@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
-import { getMealHistory } from "../../utils/history";
+import { getMealHistory } from "../../services";
 
 const screenWidth = Dimensions.get("window").width;
 const daysEN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

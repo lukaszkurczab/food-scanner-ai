@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Meal } from "../types/common";
+import { Meal } from "../types/index";
 
 const HISTORY_KEY = "meal_history";
 

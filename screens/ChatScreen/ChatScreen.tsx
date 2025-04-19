@@ -9,8 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { askDietAI } from "../../utils/chatService";
-import { getMealHistory } from "../../utils/history";
+import { askDietAI, getMealHistory } from "../../services";
 
 export default function ChatScreen() {
   const [question, setQuestion] = useState("");

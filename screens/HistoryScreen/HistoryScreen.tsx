@@ -14,8 +14,8 @@ import {
   getMealHistory,
   clearMealHistory,
   removeMealFromHistory,
-} from "../../utils/history";
-import { Meal } from "../../types/common";
+} from "../../services";
+import { Meal } from "../../types";
 import { Ionicons } from "@expo/vector-icons";
 
 type RootStackParamList = {

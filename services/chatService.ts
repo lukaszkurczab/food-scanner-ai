@@ -1,4 +1,4 @@
-import { Meal } from "../types/common";
+import { Meal } from "../types/index";
 import OpenAI from "openai";
 import Constants from "expo-constants";
 

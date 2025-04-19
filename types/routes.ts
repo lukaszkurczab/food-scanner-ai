@@ -1,4 +1,4 @@
-import { Meal } from './common';
+import { Meal } from './index';
 
 export type RootStackParamList = {
   Home: undefined;

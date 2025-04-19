@@ -1,4 +1,4 @@
-import { Nutrients } from "../types/common";
+import { Nutrients } from "../types/index";
 import Constants from "expo-constants";
 
 const API_KEY = Constants.expoConfig?.extra?.usdaApiKey;

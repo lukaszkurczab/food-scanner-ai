@@ -13,13 +13,13 @@ import {
 import { PieChart } from "react-native-chart-kit";
 import { Dimensions } from "react-native";
 import { RouteProp } from "@react-navigation/native";
-import { saveMealToHistory } from "../../utils/history";
+import { saveMealToHistory } from "../../services";
 import { RootStackParamList } from "../../types/routes";
 import {
   mockDetectIngredients,
 } from "../../utils/detectIngredients";
-import { getNutrientsForIngredient } from "../../utils/getNutrition";
-import { Ingredient, Nutrients } from "../../types/common";
+import { getNutrientsForIngredient } from "../../services";
+import { Ingredient, Nutrients } from "../../types";
 
 const screenWidth = Dimensions.get("window").width;
 type ResultScreenRouteProp = RouteProp<RootStackParamList, "Result">;
