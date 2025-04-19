@@ -9,15 +9,32 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "expo": "~52.0.46",
-    "expo-status-bar": "~2.0.1",
+    "@expo/vector-icons": "14.0.4",
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-navigation/native": "7.1.6",
+    "@react-navigation/native-stack": "7.3.10",
+    "@react-navigation/stack": "7.2.10",
+    "dotenv": "16.5.0",
+    "expo": "^52.0.46",
+    "expo-camera": "16.0.18",
+    "expo-constants": "17.0.8",
+    "expo-status-bar": "2.0.1",
+    "openai": "4.95.1",
     "react": "18.3.1",
-    "react-native": "0.76.9"
+    "react-native": "0.76.9",
+    "react-native-chart-kit": "6.12.0",
+    "react-native-get-random-values": "1.11.0",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.4.0",
+    "react-native-svg": "15.8.0",
+    "uuid": "11.1.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
+    "@babel/core": "7.26.10",
     "@types/react": "~18.3.12",
-    "typescript": "^5.3.3"
+    "@types/react-native": "0.73.0",
+    "jsdom": "26.1.0",
+    "typescript": "5.8.3"
   },
   "private": true
 }
