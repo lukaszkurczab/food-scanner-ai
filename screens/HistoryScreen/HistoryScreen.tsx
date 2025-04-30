@@ -20,7 +20,6 @@ import { Ionicons } from "@expo/vector-icons";
 
 type RootStackParamList = {
   History: undefined;
-  WeeklySummary: undefined;
   MealDetail: { meal: Meal };
 };
 type HistorycreenNavigationProp = StackNavigationProp<
@@ -84,10 +83,6 @@ export default function HistoryScreen({
         title="🗑️ Wyczyść historię"
         onPress={handleClearHistory}
         color="#f44336"
-      />
-      <Button
-        title="📈 Analiza tygodniowa"
-        onPress={() => navigation.navigate("WeeklySummary")}
       />
       <FlatList
         data={history}

@@ -1,111 +1,100 @@
-import React, { useRef, useState } from "react";
-import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
-import {
-  CameraView,
-  useCameraPermissions
-} from "expo-camera";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Image } from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { useNavigation } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { PermissionRequestView } from "@/components/PermissionRequestView";
+import { CaptureButton } from "@/components/CaptureButton";
+import { ConfirmButtons } from "@/components/ConfirmButtons";
+import { TorchToggle } from "@/components/TorchToggle";
 
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const navigation = useNavigation<any>();
+
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const [isTakingPhoto, setIsTakingPhoto] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("blur", () => {
+      setPhotoUri(null);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const handleTakePicture = async () => {
+    if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
+    setIsTakingPhoto(true);
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
+      if (photo?.uri) {
+        setPhotoUri(photo.uri);
+      }
+    } catch (err) {
+      console.error("Error taking picture:", err);
+    } finally {
+      setIsTakingPhoto(false);
+    }
+  };
+
+  const handleAccept = () => {
+    if (photoUri) navigation.navigate("Result", { image: photoUri });
+  };
+
+  const handleReject = () => {
+    setPhotoUri(null);
+  };
 
   if (!permission) return <View />;
 
   if (!permission.granted) {
     return (
-      <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>Potrzebuję dostępu do kamery</Text>
-        <TouchableOpacity
-          onPress={requestPermission}
-          style={styles.permissionButton}
-        >
-          <Text style={styles.permissionButtonText}>Zezwól</Text>
-        </TouchableOpacity>
+      <PermissionRequestView
+        message="Camera access is required to take photos."
+        onPress={requestPermission}
+      />
+    );
+  }
+
+  if (photoUri) {
+    return (
+      <View style={{ flex: 1 }}>
+        <Image
+          source={{ uri: photoUri }}
+          style={{ flex: 1 }}
+          resizeMode="cover"
+        />
+        <ConfirmButtons onAccept={handleAccept} onReject={handleReject} />
       </View>
     );
   }
 
-  const takePicture = async () => {
-    if (cameraRef.current && isCameraReady) {
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
-        base64: true,
-      });
-
-      if (!photo) {
-        console.error("Failed to capture photo");
-        return;
-      }
-
-      navigation.navigate("Result", { image: photo.uri });
-    }
-  };
-
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1 }}>
       <CameraView
         ref={cameraRef}
-        style={styles.camera}
+        style={{ flex: 1 }}
         facing="back"
-        enableTorch={false}
+        enableTorch={torchOn}
         onCameraReady={() => setIsCameraReady(true)}
       >
-        <View style={styles.controls}>
-          <TouchableOpacity onPress={takePicture} style={styles.captureButton}>
-            <Ionicons name="camera" size={36} color="black" />
-          </TouchableOpacity>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "transparent",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            paddingBottom: 30,
+            gap: 16,
+          }}
+        >
+          <TorchToggle on={torchOn} toggle={() => setTorchOn((v) => !v)} />
+          <CaptureButton onPress={handleTakePicture} disabled={isTakingPhoto} />
         </View>
       </CameraView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  camera: {
-    flex: 1,
-  },
-  controls: {
-    flex: 1,
-    backgroundColor: "transparent",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    paddingBottom: 30,
-  },
-  captureButton: {
-    width: 80,
-    height: 80,
-    backgroundColor: "#fff",
-    borderRadius: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#000",
-  },
-  permissionContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  permissionText: {
-    fontSize: 18,
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  permissionButton: {
-    backgroundColor: "#007bff",
-    padding: 10,
-    borderRadius: 8,
-  },
-  permissionButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-});

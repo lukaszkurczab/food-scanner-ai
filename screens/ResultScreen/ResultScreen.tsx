@@ -12,32 +12,37 @@ import {
 } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import { Dimensions } from "react-native";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { saveMealToHistory } from "../../services";
 import { RootStackParamList } from "../../types/routes";
-import {
-  mockDetectIngredients,
-} from "../../utils/detectIngredients";
 import { getNutrientsForIngredient } from "../../services";
 import { Ingredient, Nutrients } from "../../types";
+import { detectIngredientsWithVision } from "@/services/vision";
+import ErrorModal from "@/components/ErrorModal";
 
 const screenWidth = Dimensions.get("window").width;
-type ResultScreenRouteProp = RouteProp<RootStackParamList, "Result">;
+type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
 
-export default function ResultScreen({
-  route,
-}: {
-  route: ResultScreenRouteProp;
-}) {
+export default function ResultScreen() {
+  const route = useRoute<ResultRouteProp>();
   const { image } = route.params;
+  const navigation = useNavigation<any>();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [nutritionData, setNutritionData] = useState<Nutrients | null>(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   useEffect(() => {
     const analyze = async () => {
-      const result = await mockDetectIngredients(image);
+      const result = await detectIngredientsWithVision(image);
+
+      if (!result || result.length === 0) {
+        setShowErrorModal(true); 
+        return;
+      }
+
       setIngredients(result);
     };
+
     analyze();
   }, []);
 
@@ -156,6 +161,14 @@ export default function ResultScreen({
           </View>
         </>
       )}
+      <ErrorModal
+        visible={showErrorModal}
+        message="No ingredients detected. Please try taking the photo again."
+        onClose={() => {
+          setShowErrorModal(false);
+          navigation.navigate("Camera"); 
+        }}
+      />
     </ScrollView>
   );
 }

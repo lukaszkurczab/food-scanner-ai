@@ -1,16 +1,23 @@
-import { View, Text, Button } from "react-native";
-import { StatusBar } from "expo-status-bar";
+import { View, Text } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useTheme } from "@/theme/useTheme";
+import { useNavigation } from "@react-navigation/native";
+import Tile from "@/components/Tile";
 
 type RootStackParamList = {
-    Home: undefined;
-    Camera: undefined;
-    History: undefined;
-    Chat: undefined;
+  Home: undefined;
+  Camera: undefined;
+  History: undefined;
+  Chat: undefined;
+  WeeklySummary: undefined;
 };
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
-export default function HomeScreen({ navigation }: { navigation: HomeScreenNavigationProp }) {
+export default function HomeScreen() {
+  const { theme } = useTheme();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
+
   return (
     <View
       style={{
@@ -18,24 +25,29 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
         justifyContent: "center",
         alignItems: "center",
         padding: 16,
+        backgroundColor: theme.background,
       }}
     >
-      <Text style={{ fontSize: 28, fontWeight: "bold", marginBottom: 20 }}>
-        🍽️ Food Scanner AI
-      </Text>
-      <Button
-        title="Zrób zdjęcie posiłku"
+      <Tile
+        title="Meal analysis"
         onPress={() => navigation.navigate("Camera")}
+        style={{ width: 310, marginBottom: 10 }}
       />
-      <Button
-        title="Historia posiłków"
-        onPress={() => navigation.navigate("History")}
-      />
-      <StatusBar style="auto" />
-      <Button
-        title="🧠 Porozmawiaj z dietetykiem AI"
-        onPress={() => navigation.navigate("Chat")}
-      />
+      <View style={{ flexDirection: "row", gap: 5 }} >
+        <Tile
+          title="History"
+          onPress={() => navigation.navigate("History")}
+        />
+        <Tile
+          title="Statistics"
+          onPress={() => navigation.navigate("WeeklySummary")}
+        />
+        <Tile
+          title="Chat with AI"
+          onPress={() => navigation.navigate("Chat")}
+        />
+      </View>
+      <ThemeToggle />
     </View>
   );
 }

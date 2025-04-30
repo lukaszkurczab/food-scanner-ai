@@ -7,18 +7,15 @@ import {
   FlatList,
   Dimensions,
 } from "react-native";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useRoute } from "@react-navigation/native";
 import { RootStackParamList } from "../../types/routes";
 import { PieChart } from "react-native-chart-kit";
 
 type MealDetailRouteProp = RouteProp<RootStackParamList, "MealDetail">;
 const screenWidth = Dimensions.get("window").width;
 
-export default function MealDetailScreen({
-  route,
-}: {
-  route: MealDetailRouteProp;
-}) {
+export default function MealDetailScreen() {
+  const route = useRoute<MealDetailRouteProp>();
   const { meal } = route.params;
 
   const getMacroChartData = () => [
