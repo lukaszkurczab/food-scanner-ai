@@ -85,7 +85,7 @@ export default function HomeScreen() {
                   textAlign: "center",
                 }}
               >
-                You have no meals scaned today
+                You have no meals scanned today
               </Text>
             </View>
           )}
