@@ -14,6 +14,12 @@ export async function getMealHistory(): Promise<Meal[]> {
   return data ? JSON.parse(data) : [];
 }
 
+export async function getTodayMeal(): Promise<Meal[]> {
+  const data = await AsyncStorage.getItem(HISTORY_KEY);
+  const todayMeal = data ? JSON.parse(data) : [];
+  return todayMeal;
+}
+
 export async function clearMealHistory() {
   await AsyncStorage.removeItem(HISTORY_KEY);
 }

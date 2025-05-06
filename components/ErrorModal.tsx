@@ -1,3 +1,4 @@
+import { useTheme } from "@/theme/useTheme";
 import React from "react";
 import { Modal, View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
@@ -12,14 +13,19 @@ export default function ErrorModal({
   message,
   onClose,
 }: ErrorModalProps) {
+  const { theme } = useTheme();
+
   return (
     <Modal transparent animationType="fade" visible={visible}>
       <View style={styles.overlay}>
-        <View style={styles.modal}>
+        <View style={[styles.modal, { backgroundColor: theme.background }]}>
           <Text style={styles.title}>❌ Oops!</Text>
           <Text style={styles.message}>{message}</Text>
-          <TouchableOpacity onPress={onClose} style={styles.button}>
-            <Text style={styles.buttonText}>Try Again</Text>
+          <TouchableOpacity
+            onPress={onClose}
+            style={[styles.button, { backgroundColor: theme.secondary }]}
+          >
+            <Text style={[styles.buttonText, {color: theme.background}]}>Try Again</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -36,7 +42,6 @@ const styles = StyleSheet.create({
   },
   modal: {
     width: "80%",
-    backgroundColor: "#fff",
     padding: 20,
     borderRadius: 16,
     alignItems: "center",
@@ -56,13 +61,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor: "#4CAF50",
     paddingVertical: 10,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 24,
   },
   buttonText: {
-    color: "#fff",
     fontWeight: "600",
     fontSize: 16,
   },

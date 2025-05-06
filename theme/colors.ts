@@ -5,7 +5,7 @@ export const lightTheme = {
   text: "#1A1A1A",
   primary: "#4CAF50",
   secondary: "#FF9800",
-  card: "#F5F5F5",
+  card: "#E3E8F2",
 };
 
 export const darkTheme = {

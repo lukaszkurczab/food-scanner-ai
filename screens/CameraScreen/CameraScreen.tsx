@@ -53,7 +53,7 @@ export default function CameraScreen() {
   if (!permission.granted) {
     return (
       <PermissionRequestView
-        message="Camera access is required to take photos."
+        message="Camera access is required to take photos"
         onPress={requestPermission}
       />
     );

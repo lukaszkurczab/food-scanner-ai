@@ -2,15 +2,13 @@ import { useTheme } from "@/theme/useTheme";
 import { Text, TouchableOpacity } from "react-native";
 
 export default function Tile({
-  title,
-  description = "",
+  children,
   style = {},
   onPress,
 }: {
-  title: string;
-  description?: string;
+  children: JSX.Element;
   style?: object | undefined;
-  onPress: () => void;
+  onPress?: () => void | undefined;
 }) {
   const { theme } = useTheme();
 
@@ -18,34 +16,15 @@ export default function Tile({
     <TouchableOpacity
       onPress={onPress}
       style={{
-        width: 100,
-        height: 100,
-        borderRadius: 10,
-        overflow: "hidden",
-        backgroundColor: theme.primary,
+        borderRadius: 12,
+        backgroundColor: theme.card,
+        padding: 16,
         justifyContent: "center",
+        width: "100%",
         ...style,
       }}
     >
-      <Text
-        style={{
-          color: theme.card,
-          padding: 5,
-          fontSize: 16,
-        }}
-      >
-        {title}
-      </Text>
-      {description.length > 0 && (
-        <Text
-        style={{
-          color: theme.card,
-          padding: 5,
-        }}
-      >
-        {description}
-      </Text>)
-      }
+      {children}
     </TouchableOpacity>
   );
 }

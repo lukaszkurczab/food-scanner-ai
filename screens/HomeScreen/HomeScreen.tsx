@@ -1,9 +1,11 @@
-import { View, Text } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/theme/useTheme";
 import { useNavigation } from "@react-navigation/native";
 import Tile from "@/components/Tile";
+import { getTodayMeal } from "@/services";
+import { useEffect, useState } from "react";
+import { Meal } from "@/types/index";
 
 type RootStackParamList = {
   Home: undefined;
@@ -17,37 +19,101 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 export default function HomeScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const [todayMeal, setTodayMeal] = useState<Meal[] | []>([]);
+
+  async function fetchTodayMeal() {
+    const meal = await getTodayMeal();
+    setTodayMeal(meal);
+  }
+
+  useEffect(() => {
+    fetchTodayMeal();
+  }, []);
 
   return (
-    <View
+    <ScrollView
+      showsVerticalScrollIndicator={false}
       style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 16,
+        gap: 16,
         backgroundColor: theme.background,
+        width: "100%",
+        padding: 16,
       }}
     >
-      <Tile
-        title="Meal analysis"
-        onPress={() => navigation.navigate("Camera")}
-        style={{ width: 310, marginBottom: 10 }}
-      />
-      <View style={{ flexDirection: "row", gap: 5 }} >
-        <Tile
-          title="History"
-          onPress={() => navigation.navigate("History")}
-        />
-        <Tile
-          title="Statistics"
-          onPress={() => navigation.navigate("WeeklySummary")}
-        />
-        <Tile
-          title="Chat with AI"
-          onPress={() => navigation.navigate("Chat")}
-        />
+      <View style={{ width: "100%"}}>
+        <Text style={{
+          fontSize: 24,
+          fontWeight: 600,
+          textAlign: "center",
+          marginBottom: 16,
+        }}>Today's meals</Text>
+        <View style={{ gap: 8 }}>
+          {todayMeal.length > 0 ? (
+            <View style={{ gap: 8 }}>
+              {todayMeal.map((meal, i) => (
+                <Tile
+                  onPress={() => navigation.navigate("Camera")}
+                  key={meal.id + i}
+                >
+                  <View>
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Meal name
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 400,
+                      }}
+                    >
+                      {meal.nutrition.kcal} kcal
+                    </Text>
+                  </View>
+                </Tile>
+              ))}
+            </View>
+          ) : (
+            <View>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: 400,
+                  textAlign: "center",
+                }}
+              >
+                You have no meals scaned today
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-      <ThemeToggle />
-    </View>
+      <View
+        style={{
+          paddingVertical: 32,
+        }}
+      >
+        <Tile
+          style={{
+            backgroundColor: theme.secondary,
+            alignItems: "center",
+            borderRadius: 32,
+          }}
+          onPress={() => navigation.navigate("Camera")}
+        >
+          <Text
+            style={{
+              fontWeight: 600,
+              fontSize: 18,
+            }}
+          >
+            Scan a new meal
+          </Text>
+        </Tile>
+      </View>
+    </ScrollView>
   );
 }

@@ -1,16 +1,19 @@
+import { useTheme } from "@/theme/useTheme";
 import { useNavigation } from "@react-navigation/native";
 import { Text, TouchableOpacity } from "react-native";
 
 export default function Header() {
+  const { theme } = useTheme();
   const navigation = useNavigation<any>();
 
   return (
     <TouchableOpacity
       onPress={() => navigation.navigate("Home")}
       style={{
+        alignItems: "center",
+        backgroundColor: theme.background,
         height: 60,
         justifyContent: "center",
-        alignItems: "center",
       }}
     >
       <Text
