@@ -1,55 +1,36 @@
 import React from "react";
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  FlatList,
-  Dimensions,
-} from "react-native";
+import { View, Text, StyleSheet, FlatList } from "react-native";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { RootStackParamList } from "../../types/routes";
-import { PieChart } from "react-native-chart-kit";
+import NutrionChart from "@/components/NutrionChart";
 
 type MealDetailRouteProp = RouteProp<RootStackParamList, "MealDetail">;
-const screenWidth = Dimensions.get("window").width;
 
 export default function MealDetailScreen() {
   const route = useRoute<MealDetailRouteProp>();
   const { meal } = route.params;
 
-  const getMacroChartData = () => [
-    {
-      name: "Białko",
-      value: meal.nutrition.protein,
-      color: "#4CAF50",
-      legendFontColor: "#333",
-      legendFontSize: 14,
-    },
-    {
-      name: "Tłuszcz",
-      value: meal.nutrition.fat,
-      color: "#FFC107",
-      legendFontColor: "#333",
-      legendFontSize: 14,
-    },
-    {
-      name: "Węglowodany",
-      value: meal.nutrition.carbs,
-      color: "#2196F3",
-      legendFontColor: "#333",
-      legendFontSize: 14,
-    },
-  ];
-
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>
-        📅 {new Date(meal.date).toLocaleString()}
+      <Text
+        style={{
+          fontSize: 18,
+          fontWeight: 600,
+          marginBottom: 4,
+        }}
+      >
+        Meal name
       </Text>
-      <Image source={{ uri: meal.image }} style={styles.image} />
-
-      <Text style={styles.subheader}>Składniki:</Text>
+      <Text
+        style={{
+          fontSize: 14,
+          fontWeight: 400,
+          marginBottom: 10,
+        }}
+      >
+        {new Date(meal.date).toLocaleString()}
+      </Text>
+      <Text style={styles.subheader}>Ingredients:</Text>
       <FlatList
         data={meal.ingredients}
         keyExtractor={(item) => item.name}
@@ -58,30 +39,16 @@ export default function MealDetailScreen() {
             • {item.name}: {item.amount}g
           </Text>
         )}
+        style={{ flexGrow: 0 }}
       />
-
-      <Text style={styles.subheader}>Makroskładniki:</Text>
-      <Text>Kcal: {meal.nutrition.kcal.toFixed(0)} kcal</Text>
-      <Text>Białko: {meal.nutrition.protein.toFixed(1)} g</Text>
-      <Text>Tłuszcz: {meal.nutrition.fat.toFixed(1)} g</Text>
-      <Text>Węglowodany: {meal.nutrition.carbs.toFixed(1)} g</Text>
-
-      <PieChart
-        data={getMacroChartData()}
-        width={screenWidth - 40}
-        height={180}
-        chartConfig={{
-          color: () => `#888`,
-          backgroundColor: "#fff",
-          backgroundGradientFrom: "#fff",
-          backgroundGradientTo: "#fff",
-          decimalPlaces: 1,
-        }}
-        accessor={"value"}
-        backgroundColor={"transparent"}
-        paddingLeft={"10"}
-        absolute
-      />
+      <View style={{ marginBottom: 32 }}>
+        <Text style={styles.subheader}>Macronutrients:</Text>
+        <Text>Calories: {meal.nutrition.kcal.toFixed(0)} kcal</Text>
+        <Text>Protein: {meal.nutrition.protein.toFixed(1)} g</Text>
+        <Text>Fat: {meal.nutrition.fat.toFixed(1)} g</Text>
+        <Text>Carbohydrates: {meal.nutrition.carbs.toFixed(1)} g</Text>
+      </View>
+      <NutrionChart nutrition={meal.nutrition} />
     </View>
   );
 }
@@ -89,14 +56,10 @@ export default function MealDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: "flex-start",
     paddingTop: 40,
     paddingHorizontal: 20,
     backgroundColor: "#fff",
-  },
-  header: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 10,
   },
   subheader: {
     fontSize: 16,

@@ -3,7 +3,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useTheme } from "@/theme/useTheme";
 import { useNavigation } from "@react-navigation/native";
 import Tile from "@/components/Tile";
-import { getTodayMeal } from "@/services";
+import { getTodayMeal, saveMealToHistory } from "@/services";
 import { useEffect, useState } from "react";
 import { Meal } from "@/types/index";
 
@@ -13,6 +13,9 @@ type RootStackParamList = {
   History: undefined;
   Chat: undefined;
   WeeklySummary: undefined;
+  MealDetail: {
+    meal: Meal;
+  };
 };
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
@@ -25,6 +28,22 @@ export default function HomeScreen() {
     const meal = await getTodayMeal();
     setTodayMeal(meal);
   }
+
+  // saveMealToHistory({
+  //   id: Math.random().toString(),
+  //   image: "https://example.com/image.jpg",
+  //   date: new Date().toISOString(),
+  //   ingredients: [
+  //     { name: "Chicken", amount: 200 },
+  //     { name: "Rice", amount: 150 },
+  //   ],
+  //   nutrition: {
+  //     kcal: 500,
+  //     protein: 30,
+  //     fat: 10,
+  //     carbs: 60,
+  //   },
+  // });
 
   useEffect(() => {
     fetchTodayMeal();
@@ -40,19 +59,25 @@ export default function HomeScreen() {
         padding: 16,
       }}
     >
-      <View style={{ width: "100%"}}>
-        <Text style={{
-          fontSize: 24,
-          fontWeight: 600,
-          textAlign: "center",
-          marginBottom: 16,
-        }}>Today's meals</Text>
+      <View style={{ width: "100%" }}>
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: 600,
+            textAlign: "center",
+            marginBottom: 16,
+          }}
+        >
+          Today's meals
+        </Text>
         <View style={{ gap: 8 }}>
           {todayMeal.length > 0 ? (
             <View style={{ gap: 8 }}>
               {todayMeal.map((meal, i) => (
                 <Tile
-                  onPress={() => navigation.navigate("Camera")}
+                  onPress={() =>
+                    navigation.navigate("MealDetail", { meal: meal })
+                  }
                   key={meal.id + i}
                 >
                   <View>

@@ -16,7 +16,16 @@ export async function getMealHistory(): Promise<Meal[]> {
 
 export async function getTodayMeal(): Promise<Meal[]> {
   const data = await AsyncStorage.getItem(HISTORY_KEY);
-  const todayMeal = data ? JSON.parse(data) : [];
+  const mealsData = data ? JSON.parse(data) : [];
+  const todayMeal = mealsData.filter((meal: Meal) => {
+    const mealDate = new Date(meal.date);
+    const today = new Date();
+    return (
+      mealDate.getDate() === today.getDate() &&
+      mealDate.getMonth() === today.getMonth() &&
+      mealDate.getFullYear() === today.getFullYear()
+    );
+  });
   return todayMeal;
 }
 

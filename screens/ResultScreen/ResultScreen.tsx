@@ -7,11 +7,9 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  Button,
   ScrollView,
+  TouchableOpacity,
 } from "react-native";
-import { PieChart } from "react-native-chart-kit";
-import { Dimensions } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { saveMealToHistory } from "../../services";
 import { RootStackParamList } from "../../types/routes";
@@ -19,14 +17,16 @@ import { getNutrientsForIngredient } from "../../services";
 import { Ingredient, Nutrients } from "../../types";
 import { detectIngredientsWithVision } from "@/services/vision";
 import ErrorModal from "@/components/ErrorModal";
+import { useTheme } from "@/theme/useTheme";
+import NutrionChart from "@/components/NutrionChart";
 
-const screenWidth = Dimensions.get("window").width;
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
 
 export default function ResultScreen() {
   const route = useRoute<ResultRouteProp>();
   const { image } = route.params;
   const navigation = useNavigation<any>();
+  const { theme } = useTheme();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [nutritionData, setNutritionData] = useState<Nutrients | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -66,30 +66,6 @@ export default function ResultScreen() {
     if (ingredients.length > 0) recalculateNutrition();
   }, [ingredients]);
 
-  const getMacroChartData = (data: Nutrients) => [
-    {
-      name: "Białko",
-      value: data.protein,
-      color: "#4CAF50",
-      legendFontColor: "#333",
-      legendFontSize: 14,
-    },
-    {
-      name: "Tłuszcz",
-      value: data.fat,
-      color: "#FFC107",
-      legendFontColor: "#333",
-      legendFontSize: 14,
-    },
-    {
-      name: "Węglowodany",
-      value: data.carbs,
-      color: "#2196F3",
-      legendFontColor: "#333",
-      legendFontSize: 14,
-    },
-  ];
-
   const handleAmountChange = (index: number, text: string) => {
     const updated = [...ingredients];
     const parsed = parseInt(text);
@@ -109,16 +85,19 @@ export default function ResultScreen() {
       nutrition: nutritionData,
     };
     await saveMealToHistory(meal);
-    alert("Posiłek zapisany ✅");
     
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>📸 Twoje zdjęcie:</Text>
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        { backgroundColor: theme.background },
+      ]}
+    >
       <Image source={{ uri: image }} style={styles.image} />
 
-      <Text style={styles.subheader}>🧠 Rozpoznane składniki:</Text>
+      <Text style={styles.subheader}>Detected Ingredients:</Text>
 
       {ingredients.map((item, index) => (
         <View key={item.name + index} style={styles.ingredientRow}>
@@ -135,29 +114,25 @@ export default function ResultScreen() {
 
       {nutritionData && (
         <>
-          <Text style={styles.chartTitle}>Makroskładniki (%)</Text>
-          <PieChart
-            data={getMacroChartData(nutritionData)}
-            width={screenWidth - 40}
-            height={180}
-            chartConfig={{
-              color: () => `#888`,
-              backgroundColor: "#fff",
-              backgroundGradientFrom: "#fff",
-              backgroundGradientTo: "#fff",
-              decimalPlaces: 1,
-            }}
-            accessor={"value"}
-            backgroundColor={"transparent"}
-            paddingLeft={"10"}
-            absolute
-          />
+          <Text style={styles.chartTitle}>Nutritions (%)</Text>
+          <NutrionChart nutrition={nutritionData} />
           <View style={{ marginTop: 20 }}>
-            <Button
-              title="Zapisz do historii"
+            <TouchableOpacity
               onPress={handleSave}
-              color="#4CAF50"
-            />
+              style={{ 
+                backgroundColor: theme.secondary,
+                width: 200,
+                paddingVertical: 12,
+                borderRadius: 30,
+              }}
+            >
+              <Text style={{
+                textAlign: "center",
+                fontSize: 16,
+                fontWeight: 500,
+                color: theme.text,
+              }}>Save</Text>
+            </TouchableOpacity>
           </View>
         </>
       )}
@@ -166,7 +141,7 @@ export default function ResultScreen() {
         message="No ingredients detected. Please try taking the photo again."
         onClose={() => {
           setShowErrorModal(false);
-          navigation.navigate("Camera"); 
+          navigation.navigate("Camera");
         }}
       />
     </ScrollView>
@@ -178,7 +153,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 40,
     paddingBottom: 60,
-    backgroundColor: "#f8f8f8",
   },
   header: {
     fontSize: 22,

@@ -103,7 +103,6 @@ export default function WeeklySummaryScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>📊 Weekly Summary</Text>
       {renderChart("Calories", kcalData)}
       {renderChart("Protein", proteinData)}
       {renderChart("Carbohydrates", carbsData)}
