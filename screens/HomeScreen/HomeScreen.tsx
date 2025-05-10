@@ -12,7 +12,7 @@ type RootStackParamList = {
   Camera: undefined;
   History: undefined;
   Chat: undefined;
-  WeeklySummary: undefined;
+  Summary: undefined;
   MealDetail: {
     meal: Meal;
   };
@@ -29,10 +29,13 @@ export default function HomeScreen() {
     setTodayMeal(meal);
   }
 
+  // const yedterday = new Date();
+  // yedterday.setDate(yedterday.getDate() - 2);
+
   // saveMealToHistory({
   //   id: Math.random().toString(),
   //   image: "https://example.com/image.jpg",
-  //   date: new Date().toISOString(),
+  //   date: yedterday.toISOString(),
   //   ingredients: [
   //     { name: "Chicken", amount: 200 },
   //     { name: "Rice", amount: 150 },

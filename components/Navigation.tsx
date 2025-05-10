@@ -51,7 +51,7 @@ export default function Navigation() {
       <NavigationItem target="Home" icon="home" />
       <NavigationItem target="History" icon="calendar" />
       <NavigationItem
-        target="WeeklySummary"
+        target="Summary"
         icon="chart-bar"
       />
       <NavigationItem target="Chat" icon="robot" />

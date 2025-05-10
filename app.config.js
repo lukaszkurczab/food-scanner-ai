@@ -2,8 +2,9 @@ import "dotenv/config";
 
 export default {
   expo: {
-    name: "food-scanner-ai",
-    slug: "food-scanner-ai",
+    name: "caloriai",
+    slug: "caloriai",
+    owner: "lkurczab",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -40,6 +41,9 @@ export default {
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
       usdaApiKey: process.env.USDA_API_KEY,
+      eas: {
+        projectId: "6126cb31-0485-4b93-b30c-738b65882366",
+      },
     },
   },
 };

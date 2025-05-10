@@ -7,5 +7,5 @@ export type RootStackParamList = {
   History: undefined;
   MealDetail: { meal: Meal };
   Chat: undefined;
-  WeeklySummary: undefined;
+  Summary: undefined;
 };

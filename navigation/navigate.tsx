@@ -8,7 +8,7 @@ export type RootStackParamList = {
   History: undefined;
   MealDetail: { meal: Meal } | any;
   Chat: undefined;
-  WeeklySummary: undefined;
+  Summary: undefined;
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
