@@ -7,10 +7,13 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
-import { getMealHistory } from "../../services";
+import { getMealHistory } from "@/services";
 import { Graph } from "@/components";
+import { useTheme } from "@/theme/useTheme";
 
 export default function SummaryScreen() {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<"7" | "30">("7");
   const [graphData, setGraphData] = useState<number[]>([]);
@@ -114,8 +117,6 @@ export default function SummaryScreen() {
           carbs: Math.round(carbsArr.reduce((a, b) => a + b, 0) / totalDays),
           fat: Math.round(fatArr.reduce((a, b) => a + b, 0) / totalDays),
         });
-      } catch {
-        // Handle error if needed
       } finally {
         setLoading(false);
       }
@@ -138,12 +139,7 @@ export default function SummaryScreen() {
               setTimeRange(val as "7" | "30");
             }}
           >
-            <Text
-              style={[
-                styles.rangeButtonText,
-                timeRange === val && styles.rangeButtonTextActive,
-              ]}
-            >
+            <Text style={timeRange === val && styles.rangeButtonTextActive}>
               {val === "7" ? "Last 7 days" : "Last 30 days"}
             </Text>
           </TouchableOpacity>
@@ -154,7 +150,10 @@ export default function SummaryScreen() {
         <TouchableOpacity
           style={[
             styles.summaryBox,
-            { backgroundColor: graphData === kcalData ? "#d0d0f0" : "#f0f0f8" },
+            {
+              backgroundColor:
+                graphData === kcalData ? theme.primary : theme.primaryLight,
+            },
           ]}
           onPress={() => setGraphData(kcalData)}
         >
@@ -166,7 +165,7 @@ export default function SummaryScreen() {
             styles.summaryBox,
             {
               backgroundColor:
-                graphData === proteinData ? "#d0d0f0" : "#f0f0f8",
+                graphData === proteinData ? theme.primary : theme.primaryLight,
             },
           ]}
           onPress={() => setGraphData(proteinData)}
@@ -181,7 +180,8 @@ export default function SummaryScreen() {
           style={[
             styles.summaryBox,
             {
-              backgroundColor: graphData === carbsData ? "#d0d0f0" : "#f0f0f8",
+              backgroundColor:
+                graphData === carbsData ? theme.primary : theme.primaryLight,
             },
           ]}
           onPress={() => setGraphData(carbsData)}
@@ -192,7 +192,10 @@ export default function SummaryScreen() {
         <TouchableOpacity
           style={[
             styles.summaryBox,
-            { backgroundColor: graphData === fatData ? "#d0d0f0" : "#f0f0f8" },
+            {
+              backgroundColor:
+                graphData === fatData ? theme.primary : theme.primaryLight,
+            },
           ]}
           onPress={() => setGraphData(fatData)}
         >
@@ -213,102 +216,66 @@ export default function SummaryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingTop: 40,
-    backgroundColor: "#fff",
-  },
-  rangeSelector: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 20,
-  },
-  rangeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: "#f0f0f0",
-  },
-  rangeButtonActive: {
-    backgroundColor: "#d0d0f0",
-  },
-  rangeButtonText: {
-    color: "#333",
-  },
-  rangeButtonTextActive: {
-    fontWeight: "bold",
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 10,
-  },
-  summaryBox: {
-    backgroundColor: "#f0f0f8",
-    padding: 16,
-    borderRadius: 16,
-    width: "45%",
-    alignItems: "center",
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: "#555",
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginLeft: 10,
-    marginTop: 20,
-  },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 16,
-    alignSelf: "center",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  loadingText: {
-    marginTop: 10,
-  },
-  modalBackground: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    margin: 20,
-    padding: 20,
-    borderRadius: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 10,
-  },
-  modalButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-  },
-  modalButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      paddingTop: 40,
+      backgroundColor: theme.background,
+    },
+    rangeSelector: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      marginBottom: 20,
+    },
+    rangeButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      backgroundColor: theme.primaryLight,
+    },
+    rangeButtonActive: {
+      opacity: 1,
+      backgroundColor: theme.primary,
+    },
+    rangeButtonTextActive: {
+      fontWeight: "bold",
+    },
+    summaryRow: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      marginBottom: 10,
+    },
+    summaryBox: {
+      padding: 16,
+      borderRadius: 16,
+      width: "45%",
+      alignItems: "center",
+    },
+    summaryLabel: {
+      fontSize: 14,
+    },
+    summaryValue: {
+      fontSize: 24,
+      fontWeight: "bold",
+    },
+    chartTitle: {
+      fontSize: 18,
+      fontWeight: "600",
+      marginLeft: 10,
+      marginTop: 20,
+    },
+    chart: {
+      marginVertical: 8,
+      borderRadius: 16,
+      alignSelf: "center",
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    loadingText: {
+      marginTop: 10,
+    },
+  });

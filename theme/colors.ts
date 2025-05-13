@@ -1,9 +1,10 @@
 export const lightTheme = {
   mode: "light",
   background: "#FFFFFF",
-  accent: "#2C2C2C",
+  accent: "#ACACAC",
   text: "#1A1A1A",
-  primary: "#4CAF50",
+  primary: "#72e055",
+  primaryLight: "#c9ebc0",
   secondary: "#FF9800",
   card: "#E3E8F2",
 };

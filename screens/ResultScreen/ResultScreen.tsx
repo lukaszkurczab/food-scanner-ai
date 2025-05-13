@@ -11,12 +11,14 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import { saveMealToHistory } from "../../services";
+import {
+  saveMealToHistory,
+  detectIngredientsWithVision,
+  getNutrientsForIngredient,
+} from "@/services";
 import { RootStackParamList } from "@/navigation/navigate";
-import { getNutrientsForIngredient } from "../../services";
-import { Ingredient, Nutrients } from "../../types";
-import { detectIngredientsWithVision } from "@/services/vision";
-import { NutrionChart, ErrorModal } from "@/components";
+import { Ingredient, Nutrients } from "@/types";
+import { NutrionChart, ErrorModal, Button } from "@/components";
 import { useTheme } from "@/theme/useTheme";
 
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
@@ -114,28 +116,7 @@ export default function ResultScreen() {
         <>
           <Text style={styles.chartTitle}>Meal nutritions</Text>
           <NutrionChart nutrition={nutritionData} />
-          <View style={{ marginTop: 20 }}>
-            <TouchableOpacity
-              onPress={handleSave}
-              style={{
-                backgroundColor: theme.secondary,
-                width: 200,
-                paddingVertical: 12,
-                borderRadius: 30,
-              }}
-            >
-              <Text
-                style={{
-                  textAlign: "center",
-                  fontSize: 16,
-                  fontWeight: 500,
-                  color: theme.text,
-                }}
-              >
-                Save
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Button text="Save" onPress={handleSave} />
         </>
       )}
       <ErrorModal

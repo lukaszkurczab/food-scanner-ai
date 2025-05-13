@@ -1,5 +1,5 @@
 import { StatusBar, View } from "react-native";
-import { Header } from "./";
+import { Header } from "./Header";
 import Navigation from "./Navigation";
 import { JSX } from "react";
 import { useTheme } from "@/theme/useTheme";

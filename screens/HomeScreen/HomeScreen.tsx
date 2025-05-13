@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
-import { Tile } from "@/components";
+import { Button, Tile } from "@/components";
 import { getTodayMeal } from "@/services";
 import { Meal } from "@/types";
 import { RootStackParamList } from "@/navigation/navigate";
@@ -53,23 +53,19 @@ export default function HomeScreen() {
         )}
       </View>
 
-      <Tile style={styles.button} onPress={() => navigation.navigate("Camera")}>
-        <Text style={styles.tileMain}>Scan a new meal</Text>
-      </Tile>
+      <Button
+        text="Scan a new meal"
+        onPress={() => navigation.navigate("Camera")}
+      />
     </ScrollView>
   );
 }
 
 const getStyles = (theme: any) =>
   StyleSheet.create({
-    button: {
-      backgroundColor: theme.secondary,
-      alignItems: "center",
-      borderRadius: 32,
-      marginTop: 32,
-    },
     container: {
       padding: 16,
+      flex: 1,
       backgroundColor: theme.background,
     },
     header: {

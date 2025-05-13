@@ -99,7 +99,6 @@ export default function HistoryScreen({
                 <Ionicons
                   name={isExpanded ? "chevron-up" : "chevron-down"}
                   size={24}
-                  color={theme.secondary}
                 />
               </>
             </Tile>

@@ -11,3 +11,4 @@ export * from "./PermissionRequestView";
 export * from "./ThemeToggle";
 export * from "./Tile";
 export * from "./TorchToggle";
+export * from "./Button";

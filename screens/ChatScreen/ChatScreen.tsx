@@ -9,9 +9,12 @@ import {
   Platform,
   TouchableOpacity,
 } from "react-native";
-import { askDietAI, getMealHistory } from "../../services";
+import { askDietAI, getMealHistory } from "@/services";
+import { useTheme } from "@/theme/useTheme";
 
 export default function ChatScreen() {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([
     { from: "ai", text: "Hello! How can I help you today?" },
@@ -72,57 +75,58 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: "#fff",
-    flexGrow: 1,
-    justifyContent: "flex-end",
-  },
-  messageBubble: {
-    padding: 10,
-    borderRadius: 12,
-    marginBottom: 10,
-    maxWidth: "80%",
-  },
-  userBubble: {
-    backgroundColor: "#fdd77a",
-    alignSelf: "flex-end",
-  },
-  aiBubble: {
-    backgroundColor: "#e0e0e0",
-    alignSelf: "flex-start",
-  },
-  messageText: {
-    fontSize: 16,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#fff",
-  },
-  input: {
-    flex: 1,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  sendButton: {
-    marginLeft: 10,
-    backgroundColor: "#4caf50",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  sendButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      padding: 20,
+      backgroundColor: theme.background,
+      flexGrow: 1,
+      justifyContent: "flex-end",
+    },
+    messageBubble: {
+      padding: 10,
+      borderRadius: 12,
+      marginBottom: 10,
+      maxWidth: "80%",
+    },
+    userBubble: {
+      backgroundColor: theme.primaryLight,
+      alignSelf: "flex-end",
+    },
+    aiBubble: {
+      backgroundColor: theme.card,
+      alignSelf: "flex-start",
+    },
+    messageText: {
+      fontSize: 16,
+    },
+    inputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 10,
+      borderTopWidth: 1,
+      borderColor: theme.card,
+      backgroundColor: theme.background,
+    },
+    input: {
+      flex: 1,
+      borderColor: theme.accent,
+      borderWidth: 1,
+      borderRadius: 20,
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+      fontSize: 16,
+    },
+    sendButton: {
+      marginLeft: 10,
+      backgroundColor: theme.secondary,
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+      borderRadius: 20,
+    },
+    sendButtonText: {
+      color: theme.background,
+      fontSize: 16,
+      fontWeight: "bold",
+    },
+  });
