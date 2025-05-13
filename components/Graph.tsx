@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import { Dimensions } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 
@@ -9,7 +8,7 @@ type GraphProps = {
   data: number[];
 };
 
-export default function Graph({ labels, data }: GraphProps) {
+export const Graph = ({ labels, data }: GraphProps) => {
   const chartConfig = {
     backgroundColor: "#ffffff",
     backgroundGradientFrom: "#ffffff",
@@ -36,4 +35,4 @@ export default function Graph({ labels, data }: GraphProps) {
       }}
     />
   );
-}
+};

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { getMealHistory } from "../../services";
-import Graph from "@/components/Graph";
+import { Graph } from "@/components";
 
 export default function SummaryScreen() {
   const [loading, setLoading] = useState(true);
@@ -40,7 +40,7 @@ export default function SummaryScreen() {
 
         if (timeRange === "30") {
           days = 30;
-        } 
+        }
 
         const daysMap: Record<
           string,
@@ -73,10 +73,10 @@ export default function SummaryScreen() {
           if (isNaN(date.getTime())) continue;
 
           let include = false;
-            const daysAgo = Math.floor(
-              (new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-            );
-            if (daysAgo < days) include = true;
+          const daysAgo = Math.floor(
+            (new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          if (daysAgo < days) include = true;
 
           if (include) {
             const key = `${date.getMonth() + 1}/${date.getDate()}`;
@@ -147,34 +147,51 @@ export default function SummaryScreen() {
       </View>
 
       <View style={styles.summaryRow}>
-        <TouchableOpacity style={[
-          styles.summaryBox,
-          { backgroundColor: graphData === kcalData ? "#d0d0f0" : "#f0f0f8" },
-        ]} onPress={() => setGraphData(kcalData)}>
+        <TouchableOpacity
+          style={[
+            styles.summaryBox,
+            { backgroundColor: graphData === kcalData ? "#d0d0f0" : "#f0f0f8" },
+          ]}
+          onPress={() => setGraphData(kcalData)}
+        >
           <Text style={styles.summaryLabel}>Avg Calories</Text>
           <Text style={styles.summaryValue}>{averages.kcal}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[
-          styles.summaryBox,
-          { backgroundColor: graphData === proteinData ? "#d0d0f0" : "#f0f0f8" },
-        ]} onPress={() => setGraphData(proteinData)}>
+        <TouchableOpacity
+          style={[
+            styles.summaryBox,
+            {
+              backgroundColor:
+                graphData === proteinData ? "#d0d0f0" : "#f0f0f8",
+            },
+          ]}
+          onPress={() => setGraphData(proteinData)}
+        >
           <Text style={styles.summaryLabel}>Avg Protein</Text>
           <Text style={styles.summaryValue}>{averages.protein}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={[styles.summaryRow, { marginBottom: 48 }]}>
-        <TouchableOpacity style={[
-          styles.summaryBox,
-          { backgroundColor: graphData === carbsData ? "#d0d0f0" : "#f0f0f8" },
-        ]} onPress={() => setGraphData(carbsData)}>
+        <TouchableOpacity
+          style={[
+            styles.summaryBox,
+            {
+              backgroundColor: graphData === carbsData ? "#d0d0f0" : "#f0f0f8",
+            },
+          ]}
+          onPress={() => setGraphData(carbsData)}
+        >
           <Text style={styles.summaryLabel}>Avg Carbs</Text>
           <Text style={styles.summaryValue}>{averages.carbs}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[
-          styles.summaryBox,
-          { backgroundColor: graphData === fatData ? "#d0d0f0" : "#f0f0f8" },
-        ]} onPress={() => setGraphData(fatData)}>
+        <TouchableOpacity
+          style={[
+            styles.summaryBox,
+            { backgroundColor: graphData === fatData ? "#d0d0f0" : "#f0f0f8" },
+          ]}
+          onPress={() => setGraphData(fatData)}
+        >
           <Text style={styles.summaryLabel}>Avg Fat</Text>
           <Text style={styles.summaryValue}>{averages.fat}</Text>
         </TouchableOpacity>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import { askDietAI, getMealHistory } from "../../services";
 export default function ChatScreen() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([
-    { from: "ai", text: "Good morning! What’s for breakfast today?" },
+    { from: "ai", text: "Hello! How can I help you today?" },
   ]);
   const [loading, setLoading] = useState(false);
 

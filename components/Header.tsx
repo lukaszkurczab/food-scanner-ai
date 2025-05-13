@@ -2,7 +2,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useNavigation } from "@react-navigation/native";
 import { Text, TouchableOpacity } from "react-native";
 
-export default function Header() {
+export const Header = () => {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
 
@@ -27,4 +27,4 @@ export default function Header() {
       </Text>
     </TouchableOpacity>
   );
-}
+};

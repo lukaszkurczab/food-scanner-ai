@@ -1,4 +1,3 @@
-import React from "react";
 import { View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/theme/useTheme";
@@ -28,4 +27,5 @@ export const ConfirmButtons = ({ onAccept, onReject }: Props) => {
         <Ionicons name="checkmark-circle" size={64} color={theme.background} />
       </TouchableOpacity>
     </View>
-  );};
+  );
+};

@@ -1,7 +1,8 @@
 import { useTheme } from "@/theme/useTheme";
-import { Text, TouchableOpacity } from "react-native";
+import { JSX } from "react";
+import { TouchableOpacity } from "react-native";
 
-export default function Tile({
+export const Tile = ({
   children,
   style = {},
   onPress,
@@ -9,7 +10,7 @@ export default function Tile({
   children: JSX.Element;
   style?: object | undefined;
   onPress?: () => void | undefined;
-}) {
+}) => {
   const { theme } = useTheme();
 
   return (
@@ -27,4 +28,4 @@ export default function Tile({
       {children}
     </TouchableOpacity>
   );
-}
+};

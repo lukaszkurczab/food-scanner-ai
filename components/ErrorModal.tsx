@@ -1,5 +1,4 @@
 import { useTheme } from "@/theme/useTheme";
-import React from "react";
 import { Modal, View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
 type ErrorModalProps = {
@@ -8,11 +7,7 @@ type ErrorModalProps = {
   onClose: () => void;
 };
 
-export default function ErrorModal({
-  visible,
-  message,
-  onClose,
-}: ErrorModalProps) {
+export const ErrorModal = ({ visible, message, onClose }: ErrorModalProps) => {
   const { theme } = useTheme();
 
   return (
@@ -25,13 +20,15 @@ export default function ErrorModal({
             onPress={onClose}
             style={[styles.button, { backgroundColor: theme.secondary }]}
           >
-            <Text style={[styles.buttonText, {color: theme.background}]}>Try Again</Text>
+            <Text style={[styles.buttonText, { color: theme.background }]}>
+              Try Again
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
     </Modal>
   );
-}
+};
 
 const styles = StyleSheet.create({
   overlay: {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -12,13 +12,12 @@ import {
 } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { saveMealToHistory } from "../../services";
-import { RootStackParamList } from "../../types/routes";
+import { RootStackParamList } from "@/navigation/navigate";
 import { getNutrientsForIngredient } from "../../services";
 import { Ingredient, Nutrients } from "../../types";
 import { detectIngredientsWithVision } from "@/services/vision";
-import ErrorModal from "@/components/ErrorModal";
+import { NutrionChart, ErrorModal } from "@/components";
 import { useTheme } from "@/theme/useTheme";
-import NutrionChart from "@/components/NutrionChart";
 
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
 
@@ -36,7 +35,7 @@ export default function ResultScreen() {
       const result = await detectIngredientsWithVision(image);
 
       if (!result || result.length === 0) {
-        setShowErrorModal(true); 
+        setShowErrorModal(true);
         return;
       }
 
@@ -85,7 +84,6 @@ export default function ResultScreen() {
       nutrition: nutritionData,
     };
     await saveMealToHistory(meal);
-    
   };
 
   return (
@@ -119,19 +117,23 @@ export default function ResultScreen() {
           <View style={{ marginTop: 20 }}>
             <TouchableOpacity
               onPress={handleSave}
-              style={{ 
+              style={{
                 backgroundColor: theme.secondary,
                 width: 200,
                 paddingVertical: 12,
                 borderRadius: 30,
               }}
             >
-              <Text style={{
-                textAlign: "center",
-                fontSize: 16,
-                fontWeight: 500,
-                color: theme.text,
-              }}>Save</Text>
+              <Text
+                style={{
+                  textAlign: "center",
+                  fontSize: 16,
+                  fontWeight: 500,
+                  color: theme.text,
+                }}
+              >
+                Save
+              </Text>
             </TouchableOpacity>
           </View>
         </>

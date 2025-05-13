@@ -1,9 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 import { Appearance } from "react-native";
 import { lightTheme, darkTheme, AppTheme } from "./colors";
 

@@ -1,11 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, Image } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useNavigation } from "@react-navigation/native";
-import { PermissionRequestView } from "@/components/PermissionRequestView";
-import { CaptureButton } from "@/components/CaptureButton";
-import { ConfirmButtons } from "@/components/ConfirmButtons";
-import { TorchToggle } from "@/components/TorchToggle";
+import {
+  PermissionRequestView,
+  CaptureButton,
+  ConfirmButtons,
+  TorchToggle,
+} from "@/components";
 
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();

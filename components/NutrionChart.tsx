@@ -1,6 +1,3 @@
-import { useTheme } from "@/theme/useTheme";
-import { useNavigation } from "@react-navigation/native";
-import React from "react";
 import { Dimensions } from "react-native";
 import { Nutrients } from "@/types";
 import { PieChart } from "react-native-chart-kit";
@@ -33,7 +30,7 @@ export const getMacroChartData = (data: Nutrients) => [
   },
 ];
 
-export default function NutrionChart({ nutrition }: NutrionChartProps) {
+export const NutrionChart = ({ nutrition }: NutrionChartProps) => {
   const screenWidth = Dimensions.get("window").width;
 
   return (
@@ -54,4 +51,4 @@ export default function NutrionChart({ nutrition }: NutrionChartProps) {
       absolute
     />
   );
-}
+};

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, StyleSheet } from "react-native";
 
 type Section<T> = {
@@ -19,11 +19,7 @@ type Props<T> = {
   }>;
 };
 
-export default function DropdownList<T>({
-  sections,
-  ListHeader,
-  ListItem,
-}: Props<T>) {
+export function DropdownList<T>({ sections, ListHeader, ListItem }: Props<T>) {
   const [expandedSections, setExpandedSections] = useState<{
     [key: string]: boolean;
   }>({});

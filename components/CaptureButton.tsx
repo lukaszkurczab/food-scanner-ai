@@ -1,8 +1,13 @@
-import React from "react";
 import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export const CaptureButton = ({ onPress, disabled }: { onPress: () => void, disabled: boolean }) => (
+export const CaptureButton = ({
+  onPress,
+  disabled,
+}: {
+  onPress: () => void;
+  disabled: boolean;
+}) => (
   <TouchableOpacity
     onPress={onPress}
     disabled={disabled}

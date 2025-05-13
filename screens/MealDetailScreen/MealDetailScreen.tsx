@@ -1,8 +1,7 @@
-import React from "react";
 import { View, Text, StyleSheet, FlatList } from "react-native";
 import { RouteProp, useRoute } from "@react-navigation/native";
-import { RootStackParamList } from "../../types/routes";
-import NutrionChart from "@/components/NutrionChart";
+import { RootStackParamList } from "@/navigation/navigate";
+import { NutrionChart } from "@/components";
 
 type MealDetailRouteProp = RouteProp<RootStackParamList, "MealDetail">;
 

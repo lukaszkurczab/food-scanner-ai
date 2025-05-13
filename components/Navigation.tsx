@@ -1,8 +1,7 @@
 import { useTheme } from "@/theme/useTheme";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/FontAwesome5";
-import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 
 type NavigationItemProps = {
   target: string;
@@ -23,14 +22,13 @@ const NavigationItem = ({ target, icon }: NavigationItemProps) => {
         margin: 5,
         alignItems: "center",
         gap: 4,
-        width: "20%"
+        width: "20%",
       }}
     >
-      <Icon name={icon} size={24}/>
+      <Icon name={icon} size={24} />
     </TouchableOpacity>
   );
 };
-
 
 export default function Navigation() {
   const { theme } = useTheme();
@@ -50,10 +48,7 @@ export default function Navigation() {
     >
       <NavigationItem target="Home" icon="home" />
       <NavigationItem target="History" icon="calendar" />
-      <NavigationItem
-        target="Summary"
-        icon="chart-bar"
-      />
+      <NavigationItem target="Summary" icon="chart-bar" />
       <NavigationItem target="Chat" icon="robot" />
     </View>
   );

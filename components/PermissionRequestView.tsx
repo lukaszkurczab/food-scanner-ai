@@ -1,5 +1,4 @@
 import { useTheme } from "@/theme/useTheme";
-import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 
 type Props = {
@@ -10,7 +9,7 @@ type Props = {
 export const PermissionRequestView = ({ message, onPress }: Props) => {
   const { theme } = useTheme();
 
-  return(
+  return (
     <View
       style={{
         flex: 1,
@@ -25,14 +24,19 @@ export const PermissionRequestView = ({ message, onPress }: Props) => {
       </Text>
       <TouchableOpacity
         onPress={onPress}
-        style={{ 
-          backgroundColor: theme.secondary, 
-          paddingVertical: 12, 
-          paddingHorizontal: 24, 
-          borderRadius: 32 
+        style={{
+          backgroundColor: theme.secondary,
+          paddingVertical: 12,
+          paddingHorizontal: 24,
+          borderRadius: 32,
         }}
       >
-        <Text style={{ color: theme.background, fontWeight: "bold", fontSize: 16 }}>Grant Access</Text>
+        <Text
+          style={{ color: theme.background, fontWeight: "bold", fontSize: 16 }}
+        >
+          Grant Access
+        </Text>
       </TouchableOpacity>
     </View>
-)};
+  );
+};
