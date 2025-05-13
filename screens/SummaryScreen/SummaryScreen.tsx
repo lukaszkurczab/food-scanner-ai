@@ -89,12 +89,16 @@ export default function SummaryScreen() {
         }
 
         const keys = Object.keys(daysMap);
+        const filteredLabels =
+          timeRange === "30"
+            ? keys.map((label, index) => (index % 3 === 0 ? label : ""))
+            : keys;
         const kcalArr = keys.map((d) => daysMap[d]?.kcal || 0);
         const proteinArr = keys.map((d) => daysMap[d]?.protein || 0);
         const carbsArr = keys.map((d) => daysMap[d]?.carbs || 0);
         const fatArr = keys.map((d) => daysMap[d]?.fat || 0);
 
-        setLabels(keys);
+        setLabels(filteredLabels);
         setGraphData(kcalArr);
         setKcalData(kcalArr);
         setProteinData(proteinArr);

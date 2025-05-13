@@ -7,16 +7,13 @@ import {
   ScrollView,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { getMealHistory } from "../../services";
-import { Meal } from "../../types";
+import { getMealHistory } from "@/services";
+import { Meal } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { format, isToday } from "date-fns";
 import { useTheme } from "@/theme/useTheme";
-
-type RootStackParamList = {
-  History: undefined;
-  MealDetail: { meal: Meal };
-};
+import { RootStackParamList } from "@/navigation/navigate";
+import { Tile } from "@/components";
 
 type HistoryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -35,6 +32,7 @@ export default function HistoryScreen({
   navigation: HistoryScreenNavigationProp;
 }) {
   const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [sections, setSections] = useState<SectionData[]>([]);
   const [expandedSections, setExpandedSections] = useState<{
     [key: string]: boolean;
@@ -86,24 +84,25 @@ export default function HistoryScreen({
 
         return (
           <View key={section.title} style={styles.sectionContainer}>
-            <TouchableOpacity
+            <Tile
               style={styles.sectionHeader}
               onPress={() => toggleSection(section.title)}
-              activeOpacity={0.7}
             >
-              <View>
-                <Text style={styles.sectionTitle}>{section.title}</Text>
-                <Text style={styles.sectionSubtitle}>
-                  {section.totalKcal} kcal · {section.data.length}{" "}
-                  {section.data.length === 1 ? "meal" : "meals"}
-                </Text>
-              </View>
-              <Ionicons
-                name={isExpanded ? "chevron-up" : "chevron-down"}
-                size={24}
-                color={theme.secondary}
-              />
-            </TouchableOpacity>
+              <>
+                <View>
+                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                  <Text style={styles.sectionSubtitle}>
+                    {section.totalKcal} kcal · {section.data.length}{" "}
+                    {section.data.length === 1 ? "meal" : "meals"}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={isExpanded ? "chevron-up" : "chevron-down"}
+                  size={24}
+                  color={theme.secondary}
+                />
+              </>
+            </Tile>
 
             {isExpanded &&
               section.data.map((item) => (
@@ -127,44 +126,39 @@ export default function HistoryScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 40,
-    backgroundColor: "#fff",
-  },
-  sectionContainer: {
-    marginBottom: 16,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#f0f3f8",
-    padding: 12,
-    borderRadius: 8,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 600,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: "#555",
-  },
-  item: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    paddingHorizontal: 8,
-  },
-  mealName: {
-    fontSize: 18,
-    fontWeight: 500,
-    marginBottom: 4,
-  },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      paddingHorizontal: 16,
+      paddingTop: 24,
+      backgroundColor: theme.background,
+    },
+    sectionContainer: {
+      marginBottom: 16,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: 600,
+    },
+    sectionSubtitle: {
+      fontSize: 14,
+      color: theme.accent,
+    },
+    item: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+    },
+    mealName: {
+      fontSize: 18,
+      fontWeight: 500,
+      marginBottom: 4,
+    },
+  });

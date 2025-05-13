@@ -1,10 +1,9 @@
 import { uriToBase64 } from "@/utils/uriToBase64";
 import { convertToJpeg } from "@/utils/ensureJpeg";
 import Constants from "expo-constants";
+import { Ingredient } from "@/types";
 
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
-
-type Ingredient = { name: string; amount: number };
 
 export async function detectIngredientsWithVision(
   imageUri: string
@@ -21,8 +20,31 @@ export async function detectIngredientsWithVision(
           content: [
             {
               type: "text",
-              text:
-                "Try to list all visible food ingredients in this meal and estimate their approximate amounts in grams. Respond as JSON: [{ name: '...', amount: number }]. If unsure, make the best educated guess based on visual cues.",
+              text: `
+Your task is to analyze the provided image and detect either:
+1. A full nutrition facts table, OR
+2. Visible food or drink ingredients in a meal.
+
+Return a JSON array of objects in this format:
+[
+  {
+    "name": "string",
+    "amount": number (in grams),
+    "protein": number (per 100g),
+    "fat": number (per 100g),
+    "carbs": number (per 100g),
+    "kcal": number (per 100g),
+    "type": "food" or "drink"
+  }
+]
+
+Rules:
+- If a nutrition table is detected, return only the parsed data from it (assume amount = 100g).
+- Otherwise, do your best to visually identify ingredients and estimate their values.
+- Use educated guesses for macronutrient values if no table is found.
+- If unsure about any value, give your best estimate.
+- Never include explanations, only the JSON array.
+              `.trim(),
             },
             {
               type: "image_url",
@@ -33,7 +55,7 @@ export async function detectIngredientsWithVision(
           ],
         },
       ],
-      max_tokens: 500,
+      max_tokens: 1000,
     };
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -68,8 +90,8 @@ export async function detectIngredientsWithVision(
     try {
       data = JSON.parse(cleaned);
 
-      if (!Array.isArray(data) || !data[0]?.name) {
-        console.warn("⚠️ Vision zwróciło nietypowy obiekt, nie składniki.");
+      if (!Array.isArray(data) || !data[0]?.name || !data[0]?.type) {
+        console.warn("⚠️ Unexpected Vision response structure.");
         return null;
       }
 

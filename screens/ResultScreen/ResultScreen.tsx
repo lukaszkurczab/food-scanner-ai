@@ -95,7 +95,7 @@ export default function ResultScreen() {
     >
       <Image source={{ uri: image }} style={styles.image} />
 
-      <Text style={styles.subheader}>Detected Ingredients:</Text>
+      <Text style={styles.subheader}>Detected Ingredients</Text>
 
       {ingredients.map((item, index) => (
         <View key={item.name + index} style={styles.ingredientRow}>
@@ -106,13 +106,13 @@ export default function ResultScreen() {
             value={item.amount.toString()}
             onChangeText={(text) => handleAmountChange(index, text)}
           />
-          <Text style={styles.unit}>g</Text>
+          <Text style={styles.unit}>{item.type === "food" ? "g" : "ml"}</Text>
         </View>
       ))}
 
       {nutritionData && (
         <>
-          <Text style={styles.chartTitle}>Nutritions (%)</Text>
+          <Text style={styles.chartTitle}>Meal nutritions</Text>
           <NutrionChart nutrition={nutritionData} />
           <View style={{ marginTop: 20 }}>
             <TouchableOpacity
