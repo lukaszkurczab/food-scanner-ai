@@ -5,15 +5,18 @@ import {
   ViewStyle,
   Text,
   StyleSheet,
+  TextStyle,
 } from "react-native";
 
 export const Button = ({
   text,
   onPress,
   style,
+  textStyle = {},
 }: {
   text: string;
   onPress: () => void;
+  textStyle?: StyleProp<TextStyle>;
   style?: StyleProp<ViewStyle>;
 }) => {
   const { theme } = useTheme();
@@ -21,7 +24,7 @@ export const Button = ({
 
   return (
     <TouchableOpacity style={[styles.button, style]} onPress={onPress}>
-      <Text style={styles.buttonText}>{text}</Text>
+      <Text style={[styles.buttonText, textStyle]}>{text}</Text>
     </TouchableOpacity>
   );
 };

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, FlatList } from "react-native";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { RootStackParamList } from "@/navigation/navigate";
 import { NutrionChart } from "@/components";
+import { format } from "date-fns";
 
 type MealDetailRouteProp = RouteProp<RootStackParamList, "MealDetail">;
 
@@ -27,7 +28,7 @@ export default function MealDetailScreen() {
           marginBottom: 10,
         }}
       >
-        {new Date(meal.date).toLocaleString()}
+        {format(new Date(meal.date), "d/M/yyyy").toLocaleString()}
       </Text>
       <Text style={styles.subheader}>Ingredients:</Text>
       <FlatList
@@ -42,10 +43,10 @@ export default function MealDetailScreen() {
       />
       <View style={{ marginBottom: 32 }}>
         <Text style={styles.subheader}>Macronutrients:</Text>
-        <Text>Calories: {meal.nutrition.kcal.toFixed(0)} kcal</Text>
-        <Text>Protein: {meal.nutrition.protein.toFixed(1)} g</Text>
-        <Text>Fat: {meal.nutrition.fat.toFixed(1)} g</Text>
-        <Text>Carbohydrates: {meal.nutrition.carbs.toFixed(1)} g</Text>
+        <Text>Calories: {meal.nutrition.kcal.toFixed(0)}kcal</Text>
+        <Text>Protein: {meal.nutrition.protein.toFixed(0)}g</Text>
+        <Text>Fat: {meal.nutrition.fat.toFixed(0)}g</Text>
+        <Text>Carbohydrates: {meal.nutrition.carbs.toFixed(0)}g</Text>
       </View>
       <NutrionChart nutrition={meal.nutrition} />
     </View>

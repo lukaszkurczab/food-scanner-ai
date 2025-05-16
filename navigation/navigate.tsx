@@ -1,10 +1,21 @@
 import { createNavigationContainerRef } from "@react-navigation/native";
-import { Meal } from "@/types";
+import { Ingredient, Meal, Nutrients } from "@/types";
 
 export type RootStackParamList = {
   Home: any;
-  Camera: undefined;
-  Result: { image: string };
+  Camera:
+    | {
+        previousIngredients?: Ingredient[];
+        previousNutrition?: Nutrients;
+        prevImages?: string[];
+      }
+    | undefined;
+  Result: {
+    image: string;
+    prevImages: string[];
+    previousIngredients: Ingredient[];
+    previousNutrition: Nutrients;
+  };
   History: undefined;
   MealDetail: { meal: Meal };
   Chat: undefined;

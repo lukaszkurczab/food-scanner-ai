@@ -8,21 +8,21 @@ type NutrionChartProps = {
 
 export const getMacroChartData = (data: Nutrients) => [
   {
-    name: "Protein",
+    name: "g Protein",
     value: data.protein,
     color: "#4CAF50",
     legendFontColor: "#333",
     legendFontSize: 14,
   },
   {
-    name: "Fat",
+    name: "g Fat",
     value: data.fat,
     color: "#FFC107",
     legendFontColor: "#333",
     legendFontSize: 14,
   },
   {
-    name: "Carbs",
+    name: "g Carbs",
     value: data.carbs,
     color: "#2196F3",
     legendFontColor: "#333",
@@ -36,7 +36,7 @@ export const NutrionChart = ({ nutrition }: NutrionChartProps) => {
   return (
     <PieChart
       data={getMacroChartData(nutrition)}
-      width={screenWidth - 40}
+      width={screenWidth}
       height={180}
       chartConfig={{
         color: () => `#888`,
@@ -47,7 +47,7 @@ export const NutrionChart = ({ nutrition }: NutrionChartProps) => {
       }}
       accessor={"value"}
       backgroundColor={"transparent"}
-      paddingLeft={"10"}
+      paddingLeft={"0"}
       absolute
     />
   );

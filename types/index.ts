@@ -1,6 +1,6 @@
 export type Meal = {
   id: string;
-  image: string;
+  name: string;
   date: string;
   ingredients: Ingredient[];
   nutrition: Nutrients;
@@ -21,4 +21,5 @@ export type Ingredient = {
   carbs: number;
   kcal: number;
   type: "food" | "drink";
+  fromTable: boolean;
 };

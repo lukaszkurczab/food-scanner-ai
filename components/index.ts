@@ -12,3 +12,4 @@ export * from "./ThemeToggle";
 export * from "./Tile";
 export * from "./TorchToggle";
 export * from "./Button";
+export * from "./Carousel";

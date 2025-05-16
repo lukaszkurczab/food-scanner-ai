@@ -34,11 +34,13 @@ Return a JSON array of objects in this format:
     "fat": number (per 100g),
     "carbs": number (per 100g),
     "kcal": number (per 100g),
-    "type": "food" or "drink"
+    "type": "food" or "drink",
+    "fromTable": boolean
   }
 ]
 
 Rules:
+- If a nutrition table is detected, return fromTable as true.
 - If a nutrition table is detected, return only the parsed data from it (assume amount = 100g).
 - Otherwise, do your best to visually identify ingredients and estimate their values.
 - Use educated guesses for macronutrient values if no table is found.
