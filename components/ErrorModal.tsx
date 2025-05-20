@@ -1,4 +1,4 @@
-import { useTheme } from "@/theme/useTheme";
+import { useTheme } from "../theme/useTheme";
 import { Modal, View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
 type ErrorModalProps = {

@@ -1,6 +1,6 @@
-import { Dimensions } from "react-native";
-import { Nutrients } from "@/types";
-import { PieChart } from "react-native-chart-kit";
+import { View } from "react-native";
+import { PieChart } from "react-native-gifted-charts";
+import { Nutrients } from "../types";
 
 type NutrionChartProps = {
   nutrition: Nutrients;
@@ -8,47 +8,41 @@ type NutrionChartProps = {
 
 export const getMacroChartData = (data: Nutrients) => [
   {
-    name: "g Protein",
     value: data.protein,
     color: "#4CAF50",
-    legendFontColor: "#333",
-    legendFontSize: 14,
+    text: `${data.protein}g Protein`,
   },
   {
-    name: "g Fat",
     value: data.fat,
     color: "#FFC107",
-    legendFontColor: "#333",
-    legendFontSize: 14,
+    text: `${data.fat}g Fat`,
   },
   {
-    name: "g Carbs",
     value: data.carbs,
     color: "#2196F3",
-    legendFontColor: "#333",
-    legendFontSize: 14,
+    text: `${data.carbs}g Carbs`,
   },
 ];
 
 export const NutrionChart = ({ nutrition }: NutrionChartProps) => {
-  const screenWidth = Dimensions.get("window").width;
-
   return (
-    <PieChart
-      data={getMacroChartData(nutrition)}
-      width={screenWidth}
-      height={180}
-      chartConfig={{
-        color: () => `#888`,
-        backgroundColor: "#fff",
-        backgroundGradientFrom: "#fff",
-        backgroundGradientTo: "#fff",
-        decimalPlaces: 1,
-      }}
-      accessor={"value"}
-      backgroundColor={"transparent"}
-      paddingLeft={"0"}
-      absolute
-    />
+    <View style={{ alignItems: "center" }}>
+      <PieChart
+        data={getMacroChartData(nutrition)}
+        donut
+        showText
+        textColor="#333"
+        textSize={12}
+        radius={90}
+        innerRadius={50}
+        focusOnPress
+        showValuesAsLabels
+        centerLabelComponent={() => (
+          <View>
+            {/* Możesz tu wstawić np. sumę kalorii lub nazwę "Makroskładniki" */}
+          </View>
+        )}
+      />
+    </View>
   );
 };

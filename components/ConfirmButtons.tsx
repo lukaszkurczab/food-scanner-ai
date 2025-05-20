@@ -1,6 +1,6 @@
 import { View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "@/theme/useTheme";
+import { useTheme } from "../theme/useTheme";
 
 type Props = {
   onAccept: () => void;

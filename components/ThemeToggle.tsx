@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import { useTheme } from "@/theme/useTheme";
+import { useTheme } from "../theme/useTheme";
 
 export const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme();

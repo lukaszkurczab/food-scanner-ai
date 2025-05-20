@@ -1,6 +1,6 @@
-import { useTheme } from "@/theme/useTheme";
-import { Dimensions } from "react-native";
-import { LineChart } from "react-native-chart-kit";
+import { useTheme } from "../theme/useTheme";
+import { Dimensions, View } from "react-native";
+import { LineChart } from "react-native-gifted-charts";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -11,37 +11,45 @@ type GraphProps = {
 
 export const Graph = ({ labels, data }: GraphProps) => {
   const { theme } = useTheme();
-  const chartConfig = {
-    backgroundGradientFrom: "#ffffff",
-    backgroundGradientTo: "#ffffff",
-    fillShadowGradient: theme.secondary,
-    fillShadowGradientOpacity: 0.8,
-    strokeWidth: 1,
-    decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-  };
+
+  const processedData = data.map((value, index) => ({
+    value: isFinite(value) ? value : 0,
+    label: labels[index],
+  }));
 
   return (
-    <LineChart
-      data={{
-        labels,
-        datasets: [{ data: data.map((v) => (isFinite(v) ? v : 0)) }],
-      }}
-      width={screenWidth - 20}
-      height={220}
-      chartConfig={chartConfig}
-      bezier
-      withDots={false}
-      withVerticalLines={false}
-      yAxisSuffix=" kcal"
-      verticalLabelRotation={-45}
-      xLabelsOffset={10}
+    <View
       style={{
         marginVertical: 8,
         borderRadius: 16,
+        paddingVertical: 10,
+        backgroundColor: "#fff",
         alignSelf: "center",
       }}
-    />
+    >
+      <LineChart
+        data={processedData}
+        height={220}
+        width={screenWidth - 20}
+        curved
+        hideDataPoints
+        hideRules
+        xAxisLabelTextStyle={{
+          rotation: -45,
+          textAlign: "center",
+          marginTop: 4,
+          color: "#000",
+        }}
+        yAxisTextStyle={{ color: "#000" }}
+        thickness={1}
+        color={theme.secondary}
+        areaChart
+        startFillColor={theme.secondary}
+        endFillColor={theme.secondary}
+        startOpacity={0.8}
+        endOpacity={0.1}
+        noOfSections={4}
+      />
+    </View>
   );
 };

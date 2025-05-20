@@ -1,7 +1,7 @@
-import { uriToBase64 } from "@/utils/uriToBase64";
-import { convertToJpeg } from "@/utils/ensureJpeg";
+import { uriToBase64 } from "../utils/uriToBase64";
+import { convertToJpeg } from "../utils/ensureJpeg";
 import Constants from "expo-constants";
-import { Ingredient } from "@/types";
+import { Ingredient } from "../types";
 
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
 

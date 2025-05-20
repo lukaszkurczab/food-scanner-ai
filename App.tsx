@@ -1,5 +1,5 @@
 import { ThemeProvider } from "./theme/ThemeProvider";
-import { Layout } from "@/components";
+import { Layout } from "./components";
 import AppNavigator from "./navigation/AppNavigator";
 import { NavigationContainer } from "@react-navigation/native";
 import { navigationRef } from "./navigation/navigate";

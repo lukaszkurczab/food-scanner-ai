@@ -1,4 +1,4 @@
-import "dotenv/config";
+require("dotenv/config");
 
 export default {
   expo: {
@@ -17,12 +17,14 @@ export default {
     },
     ios: {
       supportsTablet: true,
+      bundleIdentifier: "com.lkurczab.foodscannerai",
     },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff",
       },
+      package: "com.lkurczab.foodscannerai",
     },
     web: {
       favicon: "./assets/favicon.png",

@@ -1,4 +1,4 @@
-import { useTheme } from "@/theme/useTheme";
+import { useTheme } from "../theme/useTheme";
 import { JSX } from "react";
 import { TouchableOpacity } from "react-native";
 

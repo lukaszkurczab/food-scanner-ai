@@ -1,5 +1,5 @@
 import { createNavigationContainerRef } from "@react-navigation/native";
-import { Ingredient, Meal, Nutrients } from "@/types";
+import { Ingredient, Meal, Nutrients } from "../types";
 
 export type RootStackParamList = {
   Home: any;

@@ -1,13 +1,13 @@
 import { createStackNavigator } from "@react-navigation/stack";
 import { RootStackParamList } from "./navigate";
 
-import HomeScreen from "../screens/HomeScreen/HomeScreen";
-import CameraScreen from "../screens/CameraScreen/CameraScreen";
-import ResultScreen from "../screens/ResultScreen/ResultScreen";
-import HistoryScreen from "../screens/HistoryScreen/HistoryScreen";
-import MealDetailScreen from "../screens/MealDetailScreen/MealDetailScreen";
-import ChatScreen from "../screens/ChatScreen/ChatScreen";
-import SummaryScreen from "../screens/SummaryScreen/SummaryScreen";
+import HomeScreen from "../screens/HomeScreen";
+import CameraScreen from "../screens/CameraScreen";
+import ResultScreen from "../screens/ResultScreen";
+import HistoryScreen from "../screens/HistoryScreen";
+import MealDetailScreen from "../screens/MealDetailScreen";
+import ChatScreen from "../screens/ChatScreen";
+import SummaryScreen from "../screens/SummaryScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 

@@ -1,4 +1,4 @@
-import { useTheme } from "@/theme/useTheme";
+import { useTheme } from "../theme/useTheme";
 import { View, Text, TouchableOpacity } from "react-native";
 
 type Props = {
