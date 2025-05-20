@@ -26,9 +26,6 @@ export default {
       },
       package: "com.lkurczab.foodscannerai",
     },
-    web: {
-      favicon: "./assets/favicon.png",
-    },
     plugins: [
       [
         "expo-camera",
