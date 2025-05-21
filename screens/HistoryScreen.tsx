@@ -79,48 +79,52 @@ const HistoryScreen = ({
 
   return (
     <ScrollView style={styles.container}>
-      {sections.map((section) => {
-        const isExpanded = expandedSections[section.title];
+      {sections.length ? (
+        sections.map((section) => {
+          const isExpanded = expandedSections[section.title];
 
-        return (
-          <View key={section.title} style={styles.sectionContainer}>
-            <Tile
-              style={styles.sectionHeader}
-              onPress={() => toggleSection(section.title)}
-            >
-              <>
-                <View>
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
-                  <Text style={styles.sectionSubtitle}>
-                    {section.totalKcal} kcal · {section.data.length}{" "}
-                    {section.data.length === 1 ? "meal" : "meals"}
-                  </Text>
-                </View>
-                <Ionicons
-                  name={isExpanded ? "chevron-up" : "chevron-down"}
-                  size={24}
-                />
-              </>
-            </Tile>
-
-            {isExpanded &&
-              section.data.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.item}
-                  onPress={() =>
-                    navigation.navigate("MealDetail", { meal: item })
-                  }
-                >
+          return (
+            <View key={section.title} style={styles.sectionContainer}>
+              <Tile
+                style={styles.sectionHeader}
+                onPress={() => toggleSection(section.title)}
+              >
+                <>
                   <View>
-                    <Text style={styles.mealName}>Meal name</Text>
-                    <Text>{item.nutrition.kcal.toFixed(0)} kcal</Text>
+                    <Text style={styles.sectionTitle}>{section.title}</Text>
+                    <Text style={styles.sectionSubtitle}>
+                      {section.totalKcal} kcal · {section.data.length}{" "}
+                      {section.data.length === 1 ? "meal" : "meals"}
+                    </Text>
                   </View>
-                </TouchableOpacity>
-              ))}
-          </View>
-        );
-      })}
+                  <Ionicons
+                    name={isExpanded ? "chevron-up" : "chevron-down"}
+                    size={24}
+                  />
+                </>
+              </Tile>
+
+              {isExpanded &&
+                section.data.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.item}
+                    onPress={() =>
+                      navigation.navigate("MealDetail", { meal: item })
+                    }
+                  >
+                    <View>
+                      <Text style={styles.mealName}>Meal name</Text>
+                      <Text>{item.nutrition.kcal.toFixed(0)} kcal</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+            </View>
+          );
+        })
+      ) : (
+        <Text style={styles.noMealsText}>You have no meals history</Text>
+      )}
     </ScrollView>
   );
 };
@@ -159,6 +163,11 @@ const getStyles = (theme: any) =>
       fontSize: 18,
       fontWeight: 500,
       marginBottom: 4,
+    },
+    noMealsText: {
+      fontSize: 16,
+      fontWeight: "400",
+      textAlign: "center",
     },
   });
 

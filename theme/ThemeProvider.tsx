@@ -11,9 +11,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const systemColorScheme = Appearance.getColorScheme();
-  const [theme, setTheme] = useState<AppTheme>(
-    systemColorScheme === "dark" ? darkTheme : lightTheme
-  );
+  const [theme, setTheme] = useState<AppTheme>(lightTheme);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev.mode === "dark" ? lightTheme : darkTheme));
