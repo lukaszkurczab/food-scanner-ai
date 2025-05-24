@@ -14,8 +14,7 @@ type CameraRouteProp = RouteProp<RootStackParamList, "Camera">;
 
 const CameraScreen = () => {
   const route = useRoute<CameraRouteProp>();
-  const { prevImages, previousNutrition, previousIngredients } =
-    route.params || {};
+  const { previousNutrition, previousIngredients } = route.params || {};
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const navigation = useNavigation<any>();
@@ -52,7 +51,6 @@ const CameraScreen = () => {
     if (photoUri)
       navigation.navigate("Result", {
         image: photoUri,
-        prevImages: prevImages ? prevImages : [],
         previousIngredients: previousIngredients ? previousIngredients : [],
         previousNutrition: previousNutrition ? previousNutrition : [],
       });

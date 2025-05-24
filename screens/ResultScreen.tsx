@@ -3,11 +3,11 @@ import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
 import {
   View,
-  Image,
   Text,
   StyleSheet,
   TextInput,
   ScrollView,
+  Modal,
 } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import {
@@ -17,21 +17,21 @@ import {
 } from "../services";
 import { RootStackParamList } from "../navigation/navigate";
 import { Ingredient, Nutrients } from "../types";
-import { NutrionChart, ErrorModal, Button, Carousel } from "../components";
+import { NutrionChart, ErrorModal, Button, ConfirmModal } from "../components";
 import { useTheme } from "../theme/useTheme";
 
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
 
 const ResultScreen = () => {
   const route = useRoute<ResultRouteProp>();
-  const { image, prevImages, previousIngredients, previousNutrition } =
-    route.params;
+  const { image, previousIngredients, previousNutrition } = route.params;
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [nutritionData, setNutritionData] = useState<Nutrients | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     const analyze = async () => {
@@ -96,26 +96,21 @@ const ResultScreen = () => {
     navigation.navigate("Camera", {
       previousIngredients: ingredients,
       previousNutrition: nutritionData,
-      prevImages: [image, ...prevImages],
     });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (mealName: string) => {
     if (!nutritionData) return;
     const meal = {
       id: uuidv4(),
-      name: "Meal name",
+      name: mealName,
       date: new Date().toISOString(),
       ingredients,
       nutrition: nutritionData,
     };
     await saveMealToHistory(meal);
+    navigation.navigate("Home");
   };
-
-  const imageComponentsArray = [image, ...prevImages].map((img) => ({
-    id: uuidv4(),
-    component: <Image key={img} source={{ uri: img }} style={styles.image} />,
-  }));
 
   return (
     <ScrollView
@@ -124,10 +119,6 @@ const ResultScreen = () => {
         { backgroundColor: theme.background },
       ]}
     >
-      <View style={{ height: 300 }}>
-        <Carousel items={imageComponentsArray} height={200} />
-      </View>
-
       <Text style={styles.subheader}>Detected Ingredients</Text>
       {!ingredients.length ? (
         <Text style={{ color: theme.text }}>Detecting ingredients...</Text>
@@ -166,7 +157,11 @@ const ResultScreen = () => {
           ) : (
             <NutrionChart nutrition={nutritionData} />
           )}
-          <Button text="Save" onPress={handleSave} style={styles.saveButton} />
+          <Button
+            text="Save"
+            onPress={() => setShowConfirmModal(false)}
+            style={styles.saveButton}
+          />
         </>
       )}
       <ErrorModal
@@ -177,9 +172,13 @@ const ResultScreen = () => {
           navigation.navigate("Camera", {
             previousIngredients: ingredients,
             previousNutrition: nutritionData,
-            prevImages: [...prevImages],
           });
         }}
+      />
+      <ConfirmModal
+        visible={showConfirmModal}
+        onCancel={() => setShowConfirmModal(false)}
+        onConfirm={(mealName: string) => handleSave(mealName)}
       />
     </ScrollView>
   );

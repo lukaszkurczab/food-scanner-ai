@@ -7,6 +7,7 @@ export const lightTheme = {
   primaryLight: "#c9ebc0",
   secondary: "#FF9800",
   card: "#E3E8F2",
+  error: "#FF5252",
 };
 
 export const darkTheme = {

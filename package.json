@@ -7,7 +7,8 @@
     "android": "npx expo start --android",
     "ios": "npx expo start --ios",
     "prod:test": "npx expo start --no-dev --minify",
-    "publish:android": "npx eas build -p android --profile production"
+    "publish:android": "npx eas build -p android --profile production",
+    "publish:ios": "npx eas build -p ios --profile production"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",

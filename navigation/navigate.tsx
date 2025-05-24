@@ -7,12 +7,10 @@ export type RootStackParamList = {
     | {
         previousIngredients?: Ingredient[];
         previousNutrition?: Nutrients;
-        prevImages?: string[];
       }
     | undefined;
   Result: {
     image: string;
-    prevImages: string[];
     previousIngredients: Ingredient[];
     previousNutrition: Nutrients;
   };
