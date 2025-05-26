@@ -1,55 +1,49 @@
 import { useTheme } from "../theme/useTheme";
-import { Dimensions, View } from "react-native";
-import { LineChart } from "react-native-gifted-charts";
+import { Dimensions, View, Text } from "react-native";
+import { CartesianChart, Area } from "victory-native";
+import { LinearGradient, useFont, vec } from "@shopify/react-native-skia";
 
 const screenWidth = Dimensions.get("window").width;
+const inter = require("../assets/fonts/inter.ttf");
 
 type GraphProps = {
   labels: string[];
   data: number[];
+  yUnit?: string;
 };
 
-export const Graph = ({ labels, data }: GraphProps) => {
+export const Graph = ({ labels, data, yUnit = "" }: GraphProps) => {
   const { theme } = useTheme();
+  const font = useFont(inter);
 
-  const processedData = data.map((value, index) => ({
-    value: isFinite(value) ? value : 0,
-    label: labels[index],
+  const chartData = data.map((value, index) => ({
+    x: labels[index],
+    y: isFinite(value) ? value : 0,
   }));
 
   return (
-    <View
-      style={{
-        marginVertical: 8,
-        borderRadius: 16,
-        paddingVertical: 10,
-        backgroundColor: "#fff",
-        alignSelf: "center",
-      }}
-    >
-      <LineChart
-        data={processedData}
-        height={220}
-        width={screenWidth - 20}
-        curved
-        hideDataPoints
-        hideRules
-        xAxisLabelTextStyle={{
-          rotation: -45,
-          textAlign: "center",
-          marginTop: 4,
-          color: "#000",
-        }}
-        yAxisTextStyle={{ color: "#000" }}
-        thickness={1}
-        color={theme.secondary}
-        areaChart
-        startFillColor={theme.secondary}
-        endFillColor={theme.secondary}
-        startOpacity={0.8}
-        endOpacity={0.1}
-        noOfSections={4}
-      />
+    <View style={{ width: screenWidth - 64, height: 300 }}>
+      <Text>[{yUnit}]</Text>
+      <CartesianChart
+        data={chartData}
+        xKey="x"
+        yKeys={["y"]}
+        axisOptions={{ font }}
+      >
+        {({ points, chartBounds }) => (
+          <Area
+            points={points.y}
+            y0={chartBounds.bottom}
+            connectMissingData={true}
+          >
+            <LinearGradient
+              start={vec(chartBounds.bottom, 200)}
+              end={vec(chartBounds.bottom, chartBounds.bottom)}
+              colors={[theme.secondary, "#FFB74D"]}
+            />
+          </Area>
+        )}
+      </CartesianChart>
     </View>
   );
 };

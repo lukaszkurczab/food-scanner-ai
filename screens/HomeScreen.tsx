@@ -4,7 +4,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/useTheme";
 import { Button, Tile } from "../components";
-import { getTodayMeal } from "../services";
+import { getTodayMeal, saveMealToHistory } from "../services";
 import { Meal } from "../types";
 import { RootStackParamList } from "../navigation/navigate";
 
@@ -23,6 +23,26 @@ const HomeScreen = () => {
     };
     fetchTodayMeal();
   }, []);
+
+  const handleSave = async (mealName: string) => {
+    const yesterday = new Date();
+    const meal = {
+      id: Math.random().toString(36).substring(2, 15),
+      name: mealName,
+      date: yesterday.setDate(yesterday.getDate() - 1).toString(),
+      ingredients: [],
+      nutrition: {
+        kcal: 234,
+        protein: 21,
+        carbs: 11,
+        fat: 12,
+      },
+    };
+    await saveMealToHistory(meal);
+    navigation.navigate("Home");
+  };
+
+  //handleSave("new meal");
 
   return (
     <ScrollView

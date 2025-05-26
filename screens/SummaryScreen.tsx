@@ -15,8 +15,9 @@ const SummaryScreen = () => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<"7" | "30">("7");
+  const [timeRange, setTimeRange] = useState<7 | 30>(7);
   const [graphData, setGraphData] = useState<number[]>([]);
+  const [graphUnit, setGraphUnit] = useState<string>("kcal");
 
   const [labels, setLabels] = useState<string[]>([]);
   const [kcalData, setKcalData] = useState<number[]>([]);
@@ -41,7 +42,7 @@ const SummaryScreen = () => {
         let startDate: Date | null = null;
         let endDate: Date = new Date();
 
-        if (timeRange === "30") {
+        if (timeRange === 30) {
           days = 30;
         }
 
@@ -92,10 +93,10 @@ const SummaryScreen = () => {
         }
 
         const keys = Object.keys(daysMap);
-        const filteredLabels =
-          timeRange === "30"
-            ? keys.map((label, index) => (index % 3 === 0 ? label : ""))
-            : keys;
+        const filteredLabels = keys.map((d) => {
+          const [month, day] = d.split("/");
+          return `${day}/${month}`;
+        });
         const kcalArr = keys.map((d) => daysMap[d]?.kcal || 0);
         const proteinArr = keys.map((d) => daysMap[d]?.protein || 0);
         const carbsArr = keys.map((d) => daysMap[d]?.carbs || 0);
@@ -108,14 +109,18 @@ const SummaryScreen = () => {
         setCarbsData(carbsArr);
         setFatData(fatArr);
 
-        const totalDays = kcalArr.length || 1;
+        const countValidDays = (arr: number[]) =>
+          arr.filter((v) => v > 0).length || 1;
+
+        const validDays = countValidDays(kcalArr);
+
         setAverages({
-          kcal: Math.round(kcalArr.reduce((a, b) => a + b, 0) / totalDays),
+          kcal: Math.round(kcalArr.reduce((a, b) => a + b, 0) / validDays),
           protein: Math.round(
-            proteinArr.reduce((a, b) => a + b, 0) / totalDays
+            proteinArr.reduce((a, b) => a + b, 0) / validDays
           ),
-          carbs: Math.round(carbsArr.reduce((a, b) => a + b, 0) / totalDays),
-          fat: Math.round(fatArr.reduce((a, b) => a + b, 0) / totalDays),
+          carbs: Math.round(carbsArr.reduce((a, b) => a + b, 0) / validDays),
+          fat: Math.round(fatArr.reduce((a, b) => a + b, 0) / validDays),
         });
       } finally {
         setLoading(false);
@@ -125,10 +130,15 @@ const SummaryScreen = () => {
     loadData();
   }, [timeRange]);
 
+  const handleTilePress = (data: number[], unit: string) => {
+    setGraphData(data);
+    setGraphUnit(unit);
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.rangeSelector}>
-        {["7", "30"].map((val) => (
+        {[7, 30].map((val) => (
           <TouchableOpacity
             key={val}
             style={[
@@ -136,11 +146,11 @@ const SummaryScreen = () => {
               timeRange === val && styles.rangeButtonActive,
             ]}
             onPress={() => {
-              setTimeRange(val as "7" | "30");
+              setTimeRange(val as 7 | 30);
             }}
           >
             <Text style={timeRange === val && styles.rangeButtonTextActive}>
-              {val === "7" ? "Last 7 days" : "Last 30 days"}
+              {val === 7 ? "Last 7 days" : "Last 30 days"}
             </Text>
           </TouchableOpacity>
         ))}
@@ -155,7 +165,7 @@ const SummaryScreen = () => {
                 graphData === kcalData ? theme.primary : theme.primaryLight,
             },
           ]}
-          onPress={() => setGraphData(kcalData)}
+          onPress={() => handleTilePress(kcalData, "kcal")}
         >
           <Text style={styles.summaryLabel}>Avg Calories</Text>
           <Text style={styles.summaryValue}>{averages.kcal}</Text>
@@ -168,7 +178,7 @@ const SummaryScreen = () => {
                 graphData === proteinData ? theme.primary : theme.primaryLight,
             },
           ]}
-          onPress={() => setGraphData(proteinData)}
+          onPress={() => handleTilePress(proteinData, "g")}
         >
           <Text style={styles.summaryLabel}>Avg Protein</Text>
           <Text style={styles.summaryValue}>{averages.protein}</Text>
@@ -184,7 +194,7 @@ const SummaryScreen = () => {
                 graphData === carbsData ? theme.primary : theme.primaryLight,
             },
           ]}
-          onPress={() => setGraphData(carbsData)}
+          onPress={() => handleTilePress(carbsData, "g")}
         >
           <Text style={styles.summaryLabel}>Avg Carbs</Text>
           <Text style={styles.summaryValue}>{averages.carbs}</Text>
@@ -197,21 +207,16 @@ const SummaryScreen = () => {
                 graphData === fatData ? theme.primary : theme.primaryLight,
             },
           ]}
-          onPress={() => setGraphData(fatData)}
+          onPress={() => handleTilePress(fatData, "g")}
         >
           <Text style={styles.summaryLabel}>Avg Fat</Text>
           <Text style={styles.summaryValue}>{averages.fat}</Text>
         </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>Loading summary...</Text>
-        </View>
-      ) : (
-        <Graph labels={labels} data={graphData} />
-      )}
+      <View style={styles.chart}>
+        <Graph labels={labels} data={graphData} yUnit={graphUnit} />
+      </View>
     </ScrollView>
   );
 };
@@ -265,9 +270,8 @@ const getStyles = (theme: any) =>
       marginTop: 20,
     },
     chart: {
-      marginVertical: 8,
-      borderRadius: 16,
-      alignSelf: "center",
+      marginHorizontal: 16,
+      overflow: "hidden",
     },
     loadingContainer: {
       flex: 1,
