@@ -96,6 +96,7 @@ const getStyles = (theme: any) =>
     },
     mealList: {
       gap: 8,
+      marginBottom: 32,
     },
     tileMain: {
       fontSize: 18,

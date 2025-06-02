@@ -92,21 +92,24 @@ const CameraScreen = () => {
         facing="back"
         enableTorch={torchOn}
         onCameraReady={() => setIsCameraReady(true)}
+      />
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "transparent",
+          position: "absolute",
+          bottom: 0,
+          left: "50%",
+          transform: [{ translateX: -50 }],
+          justifyContent: "flex-end",
+          alignItems: "center",
+          paddingBottom: 30,
+          gap: 16,
+        }}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "transparent",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            paddingBottom: 30,
-            gap: 16,
-          }}
-        >
-          <TorchToggle on={torchOn} toggle={() => setTorchOn((v) => !v)} />
-          <CaptureButton onPress={handleTakePicture} disabled={isTakingPhoto} />
-        </View>
-      </CameraView>
+        <TorchToggle on={torchOn} toggle={() => setTorchOn((v) => !v)} />
+        <CaptureButton onPress={handleTakePicture} disabled={isTakingPhoto} />
+      </View>
     </View>
   );
 };

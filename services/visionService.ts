@@ -108,3 +108,25 @@ Rules:
     return null;
   }
 }
+
+export async function mockedDetectIngredientsWithVision(
+  count: number,
+  delay: number
+): Promise<Ingredient[]> {
+  const mockIngredients: Ingredient[] = Array.from({ length: count }).map(
+    (_, i) => ({
+      name: `MockIngredient${i + 1}`,
+      amount: 100,
+      protein: Number((Math.random() * 20).toFixed(1)),
+      fat: Number((Math.random() * 20).toFixed(1)),
+      carbs: Number((Math.random() * 50).toFixed(1)),
+      kcal: Number((Math.random() * 300).toFixed(0)),
+      type: Math.random() > 0.5 ? "food" : "drink",
+      fromTable: Math.random() > 0.5,
+    })
+  );
+
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(mockIngredients), delay);
+  });
+}

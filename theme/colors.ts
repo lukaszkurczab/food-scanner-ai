@@ -8,6 +8,9 @@ export const lightTheme = {
   secondary: "#FF9800",
   card: "#E3E8F2",
   error: "#FF5252",
+  carbs: "#2196F3",
+  fat: "#FFC107",
+  protein: "#4CAF50",
 };
 
 export const darkTheme = {
@@ -19,6 +22,9 @@ export const darkTheme = {
   primaryLight: "#c9ebc0",
   secondary: "#FFB74D",
   card: "#1E1E1E",
+  carbs: "#2196F3",
+  fat: "#FFC107",
+  protein: "#4CAF50",
 };
 
 export type AppTheme = typeof lightTheme;

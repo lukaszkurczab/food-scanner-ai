@@ -14,3 +14,5 @@ export * from "./TorchToggle";
 export * from "./Button";
 export * from "./Carousel";
 export * from "./ConfirmModal";
+export * from "./TextInput";
+export * from "./CancelModal";

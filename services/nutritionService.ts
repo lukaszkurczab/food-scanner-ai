@@ -1,4 +1,4 @@
-import { Nutrients } from "../types/index";
+import { Ingredient, Nutrients } from "../types/index";
 import Constants from "expo-constants";
 
 const API_KEY = Constants.expoConfig?.extra?.usdaApiKey;
@@ -46,4 +46,31 @@ export async function getNutrientsForIngredient(
     console.error("Błąd w pobieraniu danych USDA:", err);
     return null;
   }
+}
+
+export async function calculateTotalNutrients(ingredients: Ingredient[]) {
+  let total: Nutrients = { kcal: 0, protein: 0, fat: 0, carbs: 0 };
+
+  for (const item of ingredients) {
+    let nutrients;
+    if (!item.fromTable) {
+      nutrients = await getNutrientsForIngredient(item.name);
+    } else {
+      nutrients = {
+        kcal: item.kcal,
+        protein: item.protein,
+        fat: item.fat,
+        carbs: item.carbs,
+      };
+    }
+    if (nutrients) {
+      const multiplier = item.amount / 100;
+      total.kcal += Number((nutrients.kcal * multiplier).toFixed(0));
+      total.protein += Number((nutrients.protein * multiplier).toFixed(0));
+      total.fat += Number((nutrients.fat * multiplier).toFixed(0));
+      total.carbs += Number((nutrients.carbs * multiplier).toFixed(0));
+    }
+  }
+
+  return total;
 }

@@ -137,86 +137,100 @@ const SummaryScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.rangeSelector}>
-        {[7, 30].map((val) => (
-          <TouchableOpacity
-            key={val}
-            style={[
-              styles.rangeButton,
-              timeRange === val && styles.rangeButtonActive,
-            ]}
-            onPress={() => {
-              setTimeRange(val as 7 | 30);
-            }}
-          >
-            <Text style={timeRange === val && styles.rangeButtonTextActive}>
-              {val === 7 ? "Last 7 days" : "Last 30 days"}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      ) : graphData.some((num) => num !== 0) ? (
+        <>
+          <View style={styles.rangeSelector}>
+            {[7, 30].map((val) => (
+              <TouchableOpacity
+                key={val}
+                style={[
+                  styles.rangeButton,
+                  timeRange === val && styles.rangeButtonActive,
+                ]}
+                onPress={() => {
+                  setTimeRange(val as 7 | 30);
+                }}
+              >
+                <Text style={timeRange === val && styles.rangeButtonTextActive}>
+                  {val === 7 ? "Last 7 days" : "Last 30 days"}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-      <View style={styles.summaryRow}>
-        <TouchableOpacity
-          style={[
-            styles.summaryBox,
-            {
-              backgroundColor:
-                graphData === kcalData ? theme.primary : theme.primaryLight,
-            },
-          ]}
-          onPress={() => handleTilePress(kcalData, "kcal")}
-        >
-          <Text style={styles.summaryLabel}>Avg Calories</Text>
-          <Text style={styles.summaryValue}>{averages.kcal}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.summaryBox,
-            {
-              backgroundColor:
-                graphData === proteinData ? theme.primary : theme.primaryLight,
-            },
-          ]}
-          onPress={() => handleTilePress(proteinData, "g")}
-        >
-          <Text style={styles.summaryLabel}>Avg Protein</Text>
-          <Text style={styles.summaryValue}>{averages.protein}</Text>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.summaryRow}>
+            <TouchableOpacity
+              style={[
+                styles.summaryBox,
+                {
+                  backgroundColor:
+                    graphData === kcalData ? theme.primary : theme.primaryLight,
+                },
+              ]}
+              onPress={() => handleTilePress(kcalData, "kcal")}
+            >
+              <Text style={styles.summaryLabel}>Avg Calories</Text>
+              <Text style={styles.summaryValue}>{averages.kcal}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.summaryBox,
+                {
+                  backgroundColor:
+                    graphData === proteinData
+                      ? theme.primary
+                      : theme.primaryLight,
+                },
+              ]}
+              onPress={() => handleTilePress(proteinData, "g")}
+            >
+              <Text style={styles.summaryLabel}>Avg Protein</Text>
+              <Text style={styles.summaryValue}>{averages.protein}</Text>
+            </TouchableOpacity>
+          </View>
 
-      <View style={[styles.summaryRow, { marginBottom: 48 }]}>
-        <TouchableOpacity
-          style={[
-            styles.summaryBox,
-            {
-              backgroundColor:
-                graphData === carbsData ? theme.primary : theme.primaryLight,
-            },
-          ]}
-          onPress={() => handleTilePress(carbsData, "g")}
-        >
-          <Text style={styles.summaryLabel}>Avg Carbs</Text>
-          <Text style={styles.summaryValue}>{averages.carbs}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.summaryBox,
-            {
-              backgroundColor:
-                graphData === fatData ? theme.primary : theme.primaryLight,
-            },
-          ]}
-          onPress={() => handleTilePress(fatData, "g")}
-        >
-          <Text style={styles.summaryLabel}>Avg Fat</Text>
-          <Text style={styles.summaryValue}>{averages.fat}</Text>
-        </TouchableOpacity>
-      </View>
+          <View style={[styles.summaryRow, { marginBottom: 48 }]}>
+            <TouchableOpacity
+              style={[
+                styles.summaryBox,
+                {
+                  backgroundColor:
+                    graphData === carbsData
+                      ? theme.primary
+                      : theme.primaryLight,
+                },
+              ]}
+              onPress={() => handleTilePress(carbsData, "g")}
+            >
+              <Text style={styles.summaryLabel}>Avg Carbs</Text>
+              <Text style={styles.summaryValue}>{averages.carbs}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.summaryBox,
+                {
+                  backgroundColor:
+                    graphData === fatData ? theme.primary : theme.primaryLight,
+                },
+              ]}
+              onPress={() => handleTilePress(fatData, "g")}
+            >
+              <Text style={styles.summaryLabel}>Avg Fat</Text>
+              <Text style={styles.summaryValue}>{averages.fat}</Text>
+            </TouchableOpacity>
+          </View>
 
-      <View style={styles.chart}>
-        <Graph labels={labels} data={graphData} yUnit={graphUnit} />
-      </View>
+          <View style={styles.chart}>
+            <Graph labels={labels} data={graphData} yUnit={graphUnit} />
+          </View>
+        </>
+      ) : (
+        <Text style={styles.noMealsText}>You have no meals history</Text>
+      )}
     </ScrollView>
   );
 };
@@ -226,6 +240,11 @@ const getStyles = (theme: any) =>
     container: {
       paddingTop: 40,
       backgroundColor: theme.background,
+    },
+    noMealsText: {
+      fontSize: 16,
+      fontWeight: "400",
+      textAlign: "center",
     },
     rangeSelector: {
       flexDirection: "row",

@@ -7,13 +7,19 @@ import {
   TouchableOpacity,
 } from "react-native";
 
-type ErrorModalProps = {
+type CancelModalProps = {
   visible: boolean;
   message: string;
   onClose: () => void;
+  onConfirm: () => void;
 };
 
-export const ErrorModal = ({ visible, message, onClose }: ErrorModalProps) => {
+export const CancelModal = ({
+  visible,
+  message,
+  onClose,
+  onConfirm,
+}: CancelModalProps) => {
   const { theme } = useTheme();
 
   return (
@@ -25,16 +31,20 @@ export const ErrorModal = ({ visible, message, onClose }: ErrorModalProps) => {
     >
       <View style={styles.overlay}>
         <View style={[styles.modal, { backgroundColor: theme.background }]}>
-          <Text style={styles.title}>❌ Oops!</Text>
           <Text style={styles.message}>{message}</Text>
-          <TouchableOpacity
-            onPress={onClose}
-            style={[styles.button, { backgroundColor: theme.secondary }]}
-          >
-            <Text style={[styles.buttonText, { color: theme.background }]}>
-              Try Again
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.row}>
+            <TouchableOpacity onPress={onClose} style={styles.button}>
+              <Text style={styles.buttonText}>No</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onConfirm}
+              style={[styles.button, { backgroundColor: theme.secondary }]}
+            >
+              <Text style={[styles.buttonText, { color: theme.background }]}>
+                Yes
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </DefaultModal>
@@ -76,5 +86,10 @@ const styles = StyleSheet.create({
   buttonText: {
     fontWeight: "600",
     fontSize: 16,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "80%",
   },
 });

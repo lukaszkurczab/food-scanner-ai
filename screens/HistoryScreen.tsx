@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -34,6 +34,9 @@ const HistoryScreen = ({
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const [sections, setSections] = useState<SectionData[]>([]);
+  const [groupedMeals, setGroupedMeals] = useState<{ [key: string]: Meal[] }>(
+    {}
+  );
   const [expandedSections, setExpandedSections] = useState<{
     [key: string]: boolean;
   }>({});
@@ -41,34 +44,42 @@ const HistoryScreen = ({
   useEffect(() => {
     const load = async () => {
       const data = await getMealHistory();
-      const grouped: { [key: string]: Meal[] } = {};
+      const newGrouped: { [key: string]: Meal[] } = {};
 
       data.forEach((meal) => {
-        const dateKey = isToday(new Date(meal.date))
+        const dateKey = isToday(new Date(Number(meal.date)))
           ? "Today"
-          : format(new Date(meal.date), "d MMM");
-        if (!grouped[dateKey]) {
-          grouped[dateKey] = [];
+          : format(new Date(Number(meal.date)), "d MMM");
+
+        if (!newGrouped[dateKey]) {
+          newGrouped[dateKey] = [];
         }
-        grouped[dateKey].push(meal);
+
+        newGrouped[dateKey].push(meal);
+        setGroupedMeals(newGrouped);
       });
-
-      const sectionData = Object.keys(grouped).map((key) => ({
-        title: key,
-        totalKcal: grouped[key].reduce((sum, m) => sum + m.nutrition.kcal, 0),
-        data: grouped[key],
-      }));
-
-      setSections(sectionData);
-
-      const initialExpanded: { [key: string]: boolean } = {};
-      sectionData.forEach((section) => {
-        initialExpanded[section.title] = section.title === "Today";
-      });
-      setExpandedSections(initialExpanded);
     };
     load();
   }, []);
+
+  useEffect(() => {
+    const sectionData = Object.keys(groupedMeals).map((key) => ({
+      title: key,
+      totalKcal: groupedMeals[key].reduce(
+        (sum, m) => sum + m.nutrition.kcal,
+        0
+      ),
+      data: groupedMeals[key],
+    }));
+
+    setSections(sectionData);
+
+    const initialExpanded: { [key: string]: boolean } = {};
+    sectionData.forEach((section) => {
+      initialExpanded[section.title] = section.title === "Today";
+    });
+    setExpandedSections(initialExpanded);
+  }, [groupedMeals]);
 
   const toggleSection = (title: string) => {
     setExpandedSections((prev) => ({

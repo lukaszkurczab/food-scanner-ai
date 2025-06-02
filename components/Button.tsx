@@ -35,7 +35,6 @@ const getStyles = (theme: any) =>
       backgroundColor: theme.secondary,
       alignItems: "center",
       borderRadius: 32,
-      marginTop: 32,
       padding: 12,
     },
     buttonText: {

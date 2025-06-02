@@ -1,57 +1,108 @@
-import { View } from "react-native";
+import { View, Text } from "react-native";
 import { Pie, PolarChart } from "victory-native";
 import { Nutrients } from "../types";
-import { useFont } from "@shopify/react-native-skia";
+import { useTheme } from "../theme/useTheme";
 
 type NutrionChartProps = {
   nutrition: Nutrients;
 };
 
-const inter = require("../assets/fonts/inter.ttf");
-
-const getMacroChartData = (data: Nutrients) => [
-  {
-    value: data.protein,
-    color: "#4CAF50",
-    label: `${data.protein}g Protein`,
-  },
-  {
-    value: data.fat,
-    color: "#FFC107",
-    label: `${data.fat}g Fat`,
-  },
-  {
-    value: data.carbs,
-    color: "#2196F3",
-    label: `${data.carbs}g Carbs`,
-  },
-];
-
 export const NutrionChart = ({ nutrition }: NutrionChartProps) => {
-  const font = useFont(inter, 16);
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+
+  const getMacroChartData = (data: Nutrients) => [
+    {
+      value: data.protein,
+      color: theme.protein,
+      label: `${data.protein}g Protein`,
+    },
+    {
+      value: data.fat,
+      color: theme.fat,
+      label: `${data.fat}g Fat`,
+    },
+    {
+      value: data.carbs,
+      color: theme.carbs,
+      label: `${data.carbs}g Carbs`,
+    },
+  ];
 
   return (
-    <View
-      style={{
-        height: 300,
-        width: 300,
-        alignSelf: "center",
-      }}
-    >
-      <PolarChart
-        data={getMacroChartData(nutrition)}
-        labelKey="label"
-        valueKey="value"
-        colorKey="color"
+    <View style={{ flex: 1, alignItems: "center", flexGrow: 0 }}>
+      <View
+        style={{
+          flex: 1,
+          flexDirection: "row",
+          gap: 16,
+        }}
       >
-        <Pie.Chart>
-          {({ slice }) => (
-            <Pie.Slice>
-              <Pie.Label font={font} color={"#111"} />
-            </Pie.Slice>
-          )}
-        </Pie.Chart>
-      </PolarChart>
+        <View
+          style={{
+            width: 200,
+            height: 200,
+          }}
+        >
+          <PolarChart
+            data={getMacroChartData(nutrition)}
+            labelKey="label"
+            valueKey="value"
+            colorKey="color"
+          >
+            <Pie.Chart />
+          </PolarChart>
+        </View>
+        <View
+          style={{
+            justifyContent: "center",
+            gap: 4,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View
+              style={{
+                ...styles.colorIndicator,
+                backgroundColor: theme.carbs,
+              }}
+            />
+            <Text style={styles.text}>{nutrition.carbs}g Carbs</Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View
+              style={{
+                ...styles.colorIndicator,
+                backgroundColor: theme.protein,
+              }}
+            />
+            <Text style={styles.text}>{nutrition.protein}g Protein</Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View
+              style={{
+                ...styles.colorIndicator,
+                backgroundColor: theme.fat,
+              }}
+            />
+            <Text style={styles.text}>{nutrition.fat}g Fat</Text>
+          </View>
+        </View>
+      </View>
+      <Text style={{ ...styles.text, marginTop: 24 }}>
+        Calorific value: {nutrition.protein}kcal
+      </Text>
     </View>
   );
 };
+
+const getStyles = (theme: any) => ({
+  colorIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  text: {
+    fontSize: 18,
+    color: theme.text,
+  },
+});

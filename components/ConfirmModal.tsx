@@ -1,4 +1,3 @@
-import { TextInput } from "react-native-gesture-handler";
 import { useTheme } from "../theme/useTheme";
 import {
   Modal as DefaultModal,
@@ -6,8 +5,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
 } from "react-native";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 type ConfirmModalProps = {
   visible: boolean;
@@ -21,7 +21,7 @@ export const ConfirmModal = ({
   onConfirm,
 }: ConfirmModalProps) => {
   const { theme } = useTheme();
-  const styles = getStyles(theme);
+  const styles = useMemo(() => getStyles(theme, visible), [theme]);
   const [mealName, setMealName] = useState("");
   const [error, setError] = useState("");
 
@@ -35,57 +35,57 @@ export const ConfirmModal = ({
   };
 
   return (
-    <DefaultModal transparent animationType="fade" visible={visible}>
-      <View style={styles.overlay}>
-        <View style={[styles.modal, { backgroundColor: theme.background }]}>
-          <TextInput
-            style={styles.textInput}
-            keyboardType="default"
-            placeholder="Enter meal name"
-            placeholderTextColor={theme.accent}
-            value={mealName}
-            onChangeText={(newName) => {
-              setMealName(newName);
-              if (newName.trim() !== "") setError("");
-            }}
-          />
-          {error ? (
-            <Text style={[styles.errorText, { color: theme.error || "red" }]}>
-              {error}
+    <View style={styles.overlay}>
+      <View style={styles.modal}>
+        <TextInput
+          style={styles.textInput}
+          keyboardType="default"
+          placeholder="Enter meal name"
+          placeholderTextColor={theme.accent}
+          value={mealName}
+          onChangeText={(newName) => {
+            setMealName(newName);
+            if (newName.trim() !== "") setError("");
+          }}
+        />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <View style={styles.buttonsContainer}>
+          <TouchableOpacity onPress={onCancel} style={styles.button}>
+            <Text style={styles.underlineButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleConfirm}
+            style={[styles.button, { backgroundColor: theme.secondary }]}
+          >
+            <Text style={[styles.buttonText, { color: theme.background }]}>
+              Confirm
             </Text>
-          ) : null}
-          <View style={styles.buttonsContainer}>
-            <TouchableOpacity onPress={onCancel} style={styles.button}>
-              <Text style={styles.underlineButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleConfirm}
-              style={[styles.button, { backgroundColor: theme.secondary }]}
-            >
-              <Text style={[styles.buttonText, { color: theme.background }]}>
-                Confirm
-              </Text>
-            </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
-    </DefaultModal>
+    </View>
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = (theme: any, visible: boolean) =>
   StyleSheet.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-    },
     buttonsContainer: {
       flexDirection: "row",
       justifyContent: "space-between",
       width: "80%",
       marginTop: 10,
+    },
+    overlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+      display: visible ? "flex" : "none",
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
     },
     modal: {
       width: "80%",
@@ -96,11 +96,7 @@ const getStyles = (theme: any) =>
       shadowOpacity: 0.25,
       shadowRadius: 6,
       elevation: 5,
-    },
-    title: {
-      fontSize: 20,
-      fontWeight: "bold",
-      marginBottom: 10,
+      backgroundColor: theme.background,
     },
     underlineButtonText: {
       textDecorationLine: "underline",
@@ -125,10 +121,12 @@ const getStyles = (theme: any) =>
       width: "100%",
       marginBottom: 10,
       fontSize: 18,
+      color: theme.primary,
     },
     errorText: {
       alignSelf: "flex-start",
       marginBottom: 8,
       fontSize: 14,
+      color: theme.error || "red",
     },
   });
