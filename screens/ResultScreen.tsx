@@ -32,7 +32,7 @@ type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
 
 const ResultScreen = () => {
   const route = useRoute<ResultRouteProp>();
-  const { previousIngredients, previousNutrition } = route.params;
+  const { previousIngredients, previousNutrition, image } = route.params;
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
   const styles = getStyles(theme);

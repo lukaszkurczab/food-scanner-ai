@@ -1,11 +1,5 @@
 import { useTheme } from "../theme/useTheme";
-import {
-  Modal as DefaultModal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
 type ErrorModalProps = {
   visible: boolean;
@@ -17,11 +11,9 @@ export const ErrorModal = ({ visible, message, onClose }: ErrorModalProps) => {
   const { theme } = useTheme();
 
   return (
-    <DefaultModal
-      transparent
-      animationType="fade"
-      visible={visible}
-      onRequestClose={onClose}
+    <View
+      style={{ display: visible ? "flex" : "none" }}
+      //onPress={onClose}
     >
       <View style={styles.overlay}>
         <View style={[styles.modal, { backgroundColor: theme.background }]}>
@@ -37,7 +29,7 @@ export const ErrorModal = ({ visible, message, onClose }: ErrorModalProps) => {
           </TouchableOpacity>
         </View>
       </View>
-    </DefaultModal>
+    </View>
   );
 };
 

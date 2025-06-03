@@ -1,6 +1,5 @@
 import { useTheme } from "../theme/useTheme";
 import {
-  Modal as DefaultModal,
   View,
   Text,
   StyleSheet,
@@ -35,7 +34,7 @@ export const ConfirmModal = ({
   };
 
   return (
-    <View style={styles.overlay}>
+    <TouchableOpacity style={styles.overlay} onPress={onCancel}>
       <View style={styles.modal}>
         <TextInput
           style={styles.textInput}
@@ -63,7 +62,7 @@ export const ConfirmModal = ({
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
