@@ -30,7 +30,12 @@ export const NutrionChart = ({ nutrition }: NutrionChartProps) => {
   ];
 
   return (
-    <View style={{ flex: 1, alignItems: "center", flexGrow: 0 }}>
+    <View
+      style={{
+        height: 245,
+        alignItems: "center",
+      }}
+    >
       <View
         style={{
           flex: 1,
@@ -88,8 +93,8 @@ export const NutrionChart = ({ nutrition }: NutrionChartProps) => {
           </View>
         </View>
       </View>
-      <Text style={{ ...styles.text, marginTop: 24 }}>
-        Calorific value: {nutrition.protein}kcal
+      <Text style={{ ...styles.text, marginTop: 16 }}>
+        Calorific value: {nutrition.kcal}kcal
       </Text>
     </View>
   );

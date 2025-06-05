@@ -59,7 +59,7 @@ const HomeScreen = () => {
               onPress={() => navigation.navigate("MealDetail", { meal })}
             >
               <>
-                <Text style={styles.tileMain}>Meal name</Text>
+                <Text style={styles.tileMain}>{meal.name}</Text>
                 <Text style={styles.tileSecondary}>
                   {meal.nutrition.kcal} kcal
                 </Text>

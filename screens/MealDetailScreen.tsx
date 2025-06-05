@@ -19,7 +19,7 @@ const MealDetailScreen = () => {
           marginBottom: 4,
         }}
       >
-        Meal name
+        {meal.name}
       </Text>
       <Text
         style={{
@@ -33,10 +33,11 @@ const MealDetailScreen = () => {
       <Text style={styles.subheader}>Ingredients:</Text>
       <FlatList
         data={meal.ingredients}
-        keyExtractor={(item) => item.name}
+        keyExtractor={(item, index) => `${item.name}-${index}`}
         renderItem={({ item }) => (
           <Text style={styles.ingredient}>
-            • {item.name}: {item.amount}g
+            • {item.name}: {item.amount}
+            {item.type === "drink" ? "ml" : "g"}
           </Text>
         )}
         style={{ flexGrow: 0 }}
@@ -48,7 +49,9 @@ const MealDetailScreen = () => {
         <Text>Fat: {meal.nutrition.fat.toFixed(0)}g</Text>
         <Text>Carbohydrates: {meal.nutrition.carbs.toFixed(0)}g</Text>
       </View>
-      <NutrionChart nutrition={meal.nutrition} />
+      <View style={{ flexGrow: 1 }}>
+        <NutrionChart nutrition={meal.nutrition} />
+      </View>
     </View>
   );
 };

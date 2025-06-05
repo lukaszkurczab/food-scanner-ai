@@ -125,7 +125,7 @@ const HistoryScreen = ({
                     }
                   >
                     <View>
-                      <Text style={styles.mealName}>Meal name</Text>
+                      <Text style={styles.mealName}>{item.name}</Text>
                       <Text>{item.nutrition.kcal.toFixed(0)} kcal</Text>
                     </View>
                   </TouchableOpacity>

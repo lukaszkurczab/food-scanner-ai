@@ -20,7 +20,7 @@ export const ConfirmModal = ({
   onConfirm,
 }: ConfirmModalProps) => {
   const { theme } = useTheme();
-  const styles = useMemo(() => getStyles(theme, visible), [theme]);
+  const styles = useMemo(() => getStyles(theme, visible), [theme, visible]);
   const [mealName, setMealName] = useState("");
   const [error, setError] = useState("");
 
@@ -120,7 +120,7 @@ const getStyles = (theme: any, visible: boolean) =>
       width: "100%",
       marginBottom: 10,
       fontSize: 18,
-      color: theme.primary,
+      color: theme.text,
     },
     errorText: {
       alignSelf: "flex-start",
