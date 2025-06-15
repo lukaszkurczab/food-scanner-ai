@@ -44,8 +44,8 @@ const ResultScreen = () => {
 
   useEffect(() => {
     const analyze = async () => {
-      //const newIngredients = await detectIngredientsWithVision(image);
-      const newIngredients = await mockedDetectIngredientsWithVision(2, 200);
+      const newIngredients = await detectIngredientsWithVision(image);
+      //const newIngredients = await mockedDetectIngredientsWithVision(2, 200);
 
       if (!newIngredients || newIngredients.length === 0) {
         setShowErrorModal(true);

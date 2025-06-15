@@ -42,7 +42,6 @@ react-native-gifted-charts – for macro charts
    Create a .env file at the root:
 
 OPENAI_API_KEY=your-openai-api-key
-USDA_API_KEY=your-usda-api-key
 
 ⚠️ Do not commit .env to version control!
 
