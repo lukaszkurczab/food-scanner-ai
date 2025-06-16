@@ -130,3 +130,90 @@ export async function mockedDetectIngredientsWithVision(
     setTimeout(() => resolve(mockIngredients), delay);
   });
 }
+
+export async function getNutritionForName(
+  name: string
+): Promise<Omit<Ingredient, "amount"> | null> {
+  try {
+    const payload = {
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: `
+For the product "${name}", return an object with estimated nutrition values **per 100g** in the following format:
+
+{
+  "name": "string (same as input)",
+  "protein": number,
+  "fat": number,
+  "carbs": number,
+  "kcal": number,
+  "type": "food" or "drink",
+  "fromTable": false
+}
+
+- Make an educated guess based on common data.
+- Be concise and accurate.
+- Do not include explanations or text — only the raw JSON object.
+        `.trim(),
+        },
+      ],
+      max_tokens: 500,
+    };
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await response.json();
+
+    if (json.error) {
+      console.error("❌ OpenAI API error in getNutritionForName:", json.error);
+      return null;
+    }
+
+    const raw = json.choices?.[0]?.message?.content;
+    if (!raw) {
+      console.warn("⚠️ No content returned in getNutritionForName");
+      return null;
+    }
+
+    const cleaned = raw
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (
+        !parsed.name ||
+        typeof parsed.kcal !== "number" ||
+        typeof parsed.protein !== "number" ||
+        typeof parsed.fat !== "number" ||
+        typeof parsed.carbs !== "number" ||
+        !["food", "drink"].includes(parsed.type)
+      ) {
+        console.warn(
+          "⚠️ Unexpected structure from getNutritionForName:",
+          parsed
+        );
+        return null;
+      }
+
+      return parsed;
+    } catch (err) {
+      console.error("❌ Failed to parse JSON in getNutritionForName:", err);
+      console.log("🗣️ Raw content:", raw);
+      return null;
+    }
+  } catch (error) {
+    console.error("❌ getNutritionForName error:", error);
+    return null;
+  }
+}

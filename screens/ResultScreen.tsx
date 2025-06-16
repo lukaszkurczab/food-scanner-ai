@@ -13,8 +13,8 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import {
   saveMealToHistory,
   detectIngredientsWithVision,
-  mockedDetectIngredientsWithVision,
   calculateTotalNutrients,
+  getNutritionForName,
 } from "../services";
 import { RootStackParamList } from "../navigation/navigate";
 import { Ingredient, Nutrients } from "../types";
@@ -25,6 +25,7 @@ import {
   ConfirmModal,
   TextInput,
   CancelModal,
+  Spinner,
 } from "../components";
 import { useTheme } from "../theme/useTheme";
 
@@ -36,23 +37,30 @@ const ResultScreen = () => {
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
   const styles = getStyles(theme);
+
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [previousNames, setPreviousNames] = useState<string[]>([]);
   const [nutritionData, setNutritionData] = useState<Nutrients | null>(null);
+  const [isLoadingDetection, setIsLoadingDetection] = useState(true);
+  const [isLoadingNutrition, setIsLoadingNutrition] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   useEffect(() => {
     const analyze = async () => {
+      setIsLoadingDetection(true);
       const newIngredients = await detectIngredientsWithVision(image);
-      //const newIngredients = await mockedDetectIngredientsWithVision(2, 200);
+      setIsLoadingDetection(false);
 
       if (!newIngredients || newIngredients.length === 0) {
         setShowErrorModal(true);
         return;
       }
 
-      setIngredients([...previousIngredients, ...newIngredients]);
+      const merged = [...previousIngredients, ...newIngredients];
+      setIngredients(merged);
+      setPreviousNames(merged.map((i) => i.name));
     };
 
     if (!ingredients.length) analyze();
@@ -60,6 +68,7 @@ const ResultScreen = () => {
 
   useEffect(() => {
     const fetchNutrition = async () => {
+      setIsLoadingNutrition(true);
       const total: Nutrients = await calculateTotalNutrients(ingredients);
       setNutritionData({
         kcal: total.kcal + (previousNutrition.kcal ?? 0),
@@ -67,6 +76,7 @@ const ResultScreen = () => {
         fat: total.fat + (previousNutrition.fat ?? 0),
         carbs: total.carbs + (previousNutrition.carbs ?? 0),
       });
+      setIsLoadingNutrition(false);
     };
     fetchNutrition();
   }, [ingredients]);
@@ -100,9 +110,25 @@ const ResultScreen = () => {
     navigation.navigate("Home");
   };
 
-  const handleNameChange = (index: number, text: string) => {
+  const handleNameChange = async (index: number, text: string) => {
     const updated = [...ingredients];
-    updated[index].name = text;
+
+    if (previousNames[index] !== text) {
+      updated[index].name = text;
+      const newNutrition = await getNutritionForName(text);
+
+      if (newNutrition) {
+        updated[index] = {
+          ...updated[index],
+          ...newNutrition,
+        };
+      }
+
+      const updatedNames = [...previousNames];
+      updatedNames[index] = text;
+      setPreviousNames(updatedNames);
+    }
+
     setIngredients(updated);
   };
 
@@ -111,6 +137,14 @@ const ResultScreen = () => {
     updated.splice(index, 1);
     setIngredients(updated);
   };
+
+  if (isLoadingDetection) {
+    return (
+      <View style={[styles.container, { justifyContent: "center" }]}>
+        <Spinner />
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -172,17 +206,21 @@ const ResultScreen = () => {
           </>
         )}
       </View>
-      {nutritionData && (
-        <View style={styles.section}>
-          {nutritionData.protein === 0 &&
+
+      <View style={styles.section}>
+        {isLoadingNutrition ? (
+          <Spinner size="small" />
+        ) : nutritionData ? (
+          nutritionData.protein === 0 &&
           nutritionData.carbs === 0 &&
           nutritionData.fat === 0 ? (
             <Text style={styles.subheader}>Meal has no nutritional value.</Text>
           ) : (
             <NutrionChart nutrition={nutritionData} />
-          )}
-        </View>
-      )}
+          )
+        ) : null}
+      </View>
+
       <View
         style={{
           flexDirection: "row",
@@ -193,9 +231,7 @@ const ResultScreen = () => {
         }}
       >
         <TouchableOpacity
-          style={{
-            paddingHorizontal: 30,
-          }}
+          style={{ paddingHorizontal: 30 }}
           onPress={() => setShowCancelModal(true)}
         >
           <Text
@@ -214,6 +250,7 @@ const ResultScreen = () => {
           style={styles.saveButton}
         />
       </View>
+
       <CancelModal
         visible={showCancelModal}
         message="Are you sure you want to cancel? All data will be lost."
@@ -223,11 +260,13 @@ const ResultScreen = () => {
           navigation.navigate("Home");
         }}
       />
+
       <ConfirmModal
         visible={showConfirmModal}
         onCancel={() => setShowConfirmModal(false)}
         onConfirm={(mealName: string) => handleSave(mealName)}
       />
+
       <ErrorModal
         visible={showErrorModal}
         message="No ingredients detected. Please try taking the photo again."
@@ -253,11 +292,6 @@ const getStyles = (theme: any) =>
       minHeight: "100%",
       justifyContent: "space-between",
     },
-    header: {
-      fontSize: 22,
-      fontWeight: "bold",
-      marginBottom: 20,
-    },
     subheader: {
       fontSize: 18,
       fontWeight: "600",
@@ -268,14 +302,6 @@ const getStyles = (theme: any) =>
       alignItems: "center",
       marginTop: 10,
       paddingHorizontal: 20,
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: theme.accent,
-      borderRadius: 6,
-      paddingHorizontal: 8,
-      width: 80,
-      marginLeft: 10,
     },
     section: {
       width: "100%",
@@ -294,13 +320,6 @@ const getStyles = (theme: any) =>
     },
     moreIngredientsButtonText: {
       fontSize: 14,
-    },
-    nameInput: {
-      borderWidth: 1,
-      borderColor: theme.accent,
-      borderRadius: 6,
-      paddingHorizontal: 8,
-      width: "70%",
     },
   });
 
