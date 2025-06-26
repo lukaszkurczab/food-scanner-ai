@@ -10,6 +10,8 @@ import ChatScreen from "../screens/ChatScreen";
 import SummaryScreen from "../screens/SummaryScreen";
 import AuthLoadingScreen from "@/screens/AuthLoadingScreen";
 import LoginScreen from "@/screens/LoginScreen";
+import AuthLoadingScreen from "@/screens/AuthLoadingScreen";
+import LoginScreen from "@/screens/LoginScreen";
 import RegisterScreen from "@/screens/RegisterScreen";
 
 import { Layout } from "../components";
@@ -30,8 +32,18 @@ const AppNavigator = () => {
   return (
     <Stack.Navigator
       initialRouteName="AuthLoading"
+      initialRouteName="AuthLoading"
       screenOptions={{ headerShown: false }}
     >
+      <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Camera" component={CameraScreen} />
+      <Stack.Screen name="Result" component={ResultScreen} />
+      <Stack.Screen name="History" component={HistoryScreen} />
+      <Stack.Screen name="MealDetail" component={MealDetailScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="Summary" component={SummaryScreen} />
       <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />

@@ -1,4 +1,5 @@
 import { Meal } from "./index";
+import { Meal } from "./index";
 
 export type RootStackParamList = {
   AuthLoadingScreen: undefined;
