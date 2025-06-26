@@ -1,6 +1,8 @@
-import { Meal } from './index';
+import { Meal } from "./index";
 
 export type RootStackParamList = {
+  AuthLoadingScreen: undefined;
+  Login: undefined;
   Home: undefined;
   Camera: undefined;
   Result: { image: string };

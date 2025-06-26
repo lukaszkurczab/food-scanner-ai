@@ -115,6 +115,7 @@ const ResultScreen = () => {
 
     if (previousNames[index] !== text) {
       updated[index].name = text;
+
       const newNutrition = await getNutritionForName(text);
 
       if (newNutrition) {
@@ -130,6 +131,18 @@ const ResultScreen = () => {
     }
 
     setIngredients(updated);
+  };
+
+  const recalculateNutrition = async () => {
+    setIsLoadingNutrition(true);
+    const total = await calculateTotalNutrients(ingredients);
+    setNutritionData({
+      kcal: total.kcal + (previousNutrition.kcal ?? 0),
+      protein: total.protein + (previousNutrition.protein ?? 0),
+      fat: total.fat + (previousNutrition.fat ?? 0),
+      carbs: total.carbs + (previousNutrition.carbs ?? 0),
+    });
+    setIsLoadingNutrition(false);
   };
 
   const handleRemoveIngredient = (index: number) => {
@@ -216,7 +229,20 @@ const ResultScreen = () => {
           nutritionData.fat === 0 ? (
             <Text style={styles.subheader}>Meal has no nutritional value.</Text>
           ) : (
-            <NutrionChart nutrition={nutritionData} />
+            <>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <Text style={styles.subheader}>Meal nutrition</Text>
+                <TouchableOpacity onPress={recalculateNutrition}>
+                  <Image
+                    source={require("../assets/icons/refresh.png")}
+                    style={{ width: 20, height: 20 }}
+                  />
+                </TouchableOpacity>
+              </View>
+              <NutrionChart nutrition={nutritionData} />
+            </>
           )
         ) : null}
       </View>

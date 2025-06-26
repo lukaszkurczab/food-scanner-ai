@@ -2,7 +2,9 @@ import { createNavigationContainerRef } from "@react-navigation/native";
 import { Ingredient, Meal, Nutrients } from "../types";
 
 export type RootStackParamList = {
+  AuthLoading: undefined;
   Home: any;
+  Login: undefined;
   Camera:
     | {
         previousIngredients?: Ingredient[];
