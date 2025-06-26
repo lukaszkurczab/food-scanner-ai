@@ -5,6 +5,7 @@ export type RootStackParamList = {
   AuthLoading: undefined;
   Home: any;
   Login: undefined;
+  Register: undefined;
   Camera:
     | {
         previousIngredients?: Ingredient[];
