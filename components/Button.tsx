@@ -13,18 +13,28 @@ export const Button = ({
   onPress,
   style,
   textStyle = {},
+  disabled = false,
 }: {
   text: string;
   onPress: () => void;
   textStyle?: StyleProp<TextStyle>;
   style?: StyleProp<ViewStyle>;
+  disabled?: boolean;
 }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
 
   return (
-    <TouchableOpacity style={[styles.button, style]} onPress={onPress}>
-      <Text style={[styles.buttonText, textStyle]}>{text}</Text>
+    <TouchableOpacity
+      style={[styles.button, disabled && styles.buttonDisabled, style]}
+      onPress={onPress}
+      disabled={disabled}
+    >
+      <Text
+        style={[styles.buttonText, disabled && styles.textDisabled, textStyle]}
+      >
+        {text}
+      </Text>
     </TouchableOpacity>
   );
 };
@@ -37,8 +47,16 @@ const getStyles = (theme: any) =>
       borderRadius: 32,
       padding: 12,
     },
+    buttonDisabled: {
+      backgroundColor: theme.disabled,
+      opacity: 0.6,
+    },
     buttonText: {
       fontSize: 18,
       fontWeight: "500",
+      color: theme.text,
+    },
+    textDisabled: {
+      color: theme.textSecondary,
     },
   });

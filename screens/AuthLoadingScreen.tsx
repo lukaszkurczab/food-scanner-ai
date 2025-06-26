@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { getAuth, onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/types/routes";
+import { auth } from "@/firebase";
 
 type AuthLoadingScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -11,7 +12,6 @@ type AuthLoadingScreenNavigationProp = StackNavigationProp<
 >;
 
 const AuthLoadingScreen = () => {
-  const auth = getAuth();
   const navigation = useNavigation<AuthLoadingScreenNavigationProp>();
 
   useEffect(() => {
