@@ -8,15 +8,19 @@ import HistoryScreen from "../screens/HistoryScreen";
 import MealDetailScreen from "../screens/MealDetailScreen";
 import ChatScreen from "../screens/ChatScreen";
 import SummaryScreen from "../screens/SummaryScreen";
+import AuthLoadingScreen from "@/screens/AuthLoadingScreen";
+import LoginScreen from "@/screens/LoginScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   return (
     <Stack.Navigator
-      initialRouteName="Home"
+      initialRouteName="AuthLoading"
       screenOptions={{ headerShown: false }}
     >
+      <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Camera" component={CameraScreen} />
       <Stack.Screen name="Result" component={ResultScreen} />

@@ -1,3 +1,4 @@
+import "./firebaseConfig";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { Layout } from "./components";
 import AppNavigator from "./navigation/AppNavigator";
