@@ -10,8 +10,6 @@ import ChatScreen from "../screens/ChatScreen";
 import SummaryScreen from "../screens/SummaryScreen";
 import AuthLoadingScreen from "@/screens/AuthLoadingScreen";
 import LoginScreen from "@/screens/LoginScreen";
-import AuthLoadingScreen from "@/screens/AuthLoadingScreen";
-import LoginScreen from "@/screens/LoginScreen";
 import RegisterScreen from "@/screens/RegisterScreen";
 
 import { Layout } from "../components";
@@ -31,7 +29,6 @@ const withLayout = <P extends object>(
 const AppNavigator = () => {
   return (
     <Stack.Navigator
-      initialRouteName="AuthLoading"
       initialRouteName="AuthLoading"
       screenOptions={{ headerShown: false }}
     >
