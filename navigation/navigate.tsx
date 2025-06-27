@@ -2,8 +2,6 @@ import { createNavigationContainerRef } from "@react-navigation/native";
 import { Ingredient, Meal, Nutrients } from "../types";
 
 export type RootStackParamList = {
-  AuthLoading: undefined;
-  AuthLoading: undefined;
   Home: any;
   Login: undefined;
   Register: undefined;

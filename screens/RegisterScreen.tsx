@@ -1,18 +1,12 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  Keyboard,
-  Alert,
-} from "react-native";
+import { Text, TextInput, StyleSheet, Keyboard, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useTheme } from "../theme/useTheme";
 import { Button } from "../components";
 import { useRegister } from "../hooks/useRegister";
 import { RootStackParamList } from "../navigation/navigate";
+import FormScreenWrapper from "../components/FormScreenWrapper";
 
 type RegisterScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -48,7 +42,7 @@ const RegisterScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <FormScreenWrapper contentContainerStyle={styles.container}>
       <Text style={styles.header}>Create an account</Text>
 
       <Text style={styles.subText}>
@@ -104,7 +98,7 @@ const RegisterScreen = () => {
         onPress={handleRegister}
         disabled={loading}
       />
-    </View>
+    </FormScreenWrapper>
   );
 };
 

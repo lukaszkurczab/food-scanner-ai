@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "297854002185",
-    "project_id": "food-scanner-ai",
-    "storage_bucket": "food-scanner-ai.firebasestorage.app"
+    "project_number": "516060318021",
+    "project_id": "calories-calculator-ai",
+    "storage_bucket": "calories-calculator-ai.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:297854002185:android:ce13101f659480d224c4d8",
+        "mobilesdk_app_id": "1:516060318021:android:a42146b61842af7f76d62c",
         "android_client_info": {
           "package_name": "com.lkurczab.foodscannerai"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA6CcswBOEON7F6kOw2iXe6l8dg6V9Ji4s"
+          "current_key": "AIzaSyAKIUg9TugL2XmmgCKn706utbRjcdreeCI"
         }
       ],
       "services": {
