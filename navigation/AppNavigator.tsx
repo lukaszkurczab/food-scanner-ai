@@ -1,5 +1,6 @@
 import { createStackNavigator } from "@react-navigation/stack";
 import { RootStackParamList } from "./navigate";
+import { useAuthContext } from "@/context/AuthContext";
 
 import HomeScreen from "../screens/HomeScreen";
 import CameraScreen from "../screens/CameraScreen";
@@ -8,11 +9,11 @@ import HistoryScreen from "../screens/HistoryScreen";
 import MealDetailScreen from "../screens/MealDetailScreen";
 import ChatScreen from "../screens/ChatScreen";
 import SummaryScreen from "../screens/SummaryScreen";
-import AuthLoadingScreen from "@/screens/AuthLoadingScreen";
 import LoginScreen from "@/screens/LoginScreen";
 import RegisterScreen from "@/screens/RegisterScreen";
 
 import { Layout } from "../components";
+import { View, ActivityIndicator } from "react-native";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -27,34 +28,37 @@ const withLayout = <P extends object>(
 };
 
 const AppNavigator = () => {
-  return (
-    <Stack.Navigator
-      initialRouteName="AuthLoading"
-      screenOptions={{ headerShown: false }}
-    >
-      <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Home" component={HomeScreen} />
-      <Stack.Screen name="Camera" component={CameraScreen} />
-      <Stack.Screen name="Result" component={ResultScreen} />
-      <Stack.Screen name="History" component={HistoryScreen} />
-      <Stack.Screen name="MealDetail" component={MealDetailScreen} />
-      <Stack.Screen name="Chat" component={ChatScreen} />
-      <Stack.Screen name="Summary" component={SummaryScreen} />
-      <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
+  const { user, loading } = useAuthContext();
 
-      <Stack.Screen name="Home" component={withLayout(HomeScreen)} />
-      <Stack.Screen name="Camera" component={withLayout(CameraScreen)} />
-      <Stack.Screen name="Result" component={withLayout(ResultScreen)} />
-      <Stack.Screen name="History" component={withLayout(HistoryScreen)} />
-      <Stack.Screen
-        name="MealDetail"
-        component={withLayout(MealDetailScreen)}
-      />
-      <Stack.Screen name="Chat" component={withLayout(ChatScreen)} />
-      <Stack.Screen name="Summary" component={withLayout(SummaryScreen)} />
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {user ? (
+        <>
+          <Stack.Screen name="Home" component={withLayout(HomeScreen)} />
+          <Stack.Screen name="Camera" component={withLayout(CameraScreen)} />
+          <Stack.Screen name="Result" component={withLayout(ResultScreen)} />
+          <Stack.Screen name="History" component={withLayout(HistoryScreen)} />
+          <Stack.Screen
+            name="MealDetail"
+            component={withLayout(MealDetailScreen)}
+          />
+          <Stack.Screen name="Chat" component={withLayout(ChatScreen)} />
+          <Stack.Screen name="Summary" component={withLayout(SummaryScreen)} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+        </>
+      )}
     </Stack.Navigator>
   );
 };

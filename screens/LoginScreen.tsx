@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { View, Text, TextInput, StyleSheet, Keyboard } from "react-native";
+import { Text, TextInput, StyleSheet, Keyboard } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/useTheme";
 import { Button } from "../components";
 import { useLogin } from "../hooks/useLogin";
 import { RootStackParamList } from "../navigation/navigate";
 import { StackNavigationProp } from "@react-navigation/stack";
+import FormScreenWrapper from "../components/FormScreenWrapper";
 
 type LoginScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -27,7 +28,7 @@ const LoginScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <FormScreenWrapper contentContainerStyle={styles.container}>
       <Text style={styles.header}>Log in</Text>
 
       <Text style={styles.subText}>
@@ -65,14 +66,14 @@ const LoginScreen = () => {
         onPress={handleLogin}
         disabled={loading}
       />
-    </View>
+    </FormScreenWrapper>
   );
 };
 
 const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
-      flex: 1,
+      flexGrow: 1,
       justifyContent: "center",
       padding: 16,
       backgroundColor: theme.background,

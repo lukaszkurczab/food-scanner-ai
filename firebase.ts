@@ -1,19 +1,19 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import firebase from "@react-native-firebase/app";
+import auth from "@react-native-firebase/auth";
+import firestore from "@react-native-firebase/firestore";
 
-export const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyAMx2jGfr3mslwuu7PXwRry8M72794NMek",
   authDomain: "calories-calculator-ai.firebaseapp.com",
   projectId: "calories-calculator-ai",
-  storageBucket: "calories-calculator-ai.firebasestorage.app",
+  storageBucket: "calories-calculator-ai.appspot.com",
   messagingSenderId: "516060318021",
   appId: "1:516060318021:web:f2413698c906624376d62c",
   measurementId: "G-QNQBTJVFEW",
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
-export { auth, db };
+export { firebase, auth, firestore };

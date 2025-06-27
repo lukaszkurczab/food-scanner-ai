@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { auth, db } from "../firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { arrayUnion, doc, setDoc, updateDoc } from "firebase/firestore";
 import { RootStackParamList } from "@/navigation/navigate";
+import { auth, firestore } from "@/firebase";
 
 export const useRegister = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -17,25 +15,26 @@ export const useRegister = () => {
   ) => {
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
+      const userCredential = await auth().createUserWithEmailAndPassword(
         email,
         password
       );
       const user = userCredential.user;
 
-      await setDoc(doc(db, "users", user.uid), {
+      await firestore().collection("users").doc(user.uid).set({
         email: user.email,
-        firstName: firstName,
-        lastName: lastName,
+        firstName,
+        lastName,
         isLinked: false,
-        createdAt: new Date(),
+        createdAt: firestore.FieldValue.serverTimestamp(),
       });
 
-      const tripRef = doc(db, "trips", "trip1");
-      await updateDoc(tripRef, {
-        members: arrayUnion(user.uid),
-      });
+      await firestore()
+        .collection("trips")
+        .doc("trip1")
+        .update({
+          members: firestore.FieldValue.arrayUnion(user.uid),
+        });
 
       navigation.navigate("Login");
     } catch (error) {
