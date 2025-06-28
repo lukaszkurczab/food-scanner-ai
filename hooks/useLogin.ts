@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "@/navigation/navigate";
-import { auth } from "@/firebase";
+import { auth, firestore } from "@/firebase";
 
 type LoginErrors = {
   password?: string;
@@ -17,8 +17,20 @@ export const useLogin = () => {
     setErrors({});
 
     try {
-      await auth().signInWithEmailAndPassword(email, password);
-      navigation.navigate("Home");
+      const userCredential = await auth().signInWithEmailAndPassword(
+        email,
+        password
+      );
+      const user = userCredential.user;
+
+      const userDoc = await firestore().collection("users").doc(user.uid).get();
+      const userData = userDoc.data();
+
+      if (userData?.firstLogin === true) {
+        navigation.navigate("NutritionSurvey");
+      } else {
+        navigation.navigate("Home");
+      }
     } catch (error: any) {
       if (
         error.code === "auth/user-not-found" ||

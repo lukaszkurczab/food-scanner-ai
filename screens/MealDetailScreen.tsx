@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, FlatList } from "react-native";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/navigate";
-import { NutrionChart } from "../components";
+import { NutritionChart } from "../components";
 import { format } from "date-fns";
 
 type MealDetailRouteProp = RouteProp<RootStackParamList, "MealDetail">;
@@ -50,7 +50,7 @@ const MealDetailScreen = () => {
         <Text>Carbohydrates: {meal.nutrition.carbs.toFixed(0)}g</Text>
       </View>
       <View style={{ flexGrow: 1 }}>
-        <NutrionChart nutrition={meal.nutrition} />
+        <NutritionChart nutrition={meal.nutrition} />
       </View>
     </View>
   );

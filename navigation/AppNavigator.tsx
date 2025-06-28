@@ -14,6 +14,7 @@ import RegisterScreen from "@/screens/RegisterScreen";
 
 import { Layout } from "../components";
 import { View, ActivityIndicator } from "react-native";
+import NutritionSurveyScreen from "@/feature/NutritionSurvey/screens/NutritionSurveyScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -43,7 +44,7 @@ const AppNavigator = () => {
       {user ? (
         <>
           <Stack.Screen name="Home" component={withLayout(HomeScreen)} />
-          <Stack.Screen name="Camera" component={withLayout(CameraScreen)} />
+          <Stack.Screen name="Camera" component={CameraScreen} />
           <Stack.Screen name="Result" component={withLayout(ResultScreen)} />
           <Stack.Screen name="History" component={withLayout(HistoryScreen)} />
           <Stack.Screen
@@ -52,6 +53,10 @@ const AppNavigator = () => {
           />
           <Stack.Screen name="Chat" component={withLayout(ChatScreen)} />
           <Stack.Screen name="Summary" component={withLayout(SummaryScreen)} />
+          <Stack.Screen
+            name="NutritionSurvey"
+            component={NutritionSurveyScreen}
+          />
         </>
       ) : (
         <>

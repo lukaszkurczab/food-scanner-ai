@@ -1,5 +1,5 @@
-type Gender = "male" | "female";
-type Goal = "reduction" | "maintenance" | "mass";
+export type Gender = "male" | "female";
+export type Goal = "reduction" | "maintenance" | "mass";
 
 export interface UserInput {
   gender: Gender;

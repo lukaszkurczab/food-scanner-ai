@@ -8,30 +8,50 @@ import {
   TextStyle,
 } from "react-native";
 
+type Variant = "primary" | "secondary";
+
 export const Button = ({
   text,
   onPress,
   style,
   textStyle = {},
   disabled = false,
+  variant = "secondary",
 }: {
   text: string;
   onPress: () => void;
   textStyle?: StyleProp<TextStyle>;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  variant?: Variant;
 }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
 
+  const buttonStyle =
+    variant === "primary" ? styles.buttonPrimary : styles.buttonSecondary;
+
+  const textColorStyle =
+    variant === "primary" ? styles.textPrimary : styles.textSecondary;
+
   return (
     <TouchableOpacity
-      style={[styles.button, disabled && styles.buttonDisabled, style]}
+      style={[
+        styles.buttonBase,
+        buttonStyle,
+        disabled && styles.buttonDisabled,
+        style,
+      ]}
       onPress={onPress}
       disabled={disabled}
     >
       <Text
-        style={[styles.buttonText, disabled && styles.textDisabled, textStyle]}
+        style={[
+          styles.buttonTextBase,
+          textColorStyle,
+          disabled && styles.textDisabled,
+          textStyle,
+        ]}
       >
         {text}
       </Text>
@@ -41,19 +61,29 @@ export const Button = ({
 
 const getStyles = (theme: any) =>
   StyleSheet.create({
-    button: {
-      backgroundColor: theme.secondary,
+    buttonBase: {
       alignItems: "center",
       borderRadius: 32,
       padding: 12,
+    },
+    buttonPrimary: {
+      backgroundColor: theme.primary,
+    },
+    buttonSecondary: {
+      backgroundColor: theme.secondary,
     },
     buttonDisabled: {
       backgroundColor: theme.disabled,
       opacity: 0.6,
     },
-    buttonText: {
+    buttonTextBase: {
       fontSize: 18,
       fontWeight: "500",
+    },
+    textPrimary: {
+      color: theme.onPrimary ?? "#fff",
+    },
+    textSecondary: {
       color: theme.text,
     },
     textDisabled: {
