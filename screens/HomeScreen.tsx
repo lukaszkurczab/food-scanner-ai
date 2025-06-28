@@ -7,6 +7,7 @@ import { Button, Tile } from "../components";
 import { getTodayMeal, saveMealToHistory } from "../services";
 import { Meal } from "../types";
 import { RootStackParamList } from "../navigation/navigate";
+import { auth } from "@/firebase";
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
@@ -77,6 +78,7 @@ const HomeScreen = () => {
         text="Scan a new meal"
         onPress={() => navigation.navigate("Camera")}
       />
+      <Button text="Log out" onPress={() => auth().signOut()} />
     </ScrollView>
   );
 };

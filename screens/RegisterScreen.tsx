@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Text, TextInput, StyleSheet, Keyboard, Alert } from "react-native";
+import { Text, TextInput, StyleSheet, Keyboard, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useTheme } from "../theme/useTheme";
-import { Button } from "../components";
+import { Button, Checkbox } from "../components";
 import { useRegister } from "../hooks/useRegister";
 import { RootStackParamList } from "../navigation/navigate";
 import FormScreenWrapper from "../components/FormScreenWrapper";
@@ -19,26 +19,16 @@ const RegisterScreen = () => {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
 
   const [email, setEmail] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const { register, loading } = useRegister();
+  const [checked, setChecked] = useState(false);
+
+  const { register, loading, errors } = useRegister();
 
   const handleRegister = async () => {
     Keyboard.dismiss();
-
-    if (password !== confirmPassword) {
-      Alert.alert("Błąd", "Hasła się nie zgadzają");
-      return;
-    }
-
-    if (!firstName.trim()) {
-      Alert.alert("Błąd", "Imię jest wymagane");
-      return;
-    }
-
-    await register(email, password, firstName, lastName);
+    await register(email, password, confirmPassword, username, checked);
   };
 
   return (
@@ -61,20 +51,19 @@ const RegisterScreen = () => {
         keyboardType="email-address"
         autoCapitalize="none"
       />
+      {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+
       <TextInput
         style={styles.input}
-        placeholder="First name"
+        placeholder="Username"
         placeholderTextColor={theme.accent}
-        value={firstName}
-        onChangeText={setFirstName}
+        value={username}
+        onChangeText={setUsername}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Last name"
-        placeholderTextColor={theme.accent}
-        value={lastName}
-        onChangeText={setLastName}
-      />
+      {errors.username && (
+        <Text style={styles.errorText}>{errors.username}</Text>
+      )}
+
       <TextInput
         style={styles.input}
         placeholder="Password"
@@ -83,6 +72,10 @@ const RegisterScreen = () => {
         value={password}
         onChangeText={setPassword}
       />
+      {errors.password && (
+        <Text style={styles.errorText}>{errors.password}</Text>
+      )}
+
       <TextInput
         style={styles.input}
         placeholder="Confirm password"
@@ -92,6 +85,20 @@ const RegisterScreen = () => {
         onChangeText={setConfirmPassword}
         onSubmitEditing={handleRegister}
       />
+      {errors.confirmPassword && (
+        <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+      )}
+
+      <View>
+        <Checkbox
+          checked={checked}
+          onCheckedChange={setChecked}
+          label="Accept terms and conditions"
+        />
+        {errors.terms && <Text style={styles.errorText}>{errors.terms}</Text>}
+      </View>
+
+      {errors.general && <Text style={styles.errorText}>{errors.general}</Text>}
 
       <Button
         text={loading ? "Creating..." : "Create account"}
@@ -133,8 +140,14 @@ const getStyles = (theme: any) =>
       borderWidth: 1,
       borderRadius: 8,
       paddingHorizontal: 12,
-      marginBottom: 16,
+      marginBottom: 8,
       color: theme.text,
+    },
+    errorText: {
+      color: "#ff4d4f",
+      fontSize: 13,
+      marginBottom: 8,
+      marginLeft: 4,
     },
   });
 
