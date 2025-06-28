@@ -20,7 +20,7 @@ const LoginScreen = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, loading } = useLogin();
+  const { login, loading, errors } = useLogin();
 
   const handleLogin = async () => {
     Keyboard.dismiss();
@@ -60,6 +60,9 @@ const LoginScreen = () => {
         secureTextEntry
         onSubmitEditing={handleLogin}
       />
+      {errors.password && (
+        <Text style={styles.errorText}>{errors.password}</Text>
+      )}
 
       <Button
         text={loading ? "Logging in..." : "Login"}
@@ -101,8 +104,14 @@ const getStyles = (theme: any) =>
       borderWidth: 1,
       borderRadius: 8,
       paddingHorizontal: 12,
-      marginBottom: 16,
+      marginBottom: 8,
       color: theme.text,
+    },
+    errorText: {
+      color: "#ff4d4f",
+      fontSize: 13,
+      marginBottom: 8,
+      marginLeft: 4,
     },
   });
 

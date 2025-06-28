@@ -2,6 +2,7 @@ export * from "./Button";
 export * from "./CancelModal";
 export * from "./CaptureButton";
 export * from "./Carousel";
+export * from "./Checkbox";
 export * from "./ConfirmButtons";
 export * from "./ConfirmModal";
 export * from "./DropdownList";
