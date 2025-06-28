@@ -19,7 +19,7 @@ import {
 import { RootStackParamList } from "../navigation/navigate";
 import { Ingredient, Nutrients } from "../types";
 import {
-  NutrionChart,
+  NutritionChart,
   ErrorModal,
   Button,
   ConfirmModal,
@@ -241,7 +241,7 @@ const ResultScreen = () => {
                   />
                 </TouchableOpacity>
               </View>
-              <NutrionChart nutrition={nutritionData} />
+              <NutritionChart nutrition={nutritionData} />
             </>
           )
         ) : null}

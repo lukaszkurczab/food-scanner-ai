@@ -76,15 +76,31 @@ export const useRegister = () => {
       );
       const user = userCredential.user;
 
-      await firestore().collection("users").doc(user.uid).set({
-        email: user.email,
-        username,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-      });
+      await firestore()
+        .collection("users")
+        .doc(user.uid)
+        .set({
+          email: user.email,
+          username,
+          firstLogin: true,
+          createdAt: firestore.FieldValue.serverTimestamp(),
+          nutritionSurvey: {
+            gender: null,
+            age: null,
+            weight: null,
+            height: null,
+            activityLevel: null,
+            goal: null,
+            bmr: null,
+            tdee: null,
+            adjustedTdee: null,
+          },
+        });
 
-      navigation.navigate("Login");
+      navigation.navigate("NutritionSurvey");
     } catch (error: any) {
       const errorMessage: RegisterErrors = {};
+
       if (error.code === "auth/email-already-in-use") {
         errorMessage.email = "This email is already in use.";
       } else if (error.code === "auth/invalid-email") {
@@ -94,6 +110,7 @@ export const useRegister = () => {
       } else {
         errorMessage.general = "Failed to create account. Please try again.";
       }
+
       setErrors(errorMessage);
     } finally {
       setLoading(false);

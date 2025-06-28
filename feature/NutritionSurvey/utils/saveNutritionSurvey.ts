@@ -9,8 +9,12 @@ export const saveNutritionSurvey = async (
   surveyData: NutritionSurvey
 ) => {
   const userRef = db.collection("users").doc(user.uid);
-  await userRef.update({
-    nutritionSurvey: surveyData,
-    firstLogin: false,
-  });
+  try {
+    await userRef.update({
+      nutritionSurvey: surveyData,
+      firstLogin: false,
+    });
+  } catch (error) {
+    console.error("Error updating nutrition survey:", error);
+  }
 };

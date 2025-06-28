@@ -5,6 +5,7 @@ export type RootStackParamList = {
   Home: any;
   Login: undefined;
   Register: undefined;
+  NutritionSurvey: undefined;
   Camera:
     | {
         previousIngredients?: Ingredient[];

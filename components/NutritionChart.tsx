@@ -3,11 +3,11 @@ import { Pie, PolarChart } from "victory-native";
 import { Nutrients } from "../types";
 import { useTheme } from "../theme/useTheme";
 
-type NutrionChartProps = {
+type NutritionChartProps = {
   nutrition: Nutrients;
 };
 
-export const NutrionChart = ({ nutrition }: NutrionChartProps) => {
+export const NutritionChart = ({ nutrition }: NutritionChartProps) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
 
