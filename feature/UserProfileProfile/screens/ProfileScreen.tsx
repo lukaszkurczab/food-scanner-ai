@@ -18,8 +18,6 @@ const ProfileScreen = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { userData } = useUserContext();
 
-  console.log("userData", userData);
-
   const getActivityLevelLabel = (level: number) => {
     switch (level) {
       case 1.2:
