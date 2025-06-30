@@ -7,13 +7,15 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
-import { getMealHistory } from "../services";
 import { Graph } from "../components";
 import { useTheme } from "../theme/useTheme";
+import { useUserContext } from "@/context/UserContext";
 
 const SummaryScreen = () => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
+  const { userData } = useUserContext();
+
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<7 | 30>(7);
   const [graphData, setGraphData] = useState<number[]>([]);
@@ -36,36 +38,22 @@ const SummaryScreen = () => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const all = await getMealHistory();
-        let days = 7;
+        const all = userData?.mealHistory ?? [];
+        let days = timeRange;
 
-        let startDate: Date | null = null;
-        let endDate: Date = new Date();
+        const endDate = new Date();
+        const dates: Date[] = [];
 
-        if (timeRange === 30) {
-          days = 30;
+        for (let i = days - 1; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          dates.push(date);
         }
 
         const daysMap: Record<
           string,
           { kcal: number; protein: number; carbs: number; fat: number }
         > = {};
-
-        let dates: Date[] = [];
-
-        if (startDate) {
-          const current = new Date(startDate);
-          while (current <= endDate) {
-            dates.push(new Date(current));
-            current.setDate(current.getDate() + 1);
-          }
-        } else {
-          for (let i = days - 1; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            dates.push(date);
-          }
-        }
 
         dates.forEach((date) => {
           const key = `${date.getMonth() + 1}/${date.getDate()}`;
@@ -76,20 +64,17 @@ const SummaryScreen = () => {
           const date = new Date(meal.date);
           if (isNaN(date.getTime())) continue;
 
-          let include = false;
           const daysAgo = Math.floor(
             (new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
           );
-          if (daysAgo < days) include = true;
+          if (daysAgo >= days) continue;
 
-          if (include) {
-            const key = `${date.getMonth() + 1}/${date.getDate()}`;
-            if (!daysMap[key]) continue;
-            daysMap[key].kcal += meal.nutrition?.kcal || 0;
-            daysMap[key].protein += meal.nutrition?.protein || 0;
-            daysMap[key].carbs += meal.nutrition?.carbs || 0;
-            daysMap[key].fat += meal.nutrition?.fat || 0;
-          }
+          const key = `${date.getMonth() + 1}/${date.getDate()}`;
+          if (!daysMap[key]) continue;
+          daysMap[key].kcal += meal.nutrition?.kcal || 0;
+          daysMap[key].protein += meal.nutrition?.protein || 0;
+          daysMap[key].carbs += meal.nutrition?.carbs || 0;
+          daysMap[key].fat += meal.nutrition?.fat || 0;
         }
 
         const keys = Object.keys(daysMap);
@@ -128,7 +113,7 @@ const SummaryScreen = () => {
     };
 
     loadData();
-  }, [timeRange]);
+  }, [timeRange, userData]);
 
   const handleTilePress = (data: number[], unit: string) => {
     setGraphData(data);
@@ -282,12 +267,6 @@ const getStyles = (theme: any) =>
       fontSize: 24,
       fontWeight: "bold",
     },
-    chartTitle: {
-      fontSize: 18,
-      fontWeight: "600",
-      marginLeft: 10,
-      marginTop: 20,
-    },
     chart: {
       marginHorizontal: 16,
       overflow: "hidden",
@@ -297,9 +276,6 @@ const getStyles = (theme: any) =>
       justifyContent: "center",
       alignItems: "center",
       padding: 20,
-    },
-    loadingText: {
-      marginTop: 10,
     },
   });
 

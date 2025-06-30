@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/useTheme";
 import { Button, ProgressBar, Tile } from "../components";
-import { getTodayMeal, saveMealToHistory } from "../services";
+import { getTodayMeal } from "../services";
 import { Meal } from "../types";
 import { RootStackParamList } from "../navigation/navigate";
 import { useUserContext } from "@/context/UserContext";
@@ -19,20 +19,15 @@ const HomeScreen = () => {
   const { userData } = useUserContext();
 
   useEffect(() => {
-    const fetchTodayMeal = async () => {
-      const meal = await getTodayMeal();
-      setTodayMeal(meal);
-    };
-    fetchTodayMeal();
-  }, []);
+    const meal = getTodayMeal(userData?.mealHistory ?? []);
+    setTodayMeal(meal);
+  }, [userData?.mealHistory]);
 
-  const handleSumCalories = () => {
-    const totalCalories = todayMeal.reduce(
-      (sum, meal) => sum + meal.nutrition.kcal,
-      0
-    );
-    return totalCalories;
-  };
+  const totalCalories = useMemo(() => {
+    return todayMeal.reduce((sum, meal) => sum + meal.nutrition.kcal, 0);
+  }, [todayMeal]);
+
+  const tdee = userData?.nutritionSurvey?.adjustedTdee ?? 0;
 
   return (
     <ScrollView
@@ -41,15 +36,12 @@ const HomeScreen = () => {
     >
       <Text style={styles.header}>Today's target</Text>
       <Text style={styles.noMealsText}>
-        {handleSumCalories() +
-          "kcal / " +
-          userData?.nutritionSurvey.adjustedTdee +
-          "kcal"}
+        {totalCalories + "kcal / " + tdee + "kcal"}
       </Text>
       <ProgressBar
         progress={
           userData?.nutritionSurvey.adjustedTdee
-            ? handleSumCalories() / userData.nutritionSurvey.adjustedTdee
+            ? totalCalories / userData.nutritionSurvey.adjustedTdee
             : 0
         }
       />
