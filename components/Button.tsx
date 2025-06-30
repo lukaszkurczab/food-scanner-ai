@@ -16,7 +16,7 @@ export const Button = ({
   style,
   textStyle = {},
   disabled = false,
-  variant = "secondary",
+  variant = "primary",
 }: {
   text: string;
   onPress: () => void;
@@ -67,10 +67,12 @@ const getStyles = (theme: any) =>
       padding: 12,
     },
     buttonPrimary: {
-      backgroundColor: theme.primary,
+      backgroundColor: theme.secondary,
     },
     buttonSecondary: {
-      backgroundColor: theme.secondary,
+      backgroundColor: theme.background,
+      borderWidth: 1,
+      borderColor: theme.secondary,
     },
     buttonDisabled: {
       backgroundColor: theme.disabled,

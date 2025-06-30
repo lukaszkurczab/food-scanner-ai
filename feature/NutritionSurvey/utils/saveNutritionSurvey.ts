@@ -9,6 +9,7 @@ export const saveNutritionSurvey = async (
   surveyData: NutritionSurvey
 ) => {
   const userRef = db.collection("users").doc(user.uid);
+
   try {
     await userRef.update({
       nutritionSurvey: surveyData,

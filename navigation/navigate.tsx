@@ -4,8 +4,10 @@ import { Ingredient, Meal, Nutrients } from "../types";
 export type RootStackParamList = {
   Home: any;
   Login: undefined;
-  Register: undefined;
   NutritionSurvey: undefined;
+  Profile: undefined;
+  UserSettings: undefined;
+  Register: undefined;
   Camera:
     | {
         previousIngredients?: Ingredient[];

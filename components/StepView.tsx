@@ -20,13 +20,13 @@ export const StepView: React.FC<StepViewProps> = ({
         style={[
           styles.stepContainer,
           {
-            width: width * totalSteps,
-            transform: [{ translateX: -width * step }],
+            width: width * totalSteps - 16,
+            transform: [{ translateX: -width * step - 16 }],
           },
         ]}
       >
         {children.map((child, index) => (
-          <View key={index} style={{ width }}>
+          <View key={index} style={{ width, paddingHorizontal: 16 }}>
             {child}
           </View>
         ))}
@@ -47,6 +47,7 @@ export const StepView: React.FC<StepViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginRight: 16,
   },
   stepContainer: {
     flexDirection: "row",
