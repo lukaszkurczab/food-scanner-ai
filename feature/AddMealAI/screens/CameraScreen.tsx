@@ -2,13 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { View, Image } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import {
-  PermissionRequestView,
-  CaptureButton,
-  ConfirmButtons,
-  TorchToggle,
-} from "../components";
-import { RootStackParamList } from "../navigation/navigate";
+import { PermissionRequestView, ConfirmButtons } from "@/components";
+import { RootStackParamList } from "@/navigation/navigate";
+import { CaptureButton, TorchToggle } from "../components";
 
 type CameraRouteProp = RouteProp<RootStackParamList, "Camera">;
 

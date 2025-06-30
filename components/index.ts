@@ -1,6 +1,5 @@
 export * from "./Button";
 export * from "./CancelModal";
-export * from "./CaptureButton";
 export * from "./Carousel";
 export * from "./Checkbox";
 export * from "./ConfirmButtons";
@@ -13,9 +12,9 @@ export * from "./Layout";
 export * from "./Navigation";
 export * from "./NutritionChart";
 export * from "./PermissionRequestView";
+export * from "./ProgressBar";
 export * from "./StepView";
 export * from "./Spinner";
 export * from "./TextInput";
 export * from "./ThemeToggle";
 export * from "./Tile";
-export * from "./TorchToggle";

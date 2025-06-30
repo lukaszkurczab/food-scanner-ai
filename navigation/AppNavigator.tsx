@@ -3,7 +3,7 @@ import { RootStackParamList } from "./navigate";
 import { useAuthContext } from "@/context/AuthContext";
 
 import HomeScreen from "../screens/HomeScreen";
-import CameraScreen from "../screens/CameraScreen";
+import CameraScreen from "@/feature/AddMealAI/screens/CameraScreen";
 import ResultScreen from "../screens/ResultScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import MealDetailScreen from "../screens/MealDetailScreen";
@@ -11,6 +11,7 @@ import ChatScreen from "../screens/ChatScreen";
 import SummaryScreen from "../screens/SummaryScreen";
 import LoginScreen from "@/screens/LoginScreen";
 import RegisterScreen from "@/screens/RegisterScreen";
+import MealAddMethodScreen from "@//screens/MealAddMethodScreen";
 
 import { Layout } from "../components";
 import { View, ActivityIndicator } from "react-native";
@@ -59,6 +60,7 @@ const AppNavigator = () => {
             name="NutritionSurvey"
             component={NutritionSurveyScreen}
           />
+          <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
         </>
       ) : (
         <>

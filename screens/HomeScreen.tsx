@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/useTheme";
-import { Button, Tile } from "../components";
+import { Button, ProgressBar, Tile } from "../components";
 import { getTodayMeal, saveMealToHistory } from "../services";
 import { Meal } from "../types";
 import { RootStackParamList } from "../navigation/navigate";
@@ -26,26 +26,6 @@ const HomeScreen = () => {
     fetchTodayMeal();
   }, []);
 
-  // const handleSave = async (mealName: string) => {
-  //   const yesterday = new Date();
-  //   const meal = {
-  //     id: Math.random().toString(36).substring(2, 15),
-  //     name: mealName,
-  //     date: yesterday.setDate(yesterday.getDate() - 1).toString(),
-  //     ingredients: [],
-  //     nutrition: {
-  //       kcal: 234,
-  //       protein: 21,
-  //       carbs: 11,
-  //       fat: 12,
-  //     },
-  //   };
-  //   await saveMealToHistory(meal);
-  //   navigation.navigate("Home");
-  // };
-
-  //handleSave("new meal");
-
   const handleSumCalories = () => {
     const totalCalories = todayMeal.reduce(
       (sum, meal) => sum + meal.nutrition.kcal,
@@ -66,6 +46,13 @@ const HomeScreen = () => {
           userData?.nutritionSurvey.adjustedTdee +
           "kcal"}
       </Text>
+      <ProgressBar
+        progress={
+          userData?.nutritionSurvey.adjustedTdee
+            ? handleSumCalories() / userData.nutritionSurvey.adjustedTdee
+            : 0
+        }
+      />
 
       <View style={styles.mealList}>
         {todayMeal.map((meal, i) => (
@@ -85,7 +72,7 @@ const HomeScreen = () => {
 
       <Button
         text="Scan a new meal"
-        onPress={() => navigation.navigate("Camera")}
+        onPress={() => navigation.navigate("MealAddMethod")}
       />
     </ScrollView>
   );
