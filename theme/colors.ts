@@ -11,6 +11,7 @@ export const lightTheme = {
   carbs: "#2196F3",
   fat: "#FFC107",
   protein: "#4CAF50",
+  disabled: "#BDBDBD",
 };
 
 export const darkTheme = {

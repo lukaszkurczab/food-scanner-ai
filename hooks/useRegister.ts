@@ -100,6 +100,7 @@ export const useRegister = () => {
       navigation.navigate("NutritionSurvey");
     } catch (error: any) {
       const errorMessage: RegisterErrors = {};
+      console.log(error);
 
       if (error.code === "auth/email-already-in-use") {
         errorMessage.email = "This email is already in use.";

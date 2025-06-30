@@ -43,6 +43,7 @@ export default function Navigation() {
         borderTopWidth: 1,
         borderTopColor: theme.card,
         padding: 2,
+        paddingHorizontal: 20,
         overflow: "hidden",
       }}
     >
@@ -50,6 +51,7 @@ export default function Navigation() {
       <NavigationItem target="History" icon="calendar" />
       <NavigationItem target="Summary" icon="chart-bar" />
       <NavigationItem target="Chat" icon="robot" />
+      <NavigationItem target="Profile" icon="user" />
     </View>
   );
 }
