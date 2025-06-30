@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import {
-  saveMealToHistory,
   detectIngredientsWithVision,
   calculateTotalNutrients,
   getNutritionForName,
@@ -28,6 +27,7 @@ import {
   Spinner,
 } from "../components";
 import { useTheme } from "../theme/useTheme";
+import { useHistory } from "@/hooks/useHistory";
 
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
 
@@ -37,6 +37,8 @@ const ResultScreen = () => {
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
   const styles = getStyles(theme);
+
+  const { saveMealToHistory } = useHistory();
 
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [previousNames, setPreviousNames] = useState<string[]>([]);

@@ -8,6 +8,7 @@ export type RootStackParamList = {
   Profile: undefined;
   AddMealManual: undefined;
   AddMealFromList: undefined;
+  MealInputMethod: undefined;
   MealAddMethod: undefined;
   UserSettings: undefined;
   Register: undefined;

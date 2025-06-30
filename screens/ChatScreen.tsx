@@ -9,12 +9,15 @@ import {
   Platform,
   TouchableOpacity,
 } from "react-native";
-import { askDietAI, getMealHistory } from "../services";
+import { askDietAI } from "../services";
 import { useTheme } from "../theme/useTheme";
+import { useUserContext } from "@/context/UserContext";
 
 const ChatScreen = () => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
+  const { userData } = useUserContext();
+
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([
     { from: "ai", text: "Hello! How can I help you today?" },
@@ -23,12 +26,13 @@ const ChatScreen = () => {
 
   const handleSend = async () => {
     if (!question.trim()) return;
+
     const userMessage = { from: "user", text: question };
     setMessages((prev) => [...prev, userMessage]);
     setQuestion("");
     setLoading(true);
 
-    const history = await getMealHistory();
+    const history = userData?.mealHistory ?? [];
     const reply = await askDietAI(question, history);
 
     const aiMessage = { from: "ai", text: reply };

@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,13 +7,13 @@ import {
   ScrollView,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { getMealHistory } from "../services";
 import { Meal } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 import { format, isToday } from "date-fns";
 import { useTheme } from "../theme/useTheme";
 import { RootStackParamList } from "../navigation/navigate";
 import { Tile } from "../components";
+import { useUserContext } from "@/context/UserContext";
 
 type HistoryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -33,6 +33,8 @@ const HistoryScreen = ({
 }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
+  const { userData } = useUserContext();
+
   const [sections, setSections] = useState<SectionData[]>([]);
   const [groupedMeals, setGroupedMeals] = useState<{ [key: string]: Meal[] }>(
     {}
@@ -43,24 +45,25 @@ const HistoryScreen = ({
 
   useEffect(() => {
     const load = async () => {
-      const data = await getMealHistory();
+      const data: Meal[] = userData?.mealHistory ?? [];
       const newGrouped: { [key: string]: Meal[] } = {};
 
       data.forEach((meal) => {
-        const dateKey = isToday(new Date(Number(meal.date)))
+        const dateKey = isToday(new Date(meal.date))
           ? "Today"
-          : format(new Date(Number(meal.date)), "d MMM");
+          : format(new Date(meal.date), "d MMM");
 
         if (!newGrouped[dateKey]) {
           newGrouped[dateKey] = [];
         }
 
         newGrouped[dateKey].push(meal);
-        setGroupedMeals(newGrouped);
       });
+
+      setGroupedMeals(newGrouped);
     };
     load();
-  }, []);
+  }, [userData]);
 
   useEffect(() => {
     const sectionData = Object.keys(groupedMeals).map((key) => ({
@@ -157,7 +160,7 @@ const getStyles = (theme: any) =>
     },
     sectionTitle: {
       fontSize: 20,
-      fontWeight: 600,
+      fontWeight: "600",
     },
     sectionSubtitle: {
       fontSize: 14,
@@ -172,7 +175,7 @@ const getStyles = (theme: any) =>
     },
     mealName: {
       fontSize: 18,
-      fontWeight: 500,
+      fontWeight: "500",
       marginBottom: 4,
     },
     noMealsText: {
