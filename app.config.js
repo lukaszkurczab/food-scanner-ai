@@ -36,6 +36,17 @@ export default {
           recordAudioAndroid: true,
         },
       ],
+      [
+        "expo-build-properties",
+        {
+          android: {
+            kotlinVersion: "1.9.10",
+            compileSdkVersion: 34,
+            targetSdkVersion: 34,
+            minSdkVersion: 24,
+          },
+        },
+      ],
     ],
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
