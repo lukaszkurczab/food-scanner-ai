@@ -1,26 +1,17 @@
-import { createContext, useContext, useState, ReactNode } from "react";
-import { Appearance } from "react-native";
-import { lightTheme, darkTheme, AppTheme } from "./colors";
+import { createContext, useContext, ReactNode } from "react";
+import { lightTheme, AppTheme } from "./colors";
 
 type ThemeContextType = {
   theme: AppTheme;
-  toggleTheme: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const systemColorScheme = Appearance.getColorScheme();
-  const [theme, setTheme] = useState<AppTheme>(lightTheme);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev.mode === "dark" ? lightTheme : darkTheme));
-  };
+  const theme = lightTheme;
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={{ theme }}>{children}</ThemeContext.Provider>
   );
 };
 
