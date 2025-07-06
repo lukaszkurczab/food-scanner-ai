@@ -12,7 +12,20 @@
           "package_name": "com.lkurczab.foodscannerai"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "516060318021-km764ipr3316cbraj3o3hnidst77hea5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lkurczab.foodscannerai",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "516060318021-i06ukc9l426b9ulb41jcaq9jrbmvvbi9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAKIUg9TugL2XmmgCKn706utbRjcdreeCI"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "516060318021-i06ukc9l426b9ulb41jcaq9jrbmvvbi9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "516060318021-2gqrdrq29e3h6kvqgqhcmtdeebuuv150.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.lkurczab.foodscannerai"
+              }
+            }
+          ]
         }
       }
     }

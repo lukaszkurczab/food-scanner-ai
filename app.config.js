@@ -41,12 +41,6 @@ export default {
       [
         "expo-build-properties",
         {
-          android: {
-            kotlinVersion: "1.8.10",
-            compileSdkVersion: 34,
-            targetSdkVersion: 34,
-            minSdkVersion: 24,
-          },
           ios: {
             useFrameworks: "static",
           },

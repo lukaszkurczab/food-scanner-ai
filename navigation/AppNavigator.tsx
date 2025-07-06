@@ -2,7 +2,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { RootStackParamList } from "./navigate";
 import { useAuthContext } from "@/context/AuthContext";
 
-import HomeScreen from "../screens/HomeScreen";
+import HomeScreen from "../feature/Home/screens/HomeScreen";
 import CameraScreen from "@/feature/AddMealAI/screens/CameraScreen";
 import ResultScreen from "../screens/ResultScreen";
 import HistoryScreen from "../screens/HistoryScreen";
