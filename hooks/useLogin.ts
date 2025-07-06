@@ -17,20 +17,7 @@ export const useLogin = () => {
     setErrors({});
 
     try {
-      const userCredential = await auth().signInWithEmailAndPassword(
-        email,
-        password
-      );
-      const user = userCredential.user;
-
-      const userDoc = await firestore().collection("users").doc(user.uid).get();
-      const userData = userDoc.data();
-
-      if (userData?.firstLogin === true) {
-        navigation.navigate("NutritionSurvey");
-      } else {
-        navigation.navigate("Home");
-      }
+      await auth().signInWithEmailAndPassword(email, password);
     } catch (error: any) {
       if (
         error.code === "auth/user-not-found" ||

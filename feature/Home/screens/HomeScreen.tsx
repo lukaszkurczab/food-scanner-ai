@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
-import { useTheme } from "../theme/useTheme";
-import { Button, ProgressBar, Tile } from "../components";
-import { getTodayMeal } from "../services";
-import { Meal } from "../types";
-import { RootStackParamList } from "../navigation/navigate";
+import { useTheme } from "../../../theme/useTheme";
+import { Button, Tile } from "../../../components";
+import { getTodayMeal } from "../../../services";
+import { Meal } from "../../../types";
+import { RootStackParamList } from "../../../navigation/navigate";
 import { useUserContext } from "@/context/UserContext";
+import { TdeeProgress } from "../components/TdeeProgrss";
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
@@ -34,18 +35,7 @@ const HomeScreen = () => {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.container}
     >
-      <Text style={styles.header}>Today's target</Text>
-      <Text style={styles.noMealsText}>
-        {totalCalories + "kcal / " + tdee + "kcal"}
-      </Text>
-      <ProgressBar
-        progress={
-          userData?.nutritionSurvey.adjustedTdee
-            ? totalCalories / userData.nutritionSurvey.adjustedTdee
-            : 0
-        }
-      />
-
+      <TdeeProgress totalCalories={totalCalories} tdee={tdee} />
       <View style={styles.mealList}>
         {todayMeal.map((meal, i) => (
           <Tile
@@ -61,7 +51,6 @@ const HomeScreen = () => {
           </Tile>
         ))}
       </View>
-
       <Button
         text="Scan a new meal"
         onPress={() => navigation.navigate("MealAddMethod")}

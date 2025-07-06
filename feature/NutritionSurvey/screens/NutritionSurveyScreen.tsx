@@ -6,7 +6,7 @@ import { Button, TextInput } from "../../../components";
 import { StepView } from "../../../components/StepView";
 import { RootStackParamList } from "../../../navigation/navigate";
 import { useCalorieCalculator } from "../hooks/useCalorieCalculator";
-import { auth } from "@/FirebaseConfig";
+import { auth, firestore } from "@/FirebaseConfig";
 import { Gender, Goal, NutritionSurvey } from "../types/types";
 import { useTheme } from "@/theme/useTheme";
 import { saveNutritionSurvey } from "../utils/saveNutritionSurvey";
@@ -75,6 +75,12 @@ const NutritionSurveyScreen = () => {
     if (newStep < 0 || newStep > 2) return;
     setStep(newStep);
   };
+
+  if (userData && userData.firstLogin) {
+    firestore().collection("users").doc(userData.uid).update({
+      firstLogin: false,
+    });
+  }
 
   if (loadingUserData || !userData) {
     return (

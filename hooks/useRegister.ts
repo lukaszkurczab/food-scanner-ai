@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "@/navigation/navigate";
 import { auth, firestore } from "@/FirebaseConfig";
 
 type RegisterErrors = {
@@ -13,7 +11,6 @@ type RegisterErrors = {
 };
 
 export const useRegister = () => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<RegisterErrors>({});
 
@@ -85,19 +82,17 @@ export const useRegister = () => {
           firstLogin: true,
           createdAt: firestore.FieldValue.serverTimestamp(),
           nutritionSurvey: {
-            gender: null,
-            age: null,
-            weight: null,
-            height: null,
-            activityLevel: null,
-            goal: null,
+            gender: "male",
+            age: 25,
+            weight: 70,
+            height: 175,
+            activityLevel: 1.55,
+            goal: "maintenance",
             bmr: null,
             tdee: null,
             adjustedTdee: null,
           },
         });
-
-      navigation.navigate("NutritionSurvey");
     } catch (error: any) {
       const errorMessage: RegisterErrors = {};
       console.log(error);
