@@ -36,7 +36,7 @@ const ProfileScreen = () => {
   };
 
   const renderBodyAndGoals = () => {
-    if (userData && userData.tdee) {
+    if (userData && userData.nutritionSurvey.tdee) {
       return (
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Body & Goals</Text>
