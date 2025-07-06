@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { auth } from "@/firebase";
+import { auth } from "@/FirebaseConfig";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 
 type AuthContextType = {

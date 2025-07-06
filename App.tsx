@@ -1,4 +1,4 @@
-import "./firebase";
+import "./FirebaseConfig";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import AppNavigator from "./navigation/AppNavigator";
 import { NavigationContainer } from "@react-navigation/native";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { firestore } from "@/firebase";
+import { firestore } from "@/FirebaseConfig";
 import { useUserContext } from "@/context/UserContext";
 import { Meal } from "@/types";
 

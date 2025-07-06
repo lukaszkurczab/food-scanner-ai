@@ -1,5 +1,5 @@
 import { useTheme } from "@/theme/useTheme";
-import { auth } from "@/firebase";
+import { auth } from "@/FirebaseConfig";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/navigation/navigate";
 import { useNavigation } from "@react-navigation/native";

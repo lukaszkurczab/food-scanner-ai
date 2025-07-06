@@ -18,6 +18,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.lkurczab.foodscannerai",
+      googleServicesFile: "./GoogleService-Info.plist",
     },
     android: {
       adaptiveIcon: {
@@ -25,6 +26,7 @@ export default {
         backgroundColor: "#ffffff",
       },
       package: "com.lkurczab.foodscannerai",
+      googleServicesFile: "./google-services.json",
     },
     plugins: [
       [
@@ -40,17 +42,21 @@ export default {
         "expo-build-properties",
         {
           android: {
-            kotlinVersion: "1.9.10",
+            kotlinVersion: "1.8.10",
             compileSdkVersion: 34,
             targetSdkVersion: 34,
             minSdkVersion: 24,
           },
+          ios: {
+            useFrameworks: "static",
+          },
         },
       ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
     ],
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
-      usdaApiKey: process.env.USDA_API_KEY,
       eas: {
         projectId: "6126cb31-0485-4b93-b30c-738b65882366",
       },
