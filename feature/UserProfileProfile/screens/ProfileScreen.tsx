@@ -35,14 +35,9 @@ const ProfileScreen = () => {
     }
   };
 
-  return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
-      <Text style={styles.header}>{userData?.username}</Text>
-
-      {userData && (
+  const renderBodyAndGoals = () => {
+    if (userData && userData.tdee) {
+      return (
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Body & Goals</Text>
           <Text style={styles.value}>
@@ -78,7 +73,25 @@ const ProfileScreen = () => {
             style={styles.editButton}
           />
         </View>
-      )}
+      );
+    } else {
+      return (
+        <Button
+          text="Calculate Tdee"
+          onPress={() => navigation.navigate("NutritionSurvey")}
+        />
+      );
+    }
+  };
+
+  return (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
+      <Text style={styles.header}>{userData?.username}</Text>
+
+      {renderBodyAndGoals()}
       <Button
         text="Log out"
         onPress={() => auth().signOut()}
