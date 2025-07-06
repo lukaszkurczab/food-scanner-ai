@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "@/navigation/navigate";
-import { auth, firestore } from "@/firebase";
+import { auth, firestore } from "@/FirebaseConfig";
 
 type LoginErrors = {
   password?: string;

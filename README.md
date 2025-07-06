@@ -23,7 +23,6 @@ Food Scanner AI is a mobile app built with React Native (Expo) that helps users 
 React Native (Expo) – front-end & camera access
 TypeScript – static typing
 AsyncStorage – meal history persistence
-USDA FoodData Central API – for real nutrition data
 OpenAI API – for chat with AI dietitian
 react-native-gifted-charts – for macro charts
 

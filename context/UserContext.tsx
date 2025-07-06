@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAuthContext } from "./AuthContext";
-import { firestore } from "@/firebase";
+import { firestore } from "@/FirebaseConfig";
 
 type UserData = {
   uid: string;

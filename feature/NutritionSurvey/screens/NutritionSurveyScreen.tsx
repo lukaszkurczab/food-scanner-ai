@@ -6,7 +6,7 @@ import { Button, TextInput } from "../../../components";
 import { StepView } from "../../../components/StepView";
 import { RootStackParamList } from "../../../navigation/navigate";
 import { useCalorieCalculator } from "../hooks/useCalorieCalculator";
-import { auth } from "@/firebase";
+import { auth } from "@/FirebaseConfig";
 import { Gender, Goal, NutritionSurvey } from "../types/types";
 import { useTheme } from "@/theme/useTheme";
 import { saveNutritionSurvey } from "../utils/saveNutritionSurvey";
