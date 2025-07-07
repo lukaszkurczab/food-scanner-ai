@@ -12,6 +12,8 @@ import SummaryScreen from "../screens/SummaryScreen";
 import LoginScreen from "@/screens/LoginScreen";
 import RegisterScreen from "@/screens/RegisterScreen";
 import MealAddMethodScreen from "@//screens/MealAddMethodScreen";
+import AddMealFromList from "@/feature/AddMealFromList/screens/AddMealFromList";
+import AddMealManual from "@/feature/AddMealManual/screens/AddMealManual";
 
 import { Layout } from "../components";
 import { View, ActivityIndicator } from "react-native";
@@ -52,6 +54,14 @@ const AppNavigator = () => {
           <Stack.Screen
             name="MealDetail"
             component={withLayout(MealDetailScreen)}
+          />
+          <Stack.Screen
+            name="AddMealFromList"
+            component={withLayout(AddMealFromList)}
+          />
+          <Stack.Screen
+            name="AddMealManual"
+            component={withLayout(AddMealManual)}
           />
           <Stack.Screen name="Profile" component={withLayout(ProfileScreen)} />
           <Stack.Screen name="Chat" component={withLayout(ChatScreen)} />

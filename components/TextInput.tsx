@@ -1,14 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "react-native-get-random-values";
-import { TextInput as DefaultTextInput, StyleSheet } from "react-native";
+import {
+  TextInput as DefaultTextInput,
+  StyleSheet,
+  TextInputProps as RNTextInputProps,
+  TextStyle,
+} from "react-native";
 import { useTheme } from "../theme/useTheme";
 
-type TextInputProps = {
+type CustomTextInputProps = {
   value: string;
   onChange?: (text: string) => void;
   onEndEditing?: (text: string) => void;
-  keyboardType?: "default" | "numeric" | "email-address" | "phone-pad";
-  styles?: any;
+  keyboardType?: RNTextInputProps["keyboardType"];
+  placeholder?: string;
+  placeholderTextColor?: string;
+  style?: TextStyle;
 };
 
 export const TextInput = ({
@@ -16,32 +23,36 @@ export const TextInput = ({
   onChange,
   onEndEditing,
   keyboardType = "default",
-  styles,
-}: TextInputProps) => {
-  const theme = useTheme();
-  const textInputStyles = getStyles(theme);
+  placeholder,
+  placeholderTextColor,
+  style,
+}: CustomTextInputProps) => {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [inputText, setInputText] = useState(value);
 
+  useEffect(() => {
+    setInputText(value); // aktualizacja gdy zmienia się wartość z zewnątrz
+  }, [value]);
+
   const handleTextChange = (newText: string) => {
-    if (onChange) {
-      onChange(newText);
-    }
     setInputText(newText);
+    if (onChange) onChange(newText);
   };
 
   const handleEndEditing = () => {
-    if (onEndEditing) {
-      onEndEditing(inputText);
-    }
+    if (onEndEditing) onEndEditing(inputText);
   };
 
   return (
     <DefaultTextInput
-      keyboardType={keyboardType}
-      style={{ ...textInputStyles.input, ...styles }}
       value={inputText}
-      onChangeText={(text) => handleTextChange(text)}
-      onEndEditing={() => handleEndEditing()}
+      onChangeText={handleTextChange}
+      onEndEditing={handleEndEditing}
+      keyboardType={keyboardType}
+      placeholder={placeholder}
+      placeholderTextColor={placeholderTextColor ?? theme.accent}
+      style={[styles.input, style]}
     />
   );
 };
@@ -51,8 +62,11 @@ const getStyles = (theme: any) =>
     input: {
       borderWidth: 1,
       borderColor: theme.accent,
-      borderRadius: 6,
-      paddingHorizontal: 8,
-      flexGrow: 1,
+      borderRadius: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      fontSize: 14,
+      color: theme.text,
+      backgroundColor: theme.card,
     },
   });
