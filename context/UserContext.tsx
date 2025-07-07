@@ -60,10 +60,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     await fetchUserData();
   };
 
-  const updateUserDataLocally = async (data: Partial<UserData>) => {
-    setUserData((prev) => (prev ? { ...prev, ...data } : null));
-  };
-
   return (
     <UserContext.Provider
       value={{ userData, loadingUserData, refreshUserData }}

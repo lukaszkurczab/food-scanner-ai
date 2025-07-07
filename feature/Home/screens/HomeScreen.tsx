@@ -52,7 +52,7 @@ const HomeScreen = () => {
         ))}
       </View>
       <Button
-        text="Scan a new meal"
+        text="Add a new meal"
         onPress={() => navigation.navigate("MealAddMethod")}
       />
     </ScrollView>
