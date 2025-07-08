@@ -33,12 +33,9 @@ const MealDetailScreen = () => {
       <Text style={styles.subheader}>Ingredients:</Text>
       <FlatList
         data={meal.ingredients}
-        keyExtractor={(item, index) => `${item.name}-${index}`}
+        keyExtractor={(item, index) => `${item}-${index}`}
         renderItem={({ item }) => (
-          <Text style={styles.ingredient}>
-            • {item.name}: {item.amount}
-            {item.type === "drink" ? "ml" : "g"}
-          </Text>
+          <Text style={styles.ingredient}>• {item}</Text>
         )}
         style={{ flexGrow: 0 }}
       />

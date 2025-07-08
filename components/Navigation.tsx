@@ -48,7 +48,7 @@ export default function Navigation() {
       }}
     >
       <NavigationItem target="Home" icon="home" />
-      <NavigationItem target="History" icon="calendar" />
+      <NavigationItem target="SavedMeals" icon="book" />
       <NavigationItem target="Summary" icon="chart-bar" />
       <NavigationItem target="Chat" icon="robot" />
       <NavigationItem target="Profile" icon="user" />

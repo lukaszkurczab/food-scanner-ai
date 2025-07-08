@@ -1,5 +1,5 @@
 import { createNavigationContainerRef } from "@react-navigation/native";
-import { Ingredient, Meal, Nutrients } from "../types";
+import { MealHistory } from "../types";
 
 export type RootStackParamList = {
   Home: any;
@@ -12,6 +12,7 @@ export type RootStackParamList = {
   MealAddMethod: undefined;
   UserSettings: undefined;
   Register: undefined;
+  SavedMeals: undefined;
   ReviewIngredients: {
     image: string;
     id: string;
@@ -19,7 +20,7 @@ export type RootStackParamList = {
   Camera: undefined;
   Result: undefined;
   History: undefined;
-  MealDetail: { meal: Meal };
+  MealDetail: { meal: MealHistory };
   Chat: undefined;
   Summary: undefined;
 };
