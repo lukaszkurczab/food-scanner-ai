@@ -32,7 +32,7 @@ export const TextInput = ({
   const [inputText, setInputText] = useState(value);
 
   useEffect(() => {
-    setInputText(value); // aktualizacja gdy zmienia się wartość z zewnątrz
+    setInputText(value);
   }, [value]);
 
   const handleTextChange = (newText: string) => {

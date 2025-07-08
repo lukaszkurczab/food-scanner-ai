@@ -89,11 +89,11 @@ const AddMealManualScreen = () => {
           <Checkbox
             checked={saveToHistory}
             onCheckedChange={setSaveToHistory}
+            label="Save to My Meals"
           />
-          <Text style={styles.checkboxLabel}>Save to My Meals</Text>
         </View>
 
-        <Button text="Save meal" onPress={handleSave} />
+        <Button text="Confirm" onPress={handleSave} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

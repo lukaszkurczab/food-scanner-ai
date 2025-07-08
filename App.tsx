@@ -6,6 +6,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { navigationRef } from "./navigation/navigate";
 import { AuthProvider } from "./context/AuthContext";
 import { UserProvider } from "./context/UserContext";
+import { MealProvider } from "./context/MealContext";
 
 export default function App() {
   useEffect(() => {
@@ -21,11 +22,13 @@ export default function App() {
   return (
     <AuthProvider>
       <UserProvider>
-        <ThemeProvider>
-          <NavigationContainer ref={navigationRef}>
-            <AppNavigator />
-          </NavigationContainer>
-        </ThemeProvider>
+        <MealProvider>
+          <ThemeProvider>
+            <NavigationContainer ref={navigationRef}>
+              <AppNavigator />
+            </NavigationContainer>
+          </ThemeProvider>
+        </MealProvider>
       </UserProvider>
     </AuthProvider>
   );

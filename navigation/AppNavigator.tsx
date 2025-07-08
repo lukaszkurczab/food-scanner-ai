@@ -14,6 +14,7 @@ import RegisterScreen from "@/screens/RegisterScreen";
 import MealAddMethodScreen from "@//screens/MealAddMethodScreen";
 import AddMealFromList from "@/feature/AddMealFromList/screens/AddMealFromList";
 import AddMealManual from "@/feature/AddMealManual/screens/AddMealManual";
+import ReviewIngredientsScreen from "@/feature/AddMealAI/screens/ReviewIngredientsScreen";
 
 import { Layout } from "../components";
 import { View, ActivityIndicator } from "react-native";
@@ -69,6 +70,10 @@ const AppNavigator = () => {
           <Stack.Screen
             name="NutritionSurvey"
             component={NutritionSurveyScreen}
+          />
+          <Stack.Screen
+            name="ReviewIngredients"
+            component={ReviewIngredientsScreen}
           />
           <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
         </>

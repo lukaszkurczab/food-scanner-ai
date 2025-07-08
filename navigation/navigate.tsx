@@ -12,17 +12,12 @@ export type RootStackParamList = {
   MealAddMethod: undefined;
   UserSettings: undefined;
   Register: undefined;
-  Camera:
-    | {
-        previousIngredients?: Ingredient[];
-        previousNutrition?: Nutrients;
-      }
-    | undefined;
-  Result: {
+  ReviewIngredients: {
     image: string;
-    previousIngredients: Ingredient[];
-    previousNutrition: Nutrients;
+    id: string;
   };
+  Camera: undefined;
+  Result: undefined;
   History: undefined;
   MealDetail: { meal: Meal };
   Chat: undefined;

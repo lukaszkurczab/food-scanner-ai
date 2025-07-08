@@ -5,6 +5,12 @@ import { Ingredient } from "../types";
 
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
 
+type MealType = {
+  id: string;
+  image: string;
+  ingredients: Ingredient[];
+};
+
 export async function detectIngredientsWithVision(
   imageUri: string
 ): Promise<Ingredient[] | null> {
@@ -46,6 +52,7 @@ Rules:
 - Use educated guesses for macronutrient values if no table is found.
 - If unsure about any value, give your best estimate.
 - Never include explanations, only the JSON array.
+Important! Na razie testuję funkcjonalność w związku z czym zwróć przykładową odpowiedź na podstawie powyższych wymagań. 
               `.trim(),
             },
             {
@@ -132,8 +139,8 @@ export async function mockedDetectIngredientsWithVision(
 }
 
 export async function getNutritionForName(
-  name: string
-): Promise<Omit<Ingredient, "amount"> | null> {
+  meal: MealType
+): Promise<Ingredient[] | null> {
   try {
     const payload = {
       model: "gpt-4o",
@@ -141,21 +148,30 @@ export async function getNutritionForName(
         {
           role: "user",
           content: `
-For the product "${name}", return an object with estimated nutrition values **per 100g** in the following format:
+Given this meal:
 
-{
-  "name": "string (same as input)",
-  "protein": number,
-  "fat": number,
-  "carbs": number,
-  "kcal": number,
-  "type": "food" or "drink",
-  "fromTable": false
-}
+${JSON.stringify(meal.ingredients, null, 2)}
 
-- Make an educated guess based on common data.
-- Be concise and accurate.
-- Do not include explanations or text — only the raw JSON object.
+Correct the nutritional values (kcal, protein, fat, carbs) for each ingredient **without changing the list or names**.
+
+Return only an array of corrected ingredients in this format:
+[
+  {
+    "amount": number,
+    "carbs": number,
+    "fat": number,
+    "fromTable": boolean,
+    "kcal": number,
+    "name": string,
+    "protein": number,
+    "type": string
+  }
+]
+
+- Do not reorder or remove items.
+- Keep the same "amount", "fromTable", "name", and "type".
+- Only fix: "kcal", "protein", "fat", "carbs".
+- Return JSON only, no explanation or text.
         `.trim(),
         },
       ],
@@ -191,16 +207,27 @@ For the product "${name}", return an object with estimated nutrition values **pe
 
     try {
       const parsed = JSON.parse(cleaned);
-      if (
-        !parsed.name ||
-        typeof parsed.kcal !== "number" ||
-        typeof parsed.protein !== "number" ||
-        typeof parsed.fat !== "number" ||
-        typeof parsed.carbs !== "number" ||
-        !["food", "drink"].includes(parsed.type)
-      ) {
+
+      if (!Array.isArray(parsed)) {
+        console.warn("⚠️ Expected an array of ingredients, got:", parsed);
+        return null;
+      }
+
+      const valid = parsed.every(
+        (ing: any) =>
+          typeof ing.name === "string" &&
+          typeof ing.kcal === "number" &&
+          typeof ing.protein === "number" &&
+          typeof ing.fat === "number" &&
+          typeof ing.carbs === "number" &&
+          typeof ing.amount === "number" &&
+          typeof ing.fromTable === "boolean" &&
+          typeof ing.type === "string"
+      );
+
+      if (!valid) {
         console.warn(
-          "⚠️ Unexpected structure from getNutritionForName:",
+          "⚠️ One or more ingredients have invalid structure:",
           parsed
         );
         return null;
