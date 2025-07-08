@@ -10,7 +10,7 @@ import {
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
-import { Button, Checkbox, TextInput } from "@/components";
+import { Button, TextInput } from "@/components";
 import { useMealContext } from "@/context/MealContext";
 import { useNavigation } from "@react-navigation/native";
 
@@ -44,7 +44,6 @@ const AddMealManualScreen = () => {
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
   const [kcal, setKcal] = useState("");
-  const [saveToHistory, setSaveToHistory] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleAddIngredient = () => {
@@ -178,14 +177,6 @@ const AddMealManualScreen = () => {
           keyboardType="numeric"
           placeholder="e.g. 120"
         />
-
-        <View style={styles.checkboxContainer}>
-          <Checkbox
-            checked={saveToHistory}
-            onCheckedChange={setSaveToHistory}
-            label="Save to My Meals"
-          />
-        </View>
 
         {validationError && (
           <Text style={styles.errorText}>{validationError}</Text>

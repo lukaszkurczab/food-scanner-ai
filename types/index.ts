@@ -6,6 +6,14 @@ export type Meal = {
   nutrition: Nutrients;
 };
 
+export type MealHistory = {
+  id: string;
+  name: string;
+  date: string;
+  ingredients: string[];
+  nutrition: Nutrients;
+};
+
 export type Nutrients = {
   kcal: number;
   protein: number;

@@ -22,6 +22,8 @@ type UserData = {
   firstLogin: boolean;
   createdAt: string;
   nutritionSurvey?: any;
+  myMeals?: Meal[];
+  history?: Meal[];
 };
 
 type UserContextType = {
@@ -29,6 +31,8 @@ type UserContextType = {
   loadingUserData: boolean;
   refreshUserData: () => Promise<void>;
   saveMealToFirestoreHistory: (meal: Meal) => Promise<void>;
+  saveMealToMyMeals: (meal: Meal) => Promise<void>;
+  getMyMeals: () => Promise<Meal[]>;
   fetchUserHistory: () => Promise<Meal[]>;
 };
 
@@ -37,6 +41,8 @@ const UserContext = createContext<UserContextType>({
   loadingUserData: true,
   refreshUserData: () => Promise.resolve(),
   saveMealToFirestoreHistory: async () => {},
+  saveMealToMyMeals: async () => {},
+  getMyMeals: async () => [],
   fetchUserHistory: async () => [],
 });
 
@@ -57,18 +63,42 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      const doc = await firestore().collection("users").doc(user.uid).get();
-      const data = doc.data();
-      if (data) {
-        setUserData({
-          uid: user.uid,
-          email: data.email,
-          username: data.username,
-          firstLogin: data.firstLogin,
-          createdAt: data.createdAt,
-          nutritionSurvey: data.nutritionSurvey,
-        });
+      const userDoc = await firestore().collection("users").doc(user.uid).get();
+      const userDataRaw = userDoc.data();
+
+      if (!userDataRaw) {
+        setUserData(null);
+        return;
       }
+
+      const [myMealsSnap, historySnap] = await Promise.all([
+        firestore()
+          .collection("users")
+          .doc(user.uid)
+          .collection("myMeals")
+          .orderBy("date", "desc")
+          .get(),
+        firestore()
+          .collection("users")
+          .doc(user.uid)
+          .collection("history")
+          .orderBy("date", "desc")
+          .get(),
+      ]);
+
+      const myMeals: Meal[] = myMealsSnap.docs.map((doc) => doc.data() as Meal);
+      const history: Meal[] = historySnap.docs.map((doc) => doc.data() as Meal);
+
+      setUserData({
+        uid: user.uid,
+        email: userDataRaw.email,
+        username: userDataRaw.username,
+        firstLogin: userDataRaw.firstLogin,
+        createdAt: userDataRaw.createdAt,
+        nutritionSurvey: userDataRaw.nutritionSurvey,
+        myMeals,
+        history,
+      });
     } catch (e) {
       console.error("Failed to fetch user data:", e);
       setUserData(null);
@@ -82,6 +112,51 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     await fetchUserData();
   };
 
+  const getMyMeals = async () => {
+    if (!user?.uid) return [];
+
+    try {
+      const snapshot = await firestore()
+        .collection("users")
+        .doc(user.uid)
+        .collection("myMeals")
+        .orderBy("date", "desc")
+        .get();
+
+      return snapshot.docs.map((doc) => doc.data() as Meal);
+    } catch (e) {
+      console.error("Failed to fetch user history:", e);
+      return [];
+    }
+  };
+
+  const saveMealToMyMeals = async (meal: Meal) => {
+    if (!user?.uid) return;
+    try {
+      await firestore()
+        .collection("users")
+        .doc(user.uid)
+        .collection("myMeals")
+        .doc(meal.id)
+        .set(meal);
+
+      setUserData((prev) =>
+        prev
+          ? {
+              ...prev,
+              myMeals: [
+                meal,
+                ...(prev.myMeals || []).filter((m) => m.id !== meal.id),
+              ],
+            }
+          : prev
+      );
+    } catch (e) {
+      console.error("Failed to save meal to myMeals:", e);
+      throw e;
+    }
+  };
+
   const saveMealToFirestoreHistory = async (meal: Meal) => {
     if (!user?.uid) return;
     try {
@@ -91,6 +166,18 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         .collection("history")
         .doc(meal.id)
         .set(meal);
+
+      setUserData((prev) =>
+        prev
+          ? {
+              ...prev,
+              history: [
+                meal,
+                ...(prev.history || []).filter((m) => m.id !== meal.id),
+              ],
+            }
+          : prev
+      );
     } catch (e) {
       console.error("Failed to save meal to history:", e);
       throw e;
@@ -122,6 +209,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         loadingUserData,
         refreshUserData,
         saveMealToFirestoreHistory,
+        saveMealToMyMeals,
+        getMyMeals,
         fetchUserHistory,
       }}
     >

@@ -14,6 +14,7 @@ import {
   Button,
   ConfirmModal,
   CancelModal,
+  Checkbox,
 } from "../components";
 import { useTheme } from "../theme/useTheme";
 import { useMealContext } from "@/context/MealContext";
@@ -26,14 +27,23 @@ const ResultScreen = () => {
   const styles = getStyles(theme);
 
   const { meal, clearMeal } = useMealContext();
-  const { userData, refreshUserData, saveMealToFirestoreHistory } =
-    useUserContext();
+  const {
+    userData,
+    refreshUserData,
+    saveMealToFirestoreHistory,
+    saveMealToMyMeals,
+  } = useUserContext();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [saveToMyMeals, setSaveToMyMeals] = useState(false);
   const totalNutrients = calculateTotalNutrients(meal);
 
   const handleDetectMoreIngredients = () => {
     navigation.navigate("MealAddMethod");
+  };
+
+  const handleCheckbox = () => {
+    setSaveToMyMeals(!saveToMyMeals);
   };
 
   const handleSave = async (mealName: string) => {
@@ -53,6 +63,7 @@ const ResultScreen = () => {
 
     try {
       await saveMealToFirestoreHistory(newMeal);
+      if (saveToMyMeals) saveMealToMyMeals(newMeal);
       await refreshUserData();
       clearMeal();
       navigation.navigate("Home");
@@ -86,6 +97,11 @@ const ResultScreen = () => {
           onPress={handleDetectMoreIngredients}
         />
         <NutritionChart nutrition={totalNutrients} />
+        <Checkbox
+          checked={saveToMyMeals}
+          onCheckedChange={handleCheckbox}
+          label="Add to MyMeals"
+        />
         <View
           style={{
             flexDirection: "row",
