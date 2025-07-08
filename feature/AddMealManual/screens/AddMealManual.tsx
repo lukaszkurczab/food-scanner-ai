@@ -7,28 +7,111 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import "react-native-get-random-values";
+import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import { Button, Checkbox, TextInput } from "@/components";
+import { useMealContext } from "@/context/MealContext";
+import { useNavigation } from "@react-navigation/native";
+
+type ParsedIngredientsType = {
+  name: string;
+  amount: number;
+  fromTable: boolean;
+  type: "food" | "drink";
+  protein: number;
+  carbs: number;
+  fat: number;
+  kcal: number;
+};
+
+type MealDataType = {
+  id: string;
+  image: string;
+  ingredients: ParsedIngredientsType[];
+};
 
 const AddMealManualScreen = () => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
+  const { addMeal } = useMealContext();
+  const navigation = useNavigation<any>();
 
-  const [name, setName] = useState("");
-  const [amount, setAmount] = useState("");
+  const [ingredients, setIngredients] = useState([
+    { id: uuidv4(), name: "", amount: "" },
+  ]);
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
+  const [kcal, setKcal] = useState("");
   const [saveToHistory, setSaveToHistory] = useState(true);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  const handleSave = () => {
-    // TODO: validation and saving
-    console.log({
-      name,
-      amount,
-      macros: { protein, carbs, fat },
-      saveToHistory,
-    });
+  const handleAddIngredient = () => {
+    setIngredients((prev) => [...prev, { id: uuidv4(), name: "", amount: "" }]);
+  };
+
+  const handleNameChange = (id: string, newValue: string) => {
+    const updated = ingredients.map((item) =>
+      item.id === id ? { ...item, name: newValue } : item
+    );
+    setIngredients(updated);
+  };
+
+  const handleAmountChange = (id: string, newValue: string) => {
+    const updated = ingredients.map((item) =>
+      item.id === id ? { ...item, amount: newValue } : item
+    );
+    setIngredients(updated);
+  };
+
+  const isFormValid = (): boolean => {
+    const hasEmptyIngredient = ingredients.some(
+      (item) => item.name.trim() === "" || item.amount.trim() === ""
+    );
+    const missingMacros =
+      protein.trim() === "" ||
+      carbs.trim() === "" ||
+      fat.trim() === "" ||
+      kcal.trim() === "";
+
+    return !hasEmptyIngredient && !missingMacros;
+  };
+
+  const handleConfirm = () => {
+    if (!isFormValid()) {
+      setValidationError("Please fill in all required fields.");
+      return;
+    }
+
+    setValidationError(null);
+
+    const totalProtein = parseFloat(protein) || 0;
+    const totalCarbs = parseFloat(carbs) || 0;
+    const totalFat = parseFloat(fat) || 0;
+    const totalKcal = parseFloat(kcal) || 0;
+
+    const parsedIngredients: ParsedIngredientsType[] = ingredients.map(
+      (item, index) => ({
+        name: item.name,
+        amount: parseInt(item.amount) || 0,
+        fromTable: false,
+        type: "food",
+        protein: index === 0 ? totalProtein : 0,
+        carbs: index === 0 ? totalCarbs : 0,
+        fat: index === 0 ? totalFat : 0,
+        kcal: index === 0 ? totalKcal : 0,
+      })
+    );
+
+    const mealData: MealDataType = {
+      id: uuidv4(),
+      image: "",
+      ingredients: parsedIngredients,
+    };
+
+    addMeal(mealData);
+    navigation.navigate("Result");
   };
 
   return (
@@ -41,25 +124,28 @@ const AddMealManualScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.header}>Add a Meal</Text>
+        {ingredients.map((i) => (
+          <View key={i.id}>
+            <Text style={styles.label}>Meal Ingredient</Text>
+            <TextInput
+              value={i.name}
+              onChange={(newText) => handleNameChange(i.id, newText)}
+              placeholder="e.g. Chicken with rice"
+            />
 
-        <Text style={styles.label}>Meal name</Text>
-        <TextInput
-          value={name}
-          onChange={setName}
-          placeholder="e.g. Chicken with rice"
-        />
+            <Text style={styles.label}>Amount (g/ml)</Text>
+            <TextInput
+              value={i.amount}
+              keyboardType="numeric"
+              onChange={(newText) => handleAmountChange(i.id, newText)}
+              placeholder="e.g. 300"
+            />
+          </View>
+        ))}
 
-        <Text style={styles.label}>Amount (g/ml)</Text>
-        <TextInput
-          value={amount}
-          onChange={setAmount}
-          keyboardType="numeric"
-          placeholder="e.g. 300"
-        />
+        <Button text="Add ingedient" onPress={handleAddIngredient} />
 
-        <Text style={styles.section}>
-          Macronutrients (for the above amount)
-        </Text>
+        <Text style={styles.section}>Macronutrients (for 100g/ml)</Text>
 
         <Text style={styles.label}>Protein (g)</Text>
         <TextInput
@@ -85,6 +171,14 @@ const AddMealManualScreen = () => {
           placeholder="e.g. 12"
         />
 
+        <Text style={styles.label}>Kcal (kcal)</Text>
+        <TextInput
+          value={kcal}
+          onChange={setKcal}
+          keyboardType="numeric"
+          placeholder="e.g. 120"
+        />
+
         <View style={styles.checkboxContainer}>
           <Checkbox
             checked={saveToHistory}
@@ -93,7 +187,15 @@ const AddMealManualScreen = () => {
           />
         </View>
 
-        <Button text="Confirm" onPress={handleSave} />
+        {validationError && (
+          <Text style={styles.errorText}>{validationError}</Text>
+        )}
+
+        <Button
+          text="Confirm"
+          onPress={handleConfirm}
+          disabled={!isFormValid()}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -145,5 +247,11 @@ const getStyles = (theme: any) =>
       marginLeft: 8,
       color: theme.text,
       fontSize: 14,
+    },
+    errorText: {
+      color: "red",
+      fontSize: 14,
+      marginTop: 10,
+      marginBottom: 10,
     },
   });
