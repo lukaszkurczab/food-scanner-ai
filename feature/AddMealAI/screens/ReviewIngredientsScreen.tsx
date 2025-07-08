@@ -28,10 +28,13 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import { useMealContext } from "@/context/MealContext";
 
-type ResultRouteProp = RouteProp<RootStackParamList, "ReviewIngredients">;
+type ReviewIngredientsRouteProp = RouteProp<
+  RootStackParamList,
+  "ReviewIngredients"
+>;
 
 const ReviewIngredientsScreen = () => {
-  const route = useRoute<ResultRouteProp>();
+  const route = useRoute<ReviewIngredientsRouteProp>();
   const { image, id } = route.params;
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
@@ -155,6 +158,15 @@ const ReviewIngredientsScreen = () => {
     }
 
     setIsLoadingNutrition(false);
+  };
+
+  const handleCancel = () => {
+    setShowCancelModal(false);
+    if (id) removeMeal(id);
+
+    if (meal.length - 1) {
+      navigation.navigate("Result");
+    } else navigation.navigate("Home");
   };
 
   const handleRemoveIngredient = (index: number) => {
@@ -299,11 +311,7 @@ const ReviewIngredientsScreen = () => {
         visible={showCancelModal}
         message="Are you sure you want to cancel? All data will be lost."
         onClose={() => setShowCancelModal(false)}
-        onConfirm={() => {
-          setShowCancelModal(false);
-          if (id) removeMeal(id);
-          navigation.navigate("Home");
-        }}
+        onConfirm={handleCancel}
       />
 
       <ErrorModal
