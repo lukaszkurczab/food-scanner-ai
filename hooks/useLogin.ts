@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { NavigationProp, useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "@/navigation/navigate";
-import { auth, firestore } from "@/FirebaseConfig";
+import { auth } from "@/FirebaseConfig";
 
 type LoginErrors = {
   password?: string;
@@ -10,7 +8,6 @@ type LoginErrors = {
 export const useLogin = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<LoginErrors>({});
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const login = async (email: string, password: string) => {
     setLoading(true);

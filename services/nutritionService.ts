@@ -1,24 +1,40 @@
-import { Ingredient, Nutrients } from "../types/index";
+type Ingredient = {
+  amount: number;
+  carbs: number;
+  fat: number;
+  kcal: number;
+  protein: number;
+  [key: string]: any;
+};
 
-export async function calculateTotalNutrients(ingredients: Ingredient[]) {
-  let total: Nutrients = { kcal: 0, protein: 0, fat: 0, carbs: 0 };
+type ImageWithIngredients = {
+  image: string;
+  ingredients: Ingredient[];
+};
 
-  for (const item of ingredients) {
-    let nutrients = {
-      kcal: item.kcal,
-      protein: item.protein,
-      fat: item.fat,
-      carbs: item.carbs,
-    };
+type NutrientSums = {
+  kcal: number;
+  carbs: number;
+  fat: number;
+  protein: number;
+};
 
-    if (nutrients) {
-      const multiplier = item.amount / 100;
-      total.kcal += Number((nutrients.kcal * multiplier).toFixed(0));
-      total.protein += Number((nutrients.protein * multiplier).toFixed(0));
-      total.fat += Number((nutrients.fat * multiplier).toFixed(0));
-      total.carbs += Number((nutrients.carbs * multiplier).toFixed(0));
-    }
-  }
+export const calculateTotalNutrients = (
+  data: ImageWithIngredients[]
+): NutrientSums => {
+  return data.reduce(
+    (totals, entry) => {
+      entry.ingredients.forEach((item) => {
+        const factor = item.amount !== 0 ? item.amount / 100 : 1; // Skorygowane skalowanie
 
-  return total;
-}
+        totals.kcal += item.kcal * factor;
+        totals.carbs += item.carbs * factor;
+        totals.fat += item.fat * factor;
+        totals.protein += item.protein * factor;
+      });
+
+      return totals;
+    },
+    { kcal: 0, carbs: 0, fat: 0, protein: 0 }
+  );
+};

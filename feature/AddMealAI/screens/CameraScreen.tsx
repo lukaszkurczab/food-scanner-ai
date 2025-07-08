@@ -1,16 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Image } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { PermissionRequestView, ConfirmButtons } from "@/components";
-import { RootStackParamList } from "@/navigation/navigate";
 import { CaptureButton, TorchToggle } from "../components";
-
-type CameraRouteProp = RouteProp<RootStackParamList, "Camera">;
+import "react-native-get-random-values";
+import { v4 as uuidv4 } from "uuid";
 
 const CameraScreen = () => {
-  const route = useRoute<CameraRouteProp>();
-  const { previousNutrition, previousIngredients } = route.params || {};
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const navigation = useNavigation<any>();
@@ -45,10 +42,9 @@ const CameraScreen = () => {
 
   const handleAccept = () => {
     if (photoUri)
-      navigation.navigate("Result", {
+      navigation.navigate("ReviewIngredients", {
         image: photoUri,
-        previousIngredients: previousIngredients ? previousIngredients : [],
-        previousNutrition: previousNutrition ? previousNutrition : [],
+        id: uuidv4(),
       });
   };
 

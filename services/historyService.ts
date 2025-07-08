@@ -1,6 +1,7 @@
+import { firestore } from "@/FirebaseConfig";
 import { Meal } from "../types/index";
 
-export function getTodayMeal(mealsData: Meal[]): Meal[] {
+export const getTodayMeal = (mealsData: Meal[]): Meal[] => {
   const today = new Date();
 
   return mealsData.filter((meal: Meal) => {
@@ -11,4 +12,4 @@ export function getTodayMeal(mealsData: Meal[]): Meal[] {
       mealDate.getFullYear() === today.getFullYear()
     );
   });
-}
+};
