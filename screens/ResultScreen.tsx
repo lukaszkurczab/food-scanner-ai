@@ -64,7 +64,6 @@ const ResultScreen = () => {
     try {
       await saveMealToFirestoreHistory(newMeal);
       if (saveToMyMeals) saveMealToMyMeals(newMeal);
-      await refreshUserData();
       clearMeal();
       navigation.navigate("Home");
     } catch (error) {

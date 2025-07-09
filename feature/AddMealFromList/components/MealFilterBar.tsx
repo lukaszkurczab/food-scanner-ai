@@ -1,33 +1,19 @@
-import {
-  View,
-  TextInput,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { View, TextInput, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useState } from "react";
 
-type FilterType = "all" | "food" | "drink";
-
 type Props = {
-  onFilterChange: (filters: { query: string; type: FilterType }) => void;
+  onFilterChange: (filters: { query: string }) => void;
 };
 
 export const MealFilterBar = ({ onFilterChange }: Props) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const [query, setQuery] = useState("");
-  const [type, setType] = useState<FilterType>("all");
-
-  const handleTypeChange = (newType: FilterType) => {
-    setType(newType);
-    onFilterChange({ query, type: newType });
-  };
 
   const handleQueryChange = (text: string) => {
     setQuery(text);
-    onFilterChange({ query: text, type });
+    onFilterChange({ query: text });
   };
 
   return (
@@ -39,22 +25,6 @@ export const MealFilterBar = ({ onFilterChange }: Props) => {
         value={query}
         onChangeText={handleQueryChange}
       />
-      <View style={styles.dropdown}>
-        {["all", "food", "drink"].map((option) => (
-          <TouchableOpacity
-            key={option}
-            style={[
-              styles.dropdownOption,
-              type === option && styles.activeOption,
-            ]}
-            onPress={() => handleTypeChange(option as FilterType)}
-          >
-            <Text style={styles.dropdownText}>
-              {option.charAt(0).toUpperCase() + option.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
     </View>
   );
 };
