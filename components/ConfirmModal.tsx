@@ -11,7 +11,7 @@ import { useState, useMemo } from "react";
 type ConfirmModalProps = {
   visible: boolean;
   onCancel: () => void;
-  onConfirm: (mealName: string) => void;
+  onConfirm: (mealName: string) => Promise<void>;
 };
 
 export const ConfirmModal = ({
@@ -23,18 +23,31 @@ export const ConfirmModal = ({
   const styles = useMemo(() => getStyles(theme, visible), [theme, visible]);
   const [mealName, setMealName] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (mealName.trim() === "") {
       setError("Meal name cannot be empty");
       return;
     }
+
     setError("");
-    onConfirm(mealName);
+    setIsSubmitting(true);
+    try {
+      await onConfirm(mealName);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <TouchableOpacity style={styles.overlay} onPress={onCancel}>
+    <TouchableOpacity
+      style={styles.overlay}
+      onPress={() => {
+        if (!isSubmitting) onCancel();
+      }}
+      activeOpacity={1}
+    >
       <View style={styles.modal}>
         <TextInput
           style={styles.textInput}
@@ -42,6 +55,7 @@ export const ConfirmModal = ({
           placeholder="Enter meal name"
           placeholderTextColor={theme.accent}
           value={mealName}
+          editable={!isSubmitting}
           onChangeText={(newName) => {
             setMealName(newName);
             if (newName.trim() !== "") setError("");
@@ -49,15 +63,28 @@ export const ConfirmModal = ({
         />
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         <View style={styles.buttonsContainer}>
-          <TouchableOpacity onPress={onCancel} style={styles.button}>
+          <TouchableOpacity
+            onPress={isSubmitting ? undefined : onCancel}
+            style={styles.button}
+            disabled={isSubmitting}
+          >
             <Text style={styles.underlineButtonText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={handleConfirm}
-            style={[styles.button, { backgroundColor: theme.secondary }]}
+            onPress={isSubmitting ? undefined : handleConfirm}
+            style={[
+              styles.button,
+              {
+                backgroundColor: isSubmitting
+                  ? theme.disabled || "#ccc"
+                  : theme.secondary,
+                opacity: isSubmitting ? 0.6 : 1,
+              },
+            ]}
+            disabled={isSubmitting}
           >
             <Text style={[styles.buttonText, { color: theme.background }]}>
-              Confirm
+              {isSubmitting ? "Saving..." : "Confirm"}
             </Text>
           </TouchableOpacity>
         </View>
