@@ -5,7 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../../../theme/useTheme";
 import { Button, Tile } from "../../../components";
 import { getTodayMeal } from "../../../services";
-import { Meal } from "../../../types";
+import { Meal, MealHistory } from "../../../types";
 import { RootStackParamList } from "../../../navigation/navigate";
 import { useUserContext } from "@/context/UserContext";
 import { TdeeProgress } from "../components/TdeeProgrss";
@@ -16,13 +16,13 @@ const HomeScreen = () => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const [todayMeal, setTodayMeal] = useState<Meal[]>([]);
+  const [todayMeal, setTodayMeal] = useState<MealHistory[]>([]);
   const { userData } = useUserContext();
 
   useEffect(() => {
-    const meal = getTodayMeal(userData?.mealHistory ?? []);
-    setTodayMeal(meal);
-  }, [userData?.mealHistory]);
+    const todaysMeal = getTodayMeal(userData?.history || []);
+    setTodayMeal(todaysMeal);
+  }, [userData?.history]);
 
   const totalCalories = useMemo(() => {
     return todayMeal.reduce((sum, meal) => sum + meal.nutrition.kcal, 0);
