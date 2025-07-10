@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,36 +8,53 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { askDietAI } from "../services";
 import { useTheme } from "../theme/useTheme";
 import { useUserContext } from "@/context/UserContext";
 
+type Message = {
+  from: "user" | "ai";
+  text: string;
+};
+
 const ChatScreen = () => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const { userData } = useUserContext();
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState([
-    { from: "ai", text: "Hello! How can I help you today?" },
+  const [messages, setMessages] = useState<Message[]>([
+    { from: "ai", text: "Cześć! Jak mogę Ci pomóc w kwestiach odżywiania?" },
   ]);
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
     if (!question.trim()) return;
 
-    const userMessage = { from: "user", text: question };
+    const userMessage: Message = { from: "user", text: question };
     setMessages((prev) => [...prev, userMessage]);
     setQuestion("");
     setLoading(true);
 
-    const history = userData?.mealHistory ?? [];
-    const reply = await askDietAI(question, history);
+    setMessages((prev) => [...prev, { from: "ai", text: "..." }]);
 
-    const aiMessage = { from: "ai", text: reply };
-    setMessages((prev) => [...prev, aiMessage]);
+    const history = userData?.history ?? [];
+    const reply = await askDietAI(question, history, [
+      ...messages,
+      userMessage,
+    ]);
+
+    setMessages((prev) => {
+      const updated = [...prev];
+      updated[updated.length - 1] = { from: "ai", text: reply };
+      return updated;
+    });
+
     setLoading(false);
+    scrollViewRef.current?.scrollToEnd({ animated: true });
   };
 
   return (
@@ -45,7 +62,13 @@ const ChatScreen = () => {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={{ flex: 1 }}
     >
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        ref={scrollViewRef}
+        onContentSizeChange={() =>
+          scrollViewRef.current?.scrollToEnd({ animated: true })
+        }
+      >
         {messages.map((msg, index) => (
           <View
             key={index}
@@ -62,17 +85,25 @@ const ChatScreen = () => {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Type your message..."
+          placeholder="Ask me..."
           value={question}
           onChangeText={setQuestion}
           multiline
+          blurOnSubmit={false}
+          onSubmitEditing={() => {
+            handleSend();
+          }}
         />
         <TouchableOpacity
           style={styles.sendButton}
           onPress={handleSend}
           disabled={loading}
         >
-          <Text style={styles.sendButtonText}>{loading ? "..." : "Send"}</Text>
+          {loading ? (
+            <ActivityIndicator color={theme.background} />
+          ) : (
+            <Text style={styles.sendButtonText}>Wyślij</Text>
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -127,6 +158,8 @@ const getStyles = (theme: any) =>
       paddingHorizontal: 15,
       paddingVertical: 10,
       borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
     },
     sendButtonText: {
       color: theme.background,
