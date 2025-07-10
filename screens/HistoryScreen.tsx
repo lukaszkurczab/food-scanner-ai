@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { Meal } from "../types";
+import { Meal, MealHistory } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 import { format, isToday } from "date-fns";
 import { useTheme } from "../theme/useTheme";
@@ -23,7 +23,7 @@ type HistoryScreenNavigationProp = StackNavigationProp<
 type SectionData = {
   title: string;
   totalKcal: number;
-  data: Meal[];
+  data: MealHistory[];
 };
 
 const HistoryScreen = ({
@@ -36,17 +36,17 @@ const HistoryScreen = ({
   const { userData } = useUserContext();
 
   const [sections, setSections] = useState<SectionData[]>([]);
-  const [groupedMeals, setGroupedMeals] = useState<{ [key: string]: Meal[] }>(
-    {}
-  );
+  const [groupedMeals, setGroupedMeals] = useState<{
+    [key: string]: MealHistory[];
+  }>({});
   const [expandedSections, setExpandedSections] = useState<{
     [key: string]: boolean;
   }>({});
 
   useEffect(() => {
     const load = async () => {
-      const data: Meal[] = userData?.mealHistory ?? [];
-      const newGrouped: { [key: string]: Meal[] } = {};
+      const data: MealHistory[] = userData?.history ?? [];
+      const newGrouped: { [key: string]: MealHistory[] } = {};
 
       data.forEach((meal) => {
         const dateKey = isToday(new Date(meal.date))
