@@ -1,10 +1,9 @@
-import { firestore } from "@/FirebaseConfig";
-import { Meal } from "../types/index";
+import { MealHistory } from "../types/index";
 
-export const getTodayMeal = (mealsData: Meal[]): Meal[] => {
+export const getTodayMeal = (userHistory: MealHistory[]) => {
   const today = new Date();
 
-  return mealsData.filter((meal: Meal) => {
+  return userHistory.filter((meal) => {
     const mealDate = new Date(meal.date);
     return (
       mealDate.getDate() === today.getDate() &&
