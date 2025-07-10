@@ -7,12 +7,15 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
-import { Graph } from "../components";
+import { Button, Graph } from "../components";
 import { useTheme } from "../theme/useTheme";
 import { useUserContext } from "@/context/UserContext";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "@/navigation/navigate";
 
 const SummaryScreen = () => {
   const { theme } = useTheme();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const styles = getStyles(theme);
   const { userData } = useUserContext();
 
@@ -38,10 +41,9 @@ const SummaryScreen = () => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const all = userData?.mealHistory ?? [];
+        const all = userData?.history ?? [];
         let days = timeRange;
 
-        const endDate = new Date();
         const dates: Date[] = [];
 
         for (let i = days - 1; i >= 0; i--) {
@@ -212,6 +214,11 @@ const SummaryScreen = () => {
           <View style={styles.chart}>
             <Graph labels={labels} data={graphData} yUnit={graphUnit} />
           </View>
+
+          <Button
+            text="Show history"
+            onPress={() => navigation.navigate("History")}
+          />
         </>
       ) : (
         <Text style={styles.noMealsText}>You have no meals history</Text>
