@@ -26,9 +26,7 @@ const ChatScreen = () => {
   const scrollViewRef = useRef<ScrollView>(null);
 
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    { from: "ai", text: "Cześć! Jak mogę Ci pomóc w kwestiach odżywiania?" },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
