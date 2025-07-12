@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
-import { useTheme } from "../../../theme/useTheme";
+import { useTheme } from "@theme/index";
 import { Button, Tile } from "../../../components";
 import { getTodayMeal } from "../../../services";
 import { Meal, MealHistory } from "../../../types";

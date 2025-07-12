@@ -1,26 +1,27 @@
+import React from "react";
+import { View, ActivityIndicator } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { RootStackParamList } from "./navigate";
-import { useAuthContext } from "@/context/AuthContext";
+import { useAuthContext } from "@contexts/AuthContext";
 
-import HomeScreen from "../feature/Home/screens/HomeScreen";
-import CameraScreen from "@/feature/AddMealAI/screens/CameraScreen";
-import ResultScreen from "../screens/ResultScreen";
-import HistoryScreen from "../screens/HistoryScreen";
-import MealDetailScreen from "../screens/MealDetailScreen";
-import ChatScreen from "../screens/ChatScreen";
-import SummaryScreen from "../screens/SummaryScreen";
-import LoginScreen from "@/screens/LoginScreen";
-import RegisterScreen from "@/screens/RegisterScreen";
-import MealAddMethodScreen from "@//screens/MealAddMethodScreen";
-import AddMealFromList from "@/feature/AddMealFromList/screens/AddMealFromList";
-import AddMealManual from "@/feature/AddMealManual/screens/AddMealManual";
-import ReviewIngredientsScreen from "@/feature/AddMealAI/screens/ReviewIngredientsScreen";
-import SavedMealsScreen from "@/feature/AddMealFromList/screens/SavedMealsScreen";
+import { Layout } from "@components/common/Layout";
 
-import { Layout } from "../components";
-import { View, ActivityIndicator } from "react-native";
-import NutritionSurveyScreen from "@/feature/NutritionSurvey/screens/NutritionSurveyScreen";
-import ProfileScreen from "@/feature/UserProfileProfile/screens/ProfileScreen";
+import HomeScreen from "@feature/Home/screens/HomeScreen";
+import CameraScreen from "@feature/AddMealAI/screens/CameraScreen";
+import ResultScreen from "@feature/AddMealAI/screens/ResultScreen";
+import HistoryScreen from "@feature/History/screens/HistoryScreen";
+import MealDetailScreen from "@feature/Meals/screens/MealDetailScreen";
+import ChatScreen from "@feature/AI/screens/ChatScreen";
+import SummaryScreen from "@feature/Statistics/screens/SummaryScreen";
+import LoginScreen from "@feature/Auth/screens/LoginScreen";
+import RegisterScreen from "@feature/Auth/screens/RegisterScreen";
+import MealAddMethodScreen from "@feature/Meals/screens/MealAddMethodScreen";
+import AddMealFromList from "@feature/AddMealFromList/screens/AddMealFromList";
+import SavedMealsScreen from "@feature/AddMealFromList/screens/SavedMealsScreen";
+import AddMealManual from "@feature/AddMealManual/screens/AddMealManual";
+import ReviewIngredientsScreen from "@feature/AddMealAI/screens/ReviewIngredientsScreen";
+import NutritionSurveyScreen from "@feature/NutritionSurvey/screens/NutritionSurveyScreen";
+import ProfileScreen from "@feature/UserProfile/screens/ProfileScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
