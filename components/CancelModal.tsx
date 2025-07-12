@@ -15,7 +15,7 @@ export const CancelModal = ({
   onClose,
   onConfirm,
 }: CancelModalProps) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = useMemo(() => getStyles(theme, visible), [theme, visible]);
 
   return (

@@ -7,7 +7,7 @@ type Props = {
 };
 
 export const MealFilterBar = ({ onFilterChange }: Props) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const [query, setQuery] = useState("");
 

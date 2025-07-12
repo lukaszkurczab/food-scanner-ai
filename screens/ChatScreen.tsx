@@ -20,7 +20,7 @@ type Message = {
 };
 
 const ChatScreen = () => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const { userData } = useUserContext();
   const scrollViewRef = useRef<ScrollView>(null);

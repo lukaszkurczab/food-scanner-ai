@@ -11,7 +11,7 @@ export const Tile = ({
   style?: object | undefined;
   onPress?: () => void | undefined;
 }) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
 
   return (
     <TouchableOpacity

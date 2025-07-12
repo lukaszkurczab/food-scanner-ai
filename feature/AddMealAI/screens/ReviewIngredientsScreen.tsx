@@ -37,7 +37,7 @@ const ReviewIngredientsScreen = () => {
   const route = useRoute<ReviewIngredientsRouteProp>();
   const { image, id } = route.params;
   const navigation = useNavigation<any>();
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const { meal, addMeal, removeMeal } = useMealContext();
 

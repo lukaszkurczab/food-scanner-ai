@@ -7,7 +7,7 @@ type Props = {
 };
 
 export const PermissionRequestView = ({ message, onPress }: Props) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
 
   return (
     <View

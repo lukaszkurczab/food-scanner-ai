@@ -7,7 +7,7 @@ type ProgressBarProps = {
 };
 
 export const ProgressBar = ({ progress, style }: ProgressBarProps) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
 
   const clampedProgress = Math.max(0, Math.min(progress, 1));

@@ -14,7 +14,7 @@ type LoginScreenNavigationProp = StackNavigationProp<
 >;
 
 const LoginScreen = () => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const navigation = useNavigation<LoginScreenNavigationProp>();
 

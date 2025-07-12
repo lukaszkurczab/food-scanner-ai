@@ -1,31 +1,18 @@
-export const lightTheme = {
-  mode: "light",
-  background: "#FFFFFF",
-  accent: "#ACACAC",
-  text: "#1A1A1A",
-  primary: "#72e055",
-  primaryLight: "#c9ebc0",
-  secondary: "#FF9800",
-  card: "#E3E8F2",
-  error: "#FF5252",
-  carbs: "#2196F3",
-  fat: "#FFC107",
-  protein: "#4CAF50",
-  disabled: "#BDBDBD",
+export const baseColors = {
+  green: "#4CAF50",
+  blue: "#64B5F6",
+  yellow: "#FFD54F",
+  lightBlue: "#81D4FA",
+  white: "#FFFFFF",
+  black: "#121212",
+  grayLight: "#F8F8F8",
+  grayDark: "#1E1E1E",
+  textLight: "#212121",
+  textDark: "#FFFFFF",
+  textSecondaryLight: "#616161",
+  textSecondaryDark: "#B0BEC5",
+  borderLight: "#E0E0E0",
+  borderDark: "#263238",
+  carbsLight: "#81C784",
+  carbsDark: "#66BB6A",
 };
-
-export const darkTheme = {
-  mode: "dark",
-  accent: "#F5F5F5",
-  background: "#121212",
-  text: "#FFFFFF",
-  primary: "#81C784",
-  primaryLight: "#c9ebc0",
-  secondary: "#FFB74D",
-  card: "#1E1E1E",
-  carbs: "#2196F3",
-  fat: "#FFC107",
-  protein: "#4CAF50",
-};
-
-export type AppTheme = typeof lightTheme;

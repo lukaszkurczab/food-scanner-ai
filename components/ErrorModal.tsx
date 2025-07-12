@@ -9,7 +9,7 @@ type ErrorModalProps = {
 };
 
 export const ErrorModal = ({ visible, message, onClose }: ErrorModalProps) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = useMemo(() => getStyles(theme, visible), [theme, visible]);
 
   return (

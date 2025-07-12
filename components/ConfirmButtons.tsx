@@ -8,7 +8,7 @@ type Props = {
 };
 
 export const ConfirmButtons = ({ onAccept, onReject }: Props) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
 
   return (
     <View

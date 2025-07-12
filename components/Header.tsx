@@ -3,7 +3,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Text, TouchableOpacity } from "react-native";
 
 export const Header = () => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const navigation = useNavigation<any>();
 
   return (

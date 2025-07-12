@@ -9,7 +9,7 @@ type NavigationItemProps = {
 };
 
 const NavigationItem = ({ target, icon }: NavigationItemProps) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const navigation = useNavigation<any>();
 
   return (
@@ -31,7 +31,7 @@ const NavigationItem = ({ target, icon }: NavigationItemProps) => {
 };
 
 export default function Navigation() {
-  const { theme } = useTheme();
+  const theme = useTheme();
 
   return (
     <View

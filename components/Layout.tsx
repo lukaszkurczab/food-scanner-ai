@@ -8,7 +8,7 @@ import { useRoute } from "@react-navigation/native";
 const hiddenRoutes = ["Login", "Register", "AuthLoading"];
 
 export const Layout = ({ children }: { children: JSX.Element }) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const route = useRoute();
 
   const isVisible = !hiddenRoutes.includes(route.name);

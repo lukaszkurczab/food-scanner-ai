@@ -19,7 +19,7 @@ export const ConfirmModal = ({
   onCancel,
   onConfirm,
 }: ConfirmModalProps) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = useMemo(() => getStyles(theme, visible), [theme, visible]);
   const [mealName, setMealName] = useState("");
   const [error, setError] = useState("");
