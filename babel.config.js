@@ -6,9 +6,18 @@ module.exports = function (api) {
       [
         "module-resolver",
         {
-          root: ["./"],
+          extensions: [".js", ".jsx", ".ts", ".tsx"],
           alias: {
-            "@": "./",
+            "@assets": "./assets",
+            "@components": "./components",
+            "@contexts": "./context",
+            "@feature": "./feature",
+            "@hooks": "./hooks",
+            "@navigation": "./navigation",
+            "@services": "./services",
+            "@theme": "./theme",
+            "@types": "./types",
+            "@utils": "./utils",
           },
         },
       ],

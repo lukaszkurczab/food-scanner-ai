@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Keyboard } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Button, TextInput } from "../../../components";
-import { StepView } from "../../../components/StepView";
+import { StepView } from "@components/index";
 import { RootStackParamList } from "../../../navigation/navigate";
 import { useCalorieCalculator } from "../hooks/useCalorieCalculator";
 import { auth, firestore } from "@/FirebaseConfig";
