@@ -7,7 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 
 const SavedMealsScreen = () => {
   const { userData } = useUserContext();
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const navigation = useNavigation<any>();
 

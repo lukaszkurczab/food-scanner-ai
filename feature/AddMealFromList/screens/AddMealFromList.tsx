@@ -23,7 +23,7 @@ type Navigation = StackNavigationProp<RootStackParamList, "AddMealFromList">;
 const AddMealFromList = () => {
   const { userData } = useUserContext();
   const { addMeal } = useMealContext();
-  const { theme } = useTheme();
+  const theme = useTheme();
   const navigation = useNavigation<Navigation>();
 
   const styles = getStyles(theme);

@@ -14,7 +14,7 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "@/navigation/navigate";
 
 const SummaryScreen = () => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const styles = getStyles(theme);
   const { userData } = useUserContext();

@@ -23,7 +23,7 @@ import { calculateTotalNutrients } from "@/services";
 
 const ResultScreen = () => {
   const navigation = useNavigation<any>();
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
 
   const { meal, clearMeal } = useMealContext();

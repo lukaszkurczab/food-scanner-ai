@@ -1,10 +1,9 @@
 import { useTheme } from "../theme/useTheme";
 import { Dimensions, View, Text } from "react-native";
 import { CartesianChart, Area } from "victory-native";
-import { LinearGradient, useFont, vec } from "@shopify/react-native-skia";
+import { LinearGradient, vec } from "@shopify/react-native-skia";
 
 const screenWidth = Dimensions.get("window").width;
-const inter = require("../assets/fonts/inter.ttf");
 
 type GraphProps = {
   labels: string[];
@@ -13,8 +12,7 @@ type GraphProps = {
 };
 
 export const Graph = ({ labels, data, yUnit = "" }: GraphProps) => {
-  const { theme } = useTheme();
-  const font = useFont(inter);
+  const theme = useTheme();
 
   const chartData = data.map((value, index) => ({
     x: labels[index],
@@ -23,12 +21,15 @@ export const Graph = ({ labels, data, yUnit = "" }: GraphProps) => {
 
   return (
     <View style={{ width: screenWidth - 64, height: 300 }}>
-      <Text>[{yUnit}]</Text>
+      <Text style={{ color: theme.text, marginBottom: 8 }}>[{yUnit}]</Text>
       <CartesianChart
         data={chartData}
         xKey="x"
         yKeys={["y"]}
-        axisOptions={{ font }}
+        axisOptions={{
+          labelColor: theme.text,
+          lineColor: theme.border,
+        }}
       >
         {({ points, chartBounds }) => (
           <Area
@@ -37,9 +38,9 @@ export const Graph = ({ labels, data, yUnit = "" }: GraphProps) => {
             connectMissingData={true}
           >
             <LinearGradient
-              start={vec(chartBounds.bottom, 200)}
-              end={vec(chartBounds.bottom, chartBounds.bottom)}
-              colors={[theme.secondary, "#FFB74D"]}
+              start={vec(chartBounds.left, chartBounds.top)}
+              end={vec(chartBounds.left, chartBounds.bottom)}
+              colors={[theme.accent, "#FFB74D"]}
             />
           </Area>
         )}

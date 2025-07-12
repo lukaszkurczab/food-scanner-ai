@@ -31,7 +31,7 @@ const HistoryScreen = ({
 }: {
   navigation: HistoryScreenNavigationProp;
 }) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const { userData } = useUserContext();
 

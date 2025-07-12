@@ -13,7 +13,7 @@ import { TdeeProgress } from "../components/TdeeProgrss";
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
 const HomeScreen = () => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [todayMeal, setTodayMeal] = useState<MealHistory[]>([]);

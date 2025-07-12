@@ -10,7 +10,7 @@ type TdeeProgressProps = {
 };
 
 export const TdeeProgress = ({ totalCalories, tdee }: TdeeProgressProps) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 

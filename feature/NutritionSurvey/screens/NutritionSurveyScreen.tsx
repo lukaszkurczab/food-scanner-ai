@@ -18,7 +18,7 @@ type NutritionSurveyNavigationProp = StackNavigationProp<
 >;
 
 const NutritionSurveyScreen = () => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const navigation = useNavigation<NutritionSurveyNavigationProp>();
   const [step, setStep] = useState(0);

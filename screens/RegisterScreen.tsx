@@ -14,7 +14,7 @@ type RegisterScreenNavigationProp = StackNavigationProp<
 >;
 
 const RegisterScreen = () => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const navigation = useNavigation<RegisterScreenNavigationProp>();
 

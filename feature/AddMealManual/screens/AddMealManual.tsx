@@ -32,7 +32,7 @@ type MealDataType = {
 };
 
 const AddMealManualScreen = () => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const { addMeal } = useMealContext();
   const navigation = useNavigation<any>();

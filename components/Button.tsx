@@ -25,7 +25,7 @@ export const Button = ({
   disabled?: boolean;
   variant?: Variant;
 }) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
 
   const buttonStyle =
@@ -67,15 +67,15 @@ const getStyles = (theme: any) =>
       padding: 12,
     },
     buttonPrimary: {
-      backgroundColor: theme.secondary,
+      backgroundColor: theme.accent,
     },
     buttonSecondary: {
       backgroundColor: theme.background,
       borderWidth: 1,
-      borderColor: theme.secondary,
+      borderColor: theme.accent,
     },
     buttonDisabled: {
-      backgroundColor: theme.disabled,
+      backgroundColor: theme.border,
       opacity: 0.6,
     },
     buttonTextBase: {
@@ -83,7 +83,7 @@ const getStyles = (theme: any) =>
       fontWeight: "500",
     },
     textPrimary: {
-      color: theme.onPrimary ?? "#fff",
+      color: "#fff",
     },
     textSecondary: {
       color: theme.text,

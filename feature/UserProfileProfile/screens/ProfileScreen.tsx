@@ -13,7 +13,7 @@ type ProfileScreenNavigationProp = StackNavigationProp<
 >;
 
 const ProfileScreen = () => {
-  const { theme } = useTheme();
+  const { toggleTheme, ...theme } = useTheme();
   const styles = getStyles(theme);
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { userData } = useUserContext();
@@ -92,6 +92,13 @@ const ProfileScreen = () => {
       <Text style={styles.header}>{userData?.username}</Text>
 
       {renderBodyAndGoals()}
+
+      <Button
+        text="Toggle Theme"
+        onPress={toggleTheme}
+        style={styles.logoutButton}
+      />
+
       <Button
         text="Log out"
         onPress={() => auth().signOut()}

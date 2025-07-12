@@ -27,7 +27,7 @@ export const TextInput = ({
   placeholderTextColor,
   style,
 }: CustomTextInputProps) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const [inputText, setInputText] = useState(value);
 

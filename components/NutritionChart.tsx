@@ -8,7 +8,7 @@ type NutritionChartProps = {
 };
 
 export const NutritionChart = ({ nutrition }: NutritionChartProps) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
 
   const getMacroChartData = (data: Nutrients) => [

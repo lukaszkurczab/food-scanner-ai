@@ -2,7 +2,7 @@ import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { useTheme } from "../theme/useTheme";
 
 export const Spinner = ({ size = "large" }: { size?: "small" | "large" }) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
 
   return (

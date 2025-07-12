@@ -12,7 +12,7 @@ type MealInputMethodNavigationProp = StackNavigationProp<
 >;
 
 const MealInputMethodScreen = () => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
   const navigation = useNavigation<MealInputMethodNavigationProp>();
 
