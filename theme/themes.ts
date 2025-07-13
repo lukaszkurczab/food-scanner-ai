@@ -7,12 +7,17 @@ export const lightTheme = {
   text: baseColors.textLight,
   textSecondary: baseColors.textSecondaryLight,
   accent: baseColors.green,
-  accentSecondary: baseColors.lightBlue,
+  accentSecondary: baseColors.accentSecondaryLight,
   border: baseColors.borderLight,
   macro: {
     protein: baseColors.blue,
     fat: baseColors.yellow,
     carbs: baseColors.carbsLight,
+  },
+  error: {
+    background: baseColors.errorBackgroundLight,
+    border: baseColors.errorBorderLight,
+    text: baseColors.errorTextLight,
   },
 };
 
@@ -23,11 +28,16 @@ export const darkTheme = {
   text: baseColors.textDark,
   textSecondary: baseColors.textSecondaryDark,
   accent: baseColors.green,
-  accentSecondary: "#03A9F4",
+  accentSecondary: baseColors.accentSecondaryDark,
   border: baseColors.borderDark,
   macro: {
-    protein: "#2196F3",
+    protein: baseColors.proteinDark,
     fat: baseColors.yellow,
     carbs: baseColors.carbsDark,
+  },
+  error: {
+    background: baseColors.errorBackgroundDark,
+    border: baseColors.errorBorderDark,
+    text: baseColors.errorTextDark,
   },
 };
