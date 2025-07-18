@@ -2,6 +2,7 @@ export const baseColors = {
   green: "#4CAF50",
   blue: "#64B5F6",
   yellow: "#FFD54F",
+  fatDark: "#C6A025",
   accentSecondaryLight: "#81D4FA",
   accentSecondaryDark: "#03A9F4",
   white: "#FFFFFF",
