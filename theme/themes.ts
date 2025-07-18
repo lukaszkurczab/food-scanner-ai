@@ -9,6 +9,11 @@ export const lightTheme = {
   accent: baseColors.green,
   accentSecondary: baseColors.accentSecondaryLight,
   border: baseColors.borderLight,
+  disabled: {
+    background: baseColors.disabledBackgroundLight,
+    text: baseColors.disabledTextLight,
+    border: baseColors.disabledBorderLight,
+  },
   macro: {
     protein: baseColors.blue,
     fat: baseColors.yellow,
@@ -19,6 +24,18 @@ export const lightTheme = {
     border: baseColors.errorBorderLight,
     text: baseColors.errorTextLight,
   },
+  success: {
+    background: baseColors.successBackgroundLight,
+    text: baseColors.successTextLight,
+  },
+  warning: {
+    background: baseColors.warningBackgroundLight,
+    text: baseColors.warningTextLight,
+  },
+  link: baseColors.linkLight,
+  onAccent: baseColors.onAccentLight,
+  overlay: baseColors.overlayLight,
+  shadow: baseColors.shadowLight,
 };
 
 export const darkTheme = {
@@ -30,6 +47,11 @@ export const darkTheme = {
   accent: baseColors.green,
   accentSecondary: baseColors.accentSecondaryDark,
   border: baseColors.borderDark,
+  disabled: {
+    background: baseColors.disabledBackgroundDark,
+    text: baseColors.disabledTextDark,
+    border: baseColors.disabledBorderDark,
+  },
   macro: {
     protein: baseColors.proteinDark,
     fat: baseColors.fatDark,
@@ -40,4 +62,16 @@ export const darkTheme = {
     border: baseColors.errorBorderDark,
     text: baseColors.errorTextDark,
   },
+  success: {
+    background: baseColors.successBackgroundDark,
+    text: baseColors.successTextDark,
+  },
+  warning: {
+    background: baseColors.warningBackgroundDark,
+    text: baseColors.warningTextDark,
+  },
+  link: baseColors.linkDark,
+  onAccent: baseColors.onAccentDark,
+  overlay: baseColors.overlayDark,
+  shadow: baseColors.shadowDark,
 };
