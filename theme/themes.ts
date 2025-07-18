@@ -32,7 +32,7 @@ export const darkTheme = {
   border: baseColors.borderDark,
   macro: {
     protein: baseColors.proteinDark,
-    fat: baseColors.yellow,
+    fat: baseColors.fatDark,
     carbs: baseColors.carbsDark,
   },
   error: {

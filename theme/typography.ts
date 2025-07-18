@@ -1,7 +1,8 @@
 export const typography = {
   fontFamily: {
-    regular: "Inter",
-    bold: "Roboto-Bold",
+    regular: "Inter-Regular",
+    medium: "Inter-Medium",
+    bold: "Inter-Bold",
   },
 
   size: {
