@@ -3,10 +3,9 @@ import {
   Pressable,
   Text,
   ActivityIndicator,
-  StyleSheet,
-  View,
   StyleProp,
   ViewStyle,
+  StyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -30,10 +29,12 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   const borderColor = disabled ? theme.disabled.background : theme.accent;
   const textColor = disabled ? theme.disabled.text : theme.accent;
   const backgroundColor = "transparent";
+  const isDisabled = disabled || loading;
 
   return (
     <Pressable
       style={({ pressed }) => [
+        styles.button,
         {
           backgroundColor,
           borderColor,
@@ -41,30 +42,27 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
           borderRadius: theme.rounded.md,
           paddingVertical: theme.spacing.md,
           paddingHorizontal: theme.spacing.lg,
-          alignSelf: "stretch",
-          width: "100%",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: pressed && !disabled ? 0.8 : disabled ? 0.6 : 1,
+          opacity: pressed && !isDisabled ? 0.8 : isDisabled ? 0.6 : 1,
         },
         style,
       ]}
       onPress={onPress}
-      disabled={disabled || loading}
-      android_ripple={!disabled ? { color: theme.overlay } : undefined}
+      disabled={isDisabled}
+      android_ripple={!isDisabled ? { color: theme.overlay } : undefined}
       accessibilityRole="button"
     >
       {loading ? (
         <ActivityIndicator size="small" color={textColor} />
       ) : (
         <Text
-          style={{
-            color: textColor,
-            fontSize: theme.typography.size.base,
-            fontWeight: "bold",
-            fontFamily: theme.typography.fontFamily.bold,
-            letterSpacing: 0.2,
-          }}
+          style={[
+            styles.label,
+            {
+              color: textColor,
+              fontSize: theme.typography.size.base,
+              fontFamily: theme.typography.fontFamily.bold,
+            },
+          ]}
         >
           {label}
         </Text>
@@ -72,3 +70,17 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
     </Pressable>
   );
 };
+
+const styles = StyleSheet.create({
+  button: {
+    alignSelf: "stretch",
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  label: {
+    fontWeight: "bold",
+    letterSpacing: 0.2,
+    textAlign: "center",
+  },
+});
