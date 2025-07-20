@@ -1,18 +1,19 @@
-import "./FirebaseConfig";
+import "./src/i18n";
+import "./src/FirebaseConfig";
 import { useEffect } from "react";
-import { ThemeProvider } from "./theme/ThemeProvider";
-import AppNavigator from "./navigation/AppNavigator";
+import { ThemeProvider } from "./src/theme/ThemeProvider";
+import AppNavigator from "./src/navigation/AppNavigator";
 import {
   NavigationContainer,
   DefaultTheme as NavigationDefaultTheme,
 } from "@react-navigation/native";
-import { navigationRef } from "./navigation/navigate";
-import { AuthProvider } from "./context/AuthContext";
-import { UserProvider } from "./context/UserContext";
-import { MealProvider } from "./context/MealContext";
+import { navigationRef } from "./src/navigation/navigate";
+import { AuthProvider } from "./src/context/AuthContext";
+import { UserProvider } from "./src/context/UserContext";
+import { MealProvider } from "./src/context/MealContext";
 import { useFonts } from "expo-font";
 import { View, ActivityIndicator } from "react-native";
-import { useTheme } from "./theme";
+import { useTheme } from "./src/theme";
 
 export default function App() {
   const theme = useTheme();
