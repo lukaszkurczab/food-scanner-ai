@@ -1,5 +1,12 @@
-import React, { useRef, useEffect } from "react";
-import { View, Text, StyleSheet, Animated, ViewStyle } from "react-native";
+import React, { useRef, useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  ViewStyle,
+  LayoutChangeEvent,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
 type ProgressBarProps = {
@@ -22,7 +29,9 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   style,
 }) => {
   const theme = useTheme();
-  const progressAnim = useRef(new Animated.Value(progress)).current;
+  const [trackWidth, setTrackWidth] = useState(0);
+
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(progressAnim, {
@@ -35,6 +44,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   const percent = Math.round(progress * 100);
   const fillColor = color || theme.accent;
   const trackColor = backgroundColor || theme.border;
+
+  const minWidth = progress > 0 ? 5 : 0;
 
   return (
     <View style={style}>
@@ -60,25 +71,30 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
             height,
           },
         ]}
+        onLayout={(e: LayoutChangeEvent) => {
+          setTrackWidth(e.nativeEvent.layout.width);
+        }}
         accessible
         accessibilityRole="progressbar"
         accessibilityLabel={`Progress: ${percent}%`}
       >
-        <Animated.View
-          style={[
-            styles.fill,
-            {
-              backgroundColor: fillColor,
-              borderRadius: theme.rounded.lg,
-              height,
-              width: progressAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ["5px", "100%"],
-                extrapolate: "clamp",
-              }),
-            },
-          ]}
-        />
+        {trackWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.fill,
+              {
+                backgroundColor: fillColor,
+                borderRadius: theme.rounded.lg,
+                height,
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [minWidth, trackWidth],
+                  extrapolate: "clamp",
+                }),
+              },
+            ]}
+          />
+        )}
       </View>
     </View>
   );
