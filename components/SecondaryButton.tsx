@@ -3,14 +3,12 @@ import {
   Pressable,
   Text,
   ActivityIndicator,
-  StyleSheet,
-  View,
   StyleProp,
   ViewStyle,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
-type PrimaryButtonProps = {
+type SecondaryButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
@@ -18,7 +16,7 @@ type PrimaryButtonProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
+export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   label,
   onPress,
   disabled = false,
@@ -27,19 +25,17 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 }) => {
   const theme = useTheme();
 
-  const backgroundColor = theme.accent;
-  const textColor = theme.onAccent;
-  const disabledBg = theme.disabled.background;
-  const disabledText = theme.disabled.text;
-
-  const isDisabled = disabled || loading;
+  const borderColor = disabled ? theme.disabled.background : theme.accent;
+  const textColor = disabled ? theme.disabled.text : theme.accent;
+  const backgroundColor = "transparent";
 
   return (
     <Pressable
       style={({ pressed }) => [
         {
-          backgroundColor: isDisabled ? disabledBg : backgroundColor,
-          opacity: pressed && !isDisabled ? 0.8 : isDisabled ? 0.6 : 1,
+          backgroundColor,
+          borderColor,
+          borderWidth: 1.5,
           borderRadius: theme.rounded.md,
           paddingVertical: theme.spacing.md,
           paddingHorizontal: theme.spacing.lg,
@@ -47,12 +43,13 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
           width: "100%",
           alignItems: "center",
           justifyContent: "center",
+          opacity: pressed && !disabled ? 0.8 : disabled ? 0.6 : 1,
         },
         style,
       ]}
       onPress={onPress}
-      disabled={isDisabled}
-      android_ripple={!isDisabled ? { color: theme.overlay } : undefined}
+      disabled={disabled || loading}
+      android_ripple={!disabled ? { color: theme.overlay } : undefined}
       accessibilityRole="button"
     >
       {loading ? (
@@ -60,7 +57,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       ) : (
         <Text
           style={{
-            color: isDisabled ? disabledText : textColor,
+            color: textColor,
             fontSize: theme.typography.size.base,
             fontWeight: "bold",
             fontFamily: theme.typography.fontFamily.bold,

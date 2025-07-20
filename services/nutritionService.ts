@@ -25,7 +25,7 @@ export const calculateTotalNutrients = (
   return data.reduce(
     (totals, entry) => {
       entry.ingredients.forEach((item) => {
-        const factor = item.amount !== 0 ? item.amount / 100 : 1; // Skorygowane skalowanie
+        const factor = item.amount !== 0 ? item.amount / 100 : 1;
 
         totals.kcal += item.kcal * factor;
         totals.carbs += item.carbs * factor;
