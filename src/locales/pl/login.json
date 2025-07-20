@@ -1,0 +1,16 @@
+{
+  "email": "E-mail",
+  "password": "Hasło",
+  "login": "Zaloguj się",
+  "forgot_password": "Zapomniałeś hasła?",
+  "dont_have_account": "Nie masz konta?",
+  "sign_up": "Zarejestruj się",
+  "enter_email": "Wpisz swój e-mail",
+  "enter_password": "Wpisz swoje hasło",
+  "invalid_email": "Wprowadź poprawny adres e-mail",
+  "invalid_password": "Podaj prawidłowe hasło",
+  "invalid_email_or_password": "Nieprawidłowy e-mail lub hasło.",
+  "too_many_requests": "Zbyt wiele prób logowania, spróbuj później.",
+  "no_internet": "Brak połączenia z internetem",
+  "login_failed": "Logowanie nie powiodło się. Spróbuj ponownie."
+}

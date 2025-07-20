@@ -1,0 +1,16 @@
+{
+  "email": "Email",
+  "password": "Password",
+  "login": "Log in",
+  "forgot_password": "Forgot password?",
+  "dont_have_account": "Don't have an account?",
+  "sign_up": "Sign up",
+  "enter_email": "Enter your email",
+  "enter_password": "Enter your password",
+  "invalid_email": "Enter a valid email address",
+  "invalid_password": "Please enter a correct password",
+  "invalid_email_or_password": "Invalid email or password.",
+  "too_many_requests": "Too many requests, try later.",
+  "no_internet": "No internet connection",
+  "login_failed": "Login failed. Try again."
+}
