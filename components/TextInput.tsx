@@ -1,86 +1,248 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-  Pressable,
+  View,
+  TextInput as RNTextInput,
   Text,
-  ActivityIndicator,
-  StyleProp,
-  ViewStyle,
   StyleSheet,
+  ViewStyle,
+  TextStyle,
+  KeyboardTypeOptions,
+  TextInputProps,
+  Platform,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
-type SecondaryButtonProps = {
-  label: string;
-  onPress: () => void;
+type Props = {
+  label?: string;
+  placeholder?: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  keyboardType?: KeyboardTypeOptions;
+  secureTextEntry?: boolean;
+  icon?: React.ReactElement<{ size?: number; color?: string }>;
+  onBlur?: () => void;
+  onFocus?: () => void;
+  iconPosition?: "left" | "right";
+  error?: boolean | string;
+  multiline?: boolean;
+  numberOfLines?: number;
+  style?: ViewStyle;
+  inputStyle?: TextStyle;
   disabled?: boolean;
-  loading?: boolean;
-  style?: StyleProp<ViewStyle>;
+  editable?: boolean;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  autoComplete?: TextInputProps["autoComplete"];
+  textContentType?: TextInputProps["textContentType"];
+  accessibilityLabel?: string;
+  left?: React.ReactNode;
+  right?: React.ReactNode;
 };
 
-export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
+export const TextInput: React.FC<Props> = ({
   label,
-  onPress,
-  disabled = false,
-  loading = false,
+  placeholder,
+  value,
+  onChangeText,
+  keyboardType = "default",
+  secureTextEntry = false,
+  icon,
+  iconPosition = "left",
+  error,
+  onBlur,
+  onFocus,
+  multiline = false,
+  numberOfLines = 1,
   style,
+  inputStyle,
+  disabled = false,
+  editable,
+  autoCapitalize,
+  autoComplete,
+  textContentType,
+  accessibilityLabel,
 }) => {
   const theme = useTheme();
+  const [isFocused, setIsFocused] = useState(false);
 
-  const borderColor = disabled ? theme.disabled.background : theme.accent;
-  const textColor = disabled ? theme.disabled.text : theme.accent;
-  const backgroundColor = "transparent";
-  const isDisabled = disabled || loading;
+  const inputBg =
+    theme.card ||
+    (theme.mode === "dark" ? theme.background + "E6" : theme.background);
+
+  const hasError = !!error;
+  const errorMsg = typeof error === "string" ? error : undefined;
+
+  // Border color logic: error > focus > normal
+  const borderColor = hasError
+    ? theme.error.border || theme.error.background
+    : isFocused
+    ? theme.accentSecondary
+    : theme.border || "transparent";
+
+  const borderWidth = hasError ? 1.5 : 1;
+
+  const iconColor = hasError ? theme.error.text : theme.textSecondary;
+  const iconSize = 22;
+
+  const inputPaddingLeft =
+    icon && iconPosition === "left"
+      ? theme.spacing.lg + iconSize
+      : theme.spacing.md;
+  const inputPaddingRight =
+    icon && iconPosition === "right"
+      ? theme.spacing.lg + iconSize
+      : theme.spacing.md;
+
+  const isEditable = editable !== undefined ? editable : !disabled;
+
+  // Focus shadow style
+  const focusShadowStyle =
+    isFocused && !hasError
+      ? Platform.select({
+          ios: {
+            shadowColor: theme.accentSecondary,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+          },
+          android: {
+            elevation: 3,
+          },
+        })
+      : {};
 
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.button,
-        {
-          backgroundColor,
-          borderColor,
-          borderWidth: 1.5,
-          borderRadius: theme.rounded.md,
-          paddingVertical: theme.spacing.md,
-          paddingHorizontal: theme.spacing.lg,
-          opacity: pressed && !isDisabled ? 0.8 : isDisabled ? 0.6 : 1,
-        },
-        style,
-      ]}
-      onPress={onPress}
-      disabled={isDisabled}
-      android_ripple={!isDisabled ? { color: theme.overlay } : undefined}
-      accessibilityRole="button"
-    >
-      {loading ? (
-        <ActivityIndicator size="small" color={textColor} />
-      ) : (
+    <View style={[{ width: "100%" }, style]}>
+      {label && (
         <Text
-          style={[
-            styles.label,
-            {
-              color: textColor,
-              fontSize: theme.typography.size.base,
-              fontFamily: theme.typography.fontFamily.bold,
-            },
-          ]}
+          style={{
+            color: theme.textSecondary,
+            fontSize: theme.typography.size.sm,
+            marginBottom: theme.spacing.xs / 2,
+            fontFamily: theme.typography.fontFamily.medium,
+            letterSpacing: 0.1,
+          }}
         >
           {label}
         </Text>
       )}
-    </Pressable>
+      <View
+        style={[
+          styles.inputWrapper,
+          {
+            backgroundColor: inputBg,
+            borderColor,
+            borderWidth,
+            borderRadius: theme.rounded.sm,
+            flexDirection: "row",
+            alignItems: multiline ? "flex-start" : "center",
+            minHeight: multiline ? Math.max(48, numberOfLines * 24) : 48,
+            opacity: !isEditable ? 0.7 : 1,
+            shadowColor: theme.shadow,
+          },
+          focusShadowStyle,
+        ]}
+      >
+        {icon && iconPosition === "left" && (
+          <View style={styles.iconLeft}>
+            {React.cloneElement(icon, {
+              size: icon.props.size ?? iconSize,
+              color: icon.props.color ?? iconColor,
+            })}
+          </View>
+        )}
+
+        <RNTextInput
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={(e) => {
+            setIsFocused(true);
+            onFocus?.();
+          }}
+          onBlur={(e) => {
+            setIsFocused(false);
+            onBlur?.();
+          }}
+          placeholder={placeholder}
+          placeholderTextColor={theme.textSecondary}
+          keyboardType={keyboardType}
+          secureTextEntry={secureTextEntry}
+          editable={isEditable}
+          multiline={multiline}
+          numberOfLines={numberOfLines}
+          autoCapitalize={autoCapitalize}
+          autoComplete={autoComplete}
+          textContentType={textContentType}
+          accessibilityLabel={accessibilityLabel}
+          style={[
+            {
+              flex: 1,
+              color: theme.text,
+              fontSize: theme.typography.size.base,
+              fontFamily: theme.typography.fontFamily.regular,
+              paddingVertical: theme.spacing.sm,
+              paddingLeft: inputPaddingLeft,
+              paddingRight: inputPaddingRight,
+              textAlignVertical: multiline ? "top" : "center",
+              minHeight: multiline ? Math.max(48, numberOfLines * 24) : 48,
+            },
+            inputStyle,
+          ]}
+          selectionColor={theme.accent}
+          underlineColorAndroid="transparent"
+        />
+
+        {icon && iconPosition === "right" && (
+          <View style={styles.iconRight}>
+            {React.cloneElement(icon, {
+              size: icon.props.size ?? iconSize,
+              color: icon.props.color ?? iconColor,
+            })}
+          </View>
+        )}
+      </View>
+      {!!errorMsg && (
+        <Text
+          style={{
+            color: theme.error.text,
+            fontSize: theme.typography.size.xs,
+            marginTop: theme.spacing.xs / 2,
+            fontFamily: theme.typography.fontFamily.medium,
+            letterSpacing: 0.1,
+          }}
+        >
+          {errorMsg}
+        </Text>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  button: {
-    alignSelf: "stretch",
+  inputWrapper: {
     width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
+    position: "relative",
+    overflow: "hidden",
+    shadowOffset: { width: 1, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 3,
   },
-  label: {
-    fontWeight: "bold",
-    letterSpacing: 0.2,
-    textAlign: "center",
+  iconLeft: {
+    position: "absolute",
+    left: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
+  },
+  iconRight: {
+    position: "absolute",
+    right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
   },
 });

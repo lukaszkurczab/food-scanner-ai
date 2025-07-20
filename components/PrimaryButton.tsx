@@ -26,7 +26,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 }) => {
   const theme = useTheme();
 
-  const backgroundColor = theme.accent;
+  const backgroundColor = theme.accentSecondary;
   const textColor = theme.onAccent;
   const disabledBg = theme.disabled.background;
   const disabledText = theme.disabled.text;
@@ -43,6 +43,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
           borderRadius: theme.rounded.md,
           paddingVertical: theme.spacing.md,
           paddingHorizontal: theme.spacing.lg,
+          shadowColor: theme.shadow,
         },
         style,
       ]}
@@ -77,6 +78,10 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
+    shadowOffset: { width: 1, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 3,
   },
   label: {
     fontWeight: "bold",

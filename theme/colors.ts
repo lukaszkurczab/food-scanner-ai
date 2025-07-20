@@ -31,7 +31,7 @@ export const baseColors = {
   overlayLight: "rgba(33, 33, 33, 0.12)",
   proteinDark: "#2196F3",
   shadowDark: "rgba(0,0,0,0.60)",
-  shadowLight: "rgba(0,0,0,0.10)",
+  shadowLight: "rgba(0,0,0,0.60)",
   successBackgroundDark: "#1B2E1B",
   successBackgroundLight: "#E8F5E9",
   successTextDark: "#B9F6CA",
