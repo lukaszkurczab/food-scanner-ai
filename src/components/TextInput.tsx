@@ -36,6 +36,10 @@ type Props = {
   accessibilityLabel?: string;
   left?: React.ReactNode;
   right?: React.ReactNode;
+  ref?: React.Ref<RNTextInput>;
+  autoCorrect?: boolean;
+  returnKeyType?: TextInputProps["returnKeyType"];
+  onSubmitEditing?: () => void;
 };
 
 export const TextInput: React.FC<Props> = ({
@@ -60,6 +64,10 @@ export const TextInput: React.FC<Props> = ({
   autoComplete,
   textContentType,
   accessibilityLabel,
+  ref,
+  autoCorrect = true,
+  returnKeyType,
+  onSubmitEditing,
 }) => {
   const theme = useTheme();
   const [isFocused, setIsFocused] = useState(false);
@@ -71,7 +79,6 @@ export const TextInput: React.FC<Props> = ({
   const hasError = !!error;
   const errorMsg = typeof error === "string" ? error : undefined;
 
-  // Border color logic: error > focus > normal
   const borderColor = hasError
     ? theme.error.border || theme.error.background
     : isFocused
@@ -94,7 +101,6 @@ export const TextInput: React.FC<Props> = ({
 
   const isEditable = editable !== undefined ? editable : !disabled;
 
-  // Focus shadow style
   const focusShadowStyle =
     isFocused && !hasError
       ? Platform.select({
@@ -152,6 +158,8 @@ export const TextInput: React.FC<Props> = ({
         )}
 
         <RNTextInput
+          autoCorrect={autoCorrect}
+          ref={ref}
           value={value}
           onChangeText={onChangeText}
           onFocus={(e) => {
@@ -173,6 +181,8 @@ export const TextInput: React.FC<Props> = ({
           autoComplete={autoComplete}
           textContentType={textContentType}
           accessibilityLabel={accessibilityLabel}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
           style={[
             {
               flex: 1,

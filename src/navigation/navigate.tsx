@@ -5,7 +5,13 @@ export type RootStackParamList = {
   Home: any;
   Login: undefined;
   NutritionSurvey: undefined;
+  CheckMailbox: {
+    email: string;
+  };
   Profile: undefined;
+  ResetPassword: undefined;
+  Terms: undefined;
+  Privacy: undefined;
   AddMealManual: undefined;
   AddMealFromList: undefined;
   MealInputMethod: undefined;

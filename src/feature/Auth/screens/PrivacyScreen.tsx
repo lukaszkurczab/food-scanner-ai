@@ -1,0 +1,47 @@
+import React from "react";
+import { View, Text, Dimensions } from "react-native";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "@/src/theme/useTheme";
+import { Layout, PrimaryButton } from "@/src/components";
+import { ScrollableBox } from "@/src/components/ScrollableBox";
+import { parseMarkdownToReactNative } from "@/src/utils/parseMarkdownToReactNative";
+
+export default function PrivacyScreen({ navigation }: any) {
+  const { t } = useTranslation("privacy");
+  const theme = useTheme();
+
+  const windowHeight = Dimensions.get("window").height;
+  const calculatedHeight = Math.max(0, windowHeight - 190);
+
+  const privacyText = t("text");
+
+  const handleClose = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate("Home");
+    }
+  };
+
+  return (
+    <Layout>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ScrollableBox style={{ height: calculatedHeight }}>
+          {parseMarkdownToReactNative(privacyText, theme)}
+        </ScrollableBox>
+
+        <PrimaryButton
+          label={t("close")}
+          onPress={handleClose}
+          style={{ width: 200, alignSelf: "center" }}
+        />
+      </View>
+    </Layout>
+  );
+}

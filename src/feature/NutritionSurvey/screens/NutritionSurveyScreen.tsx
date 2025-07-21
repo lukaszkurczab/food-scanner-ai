@@ -117,7 +117,7 @@ const NutritionSurveyScreen = () => {
           <TextInput
             keyboardType="numeric"
             value={age.toString()}
-            onChange={(v) => setAge(Number(v))}
+            onChangeText={(v) => setAge(Number(v))}
           />
 
           <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
@@ -135,14 +135,14 @@ const NutritionSurveyScreen = () => {
           <TextInput
             keyboardType="numeric"
             value={weight.toString()}
-            onChange={(v) => setWeight(Number(v))}
+            onChangeText={(v) => setWeight(Number(v))}
           />
 
           <Text style={styles.label}>Height (cm)</Text>
           <TextInput
             keyboardType="numeric"
             value={height.toString()}
-            onChange={(v) => setHeight(Number(v))}
+            onChangeText={(v) => setHeight(Number(v))}
           />
 
           <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>

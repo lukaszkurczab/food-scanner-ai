@@ -1,153 +1,241 @@
-import { useState } from "react";
-import { Text, TextInput, StyleSheet, Keyboard, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { useTheme } from "@/src/theme/index";
-import { Button, Checkbox, FormScreenWrapper } from "@/src/components/index";
-import { useRegister } from "@/src/hooks/useRegister";
-import { RootStackParamList } from "@/src/navigation/navigate";
+import React, { useState } from "react";
+import { View, Text, Keyboard, TouchableOpacity } from "react-native";
+import { useTranslation } from "react-i18next";
+import NetInfo from "@react-native-community/netinfo";
+import { useTheme } from "@/src/theme/useTheme";
+import {
+  TextInput,
+  PrimaryButton,
+  ErrorBox,
+  LinkText,
+  Layout,
+  Checkbox,
+} from "@/src/components";
+import { Feather } from "@expo/vector-icons";
+import { useRegister } from "@/src/feature/Auth/hooks/useRegister";
 
-type RegisterScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "Register"
->;
-
-const RegisterScreen = () => {
+export default function RegisterScreen({ navigation }: any) {
+  const { t } = useTranslation(["login", "common"]);
   const theme = useTheme();
-  const styles = getStyles(theme);
-  const navigation = useNavigation<RegisterScreenNavigationProp>();
 
-  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [checked, setChecked] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
 
   const { register, loading, errors } = useRegister();
 
-  const handleRegister = async () => {
+  React.useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsConnected(state.isConnected === true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const isFormDisabled =
+    !username ||
+    !email ||
+    !password ||
+    !confirmPassword ||
+    !termsAccepted ||
+    loading ||
+    !isConnected;
+
+  const handleSubmit = () => {
     Keyboard.dismiss();
-    await register(email, password, confirmPassword, username, checked);
+    register(
+      email.trim(),
+      password,
+      confirmPassword,
+      username.trim(),
+      termsAccepted
+    );
   };
 
+  const renderEyeIcon = (show: boolean, toggle: () => void) => (
+    <TouchableOpacity
+      onPress={toggle}
+      accessibilityLabel={t("toggle_password_visibility")}
+    >
+      <Feather
+        name={show ? "eye-off" : "eye"}
+        size={22}
+        color={theme.textSecondary}
+      />
+    </TouchableOpacity>
+  );
+
   return (
-    <FormScreenWrapper contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Create an account</Text>
-
-      <Text style={styles.subText}>
-        Already have an account?{" "}
-        <Text style={styles.link} onPress={() => navigation.navigate("Login")}>
-          Log in
+    <Layout>
+      <View
+        style={{
+          flexGrow: 1,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          style={{
+            fontSize: theme.typography.size.xl,
+            fontFamily: theme.typography.fontFamily.bold,
+            color: theme.text,
+            marginBottom: theme.spacing.lg,
+            textAlign: "center",
+          }}
+        >
+          {t("common:app_title")}
         </Text>
-      </Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor={theme.accent}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+        {!isConnected && <ErrorBox message={t("common:no_internet")} />}
+        {errors.general && <ErrorBox message={errors.general} />}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
-        placeholderTextColor={theme.accent}
-        value={username}
-        onChangeText={setUsername}
-      />
-      {errors.username && (
-        <Text style={styles.errorText}>{errors.username}</Text>
-      )}
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor={theme.accent}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      {errors.password && (
-        <Text style={styles.errorText}>{errors.password}</Text>
-      )}
-
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm password"
-        placeholderTextColor={theme.accent}
-        secureTextEntry
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        onSubmitEditing={handleRegister}
-      />
-      {errors.confirmPassword && (
-        <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-      )}
-
-      <View>
-        <Checkbox
-          checked={checked}
-          onCheckedChange={setChecked}
-          label="Accept terms and conditions"
+        <TextInput
+          label={t("username")}
+          value={username}
+          autoCapitalize="none"
+          autoComplete="username"
+          textContentType="username"
+          placeholder={t("enter_username")}
+          onChangeText={setUsername}
+          error={errors.username || false}
+          accessibilityLabel={t("username")}
+          style={{ marginBottom: theme.spacing.md }}
         />
-        {errors.terms && <Text style={styles.errorText}>{errors.terms}</Text>}
+
+        <TextInput
+          label={t("email", { ns: "login" })}
+          value={email}
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          textContentType="emailAddress"
+          placeholder={t("enter_email", { ns: "login" })}
+          onChangeText={setEmail}
+          error={errors.email || false}
+          accessibilityLabel={t("email", { ns: "login" })}
+          style={{ marginBottom: theme.spacing.md }}
+        />
+
+        <TextInput
+          label={t("password", { ns: "login" })}
+          value={password}
+          autoCapitalize="none"
+          autoComplete="new-password"
+          textContentType="newPassword"
+          placeholder={t("enter_password", { ns: "login" })}
+          secureTextEntry={!showPassword}
+          onChangeText={setPassword}
+          error={errors.password || false}
+          accessibilityLabel={t("password", { ns: "login" })}
+          icon={renderEyeIcon(showPassword, () => setShowPassword((v) => !v))}
+          iconPosition="right"
+          style={{ marginBottom: theme.spacing.md }}
+        />
+
+        <TextInput
+          label={t("confirm_password")}
+          value={confirmPassword}
+          autoCapitalize="none"
+          autoComplete="new-password"
+          textContentType="newPassword"
+          placeholder={t("enter_confirm_password")}
+          secureTextEntry={!showConfirm}
+          onChangeText={setConfirmPassword}
+          error={errors.confirmPassword || false}
+          accessibilityLabel={t("confirm_password")}
+          icon={renderEyeIcon(showConfirm, () => setShowConfirm((v) => !v))}
+          iconPosition="right"
+          style={{ marginBottom: theme.spacing.md }}
+        />
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginTop: theme.spacing.md,
+          }}
+        >
+          <Checkbox
+            checked={termsAccepted}
+            onChange={setTermsAccepted}
+            accessibilityLabel={t("accept_terms")}
+          />
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: theme.textSecondary,
+                fontSize: theme.typography.size.sm,
+              }}
+            >
+              {t("accept_terms")}{" "}
+            </Text>
+            <LinkText
+              text={t("terms")}
+              onPress={() => navigation.navigate("Terms")}
+            />
+            <Text
+              style={{
+                color: theme.textSecondary,
+                fontSize: theme.typography.size.sm,
+              }}
+            >
+              {" & "}
+            </Text>
+            <LinkText
+              text={t("privacy_policy")}
+              onPress={() => navigation.navigate("Privacy")}
+            />
+          </View>
+        </View>
+
+        {errors.terms && (
+          <Text
+            style={{
+              color: theme.error.text,
+              fontSize: theme.typography.size.xs,
+            }}
+          >
+            {errors.terms}
+          </Text>
+        )}
+
+        <PrimaryButton
+          label={t("sign_up")}
+          onPress={handleSubmit}
+          disabled={isFormDisabled}
+          loading={loading}
+          style={{ marginTop: theme.spacing.xl }}
+        />
       </View>
 
-      {errors.general && <Text style={styles.errorText}>{errors.general}</Text>}
-
-      <Button
-        text={loading ? "Creating..." : "Create account"}
-        onPress={handleRegister}
-        disabled={loading}
-      />
-    </FormScreenWrapper>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          style={{
+            color: theme.textSecondary,
+            fontSize: theme.typography.size.sm,
+          }}
+        >
+          {t("already_have_account")}{" "}
+        </Text>
+        <LinkText
+          text={t("sign_in")}
+          onPress={() => navigation.replace("Login")}
+        />
+      </View>
+    </Layout>
   );
-};
-
-const getStyles = (theme: any) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: "center",
-      padding: 16,
-      backgroundColor: theme.background,
-    },
-    header: {
-      fontSize: 28,
-      fontWeight: "700",
-      textAlign: "center",
-      marginBottom: 12,
-      color: theme.primary,
-    },
-    subText: {
-      textAlign: "center",
-      fontSize: 16,
-      marginBottom: 24,
-      color: theme.text,
-    },
-    link: {
-      color: "blue",
-      fontWeight: "500",
-    },
-    input: {
-      height: 48,
-      borderColor: theme.border,
-      borderWidth: 1,
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      marginBottom: 8,
-      color: theme.text,
-    },
-    errorText: {
-      color: "#ff4d4f",
-      fontSize: 13,
-      marginBottom: 8,
-      marginLeft: 4,
-    },
-  });
-
-export default RegisterScreen;
+}

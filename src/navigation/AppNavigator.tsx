@@ -20,6 +20,10 @@ import AddMealManual from "@/src/feature/AddMealManual/screens/AddMealManual";
 import ReviewIngredientsScreen from "@/src/feature/AddMealAI/screens/ReviewIngredientsScreen";
 import NutritionSurveyScreen from "@/src/feature/NutritionSurvey/screens/NutritionSurveyScreen";
 import ProfileScreen from "@/src/feature/UserProfile/screens/ProfileScreen";
+import TermsScreen from "@/src/feature/Auth/screens/TermsScreen";
+import PrivacyScreen from "@/src/feature/Auth/screens/PrivacyScreen";
+import ResetPasswordScreen from "@/src/feature/Auth/screens/ResetPasswordScreen";
+import CheckMailboxScreen from "@/src/feature/Auth/screens/CheckMailboxScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -58,11 +62,21 @@ const AppNavigator = () => {
             component={ReviewIngredientsScreen}
           />
           <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
+          <Stack.Screen name="Terms" component={TermsScreen} />
+          <Stack.Screen name="Privacy" component={PrivacyScreen} />
         </>
       ) : (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Terms" component={TermsScreen} />
+          <Stack.Screen name="Privacy" component={PrivacyScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen
+            name="CheckMailbox"
+            component={CheckMailboxScreen}
+            initialParams={{ email: "" }}
+          />
         </>
       )}
     </Stack.Navigator>
