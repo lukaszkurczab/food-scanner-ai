@@ -1,7 +1,6 @@
 export * from "./ui/Button";
 export * from "./modals/CancelModal";
 export * from "./common/Carousel";
-export * from "./ui/Checkbox";
 export * from "./common/ConfirmButtons";
 export * from "./modals/ConfirmModal";
 export * from "./common/DropdownList";
@@ -33,3 +32,4 @@ export * from "./Toggle";
 export * from "./ErrorBox";
 export * from "./LinkText";
 export * from "./Layout";
+export * from "./Checkbox";

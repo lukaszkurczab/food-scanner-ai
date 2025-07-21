@@ -25,8 +25,8 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
 }) => {
   const theme = useTheme();
 
-  const borderColor = disabled ? theme.disabled.background : theme.accent;
-  const textColor = disabled ? theme.disabled.text : theme.accent;
+  const borderColor = disabled ? theme.textSecondary : theme.accentSecondary;
+  const textColor = disabled ? theme.textSecondary : theme.accentSecondary;
   const backgroundColor = "transparent";
 
   return (
@@ -62,6 +62,7 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
             fontWeight: "bold",
             fontFamily: theme.typography.fontFamily.bold,
             letterSpacing: 0.2,
+            textAlign: "center",
           }}
         >
           {label}

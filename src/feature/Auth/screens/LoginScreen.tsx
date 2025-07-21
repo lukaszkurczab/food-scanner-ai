@@ -57,7 +57,7 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   let displayCriticalError = criticalError;
-  if (internetError) displayCriticalError = t("no_internet");
+  if (internetError) displayCriticalError = t("common:no_internet");
 
   const isLoginDisabled = !isFormValid || loading || !!displayCriticalError;
 
@@ -125,38 +125,34 @@ export default function LoginScreen({ navigation }: any) {
         />
 
         <LinkText
-          onPress={() => navigation.navigate("ForgotPassword")}
+          onPress={() => navigation.navigate("ResetPassword")}
           disabled={loading}
           style={{ alignSelf: "center", marginBottom: theme.spacing.xl }}
         >
           {t("forgot_password")}
         </LinkText>
-
-        <View
+      </View>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
+        <Text
           style={{
-            flexDirection: "row",
-            justifyContent: "center",
+            color: theme.textSecondary,
+            fontSize: theme.typography.size.sm,
+            fontFamily: theme.typography.fontFamily.regular,
           }}
         >
-          <Text
-            style={{
-              color: theme.textSecondary,
-              fontSize: theme.typography.size.sm,
-              fontFamily: theme.typography.fontFamily.regular,
-            }}
-          >
-            {t("dont_have_account")}{" "}
-          </Text>
-          <LinkText
-            style={{
-              fontFamily: theme.typography.fontFamily.bold,
-            }}
-            onPress={() => navigation.navigate("Register")}
-            disabled={loading}
-          >
-            {t("sign_up")}
-          </LinkText>
-        </View>
+          {t("dont_have_account")}{" "}
+        </Text>
+        <LinkText
+          onPress={() => navigation.navigate("Register")}
+          disabled={loading}
+        >
+          {t("sign_up")}
+        </LinkText>
       </View>
     </Layout>
   );

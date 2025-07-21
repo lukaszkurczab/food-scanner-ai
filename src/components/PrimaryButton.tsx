@@ -6,31 +6,33 @@ import {
   StyleProp,
   ViewStyle,
   StyleSheet,
+  PressableProps,
 } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
 
 type PrimaryButtonProps = {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
+  label?: string;
+  children?: React.ReactNode;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
-};
+  textStyle?: StyleProp<any>;
+} & PressableProps;
 
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   label,
+  children,
   onPress,
-  disabled = false,
   loading = false,
+  disabled = false,
   style,
+  textStyle,
+  ...rest
 }) => {
   const theme = useTheme();
-
   const backgroundColor = theme.accentSecondary;
   const textColor = theme.onAccent;
   const disabledBg = theme.disabled.background;
   const disabledText = theme.disabled.text;
-
   const isDisabled = disabled || loading;
 
   return (
@@ -51,6 +53,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       disabled={isDisabled}
       android_ripple={!isDisabled ? { color: theme.overlay } : undefined}
       accessibilityRole="button"
+      {...rest}
     >
       {loading ? (
         <ActivityIndicator size="small" color={textColor} />
@@ -63,9 +66,10 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
               fontSize: theme.typography.size.base,
               fontFamily: theme.typography.fontFamily.bold,
             },
+            textStyle,
           ]}
         >
-          {label}
+          {children || label}
         </Text>
       )}
     </Pressable>
