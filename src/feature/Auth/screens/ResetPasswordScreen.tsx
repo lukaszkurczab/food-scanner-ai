@@ -157,7 +157,14 @@ export default function ResetPasswordScreen({ navigation }: any) {
         accessibilityLabel={t("resetBtn")}
         style={{ marginVertical: theme.spacing.md }}
       />
-      <View style={{ alignItems: "center", marginTop: theme.spacing.lg }}>
+      <View
+        style={{
+          alignItems: "center",
+          marginTop: theme.spacing.lg,
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
         <Text>{t("rememberPassword")} </Text>
         <LinkText
           onPress={() => navigation.navigate("Login")}
