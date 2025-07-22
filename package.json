@@ -34,6 +34,7 @@
     "expo-haptics": "^14.1.4",
     "expo-image-manipulator": "~13.1.7",
     "expo-localization": "^16.1.6",
+    "expo-secure-store": "~14.2.3",
     "expo-status-bar": "~2.2.3",
     "i": "^0.3.7",
     "i18next": "^25.3.2",

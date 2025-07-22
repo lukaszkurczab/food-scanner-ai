@@ -1,0 +1,31 @@
+{
+  "title": "Tell us about yourself",
+  "description": "We need some basic information to calculate your daily calorie needs.",
+  "unitsSystem": "Units system",
+  "metric": "Metric",
+  "imperial": "Imperial",
+  "age": "Age",
+  "sex": "Sex",
+  "male": "Male",
+  "female": "Female",
+  "height": "Height",
+  "heightFt": "Height (ft)",
+  "heightIn": "Height (in)",
+  "weight": "Weight",
+  "next": "Next",
+  "cancel": "Cancel",
+  "cancelTitle": "Cancel onboarding?",
+  "cancelDesc": "Your progress will be lost. You can provide this info later in settings.",
+  "cancelConfirm": "Discard and exit",
+  "cancelDismiss": "Continue onboarding",
+  "errors": {
+    "ageRequired": "Age is required",
+    "ageInvalid": "Enter a valid age (10-120)",
+    "sexRequired": "Select your sex",
+    "heightRequired": "Height is required",
+    "heightInvalid": "Enter a valid height",
+    "heightInchInvalid": "Inches must be between 0 and 11",
+    "weightRequired": "Weight is required",
+    "weightInvalid": "Enter a valid weight"
+  }
+}

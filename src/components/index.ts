@@ -33,3 +33,4 @@ export * from "./ErrorBox";
 export * from "./LinkText";
 export * from "./Layout";
 export * from "./Checkbox";
+export * from "./Dropdown";

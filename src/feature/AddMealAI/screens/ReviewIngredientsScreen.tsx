@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import "react-native-get-random-values";
-import { v4 as uuidv4 } from "uuid";
 import {
   View,
   Text,
@@ -210,15 +209,10 @@ const ReviewIngredientsScreen = () => {
                     <TouchableOpacity
                       style={{ width: "5%", overflow: "hidden" }}
                       onPress={() => handleRemoveIngredient(index)}
-                    >
-                      <Image
-                        source={require("@/assets/icons/close.png")}
-                        style={{ width: 16, height: 16 }}
-                      />
-                    </TouchableOpacity>
+                    ></TouchableOpacity>
                     <TextInput
                       value={ingredient.name}
-                      onEndEditing={(e) => handleNameChange(index, e)}
+                      onChangeText={(text) => handleNameChange(index, text)}
                     />
                     <View
                       style={{
@@ -230,7 +224,7 @@ const ReviewIngredientsScreen = () => {
                       <TextInput
                         keyboardType="numeric"
                         value={ingredient.amount.toString()}
-                        onEndEditing={(e: any) => handleAmountChange(index, e)}
+                        onChangeText={(text) => handleAmountChange(index, text)}
                         style={{ width: 50 }}
                       />
                       <Text style={styles.unit}>
@@ -264,12 +258,9 @@ const ReviewIngredientsScreen = () => {
                 style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
               >
                 <Text style={styles.subheader}>Meal nutrition</Text>
-                <TouchableOpacity onPress={recalculateNutrition}>
-                  <Image
-                    source={require("@/assets/icons/refresh.png")}
-                    style={{ width: 20, height: 20 }}
-                  />
-                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={recalculateNutrition}
+                ></TouchableOpacity>
               </View>
               <NutritionChart nutrition={nutritionData} />
             </>

@@ -8,6 +8,7 @@ export type RootStackParamList = {
   CheckMailbox: {
     email: string;
   };
+  OnboardingScreen: undefined;
   Profile: undefined;
   ResetPassword: undefined;
   Terms: undefined;
