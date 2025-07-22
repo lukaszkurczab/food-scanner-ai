@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   StyleProp,
   ViewStyle,
+  PressableProps,
 } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
 
@@ -14,7 +15,7 @@ type SecondaryButtonProps = {
   disabled?: boolean;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
-};
+} & PressableProps;
 
 export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   label,
@@ -22,6 +23,7 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   disabled = false,
   loading = false,
   style,
+  ...rest
 }) => {
   const theme = useTheme();
 
@@ -51,6 +53,7 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
       disabled={disabled || loading}
       android_ripple={!disabled ? { color: theme.overlay } : undefined}
       accessibilityRole="button"
+      {...rest}
     >
       {loading ? (
         <ActivityIndicator size="small" color={textColor} />

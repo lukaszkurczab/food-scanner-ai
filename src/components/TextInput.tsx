@@ -40,6 +40,7 @@ type Props = {
   autoCorrect?: boolean;
   returnKeyType?: TextInputProps["returnKeyType"];
   onSubmitEditing?: () => void;
+  rightLabel?: string;
 };
 
 export const TextInput: React.FC<Props> = ({
@@ -68,6 +69,7 @@ export const TextInput: React.FC<Props> = ({
   autoCorrect = true,
   returnKeyType,
   onSubmitEditing,
+  rightLabel,
 }) => {
   const theme = useTheme();
   const [isFocused, setIsFocused] = useState(false);
@@ -200,6 +202,20 @@ export const TextInput: React.FC<Props> = ({
           selectionColor={theme.accent}
           underlineColorAndroid="transparent"
         />
+
+        {!!rightLabel && (
+          <Text
+            style={{
+              color: theme.textSecondary,
+              fontSize: theme.typography.size.base,
+              marginLeft: 8,
+              fontFamily: theme.typography.fontFamily.medium,
+              marginRight: theme.spacing.md,
+            }}
+          >
+            {rightLabel}
+          </Text>
+        )}
 
         {icon && iconPosition === "right" && (
           <View style={styles.iconRight}>

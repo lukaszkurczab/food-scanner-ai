@@ -7,6 +7,7 @@ import en_login from "./locales/en/login.json";
 import en_terms from "./locales/en/terms.json";
 import en_privacy from "./locales/en/privacy.json";
 import en_resetPassword from "./locales/en/resetPassword.json";
+import en_onboarding from "./locales/en/onboarding.json";
 import pl_common from "./locales/pl/common.json";
 import pl_login from "./locales/pl/login.json";
 import pl_terms from "./locales/pl/terms.json";
@@ -29,7 +30,7 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: "en",
-    ns: ["common", "login", "terms", "privacy", "resetPassword"],
+    ns: ["common", "login", "terms", "privacy", "resetPassword", "onboarding"],
     defaultNS: "common",
     resources: {
       en: {
@@ -38,6 +39,7 @@ i18n
         terms: en_terms,
         privacy: en_privacy,
         resetPassword: en_resetPassword,
+        onboarding: en_onboarding,
       },
       pl: {
         common: pl_common,

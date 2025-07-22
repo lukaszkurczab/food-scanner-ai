@@ -5,7 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/src/theme/index";
 import { Button, Tile } from "../../../components";
 import { getTodayMeal } from "../../../services";
-import { Meal, MealHistory } from "../../../types";
+import { MealHistory } from "../../../types";
 import { RootStackParamList } from "../../../navigation/navigate";
 import { useUserContext } from "@/src/context/UserContext";
 import { TdeeProgress } from "../components/TdeeProgrss";
