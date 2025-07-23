@@ -83,6 +83,11 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
               fontFamily: theme.typography.fontFamily.regular,
               padding: theme.spacing.md,
               textAlignVertical: "top",
+              shadowColor: theme.shadow,
+              shadowOpacity: 0.12,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 3,
             },
             inputStyle,
           ]}

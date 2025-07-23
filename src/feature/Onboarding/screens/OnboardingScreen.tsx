@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import * as SecureStore from "expo-secure-store";
 import ProgressDots from "@/src/feature/Onboarding/components/ProgressDots";
@@ -38,6 +38,19 @@ export default function OnboardingScreen({ navigation }: any) {
     {}
   );
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const draft = await SecureStore.getItemAsync(ONBOARDING_DRAFT_KEY);
+        if (draft) {
+          setForm(JSON.parse(draft));
+        }
+      } catch (err) {}
+      setIsLoaded(true);
+    })();
+  }, []);
 
   useSoftSave<FormData>(ONBOARDING_DRAFT_KEY, form, setForm);
 
@@ -54,6 +67,8 @@ export default function OnboardingScreen({ navigation }: any) {
     SecureStore.deleteItemAsync(ONBOARDING_DRAFT_KEY);
     navigation.reset({ index: 0, routes: [{ name: "Login" }] });
   };
+
+  if (!isLoaded) return null;
 
   return (
     <Layout>
