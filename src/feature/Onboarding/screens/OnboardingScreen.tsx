@@ -4,29 +4,24 @@ import * as SecureStore from "expo-secure-store";
 import ProgressDots from "@/src/feature/Onboarding/components/ProgressDots";
 import Step1BasicData from "@/src/feature/Onboarding/components/Step1BasicData";
 import { useSoftSave } from "@/src/feature/Onboarding/hooks/hookSoftSave";
+import Step2Preferences from "@/src/feature/Onboarding/components/Step2Preferences";
 import { Modal, Layout } from "@/src/components";
+import { FormData } from "@/src/feature/Onboarding/types";
 
 const ONBOARDING_DRAFT_KEY = "onboardingDraft";
 const STEPS = 5;
 
-type UnitsSystem = "metric" | "imperial";
-type Sex = "male" | "female" | null;
-
-type FormData = {
-  unitsSystem: UnitsSystem;
-  age: string;
-  sex: Sex;
-  height: string;
-  heightInch?: string;
-  weight: string;
-};
-
 const INITIAL_FORM: FormData = {
   unitsSystem: "metric",
   age: "",
-  sex: null,
+  sex: "male",
   height: "",
   weight: "",
+  preferences: ["none"],
+  activityLevel: "moderate",
+  goal: "maintain",
+  calorieDeficit: 0.3,
+  calorieSurplus: 0.3,
 };
 
 export default function OnboardingScreen({ navigation }: any) {
@@ -67,8 +62,16 @@ export default function OnboardingScreen({ navigation }: any) {
           onCancel={handleCancel}
         />
       )}
-      {/* {step === 2 && <Step2X ... />} */}
-      {/* ... kolejne kroki */}
+      {step === 2 && (
+        <Step2Preferences
+          form={form}
+          setForm={setForm}
+          errors={errors}
+          setErrors={setErrors}
+          onNext={nextStep}
+          onBack={prevStep}
+        />
+      )}
       <Modal
         visible={showCancelModal}
         title={t("cancelTitle")}
