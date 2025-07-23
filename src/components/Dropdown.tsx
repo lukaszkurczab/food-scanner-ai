@@ -1,12 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
   Pressable,
   TouchableOpacity,
-  StyleSheet,
-  FlatList,
-  LayoutRectangle,
+  ScrollView,
+  Modal,
   Dimensions,
 } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
@@ -38,19 +37,32 @@ export function Dropdown<T extends string>({
 }: Props<T>) {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
-  const [fieldLayout, setFieldLayout] = useState<LayoutRectangle | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+
+  const fieldRef = useRef<View>(null);
 
   const selected = options.find((o) => o.value === value);
 
   const handleOutsidePress = () => setOpen(false);
 
-  const maxHeight = Math.min(
-    220,
-    Dimensions.get("window").height - (fieldLayout?.y ?? 0) - 32
-  );
+  const openDropdown = () => {
+    if (fieldRef.current) {
+      fieldRef.current.measureInWindow((x, y, width, height) => {
+        setDropdownPos({ x, y, width, height });
+        setOpen(true);
+      });
+    } else {
+      setOpen(true);
+    }
+  };
 
   return (
-    <View style={[style, { zIndex: 50 }]}>
+    <View style={style}>
       {label && (
         <Text
           style={{
@@ -64,6 +76,7 @@ export function Dropdown<T extends string>({
         </Text>
       )}
       <Pressable
+        ref={fieldRef}
         style={{
           flexDirection: "row",
           alignItems: "center",
@@ -74,8 +87,7 @@ export function Dropdown<T extends string>({
           backgroundColor: disabled ? theme.disabled.background : theme.card,
           opacity: disabled ? 0.6 : 1,
         }}
-        onPress={() => !disabled && setOpen((v) => !v)}
-        onLayout={(e) => setFieldLayout(e.nativeEvent.layout)}
+        onPress={() => !disabled && openDropdown()}
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityState={{ disabled }}
@@ -109,71 +121,74 @@ export function Dropdown<T extends string>({
           {error}
         </Text>
       )}
-      {open && fieldLayout && (
-        <View
-          style={[
-            styles.dropdown,
-            {
-              position: "absolute",
-              top: fieldLayout.height + (fieldLayout.y ?? 0),
-              left: fieldLayout.x ?? 0,
-              width: fieldLayout.width,
-              backgroundColor: theme.card,
-              borderColor: theme.border,
-              borderWidth: 1,
-              borderRadius: theme.rounded.md,
-              maxHeight,
-              elevation: 6,
-              shadowColor: "#000",
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 2 },
-              zIndex: 100,
-            },
-          ]}
+      {open && dropdownPos && (
+        <Modal
+          transparent
+          animationType="none"
+          visible={open}
+          onRequestClose={handleOutsidePress}
         >
-          {options.map((item) => (
-            <TouchableOpacity
-              key={item.value}
-              onPress={() => {
-                setOpen(false);
-                onChange(item.value);
-              }}
-              style={{
-                paddingVertical: theme.spacing.md,
-                paddingHorizontal: theme.spacing.md,
-                backgroundColor:
-                  value === item.value ? theme.overlay : "transparent",
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={item.label}
+          <Pressable style={{ flex: 1 }} onPress={handleOutsidePress}>
+            <View
+              style={[
+                {
+                  position: "absolute",
+                  top: dropdownPos.y + dropdownPos.height,
+                  left: dropdownPos.x,
+                  width: dropdownPos.width,
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                  borderWidth: 1,
+                  borderRadius: theme.rounded.md,
+                  maxHeight: Math.min(
+                    220,
+                    Dimensions.get("window").height -
+                      (dropdownPos.y + dropdownPos.height) -
+                      32
+                  ),
+                  elevation: 6,
+                  shadowColor: "#000",
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 2 },
+                  zIndex: 100,
+                },
+              ]}
             >
-              <Text
-                style={{
-                  fontSize: theme.typography.size.base,
-                  fontFamily: theme.typography.fontFamily.regular,
-                  fontWeight: value === item.value ? "bold" : "normal",
-                }}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-      {open && (
-        <Pressable
-          style={StyleSheet.absoluteFillObject}
-          onPress={handleOutsidePress}
-        />
+              <ScrollView nestedScrollEnabled={true}>
+                {options.map((item) => (
+                  <TouchableOpacity
+                    key={item.value}
+                    onPress={() => {
+                      setOpen(false);
+                      onChange(item.value);
+                    }}
+                    style={{
+                      paddingVertical: theme.spacing.md,
+                      paddingHorizontal: theme.spacing.md,
+                      backgroundColor:
+                        value === item.value ? theme.overlay : "transparent",
+                      zIndex: 100,
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={item.label}
+                  >
+                    <Text
+                      style={{
+                        fontSize: theme.typography.size.base,
+                        fontFamily: theme.typography.fontFamily.regular,
+                        fontWeight: value === item.value ? "bold" : "normal",
+                      }}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </Pressable>
+        </Modal>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  dropdown: {
-    position: "absolute",
-    overflow: "hidden",
-  },
-});

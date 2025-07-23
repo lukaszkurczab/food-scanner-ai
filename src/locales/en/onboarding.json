@@ -1,6 +1,6 @@
 {
-  "title": "Tell us about yourself",
-  "description": "We need some basic information to calculate your daily calorie needs.",
+  "step1_title": "Tell us about yourself",
+  "step1_description": "We need some basic information to calculate your daily calorie needs.",
   "unitsSystem": "Units system",
   "metric": "Metric",
   "imperial": "Imperial",
@@ -14,10 +14,31 @@
   "weight": "Weight",
   "next": "Next",
   "cancel": "Cancel",
+  "back": "Back",
   "cancelTitle": "Cancel onboarding?",
   "cancelDesc": "Your progress will be lost. You can provide this info later in settings.",
   "cancelConfirm": "Discard and exit",
   "cancelDismiss": "Continue onboarding",
+
+  "step2_title": "Personalize your plan",
+  "step2_description": "Let us know your dietary preferences, activity level, and your goal.",
+  "activityLevel": "Activity level",
+  "activity": {
+    "sedentary": "Sedentary (little or no exercise)",
+    "light": "Lightly active (light exercise/sports 1-3 days/week)",
+    "moderate": "Moderately active (moderate exercise/sports 3-5 days/week)",
+    "active": "Active (hard exercise/sports 6-7 days/week)",
+    "very_active": "Very active (very hard exercise or physical job)"
+  },
+  "goalTitle": "Goal",
+  "goal": {
+    "lose": "Lose weight",
+    "maintain": "Maintain weight",
+    "increase": "Increase weight"
+  },
+  "calorieDeficit": "Calorie deficit:",
+  "calorieSurplus": "Calorie surplus:",
+
   "errors": {
     "ageRequired": "Age is required",
     "ageInvalid": "Enter a valid age (10-120)",
@@ -26,6 +47,29 @@
     "heightInvalid": "Enter a valid height",
     "heightInchInvalid": "Inches must be between 0 and 11",
     "weightRequired": "Weight is required",
-    "weightInvalid": "Enter a valid weight"
+    "weightInvalid": "Enter a valid weight",
+    "selectPreference": "Select at least one dietary preference",
+    "selectActivity": "Select your activity level",
+    "selectGoal": "Select your goal",
+    "selectDeficit": "Set your desired calorie deficit",
+    "selectSurplus": "Set your desired calorie surplus"
+  },
+
+  "preferences": {
+    "label": "Dietary preferences",
+    "none": "None",
+    "lowCarb": "Low carb",
+    "keto": "Keto",
+    "highProtein": "High protein",
+    "highCarb": "High carb",
+    "lowFat": "Low fat",
+    "balanced": "Balanced",
+    "vegetarian": "Vegetarian",
+    "vegan": "Vegan",
+    "pescatarian": "Pescatarian",
+    "mediterranean": "Mediterranean",
+    "glutenFree": "Gluten-free",
+    "dairyFree": "Dairy-free",
+    "paleo": "Paleo"
   }
 }

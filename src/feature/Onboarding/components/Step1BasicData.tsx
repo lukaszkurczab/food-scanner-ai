@@ -9,17 +9,7 @@ import {
   Dropdown,
 } from "@/src/components";
 import { convertHeight, convertWeight } from "@/src/utils/units";
-
-type UnitsSystem = "metric" | "imperial";
-type Sex = "male" | "female" | null;
-type FormData = {
-  unitsSystem: UnitsSystem;
-  age: string;
-  sex: Sex;
-  height: string;
-  heightInch?: string;
-  weight: string;
-};
+import { UnitsSystem, FormData } from "@/src/feature/Onboarding/types";
 
 type Props = {
   form: FormData;
@@ -31,6 +21,13 @@ type Props = {
   onNext: () => void;
   onCancel: () => void;
 };
+
+// Helper to safely cast value to string (never array/undefined/null)
+function getString(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return value.toString();
+  return "";
+}
 
 export default function Step1BasicData({
   form,
@@ -130,7 +127,7 @@ export default function Step1BasicData({
   };
 
   const handleBlur = (field: keyof FormData) => {
-    const error = validate(field, form[field] ?? "");
+    const error = validate(field, getString(form[field]));
     setErrors((prev) => ({ ...prev, [field]: error }));
   };
 
@@ -143,16 +140,16 @@ export default function Step1BasicData({
   };
 
   const canNext = () => {
-    const fields = [
-      "age",
-      "sex",
-      "height",
-      ...(form.unitsSystem === "imperial" ? ["heightInch"] : []),
-      "weight",
-    ];
-    return fields.every(
-      (f) => !validate(f as keyof FormData, form[f as keyof FormData] ?? "")
-    );
+    if (validate("age", getString(form.age))) return false;
+    if (validate("sex", getString(form.sex))) return false;
+    if (validate("height", getString(form.height))) return false;
+    if (
+      form.unitsSystem === "imperial" &&
+      validate("heightInch", getString(form.heightInch))
+    )
+      return false;
+    if (validate("weight", getString(form.weight))) return false;
+    return true;
   };
 
   const heightLabel = form.unitsSystem === "metric" ? "cm" : "ft + in";
@@ -170,7 +167,7 @@ export default function Step1BasicData({
             marginBottom: theme.spacing.sm,
           }}
         >
-          {t("title")}
+          {t("step1_title")}
         </Text>
         <Text
           style={{
@@ -179,7 +176,7 @@ export default function Step1BasicData({
             textAlign: "center",
           }}
         >
-          {t("description")}
+          {t("step1_description")}
         </Text>
       </View>
 
@@ -197,7 +194,7 @@ export default function Step1BasicData({
 
       <TextInput
         label={t("age")}
-        value={form.age ?? ""}
+        value={getString(form.age)}
         onChangeText={(val) => handleChange("age", val.replace(/[^0-9]/g, ""))}
         keyboardType="number-pad"
         onBlur={() => handleBlur("age")}
@@ -212,20 +209,37 @@ export default function Step1BasicData({
           gap: theme.spacing.sm,
         }}
       >
-        <PrimaryButton
-          label={t("male")}
-          onPress={() => handleChange("sex", "male")}
-          style={{ flex: 1, opacity: form.sex === "male" ? 1 : 0.7 }}
-          disabled={form.sex === "male"}
-          accessibilityState={{ selected: form.sex === "male" }}
-        />
-        <SecondaryButton
-          label={t("female")}
-          onPress={() => handleChange("sex", "female")}
-          style={{ flex: 1, opacity: form.sex === "female" ? 1 : 0.7 }}
-          disabled={form.sex === "female"}
-          accessibilityState={{ selected: form.sex === "female" }}
-        />
+        {form.sex === "male" ? (
+          <>
+            <PrimaryButton
+              label={t("male")}
+              onPress={() => handleChange("sex", "male")}
+              style={{ flex: 1 }}
+              accessibilityState={{ selected: true }}
+            />
+            <SecondaryButton
+              label={t("female")}
+              onPress={() => handleChange("sex", "female")}
+              style={{ flex: 1 }}
+              accessibilityState={{ selected: false }}
+            />
+          </>
+        ) : (
+          <>
+            <SecondaryButton
+              label={t("male")}
+              onPress={() => handleChange("sex", "male")}
+              style={{ flex: 1 }}
+              accessibilityState={{ selected: false }}
+            />
+            <PrimaryButton
+              label={t("female")}
+              onPress={() => handleChange("sex", "female")}
+              style={{ flex: 1 }}
+              accessibilityState={{ selected: true }}
+            />
+          </>
+        )}
       </View>
       {errors.sex && (
         <Text
@@ -242,7 +256,7 @@ export default function Step1BasicData({
       {form.unitsSystem === "metric" ? (
         <TextInput
           label={t("height")}
-          value={form.height ?? ""}
+          value={getString(form.height)}
           onChangeText={(val) =>
             handleChange("height", val.replace(/[^0-9]/g, ""))
           }
@@ -257,7 +271,7 @@ export default function Step1BasicData({
         <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
           <TextInput
             label={t("heightFt")}
-            value={form.height ?? ""}
+            value={getString(form.height)}
             onChangeText={(val) =>
               handleChange("height", val.replace(/[^0-9]/g, ""))
             }
@@ -270,7 +284,7 @@ export default function Step1BasicData({
           />
           <TextInput
             label={t("heightIn")}
-            value={form.heightInch ?? ""}
+            value={getString(form.heightInch)}
             onChangeText={(val) =>
               handleChange("heightInch", val.replace(/[^0-9]/g, ""))
             }
@@ -286,7 +300,7 @@ export default function Step1BasicData({
 
       <TextInput
         label={t("weight")}
-        value={form.weight ?? ""}
+        value={getString(form.weight)}
         onChangeText={(val) =>
           handleChange("weight", val.replace(/[^0-9]/g, ""))
         }

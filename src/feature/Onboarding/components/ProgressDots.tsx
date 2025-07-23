@@ -33,7 +33,7 @@ const ProgressDots: React.FC<Props> = ({ step, total, style }) => {
             height: DOT_SIZE,
             borderRadius: theme.rounded.full,
             backgroundColor:
-              i + 1 === step ? theme.accentSecondary : theme.textSecondary,
+              i + 1 <= step ? theme.accentSecondary : theme.textSecondary,
             opacity: i + 1 === step ? 1 : 0.6,
           }}
         />
