@@ -7,9 +7,45 @@ import {
   SecondaryButton,
   Dropdown,
   Slider,
+  CheckboxDropdown,
 } from "@/src/components";
-import { PreferencesDropdown } from "./PreferencesDropdown";
-import { ActivityLevel, FormData } from "@/src/feature/Onboarding/types";
+import {
+  ActivityLevel,
+  FormData,
+  Preference,
+} from "@/src/feature/Onboarding/types";
+
+const PREFERENCE_OPTIONS: { label: string; value: Preference }[] = [
+  { label: "preferences.lowCarb", value: "lowCarb" },
+  { label: "preferences.keto", value: "keto" },
+  { label: "preferences.highProtein", value: "highProtein" },
+  { label: "preferences.highCarb", value: "highCarb" },
+  { label: "preferences.lowFat", value: "lowFat" },
+  { label: "preferences.balanced", value: "balanced" },
+  { label: "preferences.vegetarian", value: "vegetarian" },
+  { label: "preferences.vegan", value: "vegan" },
+  { label: "preferences.pescatarian", value: "pescatarian" },
+  { label: "preferences.mediterranean", value: "mediterranean" },
+  { label: "preferences.glutenFree", value: "glutenFree" },
+  { label: "preferences.dairyFree", value: "dairyFree" },
+  { label: "preferences.paleo", value: "paleo" },
+];
+
+const PREFERENCE_CONFLICTS: Record<Preference, Preference[]> = {
+  lowCarb: ["highCarb", "balanced", "keto"],
+  keto: ["highCarb", "balanced", "lowFat", "lowCarb"],
+  highProtein: [],
+  highCarb: ["keto", "lowCarb"],
+  lowFat: ["keto"],
+  balanced: ["keto", "lowCarb"],
+  vegetarian: ["vegan", "pescatarian"],
+  vegan: ["vegetarian", "pescatarian"],
+  pescatarian: ["vegan", "vegetarian"],
+  mediterranean: [],
+  glutenFree: [],
+  dairyFree: [],
+  paleo: [],
+};
 
 type Props = {
   form: FormData;
@@ -37,6 +73,14 @@ export default function Step2Preferences({
     MAX_DEFICIT = 0.5;
   const MIN_SURPLUS = 0.1,
     MAX_SURPLUS = 0.5;
+
+  const disabledPreferences = useMemo(() => {
+    const set = new Set<Preference>();
+    for (const v of form.preferences ?? []) {
+      (PREFERENCE_CONFLICTS[v] ?? []).forEach((b) => set.add(b));
+    }
+    return Array.from(set);
+  }, [form.preferences]);
 
   function validate(): boolean {
     let valid = true;
@@ -72,7 +116,7 @@ export default function Step2Preferences({
   }
 
   const canNext = useMemo(() => {
-    if (!form.preferences || form.preferences.length === 0) return false;
+    if (!form.preferences) return false;
     if (!form.activityLevel) return false;
     if (!form.goal) return false;
     if (
@@ -167,16 +211,19 @@ export default function Step2Preferences({
         </Text>
       </View>
 
-      <PreferencesDropdown
-        values={form.preferences || ["none"]}
-        onChange={(prefs) =>
-          setForm((prev) => ({
-            ...prev,
-            preferences: prefs.length > 0 ? prefs : ["none"],
-          }))
-        }
+      <CheckboxDropdown
         label={t("preferences.label")}
+        options={PREFERENCE_OPTIONS.map((o) => ({
+          ...o,
+          label: t(o.label),
+        }))}
+        values={form.preferences}
+        onChange={(newPrefs) =>
+          setForm((prev) => ({ ...prev, preferences: newPrefs }))
+        }
         error={errors.preferences}
+        disabled={false}
+        disabledValues={disabledPreferences}
       />
 
       <Dropdown

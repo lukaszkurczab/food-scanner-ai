@@ -48,7 +48,6 @@
     "heightInchInvalid": "Inches must be between 0 and 11",
     "weightRequired": "Weight is required",
     "weightInvalid": "Enter a valid weight",
-    "selectPreference": "Select at least one dietary preference",
     "selectActivity": "Select your activity level",
     "selectGoal": "Select your goal",
     "selectDeficit": "Set your desired calorie deficit",
