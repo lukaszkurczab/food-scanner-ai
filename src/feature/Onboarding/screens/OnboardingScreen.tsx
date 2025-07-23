@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as SecureStore from "expo-secure-store";
 import ProgressDots from "@/src/feature/Onboarding/components/ProgressDots";
-import Step1BasicData from "@/src/feature/Onboarding/components/Step1BasicData";
 import { useSoftSave } from "@/src/feature/Onboarding/hooks/hookSoftSave";
-import Step2Preferences from "@/src/feature/Onboarding/components/Step2Preferences";
 import { Modal, Layout } from "@/src/components";
 import { FormData } from "@/src/feature/Onboarding/types";
+import Step1BasicData from "@/src/feature/Onboarding/components/Step1BasicData";
+import Step2Preferences from "@/src/feature/Onboarding/components/Step2Preferences";
+import Step3Health from "@/src/feature/Onboarding/components/Step3Health";
 
 const ONBOARDING_DRAFT_KEY = "onboardingDraft";
 const STEPS = 5;
@@ -22,6 +23,11 @@ const INITIAL_FORM: FormData = {
   goal: "maintain",
   calorieDeficit: 0.3,
   calorieSurplus: 0.3,
+  chronicDiseases: [],
+  chronicDiseasesOther: "",
+  allergies: [],
+  allergiesOther: "",
+  lifestyle: "",
 };
 
 export default function OnboardingScreen({ navigation }: any) {
@@ -64,6 +70,16 @@ export default function OnboardingScreen({ navigation }: any) {
       )}
       {step === 2 && (
         <Step2Preferences
+          form={form}
+          setForm={setForm}
+          errors={errors}
+          setErrors={setErrors}
+          onNext={nextStep}
+          onBack={prevStep}
+        />
+      )}
+      {step === 3 && (
+        <Step3Health
           form={form}
           setForm={setForm}
           errors={errors}

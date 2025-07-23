@@ -1,0 +1,111 @@
+import React, { forwardRef } from "react";
+import {
+  View,
+  TextInput as RNTextInput,
+  Text,
+  StyleSheet,
+  Platform,
+} from "react-native";
+import { useTheme } from "@/src/theme/useTheme";
+
+type Props = {
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  label?: string;
+  error?: string;
+  style?: any;
+  inputStyle?: any;
+  disabled?: boolean;
+  editable?: boolean;
+  numberOfLines?: number;
+  onBlur?: () => void;
+  onFocus?: () => void;
+};
+
+export const LongTextInput = forwardRef<RNTextInput, Props>(
+  (
+    {
+      value,
+      onChangeText,
+      placeholder,
+      label,
+      error,
+      style,
+      inputStyle,
+      disabled = false,
+      editable,
+      numberOfLines = 4,
+      onBlur,
+      onFocus,
+    },
+    ref
+  ) => {
+    const theme = useTheme();
+    const isEditable = editable !== undefined ? editable : !disabled;
+
+    const hasError = !!error;
+    const borderColor = hasError
+      ? theme.error.border || theme.error.background
+      : theme.border || "transparent";
+    const borderWidth = hasError ? 1.5 : 1;
+
+    return (
+      <View style={[{ width: "100%" }, style]}>
+        {label && (
+          <Text
+            style={{
+              color: theme.text,
+              fontSize: theme.typography.size.sm,
+              marginBottom: theme.spacing.xs / 2,
+              fontFamily: theme.typography.fontFamily.medium,
+            }}
+          >
+            {label}
+          </Text>
+        )}
+        <RNTextInput
+          ref={ref}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={theme.textSecondary}
+          editable={isEditable}
+          style={[
+            {
+              minHeight: Math.max(90, numberOfLines * 22),
+              borderRadius: theme.rounded.md,
+              borderWidth,
+              borderColor,
+              backgroundColor: theme.card,
+              color: theme.text,
+              fontSize: theme.typography.size.base,
+              fontFamily: theme.typography.fontFamily.regular,
+              padding: theme.spacing.md,
+              textAlignVertical: "top",
+            },
+            inputStyle,
+          ]}
+          multiline
+          numberOfLines={numberOfLines}
+          onBlur={onBlur}
+          onFocus={onFocus}
+          selectionColor={theme.accent}
+          underlineColorAndroid="transparent"
+        />
+        {!!error && (
+          <Text
+            style={{
+              color: theme.error.text,
+              fontSize: theme.typography.size.xs,
+              marginTop: theme.spacing.xs / 2,
+              fontFamily: theme.typography.fontFamily.medium,
+            }}
+          >
+            {error}
+          </Text>
+        )}
+      </View>
+    );
+  }
+);

@@ -1,4 +1,10 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useMemo,
+  useEffect,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -71,17 +77,35 @@ export function CheckboxDropdown<T extends string | number>({
     [values, options]
   );
 
-  const openDropdown = () => {
-    if (disabled) return;
+  const updateDropdownPosition = useCallback(() => {
     if (fieldRef.current) {
       fieldRef.current.measureInWindow((x, y, width, height) => {
         setDropdownPos({ x, y, width, height });
-        setOpen(true);
       });
-    } else {
-      setOpen(true);
     }
+  }, []);
+
+  const openDropdown = () => {
+    if (disabled) return;
+    setOpen(true);
+    setTimeout(updateDropdownPosition, 1);
   };
+
+  useEffect(() => {
+    if (!open) return;
+    updateDropdownPosition();
+    const subscription = Dimensions.addEventListener(
+      "change",
+      updateDropdownPosition
+    );
+    return () => subscription?.remove();
+  }, [open, updateDropdownPosition]);
+
+  useEffect(() => {
+    if (!open) return;
+    const interval = setInterval(updateDropdownPosition, 200);
+    return () => clearInterval(interval);
+  }, [open, updateDropdownPosition]);
 
   const handleToggle = (v: T) => {
     if (disabled || blockedSet.has(v)) return;
