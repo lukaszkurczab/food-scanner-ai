@@ -34,3 +34,4 @@ export * from "./LinkText";
 export * from "./Layout";
 export * from "./Checkbox";
 export * from "./Dropdown";
+export * from "./CheckboxDropdown";

@@ -12,59 +12,38 @@ import {
 import { useTheme } from "@/src/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { Preference } from "../types";
 
-const PREFERENCE_OPTIONS: { label: string; value: Preference }[] = [
-  { label: "preferences.lowCarb", value: "lowCarb" },
-  { label: "preferences.keto", value: "keto" },
-  { label: "preferences.highProtein", value: "highProtein" },
-  { label: "preferences.highCarb", value: "highCarb" },
-  { label: "preferences.lowFat", value: "lowFat" },
-  { label: "preferences.balanced", value: "balanced" },
-  { label: "preferences.vegetarian", value: "vegetarian" },
-  { label: "preferences.vegan", value: "vegan" },
-  { label: "preferences.pescatarian", value: "pescatarian" },
-  { label: "preferences.mediterranean", value: "mediterranean" },
-  { label: "preferences.glutenFree", value: "glutenFree" },
-  { label: "preferences.dairyFree", value: "dairyFree" },
-  { label: "preferences.paleo", value: "paleo" },
-];
-
-const PREFERENCE_CONFLICTS: Record<Preference, Preference[]> = {
-  lowCarb: ["highCarb", "balanced", "keto"],
-  keto: ["highCarb", "balanced", "lowFat", "lowCarb"],
-  highProtein: [],
-  highCarb: ["keto", "lowCarb"],
-  lowFat: ["keto"],
-  balanced: ["keto", "lowCarb"],
-  vegetarian: ["vegan", "pescatarian"],
-  vegan: ["vegetarian", "pescatarian"],
-  pescatarian: ["vegan", "vegetarian"],
-  mediterranean: [],
-  glutenFree: [],
-  dairyFree: [],
-  paleo: [],
+type Option<T extends string | number> = {
+  label: string;
+  value: T;
+  disabled?: boolean;
 };
 
-type Props = {
-  values: Preference[];
-  onChange: (values: Preference[]) => void;
+type CheckboxDropdownProps<T extends string | number> = {
   label?: string;
+  options: Option<T>[];
+  values: T[];
+  onChange: (values: T[]) => void;
   error?: string;
   disabled?: boolean;
+  disabledValues?: T[];
   style?: any;
+  renderLabel?: (option: Option<T>) => React.ReactNode;
 };
 
-export const PreferencesDropdown: React.FC<Props> = ({
+export function CheckboxDropdown<T extends string | number>({
+  label,
+  options,
   values,
   onChange,
-  label,
   error,
   disabled,
+  disabledValues,
   style,
-}) => {
+  renderLabel,
+}: CheckboxDropdownProps<T>) {
   const theme = useTheme();
-  const { t } = useTranslation("onboarding");
+  const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{
     x: number;
@@ -75,20 +54,21 @@ export const PreferencesDropdown: React.FC<Props> = ({
 
   const fieldRef = useRef<View>(null);
 
-  const disabledValues = useMemo(() => {
-    const blocked = new Set<Preference>();
-    for (const v of values) {
-      (PREFERENCE_CONFLICTS[v] ?? []).forEach((b) => blocked.add(b));
-    }
-    return blocked;
-  }, [values]);
+  const blockedSet = useMemo(() => {
+    const s = new Set<T>(disabledValues ?? []);
+    options.forEach((o) => {
+      if (o.disabled) s.add(o.value);
+    });
+    return s;
+  }, [options, disabledValues]);
 
   const selectedLabels = useMemo(
     () =>
-      PREFERENCE_OPTIONS.filter((o) => values.includes(o.value))
-        .map((o) => t(o.label))
+      options
+        .filter((o) => values.includes(o.value))
+        .map((o) => o.label)
         .join(", "),
-    [values, t]
+    [values, options]
   );
 
   const openDropdown = () => {
@@ -103,11 +83,10 @@ export const PreferencesDropdown: React.FC<Props> = ({
     }
   };
 
-  const handleToggle = (v: Preference) => {
-    if (disabled || disabledValues.has(v)) return;
+  const handleToggle = (v: T) => {
+    if (disabled || blockedSet.has(v)) return;
     if (values.includes(v)) {
-      const newVals = values.filter((x) => x !== v);
-      onChange(newVals);
+      onChange(values.filter((x) => x !== v));
     } else {
       onChange([...values, v]);
     }
@@ -162,7 +141,7 @@ export const PreferencesDropdown: React.FC<Props> = ({
           }}
           numberOfLines={1}
         >
-          {selectedLabels || t("preferences.none")}
+          {selectedLabels || t("none")}
         </Text>
         <MaterialIcons
           name={open ? "keyboard-arrow-up" : "keyboard-arrow-down"}
@@ -191,7 +170,7 @@ export const PreferencesDropdown: React.FC<Props> = ({
         >
           <View style={{ flex: 1 }}>
             <Pressable
-              style={{ ...StyleSheet.absoluteFillObject, zIndex: 1 }}
+              style={[StyleSheet.absoluteFillObject, { zIndex: 1 }]}
               onPress={() => setOpen(false)}
             />
             <View
@@ -218,9 +197,9 @@ export const PreferencesDropdown: React.FC<Props> = ({
                 contentContainerStyle={{ flexGrow: 1 }}
                 keyboardShouldPersistTaps="handled"
               >
-                {PREFERENCE_OPTIONS.map((item) => {
+                {options.map((item) => {
                   const isSelected = values.includes(item.value);
-                  const isDisabled = disabled || disabledValues.has(item.value);
+                  const isDisabled = disabled || blockedSet.has(item.value);
                   return (
                     <TouchableOpacity
                       key={item.value}
@@ -236,7 +215,7 @@ export const PreferencesDropdown: React.FC<Props> = ({
                         opacity: isDisabled ? 0.4 : 1,
                       }}
                       accessibilityRole="checkbox"
-                      accessibilityLabel={t(item.label)}
+                      accessibilityLabel={item.label}
                       accessibilityState={{
                         checked: isSelected,
                         disabled: isDisabled,
@@ -250,7 +229,7 @@ export const PreferencesDropdown: React.FC<Props> = ({
                         size={22}
                         color={
                           isSelected
-                            ? theme.accentSecondary
+                            ? theme.accentSecondary ?? theme.accent
                             : isDisabled
                             ? theme.textSecondary
                             : theme.textSecondary
@@ -265,7 +244,7 @@ export const PreferencesDropdown: React.FC<Props> = ({
                           flex: 1,
                         }}
                       >
-                        {t(item.label)}
+                        {renderLabel ? renderLabel(item) : item.label}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -277,4 +256,4 @@ export const PreferencesDropdown: React.FC<Props> = ({
       )}
     </View>
   );
-};
+}

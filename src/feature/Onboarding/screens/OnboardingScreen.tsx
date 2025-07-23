@@ -17,7 +17,7 @@ const INITIAL_FORM: FormData = {
   sex: "male",
   height: "",
   weight: "",
-  preferences: ["none"],
+  preferences: [],
   activityLevel: "moderate",
   goal: "maintain",
   calorieDeficit: 0.3,
