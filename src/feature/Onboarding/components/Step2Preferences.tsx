@@ -85,10 +85,6 @@ export default function Step2Preferences({
   function validate(): boolean {
     let valid = true;
     let newErrors: Partial<Record<keyof FormData, string>> = {};
-    if (!form.preferences || form.preferences.length === 0) {
-      newErrors.preferences = t("validation.selectPreference");
-      valid = false;
-    }
     if (!form.activityLevel) {
       newErrors.activityLevel = t("validation.selectActivity");
       valid = false;
@@ -116,7 +112,6 @@ export default function Step2Preferences({
   }
 
   const canNext = useMemo(() => {
-    if (!form.preferences) return false;
     if (!form.activityLevel) return false;
     if (!form.goal) return false;
     if (
@@ -143,9 +138,6 @@ export default function Step2Preferences({
   }
 
   useEffect(() => {
-    if (errors.preferences && form.preferences && form.preferences.length > 0) {
-      setErrors((prev) => ({ ...prev, preferences: undefined }));
-    }
     if (errors.activityLevel && form.activityLevel) {
       setErrors((prev) => ({ ...prev, activityLevel: undefined }));
     }
@@ -166,13 +158,7 @@ export default function Step2Preferences({
     ) {
       setErrors((prev) => ({ ...prev, calorieSurplus: undefined }));
     }
-  }, [
-    form.preferences,
-    form.activityLevel,
-    form.goal,
-    form.calorieDeficit,
-    form.calorieSurplus,
-  ]);
+  }, [form.activityLevel, form.goal, form.calorieDeficit, form.calorieSurplus]);
 
   const handleNext = () => {
     if (validate()) onNext();
@@ -221,7 +207,7 @@ export default function Step2Preferences({
         onChange={(newPrefs) =>
           setForm((prev) => ({ ...prev, preferences: newPrefs }))
         }
-        error={errors.preferences}
+        error={undefined}
         disabled={false}
         disabledValues={disabledPreferences}
       />

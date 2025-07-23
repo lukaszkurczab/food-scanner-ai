@@ -1,13 +1,16 @@
 export type UnitsSystem = "metric" | "imperial";
+
 export type Sex = "male" | "female" | null;
 
 export type Goal = "lose" | "maintain" | "increase";
+
 export type ActivityLevel =
   | "sedentary"
   | "light"
   | "moderate"
   | "active"
   | "very_active";
+
 export type Preference =
   | "lowCarb"
   | "keto"
@@ -23,10 +26,19 @@ export type Preference =
   | "dairyFree"
   | "paleo";
 
+export type ChronicDisease =
+  | "none"
+  | "diabetes"
+  | "hypertension"
+  | "asthma"
+  | "other";
+
+export type Allergy = "none" | "peanuts" | "gluten" | "lactose" | "other";
+
 export type FormData = {
-  unitsSystem: "metric" | "imperial";
+  unitsSystem: UnitsSystem;
   age: string;
-  sex: "male" | "female" | null;
+  sex: Sex;
   height: string;
   heightInch?: string;
   weight: string;
@@ -35,4 +47,9 @@ export type FormData = {
   goal: Goal | "";
   calorieDeficit?: number;
   calorieSurplus?: number;
+  chronicDiseases?: ChronicDisease[];
+  chronicDiseasesOther?: string;
+  allergies?: Allergy[];
+  allergiesOther?: string;
+  lifestyle?: string;
 };
