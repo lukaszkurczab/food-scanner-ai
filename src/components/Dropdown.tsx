@@ -86,6 +86,11 @@ export function Dropdown<T extends string>({
           borderColor: error ? theme.error.border : theme.border,
           backgroundColor: disabled ? theme.disabled.background : theme.card,
           opacity: disabled ? 0.6 : 1,
+          shadowColor: theme.shadow,
+          shadowOpacity: 0.12,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 3,
         }}
         onPress={() => !disabled && openDropdown()}
         accessibilityRole="button"
@@ -130,30 +135,28 @@ export function Dropdown<T extends string>({
         >
           <Pressable style={{ flex: 1 }} onPress={handleOutsidePress}>
             <View
-              style={[
-                {
-                  position: "absolute",
-                  top: dropdownPos.y + dropdownPos.height,
-                  left: dropdownPos.x,
-                  width: dropdownPos.width,
-                  backgroundColor: theme.card,
-                  borderColor: theme.border,
-                  borderWidth: 1,
-                  borderRadius: theme.rounded.md,
-                  maxHeight: Math.min(
-                    220,
-                    Dimensions.get("window").height -
-                      (dropdownPos.y + dropdownPos.height) -
-                      32
-                  ),
-                  elevation: 6,
-                  shadowColor: "#000",
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                  shadowOffset: { width: 0, height: 2 },
-                  zIndex: 100,
-                },
-              ]}
+              style={{
+                position: "absolute",
+                top: dropdownPos.y + dropdownPos.height,
+                left: dropdownPos.x,
+                width: dropdownPos.width,
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+                borderWidth: 1,
+                borderRadius: theme.rounded.md,
+                maxHeight: Math.min(
+                  220,
+                  Dimensions.get("window").height -
+                    (dropdownPos.y + dropdownPos.height) -
+                    32
+                ),
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 3,
+                zIndex: 100,
+              }}
             >
               <ScrollView nestedScrollEnabled={true}>
                 {options.map((item) => (

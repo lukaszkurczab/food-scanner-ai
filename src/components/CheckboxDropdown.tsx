@@ -141,16 +141,24 @@ export function CheckboxDropdown<T extends string | number>({
       )}
       <Pressable
         ref={fieldRef}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          padding: theme.spacing.md,
-          borderRadius: theme.rounded.md,
-          borderWidth: 1,
-          borderColor: error ? theme.error.border : theme.border,
-          backgroundColor: disabled ? theme.disabled.background : theme.card,
-          opacity: disabled ? 0.6 : 1,
-        }}
+        style={[
+          {
+            flexDirection: "row",
+            alignItems: "center",
+            padding: theme.spacing.md,
+            borderRadius: theme.rounded.md,
+            borderWidth: 1,
+            borderColor: error ? theme.error.border : theme.border,
+            backgroundColor: disabled ? theme.disabled.background : theme.card,
+            opacity: disabled ? 0.6 : 1,
+            shadowColor: theme.shadow,
+            shadowOpacity: 0.12,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 3,
+          },
+          style,
+        ]}
         onPress={openDropdown}
         accessibilityRole="button"
         accessibilityLabel={label}

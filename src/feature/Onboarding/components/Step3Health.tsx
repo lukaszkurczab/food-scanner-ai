@@ -165,7 +165,7 @@ export default function Step3Health({
               "Please specify..."
             )}
             error={errors.chronicDiseasesOther}
-            style={{ marginTop: theme.spacing.xs }}
+            style={{ marginTop: theme.spacing.md }}
           />
         )}
       </View>
@@ -208,7 +208,7 @@ export default function Step3Health({
               "Please specify..."
             )}
             error={errors.allergiesOther}
-            style={{ marginTop: theme.spacing.xs }}
+            style={{ marginTop: theme.spacing.md }}
           />
         )}
       </View>
