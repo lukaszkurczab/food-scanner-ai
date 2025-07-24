@@ -130,9 +130,9 @@ export function CheckboxDropdown<T extends string | number>({
       {label && (
         <Text
           style={{
-            color: theme.text,
-            fontSize: theme.typography.size.base,
-            marginBottom: theme.spacing.xs,
+            color: theme.textSecondary,
+            fontSize: theme.typography.size.sm,
+            marginBottom: theme.spacing.xs / 2,
             fontFamily: theme.typography.fontFamily.medium,
           }}
         >

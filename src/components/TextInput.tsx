@@ -129,7 +129,6 @@ export const TextInput: React.FC<Props> = ({
             fontSize: theme.typography.size.sm,
             marginBottom: theme.spacing.xs / 2,
             fontFamily: theme.typography.fontFamily.medium,
-            letterSpacing: 0.1,
           }}
         >
           {label}

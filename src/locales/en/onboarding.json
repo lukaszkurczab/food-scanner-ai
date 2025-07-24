@@ -6,8 +6,11 @@
   "imperial": "Imperial",
   "age": "Age",
   "sex": "Sex",
+  "sex.male": "Male",
+  "sex.female": "Female",
   "male": "Male",
   "female": "Female",
+  "none": "None",
   "height": "Height",
   "heightFt": "Height (ft)",
   "heightIn": "Height (in)",
@@ -105,22 +108,37 @@
   "step4_description": "Tell us how you'd like our AI assistant to support you on your journey. Your preferences help us tailor the experience just for you.",
   "ai": {
     "assistantStyle": "Assistant’s style",
-    "assistantStyle.none": "No preference",
-    "assistantStyle.concise": "Concise",
-    "assistantStyle.friendly": "Friendly & motivational",
-    "assistantStyle.detailed": "Detailed & scientific",
+    "style": {
+      "none": "No preference",
+      "concise": "Concise",
+      "friendly": "Friendly & motivational",
+      "detailed": "Detailed & scientific"
+    },
     "areaOfFocus": "Area of focus",
-    "areaOfFocus.none": "No preference",
-    "areaOfFocus.mealPlanning": "Meal planning",
-    "areaOfFocus.analyzingMistakes": "Analyzing mistakes",
-    "areaOfFocus.quickAnswers": "Quick answers",
-    "areaOfFocus.motivation": "Motivation",
-    "areaOfFocus.other": "Other",
+    "focus": {
+      "none": "No preference",
+      "mealPlanning": "Meal planning",
+      "analyzingMistakes": "Analyzing mistakes",
+      "quickAnswers": "Quick answers",
+      "motivation": "Motivation",
+      "other": "Other"
+    },
     "anythingElse": "Anything to note?",
     "anythingElse_placeholder": "Anything else we should know?",
     "focus_placeholder": "Type your own focus...",
     "errors": {
       "aiFocusOther": "Please specify your focus area"
     }
+  },
+
+  "summary": {
+    "title": "Review your info",
+    "desc": "Here’s a summary of what you’ve shared. Feel free to go back and make any changes before we get started!",
+    "personalInfo": "Personal Info",
+    "dietGoal": "Diet and Goal",
+    "health": "Health",
+    "ai": "Assistant Settings",
+    "edit": "Edit",
+    "finish": "Finish"
   }
 }
