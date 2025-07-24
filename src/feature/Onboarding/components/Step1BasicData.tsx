@@ -18,11 +18,12 @@ type Props = {
   setErrors: React.Dispatch<
     React.SetStateAction<Partial<Record<keyof FormData, string>>>
   >;
+  editMode: boolean;
+  onConfirmEdit: () => void;
   onNext: () => void;
   onCancel: () => void;
 };
 
-// Helper to safely cast value to string (never array/undefined/null)
 function getString(value: unknown): string {
   if (typeof value === "string") return value;
   if (typeof value === "number") return value.toString();
@@ -34,6 +35,8 @@ export default function Step1BasicData({
   setForm,
   errors,
   setErrors,
+  editMode,
+  onConfirmEdit,
   onNext,
   onCancel,
 }: Props) {
@@ -311,7 +314,11 @@ export default function Step1BasicData({
         accessibilityLabel={t("weight")}
       />
 
-      <PrimaryButton label={t("next")} onPress={onNext} disabled={!canNext()} />
+      <PrimaryButton
+        label={editMode ? t("summary.confirm", "Confirm") : t("next")}
+        onPress={editMode ? onConfirmEdit : onNext}
+        disabled={!canNext()}
+      />
       <SecondaryButton label={t("cancel")} onPress={onCancel} />
     </View>
   );

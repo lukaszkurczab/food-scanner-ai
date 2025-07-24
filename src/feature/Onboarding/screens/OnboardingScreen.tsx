@@ -46,6 +46,14 @@ export default function OnboardingScreen({ navigation }: any) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const [editMode, setEditMode] = useState<{
+    editing: boolean;
+    returnStep: number;
+  }>({
+    editing: false,
+    returnStep: STEPS,
+  });
+
   useEffect(() => {
     (async () => {
       try {
@@ -63,7 +71,15 @@ export default function OnboardingScreen({ navigation }: any) {
   const nextStep = () => setStep((s) => Math.min(STEPS, s + 1));
   const prevStep = () => setStep((s) => Math.max(1, s - 1));
 
-  const goToStep = (stepNumber: number) => setStep(stepNumber);
+  const goToStep = (stepNumber: number) => {
+    setEditMode({ editing: true, returnStep: STEPS });
+    setStep(stepNumber);
+  };
+
+  const confirmEdit = () => {
+    setEditMode({ editing: false, returnStep: STEPS });
+    setStep(STEPS);
+  };
 
   const handleFinish = () => {
     navigation.replace("Home");
@@ -87,8 +103,10 @@ export default function OnboardingScreen({ navigation }: any) {
           setForm={setForm}
           errors={errors}
           setErrors={setErrors}
-          onNext={nextStep}
+          onNext={editMode.editing ? confirmEdit : nextStep}
           onCancel={handleCancel}
+          editMode={editMode.editing}
+          onConfirmEdit={confirmEdit}
         />
       )}
       {step === 2 && (
@@ -97,8 +115,10 @@ export default function OnboardingScreen({ navigation }: any) {
           setForm={setForm}
           errors={errors}
           setErrors={setErrors}
-          onNext={nextStep}
-          onBack={prevStep}
+          onNext={editMode.editing ? confirmEdit : nextStep}
+          onBack={editMode.editing ? () => setStep(1) : prevStep}
+          editMode={editMode.editing}
+          onConfirmEdit={confirmEdit}
         />
       )}
       {step === 3 && (
@@ -107,8 +127,10 @@ export default function OnboardingScreen({ navigation }: any) {
           setForm={setForm}
           errors={errors}
           setErrors={setErrors}
-          onNext={nextStep}
-          onBack={prevStep}
+          onNext={editMode.editing ? confirmEdit : nextStep}
+          onBack={editMode.editing ? () => setStep(2) : prevStep}
+          editMode={editMode.editing}
+          onConfirmEdit={confirmEdit}
         />
       )}
       {step === 4 && (
@@ -117,8 +139,10 @@ export default function OnboardingScreen({ navigation }: any) {
           setForm={setForm}
           errors={errors}
           setErrors={setErrors}
-          onNext={nextStep}
-          onBack={prevStep}
+          onNext={editMode.editing ? confirmEdit : nextStep}
+          onBack={editMode.editing ? () => setStep(3) : prevStep}
+          editMode={editMode.editing}
+          onConfirmEdit={confirmEdit}
         />
       )}
       {step === 5 && (

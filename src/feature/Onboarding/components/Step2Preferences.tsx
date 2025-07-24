@@ -54,6 +54,8 @@ type Props = {
   setErrors: React.Dispatch<
     React.SetStateAction<Partial<Record<keyof FormData, string>>>
   >;
+  editMode: boolean;
+  onConfirmEdit: () => void;
   onNext: () => void;
   onBack: () => void;
 };
@@ -63,6 +65,8 @@ export default function Step2Preferences({
   setForm,
   errors,
   setErrors,
+  editMode,
+  onConfirmEdit,
   onNext,
   onBack,
 }: Props) {
@@ -313,10 +317,9 @@ export default function Step2Preferences({
       )}
 
       <PrimaryButton
-        label={t("next")}
-        onPress={handleNext}
+        label={editMode ? t("summary.confirm", "Confirm") : t("next")}
+        onPress={editMode ? onConfirmEdit : onNext}
         disabled={!canNext}
-        style={{ marginTop: theme.spacing.xl }}
       />
       <SecondaryButton label={t("back")} onPress={onBack} />
     </View>

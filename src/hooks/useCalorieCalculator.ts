@@ -1,4 +1,7 @@
-import { CalorieResult, UserInput } from "../types/types";
+import {
+  CalorieResult,
+  UserInput,
+} from "../feature/NutritionSurvey/types/types";
 
 export const useCalorieCalculator = (input: UserInput): CalorieResult => {
   const { gender, age, weight, height, activityLevel, goal } = input;
