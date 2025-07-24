@@ -5,7 +5,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { Button, TextInput } from "../../../components";
 import { StepView } from "@/src/components/index";
 import { RootStackParamList } from "../../../navigation/navigate";
-import { useCalorieCalculator } from "../hooks/useCalorieCalculator";
+import { useCalorieCalculator } from "../../../hooks/useCalorieCalculator";
 import { auth, firestore } from "@/src/FirebaseConfig";
 import { Gender, Goal, NutritionSurvey } from "../types/types";
 import { useTheme } from "@/src/theme/useTheme";

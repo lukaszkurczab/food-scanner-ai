@@ -12,19 +12,19 @@ import {
 import { AiStyle, AiFocus, FormData } from "@/src/feature/Onboarding/types";
 
 const ASSISTANT_STYLE_OPTIONS: { label: string; value: AiStyle }[] = [
-  { label: "ai.assistantStyle.none", value: "none" },
-  { label: "ai.assistantStyle.concise", value: "concise" },
-  { label: "ai.assistantStyle.friendly", value: "friendly" },
-  { label: "ai.assistantStyle.detailed", value: "detailed" },
+  { label: "ai.style.none", value: "none" },
+  { label: "ai.style.concise", value: "concise" },
+  { label: "ai.style.friendly", value: "friendly" },
+  { label: "ai.style.detailed", value: "detailed" },
 ];
 
 const AREA_OF_FOCUS_OPTIONS: { label: string; value: AiFocus }[] = [
-  { label: "ai.areaOfFocus.none", value: "none" },
-  { label: "ai.areaOfFocus.mealPlanning", value: "mealPlanning" },
-  { label: "ai.areaOfFocus.analyzingMistakes", value: "analyzingMistakes" },
-  { label: "ai.areaOfFocus.quickAnswers", value: "quickAnswers" },
-  { label: "ai.areaOfFocus.motivation", value: "motivation" },
-  { label: "ai.areaOfFocus.other", value: "other" },
+  { label: "ai.focus.none", value: "none" },
+  { label: "ai.focus.mealPlanning", value: "mealPlanning" },
+  { label: "ai.focus.analyzingMistakes", value: "analyzingMistakes" },
+  { label: "ai.focus.quickAnswers", value: "quickAnswers" },
+  { label: "ai.focus.motivation", value: "motivation" },
+  { label: "ai.focus.other", value: "other" },
 ];
 
 type Props = {
@@ -34,6 +34,8 @@ type Props = {
   setErrors: React.Dispatch<
     React.SetStateAction<Partial<Record<keyof FormData, string>>>
   >;
+  editMode: boolean;
+  onConfirmEdit: () => void;
   onNext: () => void;
   onBack: () => void;
 };
@@ -43,6 +45,8 @@ export default function Step4AIAssistantPreferences({
   setForm,
   errors,
   setErrors,
+  editMode,
+  onConfirmEdit,
   onNext,
   onBack,
 }: Props) {
@@ -153,12 +157,9 @@ export default function Step4AIAssistantPreferences({
       />
 
       <PrimaryButton
-        label={t("next")}
-        onPress={() => {
-          if (validate()) onNext();
-        }}
+        label={editMode ? t("summary.confirm", "Confirm") : t("next")}
+        onPress={editMode ? onConfirmEdit : onNext}
         disabled={!canNext}
-        style={{ marginTop: theme.spacing.xl }}
       />
       <SecondaryButton label={t("back")} onPress={onBack} />
     </View>

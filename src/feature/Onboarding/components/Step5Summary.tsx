@@ -160,14 +160,7 @@ export default function Step5Summary({
   ];
 
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{
-        padding: theme.spacing.container,
-        paddingBottom: theme.spacing.xxl,
-      }}
-      keyboardShouldPersistTaps="handled"
-    >
+    <View>
       <View style={{ marginBottom: theme.spacing.xl }}>
         <Text
           style={{
@@ -283,6 +276,6 @@ export default function Step5Summary({
         }}
       />
       <SecondaryButton label={t("back")} onPress={onBack} />
-    </ScrollView>
+    </View>
   );
 }

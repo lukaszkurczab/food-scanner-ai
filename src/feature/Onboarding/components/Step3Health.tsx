@@ -45,6 +45,8 @@ type Props = {
       >
     >
   >;
+  editMode: boolean;
+  onConfirmEdit: () => void;
   onNext: () => void;
   onBack: () => void;
 };
@@ -54,6 +56,8 @@ export default function Step3Health({
   setForm,
   errors = {},
   setErrors,
+  editMode,
+  onConfirmEdit,
   onNext,
   onBack,
 }: Props) {
@@ -188,9 +192,8 @@ export default function Step3Health({
       />
 
       <PrimaryButton
-        label={t("next")}
-        onPress={handleNext}
-        style={{ marginTop: theme.spacing.xl }}
+        label={editMode ? t("summary.confirm", "Confirm") : t("next")}
+        onPress={editMode ? onConfirmEdit : onNext}
       />
       <SecondaryButton label={t("back")} onPress={onBack} />
     </View>
