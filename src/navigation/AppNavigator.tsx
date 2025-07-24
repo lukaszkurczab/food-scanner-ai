@@ -39,6 +39,8 @@ const AppNavigator = () => {
     );
   }
 
+  console.log("User in AppNavigator:", user);
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
