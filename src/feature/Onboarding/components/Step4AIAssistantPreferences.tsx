@@ -7,6 +7,7 @@ import {
   SecondaryButton,
   Dropdown,
   TextInput,
+  LongTextInput,
 } from "@/src/components";
 import { AiStyle, AiFocus, FormData } from "@/src/feature/Onboarding/types";
 
@@ -142,15 +143,13 @@ export default function Step4AIAssistantPreferences({
         />
       )}
 
-      <TextInput
+      <LongTextInput
         label={t("ai.anythingElse")}
         placeholder={t("ai.anythingElse_placeholder")}
         value={form.aiNote ?? ""}
         onChangeText={(val) => setForm((prev) => ({ ...prev, aiNote: val }))}
         error={undefined}
         maxLength={250}
-        multiline
-        numberOfLines={4}
       />
 
       <PrimaryButton

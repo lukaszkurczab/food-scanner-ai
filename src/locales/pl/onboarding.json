@@ -1,0 +1,144 @@
+{
+  "step1_title": "Powiedz nam coś o sobie",
+  "step1_description": "Potrzebujemy kilku podstawowych informacji, aby obliczyć Twoje dzienne zapotrzebowanie kaloryczne.",
+  "unitsSystem": "System jednostek",
+  "metric": "Metryczny",
+  "imperial": "Imperialny",
+  "age": "Wiek",
+  "sex": "Płeć",
+  "sex.male": "Mężczyzna",
+  "sex.female": "Kobieta",
+  "male": "Mężczyzna",
+  "female": "Kobieta",
+  "none": "Brak",
+  "height": "Wzrost",
+  "heightFt": "Wzrost (ft)",
+  "heightIn": "Wzrost (cal)",
+  "weight": "Waga",
+  "next": "Dalej",
+  "cancel": "Anuluj",
+  "back": "Wstecz",
+  "cancelTitle": "Przerwać onboarding?",
+  "cancelDesc": "Twój postęp zostanie utracony. Te informacje możesz podać później w ustawieniach.",
+  "cancelConfirm": "Porzuć i wyjdź",
+  "cancelDismiss": "Kontynuuj onboarding",
+
+  "step2_title": "Spersonalizuj swój plan",
+  "step2_description": "Podaj swoje preferencje żywieniowe, poziom aktywności i cel.",
+  "activityLevel": "Poziom aktywności",
+  "activity": {
+    "sedentary": "Siedzący tryb życia (brak lub minimalna aktywność)",
+    "light": "Lekka aktywność (lekka aktywność/sport 1-3 dni w tygodniu)",
+    "moderate": "Umiarkowana aktywność (sport 3-5 dni w tygodniu)",
+    "active": "Wysoka aktywność (sport 6-7 dni w tygodniu)",
+    "very_active": "Bardzo wysoka aktywność lub praca fizyczna"
+  },
+  "goalTitle": "Cel",
+  "goal": {
+    "lose": "Schudnąć",
+    "maintain": "Utrzymać wagę",
+    "increase": "Zwiększyć wagę"
+  },
+  "calorieDeficit": "Deficyt kaloryczny:",
+  "calorieSurplus": "Nadwyżka kalorii:",
+
+  "errors": {
+    "ageRequired": "Wymagany wiek",
+    "ageInvalid": "Podaj prawidłowy wiek (16-120)",
+    "sexRequired": "Wybierz płeć",
+    "heightRequired": "Wymagany wzrost",
+    "heightInvalid": "Podaj prawidłowy wzrost",
+    "heightInchInvalid": "Cale muszą być w zakresie 0-11",
+    "weightRequired": "Wymagana waga",
+    "weightInvalid": "Podaj prawidłową wagę",
+    "selectActivity": "Wybierz poziom aktywności",
+    "selectGoal": "Wybierz swój cel",
+    "selectDeficit": "Ustaw oczekiwany deficyt kalorii",
+    "selectSurplus": "Ustaw oczekiwaną nadwyżkę kalorii",
+    "aiFocusOther": "Podaj własny obszar wsparcia"
+  },
+
+  "preferences": {
+    "label": "Preferencje żywieniowe",
+    "none": "Brak",
+    "lowCarb": "Niska zawartość węglowodanów",
+    "keto": "Keto",
+    "highProtein": "Wysokobiałkowa",
+    "highCarb": "Wysokowęglowodanowa",
+    "lowFat": "Niskotłuszczowa",
+    "balanced": "Zbilansowana",
+    "vegetarian": "Wegetariańska",
+    "vegan": "Wegańska",
+    "pescatarian": "Peskatariańska",
+    "mediterranean": "Śródziemnomorska",
+    "glutenFree": "Bezglutenowa",
+    "dairyFree": "Bezmleczna",
+    "paleo": "Paleo"
+  },
+
+  "step3_title": "Twój profil zdrowotny",
+  "step3_description": "Znajomość chorób przewlekłych lub alergii pozwoli nam zapewnić bezpieczne i dopasowane rekomendacje.",
+  "healthProfile": {
+    "title": "Twój profil zdrowotny",
+    "desc": "Znajomość chorób przewlekłych lub alergii pozwoli nam zapewnić bezpieczne i dopasowane rekomendacje.",
+    "chronicDisease": "Choroby przewlekłe",
+    "disease": {
+      "diabetes": "Cukrzyca",
+      "hypertension": "Nadciśnienie",
+      "asthma": "Astma",
+      "other": "Inne",
+      "otherPlaceholder": "Wpisz własne..."
+    },
+    "allergies": "Alergie",
+    "allergy": {
+      "peanuts": "Orzeszki ziemne",
+      "gluten": "Gluten",
+      "lactose": "Laktoza",
+      "other": "Inne",
+      "otherPlaceholder": "Wpisz własne..."
+    },
+    "lifestyle": "Twój styl życia",
+    "lifestylePlaceholder": "Codzienne nawyki"
+  },
+  "validation": {
+    "otherRequired": "Wymagane"
+  },
+
+  "step4_title": "Spersonalizuj wsparcie AI",
+  "step4_description": "Powiedz nam, jak AI może Cię wspierać. Twoje preferencje pozwolą nam lepiej dopasować asystenta do Twoich potrzeb.",
+  "ai": {
+    "assistantStyle": "Styl asystenta",
+    "style": {
+      "none": "Brak preferencji",
+      "concise": "Zwięzły",
+      "friendly": "Przyjazny i motywujący",
+      "detailed": "Szczegółowy i naukowy"
+    },
+    "areaOfFocus": "Obszar wsparcia",
+    "focus": {
+      "none": "Brak preferencji",
+      "mealPlanning": "Planowanie posiłków",
+      "analyzingMistakes": "Analiza błędów",
+      "quickAnswers": "Szybkie odpowiedzi",
+      "motivation": "Motywacja",
+      "other": "Inne"
+    },
+    "anythingElse": "Dodatkowe informacje?",
+    "anythingElse_placeholder": "Czy jest coś, co powinniśmy wiedzieć?",
+    "focus_placeholder": "Podaj własny obszar...",
+    "errors": {
+      "aiFocusOther": "Podaj własny obszar wsparcia"
+    }
+  },
+
+  "summary": {
+    "title": "Podsumowanie",
+    "desc": "Oto podsumowanie Twoich odpowiedzi. Wróć i popraw, jeśli coś wymaga zmiany.",
+    "personalInfo": "Dane osobowe",
+    "dietGoal": "Cel i preferencje",
+    "health": "Zdrowie",
+    "ai": "Ustawienia asystenta",
+    "edit": "Edytuj",
+    "finish": "Zakończ"
+  }
+}

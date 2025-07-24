@@ -59,7 +59,7 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
         {label && (
           <Text
             style={{
-              color: theme.text,
+              color: theme.textSecondary,
               fontSize: theme.typography.size.sm,
               marginBottom: theme.spacing.xs / 2,
               fontFamily: theme.typography.fontFamily.medium,

@@ -8,7 +8,8 @@ import { FormData } from "@/src/feature/Onboarding/types";
 import Step1BasicData from "@/src/feature/Onboarding/components/Step1BasicData";
 import Step2Preferences from "@/src/feature/Onboarding/components/Step2Preferences";
 import Step3Health from "@/src/feature/Onboarding/components/Step3Health";
-import Step5AIAssistantPreferences from "@/src/feature/Onboarding/components/Step4AIAssistantPreferences";
+import Step4AIAssistantPreferences from "@/src/feature/Onboarding/components/Step4AIAssistantPreferences";
+import Step5Summary from "@/src/feature/Onboarding/components/Step5Summary";
 
 const ONBOARDING_DRAFT_KEY = "onboardingDraft";
 const STEPS = 5;
@@ -62,6 +63,8 @@ export default function OnboardingScreen({ navigation }: any) {
   const nextStep = () => setStep((s) => Math.min(STEPS, s + 1));
   const prevStep = () => setStep((s) => Math.max(1, s - 1));
 
+  const goToStep = (stepNumber: number) => setStep(stepNumber);
+
   const handleFinish = () => {
     navigation.replace("Home");
   };
@@ -109,12 +112,20 @@ export default function OnboardingScreen({ navigation }: any) {
         />
       )}
       {step === 4 && (
-        <Step5AIAssistantPreferences
+        <Step4AIAssistantPreferences
           form={form}
           setForm={setForm}
           errors={errors}
           setErrors={setErrors}
-          onNext={handleFinish}
+          onNext={nextStep}
+          onBack={prevStep}
+        />
+      )}
+      {step === 5 && (
+        <Step5Summary
+          form={form}
+          goToStep={goToStep}
+          onFinish={handleFinish}
           onBack={prevStep}
         />
       )}

@@ -119,17 +119,8 @@ export default function Step3Health({
       </View>
 
       <View>
-        <Text
-          style={{
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: theme.typography.size.base,
-            color: theme.text,
-            marginBottom: theme.spacing.xs,
-          }}
-        >
-          {t("healthProfile.chronicDisease")}
-        </Text>
         <CheckboxDropdown<ChronicDisease>
+          label={t("healthProfile.chronicDisease")}
           options={CHRONIC_DISEASE_OPTIONS.map((o) => ({
             ...o,
             label: t(`healthProfile.disease.${o.value}`),
@@ -159,17 +150,8 @@ export default function Step3Health({
       </View>
 
       <View>
-        <Text
-          style={{
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: theme.typography.size.base,
-            color: theme.text,
-            marginBottom: theme.spacing.xs,
-          }}
-        >
-          {t("healthProfile.allergies")}
-        </Text>
         <CheckboxDropdown<Allergy>
+          label={t("healthProfile.allergies")}
           options={ALLERGIES_OPTIONS.map((o) => ({
             ...o,
             label: t(`healthProfile.allergy.${o.value}`),
@@ -198,26 +180,12 @@ export default function Step3Health({
         )}
       </View>
 
-      <View>
-        <Text
-          style={{
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: theme.typography.size.base,
-            color: theme.text,
-            marginBottom: theme.spacing.xs,
-          }}
-        >
-          {t("healthProfile.lifestyle")}
-        </Text>
-        <LongTextInput
-          value={form.lifestyle ?? ""}
-          onChangeText={(val) =>
-            setForm((prev) => ({ ...prev, lifestyle: val }))
-          }
-          placeholder={t("healthProfile.lifestylePlaceholder")}
-          style={{}}
-        />
-      </View>
+      <LongTextInput
+        label={t("healthProfile.lifestyle")}
+        value={form.lifestyle ?? ""}
+        onChangeText={(val) => setForm((prev) => ({ ...prev, lifestyle: val }))}
+        placeholder={t("healthProfile.lifestylePlaceholder")}
+      />
 
       <PrimaryButton
         label={t("next")}

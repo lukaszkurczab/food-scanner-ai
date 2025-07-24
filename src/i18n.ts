@@ -13,6 +13,7 @@ import pl_login from "./locales/pl/login.json";
 import pl_terms from "./locales/pl/terms.json";
 import pl_privacy from "./locales/pl/privacy.json";
 import pl_resetPassword from "./locales/pl/resetPassword.json";
+import pl_onboarding from "./locales/pl/onboarding.json";
 
 const languageDetector = {
   type: "languageDetector",
@@ -47,6 +48,7 @@ i18n
         terms: pl_terms,
         privacy: pl_privacy,
         resetPassword: pl_resetPassword,
+        onboarding: pl_onboarding,
       },
     },
     interpolation: { escapeValue: false },
