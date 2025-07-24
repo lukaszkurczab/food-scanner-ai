@@ -47,6 +47,7 @@ export default {
           },
         },
       ],
+      ["@nozbe/watermelondb/expo"],
       "expo-font",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",

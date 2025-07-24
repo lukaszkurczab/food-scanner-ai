@@ -1,6 +1,15 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAuthContext } from "./AuthContext";
-import { firestore } from "@/src/FirebaseConfig";
+import { getFirebaseFirestore } from "@/src/FirebaseConfig";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  query,
+  orderBy,
+} from "@react-native-firebase/firestore";
 
 type Meal = {
   id: string;
@@ -51,19 +60,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loadingUserData, setLoadingUserData] = useState(true);
 
-  useEffect(() => {
-    fetchUserData();
-  }, [user]);
-
   const fetchUserData = async () => {
     if (!user) {
       setUserData(null);
       setLoadingUserData(false);
       return;
     }
-
     try {
-      const userDoc = await firestore().collection("users").doc(user.uid).get();
+      const db = getFirebaseFirestore();
+      const userDocRef = doc(collection(db, "users"), user.uid);
+      const userDoc = await getDoc(userDocRef);
       const userDataRaw = userDoc.data();
 
       if (!userDataRaw) {
@@ -71,20 +77,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      const [myMealsSnap, historySnap] = await Promise.all([
-        firestore()
-          .collection("users")
-          .doc(user.uid)
-          .collection("myMeals")
-          .orderBy("date", "desc")
-          .get(),
-        firestore()
-          .collection("users")
-          .doc(user.uid)
-          .collection("history")
-          .orderBy("date", "desc")
-          .get(),
-      ]);
+      const myMealsRef = collection(db, "users", user.uid, "myMeals");
+      const myMealsQ = query(myMealsRef, orderBy("date", "desc"));
+      const myMealsSnap = await getDocs(myMealsQ);
+
+      const historyRef = collection(db, "users", user.uid, "history");
+      const historyQ = query(historyRef, orderBy("date", "desc"));
+      const historySnap = await getDocs(historyQ);
 
       const myMeals: Meal[] = myMealsSnap.docs.map((doc) => doc.data() as Meal);
       const history: Meal[] = historySnap.docs.map((doc) => doc.data() as Meal);
@@ -107,6 +106,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  useEffect(() => {
+    fetchUserData();
+  }, [user]);
+
   const refreshUserData = async () => {
     setLoadingUserData(true);
     await fetchUserData();
@@ -114,18 +117,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getMyMeals = async () => {
     if (!user?.uid) return [];
-
     try {
-      const snapshot = await firestore()
-        .collection("users")
-        .doc(user.uid)
-        .collection("myMeals")
-        .orderBy("date", "desc")
-        .get();
-
+      const db = getFirebaseFirestore();
+      const myMealsRef = collection(db, "users", user.uid, "myMeals");
+      const myMealsQ = query(myMealsRef, orderBy("date", "desc"));
+      const snapshot = await getDocs(myMealsQ);
       return snapshot.docs.map((doc) => doc.data() as Meal);
     } catch (e) {
-      console.error("Failed to fetch user history:", e);
+      console.error("Failed to fetch myMeals:", e);
       return [];
     }
   };
@@ -133,12 +132,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const saveMealToMyMeals = async (meal: Meal) => {
     if (!user?.uid) return;
     try {
-      await firestore()
-        .collection("users")
-        .doc(user.uid)
-        .collection("myMeals")
-        .doc(meal.id)
-        .set(meal);
+      const db = getFirebaseFirestore();
+      const mealDocRef = doc(db, "users", user.uid, "myMeals", meal.id);
+      await setDoc(mealDocRef, meal);
 
       setUserData((prev) =>
         prev
@@ -160,12 +156,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const saveMealToFirestoreHistory = async (meal: Meal) => {
     if (!user?.uid) return;
     try {
-      await firestore()
-        .collection("users")
-        .doc(user.uid)
-        .collection("history")
-        .doc(meal.id)
-        .set(meal);
+      const db = getFirebaseFirestore();
+      const mealDocRef = doc(db, "users", user.uid, "history", meal.id);
+      await setDoc(mealDocRef, meal);
 
       setUserData((prev) =>
         prev
@@ -186,15 +179,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchUserHistory = async (): Promise<Meal[]> => {
     if (!user?.uid) return [];
-
     try {
-      const snapshot = await firestore()
-        .collection("users")
-        .doc(user.uid)
-        .collection("history")
-        .orderBy("date", "desc")
-        .get();
-
+      const db = getFirebaseFirestore();
+      const historyRef = collection(db, "users", user.uid, "history");
+      const historyQ = query(historyRef, orderBy("date", "desc"));
+      const snapshot = await getDocs(historyQ);
       return snapshot.docs.map((doc) => doc.data() as Meal);
     } catch (e) {
       console.error("Failed to fetch user history:", e);

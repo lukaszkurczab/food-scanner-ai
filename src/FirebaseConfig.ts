@@ -1,6 +1,6 @@
-import firebase, { initializeApp } from "@react-native-firebase/app";
-import auth from "@react-native-firebase/auth";
-import firestore from "@react-native-firebase/firestore";
+import { initializeApp, getApp, getApps } from "@react-native-firebase/app";
+import { getAuth } from "@react-native-firebase/auth";
+import { getFirestore } from "@react-native-firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAMx2jGfr3mslwuu7PXwRry8M72794NMek",
@@ -12,6 +12,22 @@ const firebaseConfig = {
   measurementId: "G-QNQBTJVFEW",
 };
 
-const app = initializeApp(firebaseConfig);
+let appPromise: Promise<any>;
 
-export { firebase, auth, firestore, app };
+if (!getApps().length) {
+  appPromise = initializeApp(firebaseConfig);
+} else {
+  appPromise = Promise.resolve(getApp());
+}
+
+export const getFirebaseApp = () => appPromise;
+
+export const getFirebaseAuth = async () => {
+  const app = await appPromise;
+  return getAuth(app);
+};
+
+export const getFirebaseFirestore = async () => {
+  const app = await appPromise;
+  return getFirestore(app);
+};
