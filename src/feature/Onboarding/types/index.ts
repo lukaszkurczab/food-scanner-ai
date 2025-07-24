@@ -35,6 +35,16 @@ export type ChronicDisease =
 
 export type Allergy = "none" | "peanuts" | "gluten" | "lactose" | "other";
 
+export type AiStyle = "none" | "concise" | "friendly" | "detailed";
+
+export type AiFocus =
+  | "none"
+  | "mealPlanning"
+  | "analyzingMistakes"
+  | "quickAnswers"
+  | "motivation"
+  | "other";
+
 export type FormData = {
   unitsSystem: UnitsSystem;
   age: string;
@@ -52,4 +62,8 @@ export type FormData = {
   allergies?: Allergy[];
   allergiesOther?: string;
   lifestyle?: string;
+  aiStyle?: AiStyle;
+  aiFocus?: AiFocus;
+  aiFocusOther?: string;
+  aiNote?: string;
 };

@@ -8,6 +8,7 @@ import { FormData } from "@/src/feature/Onboarding/types";
 import Step1BasicData from "@/src/feature/Onboarding/components/Step1BasicData";
 import Step2Preferences from "@/src/feature/Onboarding/components/Step2Preferences";
 import Step3Health from "@/src/feature/Onboarding/components/Step3Health";
+import Step5AIAssistantPreferences from "@/src/feature/Onboarding/components/Step4AIAssistantPreferences";
 
 const ONBOARDING_DRAFT_KEY = "onboardingDraft";
 const STEPS = 5;
@@ -28,6 +29,10 @@ const INITIAL_FORM: FormData = {
   allergies: [],
   allergiesOther: "",
   lifestyle: "",
+  aiStyle: "none",
+  aiFocus: "none",
+  aiFocusOther: "",
+  aiNote: "",
 };
 
 export default function OnboardingScreen({ navigation }: any) {
@@ -100,6 +105,16 @@ export default function OnboardingScreen({ navigation }: any) {
           errors={errors}
           setErrors={setErrors}
           onNext={nextStep}
+          onBack={prevStep}
+        />
+      )}
+      {step === 4 && (
+        <Step5AIAssistantPreferences
+          form={form}
+          setForm={setForm}
+          errors={errors}
+          setErrors={setErrors}
+          onNext={handleFinish}
           onBack={prevStep}
         />
       )}

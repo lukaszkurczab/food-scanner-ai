@@ -41,6 +41,7 @@ type Props = {
   returnKeyType?: TextInputProps["returnKeyType"];
   onSubmitEditing?: () => void;
   rightLabel?: string;
+  maxLength?: number;
 };
 
 export const TextInput: React.FC<Props> = ({
@@ -70,6 +71,7 @@ export const TextInput: React.FC<Props> = ({
   returnKeyType,
   onSubmitEditing,
   rightLabel,
+  maxLength = 128,
 }) => {
   const theme = useTheme();
   const [isFocused, setIsFocused] = useState(false);
@@ -185,6 +187,7 @@ export const TextInput: React.FC<Props> = ({
           accessibilityLabel={accessibilityLabel}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
+          maxLength={maxLength}
           style={[
             {
               flex: 1,
