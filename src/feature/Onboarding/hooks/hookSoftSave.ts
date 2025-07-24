@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import * as SecureStore from "expo-secure-store";
 
 export function useSoftSave<T>(
@@ -6,13 +6,21 @@ export function useSoftSave<T>(
   value: T,
   setValue: (v: T) => void
 ) {
-  useEffect(() => {
-    SecureStore.setItemAsync(key, JSON.stringify(value));
-  }, [key, value]);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    SecureStore.getItemAsync(key).then((data) => {
-      if (data) setValue(JSON.parse(data));
-    });
+    (async () => {
+      const data = await SecureStore.getItemAsync(key);
+      if (data) {
+        setValue(JSON.parse(data));
+      }
+      initialized.current = true;
+    })();
   }, [key]);
+
+  useEffect(() => {
+    if (initialized.current) {
+      SecureStore.setItemAsync(key, JSON.stringify(value));
+    }
+  }, [key, value]);
 }
