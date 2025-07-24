@@ -82,7 +82,7 @@ export default function Step1BasicData({
     switch (field) {
       case "age":
         if (!value) return t("errors.ageRequired");
-        if (!/^\d+$/.test(value) || Number(value) < 10 || Number(value) > 120)
+        if (!/^\d+$/.test(value) || Number(value) < 16 || Number(value) > 120)
           return t("errors.ageInvalid");
         break;
       case "sex":

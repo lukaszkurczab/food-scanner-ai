@@ -41,7 +41,7 @@
 
   "errors": {
     "ageRequired": "Age is required",
-    "ageInvalid": "Enter a valid age (10-120)",
+    "ageInvalid": "Enter a valid age (16-120)",
     "sexRequired": "Select your sex",
     "heightRequired": "Height is required",
     "heightInvalid": "Enter a valid height",
@@ -51,7 +51,8 @@
     "selectActivity": "Select your activity level",
     "selectGoal": "Select your goal",
     "selectDeficit": "Set your desired calorie deficit",
-    "selectSurplus": "Set your desired calorie surplus"
+    "selectSurplus": "Set your desired calorie surplus",
+    "aiFocusOther": "Please specify your focus area"
   },
 
   "preferences": {
@@ -70,5 +71,56 @@
     "glutenFree": "Gluten-free",
     "dairyFree": "Dairy-free",
     "paleo": "Paleo"
+  },
+
+  "step3_title": "Your health profile",
+  "step3_description": "Knowing about any health conditions or allergies ensures that our recommendations are safe and suitable for you.",
+  "healthProfile": {
+    "title": "Your health profile",
+    "desc": "Knowing about any health conditions or allergies ensures that our recommendations are safe and suitable for you.",
+    "chronicDisease": "Chronic disease",
+    "disease": {
+      "diabetes": "Diabetes",
+      "hypertension": "Hypertension",
+      "asthma": "Asthma",
+      "other": "Other",
+      "otherPlaceholder": "Please specify..."
+    },
+    "allergies": "Allergies",
+    "allergy": {
+      "peanuts": "Peanuts",
+      "gluten": "Gluten",
+      "lactose": "Lactose",
+      "other": "Other",
+      "otherPlaceholder": "Please specify..."
+    },
+    "lifestyle": "Your lifestyle",
+    "lifestylePlaceholder": "Your daily habits"
+  },
+  "validation": {
+    "otherRequired": "Please specify"
+  },
+
+  "step4_title": "Personalize your experience",
+  "step4_description": "Tell us how you'd like our AI assistant to support you on your journey. Your preferences help us tailor the experience just for you.",
+  "ai": {
+    "assistantStyle": "Assistant’s style",
+    "assistantStyle.none": "No preference",
+    "assistantStyle.concise": "Concise",
+    "assistantStyle.friendly": "Friendly & motivational",
+    "assistantStyle.detailed": "Detailed & scientific",
+    "areaOfFocus": "Area of focus",
+    "areaOfFocus.none": "No preference",
+    "areaOfFocus.mealPlanning": "Meal planning",
+    "areaOfFocus.analyzingMistakes": "Analyzing mistakes",
+    "areaOfFocus.quickAnswers": "Quick answers",
+    "areaOfFocus.motivation": "Motivation",
+    "areaOfFocus.other": "Other",
+    "anythingElse": "Anything to note?",
+    "anythingElse_placeholder": "Anything else we should know?",
+    "focus_placeholder": "Type your own focus...",
+    "errors": {
+      "aiFocusOther": "Please specify your focus area"
+    }
   }
 }

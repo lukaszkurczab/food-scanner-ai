@@ -70,17 +70,11 @@ export default function Step3Health({
     > = {};
 
     if (hasChronicOther && !form.chronicDiseasesOther?.trim()) {
-      newErrors.chronicDiseasesOther = t(
-        "validation.otherRequired",
-        "Please specify your chronic disease"
-      );
+      newErrors.chronicDiseasesOther = t("validation.otherRequired");
       valid = false;
     }
     if (hasAllergyOther && !form.allergiesOther?.trim()) {
-      newErrors.allergiesOther = t(
-        "validation.otherRequired",
-        "Please specify your allergy"
-      );
+      newErrors.allergiesOther = t("validation.otherRequired");
       valid = false;
     }
     if (setErrors) setErrors(newErrors);
@@ -110,7 +104,7 @@ export default function Step3Health({
             marginBottom: theme.spacing.sm,
           }}
         >
-          {t("healthProfile.title", "Your health profile")}
+          {t("healthProfile.title")}
         </Text>
         <Text
           style={{
@@ -120,10 +114,7 @@ export default function Step3Health({
             marginBottom: theme.spacing.md,
           }}
         >
-          {t(
-            "healthProfile.desc",
-            "Knowing about any health conditions or allergies ensures that our recommendations are safe and suitable for you."
-          )}
+          {t("healthProfile.desc")}
         </Text>
       </View>
 
@@ -136,12 +127,12 @@ export default function Step3Health({
             marginBottom: theme.spacing.xs,
           }}
         >
-          {t("healthProfile.chronicDisease", "Chronic disease")}
+          {t("healthProfile.chronicDisease")}
         </Text>
         <CheckboxDropdown<ChronicDisease>
           options={CHRONIC_DISEASE_OPTIONS.map((o) => ({
             ...o,
-            label: t(`healthProfile.disease.${o.value}`, o.label),
+            label: t(`healthProfile.disease.${o.value}`),
           }))}
           values={form.chronicDiseases ?? []}
           onChange={(val) =>
@@ -160,10 +151,7 @@ export default function Step3Health({
             onChangeText={(v) =>
               setForm((prev) => ({ ...prev, chronicDiseasesOther: v }))
             }
-            placeholder={t(
-              "healthProfile.disease.otherPlaceholder",
-              "Please specify..."
-            )}
+            placeholder={t("healthProfile.disease.otherPlaceholder")}
             error={errors.chronicDiseasesOther}
             style={{ marginTop: theme.spacing.md }}
           />
@@ -179,12 +167,12 @@ export default function Step3Health({
             marginBottom: theme.spacing.xs,
           }}
         >
-          {t("healthProfile.allergies", "Allergies")}
+          {t("healthProfile.allergies")}
         </Text>
         <CheckboxDropdown<Allergy>
           options={ALLERGIES_OPTIONS.map((o) => ({
             ...o,
-            label: t(`healthProfile.allergy.${o.value}`, o.label),
+            label: t(`healthProfile.allergy.${o.value}`),
           }))}
           values={form.allergies ?? []}
           onChange={(val) =>
@@ -203,10 +191,7 @@ export default function Step3Health({
             onChangeText={(v) =>
               setForm((prev) => ({ ...prev, allergiesOther: v }))
             }
-            placeholder={t(
-              "healthProfile.allergy.otherPlaceholder",
-              "Please specify..."
-            )}
+            placeholder={t("healthProfile.allergy.otherPlaceholder")}
             error={errors.allergiesOther}
             style={{ marginTop: theme.spacing.md }}
           />
@@ -222,17 +207,14 @@ export default function Step3Health({
             marginBottom: theme.spacing.xs,
           }}
         >
-          {t("healthProfile.lifestyle", "Your lifestyle")}
+          {t("healthProfile.lifestyle")}
         </Text>
         <LongTextInput
           value={form.lifestyle ?? ""}
           onChangeText={(val) =>
             setForm((prev) => ({ ...prev, lifestyle: val }))
           }
-          placeholder={t(
-            "healthProfile.lifestylePlaceholder",
-            "Your daily habits"
-          )}
+          placeholder={t("healthProfile.lifestylePlaceholder")}
           style={{}}
         />
       </View>

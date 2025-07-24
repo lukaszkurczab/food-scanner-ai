@@ -21,7 +21,10 @@ type Props = {
   numberOfLines?: number;
   onBlur?: () => void;
   onFocus?: () => void;
+  maxLength?: number; // pozwalamy nadpisać
 };
+
+const DEFAULT_MAX_LENGTH = 250;
 
 export const LongTextInput = forwardRef<RNTextInput, Props>(
   (
@@ -38,6 +41,7 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
       numberOfLines = 4,
       onBlur,
       onFocus,
+      maxLength = DEFAULT_MAX_LENGTH,
     },
     ref
   ) => {
@@ -51,7 +55,7 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
     const borderWidth = hasError ? 1.5 : 1;
 
     return (
-      <View style={[{ width: "100%" }, style]}>
+      <View style={[{ width: "100%", position: "relative" }, style]}>
         {label && (
           <Text
             style={{
@@ -97,7 +101,23 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
           onFocus={onFocus}
           selectionColor={theme.accent}
           underlineColorAndroid="transparent"
+          maxLength={maxLength}
         />
+        <Text
+          style={{
+            position: "absolute",
+            right: theme.spacing.md,
+            bottom: theme.spacing.sm,
+            color:
+              value.length >= maxLength
+                ? theme.error.text
+                : theme.textSecondary,
+            fontSize: theme.typography.size.xs,
+            fontFamily: theme.typography.fontFamily.medium,
+          }}
+        >
+          {value.length}/{maxLength}
+        </Text>
         {!!error && (
           <Text
             style={{
