@@ -9,11 +9,7 @@ import {
   Slider,
   CheckboxDropdown,
 } from "@/src/components";
-import {
-  ActivityLevel,
-  FormData,
-  Preference,
-} from "@/src/feature/Onboarding/types";
+import { ActivityLevel, FormData, Preference } from "@types/onboarding";
 
 const PREFERENCE_OPTIONS: { label: string; value: Preference }[] = [
   { label: "preferences.lowCarb", value: "lowCarb" },

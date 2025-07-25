@@ -4,7 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import ProgressDots from "@/src/feature/Onboarding/components/ProgressDots";
 import { useSoftSave } from "@/src/feature/Onboarding/hooks/hookSoftSave";
 import { Modal, Layout } from "@/src/components";
-import { FormData } from "@/src/feature/Onboarding/types";
+import { FormData } from "@types/onboarding";
 import Step1BasicData from "@/src/feature/Onboarding/components/Step1BasicData";
 import Step2Preferences from "@/src/feature/Onboarding/components/Step2Preferences";
 import Step3Health from "@/src/feature/Onboarding/components/Step3Health";

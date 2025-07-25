@@ -1,18 +1,21 @@
-import { Ingredient } from './ingredient';
-import { Nutrients } from './nutrients';
+export type MealSyncStatus = "synced" | "pending" | "conflict";
 
-export type Meal = {
+export interface Meal {
   id: string;
   name: string;
   date: string;
-  ingredients: Ingredient[];
-  nutrition: Nutrients;
-};
-
-export type MealHistory = {
-  id: string;
-  name: string;
-  date: string;
+  deleted?: boolean;
+  photoUri?: string | null;
+  userUid: string;
+  source: "local" | "cloud";
+  syncStatus: MealSyncStatus;
+  lastUpdated: string;
+  cloudId?: string;
+  nutrition: {
+    kcal: number;
+    carbs: number;
+    fat: number;
+    protein: number;
+  };
   ingredients: string[];
-  nutrition: Nutrients;
-};
+}

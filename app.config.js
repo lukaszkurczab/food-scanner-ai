@@ -1,4 +1,4 @@
-require("dotenv/config");
+import "dotenv/config";
 
 export default {
   expo: {
@@ -47,10 +47,10 @@ export default {
           },
         },
       ],
-      ["@nozbe/watermelondb/expo"],
       "expo-font",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
+      "@morrowdigital/watermelondb-expo-plugin",
     ],
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
