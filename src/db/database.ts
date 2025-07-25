@@ -5,6 +5,7 @@ import Meal from "./models/Meal";
 import User from "./models/User";
 import Survey from "./models/Survey";
 import Settings from "./models/Settings";
+import ChatMessage from "./models/ChatMessage";
 
 import { schema } from "./schema";
 
@@ -16,7 +17,7 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [Meal, User, Survey, Settings],
+  modelClasses: [Meal, User, Survey, Settings, ChatMessage],
 });
 
 export default database;

@@ -78,5 +78,19 @@ export const schema = appSchema({
         { name: "last_updated", type: "string" },
       ],
     }),
+
+    tableSchema({
+      name: "chat_messages",
+      columns: [
+        { name: "user_uid", type: "string" },
+        { name: "role", type: "string" },
+        { name: "content", type: "string" },
+        { name: "created_at", type: "string" },
+        { name: "updated_at", type: "string" },
+        { name: "sync_status", type: "string" },
+        { name: "cloud_id", type: "string", isOptional: true },
+        { name: "deleted", type: "boolean", isOptional: true },
+      ],
+    }),
   ],
 });

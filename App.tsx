@@ -14,6 +14,15 @@ import { MealProvider } from "./src/context/MealContext";
 import { useFonts } from "expo-font";
 import { View, ActivityIndicator } from "react-native";
 import { useTheme } from "./src/theme";
+import Purchases from "react-native-purchases";
+import { Platform } from "react-native";
+
+export function initRevenueCat() {
+  Purchases.configure({
+    apiKey: Platform.OS === "android" ? "goog_PJCYrmPITZquBcJXTdOfYxzoeUo" : "",
+    appUserID: null,
+  });
+}
 
 export default function App() {
   const theme = useTheme();
@@ -32,6 +41,7 @@ export default function App() {
         defaultHandler?.(error, isFatal);
       });
     }
+    initRevenueCat();
   }, []);
 
   const navigationTheme = {
