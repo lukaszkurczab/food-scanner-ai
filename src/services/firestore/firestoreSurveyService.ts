@@ -1,26 +1,11 @@
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,
-  collection,
   doc,
-  getDocs,
-  setDoc,
-  query,
-  where,
-  orderBy,
-  limit,
+  getDoc,
+  updateDoc,
 } from "@react-native-firebase/firestore";
 import type { FormData } from "@/src/types";
-
-export interface FirestoreSurvey {
-  id: string;
-  userUid: string;
-  formData: FormData | string;
-  completedAt: string;
-  syncStatus?: string;
-}
-
-const SURVEYS_COLLECTION = "surveys";
 
 function getDb() {
   const app = getApp();
@@ -29,39 +14,45 @@ function getDb() {
 
 export async function fetchSurveyFromFirestore(
   userUid: string
-): Promise<FirestoreSurvey | null> {
+): Promise<FormData | null> {
   const db = getDb();
+  const ref = doc(db, "users", userUid);
+  const snap = await getDoc(ref);
 
-  const q = query(
-    collection(db, SURVEYS_COLLECTION),
-    where("userUid", "==", userUid),
-    orderBy("completedAt", "desc"),
-    limit(1)
-  );
-  const snapshot = await getDocs(q);
+  if (!snap.exists) return null;
+  const data = snap.data();
 
-  if (!snapshot.empty) {
-    const docSnap = snapshot.docs[0];
-    const data = docSnap.data() as Omit<FirestoreSurvey, "id">;
-    return { id: docSnap.id, ...data };
-  }
-  return null;
+  if (!data) return null;
+
+  return {
+    unitsSystem: data.unitsSystem,
+    age: data.age,
+    sex: data.sex,
+    height: data.height,
+    heightInch: data.heightInch,
+    weight: data.weight,
+    preferences: data.preferences,
+    activityLevel: data.activityLevel,
+    goal: data.goal,
+    calorieDeficit: data.calorieDeficit,
+    calorieSurplus: data.calorieSurplus,
+    chronicDiseases: data.chronicDiseases,
+    chronicDiseasesOther: data.chronicDiseasesOther,
+    allergies: data.allergies,
+    allergiesOther: data.allergiesOther,
+    lifestyle: data.lifestyle,
+    aiStyle: data.aiStyle,
+    aiFocus: data.aiFocus,
+    aiFocusOther: data.aiFocusOther,
+    aiNote: data.aiNote,
+  };
 }
 
-export async function upsertSurveyInFirestore(
-  userUid: string,
-  data: FormData,
-  completedAt: string
-) {
+export async function upsertSurveyInFirestore(userUid: string, data: FormData) {
   const db = getDb();
-  await setDoc(
-    doc(collection(db, SURVEYS_COLLECTION), userUid),
-    {
-      userUid,
-      formData: JSON.stringify(data),
-      completedAt,
-      syncStatus: "synced",
-    },
-    { merge: true }
-  );
+  const ref = doc(db, "users", userUid);
+  await updateDoc(ref, {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  });
 }

@@ -9,7 +9,7 @@ import {
   Dropdown,
 } from "@/src/components";
 import { convertHeight, convertWeight } from "@/src/utils/units";
-import { UnitsSystem, FormData } from "@types/onboarding";
+import { UnitsSystem, FormData } from "@/src/types/onboarding";
 
 type Props = {
   form: FormData;

@@ -12,6 +12,7 @@ import { useMeals } from "@/src/hooks/useMeals";
 import { useChatHistory } from "@/src/hooks/useChatHistory";
 import type { UserData, FormData, ChatMessage, Meal } from "@/src/types";
 import { fullSync } from "@/src/utils/fullSync";
+import { Survey } from "@/src/utils/surveyMapper";
 
 type UserContextType = {
   user: UserData | null;
@@ -19,10 +20,12 @@ type UserContextType = {
   syncStatus: "synced" | "pending" | "conflict";
   refreshUser: () => Promise<void>;
   updateUser: (data: Partial<UserData>) => Promise<void>;
+  syncUserProfile: () => Promise<void>;
 
   survey: any | null;
   loadingSurvey: boolean;
   saveSurvey: (data: FormData) => Promise<void>;
+  syncSurvey: (data?: Survey) => Promise<void>;
   refreshSurvey: () => Promise<void>;
 
   settings: Record<string, string>;
@@ -58,10 +61,12 @@ const UserContext = createContext<UserContextType>({
   syncStatus: "pending",
   refreshUser: async () => {},
   updateUser: async () => {},
+  syncUserProfile: async () => {},
 
   survey: null,
   loadingSurvey: true,
   saveSurvey: async () => {},
+  syncSurvey: async () => {},
   refreshSurvey: async () => {},
 
   settings: {},
@@ -97,12 +102,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     syncStatus,
     getUserProfile,
     updateUserProfile,
+    syncUserProfile,
   } = useUser(uid);
 
   const {
     survey,
     loading: loadingSurvey,
     saveSurvey,
+    syncSurvey,
     getSurvey,
   } = useSurvey(uid);
 
@@ -147,14 +154,22 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (uid) {
       fullSync({
-        getUserProfile,
-        getSurvey,
+        syncUserProfile,
+        syncSurvey,
         syncSettings,
         getMeals,
         getChatHistory,
       });
     }
-  }, [uid, getUserProfile, getSurvey, syncSettings, getMeals, getChatHistory]);
+  }, [
+    uid,
+    getUserProfile,
+    syncUserProfile,
+    syncSurvey,
+    syncSettings,
+    getMeals,
+    getChatHistory,
+  ]);
 
   return (
     <UserContext.Provider
@@ -164,10 +179,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         syncStatus,
         refreshUser,
         updateUser: updateUserProfile,
+        syncUserProfile,
 
         survey,
         loadingSurvey,
         saveSurvey,
+        syncSurvey,
         refreshSurvey,
 
         settings,

@@ -17,17 +17,19 @@ function areSettingsEqual(
   return aKeys.every((k) => a[k] === b[k]);
 }
 
-export function useSettings(userUid: string) {
-  const [settings, setSettings] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-
-  const mapRawToSetting = (raw: any): Setting => ({
+function mapRawToSetting(raw: any): Setting {
+  return {
     userUid: raw.userUid,
     key: raw.key,
     value: raw.value,
     lastUpdated: raw.lastUpdated,
     syncStatus: raw.syncStatus,
-  });
+  };
+}
+
+export function useSettings(userUid: string) {
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
 
   const getSettings = useCallback(async (): Promise<Setting[]> => {
     const settingsCollection = database.get("settings");
@@ -73,6 +75,7 @@ export function useSettings(userUid: string) {
           );
         }
       }
+
       for (const local of Settings) {
         if (local._raw.syncStatus !== "synced") {
           await updateSettingInFirestore(
@@ -89,16 +92,14 @@ export function useSettings(userUid: string) {
         }
       }
     }
+
     const refreshed = await getSettings();
     const dict: Record<string, string> = {};
     refreshed.forEach((s) => {
       dict[s.key] = s.value;
     });
 
-    setSettings((prev) => {
-      if (areSettingsEqual(prev, dict)) return prev;
-      return dict;
-    });
+    setSettings((prev) => (areSettingsEqual(prev, dict) ? prev : dict));
     setLoading(false);
   }, [userUid, getSettings]);
 

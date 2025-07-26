@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import { database } from "@/src/db/database";
 import type { UserData } from "@/src/types";
@@ -16,23 +16,57 @@ export function useUser(uid: string) {
     "synced" | "pending" | "conflict"
   >("pending");
 
-  const mapRawToUserData = (raw: any): UserData | null => {
-    if (!raw) return null;
-    return {
-      uid: raw.uid,
-      email: raw.email,
-      username: raw.username,
-      plan: raw.plan,
-      firstLogin: raw.firstLogin,
-      createdAt: raw.createdAt,
-      lastLogin: raw.lastLogin,
-      nutritionSurvey: raw.nutritionSurvey,
-      onboardingVersion: raw.onboardingVersion,
-      syncStatus: raw.syncStatus,
-      updatedAt: raw.updatedAt,
-      lastSyncedAt: raw.lastSyncedAt,
-    };
-  };
+  const getUserProfile = useCallback(async () => {
+    setLoading(true);
+    const userCollection = database.get("users");
+    const users = await userCollection.query().fetch();
+    const localUser = users.find((u: any) => u.uid === uid);
+    const localData = localUser ? mapRawToUserData(localUser._raw) : null;
+    setUser(localData);
+    setSyncStatus(localData?.syncStatus || "pending");
+    setLoading(false);
+  }, [uid]);
+
+  const fetchUserFromCloud = useCallback(async () => {
+    return await fetchUserFromFirestore(uid);
+  }, [uid]);
+
+  const updateUserProfile = useCallback(
+    async (data: Partial<UserData>) => {
+      const userCollection = database.get("users");
+      const users = await userCollection.query().fetch();
+      const localUser = users.find((u: any) => u.uid === uid);
+      if (localUser) {
+        await database.write(async () => {
+          await localUser.update((u: any) => {
+            Object.assign(u, data, {
+              updatedAt: new Date().toISOString(),
+              syncStatus: "pending",
+            });
+          });
+        });
+        const newRaw = {
+          ...localUser._raw,
+          ...data,
+          updatedAt: new Date().toISOString(),
+          syncStatus: "pending",
+        };
+        setUser(mapRawToUserData(newRaw));
+        setSyncStatus("pending");
+      }
+    },
+    [uid]
+  );
+
+  const sendUserToCloud = useCallback(async () => {
+    const userCollection = database.get("users");
+    const users = await userCollection.query().fetch();
+    const localUser = users.find((u: any) => u.uid === uid);
+    if (localUser) {
+      const localData = mapRawToUserData(localUser._raw);
+      await updateUserInFirestore(uid, localData);
+    }
+  }, [uid]);
 
   const markUserAsSynced = useCallback(async () => {
     const userCollection = database.get("users");
@@ -55,115 +89,58 @@ export function useUser(uid: string) {
     const userCollection = database.get("users");
     const users = await userCollection.query().fetch();
     const localUser = users.find((u: any) => u.uid === uid);
-    if (!localUser) return;
-    const localData = mapRawToUserData(localUser._raw);
-    if (!localData) return;
-    const remoteData = await fetchUserFromFirestore(uid);
-
-    if (!remoteData || localData.updatedAt > remoteData.updatedAt) {
-      await updateUserInFirestore(uid, localData);
-      await markUserAsSynced();
-    } else if (remoteData.updatedAt > localData.updatedAt && localUser) {
-      await database.write(async () => {
-        await localUser.update((u: any) => {
-          Object.assign(u, remoteData, { syncStatus: "synced" });
-        });
-      });
-      setUser(remoteData);
-      setSyncStatus("synced");
-    } else {
-      await markUserAsSynced();
-    }
-  }, [uid, markUserAsSynced]);
-
-  const getUserProfile = useCallback(async () => {
-    setLoading(true);
-    const userCollection = database.get("users");
-    const users = await userCollection.query().fetch();
-    const localUser = users.find((u: any) => u.uid === uid);
     const localData = localUser ? mapRawToUserData(localUser._raw) : null;
 
     const netInfo = await NetInfo.fetch();
-    if (netInfo.isConnected) {
-      const remoteData = await fetchUserFromFirestore(uid);
-      if (localData && remoteData) {
-        const pick = pickLatest(localData, remoteData);
-        if (pick === "remote" && localUser) {
-          await database.write(async () => {
-            await localUser.update((u: any) => {
-              Object.assign(u, remoteData);
-            });
-          });
-          setUser(remoteData);
-          setSyncStatus("synced");
-        } else if (pick === "local") {
-          await updateUserInFirestore(uid, localData);
-          setUser(localData);
-          setSyncStatus("synced");
-        } else {
-          setUser(localData);
-          setSyncStatus("synced");
-        }
-      } else if (!localData && remoteData) {
+    if (!netInfo.isConnected) return;
+
+    const remoteData = await fetchUserFromFirestore(uid);
+
+    if (localData && remoteData) {
+      const pick = pickLatest(localData, remoteData);
+      if (pick === "remote" && localUser) {
         await database.write(async () => {
-          await userCollection.create((user: any) => {
-            Object.assign(user, remoteData);
+          await localUser.update((u: any) => {
+            Object.assign(u, remoteData, { syncStatus: "synced" });
           });
         });
         setUser(remoteData);
         setSyncStatus("synced");
-      } else if (localData && !remoteData) {
+      } else if (pick === "local") {
         await updateUserInFirestore(uid, localData);
         setUser(localData);
         setSyncStatus("synced");
-      } else {
-        setUser(null);
-        setSyncStatus("pending");
       }
-    } else {
+    } else if (!localData && remoteData) {
+      await database.write(async () => {
+        await userCollection.create((user: any) => {
+          Object.assign(user, remoteData);
+        });
+      });
+      setUser(remoteData);
+      setSyncStatus("synced");
+    } else if (localData && !remoteData) {
+      await updateUserInFirestore(uid, localData);
       setUser(localData);
-      setSyncStatus(localData?.syncStatus || "pending");
+      setSyncStatus("synced");
+    } else {
+      setUser(null);
+      setSyncStatus("pending");
     }
-    setLoading(false);
   }, [uid]);
 
-  const updateUserProfile = useCallback(
-    async (data: Partial<UserData>) => {
-      const userCollection = database.get("users");
-      const users = await userCollection.query().fetch();
-      const localUser = users.find((u: any) => u.uid === uid);
-      if (localUser) {
-        await database.write(async () => {
-          await localUser.update((u: any) => {
-            Object.assign(u, data, {
-              updatedAt: Date.now(),
-              syncStatus: "pending",
-            });
-          });
-        });
-        const newRaw = {
-          ...localUser._raw,
-          ...data,
-          updatedAt: Date.now(),
-          syncStatus: "pending",
-        };
-        setUser(mapRawToUserData(newRaw));
-        setSyncStatus("pending");
-      }
-      const netInfo = await NetInfo.fetch();
-      if (netInfo.isConnected) {
-        await syncUserProfile();
-      }
-    },
-    [uid, syncUserProfile]
-  );
+  function mapRawToUserData(raw: any): UserData {
+    return raw as UserData;
+  }
 
   return {
     user,
     loading,
     syncStatus,
     getUserProfile,
+    fetchUserFromCloud,
     updateUserProfile,
+    sendUserToCloud,
     syncUserProfile,
     markUserAsSynced,
   };

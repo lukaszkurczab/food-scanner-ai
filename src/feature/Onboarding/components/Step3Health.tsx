@@ -9,7 +9,7 @@ import {
   LongTextInput,
   TextInput,
 } from "@/src/components";
-import { FormData, ChronicDisease, Allergy } from "@types/onboarding";
+import { FormData, ChronicDisease, Allergy } from "@/src/types/onboarding";
 
 const CHRONIC_DISEASE_OPTIONS: { label: string; value: ChronicDisease }[] = [
   { label: "Diabetes", value: "diabetes" },
