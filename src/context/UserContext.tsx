@@ -11,6 +11,7 @@ import { useSettings } from "@/src/hooks/useSettings";
 import { useMeals } from "@/src/hooks/useMeals";
 import { useChatHistory } from "@/src/hooks/useChatHistory";
 import type { UserData, FormData, ChatMessage, Meal } from "@/src/types";
+import { fullSync } from "@/src/utils/fullSync";
 
 type UserContextType = {
   user: UserData | null;
@@ -144,13 +145,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   }, [syncSettings]);
 
   useEffect(() => {
-    if (!uid) return;
-    getUserProfile();
-    getSurvey();
-    syncSettings();
-    getMeals();
-    getChatHistory();
-  }, [uid]);
+    if (uid) {
+      fullSync({
+        getUserProfile,
+        getSurvey,
+        syncSettings,
+        getMeals,
+        getChatHistory,
+      });
+    }
+  }, [uid, getUserProfile, getSurvey, syncSettings, getMeals, getChatHistory]);
 
   return (
     <UserContext.Provider

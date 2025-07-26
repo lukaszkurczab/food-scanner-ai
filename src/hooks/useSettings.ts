@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import { database } from "@/src/db/database";
 import {
@@ -6,6 +6,16 @@ import {
   updateSettingInFirestore,
 } from "@/src/services/firestore/firestoreSettingsService";
 import { Setting } from "@/src/types";
+
+function areSettingsEqual(
+  a: Record<string, string>,
+  b: Record<string, string>
+): boolean {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every((k) => a[k] === b[k]);
+}
 
 export function useSettings(userUid: string) {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -46,23 +56,21 @@ export function useSettings(userUid: string) {
               s.syncStatus = "synced";
             });
           });
-        } else {
-          if (remote.lastUpdated > local._raw.lastUpdated) {
-            await database.write(async () => {
-              await local.update((s: any) => {
-                s.value = remote.value;
-                s.lastUpdated = remote.lastUpdated;
-                s.syncStatus = "synced";
-              });
+        } else if (remote.lastUpdated > local._raw.lastUpdated) {
+          await database.write(async () => {
+            await local.update((s: any) => {
+              s.value = remote.value;
+              s.lastUpdated = remote.lastUpdated;
+              s.syncStatus = "synced";
             });
-          } else if (local._raw.lastUpdated > remote.lastUpdated) {
-            await updateSettingInFirestore(
-              userUid,
-              local.key,
-              local.value,
-              local._raw.lastUpdated
-            );
-          }
+          });
+        } else if (local._raw.lastUpdated > remote.lastUpdated) {
+          await updateSettingInFirestore(
+            userUid,
+            local.key,
+            local.value,
+            local._raw.lastUpdated
+          );
         }
       }
       for (const local of Settings) {
@@ -86,7 +94,11 @@ export function useSettings(userUid: string) {
     refreshed.forEach((s) => {
       dict[s.key] = s.value;
     });
-    setSettings(dict);
+
+    setSettings((prev) => {
+      if (areSettingsEqual(prev, dict)) return prev;
+      return dict;
+    });
     setLoading(false);
   }, [userUid, getSettings]);
 
@@ -121,18 +133,11 @@ export function useSettings(userUid: string) {
     [userUid, syncSettings]
   );
 
-  useEffect(() => {
-    syncSettings();
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      if (state.isConnected) syncSettings();
-    });
-    return unsubscribe;
-  }, [userUid, syncSettings]);
-
   return {
     settings,
     loading,
     updateSetting,
     syncSettings,
+    getSettings,
   };
 }

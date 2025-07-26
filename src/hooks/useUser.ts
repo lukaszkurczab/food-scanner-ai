@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import { database } from "@/src/db/database";
 import type { UserData } from "@/src/types";
@@ -157,14 +157,6 @@ export function useUser(uid: string) {
     },
     [uid, syncUserProfile]
   );
-
-  useEffect(() => {
-    getUserProfile();
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      if (state.isConnected) syncUserProfile();
-    });
-    return unsubscribe;
-  }, [uid, getUserProfile, syncUserProfile]);
 
   return {
     user,
