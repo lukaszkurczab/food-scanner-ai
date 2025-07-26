@@ -11,6 +11,7 @@ import { navigationRef } from "./src/navigation/navigate";
 import { AuthProvider } from "./src/context/AuthContext";
 import { UserProvider } from "./src/context/UserContext";
 import { MealProvider } from "./src/context/MealContext";
+import { PremiumProvider } from "./src/context/PremiumContext";
 import { useFonts } from "expo-font";
 import { View, ActivityIndicator } from "react-native";
 import { useTheme } from "./src/theme";
@@ -67,15 +68,17 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <UserProvider>
-        <MealProvider>
-          <ThemeProvider>
-            <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-              <AppNavigator />
-            </NavigationContainer>
-          </ThemeProvider>
-        </MealProvider>
-      </UserProvider>
+      <PremiumProvider>
+        <UserProvider>
+          <MealProvider>
+            <ThemeProvider>
+              <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+                <AppNavigator />
+              </NavigationContainer>
+            </ThemeProvider>
+          </MealProvider>
+        </UserProvider>
+      </PremiumProvider>
     </AuthProvider>
   );
 }

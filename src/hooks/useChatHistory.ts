@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
-import NetInfo from "@react-native-community/netinfo";
+import { useState, useCallback, useRef } from "react";
 import { database } from "@/src/db/database";
 import ChatMessageModel from "@/src/db/models/ChatMessage";
 import type { ChatMessage, ChatSyncStatus } from "@/src/types";
@@ -22,20 +21,28 @@ const mapModelToChatMessage = (m: ChatMessageModel): ChatMessage => ({
   deleted: m.deleted,
 });
 
+function areMessagesEqual(a: ChatMessage[], b: ChatMessage[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].id !== b[i].id || a[i].updatedAt !== b[i].updatedAt) return false;
+  }
+  return true;
+}
+
 export function useChatHistory(userUid: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<ChatSyncStatus>("pending");
+  const syncingRef = useRef(false);
 
   const getChatHistory = useCallback(async () => {
-    setLoading(true);
     const chatCollection = database.get<ChatMessageModel>("chat_messages");
     const localMessages = await chatCollection.query().fetch();
-    setMessages(
-      localMessages
-        .filter((m) => m.userUid === userUid && !m.deleted)
-        .map(mapModelToChatMessage)
-    );
+    const filtered = localMessages
+      .filter((m) => m.userUid === userUid && !m.deleted)
+      .map(mapModelToChatMessage);
+
+    setMessages((prev) => (areMessagesEqual(prev, filtered) ? prev : filtered));
     setLoading(false);
   }, [userUid]);
 
@@ -54,7 +61,7 @@ export function useChatHistory(userUid: string) {
           m.deleted = false;
         });
       });
-      getChatHistory();
+      await getChatHistory();
       setSyncStatus("pending");
     },
     [getChatHistory]
@@ -71,7 +78,7 @@ export function useChatHistory(userUid: string) {
             m.syncState = "pending";
           });
         });
-        getChatHistory();
+        await getChatHistory();
         setSyncStatus("pending");
       }
     },
@@ -79,74 +86,68 @@ export function useChatHistory(userUid: string) {
   );
 
   const syncChatHistory = useCallback(async () => {
-    const chatCollection = database.get<ChatMessageModel>("chat_messages");
-    const localMessages = await chatCollection.query().fetch();
-    const unsynced = localMessages.filter((m) => m.syncState !== "synced");
+    if (syncingRef.current) return;
+    syncingRef.current = true;
+    try {
+      const chatCollection = database.get<ChatMessageModel>("chat_messages");
+      const localMessages = await chatCollection.query().fetch();
+      const unsynced = localMessages.filter((m) => m.syncState !== "synced");
+      const remoteMessages = await fetchChatMessagesFromFirestore(userUid);
 
-    const netInfo = await NetInfo.fetch();
-    if (!netInfo.isConnected) return;
-
-    const remoteMessages = await fetchChatMessagesFromFirestore(userUid);
-
-    for (const remote of remoteMessages) {
-      const local = localMessages.find(
-        (m) => m.cloudId === remote.cloudId || m.createdAt === remote.createdAt
-      );
-      if (!local) {
-        await database.write(async () => {
-          await chatCollection.create((m) => {
-            m.userUid = remote.userUid;
-            m.role = remote.role as any;
-            m.content = remote.content;
-            m.createdAt = remote.createdAt;
-            m.updatedAt = remote.updatedAt;
-            m.syncState = remote.syncStatus as any;
-            m.cloudId = remote.cloudId;
-            m.deleted = remote.deleted;
+      for (const remote of remoteMessages) {
+        const local = localMessages.find(
+          (m) =>
+            m.cloudId === remote.cloudId || m.createdAt === remote.createdAt
+        );
+        if (!local) {
+          await database.write(async () => {
+            await chatCollection.create((m) => {
+              m.userUid = remote.userUid;
+              m.role = remote.role as any;
+              m.content = remote.content;
+              m.createdAt = remote.createdAt;
+              m.updatedAt = remote.updatedAt;
+              m.syncState = remote.syncStatus as any;
+              m.cloudId = remote.cloudId;
+              m.deleted = remote.deleted;
+            });
           });
-        });
-      } else if (remote.updatedAt > local.updatedAt) {
+        } else if (remote.updatedAt > local.updatedAt) {
+          await database.write(async () => {
+            await local.update((m) => {
+              m.role = remote.role as any;
+              m.content = remote.content;
+              m.updatedAt = remote.updatedAt;
+              m.syncState = remote.syncStatus as any;
+              m.cloudId = remote.cloudId;
+              m.deleted = remote.deleted;
+            });
+          });
+        }
+      }
+
+      for (const local of unsynced) {
+        if (local.deleted) {
+          await deleteChatMessageInFirestore(local.id);
+        } else if (!local.cloudId) {
+          await addChatMessageToFirestore(mapModelToChatMessage(local));
+        } else {
+          await updateChatMessageInFirestore(
+            local.cloudId,
+            mapModelToChatMessage(local)
+          );
+        }
         await database.write(async () => {
           await local.update((m) => {
-            m.role = remote.role as any;
-            m.content = remote.content;
-            m.updatedAt = remote.updatedAt;
-            m.syncState = remote.syncStatus as any;
-            m.cloudId = remote.cloudId;
-            m.deleted = remote.deleted;
+            m.syncState = "synced";
           });
         });
       }
+      setSyncStatus("synced");
+    } finally {
+      syncingRef.current = false;
     }
-
-    for (const local of unsynced) {
-      if (local.deleted) {
-        await deleteChatMessageInFirestore(local.id);
-      } else if (!local.cloudId) {
-        await addChatMessageToFirestore(mapModelToChatMessage(local));
-      } else {
-        await updateChatMessageInFirestore(
-          local.cloudId,
-          mapModelToChatMessage(local)
-        );
-      }
-      await database.write(async () => {
-        await local.update((m) => {
-          m.syncState = "synced";
-        });
-      });
-    }
-    setSyncStatus("synced");
-    getChatHistory();
-  }, [userUid, getChatHistory]);
-
-  useEffect(() => {
-    getChatHistory();
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      if (state.isConnected) syncChatHistory();
-    });
-    return unsubscribe;
-  }, [getChatHistory, syncChatHistory]);
+  }, [userUid]);
 
   return {
     messages,

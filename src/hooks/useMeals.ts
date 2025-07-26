@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import { database } from "@/src/db/database";
 import type { Meal } from "@/src/types";
@@ -12,9 +12,18 @@ import { v4 as uuidv4 } from "uuid";
 
 const unsyncedStatuses: Meal["syncStatus"][] = ["pending", "conflict"];
 
+function areMealsEqual(a: Meal[], b: Meal[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].id !== b[i].id) return false;
+  }
+  return true;
+}
+
 export function useMeals(userUid: string) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
+  const syncingRef = useRef(false);
 
   const getMeals = useCallback(
     async (date?: string) => {
@@ -27,7 +36,9 @@ export function useMeals(userUid: string) {
       if (date) {
         userMeals = userMeals.filter((m: any) => m.date === date);
       }
-      setMeals(userMeals.map((m: any) => mapRawToMeal(m._raw)));
+      const mealsArr = userMeals.map((m: any) => mapRawToMeal(m._raw));
+      setMeals((prev) => (areMealsEqual(prev, mealsArr) ? prev : mealsArr));
+      setLoading(false);
     },
     [userUid]
   );
@@ -109,16 +120,26 @@ export function useMeals(userUid: string) {
   }, [userUid]);
 
   const syncMeals = useCallback(async () => {
-    const netInfo = await NetInfo.fetch();
-    if (!netInfo.isConnected) return;
+    if (syncingRef.current) return;
+    syncingRef.current = true;
+    try {
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) return;
 
-    const mealCollection = database.get("meals");
-    const allLocal = await mealCollection.query().fetch();
-    const localMeals = allLocal.filter((m: any) => m.user_uid === userUid);
+      const mealCollection = database.get("meals");
+      const allLocal = await mealCollection.query().fetch();
+      const localMeals = allLocal.filter((m: any) => m.user_uid === userUid);
 
-    for (const m of localMeals) {
-      const meal = mapRawToMeal(m._raw);
-      if (unsyncedStatuses.includes(meal.syncStatus)) {
+      const toSync = localMeals.filter((m: any) =>
+        unsyncedStatuses.includes(m.sync_status)
+      );
+      if (toSync.length === 0) {
+        syncingRef.current = false;
+        return;
+      }
+
+      for (const m of toSync) {
+        const meal = mapRawToMeal(m._raw);
         if (meal.deleted) {
           await deleteMealInFirestore(meal);
         } else {
@@ -131,38 +152,32 @@ export function useMeals(userUid: string) {
           });
         });
       }
-    }
 
-    const remoteMeals = await fetchMealsFromFirestore(userUid);
-    for (const remote of remoteMeals) {
-      const local = localMeals.find((m: any) => m.id === remote.id);
-      if (local) {
-        const localMeal = mapRawToMeal(local._raw);
-        if (new Date(remote.lastUpdated) > new Date(localMeal.lastUpdated)) {
+      const remoteMeals = await fetchMealsFromFirestore(userUid);
+      for (const remote of remoteMeals) {
+        const local = localMeals.find((m: any) => m.id === remote.id);
+        if (local) {
+          const localMeal = mapRawToMeal(local._raw);
+          if (new Date(remote.lastUpdated) > new Date(localMeal.lastUpdated)) {
+            await database.write(async () => {
+              await local.update((m: any) =>
+                Object.assign(m, mapMealToRaw(remote))
+              );
+            });
+          }
+        } else if (!remote.deleted) {
           await database.write(async () => {
-            await local.update((m: any) =>
+            await mealCollection.create((m: any) =>
               Object.assign(m, mapMealToRaw(remote))
             );
           });
         }
-      } else if (!remote.deleted) {
-        await database.write(async () => {
-          await mealCollection.create((m: any) =>
-            Object.assign(m, mapMealToRaw(remote))
-          );
-        });
       }
+      await getMeals();
+    } finally {
+      syncingRef.current = false;
     }
-    await getMeals();
   }, [userUid, getMeals]);
-
-  useEffect(() => {
-    getMeals();
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      if (state.isConnected) syncMeals();
-    });
-    return unsubscribe;
-  }, [getMeals, syncMeals]);
 
   return {
     meals,
