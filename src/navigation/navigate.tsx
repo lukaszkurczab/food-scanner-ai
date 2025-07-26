@@ -1,14 +1,12 @@
 import { createNavigationContainerRef } from "@react-navigation/native";
-import { MealHistory } from "../types";
 
 export type RootStackParamList = {
   Home: any;
   Login: undefined;
-  NutritionSurvey: undefined;
   CheckMailbox: {
     email: string;
   };
-  OnboardingScreen: undefined;
+  Onboarding: undefined;
   Profile: undefined;
   ResetPassword: undefined;
   Terms: undefined;
@@ -27,7 +25,7 @@ export type RootStackParamList = {
   Camera: undefined;
   Result: undefined;
   History: undefined;
-  MealDetail: { meal: MealHistory };
+  MealDetail: undefined;
   Chat: undefined;
   Summary: undefined;
 };

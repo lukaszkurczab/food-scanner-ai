@@ -11,7 +11,7 @@ export default class User extends Model {
   @field("uid") uid!: string;
   @field("email") email!: string;
   @field("username") username?: string;
-  @field("created_at") createdAt!: string;
+  @field("created_at") createdAt!: number;
   @field("last_login") lastLogin!: string;
   @field("plan") plan!: string;
 

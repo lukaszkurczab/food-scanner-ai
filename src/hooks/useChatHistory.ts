@@ -42,7 +42,7 @@ export function useChatHistory(userUid: string) {
   const addChatMessage = useCallback(
     async (msg: Omit<ChatMessage, "id" | "syncStatus" | "deleted">) => {
       const chatCollection = database.get<ChatMessageModel>("chat_messages");
-      const now = new Date().toISOString();
+      const now = Date.now();
       await database.write(async () => {
         await chatCollection.create((m) => {
           m.userUid = msg.userUid;

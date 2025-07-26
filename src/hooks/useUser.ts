@@ -6,7 +6,7 @@ import {
   fetchUserFromFirestore,
   updateUserInFirestore,
   markUserSyncedInFirestore,
-} from "@services/firestore/firestoreUserService";
+} from "@/src/services/firestore/firestoreUserService";
 import { pickLatest } from "@/src/utils/syncUtils";
 
 export function useUser(uid: string) {
@@ -136,7 +136,7 @@ export function useUser(uid: string) {
         await database.write(async () => {
           await localUser.update((u: any) => {
             Object.assign(u, data, {
-              updatedAt: new Date().toISOString(),
+              updatedAt: Date.now(),
               syncStatus: "pending",
             });
           });
@@ -144,7 +144,7 @@ export function useUser(uid: string) {
         const newRaw = {
           ...localUser._raw,
           ...data,
-          updatedAt: new Date().toISOString(),
+          updatedAt: Date.now(),
           syncStatus: "pending",
         };
         setUser(mapRawToUserData(newRaw));

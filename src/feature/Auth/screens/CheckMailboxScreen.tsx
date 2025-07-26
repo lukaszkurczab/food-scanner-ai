@@ -6,13 +6,12 @@ import { useTheme } from "@/src/theme/useTheme";
 import {
   PrimaryButton,
   ErrorBox,
-  Card,
   Layout,
   SecondaryButton,
 } from "@/src/components";
 import { useRoute } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { auth } from "@/src/FirebaseConfig";
+import { getFirebaseAuth } from "@/src/FirebaseConfig";
 
 export default function CheckMailboxScreen({ navigation }: any) {
   const { t } = useTranslation("resetPassword");
@@ -73,13 +72,15 @@ export default function CheckMailboxScreen({ navigation }: any) {
     setSending(true);
     setError(null);
     try {
-      await auth().sendPasswordResetEmail(email.trim().toLowerCase());
-
+      const auth = await getFirebaseAuth();
+      await auth.sendPasswordResetEmail(email.trim().toLowerCase());
       setSendAgainDisabled(true);
       setTimer(60);
     } catch (err: any) {
       if (err.code === "auth/network-request-failed" || noInternet) {
         setError(t("errorNoInternet"));
+      } else if (err.code === "auth/user-not-found") {
+        setError(t("errorNotFound") ?? "User not found");
       } else {
         setError(t("errorDefault"));
       }

@@ -3,7 +3,7 @@ import { View, Keyboard, Platform, Text } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/src/theme/useTheme";
-import { auth } from "@/src/FirebaseConfig";
+import { getFirebaseAuth } from "@/src/FirebaseConfig";
 import {
   PrimaryButton,
   TextInput,
@@ -53,7 +53,7 @@ export default function ResetPasswordScreen({ navigation }: any) {
     if (!email) setError(t("errorRequired"));
     else if (!validateEmail(email)) setError(t("errorInvalid"));
     else setError(null);
-  }, [email, touched]);
+  }, [email, touched, t]);
 
   const onSubmit = async () => {
     Keyboard.dismiss();
@@ -69,7 +69,8 @@ export default function ResetPasswordScreen({ navigation }: any) {
     setError(null);
     setLoading(true);
     try {
-      await auth().sendPasswordResetEmail(email.trim().toLowerCase());
+      const auth = await getFirebaseAuth();
+      await auth.sendPasswordResetEmail(email.trim().toLowerCase());
       setLoading(false);
       navigation.navigate("CheckMailbox", {
         email: email.trim().toLowerCase(),
@@ -78,7 +79,10 @@ export default function ResetPasswordScreen({ navigation }: any) {
       setLoading(false);
       if (err.code === "auth/network-request-failed" || noInternet) {
         setError(t("errorNoInternet"));
+      } else if (err.code === "auth/user-not-found") {
+        setError(t("errorNotFound") ?? "User not found");
       } else {
+        setError(t("errorGeneric") ?? "Unexpected error");
         console.log(err);
       }
     }

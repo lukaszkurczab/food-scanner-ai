@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { auth, firestore } from "@/src/FirebaseConfig";
+import { getFirebaseAuth, getFirebaseFirestore } from "@/src/FirebaseConfig";
 
 type RegisterErrors = {
   email?: string;
@@ -67,20 +67,23 @@ export const useRegister = () => {
     setErrors({});
 
     try {
-      const userCredential = await auth().createUserWithEmailAndPassword(
+      const auth = await getFirebaseAuth();
+      const firestore = await getFirebaseFirestore();
+
+      const userCredential = await auth.createUserWithEmailAndPassword(
         email,
         password
       );
       const user = userCredential.user;
 
-      await firestore()
+      await firestore
         .collection("users")
         .doc(user.uid)
         .set({
           email: user.email,
           username,
           firstLogin: true,
-          createdAt: firestore.FieldValue.serverTimestamp(),
+          createdAt: Date.now(),
           nutritionSurvey: {
             gender: "male",
             age: 25,
