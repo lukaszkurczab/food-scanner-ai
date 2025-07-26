@@ -10,6 +10,7 @@ import Step2Preferences from "@/src/feature/Onboarding/components/Step2Preferenc
 import Step3Health from "@/src/feature/Onboarding/components/Step3Health";
 import Step4AIAssistantPreferences from "@/src/feature/Onboarding/components/Step4AIAssistantPreferences";
 import Step5Summary from "@/src/feature/Onboarding/components/Step5Summary";
+import { useUserContext } from "@/src/context/UserContext";
 
 const ONBOARDING_DRAFT_KEY = "onboardingDraft";
 const STEPS = 5;
@@ -68,6 +69,8 @@ export default function OnboardingScreen({ navigation }: any) {
 
   useSoftSave<FormData>(ONBOARDING_DRAFT_KEY, form, setForm);
 
+  const { saveSurvey, syncSurvey } = useUserContext();
+
   const nextStep = () => setStep((s) => Math.min(STEPS, s + 1));
   const prevStep = () => setStep((s) => Math.max(1, s - 1));
 
@@ -81,8 +84,16 @@ export default function OnboardingScreen({ navigation }: any) {
     setStep(STEPS);
   };
 
-  const handleFinish = () => {
-    navigation.replace("Home");
+  const handleFinish = async () => {
+    try {
+      await saveSurvey(form);
+      await syncSurvey();
+      await SecureStore.deleteItemAsync(ONBOARDING_DRAFT_KEY);
+      navigation.replace("Home");
+    } catch (err) {
+      console.log(form);
+      console.error(err);
+    }
   };
 
   const handleCancel = () => setShowCancelModal(true);

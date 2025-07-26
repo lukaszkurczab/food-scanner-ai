@@ -9,7 +9,7 @@ import {
   TextInput,
   LongTextInput,
 } from "@/src/components";
-import { AiStyle, AiFocus, FormData } from "@types/onboarding";
+import { AiStyle, AiFocus, FormData } from "@/src/types/onboarding";
 
 const ASSISTANT_STYLE_OPTIONS: { label: string; value: AiStyle }[] = [
   { label: "ai.style.none", value: "none" },

@@ -1,19 +1,19 @@
 export async function fullSync({
-  getUserProfile,
-  getSurvey,
+  syncUserProfile,
+  syncSurvey,
   syncSettings,
   getMeals,
   getChatHistory,
 }: {
-  getUserProfile: () => Promise<void>;
-  getSurvey: () => Promise<void>;
+  syncUserProfile: () => Promise<void>;
+  syncSurvey: () => Promise<void>;
   syncSettings: () => Promise<void>;
   getMeals: () => Promise<void>;
   getChatHistory: () => Promise<void>;
 }) {
   await Promise.all([
-    getUserProfile(),
-    getSurvey(),
+    syncUserProfile(),
+    syncSurvey(),
     syncSettings(),
     getMeals(),
     getChatHistory(),

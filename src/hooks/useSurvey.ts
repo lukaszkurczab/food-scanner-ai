@@ -1,138 +1,83 @@
 import { useState, useCallback } from "react";
 import { database } from "@/src/db/database";
-import { mapRawToSurvey, Survey } from "@/src/utils/surveyMapper";
-import {
-  fetchSurveyFromFirestore,
-  upsertSurveyInFirestore,
-} from "@/src/services/firestore/firestoreSurveyService";
 import type { FormData } from "@/src/types";
-
-function toSurveySyncStatus(val: any): "synced" | "pending" | "conflict" {
-  if (val === "synced" || val === "pending" || val === "conflict") return val;
-  return "synced";
-}
-
-function areSurveysEqual(a: Survey | null, b: Survey | null): boolean {
-  if (!a && !b) return true;
-  if (!a || !b) return false;
-  return (
-    a.completedAt === b.completedAt &&
-    JSON.stringify(a.formData) === JSON.stringify(b.formData)
-  );
-}
+import {
+  upsertSurveyInFirestore,
+  fetchSurveyFromFirestore,
+} from "@/src/services/firestore/firestoreSurveyService";
 
 export function useSurvey(userUid: string) {
-  const [survey, setSurvey] = useState<Survey | null>(null);
+  const [survey, setSurvey] = useState<FormData | null>(null);
   const [loading, setLoading] = useState(false);
 
   const getSurvey = useCallback(async () => {
     setLoading(true);
-    const surveyCollection = database.get("surveys");
-    const all = await surveyCollection.query().fetch();
-    const userSurveys = all.filter((s: any) => s.user_uid === userUid);
-    const latest = userSurveys.sort((a: any, b: any) =>
-      b.completed_at.localeCompare(a.completed_at)
-    )[0];
-    const result = latest ? mapRawToSurvey(latest._raw) : null;
-    setSurvey((prev) => (areSurveysEqual(prev, result) ? prev : result));
+    const userCollection = database.get("users");
+    const users = await userCollection.query().fetch();
+    const localUser = users.find((u: any) => u.uid === userUid);
+
+    if (localUser) {
+      const s: any = localUser._raw;
+      setSurvey({
+        unitsSystem: s.units_system,
+        age: s.age,
+        sex: s.sex,
+        height: s.height,
+        heightInch: s.height_inch,
+        weight: s.weight,
+        preferences: s.preferences,
+        activityLevel: s.activity_level,
+        goal: s.goal,
+        calorieDeficit: s.calorie_deficit,
+        calorieSurplus: s.calorie_surplus,
+        chronicDiseases: s.chronic_diseases,
+        chronicDiseasesOther: s.chronic_diseases_other,
+        allergies: s.allergies,
+        allergiesOther: s.allergies_other,
+        lifestyle: s.lifestyle,
+        aiStyle: s.ai_style,
+        aiFocus: s.ai_focus,
+        aiFocusOther: s.ai_focus_other,
+        aiNote: s.ai_note,
+      });
+    } else {
+      setSurvey(null);
+    }
     setLoading(false);
   }, [userUid]);
 
   const saveSurvey = useCallback(
     async (data: FormData) => {
-      const surveyCollection = database.get("surveys");
-      const completedAt = new Date().toISOString();
-      await database.write(async () => {
-        await surveyCollection.create((s: any) => {
-          s.user_uid = userUid;
-          s.form_data = JSON.stringify(data);
-          s.completed_at = completedAt;
-          s.sync_status = "pending";
-        });
-      });
-      await getSurvey();
-    },
-    [userUid, getSurvey]
-  );
+      const userCollection = database.get("users");
+      const users = await userCollection.query().fetch();
+      const localUser = users.find((u: any) => u.uid === userUid);
 
-  const syncSurveys = useCallback(
-    async (remoteData?: Survey | null) => {
-      const surveyCollection = database.get("surveys");
-      const all = await surveyCollection.query().fetch();
-      const userSurveys = all.filter((s: any) => s.user_uid === userUid);
-
-      const local = userSurveys.sort((a: any, b: any) =>
-        b.completed_at.localeCompare(a.completed_at)
-      )[0];
-      const localSurvey = local ? mapRawToSurvey(local._raw) : null;
-
-      let remoteSurvey = remoteData;
-      if (typeof remoteSurvey === "undefined") {
-        const remote = await fetchSurveyFromFirestore(userUid);
-        remoteSurvey = remote
-          ? {
-              id: remote.id,
-              userUid: remote.userUid,
-              formData:
-                typeof remote.formData === "string"
-                  ? JSON.parse(remote.formData)
-                  : remote.formData,
-              completedAt: remote.completedAt,
-              syncStatus: toSurveySyncStatus(remote.syncStatus),
-            }
-          : null;
-      }
-
-      if (
-        localSurvey &&
-        (!remoteSurvey || localSurvey.completedAt > remoteSurvey.completedAt)
-      ) {
-        await upsertSurveyInFirestore(
-          userUid,
-          localSurvey.formData,
-          localSurvey.completedAt
-        );
+      if (localUser) {
         await database.write(async () => {
-          await local.update((s: any) => {
-            s.sync_status = "synced";
+          await localUser.update((u: any) => {
+            Object.assign(u, data, {
+              syncStatus: "pending",
+              updatedAt: new Date().toISOString(),
+            });
           });
         });
-        setSurvey((prev) =>
-          areSurveysEqual(prev, localSurvey) ? prev : localSurvey
-        );
-      } else if (
-        remoteSurvey &&
-        (!localSurvey || remoteSurvey.completedAt > localSurvey.completedAt)
-      ) {
-        await database.write(async () => {
-          await surveyCollection.create((s: any) => {
-            s.user_uid = userUid;
-            s.form_data = JSON.stringify(remoteSurvey!.formData);
-            s.completed_at = remoteSurvey!.completedAt;
-            s.sync_status = "synced";
-          });
-        });
-        setSurvey((prev) =>
-          areSurveysEqual(prev, remoteSurvey) ? prev : remoteSurvey
-        );
-      } else if (
-        localSurvey &&
-        remoteSurvey &&
-        localSurvey.completedAt === remoteSurvey.completedAt
-      ) {
-        setSurvey((prev) =>
-          areSurveysEqual(prev, localSurvey) ? prev : localSurvey
-        );
+        setSurvey(data);
       }
+      await upsertSurveyInFirestore(userUid, data);
     },
     [userUid]
   );
+
+  const syncSurvey = useCallback(async () => {
+    const remoteSurvey = await fetchSurveyFromFirestore(userUid);
+    if (remoteSurvey) setSurvey(remoteSurvey);
+  }, [userUid]);
 
   return {
     survey,
     loading,
     getSurvey,
     saveSurvey,
-    syncSurveys,
+    syncSurvey,
   };
 }

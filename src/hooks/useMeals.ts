@@ -28,8 +28,7 @@ export function useMeals(userUid: string) {
   const getMeals = useCallback(
     async (date?: string) => {
       const mealCollection = database.get("meals");
-      let query = mealCollection.query();
-      const all = await query.fetch();
+      const all = await mealCollection.query().fetch();
       let userMeals = all.filter(
         (m: any) => m.user_uid === userUid && !m.deleted
       );
