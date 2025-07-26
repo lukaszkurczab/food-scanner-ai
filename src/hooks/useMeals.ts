@@ -6,7 +6,7 @@ import {
   fetchMealsFromFirestore,
   upsertMealInFirestore,
   deleteMealInFirestore,
-} from "@services/firestore/firestoreMealService";
+} from "@/src/services/firestore/firestoreMealService";
 import { mapRawToMeal, mapMealToRaw } from "@/src/utils/mealMapper";
 import { v4 as uuidv4 } from "uuid";
 

@@ -9,11 +9,11 @@ export interface UserData {
   username: string;
   plan: UserPlan;
   firstLogin: boolean;
-  createdAt: string;
+  createdAt: number;
   lastLogin: string;
   nutritionSurvey: FormData;
   onboardingVersion?: number;
   syncStatus: SyncStatus;
-  updatedAt: string;
+  updatedAt: number;
   lastSyncedAt?: string;
 }

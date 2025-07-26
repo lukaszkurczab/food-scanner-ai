@@ -18,7 +18,6 @@ import AddMealFromList from "@/src/feature/AddMealFromList/screens/AddMealFromLi
 import SavedMealsScreen from "@/src/feature/AddMealFromList/screens/SavedMealsScreen";
 import AddMealManual from "@/src/feature/AddMealManual/screens/AddMealManual";
 import ReviewIngredientsScreen from "@/src/feature/AddMealAI/screens/ReviewIngredientsScreen";
-import NutritionSurveyScreen from "@/src/feature/NutritionSurvey/screens/NutritionSurveyScreen";
 import ProfileScreen from "@/src/feature/UserProfile/screens/ProfileScreen";
 import TermsScreen from "@/src/feature/Auth/screens/TermsScreen";
 import PrivacyScreen from "@/src/feature/Auth/screens/PrivacyScreen";
@@ -39,13 +38,11 @@ const AppNavigator = () => {
     );
   }
 
-  console.log("User in AppNavigator:", user);
-
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
         <>
-          <Stack.Screen name="OnboardingScreen" component={OnboardingScreen} />
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Camera" component={CameraScreen} />
           <Stack.Screen name="Result" component={ResultScreen} />
@@ -58,31 +55,21 @@ const AppNavigator = () => {
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Summary" component={SummaryScreen} />
           <Stack.Screen
-            name="NutritionSurvey"
-            component={NutritionSurveyScreen}
-          />
-          <Stack.Screen
             name="ReviewIngredients"
             component={ReviewIngredientsScreen}
           />
           <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
-          <Stack.Screen name="Terms" component={TermsScreen} />
-          <Stack.Screen name="Privacy" component={PrivacyScreen} />
         </>
       ) : (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="Terms" component={TermsScreen} />
-          <Stack.Screen name="Privacy" component={PrivacyScreen} />
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-          <Stack.Screen
-            name="CheckMailbox"
-            component={CheckMailboxScreen}
-            initialParams={{ email: "" }}
-          />
+          <Stack.Screen name="CheckMailbox" component={CheckMailboxScreen} />
         </>
       )}
+      <Stack.Screen name="Terms" component={TermsScreen} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} />
     </Stack.Navigator>
   );
 };

@@ -5,8 +5,8 @@ export interface ChatMessage {
   userUid: string;
   role: "user" | "assistant" | "system";
   content: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: number;
+  updatedAt: number;
   syncStatus: ChatSyncStatus;
   cloudId?: string;
   deleted?: boolean;

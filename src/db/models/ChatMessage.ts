@@ -7,8 +7,8 @@ export default class ChatMessage extends Model {
   @field("user_uid") userUid!: string;
   @field("role") role!: string;
   @field("content") content!: string;
-  @field("created_at") createdAt!: string;
-  @field("updated_at") updatedAt!: string;
+  @field("created_at") createdAt!: number;
+  @field("updated_at") updatedAt!: number;
   @field("sync_status") syncState!: string;
   @field("cloud_id") cloudId?: string;
   @field("deleted") deleted?: boolean;

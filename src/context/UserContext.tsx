@@ -1,206 +1,192 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useCallback,
+} from "react";
 import { useAuthContext } from "./AuthContext";
-import { getFirebaseFirestore } from "@/src/FirebaseConfig";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  query,
-  orderBy,
-} from "@react-native-firebase/firestore";
-
-type Meal = {
-  id: string;
-  name: string;
-  date: string;
-  ingredients: string[];
-  nutrition: {
-    kcal: number;
-    carbs: number;
-    fat: number;
-    protein: number;
-  };
-};
-
-type UserData = {
-  uid: string;
-  email: string;
-  username: string;
-  firstLogin: boolean;
-  createdAt: string;
-  nutritionSurvey?: any;
-  myMeals?: Meal[];
-  history?: Meal[];
-};
+import { useUser } from "@/src/hooks/useUser";
+import { useSurvey } from "@/src/hooks/useSurvey";
+import { useSettings } from "@/src/hooks/useSettings";
+import { useMeals } from "@/src/hooks/useMeals";
+import { useChatHistory } from "@/src/hooks/useChatHistory";
+import type { UserData, FormData, ChatMessage, Meal } from "@/src/types";
 
 type UserContextType = {
-  userData: UserData | null;
-  loadingUserData: boolean;
-  refreshUserData: () => Promise<void>;
-  saveMealToFirestoreHistory: (meal: Meal) => Promise<void>;
-  saveMealToMyMeals: (meal: Meal) => Promise<void>;
-  getMyMeals: () => Promise<Meal[]>;
-  fetchUserHistory: () => Promise<Meal[]>;
+  user: UserData | null;
+  loadingUser: boolean;
+  syncStatus: "synced" | "pending" | "conflict";
+  refreshUser: () => Promise<void>;
+  updateUser: (data: Partial<UserData>) => Promise<void>;
+
+  survey: any | null;
+  loadingSurvey: boolean;
+  saveSurvey: (data: FormData) => Promise<void>;
+  refreshSurvey: () => Promise<void>;
+
+  settings: Record<string, string>;
+  loadingSettings: boolean;
+  updateSetting: (key: string, value: string) => Promise<void>;
+  refreshSettings: () => Promise<void>;
+
+  meals: Meal[];
+  loadingMeals: boolean;
+  getMeals: (date?: string) => Promise<void>;
+  addMeal: (
+    meal: Omit<Meal, "id" | "syncStatus" | "lastUpdated" | "source">
+  ) => Promise<void>;
+  updateMeal: (meal: Meal) => Promise<void>;
+  deleteMeal: (mealId: string) => Promise<void>;
+  syncMeals: () => Promise<void>;
+  getUnsyncedMeals: () => Promise<Meal[]>;
+
+  chatMessages: ChatMessage[];
+  loadingChat: boolean;
+  addChatMessage: (
+    msg: Omit<ChatMessage, "id" | "syncStatus" | "deleted">
+  ) => Promise<void>;
+  deleteChatMessage: (id: string) => Promise<void>;
+  syncChatHistory: () => Promise<void>;
+  getChatHistory: () => Promise<void>;
+  chatSyncStatus: "synced" | "pending" | "conflict";
 };
 
 const UserContext = createContext<UserContextType>({
-  userData: null,
-  loadingUserData: true,
-  refreshUserData: () => Promise.resolve(),
-  saveMealToFirestoreHistory: async () => {},
-  saveMealToMyMeals: async () => {},
-  getMyMeals: async () => [],
-  fetchUserHistory: async () => [],
+  user: null,
+  loadingUser: true,
+  syncStatus: "pending",
+  refreshUser: async () => {},
+  updateUser: async () => {},
+
+  survey: null,
+  loadingSurvey: true,
+  saveSurvey: async () => {},
+  refreshSurvey: async () => {},
+
+  settings: {},
+  loadingSettings: true,
+  updateSetting: async () => {},
+  refreshSettings: async () => {},
+
+  meals: [],
+  loadingMeals: true,
+  getMeals: async () => {},
+  addMeal: async () => {},
+  updateMeal: async () => {},
+  deleteMeal: async () => {},
+  syncMeals: async () => {},
+  getUnsyncedMeals: async () => [],
+
+  chatMessages: [],
+  loadingChat: true,
+  addChatMessage: async () => {},
+  deleteChatMessage: async () => {},
+  syncChatHistory: async () => {},
+  getChatHistory: async () => {},
+  chatSyncStatus: "pending",
 });
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuthContext();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [loadingUserData, setLoadingUserData] = useState(true);
+  const { user: authUser } = useAuthContext();
+  const uid = authUser?.uid || "";
 
-  const fetchUserData = async () => {
-    if (!user) {
-      setUserData(null);
-      setLoadingUserData(false);
-      return;
-    }
-    try {
-      const db = getFirebaseFirestore();
-      const userDocRef = doc(collection(db, "users"), user.uid);
-      const userDoc = await getDoc(userDocRef);
-      const userDataRaw = userDoc.data();
+  const {
+    user,
+    loading: loadingUser,
+    syncStatus,
+    getUserProfile,
+    updateUserProfile,
+  } = useUser(uid);
 
-      if (!userDataRaw) {
-        setUserData(null);
-        return;
-      }
+  const {
+    survey,
+    loading: loadingSurvey,
+    saveSurvey,
+    getSurvey,
+  } = useSurvey(uid);
 
-      const myMealsRef = collection(db, "users", user.uid, "myMeals");
-      const myMealsQ = query(myMealsRef, orderBy("date", "desc"));
-      const myMealsSnap = await getDocs(myMealsQ);
+  const {
+    settings,
+    loading: loadingSettings,
+    updateSetting,
+    syncSettings,
+  } = useSettings(uid);
 
-      const historyRef = collection(db, "users", user.uid, "history");
-      const historyQ = query(historyRef, orderBy("date", "desc"));
-      const historySnap = await getDocs(historyQ);
+  const {
+    meals,
+    loading: loadingMeals,
+    getMeals,
+    addMeal,
+    updateMeal,
+    deleteMeal,
+    syncMeals,
+    getUnsyncedMeals,
+  } = useMeals(uid);
 
-      const myMeals: Meal[] = myMealsSnap.docs.map((doc) => doc.data() as Meal);
-      const history: Meal[] = historySnap.docs.map((doc) => doc.data() as Meal);
+  const {
+    messages: chatMessages,
+    loading: loadingChat,
+    syncStatus: chatSyncStatus,
+    getChatHistory,
+    addChatMessage,
+    deleteChatMessage,
+    syncChatHistory,
+  } = useChatHistory(uid);
 
-      setUserData({
-        uid: user.uid,
-        email: userDataRaw.email,
-        username: userDataRaw.username,
-        firstLogin: userDataRaw.firstLogin,
-        createdAt: userDataRaw.createdAt,
-        nutritionSurvey: userDataRaw.nutritionSurvey,
-        myMeals,
-        history,
-      });
-    } catch (e) {
-      console.error("Failed to fetch user data:", e);
-      setUserData(null);
-    } finally {
-      setLoadingUserData(false);
-    }
-  };
+  const refreshUser = useCallback(async () => {
+    await getUserProfile();
+  }, [getUserProfile]);
+  const refreshSurvey = useCallback(async () => {
+    await getSurvey();
+  }, [getSurvey]);
+  const refreshSettings = useCallback(async () => {
+    await syncSettings();
+  }, [syncSettings]);
 
   useEffect(() => {
-    fetchUserData();
-  }, [user]);
-
-  const refreshUserData = async () => {
-    setLoadingUserData(true);
-    await fetchUserData();
-  };
-
-  const getMyMeals = async () => {
-    if (!user?.uid) return [];
-    try {
-      const db = getFirebaseFirestore();
-      const myMealsRef = collection(db, "users", user.uid, "myMeals");
-      const myMealsQ = query(myMealsRef, orderBy("date", "desc"));
-      const snapshot = await getDocs(myMealsQ);
-      return snapshot.docs.map((doc) => doc.data() as Meal);
-    } catch (e) {
-      console.error("Failed to fetch myMeals:", e);
-      return [];
-    }
-  };
-
-  const saveMealToMyMeals = async (meal: Meal) => {
-    if (!user?.uid) return;
-    try {
-      const db = getFirebaseFirestore();
-      const mealDocRef = doc(db, "users", user.uid, "myMeals", meal.id);
-      await setDoc(mealDocRef, meal);
-
-      setUserData((prev) =>
-        prev
-          ? {
-              ...prev,
-              myMeals: [
-                meal,
-                ...(prev.myMeals || []).filter((m) => m.id !== meal.id),
-              ],
-            }
-          : prev
-      );
-    } catch (e) {
-      console.error("Failed to save meal to myMeals:", e);
-      throw e;
-    }
-  };
-
-  const saveMealToFirestoreHistory = async (meal: Meal) => {
-    if (!user?.uid) return;
-    try {
-      const db = getFirebaseFirestore();
-      const mealDocRef = doc(db, "users", user.uid, "history", meal.id);
-      await setDoc(mealDocRef, meal);
-
-      setUserData((prev) =>
-        prev
-          ? {
-              ...prev,
-              history: [
-                meal,
-                ...(prev.history || []).filter((m) => m.id !== meal.id),
-              ],
-            }
-          : prev
-      );
-    } catch (e) {
-      console.error("Failed to save meal to history:", e);
-      throw e;
-    }
-  };
-
-  const fetchUserHistory = async (): Promise<Meal[]> => {
-    if (!user?.uid) return [];
-    try {
-      const db = getFirebaseFirestore();
-      const historyRef = collection(db, "users", user.uid, "history");
-      const historyQ = query(historyRef, orderBy("date", "desc"));
-      const snapshot = await getDocs(historyQ);
-      return snapshot.docs.map((doc) => doc.data() as Meal);
-    } catch (e) {
-      console.error("Failed to fetch user history:", e);
-      return [];
-    }
-  };
+    if (!uid) return;
+    getUserProfile();
+    getSurvey();
+    syncSettings();
+    getMeals();
+    getChatHistory();
+  }, [uid]);
 
   return (
     <UserContext.Provider
       value={{
-        userData,
-        loadingUserData,
-        refreshUserData,
-        saveMealToFirestoreHistory,
-        saveMealToMyMeals,
-        getMyMeals,
-        fetchUserHistory,
+        user,
+        loadingUser,
+        syncStatus,
+        refreshUser,
+        updateUser: updateUserProfile,
+
+        survey,
+        loadingSurvey,
+        saveSurvey,
+        refreshSurvey,
+
+        settings,
+        loadingSettings,
+        updateSetting,
+        refreshSettings,
+
+        meals,
+        loadingMeals,
+        getMeals,
+        addMeal,
+        updateMeal,
+        deleteMeal,
+        syncMeals,
+        getUnsyncedMeals,
+
+        chatMessages,
+        loadingChat,
+        addChatMessage,
+        deleteChatMessage,
+        syncChatHistory,
+        getChatHistory,
+        chatSyncStatus,
       }}
     >
       {children}

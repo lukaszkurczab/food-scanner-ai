@@ -69,7 +69,7 @@ const ProfileScreen = () => {
 
           <Button
             text="Edit Body & Goals"
-            onPress={() => navigation.navigate("NutritionSurvey")}
+            onPress={() => navigation.navigate("Onboarding")}
             style={styles.editButton}
           />
         </View>
@@ -78,7 +78,7 @@ const ProfileScreen = () => {
       return (
         <Button
           text="Calculate Tdee"
-          onPress={() => navigation.navigate("NutritionSurvey")}
+          onPress={() => navigation.navigate("Onboarding")}
         />
       );
     }

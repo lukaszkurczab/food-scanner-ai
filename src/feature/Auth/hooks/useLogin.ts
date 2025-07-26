@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { auth } from "@/src/FirebaseConfig";
+import { getFirebaseAuth } from "@/src/FirebaseConfig";
 
 type LoginErrors = {
   email?: string;
@@ -18,7 +18,8 @@ export const useLogin = (t: (key: string) => string) => {
     setCriticalError(null);
 
     try {
-      await auth().signInWithEmailAndPassword(email, password);
+      const auth = await getFirebaseAuth();
+      await auth.signInWithEmailAndPassword(email, password);
     } catch (error: any) {
       if (
         error.code === "auth/too-many-requests" ||

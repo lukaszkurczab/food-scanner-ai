@@ -1,17 +1,31 @@
-import firestore from "@react-native-firebase/firestore";
-import { Setting } from "@/src/types";
+import { getApp } from "@react-native-firebase/app";
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  getDocs,
+  query,
+  where,
+} from "@react-native-firebase/firestore";
+import type { Setting } from "@/src/types";
 
 const COLLECTION = "settings";
+
+function getDb() {
+  const app = getApp();
+  return getFirestore(app);
+}
 
 export async function fetchSettingsFromFirestore(
   userUid: string
 ): Promise<Setting[]> {
-  const snapshot = await firestore()
-    .collection(COLLECTION)
-    .where("userUid", "==", userUid)
-    .get();
+  const db = getDb();
+  const q = query(collection(db, COLLECTION), where("userUid", "==", userUid));
+  const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((doc) => doc.data() as Setting);
+  return snapshot.docs.map((docSnap: any) => docSnap.data() as Setting);
 }
 
 export async function updateSettingInFirestore(
@@ -20,13 +34,12 @@ export async function updateSettingInFirestore(
   value: string,
   lastUpdated: string
 ) {
-  await firestore()
-    .collection(COLLECTION)
-    .doc(`${userUid}_${key}`)
-    .set(
-      { userUid, key, value, lastUpdated, syncStatus: "synced" },
-      { merge: true }
-    );
+  const db = getDb();
+  await setDoc(
+    doc(collection(db, COLLECTION), `${userUid}_${key}`),
+    { userUid, key, value, lastUpdated, syncStatus: "synced" },
+    { merge: true }
+  );
 }
 
 export async function markSettingSyncedInFirestore(
@@ -34,8 +47,9 @@ export async function markSettingSyncedInFirestore(
   key: string,
   lastUpdated: string
 ) {
-  await firestore()
-    .collection(COLLECTION)
-    .doc(`${userUid}_${key}`)
-    .update({ syncStatus: "synced", lastUpdated });
+  const db = getDb();
+  await updateDoc(doc(collection(db, COLLECTION), `${userUid}_${key}`), {
+    syncStatus: "synced",
+    lastUpdated,
+  });
 }

@@ -1,30 +1,55 @@
-import firestore from "@react-native-firebase/firestore";
+import { getApp } from "@react-native-firebase/app";
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  getDocs,
+  query,
+  where,
+} from "@react-native-firebase/firestore";
 import type { Meal } from "@/src/types";
 
 const MEALS_COLLECTION = "meals";
 
+function getDb() {
+  const app = getApp();
+  return getFirestore(app);
+}
+
 export async function fetchMealsFromFirestore(
   userUid: string
 ): Promise<Meal[]> {
-  const snapshot = await firestore()
-    .collection(MEALS_COLLECTION)
-    .where("userUid", "==", userUid)
-    .get();
-  return snapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id } as Meal));
+  const db = getDb();
+  const q = query(
+    collection(db, MEALS_COLLECTION),
+    where("userUid", "==", userUid)
+  );
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map(
+    (docSnap: any) =>
+      ({
+        ...docSnap.data(),
+        id: docSnap.id,
+      } as Meal)
+  );
 }
 
 export async function upsertMealInFirestore(meal: Meal) {
+  const db = getDb();
   const id = meal.cloudId || meal.id;
-  await firestore()
-    .collection(MEALS_COLLECTION)
-    .doc(id)
-    .set(meal, { merge: true });
+  await setDoc(doc(collection(db, MEALS_COLLECTION), id), meal, {
+    merge: true,
+  });
 }
 
 export async function deleteMealInFirestore(meal: Meal) {
+  const db = getDb();
   const id = meal.cloudId || meal.id;
-  await firestore()
-    .collection(MEALS_COLLECTION)
-    .doc(id)
-    .update({ deleted: true, syncStatus: "synced" });
+  await updateDoc(doc(collection(db, MEALS_COLLECTION), id), {
+    deleted: true,
+    syncStatus: "synced",
+  });
 }
