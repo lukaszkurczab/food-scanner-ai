@@ -36,3 +36,4 @@ export * from "./Checkbox";
 export * from "./Dropdown";
 export * from "./CheckboxDropdown";
 export * from "./LongTextInput";
+export * from "./BottomTabBar";

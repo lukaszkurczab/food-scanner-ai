@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Dimensions } from "react-native";
+import { View, Dimensions } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/src/theme/useTheme";
 import { Layout, PrimaryButton } from "@/src/components";
