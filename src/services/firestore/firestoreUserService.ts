@@ -6,6 +6,9 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
+  getDocs,
+  writeBatch,
 } from "@react-native-firebase/firestore";
 import type { UserData } from "@/src/types";
 
@@ -14,6 +17,26 @@ const USERS_COLLECTION = "users";
 function getDb() {
   const app = getApp();
   return getFirestore(app);
+}
+
+async function deleteSubcollection(
+  parentDocRef: ReturnType<typeof doc>,
+  subcollectionName: string
+) {
+  const subcollectionRef = collection(parentDocRef, subcollectionName);
+  const snapshot = await getDocs(subcollectionRef);
+  const batchSize = 500;
+
+  const docs = snapshot.docs;
+
+  for (let i = 0; i < docs.length; i += batchSize) {
+    const batchDocs = docs.slice(i, i + batchSize);
+    const db = getDb();
+    const batch = writeBatch(db);
+
+    batchDocs.forEach((d: any) => batch.delete(d.ref));
+    await batch.commit();
+  }
 }
 
 export async function fetchUserFromFirestore(
@@ -43,4 +66,16 @@ export async function markUserSyncedInFirestore(
     syncStatus: "synced",
     lastSyncedAt: timestamp,
   });
+}
+
+export async function deleteUserInFirestore(uid: string) {
+  const db = getDb();
+  const userDocRef = doc(collection(db, USERS_COLLECTION), uid);
+  const subcollections = ["meals", "chatMessages"];
+
+  for (const sub of subcollections) {
+    await deleteSubcollection(userDocRef, sub);
+  }
+
+  await deleteDoc(userDocRef);
 }

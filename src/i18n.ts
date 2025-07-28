@@ -8,12 +8,14 @@ import en_terms from "./locales/en/terms.json";
 import en_privacy from "./locales/en/privacy.json";
 import en_resetPassword from "./locales/en/resetPassword.json";
 import en_onboarding from "./locales/en/onboarding.json";
+import en_profile from "./locales/en/profile.json";
 import pl_common from "./locales/pl/common.json";
 import pl_login from "./locales/pl/login.json";
 import pl_terms from "./locales/pl/terms.json";
 import pl_privacy from "./locales/pl/privacy.json";
 import pl_resetPassword from "./locales/pl/resetPassword.json";
 import pl_onboarding from "./locales/pl/onboarding.json";
+import pl_profile from "./locales/pl/profile.json";
 
 const languageDetector = {
   type: "languageDetector",
@@ -31,7 +33,15 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: "en",
-    ns: ["common", "login", "terms", "privacy", "resetPassword", "onboarding"],
+    ns: [
+      "common",
+      "login",
+      "terms",
+      "privacy",
+      "resetPassword",
+      "onboarding",
+      "profile",
+    ],
     defaultNS: "common",
     resources: {
       en: {
@@ -41,6 +51,7 @@ i18n
         privacy: en_privacy,
         resetPassword: en_resetPassword,
         onboarding: en_onboarding,
+        profile: en_profile,
       },
       pl: {
         common: pl_common,
@@ -49,6 +60,7 @@ i18n
         privacy: pl_privacy,
         resetPassword: pl_resetPassword,
         onboarding: pl_onboarding,
+        profile: pl_profile,
       },
     },
     interpolation: { escapeValue: false },

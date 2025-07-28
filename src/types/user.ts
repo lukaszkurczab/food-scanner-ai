@@ -16,4 +16,7 @@ export interface UserData {
   syncStatus: SyncStatus;
   updatedAt: number;
   lastSyncedAt?: string;
+  avatarUrl?: string;
+  avatarLocalPath?: string;
+  avatarUpdatedAt?: number;
 }
