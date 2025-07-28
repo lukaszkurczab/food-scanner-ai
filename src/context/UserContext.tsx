@@ -21,6 +21,7 @@ type UserContextType = {
   refreshUser: () => Promise<void>;
   updateUser: (data: Partial<UserData>) => Promise<void>;
   syncUserProfile: () => Promise<void>;
+  deleteUser: (password: string) => Promise<void>;
 
   survey: any | null;
   loadingSurvey: boolean;
@@ -62,6 +63,7 @@ const UserContext = createContext<UserContextType>({
   refreshUser: async () => {},
   updateUser: async () => {},
   syncUserProfile: async () => {},
+  deleteUser: async () => {},
 
   survey: null,
   loadingSurvey: true,
@@ -103,6 +105,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     getUserProfile,
     updateUserProfile,
     syncUserProfile,
+    deleteUser,
   } = useUser(uid);
 
   const {
@@ -180,6 +183,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         refreshUser,
         updateUser: updateUserProfile,
         syncUserProfile,
+        deleteUser,
 
         survey,
         loadingSurvey,

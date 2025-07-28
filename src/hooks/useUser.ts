@@ -6,8 +6,13 @@ import {
   fetchUserFromFirestore,
   updateUserInFirestore,
   markUserSyncedInFirestore,
+  deleteUserInFirestore,
 } from "@/src/services/firestore/firestoreUserService";
 import { pickLatest } from "@/src/utils/syncUtils";
+import {
+  getAuth,
+  deleteUser as deleteAuthUser,
+} from "@react-native-firebase/auth";
 
 export function useUser(uid: string) {
   const [user, setUser] = useState<UserData | null>(null);
@@ -129,6 +134,29 @@ export function useUser(uid: string) {
     }
   }, [uid]);
 
+  const deleteUser = useCallback(async () => {
+    if (!uid) return;
+    await deleteUserInFirestore(uid);
+
+    const userCollection = database.get("users");
+    const users = await userCollection.query().fetch();
+    const localUser = users.find((u: any) => u.uid === uid);
+    if (localUser) {
+      await database.write(async () => {
+        await localUser.markAsDeleted();
+      });
+    }
+
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      await deleteAuthUser(currentUser);
+    }
+
+    setUser(null);
+    setSyncStatus("pending");
+  }, [uid]);
+
   function mapRawToUserData(raw: any): UserData {
     return raw as UserData;
   }
@@ -143,5 +171,6 @@ export function useUser(uid: string) {
     sendUserToCloud,
     syncUserProfile,
     markUserAsSynced,
+    deleteUser,
   };
 }
