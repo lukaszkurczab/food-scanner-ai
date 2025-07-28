@@ -100,7 +100,7 @@ export default function OnboardingScreen({ navigation }: any) {
   const confirmCancel = () => {
     setShowCancelModal(false);
     SecureStore.deleteItemAsync(ONBOARDING_DRAFT_KEY);
-    navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   };
 
   if (!isLoaded) return null;

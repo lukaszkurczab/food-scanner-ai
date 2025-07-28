@@ -20,8 +20,8 @@
   "back": "Wstecz",
   "cancelTitle": "Przerwać onboarding?",
   "cancelDesc": "Twój postęp zostanie utracony. Te informacje możesz podać później w ustawieniach.",
-  "cancelConfirm": "Porzuć i wyjdź",
-  "cancelDismiss": "Kontynuuj onboarding",
+  "cancelConfirm": "Porzuć",
+  "cancelDismiss": "Kontynuuj",
 
   "step2_title": "Spersonalizuj swój plan",
   "step2_description": "Podaj swoje preferencje żywieniowe, poziom aktywności i cel.",

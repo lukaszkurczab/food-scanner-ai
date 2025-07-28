@@ -1,150 +1,203 @@
+import React, { useState } from "react";
+import { View, Text, Pressable, StyleSheet, Alert, Image } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/src/theme/useTheme";
-import { auth } from "@/src/FirebaseConfig";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "@/src/navigation/navigate";
-import { useNavigation } from "@react-navigation/native";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Button } from "@/src/components";
 import { useUserContext } from "@/src/context/UserContext";
+import {
+  BottomTabBar,
+  ButtonToggle,
+  InputModal,
+  Layout,
+} from "@/src/components";
+import { UserIcon } from "@/src/components/UserIcon";
+import SectionHeader from "../components/SectionHeader";
+import ListItem from "../components/ListItem";
+import { MaterialIcons } from "@expo/vector-icons";
 
-type ProfileScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "Profile"
->;
+export default function UserProfileScreen({ navigation }: any) {
+  const { t } = useTranslation("profile");
+  const theme = useTheme();
+  const { user, deleteUser } = useUserContext();
 
-const ProfileScreen = () => {
-  const { toggleTheme, ...theme } = useTheme();
-  const styles = getStyles(theme);
-  const navigation = useNavigation<ProfileScreenNavigationProp>();
-  const { userData } = useUserContext();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [password, setPassword] = useState("");
 
-  const getActivityLevelLabel = (level: number) => {
-    switch (level) {
-      case 1.2:
-        return "Sedentary";
-      case 1.375:
-        return "Lightly active";
-      case 1.55:
-        return "Moderately active";
-      case 1.725:
-        return "Very active";
-      case 1.9:
-        return "Extra active";
-      default:
-        return "Unknown";
-    }
+  const handleLogout = async () => {
+    navigation.reset({ index: 0, routes: [{ name: "Login" }] });
   };
 
-  const renderBodyAndGoals = () => {
-    if (userData && userData.nutritionSurvey.tdee) {
-      return (
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Body & Goals</Text>
-          <Text style={styles.value}>
-            Goal: {userData.nutritionSurvey.goal}
-          </Text>
-          <Text style={styles.value}>
-            Gender: {userData.nutritionSurvey.gender}
-          </Text>
-          <Text style={styles.value}>Age: {userData.nutritionSurvey.age}</Text>
-          <Text style={styles.value}>
-            Weight: {userData.nutritionSurvey.weight} kg
-          </Text>
-          <Text style={styles.value}>
-            Height: {userData.nutritionSurvey.height} cm
-          </Text>
-          <Text style={styles.value}>
-            Activity Level:{" "}
-            {getActivityLevelLabel(userData.nutritionSurvey.activityLevel)}
-          </Text>
-          <Text style={styles.value}>
-            BMR: {userData.nutritionSurvey.bmr}kcal
-          </Text>
-          <Text style={styles.value}>
-            TDEE: {userData.nutritionSurvey.tdee}kcal
-          </Text>
-          <Text style={styles.value}>
-            Goal TDEE: {userData.nutritionSurvey.adjustedTdee}kcal
-          </Text>
-
-          <Button
-            text="Edit Body & Goals"
-            onPress={() => navigation.navigate("Onboarding")}
-            style={styles.editButton}
-          />
-        </View>
-      );
-    } else {
-      return (
-        <Button
-          text="Calculate Tdee"
-          onPress={() => navigation.navigate("Onboarding")}
-        />
-      );
+  const handleDeleteAccount = async () => {
+    setShowDeleteModal(false);
+    try {
+      await deleteUser(password);
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    } catch (e) {
+      Alert.alert(t("deleteAccountError"), t("wrongPasswordOrUnknownError"));
     }
+    setPassword("");
   };
+
+  if (!user) {
+    navigation.navigate("Login");
+    return;
+  }
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
-      <Text style={styles.header}>{userData?.username}</Text>
+    <Layout>
+      <View style={styles.header}>
+        {user.avatarLocalPath ? (
+          <Image
+            source={{ uri: user.avatarLocalPath }}
+            style={styles.avatar}
+            accessible
+            accessibilityLabel={t("profilePicture")}
+          />
+        ) : (
+          <UserIcon size={96} accessibilityLabel={t("profilePictureDefault")} />
+        )}
+        <Text
+          style={[styles.username, { color: theme.text }]}
+          accessibilityRole="header"
+        >
+          {user.username}
+        </Text>
+        <Text style={[styles.email, { color: theme.textSecondary }]}>
+          {user.email}
+        </Text>
+      </View>
 
-      {renderBodyAndGoals()}
-
-      <Button
-        text="Toggle Theme"
-        onPress={toggleTheme}
-        style={styles.logoutButton}
+      <SectionHeader label={t("userSection")} />
+      <ListItem
+        label={t("changeUserData")}
+        onPress={() => navigation.navigate("ChangeUserData")}
+        accessibilityLabel={t("changeUserData")}
+      />
+      <ListItem
+        label={t("updateHealthSurvey")}
+        onPress={() => navigation.navigate("UpdateHealthSurvey")}
+        accessibilityLabel={t("updateHealthSurvey")}
+      />
+      <ListItem
+        label={t("manageSubscription")}
+        onPress={() => navigation.navigate("ManageSubscription")}
+        accessibilityLabel={t("manageSubscription")}
+      />
+      <ListItem
+        label={t("downloadYourData")}
+        onPress={() => navigation.navigate("DownloadYourData")}
+        accessibilityLabel={t("downloadYourData")}
       />
 
-      <Button
-        text="Log out"
-        onPress={() => auth().signOut()}
-        style={styles.logoutButton}
+      <SectionHeader label={t("settingsSection")} />
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Text
+          style={{
+            flex: 1,
+            color: theme.text,
+            fontFamily: theme.typography.fontFamily.bold,
+            fontSize: theme.typography.size.base,
+          }}
+          numberOfLines={1}
+        >
+          {t("toggleDarkMode")}
+        </Text>
+        <ButtonToggle accessibilityLabel={t("toggleDarkMode")} />
+      </View>
+      <ListItem
+        label={t("language")}
+        onPress={() => navigation.navigate("Language")}
+        accessibilityLabel={t("language")}
       />
-    </ScrollView>
+      <ListItem
+        label={t("termsOfService")}
+        onPress={() => navigation.navigate("TermsOfService")}
+        accessibilityLabel={t("termsOfService")}
+      />
+      <ListItem
+        label={t("privacyPolicy")}
+        onPress={() => navigation.navigate("PrivacyPolicy")}
+        accessibilityLabel={t("privacyPolicy")}
+      />
+      <ListItem
+        label={t("sendFeedback")}
+        onPress={() => navigation.navigate("SendFeedback")}
+        accessibilityLabel={t("sendFeedback")}
+      />
+      <ListItem
+        label={t("logOut")}
+        onPress={handleLogout}
+        accessibilityLabel={t("logOut")}
+      />
+
+      <Pressable
+        style={styles.deleteAccount}
+        onPress={() => setShowDeleteModal(true)}
+        accessibilityRole="button"
+        accessibilityLabel={t("deleteAccount")}
+      >
+        <Text style={[styles.deleteText, { color: theme.error.text }]}>
+          {t("deleteAccount")}
+        </Text>
+      </Pressable>
+
+      <Text style={[styles.version, { color: theme.textSecondary }]}>
+        CaloriAI 1.0.0
+      </Text>
+
+      <BottomTabBar />
+
+      <InputModal
+        visible={showDeleteModal}
+        title={t("deleteAccount")}
+        message={t("deleteAccountWarning")}
+        primaryActionLabel={t("confirm")}
+        onPrimaryAction={handleDeleteAccount}
+        secondaryActionLabel={t("cancel")}
+        onSecondaryAction={() => setShowDeleteModal(false)}
+        onClose={() => setShowDeleteModal(false)}
+        placeholder={t("enterPassword")}
+        value={password}
+        onChange={setPassword}
+        secureTextEntry={true}
+      />
+    </Layout>
   );
-};
+}
 
-const getStyles = (theme: any) =>
-  StyleSheet.create({
-    container: {
-      padding: 16,
-      flex: 1,
-      backgroundColor: theme.background,
-    },
-    header: {
-      fontSize: 24,
-      fontWeight: "600",
-      textAlign: "center",
-      marginBottom: 24,
-    },
-    section: {
-      marginBottom: 32,
-    },
-    sectionHeader: {
-      fontSize: 18,
-      fontWeight: "600",
-      marginBottom: 12,
-    },
-    label: {
-      fontSize: 16,
-      fontWeight: "500",
-    },
-    value: {
-      fontSize: 16,
-      fontWeight: "400",
-      marginBottom: 4,
-      color: theme.textSecondary,
-    },
-    editButton: {
-      marginTop: 12,
-    },
-    logoutButton: {
-      marginTop: 12,
-    },
-  });
-
-export default ProfileScreen;
+const styles = StyleSheet.create({
+  header: {
+    alignItems: "center",
+    marginVertical: 32,
+  },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "#B0BEC5",
+    marginBottom: 8,
+  },
+  username: {
+    fontSize: 24,
+    fontWeight: "bold",
+    fontFamily: "Inter-Bold",
+    marginBottom: 2,
+  },
+  email: {
+    fontSize: 16,
+    color: "#B0BEC5",
+    marginBottom: 16,
+  },
+  deleteAccount: {
+    alignItems: "center",
+    marginVertical: 24,
+  },
+  deleteText: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  version: {
+    textAlign: "center",
+    marginBottom: 64,
+    fontSize: 14,
+  },
+});
