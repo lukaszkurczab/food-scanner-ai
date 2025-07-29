@@ -76,26 +76,22 @@ export const useRegister = () => {
       );
       const user = userCredential.user;
 
-      await firestore
-        .collection("users")
-        .doc(user.uid)
-        .set({
-          email: user.email,
-          username,
-          firstLogin: true,
-          createdAt: Date.now(),
-          nutritionSurvey: {
-            gender: "male",
-            age: 25,
-            weight: 70,
-            height: 175,
-            activityLevel: 1.55,
-            goal: "maintenance",
-            bmr: null,
-            tdee: null,
-            adjustedTdee: null,
-          },
-        });
+      await firestore.collection("users").doc(user.uid).set({
+        email: user.email,
+        username,
+        firstLogin: true,
+        createdAt: Date.now(),
+        gender: "male",
+        age: 25,
+        weight: 70,
+        height: 175,
+        activityLevel: 1.55,
+        goal: "maintenance",
+        bmr: null,
+        tdee: null,
+        adjustedTdee: null,
+        surveyComplited: false,
+      });
     } catch (error: any) {
       const errorMessage: RegisterErrors = {};
       console.log(error);

@@ -28,6 +28,7 @@ export type RootStackParamList = {
   MealDetail: undefined;
   Chat: undefined;
   Summary: undefined;
+  Loading: undefined;
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();

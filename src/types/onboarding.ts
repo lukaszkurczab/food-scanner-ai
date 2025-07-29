@@ -66,4 +66,5 @@ export type FormData = {
   aiFocus?: AiFocus;
   aiFocusOther?: string;
   aiNote?: string;
+  surveyComplited: boolean;
 };

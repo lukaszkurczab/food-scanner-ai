@@ -39,6 +39,7 @@ export function useSurvey(userUid: string) {
         aiFocus: s.ai_focus,
         aiFocusOther: s.ai_focus_other,
         aiNote: s.ai_note,
+        surveyComplited: s.survey_complited,
       });
     } else {
       setSurvey(null);
@@ -61,7 +62,7 @@ export function useSurvey(userUid: string) {
             });
           });
         });
-        setSurvey(data);
+        setSurvey({ ...data, surveyComplited: true });
       }
       await upsertSurveyInFirestore(userUid, data);
     },

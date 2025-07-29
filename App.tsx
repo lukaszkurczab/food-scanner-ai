@@ -45,19 +45,6 @@ export default function App() {
     initRevenueCat();
   }, []);
 
-  const navigationTheme = {
-    ...NavigationDefaultTheme,
-    colors: {
-      ...NavigationDefaultTheme.colors,
-      background: theme.background,
-      card: theme.card,
-      text: theme.text,
-      primary: theme.accent,
-      border: theme.border,
-      notification: theme.accentSecondary,
-    },
-  };
-
   if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -72,7 +59,7 @@ export default function App() {
         <UserProvider>
           <MealProvider>
             <ThemeProvider>
-              <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+              <NavigationContainer ref={navigationRef}>
                 <AppNavigator />
               </NavigationContainer>
             </ThemeProvider>
