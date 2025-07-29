@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import { database } from "@/src/db/database";
+import { Q } from "@nozbe/watermelondb";
 import type { UserData } from "@/src/types";
 import {
   fetchUserFromFirestore,
@@ -25,33 +26,32 @@ export function useUser(uid: string) {
     setLoading(true);
     const userCollection = database.get("users");
     let localUser = null;
-
     try {
-      localUser = await userCollection.find(uid);
+      const found = await userCollection.query(Q.where("uid", uid)).fetch();
+      localUser = found[0] || null;
     } catch (e) {
       localUser = null;
     }
 
     let localData = localUser ? mapRawToUserData(localUser._raw) : null;
-    if (localData) console.log("mam!");
-    if (!localData) {
-      console.log(userCollection);
-      const remoteData = await fetchUserFromFirestore(uid);
 
+    if (!localData) {
+      const remoteData = await fetchUserFromFirestore(uid);
       if (remoteData) {
         try {
           await database.write(async () => {
             await userCollection.create((user: any) => {
-              user.id = remoteData.uid;
               Object.assign(user, remoteData);
             });
           });
-        } catch (err) {}
+        } catch (err) {
+          console.log(err);
+        }
         localData = remoteData;
       }
     }
     setUserData(localData);
-    setSyncStatus(localData?.syncStatus || "pending");
+    setSyncStatus(localData?.syncState || "pending");
     setLoading(false);
   }, [uid]);
 
