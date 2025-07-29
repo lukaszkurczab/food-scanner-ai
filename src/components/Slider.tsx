@@ -1,277 +1,179 @@
-import React, { useRef, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Pressable } from "react-native";
 import {
-  View,
-  Text,
-  StyleSheet,
-  PanResponder,
-  LayoutChangeEvent,
-  I18nManager,
-  Animated,
-} from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+  useAnimatedGestureHandler,
+} from "react-native-reanimated";
+import { PanGestureHandler } from "react-native-gesture-handler";
 
-type SliderProps = {
-  value: number;
-  onValueChange: (val: number) => void;
-  onSlidingComplete?: (val: number) => void;
-  minimumValue?: number;
-  maximumValue?: number;
-  step?: number;
-  disabled?: boolean;
-  minimumLabel?: string;
-  maximumLabel?: string;
-  unit?: string;
-};
-
-export const Slider: React.FC<SliderProps> = ({
+export function Slider({
   value,
   onValueChange,
-  onSlidingComplete,
   minimumValue = 0,
   maximumValue = 100,
   step = 1,
   disabled = false,
-  minimumLabel,
-  maximumLabel,
-  unit,
-}) => {
-  const theme = useTheme();
-  const [width, setWidth] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const thumbAnim = useRef(new Animated.Value(0)).current;
+}) {
+  const [trackWidth, setTrackWidth] = useState(1);
+  const trackWidthAnim = useSharedValue(1);
+  const thumbX = useSharedValue(0);
 
-  const getPercent = (v: number) =>
-    Math.max(
-      0,
-      Math.min(1, (v - minimumValue) / (maximumValue - minimumValue))
-    );
-  const percent = getPercent(value);
+  useEffect(() => {
+    if (!trackWidth) return;
+    const ratio = (value - minimumValue) / (maximumValue - minimumValue);
+    const px = Math.max(0, Math.min(trackWidth, ratio * trackWidth));
+    thumbX.value = withTiming(px);
+  }, [value, trackWidth, minimumValue, maximumValue]);
 
-  // Wyliczamy rzeczywiste położenie thumb w px
-  const thumbPosition = width * percent;
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: thumbX.value - 12 }],
+  }));
 
-  // Obsługa dragowania
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !disabled,
-      onMoveShouldSetPanResponder: () => !disabled,
-      onPanResponderGrant: () => {
-        setDragging(true);
-        thumbAnim.setValue(1);
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (!width) return;
-        let dx = I18nManager.isRTL ? -gestureState.dx : gestureState.dx;
+  const fillStyle = useAnimatedStyle(() => ({
+    width: thumbX.value,
+  }));
 
-        const newX = Math.max(0, Math.min(width, thumbPosition + dx));
-        const newPercent = newX / width;
-        let newValue =
-          minimumValue +
-          Math.round(((maximumValue - minimumValue) * newPercent) / step) *
-            step;
-        newValue = Math.max(minimumValue, Math.min(newValue, maximumValue));
-        if (newValue !== value) {
-          onValueChange(newValue);
-        }
-      },
-      onPanResponderRelease: () => {
-        setDragging(false);
-        Animated.spring(thumbAnim, {
-          toValue: 0,
-          useNativeDriver: false,
-        }).start();
-        if (onSlidingComplete) onSlidingComplete(value);
-      },
-      onPanResponderTerminationRequest: () => true,
-      onPanResponderTerminate: () => {
-        setDragging(false);
-        Animated.spring(thumbAnim, {
-          toValue: 0,
-          useNativeDriver: false,
-        }).start();
-      },
-    })
-  ).current;
+  const gestureHandler = useAnimatedGestureHandler({
+    onStart: (_, ctx) => {
+      ctx.startX = thumbX.value;
+    },
+    onActive: (event, ctx) => {
+      if (disabled) return;
+      let x = ctx.startX + event.translationX;
+      x = Math.max(0, Math.min(trackWidthAnim.value, x));
+      thumbX.value = x;
+      let ratio = x / trackWidthAnim.value;
+      ratio = Math.max(0, Math.min(1, ratio));
+      let val = minimumValue + ratio * (maximumValue - minimumValue);
+      val = Math.round(val / step) * step;
+      val = Math.max(minimumValue, Math.min(maximumValue, val));
+      runOnJS(onValueChange)(val);
+    },
+  });
 
-  const onTrackLayout = (e: LayoutChangeEvent) => {
-    setWidth(e.nativeEvent.layout.width);
+  const handleTrackPress = (evt) => {
+    if (disabled || !trackWidth) return;
+    const x = evt.nativeEvent.locationX;
+    let ratio = x / trackWidth;
+    ratio = Math.max(0, Math.min(1, ratio));
+    let val = minimumValue + ratio * (maximumValue - minimumValue);
+    val = Math.round(val / step) * step;
+    val = Math.max(minimumValue, Math.min(maximumValue, val));
+    thumbX.value = withTiming(x);
+    onValueChange(val);
   };
 
-  const trackBg = disabled ? theme.disabled.background : theme.border;
-  const fillColor = disabled ? theme.disabled.background : theme.accent;
-  const thumbColor = disabled ? theme.disabled.text : theme.accent;
-  const thumbBorder = theme.background;
-  const labelColor = disabled ? theme.disabled.text : theme.textSecondary;
-  const bubbleBg = theme.card;
-
-  const thumbSize = thumbAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [20, 26],
-  });
+  const onTrackLayout = (evt) => {
+    const w = evt.nativeEvent.layout.width;
+    setTrackWidth(w);
+    trackWidthAnim.value = w;
+    const ratio = (value - minimumValue) / (maximumValue - minimumValue);
+    thumbX.value = withTiming(Math.max(0, Math.min(w, ratio * w)));
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.valueRow}>
-        <View style={styles.labelsSpacer} />
-        <View style={styles.valueBubbleContainer}>
-          <View
-            style={[
-              styles.valueBubble,
-              {
-                backgroundColor: bubbleBg,
-                borderRadius: theme.rounded.sm,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: theme.text,
-                fontSize: theme.typography.size.sm,
-                fontFamily: theme.typography.fontFamily.medium,
-              }}
-            >
-              {value}
-              {unit ? ` ${unit}` : ""}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.labelsSpacer} />
-      </View>
-      <View
-        style={styles.sliderRow}
+      <Pressable
+        style={styles.track}
+        onPress={handleTrackPress}
         onLayout={onTrackLayout}
-        pointerEvents={disabled ? "none" : "auto"}
+        disabled={disabled}
       >
-        <View
-          style={[
-            styles.track,
-            {
-              backgroundColor: trackBg,
-              borderRadius: theme.rounded.full,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.filled,
-              {
-                backgroundColor: fillColor,
-                width: width * percent,
-                borderRadius: theme.rounded.full,
-              },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.thumb,
-              {
-                left: Math.max(0, width * percent - 10),
-                backgroundColor: thumbColor,
-                borderColor: thumbBorder,
-                width: thumbSize,
-                height: thumbSize,
-                shadowColor: theme.shadow,
-                shadowOpacity: 0.16,
-                shadowRadius: 5,
-                shadowOffset: { width: 0, height: 2 },
-                opacity: disabled ? 0.5 : 1,
-              },
-            ]}
-            {...panResponder.panHandlers}
-          />
+        <View style={[styles.filled, { width: 0 }]} />
+        <View style={StyleSheet.absoluteFill}>
+          <View style={styles.trackBg} />
+          <View style={styles.filledBg} />
         </View>
-      </View>
-      {(minimumLabel || maximumLabel) && (
-        <View style={styles.labelsRow}>
-          <Text
-            style={{
-              color: labelColor,
-              fontSize: theme.typography.size.sm,
-              fontFamily: theme.typography.fontFamily.regular,
-            }}
-          >
-            {minimumLabel || ""}
-          </Text>
-          <Text
-            style={{
-              color: labelColor,
-              fontSize: theme.typography.size.sm,
-              fontFamily: theme.typography.fontFamily.regular,
-            }}
-          >
-            {maximumLabel || ""}
-          </Text>
+        <View style={styles.absoluteFill}>
+          <View style={styles.trackBg} />
+          <View style={styles.filledBg} />
         </View>
-      )}
+        <View style={styles.absoluteFill}>
+          <View style={styles.filledBg} />
+        </View>
+        <View style={styles.absoluteFill}>
+          <Animated.View style={[styles.filled, fillStyle]} />
+        </View>
+        <View style={styles.trackOverlay}>
+          <PanGestureHandler
+            enabled={!disabled}
+            onGestureEvent={gestureHandler}
+          >
+            <Animated.View
+              style={[
+                styles.thumb,
+                thumbStyle,
+                {
+                  backgroundColor: disabled ? "#ccc" : "#fff",
+                  borderColor: disabled ? "#aaa" : "#4CAF50",
+                },
+              ]}
+              pointerEvents={disabled ? "none" : "auto"}
+            />
+          </PanGestureHandler>
+        </View>
+      </Pressable>
     </View>
   );
-};
+}
+
+const Animated = require("react-native-reanimated").default;
 
 const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    minHeight: 56,
-    justifyContent: "center",
-  },
-  valueRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 4,
-    minHeight: 24,
-  },
-  valueBubbleContainer: {
-    flex: 0,
-    minWidth: 48,
-    alignItems: "center",
-  },
-  valueBubble: {
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-    alignSelf: "center",
-    minWidth: 40,
-    minHeight: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  labelsSpacer: {
-    flex: 1,
-  },
-  sliderRow: {
-    width: "100%",
-    alignItems: "center",
-    marginBottom: 0,
-  },
+  container: { width: "100%", height: 40, justifyContent: "center" },
   track: {
-    width: "100%",
     height: 6,
+    borderRadius: 3,
+    backgroundColor: "#eee",
+    overflow: "visible",
+    width: "100%",
     justifyContent: "center",
   },
-  filled: {
+  absoluteFill: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "flex-start",
+  },
+  trackBg: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#eee",
+    width: "100%",
+  },
+  filledBg: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#4CAF50",
     position: "absolute",
     left: 0,
     top: 0,
+  },
+  filled: {
+    position: "absolute",
     height: 6,
+    borderRadius: 3,
+    left: 0,
+    top: 0,
+    backgroundColor: "#4CAF50",
+  },
+  trackOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "flex-start",
   },
   thumb: {
     position: "absolute",
-    top: -7,
-    width: 20,
-    height: 20,
-    borderRadius: 999,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    top: -9,
     borderWidth: 2,
-    justifyContent: "center",
-    alignItems: "center",
     elevation: 2,
-    zIndex: 10,
-  },
-  labelsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 4,
-    paddingHorizontal: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
   },
 });

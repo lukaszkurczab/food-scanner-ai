@@ -35,7 +35,7 @@ export const schema = appSchema({
         { name: "ai_note", type: "string", isOptional: true },
         { name: "survey_complited", type: "boolean" },
 
-        { name: "sync_status", type: "string" },
+        { name: "sync_state", type: "string" },
         { name: "last_synced_at", type: "string", isOptional: true },
       ],
     }),

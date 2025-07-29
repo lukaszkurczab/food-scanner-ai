@@ -32,6 +32,8 @@ export default function OnboardingScreen({ navigation }: any) {
     returnStep: STEPS,
   });
 
+  console.log(userData);
+
   useEffect(() => {
     (async () => {
       try {
