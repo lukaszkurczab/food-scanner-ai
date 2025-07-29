@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import * as SecureStore from "expo-secure-store";
 import ProgressDots from "@/src/feature/Onboarding/components/ProgressDots";
-import { useSoftSave } from "@/src/feature/Onboarding/hooks/hookSoftSave";
 import { Modal, Layout } from "@/src/components";
 import { FormData } from "@/src/types/onboarding";
 import Step1BasicData from "@/src/feature/Onboarding/components/Step1BasicData";
@@ -11,34 +9,13 @@ import Step3Health from "@/src/feature/Onboarding/components/Step3Health";
 import Step4AIAssistantPreferences from "@/src/feature/Onboarding/components/Step4AIAssistantPreferences";
 import Step5Summary from "@/src/feature/Onboarding/components/Step5Summary";
 import { useUserContext } from "@/src/context/UserContext";
+import { INITIAL_FORM } from "@/src/utils/surveyMapper";
 
-const ONBOARDING_DRAFT_KEY = "onboardingDraft";
 const STEPS = 5;
-
-const INITIAL_FORM: FormData = {
-  unitsSystem: "metric",
-  age: "",
-  sex: "male",
-  height: "",
-  weight: "",
-  preferences: [],
-  activityLevel: "moderate",
-  goal: "maintain",
-  calorieDeficit: 0.3,
-  calorieSurplus: 0.3,
-  chronicDiseases: [],
-  chronicDiseasesOther: "",
-  allergies: [],
-  allergiesOther: "",
-  lifestyle: "",
-  aiStyle: "none",
-  aiFocus: "none",
-  aiFocusOther: "",
-  aiNote: "",
-};
 
 export default function OnboardingScreen({ navigation }: any) {
   const { t } = useTranslation("onboarding");
+  const { userData, saveSurvey, syncSurvey } = useUserContext();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
@@ -58,18 +35,11 @@ export default function OnboardingScreen({ navigation }: any) {
   useEffect(() => {
     (async () => {
       try {
-        const draft = await SecureStore.getItemAsync(ONBOARDING_DRAFT_KEY);
-        if (draft) {
-          setForm(JSON.parse(draft));
-        }
+        if (userData) setForm(userData);
       } catch (err) {}
       setIsLoaded(true);
     })();
   }, []);
-
-  useSoftSave<FormData>(ONBOARDING_DRAFT_KEY, form, setForm);
-
-  const { saveSurvey, syncSurvey } = useUserContext();
 
   const nextStep = () => setStep((s) => Math.min(STEPS, s + 1));
   const prevStep = () => setStep((s) => Math.max(1, s - 1));
@@ -88,10 +58,8 @@ export default function OnboardingScreen({ navigation }: any) {
     try {
       await saveSurvey(form);
       await syncSurvey();
-      await SecureStore.deleteItemAsync(ONBOARDING_DRAFT_KEY);
       navigation.replace("Home");
     } catch (err) {
-      console.log(form);
       console.error(err);
     }
   };
@@ -99,7 +67,6 @@ export default function OnboardingScreen({ navigation }: any) {
   const handleCancel = () => setShowCancelModal(true);
   const confirmCancel = () => {
     setShowCancelModal(false);
-    SecureStore.deleteItemAsync(ONBOARDING_DRAFT_KEY);
     navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   };
 

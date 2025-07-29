@@ -44,7 +44,7 @@ export const ListItem: React.FC<ListItemProps> = ({
           flex: 1,
           color: theme.text,
           fontFamily: theme.typography.fontFamily.bold,
-          fontSize: theme.typography.size.base,
+          fontSize: theme.typography.size.md,
         }}
         numberOfLines={1}
       >

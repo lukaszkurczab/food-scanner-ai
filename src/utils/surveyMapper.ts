@@ -8,7 +8,7 @@ export interface Survey {
   syncStatus: "synced" | "pending" | "conflict";
 }
 
-const INITIAL_FORM: FormData = {
+export const INITIAL_FORM: FormData = {
   unitsSystem: "metric",
   age: "",
   sex: "male",
@@ -28,6 +28,7 @@ const INITIAL_FORM: FormData = {
   aiFocus: "none",
   aiFocusOther: "",
   aiNote: "",
+  surveyComplited: true,
 };
 
 function safeParseFormData(str: string): FormData {

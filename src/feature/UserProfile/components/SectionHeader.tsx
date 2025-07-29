@@ -19,7 +19,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
         style={{
           color: theme.textSecondary,
           fontFamily: theme.typography.fontFamily.medium,
-          fontSize: theme.typography.size.md,
+          fontSize: theme.typography.size.base,
           marginBottom: theme.spacing.xs,
           letterSpacing: 0.5,
         }}

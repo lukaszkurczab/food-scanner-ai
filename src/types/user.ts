@@ -3,7 +3,7 @@ import type { FormData } from "./onboarding";
 export type UserPlan = "free" | "premium";
 export type SyncStatus = "synced" | "pending" | "conflict";
 
-export interface UserData {
+export interface UserData extends FormData {
   uid: string;
   email: string;
   username: string;
@@ -11,8 +11,7 @@ export interface UserData {
   firstLogin: boolean;
   createdAt: number;
   lastLogin: string;
-  nutritionSurvey: FormData;
-  onboardingVersion?: number;
+  surveyComplited: boolean;
   syncStatus: SyncStatus;
   updatedAt: number;
   lastSyncedAt?: string;

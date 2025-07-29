@@ -35,7 +35,8 @@ export default class User extends Model {
   @field("ai_focus") aiFocus?: string;
   @field("ai_focus_other") aiFocusOther?: string;
   @field("ai_note") aiNote?: string;
-
-  @field("sync_status") syncState!: string;
+  @field("survey_complited") surveyComplited!: boolean;
+  @field("sync_status")
+  syncState!: string;
   @field("last_synced_at") lastSyncedAt?: string;
 }

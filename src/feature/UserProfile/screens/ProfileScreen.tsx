@@ -9,35 +9,41 @@ import {
   InputModal,
   Layout,
 } from "@/src/components";
+import { navigationRef } from "@/src/navigation/navigate";
 import { UserIcon } from "@/src/components/UserIcon";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
-import { MaterialIcons } from "@expo/vector-icons";
 
 export default function UserProfileScreen({ navigation }: any) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
-  const { user, deleteUser } = useUserContext();
+  const { userData, deleteUser } = useUserContext();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [password, setPassword] = useState("");
 
   const handleLogout = async () => {
-    navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    navigationRef.current?.reset({
+      index: 0,
+      routes: [{ name: "Login" }],
+    });
   };
 
   const handleDeleteAccount = async () => {
     setShowDeleteModal(false);
     try {
       await deleteUser(password);
-      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+      navigationRef.current?.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
     } catch (e) {
       Alert.alert(t("deleteAccountError"), t("wrongPasswordOrUnknownError"));
     }
     setPassword("");
   };
 
-  if (!user) {
+  if (!userData) {
     navigation.navigate("Login");
     return;
   }
@@ -45,9 +51,9 @@ export default function UserProfileScreen({ navigation }: any) {
   return (
     <Layout>
       <View style={styles.header}>
-        {user.avatarLocalPath ? (
+        {userData.avatarLocalPath ? (
           <Image
-            source={{ uri: user.avatarLocalPath }}
+            source={{ uri: userData.avatarLocalPath }}
             style={styles.avatar}
             accessible
             accessibilityLabel={t("profilePicture")}
@@ -59,10 +65,10 @@ export default function UserProfileScreen({ navigation }: any) {
           style={[styles.username, { color: theme.text }]}
           accessibilityRole="header"
         >
-          {user.username}
+          {userData.username}
         </Text>
         <Text style={[styles.email, { color: theme.textSecondary }]}>
-          {user.email}
+          {userData.email}
         </Text>
       </View>
 
@@ -86,6 +92,7 @@ export default function UserProfileScreen({ navigation }: any) {
         label={t("downloadYourData")}
         onPress={() => navigation.navigate("DownloadYourData")}
         accessibilityLabel={t("downloadYourData")}
+        style={{ marginBottom: 24 }}
       />
 
       <SectionHeader label={t("settingsSection")} />
@@ -167,13 +174,12 @@ export default function UserProfileScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   header: {
     alignItems: "center",
-    marginVertical: 32,
+    marginBottom: 32,
   },
   avatar: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "#B0BEC5",
     marginBottom: 8,
   },
   username: {
@@ -184,8 +190,6 @@ const styles = StyleSheet.create({
   },
   email: {
     fontSize: 16,
-    color: "#B0BEC5",
-    marginBottom: 16,
   },
   deleteAccount: {
     alignItems: "center",

@@ -24,6 +24,7 @@ import PrivacyScreen from "@/src/feature/Auth/screens/PrivacyScreen";
 import ResetPasswordScreen from "@/src/feature/Auth/screens/ResetPasswordScreen";
 import CheckMailboxScreen from "@/src/feature/Auth/screens/CheckMailboxScreen";
 import OnboardingScreen from "@/src/feature/Onboarding/screens/OnboardingScreen";
+import LoadingScreen from "@/src/feature/Home/screens/LoadingScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -42,8 +43,9 @@ const AppNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
         <>
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          <Stack.Screen name="Loading" component={LoadingScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="Camera" component={CameraScreen} />
           <Stack.Screen name="Result" component={ResultScreen} />
           <Stack.Screen name="History" component={HistoryScreen} />

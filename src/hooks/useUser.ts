@@ -15,7 +15,7 @@ import {
 } from "@react-native-firebase/auth";
 
 export function useUser(uid: string) {
-  const [user, setUser] = useState<UserData | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<
     "synced" | "pending" | "conflict"
@@ -24,10 +24,33 @@ export function useUser(uid: string) {
   const getUserProfile = useCallback(async () => {
     setLoading(true);
     const userCollection = database.get("users");
-    const users = await userCollection.query().fetch();
-    const localUser = users.find((u: any) => u.uid === uid);
-    const localData = localUser ? mapRawToUserData(localUser._raw) : null;
-    setUser(localData);
+    let localUser = null;
+
+    try {
+      localUser = await userCollection.find(uid);
+    } catch (e) {
+      localUser = null;
+    }
+
+    let localData = localUser ? mapRawToUserData(localUser._raw) : null;
+    if (localData) console.log("mam!");
+    if (!localData) {
+      console.log(userCollection);
+      const remoteData = await fetchUserFromFirestore(uid);
+
+      if (remoteData) {
+        try {
+          await database.write(async () => {
+            await userCollection.create((user: any) => {
+              user.id = remoteData.uid;
+              Object.assign(user, remoteData);
+            });
+          });
+        } catch (err) {}
+        localData = remoteData;
+      }
+    }
+    setUserData(localData);
     setSyncStatus(localData?.syncStatus || "pending");
     setLoading(false);
   }, [uid]);
@@ -56,7 +79,7 @@ export function useUser(uid: string) {
           updatedAt: new Date().toISOString(),
           syncStatus: "pending",
         };
-        setUser(mapRawToUserData(newRaw));
+        setUserData(mapRawToUserData(newRaw));
         setSyncStatus("pending");
       }
     },
@@ -109,11 +132,11 @@ export function useUser(uid: string) {
             Object.assign(u, remoteData, { syncStatus: "synced" });
           });
         });
-        setUser(remoteData);
+        setUserData(remoteData);
         setSyncStatus("synced");
       } else if (pick === "local") {
         await updateUserInFirestore(uid, localData);
-        setUser(localData);
+        setUserData(localData);
         setSyncStatus("synced");
       }
     } else if (!localData && remoteData) {
@@ -122,14 +145,14 @@ export function useUser(uid: string) {
           Object.assign(user, remoteData);
         });
       });
-      setUser(remoteData);
+      setUserData(remoteData);
       setSyncStatus("synced");
     } else if (localData && !remoteData) {
       await updateUserInFirestore(uid, localData);
-      setUser(localData);
+      setUserData(localData);
       setSyncStatus("synced");
     } else {
-      setUser(null);
+      setUserData(null);
       setSyncStatus("pending");
     }
   }, [uid]);
@@ -153,7 +176,7 @@ export function useUser(uid: string) {
       await deleteAuthUser(currentUser);
     }
 
-    setUser(null);
+    setUserData(null);
     setSyncStatus("pending");
   }, [uid]);
 
@@ -162,7 +185,7 @@ export function useUser(uid: string) {
   }
 
   return {
-    user,
+    userData,
     loading,
     syncStatus,
     getUserProfile,

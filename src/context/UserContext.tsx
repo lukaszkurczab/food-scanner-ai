@@ -15,10 +15,11 @@ import { fullSync } from "@/src/utils/fullSync";
 import { Survey } from "@/src/utils/surveyMapper";
 
 type UserContextType = {
-  user: UserData | null;
+  userData: UserData | null;
   loadingUser: boolean;
   syncStatus: "synced" | "pending" | "conflict";
   refreshUser: () => Promise<void>;
+  getUserData: () => Promise<void>;
   updateUser: (data: Partial<UserData>) => Promise<void>;
   syncUserProfile: () => Promise<void>;
   deleteUser: (password: string) => Promise<void>;
@@ -57,9 +58,10 @@ type UserContextType = {
 };
 
 const UserContext = createContext<UserContextType>({
-  user: null,
+  userData: null,
   loadingUser: true,
   syncStatus: "pending",
+  getUserData: async () => {},
   refreshUser: async () => {},
   updateUser: async () => {},
   syncUserProfile: async () => {},
@@ -99,7 +101,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const uid = authUser?.uid || "";
 
   const {
-    user,
+    userData,
     loading: loadingUser,
     syncStatus,
     getUserProfile,
@@ -177,10 +179,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <UserContext.Provider
       value={{
-        user,
+        userData,
         loadingUser,
         syncStatus,
         refreshUser,
+        getUserData: getUserProfile,
         updateUser: updateUserProfile,
         syncUserProfile,
         deleteUser,
