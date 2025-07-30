@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
 import { PrimaryButton, SecondaryButton, IconButton } from "@/src/components";
 import { FormData } from "@/src/types/onboarding";
@@ -13,6 +13,19 @@ type Props = {
   onBack: () => void;
 };
 
+function parseArray(val: any): string[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try {
+      const arr = JSON.parse(val);
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 export default function Step5Summary({
   form,
   goToStep,
@@ -21,6 +34,10 @@ export default function Step5Summary({
 }: Props) {
   const theme = useTheme();
   const { t } = useTranslation("onboarding");
+
+  const preferences: string[] = parseArray(form.preferences);
+  const allergies: string[] = parseArray(form.allergies);
+  const chronicDiseases: string[] = parseArray(form.chronicDiseases);
 
   function renderHeight() {
     if (form.unitsSystem === "imperial") {
@@ -62,10 +79,9 @@ export default function Step5Summary({
       data: [
         {
           label: t("preferences.label"),
-          value:
-            form.preferences && form.preferences.length
-              ? form.preferences.map((p) => t(`preferences.${p}`)).join(", ")
-              : t("preferences.none"),
+          value: preferences.length
+            ? preferences.map((p) => t(`preferences.${p}`)).join(", ")
+            : t("preferences.none"),
         },
         {
           label: t("activityLevel"),
@@ -100,33 +116,31 @@ export default function Step5Summary({
       data: [
         {
           label: t("healthProfile.chronicDisease"),
-          value:
-            (form.chronicDiseases?.length
-              ? form.chronicDiseases
-                  .map((d) =>
-                    d === "other"
+          value: chronicDiseases.length
+            ? chronicDiseases
+                .map((d) =>
+                  d === "other"
+                    ? form.chronicDiseasesOther
                       ? form.chronicDiseasesOther
-                        ? form.chronicDiseasesOther
-                        : t("none")
-                      : t(`healthProfile.disease.${d}`)
-                  )
-                  .join(", ")
-              : t("none")) || t("none"),
+                      : t("none")
+                    : t(`healthProfile.disease.${d}`)
+                )
+                .join(", ")
+            : t("none"),
         },
         {
           label: t("healthProfile.allergies"),
-          value:
-            (form.allergies?.length
-              ? form.allergies
-                  .map((a) =>
-                    a === "other"
+          value: allergies.length
+            ? allergies
+                .map((a) =>
+                  a === "other"
+                    ? form.allergiesOther
                       ? form.allergiesOther
-                        ? form.allergiesOther
-                        : t("none")
-                      : t(`healthProfile.allergy.${a}`)
-                  )
-                  .join(", ")
-              : t("none")) || t("none"),
+                      : t("none")
+                    : t(`healthProfile.allergy.${a}`)
+                )
+                .join(", ")
+            : t("none"),
         },
         {
           label: t("healthProfile.lifestyle"),

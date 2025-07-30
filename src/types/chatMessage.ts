@@ -1,4 +1,4 @@
-export type ChatSyncStatus = "synced" | "pending" | "conflict";
+export type ChatsyncState = "synced" | "pending" | "conflict";
 
 export interface ChatMessage {
   id: string;
@@ -6,8 +6,8 @@ export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
   createdAt: number;
-  updatedAt: number;
-  syncStatus: ChatSyncStatus;
+  lastSyncedAt: number;
+  syncState: ChatsyncState;
   cloudId?: string;
   deleted?: boolean;
 }

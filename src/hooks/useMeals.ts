@@ -10,7 +10,7 @@ import {
 import { mapRawToMeal, mapMealToRaw } from "@/src/utils/mealMapper";
 import { v4 as uuidv4 } from "uuid";
 
-const unsyncedStatuses: Meal["syncStatus"][] = ["pending", "conflict"];
+const unsyncedStatuses: Meal["syncState"][] = ["pending", "conflict"];
 
 function areMealsEqual(a: Meal[], b: Meal[]): boolean {
   if (a.length !== b.length) return false;
@@ -43,15 +43,13 @@ export function useMeals(userUid: string) {
   );
 
   const addMeal = useCallback(
-    async (
-      meal: Omit<Meal, "id" | "syncStatus" | "lastUpdated" | "source">
-    ) => {
+    async (meal: Omit<Meal, "id" | "syncState" | "lastUpdated" | "source">) => {
       const mealCollection = database.get("meals");
       const newMeal: Meal = {
         ...meal,
         id: uuidv4(),
         source: "local",
-        syncStatus: "pending",
+        syncState: "pending",
         lastUpdated: new Date().toISOString(),
       };
       await database.write(async () => {
@@ -76,7 +74,7 @@ export function useMeals(userUid: string) {
               m,
               mapMealToRaw({
                 ...meal,
-                syncStatus: "pending",
+                syncState: "pending",
                 lastUpdated: new Date().toISOString(),
               })
             )

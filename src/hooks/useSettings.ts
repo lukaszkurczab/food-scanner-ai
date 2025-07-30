@@ -23,7 +23,7 @@ function mapRawToSetting(raw: any): Setting {
     key: raw.key,
     value: raw.value,
     lastUpdated: raw.lastUpdated,
-    syncStatus: raw.syncStatus,
+    syncState: raw.syncState,
   };
 }
 
@@ -55,7 +55,7 @@ export function useSettings(userUid: string) {
               s.key = remote.key;
               s.value = remote.value;
               s.lastUpdated = remote.lastUpdated;
-              s.syncStatus = "synced";
+              s.syncState = "synced";
             });
           });
         } else if (remote.lastUpdated > local._raw.lastUpdated) {
@@ -63,7 +63,7 @@ export function useSettings(userUid: string) {
             await local.update((s: any) => {
               s.value = remote.value;
               s.lastUpdated = remote.lastUpdated;
-              s.syncStatus = "synced";
+              s.syncState = "synced";
             });
           });
         } else if (local._raw.lastUpdated > remote.lastUpdated) {
@@ -77,7 +77,7 @@ export function useSettings(userUid: string) {
       }
 
       for (const local of Settings) {
-        if (local._raw.syncStatus !== "synced") {
+        if (local._raw.syncState !== "synced") {
           await updateSettingInFirestore(
             userUid,
             local.key,
@@ -86,7 +86,7 @@ export function useSettings(userUid: string) {
           );
           await database.write(async () => {
             await local.update((s: any) => {
-              s.syncStatus = "synced";
+              s.syncState = "synced";
             });
           });
         }
@@ -115,7 +115,7 @@ export function useSettings(userUid: string) {
           await local.update((s: any) => {
             s.value = value;
             s.lastUpdated = now;
-            s.syncStatus = "pending";
+            s.syncState = "pending";
           });
         });
       } else {
@@ -125,7 +125,7 @@ export function useSettings(userUid: string) {
             s.key = key;
             s.value = value;
             s.lastUpdated = now;
-            s.syncStatus = "pending";
+            s.syncState = "pending";
           });
         });
       }

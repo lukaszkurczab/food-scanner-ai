@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { database } from "@/src/db/database";
 import ChatMessageModel from "@/src/db/models/ChatMessage";
-import type { ChatMessage, ChatSyncStatus } from "@/src/types";
+import type { ChatMessage, ChatsyncState } from "@/src/types";
 import {
   fetchChatMessagesFromFirestore,
   updateChatMessageInFirestore,
@@ -15,8 +15,8 @@ const mapModelToChatMessage = (m: ChatMessageModel): ChatMessage => ({
   role: m.role as "user" | "assistant" | "system",
   content: m.content,
   createdAt: m.createdAt,
-  updatedAt: m.updatedAt,
-  syncStatus: m.syncState as ChatSyncStatus,
+  lastSyncedAt: m.lastSyncedAt,
+  syncState: m.syncState as ChatsyncState,
   cloudId: m.cloudId,
   deleted: m.deleted,
 });
@@ -24,7 +24,8 @@ const mapModelToChatMessage = (m: ChatMessageModel): ChatMessage => ({
 function areMessagesEqual(a: ChatMessage[], b: ChatMessage[]): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
-    if (a[i].id !== b[i].id || a[i].updatedAt !== b[i].updatedAt) return false;
+    if (a[i].id !== b[i].id || a[i].lastSyncedAt !== b[i].lastSyncedAt)
+      return false;
   }
   return true;
 }
@@ -32,7 +33,7 @@ function areMessagesEqual(a: ChatMessage[], b: ChatMessage[]): boolean {
 export function useChatHistory(userUid: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncStatus, setSyncStatus] = useState<ChatSyncStatus>("pending");
+  const [syncState, setsyncState] = useState<ChatsyncState>("pending");
   const syncingRef = useRef(false);
 
   const getChatHistory = useCallback(async () => {
@@ -47,7 +48,7 @@ export function useChatHistory(userUid: string) {
   }, [userUid]);
 
   const addChatMessage = useCallback(
-    async (msg: Omit<ChatMessage, "id" | "syncStatus" | "deleted">) => {
+    async (msg: Omit<ChatMessage, "id" | "syncState" | "deleted">) => {
       const chatCollection = database.get<ChatMessageModel>("chat_messages");
       const now = Date.now();
       await database.write(async () => {
@@ -56,13 +57,13 @@ export function useChatHistory(userUid: string) {
           m.role = msg.role;
           m.content = msg.content;
           m.createdAt = now;
-          m.updatedAt = now;
+          m.lastSyncedAt = now;
           m.syncState = "pending";
           m.deleted = false;
         });
       });
       await getChatHistory();
-      setSyncStatus("pending");
+      setsyncState("pending");
     },
     [getChatHistory]
   );
@@ -79,7 +80,7 @@ export function useChatHistory(userUid: string) {
           });
         });
         await getChatHistory();
-        setSyncStatus("pending");
+        setsyncState("pending");
       }
     },
     [getChatHistory]
@@ -106,19 +107,19 @@ export function useChatHistory(userUid: string) {
               m.role = remote.role as any;
               m.content = remote.content;
               m.createdAt = remote.createdAt;
-              m.updatedAt = remote.updatedAt;
-              m.syncState = remote.syncStatus as any;
+              m.lastSyncedAt = remote.lastSyncedAt;
+              m.syncState = remote.syncState as any;
               m.cloudId = remote.cloudId;
               m.deleted = remote.deleted;
             });
           });
-        } else if (remote.updatedAt > local.updatedAt) {
+        } else if (remote.lastSyncedAt > local.lastSyncedAt) {
           await database.write(async () => {
             await local.update((m) => {
               m.role = remote.role as any;
               m.content = remote.content;
-              m.updatedAt = remote.updatedAt;
-              m.syncState = remote.syncStatus as any;
+              m.lastSyncedAt = remote.lastSyncedAt;
+              m.syncState = remote.syncState as any;
               m.cloudId = remote.cloudId;
               m.deleted = remote.deleted;
             });
@@ -143,7 +144,7 @@ export function useChatHistory(userUid: string) {
           });
         });
       }
-      setSyncStatus("synced");
+      setsyncState("synced");
     } finally {
       syncingRef.current = false;
     }
@@ -152,7 +153,7 @@ export function useChatHistory(userUid: string) {
   return {
     messages,
     loading,
-    syncStatus,
+    syncState,
     getChatHistory,
     addChatMessage,
     deleteChatMessage,

@@ -11,32 +11,32 @@ export default class User extends Model {
   @field("uid") uid!: string;
   @field("email") email!: string;
   @field("username") username?: string;
-  @field("created_at") createdAt!: number;
-  @field("last_login") lastLogin!: string;
+  @field("createdAt") createdAt!: number;
+  @field("lastLogin") lastLogin!: string;
   @field("plan") plan!: string;
 
-  @field("units_system") unitsSystem!: string;
+  @field("unitsSystem") unitsSystem!: string;
   @field("age") age!: string;
   @field("sex") sex!: string;
   @field("height") height!: string;
-  @field("height_inch") heightInch?: string;
+  @field("heightInch") heightInch?: string;
   @field("weight") weight!: string;
   @json("preferences", sanitizeArray) preferences!: string[];
-  @field("activity_level") activityLevel!: string;
+  @field("activityLevel") activityLevel!: string;
   @field("goal") goal!: string;
-  @field("calorie_deficit") calorieDeficit?: number;
-  @field("calorie_surplus") calorieSurplus?: number;
-  @json("chronic_diseases", sanitizeArray) chronicDiseases?: string[];
-  @field("chronic_diseases_other") chronicDiseasesOther?: string;
+  @field("calorieDeficit") calorieDeficit?: number;
+  @field("calorieSurplus") calorieSurplus?: number;
+  @json("chronicDiseases", sanitizeArray) chronicDiseases?: string[];
+  @field("chronicDiseasesOther") chronicDiseasesOther?: string;
   @json("allergies", sanitizeArray) allergies?: string[];
-  @field("allergies_other") allergiesOther?: string;
+  @field("allergiesOther") allergiesOther?: string;
   @field("lifestyle") lifestyle?: string;
-  @field("ai_style") aiStyle?: string;
-  @field("ai_focus") aiFocus?: string;
-  @field("ai_focus_other") aiFocusOther?: string;
-  @field("ai_note") aiNote?: string;
-  @field("survey_complited") surveyComplited!: boolean;
-  @field("sync_state")
+  @field("aiStyle") aiStyle?: string;
+  @field("aiFocus") aiFocus?: string;
+  @field("aiFocusOther") aiFocusOther?: string;
+  @field("aiNote") aiNote?: string;
+  @field("surveyComplited") surveyComplited!: boolean;
+  @field("syncState")
   syncState!: string;
-  @field("last_synced_at") lastSyncedAt?: string;
+  @field("lastSyncedAt") lastSyncedAt?: string;
 }

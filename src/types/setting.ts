@@ -5,5 +5,5 @@ export interface Setting {
   key: string;
   value: string;
   lastUpdated: string;
-  syncStatus: SettingStatus;
+  syncState: SettingStatus;
 }

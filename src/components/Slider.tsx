@@ -1,13 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
-import {
+import { View, StyleSheet, Pressable, LayoutChangeEvent } from "react-native";
+import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   runOnJS,
   useAnimatedGestureHandler,
 } from "react-native-reanimated";
-import { PanGestureHandler } from "react-native-gesture-handler";
+import {
+  PanGestureHandler,
+  PanGestureHandlerGestureEvent,
+} from "react-native-gesture-handler";
+
+type SliderProps = {
+  value: number;
+  onValueChange: (val: number) => void;
+  minimumValue?: number;
+  maximumValue?: number;
+  step?: number;
+  disabled?: boolean;
+};
+
+type ContextType = { startX: number };
 
 export function Slider({
   value,
@@ -16,7 +30,7 @@ export function Slider({
   maximumValue = 100,
   step = 1,
   disabled = false,
-}) {
+}: SliderProps) {
   const [trackWidth, setTrackWidth] = useState(1);
   const trackWidthAnim = useSharedValue(1);
   const thumbX = useSharedValue(0);
@@ -36,7 +50,10 @@ export function Slider({
     width: thumbX.value,
   }));
 
-  const gestureHandler = useAnimatedGestureHandler({
+  const gestureHandler = useAnimatedGestureHandler<
+    PanGestureHandlerGestureEvent,
+    ContextType
+  >({
     onStart: (_, ctx) => {
       ctx.startX = thumbX.value;
     },
@@ -54,7 +71,7 @@ export function Slider({
     },
   });
 
-  const handleTrackPress = (evt) => {
+  const handleTrackPress = (evt: { nativeEvent: { locationX: number } }) => {
     if (disabled || !trackWidth) return;
     const x = evt.nativeEvent.locationX;
     let ratio = x / trackWidth;
@@ -66,7 +83,7 @@ export function Slider({
     onValueChange(val);
   };
 
-  const onTrackLayout = (evt) => {
+  const onTrackLayout = (evt: LayoutChangeEvent) => {
     const w = evt.nativeEvent.layout.width;
     setTrackWidth(w);
     trackWidthAnim.value = w;
@@ -82,21 +99,7 @@ export function Slider({
         onLayout={onTrackLayout}
         disabled={disabled}
       >
-        <View style={[styles.filled, { width: 0 }]} />
-        <View style={StyleSheet.absoluteFill}>
-          <View style={styles.trackBg} />
-          <View style={styles.filledBg} />
-        </View>
-        <View style={styles.absoluteFill}>
-          <View style={styles.trackBg} />
-          <View style={styles.filledBg} />
-        </View>
-        <View style={styles.absoluteFill}>
-          <View style={styles.filledBg} />
-        </View>
-        <View style={styles.absoluteFill}>
-          <Animated.View style={[styles.filled, fillStyle]} />
-        </View>
+        <Animated.View style={[styles.filled, fillStyle]} />
         <View style={styles.trackOverlay}>
           <PanGestureHandler
             enabled={!disabled}
@@ -120,8 +123,6 @@ export function Slider({
   );
 }
 
-const Animated = require("react-native-reanimated").default;
-
 const styles = StyleSheet.create({
   container: { width: "100%", height: 40, justifyContent: "center" },
   track: {
@@ -131,25 +132,6 @@ const styles = StyleSheet.create({
     overflow: "visible",
     width: "100%",
     justifyContent: "center",
-  },
-  absoluteFill: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  trackBg: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#eee",
-    width: "100%",
-  },
-  filledBg: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#4CAF50",
-    position: "absolute",
-    left: 0,
-    top: 0,
   },
   filled: {
     position: "absolute",
