@@ -77,7 +77,7 @@ export default function OnboardingScreen({ navigation }: any) {
 
   const handleFinish = async () => {
     try {
-      await updateUser({ ...userData, surveyComplited: true });
+      await updateUser({ ...form, surveyComplited: true });
       await syncUserProfile();
       navigation.replace("Home");
     } catch (err) {

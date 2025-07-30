@@ -52,6 +52,7 @@ export async function updateUserInFirestore(
   data: Partial<UserData>
 ) {
   const db = getDb();
+
   await setDoc(doc(collection(db, USERS_COLLECTION), uid), data, {
     merge: true,
   });
