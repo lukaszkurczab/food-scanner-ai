@@ -14,8 +14,7 @@ import {
   getAuth,
   deleteUser as deleteAuthUser,
 } from "@react-native-firebase/auth";
-import { jsonStringToArray } from "@/src/utils/arrayAndStringConvertion";
-import { omitKeys } from "@/src/utils/omitKeys";
+import { omitLocalUserKeys } from "@/src/utils/omitLocalUserKeys";
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -51,8 +50,9 @@ export function useUser(uid: string) {
         }
         localData = remoteData;
       }
+      setUserData(localData);
     }
-    setUserData(localData);
+
     setsyncState(localData?.syncState || "pending");
     setLoading(false);
   }, [uid]);
@@ -68,19 +68,11 @@ export function useUser(uid: string) {
       const localUser = users.find((u: any) => u.uid === uid);
 
       if (localUser) {
-        const sanitizeData = {
-          ...data,
-          preferences: jsonStringToArray(data.preferences),
-          chronicDiseases: jsonStringToArray(data.chronicDiseases),
-          allergies: jsonStringToArray(data.allergies),
-        };
-
-        const forbidden = ["_changed", "_status", "_raw", "created_at", "id"];
-        const assignableData = omitKeys(sanitizeData, forbidden as any);
+        const sanitizeData = omitLocalUserKeys(data);
 
         await database.write(async () => {
           await localUser.update((u: any) => {
-            Object.assign(u, assignableData, {
+            Object.assign(u, sanitizeData, {
               lastSyncedAt: new Date().toISOString(),
               syncState: "pending",
             });
@@ -129,9 +121,15 @@ export function useUser(uid: string) {
 
   const syncUserProfile = useCallback(async () => {
     const userCollection = database.get("users");
-    const users = await userCollection.query().fetch();
-    const localUser = users.find((u: any) => u.uid === uid);
-    const localData = localUser ? mapRawToUserData(localUser._raw) : null;
+    let localUser = null;
+    try {
+      const found = await userCollection.query(Q.where("uid", uid)).fetch();
+      localUser = found[0] || null;
+    } catch (e) {
+      localUser = null;
+    }
+
+    let localData = localUser ? mapRawToUserData(localUser._raw) : null;
 
     const netInfo = await NetInfo.fetch();
     if (!netInfo.isConnected) return;
@@ -139,7 +137,9 @@ export function useUser(uid: string) {
     const remoteData = await fetchUserFromFirestore(uid);
 
     if (localData && remoteData) {
-      const pick = pickLatest(localData, remoteData);
+      const sanitizeData = omitLocalUserKeys(localData);
+      const pick = pickLatest(sanitizeData, remoteData);
+
       if (pick === "remote" && localUser) {
         await database.write(async () => {
           await localUser.update((u: any) => {
@@ -148,7 +148,7 @@ export function useUser(uid: string) {
         });
         setUserData(remoteData);
         setsyncState("synced");
-      } else if (pick === "local") {
+      } else {
         await updateUserInFirestore(uid, localData);
         setUserData(localData);
         setsyncState("synced");
