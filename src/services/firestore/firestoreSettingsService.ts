@@ -37,7 +37,7 @@ export async function updateSettingInFirestore(
   const db = getDb();
   await setDoc(
     doc(collection(db, COLLECTION), `${userUid}_${key}`),
-    { userUid, key, value, lastUpdated, syncStatus: "synced" },
+    { userUid, key, value, lastUpdated, syncState: "synced" },
     { merge: true }
   );
 }
@@ -49,7 +49,7 @@ export async function markSettingSyncedInFirestore(
 ) {
   const db = getDb();
   await updateDoc(doc(collection(db, COLLECTION), `${userUid}_${key}`), {
-    syncStatus: "synced",
+    syncState: "synced",
     lastUpdated,
   });
 }

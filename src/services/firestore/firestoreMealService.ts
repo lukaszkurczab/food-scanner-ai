@@ -50,6 +50,6 @@ export async function deleteMealInFirestore(meal: Meal) {
   const id = meal.cloudId || meal.id;
   await updateDoc(doc(collection(db, MEALS_COLLECTION), id), {
     deleted: true,
-    syncStatus: "synced",
+    syncState: "synced",
   });
 }

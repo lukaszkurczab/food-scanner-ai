@@ -2,14 +2,14 @@ import { Model } from "@nozbe/watermelondb";
 import { field } from "@nozbe/watermelondb/decorators";
 
 export default class ChatMessage extends Model {
-  static table = "chat_messages";
+  static table = "chatMessages";
 
-  @field("user_uid") userUid!: string;
+  @field("userUid") userUid!: string;
   @field("role") role!: string;
   @field("content") content!: string;
-  @field("created_at") createdAt!: number;
-  @field("updated_at") updatedAt!: number;
-  @field("sync_status") syncState!: string;
-  @field("cloud_id") cloudId?: string;
+  @field("createdAt") createdAt!: number;
+  @field("lastSyncedAt") lastSyncedAt!: number;
+  @field("syncState") syncState!: string;
+  @field("cloudId") cloudId?: string;
   @field("deleted") deleted?: boolean;
 }

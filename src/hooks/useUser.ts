@@ -14,13 +14,15 @@ import {
   getAuth,
   deleteUser as deleteAuthUser,
 } from "@react-native-firebase/auth";
+import { jsonStringToArray } from "@/src/utils/arrayAndStringConvertion";
+import { omitKeys } from "@/src/utils/omitKeys";
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [syncStatus, setSyncStatus] = useState<
-    "synced" | "pending" | "conflict"
-  >("pending");
+  const [syncState, setsyncState] = useState<"synced" | "pending" | "conflict">(
+    "pending"
+  );
 
   const getUserProfile = useCallback(async () => {
     setLoading(true);
@@ -51,7 +53,7 @@ export function useUser(uid: string) {
       }
     }
     setUserData(localData);
-    setSyncStatus(localData?.syncState || "pending");
+    setsyncState(localData?.syncState || "pending");
     setLoading(false);
   }, [uid]);
 
@@ -64,23 +66,35 @@ export function useUser(uid: string) {
       const userCollection = database.get("users");
       const users = await userCollection.query().fetch();
       const localUser = users.find((u: any) => u.uid === uid);
+
       if (localUser) {
+        const sanitizeData = {
+          ...data,
+          preferences: jsonStringToArray(data.preferences),
+          chronicDiseases: jsonStringToArray(data.chronicDiseases),
+          allergies: jsonStringToArray(data.allergies),
+        };
+
+        const forbidden = ["_changed", "_status", "_raw", "created_at", "id"];
+        const assignableData = omitKeys(sanitizeData, forbidden as any);
+
         await database.write(async () => {
           await localUser.update((u: any) => {
-            Object.assign(u, data, {
-              updatedAt: new Date().toISOString(),
-              syncStatus: "pending",
+            Object.assign(u, assignableData, {
+              lastSyncedAt: new Date().toISOString(),
+              syncState: "pending",
             });
           });
         });
         const newRaw = {
           ...localUser._raw,
-          ...data,
-          updatedAt: new Date().toISOString(),
-          syncStatus: "pending",
+          ...sanitizeData,
+          lastSyncedAt: new Date().toISOString(),
+          syncState: "pending",
         };
+
         setUserData(mapRawToUserData(newRaw));
-        setSyncStatus("pending");
+        setsyncState("pending");
       }
     },
     [uid]
@@ -104,12 +118,12 @@ export function useUser(uid: string) {
       const timestamp = new Date().toISOString();
       await database.write(async () => {
         await localUser.update((u: any) => {
-          u.syncStatus = "synced";
+          u.syncState = "synced";
           u.lastSyncedAt = timestamp;
         });
       });
       await markUserSyncedInFirestore(uid, timestamp);
-      setSyncStatus("synced");
+      setsyncState("synced");
     }
   }, [uid]);
 
@@ -129,15 +143,15 @@ export function useUser(uid: string) {
       if (pick === "remote" && localUser) {
         await database.write(async () => {
           await localUser.update((u: any) => {
-            Object.assign(u, remoteData, { syncStatus: "synced" });
+            Object.assign(u, remoteData, { syncState: "synced" });
           });
         });
         setUserData(remoteData);
-        setSyncStatus("synced");
+        setsyncState("synced");
       } else if (pick === "local") {
         await updateUserInFirestore(uid, localData);
         setUserData(localData);
-        setSyncStatus("synced");
+        setsyncState("synced");
       }
     } else if (!localData && remoteData) {
       await database.write(async () => {
@@ -146,14 +160,14 @@ export function useUser(uid: string) {
         });
       });
       setUserData(remoteData);
-      setSyncStatus("synced");
+      setsyncState("synced");
     } else if (localData && !remoteData) {
       await updateUserInFirestore(uid, localData);
       setUserData(localData);
-      setSyncStatus("synced");
+      setsyncState("synced");
     } else {
       setUserData(null);
-      setSyncStatus("pending");
+      setsyncState("pending");
     }
   }, [uid]);
 
@@ -177,7 +191,7 @@ export function useUser(uid: string) {
     }
 
     setUserData(null);
-    setSyncStatus("pending");
+    setsyncState("pending");
   }, [uid]);
 
   function mapRawToUserData(raw: any): UserData {
@@ -187,7 +201,7 @@ export function useUser(uid: string) {
   return {
     userData,
     loading,
-    syncStatus,
+    syncState,
     getUserProfile,
     fetchUserFromCloud,
     updateUserProfile,

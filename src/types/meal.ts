@@ -1,4 +1,4 @@
-export type MealSyncStatus = "synced" | "pending" | "conflict";
+export type MealsyncState = "synced" | "pending" | "conflict";
 
 export interface Meal {
   id: string;
@@ -8,7 +8,7 @@ export interface Meal {
   photoUri?: string | null;
   userUid: string;
   source: "local" | "cloud";
-  syncStatus: MealSyncStatus;
+  syncState: MealsyncState;
   lastUpdated: string;
   cloudId?: string;
   nutrition: {

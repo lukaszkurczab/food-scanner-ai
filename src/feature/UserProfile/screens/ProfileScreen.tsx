@@ -80,7 +80,7 @@ export default function UserProfileScreen({ navigation }: any) {
       />
       <ListItem
         label={t("updateHealthSurvey")}
-        onPress={() => navigation.navigate("UpdateHealthSurvey")}
+        onPress={() => navigation.navigate("Onboarding")}
         accessibilityLabel={t("updateHealthSurvey")}
       />
       <ListItem

@@ -73,7 +73,7 @@ export async function deleteChatMessageInFirestore(
   } else {
     await updateDoc(msgDoc, {
       deleted: true,
-      syncStatus: "synced",
+      syncState: "synced",
     });
   }
 }
@@ -84,7 +84,7 @@ export async function markChatMessageSyncedInFirestore(
 ) {
   const db = getDb();
   await updateDoc(doc(collection(db, COLLECTION), cloudId), {
-    syncStatus: "synced",
-    updatedAt: timestamp || new Date().toISOString(),
+    syncState: "synced",
+    lastSyncedAt: timestamp || new Date().toISOString(),
   });
 }

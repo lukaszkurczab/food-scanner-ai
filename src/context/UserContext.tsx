@@ -6,29 +6,21 @@ import React, {
 } from "react";
 import { useAuthContext } from "./AuthContext";
 import { useUser } from "@/src/hooks/useUser";
-import { useSurvey } from "@/src/hooks/useSurvey";
 import { useSettings } from "@/src/hooks/useSettings";
 import { useMeals } from "@/src/hooks/useMeals";
 import { useChatHistory } from "@/src/hooks/useChatHistory";
-import type { UserData, FormData, ChatMessage, Meal } from "@/src/types";
+import type { UserData, ChatMessage, Meal } from "@/src/types";
 import { fullSync } from "@/src/utils/fullSync";
-import { Survey } from "@/src/utils/surveyMapper";
 
 type UserContextType = {
   userData: UserData | null;
   loadingUser: boolean;
-  syncStatus: "synced" | "pending" | "conflict";
+  syncState: "synced" | "pending" | "conflict";
   refreshUser: () => Promise<void>;
   getUserData: () => Promise<void>;
   updateUser: (data: Partial<UserData>) => Promise<void>;
   syncUserProfile: () => Promise<void>;
   deleteUser: (password: string) => Promise<void>;
-
-  survey: any | null;
-  loadingSurvey: boolean;
-  saveSurvey: (data: FormData) => Promise<void>;
-  syncSurvey: (data?: Survey) => Promise<void>;
-  refreshSurvey: () => Promise<void>;
 
   settings: Record<string, string>;
   loadingSettings: boolean;
@@ -39,7 +31,7 @@ type UserContextType = {
   loadingMeals: boolean;
   getMeals: (date?: string) => Promise<void>;
   addMeal: (
-    meal: Omit<Meal, "id" | "syncStatus" | "lastUpdated" | "source">
+    meal: Omit<Meal, "id" | "syncState" | "lastUpdated" | "source">
   ) => Promise<void>;
   updateMeal: (meal: Meal) => Promise<void>;
   deleteMeal: (mealId: string) => Promise<void>;
@@ -49,29 +41,23 @@ type UserContextType = {
   chatMessages: ChatMessage[];
   loadingChat: boolean;
   addChatMessage: (
-    msg: Omit<ChatMessage, "id" | "syncStatus" | "deleted">
+    msg: Omit<ChatMessage, "id" | "syncState" | "deleted">
   ) => Promise<void>;
   deleteChatMessage: (id: string) => Promise<void>;
   syncChatHistory: () => Promise<void>;
   getChatHistory: () => Promise<void>;
-  chatSyncStatus: "synced" | "pending" | "conflict";
+  chatsyncState: "synced" | "pending" | "conflict";
 };
 
 const UserContext = createContext<UserContextType>({
   userData: null,
   loadingUser: true,
-  syncStatus: "pending",
+  syncState: "pending",
   getUserData: async () => {},
   refreshUser: async () => {},
   updateUser: async () => {},
   syncUserProfile: async () => {},
   deleteUser: async () => {},
-
-  survey: null,
-  loadingSurvey: true,
-  saveSurvey: async () => {},
-  syncSurvey: async () => {},
-  refreshSurvey: async () => {},
 
   settings: {},
   loadingSettings: true,
@@ -93,7 +79,7 @@ const UserContext = createContext<UserContextType>({
   deleteChatMessage: async () => {},
   syncChatHistory: async () => {},
   getChatHistory: async () => {},
-  chatSyncStatus: "pending",
+  chatsyncState: "pending",
 });
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
@@ -103,20 +89,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const {
     userData,
     loading: loadingUser,
-    syncStatus,
+    syncState,
     getUserProfile,
     updateUserProfile,
     syncUserProfile,
     deleteUser,
   } = useUser(uid);
-
-  const {
-    survey,
-    loading: loadingSurvey,
-    saveSurvey,
-    syncSurvey,
-    getSurvey,
-  } = useSurvey(uid);
 
   const {
     settings,
@@ -139,7 +117,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const {
     messages: chatMessages,
     loading: loadingChat,
-    syncStatus: chatSyncStatus,
+    syncState: chatsyncState,
     getChatHistory,
     addChatMessage,
     deleteChatMessage,
@@ -149,9 +127,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshUser = useCallback(async () => {
     await getUserProfile();
   }, [getUserProfile]);
-  const refreshSurvey = useCallback(async () => {
-    await getSurvey();
-  }, [getSurvey]);
   const refreshSettings = useCallback(async () => {
     await syncSettings();
   }, [syncSettings]);
@@ -160,7 +135,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     if (uid) {
       fullSync({
         syncUserProfile,
-        syncSurvey,
         syncSettings,
         getMeals,
         getChatHistory,
@@ -170,7 +144,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     uid,
     getUserProfile,
     syncUserProfile,
-    syncSurvey,
     syncSettings,
     getMeals,
     getChatHistory,
@@ -181,18 +154,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         userData,
         loadingUser,
-        syncStatus,
+        syncState,
         refreshUser,
         getUserData: getUserProfile,
         updateUser: updateUserProfile,
         syncUserProfile,
         deleteUser,
-
-        survey,
-        loadingSurvey,
-        saveSurvey,
-        syncSurvey,
-        refreshSurvey,
 
         settings,
         loadingSettings,
@@ -214,7 +181,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         deleteChatMessage,
         syncChatHistory,
         getChatHistory,
-        chatSyncStatus,
+        chatsyncState,
       }}
     >
       {children}

@@ -9,13 +9,34 @@ import Step3Health from "@/src/feature/Onboarding/components/Step3Health";
 import Step4AIAssistantPreferences from "@/src/feature/Onboarding/components/Step4AIAssistantPreferences";
 import Step5Summary from "@/src/feature/Onboarding/components/Step5Summary";
 import { useUserContext } from "@/src/context/UserContext";
-import { INITIAL_FORM } from "@/src/utils/surveyMapper";
 
 const STEPS = 5;
+export const INITIAL_FORM: FormData = {
+  unitsSystem: "metric",
+  age: "",
+  sex: "male",
+  height: "",
+  weight: "",
+  preferences: [],
+  activityLevel: "moderate",
+  goal: "maintain",
+  calorieDeficit: 0.3,
+  calorieSurplus: 0.3,
+  chronicDiseases: [],
+  chronicDiseasesOther: "",
+  allergies: [],
+  allergiesOther: "",
+  lifestyle: "",
+  aiStyle: "none",
+  aiFocus: "none",
+  aiFocusOther: "",
+  aiNote: "",
+  surveyComplited: true,
+};
 
 export default function OnboardingScreen({ navigation }: any) {
   const { t } = useTranslation("onboarding");
-  const { userData, saveSurvey, syncSurvey } = useUserContext();
+  const { userData, updateUser, syncUserProfile } = useUserContext();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
@@ -31,8 +52,6 @@ export default function OnboardingScreen({ navigation }: any) {
     editing: false,
     returnStep: STEPS,
   });
-
-  console.log(userData);
 
   useEffect(() => {
     (async () => {
@@ -58,8 +77,8 @@ export default function OnboardingScreen({ navigation }: any) {
 
   const handleFinish = async () => {
     try {
-      await saveSurvey(form);
-      await syncSurvey();
+      await updateUser({ ...userData, surveyComplited: true });
+      await syncUserProfile();
       navigation.replace("Home");
     } catch (err) {
       console.error(err);

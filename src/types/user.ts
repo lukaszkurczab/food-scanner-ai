@@ -1,21 +1,19 @@
 import type { FormData } from "./onboarding";
 
 export type UserPlan = "free" | "premium";
-export type SyncStatus = "synced" | "pending" | "conflict";
+export type syncState = "synced" | "pending" | "conflict";
 
 export interface UserData extends FormData {
   uid: string;
   email: string;
   username: string;
   plan: UserPlan;
-  firstLogin: boolean;
   createdAt: number;
   lastLogin: string;
   surveyComplited: boolean;
-  syncState: SyncStatus;
-  updatedAt: number;
+  syncState: syncState;
   lastSyncedAt?: string;
   avatarUrl?: string;
   avatarLocalPath?: string;
-  avatarUpdatedAt?: number;
+  avatarlastSyncedAt?: number;
 }

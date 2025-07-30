@@ -79,7 +79,6 @@ export const useRegister = () => {
       await firestore.collection("users").doc(user.uid).set({
         email: user.email,
         username,
-        firstLogin: true,
         createdAt: Date.now(),
         gender: "male",
         age: 25,
