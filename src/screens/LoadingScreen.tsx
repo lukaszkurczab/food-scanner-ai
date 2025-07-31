@@ -3,7 +3,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { Layout } from "@/src/components";
-import { RootStackParamList } from "../../../navigation/navigate";
+import { RootStackParamList } from "@/src/navigation/navigate";
 import { useUserContext } from "@/src/context/UserContext";
 
 type LoadingScreenNavigationProp = StackNavigationProp<

@@ -1,5 +1,9 @@
 {
   "app_title": "CaloriAI",
   "no_internet": "Brak połączenia z internetem",
-  "none": "Brak"
+  "none": "Brak",
+  "camera_permission_title": "Kamera wymaga uprawnień",
+  "camera_permission_message": "Nadaj dostęp do kamery, aby kontynuować.",
+  "camera_grant_access": "Nadaj dostęp",
+  "camera_take_photo": "Zrób zdjęcie"
 }

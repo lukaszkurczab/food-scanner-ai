@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 16,
     paddingHorizontal: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
     width: "100%",

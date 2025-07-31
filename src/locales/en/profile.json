@@ -20,5 +20,12 @@
   "confirm": "Confirm",
   "cancel": "Cancel",
   "enterPassword": "Enter your password",
-  "appVersion": "App version"
+  "appVersion": "App version",
+
+  "changeUserPhoto": "Change user photo",
+  "changeUsername": "Change username",
+  "changeEmail": "Change email",
+  "changePassword": "Change password",
+  "makePhoto": "Make a photo",
+  "addFromGallery": "Add from gallery"
 }
