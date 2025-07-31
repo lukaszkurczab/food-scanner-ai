@@ -10,11 +10,10 @@ import {
   Layout,
 } from "@/src/components";
 import { navigationRef } from "@/src/navigation/navigate";
-import { UserIcon } from "@/src/components/UserIcon";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
 
-export default function UserProfileScreen({ navigation }: any) {
+export default function EditUserDataScreen({ navigation }: any) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const { userData, updateUser, deleteUser } = useUserContext();
@@ -58,16 +57,6 @@ export default function UserProfileScreen({ navigation }: any) {
   return (
     <Layout>
       <View style={styles.header}>
-        {userData.avatarLocalPath ? (
-          <Image
-            source={{ uri: userData.avatarLocalPath }}
-            style={styles.avatar}
-            accessible
-            accessibilityLabel={t("profilePicture")}
-          />
-        ) : (
-          <UserIcon size={96} accessibilityLabel={t("profilePictureDefault")} />
-        )}
         <Text
           style={[styles.username, { color: theme.text }]}
           accessibilityRole="header"
@@ -82,7 +71,7 @@ export default function UserProfileScreen({ navigation }: any) {
       <SectionHeader label={t("userSection")} />
       <ListItem
         label={t("changeUserData")}
-        onPress={() => navigation.navigate("EditUserData")}
+        onPress={() => navigation.navigate("ChangeUserData")}
         accessibilityLabel={t("changeUserData")}
       />
       <ListItem
@@ -165,6 +154,8 @@ export default function UserProfileScreen({ navigation }: any) {
         CaloriAI 1.0.0
       </Text>
 
+      <BottomTabBar />
+
       <InputModal
         visible={showDeleteModal}
         title={t("deleteAccount")}
@@ -213,6 +204,7 @@ const styles = StyleSheet.create({
   },
   version: {
     textAlign: "center",
+    marginBottom: 64,
     fontSize: 14,
   },
 });

@@ -25,6 +25,7 @@ import ResetPasswordScreen from "@/src/feature/Auth/screens/ResetPasswordScreen"
 import CheckMailboxScreen from "@/src/feature/Auth/screens/CheckMailboxScreen";
 import OnboardingScreen from "@/src/feature/Onboarding/screens/OnboardingScreen";
 import LoadingScreen from "@/src/feature/Home/screens/LoadingScreen";
+import EditUserDataScreen from "@/src/feature/UserProfile/screens/EditUserDataScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -60,6 +61,7 @@ const AppNavigator = () => {
             name="ReviewIngredients"
             component={ReviewIngredientsScreen}
           />
+          <Stack.Screen name="EditUserData" component={EditUserDataScreen} />
           <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
         </>
       ) : (
