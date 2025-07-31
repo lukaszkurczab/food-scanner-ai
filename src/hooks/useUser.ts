@@ -71,12 +71,16 @@ export function useUser(uid: string) {
         const sanitizeData = omitLocalUserKeys(data);
 
         await database.write(async () => {
-          await localUser.update((u: any) => {
-            Object.assign(u, sanitizeData, {
-              lastSyncedAt: new Date().toISOString(),
-              syncState: "pending",
+          try {
+            await localUser.update((u: any) => {
+              Object.assign(u, sanitizeData, {
+                lastSyncedAt: new Date().toISOString(),
+                syncState: "pending",
+              });
             });
-          });
+          } catch (err) {
+            console.log(err);
+          }
         });
         const newRaw = {
           ...localUser._raw,
@@ -154,15 +158,18 @@ export function useUser(uid: string) {
         setsyncState("synced");
       }
     } else if (!localData && remoteData) {
+      const sanitizeData = omitLocalUserKeys(remoteData);
+
       await database.write(async () => {
         await userCollection.create((user: any) => {
-          Object.assign(user, remoteData);
+          Object.assign(user, sanitizeData);
         });
       });
       setUserData(remoteData);
       setsyncState("synced");
     } else if (localData && !remoteData) {
-      await updateUserInFirestore(uid, localData);
+      const sanitizeData = omitLocalUserKeys(localData);
+      await updateUserInFirestore(uid, sanitizeData);
       setUserData(localData);
       setsyncState("synced");
     } else {

@@ -12,6 +12,7 @@ export const schema = appSchema({
         { name: "createdAt", type: "number" },
         { name: "lastLogin", type: "string" },
         { name: "plan", type: "string" },
+        { name: "darkTheme", type: "boolean", isOptional: true },
 
         { name: "unitsSystem", type: "string" },
         { name: "age", type: "string" },

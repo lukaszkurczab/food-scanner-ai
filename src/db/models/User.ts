@@ -39,4 +39,5 @@ export default class User extends Model {
   @field("syncState")
   syncState!: string;
   @field("lastSyncedAt") lastSyncedAt?: string;
+  @field("darkTheme") darkTheme?: boolean;
 }

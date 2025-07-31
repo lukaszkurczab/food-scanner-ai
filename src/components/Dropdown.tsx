@@ -178,6 +178,7 @@ export function Dropdown<T extends string>({
                   >
                     <Text
                       style={{
+                        color: theme.text,
                         fontSize: theme.typography.size.base,
                         fontFamily: theme.typography.fontFamily.regular,
                         fontWeight: value === item.value ? "bold" : "normal",
