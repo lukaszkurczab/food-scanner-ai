@@ -5,7 +5,6 @@ import { RootStackParamList } from "./navigate";
 import { useAuthContext } from "@/src/context/AuthContext";
 
 import HomeScreen from "@/src/feature/Home/screens/HomeScreen";
-import CameraScreen from "@/src/feature/AddMealAI/screens/CameraScreen";
 import ResultScreen from "@/src/feature/AddMealAI/screens/ResultScreen";
 import HistoryScreen from "@/src/feature/History/screens/HistoryScreen";
 import MealDetailScreen from "@/src/feature/Meals/screens/MealDetailScreen";
@@ -24,8 +23,9 @@ import PrivacyScreen from "@/src/feature/Auth/screens/PrivacyScreen";
 import ResetPasswordScreen from "@/src/feature/Auth/screens/ResetPasswordScreen";
 import CheckMailboxScreen from "@/src/feature/Auth/screens/CheckMailboxScreen";
 import OnboardingScreen from "@/src/feature/Onboarding/screens/OnboardingScreen";
-import LoadingScreen from "@/src/feature/Home/screens/LoadingScreen";
+import LoadingScreen from "@/src/screens/LoadingScreen";
 import EditUserDataScreen from "@/src/feature/UserProfile/screens/EditUserDataScreen";
+import CameraScreen from "@/src/screens/CameraScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 

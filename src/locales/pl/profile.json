@@ -20,5 +20,12 @@
   "confirm": "Potwierdź",
   "cancel": "Anuluj",
   "enterPassword": "Wpisz swoje hasło",
-  "appVersion": "Wersja aplikacji"
+  "appVersion": "Wersja aplikacji",
+
+  "changeUserPhoto": "Zmień zdjęcie",
+  "changeUsername": "Zmień nazwę użytkownika",
+  "changeEmail": "Zmień e-mail",
+  "changePassword": "Zmień hasło",
+  "makePhoto": "Zrób zdjęcie",
+  "addFromGallery": "Dodaj z galerii"
 }
