@@ -1,26 +1,32 @@
 import React, { useRef, useEffect } from "react";
-import { Pressable, Animated, StyleSheet, View } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { Pressable, Animated, StyleSheet } from "react-native";
 
 type ButtonToggleProps = {
+  value: boolean;
+  onToggle: (value: boolean) => void;
   accessibilityLabel?: string;
+  trackColor?: string;
+  thumbColor?: string;
+  borderColor?: string;
 };
 
 export const ButtonToggle: React.FC<ButtonToggleProps> = ({
+  value,
+  onToggle,
   accessibilityLabel,
+  trackColor = "#B0B0B0",
+  thumbColor = "#FFF",
+  borderColor = "#CCC",
 }) => {
-  const { mode, toggleTheme, accentSecondary, textSecondary, card, border } =
-    useTheme();
-  const isDark = mode === "dark";
+  const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
 
-  const anim = useRef(new Animated.Value(isDark ? 1 : 0)).current;
   useEffect(() => {
     Animated.timing(anim, {
-      toValue: isDark ? 1 : 0,
+      toValue: value ? 1 : 0,
       duration: 180,
       useNativeDriver: false,
     }).start();
-  }, [isDark, anim]);
+  }, [value, anim]);
 
   const thumbTranslate = anim.interpolate({
     inputRange: [0, 1],
@@ -29,15 +35,15 @@ export const ButtonToggle: React.FC<ButtonToggleProps> = ({
 
   return (
     <Pressable
-      onPress={toggleTheme}
+      onPress={() => onToggle(!value)}
       accessibilityRole="switch"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ checked: isDark }}
+      accessibilityState={{ checked: value }}
       style={({ pressed }) => [
         styles.switch,
         {
-          backgroundColor: isDark ? accentSecondary : textSecondary,
-          borderColor: border,
+          backgroundColor: trackColor,
+          borderColor: borderColor,
           opacity: pressed ? 0.7 : 1,
         },
       ]}
@@ -46,7 +52,7 @@ export const ButtonToggle: React.FC<ButtonToggleProps> = ({
         style={[
           styles.thumb,
           {
-            backgroundColor: card,
+            backgroundColor: thumbColor,
             transform: [{ translateX: thumbTranslate }],
           },
         ]}

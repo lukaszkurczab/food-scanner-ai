@@ -17,10 +17,22 @@ import ListItem from "../components/ListItem";
 export default function UserProfileScreen({ navigation }: any) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
-  const { userData, deleteUser } = useUserContext();
+  const { userData, updateUser, deleteUser } = useUserContext();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [password, setPassword] = useState("");
+
+  if (!userData) {
+    navigation.navigate("Login");
+    return null;
+  }
+
+  const darkTheme = !!userData.darkTheme;
+
+  const handleThemeToggle = async (newValue: boolean) => {
+    theme.toggleTheme(newValue ? "dark" : "light");
+    await updateUser({ ...userData, darkTheme: newValue });
+  };
 
   const handleLogout = async () => {
     navigationRef.current?.reset({
@@ -42,11 +54,6 @@ export default function UserProfileScreen({ navigation }: any) {
     }
     setPassword("");
   };
-
-  if (!userData) {
-    navigation.navigate("Login");
-    return;
-  }
 
   return (
     <Layout>
@@ -108,7 +115,14 @@ export default function UserProfileScreen({ navigation }: any) {
         >
           {t("toggleDarkMode")}
         </Text>
-        <ButtonToggle accessibilityLabel={t("toggleDarkMode")} />
+        <ButtonToggle
+          value={darkTheme}
+          onToggle={handleThemeToggle}
+          accessibilityLabel={t("toggleDarkMode")}
+          trackColor={darkTheme ? theme.accentSecondary : theme.textSecondary}
+          thumbColor={theme.card}
+          borderColor={theme.border}
+        />
       </View>
       <ListItem
         label={t("language")}

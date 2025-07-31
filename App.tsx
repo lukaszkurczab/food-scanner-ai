@@ -11,8 +11,10 @@ import { MealProvider } from "./src/context/MealContext";
 import { PremiumProvider } from "./src/context/PremiumContext";
 import { useFonts } from "expo-font";
 import { View, ActivityIndicator } from "react-native";
+import { useTheme } from "./src/theme";
 import Purchases from "react-native-purchases";
 import { Platform } from "react-native";
+import { database } from "@/src/db/database";
 
 export function initRevenueCat() {
   Purchases.configure({
@@ -22,12 +24,22 @@ export function initRevenueCat() {
 }
 
 export default function App() {
+  const theme = useTheme();
   const [fontsLoaded] = useFonts({
     "Inter-Regular": require("./assets/fonts/Inter-Regular.ttf"),
     "Inter-Medium": require("./assets/fonts/Inter-Medium.ttf"),
     "Inter-Bold": require("./assets/fonts/Inter-Bold.ttf"),
     "Inter-Light": require("./assets/fonts/Inter-Light.ttf"),
   });
+
+  // const handleReset = async () => {
+  //   await database.write(async () => {
+  //     await database.unsafeResetDatabase();
+  //   });
+  //   alert("Baza została zresetowana");
+  // };
+
+  // handleReset();
 
   useEffect(() => {
     if (__DEV__ && typeof ErrorUtils?.getGlobalHandler === "function") {
