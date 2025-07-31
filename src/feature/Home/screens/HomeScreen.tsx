@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { BottomTabBar, Button, Layout } from "@/src/components";
@@ -11,11 +11,12 @@ const HomeScreen = () => {
 
   return (
     <Layout>
-      <Button
-        text="Add a new meal"
-        onPress={() => navigation.navigate("MealAddMethod")}
-      />
-      <BottomTabBar />
+      <ScrollView>
+        <Button
+          text="Add a new meal"
+          onPress={() => navigation.navigate("MealAddMethod")}
+        />
+      </ScrollView>
     </Layout>
   );
 };

@@ -18,6 +18,7 @@ export type RootStackParamList = {
   UserSettings: undefined;
   Register: undefined;
   SavedMeals: undefined;
+  EditUserData: undefined;
   ReviewIngredients: {
     image: string;
     id: string;

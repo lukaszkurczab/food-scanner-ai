@@ -29,83 +29,99 @@ export const BottomTabBar = () => {
   return (
     <View
       style={[
-        styles.container,
+        styles.wrapper,
         {
-          backgroundColor: theme.border,
-          borderRadius: theme.rounded.full,
+          marginHorizontal: theme.spacing.lg,
+          backgroundColor: theme.background,
+          borderTopEndRadius: theme.rounded.lg,
+          borderTopLeftRadius: theme.rounded.lg,
         },
       ]}
     >
-      {TABS.map((tab, i) => {
-        if (tab.isFab) {
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.border,
+            borderRadius: theme.rounded.full,
+          },
+        ]}
+      >
+        {TABS.map((tab, i) => {
+          if (tab.isFab) {
+            return (
+              <Pressable
+                key={tab.key}
+                onPress={() => handlePress(tab)}
+                style={[
+                  styles.fab,
+                  {
+                    backgroundColor: theme.textSecondary,
+                    borderRadius: theme.rounded.full,
+                    shadowColor: theme.shadow,
+                    shadowOpacity: 0.3,
+                    shadowRadius: 10,
+                    elevation: 6,
+                    borderWidth: 0,
+                  },
+                ]}
+              >
+                <MaterialIcons
+                  name={tab.icon as any}
+                  size={42}
+                  color={theme.card}
+                  style={{ alignSelf: "center" }}
+                />
+              </Pressable>
+            );
+          }
+
           return (
             <Pressable
               key={tab.key}
               onPress={() => handlePress(tab)}
               style={[
-                styles.fab,
+                styles.tab,
                 {
-                  backgroundColor: theme.textSecondary,
-                  borderRadius: theme.rounded.full,
-                  shadowColor: theme.shadow,
-                  shadowOpacity: 0.3,
-                  shadowRadius: 10,
-                  elevation: 6,
-                  borderWidth: 0,
+                  borderRadius: theme.rounded.sm,
                 },
               ]}
             >
               <MaterialIcons
                 name={tab.icon as any}
-                size={42}
-                color={theme.card}
+                size={32}
+                color={theme.text}
                 style={{ alignSelf: "center" }}
               />
             </Pressable>
           );
-        }
-
-        return (
-          <Pressable
-            key={tab.key}
-            onPress={() => handlePress(tab)}
-            style={[
-              styles.tab,
-              {
-                borderRadius: theme.rounded.sm,
-              },
-            ]}
-          >
-            <MaterialIcons
-              name={tab.icon as any}
-              size={32}
-              color={theme.text}
-              style={{ alignSelf: "center" }}
-            />
-          </Pressable>
-        );
-      })}
+        })}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingBottom: 16,
+  },
   container: {
     flexDirection: "row",
     alignSelf: "center",
     alignItems: "center",
     padding: 8,
-    marginBottom: 0,
-    position: "absolute",
+    width: "100%",
     justifyContent: "space-evenly",
-    left: 0,
-    right: 0,
-    bottom: 0,
     shadowColor: "#000",
     shadowOpacity: Platform.OS === "android" ? 0.22 : 0.12,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 4 },
     elevation: 20,
+    height: 64,
   },
   tab: {
     width: 56,
