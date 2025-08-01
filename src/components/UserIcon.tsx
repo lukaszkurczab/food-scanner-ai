@@ -17,7 +17,7 @@ export const UserIcon: React.FC<Props> = ({
   accessibilityLabel = "User avatar",
 }) => {
   const theme = useTheme();
-  const { user } = useUserContext();
+  const { userData } = useUserContext();
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
 
   const checkIfFileExists = async (path: string) => {
@@ -33,24 +33,24 @@ export const UserIcon: React.FC<Props> = ({
     let isMounted = true;
 
     const fetchAndSaveAvatar = async () => {
-      if (!user) return;
+      if (!userData) return;
 
-      if (user.avatarLocalPath) {
-        const exists = await checkIfFileExists(user.avatarLocalPath);
+      if (userData.avatarLocalPath) {
+        const exists = await checkIfFileExists(userData.avatarLocalPath);
         if (exists) {
-          setAvatarPath(user.avatarLocalPath);
+          setAvatarPath(userData.avatarLocalPath);
           return;
         }
       }
 
-      if (user.avatarUrl) {
+      if (userData.avatarUrl) {
         const fileUri =
-          FileSystem.documentDirectory + "user_avatar_" + user.uid + ".jpg";
+          FileSystem.documentDirectory + "user_avatar_" + userData.uid + ".jpg";
         const exists = await checkIfFileExists(fileUri);
 
         if (!exists) {
           try {
-            await FileSystem.downloadAsync(user.avatarUrl, fileUri);
+            await FileSystem.downloadAsync(userData.avatarUrl, fileUri);
           } catch (e) {
             setAvatarPath(null);
             return;
@@ -68,9 +68,9 @@ export const UserIcon: React.FC<Props> = ({
     return () => {
       isMounted = false;
     };
-  }, [user?.avatarLocalPath, user?.avatarUrl, user?.uid]);
+  }, [userData?.avatarLocalPath, userData?.avatarUrl, userData?.uid]);
 
-  const isPremium = user?.plan === "premium";
+  const isPremium = userData?.plan === "premium";
 
   const borderColor = isPremium ? theme.macro.fat : theme.card;
   const borderWidth = isPremium ? 4 : 2;
@@ -103,9 +103,9 @@ export const UserIcon: React.FC<Props> = ({
             borderRadius: size / 2,
           }}
         />
-      ) : user?.avatarUrl ? (
+      ) : userData?.avatarUrl ? (
         <Image
-          source={{ uri: user.avatarUrl }}
+          source={{ uri: userData.avatarUrl }}
           style={{
             width: size,
             height: size,

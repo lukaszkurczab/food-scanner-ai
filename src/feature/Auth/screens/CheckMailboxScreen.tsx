@@ -89,7 +89,7 @@ export default function CheckMailboxScreen({ navigation }: any) {
   };
 
   return (
-    <Layout>
+    <Layout showNavigation={false}>
       <View style={{ alignItems: "center", marginBottom: theme.spacing.xl }}>
         <View
           style={{

@@ -70,7 +70,7 @@ export default function RegisterScreen({ navigation }: any) {
   );
 
   return (
-    <Layout>
+    <Layout showNavigation={false}>
       <View
         style={{
           flexGrow: 1,

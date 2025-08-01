@@ -18,6 +18,7 @@ import {
 import { omitLocalUserKeys } from "@/src/utils/omitLocalUserKeys";
 import { savePhotoLocally } from "@/src/utils/savePhotoLocally";
 import * as FileSystem from "expo-file-system";
+import { getFirebaseFirestore } from "@/src/FirebaseConfig";
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -216,7 +217,19 @@ export function useUser(uid: string) {
 
   const deleteUser = useCallback(async () => {
     if (!uid) return;
+    const firestore = await getFirebaseFirestore();
+
+    const userDoc = await firestore.collection("users").doc(uid).get();
+    const username = userDoc.exists() ? userDoc.data()?.username : null;
+
     await deleteUserInFirestore(uid);
+
+    if (username) {
+      await firestore
+        .collection("usernames")
+        .doc(username.trim().toLowerCase())
+        .delete();
+    }
 
     const userCollection = database.get("users");
     const users = await userCollection.query().fetch();

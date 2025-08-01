@@ -93,7 +93,7 @@ export default function ResetPasswordScreen({ navigation }: any) {
   }, [email]);
 
   return (
-    <Layout>
+    <Layout showNavigation={false}>
       {noInternet && (
         <View
           style={{

@@ -3,14 +3,10 @@ import { View, Text, Pressable, StyleSheet, Alert, Image } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/src/theme/useTheme";
 import { useUserContext } from "@/src/context/UserContext";
-import {
-  BottomTabBar,
-  ButtonToggle,
-  InputModal,
-  Layout,
-} from "@/src/components";
+import { ButtonToggle, InputModal, Layout } from "@/src/components";
 import { navigationRef } from "@/src/navigation/navigate";
 import { UserIcon } from "@/src/components/UserIcon";
+import { getAuth } from "@react-native-firebase/auth";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
 
@@ -35,10 +31,10 @@ export default function UserProfileScreen({ navigation }: any) {
   };
 
   const handleLogout = async () => {
-    navigationRef.current?.reset({
-      index: 0,
-      routes: [{ name: "Login" }],
-    });
+    try {
+      const auth = getAuth();
+      await auth.signOut();
+    } catch (e) {}
   };
 
   const handleDeleteAccount = async () => {

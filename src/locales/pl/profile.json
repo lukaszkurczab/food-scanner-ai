@@ -21,11 +21,21 @@
   "cancel": "Anuluj",
   "enterPassword": "Wpisz swoje hasło",
   "appVersion": "Wersja aplikacji",
-
   "changeUserPhoto": "Zmień zdjęcie",
   "changeUsername": "Zmień nazwę użytkownika",
   "changeEmail": "Zmień e-mail",
   "changePassword": "Zmień hasło",
   "makePhoto": "Zrób zdjęcie",
-  "addFromGallery": "Dodaj z galerii"
+  "addFromGallery": "Dodaj z galerii",
+
+  "newUsername": "Nowa nazwa użytkownika",
+  "newUsernamePlaceholder": "Wpisz nową nazwę",
+  "password": "Hasło",
+  "passwordPlaceholder": "Hasło",
+  "usernameRequired": "Nazwa użytkownika jest wymagana",
+  "usernameTooShort": "Nazwa użytkownika musi mieć co najmniej 3 znaki",
+  "usernameTaken": "Taka nazwa jest już zajęta",
+  "usernameAvailable": "Nazwa jest dostępna",
+  "passwordRequired": "Hasło jest wymagane",
+  "checkingUsername": "Sprawdzanie dostępności..."
 }

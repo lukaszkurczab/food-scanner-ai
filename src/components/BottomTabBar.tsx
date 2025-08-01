@@ -3,6 +3,9 @@ import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { navigate, RootStackParamList } from "@/src/navigation/navigate";
+import UserIcon from "./UserIcon";
+import { useUserContext } from "@/src/context/UserContext";
+import { useTranslation } from "react-i18next";
 
 type tab = {
   key: string;
@@ -21,6 +24,9 @@ const TABS: tab[] = [
 
 export const BottomTabBar = () => {
   const theme = useTheme();
+  const { t } = useTranslation("profile");
+
+  const { userData } = useUserContext();
 
   const handlePress = (tab: tab) => {
     navigate(tab.target);
@@ -87,12 +93,30 @@ export const BottomTabBar = () => {
                 },
               ]}
             >
-              <MaterialIcons
-                name={tab.icon as any}
-                size={32}
-                color={theme.text}
-                style={{ alignSelf: "center" }}
-              />
+              {tab.key === "Profile" ? (
+                <>
+                  {userData && userData.avatarLocalPath ? (
+                    <UserIcon
+                      size={32}
+                      accessibilityLabel={t("profilePictureDefault")}
+                    />
+                  ) : (
+                    <MaterialIcons
+                      name={tab.icon as any}
+                      size={32}
+                      color={theme.text}
+                      style={{ alignSelf: "center" }}
+                    />
+                  )}
+                </>
+              ) : (
+                <MaterialIcons
+                  name={tab.icon as any}
+                  size={32}
+                  color={theme.text}
+                  style={{ alignSelf: "center" }}
+                />
+              )}
             </Pressable>
           );
         })}

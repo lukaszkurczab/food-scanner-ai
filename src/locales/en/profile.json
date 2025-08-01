@@ -21,11 +21,21 @@
   "cancel": "Cancel",
   "enterPassword": "Enter your password",
   "appVersion": "App version",
-
   "changeUserPhoto": "Change user photo",
   "changeUsername": "Change username",
   "changeEmail": "Change email",
   "changePassword": "Change password",
   "makePhoto": "Make a photo",
-  "addFromGallery": "Add from gallery"
+  "addFromGallery": "Add from gallery",
+
+  "newUsername": "New username",
+  "newUsernamePlaceholder": "Enter new username",
+  "password": "Password",
+  "passwordPlaceholder": "Password",
+  "usernameRequired": "Username is required",
+  "usernameTooShort": "Username must be at least 3 characters",
+  "usernameTaken": "This username is already taken",
+  "usernameAvailable": "Username is available",
+  "passwordRequired": "Password is required",
+  "checkingUsername": "Checking availability..."
 }
