@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/src/FirebaseConfig";
+import { doc, setDoc, collection } from "@react-native-firebase/firestore";
+import { isUsernameAvailable } from "@/src/services/firestore/firestoreUserService";
 
 type RegisterErrors = {
   email?: string;
@@ -38,28 +40,27 @@ export const useRegister = () => {
     const newErrors: RegisterErrors = {};
 
     if (!isValidEmail(email)) {
-      newErrors.email = "Please enter a valid email address.";
+      newErrors.email = "invalidEmail";
     }
 
     if (!username.trim() || username.length < 3) {
-      newErrors.username = "Username must be at least 3 characters long.";
+      newErrors.username = "usernameTooShort";
     }
 
     if (!isStrongPassword(password)) {
-      newErrors.password =
-        "Password must be 6–21 characters long and include uppercase, lowercase, number, and special character.";
+      newErrors.password = "passwordTooWeak";
     }
 
     if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match.";
+      newErrors.confirmPassword = "passwordsDontMatch";
     }
 
     if (!termsAccepted) {
-      newErrors.terms = "You must accept the terms and conditions.";
+      newErrors.terms = "mustAcceptTerms";
     }
 
+    setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
       return;
     }
 
@@ -70,39 +71,76 @@ export const useRegister = () => {
       const auth = await getFirebaseAuth();
       const firestore = await getFirebaseFirestore();
 
+      const usernameUnique = await isUsernameAvailable(username);
+      if (!usernameUnique) {
+        setErrors({ username: "usernameTaken" });
+        setLoading(false);
+        return;
+      }
+
       const userCredential = await auth.createUserWithEmailAndPassword(
         email,
         password
       );
       const user = userCredential.user;
+      const userUid = user.uid;
 
-      await firestore.collection("users").doc(user.uid).set({
+      const now = Date.now();
+
+      const defaultUserProfile = {
+        uid: userUid,
         email: user.email,
-        username,
-        createdAt: Date.now(),
-        gender: "male",
-        age: 25,
-        weight: 70,
-        height: 175,
-        activityLevel: 1.55,
-        goal: "maintenance",
-        bmr: null,
-        tdee: null,
-        adjustedTdee: null,
+        username: username.trim(),
+        createdAt: now,
+        lastLogin: new Date().toISOString(),
+        plan: "free",
+        unitsSystem: "metric",
+        age: "",
+        sex: "",
+        height: "",
+        heightInch: null,
+        weight: "",
+        preferences: [],
+        activityLevel: "",
+        goal: "",
+        calorieDeficit: null,
+        calorieSurplus: null,
+        chronicDiseases: [],
+        chronicDiseasesOther: "",
+        allergies: [],
+        allergiesOther: "",
+        lifestyle: "",
+        aiStyle: "none",
+        aiFocus: "none",
+        aiFocusOther: "",
+        aiNote: "",
         surveyComplited: false,
-      });
+        syncState: "pending",
+        lastSyncedAt: "",
+        darkTheme: false,
+        avatarUrl: "",
+        avatarLocalPath: "",
+        avatarlastSyncedAt: "",
+      };
+
+      const usersCol = collection(firestore, "users");
+      const userDocRef = doc(usersCol, userUid);
+      await setDoc(userDocRef, defaultUserProfile);
+
+      const usernamesCol = collection(firestore, "usernames");
+      const usernameDocRef = doc(usernamesCol, username.trim().toLowerCase());
+      await setDoc(usernameDocRef, { uid: userUid, createdAt: now });
     } catch (error: any) {
       const errorMessage: RegisterErrors = {};
-      console.log(error);
 
       if (error.code === "auth/email-already-in-use") {
-        errorMessage.email = "This email is already in use.";
+        errorMessage.email = "emailInUse";
       } else if (error.code === "auth/invalid-email") {
-        errorMessage.email = "Invalid email address.";
+        errorMessage.email = "invalidEmail";
       } else if (error.code === "auth/weak-password") {
-        errorMessage.password = "Password is too weak.";
+        errorMessage.password = "passwordTooWeak";
       } else {
-        errorMessage.general = "Failed to create account. Please try again.";
+        errorMessage.general = "registrationFailed";
       }
 
       setErrors(errorMessage);

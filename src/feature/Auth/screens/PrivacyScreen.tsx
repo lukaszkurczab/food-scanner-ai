@@ -24,7 +24,7 @@ export default function PrivacyScreen({ navigation }: any) {
   };
 
   return (
-    <Layout>
+    <Layout showNavigation={false}>
       <View
         style={{
           flex: 1,

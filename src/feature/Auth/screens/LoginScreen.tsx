@@ -62,7 +62,7 @@ export default function LoginScreen({ navigation }: any) {
   const isLoginDisabled = !isFormValid || loading || !!displayCriticalError;
 
   return (
-    <Layout>
+    <Layout showNavigation={false}>
       {displayCriticalError && <ErrorBox message={displayCriticalError} />}
 
       <View style={{ flex: 1, justifyContent: "center" }}>

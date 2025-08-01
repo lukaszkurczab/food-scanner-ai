@@ -24,7 +24,7 @@ export default function TermsScreen({ navigation }: any) {
   };
 
   return (
-    <Layout>
+    <Layout showNavigation={false}>
       <View
         style={{
           flex: 1,

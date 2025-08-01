@@ -17,7 +17,6 @@ import {
   writeBatch,
 } from "@react-native-firebase/firestore";
 import type { UserData } from "@/src/types";
-import * as FileSystem from "expo-file-system";
 
 const USERS_COLLECTION = "users";
 
@@ -104,6 +103,19 @@ export async function markUserSyncedInFirestore(
     syncStatus: "synced",
     lastSyncedAt: timestamp,
   });
+}
+
+export async function isUsernameAvailable(username: string): Promise<boolean> {
+  try {
+    const app = getApp();
+    const db = getFirestore(app);
+    const usernameRef = doc(db, "usernames", username.trim().toLowerCase());
+    const usernameDoc = await getDoc(usernameRef);
+    return !usernameDoc.exists();
+  } catch (e) {
+    console.log("Username check error:", e);
+    throw e;
+  }
 }
 
 export async function deleteUserInFirestore(uid: string) {

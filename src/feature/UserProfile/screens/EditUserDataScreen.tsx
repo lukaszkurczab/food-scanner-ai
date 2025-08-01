@@ -1,15 +1,26 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Modal } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Modal,
+  ActivityIndicator,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/src/theme/useTheme";
 import { Layout } from "@/src/components";
 import ListItem from "../components/ListItem";
 import { MaterialIcons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { useUserContext } from "@/src/context/UserContext";
 
 export default function ChangeUserDataScreen({ navigation }: any) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const [photoModal, setPhotoModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const { setAvatar } = useUserContext();
 
   return (
     <Layout showNavigation={false}>
@@ -33,7 +44,7 @@ export default function ChangeUserDataScreen({ navigation }: any) {
           />
           <ListItem
             label={t("changeUsername")}
-            onPress={() => navigation.navigate("ChangeUsername")}
+            onPress={() => navigation.navigate("UsernameChange")}
           />
           <ListItem
             label={t("changeEmail")}
@@ -44,6 +55,11 @@ export default function ChangeUserDataScreen({ navigation }: any) {
             onPress={() => navigation.navigate("ChangePassword")}
           />
         </View>
+        {isUploading && (
+          <View style={styles.uploadOverlay}>
+            <ActivityIndicator size="large" color={theme.accentSecondary} />
+          </View>
+        )}
       </View>
 
       <Modal visible={photoModal} transparent>
@@ -71,8 +87,25 @@ export default function ChangeUserDataScreen({ navigation }: any) {
             </Pressable>
             <Pressable
               style={styles.modalButton}
-              onPress={() => {
+              disabled={isUploading}
+              onPress={async () => {
                 setPhotoModal(false);
+                const result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                  allowsEditing: true,
+                  quality: 0.7,
+                });
+                if (
+                  !result.canceled &&
+                  result.assets &&
+                  result.assets[0]?.uri
+                ) {
+                  setIsUploading(true);
+                  try {
+                    await setAvatar(result.assets[0].uri);
+                  } catch (e) {}
+                  setIsUploading(false);
+                }
               }}
             >
               <Text style={[styles.modalButtonText, { color: theme.text }]}>
@@ -127,5 +160,12 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 18,
     fontWeight: "600",
+  },
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.08)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 99,
   },
 });
