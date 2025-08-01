@@ -62,7 +62,7 @@ export default function ChangeUserDataScreen({ navigation }: any) {
               ]}
               onPress={() => {
                 setPhotoModal(false);
-                navigation.navigate("Camera");
+                navigation.navigate("AvatarCamera");
               }}
             >
               <Text style={[styles.modalButtonText, { color: theme.text }]}>

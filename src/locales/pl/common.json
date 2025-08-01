@@ -5,5 +5,7 @@
   "camera_permission_title": "Kamera wymaga uprawnień",
   "camera_permission_message": "Nadaj dostęp do kamery, aby kontynuować.",
   "camera_grant_access": "Nadaj dostęp",
-  "camera_take_photo": "Zrób zdjęcie"
+  "camera_take_photo": "Zrób zdjęcie",
+  "camera_retake": "Zrób ponownie",
+  "camera_use_photo": "Użyj zdjęcia"
 }

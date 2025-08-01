@@ -21,6 +21,7 @@ type UserContextType = {
   updateUser: (data: Partial<UserData>) => Promise<void>;
   syncUserProfile: () => Promise<void>;
   deleteUser: (password: string) => Promise<void>;
+  setAvatar: (photoUri: string) => Promise<void>;
 
   settings: Record<string, string>;
   loadingSettings: boolean;
@@ -58,6 +59,7 @@ const UserContext = createContext<UserContextType>({
   updateUser: async () => {},
   syncUserProfile: async () => {},
   deleteUser: async () => {},
+  setAvatar: async () => {},
 
   settings: {},
   loadingSettings: true,
@@ -94,6 +96,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     updateUserProfile,
     syncUserProfile,
     deleteUser,
+    setAvatar,
   } = useUser(uid);
 
   const {
@@ -160,6 +163,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         updateUser: updateUserProfile,
         syncUserProfile,
         deleteUser,
+        setAvatar,
 
         settings,
         loadingSettings,

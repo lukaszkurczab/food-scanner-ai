@@ -25,7 +25,7 @@ import CheckMailboxScreen from "@/src/feature/Auth/screens/CheckMailboxScreen";
 import OnboardingScreen from "@/src/feature/Onboarding/screens/OnboardingScreen";
 import LoadingScreen from "@/src/screens/LoadingScreen";
 import EditUserDataScreen from "@/src/feature/UserProfile/screens/EditUserDataScreen";
-import CameraScreen from "@/src/screens/CameraScreen";
+import AvatarCameraScreen from "@/src/feature/UserProfile/screens/AvatarCameraScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -47,7 +47,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Loading" component={LoadingScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-          <Stack.Screen name="Camera" component={CameraScreen} />
+          <Stack.Screen name="AvatarCamera" component={AvatarCameraScreen} />
           <Stack.Screen name="Result" component={ResultScreen} />
           <Stack.Screen name="History" component={HistoryScreen} />
           <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />

@@ -13,6 +13,9 @@ export const schema = appSchema({
         { name: "lastLogin", type: "string" },
         { name: "plan", type: "string" },
         { name: "darkTheme", type: "boolean", isOptional: true },
+        { name: "avatarUrl", type: "string", isOptional: true },
+        { name: "avatarLocalPath", type: "string", isOptional: true },
+        { name: "avatarlastSyncedAt", type: "string", isOptional: true },
 
         { name: "unitsSystem", type: "string" },
         { name: "age", type: "string" },

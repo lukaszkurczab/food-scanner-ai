@@ -5,5 +5,7 @@
   "camera_permission_title": "Camera requires permission",
   "camera_permission_message": "Grant access to the camera to continue.",
   "camera_grant_access": "Grant Access",
-  "camera_take_photo": "Take photo"
+  "camera_take_photo": "Take photo",
+  "camera_retake": "Retake",
+  "camera_use_photo": "Use photo"
 }
