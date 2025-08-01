@@ -40,4 +40,7 @@ export default class User extends Model {
   syncState!: string;
   @field("lastSyncedAt") lastSyncedAt?: string;
   @field("darkTheme") darkTheme?: boolean;
+  @field("avatarUrl") avatarUrl?: string;
+  @field("avatarLocalPath") avatarLocalPath?: string;
+  @field("avatarlastSyncedAt") avatarlastSyncedAt?: string;
 }

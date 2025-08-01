@@ -15,6 +15,6 @@ export interface UserData extends FormData {
   lastSyncedAt?: string;
   avatarUrl?: string;
   avatarLocalPath?: string;
-  avatarlastSyncedAt?: number;
+  avatarlastSyncedAt?: string;
   darkTheme: boolean;
 }

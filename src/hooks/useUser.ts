@@ -8,6 +8,7 @@ import {
   updateUserInFirestore,
   markUserSyncedInFirestore,
   deleteUserInFirestore,
+  uploadAndSaveAvatar,
 } from "@/src/services/firestore/firestoreUserService";
 import { pickLatest } from "@/src/utils/syncUtils";
 import {
@@ -15,6 +16,8 @@ import {
   deleteUser as deleteAuthUser,
 } from "@react-native-firebase/auth";
 import { omitLocalUserKeys } from "@/src/utils/omitLocalUserKeys";
+import { savePhotoLocally } from "@/src/utils/savePhotoLocally";
+import * as FileSystem from "expo-file-system";
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -57,10 +60,6 @@ export function useUser(uid: string) {
     setLoading(false);
   }, [uid]);
 
-  const fetchUserFromCloud = useCallback(async () => {
-    return await fetchUserFromFirestore(uid);
-  }, [uid]);
-
   const updateUserProfile = useCallback(
     async (data: Partial<UserData>) => {
       const userCollection = database.get("users");
@@ -95,6 +94,43 @@ export function useUser(uid: string) {
     },
     [uid]
   );
+
+  const setAvatar = useCallback(
+    async (photoUri: string) => {
+      const localPath = FileSystem.documentDirectory + `avatar_${uid}.jpg`;
+      const now = new Date().toISOString();
+
+      await savePhotoLocally({ photoUri, path: localPath });
+
+      try {
+        await updateUserProfile({
+          avatarLocalPath: localPath,
+          avatarlastSyncedAt: now,
+          syncState: "pending",
+        });
+      } catch (e) {
+        console.log(e);
+      }
+
+      try {
+        const { avatarUrl, avatarlastSyncedAt } = await uploadAndSaveAvatar({
+          userUid: uid,
+          localUri: localPath,
+        });
+
+        await updateUserProfile({
+          avatarUrl,
+          avatarlastSyncedAt: new Date(avatarlastSyncedAt).toISOString(),
+          syncState: "synced",
+        });
+      } catch (e) {}
+    },
+    [uid, updateUserProfile]
+  );
+
+  const fetchUserFromCloud = useCallback(async () => {
+    return await fetchUserFromFirestore(uid);
+  }, [uid]);
 
   const sendUserToCloud = useCallback(async () => {
     const userCollection = database.get("users");
@@ -216,5 +252,6 @@ export function useUser(uid: string) {
     syncUserProfile,
     markUserAsSynced,
     deleteUser,
+    setAvatar,
   };
 }

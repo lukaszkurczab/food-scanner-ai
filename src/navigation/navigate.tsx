@@ -23,7 +23,7 @@ export type RootStackParamList = {
     image: string;
     id: string;
   };
-  Camera: undefined;
+  AvatarCamera: undefined;
   Result: undefined;
   History: undefined;
   MealDetail: undefined;

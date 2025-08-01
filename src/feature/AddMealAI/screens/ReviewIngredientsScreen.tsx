@@ -114,7 +114,7 @@ const ReviewIngredientsScreen = () => {
   };
 
   const handleDetectMoreIngredients = () => {
-    navigation.navigate("Camera");
+    navigation.navigate("AvatarCamera");
   };
 
   const handleNameChange = (index: number, newName: string) => {

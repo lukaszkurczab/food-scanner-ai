@@ -14,7 +14,7 @@ import { useRoute } from "@react-navigation/native";
 import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/src/components/BottomTabBar";
 
-const hiddenRoutes = ["Camera"];
+const hiddenRoutes = ["AvatarCamera"];
 
 type LayoutProps = {
   children: React.ReactNode;

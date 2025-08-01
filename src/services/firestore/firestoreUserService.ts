@@ -1,5 +1,11 @@
 import { getApp } from "@react-native-firebase/app";
 import {
+  getStorage,
+  ref,
+  putFile,
+  getDownloadURL,
+} from "@react-native-firebase/storage";
+import {
   getFirestore,
   collection,
   doc,
@@ -11,6 +17,7 @@ import {
   writeBatch,
 } from "@react-native-firebase/firestore";
 import type { UserData } from "@/src/types";
+import * as FileSystem from "expo-file-system";
 
 const USERS_COLLECTION = "users";
 
@@ -52,10 +59,40 @@ export async function updateUserInFirestore(
   data: Partial<UserData>
 ) {
   const db = getDb();
-
   await setDoc(doc(collection(db, USERS_COLLECTION), uid), data, {
     merge: true,
   });
+}
+
+export async function uploadAndSaveAvatar({
+  userUid,
+  localUri,
+}: {
+  userUid: string;
+  localUri: string;
+}) {
+  const app = getApp();
+  const storage = getStorage(app);
+  const remotePath = `avatars/${userUid}/avatar.jpg`;
+  const avatarRef = ref(storage, remotePath);
+  await putFile(avatarRef, localUri);
+  const avatarUrl = await getDownloadURL(avatarRef);
+
+  const db = getDb();
+  const userDocRef = doc(collection(db, USERS_COLLECTION), userUid);
+
+  const now = new Date().toISOString();
+  await updateDoc(userDocRef, {
+    avatarUrl,
+    avatarLocalPath: localUri,
+    avatarlastSyncedAt: now,
+  });
+
+  return {
+    avatarUrl,
+    avatarLocalPath: localUri,
+    avatarlastSyncedAt: now,
+  };
 }
 
 export async function markUserSyncedInFirestore(
