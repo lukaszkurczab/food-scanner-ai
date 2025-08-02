@@ -16,6 +16,11 @@ import {
   putFile,
   getDownloadURL,
 } from "@react-native-firebase/storage";
+import {
+  getAuth,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+} from "@react-native-firebase/auth";
 import type { UserData } from "@/src/types";
 
 const USERS_COLLECTION = "users";
@@ -109,29 +114,51 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
 
 export async function deleteUserInFirestoreWithUsername(uid: string) {
   const db = getDb();
-  console.log(1);
   const userDocRef = doc(collection(db, USERS_COLLECTION), uid);
-  console.log(2);
   const userDoc = await getDoc(doc(collection(db, USERS_COLLECTION), uid));
   let username: string | null = null;
   if (userDoc.exists()) {
     username = (userDoc.data() as { username?: string })?.username ?? null;
   }
-  console.log(3);
   const subcollections = ["meals", "chatMessages"];
   for (const sub of subcollections) {
-    console.log(4);
     try {
       await deleteSubcollection(userDocRef, sub);
     } catch (e) {
       console.log(e);
     }
-    console.log(5);
   }
   await deleteDoc(userDocRef);
-  console.log(6);
   if (username) {
     const usernameDocRef = doc(db, "usernames", username.trim().toLowerCase());
     await deleteDoc(usernameDocRef);
+  }
+}
+
+export async function changeUsernameService({
+  uid,
+  newUsername,
+  password,
+}: {
+  uid: string;
+  newUsername: string;
+  password: string;
+}) {
+  const db = getDb();
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("auth/not-logged-in");
+
+  const cred = EmailAuthProvider.credential(currentUser.email!, password);
+  await reauthenticateWithCredential(currentUser, cred);
+
+  const userRef = doc(collection(db, USERS_COLLECTION), uid);
+  const oldUserDoc = await getDoc(userRef);
+  const oldUsername = (oldUserDoc.data() as { username?: string })?.username;
+
+  await setDoc(doc(db, "usernames", newUsername.trim().toLowerCase()), { uid });
+  await updateDoc(userRef, { username: newUsername.trim() });
+  if (oldUsername && oldUsername !== newUsername.trim()) {
+    await deleteDoc(doc(db, "usernames", oldUsername.trim().toLowerCase()));
   }
 }
