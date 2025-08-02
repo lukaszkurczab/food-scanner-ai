@@ -71,7 +71,7 @@ export default function ChangeEmailScreen({ navigation }: any) {
 
     try {
       await changeEmail(email.trim(), password);
-      navigation.navigate("ChangePasswordCheckMailbox", {
+      navigation.navigate("ChangeEmailCheckMailbox", {
         email: email.trim(),
       });
     } catch (e: any) {

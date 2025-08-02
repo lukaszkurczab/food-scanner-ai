@@ -13,7 +13,7 @@ import { useRoute } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getAuth, signOut } from "@react-native-firebase/auth";
 
-export default function ChangePasswordCheckMailboxScreen({ navigation }: any) {
+export default function ChangeEmailCheckMailboxScreen({ navigation }: any) {
   const { t } = useTranslation(["change_password", "common"]);
   const theme = useTheme();
   const route = useRoute<any>();

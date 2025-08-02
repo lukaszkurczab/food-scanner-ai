@@ -20,8 +20,8 @@ import {
   getAuth,
   EmailAuthProvider,
   reauthenticateWithCredential,
-  updateEmail,
   verifyBeforeUpdateEmail,
+  updatePassword,
 } from "@react-native-firebase/auth";
 import type { UserData } from "@/src/types";
 
@@ -186,6 +186,28 @@ export async function changeEmailService({
   const db = getFirestore(getApp());
   const userRef = doc(collection(db, "users"), uid);
   await updateDoc(userRef, { emailPending: newEmail.trim() });
+
+  return true;
+}
+
+export async function changePasswordService({
+  currentPassword,
+  newPassword,
+}: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("auth/not-logged-in");
+
+  const cred = EmailAuthProvider.credential(
+    currentUser.email!,
+    currentPassword
+  );
+  await reauthenticateWithCredential(currentUser, cred);
+
+  await updatePassword(currentUser, newPassword);
 
   return true;
 }

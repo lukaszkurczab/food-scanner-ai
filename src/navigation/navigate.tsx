@@ -6,7 +6,7 @@ export type RootStackParamList = {
   CheckMailbox: {
     email: string;
   };
-  ChangePasswordCheckMailbox: {
+  ChangeEmailCheckMailbox: {
     email: string;
   };
   Onboarding: undefined;
@@ -14,6 +14,7 @@ export type RootStackParamList = {
   ResetPassword: undefined;
   Terms: undefined;
   Privacy: undefined;
+  ChangePassword: undefined;
   AddMealManual: undefined;
   AddMealFromList: undefined;
   UsernameChange: undefined;

@@ -28,7 +28,8 @@ import EditUserDataScreen from "@/src/feature/UserProfile/screens/EditUserDataSc
 import AvatarCameraScreen from "@/src/feature/UserProfile/screens/AvatarCameraScreen";
 import UsernameChangeScreen from "@/src/feature/UserProfile/screens/UsernameChangeScreen";
 import ChangeEmailScreen from "@/src/feature/UserProfile/screens/ChangeEmailScreen";
-import ChangePasswordCheckMailboxScreen from "@/src/feature/UserProfile/screens/ChangePasswordCheckMailboxScreen";
+import ChangeEmailCheckMailboxScreen from "@/src/feature/UserProfile/screens/ChangeEmailCheckMailboxScreen";
+import ChangePasswordScreen from "@/src/feature/UserProfile/screens/ChangePasswordScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -72,8 +73,12 @@ const AppNavigator = () => {
           />
           <Stack.Screen name="ChangeEmail" component={ChangeEmailScreen} />
           <Stack.Screen
-            name="ChangePasswordCheckMailbox"
-            component={ChangePasswordCheckMailboxScreen}
+            name="ChangeEmailCheckMailbox"
+            component={ChangeEmailCheckMailboxScreen}
+          />
+          <Stack.Screen
+            name="ChangePassword"
+            component={ChangePasswordScreen}
           />
         </>
       ) : (
