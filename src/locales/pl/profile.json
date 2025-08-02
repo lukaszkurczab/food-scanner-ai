@@ -37,5 +37,8 @@
   "usernameTaken": "Taka nazwa jest już zajęta",
   "usernameAvailable": "Nazwa jest dostępna",
   "passwordRequired": "Hasło jest wymagane",
-  "checkingUsername": "Sprawdzanie dostępności..."
+  "checkingUsername": "Sprawdzanie dostępności...",
+
+  "newEmail": "Nowy adres e-mail",
+  "emailChangeSecurityNote": "Ze względów bezpieczeństwa możesz zostać poproszony o ponowne zalogowanie."
 }

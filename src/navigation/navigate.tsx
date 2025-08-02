@@ -1,7 +1,7 @@
 import { createNavigationContainerRef } from "@react-navigation/native";
 
 export type RootStackParamList = {
-  Home: any;
+  Home: undefined;
   Login: undefined;
   CheckMailbox: {
     email: string;
@@ -20,6 +20,7 @@ export type RootStackParamList = {
   Register: undefined;
   SavedMeals: undefined;
   EditUserData: undefined;
+  ChangeEmail: undefined;
   ReviewIngredients: {
     image: string;
     id: string;

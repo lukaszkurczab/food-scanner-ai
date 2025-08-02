@@ -37,5 +37,8 @@
   "usernameTaken": "This username is already taken",
   "usernameAvailable": "Username is available",
   "passwordRequired": "Password is required",
-  "checkingUsername": "Checking availability..."
+  "checkingUsername": "Checking availability...",
+
+  "newEmail": "New email",
+  "emailChangeSecurityNote": "You may be asked to log in again for security reasons."
 }
