@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@/src/theme/useTheme";
 import { useUserContext } from "@/src/context/UserContext";
 import { ButtonToggle, InputModal, Layout } from "@/src/components";
-import { navigationRef } from "@/src/navigation/navigate";
 import { UserIcon } from "@/src/components/UserIcon";
 import { getAuth, signOut } from "@react-native-firebase/auth";
 import SectionHeader from "../components/SectionHeader";

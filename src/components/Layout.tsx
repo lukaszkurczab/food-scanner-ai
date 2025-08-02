@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   StatusBar,
   View,
@@ -26,6 +26,20 @@ export const Layout = ({ children, showNavigation = true }: LayoutProps) => {
   const route = useRoute();
 
   const isCardVisible = !hiddenRoutes.includes(route.name);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () =>
+      setIsKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener("keyboardDidHide", () =>
+      setIsKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   return (
     <KeyboardAvoidingView
@@ -34,11 +48,7 @@ export const Layout = ({ children, showNavigation = true }: LayoutProps) => {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={[styles.root, { backgroundColor: theme.background }]}>
-          <View
-            style={{
-              maxHeight: Dimensions.get("window").height - 18,
-            }}
-          >
+          <View style={{ maxHeight: Dimensions.get("window").height - 18 }}>
             <ScrollView
               contentContainerStyle={{
                 flexGrow: 1,
@@ -75,7 +85,7 @@ export const Layout = ({ children, showNavigation = true }: LayoutProps) => {
               )}
             </ScrollView>
           </View>
-          {showNavigation && <BottomTabBar />}
+          {showNavigation && !isKeyboardVisible && <BottomTabBar />}
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

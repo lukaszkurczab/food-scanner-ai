@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/src/theme/useTheme";
+import { useUserContext } from "@/src/context/UserContext";
 import {
   Layout,
   PrimaryButton,
@@ -27,14 +28,10 @@ function mapFirebaseErrorToKey(code: string): string {
   }
 }
 
-// Zastąpić prawdziwą logiką z contextu/hooków/serwisów!
-const mockChangeEmail = async (_email: string, _password: string) => {
-  return Promise.resolve();
-};
-
 export default function ChangeEmailScreen({ navigation }: any) {
   const { t } = useTranslation(["profile", "login"]);
   const theme = useTheme();
+  const { changeEmail } = useUserContext();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,7 +42,6 @@ export default function ChangeEmailScreen({ navigation }: any) {
   const [criticalError, setCriticalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Możesz dodać walidację formatu email, np. z utils/validation
   const validateEmail = (v: string) => /\S+@\S+\.\S+/.test(v);
 
   const validate = async () => {
@@ -54,7 +50,7 @@ export default function ChangeEmailScreen({ navigation }: any) {
     if (!email) newErrors.email = t("enter_email", { ns: "login" });
     else if (!validateEmail(email))
       newErrors.email = t("invalid_email", { ns: "login" });
-    // Tu można dodać sprawdzanie, czy email już zajęty (po stronie serwisu)
+
     if (!password)
       newErrors.password = t("passwordRequired", { ns: "profile" });
 
@@ -74,9 +70,10 @@ export default function ChangeEmailScreen({ navigation }: any) {
     }
 
     try {
-      // Podmień na swoją logikę (np. z contextu)
-      await mockChangeEmail(email.trim(), password);
-      navigation.goBack();
+      await changeEmail(email.trim(), password);
+      navigation.navigate("ChangePasswordCheckMailbox", {
+        email: email.trim(),
+      });
     } catch (e: any) {
       let errKey = "login_failed";
       if (e && typeof e.code === "string") {
@@ -106,6 +103,7 @@ export default function ChangeEmailScreen({ navigation }: any) {
       {criticalError && (
         <ErrorBox message={criticalError} style={{ marginBottom: 12 }} />
       )}
+
       <View style={{ marginBottom: theme.spacing.lg }}>
         <Text
           style={{
@@ -167,7 +165,7 @@ export default function ChangeEmailScreen({ navigation }: any) {
         {t("emailChangeSecurityNote", {
           ns: "profile",
           defaultValue:
-            "You may be asked to log in again for security reasons.",
+            "Możesz zostać poproszony o ponowne zalogowanie ze względów bezpieczeństwa.",
         })}
       </Text>
 
