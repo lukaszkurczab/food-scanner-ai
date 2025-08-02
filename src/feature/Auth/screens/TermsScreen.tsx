@@ -16,11 +16,7 @@ export default function TermsScreen({ navigation }: any) {
   const termsText = t("text");
 
   const handleClose = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate("Home");
-    }
+    navigation.goBack();
   };
 
   return (
