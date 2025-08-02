@@ -23,7 +23,7 @@ export default function ChangeUserDataScreen({ navigation }: any) {
   const { setAvatar } = useUserContext();
 
   return (
-    <Layout showNavigation={false}>
+    <Layout>
       <View style={{ justifyContent: "flex-start", height: "100%" }}>
         <Pressable style={styles.header} onPress={() => navigation.goBack()}>
           <MaterialIcons name="chevron-left" size={28} color={theme.text} />
