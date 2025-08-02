@@ -10,6 +10,7 @@ import {
   deleteUserInFirestoreWithUsername,
   uploadAndSaveAvatar,
   changeUsernameService,
+  changeEmailService,
 } from "@/src/services/firestore/firestoreUserService";
 import { pickLatest } from "@/src/utils/syncUtils";
 import {
@@ -37,7 +38,6 @@ export function useUser(uid: string) {
     } catch (e) {
       localUser = null;
     }
-
     let localData = localUser ? mapRawToUserData(localUser._raw) : null;
 
     if (!localData) {
@@ -56,9 +56,9 @@ export function useUser(uid: string) {
       }
       setUserData(localData);
     }
-
     setsyncState(localData?.syncState || "pending");
     setLoading(false);
+    return localData;
   }, [uid]);
 
   const updateUserProfile = useCallback(
@@ -225,6 +225,13 @@ export function useUser(uid: string) {
     [uid]
   );
 
+  const changeEmail = useCallback(
+    async (newEmail: string, password: string) => {
+      await changeEmailService({ uid, newEmail, password });
+    },
+    [uid]
+  );
+
   const deleteUser = useCallback(async () => {
     if (!uid) return;
     await deleteUserInFirestoreWithUsername(uid);
@@ -262,5 +269,6 @@ export function useUser(uid: string) {
     deleteUser,
     setAvatar,
     changeUsername,
+    changeEmail,
   };
 }

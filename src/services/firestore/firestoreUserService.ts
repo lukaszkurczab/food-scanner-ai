@@ -20,6 +20,8 @@ import {
   getAuth,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  updateEmail,
+  verifyBeforeUpdateEmail,
 } from "@react-native-firebase/auth";
 import type { UserData } from "@/src/types";
 
@@ -161,4 +163,29 @@ export async function changeUsernameService({
   if (oldUsername && oldUsername !== newUsername.trim()) {
     await deleteDoc(doc(db, "usernames", oldUsername.trim().toLowerCase()));
   }
+}
+
+export async function changeEmailService({
+  uid,
+  newEmail,
+  password,
+}: {
+  uid: string;
+  newEmail: string;
+  password: string;
+}) {
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("auth/not-logged-in");
+
+  const cred = EmailAuthProvider.credential(currentUser.email!, password);
+  await reauthenticateWithCredential(currentUser, cred);
+
+  await verifyBeforeUpdateEmail(currentUser, newEmail.trim());
+
+  const db = getFirestore(getApp());
+  const userRef = doc(collection(db, "users"), uid);
+  await updateDoc(userRef, { emailPending: newEmail.trim() });
+
+  return true;
 }

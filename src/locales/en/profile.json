@@ -40,5 +40,12 @@
   "checkingUsername": "Checking availability...",
 
   "newEmail": "New email",
-  "emailChangeSecurityNote": "You may be asked to log in again for security reasons."
+  "emailChangeSecurityNote": "You may be asked to log in again for security reasons.",
+
+  "check_mailbox_title": "Check your inbox",
+  "check_mailbox_desc": "We sent a link to change your password to {{email}}.",
+  "check_mailbox_desc2": "If this email exists in our system, you'll soon receive a link to change your password.",
+  "back_to_login": "Back to login",
+  "send_again": "Send again",
+  "send_again_info": "You can send again in {{seconds}} seconds."
 }

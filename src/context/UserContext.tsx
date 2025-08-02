@@ -17,12 +17,13 @@ type UserContextType = {
   loadingUser: boolean;
   syncState: "synced" | "pending" | "conflict";
   refreshUser: () => Promise<void>;
-  getUserData: () => Promise<void>;
+  getUserData: () => Promise<UserData | null>;
   updateUser: (data: Partial<UserData>) => Promise<void>;
   syncUserProfile: () => Promise<void>;
   deleteUser: (password?: string) => Promise<void>;
   setAvatar: (photoUri: string) => Promise<void>;
   changeUsername: (newUsername: string, password: string) => Promise<void>;
+  changeEmail: (newEmail: string, password: string) => Promise<void>;
 
   settings: Record<string, string>;
   loadingSettings: boolean;
@@ -55,13 +56,14 @@ const UserContext = createContext<UserContextType>({
   userData: null,
   loadingUser: true,
   syncState: "pending",
-  getUserData: async () => {},
+  getUserData: async () => null,
   refreshUser: async () => {},
   updateUser: async () => {},
   syncUserProfile: async () => {},
   deleteUser: async () => {},
   setAvatar: async () => {},
   changeUsername: async () => {},
+  changeEmail: async () => {},
 
   settings: {},
   loadingSettings: true,
@@ -100,6 +102,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     deleteUser,
     setAvatar,
     changeUsername,
+    changeEmail,
   } = useUser(uid);
 
   const {
@@ -168,6 +171,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         deleteUser,
         setAvatar,
         changeUsername,
+        changeEmail,
 
         settings,
         loadingSettings,
