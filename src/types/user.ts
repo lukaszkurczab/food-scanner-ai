@@ -18,3 +18,9 @@ export interface UserData extends FormData {
   avatarlastSyncedAt?: string;
   darkTheme: boolean;
 }
+
+export type ExportedUserData = {
+  profile: any;
+  meals: any[];
+  chatMessages: any[];
+};

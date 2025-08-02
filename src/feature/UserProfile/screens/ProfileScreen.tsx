@@ -12,10 +12,11 @@ import ListItem from "../components/ListItem";
 export default function UserProfileScreen({ navigation }: any) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
-  const { userData, updateUser, deleteUser } = useUserContext();
+  const { userData, updateUser, deleteUser, exportUserData } = useUserContext();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [password, setPassword] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   if (!userData) {
     navigation.navigate("Login");
@@ -44,6 +45,26 @@ export default function UserProfileScreen({ navigation }: any) {
       Alert.alert(t("deleteAccountError"), t("wrongPasswordOrUnknownError"));
     }
     setPassword("");
+  };
+
+  const handleExportData = async () => {
+    setExporting(true);
+    try {
+      await exportUserData();
+      Alert.alert(
+        t("downloadYourData"),
+        t("exportSuccess", {
+          defaultValue:
+            "Your data has been prepared and should appear in your sharing options.",
+        })
+      );
+    } catch (e: any) {
+      Alert.alert(
+        t("downloadYourData"),
+        t("exportError", { defaultValue: "Could not export your data." })
+      );
+    }
+    setExporting(false);
   };
 
   return (
@@ -88,9 +109,11 @@ export default function UserProfileScreen({ navigation }: any) {
       />
       <ListItem
         label={t("downloadYourData")}
-        onPress={() => navigation.navigate("DownloadYourData")}
+        onPress={handleExportData}
         accessibilityLabel={t("downloadYourData")}
         style={{ marginBottom: 24 }}
+        disabled={exporting}
+        loading={exporting}
       />
 
       <SectionHeader label={t("settingsSection")} />

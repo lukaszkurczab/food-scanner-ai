@@ -12,6 +12,7 @@ import {
   changeUsernameService,
   changeEmailService,
   changePasswordService,
+  exportUserData,
 } from "@/src/services/firestore/firestoreUserService";
 import { pickLatest } from "@/src/utils/syncUtils";
 import {
@@ -240,6 +241,10 @@ export function useUser(uid: string) {
     []
   );
 
+  const handleExportUserData = useCallback(async () => {
+    return await exportUserData(uid);
+  }, [uid]);
+
   const deleteUser = useCallback(async () => {
     if (!uid) return;
     await deleteUserInFirestoreWithUsername(uid);
@@ -279,5 +284,6 @@ export function useUser(uid: string) {
     changeUsername,
     changeEmail,
     changePassword,
+    exportUserData: handleExportUserData,
   };
 }

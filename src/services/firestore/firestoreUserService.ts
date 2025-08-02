@@ -23,7 +23,10 @@ import {
   verifyBeforeUpdateEmail,
   updatePassword,
 } from "@react-native-firebase/auth";
-import type { UserData } from "@/src/types";
+import type { ExportedUserData, UserData } from "@/src/types";
+import * as FileSystem from "expo-file-system";
+import { zip } from "react-native-zip-archive";
+import * as Sharing from "expo-sharing";
 
 const USERS_COLLECTION = "users";
 
@@ -210,4 +213,57 @@ export async function changePasswordService({
   await updatePassword(currentUser, newPassword);
 
   return true;
+}
+
+export async function exportUserData(uid: string) {
+  const db = getFirestore();
+  const storage = getStorage();
+
+  const userDocRef = doc(collection(db, "users"), uid);
+  const userDocSnap = await getDoc(userDocRef);
+  const profile = userDocSnap.exists() ? userDocSnap.data() : null;
+
+  async function fetchSubcollection(name: string) {
+    const subRef = collection(db, "users", uid, name);
+    const snap = await getDocs(subRef);
+    return snap.docs.map((doc: any) => doc.data());
+  }
+
+  const meals = await fetchSubcollection("meals");
+  const chatMessages = await fetchSubcollection("chatMessages");
+
+  let avatarUri = null;
+  try {
+    const avatarRef = ref(storage, `avatars/${uid}/avatar.jpg`);
+    const avatarUrl = await getDownloadURL(avatarRef);
+
+    const localAvatarPath = FileSystem.documentDirectory + "avatar.jpg";
+    const downloadResumable = FileSystem.createDownloadResumable(
+      avatarUrl,
+      localAvatarPath
+    );
+    await downloadResumable.downloadAsync();
+    avatarUri = localAvatarPath;
+  } catch (e) {
+    avatarUri = null;
+  }
+
+  const exportData: ExportedUserData = { profile, meals, chatMessages };
+  const dataJsonPath = FileSystem.documentDirectory + "user_data.json";
+  await FileSystem.writeAsStringAsync(
+    dataJsonPath,
+    JSON.stringify(exportData, null, 2)
+  );
+
+  const filesToZip = [dataJsonPath];
+  if (avatarUri) filesToZip.push(avatarUri);
+
+  const zipPath = FileSystem.documentDirectory + "exported_user_data.zip";
+  await zip(filesToZip, zipPath);
+
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(zipPath);
+  }
+
+  return zipPath;
 }
