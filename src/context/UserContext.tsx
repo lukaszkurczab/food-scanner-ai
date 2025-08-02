@@ -28,12 +28,11 @@ type UserContextType = {
     currentPassword: string,
     newPassword: string
   ) => Promise<void>;
-
+  exportUserData: () => Promise<string | void>;
   settings: Record<string, string>;
   loadingSettings: boolean;
   updateSetting: (key: string, value: string) => Promise<void>;
   refreshSettings: () => Promise<void>;
-
   meals: Meal[];
   loadingMeals: boolean;
   getMeals: (date?: string) => Promise<void>;
@@ -44,7 +43,6 @@ type UserContextType = {
   deleteMeal: (mealId: string) => Promise<void>;
   syncMeals: () => Promise<void>;
   getUnsyncedMeals: () => Promise<Meal[]>;
-
   chatMessages: ChatMessage[];
   loadingChat: boolean;
   addChatMessage: (
@@ -69,12 +67,11 @@ const UserContext = createContext<UserContextType>({
   changeUsername: async () => {},
   changeEmail: async () => {},
   changePassword: async () => {},
-
+  exportUserData: async () => {},
   settings: {},
   loadingSettings: true,
   updateSetting: async () => {},
   refreshSettings: async () => {},
-
   meals: [],
   loadingMeals: true,
   getMeals: async () => {},
@@ -83,7 +80,6 @@ const UserContext = createContext<UserContextType>({
   deleteMeal: async () => {},
   syncMeals: async () => {},
   getUnsyncedMeals: async () => [],
-
   chatMessages: [],
   loadingChat: true,
   addChatMessage: async () => {},
@@ -109,6 +105,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     changeUsername,
     changeEmail,
     changePassword,
+    exportUserData,
   } = useUser(uid);
 
   const {
@@ -179,12 +176,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         changeUsername,
         changeEmail,
         changePassword,
-
+        exportUserData,
         settings,
         loadingSettings,
         updateSetting,
         refreshSettings,
-
         meals,
         loadingMeals,
         getMeals,
@@ -193,7 +189,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         deleteMeal,
         syncMeals,
         getUnsyncedMeals,
-
         chatMessages,
         loadingChat,
         addChatMessage,
