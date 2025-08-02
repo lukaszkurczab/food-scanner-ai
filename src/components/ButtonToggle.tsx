@@ -68,8 +68,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.5,
     justifyContent: "center",
-    padding: 4,
-    marginVertical: 2,
     overflow: "hidden",
   },
   thumb: {

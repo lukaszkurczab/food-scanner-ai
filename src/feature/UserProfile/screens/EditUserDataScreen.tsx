@@ -25,17 +25,16 @@ export default function ChangeUserDataScreen({ navigation }: any) {
   return (
     <Layout showNavigation={false}>
       <View style={{ justifyContent: "flex-start", height: "100%" }}>
-        <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()}>
-            <MaterialIcons name="chevron-left" size={28} color={theme.text} />
-          </Pressable>
+        <Pressable style={styles.header} onPress={() => navigation.goBack()}>
+          <MaterialIcons name="chevron-left" size={28} color={theme.text} />
+
           <Text
             style={[styles.heading, { color: theme.text }]}
             accessibilityRole="header"
           >
             {t("changeUserData")}
           </Text>
-        </View>
+        </Pressable>
 
         <View style={styles.list}>
           <ListItem

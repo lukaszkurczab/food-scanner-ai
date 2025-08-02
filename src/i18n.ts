@@ -1,5 +1,6 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Localization from "expo-localization";
 
 import en_common from "./locales/en/common.json";
@@ -17,15 +18,24 @@ import pl_resetPassword from "./locales/pl/resetPassword.json";
 import pl_onboarding from "./locales/pl/onboarding.json";
 import pl_profile from "./locales/pl/profile.json";
 
+const STORAGE_KEY = "APP_LANGUAGE";
+
 const languageDetector = {
   type: "languageDetector",
   async: true,
-  detect: (cb: (lang: string) => void) => {
+  detect: async (cb: (lang: string) => void) => {
+    const savedLang = await AsyncStorage.getItem(STORAGE_KEY);
+    if (savedLang) {
+      cb(savedLang);
+      return;
+    }
     const locales = Localization.getLocales();
-    cb(locales[0]?.languageCode || "pl");
+    cb(locales[0]?.languageCode || "en");
   },
   init: () => {},
-  cacheUserLanguage: () => {},
+  cacheUserLanguage: async (lang: string) => {
+    await AsyncStorage.setItem(STORAGE_KEY, lang);
+  },
 };
 
 i18n

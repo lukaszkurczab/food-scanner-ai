@@ -14,6 +14,7 @@ export default class User extends Model {
   @field("createdAt") createdAt!: number;
   @field("lastLogin") lastLogin!: string;
   @field("plan") plan!: string;
+  @field("language") language!: string;
 
   @field("unitsSystem") unitsSystem!: string;
   @field("age") age!: string;

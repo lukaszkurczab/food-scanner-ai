@@ -30,6 +30,7 @@ import UsernameChangeScreen from "@/src/feature/UserProfile/screens/UsernameChan
 import ChangeEmailScreen from "@/src/feature/UserProfile/screens/ChangeEmailScreen";
 import ChangeEmailCheckMailboxScreen from "@/src/feature/UserProfile/screens/ChangeEmailCheckMailboxScreen";
 import ChangePasswordScreen from "@/src/feature/UserProfile/screens/ChangePasswordScreen";
+import LanguageScreen from "@/src/feature/UserProfile/screens/LanguageScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -61,6 +62,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Summary" component={SummaryScreen} />
+          <Stack.Screen name="Language" component={LanguageScreen} />
           <Stack.Screen
             name="ReviewIngredients"
             component={ReviewIngredientsScreen}

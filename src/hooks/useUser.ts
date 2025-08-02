@@ -13,6 +13,7 @@ import {
   changeEmailService,
   changePasswordService,
   exportUserData,
+  updateUserLanguageInFirestore,
 } from "@/src/services/firestore/firestoreUserService";
 import { pickLatest } from "@/src/utils/syncUtils";
 import {
@@ -22,6 +23,10 @@ import {
 import { omitLocalUserKeys } from "@/src/utils/omitLocalUserKeys";
 import { savePhotoLocally } from "@/src/utils/savePhotoLocally";
 import * as FileSystem from "expo-file-system";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Localization from "expo-localization";
+
+const LANGUAGE_KEY = "caloriai_language";
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -29,6 +34,7 @@ export function useUser(uid: string) {
   const [syncState, setsyncState] = useState<"synced" | "pending" | "conflict">(
     "pending"
   );
+  const [language, setLanguageState] = useState<string>("en");
 
   const getUserProfile = useCallback(async () => {
     setLoading(true);
@@ -41,7 +47,6 @@ export function useUser(uid: string) {
       localUser = null;
     }
     let localData = localUser ? mapRawToUserData(localUser._raw) : null;
-
     if (!localData) {
       const remoteData = await fetchUserFromFirestore(uid);
       if (remoteData) {
@@ -60,6 +65,10 @@ export function useUser(uid: string) {
     }
     setsyncState(localData?.syncState || "pending");
     setLoading(false);
+    if (localData?.language) {
+      setLanguageState(localData.language);
+      await AsyncStorage.setItem(LANGUAGE_KEY, localData.language);
+    }
     return localData;
   }, [uid]);
 
@@ -91,6 +100,10 @@ export function useUser(uid: string) {
         };
         setUserData(mapRawToUserData(newRaw));
         setsyncState("pending");
+        if (sanitizeData.language) {
+          setLanguageState(sanitizeData.language);
+          await AsyncStorage.setItem(LANGUAGE_KEY, sanitizeData.language);
+        }
       }
     },
     [uid]
@@ -182,10 +195,18 @@ export function useUser(uid: string) {
         });
         setUserData(remoteData);
         setsyncState("synced");
+        if (remoteData.language) {
+          setLanguageState(remoteData.language);
+          await AsyncStorage.setItem(LANGUAGE_KEY, remoteData.language);
+        }
       } else {
         await updateUserInFirestore(uid, localData);
         setUserData(localData);
         setsyncState("synced");
+        if (localData.language) {
+          setLanguageState(localData.language);
+          await AsyncStorage.setItem(LANGUAGE_KEY, localData.language);
+        }
       }
     } else if (!localData && remoteData) {
       const sanitizeData = omitLocalUserKeys(remoteData);
@@ -196,11 +217,19 @@ export function useUser(uid: string) {
       });
       setUserData(remoteData);
       setsyncState("synced");
+      if (remoteData.language) {
+        setLanguageState(remoteData.language);
+        await AsyncStorage.setItem(LANGUAGE_KEY, remoteData.language);
+      }
     } else if (localData && !remoteData) {
       const sanitizeData = omitLocalUserKeys(localData);
       await updateUserInFirestore(uid, sanitizeData);
       setUserData(localData);
       setsyncState("synced");
+      if (localData.language) {
+        setLanguageState(localData.language);
+        await AsyncStorage.setItem(LANGUAGE_KEY, localData.language);
+      }
     } else {
       setUserData(null);
       setsyncState("pending");
@@ -239,6 +268,31 @@ export function useUser(uid: string) {
       await changePasswordService({ currentPassword, newPassword });
     },
     []
+  );
+
+  const changeLanguage = useCallback(
+    async (newLang: string) => {
+      if (!uid) {
+        setLanguageState(newLang);
+        await AsyncStorage.setItem(LANGUAGE_KEY, newLang);
+        return;
+      }
+      const userCollection = database.get("users");
+      const users = await userCollection.query().fetch();
+      const localUser = users.find((u: any) => u.uid === uid);
+      if (localUser) {
+        await database.write(async () => {
+          await localUser.update((u: any) => {
+            u.language = newLang;
+            u.syncState = "pending";
+          });
+        });
+      }
+      await updateUserLanguageInFirestore(uid, newLang);
+      setLanguageState(newLang);
+      await AsyncStorage.setItem(LANGUAGE_KEY, newLang);
+    },
+    [uid]
   );
 
   const handleExportUserData = useCallback(async () => {
@@ -285,5 +339,7 @@ export function useUser(uid: string) {
     changeEmail,
     changePassword,
     exportUserData: handleExportUserData,
+    language,
+    changeLanguage,
   };
 }
