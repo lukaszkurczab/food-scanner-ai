@@ -117,13 +117,21 @@ export default function UserProfileScreen({ navigation }: any) {
       />
 
       <SectionHeader label={t("settingsSection")} />
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: theme.border,
+          paddingVertical: 16,
+        }}
+      >
         <Text
           style={{
             flex: 1,
             color: theme.text,
             fontFamily: theme.typography.fontFamily.bold,
-            fontSize: theme.typography.size.base,
+            fontSize: theme.typography.size.md,
           }}
           numberOfLines={1}
         >

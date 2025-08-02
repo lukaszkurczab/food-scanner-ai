@@ -19,9 +19,14 @@ const hiddenRoutes = ["AvatarCamera"];
 type LayoutProps = {
   children: React.ReactNode;
   showNavigation?: boolean;
+  disableScroll?: boolean;
 };
 
-export const Layout = ({ children, showNavigation = true }: LayoutProps) => {
+export const Layout = ({
+  children,
+  showNavigation = true,
+  disableScroll = false,
+}: LayoutProps) => {
   const theme = useTheme();
   const route = useRoute();
 
@@ -41,6 +46,27 @@ export const Layout = ({ children, showNavigation = true }: LayoutProps) => {
     };
   }, []);
 
+  const content = isCardVisible ? (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.card,
+          borderRadius: theme.rounded.lg,
+          margin: theme.spacing.lg,
+          padding: theme.spacing.lg,
+          justifyContent: "center",
+          paddingBottom: 62,
+          minHeight: Dimensions.get("window").height - 64,
+        },
+      ]}
+    >
+      {children}
+    </View>
+  ) : (
+    children
+  );
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, flexGrow: 1 }}
@@ -49,41 +75,26 @@ export const Layout = ({ children, showNavigation = true }: LayoutProps) => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={[styles.root, { backgroundColor: theme.background }]}>
           <View style={{ maxHeight: Dimensions.get("window").height - 18 }}>
-            <ScrollView
-              contentContainerStyle={{
-                flexGrow: 1,
-                justifyContent: "center",
-                marginBottom: 16,
-              }}
-              keyboardShouldPersistTaps="handled"
-            >
-              <StatusBar
-                barStyle={
-                  theme.mode === "dark" ? "light-content" : "dark-content"
-                }
-                backgroundColor={theme.background}
-              />
-              {isCardVisible ? (
-                <View
-                  style={[
-                    styles.card,
-                    {
-                      backgroundColor: theme.card,
-                      borderRadius: theme.rounded.lg,
-                      margin: theme.spacing.lg,
-                      padding: theme.spacing.lg,
-                      justifyContent: "center",
-                      paddingBottom: 62,
-                      minHeight: Dimensions.get("window").height - 64,
-                    },
-                  ]}
-                >
-                  {children}
-                </View>
-              ) : (
-                children
-              )}
-            </ScrollView>
+            {disableScroll ? (
+              content
+            ) : (
+              <ScrollView
+                contentContainerStyle={{
+                  flexGrow: 1,
+                  justifyContent: "center",
+                  marginBottom: 16,
+                }}
+                keyboardShouldPersistTaps="handled"
+              >
+                <StatusBar
+                  barStyle={
+                    theme.mode === "dark" ? "light-content" : "dark-content"
+                  }
+                  backgroundColor={theme.background}
+                />
+                {content}
+              </ScrollView>
+            )}
           </View>
           {showNavigation && !isKeyboardVisible && <BottomTabBar />}
         </View>

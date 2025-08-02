@@ -16,6 +16,7 @@ export type RootStackParamList = {
   Privacy: undefined;
   ChangePassword: undefined;
   AddMealManual: undefined;
+  Language: undefined;
   AddMealFromList: undefined;
   UsernameChange: undefined;
   MealInputMethod: undefined;

@@ -38,6 +38,7 @@ export const schema = appSchema({
         { name: "aiFocusOther", type: "string", isOptional: true },
         { name: "aiNote", type: "string", isOptional: true },
         { name: "surveyComplited", type: "boolean" },
+        { name: "language", type: "string" },
 
         { name: "syncState", type: "string" },
         { name: "lastSyncedAt", type: "string", isOptional: true },

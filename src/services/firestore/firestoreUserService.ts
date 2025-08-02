@@ -267,3 +267,23 @@ export async function exportUserData(uid: string) {
 
   return zipPath;
 }
+
+export async function updateUserLanguageInFirestore(
+  uid: string,
+  language: string
+) {
+  const db = getDb();
+  const userRef = doc(collection(db, USERS_COLLECTION), uid);
+  await updateDoc(userRef, { language });
+}
+
+export async function fetchUserLanguageFromFirestore(
+  uid: string
+): Promise<string | null> {
+  const db = getDb();
+  const userRef = doc(collection(db, USERS_COLLECTION), uid);
+  const docSnap = await getDoc(userRef);
+  if (!docSnap.exists()) return null;
+  const data = docSnap.data() as Partial<UserData>;
+  return data.language ?? null;
+}
