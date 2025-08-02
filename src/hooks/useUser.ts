@@ -9,6 +9,7 @@ import {
   markUserSyncedInFirestore,
   deleteUserInFirestoreWithUsername,
   uploadAndSaveAvatar,
+  changeUsernameService,
 } from "@/src/services/firestore/firestoreUserService";
 import { pickLatest } from "@/src/utils/syncUtils";
 import {
@@ -204,6 +205,26 @@ export function useUser(uid: string) {
     }
   }, [uid]);
 
+  const changeUsername = useCallback(
+    async (newUsername: string, password: string) => {
+      await changeUsernameService({ uid, newUsername, password });
+      const userCollection = database.get("users");
+      const users = await userCollection.query().fetch();
+      const localUser = users.find((u: any) => u.uid === uid);
+      if (localUser) {
+        await database.write(async () => {
+          await localUser.update((u: any) => {
+            u.username = newUsername;
+          });
+        });
+        setUserData((prev) =>
+          prev ? { ...prev, username: newUsername } : prev
+        );
+      }
+    },
+    [uid]
+  );
+
   const deleteUser = useCallback(async () => {
     if (!uid) return;
     await deleteUserInFirestoreWithUsername(uid);
@@ -240,5 +261,6 @@ export function useUser(uid: string) {
     markUserAsSynced,
     deleteUser,
     setAvatar,
+    changeUsername,
   };
 }
