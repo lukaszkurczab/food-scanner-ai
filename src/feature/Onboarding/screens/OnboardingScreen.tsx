@@ -94,7 +94,7 @@ export default function OnboardingScreen({ navigation }: any) {
   if (!isLoaded) return null;
 
   return (
-    <Layout>
+    <Layout showNavigation={false}>
       <ProgressDots step={step} total={STEPS} />
       {step === 1 && (
         <Step1BasicData

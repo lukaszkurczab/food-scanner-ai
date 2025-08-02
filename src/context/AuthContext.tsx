@@ -1,15 +1,24 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { getApp } from "@react-native-firebase/app";
 import { getAuth, onAuthStateChanged } from "@react-native-firebase/auth";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 
 type AuthContextType = {
   user: FirebaseAuthTypes.User | null;
+  setUser: Dispatch<SetStateAction<FirebaseAuthTypes.User | null>>;
   loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  setUser: () => {},
   loading: true,
 });
 
@@ -30,7 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, setUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

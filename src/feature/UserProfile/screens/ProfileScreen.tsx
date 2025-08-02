@@ -6,7 +6,7 @@ import { useUserContext } from "@/src/context/UserContext";
 import { ButtonToggle, InputModal, Layout } from "@/src/components";
 import { navigationRef } from "@/src/navigation/navigate";
 import { UserIcon } from "@/src/components/UserIcon";
-import { getAuth } from "@react-native-firebase/auth";
+import { getAuth, signOut } from "@react-native-firebase/auth";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
 
@@ -33,7 +33,7 @@ export default function UserProfileScreen({ navigation }: any) {
   const handleLogout = async () => {
     try {
       const auth = getAuth();
-      await auth.signOut();
+      await signOut(auth);
     } catch (e) {}
   };
 
@@ -41,10 +41,6 @@ export default function UserProfileScreen({ navigation }: any) {
     setShowDeleteModal(false);
     try {
       await deleteUser(password);
-      navigationRef.current?.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      });
     } catch (e) {
       Alert.alert(t("deleteAccountError"), t("wrongPasswordOrUnknownError"));
     }

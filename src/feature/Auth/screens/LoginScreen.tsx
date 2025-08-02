@@ -9,10 +9,11 @@ import {
   LinkText,
   Layout,
 } from "@/src/components";
-import { useLogin } from "@/src/feature/Auth/hooks/useLogin";
 import NetInfo from "@react-native-community/netinfo";
 import { validateEmail } from "@/src/utils/validation";
 import { Feather } from "@expo/vector-icons";
+import { useAuthContext } from "@/src/context/AuthContext";
+import { useLogin } from "@/src/feature/Auth/hooks/useLogin";
 
 export default function LoginScreen({ navigation }: any) {
   const { t } = useTranslation(["login", "common"]);
@@ -24,7 +25,8 @@ export default function LoginScreen({ navigation }: any) {
   const [touched, setTouched] = useState({ email: false, password: false });
   const [internetError, setInternetError] = useState(false);
 
-  const { login, loading, errors, criticalError, reset } = useLogin(t);
+  const { setUser } = useAuthContext();
+  const { login, loading, errors, criticalError, reset } = useLogin(setUser);
 
   useEffect(() => {
     reset();
@@ -42,11 +44,17 @@ export default function LoginScreen({ navigation }: any) {
   }, []);
 
   const emailError =
-    touched.email && !validateEmail(email) ? t("invalid_email") : errors.email;
+    touched.email && !validateEmail(email)
+      ? t("invalid_email")
+      : errors.email
+      ? t(errors.email)
+      : undefined;
   const passwordError =
     touched.password && password.length < 6
       ? t("invalid_password")
-      : errors.password;
+      : errors.password
+      ? t(errors.password)
+      : undefined;
 
   const isFormValid = !!email && !!password && !emailError && !passwordError;
 
@@ -56,8 +64,9 @@ export default function LoginScreen({ navigation }: any) {
     await login(email.trim(), password);
   };
 
-  let displayCriticalError = criticalError;
+  let displayCriticalError: string | null = null;
   if (internetError) displayCriticalError = t("common:no_internet");
+  else if (criticalError) displayCriticalError = t(criticalError);
 
   const isLoginDisabled = !isFormValid || loading || !!displayCriticalError;
 

@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { getFirebaseAuth } from "@/src/FirebaseConfig";
+import { getApp } from "@react-native-firebase/app";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+} from "@react-native-firebase/auth";
+import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 
 type LoginErrors = {
   email?: string;
@@ -7,7 +12,7 @@ type LoginErrors = {
 };
 type CriticalError = string | null;
 
-export const useLogin = (t: (key: string) => string) => {
+export const useLogin = (setUser: (user: FirebaseAuthTypes.User) => void) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<LoginErrors>({});
   const [criticalError, setCriticalError] = useState<CriticalError>(null);
@@ -18,24 +23,30 @@ export const useLogin = (t: (key: string) => string) => {
     setCriticalError(null);
 
     try {
-      const auth = await getFirebaseAuth();
-      await auth.signInWithEmailAndPassword(email, password);
+      const app = getApp();
+      const auth = getAuth(app);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      setUser(userCredential.user);
     } catch (error: any) {
       if (
         error.code === "auth/too-many-requests" ||
         error.message?.includes("too-many-requests")
       ) {
-        setCriticalError(t("too_many_requests"));
+        setCriticalError("tooManyRequests");
       } else if (
         error.code === "auth/user-not-found" ||
         error.code === "auth/wrong-password" ||
         error.code === "auth/invalid-credential"
       ) {
-        setErrors({ password: t("invalid_email_or_password") });
+        setErrors({ password: "invalidEmailOrPassword" });
       } else if (error.code === "auth/network-request-failed") {
-        setCriticalError(t("no_internet"));
+        setCriticalError("noInternet");
       } else {
-        setCriticalError(t("login_failed"));
+        setCriticalError("loginFailed");
         console.error(error);
       }
     } finally {

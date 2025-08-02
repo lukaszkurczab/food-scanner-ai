@@ -12,7 +12,9 @@ import {
   Checkbox,
 } from "@/src/components";
 import { Feather } from "@expo/vector-icons";
+import { useAuthContext } from "@/src/context/AuthContext";
 import { useRegister } from "@/src/feature/Auth/hooks/useRegister";
+import { validateEmail } from "@/src/utils/validation";
 
 export default function RegisterScreen({ navigation }: any) {
   const { t } = useTranslation(["login", "common"]);
@@ -27,7 +29,10 @@ export default function RegisterScreen({ navigation }: any) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
 
-  const { register, loading, errors } = useRegister();
+  const [emailTouched, setEmailTouched] = useState(false);
+
+  const { setUser } = useAuthContext();
+  const { register, loading, errors } = useRegister(setUser);
 
   React.useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -36,6 +41,9 @@ export default function RegisterScreen({ navigation }: any) {
     return () => unsubscribe();
   }, []);
 
+  const emailLiveError =
+    email && !validateEmail(email) ? t("invalid_email") : undefined;
+
   const isFormDisabled =
     !username ||
     !email ||
@@ -43,9 +51,11 @@ export default function RegisterScreen({ navigation }: any) {
     !confirmPassword ||
     !termsAccepted ||
     loading ||
-    !isConnected;
+    !isConnected ||
+    !!emailLiveError;
 
   const handleSubmit = () => {
+    setEmailTouched(true);
     Keyboard.dismiss();
     register(
       email.trim(),
@@ -91,7 +101,7 @@ export default function RegisterScreen({ navigation }: any) {
         </Text>
 
         {!isConnected && <ErrorBox message={t("common:no_internet")} />}
-        {errors.general && <ErrorBox message={errors.general} />}
+        {errors.general && <ErrorBox message={t(errors.general)} />}
 
         <TextInput
           label={t("username")}
@@ -101,7 +111,7 @@ export default function RegisterScreen({ navigation }: any) {
           textContentType="username"
           placeholder={t("enter_username")}
           onChangeText={setUsername}
-          error={errors.username || false}
+          error={errors.username ? t(errors.username) : undefined}
           accessibilityLabel={t("username")}
           style={{ marginBottom: theme.spacing.md }}
         />
@@ -114,8 +124,15 @@ export default function RegisterScreen({ navigation }: any) {
           keyboardType="email-address"
           textContentType="emailAddress"
           placeholder={t("enter_email", { ns: "login" })}
-          onChangeText={setEmail}
-          error={errors.email || false}
+          onChangeText={(val) => {
+            setEmail(val);
+            setEmailTouched(true);
+          }}
+          onBlur={() => setEmailTouched(true)}
+          error={
+            (emailTouched && emailLiveError) ||
+            (errors.email ? t(errors.email) : undefined)
+          }
           accessibilityLabel={t("email", { ns: "login" })}
           style={{ marginBottom: theme.spacing.md }}
         />
@@ -129,7 +146,7 @@ export default function RegisterScreen({ navigation }: any) {
           placeholder={t("enter_password", { ns: "login" })}
           secureTextEntry={!showPassword}
           onChangeText={setPassword}
-          error={errors.password || false}
+          error={errors.password ? t(errors.password) : undefined}
           accessibilityLabel={t("password", { ns: "login" })}
           icon={renderEyeIcon(showPassword, () => setShowPassword((v) => !v))}
           iconPosition="right"
@@ -145,7 +162,7 @@ export default function RegisterScreen({ navigation }: any) {
           placeholder={t("enter_confirm_password")}
           secureTextEntry={!showConfirm}
           onChangeText={setConfirmPassword}
-          error={errors.confirmPassword || false}
+          error={errors.confirmPassword ? t(errors.confirmPassword) : undefined}
           accessibilityLabel={t("confirm_password")}
           icon={renderEyeIcon(showConfirm, () => setShowConfirm((v) => !v))}
           iconPosition="right"
@@ -204,7 +221,7 @@ export default function RegisterScreen({ navigation }: any) {
               fontSize: theme.typography.size.xs,
             }}
           >
-            {errors.terms}
+            {t(errors.terms)}
           </Text>
         )}
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/src/FirebaseConfig";
 import { doc, setDoc, collection } from "@react-native-firebase/firestore";
 import { isUsernameAvailable } from "@/src/services/firestore/firestoreUserService";
+import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 
 type RegisterErrors = {
   email?: string;
@@ -12,7 +13,9 @@ type RegisterErrors = {
   general?: string;
 };
 
-export const useRegister = () => {
+export const useRegister = (
+  setUser: (user: FirebaseAuthTypes.User) => void
+) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<RegisterErrors>({});
 
@@ -39,41 +42,26 @@ export const useRegister = () => {
   ) => {
     const newErrors: RegisterErrors = {};
 
-    if (!isValidEmail(email)) {
-      newErrors.email = "invalidEmail";
-    }
-
-    if (!username.trim() || username.length < 3) {
-      newErrors.username = "usernameTooShort";
-    }
-
-    if (!isStrongPassword(password)) {
-      newErrors.password = "passwordTooWeak";
-    }
-
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = "passwordsDontMatch";
-    }
-
-    if (!termsAccepted) {
-      newErrors.terms = "mustAcceptTerms";
-    }
+    if (!isValidEmail(email)) newErrors.email = "invalid_email";
+    if (!username.trim() || username.length < 3)
+      newErrors.username = "username_too_short";
+    if (!isStrongPassword(password)) newErrors.password = "password_too_weak";
+    if (password !== confirmPassword)
+      newErrors.confirmPassword = "passwords_dont_match";
+    if (!termsAccepted) newErrors.terms = "must_accept_terms";
 
     setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) {
-      return;
-    }
+    if (Object.keys(newErrors).length > 0) return;
 
     setLoading(true);
     setErrors({});
-
     try {
       const auth = await getFirebaseAuth();
       const firestore = await getFirebaseFirestore();
 
       const usernameUnique = await isUsernameAvailable(username);
       if (!usernameUnique) {
-        setErrors({ username: "usernameTaken" });
+        setErrors({ username: "username_taken" });
         setLoading(false);
         return;
       }
@@ -84,7 +72,6 @@ export const useRegister = () => {
       );
       const user = userCredential.user;
       const userUid = user.uid;
-
       const now = Date.now();
 
       const defaultUserProfile = {
@@ -130,19 +117,18 @@ export const useRegister = () => {
       const usernamesCol = collection(firestore, "usernames");
       const usernameDocRef = doc(usernamesCol, username.trim().toLowerCase());
       await setDoc(usernameDocRef, { uid: userUid, createdAt: now });
+
+      setUser(user);
     } catch (error: any) {
+      console.log(error);
       const errorMessage: RegisterErrors = {};
-
-      if (error.code === "auth/email-already-in-use") {
-        errorMessage.email = "emailInUse";
-      } else if (error.code === "auth/invalid-email") {
-        errorMessage.email = "invalidEmail";
-      } else if (error.code === "auth/weak-password") {
-        errorMessage.password = "passwordTooWeak";
-      } else {
-        errorMessage.general = "registrationFailed";
-      }
-
+      if (error.code === "auth/email-already-in-use")
+        errorMessage.email = "email_in_use";
+      else if (error.code === "auth/invalid-email")
+        errorMessage.email = "invalid_email";
+      else if (error.code === "auth/weak-password")
+        errorMessage.password = "password_too_weak";
+      else errorMessage.general = "registration_failed";
       setErrors(errorMessage);
     } finally {
       setLoading(false);
