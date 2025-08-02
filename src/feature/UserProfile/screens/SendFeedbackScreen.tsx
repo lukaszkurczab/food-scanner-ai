@@ -1,11 +1,15 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import { View, Text, StyleSheet, Image, Pressable, Alert } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
-import { Layout, TextInput } from "@/src/components";
+import { Layout, LongTextInput } from "@/src/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useTranslation } from "react-i18next";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
+import NetInfo from "@react-native-community/netinfo";
+import * as Device from "expo-device";
+import { sendFeedback } from "@/src/services/firestore/firestoreUserService";
+import { useAuthContext } from "@/src/context/AuthContext";
 
 export default function SendFeedbackScreen({ navigation }: any) {
   const theme = useTheme();
@@ -15,9 +19,11 @@ export default function SendFeedbackScreen({ navigation }: any) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
+  const { user } = useAuthContext();
+
   const handlePickAttachment = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: false,
       quality: 0.8,
     });
@@ -27,18 +33,46 @@ export default function SendFeedbackScreen({ navigation }: any) {
   };
 
   const handleSend = async () => {
+    const net = await NetInfo.fetch();
+    if (!net.isConnected) {
+      Alert.alert(
+        t("noInternet", { defaultValue: "No internet connection" }),
+        t("checkConnection", {
+          defaultValue: "Please check your connection and try again.",
+        })
+      );
+      return;
+    }
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
+    try {
+      await sendFeedback({
+        message,
+        attachmentUri: attachment,
+        userUid: user?.uid ?? null,
+        email: user?.email ?? null,
+        deviceInfo: {
+          modelName: Device.modelName,
+          osName: Device.osName,
+          osVersion: Device.osVersion,
+        },
+      });
       setSent(true);
       setMessage("");
       setAttachment(null);
-    }, 1200);
+    } catch (e) {
+      Alert.alert(
+        t("error", { defaultValue: "Error" }),
+        t("feedbackSendError", {
+          defaultValue: "Failed to send feedback. Try again later.",
+        })
+      );
+    }
+    setSending(false);
   };
 
   return (
     <Layout>
-      <View style={{ flex: 1, justifyContent: "center" }}>
+      <View style={{ flex: 1, justifyContent: "space-between" }}>
         <Pressable
           style={{
             marginBottom: 24,
@@ -60,106 +94,106 @@ export default function SendFeedbackScreen({ navigation }: any) {
           </Text>
         </Pressable>
 
-        {!sent ? (
-          <>
-            <Text style={[styles.info, { color: theme.textSecondary }]}>
-              {t("feedbackDescription", {
-                defaultValue:
-                  "Share your thoughts, suggestions, or issues. We appreciate every message!",
-              })}
-            </Text>
+        <View style={{ flexGrow: 1, justifyContent: "center" }}>
+          {!sent ? (
+            <>
+              <Text style={[styles.info, { color: theme.textSecondary }]}>
+                {t("feedbackDescription", {
+                  defaultValue:
+                    "Share your thoughts, suggestions, or issues. We appreciate every message!",
+                })}
+              </Text>
 
-            <TextInput
-              placeholder={t("feedbackPlaceholder", {
-                defaultValue: "Type your message here...",
-              })}
-              value={message}
-              onChangeText={setMessage}
-              style={styles.textarea}
-              inputStyle={{ minHeight: 112, textAlignVertical: "top" }}
-              multiline
-              numberOfLines={5}
-              maxLength={1024}
-            />
+              <LongTextInput
+                placeholder={t("feedbackPlaceholder", {
+                  defaultValue: "Type your message here...",
+                })}
+                value={message}
+                onChangeText={setMessage}
+                style={styles.textarea}
+                inputStyle={{ minHeight: 200, textAlignVertical: "top" }}
+                maxLength={500}
+              />
 
-            <Pressable
-              onPress={handlePickAttachment}
-              style={{ marginTop: 10, marginBottom: 2 }}
-            >
+              <Pressable
+                onPress={handlePickAttachment}
+                style={{ marginTop: 10, marginBottom: 2 }}
+              >
+                <Text
+                  style={{
+                    color: theme.accentSecondary,
+                    fontSize: 16,
+                    fontFamily: theme.typography.fontFamily.bold,
+                  }}
+                >
+                  {t("addAttachment", { defaultValue: "Add attachment" })}
+                </Text>
+              </Pressable>
               <Text
                 style={{
-                  color: theme.accentSecondary,
-                  fontSize: 16,
-                  fontFamily: theme.typography.fontFamily.bold,
+                  color: theme.textSecondary,
+                  fontSize: 13,
+                  marginBottom: 8,
                 }}
               >
-                {t("addAttachment", { defaultValue: "Add attachment" })}
+                {t("addAttachmentDescription", {
+                  defaultValue:
+                    "Optional: attach a screenshot to help us understand the issue",
+                })}
               </Text>
-            </Pressable>
-            <Text
-              style={{
-                color: theme.textSecondary,
-                fontSize: 13,
-                marginBottom: 8,
-              }}
-            >
-              {t("addAttachmentDescription", {
-                defaultValue:
-                  "Optional: attach a screenshot to help us understand the issue",
-              })}
-            </Text>
-            {attachment && (
-              <View style={{ alignItems: "flex-start", marginBottom: 8 }}>
-                <Image
-                  source={{ uri: attachment }}
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: 14,
-                    marginTop: 4,
-                    marginBottom: 2,
-                  }}
-                />
-                <Pressable onPress={() => setAttachment(null)} hitSlop={10}>
-                  <Text style={{ color: theme.error.text, fontSize: 13 }}>
-                    {t("removeAttachment", { defaultValue: "Remove" })}
-                  </Text>
-                </Pressable>
-              </View>
-            )}
+              {attachment && (
+                <View style={{ alignItems: "flex-start", marginBottom: 8 }}>
+                  <Image
+                    source={{ uri: attachment }}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 14,
+                      marginTop: 4,
+                      marginBottom: 2,
+                    }}
+                  />
+                  <Pressable onPress={() => setAttachment(null)} hitSlop={10}>
+                    <Text style={{ color: theme.error.text, fontSize: 13 }}>
+                      {t("removeAttachment", { defaultValue: "Remove" })}
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
 
-            <Text style={{ color: theme.text, marginTop: 8, fontSize: 14 }}>
-              {t("feedbackAppInfo", {
-                defaultValue:
-                  "Your app version and device info will be sent automatically to help us improve CaloriAI.",
-              })}
-            </Text>
+              <Text style={{ color: theme.text, marginTop: 8, fontSize: 14 }}>
+                {t("feedbackAppInfo", {
+                  defaultValue:
+                    "Your app version and device info will be sent automatically to help us improve CaloriAI.",
+                })}
+              </Text>
 
-            <PrimaryButton
-              label={t("send", { defaultValue: "Send" })}
-              style={{ marginTop: 28, minHeight: 58 }}
-              loading={sending}
-              disabled={!message || sending}
-              onPress={handleSend}
-              textStyle={{ fontSize: 20 }}
-            />
-          </>
-        ) : (
-          <View style={{ alignItems: "center", marginTop: 42 }}>
-            <Text
-              style={{
-                color: theme.text,
-                fontSize: 24,
-                fontFamily: theme.typography.fontFamily.bold,
-                textAlign: "center",
-              }}
-            >
-              {t("feedbackThankYou", {
-                defaultValue: "Thank you for your feedback!",
-              })}
-            </Text>
-          </View>
-        )}
+              <PrimaryButton
+                label={t("send", { defaultValue: "Send" })}
+                style={{ marginTop: 36, minHeight: 58 }}
+                loading={sending}
+                disabled={!message || sending}
+                onPress={handleSend}
+                textStyle={{ fontSize: 20 }}
+              />
+            </>
+          ) : (
+            <View style={{ alignItems: "center", marginTop: 42 }}>
+              <Text
+                style={{
+                  color: theme.text,
+                  fontSize: 24,
+                  fontFamily: theme.typography.fontFamily.bold,
+                  textAlign: "center",
+                }}
+              >
+                {t("feedbackThankYou", {
+                  defaultValue: "Thank you for your feedback!",
+                })}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
     </Layout>
   );
@@ -167,12 +201,12 @@ export default function SendFeedbackScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   info: {
-    marginBottom: 22,
+    marginBottom: 36,
     fontSize: 16,
     lineHeight: 22,
   },
   textarea: {
-    marginBottom: 16,
+    marginBottom: 24,
     backgroundColor: "transparent",
   },
 });
