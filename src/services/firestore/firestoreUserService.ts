@@ -9,6 +9,7 @@ import {
   deleteDoc,
   getDocs,
   writeBatch,
+  addDoc,
 } from "@react-native-firebase/firestore";
 import {
   getStorage,
@@ -27,8 +28,10 @@ import type { ExportedUserData, UserData } from "@/src/types";
 import * as FileSystem from "expo-file-system";
 import { zip } from "react-native-zip-archive";
 import * as Sharing from "expo-sharing";
+import { v4 as uuidv4 } from "uuid";
 
 const USERS_COLLECTION = "users";
+const FEEDBACKS_COLLECTION = "feedbacks";
 
 function getDb() {
   const app = getApp();
@@ -286,4 +289,40 @@ export async function fetchUserLanguageFromFirestore(
   if (!docSnap.exists()) return null;
   const data = docSnap.data() as Partial<UserData>;
   return data.language ?? null;
+}
+
+export async function sendFeedback({
+  message,
+  attachmentUri,
+  userUid,
+  email,
+  deviceInfo,
+}: {
+  message: string;
+  attachmentUri?: string | null;
+  userUid?: string | null;
+  email?: string | null;
+  deviceInfo?: any;
+}): Promise<void> {
+  const db = getDb();
+  const feedbackId = uuidv4() as string;
+  let attachmentUrl: string | null = null;
+
+  if (attachmentUri) {
+    const storage = getStorage();
+    const filename = attachmentUri.split("/").pop() || "attachment.jpg";
+    const storageRef = ref(storage, `feedbacks/${feedbackId}/${filename}`);
+    await putFile(storageRef, attachmentUri);
+    attachmentUrl = await getDownloadURL(storageRef);
+  }
+
+  await addDoc(collection(db, FEEDBACKS_COLLECTION), {
+    feedbackId,
+    userUid: userUid || null,
+    email: email || null,
+    message,
+    attachmentUrl,
+    deviceInfo: deviceInfo || null,
+    createdAt: new Date().toISOString(),
+  });
 }

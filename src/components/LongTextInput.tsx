@@ -1,11 +1,5 @@
 import React, { forwardRef } from "react";
-import {
-  View,
-  TextInput as RNTextInput,
-  Text,
-  StyleSheet,
-  Platform,
-} from "react-native";
+import { View, TextInput as RNTextInput, Text } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
 
 type Props = {
@@ -21,7 +15,7 @@ type Props = {
   numberOfLines?: number;
   onBlur?: () => void;
   onFocus?: () => void;
-  maxLength?: number; // pozwalamy nadpisać
+  maxLength?: number;
 };
 
 const DEFAULT_MAX_LENGTH = 250;
