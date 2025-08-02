@@ -27,6 +27,7 @@ import LoadingScreen from "@/src/screens/LoadingScreen";
 import EditUserDataScreen from "@/src/feature/UserProfile/screens/EditUserDataScreen";
 import AvatarCameraScreen from "@/src/feature/UserProfile/screens/AvatarCameraScreen";
 import UsernameChangeScreen from "@/src/feature/UserProfile/screens/UsernameChangeScreen";
+import ChangeEmailScreen from "@/src/feature/UserProfile/screens/ChangeEmailScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -68,6 +69,7 @@ const AppNavigator = () => {
             name="UsernameChange"
             component={UsernameChangeScreen}
           />
+          <Stack.Screen name="ChangeEmail" component={ChangeEmailScreen} />
         </>
       ) : (
         <>
