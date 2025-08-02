@@ -24,6 +24,10 @@ type UserContextType = {
   setAvatar: (photoUri: string) => Promise<void>;
   changeUsername: (newUsername: string, password: string) => Promise<void>;
   changeEmail: (newEmail: string, password: string) => Promise<void>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<void>;
 
   settings: Record<string, string>;
   loadingSettings: boolean;
@@ -64,6 +68,7 @@ const UserContext = createContext<UserContextType>({
   setAvatar: async () => {},
   changeUsername: async () => {},
   changeEmail: async () => {},
+  changePassword: async () => {},
 
   settings: {},
   loadingSettings: true,
@@ -103,6 +108,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     setAvatar,
     changeUsername,
     changeEmail,
+    changePassword,
   } = useUser(uid);
 
   const {
@@ -172,6 +178,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         setAvatar,
         changeUsername,
         changeEmail,
+        changePassword,
 
         settings,
         loadingSettings,

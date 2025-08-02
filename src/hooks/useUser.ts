@@ -11,6 +11,7 @@ import {
   uploadAndSaveAvatar,
   changeUsernameService,
   changeEmailService,
+  changePasswordService,
 } from "@/src/services/firestore/firestoreUserService";
 import { pickLatest } from "@/src/utils/syncUtils";
 import {
@@ -232,6 +233,13 @@ export function useUser(uid: string) {
     [uid]
   );
 
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      await changePasswordService({ currentPassword, newPassword });
+    },
+    []
+  );
+
   const deleteUser = useCallback(async () => {
     if (!uid) return;
     await deleteUserInFirestoreWithUsername(uid);
@@ -270,5 +278,6 @@ export function useUser(uid: string) {
     setAvatar,
     changeUsername,
     changeEmail,
+    changePassword,
   };
 }
