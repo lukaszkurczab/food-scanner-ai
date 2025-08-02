@@ -1,11 +1,5 @@
 import { getApp } from "@react-native-firebase/app";
 import {
-  getStorage,
-  ref,
-  putFile,
-  getDownloadURL,
-} from "@react-native-firebase/storage";
-import {
   getFirestore,
   collection,
   doc,
@@ -16,6 +10,12 @@ import {
   getDocs,
   writeBatch,
 } from "@react-native-firebase/firestore";
+import {
+  getStorage,
+  ref,
+  putFile,
+  getDownloadURL,
+} from "@react-native-firebase/storage";
 import type { UserData } from "@/src/types";
 
 const USERS_COLLECTION = "users";
@@ -32,14 +32,11 @@ async function deleteSubcollection(
   const subcollectionRef = collection(parentDocRef, subcollectionName);
   const snapshot = await getDocs(subcollectionRef);
   const batchSize = 500;
-
   const docs = snapshot.docs;
-
   for (let i = 0; i < docs.length; i += batchSize) {
     const batchDocs = docs.slice(i, i + batchSize);
     const db = getDb();
     const batch = writeBatch(db);
-
     batchDocs.forEach((d: any) => batch.delete(d.ref));
     await batch.commit();
   }
@@ -76,17 +73,14 @@ export async function uploadAndSaveAvatar({
   const avatarRef = ref(storage, remotePath);
   await putFile(avatarRef, localUri);
   const avatarUrl = await getDownloadURL(avatarRef);
-
   const db = getDb();
   const userDocRef = doc(collection(db, USERS_COLLECTION), userUid);
-
   const now = new Date().toISOString();
   await updateDoc(userDocRef, {
     avatarUrl,
     avatarLocalPath: localUri,
     avatarlastSyncedAt: now,
   });
-
   return {
     avatarUrl,
     avatarLocalPath: localUri,
@@ -106,26 +100,38 @@ export async function markUserSyncedInFirestore(
 }
 
 export async function isUsernameAvailable(username: string): Promise<boolean> {
-  try {
-    const app = getApp();
-    const db = getFirestore(app);
-    const usernameRef = doc(db, "usernames", username.trim().toLowerCase());
-    const usernameDoc = await getDoc(usernameRef);
-    return !usernameDoc.exists();
-  } catch (e) {
-    console.log("Username check error:", e);
-    throw e;
-  }
+  const app = getApp();
+  const db = getFirestore(app);
+  const usernameRef = doc(db, "usernames", username.trim().toLowerCase());
+  const usernameDoc = await getDoc(usernameRef);
+  return !usernameDoc.exists();
 }
 
-export async function deleteUserInFirestore(uid: string) {
+export async function deleteUserInFirestoreWithUsername(uid: string) {
   const db = getDb();
+  console.log(1);
   const userDocRef = doc(collection(db, USERS_COLLECTION), uid);
-  const subcollections = ["meals", "chatMessages"];
-
-  for (const sub of subcollections) {
-    await deleteSubcollection(userDocRef, sub);
+  console.log(2);
+  const userDoc = await getDoc(doc(collection(db, USERS_COLLECTION), uid));
+  let username: string | null = null;
+  if (userDoc.exists()) {
+    username = (userDoc.data() as { username?: string })?.username ?? null;
   }
-
+  console.log(3);
+  const subcollections = ["meals", "chatMessages"];
+  for (const sub of subcollections) {
+    console.log(4);
+    try {
+      await deleteSubcollection(userDocRef, sub);
+    } catch (e) {
+      console.log(e);
+    }
+    console.log(5);
+  }
   await deleteDoc(userDocRef);
+  console.log(6);
+  if (username) {
+    const usernameDocRef = doc(db, "usernames", username.trim().toLowerCase());
+    await deleteDoc(usernameDocRef);
+  }
 }

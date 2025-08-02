@@ -7,7 +7,7 @@ import {
   fetchUserFromFirestore,
   updateUserInFirestore,
   markUserSyncedInFirestore,
-  deleteUserInFirestore,
+  deleteUserInFirestoreWithUsername,
   uploadAndSaveAvatar,
 } from "@/src/services/firestore/firestoreUserService";
 import { pickLatest } from "@/src/utils/syncUtils";
@@ -18,7 +18,6 @@ import {
 import { omitLocalUserKeys } from "@/src/utils/omitLocalUserKeys";
 import { savePhotoLocally } from "@/src/utils/savePhotoLocally";
 import * as FileSystem from "expo-file-system";
-import { getFirebaseFirestore } from "@/src/FirebaseConfig";
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -69,7 +68,6 @@ export function useUser(uid: string) {
 
       if (localUser) {
         const sanitizeData = omitLocalUserKeys(data);
-
         await database.write(async () => {
           try {
             await localUser.update((u: any) => {
@@ -88,7 +86,6 @@ export function useUser(uid: string) {
           lastSyncedAt: new Date().toISOString(),
           syncState: "pending",
         };
-
         setUserData(mapRawToUserData(newRaw));
         setsyncState("pending");
       }
@@ -100,9 +97,7 @@ export function useUser(uid: string) {
     async (photoUri: string) => {
       const localPath = FileSystem.documentDirectory + `avatar_${uid}.jpg`;
       const now = new Date().toISOString();
-
       await savePhotoLocally({ photoUri, path: localPath });
-
       try {
         await updateUserProfile({
           avatarLocalPath: localPath,
@@ -112,13 +107,11 @@ export function useUser(uid: string) {
       } catch (e) {
         console.log(e);
       }
-
       try {
         const { avatarUrl, avatarlastSyncedAt } = await uploadAndSaveAvatar({
           userUid: uid,
           localUri: localPath,
         });
-
         await updateUserProfile({
           avatarUrl,
           avatarlastSyncedAt: new Date(avatarlastSyncedAt).toISOString(),
@@ -171,16 +164,13 @@ export function useUser(uid: string) {
     }
 
     let localData = localUser ? mapRawToUserData(localUser._raw) : null;
-
     const netInfo = await NetInfo.fetch();
     if (!netInfo.isConnected) return;
-
     const remoteData = await fetchUserFromFirestore(uid);
 
     if (localData && remoteData) {
       const sanitizeData = omitLocalUserKeys(localData);
       const pick = pickLatest(sanitizeData, remoteData);
-
       if (pick === "remote" && localUser) {
         await database.write(async () => {
           await localUser.update((u: any) => {
@@ -196,7 +186,6 @@ export function useUser(uid: string) {
       }
     } else if (!localData && remoteData) {
       const sanitizeData = omitLocalUserKeys(remoteData);
-
       await database.write(async () => {
         await userCollection.create((user: any) => {
           Object.assign(user, sanitizeData);
@@ -217,20 +206,7 @@ export function useUser(uid: string) {
 
   const deleteUser = useCallback(async () => {
     if (!uid) return;
-    const firestore = await getFirebaseFirestore();
-
-    const userDoc = await firestore.collection("users").doc(uid).get();
-    const username = userDoc.exists() ? userDoc.data()?.username : null;
-
-    await deleteUserInFirestore(uid);
-
-    if (username) {
-      await firestore
-        .collection("usernames")
-        .doc(username.trim().toLowerCase())
-        .delete();
-    }
-
+    await deleteUserInFirestoreWithUsername(uid);
     const userCollection = database.get("users");
     const users = await userCollection.query().fetch();
     const localUser = users.find((u: any) => u.uid === uid);
@@ -239,13 +215,11 @@ export function useUser(uid: string) {
         await localUser.markAsDeleted();
       });
     }
-
     const auth = getAuth();
     const currentUser = auth.currentUser;
     if (currentUser) {
       await deleteAuthUser(currentUser);
     }
-
     setUserData(null);
     setsyncState("pending");
   }, [uid]);
