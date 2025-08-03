@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from "@nozbe/watermelondb";
 
 export const schema = appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: "users",
@@ -16,7 +16,6 @@ export const schema = appSchema({
         { name: "avatarUrl", type: "string", isOptional: true },
         { name: "avatarLocalPath", type: "string", isOptional: true },
         { name: "avatarlastSyncedAt", type: "string", isOptional: true },
-
         { name: "unitsSystem", type: "string" },
         { name: "age", type: "string" },
         { name: "sex", type: "string" },
@@ -39,7 +38,6 @@ export const schema = appSchema({
         { name: "aiNote", type: "string", isOptional: true },
         { name: "surveyComplited", type: "boolean" },
         { name: "language", type: "string" },
-
         { name: "syncState", type: "string" },
         { name: "lastSyncedAt", type: "string", isOptional: true },
       ],
@@ -48,20 +46,20 @@ export const schema = appSchema({
     tableSchema({
       name: "meals",
       columns: [
+        { name: "mealId", type: "string" },
         { name: "userUid", type: "string" },
-        { name: "name", type: "string" },
-        { name: "date", type: "string" },
-        { name: "photoUri", type: "string", isOptional: true },
-        { name: "kcal", type: "number" },
-        { name: "carbs", type: "number" },
-        { name: "fat", type: "number" },
-        { name: "protein", type: "number" },
-        { name: "ingredients", type: "string" },
-        { name: "mealType", type: "string", isOptional: true },
-        { name: "source", type: "string" },
-        { name: "syncState", type: "string" },
-        { name: "lastUpdated", type: "string" },
+        { name: "timestamp", type: "string" },
+        { name: "type", type: "string", isOptional: true },
+        { name: "photoUrl", type: "string", isOptional: true },
+        { name: "notes", type: "string", isOptional: true },
+        { name: "ingredients", type: "string" }, // JSON.stringify
+        { name: "createdAt", type: "string" },
+        { name: "updatedAt", type: "string" },
+        { name: "source", type: "string", isOptional: true },
+        { name: "syncStatus", type: "string", isOptional: true },
+        { name: "tags", type: "string", isOptional: true }, // JSON.stringify
         { name: "deleted", type: "boolean", isOptional: true },
+        { name: "cloudId", type: "string", isOptional: true },
       ],
     }),
 

@@ -6,5 +6,9 @@
   "manualTitle": "Manual input",
   "manualDesc": "Add ingredients and nutrition manually",
   "savedTitle": "Pick saved meal",
-  "savedDesc": "Select a meal you've added before"
+  "savedDesc": "Select a meal you've added before",
+  "continue_draft_title": "Continue started meal?",
+  "continue_draft_message": "You have an unsaved meal draft. Do you want to continue or start over?",
+  "continue": "Continue",
+  "discard": "Discard"
 }
