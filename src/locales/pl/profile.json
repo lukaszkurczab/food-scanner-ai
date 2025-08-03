@@ -47,5 +47,33 @@
   "check_mailbox_desc2": "Jeśli ten adres istnieje w naszym systemie, wkrótce otrzymasz link do zmiany hasła.",
   "back_to_login": "Powrót do logowania",
   "send_again": "Wyślij ponownie",
-  "send_again_info": "Możesz wysłać ponownie za {{seconds}} sekund."
+  "send_again_info": "Możesz wysłać ponownie za {{seconds}} sekund.",
+
+  "manageSubscription": {
+    "title": "Zarządzanie subskrypcją",
+    "yourSubscription": "Twoja subskrypcja",
+    "premium": "Premium",
+    "free": "Darmowa",
+    "renew": "Odnowienie:",
+    "plan": "Plan:",
+    "plan_monthly": "miesięczny",
+    "plan_yearly": "roczny",
+    "lastPayment": "Ostatnia płatność:",
+    "subscriptionStart": "Początek subskrypcji",
+    "subscriptionEnd": "Koniec subskrypcji",
+    "premiumBenefits": "Korzyści premium:",
+    "benefit_unlimitedAiChat": "Nielimitowany AI Chat",
+    "benefitDesc_unlimitedAiChat": "Premium: Bez limitu wiadomości do AI! Natychmiastowa, spersonalizowana pomoc dietetyka AI — kiedy chcesz, ile chcesz.\nDarmowa: Limit 5 wiadomości AI dziennie.",
+    "benefit_fullCloudBackup": "Pełna kopia zapasowa w chmurze",
+    "benefitDesc_fullCloudBackup": "Premium: Automatyczny, nielimitowany backup wszystkich posiłków, ankiet i ustawień. Przywróć pełną historię na dowolnym urządzeniu — bez ograniczeń.\nDarmowa: Backup i przywracanie tylko z ostatnich 30 dni.",
+    "benefit_unlimitedAiMealRecognition": "Nielimitowane rozpoznawanie posiłków AI",
+    "benefitDesc_unlimitedAiMealRecognition": "Premium: Analizuj nieograniczoną liczbę zdjęć posiłków z AI Vision. Natychmiast wykrywaj składniki i makroskładniki w każdym posiłku, bez limitu.\nDarmowa: 1 analiza posiłku dziennie.",
+    "benefit_earlyAccess": "Wczesny dostęp do nowych funkcji",
+    "benefitDesc_earlyAccess": "Premium: Testuj nowe funkcje i narzędzia jako pierwszy. Ekskluzywny wczesny dostęp tylko dla użytkowników premium!\nDarmowa: Nowe funkcje dostępne po oficjalnej premierze; niektóre będą tylko dla premium.",
+    "refundPolicy": "Zasady zwrotów",
+    "refundLink": "https://support.google.com/googleplay/answer/2479637?hl=pl",
+    "cancelSubscription": "Anuluj subskrypcję",
+    "renewSubscription": "Odnów subskrypcję",
+    "startSubscription": "Rozpocznij subskrypcję"
+  }
 }

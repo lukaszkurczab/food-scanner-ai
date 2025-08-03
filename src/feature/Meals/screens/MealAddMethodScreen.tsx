@@ -1,72 +1,134 @@
-import { Text, StyleSheet, View } from "react-native";
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useTheme } from "@/src/theme/index";
+import { useTheme } from "@/src/theme";
 import { RootStackParamList } from "@/src/navigation/navigate";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { FormScreenWrapper, Tile } from "@/src/components/index";
+import { MaterialIcons } from "@expo/vector-icons";
+import { spacing, rounded } from "@/src/theme";
+import { useTranslation } from "react-i18next";
+import { Layout } from "@/src/components";
 
 type MealInputMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
   "MealInputMethod"
 >;
 
+const options = [
+  {
+    key: "ai",
+    icon: "camera-alt",
+    titleKey: "aiTitle",
+    descKey: "aiDesc",
+    onPress: (navigation: any) => navigation.navigate("Camera"),
+  },
+  {
+    key: "manual",
+    icon: "edit",
+    titleKey: "manualTitle",
+    descKey: "manualDesc",
+    onPress: (navigation: any) => navigation.navigate("AddMealManual"),
+  },
+  {
+    key: "saved",
+    icon: "library-books",
+    titleKey: "savedTitle",
+    descKey: "savedDesc",
+    onPress: (navigation: any) => navigation.navigate("AddMealFromList"),
+  },
+];
+
 const MealInputMethodScreen = () => {
   const theme = useTheme();
-  const styles = getStyles(theme);
   const navigation = useNavigation<MealInputMethodNavigationProp>();
+  const { t } = useTranslation("meals");
 
   return (
-    <FormScreenWrapper contentContainerStyle={styles.container}>
-      <Text style={styles.header}>How do you want to add a meal?</Text>
-      <Text style={styles.subText}>Choose your preferred method</Text>
+    <Layout>
+      <Text
+        style={{
+          fontSize: theme.typography.size.xxl,
+          fontWeight: "bold",
+          color: theme.text,
+          textAlign: "center",
+          marginBottom: spacing.md,
+        }}
+      >
+        {t("title", "Add a meal")}
+      </Text>
+      <Text
+        style={{
+          fontSize: theme.typography.size.md,
+          color: theme.textSecondary,
+          textAlign: "center",
+          marginBottom: spacing.xl,
+        }}
+      >
+        {t("subtitle", "Choose how you want to add meal")}
+      </Text>
 
-      <View style={styles.tiles}>
-        <Tile onPress={() => navigation.navigate("Camera")}>
-          <Text style={styles.tileText}>AI Detection</Text>
-        </Tile>
-
-        <Tile onPress={() => navigation.navigate("AddMealManual")}>
-          <Text style={styles.tileText}>Enter Manually</Text>
-        </Tile>
-
-        <Tile onPress={() => navigation.navigate("AddMealFromList")}>
-          <Text style={styles.tileText}>Select From List</Text>
-        </Tile>
+      <View style={{ gap: spacing.xl, flexGrow: 1, justifyContent: "center" }}>
+        {options.map((option) => (
+          <TouchableOpacity
+            key={option.key}
+            activeOpacity={0.85}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: theme.card,
+              borderRadius: rounded.md,
+              padding: spacing.lg,
+              borderWidth: 1.5,
+              borderColor: theme.border,
+              shadowColor: theme.shadow,
+              shadowOpacity: 0.1,
+              shadowOffset: { width: 0, height: 2 },
+              shadowRadius: 12,
+            }}
+            onPress={() => option.onPress(navigation)}
+          >
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: rounded.sm,
+                marginRight: spacing.lg,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <MaterialIcons
+                name={option.icon as any}
+                size={36}
+                color={theme.textSecondary}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: theme.typography.size.lg,
+                  fontWeight: "bold",
+                  color: theme.text,
+                  marginBottom: 4,
+                }}
+              >
+                {t(option.titleKey)}
+              </Text>
+              <Text
+                style={{
+                  fontSize: theme.typography.size.base,
+                  color: theme.textSecondary,
+                  opacity: 0.95,
+                }}
+              >
+                {t(option.descKey)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
       </View>
-    </FormScreenWrapper>
+    </Layout>
   );
 };
-
-const getStyles = (theme: any) =>
-  StyleSheet.create({
-    container: {
-      flexGrow: 1,
-      justifyContent: "center",
-      padding: 16,
-      backgroundColor: theme.background,
-    },
-    header: {
-      fontSize: 28,
-      fontWeight: "700",
-      marginBottom: 8,
-      textAlign: "center",
-      color: theme.primary,
-    },
-    subText: {
-      textAlign: "center",
-      fontSize: 16,
-      marginBottom: 24,
-      color: theme.text,
-    },
-    tiles: {
-      gap: 16,
-    },
-    tileText: {
-      fontSize: 18,
-      fontWeight: "500",
-      color: theme.text,
-      textAlign: "center",
-    },
-  });
 
 export default MealInputMethodScreen;
