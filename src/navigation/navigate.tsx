@@ -14,6 +14,7 @@ export type RootStackParamList = {
   ResetPassword: undefined;
   Terms: undefined;
   Privacy: undefined;
+  ManageSubscription: undefined;
   ChangePassword: undefined;
   AddMealManual: undefined;
   SendFeedback: undefined;

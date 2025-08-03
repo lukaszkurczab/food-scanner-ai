@@ -3,8 +3,7 @@ import { View, Text, Pressable, StyleSheet, Alert, Image } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/src/theme/useTheme";
 import { useUserContext } from "@/src/context/UserContext";
-import { ButtonToggle, InputModal, Layout } from "@/src/components";
-import { UserIcon } from "@/src/components/UserIcon";
+import { ButtonToggle, InputModal, Layout, UserIcon } from "@/src/components";
 import { getAuth, signOut } from "@react-native-firebase/auth";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
@@ -103,7 +102,7 @@ export default function UserProfileScreen({ navigation }: any) {
         accessibilityLabel={t("updateHealthSurvey")}
       />
       <ListItem
-        label={t("manageSubscription")}
+        label={t("manageSubscription.title")}
         onPress={() => navigation.navigate("ManageSubscription")}
         accessibilityLabel={t("manageSubscription")}
       />

@@ -1,0 +1,10 @@
+{
+  "title": "Add a meal",
+  "subtitle": "Choose how you want to add meal",
+  "aiTitle": "Use AI (Photo)",
+  "aiDesc": "Snap a photo of your meal",
+  "manualTitle": "Manual input",
+  "manualDesc": "Add ingredients and nutrition manually",
+  "savedTitle": "Pick saved meal",
+  "savedDesc": "Select a meal you've added before"
+}

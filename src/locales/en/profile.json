@@ -4,7 +4,6 @@
   "userSection": "User",
   "changeUserData": "Edit profile data",
   "updateHealthSurvey": "Update nutrition survey",
-  "manageSubscription": "Manage subscription",
   "downloadYourData": "Download your data",
   "settingsSection": "Settings",
   "toggleDarkMode": "Dark mode",
@@ -47,5 +46,33 @@
   "check_mailbox_desc2": "If this email exists in our system, you'll soon receive a link to change your password.",
   "back_to_login": "Back to login",
   "send_again": "Send again",
-  "send_again_info": "You can send again in {{seconds}} seconds."
+  "send_again_info": "You can send again in {{seconds}} seconds.",
+
+  "manageSubscription": {
+    "title": "Manage subscription",
+    "yourSubscription": "Your subscription",
+    "premium": "Premium",
+    "free": "Free",
+    "renew": "Renew:",
+    "plan": "Plan:",
+    "plan_monthly": "monthly",
+    "plan_yearly": "yearly",
+    "lastPayment": "Last payment:",
+    "subscriptionStart": "Subscription start",
+    "subscriptionEnd": "Subscription end",
+    "premiumBenefits": "Premium benefits:",
+    "benefit_unlimitedAiChat": "Unlimited AI Chat",
+    "benefitDesc_unlimitedAiChat": "Premium: No daily message limits! Get instant, personalized advice from your AI dietitian — as often as you want, any time.\nFree: Limited to 5 AI messages per day.",
+    "benefit_fullCloudBackup": "Full cloud backup",
+    "benefitDesc_fullCloudBackup": "Premium: Automatic, unlimited backup of all your meals, surveys, and preferences. Restore your full history to any device — no restrictions.\nFree: Limited backup and restore (last 30 days only).",
+    "benefit_unlimitedAiMealRecognition": "Unlimited AI meal recognition",
+    "benefitDesc_unlimitedAiMealRecognition": "Premium: Analyze unlimited meal photos with AI Vision. Instantly detect ingredients and nutrition in every meal, as often as you want.\nFree: 1 meal analysis per day.",
+    "benefit_earlyAccess": "Early access to new feature",
+    "benefitDesc_earlyAccess": "Premium: Try upcoming features and tools before anyone else. Exclusive early access for premium members!\nFree: New features become available after official release and some of them will never be able for free users.",
+    "refundPolicy": "Refund policy",
+    "refundLink": "https://support.google.com/googleplay/answer/2479637?hl=pl",
+    "cancelSubscription": "Cancel subscription",
+    "renewSubscription": "Renew subscription",
+    "startSubscription": "Start subscription"
+  }
 }

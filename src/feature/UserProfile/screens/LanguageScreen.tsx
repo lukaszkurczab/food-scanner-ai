@@ -32,7 +32,7 @@ export default function LanguageScreen({ navigation }: any) {
 
   return (
     <Layout disableScroll>
-      <View style={{ paddingTop: theme.spacing.lg, flex: 1 }}>
+      <View style={{ flex: 1 }}>
         <Pressable
           onPress={() => navigation.goBack()}
           hitSlop={12}

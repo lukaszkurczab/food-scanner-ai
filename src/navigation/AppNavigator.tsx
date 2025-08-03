@@ -32,6 +32,7 @@ import ChangeEmailCheckMailboxScreen from "@/src/feature/UserProfile/screens/Cha
 import ChangePasswordScreen from "@/src/feature/UserProfile/screens/ChangePasswordScreen";
 import LanguageScreen from "@/src/feature/UserProfile/screens/LanguageScreen";
 import SendFeedbackScreen from "@/src/feature/UserProfile/screens/SendFeedbackScreen";
+import ManageSubscriptionScreen from "@/src/feature/UserProfile/screens/ManageSubscriptionScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -78,6 +79,10 @@ const AppNavigator = () => {
           <Stack.Screen
             name="ChangeEmailCheckMailbox"
             component={ChangeEmailCheckMailboxScreen}
+          />
+          <Stack.Screen
+            name="ManageSubscription"
+            component={ManageSubscriptionScreen}
           />
           <Stack.Screen
             name="ChangePassword"

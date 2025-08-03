@@ -1,0 +1,10 @@
+{
+  "title": "Dodaj posiłek",
+  "subtitle": "Wybierz, jak chcesz dodać posiłek",
+  "aiTitle": "Użyj AI (zdjęcie)",
+  "aiDesc": "Zrób zdjęcie swojego posiłku",
+  "manualTitle": "Wpisz ręcznie",
+  "manualDesc": "Dodaj składniki i wartości odżywcze ręcznie",
+  "savedTitle": "Wybierz z zapisanych",
+  "savedDesc": "Wybierz posiłek, który wcześniej zapisałeś"
+}
