@@ -210,7 +210,6 @@ export default function AvatarCameraScreen({
               style={({ pressed }) => [
                 styles.shutterButton,
                 {
-                  borderColor: theme.text,
                   opacity: pressed ? 0.7 : 1,
                   backgroundColor: "transparent",
                 },
@@ -252,5 +251,6 @@ const styles = StyleSheet.create({
     borderRadius: 34,
     borderWidth: 4,
     backgroundColor: "transparent",
+    borderColor: "white",
   },
 });

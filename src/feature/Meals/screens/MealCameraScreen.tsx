@@ -1,105 +1,215 @@
-import { useEffect, useRef, useState } from "react";
-import { View, Image } from "react-native";
+import React, { useRef, useState, useEffect } from "react";
+import { View, StyleSheet, Pressable } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useNavigation } from "@react-navigation/native";
-import { PermissionRequestView, ConfirmButtons } from "@/src/components";
-import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
+import { useTheme } from "@/src/theme/useTheme";
+import { useMealContext } from "@/src/context/MealContext";
+import PhotoPreview from "@/src/components/PhotoPreview";
 
-const MealCameraScreen = () => {
+type MealCameraScreenProps = {
+  onPhotoTaken?: (uri: string) => void;
+  frameSize?: number;
+  cornerLength?: number;
+  cornerThickness?: number;
+  navigation: any;
+};
+
+export default function MealCameraScreen({
+  frameSize = 220,
+  cornerLength = 48,
+  cornerThickness = 8,
+  navigation,
+}: MealCameraScreenProps) {
+  const theme = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
-  const navigation = useNavigation<any>();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isTakingPhoto, setIsTakingPhoto] = useState(false);
-  const [torchOn, setTorchOn] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { updateMeal, setLastScreen } = useMealContext();
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener("blur", () => {
-      setPhotoUri(null);
-    });
-
-    return unsubscribe;
-  }, [navigation]);
+    setLastScreen("MealCamera");
+  }, [setLastScreen]);
 
   const handleTakePicture = async () => {
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
     setIsTakingPhoto(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
-      if (photo?.uri) {
-        setPhotoUri(photo.uri);
-      }
+      if (photo?.uri) setPhotoUri(photo.uri);
     } catch (err) {
-      console.error("Error taking picture:", err);
     } finally {
       setIsTakingPhoto(false);
     }
   };
 
-  const handleAccept = () => {
-    if (photoUri)
-      navigation.navigate("ReviewIngredients", {
-        image: photoUri,
-        id: uuidv4(),
-      });
+  const handleAccept = async () => {
+    if (!photoUri) return;
+    setIsLoading(true);
+    const id = uuidv4();
+    await updateMeal({
+      photoUrl: photoUri,
+      mealId: id,
+      syncState: "pending",
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    });
+    await setLastScreen("ReviewIngredients");
+    setIsLoading(false);
+    navigation.navigate("ReviewIngredients", { image: photoUri, id });
   };
 
-  const handleReject = () => {
-    setPhotoUri(null);
-  };
+  const handleRetake = () => setPhotoUri(null);
 
-  if (!permission) return <View />;
-
+  if (!permission)
+    return <View style={{ flex: 1, backgroundColor: theme.background }} />;
   if (!permission.granted) {
     return (
-      <PermissionRequestView
-        message="Camera access is required to take photos"
-        onPress={requestPermission}
-      />
+      <View
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      ></View>
     );
   }
 
   if (photoUri) {
     return (
-      <View style={{ flex: 1 }}>
-        <Image
-          source={{ uri: photoUri }}
-          style={{ flex: 1 }}
-          resizeMode="cover"
-        />
-        <ConfirmButtons onAccept={handleAccept} onReject={handleReject} />
-      </View>
+      <PhotoPreview
+        photoUri={photoUri}
+        onRetake={handleRetake}
+        onAccept={handleAccept}
+        isLoading={isLoading}
+      />
     );
   }
 
   return (
     <View style={{ flex: 1 }}>
-      <CameraView
-        ref={cameraRef}
-        style={{ flex: 1 }}
-        facing="back"
-        enableTorch={torchOn}
-        onCameraReady={() => setIsCameraReady(true)}
-      />
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "transparent",
-          position: "absolute",
-          bottom: 0,
-          left: "50%",
-          transform: [{ translateX: -50 }],
-          justifyContent: "flex-end",
-          alignItems: "center",
-          paddingBottom: 30,
-          gap: 16,
-        }}
-      ></View>
+      <View style={{ flex: 1, backgroundColor: theme.background }}>
+        <CameraView
+          ref={cameraRef}
+          style={{ flex: 1 }}
+          onCameraReady={() => setIsCameraReady(true)}
+        />
+        <View style={StyleSheet.absoluteFill}>
+          <View style={styles.overlay} pointerEvents="none">
+            <View
+              style={[
+                styles.corner,
+                {
+                  borderLeftWidth: cornerThickness,
+                  borderTopWidth: cornerThickness,
+                  borderColor: theme.textSecondary,
+                  top: `50%`,
+                  left: `50%`,
+                  marginLeft: -frameSize / 2,
+                  marginTop: -frameSize / 2,
+                  width: cornerLength,
+                  height: cornerLength,
+                  borderTopLeftRadius: 18,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.corner,
+                {
+                  borderRightWidth: cornerThickness,
+                  borderTopWidth: cornerThickness,
+                  borderColor: theme.textSecondary,
+                  top: `50%`,
+                  left: `50%`,
+                  marginLeft: frameSize / 2 - cornerLength,
+                  marginTop: -frameSize / 2,
+                  width: cornerLength,
+                  height: cornerLength,
+                  borderTopRightRadius: 18,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.corner,
+                {
+                  borderLeftWidth: cornerThickness,
+                  borderBottomWidth: cornerThickness,
+                  borderColor: theme.textSecondary,
+                  top: `50%`,
+                  left: `50%`,
+                  marginLeft: -frameSize / 2,
+                  marginTop: frameSize / 2 - cornerLength,
+                  width: cornerLength,
+                  height: cornerLength,
+                  borderBottomLeftRadius: 18,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.corner,
+                {
+                  borderRightWidth: cornerThickness,
+                  borderBottomWidth: cornerThickness,
+                  borderColor: theme.textSecondary,
+                  top: `50%`,
+                  left: `50%`,
+                  marginLeft: frameSize / 2 - cornerLength,
+                  marginTop: frameSize / 2 - cornerLength,
+                  width: cornerLength,
+                  height: cornerLength,
+                  borderBottomRightRadius: 18,
+                },
+              ]}
+            />
+          </View>
+          <View style={styles.shutterWrapper}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.shutterButton,
+                {
+                  opacity: pressed ? 0.7 : 1,
+                  backgroundColor: "transparent",
+                },
+              ]}
+              onPress={handleTakePicture}
+              disabled={isTakingPhoto}
+            />
+          </View>
+        </View>
+      </View>
     </View>
   );
-};
+}
 
-export default MealCameraScreen;
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+  },
+  corner: {
+    position: "absolute",
+    backgroundColor: "transparent",
+  },
+  shutterWrapper: {
+    position: "absolute",
+    bottom: 48,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  shutterButton: {
+    borderColor: "white",
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 4,
+    backgroundColor: "transparent",
+  },
+});
