@@ -32,7 +32,7 @@ export const parseMarkdownToReactNative = (text: string, theme: any) => {
             fontSize: theme.typography.size.xl,
             fontFamily: theme.typography.fontFamily.bold,
             color: theme.text,
-            marginTop: theme.spacing.lg,
+            marginTop: theme.spacing.md,
             marginBottom: theme.spacing.md,
             textAlign: "center",
           }}

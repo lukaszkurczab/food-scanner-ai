@@ -75,5 +75,17 @@
     "cancelSubscription": "Anuluj subskrypcję",
     "renewSubscription": "Odnów subskrypcję",
     "startSubscription": "Rozpocznij subskrypcję"
-  }
+  },
+  "change_password": "Zmień hasło",
+  "old_password": "Obecne hasło",
+  "enter_current_password": "Wpisz obecne hasło",
+  "new_password": "Nowe hasło",
+  "enter_new_password": "Wpisz nowe hasło",
+  "confirm_new_password": "Powtórz nowe hasło",
+  "repeat_new_password": "Powtórz nowe hasło",
+  "password_min_length": "Hasło musi mieć co najmniej {{count}} znaków",
+  "passwords_do_not_match": "Hasła nie są takie same",
+  "new_password_must_be_different": "Nowe hasło musi różnić się od obecnego",
+  "invalid_current_password": "Nieprawidłowe obecne hasło",
+  "weak_password": "Nowe hasło jest zbyt słabe"
 }

@@ -74,5 +74,17 @@
     "cancelSubscription": "Cancel subscription",
     "renewSubscription": "Renew subscription",
     "startSubscription": "Start subscription"
-  }
+  },
+  "change_password": "Change password",
+  "old_password": "Current password",
+  "enter_current_password": "Enter your current password",
+  "new_password": "New password",
+  "enter_new_password": "Enter a new password",
+  "confirm_new_password": "Repeat new password",
+  "repeat_new_password": "Repeat new password",
+  "password_min_length": "Password must be at least {{count}} characters",
+  "passwords_do_not_match": "Passwords do not match",
+  "new_password_must_be_different": "New password must be different from current password",
+  "invalid_current_password": "Invalid current password",
+  "weak_password": "The new password is too weak"
 }

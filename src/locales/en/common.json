@@ -7,5 +7,8 @@
   "camera_grant_access": "Grant Access",
   "camera_take_photo": "Take photo",
   "camera_retake": "Retake",
-  "camera_use_photo": "Use photo"
+  "camera_use_photo": "Use photo",
+  "default_error": "Something went wrong. Please try again.",
+  "cancel": "Cansel",
+  "confirm": "Confirm"
 }

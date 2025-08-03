@@ -56,7 +56,7 @@ export const Layout = ({
           margin: theme.spacing.lg,
           padding: theme.spacing.lg,
           justifyContent: "center",
-          paddingBottom: 62,
+          paddingBottom: showNavigation ? 62 : 32,
           minHeight: Dimensions.get("window").height - 64,
         },
       ]}
