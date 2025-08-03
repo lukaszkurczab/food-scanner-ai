@@ -19,10 +19,6 @@ export const ScrollableBox: React.FC<Props> = ({
     <View
       style={[
         {
-          borderRadius: theme.rounded.md,
-          backgroundColor: theme.background,
-          borderWidth: 1,
-          borderColor: theme.border,
           marginBottom: theme.spacing.xl,
         },
         style,
@@ -32,10 +28,9 @@ export const ScrollableBox: React.FC<Props> = ({
         contentContainerStyle={[{ paddingBottom: 8 }, contentContainerStyle]}
         showsVerticalScrollIndicator
         bounces
+        nestedScrollEnabled={true}
       >
-        <View style={{ flexGrow: 1, margin: theme.spacing.md }}>
-          {children}
-        </View>
+        <View style={{ flexGrow: 1 }}>{children}</View>
       </ScrollView>
     </View>
   );
