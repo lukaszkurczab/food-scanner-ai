@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/src/theme";
@@ -8,6 +8,9 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { spacing, rounded } from "@/src/theme";
 import { useTranslation } from "react-i18next";
 import { Layout } from "@/src/components";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Modal } from "@/src/components/Modal";
+import { STORAGE_KEY, useMealContext } from "@/src/context/MealContext";
 
 type MealInputMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -20,28 +23,62 @@ const options = [
     icon: "camera-alt",
     titleKey: "aiTitle",
     descKey: "aiDesc",
-    onPress: (navigation: any) => navigation.navigate("Camera"),
+    screen: "MealCamera",
   },
   {
     key: "manual",
     icon: "edit",
     titleKey: "manualTitle",
     descKey: "manualDesc",
-    onPress: (navigation: any) => navigation.navigate("AddMealManual"),
+    screen: "AddMealManual",
   },
   {
     key: "saved",
     icon: "library-books",
     titleKey: "savedTitle",
     descKey: "savedDesc",
-    onPress: (navigation: any) => navigation.navigate("AddMealFromList"),
+    screen: "AddMealFromList",
   },
 ];
 
 const MealInputMethodScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation<MealInputMethodNavigationProp>();
+  const { lastScreen, loadLastScreen } = useMealContext();
   const { t } = useTranslation("meals");
+
+  const [showModal, setShowModal] = useState(false);
+  const [draftExists, setDraftExists] = useState(false);
+
+  const checkDraft = useCallback(async () => {
+    const draft = await AsyncStorage.getItem(STORAGE_KEY);
+    setDraftExists(!!draft);
+    if (draftExists) loadLastScreen;
+  }, []);
+
+  useEffect(() => {
+    checkDraft();
+  }, [checkDraft]);
+
+  const handleOptionPress = (screen: string) => {
+    if (draftExists) {
+      setShowModal(true);
+    } else {
+      navigation.navigate(screen as any);
+    }
+  };
+
+  const handleContinue = async () => {
+    setShowModal(false);
+
+    navigation.navigate(lastScreen as any);
+  };
+
+  const handleDiscard = async () => {
+    await AsyncStorage.removeItem("current_meal_draft");
+    setShowModal(false);
+    setDraftExists(false);
+  };
 
   return (
     <Layout>
@@ -54,7 +91,7 @@ const MealInputMethodScreen = () => {
           marginBottom: spacing.md,
         }}
       >
-        {t("title", "Add a meal")}
+        {t("title")}
       </Text>
       <Text
         style={{
@@ -64,10 +101,17 @@ const MealInputMethodScreen = () => {
           marginBottom: spacing.xl,
         }}
       >
-        {t("subtitle", "Choose how you want to add meal")}
+        {t("subtitle")}
       </Text>
 
-      <View style={{ gap: spacing.xl, flexGrow: 1, justifyContent: "center" }}>
+      <View
+        style={{
+          gap: spacing.xl,
+          flexGrow: 1,
+          justifyContent: "flex-start",
+          paddingTop: spacing.xl,
+        }}
+      >
         {options.map((option) => (
           <TouchableOpacity
             key={option.key}
@@ -85,7 +129,7 @@ const MealInputMethodScreen = () => {
               shadowOffset: { width: 0, height: 2 },
               shadowRadius: 12,
             }}
-            onPress={() => option.onPress(navigation)}
+            onPress={() => handleOptionPress(option.screen)}
           >
             <View
               style={{
@@ -127,6 +171,17 @@ const MealInputMethodScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
+
+      <Modal
+        visible={showModal}
+        title={t("continue_draft_title")}
+        message={t("continue_draft_message")}
+        primaryActionLabel={t("continue")}
+        onPrimaryAction={handleContinue}
+        secondaryActionLabel={t("discard")}
+        onSecondaryAction={handleDiscard}
+        onClose={() => setShowModal(false)}
+      />
     </Layout>
   );
 };

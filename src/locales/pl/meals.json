@@ -6,5 +6,9 @@
   "manualTitle": "Wpisz ręcznie",
   "manualDesc": "Dodaj składniki i wartości odżywcze ręcznie",
   "savedTitle": "Wybierz z zapisanych",
-  "savedDesc": "Wybierz posiłek, który wcześniej zapisałeś"
+  "savedDesc": "Wybierz posiłek, który wcześniej zapisałeś",
+  "continue_draft_title": "Kontynuować rozpoczęty posiłek?",
+  "continue_draft_message": "Masz niezapisany posiłek w trakcie dodawania. Czy chcesz kontynuować czy zacząć od nowa?",
+  "continue": "Kontynuuj",
+  "discard": "Porzuć"
 }

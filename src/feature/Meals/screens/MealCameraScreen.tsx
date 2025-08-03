@@ -3,11 +3,10 @@ import { View, Image } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useNavigation } from "@react-navigation/native";
 import { PermissionRequestView, ConfirmButtons } from "@/src/components";
-import { CaptureButton, TorchToggle } from "../components";
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
 
-const CameraScreen = () => {
+const MealCameraScreen = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const navigation = useNavigation<any>();
@@ -98,12 +97,9 @@ const CameraScreen = () => {
           paddingBottom: 30,
           gap: 16,
         }}
-      >
-        <TorchToggle on={torchOn} toggle={() => setTorchOn((v) => !v)} />
-        <CaptureButton onPress={handleTakePicture} disabled={isTakingPhoto} />
-      </View>
+      ></View>
     </View>
   );
 };
 
-export default CameraScreen;
+export default MealCameraScreen;
