@@ -14,12 +14,14 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import * as ImageManipulator from "expo-image-manipulator";
 
 type PhotoPreviewProps = {
   photoUri: string;
   onRetake: () => void;
-  onAccept: () => void;
+  onAccept: (optimizedUri: string) => void;
   isLoading?: boolean;
+  noCrop?: boolean;
 };
 
 const CROP_SIZE = 340;
@@ -29,6 +31,7 @@ export default function PhotoPreview({
   onRetake,
   onAccept,
   isLoading = false,
+  noCrop = false,
 }: PhotoPreviewProps) {
   const theme = useTheme();
   const { t } = useTranslation("common");
@@ -49,18 +52,20 @@ export default function PhotoPreview({
     RNImage.getSize(photoUri, (width, height) => {
       setImageWidth(width);
       setImageHeight(height);
-      const scaleW = CROP_SIZE / width;
-      const scaleH = CROP_SIZE / height;
-      const min = Math.max(scaleW, scaleH);
-      setMinScale(min);
-      scale.value = min;
-      savedScale.value = min;
-      translateX.value = 0;
-      translateY.value = 0;
-      savedTranslateX.value = 0;
-      savedTranslateY.value = 0;
+      if (!noCrop) {
+        const scaleW = CROP_SIZE / width;
+        const scaleH = CROP_SIZE / height;
+        const min = Math.max(scaleW, scaleH);
+        setMinScale(min);
+        scale.value = min;
+        savedScale.value = min;
+        translateX.value = 0;
+        translateY.value = 0;
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+      }
     });
-  }, [photoUri]);
+  }, [photoUri, noCrop]);
 
   function clamp(val: number, min: number, max: number) {
     "worklet";
@@ -68,6 +73,7 @@ export default function PhotoPreview({
   }
 
   const pan = Gesture.Pan()
+    .enabled(!noCrop)
     .onBegin(() => {
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
@@ -86,6 +92,7 @@ export default function PhotoPreview({
     });
 
   const pinch = Gesture.Pinch()
+    .enabled(!noCrop)
     .onBegin(() => {
       savedScale.value = scale.value;
     })
@@ -114,18 +121,45 @@ export default function PhotoPreview({
     ],
   }));
 
+  const handleAccept = async () => {
+    let outUri = photoUri;
+    try {
+      const manipulated = await ImageManipulator.manipulateAsync(
+        photoUri,
+        [{ resize: { width: 1024 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      outUri = manipulated.uri;
+    } catch (err) {
+      outUri = photoUri;
+    }
+    onAccept(outUri);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.cropBox}>
-        <GestureDetector gesture={composed}>
-          <View style={styles.centerContent}>
-            <Animated.Image
-              source={{ uri: photoUri }}
-              style={[styles.image, animatedImageStyle]}
-              resizeMode="cover"
-            />
-          </View>
-        </GestureDetector>
+        {noCrop ? (
+          <RNImage
+            source={{ uri: photoUri }}
+            style={{
+              width: "100%",
+              height: "100%",
+              resizeMode: "contain",
+              borderRadius: 40,
+            }}
+          />
+        ) : (
+          <GestureDetector gesture={composed}>
+            <View style={styles.centerContent}>
+              <Animated.Image
+                source={{ uri: photoUri }}
+                style={[styles.image, animatedImageStyle]}
+                resizeMode="cover"
+              />
+            </View>
+          </GestureDetector>
+        )}
       </View>
       <Pressable
         onPress={onRetake}
@@ -148,7 +182,7 @@ export default function PhotoPreview({
         </Text>
       </Pressable>
       <Pressable
-        onPress={onAccept}
+        onPress={handleAccept}
         disabled={isLoading}
         style={[
           styles.button,
@@ -199,9 +233,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  image: {
-    // bez absolute!
-  },
+  image: {},
   button: {
     width: "100%",
     paddingVertical: 16,
