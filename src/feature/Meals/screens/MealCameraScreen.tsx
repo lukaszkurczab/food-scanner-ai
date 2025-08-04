@@ -12,9 +12,6 @@ import { useRoute } from "@react-navigation/native";
 
 type MealCameraScreenProps = {
   navigation: any;
-  frameSize?: number;
-  cornerLength?: number;
-  cornerThickness?: number;
 };
 
 export default function MealCameraScreen({
@@ -29,14 +26,16 @@ export default function MealCameraScreen({
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { updateMeal, setLastScreen } = useMealContext();
+  const { meal, setMeal, updateMeal, setPhotoUrl, setLastScreen } =
+    useMealContext();
   const { t } = useTranslation("meals");
   const route = useRoute<any>();
 
   const routeId = route.params?.id as string | undefined;
   const attemptFromRoute = route.params?.attempt as number | undefined;
+  const skipDetection = !!route.params?.skipDetection;
 
-  const [id] = useState<string>(() => routeId ?? uuidv4());
+  const mealId = meal?.mealId || routeId || uuidv4();
   const attempt = attemptFromRoute ?? 1;
 
   useEffect(() => {
@@ -59,14 +58,33 @@ export default function MealCameraScreen({
     setIsLoading(true);
 
     try {
-      await updateMeal({
-        photoUrl: photoUri,
-        mealId: id,
-        syncState: "pending",
-        updatedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      });
+      if (!meal) {
+        setMeal({
+          ...{
+            mealId,
+            photoUrl: photoUri,
+            ingredients: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            syncState: "pending",
+            tags: [],
+            deleted: false,
+            notes: null,
+            type: null,
+            timestamp: "",
+            source: null,
+          },
+        });
+      } else {
+        updateMeal({ photoUrl: photoUri, mealId });
+      }
       await setLastScreen("ReviewIngredients");
+
+      if (skipDetection) {
+        setIsLoading(false);
+        navigation.replace("ReviewIngredients");
+        return;
+      }
 
       const ingredients = await detectIngredientsWithVision(photoUri);
 
@@ -75,24 +93,21 @@ export default function MealCameraScreen({
       if (!ingredients || ingredients.length === 0) {
         navigation.replace("IngredientsNotRecognized", {
           image: photoUri,
-          id,
+          id: mealId,
           attempt,
         });
         return;
       }
-      navigation.replace("ReviewIngredients", {
-        image: photoUri,
-        id,
-        ingredients,
-      });
+      updateMeal({ ingredients, mealId, photoUrl: photoUri });
+      navigation.replace("ReviewIngredients");
     } catch (error: any) {
       setIsLoading(false);
       if (error?.name === "AbortError") {
-        navigation.replace("NoInternet", { image: photoUri, id });
+        navigation.replace("NoInternet", { image: photoUri, id: mealId });
       } else {
         navigation.replace("IngredientsNotRecognized", {
           image: photoUri,
-          id,
+          id: mealId,
           attempt,
         });
       }
@@ -166,7 +181,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  corner: { position: "absolute", backgroundColor: "transparent" },
   shutterWrapper: {
     position: "absolute",
     bottom: 48,

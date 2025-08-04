@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   ScrollView,
   Pressable,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/src/theme/useTheme";
 import { PrimaryButton, SecondaryButton } from "@/src/components";
 import { IngredientBox } from "@/src/components/IngredientBox";
@@ -16,28 +16,22 @@ import { useMealContext } from "@/src/context/MealContext";
 
 export default function ReviewIngredientsScreen() {
   const navigation = useNavigation<any>();
-  const route = useRoute<any>();
   const theme = useTheme();
-  const { meal, removeIngredient, clearMeal, setLastScreen, saveDraft } =
-    useMealContext();
-
-  useEffect(() => {
-    setLastScreen("ReviewIngredients");
-  }, [setLastScreen]);
+  const { meal, removeIngredient, clearMeal, saveDraft } = useMealContext();
 
   const ingredients = meal?.ingredients ?? [];
-  const image = meal?.photoUrl ?? route.params?.image ?? null;
+  const image = meal?.photoUrl ?? null;
 
   const handleAddPhoto = () => {
-    navigation.replace("MealCamera", { id: meal?.mealId });
+    navigation.replace("MealCamera", { skipDetection: true });
   };
 
   const handleAddIngredient = () => {
-    navigation.navigate("AddMealManual", { id: meal?.mealId });
+    navigation.navigate("AddMealManual");
   };
 
   const handleEditIngredient = (idx: number) => {
-    navigation.navigate("AddMealManual", { id: meal?.mealId, editIndex: idx });
+    navigation.navigate("AddMealManual", { editIndex: idx });
   };
 
   const handleRemoveIngredient = (idx: number) => {
@@ -46,7 +40,7 @@ export default function ReviewIngredientsScreen() {
   };
 
   const handleContinue = () => {
-    navigation.navigate("Result", { id: meal?.mealId });
+    navigation.navigate("Result");
   };
 
   const handleStartOver = () => {
@@ -56,7 +50,7 @@ export default function ReviewIngredientsScreen() {
 
   useEffect(() => {
     saveDraft();
-  }, [ingredients, image]);
+  }, [ingredients, image, saveDraft]);
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
@@ -64,7 +58,6 @@ export default function ReviewIngredientsScreen() {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Foto lub placeholder */}
         <View style={styles.imageWrapper}>
           {image ? (
             <Image
@@ -91,7 +84,6 @@ export default function ReviewIngredientsScreen() {
           )}
         </View>
 
-        {/* Składniki */}
         {ingredients.map((ing, idx) => (
           <IngredientBox
             key={idx}
@@ -101,7 +93,6 @@ export default function ReviewIngredientsScreen() {
           />
         ))}
 
-        {/* Dodaj składnik */}
         <SecondaryButton
           label="+ Add ingredient"
           onPress={handleAddIngredient}
