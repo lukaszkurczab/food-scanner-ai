@@ -38,3 +38,4 @@ export * from "./BottomTabBar";
 export * from "./ButtonToggle";
 export * from "./InputModal";
 export * from "./UserIcon";
+export * from "./ErrorButton";

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, Alert } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/src/theme/useTheme";
@@ -8,6 +8,7 @@ import PhotoPreview from "@/src/components/PhotoPreview";
 import Loader from "../components/Loader";
 import { useTranslation } from "react-i18next";
 import { detectIngredientsWithVision } from "@/src/services/visionService";
+import { useRoute } from "@react-navigation/native";
 
 type MealCameraScreenProps = {
   navigation: any;
@@ -20,7 +21,7 @@ export default function MealCameraScreen({
   navigation,
 }: MealCameraScreenProps) {
   const theme = useTheme();
-  const [permission, requestPermission] = useCameraPermissions();
+  const [permission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -30,6 +31,13 @@ export default function MealCameraScreen({
 
   const { updateMeal, setLastScreen } = useMealContext();
   const { t } = useTranslation("meals");
+  const route = useRoute<any>();
+
+  const routeId = route.params?.id as string | undefined;
+  const attemptFromRoute = route.params?.attempt as number | undefined;
+
+  const [id] = useState<string>(() => routeId ?? uuidv4());
+  const attempt = attemptFromRoute ?? 1;
 
   useEffect(() => {
     setLastScreen("MealCamera");
@@ -49,7 +57,6 @@ export default function MealCameraScreen({
   const handleAccept = async () => {
     if (!photoUri) return;
     setIsLoading(true);
-    const id = uuidv4();
 
     try {
       await updateMeal({
@@ -65,12 +72,12 @@ export default function MealCameraScreen({
 
       setIsLoading(false);
 
-      if (!ingredients) {
-        navigation.replace("IngredientsNotRecognized", { image: photoUri, id });
-        return;
-      }
-      if (ingredients.length === 0) {
-        navigation.replace("IngredientsNotRecognized", { image: photoUri, id });
+      if (!ingredients || ingredients.length === 0) {
+        navigation.replace("IngredientsNotRecognized", {
+          image: photoUri,
+          id,
+          attempt,
+        });
         return;
       }
       navigation.replace("ReviewIngredients", {
@@ -83,7 +90,11 @@ export default function MealCameraScreen({
       if (error?.name === "AbortError") {
         navigation.replace("NoInternet", { image: photoUri, id });
       } else {
-        navigation.replace("IngredientsNotRecognized", { image: photoUri, id });
+        navigation.replace("IngredientsNotRecognized", {
+          image: photoUri,
+          id,
+          attempt,
+        });
       }
     }
   };
@@ -129,10 +140,7 @@ export default function MealCameraScreen({
           onCameraReady={() => setIsCameraReady(true)}
         />
         <View style={StyleSheet.absoluteFill}>
-          <View style={styles.overlay} pointerEvents="none">
-            {/* Róg kadru */}
-            {/* ... (Twój kod z rogami) */}
-          </View>
+          <View style={styles.overlay} pointerEvents="none"></View>
           <View style={styles.shutterWrapper}>
             <Pressable
               style={({ pressed }) => [
