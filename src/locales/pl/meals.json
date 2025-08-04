@@ -10,5 +10,7 @@
   "continue_draft_title": "Kontynuować rozpoczęty posiłek?",
   "continue_draft_message": "Masz niezapisany posiłek w trakcie dodawania. Czy chcesz kontynuować czy zacząć od nowa?",
   "continue": "Kontynuuj",
-  "discard": "Porzuć"
+  "discard": "Porzuć",
+  "camera_loader_title": "Analizowanie posiłku...",
+  "camera_loader_subtext": "To może potrwać kilka sekund."
 }

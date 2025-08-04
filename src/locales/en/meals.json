@@ -10,5 +10,7 @@
   "continue_draft_title": "Continue started meal?",
   "continue_draft_message": "You have an unsaved meal draft. Do you want to continue or start over?",
   "continue": "Continue",
-  "discard": "Discard"
+  "discard": "Discard",
+  "camera_loader_title": "Analizowanie posiłku...",
+  "camera_loader_subtext": "To może potrwać kilka sekund."
 }
