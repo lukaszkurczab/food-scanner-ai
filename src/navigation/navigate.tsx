@@ -23,7 +23,9 @@ export type RootStackParamList = {
   ChangePassword: undefined;
   AddMealManual: { id?: string; image?: string } | undefined;
   SendFeedback: undefined;
-  MealCamera: { id?: string; attempt?: number } | undefined;
+  MealCamera:
+    | { id?: string; attempt?: number; skipDetection?: boolean }
+    | undefined;
   Language: undefined;
   AddMealFromList: undefined;
   UsernameChange: undefined;
@@ -34,10 +36,7 @@ export type RootStackParamList = {
   SavedMeals: undefined;
   EditUserData: undefined;
   ChangeEmail: undefined;
-  ReviewIngredients: {
-    image: string;
-    id: string;
-  };
+  ReviewIngredients: undefined;
   AvatarCamera: undefined;
   Result: undefined;
   History: undefined;
