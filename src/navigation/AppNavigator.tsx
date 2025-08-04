@@ -34,6 +34,7 @@ import LanguageScreen from "@/src/feature/UserProfile/screens/LanguageScreen";
 import SendFeedbackScreen from "@/src/feature/UserProfile/screens/SendFeedbackScreen";
 import ManageSubscriptionScreen from "@/src/feature/UserProfile/screens/ManageSubscriptionScreen";
 import MealCameraScreen from "@/src/feature/Meals/screens/MealCameraScreen";
+import IngredientsNotRecognizedScreen from "@/src/feature/Meals/screens/IngredientsNotRecognizedScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -67,6 +68,10 @@ const AppNavigator = () => {
           <Stack.Screen name="Summary" component={SummaryScreen} />
           <Stack.Screen name="Language" component={LanguageScreen} />
           <Stack.Screen name="MealCamera" component={MealCameraScreen} />
+          <Stack.Screen
+            name="IngredientsNotRecognized"
+            component={IngredientsNotRecognizedScreen}
+          />
           <Stack.Screen
             name="ReviewIngredients"
             component={ReviewIngredientsScreen}

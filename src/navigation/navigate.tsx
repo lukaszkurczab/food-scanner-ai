@@ -13,12 +13,17 @@ export type RootStackParamList = {
   Profile: undefined;
   ResetPassword: undefined;
   Terms: undefined;
+  IngredientsNotRecognized: {
+    image: string;
+    id: string;
+    attempt?: number;
+  };
   Privacy: undefined;
   ManageSubscription: undefined;
   ChangePassword: undefined;
-  AddMealManual: undefined;
+  AddMealManual: { id?: string; image?: string } | undefined;
   SendFeedback: undefined;
-  MealCamera: undefined;
+  MealCamera: { id?: string; attempt?: number } | undefined;
   Language: undefined;
   AddMealFromList: undefined;
   UsernameChange: undefined;
@@ -51,7 +56,7 @@ export function navigate(
   params?: RootStackParamList[ScreenNames]
 ) {
   if (navigationRef.isReady()) {
-    navigationRef.navigate(name, params);
+    navigationRef.navigate(name as any, params as any);
   }
 }
 
