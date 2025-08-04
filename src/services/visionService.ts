@@ -3,6 +3,7 @@ import { convertToJpegAndResize } from "@/src/utils/convertToJpegAndResize";
 import Constants from "expo-constants";
 import { Ingredient } from "../types";
 
+const IS_DEV = typeof __DEV__ !== "undefined" && __DEV__;
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
 const VISION_MODEL = "gpt-4o";
 const MAX_TOKENS = 600;
@@ -43,6 +44,19 @@ function validateIngredients(arr: any[]): Ingredient[] {
 export async function detectIngredientsWithVision(
   imageUri: string
 ): Promise<Ingredient[] | null> {
+  if (IS_DEV) {
+    return [
+      {
+        name: "MockIngredient",
+        amount: 100,
+        kcal: 200,
+        protein: 10,
+        fat: 5,
+        carbs: 25,
+      },
+    ];
+  }
+
   let lastError: any = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {

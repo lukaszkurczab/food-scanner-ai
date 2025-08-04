@@ -5,7 +5,7 @@ import { RootStackParamList } from "./navigate";
 import { useAuthContext } from "@/src/context/AuthContext";
 
 import HomeScreen from "@/src/feature/Home/screens/HomeScreen";
-import ResultScreen from "@/src/feature/AddMealAI/screens/ResultScreen";
+import ResultScreen from "@/src/feature/Meals/screens/ResultScreen";
 import HistoryScreen from "@/src/feature/History/screens/HistoryScreen";
 import MealDetailScreen from "@/src/feature/Meals/screens/MealDetailScreen";
 import ChatScreen from "@/src/feature/AI/screens/ChatScreen";
@@ -16,7 +16,7 @@ import MealAddMethodScreen from "@/src/feature/Meals/screens/MealAddMethodScreen
 import AddMealFromList from "@/src/feature/AddMealFromList/screens/AddMealFromList";
 import SavedMealsScreen from "@/src/feature/AddMealFromList/screens/SavedMealsScreen";
 import AddMealManual from "@/src/feature/AddMealManual/screens/AddMealManual";
-import ReviewIngredientsScreen from "@/src/feature/AddMealAI/screens/ReviewIngredientsScreen";
+import ReviewIngredientsScreen from "@/src/feature/Meals/screens/ReviewIngredientsScreen";
 import ProfileScreen from "@/src/feature/UserProfile/screens/ProfileScreen";
 import TermsScreen from "@/src/feature/Auth/screens/TermsScreen";
 import PrivacyScreen from "@/src/feature/Auth/screens/PrivacyScreen";
