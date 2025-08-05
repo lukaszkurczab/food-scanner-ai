@@ -1,3 +1,5 @@
+import { Meal } from "@/src/types/meal";
+
 type Ingredient = {
   amount: number;
   carbs: number;
@@ -7,11 +9,6 @@ type Ingredient = {
   [key: string]: any;
 };
 
-type ImageWithIngredients = {
-  image: string;
-  ingredients: Ingredient[];
-};
-
 type NutrientSums = {
   kcal: number;
   carbs: number;
@@ -19,9 +16,7 @@ type NutrientSums = {
   protein: number;
 };
 
-export const calculateTotalNutrients = (
-  data: ImageWithIngredients[]
-): NutrientSums => {
+export const calculateTotalNutrients = (data: Meal[]): NutrientSums => {
   return data.reduce(
     (totals, entry) => {
       entry.ingredients.forEach((item) => {

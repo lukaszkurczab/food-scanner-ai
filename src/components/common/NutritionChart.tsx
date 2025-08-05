@@ -1,6 +1,6 @@
 import { View, Text } from "react-native";
-import { Pie, PolarChart } from "victory-native";
-import { Nutrients } from "../../types";
+import { PieChart } from "@/src/components";
+import { Nutrients } from "@/src/types/meal";
 import { useTheme } from "@/src/theme/index";
 
 type NutritionChartProps = {
@@ -49,14 +49,7 @@ export const NutritionChart = ({ nutrition }: NutritionChartProps) => {
             height: 200,
           }}
         >
-          <PolarChart
-            data={getMacroChartData(nutrition)}
-            labelKey="label"
-            valueKey="value"
-            colorKey="color"
-          >
-            <Pie.Chart />
-          </PolarChart>
+          <PieChart data={getMacroChartData(nutrition)} size={200} />
         </View>
         <View
           style={{

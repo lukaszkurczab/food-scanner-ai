@@ -8,6 +8,7 @@ function sanitizeArray(raw: any): any[] {
 export default class Meal extends Model {
   static table = "meals";
 
+  @field("name") name!: string;
   @field("mealId") mealId!: string;
   @field("timestamp") timestamp!: string;
   @field("type") type!: string;

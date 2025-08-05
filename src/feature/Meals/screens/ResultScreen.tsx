@@ -1,192 +1,138 @@
-import { useState } from "react";
-import "react-native-get-random-values";
-import { v4 as uuidv4 } from "uuid";
+import React, { useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import {
-  NutritionChart,
-  Button,
+  MealBox,
+  PrimaryButton,
+  Checkbox,
+  Layout,
   ConfirmModal,
   CancelModal,
-  Checkbox,
-} from "@/src/components/index";
-import { useTheme } from "@/src/theme/index";
+  IngredientBox,
+} from "@/src/components";
+import { useTheme } from "@/src/theme/useTheme";
 import { useMealContext } from "@/src/context/MealContext";
 import { useUserContext } from "@/src/context/UserContext";
 import { calculateTotalNutrients } from "@/src/services";
+import type { MealType } from "@/src/types/meal";
 
-const ResultScreen = () => {
-  const navigation = useNavigation<any>();
+type ResultScreenProps = {
+  navigation: any;
+};
+
+export default function ResultScreen({ navigation }: ResultScreenProps) {
   const theme = useTheme();
-  const styles = getStyles(theme);
+  const { meal, updateMeal, clearMeal, removeIngredient, updateIngredient } =
+    useMealContext();
+  const { userData } =
+    // const { userData, saveMealToFirestoreHistory, saveMealToMyMeals } =
+    useUserContext();
 
-  const { meal, clearMeal } = useMealContext();
-  const {
-    userData,
-    refreshUserData,
-    saveMealToFirestoreHistory,
-    saveMealToMyMeals,
-  } = useUserContext();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [saveToMyMeals, setSaveToMyMeals] = useState(false);
-  const totalNutrients = calculateTotalNutrients(meal);
+  const [mealName, setMealName] = useState(meal?.name || "");
+  const [mealType, setMealType] = useState<MealType>(meal?.type || "breakfast");
 
-  const handleDetectMoreIngredients = () => {
-    navigation.navigate("MealAddMethod");
-  };
+  if (!meal) return null;
 
-  const handleCheckbox = () => {
-    setSaveToMyMeals(!saveToMyMeals);
-  };
+  const nutrition = calculateTotalNutrients([meal]);
 
-  const handleSave = async (mealName: string) => {
+  const handleSave = async () => {
     if (!userData?.uid) return;
-
-    const ingredientsList = meal
-      .flatMap((item) => item.ingredients)
-      .map((ing) => ing.name);
-
     const newMeal = {
-      id: uuidv4(),
+      ...meal,
       name: mealName,
+      type: mealType,
+      nutrition,
       date: new Date().toISOString(),
-      ingredients: ingredientsList,
-      nutrition: totalNutrients,
     };
-
     try {
-      await saveMealToFirestoreHistory(newMeal);
-      if (saveToMyMeals) saveMealToMyMeals(newMeal);
-      clearMeal();
-      navigation.navigate("Home");
+      //await saveMealToFirestoreHistory(newMeal);
+      //if (saveToMyMeals) await saveMealToMyMeals(newMeal);
+      //clearMeal();
+      //navigation.navigate("Home");
     } catch (error) {
-      console.error("Błąd zapisu posiłku:", error);
+      // obsłuż błąd
     }
   };
 
-  const handleCancel = () => {
-    setShowCancelModal(false);
-    clearMeal();
-    navigation.navigate("Home");
-  };
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.section}>
-        <Text style={styles.subheader}>Detected Ingredients</Text>
-        {meal.map((item) =>
-          item.ingredients.map((ingredient) => (
-            <View key={ingredient.name}>
-              <Text>
-                {ingredient.name} - {ingredient.amount}
-                {ingredient.type === "food" ? "g" : "ml"}
-              </Text>
-            </View>
-          ))
-        )}
-        <Button
-          text="Add more ingredients"
-          onPress={handleDetectMoreIngredients}
+    <Layout showNavigation={false}>
+      <MealBox
+        name={mealName}
+        type={mealType}
+        nutrition={nutrition}
+        editable
+        onNameChange={setMealName}
+        onTypeChange={setMealType}
+      />
+
+      <Text
+        style={{
+          marginBottom: theme.spacing.sm,
+          fontSize: theme.typography.size.md,
+          color: theme.text,
+        }}
+      >
+        Ingredients
+      </Text>
+      {meal.ingredients.map((ingredient, idx) => (
+        <IngredientBox
+          key={idx || ingredient.name + idx}
+          ingredient={ingredient}
+          editable
+          onSave={(updated) => updateIngredient(idx, updated)}
+          onRemove={() => removeIngredient(idx)}
         />
-        <NutritionChart nutrition={totalNutrients} />
+      ))}
+
+      <View style={{ flexDirection: "row" }}>
         <Checkbox
           checked={saveToMyMeals}
-          onCheckedChange={handleCheckbox}
-          label="Add to MyMeals"
+          onChange={setSaveToMyMeals}
+          style={{ marginVertical: theme.spacing.md }}
         />
-        <View
-          style={{
-            flexDirection: "row",
-            gap: 16,
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: "80%",
-          }}
-        >
-          <TouchableOpacity
-            style={{ paddingHorizontal: 30 }}
-            onPress={() => setShowCancelModal(true)}
+        <Text>Add to My Meals</Text>
+      </View>
+
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          gap: 16,
+          marginTop: theme.spacing.lg,
+        }}
+      >
+        <TouchableOpacity onPress={() => setShowCancelModal(true)}>
+          <Text
+            style={{
+              fontSize: theme.typography.size.base,
+              color: theme.error.text,
+              borderBottomWidth: 1,
+              borderColor: theme.error.text,
+            }}
           >
-            <Text
-              style={{
-                fontSize: 16,
-                borderBottomWidth: 1,
-                borderColor: theme.text,
-              }}
-            >
-              Cancel
-            </Text>
-          </TouchableOpacity>
-          <Button
-            text="Save"
-            onPress={() => setShowConfirmModal(true)}
-            style={styles.saveButton}
-          />
-        </View>
+            Cancel
+          </Text>
+        </TouchableOpacity>
+        <PrimaryButton label="Save" onPress={() => setShowConfirmModal(true)} />
       </View>
 
       <CancelModal
         visible={showCancelModal}
         message="Are you sure you want to cancel? All data will be lost."
         onClose={() => setShowCancelModal(false)}
-        onConfirm={handleCancel}
+        onConfirm={() => {
+          setShowCancelModal(false);
+          clearMeal();
+          navigation.navigate("Home");
+        }}
       />
-
       <ConfirmModal
         visible={showConfirmModal}
         onCancel={() => setShowConfirmModal(false)}
-        onConfirm={(mealName: string) => handleSave(mealName)}
+        onConfirm={handleSave}
       />
-    </ScrollView>
+    </Layout>
   );
-};
-
-const getStyles = (theme: any) =>
-  StyleSheet.create({
-    container: {
-      alignItems: "center",
-      paddingBottom: 30,
-      gap: 24,
-      backgroundColor: theme.background,
-      minHeight: "100%",
-      justifyContent: "space-between",
-    },
-    subheader: {
-      fontSize: 18,
-      fontWeight: "600",
-    },
-    ingredientRow: {
-      width: "90%",
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 10,
-      paddingHorizontal: 20,
-    },
-    section: {
-      width: "100%",
-      alignItems: "center",
-    },
-    unit: {
-      marginLeft: 5,
-    },
-    saveButton: {
-      width: 150,
-    },
-    moreIngredientsButton: {
-      width: 200,
-      marginTop: 16,
-      backgroundColor: theme.primaryLight,
-    },
-    moreIngredientsButtonText: {
-      fontSize: 14,
-    },
-  });
-
-export default ResultScreen;
+}

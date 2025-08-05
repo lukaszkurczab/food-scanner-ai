@@ -7,7 +7,7 @@ import { useAuthContext } from "@/src/context/AuthContext";
 import HomeScreen from "@/src/feature/Home/screens/HomeScreen";
 import ResultScreen from "@/src/feature/Meals/screens/ResultScreen";
 import HistoryScreen from "@/src/feature/History/screens/HistoryScreen";
-import MealDetailScreen from "@/src/feature/Meals/screens/MealDetailScreen";
+import MealDetailScreen from "@/src/feature/Statistics/MealDetailScreen";
 import ChatScreen from "@/src/feature/AI/screens/ChatScreen";
 import SummaryScreen from "@/src/feature/Statistics/screens/SummaryScreen";
 import LoginScreen from "@/src/feature/Auth/screens/LoginScreen";
