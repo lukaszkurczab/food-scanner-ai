@@ -1,14 +1,9 @@
-export type MealType =
-  | "breakfast"
-  | "lunch"
-  | "dinner"
-  | "snack"
-  | "other"
-  | null;
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "other";
 export type MealSource = "ai" | "manual" | "saved" | null;
 export type MealSyncState = "synced" | "pending" | "conflict";
 
 export interface Meal {
+  name: string;
   mealId: string;
   timestamp: string;
   type: MealType;
@@ -31,4 +26,11 @@ export type Ingredient = {
   protein: number;
   fat: number;
   carbs: number;
+};
+
+export type Nutrients = {
+  protein: number;
+  fat: number;
+  carbs: number;
+  kcal: number;
 };
