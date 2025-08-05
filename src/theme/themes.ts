@@ -16,7 +16,7 @@ export const lightTheme = {
   },
   macro: {
     protein: baseColors.blue,
-    fat: baseColors.yellow,
+    fat: baseColors.fatDark,
     carbs: baseColors.carbsLight,
   },
   error: {

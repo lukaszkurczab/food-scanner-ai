@@ -14,7 +14,9 @@ import { View, ActivityIndicator } from "react-native";
 import { useTheme } from "./src/theme";
 import Purchases from "react-native-purchases";
 import { Platform } from "react-native";
+import { InactivityProvider } from "@/src/context/InactivityContext";
 import { database } from "@/src/db/database";
+import { MealDraftInactivityGuard } from "@/src/feature/Meals/components/MealDraftInactivityGuard";
 
 export function initRevenueCat() {
   Purchases.configure({
@@ -62,17 +64,21 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <PremiumProvider>
-        <UserProvider>
-          <MealProvider>
-            <ThemeProvider>
-              <NavigationContainer ref={navigationRef}>
-                <AppNavigator />
-              </NavigationContainer>
-            </ThemeProvider>
-          </MealProvider>
-        </UserProvider>
-      </PremiumProvider>
+      <NavigationContainer ref={navigationRef}>
+        <InactivityProvider>
+          <PremiumProvider>
+            <UserProvider>
+              <MealProvider>
+                <MealDraftInactivityGuard>
+                  <ThemeProvider>
+                    <AppNavigator />
+                  </ThemeProvider>
+                </MealDraftInactivityGuard>
+              </MealProvider>
+            </UserProvider>
+          </PremiumProvider>
+        </InactivityProvider>
+      </NavigationContainer>
     </AuthProvider>
   );
 }

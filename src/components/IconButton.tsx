@@ -28,12 +28,12 @@ export const IconButton: React.FC<IconButtonProps> = ({
   const theme = useTheme();
 
   const resolvedBg =
-    variant === "solid" ? backgroundColor || theme.accent : "transparent";
+    variant === "solid" ? backgroundColor || theme.card : "transparent";
 
   const resolvedIconColor =
     iconColor || (variant === "solid" ? theme.onAccent : theme.text);
 
-  const iconSize = Math.round(size * 0.6);
+  const iconSize = Math.round(size * 0.8);
 
   return (
     <Pressable

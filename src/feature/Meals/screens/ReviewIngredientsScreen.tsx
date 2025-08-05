@@ -1,15 +1,13 @@
-import React, { useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  ScrollView,
-  Pressable,
-} from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/src/theme/useTheme";
-import { PrimaryButton, SecondaryButton } from "@/src/components";
+import {
+  Layout,
+  Modal,
+  PrimaryButton,
+  SecondaryButton,
+} from "@/src/components";
 import { IngredientBox } from "@/src/components/IngredientBox";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useMealContext } from "@/src/context/MealContext";
@@ -17,7 +15,9 @@ import { useMealContext } from "@/src/context/MealContext";
 export default function ReviewIngredientsScreen() {
   const navigation = useNavigation<any>();
   const theme = useTheme();
-  const { meal, removeIngredient, clearMeal, saveDraft } = useMealContext();
+  const { meal, removeIngredient, updateIngredient, clearMeal, saveDraft } =
+    useMealContext();
+  const [showModal, setShowModal] = useState(false);
 
   const ingredients = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
@@ -30,12 +30,13 @@ export default function ReviewIngredientsScreen() {
     navigation.navigate("AddMealManual");
   };
 
-  const handleEditIngredient = (idx: number) => {
-    navigation.navigate("AddMealManual", { editIndex: idx });
-  };
-
   const handleRemoveIngredient = (idx: number) => {
     removeIngredient(idx);
+    saveDraft();
+  };
+
+  const handleSaveIngredient = (idx: number, updated: any) => {
+    updateIngredient(idx, updated);
     saveDraft();
   };
 
@@ -45,19 +46,17 @@ export default function ReviewIngredientsScreen() {
 
   const handleStartOver = () => {
     clearMeal();
-    navigation.replace("MealCamera");
+    navigation.replace("MealAddMethod");
   };
 
   useEffect(() => {
+    console.log(ingredients);
     saveDraft();
   }, [ingredients, image, saveDraft]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background }]}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
+    <Layout showNavigation={false}>
+      <View style={styles.wrapper}>
         <View style={styles.imageWrapper}>
           {image ? (
             <Image
@@ -88,7 +87,8 @@ export default function ReviewIngredientsScreen() {
           <IngredientBox
             key={idx}
             ingredient={ing}
-            onEdit={() => handleEditIngredient(idx)}
+            editable={true}
+            onSave={(updated) => handleSaveIngredient(idx, updated)}
             onRemove={() => handleRemoveIngredient(idx)}
           />
         ))}
@@ -101,42 +101,53 @@ export default function ReviewIngredientsScreen() {
         <PrimaryButton
           label="Continue"
           onPress={handleContinue}
+          disabled={ingredients.length === 0}
           style={styles.continueBtn}
         />
         <SecondaryButton
           label="Start over"
-          onPress={handleStartOver}
+          onPress={() => setShowModal(true)}
           style={styles.startOverBtn}
         />
-      </ScrollView>
-    </View>
+        <Modal
+          visible={showModal}
+          title="Are you sure you want to start over?"
+          message="Every data will be lost"
+          primaryActionLabel="Quit"
+          onPrimaryAction={handleStartOver}
+          secondaryActionLabel="Continue"
+          onSecondaryAction={() => setShowModal(false)}
+          onClose={() => setShowModal(false)}
+        />
+      </View>
+    </Layout>
   );
 }
 
 const IMAGE_SIZE = 220;
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  container: { alignItems: "center", padding: 18, paddingBottom: 36 },
+  wrapper: {
+    flex: 1,
+  },
   imageWrapper: {
-    marginTop: 12,
     marginBottom: 22,
-    width: IMAGE_SIZE,
-    height: 140,
+    width: "100%",
+    height: IMAGE_SIZE,
     borderRadius: 32,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
   image: {
-    width: IMAGE_SIZE,
-    height: 140,
+    width: "100%",
+    height: IMAGE_SIZE,
     borderRadius: 32,
     backgroundColor: "#B2C0C9",
   },
   placeholder: {
-    width: IMAGE_SIZE,
-    height: 140,
+    width: "100%",
+    height: IMAGE_SIZE,
     borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
