@@ -11,7 +11,6 @@ import type { Meal, Ingredient, MealType } from "@/src/types/meal";
 
 export const STORAGE_KEY = "current_meal_draft";
 export const STORAGE_SCREEN_KEY = "current_meal_draft_screen";
-const TIMEOUT_MS = 10 * 60 * 1000;
 
 export type MealContextType = {
   meal: Meal | null;
@@ -84,21 +83,6 @@ export const MealProvider = ({ children }: { children: React.ReactNode }) => {
   const [meal, setMealState] = useState<Meal | null>(null);
   const [isDraft, setIsDraft] = useState(false);
   const [lastScreen, setLastScreenState] = useState<string | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const startTimeout = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      clearMeal();
-    }, TIMEOUT_MS);
-  }, []);
-
-  useEffect(() => {
-    if (meal) startTimeout();
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [meal, startTimeout]);
 
   const saveDraft = useCallback(async () => {
     if (meal) {
@@ -144,14 +128,12 @@ export const MealProvider = ({ children }: { children: React.ReactNode }) => {
 
   const setMeal = (meal: Meal) => {
     setMealState(meal);
-    startTimeout();
   };
 
   const updateMeal = (patch: Partial<Meal>) => {
     setMealState((prev) =>
       prev ? { ...prev, ...patch, updatedAt: new Date().toISOString() } : null
     );
-    startTimeout();
   };
 
   const addIngredient = (ingredient: Ingredient) => {
@@ -164,7 +146,6 @@ export const MealProvider = ({ children }: { children: React.ReactNode }) => {
           }
         : null
     );
-    startTimeout();
   };
 
   const removeIngredient = (index: number) => {
@@ -177,7 +158,6 @@ export const MealProvider = ({ children }: { children: React.ReactNode }) => {
           }
         : null
     );
-    startTimeout();
   };
 
   const updateIngredient = (index: number, ingredient: Ingredient) => {
@@ -192,7 +172,6 @@ export const MealProvider = ({ children }: { children: React.ReactNode }) => {
           }
         : null
     );
-    startTimeout();
   };
 
   const setType = (type: MealType) => {
@@ -221,7 +200,6 @@ export const MealProvider = ({ children }: { children: React.ReactNode }) => {
           }
         : prev
     );
-    startTimeout();
   };
 
   const removeTag = (tag: string) => {
@@ -234,7 +212,6 @@ export const MealProvider = ({ children }: { children: React.ReactNode }) => {
           }
         : prev
     );
-    startTimeout();
   };
 
   useEffect(() => {
