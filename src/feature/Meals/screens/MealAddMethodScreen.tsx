@@ -10,7 +10,11 @@ import { useTranslation } from "react-i18next";
 import { Layout } from "@/src/components";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Modal } from "@/src/components/Modal";
-import { STORAGE_KEY, useMealContext } from "@/src/context/MealContext";
+import {
+  STORAGE_KEY,
+  STORAGE_SCREEN_KEY,
+  useMealContext,
+} from "@/src/context/MealContext";
 
 type MealInputMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -44,28 +48,33 @@ const options = [
 const MealInputMethodScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation<MealInputMethodNavigationProp>();
-  const { lastScreen, loadLastScreen } = useMealContext();
   const { t } = useTranslation("meals");
 
   const [showModal, setShowModal] = useState(false);
   const [draftExists, setDraftExists] = useState(false);
+  const [lastScreen, loadLastScreen] = useState();
 
   const checkDraft = useCallback(async () => {
     const draft = await AsyncStorage.getItem(STORAGE_KEY);
-    setDraftExists(!!draft);
-    if (draftExists) loadLastScreen;
+    const lastScreen = await AsyncStorage.getItem(STORAGE_SCREEN_KEY);
+    if (draft && lastScreen) {
+      setDraftExists(true);
+      loadLastScreen(lastScreen as any);
+    }
   }, []);
 
   useEffect(() => {
     checkDraft();
   }, [checkDraft]);
 
-  const handleOptionPress = (screen: string) => {
+  useEffect(() => {
     if (draftExists) {
       setShowModal(true);
-    } else {
-      navigation.navigate(screen as any);
     }
+  }, [draftExists]);
+
+  const handleOptionPress = (screen: string) => {
+    navigation.navigate(screen as any);
   };
 
   const handleContinue = async () => {

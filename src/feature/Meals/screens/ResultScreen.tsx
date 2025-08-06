@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import {
   MealBox,
@@ -24,11 +24,15 @@ type ResultScreenProps = {
 
 export default function ResultScreen({ navigation }: ResultScreenProps) {
   const theme = useTheme();
-  const { meal, updateMeal, clearMeal, removeIngredient, updateIngredient } =
+  const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =
     useMealContext();
   const { userData } =
     // const { userData, saveMealToFirestoreHistory, saveMealToMyMeals } =
     useUserContext();
+
+  useEffect(() => {
+    setLastScreen("Result");
+  }, [setLastScreen]);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
