@@ -3,6 +3,8 @@ import { useMealContext } from "@/src/context/MealContext";
 import { useInactivity } from "@/src/context/InactivityContext";
 import { useNavigation } from "@react-navigation/native";
 import { Modal } from "@/src/components/";
+import { useAuthContext } from "@/src/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 export const MealDraftInactivityGuard = ({
   children,
@@ -12,6 +14,8 @@ export const MealDraftInactivityGuard = ({
   const { meal, clearMeal, removeDraft } = useMealContext();
   const { isModalVisible, setOnTimeout, dismissModal } = useInactivity();
   const navigation = useNavigation<any>();
+  const { user } = useAuthContext();
+  const { t } = useTranslation("common");
 
   useEffect(() => {
     if (meal && meal.ingredients.length > 0) {
@@ -23,8 +27,10 @@ export const MealDraftInactivityGuard = ({
   }, [meal, setOnTimeout]);
 
   const handleQuit = () => {
-    clearMeal();
-    removeDraft();
+    if (user?.uid) {
+      clearMeal(user.uid);
+      removeDraft(user.uid);
+    }
     dismissModal();
     navigation.replace("Home");
   };
@@ -34,11 +40,11 @@ export const MealDraftInactivityGuard = ({
       {children}
       <Modal
         visible={isModalVisible}
-        title="Are you still there?"
-        message="Your draft will be removed due to inactivity. Do you want to continue editing or quit?"
-        secondaryActionLabel="Quit"
+        title={t("draft_inactivity_title")}
+        message={t("draft_inactivity_message")}
+        secondaryActionLabel={t("quit")}
         onSecondaryAction={handleQuit}
-        primaryActionLabel="Continue"
+        primaryActionLabel={t("continue")}
         onPrimaryAction={dismissModal}
         onClose={dismissModal}
       />

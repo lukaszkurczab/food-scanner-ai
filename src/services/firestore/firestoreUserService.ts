@@ -80,10 +80,8 @@ export async function uploadAndSaveAvatar({
   userUid: string;
   localUri: string;
 }) {
-  const app = getApp();
-  const storage = getStorage(app);
-  const remotePath = `avatars/${userUid}/avatar.jpg`;
-  const avatarRef = ref(storage, remotePath);
+  const storage = getStorage();
+  const avatarRef = ref(storage, `avatars/${userUid}/avatar.jpg`);
   await putFile(avatarRef, localUri);
   const avatarUrl = await getDownloadURL(avatarRef);
   const db = getDb();

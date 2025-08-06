@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 type MealTileProps = {
   mealName: string;
@@ -35,6 +36,7 @@ export const MealTile: React.FC<MealTileProps> = ({
 }) => {
   const theme = useTheme();
   const macro = theme.macro || theme;
+  const { t } = useTranslation(["meals", "common"]);
 
   const Content = (
     <View
@@ -111,7 +113,7 @@ export const MealTile: React.FC<MealTileProps> = ({
               fontFamily: theme.typography.fontFamily.regular,
             }}
           >
-            {calories} kcal
+            {calories} {t("calories", { ns: "meals" })}
           </Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <Text
@@ -120,17 +122,17 @@ export const MealTile: React.FC<MealTileProps> = ({
                 fontSize: theme.typography.size.sm,
               }}
             >
-              P:{protein}g
+              {t("protein", { ns: "meals" }).charAt(0)}:{protein}g
             </Text>
             <Text
               style={{ color: macro.carbs, fontSize: theme.typography.size.sm }}
             >
-              C:{carbs}g
+              {t("carbs", { ns: "meals" }).charAt(0)}:{carbs}g
             </Text>
             <Text
               style={{ color: macro.fat, fontSize: theme.typography.size.sm }}
             >
-              F:{fat}g
+              {t("fat", { ns: "meals" }).charAt(0)}:{fat}g
             </Text>
           </View>
         </View>
@@ -145,7 +147,11 @@ export const MealTile: React.FC<MealTileProps> = ({
         disabled={!onPress}
         style={({ pressed }) => [{ opacity: pressed ? 0.86 : 1 }]}
         accessibilityRole="button"
-        accessibilityLabel={`${mealName}, ${calories} calories, Protein ${protein}g, Carbs ${carbs}g, Fat ${fat}g`}
+        accessibilityLabel={`${mealName}, ${calories} ${t("calories", {
+          ns: "meals",
+        })}, ${t("protein", { ns: "meals" })} ${protein}g, ${t("carbs", {
+          ns: "meals",
+        })} ${carbs}g, ${t("fat", { ns: "meals" })} ${fat}g`}
       >
         {Content}
       </Pressable>

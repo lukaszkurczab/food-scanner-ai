@@ -12,10 +12,12 @@ import { IngredientBox } from "@/src/components/IngredientBox";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useMealContext } from "@/src/context/MealContext";
 import { useAuthContext } from "@/src/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 export default function ReviewIngredientsScreen() {
   const navigation = useNavigation<any>();
   const theme = useTheme();
+  const { t } = useTranslation(["meals", "common"]);
   const {
     meal,
     removeIngredient,
@@ -88,7 +90,7 @@ export default function ReviewIngredientsScreen() {
               <Text
                 style={[styles.placeholderText, { color: theme.textSecondary }]}
               >
-                Add photo
+                {t("add_photo", { ns: "meals" })}
               </Text>
             </Pressable>
           )}
@@ -105,28 +107,28 @@ export default function ReviewIngredientsScreen() {
         ))}
 
         <SecondaryButton
-          label="+ Add ingredient"
+          label={t("add_ingredient", { ns: "meals" })}
           onPress={handleAddIngredient}
           style={styles.addIngredientBtn}
         />
         <PrimaryButton
-          label="Continue"
+          label={t("continue", { ns: "common" })}
           onPress={handleContinue}
           disabled={ingredients.length === 0}
           style={styles.continueBtn}
         />
         <SecondaryButton
-          label="Start over"
+          label={t("start_over", { ns: "meals" })}
           onPress={() => setShowModal(true)}
           style={styles.startOverBtn}
         />
         <Modal
           visible={showModal}
-          title="Are you sure you want to start over?"
-          message="Every data will be lost"
-          primaryActionLabel="Quit"
+          title={t("start_over_title", { ns: "meals" })}
+          message={t("start_over_message", { ns: "meals" })}
+          primaryActionLabel={t("quit", { ns: "common" })}
           onPrimaryAction={handleStartOver}
-          secondaryActionLabel="Continue"
+          secondaryActionLabel={t("continue", { ns: "common" })}
           onSecondaryAction={() => setShowModal(false)}
           onClose={() => setShowModal(false)}
         />

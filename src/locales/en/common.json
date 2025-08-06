@@ -9,6 +9,13 @@
   "camera_retake": "Retake",
   "camera_use_photo": "Use photo",
   "default_error": "Something went wrong. Please try again.",
-  "cancel": "Cansel",
-  "confirm": "Confirm"
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "save_changes": "Save changes",
+  "edit": "Edit",
+  "remove": "Remove",
+  "draft_inactivity_title": "Are you still there?",
+  "draft_inactivity_message": "Your draft will be removed due to inactivity. Do you want to continue editing or quit?",
+  "quit": "Quit",
+  "continue": "Continue"
 }

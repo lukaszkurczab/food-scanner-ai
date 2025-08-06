@@ -5,7 +5,6 @@ import {
   PrimaryButton,
   Checkbox,
   Layout,
-  CancelModal,
   Card,
   IngredientBox,
   SecondaryButton,
@@ -20,6 +19,7 @@ import { calculateTotalNutrients } from "@/src/services";
 import { useAuthContext } from "@/src/context/AuthContext";
 import type { MealType } from "@/src/types/meal";
 import { autoMealName } from "@/src/utils/autoMealName";
+import { useTranslation } from "react-i18next";
 
 type ResultScreenProps = {
   navigation: any;
@@ -27,6 +27,7 @@ type ResultScreenProps = {
 
 export default function ResultScreen({ navigation }: ResultScreenProps) {
   const theme = useTheme();
+  const { t } = useTranslation(["meals", "common"]);
   const { user } = useAuthContext();
   const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =
     useMealContext();
@@ -111,7 +112,9 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
             textAlign: "center",
           }}
         >
-          {showIngredients ? "Hide ingredients" : "Show ingredients"}
+          {showIngredients
+            ? t("hide_ingredients", { ns: "meals" })
+            : t("show_ingredients", { ns: "meals" })}
         </Text>
       </Card>
 
@@ -127,7 +130,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
             />
           ))}
           <SecondaryButton
-            label="Edit ingredients"
+            label={t("edit_ingredients", { ns: "meals" })}
             onPress={() => !saving && navigation.navigate("ReviewIngredients")}
             disabled={saving}
           />
@@ -141,7 +144,9 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
           style={{ marginVertical: theme.spacing.md }}
           disabled={saving}
         />
-        <Text>Add to My Meals</Text>
+        <Text style={{ marginLeft: 8 }}>
+          {t("add_to_my_meals", { ns: "meals" })}
+        </Text>
       </View>
 
       <View
@@ -152,13 +157,13 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
         }}
       >
         <PrimaryButton
-          label="Save"
+          label={t("save", { ns: "common" })}
           onPress={handleSave}
           loading={saving}
           disabled={saving}
         />
         <ErrorButton
-          label="Cancel"
+          label={t("cancel", { ns: "common" })}
           onPress={handleCancel}
           loading={saving}
           disabled={saving}
@@ -167,11 +172,11 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
 
       <Modal
         visible={showCancelModal}
-        message="Are you sure you want to cancel? All data will be lost."
-        primaryActionLabel="Confirm"
+        message={t("cancel_result_message", { ns: "meals" })}
+        primaryActionLabel={t("confirm", { ns: "common" })}
         onClose={() => setShowCancelModal(false)}
         onPrimaryAction={handleCancelConfirm}
-        secondaryActionLabel="Cancel"
+        secondaryActionLabel={t("cancel", { ns: "common" })}
         onSecondaryAction={() => setShowCancelModal(false)}
       />
     </Layout>
