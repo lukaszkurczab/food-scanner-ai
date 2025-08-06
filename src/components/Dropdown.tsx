@@ -80,8 +80,10 @@ export function Dropdown<T extends string>({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          padding: theme.spacing.md,
-          borderRadius: theme.rounded.md,
+          paddingVertical: theme.spacing.sm,
+          paddingHorizontal: theme.spacing.md,
+          minHeight: 48,
+          borderRadius: theme.rounded.sm,
           borderWidth: 1,
           borderColor: error ? theme.error.border : theme.border,
           backgroundColor: disabled ? theme.disabled.background : theme.card,
@@ -143,7 +145,7 @@ export function Dropdown<T extends string>({
                 backgroundColor: theme.card,
                 borderColor: theme.border,
                 borderWidth: 1,
-                borderRadius: theme.rounded.md,
+                borderRadius: theme.rounded.sm,
                 maxHeight: Math.min(
                   220,
                   Dimensions.get("window").height -

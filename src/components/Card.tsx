@@ -47,21 +47,20 @@ export const Card: React.FC<CardProps> = ({
       : {}),
   };
 
-  const shadowStyle =
-    variant !== "outlined" && Platform.OS !== "android" ? styles.shadow : {};
-
-  const Content = (
-    <View style={[cardStyle, shadowStyle, style]}>{children}</View>
-  );
+  const Content = <View style={[cardStyle, style]}>{children}</View>;
 
   if (onPress) {
     return (
       <Pressable
         style={({ pressed }) => [
           cardStyle,
-          shadowStyle,
           style,
-          { opacity: pressed ? 0.92 : 1 },
+          {
+            opacity: pressed ? 0.92 : 1,
+            elevation: 2,
+            shadowOpacity: 0.07,
+            shadowRadius: 12,
+          },
         ]}
         onPress={onPress}
         android_ripple={
@@ -76,12 +75,3 @@ export const Card: React.FC<CardProps> = ({
   }
   return Content;
 };
-
-const styles = StyleSheet.create({
-  shadow: {
-    shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-  },
-});

@@ -12,6 +12,7 @@ import {
 import { useTheme } from "@/src/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { Ingredient } from "@/src/types";
+import { MacroChip } from "./MacroChip";
 
 type IngredientBoxProps = {
   ingredient: Ingredient;
@@ -349,113 +350,12 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
           )}
         </View>
       </View>
+      <MacroChip label="Calories" value={ingredient.kcal} />
       <View style={styles.macrosRow}>
-        <View style={styles.macroWrapper}>
-          <Text
-            style={[
-              { fontSize: theme.typography.size.base },
-              styles.macroLabel,
-            ]}
-          >
-            Protein [g]
-          </Text>
-          <View
-            style={[
-              styles.macro,
-              {
-                backgroundColor: theme.macro.protein + "18",
-                borderWidth: 1,
-                borderColor: theme.macro.protein,
-                borderRadius: theme.rounded.full,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: theme.macro.protein,
-                fontWeight: "bold",
-                fontSize: theme.typography.size.md,
-              }}
-            >
-              {ingredient.protein}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.macroWrapper}>
-          <Text
-            style={[
-              { fontSize: theme.typography.size.base },
-              styles.macroLabel,
-            ]}
-          >
-            Carbs [g]
-          </Text>
-          <View
-            style={[
-              styles.macro,
-              {
-                backgroundColor: theme.macro.carbs + "18",
-                borderWidth: 1,
-                borderRadius: theme.rounded.full,
-                borderColor: theme.macro.carbs,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: theme.macro.carbs,
-                fontWeight: "bold",
-                fontSize: theme.typography.size.md,
-              }}
-            >
-              {ingredient.carbs}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.macroWrapper}>
-          <Text
-            style={[
-              { fontSize: theme.typography.size.base },
-              styles.macroLabel,
-            ]}
-          >
-            Fat [g]
-          </Text>
-          <View
-            style={[
-              styles.macro,
-              {
-                backgroundColor: theme.macro.fat + "18",
-                borderWidth: 1,
-                borderRadius: theme.rounded.full,
-                borderColor: theme.macro.fat,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: theme.macro.fat,
-                fontWeight: "bold",
-                fontSize: theme.typography.size.md,
-              }}
-            >
-              {ingredient.fat}
-            </Text>
-          </View>
-        </View>
+        <MacroChip label="Protein" value={ingredient.protein} />
+        <MacroChip label="Carbs" value={ingredient.carbs} />
+        <MacroChip label="Fat" value={ingredient.fat} />
       </View>
-      <Text
-        style={[
-          styles.kcal,
-          {
-            color: theme.textSecondary,
-            fontFamily: theme.typography.fontFamily.medium,
-            fontSize: theme.typography.size.md,
-          },
-        ]}
-      >
-        Calories: {ingredient.kcal} kcal
-      </Text>
       <Modal
         visible={menuVisible}
         transparent
@@ -556,26 +456,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 2,
     gap: 10,
-  },
-  macroWrapper: {
-    width: "100%",
-    flexShrink: 1,
-  },
-  macro: {
-    borderRadius: "full",
-    alignItems: "center",
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  macroLabel: {
-    opacity: 0.7,
-    marginTop: 2,
-    marginBottom: 4,
-  },
-  kcal: {
-    fontSize: 15,
-    marginTop: 16,
-    fontWeight: "500",
   },
   icon: {
     marginLeft: 6,
