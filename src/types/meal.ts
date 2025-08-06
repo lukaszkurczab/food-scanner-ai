@@ -3,7 +3,7 @@ export type MealSource = "ai" | "manual" | "saved" | null;
 export type MealSyncState = "synced" | "pending" | "conflict";
 
 export interface Meal {
-  name: string;
+  name: string | null;
   mealId: string;
   timestamp: string;
   type: MealType;

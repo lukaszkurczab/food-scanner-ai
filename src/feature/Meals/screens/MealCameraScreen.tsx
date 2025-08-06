@@ -26,8 +26,7 @@ export default function MealCameraScreen({
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { meal, setMeal, updateMeal, setPhotoUrl, setLastScreen } =
-    useMealContext();
+  const { meal, setMeal, updateMeal, setLastScreen } = useMealContext();
   const { t } = useTranslation("meals");
   const route = useRoute<any>();
 
@@ -62,6 +61,7 @@ export default function MealCameraScreen({
         setMeal({
           ...{
             mealId,
+            name: null,
             photoUrl: photoUri,
             ingredients: [],
             createdAt: new Date().toISOString(),
@@ -70,7 +70,7 @@ export default function MealCameraScreen({
             tags: [],
             deleted: false,
             notes: null,
-            type: null,
+            type: "other",
             timestamp: "",
             source: null,
           },
@@ -78,7 +78,6 @@ export default function MealCameraScreen({
       } else {
         updateMeal({ photoUrl: photoUri, mealId });
       }
-      await setLastScreen("ReviewIngredients");
 
       if (skipDetection) {
         setIsLoading(false);

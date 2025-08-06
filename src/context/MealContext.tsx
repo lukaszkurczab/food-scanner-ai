@@ -40,21 +40,6 @@ export type MealContextType = {
   clearLastScreen: () => void;
 };
 
-const defaultMeal: Meal = {
-  mealId: "",
-  timestamp: "",
-  type: null,
-  photoUrl: null,
-  notes: null,
-  ingredients: [],
-  createdAt: "",
-  updatedAt: "",
-  source: null,
-  syncState: "pending",
-  tags: [],
-  deleted: false,
-};
-
 const MealContext = createContext<MealContextType>({
   meal: null,
   setMeal: () => {},
@@ -123,6 +108,7 @@ export const MealProvider = ({ children }: { children: React.ReactNode }) => {
 
   const loadLastScreen = useCallback(async () => {
     const screen = await AsyncStorage.getItem(STORAGE_SCREEN_KEY);
+    console.log(screen);
     if (screen) setLastScreenState(screen);
   }, []);
 

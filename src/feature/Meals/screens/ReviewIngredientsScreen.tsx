@@ -15,12 +15,22 @@ import { useMealContext } from "@/src/context/MealContext";
 export default function ReviewIngredientsScreen() {
   const navigation = useNavigation<any>();
   const theme = useTheme();
-  const { meal, removeIngredient, updateIngredient, clearMeal, saveDraft } =
-    useMealContext();
+  const {
+    meal,
+    removeIngredient,
+    setLastScreen,
+    updateIngredient,
+    clearMeal,
+    saveDraft,
+  } = useMealContext();
   const [showModal, setShowModal] = useState(false);
 
   const ingredients = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
+
+  useEffect(() => {
+    setLastScreen("ReviewIngredients");
+  }, [setLastScreen]);
 
   const handleAddPhoto = () => {
     navigation.replace("MealCamera", { skipDetection: true });
