@@ -13,6 +13,7 @@ import { useTheme } from "@/src/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { Ingredient } from "@/src/types";
 import { MacroChip } from "./MacroChip";
+import { useTranslation } from "react-i18next";
 
 type IngredientBoxProps = {
   ingredient: Ingredient;
@@ -28,6 +29,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
   onRemove,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["meals", "common"]);
   const [menuVisible, setMenuVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [edited, setEdited] = useState<Ingredient>(ingredient);
@@ -147,14 +149,14 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
             ]}
             value={edited.name}
             onChangeText={(v) => setEdited({ ...edited, name: v })}
-            placeholder="Ingredient name"
+            placeholder={t("ingredient_name", { ns: "meals" })}
             placeholderTextColor={theme.textSecondary}
             autoFocus
           />
 
           <View>
             <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-              Amount [g]
+              {t("amount", { ns: "meals" })}
             </Text>
             <TextInput
               style={[
@@ -169,7 +171,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
           </View>
           <View>
             <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-              Protein [g]
+              {t("protein", { ns: "meals" })} [g]
             </Text>
             <TextInput
               style={[
@@ -190,7 +192,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
           </View>
           <View>
             <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-              Carbs [g]
+              {t("carbs", { ns: "meals" })} [g]
             </Text>
             <TextInput
               style={[
@@ -211,7 +213,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
           </View>
           <View>
             <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-              Fat [g]
+              {t("fat", { ns: "meals" })} [g]
             </Text>
             <TextInput
               style={[
@@ -232,7 +234,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
           </View>
           <View>
             <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-              Calories [kcal]
+              {t("calories", { ns: "meals" })} [kcal]
             </Text>
             <TextInput
               style={[
@@ -262,7 +264,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               }}
             >
               <Text style={[styles.saveBtnText, { color: theme.onAccent }]}>
-                Save changes
+                {t("save_changes", { ns: "common" })}
               </Text>
             </Pressable>
             <Pressable
@@ -283,7 +285,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               <Text
                 style={[styles.cancelBtnText, { color: theme.accentSecondary }]}
               >
-                Cancel
+                {t("cancel", { ns: "common" })}
               </Text>
             </Pressable>
           </View>
@@ -350,11 +352,20 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
           )}
         </View>
       </View>
-      <MacroChip label="Calories" value={ingredient.kcal} />
+      <MacroChip
+        label={t("calories", { ns: "meals" })}
+        value={ingredient.kcal}
+      />
       <View style={styles.macrosRow}>
-        <MacroChip label="Protein" value={ingredient.protein} />
-        <MacroChip label="Carbs" value={ingredient.carbs} />
-        <MacroChip label="Fat" value={ingredient.fat} />
+        <MacroChip
+          label={t("protein", { ns: "meals" })}
+          value={ingredient.protein}
+        />
+        <MacroChip
+          label={t("carbs", { ns: "meals" })}
+          value={ingredient.carbs}
+        />
+        <MacroChip label={t("fat", { ns: "meals" })} value={ingredient.fat} />
       </View>
       <Modal
         visible={menuVisible}
@@ -393,7 +404,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
                 style={{ marginRight: 8 }}
               />
               <Text style={[styles.dropdownLabel, { color: theme.text }]}>
-                Edit
+                {t("edit", { ns: "common" })}
               </Text>
             </Pressable>
             <Pressable
@@ -415,7 +426,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
                   { color: theme.error.text, fontWeight: "bold" },
                 ]}
               >
-                Remove
+                {t("remove", { ns: "common" })}
               </Text>
             </Pressable>
           </View>

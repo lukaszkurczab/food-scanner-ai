@@ -31,7 +31,7 @@ const options = [
     icon: "edit",
     titleKey: "manualTitle",
     descKey: "manualDesc",
-    screen: "AddMealManual",
+    screen: "ReviewIngredients",
   },
   {
     key: "saved",

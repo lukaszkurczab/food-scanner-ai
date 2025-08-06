@@ -9,6 +9,13 @@
   "camera_retake": "Zrób ponownie",
   "camera_use_photo": "Użyj zdjęcia",
   "default_error": "Coś poszło nie tak. Spróbuj ponownie.",
-  "cancel": "Porzuć",
-  "confirm": "Potwierdź"
+  "cancel": "Anuluj",
+  "confirm": "Potwierdź",
+  "save_changes": "Zapisz zmiany",
+  "edit": "Edytuj",
+  "remove": "Usuń",
+  "draft_inactivity_title": "Jesteś tam?",
+  "draft_inactivity_message": "Twój szkic zostanie usunięty z powodu bezczynności. Chcesz kontynuować edycję czy wyjść?",
+  "quit": "Wyjdź",
+  "continue": "Kontynuuj"
 }
