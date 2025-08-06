@@ -4,15 +4,16 @@ import { useTheme } from "@/src/theme/useTheme";
 import { TextInput, Dropdown, PieChart } from "@/src/components";
 import type { MealType, Nutrients } from "@/src/types/meal";
 import { MacroChip } from "./MacroChip";
+import { useTranslation } from "react-i18next";
 
 type Option<T extends string> = { label: string; value: T };
 
 const mealTypeOptions: Option<MealType>[] = [
-  { value: "breakfast", label: "Breakfast" },
-  { value: "lunch", label: "Lunch" },
-  { value: "dinner", label: "Dinner" },
-  { value: "snack", label: "Snack" },
-  { value: "other", label: "Other" },
+  { value: "breakfast", label: "meals:breakfast" },
+  { value: "lunch", label: "meals:lunch" },
+  { value: "dinner", label: "meals:dinner" },
+  { value: "snack", label: "meals:snack" },
+  { value: "other", label: "meals:other" },
 ];
 
 type MealBoxProps = {
@@ -33,11 +34,24 @@ export const MealBox: React.FC<MealBoxProps> = ({
   onTypeChange,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["meals", "common"]);
 
   const macroChartData = [
-    { value: nutrition.protein, color: theme.macro.protein, label: "Protein" },
-    { value: nutrition.fat, color: theme.macro.fat, label: "Fat" },
-    { value: nutrition.carbs, color: theme.macro.carbs, label: "Carbs" },
+    {
+      value: nutrition.protein,
+      color: theme.macro.protein,
+      label: t("protein_short", { ns: "meals" }),
+    },
+    {
+      value: nutrition.fat,
+      color: theme.macro.fat,
+      label: t("fat_short", { ns: "meals" }),
+    },
+    {
+      value: nutrition.carbs,
+      color: theme.macro.carbs,
+      label: t("carbs_short", { ns: "meals" }),
+    },
   ];
 
   return (
@@ -61,7 +75,7 @@ export const MealBox: React.FC<MealBoxProps> = ({
         <TextInput
           value={name}
           onChangeText={onNameChange || (() => {})}
-          placeholder="Enter meal name"
+          placeholder={t("ingredient_name", { ns: "meals" })}
           numberOfLines={1}
           maxLength={48}
         />
@@ -82,19 +96,34 @@ export const MealBox: React.FC<MealBoxProps> = ({
         {editable ? (
           <Dropdown
             value={type || "breakfast"}
-            options={mealTypeOptions}
+            options={mealTypeOptions.map((opt) => ({
+              ...opt,
+              label: t(opt.label),
+            }))}
             onChange={onTypeChange || (() => {})}
           />
         ) : (
-          <Text>{type}</Text>
+          <Text>{type ? t(`meals:${type}`) : ""}</Text>
         )}
       </View>
 
-      <MacroChip label="Calories" value={nutrition.kcal} />
+      <MacroChip
+        label={t("calories", { ns: "meals" })}
+        value={nutrition.kcal}
+      />
       <View style={styles.macrosRow}>
-        <MacroChip label="Protein" value={nutrition.protein} />
-        <MacroChip label="Carbs" value={nutrition.carbs} />
-        <MacroChip label="Fat" value={nutrition.fat} />
+        <MacroChip
+          label={t("protein_short", { ns: "meals" })}
+          value={nutrition.protein}
+        />
+        <MacroChip
+          label={t("carbs_short", { ns: "meals" })}
+          value={nutrition.carbs}
+        />
+        <MacroChip
+          label={t("fat_short", { ns: "meals" })}
+          value={nutrition.fat}
+        />
       </View>
 
       <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>

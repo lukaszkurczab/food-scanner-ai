@@ -1,189 +1,144 @@
 import React from "react";
-import {
-  View,
-  Text,
-  Image,
-  Pressable,
-  ViewStyle,
-  StyleSheet,
-} from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
+import { TextInput, Dropdown, PieChart } from "@/src/components";
+import type { MealType, Nutrients } from "@/src/types/meal";
+import { MacroChip } from "./MacroChip";
 import { useTranslation } from "react-i18next";
 
-type MealTileProps = {
-  mealName: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  imageUri?: string;
-  onPress?: () => void;
-  selected?: boolean;
-  style?: ViewStyle;
+type Option<T extends string> = { label: string; value: T };
+
+const mealTypeOptions: Option<MealType>[] = [
+  { value: "breakfast", label: "meals:breakfast" },
+  { value: "lunch", label: "meals:lunch" },
+  { value: "dinner", label: "meals:dinner" },
+  { value: "snack", label: "meals:snack" },
+  { value: "other", label: "meals:other" },
+];
+
+type MealBoxProps = {
+  name: string;
+  type: MealType | null;
+  nutrition: Nutrients;
+  editable?: boolean;
+  onNameChange?: (val: string) => void;
+  onTypeChange?: (val: MealType) => void;
 };
 
-export const MealTile: React.FC<MealTileProps> = ({
-  mealName,
-  calories,
-  protein,
-  carbs,
-  fat,
-  imageUri,
-  onPress,
-  selected,
-  style,
+export const MealBox: React.FC<MealBoxProps> = ({
+  name,
+  type,
+  nutrition,
+  editable = false,
+  onNameChange,
+  onTypeChange,
 }) => {
   const theme = useTheme();
-  const macro = theme.macro || theme;
   const { t } = useTranslation(["meals", "common"]);
 
-  const Content = (
+  const macroChartData = [
+    {
+      value: nutrition.protein,
+      color: theme.macro.protein,
+      label: t("protein_short", { ns: "meals" }),
+    },
+    {
+      value: nutrition.fat,
+      color: theme.macro.fat,
+      label: t("fat_short", { ns: "meals" }),
+    },
+    {
+      value: nutrition.carbs,
+      color: theme.macro.carbs,
+      label: t("carbs_short", { ns: "meals" }),
+    },
+  ];
+
+  return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.card,
-          borderRadius: theme.rounded.md,
-          padding: theme.spacing.md,
-          borderColor: selected ? theme.accent : "transparent",
-          borderWidth: selected ? 2 : 0,
-          shadowColor: theme.shadow,
-        },
-        style,
-      ]}
+      style={{
+        backgroundColor: theme.card,
+        borderRadius: theme.rounded.lg,
+        borderWidth: 1,
+        borderColor: theme.border,
+        padding: theme.spacing.lg,
+        marginBottom: theme.spacing.lg,
+        shadowColor: theme.shadow,
+        shadowOffset: { width: 1, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+        elevation: 3,
+        marginTop: theme.spacing.lg,
+      }}
     >
-      <View style={styles.leftSection}>
-        {imageUri ? (
-          <Image
-            source={{ uri: imageUri }}
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: theme.rounded.sm,
-              backgroundColor: theme.background,
-              opacity: selected ? 0.7 : 1,
-            }}
-            resizeMode="cover"
-          />
-        ) : (
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: theme.rounded.sm,
-              backgroundColor: theme.background,
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: selected ? 0.7 : 1,
-            }}
-          >
-            <MaterialIcons
-              name="restaurant"
-              size={28}
-              color={theme.textSecondary}
-            />
-          </View>
-        )}
-        {selected && (
-          <View style={styles.checkmark}>
-            <MaterialIcons name="check-circle" size={20} color={theme.accent} />
-          </View>
-        )}
-      </View>
-      <View style={styles.rightSection}>
+      {editable ? (
+        <TextInput
+          value={name}
+          onChangeText={onNameChange || (() => {})}
+          placeholder={t("ingredient_name", { ns: "meals" })}
+          numberOfLines={1}
+          maxLength={48}
+        />
+      ) : (
         <Text
           style={{
+            fontFamily: theme.typography.fontFamily.bold,
+            fontSize: theme.typography.size.xl,
             color: theme.text,
-            fontSize: theme.typography.size.base,
-            fontWeight: theme.typography.weight.medium as any,
-            fontFamily: theme.typography.fontFamily.medium,
-            marginBottom: 2,
-            maxWidth: 210,
+            marginBottom: theme.spacing.sm,
           }}
-          numberOfLines={2}
         >
-          {mealName}
+          {name}
         </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <Text
-            style={{
-              color: theme.textSecondary,
-              fontSize: theme.typography.size.sm,
-              fontFamily: theme.typography.fontFamily.regular,
-            }}
-          >
-            {calories} {t("calories", { ns: "meals" })}
-          </Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text
-              style={{
-                color: macro.protein,
-                fontSize: theme.typography.size.sm,
-              }}
-            >
-              {t("protein", { ns: "meals" }).charAt(0)}:{protein}g
-            </Text>
-            <Text
-              style={{ color: macro.carbs, fontSize: theme.typography.size.sm }}
-            >
-              {t("carbs", { ns: "meals" }).charAt(0)}:{carbs}g
-            </Text>
-            <Text
-              style={{ color: macro.fat, fontSize: theme.typography.size.sm }}
-            >
-              {t("fat", { ns: "meals" }).charAt(0)}:{fat}g
-            </Text>
-          </View>
-        </View>
+      )}
+
+      <View style={{ marginVertical: theme.spacing.md }}>
+        {editable ? (
+          <Dropdown
+            value={type || "breakfast"}
+            options={mealTypeOptions.map((opt) => ({
+              ...opt,
+              label: t(opt.label),
+            }))}
+            onChange={onTypeChange || (() => {})}
+          />
+        ) : (
+          <Text>{type ? t(`meals:${type}`) : ""}</Text>
+        )}
+      </View>
+
+      <MacroChip
+        label={t("calories", { ns: "meals" })}
+        value={nutrition.kcal}
+      />
+      <View style={styles.macrosRow}>
+        <MacroChip
+          label={t("protein_short", { ns: "meals" })}
+          value={nutrition.protein}
+        />
+        <MacroChip
+          label={t("carbs_short", { ns: "meals" })}
+          value={nutrition.carbs}
+        />
+        <MacroChip
+          label={t("fat_short", { ns: "meals" })}
+          value={nutrition.fat}
+        />
+      </View>
+
+      <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
+        <PieChart data={macroChartData} size={140} />
       </View>
     </View>
   );
-
-  if (onPress) {
-    return (
-      <Pressable
-        onPress={onPress}
-        disabled={!onPress}
-        style={({ pressed }) => [{ opacity: pressed ? 0.86 : 1 }]}
-        accessibilityRole="button"
-        accessibilityLabel={`${mealName}, ${calories} ${t("calories", {
-          ns: "meals",
-        })}, ${t("protein", { ns: "meals" })} ${protein}g, ${t("carbs", {
-          ns: "meals",
-        })} ${carbs}g, ${t("fat", { ns: "meals" })} ${fat}g`}
-      >
-        {Content}
-      </Pressable>
-    );
-  }
-
-  return Content;
 };
 
 const styles = StyleSheet.create({
-  container: {
+  macrosRow: {
     flexDirection: "row",
-    alignItems: "center",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.09,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  leftSection: {
-    marginRight: 16,
-    position: "relative",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkmark: {
-    position: "absolute",
-    top: -7,
-    left: -7,
-    backgroundColor: "transparent",
-  },
-  rightSection: {
-    flex: 1,
-    justifyContent: "center",
+    justifyContent: "space-between",
+    marginTop: 10,
+    marginBottom: 2,
+    gap: 10,
   },
 });
