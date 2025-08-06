@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image } from "react-native";
 import {
   MealBox,
   PrimaryButton,
@@ -7,7 +7,10 @@ import {
   Layout,
   ConfirmModal,
   CancelModal,
+  Card,
   IngredientBox,
+  SecondaryButton,
+  ErrorButton,
 } from "@/src/components";
 import { useTheme } from "@/src/theme/useTheme";
 import { useMealContext } from "@/src/context/MealContext";
@@ -32,6 +35,8 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const [saveToMyMeals, setSaveToMyMeals] = useState(false);
   const [mealName, setMealName] = useState(meal?.name || "");
   const [mealType, setMealType] = useState<MealType>(meal?.type || "breakfast");
+  const [showIngredients, setShowIngredients] = useState<boolean>(false);
+  const image = meal?.photoUrl ?? null;
 
   if (!meal) return null;
 
@@ -58,6 +63,13 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
 
   return (
     <Layout showNavigation={false}>
+      {image && (
+        <Image
+          source={{ uri: image }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+      )}
       <MealBox
         name={mealName}
         type={mealType}
@@ -66,27 +78,41 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
         onNameChange={setMealName}
         onTypeChange={setMealType}
       />
-
-      <Text
-        style={{
-          marginBottom: theme.spacing.sm,
-          fontSize: theme.typography.size.md,
-          color: theme.text,
-        }}
+      <Card
+        variant="outlined"
+        onPress={() => setShowIngredients(!showIngredients)}
       >
-        Ingredients
-      </Text>
-      {meal.ingredients.map((ingredient, idx) => (
-        <IngredientBox
-          key={idx || ingredient.name + idx}
-          ingredient={ingredient}
-          editable
-          onSave={(updated) => updateIngredient(idx, updated)}
-          onRemove={() => removeIngredient(idx)}
-        />
-      ))}
+        <Text
+          style={{
+            fontSize: theme.typography.size.md,
+            fontWeight: "500",
+            color: theme.text,
+            textAlign: "center",
+          }}
+        >
+          {showIngredients ? "Hide ingredients" : "Show ingredients"}
+        </Text>
+      </Card>
 
-      <View style={{ flexDirection: "row" }}>
+      {showIngredients && (
+        <>
+          {meal.ingredients.map((ingredient, idx) => (
+            <IngredientBox
+              key={idx || ingredient.name + idx}
+              ingredient={ingredient}
+              editable={false}
+              onSave={(updated) => updateIngredient(idx, updated)}
+              onRemove={() => removeIngredient(idx)}
+            />
+          ))}
+          <SecondaryButton
+            label="Edit ingredients"
+            onPress={() => navigation.navigate("ReviewIngredients")}
+          />
+        </>
+      )}
+
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
         <Checkbox
           checked={saveToMyMeals}
           onChange={setSaveToMyMeals}
@@ -97,25 +123,13 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
 
       <View
         style={{
-          flexDirection: "row",
           justifyContent: "space-between",
           gap: 16,
-          marginTop: theme.spacing.lg,
+          marginTop: theme.spacing.md,
         }}
       >
-        <TouchableOpacity onPress={() => setShowCancelModal(true)}>
-          <Text
-            style={{
-              fontSize: theme.typography.size.base,
-              color: theme.error.text,
-              borderBottomWidth: 1,
-              borderColor: theme.error.text,
-            }}
-          >
-            Cancel
-          </Text>
-        </TouchableOpacity>
         <PrimaryButton label="Save" onPress={() => setShowConfirmModal(true)} />
+        <ErrorButton label="Cancel" onPress={() => {}} />
       </View>
 
       <CancelModal
@@ -136,3 +150,14 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
     </Layout>
   );
 }
+
+const IMAGE_SIZE = 220;
+
+const styles = StyleSheet.create({
+  image: {
+    width: "100%",
+    height: IMAGE_SIZE,
+    borderRadius: 32,
+    backgroundColor: "#B2C0C9",
+  },
+});

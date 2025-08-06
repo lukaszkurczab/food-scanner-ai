@@ -1,10 +1,9 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
-import { LongTextInput } from "@/src/components/LongTextInput";
-import { Dropdown } from "@/src/components/Dropdown";
-import { PieChart } from "@/src/components/PieChart";
+import { TextInput, Dropdown, PieChart } from "@/src/components";
 import type { MealType, Nutrients } from "@/src/types/meal";
+import { MacroChip } from "./MacroChip";
 
 type Option<T extends string> = { label: string; value: T };
 
@@ -36,9 +35,9 @@ export const MealBox: React.FC<MealBoxProps> = ({
   const theme = useTheme();
 
   const macroChartData = [
-    { value: nutrition.protein, color: theme.macro.protein },
-    { value: nutrition.fat, color: theme.macro.fat },
-    { value: nutrition.carbs, color: theme.macro.carbs },
+    { value: nutrition.protein, color: theme.macro.protein, label: "Protein" },
+    { value: nutrition.fat, color: theme.macro.fat, label: "Fat" },
+    { value: nutrition.carbs, color: theme.macro.carbs, label: "Carbs" },
   ];
 
   return (
@@ -46,18 +45,22 @@ export const MealBox: React.FC<MealBoxProps> = ({
       style={{
         backgroundColor: theme.card,
         borderRadius: theme.rounded.lg,
+        borderWidth: 1,
+        borderColor: theme.border,
         padding: theme.spacing.lg,
         marginBottom: theme.spacing.lg,
         shadowColor: theme.shadow,
-        shadowOpacity: 0.07,
-        shadowRadius: 12,
+        shadowOffset: { width: 1, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+        elevation: 3,
+        marginTop: theme.spacing.lg,
       }}
     >
       {editable ? (
-        <LongTextInput
+        <TextInput
           value={name}
           onChangeText={onNameChange || (() => {})}
-          label="Meal name"
           placeholder="Enter meal name"
           numberOfLines={1}
           maxLength={48}
@@ -75,43 +78,38 @@ export const MealBox: React.FC<MealBoxProps> = ({
         </Text>
       )}
 
-      <View style={{ marginBottom: theme.spacing.md }}>
-        <Dropdown
-          label="Type"
-          value={type || "breakfast"}
-          options={mealTypeOptions}
-          onChange={onTypeChange || (() => {})}
-          disabled={!editable}
-          style={{ marginTop: 0, marginBottom: 0 }}
-        />
+      <View style={{ marginVertical: theme.spacing.md }}>
+        {editable ? (
+          <Dropdown
+            value={type || "breakfast"}
+            options={mealTypeOptions}
+            onChange={onTypeChange || (() => {})}
+          />
+        ) : (
+          <Text>{type}</Text>
+        )}
       </View>
 
-      <View style={{ alignItems: "center", marginBottom: theme.spacing.md }}>
+      <MacroChip label="Calories" value={nutrition.kcal} />
+      <View style={styles.macrosRow}>
+        <MacroChip label="Protein" value={nutrition.protein} />
+        <MacroChip label="Carbs" value={nutrition.carbs} />
+        <MacroChip label="Fat" value={nutrition.fat} />
+      </View>
+
+      <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
         <PieChart data={macroChartData} size={140} />
       </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          marginBottom: theme.spacing.sm,
-        }}
-      >
-        <Text style={{ color: theme.macro.carbs }}>
-          {nutrition.carbs}g Carbs
-        </Text>
-        <Text style={{ color: theme.macro.protein }}>
-          {nutrition.protein}g Protein
-        </Text>
-        <Text style={{ color: theme.macro.fat }}>{nutrition.fat}g Fat</Text>
-      </View>
-      <Text
-        style={{
-          color: theme.textSecondary,
-          fontSize: theme.typography.size.md,
-        }}
-      >
-        Calories: {nutrition.kcal} kcal
-      </Text>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  macrosRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+    marginBottom: 2,
+    gap: 10,
+  },
+});

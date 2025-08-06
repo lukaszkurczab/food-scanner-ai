@@ -1,21 +1,27 @@
 import React from "react";
+import { View, Text } from "react-native";
 import { Svg, Path } from "react-native-svg";
 
 type PieSlice = {
   value: number;
   color: string;
+  label?: string;
 };
 
 type PieChartProps = {
   data: PieSlice[];
   size?: number;
   strokeWidth?: number;
+  legendWidth?: number;
+  fontSize?: number;
 };
 
 export const PieChart: React.FC<PieChartProps> = ({
   data,
   size = 200,
   strokeWidth = 0,
+  legendWidth = 96,
+  fontSize = 16,
 }) => {
   const total = data.reduce((sum, d) => sum + d.value, 0);
   let angle = 0;
@@ -51,9 +57,42 @@ export const PieChart: React.FC<PieChartProps> = ({
     );
   };
 
+  // Main render
   return (
-    <Svg width={size} height={size}>
-      {data.map(renderSlice)}
-    </Svg>
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      {/* Wykres */}
+      <Svg width={size} height={size}>
+        {data.map(renderSlice)}
+      </Svg>
+
+      {/* Legenda */}
+      <View style={{ marginLeft: 18, minWidth: legendWidth }}>
+        {data.map((slice, i) => (
+          <View
+            key={i}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 10,
+            }}
+          >
+            <View
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: 9,
+                backgroundColor: slice.color,
+                marginRight: 10,
+                borderWidth: 1,
+                borderColor: "#e0e0e0",
+              }}
+            />
+            <Text style={{ fontSize, color: "#444" }}>
+              {slice.label || slice.value}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
   );
 };
