@@ -11,6 +11,7 @@ import {
 import { IngredientBox } from "@/src/components/IngredientBox";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useMealContext } from "@/src/context/MealContext";
+import { useAuthContext } from "@/src/context/AuthContext";
 
 export default function ReviewIngredientsScreen() {
   const navigation = useNavigation<any>();
@@ -23,14 +24,15 @@ export default function ReviewIngredientsScreen() {
     clearMeal,
     saveDraft,
   } = useMealContext();
+  const { user } = useAuthContext();
   const [showModal, setShowModal] = useState(false);
 
   const ingredients = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
 
   useEffect(() => {
-    setLastScreen("ReviewIngredients");
-  }, [setLastScreen]);
+    if (user?.uid) setLastScreen(user.uid, "ReviewIngredients");
+  }, [setLastScreen, user?.uid]);
 
   const handleAddPhoto = () => {
     navigation.replace("MealCamera", { skipDetection: true });
@@ -42,12 +44,12 @@ export default function ReviewIngredientsScreen() {
 
   const handleRemoveIngredient = (idx: number) => {
     removeIngredient(idx);
-    saveDraft();
+    if (user?.uid) saveDraft(user.uid);
   };
 
   const handleSaveIngredient = (idx: number, updated: any) => {
     updateIngredient(idx, updated);
-    saveDraft();
+    if (user?.uid) saveDraft(user.uid);
   };
 
   const handleContinue = () => {
@@ -55,14 +57,13 @@ export default function ReviewIngredientsScreen() {
   };
 
   const handleStartOver = () => {
-    clearMeal();
+    if (user?.uid) clearMeal(user.uid);
     navigation.replace("MealAddMethod");
   };
 
   useEffect(() => {
-    console.log(ingredients);
-    saveDraft();
-  }, [ingredients, image, saveDraft]);
+    if (user?.uid) saveDraft(user.uid);
+  }, [ingredients, image, saveDraft, user?.uid]);
 
   return (
     <Layout showNavigation={false}>

@@ -46,18 +46,17 @@ export const schema = appSchema({
     tableSchema({
       name: "meals",
       columns: [
-        { name: "name", type: "string" },
         { name: "mealId", type: "string" },
-        { name: "userUid", type: "string" },
         { name: "timestamp", type: "string" },
-        { name: "type", type: "string", isOptional: true },
-        { name: "photoUrl", type: "string", isOptional: true },
-        { name: "notes", type: "string", isOptional: true },
+        { name: "type", type: "string" },
+        { name: "name", type: "string", isOptional: true },
         { name: "ingredients", type: "string" }, // JSON.stringify
         { name: "createdAt", type: "string" },
         { name: "updatedAt", type: "string" },
-        { name: "source", type: "string", isOptional: true },
-        { name: "syncStatus", type: "string", isOptional: true },
+        { name: "syncState", type: "string" },
+        { name: "source", type: "string" },
+        { name: "photoUrl", type: "string", isOptional: true },
+        { name: "notes", type: "string", isOptional: true },
         { name: "tags", type: "string", isOptional: true }, // JSON.stringify
         { name: "deleted", type: "boolean", isOptional: true },
         { name: "cloudId", type: "string", isOptional: true },

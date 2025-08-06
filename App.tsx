@@ -34,14 +34,14 @@ export default function App() {
     "Inter-Light": require("./assets/fonts/Inter-Light.ttf"),
   });
 
-  // const handleReset = async () => {
-  //   await database.write(async () => {
-  //     await database.unsafeResetDatabase();
-  //   });
-  //   alert("Baza została zresetowana");
-  // };
+  const handleReset = async () => {
+    await database.write(async () => {
+      await database.unsafeResetDatabase();
+    });
+    alert("Baza została zresetowana");
+  };
 
-  // handleReset();
+  //handleReset();
 
   useEffect(() => {
     if (__DEV__ && typeof ErrorUtils?.getGlobalHandler === "function") {

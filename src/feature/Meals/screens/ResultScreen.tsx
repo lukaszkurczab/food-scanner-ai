@@ -5,18 +5,21 @@ import {
   PrimaryButton,
   Checkbox,
   Layout,
-  ConfirmModal,
   CancelModal,
   Card,
   IngredientBox,
   SecondaryButton,
   ErrorButton,
+  Modal,
 } from "@/src/components";
 import { useTheme } from "@/src/theme/useTheme";
 import { useMealContext } from "@/src/context/MealContext";
 import { useUserContext } from "@/src/context/UserContext";
+import { useMeals } from "@/src/hooks/useMeals";
 import { calculateTotalNutrients } from "@/src/services";
+import { useAuthContext } from "@/src/context/AuthContext";
 import type { MealType } from "@/src/types/meal";
+import { autoMealName } from "@/src/utils/autoMealName";
 
 type ResultScreenProps = {
   navigation: any;
@@ -24,45 +27,59 @@ type ResultScreenProps = {
 
 export default function ResultScreen({ navigation }: ResultScreenProps) {
   const theme = useTheme();
+  const { user } = useAuthContext();
   const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =
     useMealContext();
-  const { userData } =
-    // const { userData, saveMealToFirestoreHistory, saveMealToMyMeals } =
-    useUserContext();
-
-  useEffect(() => {
-    setLastScreen("Result");
-  }, [setLastScreen]);
-
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const { userData } = useUserContext();
+  const { addMeal } = useMeals(user?.uid || "");
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [saveToMyMeals, setSaveToMyMeals] = useState(false);
-  const [mealName, setMealName] = useState(meal?.name || "");
+  const [mealName, setMealName] = useState(meal?.name || autoMealName());
   const [mealType, setMealType] = useState<MealType>(meal?.type || "breakfast");
   const [showIngredients, setShowIngredients] = useState<boolean>(false);
+  const [saving, setSaving] = useState(false);
+
   const image = meal?.photoUrl ?? null;
 
-  if (!meal) return null;
+  useEffect(() => {
+    if (user?.uid) setLastScreen(user.uid, "Result");
+  }, [setLastScreen, user?.uid]);
+
+  if (!meal || !user?.uid) return null;
 
   const nutrition = calculateTotalNutrients([meal]);
 
   const handleSave = async () => {
-    if (!userData?.uid) return;
+    if (!userData?.uid || saving) return;
+    setSaving(true);
     const newMeal = {
       ...meal,
+      cloudId: meal.cloudId,
+      user_uid: user.uid,
       name: mealName,
       type: mealType,
       nutrition,
       date: new Date().toISOString(),
+      syncState: "pending",
+      updatedAt: new Date().toISOString(),
     };
     try {
-      //await saveMealToFirestoreHistory(newMeal);
-      //if (saveToMyMeals) await saveMealToMyMeals(newMeal);
-      //clearMeal();
-      //navigation.navigate("Home");
+      await addMeal(newMeal);
+      clearMeal(user.uid);
+      navigation.navigate("Home");
     } catch (error) {
-      // obsłuż błąd
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    setShowCancelModal(true);
+  };
+
+  const handleCancelConfirm = () => {
+    if (user?.uid) clearMeal(user.uid);
+    navigation.navigate("Home");
   };
 
   return (
@@ -78,13 +95,13 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
         name={mealName}
         type={mealType}
         nutrition={nutrition}
-        editable
+        editable={!saving}
         onNameChange={setMealName}
         onTypeChange={setMealType}
       />
       <Card
         variant="outlined"
-        onPress={() => setShowIngredients(!showIngredients)}
+        onPress={() => !saving && setShowIngredients(!showIngredients)}
       >
         <Text
           style={{
@@ -105,13 +122,14 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
               key={idx || ingredient.name + idx}
               ingredient={ingredient}
               editable={false}
-              onSave={(updated) => updateIngredient(idx, updated)}
-              onRemove={() => removeIngredient(idx)}
+              onSave={(updated) => !saving && updateIngredient(idx, updated)}
+              onRemove={() => !saving && removeIngredient(idx)}
             />
           ))}
           <SecondaryButton
             label="Edit ingredients"
-            onPress={() => navigation.navigate("ReviewIngredients")}
+            onPress={() => !saving && navigation.navigate("ReviewIngredients")}
+            disabled={saving}
           />
         </>
       )}
@@ -119,8 +137,9 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <Checkbox
           checked={saveToMyMeals}
-          onChange={setSaveToMyMeals}
+          onChange={!saving ? setSaveToMyMeals : () => {}}
           style={{ marginVertical: theme.spacing.md }}
+          disabled={saving}
         />
         <Text>Add to My Meals</Text>
       </View>
@@ -132,24 +151,28 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
           marginTop: theme.spacing.md,
         }}
       >
-        <PrimaryButton label="Save" onPress={() => setShowConfirmModal(true)} />
-        <ErrorButton label="Cancel" onPress={() => {}} />
+        <PrimaryButton
+          label="Save"
+          onPress={handleSave}
+          loading={saving}
+          disabled={saving}
+        />
+        <ErrorButton
+          label="Cancel"
+          onPress={handleCancel}
+          loading={saving}
+          disabled={saving}
+        />
       </View>
 
-      <CancelModal
+      <Modal
         visible={showCancelModal}
         message="Are you sure you want to cancel? All data will be lost."
+        primaryActionLabel="Confirm"
         onClose={() => setShowCancelModal(false)}
-        onConfirm={() => {
-          setShowCancelModal(false);
-          clearMeal();
-          navigation.navigate("Home");
-        }}
-      />
-      <ConfirmModal
-        visible={showConfirmModal}
-        onCancel={() => setShowConfirmModal(false)}
-        onConfirm={handleSave}
+        onPrimaryAction={handleCancelConfirm}
+        secondaryActionLabel="Cancel"
+        onSecondaryAction={() => setShowCancelModal(false)}
       />
     </Layout>
   );

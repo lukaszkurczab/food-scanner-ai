@@ -1,22 +1,25 @@
 import React, {
   createContext,
   useContext,
-  useEffect,
   useState,
   useCallback,
-  useRef,
+  ReactNode,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Meal, Ingredient, MealType } from "@/src/types/meal";
 
-export const STORAGE_KEY = "current_meal_draft";
-export const STORAGE_SCREEN_KEY = "current_meal_draft_screen";
+export function getDraftKey(userUid: string) {
+  return `current_meal_draft_${userUid}`;
+}
+export function getScreenKey(userUid: string) {
+  return `current_meal_draft_screen_${userUid}`;
+}
 
 export type MealContextType = {
   meal: Meal | null;
   setMeal: (meal: Meal) => void;
   updateMeal: (patch: Partial<Meal>) => void;
-  clearMeal: () => void;
+  clearMeal: (userUid: string) => void;
 
   addIngredient: (ingredient: Ingredient) => void;
   removeIngredient: (index: number) => void;
@@ -30,14 +33,14 @@ export type MealContextType = {
   removeTag: (tag: string) => void;
 
   isDraft: boolean;
-  saveDraft: () => Promise<void>;
-  loadDraft: () => Promise<void>;
-  removeDraft: () => Promise<void>;
+  saveDraft: (userUid: string) => Promise<void>;
+  loadDraft: (userUid: string) => Promise<void>;
+  removeDraft: (userUid: string) => Promise<void>;
 
-  loadLastScreen: () => void;
+  loadLastScreen: (userUid: string) => void;
   lastScreen: string | null;
-  setLastScreen: (screen: string) => void;
-  clearLastScreen: () => void;
+  setLastScreen: (userUid: string, screen: string) => void;
+  clearLastScreen: (userUid: string) => void;
 };
 
 const MealContext = createContext<MealContextType>({
@@ -53,7 +56,6 @@ const MealContext = createContext<MealContextType>({
   setNotes: () => {},
   setTags: () => {},
   addTag: () => {},
-  loadLastScreen: () => {},
   removeTag: () => {},
   isDraft: false,
   saveDraft: async () => {},
@@ -61,60 +63,60 @@ const MealContext = createContext<MealContextType>({
   removeDraft: async () => {},
   lastScreen: null,
   setLastScreen: () => {},
+  loadLastScreen: () => {},
   clearLastScreen: () => {},
 });
 
-export const MealProvider = ({ children }: { children: React.ReactNode }) => {
+type Props = { children: ReactNode };
+
+export const MealProvider = ({ children }: Props) => {
   const [meal, setMealState] = useState<Meal | null>(null);
   const [isDraft, setIsDraft] = useState(false);
   const [lastScreen, setLastScreenState] = useState<string | null>(null);
 
-  const saveDraft = useCallback(async () => {
-    if (meal) {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(meal));
-      setIsDraft(true);
-    }
-  }, [meal]);
+  const saveDraft = useCallback(
+    async (userUid: string) => {
+      if (meal) {
+        await AsyncStorage.setItem(getDraftKey(userUid), JSON.stringify(meal));
+        setIsDraft(true);
+      }
+    },
+    [meal]
+  );
 
-  const loadDraft = useCallback(async () => {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+  const loadDraft = useCallback(async (userUid: string) => {
+    const raw = await AsyncStorage.getItem(getDraftKey(userUid));
     if (raw) {
       setMealState(JSON.parse(raw));
       setIsDraft(true);
+    } else {
+      setMealState(null);
+      setIsDraft(false);
     }
   }, []);
 
-  const removeDraft = useCallback(async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+  const removeDraft = useCallback(async (userUid: string) => {
+    await AsyncStorage.removeItem(getDraftKey(userUid));
     setIsDraft(false);
-    clearLastScreen();
+    clearLastScreen(userUid);
   }, []);
 
-  const clearMeal = useCallback(() => {
-    setMealState(null);
-    removeDraft();
-    clearLastScreen();
-  }, [removeDraft]);
-
-  const setLastScreen = useCallback(async (screen: string) => {
+  const setLastScreen = useCallback(async (userUid: string, screen: string) => {
     setLastScreenState(screen);
-    await AsyncStorage.setItem(STORAGE_SCREEN_KEY, screen);
+    await AsyncStorage.setItem(getScreenKey(userUid), screen);
   }, []);
 
-  const clearLastScreen = useCallback(async () => {
+  const clearLastScreen = useCallback(async (userUid: string) => {
     setLastScreenState(null);
-    await AsyncStorage.removeItem(STORAGE_SCREEN_KEY);
+    await AsyncStorage.removeItem(getScreenKey(userUid));
   }, []);
 
-  const loadLastScreen = useCallback(async () => {
-    const screen = await AsyncStorage.getItem(STORAGE_SCREEN_KEY);
-    console.log(screen);
-    if (screen) setLastScreenState(screen);
+  const loadLastScreen = useCallback(async (userUid: string) => {
+    const screen = await AsyncStorage.getItem(getScreenKey(userUid));
+    setLastScreenState(screen || null);
   }, []);
 
-  const setMeal = (meal: Meal) => {
-    setMealState(meal);
-  };
+  const setMeal = (meal: Meal) => setMealState(meal);
 
   const updateMeal = (patch: Partial<Meal>) => {
     setMealState((prev) =>
@@ -160,21 +162,10 @@ export const MealProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
 
-  const setType = (type: MealType) => {
-    updateMeal({ type });
-  };
-
-  const setPhotoUrl = (url: string | null) => {
-    updateMeal({ photoUrl: url });
-  };
-
-  const setNotes = (notes: string | null) => {
-    updateMeal({ notes });
-  };
-
-  const setTags = (tags: string[]) => {
-    updateMeal({ tags });
-  };
+  const setType = (type: MealType) => updateMeal({ type });
+  const setPhotoUrl = (url: string | null) => updateMeal({ photoUrl: url });
+  const setNotes = (notes: string | null) => updateMeal({ notes });
+  const setTags = (tags: string[]) => updateMeal({ tags });
 
   const addTag = (tag: string) => {
     setMealState((prev) =>
@@ -200,13 +191,14 @@ export const MealProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
 
-  useEffect(() => {
-    if (meal) saveDraft();
-  }, [meal, saveDraft]);
-
-  useEffect(() => {
-    loadDraft();
-  }, [loadDraft]);
+  const clearMeal = useCallback(
+    (userUid: string) => {
+      setMealState(null);
+      removeDraft(userUid);
+      clearLastScreen(userUid);
+    },
+    [removeDraft, clearLastScreen]
+  );
 
   return (
     <MealContext.Provider
