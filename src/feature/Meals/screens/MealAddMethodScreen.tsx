@@ -10,11 +10,8 @@ import { useTranslation } from "react-i18next";
 import { Layout } from "@/src/components";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Modal } from "@/src/components/Modal";
-import {
-  STORAGE_KEY,
-  STORAGE_SCREEN_KEY,
-  useMealContext,
-} from "@/src/context/MealContext";
+import { getDraftKey, getScreenKey } from "@/src/context/MealContext";
+import { useAuthContext } from "@/src/context/AuthContext";
 
 type MealInputMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -49,44 +46,48 @@ const MealInputMethodScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation<MealInputMethodNavigationProp>();
   const { t } = useTranslation("meals");
+  const { user } = useAuthContext();
 
   const [showModal, setShowModal] = useState(false);
   const [draftExists, setDraftExists] = useState(false);
-  const [lastScreen, loadLastScreen] = useState();
+  const [lastScreen, setLastScreen] = useState<string | null>(null);
 
   const checkDraft = useCallback(async () => {
-    const draft = await AsyncStorage.getItem(STORAGE_KEY);
-    const lastScreen = await AsyncStorage.getItem(STORAGE_SCREEN_KEY);
-    if (draft && lastScreen) {
+    if (!user?.uid) return;
+    const draft = await AsyncStorage.getItem(getDraftKey(user.uid));
+    const lastScreenStored = await AsyncStorage.getItem(getScreenKey(user.uid));
+    if (draft && lastScreenStored) {
       setDraftExists(true);
-      loadLastScreen(lastScreen as any);
+      setLastScreen(lastScreenStored);
     }
-  }, []);
+  }, [user?.uid]);
 
   useEffect(() => {
     checkDraft();
   }, [checkDraft]);
 
   useEffect(() => {
-    if (draftExists) {
-      setShowModal(true);
-    }
+    if (draftExists) setShowModal(true);
   }, [draftExists]);
 
   const handleOptionPress = (screen: string) => {
     navigation.navigate(screen as any);
   };
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     setShowModal(false);
-
-    navigation.navigate(lastScreen as any);
+    if (lastScreen) {
+      navigation.navigate(lastScreen as any);
+    }
   };
 
   const handleDiscard = async () => {
-    await AsyncStorage.removeItem("current_meal_draft");
+    if (!user?.uid) return;
+    await AsyncStorage.removeItem(getDraftKey(user.uid));
+    await AsyncStorage.removeItem(getScreenKey(user.uid));
     setShowModal(false);
     setDraftExists(false);
+    setLastScreen(null);
   };
 
   return (

@@ -9,14 +9,9 @@ import Loader from "../components/Loader";
 import { useTranslation } from "react-i18next";
 import { detectIngredientsWithVision } from "@/src/services/visionService";
 import { useRoute } from "@react-navigation/native";
+import { useAuthContext } from "@/src/context/AuthContext";
 
-type MealCameraScreenProps = {
-  navigation: any;
-};
-
-export default function MealCameraScreen({
-  navigation,
-}: MealCameraScreenProps) {
+export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const theme = useTheme();
   const [permission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -28,8 +23,9 @@ export default function MealCameraScreen({
 
   const { meal, setMeal, updateMeal, setLastScreen } = useMealContext();
   const { t } = useTranslation("meals");
-  const route = useRoute<any>();
+  const { user } = useAuthContext();
 
+  const route = useRoute<any>();
   const routeId = route.params?.id as string | undefined;
   const attemptFromRoute = route.params?.attempt as number | undefined;
   const skipDetection = !!route.params?.skipDetection;
@@ -38,8 +34,8 @@ export default function MealCameraScreen({
   const attempt = attemptFromRoute ?? 1;
 
   useEffect(() => {
-    setLastScreen("MealCamera");
-  }, [setLastScreen]);
+    if (user?.uid && setLastScreen) setLastScreen(user.uid, "MealCamera");
+  }, [setLastScreen, user?.uid]);
 
   const handleTakePicture = async () => {
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
@@ -59,21 +55,19 @@ export default function MealCameraScreen({
     try {
       if (!meal) {
         setMeal({
-          ...{
-            mealId,
-            name: null,
-            photoUrl: photoUri,
-            ingredients: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            syncState: "pending",
-            tags: [],
-            deleted: false,
-            notes: null,
-            type: "other",
-            timestamp: "",
-            source: null,
-          },
+          mealId,
+          name: null,
+          photoUrl: photoUri,
+          ingredients: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          syncState: "pending",
+          tags: [],
+          deleted: false,
+          notes: null,
+          type: "other",
+          timestamp: "",
+          source: null,
         });
       } else {
         updateMeal({ photoUrl: photoUri, mealId });
@@ -86,7 +80,6 @@ export default function MealCameraScreen({
       }
 
       const ingredients = await detectIngredientsWithVision(photoUri);
-
       setIsLoading(false);
 
       if (!ingredients || ingredients.length === 0) {
@@ -97,6 +90,7 @@ export default function MealCameraScreen({
         });
         return;
       }
+
       updateMeal({ ingredients, mealId, photoUrl: photoUri });
       navigation.replace("ReviewIngredients");
     } catch (error: any) {

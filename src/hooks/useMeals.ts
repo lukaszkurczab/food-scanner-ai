@@ -4,7 +4,7 @@ import { database } from "@/src/db/database";
 import type { Meal } from "@/src/types";
 import {
   fetchMealsFromFirestore,
-  upsertMealInFirestore,
+  upsertMealWithPhoto,
   deleteMealInFirestore,
 } from "@/src/services/firestore/firestoreMealService";
 import { mapRawToMeal, mapMealToRaw } from "@/src/utils/mealMapper";
@@ -15,7 +15,7 @@ const unsyncedStatuses: Meal["syncState"][] = ["pending", "conflict"];
 function areMealsEqual(a: Meal[], b: Meal[]): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
-    if (a[i].id !== b[i].id) return false;
+    if (a[i].cloudId !== b[i].cloudId) return false;
   }
   return true;
 }
@@ -43,30 +43,44 @@ export function useMeals(userUid: string) {
   );
 
   const addMeal = useCallback(
-    async (meal: Omit<Meal, "id" | "syncState" | "lastUpdated" | "source">) => {
+    async (
+      meal: Omit<Meal, "syncState" | "lastUpdated" | "source" | "updatedAt">
+    ) => {
       const mealCollection = database.get("meals");
-      const newMeal: Meal = {
+      const cloudId = meal.cloudId ?? uuidv4();
+      const baseMeal: Meal = {
         ...meal,
-        id: uuidv4(),
-        source: "local",
         syncState: "pending",
-        lastUpdated: new Date().toISOString(),
+        cloudId,
+        source: "ai",
+        updatedAt: new Date().toISOString(),
       };
-      await database.write(async () => {
-        await mealCollection.create((m: any) =>
-          Object.assign(m, mapMealToRaw(newMeal))
+
+      let syncState: Meal["syncState"] = "synced";
+      try {
+        await upsertMealWithPhoto(
+          userUid,
+          { ...baseMeal, syncState: "synced" },
+          meal.photoUrl || null
         );
+      } catch (err) {
+        syncState = "pending";
+      }
+
+      await database.write(async () => {
+        const { id, ...raw } = mapMealToRaw({ ...baseMeal, syncState });
+        await mealCollection.create((m: any) => Object.assign(m, raw));
       });
       await getMeals();
     },
-    [getMeals]
+    [getMeals, userUid]
   );
 
   const updateMeal = useCallback(
     async (meal: Meal) => {
       const mealCollection = database.get("meals");
       const all = await mealCollection.query().fetch();
-      const localMeal = all.find((m: any) => m.id === meal.id);
+      const localMeal = all.find((m: any) => m.id === meal.cloudId);
       if (localMeal) {
         await database.write(async () => {
           await localMeal.update((m: any) =>
@@ -75,7 +89,7 @@ export function useMeals(userUid: string) {
               mapMealToRaw({
                 ...meal,
                 syncState: "pending",
-                lastUpdated: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
               })
             )
           );
@@ -137,25 +151,27 @@ export function useMeals(userUid: string) {
 
       for (const m of toSync) {
         const meal = mapRawToMeal(m._raw);
-        if (meal.deleted) {
-          await deleteMealInFirestore(meal);
-        } else {
-          await upsertMealInFirestore(meal);
-        }
-        await database.write(async () => {
-          await m.update((mm: any) => {
-            mm.sync_status = "synced";
-            mm.last_updated = new Date().toISOString();
+        try {
+          if (meal.deleted) {
+            await deleteMealInFirestore(userUid, meal);
+          } else {
+            await upsertMealWithPhoto(userUid, meal, meal.photoUrl || null);
+          }
+          await database.write(async () => {
+            await m.update((mm: any) => {
+              mm.sync_status = "synced";
+              mm.last_updated = new Date().toISOString();
+            });
           });
-        });
+        } catch (error) {}
       }
 
       const remoteMeals = await fetchMealsFromFirestore(userUid);
       for (const remote of remoteMeals) {
-        const local = localMeals.find((m: any) => m.id === remote.id);
+        const local = localMeals.find((m: any) => m.id === remote.cloudId);
         if (local) {
           const localMeal = mapRawToMeal(local._raw);
-          if (new Date(remote.lastUpdated) > new Date(localMeal.lastUpdated)) {
+          if (new Date(remote.updatedAt) > new Date(localMeal.updatedAt)) {
             await database.write(async () => {
               await local.update((m: any) =>
                 Object.assign(m, mapMealToRaw(remote))

@@ -3,17 +3,17 @@ export type MealSource = "ai" | "manual" | "saved" | null;
 export type MealSyncState = "synced" | "pending" | "conflict";
 
 export interface Meal {
-  name: string | null;
   mealId: string;
   timestamp: string;
   type: MealType;
-  photoUrl?: string | null;
-  notes?: string | null;
+  name: string | null;
   ingredients: Ingredient[];
   createdAt: string;
   updatedAt: string;
-  source?: MealSource;
-  syncState?: MealSyncState;
+  syncState: MealSyncState;
+  source: MealSource;
+  photoUrl?: string | null;
+  notes?: string | null;
   tags?: string[];
   deleted?: boolean;
   cloudId?: string;
