@@ -36,5 +36,10 @@
   "hide_ingredients": "Hide ingredients",
   "edit_ingredients": "Edit ingredients",
   "add_to_my_meals": "Add to My Meals",
-  "cancel_result_message": "Are you sure you want to cancel? All data will be lost."
+  "cancel_result_message": "Are you sure you want to cancel? All data will be lost.",
+  "breakfast": "Breakfast",
+  "lunch": "Lunch",
+  "dinner": "Dinner",
+  "snack": "Snack",
+  "other": "Other"
 }

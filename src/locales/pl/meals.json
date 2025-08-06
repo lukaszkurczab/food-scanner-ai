@@ -23,9 +23,9 @@
   "calories": "Kalorie",
   "protein": "Białko",
   "protein_short": "B",
-  "carbs": "Węglowodany",
+  "carbs": "Węglo.",
   "carbs_short": "W",
-  "fat": "Tłuszcze",
+  "fat": "Tłuszcz",
   "fat_short": "T",
   "add_photo": "Dodaj zdjęcie",
   "add_ingredient": "+ Dodaj składnik",
@@ -36,5 +36,10 @@
   "hide_ingredients": "Ukryj składniki",
   "edit_ingredients": "Edytuj składniki",
   "add_to_my_meals": "Dodaj do Moich posiłków",
-  "cancel_result_message": "Czy na pewno anulować? Wszystkie dane zostaną utracone."
+  "cancel_result_message": "Czy na pewno anulować? Wszystkie dane zostaną utracone.",
+  "breakfast": "Śniadanie",
+  "lunch": "Obiad",
+  "dinner": "Kolacja",
+  "snack": "Przekąska",
+  "other": "Inne"
 }
