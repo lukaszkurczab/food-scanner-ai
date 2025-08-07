@@ -18,6 +18,7 @@ export interface UserData extends FormData {
   avatarlastSyncedAt?: string;
   darkTheme: boolean;
   language: string;
+  calorieTarget: number | null;
 }
 
 export type ExportedUserData = {
