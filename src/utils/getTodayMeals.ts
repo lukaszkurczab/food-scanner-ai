@@ -10,10 +10,12 @@ export function getTodayMeals(meals: Meal[]): Meal[] {
   const end = start + 24 * 60 * 60 * 1000;
 
   return meals.filter((meal) => {
-    const ts =
-      typeof meal.timestamp === "string"
-        ? Date.parse(meal.timestamp)
-        : meal.timestamp;
+    const rawTs = meal.timestamp || meal.createdAt;
+    if (!rawTs) return false;
+
+    const ts = typeof rawTs === "string" ? Date.parse(rawTs) : rawTs;
+    if (isNaN(ts)) return false;
+
     return ts >= start && ts < end;
   });
 }

@@ -1,13 +1,24 @@
 import { Model } from "@nozbe/watermelondb";
 import { field, json } from "@nozbe/watermelondb/decorators";
 
-function sanitizeArray(raw: any): any[] {
-  return Array.isArray(raw) ? raw : [];
+function sanitizeArray(v: any): any[] {
+  if (Array.isArray(v)) return v;
+  if (v == null) return [];
+  if (typeof v === "string") {
+    try {
+      const parsed = JSON.parse(v);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
 export default class Meal extends Model {
   static table = "meals";
 
+  @field("userUid") userUid!: string;
   @field("mealId") mealId!: string;
   @field("timestamp") timestamp!: string;
   @field("type") type!: string;

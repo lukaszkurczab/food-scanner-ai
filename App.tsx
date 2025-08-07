@@ -41,7 +41,7 @@ export default function App() {
     alert("Baza została zresetowana");
   };
 
-  handleReset();
+  //handleReset();
 
   useEffect(() => {
     if (__DEV__ && typeof ErrorUtils?.getGlobalHandler === "function") {

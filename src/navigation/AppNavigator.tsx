@@ -15,7 +15,6 @@ import RegisterScreen from "@/src/feature/Auth/screens/RegisterScreen";
 import MealAddMethodScreen from "@/src/feature/Meals/screens/MealAddMethodScreen";
 import AddMealFromList from "@/src/feature/AddMealFromList/screens/AddMealFromList";
 import SavedMealsScreen from "@/src/feature/AddMealFromList/screens/SavedMealsScreen";
-import AddMealManual from "@/src/feature/AddMealManual/screens/AddMealManual";
 import ReviewIngredientsScreen from "@/src/feature/Meals/screens/ReviewIngredientsScreen";
 import ProfileScreen from "@/src/feature/UserProfile/screens/ProfileScreen";
 import TermsScreen from "@/src/feature/Auth/screens/TermsScreen";
@@ -62,7 +61,6 @@ const AppNavigator = () => {
           <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
           <Stack.Screen name="MealDetail" component={MealDetailScreen} />
           <Stack.Screen name="AddMealFromList" component={AddMealFromList} />
-          <Stack.Screen name="AddMealManual" component={AddMealManual} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Summary" component={SummaryScreen} />

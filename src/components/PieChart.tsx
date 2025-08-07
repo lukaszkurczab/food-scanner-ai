@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { Svg, Path } from "react-native-svg";
+import { Svg, Path, Circle } from "react-native-svg";
 
 type PieSlice = {
   value: number;
@@ -26,6 +26,49 @@ export const PieChart: React.FC<PieChartProps> = ({
   const total = data.reduce((sum, d) => sum + d.value, 0);
   let angle = 0;
   const radius = size / 2;
+
+  if (!total || total <= 0) {
+    return (
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Svg width={size} height={size}>
+          <Circle cx={radius} cy={radius} r={radius} fill="transparent" />
+          <Circle
+            cx={radius}
+            cy={radius}
+            r={radius - strokeWidth / 2}
+            fill="transparent"
+          />
+        </Svg>
+        <View style={{ marginLeft: 18, minWidth: legendWidth }}>
+          {data.map((slice, i) => (
+            <View
+              key={i}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 10,
+              }}
+            >
+              <View
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 9,
+                  backgroundColor: slice.color,
+                  marginRight: 10,
+                  borderWidth: 1,
+                  borderColor: "#e0e0e0",
+                }}
+              />
+              <Text style={{ fontSize, color: "#444" }}>
+                {slice.label || 0}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   const renderSlice = (slice: PieSlice, i: number) => {
     const startAngle = angle;

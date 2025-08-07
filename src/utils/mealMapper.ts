@@ -2,6 +2,7 @@ import type { Meal } from "@/src/types";
 
 export function mapRawToMeal(raw: any): Meal {
   return {
+    userUid: raw.userUid,
     mealId: raw.mealId,
     timestamp: raw.timestamp,
     type: raw.type,
@@ -23,6 +24,7 @@ export function mapRawToMeal(raw: any): Meal {
 
 export function mapMealToRaw(meal: Meal): any {
   return {
+    userUid: meal.userUid,
     mealId: meal.mealId,
     timestamp: meal.timestamp,
     type: meal.type,
