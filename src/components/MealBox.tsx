@@ -25,14 +25,14 @@ type MealBoxProps = {
   onTypeChange?: (val: MealType) => void;
 };
 
-export const MealBox: React.FC<MealBoxProps> = ({
+export const MealBox = ({
   name,
   type,
   nutrition,
   editable = false,
   onNameChange,
   onTypeChange,
-}) => {
+}: MealBoxProps) => {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
 

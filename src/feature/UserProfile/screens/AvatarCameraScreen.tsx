@@ -5,6 +5,7 @@ import PhotoPreview from "@/src/components/PhotoPreview";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/src/theme/useTheme";
 import { useUserContext } from "@/src/context/UserContext";
+import { Layout } from "@/src/components/Layout";
 
 type AvatarCameraScreenProps = {
   onPhotoTaken?: (uri: string) => void;
@@ -59,48 +60,54 @@ export default function AvatarCameraScreen({
   };
 
   if (!permission)
-    return <View style={{ flex: 1, backgroundColor: theme.background }} />;
+    return (
+      <Layout hiddenLayout={true}>
+        <View style={{ flex: 1, backgroundColor: theme.background }} />
+      </Layout>
+    );
   if (!permission.granted) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          padding: 20,
-          backgroundColor: theme.background,
-        }}
-      >
-        <Text
+      <Layout hiddenLayout={true}>
+        <View
           style={{
-            fontSize: 18,
-            textAlign: "center",
-            marginBottom: 20,
-            color: theme.text,
-          }}
-        >
-          {t("camera_permission_message")}
-        </Text>
-        <Pressable
-          onPress={requestPermission}
-          style={{
-            paddingVertical: 12,
-            paddingHorizontal: 32,
-            borderRadius: 32,
-            backgroundColor: theme.card,
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+            backgroundColor: theme.background,
           }}
         >
           <Text
             style={{
-              fontWeight: "bold",
-              fontSize: 16,
+              fontSize: 18,
+              textAlign: "center",
+              marginBottom: 20,
               color: theme.text,
             }}
           >
-            {t("camera_grant_access")}
+            {t("camera_permission_message")}
           </Text>
-        </Pressable>
-      </View>
+          <Pressable
+            onPress={requestPermission}
+            style={{
+              paddingVertical: 12,
+              paddingHorizontal: 32,
+              borderRadius: 32,
+              backgroundColor: theme.card,
+            }}
+          >
+            <Text
+              style={{
+                fontWeight: "bold",
+                fontSize: 16,
+                color: theme.text,
+              }}
+            >
+              {t("camera_grant_access")}
+            </Text>
+          </Pressable>
+        </View>
+      </Layout>
     );
   }
 
@@ -126,101 +133,103 @@ export default function AvatarCameraScreen({
   }
 
   return (
-    <Pressable style={{ flex: 1 }} onPress={handleScreenPress}>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        <CameraView
-          ref={cameraRef}
-          style={{ flex: 1 }}
-          facing={facing}
-          onCameraReady={() => setIsCameraReady(true)}
-        />
-        <View style={StyleSheet.absoluteFill}>
-          <View style={styles.overlay} pointerEvents="none">
-            <View
-              style={[
-                styles.corner,
-                {
-                  borderLeftWidth: cornerThickness,
-                  borderTopWidth: cornerThickness,
-                  borderColor: theme.textSecondary,
-                  top: `50%`,
-                  left: `50%`,
-                  marginLeft: -frameSize / 2,
-                  marginTop: -frameSize / 2,
-                  width: cornerLength,
-                  height: cornerLength,
-                  borderTopLeftRadius: 18,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.corner,
-                {
-                  borderRightWidth: cornerThickness,
-                  borderTopWidth: cornerThickness,
-                  borderColor: theme.textSecondary,
-                  top: `50%`,
-                  left: `50%`,
-                  marginLeft: frameSize / 2 - cornerLength,
-                  marginTop: -frameSize / 2,
-                  width: cornerLength,
-                  height: cornerLength,
-                  borderTopRightRadius: 18,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.corner,
-                {
-                  borderLeftWidth: cornerThickness,
-                  borderBottomWidth: cornerThickness,
-                  borderColor: theme.textSecondary,
-                  top: `50%`,
-                  left: `50%`,
-                  marginLeft: -frameSize / 2,
-                  marginTop: frameSize / 2 - cornerLength,
-                  width: cornerLength,
-                  height: cornerLength,
-                  borderBottomLeftRadius: 18,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.corner,
-                {
-                  borderRightWidth: cornerThickness,
-                  borderBottomWidth: cornerThickness,
-                  borderColor: theme.textSecondary,
-                  top: `50%`,
-                  left: `50%`,
-                  marginLeft: frameSize / 2 - cornerLength,
-                  marginTop: frameSize / 2 - cornerLength,
-                  width: cornerLength,
-                  height: cornerLength,
-                  borderBottomRightRadius: 18,
-                },
-              ]}
-            />
-          </View>
-          <View style={styles.shutterWrapper}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.shutterButton,
-                {
-                  opacity: pressed ? 0.7 : 1,
-                  backgroundColor: "transparent",
-                },
-              ]}
-              onPress={handleTakePicture}
-              disabled={isTakingPhoto}
-            />
+    <Layout hiddenLayout={true}>
+      <Pressable style={{ flex: 1 }} onPress={handleScreenPress}>
+        <View style={{ flex: 1, backgroundColor: theme.background }}>
+          <CameraView
+            ref={cameraRef}
+            style={{ flex: 1 }}
+            facing={facing}
+            onCameraReady={() => setIsCameraReady(true)}
+          />
+          <View style={StyleSheet.absoluteFill}>
+            <View style={styles.overlay} pointerEvents="none">
+              <View
+                style={[
+                  styles.corner,
+                  {
+                    borderLeftWidth: cornerThickness,
+                    borderTopWidth: cornerThickness,
+                    borderColor: theme.textSecondary,
+                    top: `50%`,
+                    left: `50%`,
+                    marginLeft: -frameSize / 2,
+                    marginTop: -frameSize / 2,
+                    width: cornerLength,
+                    height: cornerLength,
+                    borderTopLeftRadius: 18,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.corner,
+                  {
+                    borderRightWidth: cornerThickness,
+                    borderTopWidth: cornerThickness,
+                    borderColor: theme.textSecondary,
+                    top: `50%`,
+                    left: `50%`,
+                    marginLeft: frameSize / 2 - cornerLength,
+                    marginTop: -frameSize / 2,
+                    width: cornerLength,
+                    height: cornerLength,
+                    borderTopRightRadius: 18,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.corner,
+                  {
+                    borderLeftWidth: cornerThickness,
+                    borderBottomWidth: cornerThickness,
+                    borderColor: theme.textSecondary,
+                    top: `50%`,
+                    left: `50%`,
+                    marginLeft: -frameSize / 2,
+                    marginTop: frameSize / 2 - cornerLength,
+                    width: cornerLength,
+                    height: cornerLength,
+                    borderBottomLeftRadius: 18,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.corner,
+                  {
+                    borderRightWidth: cornerThickness,
+                    borderBottomWidth: cornerThickness,
+                    borderColor: theme.textSecondary,
+                    top: `50%`,
+                    left: `50%`,
+                    marginLeft: frameSize / 2 - cornerLength,
+                    marginTop: frameSize / 2 - cornerLength,
+                    width: cornerLength,
+                    height: cornerLength,
+                    borderBottomRightRadius: 18,
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.shutterWrapper}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.shutterButton,
+                  {
+                    opacity: pressed ? 0.7 : 1,
+                    backgroundColor: "transparent",
+                  },
+                ]}
+                onPress={handleTakePicture}
+                disabled={isTakingPhoto}
+              />
+            </View>
           </View>
         </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </Layout>
   );
 }
 

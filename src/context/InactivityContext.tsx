@@ -7,6 +7,16 @@ import React, {
 } from "react";
 import { AppState, TouchableWithoutFeedback } from "react-native";
 
+const ALLOWED_SCREENS = [
+  "MealCamera",
+  "AddMealManual",
+  "AddMealFromList",
+  "MealAddMethod",
+  "IngredientsNotRecognized",
+  "ReviewIngredients",
+  "Result",
+];
+
 const TIMEOUT_MS = 10 * 60 * 1000;
 
 type InactivityContextType = {
@@ -15,6 +25,7 @@ type InactivityContextType = {
   onTimeout: (() => void) | null;
   setOnTimeout: (fn: (() => void) | null) => void;
   dismissModal: () => void;
+  setScreenName: (screen: string) => void;
 };
 
 const InactivityContext = createContext<InactivityContextType>({
@@ -23,6 +34,7 @@ const InactivityContext = createContext<InactivityContextType>({
   onTimeout: null,
   setOnTimeout: () => {},
   dismissModal: () => {},
+  setScreenName: () => {},
 });
 
 export const InactivityProvider = ({
@@ -33,8 +45,12 @@ export const InactivityProvider = ({
   const [isModalVisible, setIsModalVisible] = useState(false);
   const timer = useRef<NodeJS.Timeout | null>(null);
   const [onTimeout, setOnTimeout] = useState<(() => void) | null>(null);
+  const [screenName, setScreenName] = useState("");
+
+  const isTimerEnabled = ALLOWED_SCREENS.includes(screenName);
 
   const resetTimer = () => {
+    if (!isTimerEnabled) return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       setIsModalVisible(true);
@@ -45,15 +61,19 @@ export const InactivityProvider = ({
   const dismissModal = () => setIsModalVisible(false);
 
   useEffect(() => {
+    if (!isTimerEnabled) return;
+
     resetTimer();
+
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") resetTimer();
     });
+
     return () => {
       if (timer.current) clearTimeout(timer.current);
       subscription.remove();
     };
-  }, [onTimeout]);
+  }, [onTimeout, isTimerEnabled]);
 
   return (
     <InactivityContext.Provider
@@ -63,6 +83,7 @@ export const InactivityProvider = ({
         onTimeout,
         setOnTimeout,
         dismissModal,
+        setScreenName,
       }}
     >
       <TouchableWithoutFeedback onPress={resetTimer}>

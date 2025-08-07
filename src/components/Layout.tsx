@@ -13,6 +13,7 @@ import { useTheme } from "@/src/theme/useTheme";
 import { useRoute } from "@react-navigation/native";
 import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/src/components/BottomTabBar";
+import { useInactivity } from "@/src/context/InactivityContext";
 
 const hiddenRoutes = ["AvatarCamera"];
 
@@ -20,18 +21,25 @@ type LayoutProps = {
   children: React.ReactNode;
   showNavigation?: boolean;
   disableScroll?: boolean;
+  hiddenLayout?: boolean;
 };
 
 export const Layout = ({
   children,
   showNavigation = true,
   disableScroll = false,
+  hiddenLayout = false,
 }: LayoutProps) => {
   const theme = useTheme();
   const route = useRoute();
+  const { setScreenName } = useInactivity();
 
   const isCardVisible = !hiddenRoutes.includes(route.name);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    setScreenName(route.name);
+  }, [route.name]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", () =>
@@ -45,6 +53,10 @@ export const Layout = ({
       hideSub.remove();
     };
   }, []);
+
+  if (hiddenLayout) {
+    return <>{children}</>;
+  }
 
   const content = isCardVisible ? (
     <View
