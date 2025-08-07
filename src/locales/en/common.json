@@ -17,5 +17,7 @@
   "draft_inactivity_title": "Are you still there?",
   "draft_inactivity_message": "Your draft will be removed due to inactivity. Do you want to continue editing or quit?",
   "quit": "Quit",
-  "continue": "Continue"
+  "continue": "Continue",
+  "camera_loader_title": "Analyzing your meal...",
+  "camera_loader_subtext": "This may take a few seconds."
 }

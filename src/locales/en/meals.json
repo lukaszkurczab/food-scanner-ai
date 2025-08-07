@@ -11,8 +11,6 @@
   "continue_draft_message": "You have an unsaved meal draft. Do you want to continue or start over?",
   "continue": "Continue",
   "discard": "Discard",
-  "camera_loader_title": "Analyzing your meal...",
-  "camera_loader_subtext": "This may take a few seconds.",
   "not_recognized_title": "We couldn't recognize the ingredients",
   "not_recognized_sub": "Try again or select other method",
   "not_recognized_last": "Please add the meal manually or try later.",

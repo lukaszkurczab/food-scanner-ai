@@ -11,8 +11,6 @@
   "continue_draft_message": "Masz niezapisany posiłek w trakcie dodawania. Czy chcesz kontynuować czy zacząć od nowa?",
   "continue": "Kontynuuj",
   "discard": "Porzuć",
-  "camera_loader_title": "Analizowanie posiłku...",
-  "camera_loader_subtext": "To może potrwać kilka sekund.",
   "not_recognized_title": "Nie udało się rozpoznać składników",
   "not_recognized_sub": "Spróbuj ponownie lub wybierz inną metodę",
   "not_recognized_last": "Dodaj posiłek ręcznie lub spróbuj później.",

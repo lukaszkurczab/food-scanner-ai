@@ -37,7 +37,7 @@ export default function IngredientsNotRecognizedScreen() {
   };
 
   return (
-    <Layout hiddenLayout={true}>
+    <Layout>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Image
           source={{ uri: image }}
