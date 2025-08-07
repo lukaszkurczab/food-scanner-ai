@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { detectIngredientsWithVision } from "@/src/services/visionService";
 import { useRoute } from "@react-navigation/native";
 import { useAuthContext } from "@/src/context/AuthContext";
+import { Layout } from "@/src/components/Layout";
 
 export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const theme = useTheme();
@@ -110,12 +111,18 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const handleRetake = () => setPhotoUri(null);
 
   if (!permission)
-    return <View style={{ flex: 1, backgroundColor: theme.background }} />;
+    return (
+      <Layout hiddenLayout={true}>
+        <View style={{ flex: 1, backgroundColor: theme.background }} />
+      </Layout>
+    );
   if (!permission.granted) {
     return (
-      <View
-        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-      />
+      <Layout hiddenLayout={true}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        />
+      </Layout>
     );
   }
 
@@ -140,28 +147,30 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        <CameraView
-          ref={cameraRef}
-          style={{ flex: 1 }}
-          onCameraReady={() => setIsCameraReady(true)}
-        />
-        <View style={StyleSheet.absoluteFill}>
-          <View style={styles.overlay} pointerEvents="none"></View>
-          <View style={styles.shutterWrapper}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.shutterButton,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}
-              onPress={handleTakePicture}
-              disabled={isTakingPhoto}
-            />
+    <Layout hiddenLayout={true}>
+      <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: theme.background }}>
+          <CameraView
+            ref={cameraRef}
+            style={{ flex: 1 }}
+            onCameraReady={() => setIsCameraReady(true)}
+          />
+          <View style={StyleSheet.absoluteFill}>
+            <View style={styles.overlay} pointerEvents="none"></View>
+            <View style={styles.shutterWrapper}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.shutterButton,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+                onPress={handleTakePicture}
+                disabled={isTakingPhoto}
+              />
+            </View>
           </View>
         </View>
       </View>
-    </View>
+    </Layout>
   );
 }
 

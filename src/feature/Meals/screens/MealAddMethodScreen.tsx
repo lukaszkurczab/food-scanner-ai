@@ -13,9 +13,9 @@ import { Modal } from "@/src/components/Modal";
 import { getDraftKey, getScreenKey } from "@/src/context/MealContext";
 import { useAuthContext } from "@/src/context/AuthContext";
 
-type MealInputMethodNavigationProp = StackNavigationProp<
+type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
-  "MealInputMethod"
+  "MealAddMethod"
 >;
 
 const options = [
@@ -42,9 +42,9 @@ const options = [
   },
 ];
 
-const MealInputMethodScreen = () => {
+const MealAddMethodScreen = () => {
   const theme = useTheme();
-  const navigation = useNavigation<MealInputMethodNavigationProp>();
+  const navigation = useNavigation<MealAddMethodNavigationProp>();
   const { t } = useTranslation("meals");
   const { user } = useAuthContext();
 
@@ -196,4 +196,4 @@ const MealInputMethodScreen = () => {
   );
 };
 
-export default MealInputMethodScreen;
+export default MealAddMethodScreen;

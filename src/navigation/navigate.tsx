@@ -18,27 +18,26 @@ export type RootStackParamList = {
     id: string;
     attempt?: number;
   };
-  Privacy: undefined;
-  ManageSubscription: undefined;
-  ChangePassword: undefined;
   AddMealManual: { id?: string; image?: string } | undefined;
-  SendFeedback: undefined;
   MealCamera:
     | { id?: string; attempt?: number; skipDetection?: boolean }
     | undefined;
-  Language: undefined;
   AddMealFromList: undefined;
-  UsernameChange: undefined;
-  MealInputMethod: undefined;
   MealAddMethod: undefined;
+  Result: undefined;
+  ReviewIngredients: undefined;
+  Privacy: undefined;
+  ManageSubscription: undefined;
+  ChangePassword: undefined;
+  SendFeedback: undefined;
+  Language: undefined;
+  UsernameChange: undefined;
   UserSettings: undefined;
   Register: undefined;
   SavedMeals: undefined;
   EditUserData: undefined;
   ChangeEmail: undefined;
-  ReviewIngredients: undefined;
   AvatarCamera: undefined;
-  Result: undefined;
   History: undefined;
   MealDetail: undefined;
   Chat: undefined;

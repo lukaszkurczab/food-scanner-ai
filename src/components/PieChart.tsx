@@ -57,15 +57,12 @@ export const PieChart: React.FC<PieChartProps> = ({
     );
   };
 
-  // Main render
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
-      {/* Wykres */}
       <Svg width={size} height={size}>
         {data.map(renderSlice)}
       </Svg>
 
-      {/* Legenda */}
       <View style={{ marginLeft: 18, minWidth: legendWidth }}>
         {data.map((slice, i) => (
           <View
