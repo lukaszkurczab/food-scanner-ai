@@ -39,3 +39,4 @@ export * from "./ErrorButton";
 export * from "./IngredientBox";
 export * from "./PieChart";
 export * from "./MealBox";
+export * from "./LineGraph";

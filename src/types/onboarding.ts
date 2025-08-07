@@ -67,4 +67,5 @@ export type FormData = {
   aiFocusOther?: string;
   aiNote?: string;
   surveyComplited: boolean;
+  calorieTarget: number | null;
 };

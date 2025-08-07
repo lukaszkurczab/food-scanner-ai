@@ -1,19 +1,24 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
+import { PrimaryButton } from "@/src/components/PrimaryButton";
 
-export const AddMealPlaceholder = () => {
+type AddMealPlaceholderProps = {
+  handleAddMeal: () => {};
+};
+
+export const AddMealPlaceholder = ({
+  handleAddMeal,
+}: AddMealPlaceholderProps) => {
   const theme = useTheme();
 
   return (
     <View style={[styles.container, { borderColor: theme.border }]}>
       <Text style={[styles.title, { color: theme.text }]}>No meals yet</Text>
-      <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Start by adding your first one!</Text>
-      <Pressable style={[styles.button, { backgroundColor: theme.accent }]}
-        onPress={() => {/* navigate to add meal */}}
-      >
-        <Text style={[styles.buttonText, { color: theme.onAccent }]}>Add meal</Text>
-      </Pressable>
+      <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+        Add your first meal today!
+      </Text>
+      <PrimaryButton label="Add meal" onPress={() => handleAddMeal()} />
     </View>
   );
 };
@@ -35,13 +40,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 16,
     textAlign: "center",
-  },
-  button: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  buttonText: {
-    fontWeight: "bold",
   },
 });
