@@ -15,20 +15,18 @@ import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/src/components/BottomTabBar";
 import { useInactivity } from "@/src/context/InactivityContext";
 
-const hiddenRoutes = ["AvatarCamera"];
+const hiddenRoutes = ["AvatarCamera", "IngredientsNotRecognized", "MealCamera"];
 
 type LayoutProps = {
   children: React.ReactNode;
   showNavigation?: boolean;
   disableScroll?: boolean;
-  hiddenLayout?: boolean;
 };
 
 export const Layout = ({
   children,
   showNavigation = true,
   disableScroll = false,
-  hiddenLayout = false,
 }: LayoutProps) => {
   const theme = useTheme();
   const route = useRoute();
@@ -54,30 +52,9 @@ export const Layout = ({
     };
   }, []);
 
-  if (hiddenLayout) {
+  if (!isCardVisible) {
     return <>{children}</>;
   }
-
-  const content = isCardVisible ? (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: theme.card,
-          borderRadius: theme.rounded.lg,
-          margin: theme.spacing.lg,
-          padding: theme.spacing.lg,
-          justifyContent: "center",
-          paddingBottom: showNavigation ? 62 : 32,
-          minHeight: Dimensions.get("window").height - 64,
-        },
-      ]}
-    >
-      {children}
-    </View>
-  ) : (
-    children
-  );
 
   return (
     <KeyboardAvoidingView
@@ -88,7 +65,22 @@ export const Layout = ({
         <View style={[styles.root, { backgroundColor: theme.background }]}>
           <View style={{ maxHeight: Dimensions.get("window").height - 18 }}>
             {disableScroll ? (
-              content
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: theme.card,
+                    borderRadius: theme.rounded.lg,
+                    margin: theme.spacing.lg,
+                    padding: theme.spacing.lg,
+                    justifyContent: "center",
+                    paddingBottom: showNavigation ? 62 : 32,
+                    minHeight: Dimensions.get("window").height - 64,
+                  },
+                ]}
+              >
+                {children}
+              </View>
             ) : (
               <ScrollView
                 contentContainerStyle={{
@@ -104,11 +96,28 @@ export const Layout = ({
                   }
                   backgroundColor={theme.background}
                 />
-                {content}
+                <View
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: theme.card,
+                      borderRadius: theme.rounded.lg,
+                      margin: theme.spacing.lg,
+                      padding: theme.spacing.lg,
+                      justifyContent: "center",
+                      paddingBottom: showNavigation ? 62 : 32,
+                      minHeight: Dimensions.get("window").height - 64,
+                    },
+                  ]}
+                >
+                  {children}
+                </View>
               </ScrollView>
             )}
           </View>
-          {showNavigation && !isKeyboardVisible && <BottomTabBar />}
+          {showNavigation && !isKeyboardVisible && isCardVisible && (
+            <BottomTabBar />
+          )}
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

@@ -61,13 +61,13 @@ export default function AvatarCameraScreen({
 
   if (!permission)
     return (
-      <Layout hiddenLayout={true}>
+      <Layout>
         <View style={{ flex: 1, backgroundColor: theme.background }} />
       </Layout>
     );
   if (!permission.granted) {
     return (
-      <Layout hiddenLayout={true}>
+      <Layout>
         <View
           style={{
             flex: 1,
@@ -133,7 +133,7 @@ export default function AvatarCameraScreen({
   }
 
   return (
-    <Layout hiddenLayout={true}>
+    <Layout>
       <Pressable style={{ flex: 1 }} onPress={handleScreenPress}>
         <View style={{ flex: 1, backgroundColor: theme.background }}>
           <CameraView

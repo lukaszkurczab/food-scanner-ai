@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, Text } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/src/theme/useTheme";
@@ -14,7 +14,7 @@ import { Layout } from "@/src/components/Layout";
 
 export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const theme = useTheme();
-  const [permission] = useCameraPermissions();
+  const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -23,7 +23,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const { meal, setMeal, updateMeal, setLastScreen } = useMealContext();
-  const { t } = useTranslation("meals");
+  const { t } = useTranslation("common");
   const { user } = useAuthContext();
 
   const route = useRoute<any>();
@@ -112,42 +112,82 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
 
   if (!permission)
     return (
-      <Layout hiddenLayout={true}>
+      <Layout>
         <View style={{ flex: 1, backgroundColor: theme.background }} />
       </Layout>
     );
   if (!permission.granted) {
     return (
-      <Layout hiddenLayout={true}>
+      <Layout>
         <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        />
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+            backgroundColor: theme.background,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 18,
+              textAlign: "center",
+              marginBottom: 20,
+              color: theme.text,
+            }}
+          >
+            {t("camera_permission_message")}
+          </Text>
+          <Pressable
+            onPress={requestPermission}
+            style={{
+              paddingVertical: 12,
+              paddingHorizontal: 32,
+              borderRadius: 32,
+              backgroundColor: theme.card,
+            }}
+          >
+            <Text
+              style={{
+                fontWeight: "bold",
+                fontSize: 16,
+                color: theme.text,
+              }}
+            >
+              {t("camera_grant_access")}
+            </Text>
+          </Pressable>
+        </View>
       </Layout>
     );
   }
 
   if (isLoading) {
     return (
-      <Loader
-        text={t("camera_loader_title", "Analyzing your meal...")}
-        subtext={t("camera_loader_subtext", "This may take a few seconds.")}
-      />
+      <Layout>
+        <Loader
+          text={t("camera_loader_title", "Analyzing your meal...")}
+          subtext={t("camera_loader_subtext", "This may take a few seconds.")}
+        />
+      </Layout>
     );
   }
 
   if (photoUri) {
     return (
-      <PhotoPreview
-        photoUri={photoUri}
-        onRetake={handleRetake}
-        onAccept={handleAccept}
-        isLoading={isLoading}
-      />
+      <Layout>
+        <PhotoPreview
+          photoUri={photoUri}
+          onRetake={handleRetake}
+          onAccept={handleAccept}
+          isLoading={isLoading}
+        />
+      </Layout>
     );
   }
 
   return (
-    <Layout hiddenLayout={true}>
+    <Layout>
       <View style={{ flex: 1 }}>
         <View style={{ flex: 1, backgroundColor: theme.background }}>
           <CameraView
