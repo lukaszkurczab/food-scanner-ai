@@ -9,6 +9,7 @@ import Step3Health from "@/src/feature/Onboarding/components/Step3Health";
 import Step4AIAssistantPreferences from "@/src/feature/Onboarding/components/Step4AIAssistantPreferences";
 import Step5Summary from "@/src/feature/Onboarding/components/Step5Summary";
 import { useUserContext } from "@/src/context/UserContext";
+import { calculateCalorieTarget } from "../utils/calculateCalorieTarget";
 
 const STEPS = 5;
 export const INITIAL_FORM: FormData = {
@@ -32,6 +33,7 @@ export const INITIAL_FORM: FormData = {
   aiFocusOther: "",
   aiNote: "",
   surveyComplited: true,
+  calorieTarget: 0,
 };
 
 export default function OnboardingScreen({ navigation }: any) {
@@ -77,7 +79,8 @@ export default function OnboardingScreen({ navigation }: any) {
 
   const handleFinish = async () => {
     try {
-      await updateUser({ ...form, surveyComplited: true });
+      const calorieTarget = calculateCalorieTarget(form);
+      await updateUser({ ...form, surveyComplited: true, calorieTarget });
       await syncUserProfile();
       navigation.replace("Home");
     } catch (err) {

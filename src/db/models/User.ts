@@ -44,4 +44,5 @@ export default class User extends Model {
   @field("avatarUrl") avatarUrl?: string;
   @field("avatarLocalPath") avatarLocalPath?: string;
   @field("avatarlastSyncedAt") avatarlastSyncedAt?: string;
+  @field("calorieTarget") calorieTarget!: number | null;
 }

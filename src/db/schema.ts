@@ -40,6 +40,7 @@ export const schema = appSchema({
         { name: "language", type: "string" },
         { name: "syncState", type: "string" },
         { name: "lastSyncedAt", type: "string", isOptional: true },
+        { name: "calorieTarget", type: "number", isOptional: true },
       ],
     }),
 

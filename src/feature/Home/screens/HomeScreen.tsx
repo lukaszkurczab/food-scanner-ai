@@ -4,16 +4,22 @@ import { useTheme } from "@/src/theme/useTheme";
 import { TargetProgressBar } from "../components/TargetProgressBar";
 import { TodaysMealsList } from "../components/TodaysMealsList";
 import { TodaysMacrosChart } from "../components/TodaysMacrosChart";
-import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { ButtonSection } from "../components/ButtonSection";
 import { AddMealPlaceholder } from "../components/AddMealPlaceholder";
 import { useUserContext } from "@/src/context/UserContext";
 import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
 import { getTodayMeals } from "@/src/utils/getTodayMeals";
+import { Layout, LineGraph } from "@/src/components";
+import { getLastNDaysAggregated } from "@/src/utils/getLastNDaysAggregated";
+import { useMeals } from "@/src/hooks/useMeals";
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: any) {
   const theme = useTheme();
-  const { userData, meals } = useUserContext();
+  const { userData } = useUserContext();
+  const { meals, getMeals } = useMeals(userData!.uid);
+  const { labels, data } = getLastNDaysAggregated(meals, 7, "kcal");
+
+  console.log(meals);
 
   const hasSurvey = !!userData?.surveyComplited;
   const todayMeals = getTodayMeals(meals);
@@ -28,32 +34,44 @@ export default function HomeScreen() {
   const goalCalories = hasSurvey ? userData.calorieTarget ?? 0 : 0;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {hasSurvey ? (
-        <TargetProgressBar current={totalCalories} target={goalCalories} />
-      ) : (
-        <View style={styles.caloriesBox}>
-          <Text style={[styles.caloriesText, { color: theme.text }]}>
-            Total today: {totalCalories} kcal
-          </Text>
-          <Text style={[styles.link, { color: theme.link }]} onPress={() => {}}>
-            Set your daily goal →
-          </Text>
-        </View>
-      )}
+    <Layout>
+      <View style={{ flex: 1 }}>
+        {userData?.calorieTarget && userData.calorieTarget > 0 ? (
+          <TargetProgressBar current={totalCalories} target={goalCalories} />
+        ) : (
+          <View style={styles.caloriesBox}>
+            <Text style={[styles.caloriesText, { color: theme.text }]}>
+              Total today: {totalCalories} kcal
+            </Text>
+            <Text
+              style={[styles.link, { color: theme.link }]}
+              onPress={() => navigation.navigate("Onboarding")}
+            >
+              Set your daily goal →
+            </Text>
+          </View>
+        )}
 
-      {todayMeals.length === 0 ? (
-        <AddMealPlaceholder />
-      ) : (
-        <>
-          <TodaysMealsList meals={todayMeals} />
-          <TodaysMacrosChart macros={macros} />
-        </>
-      )}
+        {todayMeals.length === 0 ? (
+          <AddMealPlaceholder
+            handleAddMeal={() => navigation.navigate("MealAddMethod")}
+          />
+        ) : (
+          <>
+            <TodaysMealsList meals={todayMeals} />
+            <TodaysMacrosChart macros={macros} />
+          </>
+        )}
 
-      <WeeklyProgressGraph />
-      <ButtonSection />
-    </View>
+        <LineGraph
+          data={data}
+          labels={labels}
+          title="Weekly Progress"
+          stepX={1}
+        />
+        <ButtonSection />
+      </View>
+    </Layout>
   );
 }
 
