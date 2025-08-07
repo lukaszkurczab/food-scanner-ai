@@ -7,7 +7,6 @@ export * from "./common/DropdownList";
 export * from "./modals/ErrorModal";
 export * from "./common/Header";
 export * from "./common/Navigation";
-export * from "./common/NutritionChart";
 export * from "./common/PermissionRequestView";
 export * from "./ui/StepView";
 export * from "./ui/Spinner";
