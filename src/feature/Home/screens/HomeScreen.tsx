@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
 import { TargetProgressBar } from "../components/TargetProgressBar";
@@ -12,17 +12,24 @@ import { getTodayMeals } from "@/src/utils/getTodayMeals";
 import { Layout, LineGraph } from "@/src/components";
 import { getLastNDaysAggregated } from "@/src/utils/getLastNDaysAggregated";
 import { useMeals } from "@/src/hooks/useMeals";
+import { Meal } from "@/src/types";
 
 export default function HomeScreen({ navigation }: any) {
   const theme = useTheme();
   const { userData } = useUserContext();
   const { meals, getMeals } = useMeals(userData!.uid);
   const { labels, data } = getLastNDaysAggregated(meals, 7, "kcal");
-
-  console.log(meals);
-
+  const [todayMeals, setTodayMeals] = useState<Meal[]>([]);
   const hasSurvey = !!userData?.surveyComplited;
-  const todayMeals = getTodayMeals(meals);
+
+  useEffect(() => {
+    getMeals();
+  }, [getMeals]);
+
+  useEffect(() => {
+    const newData = getTodayMeals(meals);
+    setTodayMeals(newData);
+  }, [meals]);
 
   const totalCalories = todayMeals.reduce((sum, meal) => {
     const mealKcal = meal.ingredients.reduce((acc, ing) => acc + ing.kcal, 0);

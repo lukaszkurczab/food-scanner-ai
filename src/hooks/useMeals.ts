@@ -25,22 +25,17 @@ export function useMeals(userUid: string) {
   const [loading, setLoading] = useState(true);
   const syncingRef = useRef(false);
 
-  const getMeals = useCallback(
-    async (date?: string) => {
-      const mealCollection = database.get("meals");
-      const all = await mealCollection.query().fetch();
-      let userMeals = all.filter(
-        (m: any) => m.user_uid === userUid && !m.deleted
-      );
-      if (date) {
-        userMeals = userMeals.filter((m: any) => m.date === date);
-      }
-      const mealsArr = userMeals.map((m: any) => mapRawToMeal(m._raw));
-      setMeals((prev) => (areMealsEqual(prev, mealsArr) ? prev : mealsArr));
-      setLoading(false);
-    },
-    [userUid]
-  );
+  const getMeals = useCallback(async () => {
+    const mealCollection = database.get("meals");
+    const all = await mealCollection.query().fetch();
+    let userMeals = all.filter((m: any) => m.userUid === userUid && !m.deleted);
+    const mealsArr = userMeals.map((m: any) => {
+      console.log(m._raw);
+      return mapRawToMeal(m._raw);
+    });
+    setMeals((prev) => (areMealsEqual(prev, mealsArr) ? prev : mealsArr));
+    setLoading(false);
+  }, [userUid]);
 
   const addMeal = useCallback(
     async (
@@ -50,6 +45,7 @@ export function useMeals(userUid: string) {
       const cloudId = meal.cloudId ?? uuidv4();
       const baseMeal: Meal = {
         ...meal,
+        userUid,
         syncState: "pending",
         cloudId,
         source: "ai",
@@ -69,6 +65,7 @@ export function useMeals(userUid: string) {
 
       await database.write(async () => {
         const { id, ...raw } = mapMealToRaw({ ...baseMeal, syncState });
+        console.log(raw.ingredients);
         await mealCollection.create((m: any) => Object.assign(m, raw));
       });
       await getMeals();
@@ -125,7 +122,7 @@ export function useMeals(userUid: string) {
     return all
       .filter(
         (m: any) =>
-          m.user_uid === userUid && unsyncedStatuses.includes(m.sync_status)
+          m.userUid === userUid && unsyncedStatuses.includes(m.sync_status)
       )
       .map((m: any) => mapRawToMeal(m._raw));
   }, [userUid]);
@@ -139,7 +136,7 @@ export function useMeals(userUid: string) {
 
       const mealCollection = database.get("meals");
       const allLocal = await mealCollection.query().fetch();
-      const localMeals = allLocal.filter((m: any) => m.user_uid === userUid);
+      const localMeals = allLocal.filter((m: any) => m.userUid === userUid);
 
       const toSync = localMeals.filter((m: any) =>
         unsyncedStatuses.includes(m.sync_status)

@@ -47,6 +47,7 @@ export const schema = appSchema({
     tableSchema({
       name: "meals",
       columns: [
+        { name: "userUid", type: "string" },
         { name: "mealId", type: "string" },
         { name: "timestamp", type: "string" },
         { name: "type", type: "string" },
