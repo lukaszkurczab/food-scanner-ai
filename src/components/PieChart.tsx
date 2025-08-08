@@ -1,137 +1,128 @@
-import React from "react";
-import { View, Text } from "react-native";
+import React, { useState } from "react";
+import { View, Text, LayoutChangeEvent } from "react-native";
 import { Svg, Path, Circle } from "react-native-svg";
+import { useTheme } from "@/src/theme/useTheme";
 
-type PieSlice = {
-  value: number;
-  color: string;
-  label?: string;
-};
+type PieSlice = { value: number; color: string; label?: string };
 
 type PieChartProps = {
   data: PieSlice[];
-  size?: number;
-  strokeWidth?: number;
+  maxSize?: number;
+  minSize?: number;
   legendWidth?: number;
+  gap?: number;
+  strokeWidth?: number;
   fontSize?: number;
 };
 
 export const PieChart: React.FC<PieChartProps> = ({
   data,
-  size = 200,
+  maxSize = 200,
+  minSize = 120,
+  legendWidth = 120,
+  gap = 16,
   strokeWidth = 0,
-  legendWidth = 96,
   fontSize = 16,
 }) => {
-  const total = data.reduce((sum, d) => sum + d.value, 0);
-  let angle = 0;
-  const radius = size / 2;
+  const theme = useTheme();
+  const [parentW, setParentW] = useState(0);
+  const total = data.reduce((s, d) => s + (Number(d.value) || 0), 0);
 
-  if (!total || total <= 0) {
-    return (
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <Svg width={size} height={size}>
-          <Circle cx={radius} cy={radius} r={radius} fill="transparent" />
-          <Circle
-            cx={radius}
-            cy={radius}
-            r={radius - strokeWidth / 2}
-            fill="transparent"
-          />
-        </Svg>
-        <View style={{ marginLeft: 18, minWidth: legendWidth }}>
-          {data.map((slice, i) => (
-            <View
-              key={i}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 10,
-              }}
-            >
-              <View
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 9,
-                  backgroundColor: slice.color,
-                  marginRight: 10,
-                  borderWidth: 1,
-                  borderColor: "#e0e0e0",
-                }}
-              />
-              <Text style={{ fontSize, color: "#444" }}>
-                {slice.label || 0}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  }
+  const onLayout = (e: LayoutChangeEvent) => {
+    setParentW(e.nativeEvent.layout.width);
+  };
+
+  const canRow = parentW > 0 && parentW >= minSize + legendWidth + gap;
+  const chartSize = parentW
+    ? Math.max(
+        minSize,
+        Math.min(maxSize, canRow ? parentW - legendWidth - gap : parentW)
+      )
+    : maxSize;
+
+  const radius = chartSize / 2;
+  let angle = 0;
 
   const renderSlice = (slice: PieSlice, i: number) => {
+    if (!slice.value) return null;
     const startAngle = angle;
     const sweep = (slice.value / total) * 360;
     angle += sweep;
     const largeArc = sweep > 180 ? 1 : 0;
 
-    const startRadians = (Math.PI / 180) * startAngle;
-    const endRadians = (Math.PI / 180) * (startAngle + sweep);
-
-    const x1 = radius + radius * Math.sin(startRadians);
-    const y1 = radius - radius * Math.cos(startRadians);
-    const x2 = radius + radius * Math.sin(endRadians);
-    const y2 = radius - radius * Math.cos(endRadians);
+    const sr = (Math.PI / 180) * startAngle;
+    const er = (Math.PI / 180) * (startAngle + sweep);
+    const x1 = radius + radius * Math.sin(sr);
+    const y1 = radius - radius * Math.cos(sr);
+    const x2 = radius + radius * Math.sin(er);
+    const y2 = radius - radius * Math.cos(er);
 
     return (
       <Path
         key={i}
-        d={`
-          M ${radius} ${radius}
-          L ${x1} ${y1}
-          A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}
-          Z
-        `}
+        d={`M ${radius} ${radius} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`}
         fill={slice.color}
-        stroke="#fff"
-        strokeWidth={strokeWidth}
       />
     );
   };
 
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <Svg width={size} height={size}>
-        {data.map(renderSlice)}
-      </Svg>
-
-      <View style={{ marginLeft: 18, minWidth: legendWidth }}>
-        {data.map((slice, i) => (
+  const Legend = () => (
+    <View style={{ minWidth: canRow ? legendWidth : undefined }}>
+      {data.map((slice, i) => (
+        <View
+          key={i}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 10,
+          }}
+        >
           <View
-            key={i}
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: 10,
+              width: 18,
+              height: 18,
+              borderRadius: 9,
+              backgroundColor: slice.color,
+              marginRight: 10,
+              borderWidth: 1,
+              borderColor: theme.border,
             }}
-          >
-            <View
-              style={{
-                width: 18,
-                height: 18,
-                borderRadius: 9,
-                backgroundColor: slice.color,
-                marginRight: 10,
-                borderWidth: 1,
-                borderColor: "#e0e0e0",
-              }}
-            />
-            <Text style={{ fontSize, color: "#444" }}>
-              {slice.label || slice.value}
-            </Text>
-          </View>
-        ))}
+          />
+          <Text style={{ fontSize, color: theme.text }}>
+            {slice.label ?? slice.value}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+
+  return (
+    <View onLayout={onLayout} style={{ width: "100%" }}>
+      <View
+        style={{
+          flexDirection: canRow ? "row" : "column",
+          alignItems: "center",
+          justifyContent: canRow ? "flex-start" : "center",
+          gap,
+        }}
+      >
+        <Svg width={chartSize} height={chartSize}>
+          {total > 0 ? (
+            data.map(renderSlice)
+          ) : (
+            <>
+              <Circle cx={radius} cy={radius} r={radius} fill="transparent" />
+              <Circle
+                cx={radius}
+                cy={radius}
+                r={radius - strokeWidth / 2}
+                fill="transparent"
+              />
+            </>
+          )}
+        </Svg>
+
+        <Legend />
       </View>
     </View>
   );

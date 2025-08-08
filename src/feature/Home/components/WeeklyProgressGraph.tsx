@@ -1,31 +1,18 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
-import { PieChart } from "@/src/components";
+import { LineGraph } from "@/src/components";
 
-export const TodaysMacrosChart = ({
-  macros,
-}: {
-  macros: { protein: number; fat: number; carbs: number };
-}) => {
+type WeeklyProgressGraphProps = {
+  data: number[];
+  labels: string[];
+};
+
+export const WeeklyProgressGraph = ({
+  data,
+  labels,
+}: WeeklyProgressGraphProps) => {
   const theme = useTheme();
-  const data = [
-    {
-      value: macros.protein,
-      color: theme.macro.protein,
-      label: `Protein: ${macros.protein}g`,
-    },
-    {
-      value: macros.fat,
-      color: theme.macro.fat,
-      label: `Fat: ${macros.fat}g`,
-    },
-    {
-      value: macros.carbs,
-      color: theme.macro.carbs,
-      label: `Carbs: ${macros.carbs}g`,
-    },
-  ];
 
   return (
     <View
@@ -33,7 +20,8 @@ export const TodaysMacrosChart = ({
         styles.container,
         {
           borderColor: theme.border,
-          padding: theme.spacing.md,
+          paddingTop: theme.spacing.md,
+          paddingRight: theme.spacing.md,
           borderRadius: theme.rounded.md,
         },
       ]}
@@ -45,12 +33,13 @@ export const TodaysMacrosChart = ({
             color: theme.text,
             fontSize: theme.typography.size.lg,
             marginBottom: theme.spacing.md,
+            paddingLeft: theme.spacing.md,
           },
         ]}
       >
-        Today’s macros
+        Weekly Progress
       </Text>
-      <PieChart data={data} />
+      <LineGraph data={data} labels={labels} stepX={1} />
     </View>
   );
 };
