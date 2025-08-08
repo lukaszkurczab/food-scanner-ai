@@ -1,0 +1,33 @@
+{
+  "pickRange": "Wybierz zakres dat",
+  "ranges": {
+    "7d": "7 dni",
+    "30d": "30 dni",
+    "custom": "Własny"
+  },
+  "offline": "Brak połączenia z internetem. Niektóre statystyki mogą być niedostępne lub nieaktualne.",
+  "empty": {
+    "title": "Brak danych",
+    "desc": "Dodaj swój pierwszy posiłek, aby zobaczyć statystyki i postępy.",
+    "cta": "Dodaj pierwszy posiłek"
+  },
+  "progress": {
+    "title": "Postęp",
+    "descWithGoal": "Średnio dziennie w ciągu ostatnich {{days}} dni",
+    "descNoGoal": "Łączne spożycie w ciągu ostatnich {{days}} dni",
+    "totalInRange": "Łącznie {{kcal}} kcal w wybranym zakresie"
+  },
+  "tiles": {
+    "calories": "Kalorie",
+    "protein": "Białko",
+    "carbs": "Węglowodany",
+    "fat": "Tłuszcz"
+  },
+  "charts": {
+    "calories": "Kalorie",
+    "protein": "Białko",
+    "carbs": "Węglowodany",
+    "fat": "Tłuszcz",
+    "macroBreakdown": "Rozkład makroskładników"
+  }
+}

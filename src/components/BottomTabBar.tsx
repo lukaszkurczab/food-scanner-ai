@@ -16,7 +16,7 @@ type tab = {
 
 const TABS: tab[] = [
   { key: "Home", icon: "home-filled", target: "Home" },
-  { key: "Stats", icon: "bar-chart", target: "Summary" },
+  { key: "Stats", icon: "bar-chart", target: "Statistics" },
   { key: "Add", icon: "add", target: "MealAddMethod", isFab: true },
   { key: "History", icon: "history", target: "History" },
   { key: "Profile", icon: "person", target: "Profile" },

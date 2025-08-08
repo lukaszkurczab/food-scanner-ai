@@ -40,3 +40,6 @@ export * from "./IngredientBox";
 export * from "./PieChart";
 export * from "./MealBox";
 export * from "./LineGraph";
+export * from "./TargetProgressBar";
+export * from "./DateInput";
+export * from "./Calendar";

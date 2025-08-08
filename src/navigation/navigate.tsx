@@ -24,6 +24,7 @@ export type RootStackParamList = {
     | undefined;
   AddMealFromList: undefined;
   MealAddMethod: undefined;
+  Statistics: undefined;
   Result: undefined;
   ReviewIngredients: undefined;
   Privacy: undefined;
