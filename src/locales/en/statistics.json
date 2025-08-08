@@ -1,0 +1,29 @@
+{
+  "pickRange": "Choose date",
+  "ranges": { "7d": "7 days", "30d": "30 days", "custom": "Custom" },
+  "offline": "You’re offline. Some stats may be unavailable or outdated.",
+  "empty": {
+    "title": "No data yet",
+    "desc": "Log your first meal to see your stats and progress.",
+    "cta": "Add first meal"
+  },
+  "progress": {
+    "title": "Progress",
+    "descWithGoal": "Average per day in the last {{days}} days",
+    "descNoGoal": "Total intake in the last {{days}} days",
+    "totalInRange": "{{kcal}} kcal total in selected range"
+  },
+  "tiles": {
+    "calories": "Calories",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat"
+  },
+  "charts": {
+    "calories": "Calories",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat",
+    "macroBreakdown": "Macro Breakdown"
+  }
+}

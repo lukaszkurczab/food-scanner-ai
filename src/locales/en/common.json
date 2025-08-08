@@ -19,5 +19,8 @@
   "quit": "Quit",
   "continue": "Continue",
   "camera_loader_title": "Analyzing your meal...",
-  "camera_loader_subtext": "This may take a few seconds."
+  "camera_loader_subtext": "This may take a few seconds.",
+  "kcal": "kcal",
+  "gram": "g",
+  "loading": "Loading…"
 }

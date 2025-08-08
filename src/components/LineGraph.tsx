@@ -23,16 +23,18 @@ type LineGraphProps = {
   stepX?: number;
   height?: number;
   smooth?: boolean;
+  approxYTicks?: number;
 };
 
 export const LineGraph = ({
   data,
   labels,
   title,
-  stepY = 200,
+  stepY,
   stepX = 1,
   height = 120,
   smooth = true,
+  approxYTicks = 4,
 }: LineGraphProps) => {
   const theme = useTheme();
   const [width, setWidth] = useState(0);
@@ -47,13 +49,58 @@ export const LineGraph = ({
     setWidth(e.nativeEvent.layout.width);
 
   const safeData = Array.isArray(data) && data.length ? data : [0];
-  let maxVal = Math.max(...safeData);
-  let minVal = Math.min(...safeData);
-  if (maxVal === minVal) {
-    maxVal += 1;
-    minVal -= 1;
+
+  let rawMax = Math.max(...safeData);
+  let rawMin = Math.min(...safeData);
+  if (rawMax === rawMin) {
+    rawMax += 1;
+    rawMin -= 1;
   }
-  const range = Math.max(1, maxVal - minVal);
+
+  function niceNum(range: number, round: boolean) {
+    const exp = Math.floor(Math.log10(range));
+    const f = range / Math.pow(10, exp);
+    let nf: number;
+    if (round) {
+      if (f < 1.5) nf = 1;
+      else if (f < 3) nf = 2;
+      else if (f < 7) nf = 5;
+      else nf = 10;
+    } else {
+      if (f <= 1) nf = 1;
+      else if (f <= 2) nf = 2;
+      else if (f <= 5) nf = 5;
+      else nf = 10;
+    }
+    return nf * Math.pow(10, exp);
+  }
+
+  function niceScale(minVal: number, maxVal: number, maxTicks = 4) {
+    const range = niceNum(maxVal - minVal, false);
+    const spacing = niceNum(range / Math.max(1, maxTicks), true);
+    const niceMin = Math.floor(minVal / spacing) * spacing;
+    const niceMax = Math.ceil(maxVal / spacing) * spacing;
+    return { niceMin, niceMax, spacing };
+  }
+
+  let yMin: number;
+  let yMax: number;
+  let yStep: number;
+
+  if (stepY && stepY > 0) {
+    yStep = stepY;
+    yMin = Math.floor(rawMin / yStep) * yStep;
+    yMax = Math.ceil(rawMax / yStep) * yStep;
+  } else {
+    const { niceMin, niceMax, spacing } = niceScale(
+      rawMin,
+      rawMax,
+      approxYTicks
+    );
+    yMin = niceMin;
+    yMax = niceMax;
+    yStep = spacing;
+  }
 
   const chartW = Math.max(1, width - yAxisWidth - rightPad);
   const chartH = height;
@@ -61,7 +108,10 @@ export const LineGraph = ({
   const xAt = (i: number) =>
     yAxisWidth +
     chartW * (safeData.length <= 1 ? 0 : i / (safeData.length - 1));
-  const yAt = (v: number) => topPad + chartH - ((v - minVal) / range) * chartH;
+  const yAt = (v: number) => {
+    const range = Math.max(1, yMax - yMin);
+    return topPad + chartH - ((v - yMin) / range) * chartH;
+  };
 
   const pts = safeData.map((v, i) => ({ x: xAt(i), y: yAt(v), v }));
 
@@ -84,11 +134,7 @@ export const LineGraph = ({
     t[0] = m[0];
     t[n - 1] = m[n - 2];
     for (let i = 1; i < n - 1; i++) {
-      if (m[i - 1] * m[i] <= 0) {
-        t[i] = 0;
-      } else {
-        t[i] = (m[i - 1] + m[i]) / 2;
-      }
+      t[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2;
     }
 
     for (let i = 0; i < n - 1; i++) {
@@ -120,21 +166,26 @@ export const LineGraph = ({
     return d;
   }
 
-  const linePath = smooth
-    ? buildMonotonePath(pts)
-    : pts.reduce((acc, p, i) => acc + `${i ? "L" : "M"}${p.x},${p.y} `, "");
+  const hasEnoughPoints = pts.length >= 2;
+
+  const linePath = hasEnoughPoints
+    ? smooth
+      ? buildMonotonePath(pts)
+      : pts.reduce((acc, p, i) => acc + `${i ? "L" : "M"}${p.x},${p.y} `, "")
+    : "";
 
   const clipId = "clipArea";
-  const areaD =
-    linePath +
-    ` L${yAxisWidth + chartW},${topPad + chartH} L${yAxisWidth},${
-      topPad + chartH
-    } Z`;
+  const areaD = hasEnoughPoints
+    ? linePath +
+      ` L${yAxisWidth + chartW},${topPad + chartH} L${yAxisWidth},${
+        topPad + chartH
+      } Z`
+    : "";
 
-  const niceStep = Math.max(stepY, 1);
-  const firstTick = Math.ceil(minVal / niceStep) * niceStep;
   const yTicks: number[] = [];
-  for (let v = firstTick; v <= maxVal; v += niceStep) yTicks.push(v);
+  for (let v = yMin; v <= yMax + 1e-6; v += yStep) {
+    yTicks.push(v);
+  }
 
   const colW = chartW / Math.max(1, safeData.length - 1);
   const hitHalf = Math.max(20, colW / 2);
@@ -194,20 +245,24 @@ export const LineGraph = ({
             strokeWidth={1}
           />
 
-          <Path
-            d={areaD}
-            fill="url(#areaGradient)"
-            clipPath={`url(#${clipId})`}
-          />
+          {hasEnoughPoints && (
+            <Path
+              d={areaD}
+              fill="url(#areaGradient)"
+              clipPath={`url(#${clipId})`}
+            />
+          )}
 
-          <Path
-            d={linePath}
-            fill="none"
-            stroke={theme.accent}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          {hasEnoughPoints && (
+            <Path
+              d={linePath}
+              fill="none"
+              stroke={theme.accent}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
 
           {pts.map((p, i) => (
             <G key={i}>

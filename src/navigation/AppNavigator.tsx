@@ -9,7 +9,7 @@ import ResultScreen from "@/src/feature/Meals/screens/ResultScreen";
 import HistoryScreen from "@/src/feature/History/screens/HistoryScreen";
 import MealDetailScreen from "@/src/feature/Statistics/MealDetailScreen";
 import ChatScreen from "@/src/feature/AI/screens/ChatScreen";
-import SummaryScreen from "@/src/feature/Statistics/screens/SummaryScreen";
+import StatisticsScreen from "@/src/feature/Statistics/screens/StatisticsScreen";
 import LoginScreen from "@/src/feature/Auth/screens/LoginScreen";
 import RegisterScreen from "@/src/feature/Auth/screens/RegisterScreen";
 import MealAddMethodScreen from "@/src/feature/Meals/screens/MealAddMethodScreen";
@@ -63,7 +63,7 @@ const AppNavigator = () => {
           <Stack.Screen name="AddMealFromList" component={AddMealFromList} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
-          <Stack.Screen name="Summary" component={SummaryScreen} />
+          <Stack.Screen name="Statistics" component={StatisticsScreen} />
           <Stack.Screen name="Language" component={LanguageScreen} />
           <Stack.Screen name="MealCamera" component={MealCameraScreen} />
           <Stack.Screen

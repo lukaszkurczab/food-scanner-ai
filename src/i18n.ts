@@ -11,6 +11,7 @@ import en_resetPassword from "./locales/en/resetPassword.json";
 import en_onboarding from "./locales/en/onboarding.json";
 import en_profile from "./locales/en/profile.json";
 import en_meals from "./locales/en/meals.json";
+import en_statistics from "./locales/en/statistics.json";
 import pl_common from "./locales/pl/common.json";
 import pl_login from "./locales/pl/login.json";
 import pl_terms from "./locales/pl/terms.json";
@@ -54,6 +55,7 @@ i18n
       "onboarding",
       "profile",
       "meals",
+      "statistics",
     ],
     defaultNS: "common",
     resources: {
@@ -66,6 +68,7 @@ i18n
         onboarding: en_onboarding,
         profile: en_profile,
         meals: en_meals,
+        statistics: en_statistics,
       },
       pl: {
         common: pl_common,
