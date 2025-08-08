@@ -7,12 +7,37 @@ export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
   const theme = useTheme();
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.title, { color: theme.text }]}>Today’s meals</Text>
+    <View
+      style={[
+        styles.container,
+        {
+          borderColor: theme.border,
+          padding: theme.spacing.md,
+          borderRadius: theme.rounded.md,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.title,
+          { color: theme.text, fontSize: theme.typography.size.lg },
+        ]}
+      >
+        Today’s meals
+      </Text>
       {meals.map((meal) => (
         <View key={meal.mealId} style={styles.mealRow}>
-          <Text style={[styles.mealName, { color: theme.text }]}>{meal.name}</Text>
-          <Text style={[styles.mealKcal, { color: theme.textSecondary }]}> 
+          <Text
+            style={{ color: theme.text, fontSize: theme.typography.size.md }}
+          >
+            {meal.name}
+          </Text>
+          <Text
+            style={{
+              color: theme.textSecondary,
+              fontSize: theme.typography.size.md,
+            }}
+          >
             {meal.ingredients.reduce((sum, i) => sum + i.kcal, 0)} kcal
           </Text>
         </View>
@@ -22,9 +47,11 @@ export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { marginBottom: 20 },
+  container: { borderWidth: 1 },
   title: { fontWeight: "bold", marginBottom: 8 },
-  mealRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
-  mealName: {},
-  mealKcal: {},
+  mealRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
 });

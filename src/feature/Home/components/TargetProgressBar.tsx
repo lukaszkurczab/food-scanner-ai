@@ -10,10 +10,10 @@ export const TargetProgressBar = ({
   target: number;
 }) => {
   const theme = useTheme();
-  const percentage = Math.min(100, Math.round((current / target) * 100));
+  const percentage = Math.min(100, (current / target) * 100);
 
   return (
-    <View style={styles.container}>
+    <View>
       <View
         style={{
           flexDirection: "row",
@@ -32,7 +32,7 @@ export const TargetProgressBar = ({
             styles.labelSecondary,
             { color: theme.textSecondary, fontSize: theme.typography.size.lg },
           ]}
-        >{`${(current / target).toFixed(0)} %`}</Text>
+        >{`${percentage.toFixed(0)} %`}</Text>
       </View>
       <View style={[styles.bar, { backgroundColor: theme.border }]}>
         <View
@@ -50,7 +50,6 @@ export const TargetProgressBar = ({
 };
 
 const styles = StyleSheet.create({
-  container: { marginBottom: 20 },
   label: { marginBottom: 4, fontWeight: "bold" },
   labelSecondary: { fontWeight: "medium" },
   bar: {

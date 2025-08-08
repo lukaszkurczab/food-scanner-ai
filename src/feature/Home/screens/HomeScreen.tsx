@@ -9,8 +9,9 @@ import { AddMealPlaceholder } from "../components/AddMealPlaceholder";
 import { useUserContext } from "@/src/context/UserContext";
 import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
 import { getTodayMeals } from "@/src/utils/getTodayMeals";
-import { Layout, LineGraph } from "@/src/components";
+import { Layout } from "@/src/components";
 import { getLastNDaysAggregated } from "@/src/utils/getLastNDaysAggregated";
+import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@/src/hooks/useMeals";
 import { Meal } from "@/src/types";
 
@@ -42,7 +43,7 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <Layout>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, gap: theme.spacing.lg }}>
         {userData?.calorieTarget && userData.calorieTarget > 0 ? (
           <TargetProgressBar current={totalCalories} target={goalCalories} />
         ) : (
@@ -70,12 +71,7 @@ export default function HomeScreen({ navigation }: any) {
           </>
         )}
 
-        <LineGraph
-          data={data}
-          labels={labels}
-          title="Weekly Progress"
-          stepX={1}
-        />
+        <WeeklyProgressGraph data={data} labels={labels} />
         <ButtonSection />
       </View>
     </Layout>

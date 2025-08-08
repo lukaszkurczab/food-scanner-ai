@@ -29,10 +29,7 @@ export function useMeals(userUid: string) {
     const mealCollection = database.get("meals");
     const all = await mealCollection.query().fetch();
     let userMeals = all.filter((m: any) => m.userUid === userUid && !m.deleted);
-    const mealsArr = userMeals.map((m: any) => {
-      console.log(m._raw);
-      return mapRawToMeal(m._raw);
-    });
+    const mealsArr = userMeals.map((m: any) => mapRawToMeal(m._raw));
     setMeals((prev) => (areMealsEqual(prev, mealsArr) ? prev : mealsArr));
     setLoading(false);
   }, [userUid]);
@@ -65,7 +62,6 @@ export function useMeals(userUid: string) {
 
       await database.write(async () => {
         const { id, ...raw } = mapMealToRaw({ ...baseMeal, syncState });
-        console.log(raw.ingredients);
         await mealCollection.create((m: any) => Object.assign(m, raw));
       });
       await getMeals();
