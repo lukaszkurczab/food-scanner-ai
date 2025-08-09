@@ -1,3 +1,4 @@
+// src/services/firestore/firestoreChatService.ts
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,
@@ -9,54 +10,86 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  where,
+  orderBy,
+  limit,
+  startAfter,
 } from "@react-native-firebase/firestore";
 import type { ChatMessage } from "@/src/types";
-
-const COLLECTION = "chat_messages";
 
 function getDb() {
   const app = getApp();
   return getFirestore(app);
 }
 
-export async function fetchChatMessagesFromFirestore(
-  userUid: string
-): Promise<ChatMessage[]> {
-  const db = getDb();
-  const q = query(collection(db, COLLECTION), where("userUid", "==", userUid));
-  const querySnapshot = await getDocs(q);
+function messagesCol(db: any, userUid: string) {
+  return collection(db, "users", userUid, "chat_messages");
+}
 
-  return querySnapshot.docs.map((docSnap: any) => {
-    const data = docSnap.data() as ChatMessage;
-    return {
-      ...data,
-      id: docSnap.id,
-    };
-  });
+export type ChatPage = { items: ChatMessage[]; nextCursor: any | null };
+
+export async function fetchChatMessagesPageFromFirestore(
+  userUid: string,
+  pageSize = 50,
+  cursor?: any | null
+): Promise<ChatPage> {
+  const db = getDb();
+  const base = query(
+    messagesCol(db, userUid),
+    orderBy("createdAt", "desc"),
+    limit(pageSize)
+  );
+  const q = cursor ? query(base, startAfter(cursor)) : base;
+  try {
+    const snap = await getDocs(q);
+    const items = snap.docs.map((d: any) => {
+      const data = d.data() as ChatMessage;
+      return { ...data, id: d.id };
+    });
+    const nextCursor =
+      snap.docs.length === pageSize ? snap.docs[snap.docs.length - 1] : null;
+    return { items, nextCursor };
+  } catch (e) {
+    return { items: [], nextCursor: null };
+  }
 }
 
 export async function addChatMessageToFirestore(
   message: ChatMessage
 ): Promise<string> {
   const db = getDb();
-  const ref = await addDoc(collection(db, COLLECTION), {
-    ...message,
-    id: undefined,
+  const ref = await addDoc(messagesCol(db, message.userUid), {
+    userUid: message.userUid,
+    role: message.role,
+    content: message.content,
+    createdAt:
+      typeof message.createdAt === "number" ? message.createdAt : Date.now(),
+    lastSyncedAt:
+      typeof message.lastSyncedAt === "number" ? message.lastSyncedAt : 0,
+    syncState: message.syncState,
+    deleted: !!message.deleted,
   });
   return ref.id;
 }
 
-export async function updateChatMessageInFirestore(
+export async function upsertChatMessageInFirestore(
   cloudId: string,
   message: ChatMessage
 ) {
   const db = getDb();
   await setDoc(
-    doc(collection(db, COLLECTION), cloudId),
+    doc(messagesCol(db, message.userUid), cloudId),
     {
-      ...message,
-      id: cloudId,
+      userUid: message.userUid,
+      role: message.role,
+      content: message.content,
+      createdAt:
+        typeof message.createdAt === "number" ? message.createdAt : Date.now(),
+      lastSyncedAt:
+        typeof message.lastSyncedAt === "number"
+          ? message.lastSyncedAt
+          : Date.now(),
+      syncState: message.syncState,
+      deleted: !!message.deleted,
     },
     { merge: true }
   );
@@ -64,27 +97,30 @@ export async function updateChatMessageInFirestore(
 
 export async function deleteChatMessageInFirestore(
   cloudId: string,
-  hard = false
+  hard = false,
+  userUid?: string
 ) {
   const db = getDb();
-  const msgDoc = doc(collection(db, COLLECTION), cloudId);
+  const msgDoc = doc(messagesCol(db, userUid as string), cloudId);
   if (hard) {
     await deleteDoc(msgDoc);
   } else {
     await updateDoc(msgDoc, {
       deleted: true,
       syncState: "synced",
+      lastSyncedAt: Date.now(),
     });
   }
 }
 
 export async function markChatMessageSyncedInFirestore(
   cloudId: string,
-  timestamp?: string
+  timestamp: number,
+  userUid: string
 ) {
   const db = getDb();
-  await updateDoc(doc(collection(db, COLLECTION), cloudId), {
+  await updateDoc(doc(messagesCol(db, userUid), cloudId), {
     syncState: "synced",
-    lastSyncedAt: timestamp || new Date().toISOString(),
+    lastSyncedAt: timestamp ?? Date.now(),
   });
 }

@@ -2,15 +2,17 @@ import React from "react";
 import { Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 export const ButtonSection = () => {
   const theme = useTheme();
+  const navigation = useNavigation<any>();
 
   return (
     <Pressable
       style={[styles.button, { borderColor: theme.link }]}
       onPress={() => {
-        /* navigate to AI */
+        navigation.navigate("Chat");
       }}
     >
       <MaterialIcons name="smart-toy" size={20} color={theme.link} />
