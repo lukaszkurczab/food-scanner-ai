@@ -1,17 +1,20 @@
 {
   "typing": "…",
   "offline": {
-    "title": "You are offline",
-    "short": "Offline"
+    "title": "No internet connection",
+    "subtitle": "Check your connection and try again.",
+    "short": "You are offline"
   },
   "input": {
-    "placeholder": "Ask me anything about your nutrition…"
+    "placeholder": "Ask me anything",
+    "send": "Send"
   },
   "limit": {
-    "title": "Daily message limit reached",
-    "description": "You've used {{used}} of {{limit}} daily messages. Upgrade to Premium for unlimited chat.",
-    "upgradeCta": "Go Premium",
-    "reached": "Daily limit reached ({{used}}/{{limit}})"
+    "title": "Thanks for exploring CaloriAI!",
+    "body": "You've used {{used}} out of {{limit}} free questions today. Come back tomorrow or unlock unlimited access.",
+    "button": "Unlock Premium",
+    "reached": "Daily limit reached ({{used}}/{{limit}})",
+    "reachedShort": "Daily limit reached ({{used}}/{{limit}})"
   },
   "diet": {
     "rules": {

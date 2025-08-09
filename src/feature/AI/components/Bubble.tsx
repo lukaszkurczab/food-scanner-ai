@@ -15,7 +15,9 @@ export const Bubble: React.FC<Props> = ({ msg }) => {
     <View
       style={[
         styles.row,
-        { justifyContent: isUser ? "flex-end" : "flex-start" },
+        {
+          justifyContent: isUser ? "flex-end" : "flex-start",
+        },
       ]}
     >
       <View
@@ -55,7 +57,7 @@ export const Bubble: React.FC<Props> = ({ msg }) => {
 };
 
 const styles = StyleSheet.create({
-  row: { width: "100%", marginVertical: 6 },
+  row: { width: "100%", marginVertical: 8, flexDirection: "row" },
   bubble: {
     maxWidth: "82%",
     paddingHorizontal: 14,

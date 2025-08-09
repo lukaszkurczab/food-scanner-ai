@@ -53,14 +53,22 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
 
 const styles = StyleSheet.create({
   card: {
-    marginTop: 12,
     padding: 16,
-    borderWidth: 1,
     borderRadius: 16,
     alignSelf: "stretch",
   },
-  title: { fontSize: 16, fontWeight: "700", marginBottom: 6 },
-  body: { fontSize: 14, marginBottom: 12 },
-  cta: { alignSelf: "flex-start", paddingHorizontal: 16, paddingVertical: 10 },
+  title: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  body: { fontSize: 16, marginBottom: 12, textAlign: "center" },
+  cta: {
+    alignSelf: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginTop: 16,
+  },
   ctaLabel: { fontSize: 15, fontWeight: "700" },
 });
