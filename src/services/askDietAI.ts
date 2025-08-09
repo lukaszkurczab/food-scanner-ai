@@ -224,6 +224,63 @@ const rawKey = Constants.expoConfig?.extra?.openaiApiKey;
 const apiKey = rawKey?.trim();
 const openai = new OpenAI({ apiKey });
 
+function buildProfileSummary(p: FormData) {
+  const lines: string[] = [];
+
+  if (p.goal) lines.push(`Goal: ${p.goal}`);
+  if (p.activityLevel) lines.push(`Activity: ${p.activityLevel}`);
+  if (p.sex) lines.push(`Sex: ${p.sex}`);
+  if (p.age) lines.push(`Age: ${p.age}`);
+  if (p.unitsSystem === "metric") {
+    if (p.height)
+      lines.push(
+        `Height: ${p.height} cm${p.heightInch ? ` (${p.heightInch}")` : ""}`
+      );
+    if (p.weight) lines.push(`Weight: ${p.weight} kg`);
+  } else {
+    if (p.height || p.heightInch)
+      lines.push(`Height: ${p.height || "-"}'${p.heightInch || "-"}`);
+    if (p.weight) lines.push(`Weight: ${p.weight} lbs`);
+  }
+  if (Array.isArray(p.preferences) && p.preferences.length)
+    lines.push(`Diet prefs: ${p.preferences.join(", ")}`);
+  if (Array.isArray(p.allergies) && p.allergies.length)
+    lines.push(`Allergies: ${p.allergies.join(", ")}`);
+  if (Array.isArray(p.chronicDiseases) && p.chronicDiseases.length)
+    lines.push(`Chronic: ${p.chronicDiseases.join(", ")}`);
+  if (typeof p.calorieTarget === "number")
+    lines.push(`Calorie target: ${p.calorieTarget} kcal/day`);
+  if (p.aiNote) lines.push(`Notes: ${p.aiNote}`);
+
+  return lines.length
+    ? lines.join("\n")
+    : i18next.t("diet.user.noProfile", "no profile data");
+}
+
+function formatMeals(meals: Meal[]) {
+  if (!meals?.length) return i18next.t("diet.user.noData", "brak danych");
+
+  return meals
+    .slice()
+    .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
+    .slice(0, 20)
+    .map((m) => {
+      const when =
+        typeof m.createdAt === "number"
+          ? new Date(m.createdAt).toISOString().slice(0, 16).replace("T", " ")
+          : m.createdAt;
+      const ing = (m.ingredients || [])
+        .map((it: any) =>
+          [it.name, typeof it.amount === "number" ? `${it.amount}g` : null]
+            .filter(Boolean)
+            .join(" ")
+        )
+        .join(", ");
+      return `• ${when} — ${m.name || m.type || "meal"}: ${ing}`;
+    })
+    .join("\n");
+}
+
 export async function askDietAI(
   question: string,
   meals: Meal[],
@@ -233,15 +290,10 @@ export async function askDietAI(
   const dc = buildDietContext(profile);
   const lang = i18next.language || "en";
 
-  const recentMeals = meals
-    .slice(0, 20)
-    .map(
-      (m) =>
-        `• ${m.createdAt} – ${m.ingredients
-          .map((i: any) => `${i}g`)
-          .join(", ")}`
-    )
-    .join("\n");
+  const profileSummary = buildProfileSummary(profile);
+  const recentMeals = formatMeals(meals);
+
+  console.log(recentMeals);
 
   const system = [
     i18next.t(
@@ -275,7 +327,7 @@ export async function askDietAI(
 
   const history: ChatCompletionMessageParam[] = chatHistory
     .slice(-10)
-    .map<ChatCompletionMessageParam>((m) => ({
+    .map((m) => ({
       role: m.from === "user" ? "user" : "assistant",
       content: m.text,
     }));
@@ -285,11 +337,9 @@ export async function askDietAI(
     {
       role: "user",
       content: i18next.t(
-        "diet.user.recentMeals",
-        "Ostatnie posiłki użytkownika:\n{{meals}}",
-        {
-          meals: recentMeals || i18next.t("diet.user.noData", "brak danych"),
-        }
+        "diet.user.profileBlock",
+        "User profile:\n{{profile}}\n\nRecent meals:\n{{meals}}",
+        { profile: profileSummary, meals: recentMeals }
       ) as string,
     },
     ...history,

@@ -1,17 +1,22 @@
 {
   "typing": "…",
   "offline": {
-    "title": "Jesteś offline",
-    "short": "Offline"
+    "title": "Brak internetu",
+    "subtitle": "Sprawdź połączenie i spróbuj ponownie.",
+    "short": "Jesteś offline"
   },
   "input": {
-    "placeholder": "Zapytaj o cokolwiek dotyczącego Twojej diety…"
+    "placeholder": "Zapytaj mnie",
+    "send": "Wyślij"
   },
   "limit": {
-    "title": "Wykorzystano dzienny limit wiadomości",
     "description": "Wykorzystałeś {{used}} z {{limit}} wiadomości dziennie. Przejdź na Premium, aby mieć nielimitowany czat.",
     "upgradeCta": "Przejdź na Premium",
-    "reached": "Osiągnięto limit dzienny ({{used}}/{{limit}})"
+    "title": "Dziękujemy za korzystanie z CaloriAI!",
+    "body": "Wykorzystano {{used}} z {{limit}} darmowych pytań dziennie. Wróć jutro lub odblokuj nielimitowany dostęp.",
+    "button": "Odblokuj Premium",
+    "reached": "Osiągnięto limit dzienny ({{used}}/{{limit}})",
+    "reachedShort": "Limit dzienny osiągnięty ({{used}}/{{limit}})"
   },
   "diet": {
     "rules": {

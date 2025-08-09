@@ -53,7 +53,7 @@ export const InputBar: React.FC<Props> = ({
             {
               backgroundColor: theme.card,
               borderColor: disabled ? theme.disabled.border : theme.border,
-              borderRadius: theme.rounded.full,
+              borderRadius: theme.rounded.lg,
             },
           ]}
         >
@@ -69,7 +69,6 @@ export const InputBar: React.FC<Props> = ({
             multiline
             editable={!disabled}
             onSubmitEditing={send}
-            blurOnSubmit={false}
           />
           <Pressable
             accessibilityRole="button"
@@ -131,6 +130,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     maxHeight: 132,
     paddingRight: 8,
+    alignSelf: "center",
   },
   sendBtn: {
     paddingHorizontal: 16,

@@ -1,3 +1,4 @@
+// src/hooks/useChatHistory.ts
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import { database } from "@/src/db/database";
@@ -11,7 +12,7 @@ import {
   upsertChatMessageInFirestore,
   markChatMessageSyncedInFirestore,
 } from "@/src/services/firestore/firestoreChatService";
-import { askDietAI, Message } from "@/src/services/askDietAI";
+import { askDietAI, type Message } from "@/src/services/askDietAI";
 import { v4 as uuidv4 } from "uuid";
 
 type Options = {
@@ -73,68 +74,60 @@ export function useChatHistory(
       )
       .fetch();
     setMessages(rows.map(mapModelToChat));
+    setLoading(false);
   }, [userUid]);
 
   const pull = useCallback(
     async (reset = false) => {
-      console.log(1);
-
       const { items, nextCursor } = await fetchChatMessagesPageFromFirestore(
         userUid,
         pageSize,
         reset ? null : cursorRef.current
       );
-      console.log(2);
       cursorRef.current = nextCursor;
       setHasMore(!!nextCursor);
-      if (items.length === 0) return;
-      console.log(3);
+      if (!items.length) {
+        if (reset) setLoading(false);
+        return;
+      }
 
       const collection = database.get<ChatMessageModel>("chatMessages");
-      try {
-        await database.write(async () => {
-          for (const msg of items) {
-            const existing = await collection
-              .query(Q.where("cloudId", msg.id))
-              .fetch();
-            if (existing[0]) {
-              await existing[0].update((m: any) => {
-                m.userUid = msg.userUid;
-                m.role = msg.role;
-                m.content = msg.content;
-                m.createdAt =
-                  typeof msg.createdAt === "number"
-                    ? msg.createdAt
-                    : Date.now();
-                m.lastSyncedAt =
-                  typeof msg.lastSyncedAt === "number"
-                    ? msg.lastSyncedAt
-                    : Date.now();
-                m.syncState = "synced";
-                m.cloudId = msg.id;
-                m.deleted = !!msg.deleted;
-              });
-            } else {
-              await collection.create((m: any) => {
-                m.userUid = msg.userUid;
-                m.role = msg.role;
-                m.content = msg.content;
-                m.createdAt =
-                  typeof msg.createdAt === "number"
-                    ? msg.createdAt
-                    : Date.now();
-                m.lastSyncedAt =
-                  typeof msg.lastSyncedAt === "number" ? msg.lastSyncedAt : 0;
-                m.syncState = "synced";
-                m.cloudId = msg.id;
-                m.deleted = !!msg.deleted;
-              });
-            }
+      await database.write(async () => {
+        for (const msg of items) {
+          const existing = await collection
+            .query(Q.where("cloudId", msg.id))
+            .fetch();
+          if (existing[0]) {
+            await existing[0].update((m: any) => {
+              m.userUid = msg.userUid;
+              m.role = msg.role;
+              m.content = msg.content;
+              m.createdAt =
+                typeof msg.createdAt === "number" ? msg.createdAt : Date.now();
+              m.lastSyncedAt =
+                typeof msg.lastSyncedAt === "number"
+                  ? msg.lastSyncedAt
+                  : Date.now();
+              m.syncState = "synced";
+              m.cloudId = msg.id;
+              m.deleted = !!msg.deleted;
+            });
+          } else {
+            await collection.create((m: any) => {
+              m.userUid = msg.userUid;
+              m.role = msg.role;
+              m.content = msg.content;
+              m.createdAt =
+                typeof msg.createdAt === "number" ? msg.createdAt : Date.now();
+              m.lastSyncedAt =
+                typeof msg.lastSyncedAt === "number" ? msg.lastSyncedAt : 0;
+              m.syncState = "synced";
+              m.cloudId = msg.id;
+              m.deleted = !!msg.deleted;
+            });
           }
-        });
-      } catch (e: any) {
-        console.log(e);
-      }
+        }
+      });
       await loadLocal();
     },
     [userUid, pageSize, loadLocal]
@@ -226,6 +219,23 @@ export function useChatHistory(
         });
       });
 
+      const historyForAiBase: Message[] = messages.slice(-10).map((m) => ({
+        from: m.role === "user" ? "user" : "ai",
+        text: m.content,
+      }));
+      let historyForAi: Message[] = [
+        ...historyForAiBase,
+        { from: "user", text: userMsg.content },
+      ];
+      if (
+        historyForAi.length >= 2 &&
+        historyForAi.at(-1)!.from === "user" &&
+        historyForAi.at(-2)!.from === "user" &&
+        historyForAi.at(-1)!.text === historyForAi.at(-2)!.text
+      ) {
+        historyForAi = historyForAi.slice(0, -1);
+      }
+
       setTyping(true);
       await loadLocal();
 
@@ -234,14 +244,10 @@ export function useChatHistory(
         const recentMeals = meals
           ?.slice()
           .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
-        const historyForAi: Message[] = messages.slice(-10).map((m) => ({
-          from: m.role === "user" ? "user" : "ai",
-          text: m.content,
-        }));
         aiText = await askDietAI(
-          text,
+          userMsg.content,
           recentMeals as any,
-          [...historyForAi, { from: "user", text }],
+          historyForAi,
           profile
         );
       } catch (e: any) {
@@ -264,7 +270,7 @@ export function useChatHistory(
         await collection.create((m: any) => {
           m.userUid = assistantMsg.userUid;
           m.role = assistantMsg.role;
-          m.content = assistantMsg.content || "…";
+          m.content = assistantMsg.content;
           m.createdAt = assistantMsg.createdAt;
           m.lastSyncedAt = assistantMsg.lastSyncedAt;
           m.syncState = assistantMsg.syncState;
@@ -302,7 +308,6 @@ export function useChatHistory(
     (async () => {
       await loadLocal();
       await pull(true);
-      setLoading(false);
       unsubNet = NetInfo.addEventListener((state) => {
         if (state.isConnected) {
           pushPending();
