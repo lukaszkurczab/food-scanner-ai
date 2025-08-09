@@ -1,162 +1,328 @@
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import NetInfo from "@react-native-community/netinfo";
 import { database } from "@/src/db/database";
+import { Q } from "@nozbe/watermelondb";
 import ChatMessageModel from "@/src/db/models/ChatMessage";
 import type { ChatMessage, ChatsyncState } from "@/src/types";
+import type { Meal, FormData } from "@/src/types";
 import {
-  fetchChatMessagesFromFirestore,
-  updateChatMessageInFirestore,
+  fetchChatMessagesPageFromFirestore,
   addChatMessageToFirestore,
-  deleteChatMessageInFirestore,
+  upsertChatMessageInFirestore,
+  markChatMessageSyncedInFirestore,
 } from "@/src/services/firestore/firestoreChatService";
+import { askDietAI, Message } from "@/src/services/askDietAI";
+import { v4 as uuidv4 } from "uuid";
 
-const mapModelToChatMessage = (m: ChatMessageModel): ChatMessage => ({
-  id: m.id,
-  userUid: m.userUid,
-  role: m.role as "user" | "assistant" | "system",
-  content: m.content,
-  createdAt: m.createdAt,
-  lastSyncedAt: m.lastSyncedAt,
-  syncState: m.syncState as ChatsyncState,
-  cloudId: m.cloudId,
-  deleted: m.deleted,
-});
+type Options = {
+  pageSize?: number;
+};
 
-function areMessagesEqual(a: ChatMessage[], b: ChatMessage[]): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i].id !== b[i].id || a[i].lastSyncedAt !== b[i].lastSyncedAt)
-      return false;
-  }
-  return true;
+function mapModelToChat(m: ChatMessageModel): ChatMessage {
+  return {
+    id: m.id,
+    userUid: m.userUid,
+    role: m.role as "user" | "assistant" | "system",
+    content: m.content,
+    createdAt: m.createdAt,
+    lastSyncedAt: m.lastSyncedAt,
+    syncState: m.syncState as ChatsyncState,
+    cloudId: m.cloudId,
+    deleted: !!m.deleted,
+  };
 }
 
-export function useChatHistory(userUid: string) {
+function startOfDayMs(now: number) {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+export function useChatHistory(
+  userUid: string,
+  isPremium: boolean,
+  meals: Meal[],
+  profile: FormData,
+  opts: Options = {}
+) {
+  const pageSize = opts.pageSize ?? 50;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncState, setsyncState] = useState<ChatsyncState>("pending");
-  const syncingRef = useRef(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const cursorRef = useRef<any | null>(null);
+  const [typing, setTyping] = useState(false);
+  const pendingQueueRef = useRef<ChatMessage[]>([]);
 
-  const getChatHistory = useCallback(async () => {
-    const chatCollection = database.get<ChatMessageModel>("chat_messages");
-    const localMessages = await chatCollection.query().fetch();
-    const filtered = localMessages
-      .filter((m) => m.userUid === userUid && !m.deleted)
-      .map(mapModelToChatMessage);
+  const countToday = useMemo(() => {
+    const today = startOfDayMs(Date.now());
+    return messages.filter((m) => m.role === "user" && m.createdAt >= today)
+      .length;
+  }, [messages]);
 
-    setMessages((prev) => (areMessagesEqual(prev, filtered) ? prev : filtered));
-    setLoading(false);
+  const canSend = isPremium || countToday < 5;
+
+  const loadLocal = useCallback(async () => {
+    const collection = database.get<ChatMessageModel>("chatMessages");
+    const rows = await collection
+      .query(
+        Q.where("userUid", userUid),
+        Q.where("deleted", false),
+        Q.sortBy("createdAt", Q.desc)
+      )
+      .fetch();
+    setMessages(rows.map(mapModelToChat));
   }, [userUid]);
 
-  const addChatMessage = useCallback(
-    async (msg: Omit<ChatMessage, "id" | "syncState" | "deleted">) => {
-      const chatCollection = database.get<ChatMessageModel>("chat_messages");
-      const now = Date.now();
+  const pull = useCallback(
+    async (reset = false) => {
+      console.log(1);
+
+      const { items, nextCursor } = await fetchChatMessagesPageFromFirestore(
+        userUid,
+        pageSize,
+        reset ? null : cursorRef.current
+      );
+      console.log(2);
+      cursorRef.current = nextCursor;
+      setHasMore(!!nextCursor);
+      if (items.length === 0) return;
+      console.log(3);
+
+      const collection = database.get<ChatMessageModel>("chatMessages");
+      try {
+        await database.write(async () => {
+          for (const msg of items) {
+            const existing = await collection
+              .query(Q.where("cloudId", msg.id))
+              .fetch();
+            if (existing[0]) {
+              await existing[0].update((m: any) => {
+                m.userUid = msg.userUid;
+                m.role = msg.role;
+                m.content = msg.content;
+                m.createdAt =
+                  typeof msg.createdAt === "number"
+                    ? msg.createdAt
+                    : Date.now();
+                m.lastSyncedAt =
+                  typeof msg.lastSyncedAt === "number"
+                    ? msg.lastSyncedAt
+                    : Date.now();
+                m.syncState = "synced";
+                m.cloudId = msg.id;
+                m.deleted = !!msg.deleted;
+              });
+            } else {
+              await collection.create((m: any) => {
+                m.userUid = msg.userUid;
+                m.role = msg.role;
+                m.content = msg.content;
+                m.createdAt =
+                  typeof msg.createdAt === "number"
+                    ? msg.createdAt
+                    : Date.now();
+                m.lastSyncedAt =
+                  typeof msg.lastSyncedAt === "number" ? msg.lastSyncedAt : 0;
+                m.syncState = "synced";
+                m.cloudId = msg.id;
+                m.deleted = !!msg.deleted;
+              });
+            }
+          }
+        });
+      } catch (e: any) {
+        console.log(e);
+      }
+      await loadLocal();
+    },
+    [userUid, pageSize, loadLocal]
+  );
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore) return;
+    await pull(false);
+  }, [hasMore, pull]);
+
+  const pushPending = useCallback(async () => {
+    const net = await NetInfo.fetch();
+    if (!net.isConnected) return;
+
+    const collection = database.get<ChatMessageModel>("chatMessages");
+    const pending = await collection
+      .query(Q.where("syncState", "pending"), Q.where("userUid", userUid))
+      .fetch();
+
+    for (const row of pending) {
+      const data = mapModelToChat(row);
+      let cloudId = data.cloudId;
+      if (!cloudId) {
+        const newId = await addChatMessageToFirestore({
+          ...data,
+          id: "",
+          cloudId: undefined,
+          lastSyncedAt: Date.now(),
+          syncState: "pending",
+        });
+        cloudId = newId;
+      } else {
+        await upsertChatMessageInFirestore(cloudId, data);
+      }
+      await markChatMessageSyncedInFirestore(cloudId, Date.now(), userUid);
       await database.write(async () => {
-        await chatCollection.create((m) => {
-          m.userUid = msg.userUid;
-          m.role = msg.role;
-          m.content = msg.content;
-          m.createdAt = now;
-          m.lastSyncedAt = now;
-          m.syncState = "pending";
+        await row.update((m: any) => {
+          m.syncState = "synced";
+          m.cloudId = cloudId!;
+          m.lastSyncedAt = Date.now();
+        });
+      });
+    }
+    await loadLocal();
+  }, [userUid, loadLocal]);
+
+  const retryPendingWithBackoff = useCallback(() => {
+    let attempt = 0;
+    const run = async () => {
+      attempt += 1;
+      try {
+        await pushPending();
+      } catch {}
+      const delay = Math.min(30000, 1000 * Math.pow(2, attempt));
+      setTimeout(run, delay);
+    };
+    run();
+  }, [pushPending]);
+
+  const send = useCallback(
+    async (text: string) => {
+      setError(null);
+      if (!text.trim()) return;
+      const net = await NetInfo.fetch();
+      if (!canSend || sending || !net.isConnected) return;
+      setSending(true);
+
+      const userMsg: ChatMessage = {
+        id: uuidv4(),
+        userUid,
+        role: "user",
+        content: text.trim(),
+        createdAt: Date.now(),
+        lastSyncedAt: 0,
+        syncState: "pending",
+        deleted: false,
+      };
+
+      const collection = database.get<ChatMessageModel>("chatMessages");
+      await database.write(async () => {
+        await collection.create((m: any) => {
+          m.userUid = userMsg.userUid;
+          m.role = userMsg.role;
+          m.content = userMsg.content;
+          m.createdAt = userMsg.createdAt;
+          m.lastSyncedAt = userMsg.lastSyncedAt;
+          m.syncState = userMsg.syncState;
           m.deleted = false;
         });
       });
-      await getChatHistory();
-      setsyncState("pending");
-    },
-    [getChatHistory]
-  );
 
-  const deleteChatMessage = useCallback(
-    async (id: string) => {
-      const chatCollection = database.get<ChatMessageModel>("chat_messages");
-      const localMsg = (await chatCollection.find(id)) as ChatMessageModel;
-      if (localMsg) {
-        await database.write(async () => {
-          await localMsg.update((m) => {
-            m.deleted = true;
-            m.syncState = "pending";
-          });
-        });
-        await getChatHistory();
-        setsyncState("pending");
-      }
-    },
-    [getChatHistory]
-  );
+      setTyping(true);
+      await loadLocal();
 
-  const syncChatHistory = useCallback(async () => {
-    if (syncingRef.current) return;
-    syncingRef.current = true;
-    try {
-      const chatCollection = database.get<ChatMessageModel>("chat_messages");
-      const localMessages = await chatCollection.query().fetch();
-      const unsynced = localMessages.filter((m) => m.syncState !== "synced");
-      const remoteMessages = await fetchChatMessagesFromFirestore(userUid);
-
-      for (const remote of remoteMessages) {
-        const local = localMessages.find(
-          (m) =>
-            m.cloudId === remote.cloudId || m.createdAt === remote.createdAt
+      let aiText = "";
+      try {
+        const recentMeals = meals
+          ?.slice()
+          .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+        const historyForAi: Message[] = messages.slice(-10).map((m) => ({
+          from: m.role === "user" ? "user" : "ai",
+          text: m.content,
+        }));
+        aiText = await askDietAI(
+          text,
+          recentMeals as any,
+          [...historyForAi, { from: "user", text }],
+          profile
         );
-        if (!local) {
-          await database.write(async () => {
-            await chatCollection.create((m) => {
-              m.userUid = remote.userUid;
-              m.role = remote.role as any;
-              m.content = remote.content;
-              m.createdAt = remote.createdAt;
-              m.lastSyncedAt = remote.lastSyncedAt;
-              m.syncState = remote.syncState as any;
-              m.cloudId = remote.cloudId;
-              m.deleted = remote.deleted;
-            });
-          });
-        } else if (remote.lastSyncedAt > local.lastSyncedAt) {
-          await database.write(async () => {
-            await local.update((m) => {
-              m.role = remote.role as any;
-              m.content = remote.content;
-              m.lastSyncedAt = remote.lastSyncedAt;
-              m.syncState = remote.syncState as any;
-              m.cloudId = remote.cloudId;
-              m.deleted = remote.deleted;
-            });
-          });
-        }
+      } catch (e: any) {
+        setError("AI_ERROR");
+        aiText = "";
       }
 
-      for (const local of unsynced) {
-        if (local.deleted) {
-          await deleteChatMessageInFirestore(local.id);
-        } else if (!local.cloudId) {
-          await addChatMessageToFirestore(mapModelToChatMessage(local));
-        } else {
-          await updateChatMessageInFirestore(
-            local.cloudId,
-            mapModelToChatMessage(local)
-          );
-        }
-        await database.write(async () => {
-          await local.update((m) => {
-            m.syncState = "synced";
-          });
+      const assistantMsg: ChatMessage = {
+        id: uuidv4(),
+        userUid,
+        role: "assistant",
+        content: aiText || "",
+        createdAt: Date.now(),
+        lastSyncedAt: 0,
+        syncState: "pending",
+        deleted: false,
+      };
+
+      await database.write(async () => {
+        await collection.create((m: any) => {
+          m.userUid = assistantMsg.userUid;
+          m.role = assistantMsg.role;
+          m.content = assistantMsg.content || "…";
+          m.createdAt = assistantMsg.createdAt;
+          m.lastSyncedAt = assistantMsg.lastSyncedAt;
+          m.syncState = assistantMsg.syncState;
+          m.deleted = false;
         });
+      });
+
+      setTyping(false);
+      await loadLocal();
+
+      try {
+        pendingQueueRef.current.push(userMsg, assistantMsg);
+        await pushPending();
+      } catch {
+        retryPendingWithBackoff();
+      } finally {
+        setSending(false);
       }
-      setsyncState("synced");
-    } finally {
-      syncingRef.current = false;
-    }
-  }, [userUid]);
+    },
+    [
+      userUid,
+      canSend,
+      sending,
+      meals,
+      profile,
+      messages,
+      loadLocal,
+      pushPending,
+      retryPendingWithBackoff,
+    ]
+  );
+
+  useEffect(() => {
+    let unsubNet: any;
+    (async () => {
+      await loadLocal();
+      await pull(true);
+      setLoading(false);
+      unsubNet = NetInfo.addEventListener((state) => {
+        if (state.isConnected) {
+          pushPending();
+        }
+      });
+    })();
+    return () => {
+      if (unsubNet) unsubNet();
+    };
+  }, [loadLocal, pull, pushPending]);
 
   return {
     messages,
     loading,
-    syncState,
-    getChatHistory,
-    addChatMessage,
-    deleteChatMessage,
-    syncChatHistory,
+    sending,
+    typing,
+    error,
+    canSend,
+    countToday,
+    loadMore,
+    send,
   };
 }

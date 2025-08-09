@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import { database } from "@/src/db/database";
 import { Q } from "@nozbe/watermelondb";
@@ -24,7 +24,6 @@ import { omitLocalUserKeys } from "@/src/utils/omitLocalUserKeys";
 import { savePhotoLocally } from "@/src/utils/savePhotoLocally";
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Localization from "expo-localization";
 
 const LANGUAGE_KEY = "caloriai_language";
 
@@ -56,11 +55,11 @@ export function useUser(uid: string) {
               Object.assign(user, remoteData);
             });
           });
-        } catch (err) {
-          console.log(err);
-        }
+        } catch {}
         localData = remoteData;
       }
+      setUserData(localData);
+    } else {
       setUserData(localData);
     }
     setsyncState(localData?.syncState || "pending");
@@ -71,6 +70,15 @@ export function useUser(uid: string) {
     }
     return localData;
   }, [uid]);
+
+  useEffect(() => {
+    if (!uid) {
+      setUserData(null);
+      setLoading(false);
+      return;
+    }
+    getUserProfile();
+  }, [uid, getUserProfile]);
 
   const updateUserProfile = useCallback(
     async (data: Partial<UserData>) => {
@@ -88,9 +96,7 @@ export function useUser(uid: string) {
                 syncState: "pending",
               });
             });
-          } catch (err) {
-            console.log(err);
-          }
+          } catch {}
         });
         const newRaw = {
           ...localUser._raw,
@@ -120,9 +126,7 @@ export function useUser(uid: string) {
           avatarlastSyncedAt: now,
           syncState: "pending",
         });
-      } catch (e) {
-        console.log(e);
-      }
+      } catch {}
       try {
         const { avatarUrl, avatarlastSyncedAt } = await uploadAndSaveAvatar({
           userUid: uid,
@@ -133,7 +137,7 @@ export function useUser(uid: string) {
           avatarlastSyncedAt: new Date(avatarlastSyncedAt).toISOString(),
           syncState: "synced",
         });
-      } catch (e) {}
+      } catch {}
     },
     [uid, updateUserProfile]
   );
@@ -175,7 +179,7 @@ export function useUser(uid: string) {
     try {
       const found = await userCollection.query(Q.where("uid", uid)).fetch();
       localUser = found[0] || null;
-    } catch (e) {
+    } catch {
       localUser = null;
     }
 

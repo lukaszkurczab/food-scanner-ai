@@ -1,0 +1,75 @@
+{
+  "typing": "…",
+  "offline": {
+    "title": "You are offline",
+    "short": "Offline"
+  },
+  "input": {
+    "placeholder": "Ask me anything about your nutrition…"
+  },
+  "limit": {
+    "title": "Daily message limit reached",
+    "description": "You've used {{used}} of {{limit}} daily messages. Upgrade to Premium for unlimited chat.",
+    "upgradeCta": "Go Premium",
+    "reached": "Daily limit reached ({{used}}/{{limit}})"
+  },
+  "diet": {
+    "rules": {
+      "goalActivity": "Adjust recommendations to the goal (lose/maintain/increase) and activity level.",
+      "safeRanges": "Give advice within safe ranges and avoid extremes.",
+      "vegan": "Do not suggest meat, fish, seafood, eggs or dairy products.",
+      "vegetarian": "Do not suggest meat or fish; dairy and eggs are allowed unless restricted otherwise.",
+      "keto": "Maintain low carbohydrate intake and higher fat.",
+      "lowCarb": "Prefer a low glycemic load.",
+      "highProtein": "Ensure high protein intake.",
+      "lowFat": "Limit saturated fats.",
+      "glutenFree": "Avoid gluten.",
+      "dairyFree": "Avoid dairy products.",
+      "paleo": "Exclude grains, dairy and processed foods.",
+      "noPeanuts": "Never suggest peanuts.",
+      "noGluten": "Never suggest products containing gluten.",
+      "noLactose": "Do not suggest dairy products containing lactose; offer plant-based alternatives.",
+      "diabetes": "Prefer low glycemic load, avoid simple sugars.",
+      "hypertension": "Limit sodium, prefer potassium, vegetables, DASH-like diet."
+    },
+    "prefers": {
+      "veganProteins": "plant-based proteins (tofu, tempeh, legumes)",
+      "wholeGrains": "whole grains",
+      "vegFruit": "vegetables, fruits",
+      "nutsSeeds": "nuts and seeds",
+      "vegetarianSources": "eggs, dairy, legumes, tofu, whole grain products",
+      "fishSeafood": "fish and seafood",
+      "mediterranean": "olive oil, fish, vegetables, legumes, whole grains, nuts"
+    },
+    "tone": {
+      "concise": "Brief and concise (3–6 sentences).",
+      "detailed": "Detailed, with a short bullet list.",
+      "friendly": "Friendly and motivating.",
+      "neutral": "Neutral and factual."
+    },
+    "focus": {
+      "mealPlanning": "Focus on ready meal suggestions.",
+      "analyzingMistakes": "First point out mistakes, then corrections.",
+      "quickAnswers": "Provide a short answer without digressions.",
+      "motivation": "Add 1–2 motivational sentences.",
+      "default": "Adapt the answer to the question."
+    },
+    "replacement": "substitute",
+    "constraintsNote": "(I have considered your restrictions – I suggested substitutes.)",
+    "system": {
+      "role": "You are a licensed dietitian. Respond in the user's language.",
+      "rulesHeader": "Always follow the compliance rules below (do not break them).",
+      "prefers": "User preferences: {{list}}.",
+      "substitute": "If something is prohibited, suggest an appropriate substitute.",
+      "medical": "You do not provide medical advice; if in doubt, suggest consulting a professional.",
+      "language": "Respond in {{lang}}."
+    },
+    "user": {
+      "recentMeals": "User's recent meals:\n{{meals}}",
+      "noData": "no data"
+    },
+    "errors": {
+      "empty": "No answer."
+    }
+  }
+}

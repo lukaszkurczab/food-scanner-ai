@@ -11,6 +11,7 @@ import en_resetPassword from "./locales/en/resetPassword.json";
 import en_onboarding from "./locales/en/onboarding.json";
 import en_profile from "./locales/en/profile.json";
 import en_meals from "./locales/en/meals.json";
+import en_chat from "./locales/en/chat.json";
 import en_statistics from "./locales/en/statistics.json";
 import pl_common from "./locales/pl/common.json";
 import pl_login from "./locales/pl/login.json";
@@ -20,6 +21,7 @@ import pl_resetPassword from "./locales/pl/resetPassword.json";
 import pl_onboarding from "./locales/pl/onboarding.json";
 import pl_profile from "./locales/pl/profile.json";
 import pl_meals from "./locales/pl/meals.json";
+import pl_chat from "./locales/pl/chat.json";
 
 const STORAGE_KEY = "APP_LANGUAGE";
 
@@ -56,6 +58,7 @@ i18n
       "profile",
       "meals",
       "statistics",
+      "chat",
     ],
     defaultNS: "common",
     resources: {
@@ -69,6 +72,7 @@ i18n
         profile: en_profile,
         meals: en_meals,
         statistics: en_statistics,
+        chat: en_chat,
       },
       pl: {
         common: pl_common,
@@ -79,6 +83,7 @@ i18n
         onboarding: pl_onboarding,
         profile: pl_profile,
         meals: pl_meals,
+        chat: pl_chat,
       },
     },
     interpolation: { escapeValue: false },
