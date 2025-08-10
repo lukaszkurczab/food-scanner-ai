@@ -23,6 +23,7 @@ import ResetPasswordScreen from "@/src/feature/Auth/screens/ResetPasswordScreen"
 import CheckMailboxScreen from "@/src/feature/Auth/screens/CheckMailboxScreen";
 import OnboardingScreen from "@/src/feature/Onboarding/screens/OnboardingScreen";
 import LoadingScreen from "@/src/screens/LoadingScreen";
+import MealDetailsScreen from "@/src/feature/History/screens/MealDetailsScreen";
 import EditUserDataScreen from "@/src/feature/UserProfile/screens/EditUserDataScreen";
 import AvatarCameraScreen from "@/src/feature/UserProfile/screens/AvatarCameraScreen";
 import UsernameChangeScreen from "@/src/feature/UserProfile/screens/UsernameChangeScreen";
@@ -76,6 +77,7 @@ const AppNavigator = () => {
           />
           <Stack.Screen name="EditUserData" component={EditUserDataScreen} />
           <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
+          <Stack.Screen name="MealDetails" component={MealDetailsScreen} />
           <Stack.Screen
             name="UsernameChange"
             component={UsernameChangeScreen}

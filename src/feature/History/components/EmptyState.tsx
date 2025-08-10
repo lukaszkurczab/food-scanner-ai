@@ -1,16 +1,11 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
+import { MaterialIcons } from "@expo/vector-icons";
 
-type Action = { label: string; onPress: () => void };
+type Props = { title: string; description?: string };
 
-type Props = { title: string; description?: string; actions?: Action[] };
-
-export const EmptyState: React.FC<Props> = ({
-  title,
-  description,
-  actions = [],
-}) => {
+export const EmptyState: React.FC<Props> = ({ title, description }) => {
   const theme = useTheme();
   return (
     <View style={{ alignItems: "center", padding: 24 }}>
@@ -20,15 +15,17 @@ export const EmptyState: React.FC<Props> = ({
           height: 140,
           borderRadius: 20,
           backgroundColor: theme.card,
-          borderWidth: 1,
-          borderColor: theme.border,
           marginBottom: 16,
+          alignItems: "center",
+          justifyContent: "center",
         }}
-      />
+      >
+        <MaterialIcons name="no-meals" size={76} color={theme.textSecondary} />
+      </View>
       <Text
         style={{
           color: theme.text,
-          fontSize: 18,
+          fontSize: 22,
           fontWeight: "700",
           marginBottom: 6,
         }}
@@ -41,29 +38,12 @@ export const EmptyState: React.FC<Props> = ({
             color: theme.textSecondary,
             textAlign: "center",
             marginBottom: 16,
+            fontSize: 18,
           }}
         >
           {description}
         </Text>
       )}
-      <View style={{ flexDirection: "row", gap: 12 }}>
-        {actions.map((a, i) => (
-          <Pressable
-            key={i}
-            onPress={a.onPress}
-            style={{
-              paddingHorizontal: 14,
-              paddingVertical: 10,
-              borderRadius: 12,
-              backgroundColor: theme.card,
-              borderWidth: 1,
-              borderColor: theme.border,
-            }}
-          >
-            <Text style={{ color: theme.text }}>{a.label}</Text>
-          </Pressable>
-        ))}
-      </View>
     </View>
   );
 };

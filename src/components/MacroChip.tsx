@@ -34,7 +34,10 @@ export const MacroChip: React.FC<MacroChipProps> = ({ label, value }) => {
   return (
     <View style={styles.macroWrapper}>
       <Text
-        style={[{ fontSize: theme.typography.size.base }, styles.macroLabel]}
+        style={[
+          { fontSize: theme.typography.size.base, color: theme.text },
+          styles.macroLabel,
+        ]}
       >
         {label} {label === "Calories" ? "[kcal]" : "[g]"}
       </Text>
