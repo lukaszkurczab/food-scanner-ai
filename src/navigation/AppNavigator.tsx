@@ -6,7 +6,7 @@ import { useAuthContext } from "@/src/context/AuthContext";
 
 import HomeScreen from "@/src/feature/Home/screens/HomeScreen";
 import ResultScreen from "@/src/feature/Meals/screens/ResultScreen";
-import HistoryScreen from "@/src/feature/History/screens/HistoryScreen";
+import HistoryListScreen from "@/src/feature/History/screens/HistoryListScreen";
 import MealDetailScreen from "@/src/feature/Statistics/MealDetailScreen";
 import ChatScreen from "@/src/feature/AI/screens/ChatScreen";
 import StatisticsScreen from "@/src/feature/Statistics/screens/StatisticsScreen";
@@ -57,7 +57,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="AvatarCamera" component={AvatarCameraScreen} />
           <Stack.Screen name="Result" component={ResultScreen} />
-          <Stack.Screen name="History" component={HistoryScreen} />
+          <Stack.Screen name="HistoryList" component={HistoryListScreen} />
           <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
           <Stack.Screen name="MealDetail" component={MealDetailScreen} />
           <Stack.Screen name="AddMealFromList" component={AddMealFromList} />

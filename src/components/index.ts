@@ -43,3 +43,4 @@ export * from "./LineGraph";
 export * from "./TargetProgressBar";
 export * from "./DateInput";
 export * from "./Calendar";
+export * from "./OfflineBanner";

@@ -127,7 +127,7 @@ export const MealBox = ({
       </View>
 
       <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
-        <PieChart data={macroChartData} size={140} />
+        <PieChart data={macroChartData} minSize={140} />
       </View>
     </View>
   );

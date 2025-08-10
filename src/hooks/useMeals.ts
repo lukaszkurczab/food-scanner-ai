@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import { database } from "@/src/db/database";
-import type { Meal } from "@/src/types";
+import type { Meal } from "@/src/types/meal";
 import {
   fetchMealsFromFirestore,
   upsertMealWithPhoto,
@@ -28,7 +28,9 @@ export function useMeals(userUid: string) {
   const getMeals = useCallback(async () => {
     const mealCollection = database.get("meals");
     const all = await mealCollection.query().fetch();
-    let userMeals = all.filter((m: any) => m.userUid === userUid && !m.deleted);
+    const userMeals = all.filter(
+      (m: any) => m.userUid === userUid && !m.deleted
+    );
     const mealsArr = userMeals.map((m: any) => mapRawToMeal(m._raw));
     setMeals((prev) => (areMealsEqual(prev, mealsArr) ? prev : mealsArr));
     setLoading(false);
@@ -48,7 +50,6 @@ export function useMeals(userUid: string) {
         source: "ai",
         updatedAt: new Date().toISOString(),
       };
-
       let syncState: Meal["syncState"] = "synced";
       try {
         await upsertMealWithPhoto(
@@ -56,10 +57,9 @@ export function useMeals(userUid: string) {
           { ...baseMeal, syncState: "synced" },
           meal.photoUrl || null
         );
-      } catch (err) {
+      } catch {
         syncState = "pending";
       }
-
       await database.write(async () => {
         const { id, ...raw } = mapMealToRaw({ ...baseMeal, syncState });
         await mealCollection.create((m: any) => Object.assign(m, raw));
@@ -94,10 +94,10 @@ export function useMeals(userUid: string) {
   );
 
   const deleteMeal = useCallback(
-    async (mealId: string) => {
+    async (mealCloudId: string) => {
       const mealCollection = database.get("meals");
       const all = await mealCollection.query().fetch();
-      const localMeal = all.find((m: any) => m.id === mealId);
+      const localMeal = all.find((m: any) => m.id === mealCloudId);
       if (localMeal) {
         await database.write(async () => {
           await localMeal.update((m: any) => {
@@ -110,6 +110,22 @@ export function useMeals(userUid: string) {
       }
     },
     [getMeals]
+  );
+
+  const duplicateMeal = useCallback(
+    async (original: Meal, dateOverride?: string) => {
+      const copy: Omit<Meal, "syncState" | "lastUpdated" | "updatedAt"> = {
+        ...original,
+        mealId: uuidv4(),
+        cloudId: uuidv4(),
+        timestamp: dateOverride || new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        source: original.source || "manual",
+        deleted: false,
+      } as any;
+      await addMeal(copy as any);
+    },
+    [addMeal]
   );
 
   const getUnsyncedMeals = useCallback(async () => {
@@ -129,11 +145,9 @@ export function useMeals(userUid: string) {
     try {
       const netInfo = await NetInfo.fetch();
       if (!netInfo.isConnected) return;
-
       const mealCollection = database.get("meals");
       const allLocal = await mealCollection.query().fetch();
       const localMeals = allLocal.filter((m: any) => m.userUid === userUid);
-
       const toSync = localMeals.filter((m: any) =>
         unsyncedStatuses.includes(m.sync_status)
       );
@@ -141,7 +155,6 @@ export function useMeals(userUid: string) {
         syncingRef.current = false;
         return;
       }
-
       for (const m of toSync) {
         const meal = mapRawToMeal(m._raw);
         try {
@@ -156,9 +169,8 @@ export function useMeals(userUid: string) {
               mm.last_updated = new Date().toISOString();
             });
           });
-        } catch (error) {}
+        } catch {}
       }
-
       const remoteMeals = await fetchMealsFromFirestore(userUid);
       for (const remote of remoteMeals) {
         const local = localMeals.find((m: any) => m.id === remote.cloudId);
@@ -192,6 +204,7 @@ export function useMeals(userUid: string) {
     addMeal,
     updateMeal,
     deleteMeal,
+    duplicateMeal,
     syncMeals,
     getUnsyncedMeals,
   };
