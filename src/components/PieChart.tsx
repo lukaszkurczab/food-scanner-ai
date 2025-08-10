@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, LayoutChangeEvent } from "react-native";
 import { Svg, Path, Circle } from "react-native-svg";
 import { useTheme } from "@/src/theme/useTheme";
+import { useTranslation } from "react-i18next";
 
 type PieSlice = { value: number; color: string; label?: string };
 
@@ -25,6 +26,7 @@ export const PieChart: React.FC<PieChartProps> = ({
   fontSize = 16,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["meals"]);
   const [parentW, setParentW] = useState(0);
   const total = data.reduce((s, d) => s + (Number(d.value) || 0), 0);
 
@@ -66,6 +68,24 @@ export const PieChart: React.FC<PieChartProps> = ({
     );
   };
 
+  const getLabel = (label: string | undefined) => {
+    let labelText;
+    switch (label) {
+      case "Carbs":
+        labelText = t("meals:carbs", { ns: "carbs" });
+        break;
+      case "Protein":
+        labelText = t("meals:protein", { ns: "proteins" });
+        break;
+      case "Fat":
+        labelText = t("meals:fat", { ns: "fat" });
+        break;
+      default:
+        null;
+    }
+    return labelText;
+  };
+
   const Legend = () => (
     <View style={{ minWidth: canRow ? legendWidth : undefined }}>
       {data.map((slice, i) => (
@@ -89,7 +109,7 @@ export const PieChart: React.FC<PieChartProps> = ({
             }}
           />
           <Text style={{ fontSize, color: theme.text }}>
-            {slice.label ?? slice.value}
+            {getLabel(slice.label) ?? slice.value}
           </Text>
         </View>
       ))}

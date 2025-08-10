@@ -40,24 +40,24 @@ export const MealBox = ({
     {
       value: nutrition.protein,
       color: theme.macro.protein,
-      label: t("protein_short", { ns: "meals" }),
+      label: "Protein",
     },
     {
       value: nutrition.fat,
       color: theme.macro.fat,
-      label: t("fat_short", { ns: "meals" }),
+      label: "Fat",
     },
     {
       value: nutrition.carbs,
       color: theme.macro.carbs,
-      label: t("carbs_short", { ns: "meals" }),
+      label: "Carbs",
     },
   ];
 
   return (
     <View
       style={{
-        backgroundColor: theme.card,
+        backgroundColor: theme.background,
         borderRadius: theme.rounded.lg,
         borderWidth: 1,
         borderColor: theme.border,
@@ -85,7 +85,6 @@ export const MealBox = ({
             fontFamily: theme.typography.fontFamily.bold,
             fontSize: theme.typography.size.xl,
             color: theme.text,
-            marginBottom: theme.spacing.sm,
           }}
         >
           {name}
@@ -96,6 +95,7 @@ export const MealBox = ({
         {editable ? (
           <Dropdown
             value={type || "breakfast"}
+            style={{ marginTop: theme.spacing.sm }}
             options={mealTypeOptions.map((opt) => ({
               ...opt,
               label: t(opt.label),
@@ -103,7 +103,14 @@ export const MealBox = ({
             onChange={onTypeChange || (() => {})}
           />
         ) : (
-          <Text>{type ? t(`meals:${type}`) : ""}</Text>
+          <Text
+            style={{
+              fontSize: theme.typography.size.md,
+              color: theme.text,
+            }}
+          >
+            {type ? t(`meals:${type}`) : ""}
+          </Text>
         )}
       </View>
 
@@ -112,22 +119,13 @@ export const MealBox = ({
         value={nutrition.kcal}
       />
       <View style={styles.macrosRow}>
-        <MacroChip
-          label={t("protein_short", { ns: "meals" })}
-          value={nutrition.protein}
-        />
-        <MacroChip
-          label={t("carbs_short", { ns: "meals" })}
-          value={nutrition.carbs}
-        />
-        <MacroChip
-          label={t("fat_short", { ns: "meals" })}
-          value={nutrition.fat}
-        />
+        <MacroChip label="Protein" value={nutrition.protein} />
+        <MacroChip label="Carbs" value={nutrition.carbs} />
+        <MacroChip label="Fat" value={nutrition.fat} />
       </View>
 
       <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
-        <PieChart data={macroChartData} minSize={140} />
+        <PieChart data={macroChartData} maxSize={140} />
       </View>
     </View>
   );

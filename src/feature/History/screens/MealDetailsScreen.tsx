@@ -45,11 +45,7 @@ export default function MealDetailsScreen() {
         />
       </View>
 
-      <Card
-        variant="outlined"
-        onPress={() => setShowIngredients((v) => !v)}
-        style={{ marginTop: theme.spacing.md }}
-      >
+      <Card variant="outlined" onPress={() => setShowIngredients((v) => !v)}>
         <Text
           style={{
             fontSize: theme.typography.size.md,
