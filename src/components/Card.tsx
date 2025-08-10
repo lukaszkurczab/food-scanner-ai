@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  View,
-  Pressable,
-  StyleSheet,
-  ViewStyle,
-  StyleProp,
-  Platform,
-} from "react-native";
+import { View, Pressable, ViewStyle, StyleProp, Platform } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
 
 type CardProps = {

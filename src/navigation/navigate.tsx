@@ -39,7 +39,7 @@ export type RootStackParamList = {
   EditUserData: undefined;
   ChangeEmail: undefined;
   AvatarCamera: undefined;
-  History: undefined;
+  HistoryList: undefined;
   MealDetail: undefined;
   Chat: undefined;
   Summary: undefined;

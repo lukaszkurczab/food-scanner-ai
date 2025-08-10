@@ -18,7 +18,7 @@ const TABS: tab[] = [
   { key: "Home", icon: "home-filled", target: "Home" },
   { key: "Stats", icon: "bar-chart", target: "Statistics" },
   { key: "Add", icon: "add", target: "MealAddMethod", isFab: true },
-  { key: "History", icon: "history", target: "History" },
+  { key: "History", icon: "history", target: "HistoryList" },
   { key: "Profile", icon: "person", target: "Profile" },
 ];
 
