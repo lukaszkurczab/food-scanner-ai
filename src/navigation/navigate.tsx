@@ -1,4 +1,5 @@
 import { createNavigationContainerRef } from "@react-navigation/native";
+import { Meal } from "@/src/types";
 
 export type RootStackParamList = {
   Home: undefined;
@@ -44,6 +45,7 @@ export type RootStackParamList = {
   Chat: undefined;
   Summary: undefined;
   Loading: undefined;
+  MealDetails: { meal: Meal };
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();

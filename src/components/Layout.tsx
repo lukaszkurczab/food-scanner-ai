@@ -15,7 +15,12 @@ import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/src/components/BottomTabBar";
 import { useInactivity } from "@/src/context/InactivityContext";
 
-const hiddenRoutes = ["AvatarCamera", "IngredientsNotRecognized", "MealCamera"];
+const hiddenRoutes = [
+  "AvatarCamera",
+  "IngredientsNotRecognized",
+  "MealCamera",
+  "HistoryList",
+];
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -53,7 +58,18 @@ export const Layout = ({
   }, []);
 
   if (!isCardVisible) {
-    return <>{children}</>;
+    return (
+      <KeyboardAvoidingView
+        style={{ flex: 1, flexGrow: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={[styles.root, { backgroundColor: theme.background }]}>
+            {children}
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    );
   }
 
   return (

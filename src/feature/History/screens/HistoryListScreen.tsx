@@ -10,8 +10,15 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useUserContext } from "@/src/context/UserContext";
+import { Layout } from "@/src/components";
 
-export default function HistoryListScreen() {
+type HistoryListScreenProps = {
+  navigation: any;
+};
+
+export default function HistoryListScreen({
+  navigation,
+}: HistoryListScreenProps) {
   const theme = useTheme();
   const netInfo = useNetInfo();
   const today = new Date();
@@ -42,7 +49,7 @@ export default function HistoryListScreen() {
 
   if (loadingMeals) return <LoadingSkeleton />;
 
-  if (!mealsForDay.length)
+  if (!meals.length)
     return (
       <View style={{ flex: 1, backgroundColor: theme.background }}>
         {!netInfo.isConnected && <OfflineBanner />}
@@ -67,23 +74,19 @@ export default function HistoryListScreen() {
     );
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <Layout>
       {!netInfo.isConnected && <OfflineBanner />}
       <View
         style={{
           flexDirection: "row",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           padding: 16,
         }}
       >
-        <DateHeaderWithCalendarButton
-          dateLabel={dateLabel}
-          onOpenCalendar={() => {}}
-        />
         <FilterBadgeButton activeCount={filterCount} onPress={() => {}} />
       </View>
       <FlatList
-        data={mealsForDay}
+        data={meals.reverse()}
         keyExtractor={(item) => item.cloudId || item.mealId}
         refreshControl={
           <RefreshControl refreshing={loadingMeals} onRefresh={getMeals} />
@@ -91,7 +94,7 @@ export default function HistoryListScreen() {
         renderItem={({ item }) => (
           <MealListItem
             meal={item}
-            onPress={() => onEditMeal(item.cloudId || item.mealId)}
+            onPress={() => navigation.navigate("MealDetails", { meal: item })}
             onEdit={() => onEditMeal(item.cloudId || item.mealId)}
             onDuplicate={() => onDuplicateMeal(item)}
             onDelete={() => onDeleteMeal(item.cloudId)}
@@ -99,6 +102,6 @@ export default function HistoryListScreen() {
         )}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
       />
-    </View>
+    </Layout>
   );
 }

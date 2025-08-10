@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Image, View, StyleSheet } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
+import { MaterialIcons } from "@expo/vector-icons";
 
 type Props = {
   uri?: string | null;
@@ -33,6 +34,11 @@ export const FallbackImage: React.FC<Props> = ({
       />
     );
   }
+
+  if (!uri)
+    return (
+      <MaterialIcons name="add-a-photo" size={44} color={theme.textSecondary} />
+    );
   return (
     <Image
       source={{ uri: uri as string }}

@@ -5,6 +5,7 @@ import { useTheme } from "@/src/theme/useTheme";
 import { FallbackImage } from "./FallbackImage";
 import { MacroChip } from "@/src/components/MacroChip";
 import type { Meal } from "@/src/types/meal";
+import { calculateTotalNutrients } from "@/src/services";
 
 type Props = {
   meal: Meal;
@@ -22,6 +23,7 @@ export const MealListItem: React.FC<Props> = ({
   onDuplicate,
 }) => {
   const theme = useTheme();
+
   const Right = () => (
     <View style={styles.actions}>
       <Pressable
@@ -44,62 +46,86 @@ export const MealListItem: React.FC<Props> = ({
       </Pressable>
     </View>
   );
-  const kcal = meal.ingredients.reduce((s, i) => s + i.kcal, 0);
-  const p = meal.ingredients.reduce((s, i) => s + i.protein, 0);
-  const c = meal.ingredients.reduce((s, i) => s + i.carbs, 0);
-  const f = meal.ingredients.reduce((s, i) => s + i.fat, 0);
+
+  const nutrition = calculateTotalNutrients([meal]);
+
   return (
     <Swipeable renderRightActions={Right} overshootRight={false}>
       <Pressable
         onPress={onPress}
         style={[
-          styles.row,
-          { borderColor: theme.border, backgroundColor: theme.background },
+          styles.card,
+          {
+            backgroundColor: theme.background,
+            borderColor: theme.border,
+            shadowColor: theme.shadow,
+          },
         ]}
       >
-        <FallbackImage
-          uri={meal.photoUrl || null}
-          width={48}
-          height={48}
-          borderRadius={12}
-        />
-        <View style={{ flex: 1, marginHorizontal: 12 }}>
-          <Text style={{ color: theme.text, fontWeight: "700" }}>
-            {meal.name || "Meal"}
-          </Text>
-          <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
-            <MacroChip label="kcal" value={kcal} />
-            <MacroChip label="P" value={p} />
-            <MacroChip label="C" value={c} />
-            <MacroChip label="F" value={f} />
+        {meal.photoUrl && (
+          <FallbackImage
+            uri={meal.photoUrl || null}
+            width={72}
+            height={72}
+            borderRadius={theme.rounded.sm}
+          />
+        )}
+        <View style={{ flex: 1, marginLeft: theme.spacing.md }}>
+          <View style={styles.headerRow}>
+            <Text
+              numberOfLines={1}
+              style={{
+                color: theme.text,
+                fontFamily: theme.typography.fontFamily.bold,
+                fontSize: theme.typography.size.lg,
+              }}
+            >
+              {meal.name || "Meal"}
+            </Text>
+            <Text
+              style={{
+                color: theme.text,
+                fontFamily: theme.typography.fontFamily.bold,
+                fontSize: theme.typography.size.lg,
+              }}
+            >
+              {nutrition.kcal} kcal
+            </Text>
+          </View>
+          <View style={styles.chipsRow}>
+            <MacroChip label="Protein" value={nutrition.protein} />
+            <MacroChip label="Carbs" value={nutrition.carbs} />
+            <MacroChip label="Fat" value={nutrition.fat} />
           </View>
         </View>
-        <View
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor:
-              meal.syncState === "synced"
-                ? theme.accent
-                : meal.syncState === "pending"
-                ? theme.warning.text
-                : theme.error.text,
-          }}
-        />
       </Pressable>
     </Swipeable>
   );
 };
 
 const styles = StyleSheet.create({
-  row: {
+  card: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderRadius: 12,
+    padding: 16,
+    borderRadius: 24,
     borderWidth: 1,
-    marginBottom: 10,
+    marginBottom: 12,
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  chipsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 6,
   },
   actions: { flexDirection: "row", alignItems: "center" },
   actBtn: {
@@ -107,6 +133,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
     marginLeft: 6,
-    borderRadius: 10,
+    borderRadius: 12,
   },
 });
