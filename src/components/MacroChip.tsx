@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/src/theme/useTheme";
+import { useTranslation } from "react-i18next";
 
 type MacroChipProps = {
   label: string;
@@ -9,24 +10,30 @@ type MacroChipProps = {
 
 export const MacroChip: React.FC<MacroChipProps> = ({ label, value }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["meals"]);
 
   let backgroundColor;
+  let labelText;
   let color;
 
   switch (label) {
     case "Carbs":
       backgroundColor = theme.macro.carbs + "18";
+      labelText = t("meals:carbs", { ns: "carbs" });
       color = theme.macro.carbs;
       break;
     case "Protein":
       backgroundColor = theme.macro.protein + "18";
+      labelText = t("meals:protein", { ns: "proteins" });
       color = theme.macro.protein;
       break;
     case "Fat":
+      labelText = t("meals:fat", { ns: "fat" });
       backgroundColor = theme.macro.fat + "18";
       color = theme.macro.fat;
       break;
     default:
+      labelText = t("meals:calories", { ns: "calories" });
       backgroundColor = theme.border + "18";
       color = theme.text;
   }
@@ -39,7 +46,7 @@ export const MacroChip: React.FC<MacroChipProps> = ({ label, value }) => {
           styles.macroLabel,
         ]}
       >
-        {label} {label === "Calories" ? "[kcal]" : "[g]"}
+        {labelText} {label === "Calories" ? "[kcal]" : "[g]"}
       </Text>
       <View
         style={[
