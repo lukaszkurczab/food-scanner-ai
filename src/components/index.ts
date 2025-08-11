@@ -28,3 +28,5 @@ export * from "./TargetProgressBar";
 export * from "./DateInput";
 export * from "./Calendar";
 export * from "./OfflineBanner";
+export * from "./DateRangePicker";
+export * from "./RangeSlider";

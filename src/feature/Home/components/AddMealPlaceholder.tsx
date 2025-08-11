@@ -1,15 +1,15 @@
 import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { PrimaryButton } from "@/components/PrimaryButton";
+import { PrimaryButton } from "@/components";
 
 type AddMealPlaceholderProps = {
-  handleAddMeal: () => {};
+  handleAddMeal: () => void;
 };
 
-export const AddMealPlaceholder = ({
+export const AddMealPlaceholder: React.FC<AddMealPlaceholderProps> = ({
   handleAddMeal,
-}: AddMealPlaceholderProps) => {
+}) => {
   const theme = useTheme();
 
   return (
@@ -18,7 +18,7 @@ export const AddMealPlaceholder = ({
       <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
         Add your first meal today!
       </Text>
-      <PrimaryButton label="Add meal" onPress={() => handleAddMeal()} />
+      <PrimaryButton label="Add meal" onPress={handleAddMeal} />
     </View>
   );
 };

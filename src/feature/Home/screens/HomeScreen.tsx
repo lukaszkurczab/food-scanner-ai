@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { TodaysMealsList } from "../components/TodaysMealsList";
@@ -12,34 +12,40 @@ import { Layout, TargetProgressBar } from "@/components";
 import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@hooks/useMeals";
-import { Meal } from "@/types";
+import type { Meal } from "@/types/meal";
 
 export default function HomeScreen({ navigation }: any) {
   const theme = useTheme();
   const { userData, syncUserProfile } = useUserContext();
-  const { meals, getMeals } = useMeals(userData!.uid);
-  const { labels, data } = getLastNDaysAggregated(meals, 7, "kcal");
+  const uid = userData?.uid || "";
+  const { meals, getMeals } = useMeals(uid);
+  const { labels, data } = useMemo(
+    () => getLastNDaysAggregated(meals, 7, "kcal"),
+    [meals]
+  );
   const [todayMeals, setTodayMeals] = useState<Meal[]>([]);
   const hasSurvey = !!userData?.surveyComplited;
 
   useEffect(() => {
+    if (!uid) return;
     getMeals();
     syncUserProfile();
-  }, [getMeals]);
+  }, [uid, getMeals, syncUserProfile]);
 
   useEffect(() => {
-    const newData = getTodayMeals(meals);
-    setTodayMeals(newData);
+    setTodayMeals(getTodayMeals(meals));
   }, [meals]);
 
   const totalCalories = todayMeals.reduce((sum, meal) => {
-    const mealKcal = meal.ingredients.reduce((acc, ing) => acc + ing.kcal, 0);
+    const mealKcal = meal.ingredients.reduce(
+      (acc, ing) => acc + (ing.kcal || 0),
+      0
+    );
     return sum + mealKcal;
   }, 0);
 
   const macros = calculateTotalNutrients(todayMeals);
-
-  const goalCalories = hasSurvey ? userData.calorieTarget ?? 0 : 0;
+  const goalCalories = hasSurvey ? userData?.calorieTarget ?? 0 : 0;
 
   return (
     <Layout>
@@ -79,10 +85,6 @@ export default function HomeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
   caloriesBox: {
     marginBottom: 16,
   },
