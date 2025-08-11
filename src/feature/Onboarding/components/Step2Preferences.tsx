@@ -9,7 +9,7 @@ import {
   Slider,
   CheckboxDropdown,
 } from "@/components";
-import { ActivityLevel, FormData, Preference } from "@/types/onboarding";
+import { ActivityLevel, FormData, Preference } from "@/types";
 
 const PREFERENCE_OPTIONS: { label: string; value: Preference }[] = [
   { label: "preferences.lowCarb", value: "lowCarb" },
@@ -314,7 +314,7 @@ export default function Step2Preferences({
 
       <PrimaryButton
         label={editMode ? t("summary.confirm", "Confirm") : t("next")}
-        onPress={editMode ? onConfirmEdit : onNext}
+        onPress={editMode ? onConfirmEdit : handleNext}
         disabled={!canNext}
       />
       <SecondaryButton label={t("back")} onPress={onBack} />

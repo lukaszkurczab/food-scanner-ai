@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import ProgressDots from "@/feature/Onboarding/components/ProgressDots";
 import { Modal, Layout } from "@/components";
-import { FormData } from "@/types/onboarding";
+import { FormData } from "@/types";
 import Step1BasicData from "@/feature/Onboarding/components/Step1BasicData";
 import Step2Preferences from "@/feature/Onboarding/components/Step2Preferences";
 import Step3Health from "@/feature/Onboarding/components/Step3Health";

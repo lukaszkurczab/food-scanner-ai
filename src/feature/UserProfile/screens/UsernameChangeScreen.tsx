@@ -3,7 +3,6 @@ import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
-import { isUsernameAvailable } from "@services/userService";
 import {
   PrimaryButton,
   TextInput,
@@ -11,6 +10,10 @@ import {
   ErrorBox,
   SecondaryButton,
 } from "@/components";
+import {
+  isUsernameAvailable,
+  normalizeUsername,
+} from "@/services/usernameService";
 
 function mapFirebaseErrorToKey(code: string): string {
   switch (code) {
@@ -22,6 +25,8 @@ function mapFirebaseErrorToKey(code: string): string {
       return "invalid_email_or_password";
     case "auth/not-logged-in":
       return "invalid_password";
+    case "username/unavailable":
+      return "usernameTaken";
     default:
       return "invalid_password";
   }
@@ -30,7 +35,7 @@ function mapFirebaseErrorToKey(code: string): string {
 export default function UsernameChangeScreen({ navigation }: any) {
   const { t } = useTranslation(["profile", "login"]);
   const theme = useTheme();
-  const { changeUsername } = useUserContext();
+  const { changeUsername, userData } = useUserContext();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -43,14 +48,15 @@ export default function UsernameChangeScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   const validate = async () => {
-    let newErrors: { username?: string; password?: string } = {};
+    const newErrors: { username?: string; password?: string } = {};
+    const candidate = normalizeUsername(username);
 
-    if (!username)
+    if (!candidate) {
       newErrors.username = t("usernameRequired", { ns: "profile" });
-    else if (username.length < 3)
+    } else if (candidate.length < 3) {
       newErrors.username = t("usernameTooShort", { ns: "profile" });
-    else {
-      const available = await isUsernameAvailable(username.trim());
+    } else {
+      const available = await isUsernameAvailable(candidate, userData?.uid);
       if (!available)
         newErrors.username = t("usernameTaken", { ns: "profile" });
     }
@@ -74,17 +80,23 @@ export default function UsernameChangeScreen({ navigation }: any) {
     }
 
     try {
-      await changeUsername(username.trim(), password);
+      await changeUsername(normalizeUsername(username), password);
       navigation.goBack();
     } catch (e: any) {
       let errKey = "login_failed";
-      if (e && typeof e.code === "string") {
+      if (e && typeof e.code === "string")
         errKey = mapFirebaseErrorToKey(e.code);
-      }
+
       if (errKey === "invalid_password") {
         setErrors((old) => ({
           ...old,
           password: t("invalid_password", { ns: "login" }),
+        }));
+        setCriticalError(null);
+      } else if (errKey === "usernameTaken") {
+        setErrors((old) => ({
+          ...old,
+          username: t("usernameTaken", { ns: "profile" }),
         }));
         setCriticalError(null);
       } else {

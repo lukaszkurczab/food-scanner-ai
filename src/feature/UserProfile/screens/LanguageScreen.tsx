@@ -1,17 +1,18 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet, FlatList } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Layout, TextInput } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
+import { useUserContext } from "@contexts/UserContext";
 
 type Language = {
   code: string;
   label: string;
 };
 
-const MOCK_LANGUAGES: Language[] = [
+const LANGUAGES: Language[] = [
   { code: "en", label: "English" },
   { code: "pl", label: "Polski" },
 ];
@@ -19,16 +20,38 @@ const MOCK_LANGUAGES: Language[] = [
 export default function LanguageScreen({ navigation }: any) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const { userData, updateUser } = useUserContext();
+
+  const initialLang = userData?.language || i18n.language || "en";
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(i18n.language || "en");
+  const [selected, setSelected] = useState(initialLang);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (userData?.language && userData.language !== selected) {
+      setSelected(userData.language);
+    }
+  }, [userData?.language]);
 
   const languages = useMemo(
     () =>
-      MOCK_LANGUAGES.filter((lang) =>
+      LANGUAGES.filter((lang) =>
         lang.label.toLowerCase().includes(search.toLowerCase())
       ),
     [search]
   );
+
+  const handleSelect = async (code: string) => {
+    if (code === selected || saving) return;
+    setSelected(code);
+    setSaving(true);
+    try {
+      await i18n.changeLanguage(code);
+      await updateUser({ ...userData, language: code });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Layout disableScroll>
@@ -83,18 +106,14 @@ export default function LanguageScreen({ navigation }: any) {
                 styles.languageRow,
                 {
                   borderBottomColor: theme.border,
-                  opacity: pressed ? 0.7 : 1,
+                  opacity: pressed || saving ? 0.7 : 1,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 8,
                 },
               ]}
-              onPress={async () => {
-                if (item.code !== selected) {
-                  setSelected(item.code);
-                  await i18n.changeLanguage(item.code);
-                }
-              }}
+              onPress={() => handleSelect(item.code)}
+              disabled={saving}
               accessibilityRole="button"
               accessibilityLabel={item.label}
             >

@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { PrimaryButton, SecondaryButton, IconButton } from "@/components";
-import { FormData } from "@/types/onboarding";
+import { FormData } from "@/types";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 

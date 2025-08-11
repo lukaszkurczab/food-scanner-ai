@@ -26,13 +26,13 @@ type PhotoPreviewProps = {
 
 const CROP_SIZE = 340;
 
-export default function PhotoPreview({
+export const PhotoPreview = ({
   photoUri,
   onRetake,
   onAccept,
   isLoading = false,
   noCrop = false,
-}: PhotoPreviewProps) {
+}: PhotoPreviewProps) => {
   const theme = useTheme();
   const { t } = useTranslation("common");
 
@@ -209,7 +209,7 @@ export default function PhotoPreview({
       </Pressable>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
