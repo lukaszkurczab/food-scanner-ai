@@ -39,7 +39,6 @@ import {
   updateDoc,
   getDocs,
   writeBatch,
-  addDoc,
   deleteDoc,
 } from "@react-native-firebase/firestore";
 import {
@@ -60,8 +59,6 @@ import * as Sharing from "expo-sharing";
 import { zip } from "react-native-zip-archive";
 
 import { withRetry, onReconnect } from "@utils/syncUtils";
-
-/** ===================== Helpers (typing & sanitization) ===================== */
 
 type SexNonNull = Exclude<Sex, null>;
 
@@ -100,8 +97,6 @@ function asEnumArray<T extends string>(
   const set = new Set(allowed as readonly string[]);
   return vals.filter((x) => typeof x === "string" && set.has(x)) as T[];
 }
-
-/** ===================== LOCAL (WatermelonDB) ===================== */
 
 export async function getUserLocal(uid: string): Promise<UserData | null> {
   const users = database.get<UserModel>("users");
@@ -268,14 +263,11 @@ export async function upsertUserLocal(data: UserData): Promise<void> {
   onReconnect(() => syncUserProfile(data.uid));
 }
 
-/** ===================== CLOUD (Firestore/Storage/Auth) ===================== */
-
 const USERS = "users";
 function db() {
   return getFirestore(getApp());
 }
 
-/** pobierz z chmury */
 export async function fetchUserFromCloud(
   uid: string
 ): Promise<UserData | null> {
@@ -289,7 +281,6 @@ function newerIso(a?: string, b?: string) {
   return aa > bb;
 }
 
-/** główny sync profilu (last-write-wins po lastSyncedAt) */
 export async function syncUserProfile(uid: string): Promise<void> {
   const net = await NetInfo.fetch();
   if (!net.isConnected) return;
@@ -332,9 +323,6 @@ export async function syncUserProfile(uid: string): Promise<void> {
     }
   }
 }
-
-/** ===================== Dodatkowe operacje cloud ===================== */
-
 export async function updateUserLanguageInFirestore(
   uid: string,
   language: string
@@ -386,7 +374,6 @@ export async function changeUsernameService({
     username: newUsername.trim(),
   });
 
-  // opcjonalne czyszczenie poprzedniej nazwy — tylko jeśli różna
   const prevSnap = await getDoc(doc(collection(dbi, USERS), uid));
   const prev = (prevSnap.data() as any)?.username;
   if (prev && prev !== newUsername.trim()) {

@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import NetInfo from "@react-native-community/netinfo";
 import * as Device from "expo-device";
-import { sendFeedback } from "@services/userService";
+import { sendFeedback } from "@/services/feedbackService";
 import { useAuthContext } from "@/context/AuthContext";
 
 export default function SendFeedbackScreen({ navigation }: any) {
@@ -19,7 +19,7 @@ export default function SendFeedbackScreen({ navigation }: any) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const { user } = useAuthContext();
+  const { firebaseUser: user } = useAuthContext();
 
   const handlePickAttachment = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({

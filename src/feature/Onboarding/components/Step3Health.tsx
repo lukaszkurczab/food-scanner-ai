@@ -9,7 +9,7 @@ import {
   LongTextInput,
   TextInput,
 } from "@/components";
-import { FormData, ChronicDisease, Allergy } from "@/types/onboarding";
+import { FormData, ChronicDisease, Allergy } from "@/types";
 
 const CHRONIC_DISEASE_OPTIONS: { label: string; value: ChronicDisease }[] = [
   { label: "Diabetes", value: "diabetes" },
@@ -189,7 +189,7 @@ export default function Step3Health({
 
       <PrimaryButton
         label={editMode ? t("summary.confirm", "Confirm") : t("next")}
-        onPress={editMode ? onConfirmEdit : onNext}
+        onPress={editMode ? onConfirmEdit : handleNext}
       />
       <SecondaryButton label={t("back")} onPress={onBack} />
     </View>
