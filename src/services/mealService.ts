@@ -1,100 +1,286 @@
-import { getApp } from "@react-native-firebase/app";
+import NetInfo from "@react-native-community/netinfo";
+import { Q } from "@nozbe/watermelondb";
+import { database } from "@/db/database";
+import MealModel from "@/db/models/Meal";
+import type { Meal } from "@/types/";
 import {
   getFirestore,
   collection,
+  addDoc,
   doc,
   setDoc,
-  updateDoc,
   getDocs,
 } from "@react-native-firebase/firestore";
-import storage from "@react-native-firebase/storage";
-import type { Meal } from "@/types";
+import { getApp } from "@react-native-firebase/app";
+import {
+  getStorage,
+  ref,
+  putFile,
+  getDownloadURL,
+} from "@react-native-firebase/storage";
+import { withRetry, onReconnect } from "@utils/syncUtils";
 
-const USERS_COLLECTION = "users";
-const MEALS_SUBCOLLECTION = "meals";
+export async function getMealsLocal(userUid: string): Promise<Meal[]> {
+  const mealsCollection = database.get<MealModel>("meals");
+  const records = await mealsCollection
+    .query(
+      Q.where("userUid", userUid),
+      Q.where("deleted", Q.notEq(true)),
+      Q.sortBy("timestamp", Q.desc)
+    )
+    .fetch();
 
-function getDb() {
-  const app = getApp();
-  return getFirestore(app);
-}
-
-function getPhotoStoragePath(userUid: string, cloudId: string) {
-  return `meals/${userUid}/${cloudId}.jpg`;
-}
-
-export async function fetchMealsFromFirestore(
-  userUid: string
-): Promise<Meal[]> {
-  const db = getDb();
-  const mealsCollection = collection(
-    db,
-    USERS_COLLECTION,
-    userUid,
-    MEALS_SUBCOLLECTION
-  );
-  const snapshot = await getDocs(mealsCollection);
-  return snapshot.docs.map((docSnap: any) => ({
-    ...(docSnap.data() as Meal),
-    cloudId: docSnap.id,
+  return records.map((r) => ({
+    userUid: r.userUid,
+    mealId: r.mealId,
+    timestamp: r.timestamp,
+    type: r.type as Meal["type"],
+    name: r.name ?? null,
+    ingredients: r.ingredients as Meal["ingredients"],
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    syncState: r.syncState as Meal["syncState"],
+    source: r.source as Meal["source"],
+    photoUrl: r.photoUrl ?? null,
+    notes: r.notes ?? null,
+    tags: (r.tags ?? []) as string[],
+    deleted: r.deleted ?? false,
+    cloudId: r.cloudId,
   }));
 }
 
-export async function upsertMealWithPhoto(
+export async function upsertMealLocal(
   userUid: string,
-  meal: Meal,
-  photoUri: string | null
-) {
-  if (!meal.cloudId) throw new Error("Meal must have cloudId");
-  const db = getDb();
-  const mealDoc = doc(
-    db,
-    USERS_COLLECTION,
-    userUid,
-    MEALS_SUBCOLLECTION,
-    meal.cloudId
-  );
+  meal: Meal
+): Promise<void> {
+  const meals = database.get<MealModel>("meals");
 
-  if (!photoUri) {
-    await setDoc(mealDoc, meal, { merge: true });
-    return;
-  }
+  await database.write(async () => {
+    const existing = await meals
+      .query(Q.where("userUid", userUid), Q.where("mealId", meal.mealId))
+      .fetch();
 
-  const photoPath = getPhotoStoragePath(userUid, meal.cloudId);
-  try {
-    await storage().ref(photoPath).putFile(photoUri);
+    if (existing.length) {
+      await existing[0].update((m) => {
+        m.timestamp = meal.timestamp;
+        m.type = meal.type;
+        m.name = meal.name ?? null;
+        m.ingredients = meal.ingredients ?? [];
+        m.updatedAt = meal.updatedAt;
+        m.source = meal.source ?? "";
+        m.photoUrl = meal.photoUrl ?? null;
+        m.notes = meal.notes ?? null;
+        m.tags = meal.tags ?? [];
+        m.deleted = !!meal.deleted;
+        m.syncState = "pending";
+        m.cloudId = meal.cloudId;
+      });
+    } else {
+      await meals.create((m) => {
+        m.userUid = userUid;
+        m.mealId = meal.mealId;
+        m.timestamp = meal.timestamp;
+        m.type = meal.type;
+        m.name = meal.name ?? null;
+        m.ingredients = meal.ingredients ?? [];
+        m.createdAt = meal.createdAt;
+        m.updatedAt = meal.updatedAt;
+        m.syncState = "pending";
+        m.source = meal.source ?? "";
+        m.photoUrl = meal.photoUrl ?? null;
+        m.notes = meal.notes ?? null;
+        m.tags = meal.tags ?? [];
+        m.deleted = !!meal.deleted;
+        m.cloudId = meal.cloudId;
+      });
+    }
+  });
 
-    await setDoc(mealDoc, meal, { merge: true });
-  } catch (err) {
-    throw err;
-  }
+  // spróbuj zsynchronizować, jeśli online
+  onReconnect(() => syncMeals(userUid));
 }
 
-export async function deleteMealPhoto(userUid: string, cloudId: string) {
-  const photoPath = getPhotoStoragePath(userUid, cloudId);
-  try {
-    await storage().ref(photoPath).delete();
-  } catch (err: any) {
-    if (err.code !== "storage/object-not-found") {
-      throw err;
+export async function softDeleteMealLocal(
+  userUid: string,
+  mealId: string
+): Promise<void> {
+  const meals = database.get<MealModel>("meals");
+  const existing = await meals
+    .query(Q.where("userUid", userUid), Q.where("mealId", mealId))
+    .fetch();
+
+  if (!existing.length) return;
+  await database.write(async () => {
+    await existing[0].update((m) => {
+      m.deleted = true;
+      m.syncState = "pending";
+      m.updatedAt = new Date().toISOString();
+    });
+  });
+
+  onReconnect(() => syncMeals(userUid));
+}
+
+/** ========== CLOUD (Firestore/Storage) ========== */
+
+const USERS = "users";
+const MEALS = "meals";
+
+function db() {
+  return getFirestore(getApp());
+}
+function storage() {
+  return getStorage();
+}
+
+function isLocalPhoto(uri?: string | null) {
+  return !!uri && uri.startsWith("file:");
+}
+
+async function uploadPhotoIfNeeded(
+  userUid: string,
+  meal: Meal
+): Promise<string | null> {
+  if (!isLocalPhoto(meal.photoUrl)) return meal.photoUrl ?? null;
+
+  const path = `meals/${userUid}/${meal.cloudId ?? meal.mealId}.jpg`;
+  const s = storage();
+  const r = ref(s, path);
+  await putFile(r, meal.photoUrl!);
+  return await getDownloadURL(r);
+}
+
+/** Pobranie z chmury (np. do pełnej synchronizacji) */
+export async function fetchMealsFromCloud(userUid: string): Promise<Meal[]> {
+  const mealsCol = collection(db(), USERS, userUid, MEALS);
+  const snap = await getDocs(mealsCol);
+  return snap.docs.map((d: any) => ({ ...(d.data() as Meal), cloudId: d.id }));
+}
+
+/** ========== SYNC (local -> cloud i cloud -> local) ========== */
+
+function newer(localIso: string, remoteIso: string) {
+  const l = Date.parse(localIso || "0");
+  const r = Date.parse(remoteIso || "0");
+  return l > r;
+}
+
+/** Główna synchronizacja posiłków dla danego usera */
+export async function syncMeals(userUid: string): Promise<void> {
+  const net = await NetInfo.fetch();
+  if (!net.isConnected) return;
+
+  const mealsCol = database.get<MealModel>("meals");
+
+  // 1) WYŚLIJ PENDING/CONFLICT W GÓRĘ
+  const dirty = await mealsCol
+    .query(
+      Q.where("userUid", userUid),
+      Q.where("syncState", Q.oneOf(["pending", "conflict"]))
+    )
+    .fetch();
+
+  for (const rec of dirty) {
+    await withRetry(async () => {
+      // składamy obiekt Meal z rekordu
+      const m: Meal = {
+        userUid: rec.userUid,
+        mealId: rec.mealId,
+        timestamp: rec.timestamp,
+        type: rec.type as Meal["type"],
+        name: rec.name ?? null,
+        ingredients: (rec.ingredients ?? []) as Meal["ingredients"],
+        createdAt: rec.createdAt,
+        updatedAt: rec.updatedAt,
+        syncState: "synced",
+        source: rec.source as Meal["source"],
+        photoUrl: rec.photoUrl ?? null,
+        notes: rec.notes ?? null,
+        tags: (rec.tags ?? []) as string[],
+        deleted: rec.deleted ?? false,
+        cloudId: rec.cloudId,
+      };
+
+      // upload zdjęcia jeśli lokalne
+      const photoUrl = await uploadPhotoIfNeeded(userUid, m);
+      if (photoUrl && photoUrl !== m.photoUrl) m.photoUrl = photoUrl;
+
+      const firestore = db();
+      if (!m.cloudId) {
+        const newRef = await addDoc(
+          collection(firestore, USERS, userUid, MEALS),
+          m
+        );
+        await database.write(async () => {
+          await rec.update((r) => {
+            r.cloudId = newRef.id;
+            r.syncState = "synced";
+          });
+        });
+      } else {
+        const refDoc = doc(firestore, USERS, userUid, MEALS, m.cloudId);
+        await setDoc(refDoc, m, { merge: true });
+        await database.write(async () => {
+          await rec.update((r) => {
+            r.syncState = "synced";
+          });
+        });
+      }
+    });
+  }
+
+  // 2) POBIERZ Z CHMURY I ZMERGUJ W DÓŁ
+  const remote = await fetchMealsFromCloud(userUid);
+  const localByMealId = new Map<string, MealModel>();
+  (await mealsCol.query(Q.where("userUid", userUid)).fetch()).forEach((r) =>
+    localByMealId.set(r.mealId, r)
+  );
+
+  for (const rm of remote) {
+    const localRec = localByMealId.get(rm.mealId);
+    if (!localRec) {
+      // nowy rekord z chmury
+      await database.write(async () => {
+        await mealsCol.create((m) => {
+          m.userUid = rm.userUid;
+          m.mealId = rm.mealId;
+          m.timestamp = rm.timestamp;
+          m.type = rm.type;
+          m.name = rm.name ?? null;
+          m.ingredients = rm.ingredients ?? [];
+          m.createdAt = rm.createdAt;
+          m.updatedAt = rm.updatedAt;
+          m.syncState = "synced";
+          m.source = rm.source ?? "";
+          m.photoUrl = rm.photoUrl ?? null;
+          m.notes = rm.notes ?? null;
+          m.tags = rm.tags ?? [];
+          m.deleted = !!rm.deleted;
+          m.cloudId = rm.cloudId;
+        });
+      });
+    } else {
+      // konflikt: wybieramy nowszy updatedAt (ISO)
+      const takeRemote = newer(rm.updatedAt, localRec.updatedAt);
+      if (takeRemote) {
+        await database.write(async () => {
+          await localRec.update((m) => {
+            m.timestamp = rm.timestamp;
+            m.type = rm.type;
+            m.name = rm.name ?? null;
+            m.ingredients = rm.ingredients ?? [];
+            m.createdAt = rm.createdAt;
+            m.updatedAt = rm.updatedAt;
+            m.syncState = "synced";
+            m.source = rm.source ?? "";
+            m.photoUrl = rm.photoUrl ?? null;
+            m.notes = rm.notes ?? null;
+            m.tags = rm.tags ?? [];
+            m.deleted = !!rm.deleted;
+            m.cloudId = rm.cloudId;
+          });
+        });
+      }
     }
   }
-}
-
-export async function deleteMealInFirestore(userUid: string, meal: Meal) {
-  if (!meal.cloudId) throw new Error("Meal must have cloudId");
-  const db = getDb();
-  const mealDoc = doc(
-    db,
-    USERS_COLLECTION,
-    userUid,
-    MEALS_SUBCOLLECTION,
-    meal.cloudId
-  );
-
-  await deleteMealPhoto(userUid, meal.cloudId);
-
-  await updateDoc(mealDoc, {
-    deleted: true,
-    syncState: "synced",
-  });
 }

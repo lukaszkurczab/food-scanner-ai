@@ -1,13 +1,13 @@
-export type ChatsyncState = "synced" | "pending" | "conflict";
+export type ChatSyncState = "synced" | "pending" | "conflict";
 
 export interface ChatMessage {
-  id: string;
-  userUid: string;
+  id: string; // WatermelonDB id
+  userUid: string; // per-user scoping
   role: "user" | "assistant" | "system";
   content: string;
-  createdAt: number;
-  lastSyncedAt: number;
-  syncState: ChatsyncState;
+  createdAt: number; // epoch ms
+  lastSyncedAt: number; // epoch ms
+  syncState: ChatSyncState;
   cloudId?: string;
   deleted?: boolean;
 }

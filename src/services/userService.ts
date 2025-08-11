@@ -1,326 +1,308 @@
-import { getApp } from "@react-native-firebase/app";
+import NetInfo from "@react-native-community/netinfo";
+import { Q } from "@nozbe/watermelondb";
+import { database } from "@/db/database";
+import UserModel from "@/db/models/User";
+import type { UserData, SyncState } from "@/types";
 import {
   getFirestore,
   collection,
   doc,
   getDoc,
   setDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  writeBatch,
-  addDoc,
 } from "@react-native-firebase/firestore";
+import { getApp } from "@react-native-firebase/app";
+import { withRetry, onReconnect } from "@utils/syncUtils";
+
+/** ========== LOCAL ========== */
+
+import type {
+  UnitsSystem,
+  Sex,
+  Goal,
+  ActivityLevel,
+  Preference,
+  ChronicDisease,
+  Allergy,
+  AiStyle,
+  AiFocus,
+} from "@/types";
 import {
-  getStorage,
-  ref,
-  putFile,
-  getDownloadURL,
-} from "@react-native-firebase/storage";
-import {
-  getAuth,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  verifyBeforeUpdateEmail,
-  updatePassword,
-} from "@react-native-firebase/auth";
-import type { ExportedUserData, UserData } from "@/types";
-import * as FileSystem from "expo-file-system";
-import { zip } from "react-native-zip-archive";
-import * as Sharing from "expo-sharing";
-import { v4 as uuidv4 } from "uuid";
+  UNITS,
+  SEX_NON_NULL,
+  GOALS,
+  ACTIVITY,
+  PREFERENCES,
+  CHRONIC,
+  ALLERGIES,
+  AI_STYLE,
+  AI_FOCUS,
+} from "@/types/constants";
 
-const USERS_COLLECTION = "users";
-const FEEDBACKS_COLLECTION = "feedbacks";
+type SexNonNull = Exclude<Sex, null>;
 
-function getDb() {
-  const app = getApp();
-  return getFirestore(app);
+export const orUndef = <T>(v: T | null | undefined): T | undefined =>
+  v == null ? undefined : v;
+
+export const arr = <T>(v: T[] | null | undefined): T[] =>
+  Array.isArray(v) ? v : [];
+
+export function asEnum<T extends string>(
+  val: unknown,
+  allowed: readonly T[],
+  fallback: T
+): T {
+  return typeof val === "string" && (allowed as readonly string[]).includes(val)
+    ? (val as T)
+    : fallback;
 }
 
-async function deleteSubcollection(
-  parentDocRef: ReturnType<typeof doc>,
-  subcollectionName: string
-) {
-  const subcollectionRef = collection(parentDocRef, subcollectionName);
-  const snapshot = await getDocs(subcollectionRef);
-  const batchSize = 500;
-  const docs = snapshot.docs;
-  for (let i = 0; i < docs.length; i += batchSize) {
-    const batchDocs = docs.slice(i, i + batchSize);
-    const db = getDb();
-    const batch = writeBatch(db);
-    batchDocs.forEach((d: any) => batch.delete(d.ref));
-    await batch.commit();
-  }
+export function asEnumNullable<T extends string>(
+  val: unknown,
+  allowed: readonly T[],
+  fallback: T | null = null
+): T | null {
+  if (val == null) return null;
+  return (allowed as readonly string[]).includes(String(val))
+    ? (val as T)
+    : fallback;
 }
 
-export async function fetchUserFromFirestore(
-  uid: string
-): Promise<UserData | null> {
-  const db = getDb();
-  const userDoc = await getDoc(doc(collection(db, USERS_COLLECTION), uid));
-  return userDoc.exists() ? (userDoc.data() as UserData) : null;
+function asEnumArray<T extends string>(
+  vals: unknown,
+  allowed: readonly T[]
+): T[] {
+  if (!Array.isArray(vals)) return [];
+  const set = new Set(allowed as readonly string[]);
+  return vals.filter((x) => typeof x === "string" && set.has(x)) as T[];
 }
 
-export async function updateUserInFirestore(
-  uid: string,
-  data: Partial<UserData>
-) {
-  const db = getDb();
-  await setDoc(doc(collection(db, USERS_COLLECTION), uid), data, {
-    merge: true,
-  });
-}
+export async function getUserLocal(uid: string): Promise<UserData | null> {
+  const users = database.get<UserModel>("users");
+  const rows = await users.query(Q.where("uid", uid)).fetch();
+  if (!rows.length) return null;
 
-export async function uploadAndSaveAvatar({
-  userUid,
-  localUri,
-}: {
-  userUid: string;
-  localUri: string;
-}) {
-  const storage = getStorage();
-  const avatarRef = ref(storage, `avatars/${userUid}/avatar.jpg`);
-  await putFile(avatarRef, localUri);
-  const avatarUrl = await getDownloadURL(avatarRef);
-  const db = getDb();
-  const userDocRef = doc(collection(db, USERS_COLLECTION), userUid);
-  const now = new Date().toISOString();
-  await updateDoc(userDocRef, {
-    avatarUrl,
-    avatarLocalPath: localUri,
-    avatarlastSyncedAt: now,
-  });
+  const u = rows[0];
+
   return {
-    avatarUrl,
-    avatarLocalPath: localUri,
-    avatarlastSyncedAt: now,
+    uid: u.uid,
+    email: u.email,
+    username: u.username ?? "",
+    plan: u.plan as UserData["plan"],
+    createdAt: u.createdAt,
+    lastLogin: u.lastLogin,
+    surveyComplited: u.surveyComplited,
+    syncState: u.syncState as SyncState,
+    lastSyncedAt: orUndef(u.lastSyncedAt),
+
+    avatarUrl: orUndef(u.avatarUrl),
+    avatarLocalPath: orUndef(u.avatarLocalPath),
+    avatarlastSyncedAt: orUndef(u.avatarlastSyncedAt),
+    darkTheme: u.darkTheme ?? false,
+    language: u.language,
+
+    unitsSystem: asEnum<UnitsSystem>(u.unitsSystem, UNITS, "metric"),
+    sex:
+      u.sex == null
+        ? null
+        : (asEnum<SexNonNull>(u.sex, SEX_NON_NULL, "male") as Sex), // zawężamy do "male" | "female", a potem jako Sex
+    goal: asEnum<Goal>(u.goal as any, GOALS, "maintain"),
+    activityLevel: asEnum<ActivityLevel>(
+      u.activityLevel as any,
+      ACTIVITY,
+      "light"
+    ),
+
+    preferences: asEnumArray<Preference>(u.preferences, PREFERENCES),
+    chronicDiseases: asEnumArray<ChronicDisease>(u.chronicDiseases, CHRONIC),
+    allergies: asEnumArray<Allergy>(u.allergies, ALLERGIES),
+
+    height: u.height,
+    heightInch: orUndef(u.heightInch),
+    age: u.age,
+    weight: u.weight,
+
+    chronicDiseasesOther: orUndef(u.chronicDiseasesOther),
+    allergiesOther: orUndef(u.allergiesOther),
+    lifestyle: orUndef(u.lifestyle),
+
+    aiStyle: asEnum<AiStyle>(u.aiStyle as any, AI_STYLE, "none"),
+    aiFocus: asEnum<AiFocus>(u.aiFocus as any, AI_FOCUS, "none"),
+    aiFocusOther: orUndef(u.aiFocusOther),
+    aiNote: orUndef(u.aiNote),
+
+    calorieDeficit: orUndef(u.calorieDeficit),
+    calorieSurplus: orUndef(u.calorieSurplus),
+    calorieTarget: u.calorieTarget ?? null,
   };
 }
 
-export async function markUserSyncedInFirestore(
-  uid: string,
-  timestamp: string
-) {
-  const db = getDb();
-  await updateDoc(doc(collection(db, USERS_COLLECTION), uid), {
-    syncStatus: "synced",
-    lastSyncedAt: timestamp,
+export async function upsertUserLocal(data: UserData): Promise<void> {
+  const users = database.get<UserModel>("users");
+  const rows = await users.query(Q.where("uid", data.uid)).fetch();
+
+  await database.write(async () => {
+    if (rows.length) {
+      await rows[0].update((u) => {
+        u.email = data.email;
+        u.username = data.username;
+        u.plan = data.plan;
+        u.lastLogin = data.lastLogin;
+        u.surveyComplited = data.surveyComplited;
+        u.syncState = "pending";
+        u.darkTheme = data.darkTheme ?? false;
+        u.language = data.language;
+        u.unitsSystem = data.unitsSystem;
+        u.age = data.age;
+        u.sex = data.sex as any;
+        u.height = data.height;
+        u.weight = data.weight;
+        u.preferences = data.preferences ?? [];
+        u.activityLevel = (data.activityLevel as any) ?? "";
+        u.goal = (data.goal as any) ?? "";
+
+        if (data.avatarUrl !== undefined) u.avatarUrl = data.avatarUrl;
+        if (data.avatarLocalPath !== undefined)
+          u.avatarLocalPath = data.avatarLocalPath;
+        if (data.avatarlastSyncedAt !== undefined)
+          u.avatarlastSyncedAt = data.avatarlastSyncedAt;
+        if (data.heightInch !== undefined) u.heightInch = data.heightInch;
+        if (data.calorieDeficit !== undefined)
+          u.calorieDeficit = data.calorieDeficit;
+        if (data.calorieSurplus !== undefined)
+          u.calorieSurplus = data.calorieSurplus;
+        if (data.chronicDiseases !== undefined)
+          u.chronicDiseases = data.chronicDiseases;
+        if (data.chronicDiseasesOther !== undefined)
+          u.chronicDiseasesOther = data.chronicDiseasesOther;
+        if (data.allergies !== undefined) u.allergies = data.allergies;
+        if (data.allergiesOther !== undefined)
+          u.allergiesOther = data.allergiesOther;
+        if (data.lifestyle !== undefined) u.lifestyle = data.lifestyle;
+        if (data.aiStyle !== undefined) u.aiStyle = data.aiStyle as any;
+        if (data.aiFocus !== undefined) u.aiFocus = data.aiFocus as any;
+        if (data.aiFocusOther !== undefined) u.aiFocusOther = data.aiFocusOther;
+        if (data.aiNote !== undefined) u.aiNote = data.aiNote;
+        if (data.calorieTarget !== undefined)
+          u.calorieTarget = data.calorieTarget;
+        if (data.lastSyncedAt !== undefined) u.lastSyncedAt = data.lastSyncedAt;
+      });
+    } else {
+      await users.create((u) => {
+        u.uid = data.uid;
+        u.email = data.email;
+        u.username = data.username;
+        u.plan = data.plan;
+        u.createdAt = data.createdAt;
+        u.lastLogin = data.lastLogin;
+        u.surveyComplited = data.surveyComplited;
+        u.syncState = "pending";
+        u.darkTheme = data.darkTheme ?? false;
+        u.language = data.language;
+        u.unitsSystem = data.unitsSystem;
+        u.age = data.age;
+        u.sex = data.sex as any;
+        u.height = data.height;
+        u.weight = data.weight;
+        u.preferences = data.preferences ?? [];
+        u.activityLevel = (data.activityLevel as any) ?? "";
+        u.goal = (data.goal as any) ?? "";
+
+        // opcjonalne (ustawiamy tylko jeśli przyszły)
+        if (data.avatarUrl !== undefined) u.avatarUrl = data.avatarUrl;
+        if (data.avatarLocalPath !== undefined)
+          u.avatarLocalPath = data.avatarLocalPath;
+        if (data.avatarlastSyncedAt !== undefined)
+          u.avatarlastSyncedAt = data.avatarlastSyncedAt;
+        if (data.heightInch !== undefined) u.heightInch = data.heightInch;
+        if (data.calorieDeficit !== undefined)
+          u.calorieDeficit = data.calorieDeficit;
+        if (data.calorieSurplus !== undefined)
+          u.calorieSurplus = data.calorieSurplus;
+        if (data.chronicDiseases !== undefined)
+          u.chronicDiseases = data.chronicDiseases;
+        if (data.chronicDiseasesOther !== undefined)
+          u.chronicDiseasesOther = data.chronicDiseasesOther;
+        if (data.allergies !== undefined) u.allergies = data.allergies;
+        if (data.allergiesOther !== undefined)
+          u.allergiesOther = data.allergiesOther;
+        if (data.lifestyle !== undefined) u.lifestyle = data.lifestyle;
+        if (data.aiStyle !== undefined) u.aiStyle = data.aiStyle as any;
+        if (data.aiFocus !== undefined) u.aiFocus = data.aiFocus as any;
+        if (data.aiFocusOther !== undefined) u.aiFocusOther = data.aiFocusOther;
+        if (data.aiNote !== undefined) u.aiNote = data.aiNote;
+        if (data.calorieTarget !== undefined)
+          u.calorieTarget = data.calorieTarget;
+        if (data.lastSyncedAt !== undefined) u.lastSyncedAt = data.lastSyncedAt;
+      });
+    }
   });
+
+  onReconnect(() => syncUserProfile(data.uid));
 }
 
-export async function isUsernameAvailable(username: string): Promise<boolean> {
-  const app = getApp();
-  const db = getFirestore(app);
-  const usernameRef = doc(db, "usernames", username.trim().toLowerCase());
-  const usernameDoc = await getDoc(usernameRef);
-  return !usernameDoc.exists();
+/** ========== CLOUD ========== */
+
+const USERS = "users";
+function db() {
+  return getFirestore(getApp());
 }
 
-export async function deleteUserInFirestoreWithUsername(uid: string) {
-  const db = getDb();
-  const userDocRef = doc(collection(db, USERS_COLLECTION), uid);
-  const userDoc = await getDoc(doc(collection(db, USERS_COLLECTION), uid));
-  let username: string | null = null;
-  if (userDoc.exists()) {
-    username = (userDoc.data() as { username?: string })?.username ?? null;
+/** pobierz z chmury */
+export async function fetchUserFromCloud(
+  uid: string
+): Promise<UserData | null> {
+  const snap = await getDoc(doc(collection(db(), USERS), uid));
+  return snap.exists() ? (snap.data() as UserData) : null;
+}
+
+function newerIso(a?: string, b?: string) {
+  const aa = a ? Date.parse(a) : 0;
+  const bb = b ? Date.parse(b) : 0;
+  return aa > bb;
+}
+
+/** główny sync profilu (last-write-wins po lastSyncedAt) */
+export async function syncUserProfile(uid: string): Promise<void> {
+  const net = await NetInfo.fetch();
+  if (!net.isConnected) return;
+
+  const local = await getUserLocal(uid);
+  const remote = await fetchUserFromCloud(uid);
+
+  if (!local && !remote) return;
+
+  if (!local && remote) {
+    await upsertUserLocal({ ...remote, syncState: "synced" });
+    return;
   }
-  const subcollections = ["meals", "chatMessages"];
-  for (const sub of subcollections) {
-    try {
-      await deleteSubcollection(userDocRef, sub);
-    } catch (e) {
-      console.log(e);
+
+  if (local && !remote) {
+    await withRetry(async () => {
+      await setDoc(
+        doc(collection(db(), USERS), uid),
+        { ...local, syncState: "synced" },
+        { merge: true }
+      );
+    });
+    await upsertUserLocal({ ...local, syncState: "synced" });
+    return;
+  }
+
+  // obie strony → wybierz nowsze
+  // Uwaga: w Twoim modelu lastSyncedAt jest ISO string
+  if (local && remote) {
+    const takeLocal = newerIso(local.lastSyncedAt, remote.lastSyncedAt);
+    if (takeLocal) {
+      await withRetry(async () => {
+        await setDoc(
+          doc(collection(db(), USERS), uid),
+          { ...local, syncState: "synced" },
+          { merge: true }
+        );
+      });
+      await upsertUserLocal({ ...local, syncState: "synced" });
+    } else {
+      await upsertUserLocal({ ...remote, syncState: "synced" });
     }
   }
-  await deleteDoc(userDocRef);
-  if (username) {
-    const usernameDocRef = doc(db, "usernames", username.trim().toLowerCase());
-    await deleteDoc(usernameDocRef);
-  }
-}
-
-export async function changeUsernameService({
-  uid,
-  newUsername,
-  password,
-}: {
-  uid: string;
-  newUsername: string;
-  password: string;
-}) {
-  const db = getDb();
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
-  if (!currentUser) throw new Error("auth/not-logged-in");
-
-  const cred = EmailAuthProvider.credential(currentUser.email!, password);
-  await reauthenticateWithCredential(currentUser, cred);
-
-  const userRef = doc(collection(db, USERS_COLLECTION), uid);
-  const oldUserDoc = await getDoc(userRef);
-  const oldUsername = (oldUserDoc.data() as { username?: string })?.username;
-
-  await setDoc(doc(db, "usernames", newUsername.trim().toLowerCase()), { uid });
-  await updateDoc(userRef, { username: newUsername.trim() });
-  if (oldUsername && oldUsername !== newUsername.trim()) {
-    await deleteDoc(doc(db, "usernames", oldUsername.trim().toLowerCase()));
-  }
-}
-
-export async function changeEmailService({
-  uid,
-  newEmail,
-  password,
-}: {
-  uid: string;
-  newEmail: string;
-  password: string;
-}) {
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
-  if (!currentUser) throw new Error("auth/not-logged-in");
-
-  const cred = EmailAuthProvider.credential(currentUser.email!, password);
-  await reauthenticateWithCredential(currentUser, cred);
-
-  await verifyBeforeUpdateEmail(currentUser, newEmail.trim());
-
-  const db = getFirestore(getApp());
-  const userRef = doc(collection(db, "users"), uid);
-  await updateDoc(userRef, { emailPending: newEmail.trim() });
-
-  return true;
-}
-
-export async function changePasswordService({
-  currentPassword,
-  newPassword,
-}: {
-  currentPassword: string;
-  newPassword: string;
-}) {
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
-  if (!currentUser) throw new Error("auth/not-logged-in");
-
-  const cred = EmailAuthProvider.credential(
-    currentUser.email!,
-    currentPassword
-  );
-  await reauthenticateWithCredential(currentUser, cred);
-
-  await updatePassword(currentUser, newPassword);
-
-  return true;
-}
-
-export async function exportUserData(uid: string) {
-  const db = getFirestore();
-  const storage = getStorage();
-
-  const userDocRef = doc(collection(db, "users"), uid);
-  const userDocSnap = await getDoc(userDocRef);
-  const profile = userDocSnap.exists() ? userDocSnap.data() : null;
-
-  async function fetchSubcollection(name: string) {
-    const subRef = collection(db, "users", uid, name);
-    const snap = await getDocs(subRef);
-    return snap.docs.map((doc: any) => doc.data());
-  }
-
-  const meals = await fetchSubcollection("meals");
-  const chatMessages = await fetchSubcollection("chatMessages");
-
-  let avatarUri = null;
-  try {
-    const avatarRef = ref(storage, `avatars/${uid}/avatar.jpg`);
-    const avatarUrl = await getDownloadURL(avatarRef);
-
-    const localAvatarPath = FileSystem.documentDirectory + "avatar.jpg";
-    const downloadResumable = FileSystem.createDownloadResumable(
-      avatarUrl,
-      localAvatarPath
-    );
-    await downloadResumable.downloadAsync();
-    avatarUri = localAvatarPath;
-  } catch (e) {
-    avatarUri = null;
-  }
-
-  const exportData: ExportedUserData = { profile, meals, chatMessages };
-  const dataJsonPath = FileSystem.documentDirectory + "user_data.json";
-  await FileSystem.writeAsStringAsync(
-    dataJsonPath,
-    JSON.stringify(exportData, null, 2)
-  );
-
-  const filesToZip = [dataJsonPath];
-  if (avatarUri) filesToZip.push(avatarUri);
-
-  const zipPath = FileSystem.documentDirectory + "exported_user_data.zip";
-  await zip(filesToZip, zipPath);
-
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(zipPath);
-  }
-
-  return zipPath;
-}
-
-export async function updateUserLanguageInFirestore(
-  uid: string,
-  language: string
-) {
-  const db = getDb();
-  const userRef = doc(collection(db, USERS_COLLECTION), uid);
-  await updateDoc(userRef, { language });
-}
-
-export async function fetchUserLanguageFromFirestore(
-  uid: string
-): Promise<string | null> {
-  const db = getDb();
-  const userRef = doc(collection(db, USERS_COLLECTION), uid);
-  const docSnap = await getDoc(userRef);
-  if (!docSnap.exists()) return null;
-  const data = docSnap.data() as Partial<UserData>;
-  return data.language ?? null;
-}
-
-export async function sendFeedback({
-  message,
-  attachmentUri,
-  userUid,
-  email,
-  deviceInfo,
-}: {
-  message: string;
-  attachmentUri?: string | null;
-  userUid?: string | null;
-  email?: string | null;
-  deviceInfo?: any;
-}): Promise<void> {
-  const db = getDb();
-  const feedbackId = uuidv4() as string;
-  let attachmentUrl: string | null = null;
-
-  if (attachmentUri) {
-    const storage = getStorage();
-    const filename = attachmentUri.split("/").pop() || "attachment.jpg";
-    const storageRef = ref(storage, `feedbacks/${feedbackId}/${filename}`);
-    await putFile(storageRef, attachmentUri);
-    attachmentUrl = await getDownloadURL(storageRef);
-  }
-
-  await addDoc(collection(db, FEEDBACKS_COLLECTION), {
-    feedbackId,
-    userUid: userUid || null,
-    email: email || null,
-    message,
-    attachmentUrl,
-    deviceInfo: deviceInfo || null,
-    createdAt: new Date().toISOString(),
-  });
 }
