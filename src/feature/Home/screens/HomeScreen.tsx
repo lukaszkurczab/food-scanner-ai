@@ -16,7 +16,7 @@ import { Meal } from "@/src/types";
 
 export default function HomeScreen({ navigation }: any) {
   const theme = useTheme();
-  const { userData } = useUserContext();
+  const { userData, syncUserProfile } = useUserContext();
   const { meals, getMeals } = useMeals(userData!.uid);
   const { labels, data } = getLastNDaysAggregated(meals, 7, "kcal");
   const [todayMeals, setTodayMeals] = useState<Meal[]>([]);
@@ -24,6 +24,7 @@ export default function HomeScreen({ navigation }: any) {
 
   useEffect(() => {
     getMeals();
+    syncUserProfile();
   }, [getMeals]);
 
   useEffect(() => {

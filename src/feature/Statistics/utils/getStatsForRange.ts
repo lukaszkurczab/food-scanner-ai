@@ -2,7 +2,7 @@ import type { Meal } from "@/src/types";
 import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
 import { getLastNDaysAggregated } from "@/src/utils/getLastNDaysAggregated";
 
-export type StatsRange = { start: Date; end: Date }; // [start, end)
+export type StatsRange = { start: Date; end: Date };
 export type StatsResult = {
   labels: string[];
   caloriesSeries: number[];

@@ -5,7 +5,7 @@ import { useTheme } from "@/src/theme/useTheme";
 import { FallbackImage } from "./FallbackImage";
 import { MacroChip } from "@/src/components/MacroChip";
 import type { Meal } from "@/src/types/meal";
-import { calculateTotalNutrients } from "@/src/services";
+import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
 
 type Props = {
   meal: Meal;

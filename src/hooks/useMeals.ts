@@ -6,7 +6,7 @@ import {
   fetchMealsFromFirestore,
   upsertMealWithPhoto,
   deleteMealInFirestore,
-} from "@/src/services/firestore/firestoreMealService";
+} from "@services/mealService";
 import { mapRawToMeal, mapMealToRaw } from "@/src/utils/mealMapper";
 import { v4 as uuidv4 } from "uuid";
 
@@ -14,9 +14,8 @@ const unsyncedStatuses: Meal["syncState"][] = ["pending", "conflict"];
 
 function areMealsEqual(a: Meal[], b: Meal[]): boolean {
   if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
+  for (let i = 0; i < a.length; i++)
     if (a[i].cloudId !== b[i].cloudId) return false;
-  }
   return true;
 }
 
@@ -74,6 +73,16 @@ export function useMeals(userUid: string) {
       const mealCollection = database.get("meals");
       const all = await mealCollection.query().fetch();
       const localMeal = all.find((m: any) => m.id === meal.cloudId);
+      let resultingSync: Meal["syncState"] = "synced";
+      try {
+        await upsertMealWithPhoto(
+          userUid,
+          { ...meal, syncState: "synced" },
+          meal.photoUrl || null
+        );
+      } catch {
+        resultingSync = "pending";
+      }
       if (localMeal) {
         await database.write(async () => {
           await localMeal.update((m: any) =>
@@ -81,7 +90,7 @@ export function useMeals(userUid: string) {
               m,
               mapMealToRaw({
                 ...meal,
-                syncState: "pending",
+                syncState: resultingSync,
                 updatedAt: new Date().toISOString(),
               })
             )
@@ -90,7 +99,7 @@ export function useMeals(userUid: string) {
         await getMeals();
       }
     },
-    [getMeals]
+    [getMeals, userUid]
   );
 
   const deleteMeal = useCallback(
@@ -151,10 +160,8 @@ export function useMeals(userUid: string) {
       const toSync = localMeals.filter((m: any) =>
         unsyncedStatuses.includes(m.sync_status)
       );
-      if (toSync.length === 0) {
-        syncingRef.current = false;
-        return;
-      }
+      if (toSync.length === 0) return;
+
       for (const m of toSync) {
         const meal = mapRawToMeal(m._raw);
         try {
@@ -171,6 +178,7 @@ export function useMeals(userUid: string) {
           });
         } catch {}
       }
+
       const remoteMeals = await fetchMealsFromFirestore(userUid);
       for (const remote of remoteMeals) {
         const local = localMeals.find((m: any) => m.id === remote.cloudId);

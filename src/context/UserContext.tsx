@@ -10,7 +10,7 @@ import { useSettings } from "@/src/hooks/useSettings";
 import { useMeals } from "@/src/hooks/useMeals";
 import { useChatHistory } from "@/src/hooks/useChatHistory";
 import type { UserData, ChatMessage, Meal } from "@/src/types";
-import { fullSync } from "@/src/utils/fullSync";
+import { fullSync } from "@/src/utils/syncUtils";
 
 type UserContextType = {
   userData: UserData | null;

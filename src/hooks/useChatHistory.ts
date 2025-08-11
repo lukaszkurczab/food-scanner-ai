@@ -11,7 +11,7 @@ import {
   addChatMessageToFirestore,
   upsertChatMessageInFirestore,
   markChatMessageSyncedInFirestore,
-} from "@/src/services/firestore/firestoreChatService";
+} from "@services/chatService";
 import { askDietAI, type Message } from "@/src/services/askDietAI";
 import { v4 as uuidv4 } from "uuid";
 

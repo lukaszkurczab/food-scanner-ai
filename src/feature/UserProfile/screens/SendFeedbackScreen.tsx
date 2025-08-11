@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
 import NetInfo from "@react-native-community/netinfo";
 import * as Device from "expo-device";
-import { sendFeedback } from "@/src/services/firestore/firestoreUserService";
+import { sendFeedback } from "@services/userService";
 import { useAuthContext } from "@/src/context/AuthContext";
 
 export default function SendFeedbackScreen({ navigation }: any) {
