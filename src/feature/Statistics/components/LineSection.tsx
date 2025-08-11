@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { LineGraph } from "@/components/LineGraph";
+import { LineGraph } from "@/components";
 import { useTranslation } from "react-i18next";
 import type { MetricKey } from "./MetricsGrid";
 
@@ -20,13 +20,6 @@ export const LineSection: React.FC<Props> = ({ labels, data, metric }) => {
     protein: t("statistics:charts.protein"),
     carbs: t("statistics:charts.carbs"),
     fat: t("statistics:charts.fat"),
-  };
-
-  const accentMap: Record<MetricKey, string> = {
-    kcal: theme.accent,
-    protein: theme.macro.protein,
-    carbs: theme.macro.carbs,
-    fat: theme.macro.fat,
   };
 
   return (
@@ -52,7 +45,7 @@ export const LineSection: React.FC<Props> = ({ labels, data, metric }) => {
         data={data}
         labels={labels}
         stepY={200}
-        stepX={Math.ceil(labels.length / 7)}
+        stepX={Math.ceil(Math.max(1, labels.length) / 7)}
         height={140}
         smooth
       />

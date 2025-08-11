@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import Constants from "expo-constants";
 import i18next from "i18next";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import type { Meal, FormData } from "@/types/index";
+import type { Meal, FormData } from "@/types";
 
 export type Message = {
   from: "user" | "ai";
@@ -292,8 +292,6 @@ export async function askDietAI(
 
   const profileSummary = buildProfileSummary(profile);
   const recentMeals = formatMeals(meals);
-
-  console.log(recentMeals);
 
   const system = [
     i18next.t(

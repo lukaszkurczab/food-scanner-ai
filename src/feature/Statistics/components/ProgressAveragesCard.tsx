@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { TargetProgressBar } from "@/components/TargetProgressBar";
+import { TargetProgressBar } from "@/components";
 import { useTranslation } from "react-i18next";
 
 type Props = {
@@ -42,9 +42,7 @@ export const ProgressAveragesCard: React.FC<Props> = ({
   const hasGoal = !!dailyGoal && dailyGoal > 0;
 
   const desc = hasGoal
-    ? Array.isArray(caloriesSeries) && !countEmptyAsZero
-      ? t("statistics:progress.descWithGoal", { days })
-      : t("statistics:progress.descWithGoal", { days })
+    ? t("statistics:progress.descWithGoal", { days })
     : t("statistics:progress.descNoGoal", { days });
 
   return (

@@ -13,11 +13,11 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { useStats } from "@/hooks/useStats";
 import { lastNDaysRange } from "../utils/dateRange";
 import { RangeTabs } from "../components/RangeTabs";
-import { MetricsGrid, MetricKey } from "../components/MetricsGrid";
+import { MetricsGrid, type MetricKey } from "../components/MetricsGrid";
 import { LineSection } from "../components/LineSection";
 import { MacroPieCard } from "../components/MacroPieCard";
 import { ProgressAveragesCard } from "../components/ProgressAveragesCard";
-import { BottomTabBar, DateInput } from "@/components";
+import { BottomTabBar, DateInput, UserIcon } from "@/components";
 import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { useTranslation } from "react-i18next";
 
@@ -27,7 +27,7 @@ export default function StatisticsScreen({ navigation }: any) {
   const theme = useTheme();
   const net = useNetInfo();
   const { t } = useTranslation(["statistics", "common"]);
-  const { meals, loadingMeals, userData } = useUserContext();
+  const { meals, loadingMeals, userData } = useUserContext() as any;
 
   const [active, setActive] = useState<RangeKey>("7d");
   const [customRange, setCustomRange] = useState({
@@ -101,7 +101,6 @@ export default function StatisticsScreen({ navigation }: any) {
           active={active}
           onChange={(key) => {
             setActive(key as any);
-            if (key !== "custom") return;
           }}
         />
         {active === "custom" && (
@@ -183,7 +182,39 @@ export default function StatisticsScreen({ navigation }: any) {
           />
         </ScrollView>
       )}
-      <BottomTabBar />
+      <BottomTabBar
+        tabs={[
+          {
+            key: "Home",
+            icon: "home-filled",
+            onPress: () => navigation.navigate("Home"),
+          },
+          {
+            key: "Stats",
+            icon: "bar-chart",
+            onPress: () => navigation.navigate("Statistics"),
+          },
+          {
+            key: "Add",
+            icon: "add",
+            isFab: true,
+            onPress: () => navigation.navigate("MealAddMethod"),
+          },
+          {
+            key: "History",
+            icon: "history",
+            onPress: () => navigation.navigate("HistoryList"),
+          },
+          {
+            key: "Profile",
+            icon: "person",
+            onPress: () => navigation.navigate("Profile"),
+          },
+        ]}
+        renderProfileIcon={
+          <UserIcon size={32} accessibilityLabel="Profile picture" />
+        }
+      />
     </View>
   );
 }

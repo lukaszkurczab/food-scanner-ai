@@ -22,7 +22,7 @@ import { TopToast } from "../components/TopToast";
 import { useMeals } from "@hooks/useMeals";
 
 export default function ChatScreen() {
-  const { user } = useAuthContext();
+  const { firebaseUser: user } = useAuthContext();
   const theme = useTheme();
   const { t } = useTranslation("chat");
   const net = useNetInfo();
