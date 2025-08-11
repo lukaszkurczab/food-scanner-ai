@@ -1,3 +1,4 @@
+// src/feature/Meals/guards/MealDraftInactivityGuard.tsx
 import React, { useEffect } from "react";
 import { useMealContext } from "@contexts/MealDraftContext";
 import { useInactivity } from "@contexts/InactivityContext";
@@ -14,7 +15,7 @@ export const MealDraftInactivityGuard = ({
   const { meal, clearMeal, removeDraft } = useMealContext();
   const { isModalVisible, setOnTimeout, dismissModal } = useInactivity();
   const navigation = useNavigation<any>();
-  const { user } = useAuthContext();
+  const { uid } = useAuthContext();
   const { t } = useTranslation("common");
 
   useEffect(() => {
@@ -27,9 +28,9 @@ export const MealDraftInactivityGuard = ({
   }, [meal, setOnTimeout]);
 
   const handleQuit = () => {
-    if (user?.uid) {
-      clearMeal(user.uid);
-      removeDraft(user.uid);
+    if (uid) {
+      clearMeal(uid);
+      removeDraft(uid);
     }
     dismissModal();
     navigation.replace("Home");

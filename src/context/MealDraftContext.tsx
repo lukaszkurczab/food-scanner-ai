@@ -1,3 +1,4 @@
+// src/context/MealDraftContext.tsx
 import React, {
   createContext,
   useContext,
@@ -228,3 +229,4 @@ export const MealDraftProvider = ({ children }: Props) => {
 };
 
 export const useMealDraftContext = () => useContext(MealDraftContext);
+export const useMealContext = useMealDraftContext;

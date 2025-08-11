@@ -1,3 +1,4 @@
+// src/context/UserContext.tsx
 import React, {
   createContext,
   useContext,
@@ -6,7 +7,7 @@ import React, {
 } from "react";
 import { useAuthContext } from "./AuthContext";
 import { useUser } from "@hooks/useUser";
-import type { UserData, ChatMessage } from "@/types";
+import type { UserData } from "@/types";
 
 export type UserContextType = {
   userData: UserData | null;
@@ -48,7 +49,7 @@ const UserContext = createContext<UserContextType>({
 });
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user: authUser } = useAuthContext();
+  const { firebaseUser: authUser } = useAuthContext();
   const uid = authUser?.uid || "";
 
   const {

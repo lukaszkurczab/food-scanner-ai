@@ -1,3 +1,4 @@
+// src/feature/Meals/screens/IngredientsNotRecognizedScreen.tsx
 import React from "react";
 import { View, StyleSheet, Text, Image } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -56,7 +57,6 @@ export default function IngredientsNotRecognizedScreen() {
               )}
         </Text>
         <View style={{ height: 24 }} />
-
         {attempt < MAX_ATTEMPTS && (
           <PrimaryButton
             label={`${t(
@@ -67,7 +67,6 @@ export default function IngredientsNotRecognizedScreen() {
             style={{ marginTop: 0 }}
           />
         )}
-
         <SecondaryButton
           label={t("select_method", "Select other method")}
           onPress={handleOtherMethod}
@@ -98,9 +97,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#B2C0C9",
   },
   title: { fontSize: 22, fontWeight: "bold", textAlign: "center" },
-  subtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 10,
-  },
+  subtitle: { fontSize: 16, textAlign: "center", marginTop: 10 },
 });
