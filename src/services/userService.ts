@@ -2,20 +2,10 @@ import NetInfo from "@react-native-community/netinfo";
 import { Q } from "@nozbe/watermelondb";
 import { database } from "@/db/database";
 import UserModel from "@/db/models/User";
-import type { UserData, SyncState } from "@/types";
-import {
-  getFirestore,
-  collection,
-  doc,
-  getDoc,
-  setDoc,
-} from "@react-native-firebase/firestore";
-import { getApp } from "@react-native-firebase/app";
-import { withRetry, onReconnect } from "@utils/syncUtils";
-
-/** ========== LOCAL ========== */
 
 import type {
+  UserData,
+  SyncState,
   UnitsSystem,
   Sex,
   Goal,
@@ -26,6 +16,7 @@ import type {
   AiStyle,
   AiFocus,
 } from "@/types";
+
 import {
   UNITS,
   SEX_NON_NULL,
@@ -37,6 +28,40 @@ import {
   AI_STYLE,
   AI_FOCUS,
 } from "@/types/constants";
+
+import { getApp } from "@react-native-firebase/app";
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  getDocs,
+  writeBatch,
+  addDoc,
+  deleteDoc,
+} from "@react-native-firebase/firestore";
+import {
+  getStorage,
+  ref as storageRef,
+  putFile,
+  getDownloadURL,
+} from "@react-native-firebase/storage";
+import {
+  getAuth,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  verifyBeforeUpdateEmail,
+  updatePassword,
+} from "@react-native-firebase/auth";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { zip } from "react-native-zip-archive";
+
+import { withRetry, onReconnect } from "@utils/syncUtils";
+
+/** ===================== Helpers (typing & sanitization) ===================== */
 
 type SexNonNull = Exclude<Sex, null>;
 
@@ -76,6 +101,8 @@ function asEnumArray<T extends string>(
   return vals.filter((x) => typeof x === "string" && set.has(x)) as T[];
 }
 
+/** ===================== LOCAL (WatermelonDB) ===================== */
+
 export async function getUserLocal(uid: string): Promise<UserData | null> {
   const users = database.get<UserModel>("users");
   const rows = await users.query(Q.where("uid", uid)).fetch();
@@ -104,7 +131,7 @@ export async function getUserLocal(uid: string): Promise<UserData | null> {
     sex:
       u.sex == null
         ? null
-        : (asEnum<SexNonNull>(u.sex, SEX_NON_NULL, "male") as Sex), // zawężamy do "male" | "female", a potem jako Sex
+        : (asEnum<SexNonNull>(u.sex, SEX_NON_NULL, "male") as Sex),
     goal: asEnum<Goal>(u.goal as any, GOALS, "maintain"),
     activityLevel: asEnum<ActivityLevel>(
       u.activityLevel as any,
@@ -149,6 +176,7 @@ export async function upsertUserLocal(data: UserData): Promise<void> {
         u.lastLogin = data.lastLogin;
         u.surveyComplited = data.surveyComplited;
         u.syncState = "pending";
+
         u.darkTheme = data.darkTheme ?? false;
         u.language = data.language;
         u.unitsSystem = data.unitsSystem;
@@ -196,6 +224,7 @@ export async function upsertUserLocal(data: UserData): Promise<void> {
         u.lastLogin = data.lastLogin;
         u.surveyComplited = data.surveyComplited;
         u.syncState = "pending";
+
         u.darkTheme = data.darkTheme ?? false;
         u.language = data.language;
         u.unitsSystem = data.unitsSystem;
@@ -207,7 +236,6 @@ export async function upsertUserLocal(data: UserData): Promise<void> {
         u.activityLevel = (data.activityLevel as any) ?? "";
         u.goal = (data.goal as any) ?? "";
 
-        // opcjonalne (ustawiamy tylko jeśli przyszły)
         if (data.avatarUrl !== undefined) u.avatarUrl = data.avatarUrl;
         if (data.avatarLocalPath !== undefined)
           u.avatarLocalPath = data.avatarLocalPath;
@@ -240,7 +268,7 @@ export async function upsertUserLocal(data: UserData): Promise<void> {
   onReconnect(() => syncUserProfile(data.uid));
 }
 
-/** ========== CLOUD ========== */
+/** ===================== CLOUD (Firestore/Storage/Auth) ===================== */
 
 const USERS = "users";
 function db() {
@@ -288,8 +316,6 @@ export async function syncUserProfile(uid: string): Promise<void> {
     return;
   }
 
-  // obie strony → wybierz nowsze
-  // Uwaga: w Twoim modelu lastSyncedAt jest ISO string
   if (local && remote) {
     const takeLocal = newerIso(local.lastSyncedAt, remote.lastSyncedAt);
     if (takeLocal) {
@@ -304,5 +330,177 @@ export async function syncUserProfile(uid: string): Promise<void> {
     } else {
       await upsertUserLocal({ ...remote, syncState: "synced" });
     }
+  }
+}
+
+/** ===================== Dodatkowe operacje cloud ===================== */
+
+export async function updateUserLanguageInFirestore(
+  uid: string,
+  language: string
+) {
+  await updateDoc(doc(collection(db(), USERS), uid), { language });
+}
+
+export async function uploadAndSaveAvatar({
+  userUid,
+  localUri,
+}: {
+  userUid: string;
+  localUri: string;
+}) {
+  const storage = getStorage();
+  const avatar = storageRef(storage, `avatars/${userUid}/avatar.jpg`);
+  await putFile(avatar, localUri);
+  const avatarUrl = await getDownloadURL(avatar);
+  const now = new Date().toISOString();
+  await updateDoc(doc(collection(db(), USERS), userUid), {
+    avatarUrl,
+    avatarLocalPath: localUri,
+    avatarlastSyncedAt: now,
+  });
+  return { avatarUrl, avatarLocalPath: localUri, avatarlastSyncedAt: now };
+}
+
+export async function changeUsernameService({
+  uid,
+  newUsername,
+  password,
+}: {
+  uid: string;
+  newUsername: string;
+  password: string;
+}) {
+  const auth = getAuth();
+  const current = auth.currentUser;
+  if (!current) throw new Error("auth/not-logged-in");
+  const cred = EmailAuthProvider.credential(current.email!, password);
+  await reauthenticateWithCredential(current, cred);
+
+  const dbi = db();
+
+  const next = newUsername.trim().toLowerCase();
+  await setDoc(doc(dbi, "usernames", next), { uid });
+
+  await updateDoc(doc(collection(dbi, USERS), uid), {
+    username: newUsername.trim(),
+  });
+
+  // opcjonalne czyszczenie poprzedniej nazwy — tylko jeśli różna
+  const prevSnap = await getDoc(doc(collection(dbi, USERS), uid));
+  const prev = (prevSnap.data() as any)?.username;
+  if (prev && prev !== newUsername.trim()) {
+    await deleteDoc(doc(dbi, "usernames", String(prev).trim().toLowerCase()));
+  }
+}
+
+export async function changeEmailService({
+  uid,
+  newEmail,
+  password,
+}: {
+  uid: string;
+  newEmail: string;
+  password: string;
+}) {
+  const auth = getAuth();
+  const current = auth.currentUser;
+  if (!current) throw new Error("auth/not-logged-in");
+
+  const cred = EmailAuthProvider.credential(current.email!, password);
+  await reauthenticateWithCredential(current, cred);
+  await verifyBeforeUpdateEmail(current, newEmail.trim());
+
+  await updateDoc(doc(collection(db(), USERS), uid), {
+    emailPending: newEmail.trim(),
+  });
+}
+
+export async function changePasswordService({
+  currentPassword,
+  newPassword,
+}: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  const auth = getAuth();
+  const current = auth.currentUser;
+  if (!current) throw new Error("auth/not-logged-in");
+
+  const cred = EmailAuthProvider.credential(current.email!, currentPassword);
+  await reauthenticateWithCredential(current, cred);
+  await updatePassword(current, newPassword);
+}
+
+export async function exportUserData(uid: string) {
+  const dbi = db();
+
+  const userDocRef = doc(collection(dbi, USERS), uid);
+  const userDocSnap = await getDoc(userDocRef);
+  const profile = userDocSnap.exists() ? userDocSnap.data() : null;
+
+  async function fetchSub(name: string) {
+    const snap = await getDocs(collection(dbi, USERS, uid, name));
+    return snap.docs.map((d: any) => d.data());
+  }
+
+  const meals = await fetchSub("meals");
+  const chatMessages = await fetchSub("chat_messages");
+
+  let avatarUri: string | null = null;
+  try {
+    const url = await getDownloadURL(
+      storageRef(getStorage(), `avatars/${uid}/avatar.jpg`)
+    );
+    const localPath = FileSystem.documentDirectory + "avatar.jpg";
+    const dl = FileSystem.createDownloadResumable(url, localPath);
+    await dl.downloadAsync();
+    avatarUri = localPath;
+  } catch {
+    avatarUri = null;
+  }
+
+  const exportData = { profile, meals, chatMessages };
+  const dataJsonPath = FileSystem.documentDirectory + "user_data.json";
+  await FileSystem.writeAsStringAsync(
+    dataJsonPath,
+    JSON.stringify(exportData, null, 2)
+  );
+
+  const files = [dataJsonPath];
+  if (avatarUri) files.push(avatarUri);
+
+  const zipPath = FileSystem.documentDirectory + "exported_user_data.zip";
+  await zip(files, zipPath);
+
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(zipPath);
+  }
+  return zipPath;
+}
+
+export async function deleteUserInFirestoreWithUsername(uid: string) {
+  const dbi = db();
+  const userRef = doc(collection(dbi, USERS), uid);
+  const userSnap = await getDoc(userRef);
+  const username: string | null = (userSnap.data() as any)?.username ?? null;
+
+  const subcollections = ["meals", "chat_messages"];
+  for (const sub of subcollections) {
+    const subRef = collection(dbi, USERS, uid, sub);
+    const snap = await getDocs(subRef);
+    const batchSize = 500;
+    for (let i = 0; i < snap.docs.length; i += batchSize) {
+      const batch = writeBatch(dbi);
+      snap.docs
+        .slice(i, i + batchSize)
+        .forEach((d: any) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+
+  await deleteDoc(userRef);
+  if (username) {
+    await deleteDoc(doc(dbi, "usernames", username.trim().toLowerCase()));
   }
 }

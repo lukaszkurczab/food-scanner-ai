@@ -1,115 +1,69 @@
-import { useCallback, useEffect, useState } from "react";
-import NetInfo from "@react-native-community/netinfo";
-import { database } from "@/db/database";
-import { Q } from "@nozbe/watermelondb";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UserData } from "@/types";
+import * as FileSystem from "expo-file-system";
+import { savePhotoLocally } from "@utils/savePhotoLocally";
 import {
-  fetchUserFromFirestore,
-  updateUserInFirestore,
-  markUserSyncedInFirestore,
-  deleteUserInFirestoreWithUsername,
+  getUserLocal,
+  upsertUserLocal,
+  syncUserProfile as syncUserProfileRepo,
+  fetchUserFromCloud as fetchUserFromCloudRepo,
+  updateUserLanguageInFirestore,
   uploadAndSaveAvatar,
   changeUsernameService,
   changeEmailService,
   changePasswordService,
-  exportUserData,
-  updateUserLanguageInFirestore,
-} from "@services/userService";
-import { pickLatest } from "@/utils/syncUtils";
-import {
-  getAuth,
-  deleteUser as deleteAuthUser,
-} from "@react-native-firebase/auth";
-import { omitLocalUserKeys } from "@/utils/omitLocalUserKeys";
-import { savePhotoLocally } from "@/utils/savePhotoLocally";
-import * as FileSystem from "expo-file-system";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const LANGUAGE_KEY = "caloriai_language";
+  exportUserData as exportUserDataRepo,
+  deleteUserInFirestoreWithUsername,
+} from "@/services/userService";
+import { getUserQueue } from "@/sync/queues";
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [syncState, setsyncState] = useState<"synced" | "pending" | "conflict">(
+  const [syncState, setSyncState] = useState<"synced" | "pending" | "conflict">(
     "pending"
   );
-  const [language, setLanguageState] = useState<string>("en");
+  const [language, setLanguage] = useState<string>("en");
 
   const getUserProfile = useCallback(async () => {
     setLoading(true);
-    const userCollection = database.get("users");
-    let localUser = null;
-    try {
-      const found = await userCollection.query(Q.where("uid", uid)).fetch();
-      localUser = found[0] || null;
-    } catch (e) {
-      localUser = null;
-    }
-    let localData = localUser ? mapRawToUserData(localUser._raw) : null;
-    if (!localData) {
-      const remoteData = await fetchUserFromFirestore(uid);
-      if (remoteData) {
-        try {
-          await database.write(async () => {
-            await userCollection.create((user: any) => {
-              Object.assign(user, remoteData);
-            });
-          });
-        } catch {}
-        localData = remoteData;
-      }
-      setUserData(localData);
-    } else {
-      setUserData(localData);
-    }
-    setsyncState(localData?.syncState || "pending");
-    setLoading(false);
-    if (localData?.language) {
-      setLanguageState(localData.language);
-      await AsyncStorage.setItem(LANGUAGE_KEY, localData.language);
-    }
-    return localData;
-  }, [uid]);
-
-  useEffect(() => {
     if (!uid) {
       setUserData(null);
       setLoading(false);
-      return;
+      return null;
     }
+    const local = await getUserLocal(uid);
+    if (local) {
+      setUserData(local);
+      setSyncState(local.syncState);
+      if (local.language) setLanguage(local.language);
+    }
+    setLoading(false);
+    return local;
+  }, [uid]);
+
+  useEffect(() => {
     getUserProfile();
-  }, [uid, getUserProfile]);
+  }, [getUserProfile]);
 
   const updateUserProfile = useCallback(
-    async (data: Partial<UserData>) => {
-      const userCollection = database.get("users");
-      const users = await userCollection.query().fetch();
-      const localUser = users.find((u: any) => u.uid === uid);
-
-      if (localUser) {
-        const sanitizeData = omitLocalUserKeys(data);
-        await database.write(async () => {
-          try {
-            await localUser.update((u: any) => {
-              Object.assign(u, sanitizeData, {
-                lastSyncedAt: new Date().toISOString(),
-                syncState: "pending",
-              });
-            });
-          } catch {}
-        });
-        const newRaw = {
-          ...localUser._raw,
-          ...sanitizeData,
-          lastSyncedAt: new Date().toISOString(),
-          syncState: "pending",
-        };
-        setUserData(mapRawToUserData(newRaw));
-        setsyncState("pending");
-        if (sanitizeData.language) {
-          setLanguageState(sanitizeData.language);
-          await AsyncStorage.setItem(LANGUAGE_KEY, sanitizeData.language);
-        }
+    async (patch: Partial<UserData>) => {
+      if (!uid) return;
+      const prev = await getUserLocal(uid);
+      const next: UserData | null = prev
+        ? {
+            ...prev,
+            ...patch,
+            syncState: "pending",
+            lastSyncedAt: new Date().toISOString(),
+          }
+        : null;
+      if (next) {
+        await upsertUserLocal(next);
+        getUserQueue(uid).enqueue({ kind: "sync", userUid: uid });
+        setUserData(next);
+        setSyncState("pending");
+        if (patch.language) setLanguage(patch.language);
       }
     },
     [uid]
@@ -117,24 +71,21 @@ export function useUser(uid: string) {
 
   const setAvatar = useCallback(
     async (photoUri: string) => {
+      if (!uid) return;
       const localPath = FileSystem.documentDirectory + `avatar_${uid}.jpg`;
-      const now = new Date().toISOString();
       await savePhotoLocally({ photoUri, path: localPath });
+      await updateUserProfile({
+        avatarLocalPath: localPath,
+        avatarlastSyncedAt: new Date().toISOString(),
+      });
       try {
-        await updateUserProfile({
-          avatarLocalPath: localPath,
-          avatarlastSyncedAt: now,
-          syncState: "pending",
-        });
-      } catch {}
-      try {
-        const { avatarUrl, avatarlastSyncedAt } = await uploadAndSaveAvatar({
+        const res = await uploadAndSaveAvatar({
           userUid: uid,
           localUri: localPath,
         });
         await updateUserProfile({
-          avatarUrl,
-          avatarlastSyncedAt: new Date(avatarlastSyncedAt).toISOString(),
+          avatarUrl: res.avatarUrl,
+          avatarlastSyncedAt: res.avatarlastSyncedAt,
           syncState: "synced",
         });
       } catch {}
@@ -143,125 +94,41 @@ export function useUser(uid: string) {
   );
 
   const fetchUserFromCloud = useCallback(async () => {
-    return await fetchUserFromFirestore(uid);
+    if (!uid) return null;
+    return await fetchUserFromCloudRepo(uid);
   }, [uid]);
 
   const sendUserToCloud = useCallback(async () => {
-    const userCollection = database.get("users");
-    const users = await userCollection.query().fetch();
-    const localUser = users.find((u: any) => u.uid === uid);
-    if (localUser) {
-      const localData = mapRawToUserData(localUser._raw);
-      await updateUserInFirestore(uid, localData);
-    }
-  }, [uid]);
+    if (!uid) return;
+    await syncUserProfileRepo(uid);
+    await getUserProfile();
+  }, [uid, getUserProfile]);
 
   const markUserAsSynced = useCallback(async () => {
-    const userCollection = database.get("users");
-    const users = await userCollection.query().fetch();
-    const localUser = users.find((u: any) => u.uid === uid);
-    if (localUser) {
-      const timestamp = new Date().toISOString();
-      await database.write(async () => {
-        await localUser.update((u: any) => {
-          u.syncState = "synced";
-          u.lastSyncedAt = timestamp;
-        });
-      });
-      await markUserSyncedInFirestore(uid, timestamp);
-      setsyncState("synced");
-    }
-  }, [uid]);
+    if (!uid) return;
+    await syncUserProfileRepo(uid);
+    await getUserProfile();
+    setSyncState("synced");
+  }, [uid, getUserProfile]);
 
   const syncUserProfile = useCallback(async () => {
-    const userCollection = database.get("users");
-    let localUser = null;
-    try {
-      const found = await userCollection.query(Q.where("uid", uid)).fetch();
-      localUser = found[0] || null;
-    } catch {
-      localUser = null;
-    }
-
-    let localData = localUser ? mapRawToUserData(localUser._raw) : null;
-    const netInfo = await NetInfo.fetch();
-    if (!netInfo.isConnected) return;
-    const remoteData = await fetchUserFromFirestore(uid);
-
-    if (localData && remoteData) {
-      const sanitizeData = omitLocalUserKeys(localData);
-      const pick = pickLatest(sanitizeData, remoteData);
-      if (pick === "remote" && localUser) {
-        await database.write(async () => {
-          await localUser.update((u: any) => {
-            Object.assign(u, remoteData, { syncState: "synced" });
-          });
-        });
-        setUserData(remoteData);
-        setsyncState("synced");
-        if (remoteData.language) {
-          setLanguageState(remoteData.language);
-          await AsyncStorage.setItem(LANGUAGE_KEY, remoteData.language);
-        }
-      } else {
-        await updateUserInFirestore(uid, localData);
-        setUserData(localData);
-        setsyncState("synced");
-        if (localData.language) {
-          setLanguageState(localData.language);
-          await AsyncStorage.setItem(LANGUAGE_KEY, localData.language);
-        }
-      }
-    } else if (!localData && remoteData) {
-      const sanitizeData = omitLocalUserKeys(remoteData);
-      await database.write(async () => {
-        await userCollection.create((user: any) => {
-          Object.assign(user, sanitizeData);
-        });
-      });
-      setUserData(remoteData);
-      setsyncState("synced");
-      if (remoteData.language) {
-        setLanguageState(remoteData.language);
-        await AsyncStorage.setItem(LANGUAGE_KEY, remoteData.language);
-      }
-    } else if (localData && !remoteData) {
-      const sanitizeData = omitLocalUserKeys(localData);
-      await updateUserInFirestore(uid, sanitizeData);
-      setUserData(localData);
-      setsyncState("synced");
-      if (localData.language) {
-        setLanguageState(localData.language);
-        await AsyncStorage.setItem(LANGUAGE_KEY, localData.language);
-      }
-    } else {
-      setUserData(null);
-      setsyncState("pending");
-    }
-  }, [uid]);
+    if (!uid) return;
+    await syncUserProfileRepo(uid);
+    await getUserProfile();
+  }, [uid, getUserProfile]);
 
   const changeUsername = useCallback(
     async (newUsername: string, password: string) => {
+      if (!uid) return;
       await changeUsernameService({ uid, newUsername, password });
-      const userCollection = database.get("users");
-      const users = await userCollection.query().fetch();
-      const localUser = users.find((u: any) => u.uid === uid);
-      if (localUser) {
-        await database.write(async () => {
-          await localUser.update((u: any) => {
-            u.username = newUsername;
-          });
-        });
-        setUserData((prev) =>
-          prev ? { ...prev, username: newUsername } : prev
-        );
-      }
+      await updateUserProfile({ username: newUsername });
     },
-    [uid]
+    [uid, updateUserProfile]
   );
 
   const changeEmail = useCallback(
     async (newEmail: string, password: string) => {
+      if (!uid) return;
       await changeEmailService({ uid, newEmail, password });
     },
     [uid]
@@ -277,73 +144,66 @@ export function useUser(uid: string) {
   const changeLanguage = useCallback(
     async (newLang: string) => {
       if (!uid) {
-        setLanguageState(newLang);
-        await AsyncStorage.setItem(LANGUAGE_KEY, newLang);
+        setLanguage(newLang);
         return;
       }
-      const userCollection = database.get("users");
-      const users = await userCollection.query().fetch();
-      const localUser = users.find((u: any) => u.uid === uid);
-      if (localUser) {
-        await database.write(async () => {
-          await localUser.update((u: any) => {
-            u.language = newLang;
-            u.syncState = "pending";
-          });
-        });
-      }
+      await updateUserProfile({ language: newLang });
       await updateUserLanguageInFirestore(uid, newLang);
-      setLanguageState(newLang);
-      await AsyncStorage.setItem(LANGUAGE_KEY, newLang);
+      setLanguage(newLang);
     },
-    [uid]
+    [uid, updateUserProfile]
   );
 
-  const handleExportUserData = useCallback(async () => {
-    return await exportUserData(uid);
+  const exportUserData = useCallback(async () => {
+    if (!uid) return null;
+    return await exportUserDataRepo(uid);
   }, [uid]);
 
   const deleteUser = useCallback(async () => {
     if (!uid) return;
     await deleteUserInFirestoreWithUsername(uid);
-    const userCollection = database.get("users");
-    const users = await userCollection.query().fetch();
-    const localUser = users.find((u: any) => u.uid === uid);
-    if (localUser) {
-      await database.write(async () => {
-        await localUser.markAsDeleted();
-      });
-    }
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      await deleteAuthUser(currentUser);
-    }
     setUserData(null);
-    setsyncState("pending");
+    setSyncState("pending");
   }, [uid]);
 
-  function mapRawToUserData(raw: any): UserData {
-    return raw as UserData;
-  }
-
-  return {
-    userData,
-    loading,
-    syncState,
-    getUserProfile,
-    fetchUserFromCloud,
-    updateUserProfile,
-    sendUserToCloud,
-    syncUserProfile,
-    markUserAsSynced,
-    deleteUser,
-    setAvatar,
-    changeUsername,
-    changeEmail,
-    changePassword,
-    exportUserData: handleExportUserData,
-    language,
-    changeLanguage,
-  };
+  return useMemo(
+    () => ({
+      userData,
+      loading,
+      syncState,
+      getUserProfile,
+      fetchUserFromCloud,
+      updateUserProfile,
+      sendUserToCloud,
+      syncUserProfile,
+      markUserAsSynced,
+      deleteUser,
+      setAvatar,
+      changeUsername,
+      changeEmail,
+      changePassword,
+      exportUserData,
+      language,
+      changeLanguage,
+    }),
+    [
+      userData,
+      loading,
+      syncState,
+      getUserProfile,
+      fetchUserFromCloud,
+      updateUserProfile,
+      sendUserToCloud,
+      syncUserProfile,
+      markUserAsSynced,
+      deleteUser,
+      setAvatar,
+      changeUsername,
+      changeEmail,
+      changePassword,
+      exportUserData,
+      language,
+      changeLanguage,
+    ]
+  );
 }

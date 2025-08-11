@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
@@ -13,6 +13,7 @@ import {
   onAuthStateChanged,
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
+import { attachQueues, disposeQueues } from "@/sync/queues";
 
 type AuthContextType = {
   firebaseUser: FirebaseAuthTypes.User | null;
@@ -20,7 +21,6 @@ type AuthContextType = {
   email: string | null;
   isAuthenticated: boolean;
   loading: boolean;
-  // zostawiamy setter (przydaje się np. po reautoryzacji), ale to nie jest obowiązkowe do używania
   setFirebaseUser: Dispatch<SetStateAction<FirebaseAuthTypes.User | null>>;
 };
 
@@ -60,6 +60,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setFirebaseUser,
     };
   }, [firebaseUser, loading]);
+
+  useEffect(() => {
+    if (!value.uid) return;
+    attachQueues(value.uid);
+    return () => {
+      if (value.uid) disposeQueues(value.uid);
+    };
+  }, [value.uid]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -3,20 +3,14 @@ import NetInfo from "@react-native-community/netinfo";
 import { database } from "@/db/database";
 import { Q } from "@nozbe/watermelondb";
 import ChatMessageModel from "@/db/models/ChatMessage";
-import type { ChatMessage, ChatsyncState } from "@/types";
+import type { ChatMessage, ChatSyncState } from "@/types";
 import type { Meal, FormData } from "@/types";
-import {
-  fetchChatMessagesPageFromFirestore,
-  addChatMessageToFirestore,
-  upsertChatMessageInFirestore,
-  markChatMessageSyncedInFirestore,
-} from "@services/chatService";
+import { pullPage } from "@services/chatService";
 import { askDietAI, type Message } from "@/services/askDietAI";
 import { v4 as uuidv4 } from "uuid";
+import { getChatQueue } from "@/sync/queues";
 
-type Options = {
-  pageSize?: number;
-};
+type Options = { pageSize?: number };
 
 function mapModelToChat(m: ChatMessageModel): ChatMessage {
   return {
@@ -26,7 +20,7 @@ function mapModelToChat(m: ChatMessageModel): ChatMessage {
     content: m.content,
     createdAt: m.createdAt,
     lastSyncedAt: m.lastSyncedAt,
-    syncState: m.syncState as ChatsyncState,
+    syncState: m.syncState as ChatSyncState,
     cloudId: m.cloudId,
     deleted: !!m.deleted,
   };
@@ -53,7 +47,6 @@ export function useChatHistory(
   const [hasMore, setHasMore] = useState(true);
   const cursorRef = useRef<any | null>(null);
   const [typing, setTyping] = useState(false);
-  const pendingQueueRef = useRef<ChatMessage[]>([]);
 
   const countToday = useMemo(() => {
     const today = startOfDayMs(Date.now());
@@ -78,7 +71,7 @@ export function useChatHistory(
 
   const pull = useCallback(
     async (reset = false) => {
-      const { items, nextCursor } = await fetchChatMessagesPageFromFirestore(
+      const { items, nextCursor } = await pullPage(
         userUid,
         pageSize,
         reset ? null : cursorRef.current
@@ -136,55 +129,6 @@ export function useChatHistory(
     if (!hasMore) return;
     await pull(false);
   }, [hasMore, pull]);
-
-  const pushPending = useCallback(async () => {
-    const net = await NetInfo.fetch();
-    if (!net.isConnected) return;
-
-    const collection = database.get<ChatMessageModel>("chatMessages");
-    const pending = await collection
-      .query(Q.where("syncState", "pending"), Q.where("userUid", userUid))
-      .fetch();
-
-    for (const row of pending) {
-      const data = mapModelToChat(row);
-      let cloudId = data.cloudId;
-      if (!cloudId) {
-        const newId = await addChatMessageToFirestore({
-          ...data,
-          id: "",
-          cloudId: undefined,
-          lastSyncedAt: Date.now(),
-          syncState: "pending",
-        });
-        cloudId = newId;
-      } else {
-        await upsertChatMessageInFirestore(cloudId, data);
-      }
-      await markChatMessageSyncedInFirestore(cloudId, Date.now(), userUid);
-      await database.write(async () => {
-        await row.update((m: any) => {
-          m.syncState = "synced";
-          m.cloudId = cloudId!;
-          m.lastSyncedAt = Date.now();
-        });
-      });
-    }
-    await loadLocal();
-  }, [userUid, loadLocal]);
-
-  const retryPendingWithBackoff = useCallback(() => {
-    let attempt = 0;
-    const run = async () => {
-      attempt += 1;
-      try {
-        await pushPending();
-      } catch {}
-      const delay = Math.min(30000, 1000 * Math.pow(2, attempt));
-      setTimeout(run, delay);
-    };
-    run();
-  }, [pushPending]);
 
   const send = useCallback(
     async (text: string) => {
@@ -249,7 +193,7 @@ export function useChatHistory(
           historyForAi,
           profile
         );
-      } catch (e: any) {
+      } catch {
         setError("AI_ERROR");
         aiText = "";
       }
@@ -280,43 +224,22 @@ export function useChatHistory(
       setTyping(false);
       await loadLocal();
 
-      try {
-        pendingQueueRef.current.push(userMsg, assistantMsg);
-        await pushPending();
-      } catch {
-        retryPendingWithBackoff();
-      } finally {
-        setSending(false);
-      }
+      // push przez kolejkę
+      const q = getChatQueue(userUid);
+      q.enqueue({ kind: "upsert", userUid, message: userMsg });
+      q.enqueue({ kind: "upsert", userUid, message: assistantMsg });
+
+      setSending(false);
     },
-    [
-      userUid,
-      canSend,
-      sending,
-      meals,
-      profile,
-      messages,
-      loadLocal,
-      pushPending,
-      retryPendingWithBackoff,
-    ]
+    [userUid, canSend, sending, meals, profile, messages, loadLocal]
   );
 
   useEffect(() => {
-    let unsubNet: any;
     (async () => {
       await loadLocal();
       await pull(true);
-      unsubNet = NetInfo.addEventListener((state) => {
-        if (state.isConnected) {
-          pushPending();
-        }
-      });
     })();
-    return () => {
-      if (unsubNet) unsubNet();
-    };
-  }, [loadLocal, pull, pushPending]);
+  }, [loadLocal, pull]);
 
   return {
     messages,

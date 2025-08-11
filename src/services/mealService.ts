@@ -284,3 +284,77 @@ export async function syncMeals(userUid: string): Promise<void> {
     }
   }
 }
+
+// --- HELPER: pojedynczy upsert do Firestore + zdjęcie ---
+export async function upsertMealWithPhoto(
+  userUid: string,
+  meal: Meal,
+  photoUri: string | null
+): Promise<void> {
+  // jeśli lokalne zdjęcie, wyślij i podmień URL
+  let next = { ...meal };
+  if (photoUri && photoUri.startsWith("file:")) {
+    const url = await uploadPhotoIfNeeded(userUid, {
+      ...meal,
+      photoUrl: photoUri,
+    });
+    if (url) next.photoUrl = url;
+  }
+
+  const firestore = db();
+  if (!next.cloudId) {
+    const ref = await addDoc(
+      collection(firestore, USERS, userUid, MEALS),
+      next
+    );
+    next.cloudId = ref.id;
+  } else {
+    await setDoc(doc(firestore, USERS, userUid, MEALS, next.cloudId), next, {
+      merge: true,
+    });
+  }
+
+  // lokalny rekord oznacz jako zsynchronizowany
+  const meals = database.get<MealModel>("meals");
+  const rows = await meals
+    .query(Q.where("userUid", userUid), Q.where("mealId", next.mealId))
+    .fetch();
+  if (rows[0]) {
+    await database.write(async () => {
+      await rows[0].update((m: any) => {
+        m.syncState = "synced";
+        if (!m.cloudId) m.cloudId = next.cloudId!;
+        m.updatedAt = new Date().toISOString();
+        if (next.photoUrl) m.photoUrl = next.photoUrl;
+      });
+    });
+  }
+}
+
+// --- HELPER: miękkie usunięcie posiłku w Firestore (+ lokalny stan) ---
+export async function deleteMealInFirestore(
+  userUid: string,
+  cloudId: string
+): Promise<void> {
+  const firestore = db();
+  await setDoc(
+    doc(firestore, USERS, userUid, MEALS, cloudId),
+    { deleted: true, syncState: "synced", updatedAt: new Date().toISOString() },
+    { merge: true }
+  );
+
+  // lokalnie przestaw na deleted + synced
+  const meals = database.get<MealModel>("meals");
+  const rows = await meals
+    .query(Q.where("userUid", userUid), Q.where("cloudId", cloudId))
+    .fetch();
+  if (rows[0]) {
+    await database.write(async () => {
+      await rows[0].update((m: any) => {
+        m.deleted = true;
+        m.syncState = "synced";
+        m.updatedAt = new Date().toISOString();
+      });
+    });
+  }
+}
