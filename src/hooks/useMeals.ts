@@ -1,3 +1,4 @@
+// src/hooks/useMeals.ts
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Meal } from "@/types/meal";
 import { v4 as uuidv4 } from "uuid";

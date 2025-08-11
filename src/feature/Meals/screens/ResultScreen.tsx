@@ -1,3 +1,4 @@
+// src/feature/Meals/screens/ResultScreen.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import {
@@ -28,11 +29,11 @@ type ResultScreenProps = {
 export default function ResultScreen({ navigation }: ResultScreenProps) {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
-  const { user } = useAuthContext();
+  const { uid } = useAuthContext();
   const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =
     useMealContext();
   const { userData } = useUserContext();
-  const { addMeal } = useMeals(user?.uid || "");
+  const { addMeal } = useMeals(uid || "");
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [saveToMyMeals, setSaveToMyMeals] = useState(false);
   const [mealName, setMealName] = useState(meal?.name || autoMealName());
@@ -43,10 +44,10 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const image = meal?.photoUrl ?? null;
 
   useEffect(() => {
-    if (user?.uid) setLastScreen(user.uid, "Result");
-  }, [setLastScreen, user?.uid]);
+    if (uid) setLastScreen(uid, "Result");
+  }, [setLastScreen, uid]);
 
-  if (!meal || !user?.uid) return null;
+  if (!meal || !uid) return null;
 
   const nutrition = calculateTotalNutrients([meal]);
 
@@ -56,19 +57,19 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
     const newMeal = {
       ...meal,
       cloudId: meal.cloudId,
-      user_uid: user.uid,
+      userUid: uid,
       name: mealName,
       type: mealType,
       nutrition,
       date: new Date().toISOString(),
       syncState: "pending",
       updatedAt: new Date().toISOString(),
-    };
+    } as any;
     try {
       await addMeal(newMeal);
-      clearMeal(user.uid);
+      clearMeal(uid);
       navigation.navigate("Home");
-    } catch (error) {
+    } catch {
     } finally {
       setSaving(false);
     }
@@ -79,7 +80,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   };
 
   const handleCancelConfirm = () => {
-    if (user?.uid) clearMeal(user.uid);
+    if (uid) clearMeal(uid);
     navigation.navigate("Home");
   };
 

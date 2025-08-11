@@ -1,3 +1,4 @@
+// src/feature/Meals/components/Loader.tsx
 import React from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
@@ -31,20 +32,12 @@ export default function Loader({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  container: { flex: 1, justifyContent: "center", alignItems: "center" },
   title: {
     fontSize: 22,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 12,
   },
-  subtext: {
-    fontSize: 16,
-    opacity: 0.85,
-    textAlign: "center",
-  },
+  subtext: { fontSize: 16, opacity: 0.85, textAlign: "center" },
 });

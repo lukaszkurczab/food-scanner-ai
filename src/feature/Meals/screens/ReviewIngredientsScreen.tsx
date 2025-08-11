@@ -1,3 +1,4 @@
+// src/feature/Meals/screens/ReviewIngredientsScreen.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -21,15 +22,15 @@ export default function ReviewIngredientsScreen() {
     clearMeal,
     saveDraft,
   } = useMealContext();
-  const { user } = useAuthContext();
+  const { uid } = useAuthContext();
   const [showModal, setShowModal] = useState(false);
 
   const ingredients = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
 
   useEffect(() => {
-    if (user?.uid) setLastScreen(user.uid, "ReviewIngredients");
-  }, [setLastScreen, user?.uid]);
+    if (uid) setLastScreen(uid, "ReviewIngredients");
+  }, [setLastScreen, uid]);
 
   const handleAddPhoto = () => {
     navigation.replace("MealCamera", { skipDetection: true });
@@ -41,12 +42,12 @@ export default function ReviewIngredientsScreen() {
 
   const handleRemoveIngredient = (idx: number) => {
     removeIngredient(idx);
-    if (user?.uid) saveDraft(user.uid);
+    if (uid) saveDraft(uid);
   };
 
   const handleSaveIngredient = (idx: number, updated: any) => {
     updateIngredient(idx, updated);
-    if (user?.uid) saveDraft(user.uid);
+    if (uid) saveDraft(uid);
   };
 
   const handleContinue = () => {
@@ -54,13 +55,13 @@ export default function ReviewIngredientsScreen() {
   };
 
   const handleStartOver = () => {
-    if (user?.uid) clearMeal(user.uid);
+    if (uid) clearMeal(uid);
     navigation.replace("MealAddMethod");
   };
 
   useEffect(() => {
-    if (user?.uid) saveDraft(user.uid);
-  }, [ingredients, image, saveDraft, user?.uid]);
+    if (uid) saveDraft(uid);
+  }, [ingredients, image, saveDraft, uid]);
 
   return (
     <Layout showNavigation={false}>
@@ -135,9 +136,7 @@ export default function ReviewIngredientsScreen() {
 const IMAGE_SIZE = 220;
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-  },
+  wrapper: { flex: 1 },
   imageWrapper: {
     marginBottom: 22,
     width: "100%",

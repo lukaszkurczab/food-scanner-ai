@@ -1,7 +1,8 @@
+// src/feature/Meals/screens/MealAddMethodScreen.tsx
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useTheme } from "@/theme";
+import { useTheme } from "@/theme/useTheme";
 import { RootStackParamList } from "@/navigation/navigate";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -46,21 +47,21 @@ const MealAddMethodScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation<MealAddMethodNavigationProp>();
   const { t } = useTranslation("meals");
-  const { user } = useAuthContext();
+  const { uid } = useAuthContext();
 
   const [showModal, setShowModal] = useState(false);
   const [draftExists, setDraftExists] = useState(false);
   const [lastScreen, setLastScreen] = useState<string | null>(null);
 
   const checkDraft = useCallback(async () => {
-    if (!user?.uid) return;
-    const draft = await AsyncStorage.getItem(getDraftKey(user.uid));
-    const lastScreenStored = await AsyncStorage.getItem(getScreenKey(user.uid));
+    if (!uid) return;
+    const draft = await AsyncStorage.getItem(getDraftKey(uid));
+    const lastScreenStored = await AsyncStorage.getItem(getScreenKey(uid));
     if (draft && lastScreenStored) {
       setDraftExists(true);
       setLastScreen(lastScreenStored);
     }
-  }, [user?.uid]);
+  }, [uid]);
 
   useEffect(() => {
     checkDraft();
@@ -82,9 +83,9 @@ const MealAddMethodScreen = () => {
   };
 
   const handleDiscard = async () => {
-    if (!user?.uid) return;
-    await AsyncStorage.removeItem(getDraftKey(user.uid));
-    await AsyncStorage.removeItem(getScreenKey(user.uid));
+    if (!uid) return;
+    await AsyncStorage.removeItem(getDraftKey(uid));
+    await AsyncStorage.removeItem(getScreenKey(uid));
     setShowModal(false);
     setDraftExists(false);
     setLastScreen(null);

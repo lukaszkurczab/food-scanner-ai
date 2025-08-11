@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UserData } from "@/types";
-import * as FileSystem from "expo-file-system";
 import { savePhotoLocally } from "@utils/savePhotoLocally";
 import {
   getUserLocal,
@@ -72,8 +71,11 @@ export function useUser(uid: string) {
   const setAvatar = useCallback(
     async (photoUri: string) => {
       if (!uid) return;
-      const localPath = FileSystem.documentDirectory + `avatar_${uid}.jpg`;
-      await savePhotoLocally({ photoUri, path: localPath });
+      const localPath = await savePhotoLocally({
+        userUid: uid,
+        fileId: "avatar",
+        photoUri,
+      });
       await updateUserProfile({
         avatarLocalPath: localPath,
         avatarlastSyncedAt: new Date().toISOString(),
@@ -154,8 +156,8 @@ export function useUser(uid: string) {
     [uid, updateUserProfile]
   );
 
-  const exportUserData = useCallback(async () => {
-    if (!uid) return null;
+  const exportUserData = useCallback(async (): Promise<string | void> => {
+    if (!uid) return;
     return await exportUserDataRepo(uid);
   }, [uid]);
 
