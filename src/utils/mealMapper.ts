@@ -1,4 +1,4 @@
-import type { Meal } from "@/src/types";
+import type { Meal } from "@/types";
 
 export function mapRawToMeal(raw: any): Meal {
   return {

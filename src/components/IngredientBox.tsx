@@ -9,9 +9,9 @@ import {
   Keyboard,
   Modal,
 } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
-import type { Ingredient } from "@/src/types";
+import type { Ingredient } from "@/types";
 import { MacroChip } from "./MacroChip";
 import { useTranslation } from "react-i18next";
 

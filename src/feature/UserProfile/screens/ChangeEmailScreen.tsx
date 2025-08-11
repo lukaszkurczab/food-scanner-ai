@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
-import { useUserContext } from "@/src/context/UserContext";
+import { useTheme } from "@/theme/useTheme";
+import { useUserContext } from "@contexts/UserContext";
 import {
   Layout,
   PrimaryButton,
   SecondaryButton,
   TextInput,
   ErrorBox,
-} from "@/src/components";
+} from "@/components";
 
 function mapFirebaseErrorToKey(code: string): string {
   switch (code) {

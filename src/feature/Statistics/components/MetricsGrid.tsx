@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Pressable, Text, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 
 export type MetricKey = "kcal" | "protein" | "carbs" | "fat";

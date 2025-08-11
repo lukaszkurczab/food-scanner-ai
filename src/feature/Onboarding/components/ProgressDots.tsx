@@ -1,6 +1,6 @@
 import React from "react";
 import { View, ViewStyle } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 
 type Props = {
   step: number;

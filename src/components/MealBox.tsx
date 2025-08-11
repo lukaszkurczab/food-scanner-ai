@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { TextInput, Dropdown, PieChart } from "@/src/components";
-import type { MealType, Nutrients } from "@/src/types/meal";
+import { useTheme } from "@/theme/useTheme";
+import { TextInput, Dropdown, PieChart } from "@/components";
+import type { MealType, Nutrients } from "@/types/meal";
 import { MacroChip } from "./MacroChip";
 import { useTranslation } from "react-i18next";
 

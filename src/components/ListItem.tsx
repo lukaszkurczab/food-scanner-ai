@@ -7,7 +7,7 @@ import {
   ViewStyle,
   StyleProp,
 } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 
 type ListItemProps = {

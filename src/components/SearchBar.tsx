@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { View, TextInput, StyleSheet, Pressable, Platform } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 
 type Props = {

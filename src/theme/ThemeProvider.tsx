@@ -10,7 +10,7 @@ import { lightTheme, darkTheme } from "./themes";
 import { spacing } from "./spacing";
 import { rounded } from "./rounded";
 import { typography } from "./typography";
-import { useUserContext } from "@/src/context/UserContext";
+import { useUserContext } from "@contexts/UserContext";
 
 type ThemeMode = "light" | "dark";
 type ThemeType = typeof lightTheme & {

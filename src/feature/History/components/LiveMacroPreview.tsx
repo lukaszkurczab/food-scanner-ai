@@ -1,9 +1,9 @@
 import React, { useMemo } from "react";
 import { View } from "react-native";
-import { MacroChip } from "@/src/components/MacroChip";
-import { useTheme } from "@/src/theme/useTheme";
-import type { Meal, Nutrients } from "@/src/types/meal";
-import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
+import { MacroChip } from "@/components/MacroChip";
+import { useTheme } from "@/theme/useTheme";
+import type { Meal, Nutrients } from "@/types/meal";
+import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 
 export const LiveMacroPreview: React.FC<{ meal: Meal }> = ({ meal }) => {
   const theme = useTheme();

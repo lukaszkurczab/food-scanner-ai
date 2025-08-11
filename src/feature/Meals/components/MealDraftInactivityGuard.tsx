@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
-import { useMealContext } from "@/src/context/MealContext";
-import { useInactivity } from "@/src/context/InactivityContext";
+import { useMealContext } from "@contexts/MealDraftContext";
+import { useInactivity } from "@/feature/Meals/context/InactivityContext";
 import { useNavigation } from "@react-navigation/native";
-import { Modal } from "@/src/components/";
-import { useAuthContext } from "@/src/context/AuthContext";
+import { Modal } from "@/components/";
+import { useAuthContext } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 
 export const MealDraftInactivityGuard = ({

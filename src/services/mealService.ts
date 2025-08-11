@@ -8,7 +8,7 @@ import {
   getDocs,
 } from "@react-native-firebase/firestore";
 import storage from "@react-native-firebase/storage";
-import type { Meal } from "@/src/types";
+import type { Meal } from "@/types";
 
 const USERS_COLLECTION = "users";
 const MEALS_SUBCOLLECTION = "meals";

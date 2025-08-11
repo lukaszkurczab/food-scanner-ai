@@ -2,13 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, Text } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
-import {
-  PrimaryButton,
-  ErrorBox,
-  Layout,
-  SecondaryButton,
-} from "@/src/components";
+import { useTheme } from "@/theme/useTheme";
+import { PrimaryButton, ErrorBox, Layout, SecondaryButton } from "@/components";
 import { useRoute } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getAuth, signOut } from "@react-native-firebase/auth";

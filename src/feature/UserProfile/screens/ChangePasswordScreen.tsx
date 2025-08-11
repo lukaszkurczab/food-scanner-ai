@@ -2,16 +2,16 @@ import React, { useState } from "react";
 import { View, Text, Keyboard, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import {
   TextInput,
   PrimaryButton,
   SecondaryButton,
   ErrorBox,
   Layout,
-} from "@/src/components";
+} from "@/components";
 import { Feather } from "@expo/vector-icons";
-import { useUserContext } from "@/src/context/UserContext";
+import { useUserContext } from "@contexts/UserContext";
 
 export default function ChangePasswordScreen({ navigation }: any) {
   const { t } = useTranslation(["profile", "common"]);

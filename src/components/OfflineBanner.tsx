@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 
 export const OfflineBanner = () => {
   const theme = useTheme();

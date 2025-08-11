@@ -1,6 +1,6 @@
 import React from "react";
 import { View, ScrollView, ViewStyle } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 
 type Props = {
   children: React.ReactNode;

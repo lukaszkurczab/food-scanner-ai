@@ -1,5 +1,5 @@
 import { View, TextInput, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { useState } from "react";
 
 type Props = {

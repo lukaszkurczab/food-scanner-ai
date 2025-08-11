@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Dimensions } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
-import { Layout, PrimaryButton } from "@/src/components";
-import { ScrollableBox } from "@/src/components/ScrollableBox";
-import { parseMarkdownToReactNative } from "@/src/utils/parseMarkdownToReactNative";
+import { useTheme } from "@/theme/useTheme";
+import { Layout, PrimaryButton } from "@/components";
+import { ScrollableBox } from "@/components/ScrollableBox";
+import { parseMarkdownToReactNative } from "@/utils/parseMarkdownToReactNative";
 
 export default function PrivacyScreen({ navigation }: any) {
   const { t } = useTranslation("privacy");

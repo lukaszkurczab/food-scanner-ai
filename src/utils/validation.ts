@@ -1,4 +1,4 @@
-import { Meal } from "@/src/types/index";
+import { Meal } from "@/types/index";
 
 export function validateEmail(email: string): boolean {
   if (!email) return false;

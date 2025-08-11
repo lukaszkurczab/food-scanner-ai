@@ -13,7 +13,7 @@ import {
   limit,
   startAfter,
 } from "@react-native-firebase/firestore";
-import type { ChatMessage } from "@/src/types";
+import type { ChatMessage } from "@/types";
 
 function getDb() {
   const app = getApp();

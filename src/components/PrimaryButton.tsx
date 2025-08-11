@@ -8,7 +8,7 @@ import {
   StyleSheet,
   PressableProps,
 } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 
 type PrimaryButtonProps = {
   label?: string;

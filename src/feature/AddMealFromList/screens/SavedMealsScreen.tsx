@@ -1,8 +1,8 @@
 import { StyleSheet, ScrollView, Text, TouchableOpacity } from "react-native";
-import { useUserContext } from "@/src/context/UserContext";
-import { useTheme } from "@/src/theme/useTheme";
-import { Tile } from "@/src/components";
-import { MealHistory } from "@/src/types";
+import { useUserContext } from "@contexts/UserContext";
+import { useTheme } from "@/theme/useTheme";
+import { Tile } from "@/components";
+import { MealHistory } from "@/types";
 import { useNavigation } from "@react-navigation/native";
 
 const SavedMealsScreen = () => {

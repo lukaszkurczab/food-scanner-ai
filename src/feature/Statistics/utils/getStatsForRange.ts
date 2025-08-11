@@ -1,6 +1,6 @@
-import type { Meal } from "@/src/types";
-import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
-import { getLastNDaysAggregated } from "@/src/utils/getLastNDaysAggregated";
+import type { Meal } from "@/types";
+import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
+import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 
 export type StatsRange = { start: Date; end: Date };
 export type StatsResult = {

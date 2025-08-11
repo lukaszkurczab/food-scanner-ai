@@ -1,14 +1,14 @@
 import React from "react";
 import { View, StyleSheet, Text, Image } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import {
   PrimaryButton,
   SecondaryButton,
   ErrorButton,
   Layout,
-} from "@/src/components";
+} from "@/components";
 
 const MAX_ATTEMPTS = 3;
 

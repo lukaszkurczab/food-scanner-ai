@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getFirebaseAuth, getFirebaseFirestore } from "@/src/FirebaseConfig";
+import { getFirebaseAuth, getFirebaseFirestore } from "@/FirebaseConfig";
 import { doc, setDoc, collection } from "@react-native-firebase/firestore";
 import { isUsernameAvailable } from "@services/userService";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";

@@ -1,18 +1,17 @@
-// src/hooks/useChatHistory.ts
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
-import { database } from "@/src/db/database";
+import { database } from "@/db/database";
 import { Q } from "@nozbe/watermelondb";
-import ChatMessageModel from "@/src/db/models/ChatMessage";
-import type { ChatMessage, ChatsyncState } from "@/src/types";
-import type { Meal, FormData } from "@/src/types";
+import ChatMessageModel from "@/db/models/ChatMessage";
+import type { ChatMessage, ChatsyncState } from "@/types";
+import type { Meal, FormData } from "@/types";
 import {
   fetchChatMessagesPageFromFirestore,
   addChatMessageToFirestore,
   upsertChatMessageInFirestore,
   markChatMessageSyncedInFirestore,
 } from "@services/chatService";
-import { askDietAI, type Message } from "@/src/services/askDietAI";
+import { askDietAI, type Message } from "@/services/askDietAI";
 import { v4 as uuidv4 } from "uuid";
 
 type Options = {

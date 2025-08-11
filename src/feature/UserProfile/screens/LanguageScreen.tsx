@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, FlatList } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { Layout, TextInput } from "@/src/components";
+import { useTheme } from "@/theme/useTheme";
+import { Layout, TextInput } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import i18n from "@/src/i18n";
+import i18n from "@/i18n";
 
 type Language = {
   code: string;

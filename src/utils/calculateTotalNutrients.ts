@@ -1,4 +1,4 @@
-import type { Meal, Nutrients } from "@/src/types";
+import type { Meal, Nutrients } from "@/types";
 
 export function calculateTotalNutrients(meals: Meal[]): Nutrients {
   return meals.reduce<Nutrients>(

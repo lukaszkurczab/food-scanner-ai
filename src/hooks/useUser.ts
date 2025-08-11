@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
-import { database } from "@/src/db/database";
+import { database } from "@/db/database";
 import { Q } from "@nozbe/watermelondb";
-import type { UserData } from "@/src/types";
+import type { UserData } from "@/types";
 import {
   fetchUserFromFirestore,
   updateUserInFirestore,
@@ -15,13 +15,13 @@ import {
   exportUserData,
   updateUserLanguageInFirestore,
 } from "@services/userService";
-import { pickLatest } from "@/src/utils/syncUtils";
+import { pickLatest } from "@/utils/syncUtils";
 import {
   getAuth,
   deleteUser as deleteAuthUser,
 } from "@react-native-firebase/auth";
-import { omitLocalUserKeys } from "@/src/utils/omitLocalUserKeys";
-import { savePhotoLocally } from "@/src/utils/savePhotoLocally";
+import { omitLocalUserKeys } from "@/utils/omitLocalUserKeys";
+import { savePhotoLocally } from "@/utils/savePhotoLocally";
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 

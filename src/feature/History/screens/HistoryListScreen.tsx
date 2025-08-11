@@ -1,16 +1,16 @@
 import React, { useMemo, useState } from "react";
 import { View, FlatList, RefreshControl } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { useMeals } from "@/src/hooks/useMeals";
+import { useTheme } from "@/theme/useTheme";
+import { useMeals } from "@hooks/useMeals";
 import { FilterBadgeButton } from "../components/FilterBadgeButton";
 import { DateHeaderWithCalendarButton } from "../components/DateHeaderWithCalendarButton";
 import { MealListItem } from "../components/MealListItem";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
-import { OfflineBanner } from "@/src/components/OfflineBanner";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { useUserContext } from "@/src/context/UserContext";
-import { Layout } from "@/src/components";
+import { useUserContext } from "@contexts/UserContext";
+import { Layout } from "@/components";
 
 type HistoryListScreenProps = {
   navigation: any;

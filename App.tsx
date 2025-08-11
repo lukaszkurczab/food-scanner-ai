@@ -1,22 +1,23 @@
-import "./src/i18n";
-import "./src/FirebaseConfig";
+import "@/i18n";
+import "@/FirebaseConfig";
 import { useEffect } from "react";
-import { ThemeProvider } from "./src/theme/ThemeProvider";
-import AppNavigator from "./src/navigation/AppNavigator";
+import { ThemeProvider } from "@/theme/ThemeProvider";
+import AppNavigator from "@/navigation/AppNavigator";
 import { NavigationContainer } from "@react-navigation/native";
-import { navigationRef } from "./src/navigation/navigate";
-import { AuthProvider } from "./src/context/AuthContext";
-import { UserProvider } from "./src/context/UserContext";
-import { MealProvider } from "./src/context/MealContext";
-import { PremiumProvider } from "./src/context/PremiumContext";
+import { navigationRef } from "@/navigation/navigate";
+import { AuthProvider } from "@/context/AuthContext";
+import { UserProvider } from "@/context/UserContext";
+import { MealDraftProvider } from "@/context/MealDraftContext";
+import { MealsProvider } from "@/context/MealsContext";
+import { PremiumProvider } from "@/context/PremiumContext";
 import { useFonts } from "expo-font";
 import { View, ActivityIndicator } from "react-native";
-import { useTheme } from "./src/theme";
+import { useTheme } from "@/theme";
 import Purchases from "react-native-purchases";
 import { Platform } from "react-native";
-import { InactivityProvider } from "@/src/context/InactivityContext";
-import { database } from "@/src/db/database";
-import { MealDraftInactivityGuard } from "@/src/feature/Meals/components/MealDraftInactivityGuard";
+import { InactivityProvider } from "@/feature/Meals/context/InactivityContext";
+import { database } from "@/db/database";
+import { MealDraftInactivityGuard } from "@/feature/Meals/components/MealDraftInactivityGuard";
 
 export function initRevenueCat() {
   Purchases.configure({
@@ -68,13 +69,15 @@ export default function App() {
         <InactivityProvider>
           <PremiumProvider>
             <UserProvider>
-              <MealProvider>
-                <MealDraftInactivityGuard>
-                  <ThemeProvider>
-                    <AppNavigator />
-                  </ThemeProvider>
-                </MealDraftInactivityGuard>
-              </MealProvider>
+              <MealsProvider>
+                <MealDraftProvider>
+                  <MealDraftInactivityGuard>
+                    <ThemeProvider>
+                      <AppNavigator />
+                    </ThemeProvider>
+                  </MealDraftInactivityGuard>
+                </MealDraftProvider>
+              </MealsProvider>
             </UserProvider>
           </PremiumProvider>
         </InactivityProvider>

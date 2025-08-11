@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable, Alert } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { Layout, LongTextInput } from "@/src/components";
+import { useTheme } from "@/theme/useTheme";
+import { Layout, LongTextInput } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useTranslation } from "react-i18next";
-import { PrimaryButton } from "@/src/components/PrimaryButton";
+import { PrimaryButton } from "@/components/PrimaryButton";
 import NetInfo from "@react-native-community/netinfo";
 import * as Device from "expo-device";
 import { sendFeedback } from "@services/userService";
-import { useAuthContext } from "@/src/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 export default function SendFeedbackScreen({ navigation }: any) {
   const theme = useTheme();

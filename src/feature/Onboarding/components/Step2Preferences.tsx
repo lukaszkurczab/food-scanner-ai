@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo } from "react";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import {
   PrimaryButton,
   SecondaryButton,
   Dropdown,
   Slider,
   CheckboxDropdown,
-} from "@/src/components";
-import { ActivityLevel, FormData, Preference } from "@/src/types/onboarding";
+} from "@/components";
+import { ActivityLevel, FormData, Preference } from "@/types/onboarding";
 
 const PREFERENCE_OPTIONS: { label: string; value: Preference }[] = [
   { label: "preferences.lowCarb", value: "lowCarb" },

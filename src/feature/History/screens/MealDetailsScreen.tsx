@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Text } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { useRoute } from "@react-navigation/native";
 import {
@@ -10,13 +10,13 @@ import {
   IngredientBox,
   MealBox,
   ErrorButton,
-} from "@/src/components";
+} from "@/components";
 import { FallbackImage } from "../components/FallbackImage";
-import { Modal } from "@/src/components/Modal";
-import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
-import type { Meal, MealType, Ingredient } from "@/src/types/meal";
-import { useMeals } from "@/src/hooks/useMeals";
-import { useAuthContext } from "@/src/context/AuthContext";
+import { Modal } from "@/components/Modal";
+import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
+import type { Meal, MealType, Ingredient } from "@/types/meal";
+import { useMeals } from "@hooks/useMeals";
+import { useAuthContext } from "@/context/AuthContext";
 
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
 

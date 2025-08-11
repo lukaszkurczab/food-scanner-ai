@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { LineGraph } from "@/src/components";
+import { useTheme } from "@/theme/useTheme";
+import { LineGraph } from "@/components";
 
 type WeeklyProgressGraphProps = {
   data: number[];

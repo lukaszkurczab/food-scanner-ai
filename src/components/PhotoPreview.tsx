@@ -7,7 +7,7 @@ import {
   Image as RNImage,
   ActivityIndicator,
 } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import Animated, {
   useSharedValue,

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, LayoutChangeEvent } from "react-native";
 import { Svg, Path, Circle } from "react-native-svg";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 
 type PieSlice = { value: number; color: string; label?: string };

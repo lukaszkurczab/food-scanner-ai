@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { PrimaryButton } from "@/src/components/PrimaryButton";
+import { useTheme } from "@/theme/useTheme";
+import { PrimaryButton } from "@/components/PrimaryButton";
 
 type AddMealPlaceholderProps = {
   handleAddMeal: () => {};

@@ -10,15 +10,15 @@ import {
   SecondaryButton,
   ErrorButton,
   Modal,
-} from "@/src/components";
-import { useTheme } from "@/src/theme/useTheme";
-import { useMealContext } from "@/src/context/MealContext";
-import { useUserContext } from "@/src/context/UserContext";
-import { useMeals } from "@/src/hooks/useMeals";
-import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
-import { useAuthContext } from "@/src/context/AuthContext";
-import type { MealType } from "@/src/types/meal";
-import { autoMealName } from "@/src/utils/autoMealName";
+} from "@/components";
+import { useTheme } from "@/theme/useTheme";
+import { useMealContext } from "@contexts/MealDraftContext";
+import { useUserContext } from "@contexts/UserContext";
+import { useMeals } from "@hooks/useMeals";
+import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
+import { useAuthContext } from "@/context/AuthContext";
+import type { MealType } from "@/types/meal";
+import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
 
 type ResultScreenProps = {

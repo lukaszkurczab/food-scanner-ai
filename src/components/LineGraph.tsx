@@ -13,7 +13,7 @@ import {
   Rect,
   ClipPath,
 } from "react-native-svg";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 
 type LineGraphProps = {
   data: number[];

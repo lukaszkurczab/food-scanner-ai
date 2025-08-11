@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import ProgressDots from "@/src/feature/Onboarding/components/ProgressDots";
-import { Modal, Layout } from "@/src/components";
-import { FormData } from "@/src/types/onboarding";
-import Step1BasicData from "@/src/feature/Onboarding/components/Step1BasicData";
-import Step2Preferences from "@/src/feature/Onboarding/components/Step2Preferences";
-import Step3Health from "@/src/feature/Onboarding/components/Step3Health";
-import Step4AIAssistantPreferences from "@/src/feature/Onboarding/components/Step4AIAssistantPreferences";
-import Step5Summary from "@/src/feature/Onboarding/components/Step5Summary";
-import { useUserContext } from "@/src/context/UserContext";
+import ProgressDots from "@/feature/Onboarding/components/ProgressDots";
+import { Modal, Layout } from "@/components";
+import { FormData } from "@/types/onboarding";
+import Step1BasicData from "@/feature/Onboarding/components/Step1BasicData";
+import Step2Preferences from "@/feature/Onboarding/components/Step2Preferences";
+import Step3Health from "@/feature/Onboarding/components/Step3Health";
+import Step4AIAssistantPreferences from "@/feature/Onboarding/components/Step4AIAssistantPreferences";
+import Step5Summary from "@/feature/Onboarding/components/Step5Summary";
+import { useUserContext } from "@contexts/UserContext";
 import { calculateCalorieTarget } from "../utils/calculateCalorieTarget";
 
 const STEPS = 5;

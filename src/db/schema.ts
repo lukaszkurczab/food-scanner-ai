@@ -66,16 +66,6 @@ export const schema = appSchema({
     }),
 
     tableSchema({
-      name: "settings",
-      columns: [
-        { name: "userUid", type: "string" },
-        { name: "key", type: "string" },
-        { name: "value", type: "string" },
-        { name: "lastUpdated", type: "string" },
-      ],
-    }),
-
-    tableSchema({
       name: "chatMessages",
       columns: [
         { name: "userUid", type: "string" },

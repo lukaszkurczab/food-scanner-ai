@@ -8,12 +8,12 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
-import { Layout } from "@/src/components";
+import { useTheme } from "@/theme/useTheme";
+import { Layout } from "@/components";
 import ListItem from "../components/ListItem";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useUserContext } from "@/src/context/UserContext";
+import { useUserContext } from "@contexts/UserContext";
 
 export default function ChangeUserDataScreen({ navigation }: any) {
   const { t } = useTranslation("profile");

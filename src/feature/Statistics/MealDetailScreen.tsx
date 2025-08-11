@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, FlatList } from "react-native";
 import { RouteProp, useRoute } from "@react-navigation/native";
-import { RootStackParamList } from "@/src/navigation/navigate";
-import { NutritionChart } from "@/src/components/index";
+import { RootStackParamList } from "@/navigation/navigate";
+import { NutritionChart } from "@/components/index";
 import { format } from "date-fns";
 
 type MealDetailRouteProp = RouteProp<RootStackParamList, "MealDetail">;

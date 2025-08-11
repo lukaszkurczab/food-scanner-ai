@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Pressable, StyleSheet, Platform } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
-import { navigate, RootStackParamList } from "@/src/navigation/navigate";
+import { navigate, RootStackParamList } from "@/navigation/navigate";
 import UserIcon from "./UserIcon";
-import { useUserContext } from "@/src/context/UserContext";
+import { useUserContext } from "@contexts/UserContext";
 import { useTranslation } from "react-i18next";
 
 type tab = {

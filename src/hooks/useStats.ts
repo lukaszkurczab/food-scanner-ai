@@ -1,10 +1,10 @@
 import { useMemo } from "react";
-import type { Meal } from "@/src/types";
+import type { Meal } from "@/types";
 import {
   getStatsForRange,
   StatsRange,
   StatsResult,
-} from "@/src/feature/Statistics/utils/getStatsForRange";
+} from "@/feature/Statistics/utils/getStatsForRange";
 
 export function useStats(
   meals: Meal[],
