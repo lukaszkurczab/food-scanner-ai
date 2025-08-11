@@ -1,4 +1,4 @@
-import type { Meal } from "@/types";
+import type { Meal } from "@/types/meal";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 
@@ -29,6 +29,7 @@ export function getStatsForRange(
     const t = typeof raw === "number" ? raw : Date.parse(raw);
     return !Number.isNaN(t) && t >= +range.start && t < +range.end;
   });
+
   const totals = calculateTotalNutrients(mealsInRange);
   const averages = {
     kcal: Math.round((totals.kcal || 0) / days),

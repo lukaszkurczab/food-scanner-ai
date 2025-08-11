@@ -166,7 +166,7 @@ export async function pushPending(userUid: string): Promise<void> {
       deleted: !!row.deleted,
     };
 
-    let cloudId: string; // <<< kluczowe zawężenie
+    let cloudId: string;
 
     if (!data.cloudId) {
       const ref = await addDoc(col(userUid), {
@@ -179,9 +179,9 @@ export async function pushPending(userUid: string): Promise<void> {
         syncState: "pending",
         deleted: !!data.deleted,
       });
-      cloudId = ref.id; // teraz na pewno string
+      cloudId = ref.id;
     } else {
-      cloudId = data.cloudId; // zawężone do string
+      cloudId = data.cloudId;
       await setDoc(
         doc(col(userUid), cloudId),
         {
@@ -264,7 +264,6 @@ export async function pushDeletes(userUid: string): Promise<void> {
   }
 }
 
-// --- HELPER: dodaj wiadomość (tworzy document, zwraca id) ---
 export async function addChatMessageToFirestore(
   message: ChatMessage
 ): Promise<string> {
@@ -284,7 +283,6 @@ export async function addChatMessageToFirestore(
   return ref.id;
 }
 
-// --- HELPER: upsert po cloudId (merge) ---
 export async function upsertChatMessageInFirestore(
   cloudId: string,
   message: ChatMessage

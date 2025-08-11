@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { PieChart } from "@/components/PieChart";
+import { PieChart } from "@/components";
 import { useTranslation } from "react-i18next";
 
 type Props = {
