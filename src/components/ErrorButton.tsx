@@ -52,7 +52,7 @@ export const ErrorButton: React.FC<ErrorButtonProps> = ({
       ]}
       onPress={onPress}
       disabled={isDisabled}
-      android_ripple={!isDisabled ? { color: "#ffcccc" } : undefined}
+      android_ripple={!isDisabled ? { color: theme.overlay } : undefined}
       accessibilityRole="button"
       {...rest}
     >

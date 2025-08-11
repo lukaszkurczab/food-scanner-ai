@@ -39,7 +39,7 @@ import IngredientsNotRecognizedScreen from "@/feature/Meals/screens/IngredientsN
 const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
-  const { user, loading } = useAuthContext();
+  const { isAuthenticated, loading } = useAuthContext();
 
   if (loading) {
     return (
@@ -51,7 +51,7 @@ const AppNavigator = () => {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {user ? (
+      {isAuthenticated ? (
         <>
           <Stack.Screen name="Loading" component={LoadingScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />

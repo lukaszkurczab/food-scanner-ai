@@ -80,9 +80,7 @@ export const InputModal: React.FC<Props> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <View
-          style={[styles.overlay, { backgroundColor: "rgba(0,0,0,0.6)" }]}
-        />
+        <View style={[styles.overlay, { backgroundColor: theme.overlay }]} />
       </TouchableWithoutFeedback>
 
       <KeyboardAvoidingView

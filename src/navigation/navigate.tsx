@@ -1,24 +1,16 @@
 import { createNavigationContainerRef } from "@react-navigation/native";
-import { Meal } from "@/types";
+import type { Meal } from "@/types";
 
 export type RootStackParamList = {
   Home: undefined;
   Login: undefined;
-  CheckMailbox: {
-    email: string;
-  };
-  ChangeEmailCheckMailbox: {
-    email: string;
-  };
+  CheckMailbox: { email: string };
+  ChangeEmailCheckMailbox: { email: string };
   Onboarding: undefined;
   Profile: undefined;
   ResetPassword: undefined;
   Terms: undefined;
-  IngredientsNotRecognized: {
-    image: string;
-    id: string;
-    attempt?: number;
-  };
+  IngredientsNotRecognized: { image: string; id: string; attempt?: number };
   AddMealManual: { id?: string; image?: string } | undefined;
   MealCamera:
     | { id?: string; attempt?: number; skipDetection?: boolean }
@@ -52,23 +44,20 @@ export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 type ScreenNames = keyof RootStackParamList;
 
-export function navigate(
-  name: ScreenNames,
-  params?: RootStackParamList[ScreenNames]
+export function navigate<Name extends ScreenNames>(
+  name: Name,
+  params?: RootStackParamList[Name]
 ) {
   if (navigationRef.isReady()) {
     navigationRef.navigate(name as any, params as any);
   }
 }
 
-export function resetNavigation(
-  name: ScreenNames,
-  params?: RootStackParamList[ScreenNames]
+export function resetNavigation<Name extends ScreenNames>(
+  name: Name,
+  params?: RootStackParamList[Name]
 ) {
   if (navigationRef.isReady()) {
-    navigationRef.reset({
-      index: 0,
-      routes: [{ name, params }],
-    });
+    navigationRef.reset({ index: 0, routes: [{ name, params }] });
   }
 }

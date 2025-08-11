@@ -2,35 +2,21 @@ import React from "react";
 import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
-import { navigate, RootStackParamList } from "@/navigation/navigate";
-import UserIcon from "./UserIcon";
-import { useUserContext } from "@contexts/UserContext";
-import { useTranslation } from "react-i18next";
 
-type tab = {
+type TabItem = {
   key: string;
   icon: string;
-  target: keyof RootStackParamList;
+  onPress: () => void;
   isFab?: boolean;
 };
 
-const TABS: tab[] = [
-  { key: "Home", icon: "home-filled", target: "Home" },
-  { key: "Stats", icon: "bar-chart", target: "Statistics" },
-  { key: "Add", icon: "add", target: "MealAddMethod", isFab: true },
-  { key: "History", icon: "history", target: "HistoryList" },
-  { key: "Profile", icon: "person", target: "Profile" },
-];
+type Props = {
+  tabs: TabItem[];
+  renderProfileIcon?: React.ReactNode;
+};
 
-export const BottomTabBar = () => {
+export const BottomTabBar: React.FC<Props> = ({ tabs, renderProfileIcon }) => {
   const theme = useTheme();
-  const { t } = useTranslation("profile");
-
-  const { userData } = useUserContext();
-
-  const handlePress = (tab: tab) => {
-    navigate(tab.target);
-  };
 
   return (
     <View
@@ -53,12 +39,12 @@ export const BottomTabBar = () => {
           },
         ]}
       >
-        {TABS.map((tab, i) => {
+        {tabs.map((tab) => {
           if (tab.isFab) {
             return (
               <Pressable
                 key={tab.key}
-                onPress={() => handlePress(tab)}
+                onPress={tab.onPress}
                 style={[
                   styles.fab,
                   {
@@ -82,10 +68,12 @@ export const BottomTabBar = () => {
             );
           }
 
+          const isProfile = tab.key.toLowerCase() === "profile";
+
           return (
             <Pressable
               key={tab.key}
-              onPress={() => handlePress(tab)}
+              onPress={tab.onPress}
               style={[
                 styles.tab,
                 {
@@ -93,22 +81,8 @@ export const BottomTabBar = () => {
                 },
               ]}
             >
-              {tab.key === "Profile" ? (
-                <>
-                  {userData && userData.avatarLocalPath ? (
-                    <UserIcon
-                      size={32}
-                      accessibilityLabel={t("profilePictureDefault")}
-                    />
-                  ) : (
-                    <MaterialIcons
-                      name={tab.icon as any}
-                      size={32}
-                      color={theme.text}
-                      style={{ alignSelf: "center" }}
-                    />
-                  )}
-                </>
+              {isProfile && renderProfileIcon ? (
+                renderProfileIcon
               ) : (
                 <MaterialIcons
                   name={tab.icon as any}

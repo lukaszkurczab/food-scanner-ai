@@ -13,6 +13,7 @@ import en_profile from "./locales/en/profile.json";
 import en_meals from "./locales/en/meals.json";
 import en_chat from "./locales/en/chat.json";
 import en_statistics from "./locales/en/statistics.json";
+
 import pl_common from "./locales/pl/common.json";
 import pl_login from "./locales/pl/login.json";
 import pl_terms from "./locales/pl/terms.json";
@@ -22,6 +23,7 @@ import pl_onboarding from "./locales/pl/onboarding.json";
 import pl_profile from "./locales/pl/profile.json";
 import pl_meals from "./locales/pl/meals.json";
 import pl_chat from "./locales/pl/chat.json";
+import pl_statistics from "./locales/pl/statistics.json";
 
 const STORAGE_KEY = "APP_LANGUAGE";
 
@@ -29,17 +31,19 @@ const languageDetector = {
   type: "languageDetector",
   async: true,
   detect: async (cb: (lang: string) => void) => {
-    const savedLang = await AsyncStorage.getItem(STORAGE_KEY);
-    if (savedLang) {
-      cb(savedLang);
-      return;
-    }
-    const locales = Localization.getLocales();
-    cb(locales[0]?.languageCode || "en");
+    try {
+      const saved = await AsyncStorage.getItem(STORAGE_KEY);
+      if (saved) return cb(saved);
+    } catch {}
+    const locales = Localization.getLocales?.() || [];
+    const code = locales[0]?.languageCode?.toLowerCase() || "en";
+    cb(code === "pl" ? "pl" : "en");
   },
   init: () => {},
   cacheUserLanguage: async (lang: string) => {
-    await AsyncStorage.setItem(STORAGE_KEY, lang);
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, lang);
+    } catch {}
   },
 };
 
@@ -48,6 +52,7 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: "en",
+    supportedLngs: ["en", "pl"],
     ns: [
       "common",
       "login",
@@ -83,10 +88,13 @@ i18n
         onboarding: pl_onboarding,
         profile: pl_profile,
         meals: pl_meals,
+        statistics: pl_statistics,
         chat: pl_chat,
       },
     },
     interpolation: { escapeValue: false },
+    returnNull: false,
+    cleanCode: true,
   });
 
 export default i18n;

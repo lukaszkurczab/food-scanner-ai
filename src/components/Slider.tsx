@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, LayoutChangeEvent } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Pressable, StyleSheet, LayoutChangeEvent } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -11,6 +11,7 @@ import {
   PanGestureHandler,
   PanGestureHandlerGestureEvent,
 } from "react-native-gesture-handler";
+import { useTheme } from "@/theme/useTheme";
 
 type SliderProps = {
   value: number;
@@ -31,6 +32,7 @@ export function Slider({
   step = 1,
   disabled = false,
 }: SliderProps) {
+  const theme = useTheme();
   const [trackWidth, setTrackWidth] = useState(1);
   const trackWidthAnim = useSharedValue(1);
   const thumbX = useSharedValue(0);
@@ -94,12 +96,25 @@ export function Slider({
   return (
     <View style={styles.container}>
       <Pressable
-        style={styles.track}
+        style={[
+          styles.track,
+          {
+            backgroundColor: theme.border,
+          },
+        ]}
         onPress={handleTrackPress}
         onLayout={onTrackLayout}
         disabled={disabled}
       >
-        <Animated.View style={[styles.filled, fillStyle]} />
+        <Animated.View
+          style={[
+            styles.filled,
+            {
+              backgroundColor: theme.accent,
+            },
+            fillStyle,
+          ]}
+        />
         <View style={styles.trackOverlay}>
           <PanGestureHandler
             enabled={!disabled}
@@ -110,8 +125,9 @@ export function Slider({
                 styles.thumb,
                 thumbStyle,
                 {
-                  backgroundColor: disabled ? "#ccc" : "#fff",
-                  borderColor: disabled ? "#aaa" : "#4CAF50",
+                  backgroundColor: theme.card,
+                  borderColor: theme.accent,
+                  shadowColor: theme.shadow,
                 },
               ]}
               pointerEvents={disabled ? "none" : "auto"}
@@ -128,7 +144,6 @@ const styles = StyleSheet.create({
   track: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#eee",
     overflow: "visible",
     width: "100%",
     justifyContent: "center",
@@ -139,7 +154,6 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     left: 0,
     top: 0,
-    backgroundColor: "#4CAF50",
   },
   trackOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -154,7 +168,6 @@ const styles = StyleSheet.create({
     top: -9,
     borderWidth: 2,
     elevation: 2,
-    shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 2,
   },
