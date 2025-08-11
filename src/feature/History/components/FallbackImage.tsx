@@ -18,13 +18,14 @@ export const FallbackImage: React.FC<Props> = ({
 }) => {
   const theme = useTheme();
   const [error, setError] = useState(!uri);
+
   if (error) {
     return (
       <View
         style={[
           styles.fallback,
           {
-            width,
+            width: width as any,
             height,
             borderRadius: borderRadius ?? 16,
             backgroundColor: theme.card,
@@ -39,11 +40,12 @@ export const FallbackImage: React.FC<Props> = ({
     return (
       <MaterialIcons name="add-a-photo" size={44} color={theme.textSecondary} />
     );
+
   return (
     <Image
       source={{ uri: uri as string }}
       style={{
-        width,
+        width: width as any,
         height,
         borderRadius: borderRadius ?? 16,
         backgroundColor: theme.card,

@@ -49,6 +49,48 @@ export async function getMealsLocal(userUid: string): Promise<Meal[]> {
   }));
 }
 
+export async function getMealsPage(
+  userUid: string,
+  opts: { limit: number; before?: string | null }
+): Promise<{ items: Meal[]; nextBefore: string | null }> {
+  const { limit, before } = opts;
+  const mealsCollection = database.get<MealModel>("meals");
+
+  const clauses = [
+    Q.where("userUid", userUid),
+    Q.where("deleted", Q.notEq(true)),
+    Q.sortBy("timestamp", Q.desc),
+  ] as any[];
+
+  if (before) {
+    clauses.push(Q.where("timestamp", Q.lt(before)));
+  }
+
+  const records = await mealsCollection.query(...clauses).fetch();
+
+  const page = records.slice(0, limit).map((r) => ({
+    userUid: r.userUid,
+    mealId: r.mealId,
+    timestamp: r.timestamp,
+    type: r.type as Meal["type"],
+    name: r.name ?? null,
+    ingredients: r.ingredients as Meal["ingredients"],
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    syncState: r.syncState as Meal["syncState"],
+    source: r.source as Meal["source"],
+    photoUrl: r.photoUrl ?? null,
+    notes: r.notes ?? null,
+    tags: (r.tags ?? []) as string[],
+    deleted: r.deleted ?? false,
+    cloudId: r.cloudId,
+  }));
+
+  const nextBefore = page.length > 0 ? page[page.length - 1].timestamp : null;
+
+  return { items: page, nextBefore };
+}
+
 export async function upsertMealLocal(
   userUid: string,
   meal: Meal
@@ -96,7 +138,6 @@ export async function upsertMealLocal(
     }
   });
 
-  // spróbuj zsynchronizować, jeśli online
   onReconnect(() => syncMeals(userUid));
 }
 
@@ -120,8 +161,6 @@ export async function softDeleteMealLocal(
 
   onReconnect(() => syncMeals(userUid));
 }
-
-/** ========== CLOUD (Firestore/Storage) ========== */
 
 const USERS = "users";
 const MEALS = "meals";
@@ -150,14 +189,11 @@ async function uploadPhotoIfNeeded(
   return await getDownloadURL(r);
 }
 
-/** Pobranie z chmury (np. do pełnej synchronizacji) */
 export async function fetchMealsFromCloud(userUid: string): Promise<Meal[]> {
   const mealsCol = collection(db(), USERS, userUid, MEALS);
   const snap = await getDocs(mealsCol);
   return snap.docs.map((d: any) => ({ ...(d.data() as Meal), cloudId: d.id }));
 }
-
-/** ========== SYNC (local -> cloud i cloud -> local) ========== */
 
 function newer(localIso: string, remoteIso: string) {
   const l = Date.parse(localIso || "0");
@@ -165,14 +201,12 @@ function newer(localIso: string, remoteIso: string) {
   return l > r;
 }
 
-/** Główna synchronizacja posiłków dla danego usera */
 export async function syncMeals(userUid: string): Promise<void> {
   const net = await NetInfo.fetch();
   if (!net.isConnected) return;
 
   const mealsCol = database.get<MealModel>("meals");
 
-  // 1) WYŚLIJ PENDING/CONFLICT W GÓRĘ
   const dirty = await mealsCol
     .query(
       Q.where("userUid", userUid),
@@ -182,7 +216,6 @@ export async function syncMeals(userUid: string): Promise<void> {
 
   for (const rec of dirty) {
     await withRetry(async () => {
-      // składamy obiekt Meal z rekordu
       const m: Meal = {
         userUid: rec.userUid,
         mealId: rec.mealId,
@@ -201,7 +234,6 @@ export async function syncMeals(userUid: string): Promise<void> {
         cloudId: rec.cloudId,
       };
 
-      // upload zdjęcia jeśli lokalne
       const photoUrl = await uploadPhotoIfNeeded(userUid, m);
       if (photoUrl && photoUrl !== m.photoUrl) m.photoUrl = photoUrl;
 
@@ -229,7 +261,6 @@ export async function syncMeals(userUid: string): Promise<void> {
     });
   }
 
-  // 2) POBIERZ Z CHMURY I ZMERGUJ W DÓŁ
   const remote = await fetchMealsFromCloud(userUid);
   const localByMealId = new Map<string, MealModel>();
   (await mealsCol.query(Q.where("userUid", userUid)).fetch()).forEach((r) =>
@@ -239,7 +270,6 @@ export async function syncMeals(userUid: string): Promise<void> {
   for (const rm of remote) {
     const localRec = localByMealId.get(rm.mealId);
     if (!localRec) {
-      // nowy rekord z chmury
       await database.write(async () => {
         await mealsCol.create((m) => {
           m.userUid = rm.userUid;
@@ -260,7 +290,6 @@ export async function syncMeals(userUid: string): Promise<void> {
         });
       });
     } else {
-      // konflikt: wybieramy nowszy updatedAt (ISO)
       const takeRemote = newer(rm.updatedAt, localRec.updatedAt);
       if (takeRemote) {
         await database.write(async () => {
@@ -285,13 +314,11 @@ export async function syncMeals(userUid: string): Promise<void> {
   }
 }
 
-// --- HELPER: pojedynczy upsert do Firestore + zdjęcie ---
 export async function upsertMealWithPhoto(
   userUid: string,
   meal: Meal,
   photoUri: string | null
 ): Promise<void> {
-  // jeśli lokalne zdjęcie, wyślij i podmień URL
   let next = { ...meal };
   if (photoUri && photoUri.startsWith("file:")) {
     const url = await uploadPhotoIfNeeded(userUid, {
@@ -314,7 +341,6 @@ export async function upsertMealWithPhoto(
     });
   }
 
-  // lokalny rekord oznacz jako zsynchronizowany
   const meals = database.get<MealModel>("meals");
   const rows = await meals
     .query(Q.where("userUid", userUid), Q.where("mealId", next.mealId))
@@ -331,7 +357,6 @@ export async function upsertMealWithPhoto(
   }
 }
 
-// --- HELPER: miękkie usunięcie posiłku w Firestore (+ lokalny stan) ---
 export async function deleteMealInFirestore(
   userUid: string,
   cloudId: string
@@ -343,7 +368,6 @@ export async function deleteMealInFirestore(
     { merge: true }
   );
 
-  // lokalnie przestaw na deleted + synced
   const meals = database.get<MealModel>("meals");
   const rows = await meals
     .query(Q.where("userUid", userUid), Q.where("cloudId", cloudId))

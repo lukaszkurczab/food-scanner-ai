@@ -26,8 +26,8 @@ export default function MealDetailsScreen() {
   const route = useRoute<any>();
   const initial: Meal | undefined = route.params?.meal;
 
-  const { user } = useAuthContext();
-  const { updateMeal } = useMeals(user?.uid || "");
+  const { uid } = useAuthContext();
+  const { updateMeal } = useMeals(uid || "");
 
   const [draft, setDraft] = useState<Meal | null>(initial ?? null);
   const [saving, setSaving] = useState(false);

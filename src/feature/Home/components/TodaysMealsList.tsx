@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Meal } from "@/types";
 import { useTheme } from "@/theme/useTheme";
+import type { Meal } from "@/types/meal";
 
 export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
   const theme = useTheme();
@@ -30,7 +30,7 @@ export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
           <Text
             style={{ color: theme.text, fontSize: theme.typography.size.md }}
           >
-            {meal.name}
+            {meal.name || "Meal"}
           </Text>
           <Text
             style={{
@@ -38,7 +38,7 @@ export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
               fontSize: theme.typography.size.md,
             }}
           >
-            {meal.ingredients.reduce((sum, i) => sum + i.kcal, 0)} kcal
+            {meal.ingredients.reduce((sum, i) => sum + (i.kcal || 0), 0)} kcal
           </Text>
         </View>
       ))}
