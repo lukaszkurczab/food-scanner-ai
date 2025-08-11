@@ -8,7 +8,6 @@ import { navigationRef } from "@/navigation/navigate";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserProvider } from "@/context/UserContext";
 import { MealDraftProvider } from "@/context/MealDraftContext";
-import { MealsProvider } from "@/context/MealsContext";
 import { PremiumProvider } from "@/context/PremiumContext";
 import { useFonts } from "expo-font";
 import { View, ActivityIndicator } from "react-native";
@@ -69,15 +68,13 @@ export default function App() {
         <InactivityProvider>
           <PremiumProvider>
             <UserProvider>
-              <MealsProvider>
-                <MealDraftProvider>
-                  <MealDraftInactivityGuard>
-                    <ThemeController>
-                      <AppNavigator />
-                    </ThemeController>
-                  </MealDraftInactivityGuard>
-                </MealDraftProvider>
-              </MealsProvider>
+              <MealDraftProvider>
+                <MealDraftInactivityGuard>
+                  <ThemeController>
+                    <AppNavigator />
+                  </ThemeController>
+                </MealDraftInactivityGuard>
+              </MealDraftProvider>
             </UserProvider>
           </PremiumProvider>
         </InactivityProvider>

@@ -7,14 +7,11 @@ import { useAuthContext } from "@/context/AuthContext";
 import HomeScreen from "@/feature/Home/screens/HomeScreen";
 import ResultScreen from "@/feature/Meals/screens/ResultScreen";
 import HistoryListScreen from "@/feature/History/screens/HistoryListScreen";
-import MealDetailScreen from "@/feature/Statistics/MealDetailScreen";
 import ChatScreen from "@/feature/AI/screens/ChatScreen";
 import StatisticsScreen from "@/feature/Statistics/screens/StatisticsScreen";
 import LoginScreen from "@/feature/Auth/screens/LoginScreen";
 import RegisterScreen from "@/feature/Auth/screens/RegisterScreen";
 import MealAddMethodScreen from "@/feature/Meals/screens/MealAddMethodScreen";
-import AddMealFromList from "@/feature/AddMealFromList/screens/AddMealFromList";
-import SavedMealsScreen from "@/feature/AddMealFromList/screens/SavedMealsScreen";
 import ReviewIngredientsScreen from "@/feature/Meals/screens/ReviewIngredientsScreen";
 import ProfileScreen from "@/feature/UserProfile/screens/ProfileScreen";
 import TermsScreen from "@/feature/Auth/screens/TermsScreen";
@@ -59,9 +56,6 @@ const AppNavigator = () => {
           <Stack.Screen name="AvatarCamera" component={AvatarCameraScreen} />
           <Stack.Screen name="Result" component={ResultScreen} />
           <Stack.Screen name="HistoryList" component={HistoryListScreen} />
-          <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
-          <Stack.Screen name="MealDetail" component={MealDetailScreen} />
-          <Stack.Screen name="AddMealFromList" component={AddMealFromList} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Statistics" component={StatisticsScreen} />

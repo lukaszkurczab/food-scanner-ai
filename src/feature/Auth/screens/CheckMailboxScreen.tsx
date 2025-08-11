@@ -7,6 +7,7 @@ import { PrimaryButton, ErrorBox, Layout, SecondaryButton } from "@/components";
 import { useRoute } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getFirebaseAuth } from "@/FirebaseConfig";
+import { authSendPasswordReset } from "@/feature/Auth/services/authService";
 
 export default function CheckMailboxScreen({ navigation }: any) {
   const { t } = useTranslation("resetPassword");
@@ -68,7 +69,7 @@ export default function CheckMailboxScreen({ navigation }: any) {
     setError(null);
     try {
       const auth = await getFirebaseAuth();
-      await auth.sendPasswordResetEmail(email.trim().toLowerCase());
+      await authSendPasswordReset(email.trim().toLowerCase());
       setSendAgainDisabled(true);
       setTimer(60);
     } catch (err: any) {

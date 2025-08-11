@@ -31,8 +31,8 @@ export default function RegisterScreen({ navigation }: any) {
 
   const [emailTouched, setEmailTouched] = useState(false);
 
-  const { setUser } = useAuthContext();
-  const { register, loading, errors } = useRegister(setUser);
+  const { setFirebaseUser } = useAuthContext();
+  const { register, loading, errors } = useRegister(setFirebaseUser);
 
   React.useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {

@@ -25,7 +25,7 @@ export default function UserProfileScreen({ navigation }: any) {
   const darkTheme = !!userData.darkTheme;
 
   const handleThemeToggle = async (newValue: boolean) => {
-    theme.toggleTheme(newValue ? "dark" : "light");
+    theme.setMode(newValue ? "dark" : "light");
     await updateUser({ ...userData, darkTheme: newValue });
   };
 

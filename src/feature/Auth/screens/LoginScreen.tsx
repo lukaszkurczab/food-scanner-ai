@@ -25,8 +25,9 @@ export default function LoginScreen({ navigation }: any) {
   const [touched, setTouched] = useState({ email: false, password: false });
   const [internetError, setInternetError] = useState(false);
 
-  const { setUser } = useAuthContext();
-  const { login, loading, errors, criticalError, reset } = useLogin(setUser);
+  const { setFirebaseUser } = useAuthContext();
+  const { login, loading, errors, criticalError, reset } =
+    useLogin(setFirebaseUser);
 
   useEffect(() => {
     reset();

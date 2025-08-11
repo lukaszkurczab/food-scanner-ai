@@ -14,14 +14,14 @@ type LoadingScreenNavigationProp = StackNavigationProp<
 
 const LoadingScreen = () => {
   const { userData, getUserData } = useUserContext();
-  const { setUser } = useAuthContext();
+  const { setFirebaseUser } = useAuthContext();
   const navigation = useNavigation<LoadingScreenNavigationProp>();
 
   useEffect(() => {
     if (!userData) {
       getUserData().then((res) => {
         if (res === undefined) {
-          setUser(null);
+          setFirebaseUser(null);
         }
       });
     } else if (userData.surveyComplited) {
