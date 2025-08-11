@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { MacroChip } from "@/src/components/MacroChip";
 import { useTheme } from "@/src/theme/useTheme";
 import type { Meal, Nutrients } from "@/src/types/meal";
-import { calculateTotalNutrients } from "@/src/services";
+import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
 
 export const LiveMacroPreview: React.FC<{ meal: Meal }> = ({ meal }) => {
   const theme = useTheme();

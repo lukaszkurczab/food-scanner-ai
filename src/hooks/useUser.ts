@@ -14,7 +14,7 @@ import {
   changePasswordService,
   exportUserData,
   updateUserLanguageInFirestore,
-} from "@/src/services/firestore/firestoreUserService";
+} from "@services/userService";
 import { pickLatest } from "@/src/utils/syncUtils";
 import {
   getAuth,

@@ -54,6 +54,15 @@ export const MealBox = ({
     },
   ];
 
+  const renderNutritionGraph = () => {
+    if (nutrition.protein || nutrition.carbs || nutrition.fat)
+      return (
+        <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
+          <PieChart data={macroChartData} maxSize={140} />
+        </View>
+      );
+  };
+
   return (
     <View
       style={{
@@ -124,9 +133,7 @@ export const MealBox = ({
         <MacroChip label="Fat" value={nutrition.fat} />
       </View>
 
-      <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
-        <PieChart data={macroChartData} maxSize={140} />
-      </View>
+      {renderNutritionGraph()}
     </View>
   );
 };

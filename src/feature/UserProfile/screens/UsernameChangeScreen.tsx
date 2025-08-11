@@ -3,7 +3,7 @@ import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/src/theme/useTheme";
 import { useUserContext } from "@/src/context/UserContext";
-import { isUsernameAvailable } from "@/src/services/firestore/firestoreUserService";
+import { isUsernameAvailable } from "@services/userService";
 import {
   PrimaryButton,
   TextInput,
