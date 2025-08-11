@@ -1,10 +1,35 @@
 import * as ImageManipulator from "expo-image-manipulator";
+import * as FileSystem from "expo-file-system";
 import { Image } from "react-native";
+
+type TargetOpts = {
+  userUid: string;
+  fileId?: string;
+  dir?: "images" | "tmp";
+};
+
+function buildTargetPath({
+  userUid,
+  fileId,
+  dir = "images",
+}: TargetOpts): string {
+  const name = fileId ?? `img-${Date.now()}.jpg`;
+  return `${FileSystem.documentDirectory}users/${userUid}/${dir}/${name}`;
+}
+
+async function ensureDir(path: string) {
+  const parts = path.split("/");
+  const dir = parts.slice(0, parts.length - 1).join("/") + "/";
+  try {
+    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+  } catch {}
+}
 
 export async function convertToJpegAndResize(
   uri: string,
   maxWidth = 512,
-  maxHeight = 512
+  maxHeight = 512,
+  opts?: TargetOpts
 ): Promise<string> {
   const { width, height } = await new Promise<{
     width: number;
@@ -23,14 +48,16 @@ export async function convertToJpegAndResize(
     newHeight = Math.round(height * ratio);
   }
 
-  const result = await ImageManipulator.manipulateAsync(
+  const manipulated = await ImageManipulator.manipulateAsync(
     uri,
     [{ resize: { width: newWidth, height: newHeight } }],
-    {
-      compress: 0.7,
-      format: ImageManipulator.SaveFormat.JPEG,
-    }
+    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
   );
 
-  return result.uri;
+  if (!opts) return manipulated.uri;
+
+  const target = buildTargetPath(opts);
+  await ensureDir(target);
+  await FileSystem.copyAsync({ from: manipulated.uri, to: target });
+  return target;
 }

@@ -1,7 +1,7 @@
 import "@/i18n";
 import "@/FirebaseConfig";
 import { useEffect } from "react";
-import { ThemeProvider } from "@/theme/ThemeProvider";
+import { ThemeController } from "@/theme/ThemeController";
 import AppNavigator from "@/navigation/AppNavigator";
 import { NavigationContainer } from "@react-navigation/native";
 import { navigationRef } from "@/navigation/navigate";
@@ -72,9 +72,9 @@ export default function App() {
               <MealsProvider>
                 <MealDraftProvider>
                   <MealDraftInactivityGuard>
-                    <ThemeProvider>
+                    <ThemeController>
                       <AppNavigator />
-                    </ThemeProvider>
+                    </ThemeController>
                   </MealDraftInactivityGuard>
                 </MealDraftProvider>
               </MealsProvider>

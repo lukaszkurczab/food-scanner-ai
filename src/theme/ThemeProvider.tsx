@@ -1,16 +1,15 @@
 import React, {
   createContext,
   useContext,
-  useState,
   useEffect,
-  ReactNode,
+  useMemo,
+  useState,
 } from "react";
 import { Appearance } from "react-native";
 import { lightTheme, darkTheme } from "./themes";
 import { spacing } from "./spacing";
 import { rounded } from "./rounded";
 import { typography } from "./typography";
-import { useUserContext } from "@contexts/UserContext";
 
 type ThemeMode = "light" | "dark";
 type ThemeType = typeof lightTheme & {
@@ -19,56 +18,68 @@ type ThemeType = typeof lightTheme & {
   typography: typeof typography;
 };
 
-interface ThemeContextType {
+type Props = {
+  children: React.ReactNode;
+  /** jeżeli podasz, Provider nie będzie słuchał systemu */
+  mode?: ThemeMode;
+  /** jeżeli true i nie podasz mode — Provider śledzi system (domyślnie: true) */
+  followSystem?: boolean;
+  /** callback informacyjny gdy mode się zmieni (np. gdy followSystem=true) */
+  onModeChange?: (mode: ThemeMode) => void;
+};
+
+type ThemeContextType = {
   theme: ThemeType;
-  toggleTheme: (newTheme: ThemeMode) => void;
   mode: ThemeMode;
-}
+  setMode: (m: ThemeMode) => void;
+};
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: { ...lightTheme, spacing, rounded, typography },
-  toggleTheme: () => {},
   mode: "light",
+  setMode: () => {},
 });
 
-export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const { userData } = useUserContext();
-  const [mode, setMode] = useState<ThemeMode>("light");
-
-  useEffect(() => {
-    if (typeof userData?.darkTheme === "boolean") {
-      setMode(userData.darkTheme ? "dark" : "light");
-    } else {
-      const sys = Appearance.getColorScheme();
-      setMode(sys === "dark" ? "dark" : "light");
-    }
-
-    let subscription: any;
-    if (userData?.darkTheme === undefined) {
-      subscription = Appearance.addChangeListener(({ colorScheme }) => {
-        setMode(colorScheme === "dark" ? "dark" : "light");
-      });
-    }
-    return () => {
-      if (subscription) subscription.remove();
-    };
-  }, [userData?.darkTheme]);
-
-  const makeTheme = (mode: ThemeMode): ThemeType => ({
-    ...(mode === "dark" ? darkTheme : lightTheme),
-    spacing,
-    rounded,
-    typography,
+export const ThemeProvider: React.FC<Props> = ({
+  children,
+  mode,
+  followSystem = true,
+  onModeChange,
+}) => {
+  const [internalMode, setInternalMode] = useState<ThemeMode>(() => {
+    if (mode) return mode;
+    const sys = Appearance.getColorScheme();
+    return sys === "dark" ? "dark" : "light";
   });
 
-  const toggleTheme = (newTheme: ThemeMode) => {
-    setMode(newTheme);
+  // jeżeli sterowane z zewnątrz → nadpisuj
+  useEffect(() => {
+    if (mode) setInternalMode(mode);
+  }, [mode]);
+
+  // śledzenie systemu tylko gdy nie sterujemy mode propsami
+  useEffect(() => {
+    if (!followSystem || mode) return;
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      const m = colorScheme === "dark" ? "dark" : "light";
+      setInternalMode(m);
+      onModeChange?.(m);
+    });
+    return () => sub.remove();
+  }, [followSystem, mode, onModeChange]);
+
+  const theme = useMemo<ThemeType>(() => {
+    const base = internalMode === "dark" ? darkTheme : lightTheme;
+    return { ...base, spacing, rounded, typography };
+  }, [internalMode]);
+
+  const setMode = (m: ThemeMode) => {
+    setInternalMode(m);
+    onModeChange?.(m);
   };
 
   return (
-    <ThemeContext.Provider
-      value={{ theme: makeTheme(mode), toggleTheme, mode }}
-    >
+    <ThemeContext.Provider value={{ theme, mode: internalMode, setMode }}>
       {children}
     </ThemeContext.Provider>
   );

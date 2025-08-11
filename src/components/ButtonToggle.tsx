@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { Pressable, Animated, StyleSheet } from "react-native";
+import { useTheme } from "@/theme/useTheme";
 
 type ButtonToggleProps = {
   value: boolean;
@@ -14,10 +15,14 @@ export const ButtonToggle: React.FC<ButtonToggleProps> = ({
   value,
   onToggle,
   accessibilityLabel,
-  trackColor = "#B0B0B0",
-  thumbColor = "#FFF",
-  borderColor = "#CCC",
+  trackColor,
+  thumbColor,
+  borderColor,
 }) => {
+  const theme = useTheme();
+  const resolvedTrack = trackColor ?? theme.border;
+  const resolvedThumb = thumbColor ?? theme.card;
+  const resolvedBorder = borderColor ?? theme.border;
   const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
 
   useEffect(() => {
@@ -42,8 +47,8 @@ export const ButtonToggle: React.FC<ButtonToggleProps> = ({
       style={({ pressed }) => [
         styles.switch,
         {
-          backgroundColor: trackColor,
-          borderColor: borderColor,
+          backgroundColor: resolvedTrack,
+          borderColor: resolvedBorder,
           opacity: pressed ? 0.7 : 1,
         },
       ]}
@@ -52,7 +57,7 @@ export const ButtonToggle: React.FC<ButtonToggleProps> = ({
         style={[
           styles.thumb,
           {
-            backgroundColor: thumbColor,
+            backgroundColor: resolvedThumb,
             transform: [{ translateX: thumbTranslate }],
           },
         ]}

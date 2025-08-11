@@ -19,21 +19,21 @@ export const MacroChip: React.FC<MacroChipProps> = ({ label, value }) => {
   switch (label) {
     case "Carbs":
       backgroundColor = theme.macro.carbs + "18";
-      labelText = t("meals:carbs", { ns: "carbs" });
+      labelText = t("meals:carbs");
       color = theme.macro.carbs;
       break;
     case "Protein":
       backgroundColor = theme.macro.protein + "18";
-      labelText = t("meals:protein", { ns: "proteins" });
+      labelText = t("meals:protein");
       color = theme.macro.protein;
       break;
     case "Fat":
-      labelText = t("meals:fat", { ns: "fat" });
+      labelText = t("meals:fat");
       backgroundColor = theme.macro.fat + "18";
       color = theme.macro.fat;
       break;
     default:
-      labelText = t("meals:calories", { ns: "calories" });
+      labelText = t("meals:calories");
       backgroundColor = theme.border + "18";
       color = theme.text;
   }
@@ -79,7 +79,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   macro: {
-    borderRadius: "full",
     alignItems: "center",
     paddingVertical: 4,
     paddingHorizontal: 10,

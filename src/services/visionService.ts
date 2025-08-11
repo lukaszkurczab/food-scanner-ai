@@ -1,7 +1,7 @@
-import { uriToBase64 } from "../utils/uriToBase64";
+import { uriToBase64 } from "@/utils/uriToBase64";
 import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
 import Constants from "expo-constants";
-import { Ingredient } from "../types";
+import type { Ingredient } from "@/types";
 
 const IS_DEV = typeof __DEV__ !== "undefined" && __DEV__;
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
@@ -13,9 +13,8 @@ const RETRY_BACKOFF = 3000;
 function extractJsonArray(raw: string): string | null {
   const start = raw.indexOf("[");
   const end = raw.lastIndexOf("]");
-  if (start !== -1 && end !== -1 && end > start) {
+  if (start !== -1 && end !== -1 && end > start)
     return raw.substring(start, end + 1);
-  }
   return null;
 }
 
@@ -42,6 +41,7 @@ function validateIngredients(arr: any[]): Ingredient[] {
 }
 
 export async function detectIngredientsWithVision(
+  userUid: string,
   imageUri: string
 ): Promise<Ingredient[] | null> {
   if (IS_DEV) {
@@ -60,7 +60,11 @@ export async function detectIngredientsWithVision(
   let lastError: any = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const jpegUri = await convertToJpegAndResize(imageUri, 512, 512);
+      const jpegUri = await convertToJpegAndResize(imageUri, 512, 512, {
+        userUid,
+        fileId: `vision-${Date.now()}`,
+        dir: "tmp",
+      });
       const imageBase64 = await uriToBase64(jpegUri);
 
       const payload = {
@@ -71,19 +75,11 @@ export async function detectIngredientsWithVision(
             content: [
               {
                 type: "text",
-                text: `
-Analyze the image and extract either:
+                text: `Analyze the image and extract either:
 - a nutrition facts table, or
 - visible food/drink ingredients.
-
-Return a raw JSON array ONLY, example:
-[{ "name": "string", "amount": 100, "protein": 8, "fat": 5, "carbs": 20, "kcal": 180, "type": "food", "fromTable": true }]
-
-Rules:
-- If a nutrition table is present, use only its data and set fromTable=true.
-- If not, estimate values for visible foods/drinks.
-- Do NOT explain, do NOT use markdown, return only the array.
-                `.trim(),
+Return a raw JSON array ONLY like:
+[{ "name":"string","amount":100,"protein":8,"fat":5,"carbs":20,"kcal":180,"type":"food","fromTable":true }]`,
               },
               {
                 type: "image_url",
@@ -121,7 +117,6 @@ Rules:
 
       const json = await response.json();
       if (json.error) {
-        console.error("❌ OpenAI API returned an error:", json.error);
         lastError = json.error;
         if (
           attempt === 0 &&
@@ -136,42 +131,18 @@ Rules:
       }
 
       const raw = json.choices?.[0]?.message?.content;
-      if (!raw) {
-        console.warn("⚠️ OpenAI response has no content.");
-        return null;
-      }
+      if (!raw) return null;
 
-      let arrayStr = extractJsonArray(raw);
-      if (!arrayStr) {
-        arrayStr = fallbackJsonArray(raw);
-      }
-      if (!arrayStr) {
-        console.warn(
-          "⚠️ Could not extract JSON array from Vision response.",
-          raw
-        );
-        return null;
-      }
+      let arrayStr = extractJsonArray(raw) || fallbackJsonArray(raw);
+      if (!arrayStr) return null;
 
-      let data: Ingredient[];
       try {
         const parsed = JSON.parse(arrayStr);
-        data = validateIngredients(parsed);
-        if (!Array.isArray(data)) {
-          throw new Error("Parsed data is not an array");
-        }
-
+        const data = validateIngredients(parsed);
+        if (!Array.isArray(data)) throw new Error("Not an array");
         return data;
       } catch (parseError) {
         lastError = parseError;
-        console.error(
-          "❌ JSON parsing failed, attempt:",
-          attempt + 1,
-          parseError,
-          "\nRaw:",
-          arrayStr
-        );
-
         if (attempt === 0) {
           await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
           continue;
@@ -180,21 +151,12 @@ Rules:
       }
     } catch (error: any) {
       lastError = error;
-      if (error.name === "AbortError") {
-        console.error("❌ OpenAI request timed out.");
-      } else {
-        console.error("❌ detectIngredientsWithVision error:", error);
-      }
       if (attempt === 0) {
         await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
         continue;
       }
       return null;
     }
-  }
-
-  if (lastError) {
-    console.error("❌ Final error in detectIngredientsWithVision:", lastError);
   }
   return null;
 }
