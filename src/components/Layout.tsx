@@ -13,7 +13,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useRoute } from "@react-navigation/native";
 import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/components/BottomTabBar";
-import { useInactivity } from "@/feature/Meals/context/InactivityContext";
+import { useInactivity } from "@contexts/InactivityContext";
 
 const hiddenRoutes = [
   "AvatarCamera",

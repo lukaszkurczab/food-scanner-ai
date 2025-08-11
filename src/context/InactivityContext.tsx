@@ -1,3 +1,4 @@
+// src/context/InactivityContext.tsx
 import React, {
   createContext,
   useContext,
@@ -45,7 +46,7 @@ export const InactivityProvider = ({
   const [isModalVisible, setIsModalVisible] = useState(false);
   const timer = useRef<NodeJS.Timeout | null>(null);
   const [onTimeout, setOnTimeout] = useState<(() => void) | null>(null);
-  const [screenName, setScreenName] = useState("");
+  const [screenName, setScreenNameState] = useState("");
 
   const isTimerEnabled = ALLOWED_SCREENS.includes(screenName);
 
@@ -60,15 +61,14 @@ export const InactivityProvider = ({
 
   const dismissModal = () => setIsModalVisible(false);
 
+  const setScreenName = (screen: string) => setScreenNameState(screen);
+
   useEffect(() => {
     if (!isTimerEnabled) return;
-
     resetTimer();
-
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") resetTimer();
     });
-
     return () => {
       if (timer.current) clearTimeout(timer.current);
       subscription.remove();

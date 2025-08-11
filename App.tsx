@@ -15,7 +15,7 @@ import { View, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme";
 import Purchases from "react-native-purchases";
 import { Platform } from "react-native";
-import { InactivityProvider } from "@/feature/Meals/context/InactivityContext";
+import { InactivityProvider } from "@contexts/InactivityContext";
 import { database } from "@/db/database";
 import { MealDraftInactivityGuard } from "@/feature/Meals/components/MealDraftInactivityGuard";
 

@@ -1,5 +1,5 @@
-import React, { createContext, useContext } from "react";
-import { useAuthContext } from "./AuthContext";
+import React, { createContext, useContext, useMemo } from "react";
+import { useAuthContext } from "@/context/AuthContext";
 import { useMeals as useMealsHook } from "@hooks/useMeals";
 import type { Meal } from "@/types/meal";
 
@@ -8,7 +8,7 @@ export type MealsContextType = {
   loadingMeals: boolean;
   getMeals: () => Promise<void>;
   addMeal: (
-    meal: Omit<Meal, "syncState" | "lastUpdated" | "source" | "updatedAt">
+    meal: Omit<Meal, "syncState" | "source" | "updatedAt">
   ) => Promise<void>;
   updateMeal: (meal: Meal) => Promise<void>;
   deleteMeal: (mealCloudId: string) => Promise<void>;
@@ -30,8 +30,8 @@ const MealsContext = createContext<MealsContextType>({
 });
 
 export const MealsProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuthContext();
-  const uid = user?.uid || "";
+  const { uid } = useAuthContext();
+  const safeUid = uid ?? "";
 
   const {
     meals,
@@ -43,24 +43,35 @@ export const MealsProvider = ({ children }: { children: React.ReactNode }) => {
     duplicateMeal,
     syncMeals,
     getUnsyncedMeals,
-  } = useMealsHook(uid);
+  } = useMealsHook(safeUid);
+
+  const value = useMemo<MealsContextType>(
+    () => ({
+      meals,
+      loadingMeals: loading,
+      getMeals,
+      addMeal,
+      updateMeal,
+      deleteMeal,
+      duplicateMeal,
+      syncMeals,
+      getUnsyncedMeals,
+    }),
+    [
+      meals,
+      loading,
+      getMeals,
+      addMeal,
+      updateMeal,
+      deleteMeal,
+      duplicateMeal,
+      syncMeals,
+      getUnsyncedMeals,
+    ]
+  );
 
   return (
-    <MealsContext.Provider
-      value={{
-        meals,
-        loadingMeals: loading,
-        getMeals,
-        addMeal,
-        updateMeal,
-        deleteMeal,
-        duplicateMeal,
-        syncMeals,
-        getUnsyncedMeals,
-      }}
-    >
-      {children}
-    </MealsContext.Provider>
+    <MealsContext.Provider value={value}>{children}</MealsContext.Provider>
   );
 };
 

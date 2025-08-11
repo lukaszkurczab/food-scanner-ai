@@ -20,23 +20,19 @@ export type MealDraftContextType = {
   setMeal: (meal: Meal) => void;
   updateMeal: (patch: Partial<Meal>) => void;
   clearMeal: (userUid: string) => void;
-
   addIngredient: (ingredient: Ingredient) => void;
   removeIngredient: (index: number) => void;
   updateIngredient: (index: number, ingredient: Ingredient) => void;
-
   setType: (type: MealType) => void;
   setPhotoUrl: (url: string | null) => void;
   setNotes: (notes: string | null) => void;
   setTags: (tags: string[]) => void;
   addTag: (tag: string) => void;
   removeTag: (tag: string) => void;
-
   isDraft: boolean;
   saveDraft: (userUid: string) => Promise<void>;
   loadDraft: (userUid: string) => Promise<void>;
   removeDraft: (userUid: string) => Promise<void>;
-
   loadLastScreen: (userUid: string) => void;
   lastScreen: string | null;
   setLastScreen: (userUid: string, screen: string) => void;
