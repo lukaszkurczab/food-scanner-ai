@@ -1,13 +1,13 @@
 import { appSchema, tableSchema } from "@nozbe/watermelondb";
 
 export const schema = appSchema({
-  version: 2,
+  version: 3, // <— bump z 2 na 3
   tables: [
     tableSchema({
       name: "users",
       columns: [
-        { name: "uid", type: "string" },
-        { name: "email", type: "string" },
+        { name: "uid", type: "string", isIndexed: true }, // index
+        { name: "email", type: "string", isIndexed: true }, // index
         { name: "username", type: "string", isOptional: true },
         { name: "createdAt", type: "number" },
         { name: "lastLogin", type: "string" },
@@ -47,20 +47,20 @@ export const schema = appSchema({
     tableSchema({
       name: "meals",
       columns: [
-        { name: "userUid", type: "string" },
-        { name: "mealId", type: "string" },
-        { name: "timestamp", type: "string" },
+        { name: "userUid", type: "string", isIndexed: true }, // index
+        { name: "mealId", type: "string", isIndexed: true }, // index
+        { name: "timestamp", type: "string", isIndexed: true }, // index (sortowanie)
         { name: "type", type: "string" },
         { name: "name", type: "string", isOptional: true },
         { name: "ingredients", type: "string" }, // JSON.stringify
         { name: "createdAt", type: "string" },
         { name: "updatedAt", type: "string" },
-        { name: "syncState", type: "string" },
+        { name: "syncState", type: "string", isIndexed: true }, // index (sync)
         { name: "source", type: "string" },
         { name: "photoUrl", type: "string", isOptional: true },
         { name: "notes", type: "string", isOptional: true },
         { name: "tags", type: "string", isOptional: true }, // JSON.stringify
-        { name: "deleted", type: "boolean", isOptional: true },
+        { name: "deleted", type: "boolean", isOptional: true, isIndexed: true }, // index
         { name: "cloudId", type: "string", isOptional: true },
       ],
     }),
@@ -68,14 +68,14 @@ export const schema = appSchema({
     tableSchema({
       name: "chatMessages",
       columns: [
-        { name: "userUid", type: "string" },
+        { name: "userUid", type: "string", isIndexed: true }, // index
         { name: "role", type: "string" },
         { name: "content", type: "string" },
-        { name: "createdAt", type: "number" },
+        { name: "createdAt", type: "number", isIndexed: true }, // index
         { name: "lastSyncedAt", type: "number" },
-        { name: "syncState", type: "string" },
+        { name: "syncState", type: "string", isIndexed: true }, // index
         { name: "cloudId", type: "string", isOptional: true },
-        { name: "deleted", type: "boolean", isOptional: true },
+        { name: "deleted", type: "boolean", isOptional: true, isIndexed: true }, // index
       ],
     }),
   ],

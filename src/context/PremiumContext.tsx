@@ -1,29 +1,38 @@
-import React, { createContext, useContext, useEffect } from "react";
-import { usePremiumStatus } from "@/hooks/usePremiumStatus";
+import React, { createContext, useContext, useEffect, useMemo } from "react";
+import { useAuthContext } from "@/context/AuthContext";
+import { usePremiumStatus } from "@hooks/usePremiumStatus";
 
-const PremiumContext = createContext({
-  isPremium: null as boolean | null,
-});
+type PremiumContextType = {
+  isPremium: boolean | null;
+};
+
+const PremiumContext = createContext<PremiumContextType>({ isPremium: null });
 
 export const PremiumProvider = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
+  const { uid } = useAuthContext();
   const { isPremium, checkPremiumStatus, subscribeToPremiumChanges } =
     usePremiumStatus();
 
   useEffect(() => {
-    checkPremiumStatus();
-    subscribeToPremiumChanges(() => {
-      checkPremiumStatus();
+    // po zmianie usera — sprawdź i zasubskrybuj per-user
+    checkPremiumStatus(uid);
+    const unsub = subscribeToPremiumChanges(uid, () => {
+      // opcjonalny refresh; najczęściej niepotrzebny, bo listener już ustawia stan
+      // checkPremiumStatus(uid);
     });
-  }, [checkPremiumStatus]);
+    return () => {
+      if (typeof unsub === "function") unsub();
+    };
+  }, [uid, checkPremiumStatus, subscribeToPremiumChanges]);
+
+  const value = useMemo(() => ({ isPremium }), [isPremium]);
 
   return (
-    <PremiumContext.Provider value={{ isPremium }}>
-      {children}
-    </PremiumContext.Provider>
+    <PremiumContext.Provider value={value}>{children}</PremiumContext.Provider>
   );
 };
 

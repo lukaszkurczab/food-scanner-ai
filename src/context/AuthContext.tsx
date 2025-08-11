@@ -1,48 +1,67 @@
-import {
+import React, {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   Dispatch,
   SetStateAction,
 } from "react";
 import { getApp } from "@react-native-firebase/app";
-import { getAuth, onAuthStateChanged } from "@react-native-firebase/auth";
-import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import {
+  getAuth,
+  onAuthStateChanged,
+  type FirebaseAuthTypes,
+} from "@react-native-firebase/auth";
 
 type AuthContextType = {
-  user: FirebaseAuthTypes.User | null;
-  setUser: Dispatch<SetStateAction<FirebaseAuthTypes.User | null>>;
+  firebaseUser: FirebaseAuthTypes.User | null;
+  uid: string | null;
+  email: string | null;
+  isAuthenticated: boolean;
   loading: boolean;
+  // zostawiamy setter (przydaje się np. po reautoryzacji), ale to nie jest obowiązkowe do używania
+  setFirebaseUser: Dispatch<SetStateAction<FirebaseAuthTypes.User | null>>;
 };
 
 const AuthContext = createContext<AuthContextType>({
-  user: null,
-  setUser: () => {},
+  firebaseUser: null,
+  uid: null,
+  email: null,
+  isAuthenticated: false,
   loading: true,
+  setFirebaseUser: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [firebaseUser, setFirebaseUser] =
+    useState<FirebaseAuthTypes.User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const app = getApp();
     const auth = getAuth(app);
-
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
       setLoading(false);
     });
-
     return unsub;
   }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, setUser, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = useMemo<AuthContextType>(() => {
+    const uid = firebaseUser?.uid ?? null;
+    const email = firebaseUser?.email ?? null;
+    return {
+      firebaseUser,
+      uid,
+      email,
+      isAuthenticated: !!uid,
+      loading,
+      setFirebaseUser,
+    };
+  }, [firebaseUser, loading]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuthContext = () => useContext(AuthContext);

@@ -1,18 +1,18 @@
 import type { FormData } from "./onboarding";
 
 export type UserPlan = "free" | "premium";
-export type syncState = "synced" | "pending" | "conflict";
+export type SyncState = "synced" | "pending" | "conflict";
 
 export interface UserData extends FormData {
   uid: string;
   email: string;
   username: string;
   plan: UserPlan;
-  createdAt: number;
-  lastLogin: string;
-  surveyComplited: boolean;
-  syncState: syncState;
-  lastSyncedAt?: string;
+  createdAt: number; // epoch ms
+  lastLogin: string; // ISO string (pozostawione jak w schemacie)
+  surveyComplited: boolean; // (pisownia zachowana zgodnie ze schematem)
+  syncState: SyncState;
+  lastSyncedAt?: string; // ISO string
   avatarUrl?: string;
   avatarLocalPath?: string;
   avatarlastSyncedAt?: string;
@@ -20,6 +20,7 @@ export interface UserData extends FormData {
   language: string;
 }
 
+// Eksport (jeśli faktycznie to wykorzystujesz)
 export type ExportedUserData = {
   profile: any;
   meals: any[];
