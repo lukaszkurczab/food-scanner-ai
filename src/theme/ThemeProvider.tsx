@@ -20,11 +20,8 @@ type ThemeType = typeof lightTheme & {
 
 type Props = {
   children: React.ReactNode;
-  /** jeżeli podasz, Provider nie będzie słuchał systemu */
   mode?: ThemeMode;
-  /** jeżeli true i nie podasz mode — Provider śledzi system (domyślnie: true) */
   followSystem?: boolean;
-  /** callback informacyjny gdy mode się zmieni (np. gdy followSystem=true) */
   onModeChange?: (mode: ThemeMode) => void;
 };
 
@@ -52,12 +49,10 @@ export const ThemeProvider: React.FC<Props> = ({
     return sys === "dark" ? "dark" : "light";
   });
 
-  // jeżeli sterowane z zewnątrz → nadpisuj
   useEffect(() => {
     if (mode) setInternalMode(mode);
   }, [mode]);
 
-  // śledzenie systemu tylko gdy nie sterujemy mode propsami
   useEffect(() => {
     if (!followSystem || mode) return;
     const sub = Appearance.addChangeListener(({ colorScheme }) => {

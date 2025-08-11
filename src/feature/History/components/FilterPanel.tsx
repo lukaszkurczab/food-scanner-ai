@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { RangeSlider } from "@/components";
-import { DateRangePicker } from "@/components/DateRangePicker";
+import { DateRangePicker } from "@/components";
 import { PrimaryButton, SecondaryButton } from "@/components";
 
 export const FilterPanelScreen: React.FC<{
@@ -60,13 +60,13 @@ export const FilterPanelScreen: React.FC<{
           onChangeRange={setDateRange}
         />
       </ScrollView>
-      <StickyFooterActions>
+      <View>
         <PrimaryButton
           label="Apply filters"
           onPress={() => onApply({ calories, protein, carbs, fat, dateRange })}
         />
         <SecondaryButton label="Clear" onPress={onClear} />
-      </StickyFooterActions>
+      </View>
     </View>
   );
 };

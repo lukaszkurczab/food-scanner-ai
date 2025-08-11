@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { getFirebaseAuth, getFirebaseFirestore } from "@/FirebaseConfig";
-import { doc, setDoc, collection } from "@react-native-firebase/firestore";
-import { isUsernameAvailable } from "@/services/userService";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { authRegister } from "@/feature/Auth/services/authService";
+import { isUsernameAvailable } from "@/services/usernameService";
 
 type RegisterErrors = {
   email?: string;
@@ -13,25 +12,19 @@ type RegisterErrors = {
   general?: string;
 };
 
-export const useRegister = (
-  setUser: (user: FirebaseAuthTypes.User) => void
-) => {
+export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<RegisterErrors>({});
 
   const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-  const isStrongPassword = (password: string) => {
-    return (
-      password.length >= 6 &&
-      password.length <= 21 &&
-      /[a-z]/.test(password) &&
-      /[A-Z]/.test(password) &&
-      /[0-9]/.test(password) &&
-      /[^A-Za-z0-9]/.test(password)
-    );
-  };
+  const isStrongPassword = (p: string) =>
+    p.length >= 6 &&
+    p.length <= 21 &&
+    /[a-z]/.test(p) &&
+    /[A-Z]/.test(p) &&
+    /[0-9]/.test(p) &&
+    /[^A-Za-z0-9]/.test(p);
 
   const register = async (
     email: string,
@@ -41,7 +34,6 @@ export const useRegister = (
     termsAccepted: boolean
   ) => {
     const newErrors: RegisterErrors = {};
-
     if (!isValidEmail(email)) newErrors.email = "invalid_email";
     if (!username.trim() || username.length < 3)
       newErrors.username = "username_too_short";
@@ -49,87 +41,27 @@ export const useRegister = (
     if (password !== confirmPassword)
       newErrors.confirmPassword = "passwords_dont_match";
     if (!termsAccepted) newErrors.terms = "must_accept_terms";
-
     setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
+    if (Object.keys(newErrors).length) return;
 
     setLoading(true);
     setErrors({});
     try {
-      const auth = await getFirebaseAuth();
-      const firestore = await getFirebaseFirestore();
-
-      const usernameUnique = await isUsernameAvailable(username);
-      if (!usernameUnique) {
+      const available = await isUsernameAvailable(username.trim());
+      if (!available) {
         setErrors({ username: "username_taken" });
-        setLoading(false);
         return;
       }
-
-      const userCredential = await auth.createUserWithEmailAndPassword(
-        email,
-        password
-      );
-      const user = userCredential.user;
-      const userUid = user.uid;
-      const now = Date.now();
-
-      const defaultUserProfile = {
-        uid: userUid,
-        email: user.email,
-        username: username.trim(),
-        createdAt: now,
-        lastLogin: new Date().toISOString(),
-        plan: "free",
-        unitsSystem: "metric",
-        age: "",
-        sex: "",
-        height: "",
-        heightInch: null,
-        weight: "",
-        preferences: [],
-        activityLevel: "",
-        goal: "",
-        calorieDeficit: null,
-        calorieSurplus: null,
-        chronicDiseases: [],
-        chronicDiseasesOther: "",
-        allergies: [],
-        allergiesOther: "",
-        lifestyle: "",
-        aiStyle: "none",
-        aiFocus: "none",
-        aiFocusOther: "",
-        aiNote: "",
-        surveyComplited: false,
-        syncState: "pending",
-        lastSyncedAt: "",
-        darkTheme: false,
-        avatarUrl: "",
-        avatarLocalPath: "",
-        avatarlastSyncedAt: "",
-      };
-
-      const usersCol = collection(firestore, "users");
-      const userDocRef = doc(usersCol, userUid);
-      await setDoc(userDocRef, defaultUserProfile);
-
-      const usernamesCol = collection(firestore, "usernames");
-      const usernameDocRef = doc(usernamesCol, username.trim().toLowerCase());
-      await setDoc(usernameDocRef, { uid: userUid, createdAt: now });
-
+      const user = await authRegister(email.trim(), password, username.trim());
       setUser(user);
     } catch (error: any) {
-      console.log(error);
-      const errorMessage: RegisterErrors = {};
-      if (error.code === "auth/email-already-in-use")
-        errorMessage.email = "email_in_use";
-      else if (error.code === "auth/invalid-email")
-        errorMessage.email = "invalid_email";
+      const e: RegisterErrors = {};
+      if (error.code === "auth/email-already-in-use") e.email = "email_in_use";
+      else if (error.code === "auth/invalid-email") e.email = "invalid_email";
       else if (error.code === "auth/weak-password")
-        errorMessage.password = "password_too_weak";
-      else errorMessage.general = "registration_failed";
-      setErrors(errorMessage);
+        e.password = "password_too_weak";
+      else e.general = "registration_failed";
+      setErrors(e);
     } finally {
       setLoading(false);
     }

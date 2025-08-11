@@ -12,6 +12,7 @@ import {
   Layout,
 } from "@/components";
 import { validateEmail } from "@/utils/validation";
+import { authSendPasswordReset } from "@/feature/Auth/services/authService";
 
 export default function ResetPasswordScreen({ navigation }: any) {
   const { t } = useTranslation("resetPassword");
@@ -70,8 +71,7 @@ export default function ResetPasswordScreen({ navigation }: any) {
     setLoading(true);
     try {
       const auth = await getFirebaseAuth();
-      await auth.sendPasswordResetEmail(email.trim().toLowerCase());
-      setLoading(false);
+      await authSendPasswordReset(email.trim().toLowerCase());
       navigation.navigate("CheckMailbox", {
         email: email.trim().toLowerCase(),
       });

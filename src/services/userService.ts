@@ -2,6 +2,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { Q } from "@nozbe/watermelondb";
 import { database } from "@/db/database";
 import UserModel from "@/db/models/User";
+import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 
 import type {
   UserData,
@@ -490,4 +491,52 @@ export async function deleteUserInFirestoreWithUsername(uid: string) {
   if (username) {
     await deleteDoc(doc(dbi, "usernames", username.trim().toLowerCase()));
   }
+}
+
+export async function createInitialUserProfile(
+  user: FirebaseAuthTypes.User,
+  username: string
+) {
+  const uid = user.uid;
+  const now = Date.now();
+
+  const profile = {
+    uid,
+    email: user.email,
+    username: username.trim(),
+    createdAt: now,
+    lastLogin: new Date().toISOString(),
+    plan: "free",
+    unitsSystem: "metric",
+    age: "",
+    sex: "",
+    height: "",
+    heightInch: null as number | null,
+    weight: "",
+    preferences: [] as string[],
+    activityLevel: "",
+    goal: "",
+    calorieDeficit: null as number | null,
+    calorieSurplus: null as number | null,
+    chronicDiseases: [] as string[],
+    chronicDiseasesOther: "",
+    allergies: [] as string[],
+    allergiesOther: "",
+    lifestyle: "",
+    aiStyle: "none",
+    aiFocus: "none",
+    aiFocusOther: "",
+    aiNote: "",
+    surveyComplited: false,
+    syncState: "pending",
+    lastSyncedAt: "",
+    darkTheme: false,
+    avatarUrl: "",
+    avatarLocalPath: "",
+    avatarlastSyncedAt: "",
+  };
+
+  await upsertUserLocal(profile as any);
+
+  await setDoc(doc(collection(db(), "users"), uid), profile, { merge: true });
 }
