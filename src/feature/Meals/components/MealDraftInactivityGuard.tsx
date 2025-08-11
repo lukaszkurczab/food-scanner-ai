@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useMealContext } from "@contexts/MealDraftContext";
-import { useInactivity } from "@/feature/Meals/context/InactivityContext";
+import { useInactivity } from "@contexts/InactivityContext";
 import { useNavigation } from "@react-navigation/native";
 import { Modal } from "@/components/";
 import { useAuthContext } from "@/context/AuthContext";
