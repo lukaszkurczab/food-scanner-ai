@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { TargetProgressBar } from "@/src/components/TargetProgressBar";
+import { useTheme } from "@/theme/useTheme";
+import { TargetProgressBar } from "@/components/TargetProgressBar";
 import { useTranslation } from "react-i18next";
 
 type Props = {

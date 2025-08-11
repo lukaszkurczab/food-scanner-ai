@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect } from "react";
-import { usePremiumStatus } from "@/src/hooks/usePremiumStatus";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 
 const PremiumContext = createContext({
   isPremium: null as boolean | null,

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, Pressable, Modal, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { Calendar } from "./Calendar";
 import { PrimaryButton } from "./PrimaryButton";

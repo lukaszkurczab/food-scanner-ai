@@ -6,11 +6,11 @@ import {
   StyleSheet,
   Text,
 } from "react-native";
-import { useAuthContext } from "@/src/context/AuthContext";
-import { useUser } from "@/src/hooks/useUser";
-import { useSubscriptionData } from "@/src/hooks/useSubscriptionData";
-import { useChatHistory } from "@/src/hooks/useChatHistory";
-import { useTheme } from "@/src/theme/useTheme";
+import { useAuthContext } from "@/context/AuthContext";
+import { useUser } from "@hooks/useUser";
+import { useSubscriptionData } from "@/hooks/useSubscriptionData";
+import { useChatHistory } from "@/hooks/useChatHistory";
+import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { Bubble } from "../components/Bubble";
@@ -19,7 +19,7 @@ import { OfflineBanner } from "../components/OfflineBanner";
 import { PaywallCard } from "../components/PaywallCard";
 import { TypingDots } from "../components/TypingDots";
 import { TopToast } from "../components/TopToast";
-import { useMeals } from "@/src/hooks/useMeals";
+import { useMeals } from "@hooks/useMeals";
 
 export default function ChatScreen() {
   const { user } = useAuthContext();

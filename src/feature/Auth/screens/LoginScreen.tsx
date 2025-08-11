@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import {
   TextInput,
   PrimaryButton,
   ErrorBox,
   LinkText,
   Layout,
-} from "@/src/components";
+} from "@/components";
 import NetInfo from "@react-native-community/netinfo";
-import { validateEmail } from "@/src/utils/validation";
+import { validateEmail } from "@/utils/validation";
 import { Feather } from "@expo/vector-icons";
-import { useAuthContext } from "@/src/context/AuthContext";
-import { useLogin } from "@/src/feature/Auth/hooks/useLogin";
+import { useAuthContext } from "@/context/AuthContext";
+import { useLogin } from "@/feature/Auth/hooks/useLogin";
 
 export default function LoginScreen({ navigation }: any) {
   const { t } = useTranslation(["login", "common"]);

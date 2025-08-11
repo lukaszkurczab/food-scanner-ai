@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Meal } from "@/src/types";
-import { useTheme } from "@/src/theme/useTheme";
+import { Meal } from "@/types";
+import { useTheme } from "@/theme/useTheme";
 
 export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
   const theme = useTheme();

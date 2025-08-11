@@ -1,15 +1,15 @@
 import React from "react";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import {
   PrimaryButton,
   SecondaryButton,
   CheckboxDropdown,
   LongTextInput,
   TextInput,
-} from "@/src/components";
-import { FormData, ChronicDisease, Allergy } from "@/src/types/onboarding";
+} from "@/components";
+import { FormData, ChronicDisease, Allergy } from "@/types/onboarding";
 
 const CHRONIC_DISEASE_OPTIONS: { label: string; value: ChronicDisease }[] = [
   { label: "Diabetes", value: "diabetes" },

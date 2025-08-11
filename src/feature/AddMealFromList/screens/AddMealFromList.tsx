@@ -8,15 +8,15 @@ import {
 } from "react-native";
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
-import { useUserContext } from "@/src/context/UserContext";
-import { useTheme } from "@/src/theme/useTheme";
+import { useUserContext } from "@contexts/UserContext";
+import { useTheme } from "@/theme/useTheme";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { Tile } from "@/src/components";
-import { Meal, MealHistory } from "@/src/types";
-import { RootStackParamList } from "@/src/navigation/navigate";
+import { Tile } from "@/components";
+import { Meal, MealHistory } from "@/types";
+import { RootStackParamList } from "@/navigation/navigate";
 import { MealFilterBar } from "../components/MealFilterBar";
-import { useMealContext } from "@/src/context/MealContext";
+import { useMealContext } from "@contexts/MealDraftContext";
 
 type Navigation = StackNavigationProp<RootStackParamList, "AddMealFromList">;
 

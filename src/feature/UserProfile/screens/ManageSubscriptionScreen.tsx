@@ -7,12 +7,12 @@ import {
   Pressable,
   StyleSheet,
 } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { spacing } from "@/src/theme";
-import { useSubscriptionData } from "@/src/hooks/useSubscriptionData";
-import { Layout } from "@/src/components/index";
+import { spacing } from "@/theme";
+import { useSubscriptionData } from "@/hooks/useSubscriptionData";
+import { Layout } from "@/components/index";
 
 const BENEFITS = [
   "unlimitedAiChat",

@@ -1,4 +1,4 @@
-import type { UserData } from "@/src/types";
+import type { UserData } from "@/types";
 
 export function pickLatest(
   local: UserData,
@@ -14,19 +14,10 @@ export function pickLatest(
 
 export async function fullSync({
   syncUserProfile,
-  syncSettings,
-  getMeals,
   getChatHistory,
 }: {
   syncUserProfile: () => Promise<void>;
-  syncSettings: () => Promise<void>;
-  getMeals: () => Promise<void>;
   getChatHistory: () => Promise<void>;
 }) {
-  await Promise.all([
-    syncUserProfile(),
-    syncSettings(),
-    getMeals(),
-    getChatHistory(),
-  ]);
+  await Promise.all([syncUserProfile(), getChatHistory()]);
 }

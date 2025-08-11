@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { View, Text } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import {
   PrimaryButton,
@@ -8,8 +8,8 @@ import {
   Dropdown,
   TextInput,
   LongTextInput,
-} from "@/src/components";
-import { AiStyle, AiFocus, FormData } from "@/src/types/onboarding";
+} from "@/components";
+import { AiStyle, AiFocus, FormData } from "@/types/onboarding";
 
 const ASSISTANT_STYLE_OPTIONS: { label: string; value: AiStyle }[] = [
   { label: "ai.style.none", value: "none" },

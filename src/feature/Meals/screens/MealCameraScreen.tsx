@@ -2,15 +2,15 @@ import React, { useRef, useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
-import { useTheme } from "@/src/theme/useTheme";
-import { useMealContext } from "@/src/context/MealContext";
-import PhotoPreview from "@/src/components/PhotoPreview";
+import { useTheme } from "@/theme/useTheme";
+import { useMealContext } from "@contexts/MealDraftContext";
+import PhotoPreview from "@/components/PhotoPreview";
 import Loader from "../components/Loader";
 import { useTranslation } from "react-i18next";
-import { detectIngredientsWithVision } from "@/src/services/visionService";
+import { detectIngredientsWithVision } from "@/services/visionService";
 import { useRoute } from "@react-navigation/native";
-import { useAuthContext } from "@/src/context/AuthContext";
-import { Layout } from "@/src/components/Layout";
+import { useAuthContext } from "@/context/AuthContext";
+import { Layout } from "@/components/Layout";
 
 export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const theme = useTheme();

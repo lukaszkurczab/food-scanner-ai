@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, StyleProp, ViewStyle, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 
 type IconButtonProps = {
   icon: React.ReactElement<{ size?: number; color?: string }>;

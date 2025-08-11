@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { MealType } from "@/src/types/meal";
+import type { MealType } from "@/types/meal";
 
 export function autoMealName(mealType?: MealType) {
   return useMemo(() => {

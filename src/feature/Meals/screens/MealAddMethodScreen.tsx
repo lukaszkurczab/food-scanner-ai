@@ -1,17 +1,17 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useTheme } from "@/src/theme";
-import { RootStackParamList } from "@/src/navigation/navigate";
+import { useTheme } from "@/theme";
+import { RootStackParamList } from "@/navigation/navigate";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { MaterialIcons } from "@expo/vector-icons";
-import { spacing, rounded } from "@/src/theme";
+import { spacing, rounded } from "@/theme";
 import { useTranslation } from "react-i18next";
-import { Layout } from "@/src/components";
+import { Layout } from "@/components";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Modal } from "@/src/components/Modal";
-import { getDraftKey, getScreenKey } from "@/src/context/MealContext";
-import { useAuthContext } from "@/src/context/AuthContext";
+import { Modal } from "@/components/Modal";
+import { getDraftKey, getScreenKey } from "@contexts/MealDraftContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,

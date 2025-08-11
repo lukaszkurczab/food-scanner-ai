@@ -2,16 +2,16 @@ import React, { useState, useRef, useEffect } from "react";
 import { View, Keyboard, Platform, Text } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
-import { getFirebaseAuth } from "@/src/FirebaseConfig";
+import { useTheme } from "@/theme/useTheme";
+import { getFirebaseAuth } from "@/FirebaseConfig";
 import {
   PrimaryButton,
   TextInput,
   LinkText,
   ErrorBox,
   Layout,
-} from "@/src/components";
-import { validateEmail } from "@/src/utils/validation";
+} from "@/components";
+import { validateEmail } from "@/utils/validation";
 
 export default function ResetPasswordScreen({ navigation }: any) {
   const { t } = useTranslation("resetPassword");

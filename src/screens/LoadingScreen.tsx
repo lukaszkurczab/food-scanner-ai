@@ -2,10 +2,10 @@ import { useEffect } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
-import { Layout } from "@/src/components";
-import { RootStackParamList } from "@/src/navigation/navigate";
-import { useUserContext } from "@/src/context/UserContext";
-import { useAuthContext } from "@/src/context/AuthContext";
+import { Layout } from "@/components";
+import { RootStackParamList } from "@/navigation/navigate";
+import { useUserContext } from "@contexts/UserContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 type LoadingScreenNavigationProp = StackNavigationProp<
   RootStackParamList,

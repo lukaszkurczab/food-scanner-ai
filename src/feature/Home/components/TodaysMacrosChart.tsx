@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { PieChart } from "@/src/components";
+import { useTheme } from "@/theme/useTheme";
+import { PieChart } from "@/components";
 
 export const TodaysMacrosChart = ({
   macros,

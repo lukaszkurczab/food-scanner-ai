@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { PrimaryButton, SecondaryButton, IconButton } from "@/src/components";
-import { FormData } from "@/src/types/onboarding";
+import { useTheme } from "@/theme/useTheme";
+import { PrimaryButton, SecondaryButton, IconButton } from "@/components";
+import { FormData } from "@/types/onboarding";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 

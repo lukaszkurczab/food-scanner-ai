@@ -6,7 +6,7 @@ import React, {
   ReactNode,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { Meal, Ingredient, MealType } from "@/src/types/meal";
+import type { Meal, Ingredient, MealType } from "@/types/meal";
 
 export function getDraftKey(userUid: string) {
   return `current_meal_draft_${userUid}`;
@@ -15,7 +15,7 @@ export function getScreenKey(userUid: string) {
   return `current_meal_draft_screen_${userUid}`;
 }
 
-export type MealContextType = {
+export type MealDraftContextType = {
   meal: Meal | null;
   setMeal: (meal: Meal) => void;
   updateMeal: (patch: Partial<Meal>) => void;
@@ -43,7 +43,7 @@ export type MealContextType = {
   clearLastScreen: (userUid: string) => void;
 };
 
-const MealContext = createContext<MealContextType>({
+const MealDraftContext = createContext<MealDraftContextType>({
   meal: null,
   setMeal: () => {},
   updateMeal: () => {},
@@ -69,7 +69,7 @@ const MealContext = createContext<MealContextType>({
 
 type Props = { children: ReactNode };
 
-export const MealProvider = ({ children }: Props) => {
+export const MealDraftProvider = ({ children }: Props) => {
   const [meal, setMealState] = useState<Meal | null>(null);
   const [isDraft, setIsDraft] = useState(false);
   const [lastScreen, setLastScreenState] = useState<string | null>(null);
@@ -201,7 +201,7 @@ export const MealProvider = ({ children }: Props) => {
   );
 
   return (
-    <MealContext.Provider
+    <MealDraftContext.Provider
       value={{
         meal,
         setMeal,
@@ -227,8 +227,8 @@ export const MealProvider = ({ children }: Props) => {
       }}
     >
       {children}
-    </MealContext.Provider>
+    </MealDraftContext.Provider>
   );
 };
 
-export const useMealContext = () => useContext(MealContext);
+export const useMealDraftContext = () => useContext(MealDraftContext);

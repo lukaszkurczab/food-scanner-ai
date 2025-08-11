@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { View, ScrollView } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { RangeSlider } from "@/src/components";
-import { DateRangePicker } from "@/src/components/DateRangePicker";
-import { PrimaryButton, SecondaryButton } from "@/src/components";
+import { useTheme } from "@/theme/useTheme";
+import { RangeSlider } from "@/components";
+import { DateRangePicker } from "@/components/DateRangePicker";
+import { PrimaryButton, SecondaryButton } from "@/components";
 
 export const FilterPanelScreen: React.FC<{
   onApply: (filters: any) => void;

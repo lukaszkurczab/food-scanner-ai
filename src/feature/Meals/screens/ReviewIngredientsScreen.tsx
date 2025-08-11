@@ -1,17 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useTheme } from "@/src/theme/useTheme";
-import {
-  Layout,
-  Modal,
-  PrimaryButton,
-  SecondaryButton,
-} from "@/src/components";
-import { IngredientBox } from "@/src/components/IngredientBox";
+import { useTheme } from "@/theme/useTheme";
+import { Layout, Modal, PrimaryButton, SecondaryButton } from "@/components";
+import { IngredientBox } from "@/components/IngredientBox";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useMealContext } from "@/src/context/MealContext";
-import { useAuthContext } from "@/src/context/AuthContext";
+import { useMealContext } from "@contexts/MealDraftContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 
 export default function ReviewIngredientsScreen() {

@@ -1,11 +1,11 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { FallbackImage } from "./FallbackImage";
-import { MacroChip } from "@/src/components/MacroChip";
-import type { Meal } from "@/src/types/meal";
-import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
+import { MacroChip } from "@/components/MacroChip";
+import type { Meal } from "@/types/meal";
+import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 
 type Props = {
   meal: Meal;

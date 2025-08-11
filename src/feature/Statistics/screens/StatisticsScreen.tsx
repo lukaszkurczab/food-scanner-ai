@@ -7,18 +7,18 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { useUserContext } from "@/src/context/UserContext";
+import { useTheme } from "@/theme/useTheme";
+import { useUserContext } from "@contexts/UserContext";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { useStats } from "@/src/hooks/useStats";
+import { useStats } from "@/hooks/useStats";
 import { lastNDaysRange } from "../utils/dateRange";
 import { RangeTabs } from "../components/RangeTabs";
 import { MetricsGrid, MetricKey } from "../components/MetricsGrid";
 import { LineSection } from "../components/LineSection";
 import { MacroPieCard } from "../components/MacroPieCard";
 import { ProgressAveragesCard } from "../components/ProgressAveragesCard";
-import { BottomTabBar, DateInput } from "@/src/components";
-import { getLastNDaysAggregated } from "@/src/utils/getLastNDaysAggregated";
+import { BottomTabBar, DateInput } from "@/components";
+import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { useTranslation } from "react-i18next";
 
 type RangeKey = "7d" | "30d" | "custom";

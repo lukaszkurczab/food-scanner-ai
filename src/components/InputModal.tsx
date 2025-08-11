@@ -10,10 +10,10 @@ import {
   Dimensions,
   TextInput,
 } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { PrimaryButton } from "@/src/components/PrimaryButton";
-import { SecondaryButton } from "@/src/components/SecondaryButton";
-import { IconButton } from "@/src/components/IconButton";
+import { useTheme } from "@/theme/useTheme";
+import { PrimaryButton } from "@/components/PrimaryButton";
+import { SecondaryButton } from "@/components/SecondaryButton";
+import { IconButton } from "@/components/IconButton";
 import { MaterialIcons } from "@expo/vector-icons";
 
 const windowHeight = Dimensions.get("window").height;

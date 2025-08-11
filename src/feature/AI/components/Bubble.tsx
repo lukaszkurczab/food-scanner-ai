@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import type { ChatMessage } from "@/src/types";
-import { useTheme } from "@/src/theme/useTheme";
+import type { ChatMessage } from "@/types";
+import { useTheme } from "@/theme/useTheme";
 
 type Props = {
   msg: ChatMessage;

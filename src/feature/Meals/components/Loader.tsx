@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 
 type LoaderProps = {
   text?: string;

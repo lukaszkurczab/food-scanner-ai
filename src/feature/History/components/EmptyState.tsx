@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 
 type Props = { title: string; description?: string };

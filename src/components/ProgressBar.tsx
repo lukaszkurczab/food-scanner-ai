@@ -7,7 +7,7 @@ import {
   ViewStyle,
   LayoutChangeEvent,
 } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 
 type ProgressBarProps = {
   progress: number;

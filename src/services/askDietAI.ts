@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import Constants from "expo-constants";
 import i18next from "i18next";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import type { Meal, FormData } from "@/src/types/index";
+import type { Meal, FormData } from "@/types/index";
 
 export type Message = {
   from: "user" | "ai";

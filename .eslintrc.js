@@ -1,5 +1,6 @@
 module.exports = {
   root: true,
+  parser: "@typescript-eslint/parser",
   extends: [
     "eslint:recommended",
     "plugin:react/recommended",
@@ -11,18 +12,19 @@ module.exports = {
       alias: {
         map: [
           ["@assets", "./assets"],
-          ["@components", "./components"],
-          ["@contexts", "./context"],
-          ["@feature", "./feature"],
-          ["@hooks", "./hooks"],
-          ["@navigation", "./navigation"],
-          ["@services", "./services"],
-          ["@theme", "./theme"],
-          ["@types", "./types"],
-          ["@utils", "./utils"],
+          ["@components", "./src/components"],
+          ["@contexts", "./src/context"],
+          ["@feature", "./src/feature"],
+          ["@hooks", "./src/hooks"],
+          ["@navigation", "./src/navigation"],
+          ["@services", "./src/services"],
+          ["@theme", "./src/theme"],
+          ["@types", "./src/types"],
+          ["@utils", "./src/utils"],
         ],
         extensions: [".ts", ".tsx", ".js", ".jsx"],
       },
+      typescript: {},
     },
   },
   rules: {

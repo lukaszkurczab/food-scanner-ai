@@ -1,5 +1,5 @@
 import { uriToBase64 } from "../utils/uriToBase64";
-import { convertToJpegAndResize } from "@/src/utils/convertToJpegAndResize";
+import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
 import Constants from "expo-constants";
 import { Ingredient } from "../types";
 

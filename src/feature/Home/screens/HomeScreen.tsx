@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { TodaysMealsList } from "../components/TodaysMealsList";
 import { TodaysMacrosChart } from "../components/TodaysMacrosChart";
 import { ButtonSection } from "../components/ButtonSection";
 import { AddMealPlaceholder } from "../components/AddMealPlaceholder";
-import { useUserContext } from "@/src/context/UserContext";
-import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
-import { getTodayMeals } from "@/src/utils/getTodayMeals";
-import { Layout, TargetProgressBar } from "@/src/components";
-import { getLastNDaysAggregated } from "@/src/utils/getLastNDaysAggregated";
+import { useUserContext } from "@contexts/UserContext";
+import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
+import { getTodayMeals } from "@/utils/getTodayMeals";
+import { Layout, TargetProgressBar } from "@/components";
+import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
-import { useMeals } from "@/src/hooks/useMeals";
-import { Meal } from "@/src/types";
+import { useMeals } from "@hooks/useMeals";
+import { Meal } from "@/types";
 
 export default function HomeScreen({ navigation }: any) {
   const theme = useTheme();

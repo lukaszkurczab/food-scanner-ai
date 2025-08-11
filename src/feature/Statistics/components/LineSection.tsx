@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
-import { LineGraph } from "@/src/components/LineGraph";
+import { useTheme } from "@/theme/useTheme";
+import { LineGraph } from "@/components/LineGraph";
 import { useTranslation } from "react-i18next";
 import type { MetricKey } from "./MetricsGrid";
 

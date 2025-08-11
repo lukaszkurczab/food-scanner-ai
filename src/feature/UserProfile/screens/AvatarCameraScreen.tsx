@@ -1,11 +1,11 @@
 import React, { useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import PhotoPreview from "@/src/components/PhotoPreview";
+import PhotoPreview from "@/components/PhotoPreview";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
-import { useUserContext } from "@/src/context/UserContext";
-import { Layout } from "@/src/components/Layout";
+import { useTheme } from "@/theme/useTheme";
+import { useUserContext } from "@contexts/UserContext";
+import { Layout } from "@/components/Layout";
 
 type AvatarCameraScreenProps = {
   onPhotoTaken?: (uri: string) => void;

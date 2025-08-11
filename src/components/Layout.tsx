@@ -9,11 +9,11 @@ import {
   Keyboard,
   Dimensions,
 } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { useRoute } from "@react-navigation/native";
 import { ScrollView } from "react-native-gesture-handler";
-import BottomTabBar from "@/src/components/BottomTabBar";
-import { useInactivity } from "@/src/context/InactivityContext";
+import BottomTabBar from "@/components/BottomTabBar";
+import { useInactivity } from "@/feature/Meals/context/InactivityContext";
 
 const hiddenRoutes = [
   "AvatarCamera",

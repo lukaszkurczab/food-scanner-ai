@@ -1,19 +1,3 @@
-export * from "./ui/Button";
-export * from "./modals/CancelModal";
-export * from "./common/Carousel";
-export * from "./common/ConfirmButtons";
-export * from "./modals/ConfirmModal";
-export * from "./common/DropdownList";
-export * from "./modals/ErrorModal";
-export * from "./common/Header";
-export * from "./common/Navigation";
-export * from "./common/PermissionRequestView";
-export * from "./ui/StepView";
-export * from "./ui/Spinner";
-export * from "./common/Tile";
-export * from "./common/FormScreenWrapper";
-
-//New components
 export * from "./Card";
 export * from "./IconButton";
 export * from "./ListItem";

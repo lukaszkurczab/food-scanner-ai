@@ -24,7 +24,7 @@ import {
   verifyBeforeUpdateEmail,
   updatePassword,
 } from "@react-native-firebase/auth";
-import type { ExportedUserData, UserData } from "@/src/types";
+import type { ExportedUserData, UserData } from "@/types";
 import * as FileSystem from "expo-file-system";
 import { zip } from "react-native-zip-archive";
 import * as Sharing from "expo-sharing";

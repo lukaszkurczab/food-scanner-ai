@@ -1,13 +1,13 @@
 import { useState, useCallback, useRef } from "react";
 import NetInfo from "@react-native-community/netinfo";
-import { database } from "@/src/db/database";
-import type { Meal } from "@/src/types/meal";
+import { database } from "@/db/database";
+import type { Meal } from "@/types/meal";
 import {
   fetchMealsFromFirestore,
   upsertMealWithPhoto,
   deleteMealInFirestore,
 } from "@services/mealService";
-import { mapRawToMeal, mapMealToRaw } from "@/src/utils/mealMapper";
+import { mapRawToMeal, mapMealToRaw } from "@/utils/mealMapper";
 import { v4 as uuidv4 } from "uuid";
 
 const unsyncedStatuses: Meal["syncState"][] = ["pending", "conflict"];

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, Keyboard, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import {
   TextInput,
   PrimaryButton,
@@ -10,11 +10,11 @@ import {
   LinkText,
   Layout,
   Checkbox,
-} from "@/src/components";
+} from "@/components";
 import { Feather } from "@expo/vector-icons";
-import { useAuthContext } from "@/src/context/AuthContext";
-import { useRegister } from "@/src/feature/Auth/hooks/useRegister";
-import { validateEmail } from "@/src/utils/validation";
+import { useAuthContext } from "@/context/AuthContext";
+import { useRegister } from "@/feature/Auth/hooks/useRegister";
+import { validateEmail } from "@/utils/validation";
 
 export default function RegisterScreen({ navigation }: any) {
   const { t } = useTranslation(["login", "common"]);

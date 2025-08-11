@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { View, Image } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system";
-import { useUserContext } from "@/src/context/UserContext";
+import { useUserContext } from "@contexts/UserContext";
 
 type Props = {
   size?: number;

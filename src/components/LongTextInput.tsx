@@ -1,6 +1,6 @@
 import React, { forwardRef } from "react";
 import { View, TextInput as RNTextInput, Text } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 
 type Props = {
   value: string;

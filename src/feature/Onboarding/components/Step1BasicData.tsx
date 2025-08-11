@@ -1,15 +1,15 @@
 import React, { useEffect } from "react";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import {
   PrimaryButton,
   SecondaryButton,
   TextInput,
   Dropdown,
-} from "@/src/components";
-import { convertHeight, convertWeight } from "@/src/utils/units";
-import { UnitsSystem, FormData } from "@/src/types/onboarding";
+} from "@/components";
+import { convertHeight, convertWeight } from "@/utils/units";
+import { UnitsSystem, FormData } from "@/types/onboarding";
 
 type Props = {
   form: FormData;

@@ -1,4 +1,4 @@
-import type { Meal } from "@/src/types";
+import type { Meal } from "@/types";
 
 export function getTodayMeals(meals: Meal[]): Meal[] {
   const now = new Date();

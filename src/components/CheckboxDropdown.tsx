@@ -15,7 +15,7 @@ import {
   StyleSheet,
   Dimensions,
 } from "react-native";
-import { useTheme } from "@/src/theme/useTheme";
+import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 

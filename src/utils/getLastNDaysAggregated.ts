@@ -1,5 +1,5 @@
-import type { Meal, Nutrients } from "@/src/types";
-import { calculateTotalNutrients } from "@/src/utils/calculateTotalNutrients";
+import type { Meal, Nutrients } from "@/types";
+import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 
 type AggregationType = "kcal" | "nutrients";
 

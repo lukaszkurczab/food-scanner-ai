@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "jsx": "react-native",
     "strict": true,
     "esModuleInterop": true,
@@ -24,7 +24,7 @@
       "@theme/*": ["src/theme/*"],
       "@types/*": ["src/types/*"],
       "@utils/*": ["src/utils/*"],
-      "@/src/*": ["./src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["."],

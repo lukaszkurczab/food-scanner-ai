@@ -1,4 +1,4 @@
-import type { FormData } from "@/src/types";
+import type { FormData } from "@/types";
 
 export function calculateCalorieTarget(form: FormData): number {
   const weight = Number(form.weight);

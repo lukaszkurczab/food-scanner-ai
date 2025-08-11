@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Alert, Image } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/src/theme/useTheme";
-import { useUserContext } from "@/src/context/UserContext";
-import { ButtonToggle, InputModal, Layout, UserIcon } from "@/src/components";
+import { useTheme } from "@/theme/useTheme";
+import { useUserContext } from "@contexts/UserContext";
+import { ButtonToggle, InputModal, Layout, UserIcon } from "@/components";
 import { getAuth, signOut } from "@react-native-firebase/auth";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";

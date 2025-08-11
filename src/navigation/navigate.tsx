@@ -1,5 +1,5 @@
 import { createNavigationContainerRef } from "@react-navigation/native";
-import { Meal } from "@/src/types";
+import { Meal } from "@/types";
 
 export type RootStackParamList = {
   Home: undefined;
