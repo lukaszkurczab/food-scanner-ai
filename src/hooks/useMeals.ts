@@ -1,18 +1,15 @@
-import { useState, useCallback, useRef } from "react";
-import NetInfo from "@react-native-community/netinfo";
-import { database } from "@/db/database";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Meal } from "@/types/meal";
-import {
-  fetchMealsFromFirestore,
-  upsertMealWithPhoto,
-  deleteMealInFirestore,
-} from "@services/mealService";
-import { mapRawToMeal, mapMealToRaw } from "@/utils/mealMapper";
 import { v4 as uuidv4 } from "uuid";
+import {
+  getMealsLocal,
+  upsertMealLocal,
+  softDeleteMealLocal,
+  syncMeals as syncMealsRepo,
+} from "@services/mealService";
+import { getMealQueue } from "@/sync/queues";
 
-const unsyncedStatuses: Meal["syncState"][] = ["pending", "conflict"];
-
-function areMealsEqual(a: Meal[], b: Meal[]): boolean {
+function eqByCloudId(a: Meal[], b: Meal[]) {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++)
     if (a[i].cloudId !== b[i].cloudId) return false;
@@ -25,195 +22,121 @@ export function useMeals(userUid: string) {
   const syncingRef = useRef(false);
 
   const getMeals = useCallback(async () => {
-    const mealCollection = database.get("meals");
-    const all = await mealCollection.query().fetch();
-    const userMeals = all.filter(
-      (m: any) => m.userUid === userUid && !m.deleted
-    );
-    const mealsArr = userMeals.map((m: any) => mapRawToMeal(m._raw));
-    setMeals((prev) => (areMealsEqual(prev, mealsArr) ? prev : mealsArr));
+    if (!userUid) {
+      setMeals([]);
+      setLoading(false);
+      return;
+    }
+    const list = await getMealsLocal(userUid);
+    setMeals((prev) => (eqByCloudId(prev, list) ? prev : list));
     setLoading(false);
   }, [userUid]);
 
+  useEffect(() => {
+    getMeals();
+  }, [getMeals]);
+
   const addMeal = useCallback(
-    async (
-      meal: Omit<Meal, "syncState" | "lastUpdated" | "source" | "updatedAt">
-    ) => {
-      const mealCollection = database.get("meals");
-      const cloudId = meal.cloudId ?? uuidv4();
-      const baseMeal: Meal = {
+    async (meal: Omit<Meal, "syncState" | "updatedAt">) => {
+      const now = new Date().toISOString();
+      const base: Meal = {
         ...meal,
         userUid,
         syncState: "pending",
-        cloudId,
-        source: "ai",
-        updatedAt: new Date().toISOString(),
+        source: meal.source ?? "manual",
+        updatedAt: now,
+        createdAt: meal.createdAt ?? now,
+        cloudId: meal.cloudId ?? uuidv4(),
+        mealId: meal.mealId ?? uuidv4(),
       };
-      let syncState: Meal["syncState"] = "synced";
-      try {
-        await upsertMealWithPhoto(
-          userUid,
-          { ...baseMeal, syncState: "synced" },
-          meal.photoUrl || null
-        );
-      } catch {
-        syncState = "pending";
-      }
-      await database.write(async () => {
-        const { id, ...raw } = mapMealToRaw({ ...baseMeal, syncState });
-        await mealCollection.create((m: any) => Object.assign(m, raw));
-      });
+      await upsertMealLocal(userUid, base);
+      getMealQueue(userUid).enqueue({ kind: "upsert", userUid, meal: base });
       await getMeals();
     },
-    [getMeals, userUid]
+    [userUid, getMeals]
   );
 
   const updateMeal = useCallback(
     async (meal: Meal) => {
-      const mealCollection = database.get("meals");
-      const all = await mealCollection.query().fetch();
-      const localMeal = all.find((m: any) => m.id === meal.cloudId);
-      let resultingSync: Meal["syncState"] = "synced";
-      try {
-        await upsertMealWithPhoto(
-          userUid,
-          { ...meal, syncState: "synced" },
-          meal.photoUrl || null
-        );
-      } catch {
-        resultingSync = "pending";
-      }
-      if (localMeal) {
-        await database.write(async () => {
-          await localMeal.update((m: any) =>
-            Object.assign(
-              m,
-              mapMealToRaw({
-                ...meal,
-                syncState: resultingSync,
-                updatedAt: new Date().toISOString(),
-              })
-            )
-          );
-        });
-        await getMeals();
-      }
+      const updated: Meal = {
+        ...meal,
+        updatedAt: new Date().toISOString(),
+        syncState: "pending",
+      };
+      await upsertMealLocal(userUid, updated);
+      getMealQueue(userUid).enqueue({ kind: "upsert", userUid, meal: updated });
+      await getMeals();
     },
-    [getMeals, userUid]
+    [userUid, getMeals]
   );
 
   const deleteMeal = useCallback(
     async (mealCloudId: string) => {
-      const mealCollection = database.get("meals");
-      const all = await mealCollection.query().fetch();
-      const localMeal = all.find((m: any) => m.id === mealCloudId);
-      if (localMeal) {
-        await database.write(async () => {
-          await localMeal.update((m: any) => {
-            m.deleted = true;
-            m.sync_status = "pending";
-            m.last_updated = new Date().toISOString();
-          });
-        });
-        await getMeals();
-      }
+      if (!mealCloudId) return;
+      await softDeleteMealLocal(userUid, mealCloudId);
+      getMealQueue(userUid).enqueue({
+        kind: "delete",
+        userUid,
+        cloudId: mealCloudId,
+      });
+      await getMeals();
     },
-    [getMeals]
+    [userUid, getMeals]
   );
 
   const duplicateMeal = useCallback(
     async (original: Meal, dateOverride?: string) => {
-      const copy: Omit<Meal, "syncState" | "lastUpdated" | "updatedAt"> = {
+      const copy: Omit<Meal, "syncState" | "updatedAt"> = {
         ...original,
         mealId: uuidv4(),
         cloudId: uuidv4(),
         timestamp: dateOverride || new Date().toISOString(),
         createdAt: new Date().toISOString(),
-        source: original.source || "manual",
         deleted: false,
-      } as any;
+      };
       await addMeal(copy as any);
     },
     [addMeal]
   );
 
-  const getUnsyncedMeals = useCallback(async () => {
-    const mealCollection = database.get("meals");
-    const all = await mealCollection.query().fetch();
-    return all
-      .filter(
-        (m: any) =>
-          m.userUid === userUid && unsyncedStatuses.includes(m.sync_status)
-      )
-      .map((m: any) => mapRawToMeal(m._raw));
-  }, [userUid]);
-
   const syncMeals = useCallback(async () => {
     if (syncingRef.current) return;
     syncingRef.current = true;
     try {
-      const netInfo = await NetInfo.fetch();
-      if (!netInfo.isConnected) return;
-      const mealCollection = database.get("meals");
-      const allLocal = await mealCollection.query().fetch();
-      const localMeals = allLocal.filter((m: any) => m.userUid === userUid);
-      const toSync = localMeals.filter((m: any) =>
-        unsyncedStatuses.includes(m.sync_status)
-      );
-      if (toSync.length === 0) return;
-
-      for (const m of toSync) {
-        const meal = mapRawToMeal(m._raw);
-        try {
-          if (meal.deleted) {
-            await deleteMealInFirestore(userUid, meal);
-          } else {
-            await upsertMealWithPhoto(userUid, meal, meal.photoUrl || null);
-          }
-          await database.write(async () => {
-            await m.update((mm: any) => {
-              mm.sync_status = "synced";
-              mm.last_updated = new Date().toISOString();
-            });
-          });
-        } catch {}
-      }
-
-      const remoteMeals = await fetchMealsFromFirestore(userUid);
-      for (const remote of remoteMeals) {
-        const local = localMeals.find((m: any) => m.id === remote.cloudId);
-        if (local) {
-          const localMeal = mapRawToMeal(local._raw);
-          if (new Date(remote.updatedAt) > new Date(localMeal.updatedAt)) {
-            await database.write(async () => {
-              await local.update((m: any) =>
-                Object.assign(m, mapMealToRaw(remote))
-              );
-            });
-          }
-        } else if (!remote.deleted) {
-          await database.write(async () => {
-            await mealCollection.create((m: any) =>
-              Object.assign(m, mapMealToRaw(remote))
-            );
-          });
-        }
-      }
+      await syncMealsRepo(userUid);
       await getMeals();
     } finally {
       syncingRef.current = false;
     }
   }, [userUid, getMeals]);
 
-  return {
-    meals,
-    loading,
-    getMeals,
-    addMeal,
-    updateMeal,
-    deleteMeal,
-    duplicateMeal,
-    syncMeals,
-    getUnsyncedMeals,
-  };
+  const getUnsyncedMeals = useCallback(async () => {
+    const list = await getMealsLocal(userUid);
+    return list.filter((m) => m.syncState !== "synced");
+  }, [userUid]);
+
+  return useMemo(
+    () => ({
+      meals,
+      loading,
+      getMeals,
+      addMeal,
+      updateMeal,
+      deleteMeal,
+      duplicateMeal,
+      syncMeals,
+      getUnsyncedMeals,
+    }),
+    [
+      meals,
+      loading,
+      getMeals,
+      addMeal,
+      updateMeal,
+      deleteMeal,
+      duplicateMeal,
+      syncMeals,
+      getUnsyncedMeals,
+    ]
+  );
 }
