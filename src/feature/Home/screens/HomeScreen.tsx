@@ -16,7 +16,7 @@ import type { Meal } from "@/types/meal";
 
 export default function HomeScreen({ navigation }: any) {
   const theme = useTheme();
-  const { userData, syncUserProfile } = useUserContext();
+  const { userData } = useUserContext();
   const uid = userData?.uid || "";
   const { meals, getMeals } = useMeals(uid);
   const { labels, data } = useMemo(
@@ -29,8 +29,8 @@ export default function HomeScreen({ navigation }: any) {
   useEffect(() => {
     if (!uid) return;
     getMeals();
-    syncUserProfile();
-  }, [uid, getMeals, syncUserProfile]);
+    // usunięto syncUserProfile() – zostaje tylko w UserProvider
+  }, [uid, getMeals]);
 
   useEffect(() => {
     setTodayMeals(getTodayMeals(meals));

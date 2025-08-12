@@ -1,4 +1,3 @@
-// src/utils/syncUtils.ts
 import NetInfo from "@react-native-community/netinfo";
 
 export async function withRetry<T>(

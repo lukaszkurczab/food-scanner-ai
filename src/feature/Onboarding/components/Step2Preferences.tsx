@@ -131,9 +131,8 @@ export default function Step2Preferences({
     setForm((prev) => ({
       ...prev,
       goal: val,
-      calorieDeficit: val === "lose" ? prev.calorieDeficit ?? 0.2 : undefined,
-      calorieSurplus:
-        val === "increase" ? prev.calorieSurplus ?? 0.2 : undefined,
+      calorieDeficit: val === "lose" ? prev.calorieDeficit ?? 0.2 : 0.2,
+      calorieSurplus: val === "increase" ? prev.calorieSurplus ?? 0.2 : 0.2,
     }));
   }
 

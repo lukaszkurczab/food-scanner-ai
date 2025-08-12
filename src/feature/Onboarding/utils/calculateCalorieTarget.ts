@@ -1,59 +1,50 @@
 import type { FormData } from "@/types";
 
 export function calculateCalorieTarget(form: FormData): number {
-  const weight = Number(form.weight);
-  const height = Number(form.height);
+  const weightKg = Number(form.weight);
+  const heightCm = Number(form.height);
   const age = Number(form.age);
   const sex = form.sex;
 
-  let weightKg = weight;
-  let heightCm = height;
-
-  if (form.unitsSystem === "imperial") {
-    weightKg = weight * 0.453592;
-
-    if (form.heightInch) {
-      heightCm = Number(form.heightInch) * 2.54;
-    } else {
-      heightCm = height * 2.54;
-    }
-  }
-
   if (!weightKg || !heightCm || !age || !sex) return 0;
 
-  let bmr = 0;
-  if (sex === "male") {
-    bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + 5;
-  } else if (sex === "female") {
-    bmr = 10 * weightKg + 6.25 * heightCm - 5 * age - 161;
-  } else {
-    return 0;
-  }
+  const bmr =
+    sex === "male"
+      ? 10 * weightKg + 6.25 * heightCm - 5 * age + 5
+      : sex === "female"
+      ? 10 * weightKg + 6.25 * heightCm - 5 * age - 161
+      : 0;
+  if (!bmr) return 0;
 
-  const activityMultipliers: Record<string, number> = {
+  const multipliers = {
     sedentary: 1.2,
     light: 1.375,
     moderate: 1.55,
     active: 1.725,
     very_active: 1.9,
-  };
-  const multiplier = activityMultipliers[form.activityLevel] ?? 1.2;
-  let tdee = bmr * multiplier;
-  let calorieTarget = tdee;
+  } as const;
 
-  if (form.goal === "lose") {
-    const deficit =
-      typeof form.calorieDeficit === "number" ? form.calorieDeficit : 0.15;
-    calorieTarget = tdee * (1 - deficit);
-  } else if (form.goal === "increase") {
-    const surplus =
-      typeof form.calorieSurplus === "number" ? form.calorieSurplus : 0.1;
-    calorieTarget = tdee * (1 + surplus);
+  let tdee;
+
+  if (form.activityLevel != "") {
+    tdee = bmr * multipliers[form.activityLevel];
+  } else {
+    tdee = bmr * 1.375;
   }
 
-  calorieTarget = Math.round(calorieTarget);
+  const target =
+    form.goal === "lose"
+      ? tdee *
+        (1 -
+          (typeof form.calorieDeficit === "number"
+            ? form.calorieDeficit
+            : 0.15))
+      : form.goal === "increase"
+      ? tdee *
+        (1 +
+          (typeof form.calorieSurplus === "number" ? form.calorieSurplus : 0.1))
+      : tdee;
 
-  if (calorieTarget < 1000 || calorieTarget > 6000) return 0;
-
-  return calorieTarget;
+  const rounded = Math.round(target);
+  return rounded < 1000 || rounded > 6000 ? 0 : rounded;
 }

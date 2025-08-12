@@ -54,7 +54,7 @@ export function useUser(uid: string) {
         ? {
             ...prev,
             ...patch,
-            syncState: "pending",
+            syncState: (patch.syncState as any) ?? "pending",
             lastSyncedAt: new Date().toISOString(),
           }
         : null;
@@ -62,7 +62,7 @@ export function useUser(uid: string) {
         await upsertUserLocal(next);
         getUserQueue(uid).enqueue({ kind: "sync", userUid: uid });
         setUserData(next);
-        setSyncState("pending");
+        setSyncState(next.syncState);
         if (patch.language) setLanguage(patch.language);
       }
     },
@@ -91,7 +91,9 @@ export function useUser(uid: string) {
           avatarlastSyncedAt: res.avatarlastSyncedAt,
           syncState: "synced",
         });
-      } catch {}
+      } catch {
+        // swallow upload error; kolejka i tak spróbuje zsynchronizować
+      }
     },
     [uid, updateUserProfile]
   );

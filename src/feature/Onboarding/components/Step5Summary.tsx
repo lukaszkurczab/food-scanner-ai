@@ -5,6 +5,7 @@ import { PrimaryButton, SecondaryButton, IconButton } from "@/components";
 import { FormData } from "@/types";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { cmToFtIn, kgToLbs } from "@utils/units";
 
 type Props = {
   form: FormData;
@@ -40,19 +41,20 @@ export default function Step5Summary({
   const chronicDiseases: string[] = parseArray(form.chronicDiseases);
 
   function renderHeight() {
+    const cm = Number(form.height || 0);
     if (form.unitsSystem === "imperial") {
-      const feet = form.height;
-      const inches = form.heightInch || "0";
-      return `${feet} ft ${inches} in`;
+      const { ft, inch } = cmToFtIn(cm);
+      return `${ft} ft ${inch} in`;
     }
-    return `${form.height} cm`;
+    return `${cm || ""} cm`;
   }
 
   function renderWeight() {
+    const kg = Number(form.weight || 0);
     if (form.unitsSystem === "imperial") {
-      return `${form.weight} lbs`;
+      return `${kg ? kgToLbs(kg) : ""} lbs`;
     }
-    return `${form.weight} kg`;
+    return `${kg || ""} kg`;
   }
 
   function renderSex() {
