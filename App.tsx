@@ -1,5 +1,6 @@
 import "@/i18n";
 import "@/FirebaseConfig";
+import "react-native-get-random-values";
 import { useEffect } from "react";
 import { ThemeController } from "@/theme/ThemeController";
 import AppNavigator from "@/navigation/AppNavigator";

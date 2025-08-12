@@ -1,4 +1,3 @@
-// src/feature/Meals/screens/ReviewIngredientsScreen.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
