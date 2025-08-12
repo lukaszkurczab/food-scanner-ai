@@ -59,7 +59,7 @@ import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { zip } from "react-native-zip-archive";
 
-import { withRetry, onReconnect } from "@utils/syncUtils";
+import { withRetry } from "@utils/syncUtils"; // <- usunięto onReconnect stąd
 
 type SexNonNull = Exclude<Sex, null>;
 
@@ -140,7 +140,6 @@ export async function getUserLocal(uid: string): Promise<UserData | null> {
     allergies: asEnumArray<Allergy>(u.allergies, ALLERGIES),
 
     height: u.height,
-    heightInch: orUndef(u.heightInch),
     age: u.age,
     weight: u.weight,
 
@@ -171,7 +170,12 @@ export async function upsertUserLocal(data: UserData): Promise<void> {
         u.plan = data.plan;
         u.lastLogin = data.lastLogin;
         u.surveyComplited = data.surveyComplited;
-        u.syncState = "pending";
+
+        // KLUCZOWA ZMIANA: nie nadpisuj bezwarunkowo na "pending"
+        u.syncState =
+          (data.syncState as SyncState) ??
+          (u.syncState as SyncState) ??
+          "pending";
 
         u.darkTheme = data.darkTheme ?? false;
         u.language = data.language;
@@ -189,7 +193,6 @@ export async function upsertUserLocal(data: UserData): Promise<void> {
           u.avatarLocalPath = data.avatarLocalPath;
         if (data.avatarlastSyncedAt !== undefined)
           u.avatarlastSyncedAt = data.avatarlastSyncedAt;
-        if (data.heightInch !== undefined) u.heightInch = data.heightInch;
         if (data.calorieDeficit !== undefined)
           u.calorieDeficit = data.calorieDeficit;
         if (data.calorieSurplus !== undefined)
@@ -219,7 +222,9 @@ export async function upsertUserLocal(data: UserData): Promise<void> {
         u.createdAt = data.createdAt;
         u.lastLogin = data.lastLogin;
         u.surveyComplited = data.surveyComplited;
-        u.syncState = "pending";
+
+        // KLUCZOWA ZMIANA: tylko gdy brak — "pending"
+        u.syncState = (data.syncState as SyncState) ?? "pending";
 
         u.darkTheme = data.darkTheme ?? false;
         u.language = data.language;
@@ -237,7 +242,6 @@ export async function upsertUserLocal(data: UserData): Promise<void> {
           u.avatarLocalPath = data.avatarLocalPath;
         if (data.avatarlastSyncedAt !== undefined)
           u.avatarlastSyncedAt = data.avatarlastSyncedAt;
-        if (data.heightInch !== undefined) u.heightInch = data.heightInch;
         if (data.calorieDeficit !== undefined)
           u.calorieDeficit = data.calorieDeficit;
         if (data.calorieSurplus !== undefined)
@@ -261,7 +265,7 @@ export async function upsertUserLocal(data: UserData): Promise<void> {
     }
   });
 
-  onReconnect(() => syncUserProfile(data.uid));
+  // KLUCZOWA ZMIANA: usunięto rejestrowanie onReconnect(() => syncUserProfile(...))
 }
 
 const USERS = "users";
@@ -291,8 +295,15 @@ export async function syncUserProfile(uid: string): Promise<void> {
 
   if (!local && !remote) return;
 
+  // używamy jednego stempla czasu dla danej operacji
+  const nowIso = new Date().toISOString();
+
   if (!local && remote) {
-    await upsertUserLocal({ ...remote, syncState: "synced" });
+    await upsertUserLocal({
+      ...remote,
+      syncState: "synced",
+      lastSyncedAt: nowIso,
+    });
     return;
   }
 
@@ -300,11 +311,15 @@ export async function syncUserProfile(uid: string): Promise<void> {
     await withRetry(async () => {
       await setDoc(
         doc(collection(db(), USERS), uid),
-        { ...local, syncState: "synced" },
+        { ...local, syncState: "synced", lastSyncedAt: nowIso },
         { merge: true }
       );
     });
-    await upsertUserLocal({ ...local, syncState: "synced" });
+    await upsertUserLocal({
+      ...local,
+      syncState: "synced",
+      lastSyncedAt: nowIso,
+    });
     return;
   }
 
@@ -314,16 +329,25 @@ export async function syncUserProfile(uid: string): Promise<void> {
       await withRetry(async () => {
         await setDoc(
           doc(collection(db(), USERS), uid),
-          { ...local, syncState: "synced" },
+          { ...local, syncState: "synced", lastSyncedAt: nowIso },
           { merge: true }
         );
       });
-      await upsertUserLocal({ ...local, syncState: "synced" });
+      await upsertUserLocal({
+        ...local,
+        syncState: "synced",
+        lastSyncedAt: nowIso,
+      });
     } else {
-      await upsertUserLocal({ ...remote, syncState: "synced" });
+      await upsertUserLocal({
+        ...remote,
+        syncState: "synced",
+        lastSyncedAt: nowIso,
+      });
     }
   }
 }
+
 export async function updateUserLanguageInFirestore(
   uid: string,
   language: string

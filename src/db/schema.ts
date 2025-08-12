@@ -20,7 +20,6 @@ export const schema = appSchema({
         { name: "age", type: "string" },
         { name: "sex", type: "string" },
         { name: "height", type: "string" },
-        { name: "heightInch", type: "string", isOptional: true },
         { name: "weight", type: "string" },
         { name: "preferences", type: "string" },
         { name: "activityLevel", type: "string" },

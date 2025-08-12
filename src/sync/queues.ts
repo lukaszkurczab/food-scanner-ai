@@ -18,7 +18,6 @@ import {
 
 import { syncUserProfile } from "@/services/userService";
 
-/** MEALS */
 type MealJob =
   | { kind: "upsert"; userUid: string; meal: Meal }
   | { kind: "delete"; userUid: string; cloudId: string };
@@ -61,7 +60,6 @@ async function processMeal(job: MealJob) {
   }
 }
 
-/** CHAT */
 type ChatJob = { kind: "upsert"; userUid: string; message: ChatMessage };
 
 async function processChat(job: ChatJob) {
@@ -101,14 +99,12 @@ async function processChat(job: ChatJob) {
   }
 }
 
-/** USER */
 type UserJob = { kind: "sync"; userUid: string };
 
 async function processUser(job: UserJob) {
   await syncUserProfile(job.userUid);
 }
 
-/** Fabryki kolejek per-uid */
 const mealQueues = new Map<
   string,
   ReturnType<typeof createPendingQueue<MealJob>>

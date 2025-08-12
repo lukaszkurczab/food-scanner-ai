@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -8,7 +8,7 @@ import {
   TextInput,
   Dropdown,
 } from "@/components";
-import { convertHeight, convertWeight } from "@/utils/units";
+import { cmToFtIn, ftInToCm, kgToLbs, lbsToKg } from "@/utils/units";
 import { UnitsSystem, FormData } from "@/types";
 
 type Props = {
@@ -43,69 +43,41 @@ export default function Step1BasicData({
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
 
-  useEffect(() => {
-    if (form.unitsSystem === "imperial" && form.height && !form.heightInch) {
-      const { ft, inch } = convertHeight(
-        "cmToImperial",
-        Number(form.height)
-      ) as { ft: number; inch: number };
-      setForm((prev) => ({
-        ...prev,
-        height: ft.toString(),
-        heightInch: inch.toString(),
-        weight: prev.weight
-          ? convertWeight("kgToLbs", Number(prev.weight)).toString()
-          : "",
-      }));
-    } else if (
-      form.unitsSystem === "metric" &&
-      form.height &&
-      form.heightInch
-    ) {
-      const cm = convertHeight(
-        "imperialToCm",
-        Number(form.height),
-        Number(form.heightInch)
-      ) as number;
-      setForm((prev) => ({
-        ...prev,
-        height: cm.toString(),
-        heightInch: undefined,
-        weight: prev.weight
-          ? convertWeight("lbsToKg", Number(prev.weight)).toString()
-          : "",
-      }));
-    }
-  }, [form.unitsSystem]);
+  const cm = Number(form.height || 0);
+  const kg = Number(form.weight || 0);
+  const { ft: dispFt, inch: dispIn } = cm ? cmToFtIn(cm) : { ft: 0, inch: 0 };
+  const dispLbs = kg ? kgToLbs(kg) : 0;
 
   const validate = (
     field: keyof FormData,
     value: string
   ): string | undefined => {
     switch (field) {
-      case "age":
+      case "age": {
         if (!value) return t("errors.ageRequired");
         if (!/^\d+$/.test(value) || Number(value) < 16 || Number(value) > 120)
           return t("errors.ageInvalid");
         break;
-      case "sex":
+      }
+      case "sex": {
         if (!value) return t("errors.sexRequired");
         break;
-      case "height":
-        if (!value) return t("errors.heightRequired");
+      }
+      case "height": {
+        if (!value && form.unitsSystem === "metric")
+          return t("errors.heightRequired");
         if (form.unitsSystem === "metric") {
-          if (
-            !/^\d{2,3}$/.test(value) ||
-            Number(value) < 90 ||
-            Number(value) > 250
-          )
-            return t("errors.heightInvalid");
+          if (!/^\d{2,3}$/.test(value)) return t("errors.heightInvalid");
+          const v = Number(value);
+          if (v < 90 || v > 250) return t("errors.heightInvalid");
         } else {
-          if (!/^\d+$/.test(value) || Number(value) < 3 || Number(value) > 8)
-            return t("errors.heightInvalid");
+          if (!/^\d+$/.test(value)) return t("errors.heightInvalid");
+          const ft = Number(value);
+          if (ft < 3 || ft > 8) return t("errors.heightInvalid");
         }
         break;
-      case "heightInch":
+      }
+      case "heightInch": {
         if (form.unitsSystem === "imperial") {
           if (
             value &&
@@ -114,16 +86,21 @@ export default function Step1BasicData({
             return t("errors.heightInchInvalid");
         }
         break;
-      case "weight":
-        if (!value) return t("errors.weightRequired");
+      }
+      case "weight": {
+        if (!value && form.unitsSystem === "metric")
+          return t("errors.weightRequired");
         if (form.unitsSystem === "metric") {
-          if (!/^\d+$/.test(value) || Number(value) < 30 || Number(value) > 300)
-            return t("errors.weightInvalid");
+          if (!/^\d+$/.test(value)) return t("errors.weightInvalid");
+          const v = Number(value);
+          if (v < 30 || v > 300) return t("errors.weightInvalid");
         } else {
-          if (!/^\d+$/.test(value) || Number(value) < 70 || Number(value) > 660)
-            return t("errors.weightInvalid");
+          if (!/^\d+$/.test(value)) return t("errors.weightInvalid");
+          const lbs = Number(value);
+          if (lbs < 70 || lbs > 660) return t("errors.weightInvalid");
         }
         break;
+      }
       default:
         break;
     }
@@ -142,16 +119,40 @@ export default function Step1BasicData({
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
+  const handleHeightFtChange = (ftStr: string) => {
+    const ft = Number(ftStr.replace(/[^0-9]/g, "")) || 0;
+    const inch = Number(getString(form.heightInch)) || 0;
+    const toCm = ftInToCm(ft, inch);
+    setForm((p) => ({ ...p, height: String(toCm), heightInch: String(inch) }));
+    setErrors((e) => ({ ...e, height: undefined }));
+  };
+
+  const handleHeightInChange = (inStr: string) => {
+    const inch = Number(inStr.replace(/[^0-9]/g, "")) || 0;
+    const ft = dispFt || 0;
+    const toCm = ftInToCm(ft, inch);
+    setForm((p) => ({ ...p, height: String(toCm), heightInch: String(inch) }));
+    setErrors((e) => ({ ...e, heightInch: undefined }));
+  };
+
+  const handleWeightLbsChange = (lbsStr: string) => {
+    const lbs = Number(lbsStr.replace(/[^0-9]/g, "")) || 0;
+    const toKg = lbsToKg(lbs);
+    setForm((p) => ({ ...p, weight: String(toKg) }));
+    setErrors((e) => ({ ...e, weight: undefined }));
+  };
+
   const canNext = () => {
     if (validate("age", getString(form.age))) return false;
     if (validate("sex", getString(form.sex))) return false;
-    if (validate("height", getString(form.height))) return false;
-    if (
-      form.unitsSystem === "imperial" &&
-      validate("heightInch", getString(form.heightInch))
-    )
-      return false;
-    if (validate("weight", getString(form.weight))) return false;
+    if (form.unitsSystem === "metric") {
+      if (validate("height", getString(form.height))) return false;
+      if (validate("weight", getString(form.weight))) return false;
+    } else {
+      if (validate("height", String(dispFt || ""))) return false;
+      if (validate("heightInch", String(dispIn ?? ""))) return false;
+      if (validate("weight", String(dispLbs || ""))) return false;
+    }
     return true;
   };
 
@@ -259,9 +260,9 @@ export default function Step1BasicData({
       {form.unitsSystem === "metric" ? (
         <TextInput
           label={t("height")}
-          value={getString(form.height)}
+          value={getString(form.height)} // cm w form
           onChangeText={(val) =>
-            handleChange("height", val.replace(/[^0-9]/g, ""))
+            setForm((p) => ({ ...p, height: val.replace(/[^0-9]/g, "") }))
           }
           keyboardType="number-pad"
           onBlur={() => handleBlur("height")}
@@ -274,10 +275,8 @@ export default function Step1BasicData({
         <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
           <TextInput
             label={t("heightFt")}
-            value={getString(form.height)}
-            onChangeText={(val) =>
-              handleChange("height", val.replace(/[^0-9]/g, ""))
-            }
+            value={dispFt ? String(dispFt) : ""}
+            onChangeText={handleHeightFtChange}
             keyboardType="number-pad"
             onBlur={() => handleBlur("height")}
             error={errors.height}
@@ -287,10 +286,8 @@ export default function Step1BasicData({
           />
           <TextInput
             label={t("heightIn")}
-            value={getString(form.heightInch)}
-            onChangeText={(val) =>
-              handleChange("heightInch", val.replace(/[^0-9]/g, ""))
-            }
+            value={String(dispIn ?? 0)}
+            onChangeText={handleHeightInChange}
             keyboardType="number-pad"
             onBlur={() => handleBlur("heightInch")}
             error={errors.heightInch}
@@ -303,9 +300,18 @@ export default function Step1BasicData({
 
       <TextInput
         label={t("weight")}
-        value={getString(form.weight)}
-        onChangeText={(val) =>
-          handleChange("weight", val.replace(/[^0-9]/g, ""))
+        value={
+          form.unitsSystem === "metric"
+            ? getString(form.weight)
+            : String(dispLbs || "")
+        }
+        onChangeText={
+          form.unitsSystem === "metric"
+            ? (val) => {
+                setForm((p) => ({ ...p, weight: val.replace(/[^0-9]/g, "") }));
+                setErrors((e) => ({ ...e, weight: undefined }));
+              }
+            : handleWeightLbsChange
         }
         keyboardType="number-pad"
         onBlur={() => handleBlur("weight")}

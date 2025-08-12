@@ -20,7 +20,6 @@ export default class User extends Model {
   @field("age") age!: string;
   @field("sex") sex!: string;
   @field("height") height!: string;
-  @field("heightInch") heightInch?: string;
   @field("weight") weight!: string;
   @json("preferences", sanitizeArray) preferences!: string[];
   @field("activityLevel") activityLevel!: string;
