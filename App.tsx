@@ -17,7 +17,6 @@ import Purchases from "react-native-purchases";
 import { Platform } from "react-native";
 import { InactivityProvider } from "@contexts/InactivityContext";
 import { database } from "@/db/database";
-import { MealDraftInactivityGuard } from "@feature/Meals/guards/MealDraftInactivityGuard";
 
 export function initRevenueCat() {
   Purchases.configure({
@@ -70,11 +69,9 @@ export default function App() {
           <PremiumProvider>
             <UserProvider>
               <MealDraftProvider>
-                <MealDraftInactivityGuard>
-                  <ThemeController>
-                    <AppNavigator />
-                  </ThemeController>
-                </MealDraftInactivityGuard>
+                <ThemeController>
+                  <AppNavigator />
+                </ThemeController>
               </MealDraftProvider>
             </UserProvider>
           </PremiumProvider>
