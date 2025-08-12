@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Pressable,
   ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
@@ -18,8 +17,11 @@ import { LineSection } from "../components/LineSection";
 import { MacroPieCard } from "../components/MacroPieCard";
 import { ProgressAveragesCard } from "../components/ProgressAveragesCard";
 import { BottomTabBar, DateInput, UserIcon } from "@/components";
+import { PrimaryButton } from "@/components/PrimaryButton";
 import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { useTranslation } from "react-i18next";
+import { useMeals } from "@hooks/useMeals";
+import type { Meal } from "@/types/meal";
 
 type RangeKey = "7d" | "30d" | "custom";
 
@@ -27,7 +29,15 @@ export default function StatisticsScreen({ navigation }: any) {
   const theme = useTheme();
   const net = useNetInfo();
   const { t } = useTranslation(["statistics", "common"]);
-  const { meals, loadingMeals, userData } = useUserContext() as any;
+  const { userData } = useUserContext();
+
+  const uid = userData?.uid || "";
+  const {
+    meals: rawMeals,
+    getMeals,
+    loadingMeals,
+  } = (useMeals(uid) as any) ?? {};
+  const meals: Meal[] = Array.isArray(rawMeals) ? rawMeals : [];
 
   const [active, setActive] = useState<RangeKey>("7d");
   const [customRange, setCustomRange] = useState({
@@ -35,6 +45,12 @@ export default function StatisticsScreen({ navigation }: any) {
     end: new Date(),
   });
   const [metric, setMetric] = useState<MetricKey>("kcal");
+
+  useEffect(() => {
+    if (!uid) return;
+    // pobierz posiłki przy wejściu na ekran
+    if (typeof getMeals === "function") getMeals();
+  }, [uid, getMeals]);
 
   const range = useMemo(() => {
     if (active === "7d") return lastNDaysRange(7);
@@ -54,10 +70,11 @@ export default function StatisticsScreen({ navigation }: any) {
     days,
     "nutrients"
   );
-  const kcalSeries = stats.caloriesSeries;
-  const proteinSeries = nutrientsByDay.map((n) => n.protein);
-  const carbsSeries = nutrientsByDay.map((n) => n.carbs);
-  const fatSeries = nutrientsByDay.map((n) => n.fat);
+
+  const kcalSeries = stats.caloriesSeries ?? [];
+  const proteinSeries = (nutrientsByDay ?? []).map((n) => n.protein ?? 0);
+  const carbsSeries = (nutrientsByDay ?? []).map((n) => n.carbs ?? 0);
+  const fatSeries = (nutrientsByDay ?? []).map((n) => n.fat ?? 0);
 
   const seriesByMetric: Record<MetricKey, number[]> = {
     kcal: kcalSeries,
@@ -66,10 +83,25 @@ export default function StatisticsScreen({ navigation }: any) {
     fat: fatSeries,
   };
 
-  const sumKcal = kcalSeries.reduce((s, v) => s + v, 0);
+  const sumKcal = kcalSeries.reduce((s, v) => s + (v || 0), 0);
 
-  const totals = stats.totals;
-  const empty = !loadingMeals && sumKcal === 0 && totals.kcal === 0;
+  const totals = stats.totals ?? { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+
+  // solidne sprawdzenie czy jest co wyświetlić
+  const hasAnySeriesData =
+    kcalSeries.some((v) => v > 0) ||
+    proteinSeries.some((v) => v > 0) ||
+    carbsSeries.some((v) => v > 0) ||
+    fatSeries.some((v) => v > 0);
+
+  const hasTotals =
+    (totals.kcal ?? 0) > 0 ||
+    (totals.protein ?? 0) > 0 ||
+    (totals.carbs ?? 0) > 0 ||
+    (totals.fat ?? 0) > 0;
+
+  const empty =
+    !loadingMeals && meals.length === 0 && !hasAnySeriesData && !hasTotals;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
@@ -99,9 +131,7 @@ export default function StatisticsScreen({ navigation }: any) {
             { key: "custom", label: t("statistics:ranges.custom") },
           ]}
           active={active}
-          onChange={(key) => {
-            setActive(key as any);
-          }}
+          onChange={(key) => setActive(key as RangeKey)}
         />
         {active === "custom" && (
           <View style={{ marginTop: 8 }}>
@@ -131,17 +161,12 @@ export default function StatisticsScreen({ navigation }: any) {
           >
             {t("statistics:empty.desc")}
           </Text>
-          <Pressable
+
+          <PrimaryButton
+            label={t("statistics:empty.cta")}
             onPress={() => navigation.navigate("MealAddMethod")}
-            style={[
-              styles.cta,
-              { backgroundColor: theme.accent, borderRadius: theme.rounded.md },
-            ]}
-          >
-            <Text style={{ color: theme.onAccent, fontWeight: "600" }}>
-              {t("statistics:empty.cta")}
-            </Text>
-          </Pressable>
+            style={{ marginTop: 14, alignSelf: "stretch" }}
+          />
         </View>
       ) : (
         <ScrollView
@@ -161,9 +186,9 @@ export default function StatisticsScreen({ navigation }: any) {
           <MetricsGrid
             values={{
               kcal: sumKcal,
-              protein: totals.protein,
-              carbs: totals.carbs,
-              fat: totals.fat,
+              protein: totals.protein ?? 0,
+              carbs: totals.carbs ?? 0,
+              fat: totals.fat ?? 0,
             }}
             selected={metric}
             onSelect={setMetric}
@@ -176,12 +201,13 @@ export default function StatisticsScreen({ navigation }: any) {
           />
 
           <MacroPieCard
-            protein={totals.protein}
-            carbs={totals.carbs}
-            fat={totals.fat}
+            protein={totals.protein ?? 0}
+            carbs={totals.carbs ?? 0}
+            fat={totals.fat ?? 0}
           />
         </ScrollView>
       )}
+
       <BottomTabBar
         tabs={[
           {
@@ -237,6 +263,5 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emptyTitle: { fontSize: 18, fontWeight: "700" },
-  cta: { marginTop: 14, paddingVertical: 10, paddingHorizontal: 18 },
   scroll: { gap: 16 },
 });
