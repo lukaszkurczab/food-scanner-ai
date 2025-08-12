@@ -32,6 +32,7 @@ export function useUser(uid: string) {
       return null;
     }
     const local = await getUserLocal(uid);
+
     if (local) {
       setUserData(local);
       setSyncState(local.syncState);

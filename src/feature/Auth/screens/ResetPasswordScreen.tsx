@@ -83,7 +83,6 @@ export default function ResetPasswordScreen({ navigation }: any) {
         setError(t("errorNotFound") ?? "User not found");
       } else {
         setError(t("errorGeneric") ?? "Unexpected error");
-        console.log(err);
       }
     }
   };

@@ -28,11 +28,13 @@ export default function RegisterScreen({ navigation }: any) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
+  const [emailValidated, setEmailValidated] = useState(true);
 
   const [emailTouched, setEmailTouched] = useState(false);
 
   const { setFirebaseUser } = useAuthContext();
-  const { register, loading, errors } = useRegister(setFirebaseUser);
+  const { register, loading, errors, clearError } =
+    useRegister(setFirebaseUser);
 
   React.useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -41,8 +43,14 @@ export default function RegisterScreen({ navigation }: any) {
     return () => unsubscribe();
   }, []);
 
+  const handleValidateEmail = () => {
+    setEmailTouched(true);
+    const val = validateEmail(email);
+    setEmailValidated(val);
+  };
+
   const emailLiveError =
-    email && !validateEmail(email) ? t("invalid_email") : undefined;
+    email && !emailValidated ? t("invalid_email") : undefined;
 
   const isFormDisabled =
     !username ||
@@ -72,7 +80,7 @@ export default function RegisterScreen({ navigation }: any) {
       accessibilityLabel={t("toggle_password_visibility")}
     >
       <Feather
-        name={show ? "eye-off" : "eye"}
+        name={!show ? "eye-off" : "eye"}
         size={22}
         color={theme.textSecondary}
       />
@@ -110,7 +118,10 @@ export default function RegisterScreen({ navigation }: any) {
           autoComplete="username"
           textContentType="username"
           placeholder={t("enter_username")}
-          onChangeText={setUsername}
+          onChangeText={(val) => {
+            setUsername(val);
+            clearError("username");
+          }}
           error={errors.username ? t(errors.username) : undefined}
           accessibilityLabel={t("username")}
           style={{ marginBottom: theme.spacing.md }}
@@ -126,9 +137,8 @@ export default function RegisterScreen({ navigation }: any) {
           placeholder={t("enter_email", { ns: "login" })}
           onChangeText={(val) => {
             setEmail(val);
-            setEmailTouched(true);
           }}
-          onBlur={() => setEmailTouched(true)}
+          onBlur={handleValidateEmail}
           error={
             (emailTouched && emailLiveError) ||
             (errors.email ? t(errors.email) : undefined)

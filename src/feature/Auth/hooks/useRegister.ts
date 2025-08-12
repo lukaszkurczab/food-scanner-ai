@@ -16,6 +16,13 @@ export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<RegisterErrors>({});
 
+  const clearError = (key: keyof RegisterErrors) => {
+    setErrors((prev) => {
+      const { [key]: _, ...rest } = prev;
+      return rest;
+    });
+  };
+
   const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const isStrongPassword = (p: string) =>
@@ -67,5 +74,5 @@ export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
     }
   };
 
-  return { register, loading, errors };
+  return { register, loading, errors, clearError };
 };

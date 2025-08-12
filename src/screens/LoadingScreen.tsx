@@ -1,35 +1,50 @@
 import { useEffect } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation } from "@react-navigation/native";
+import { ActivityIndicator, View } from "react-native";
 import { Layout } from "@/components";
-import { RootStackParamList } from "@/navigation/navigate";
 import { useUserContext } from "@contexts/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
+import { useUser } from "@hooks/useUser";
 
-type LoadingScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "Home"
->;
-
-const LoadingScreen = () => {
+const LoadingScreen = ({ navigation }: any) => {
+  const { firebaseUser, uid } = useAuthContext();
   const { userData, getUserData } = useUserContext();
-  const { setFirebaseUser } = useAuthContext();
-  const navigation = useNavigation<LoadingScreenNavigationProp>();
+  const { fetchUserFromCloud } = useUser(uid!);
 
   useEffect(() => {
-    if (!userData) {
-      getUserData().then((res) => {
-        if (res === undefined) {
-          setFirebaseUser(null);
+    let cancelled = false;
+
+    const run = async () => {
+      if (!firebaseUser) {
+        navigation.replace("Login");
+        return;
+      }
+
+      const local = await getUserData();
+      if (cancelled) return;
+
+      if (local) {
+        if (local.surveyComplited) navigation.replace("Home");
+        else navigation.replace("Onboarding");
+        return;
+      }
+
+      if (fetchUserFromCloud) {
+        const cloud = await fetchUserFromCloud();
+        if (cancelled) return;
+
+        if (cloud) {
+          if (cloud.surveyComplited) navigation.replace("Home");
+          else navigation.replace("Onboarding");
+          return;
         }
-      });
-    } else if (userData.surveyComplited) {
-      navigation.replace("Home");
-    } else {
-      navigation.replace("Onboarding");
-    }
-  }, [userData]);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseUser, userData, getUserData, fetchUserFromCloud, navigation]);
 
   return (
     <Layout showNavigation={false}>

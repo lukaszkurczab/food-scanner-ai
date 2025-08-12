@@ -26,8 +26,16 @@ export async function authRegister(
   username: string
 ): Promise<FirebaseAuthTypes.User> {
   const auth = getAuth(getApp());
-  await reserveUsername(username);
   const cred = await createUserWithEmailAndPassword(auth, email, password);
-  await createInitialUserProfile(cred.user, username);
-  return cred.user;
+
+  try {
+    await reserveUsername(username, cred.user.uid);
+    await createInitialUserProfile(cred.user, username);
+    return cred.user;
+  } catch (e) {
+    try {
+      await cred.user.delete();
+    } catch {}
+    throw e;
+  }
 }
