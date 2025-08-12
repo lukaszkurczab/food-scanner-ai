@@ -4,9 +4,10 @@ import {
   doc,
   getDoc,
   setDoc,
+  collection,
 } from "@react-native-firebase/firestore";
 
-const col = () => getFirestore(getApp()).collection("usernames");
+const col = () => collection(getFirestore(getApp()), "usernames");
 
 export function normalizeUsername(raw: string): string {
   return String(raw || "")
@@ -19,15 +20,16 @@ export async function isUsernameAvailable(
   currentUid?: string | null
 ): Promise<boolean> {
   const username = normalizeUsername(candidate);
+
   if (!username) return false;
 
   const db = getFirestore(getApp());
   const ref = doc(db, "usernames", username);
   const snap = await getDoc(ref);
 
-  if (!snap.exists) return true;
-
+  if (!snap.exists()) return true;
   const data = snap.data() as { uid?: string } | undefined;
+
   if (data?.uid && currentUid && data.uid === currentUid) return true;
 
   return false;

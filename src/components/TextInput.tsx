@@ -28,6 +28,7 @@ type Props = {
   numberOfLines?: number;
   style?: ViewStyle;
   inputStyle?: TextStyle;
+  onEndEditing?: () => void;
   disabled?: boolean;
   editable?: boolean;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
@@ -70,6 +71,7 @@ export const TextInput: React.FC<Props> = ({
   autoCorrect = true,
   returnKeyType,
   onSubmitEditing,
+  onEndEditing,
   rightLabel,
   maxLength = 128,
 }) => {
@@ -178,6 +180,7 @@ export const TextInput: React.FC<Props> = ({
           keyboardType={keyboardType}
           secureTextEntry={secureTextEntry}
           editable={isEditable}
+          onEndEditing={onEndEditing}
           multiline={multiline}
           numberOfLines={numberOfLines}
           autoCapitalize={autoCapitalize}
