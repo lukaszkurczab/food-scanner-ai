@@ -1,4 +1,3 @@
-// src/feature/Meals/screens/MealAddMethodScreen.tsx
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";

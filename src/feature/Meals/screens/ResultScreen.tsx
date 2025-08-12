@@ -1,4 +1,3 @@
-// src/feature/Meals/screens/ResultScreen.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import {

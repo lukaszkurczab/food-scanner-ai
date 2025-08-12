@@ -1,4 +1,3 @@
-// src/feature/Meals/guards/MealDraftInactivityGuard.tsx
 import React, { useEffect } from "react";
 import { useMealContext } from "@contexts/MealDraftContext";
 import { useInactivity } from "@contexts/InactivityContext";
