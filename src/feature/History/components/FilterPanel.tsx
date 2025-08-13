@@ -5,7 +5,7 @@ import { RangeSlider } from "@/components";
 import { DateRangePicker } from "@/components";
 import { PrimaryButton, SecondaryButton } from "@/components";
 
-export const FilterPanelScreen: React.FC<{
+export const FilterPanel: React.FC<{
   onApply: (filters: any) => void;
   onClear: () => void;
 }> = ({ onApply, onClear }) => {
@@ -20,7 +20,13 @@ export const FilterPanelScreen: React.FC<{
   });
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.background,
+        paddingHorizontal: theme.spacing.lg,
+      }}
+    >
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <RangeSlider
           label="Calories"
