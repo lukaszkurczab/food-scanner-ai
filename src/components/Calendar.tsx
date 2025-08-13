@@ -24,7 +24,7 @@ const startOfDay = (d: Date) => {
 };
 const isSameDay = (a: Date, b: Date) => +startOfDay(a) === +startOfDay(b);
 const clamp = (d: Date, min?: Date, max?: Date) => {
-  let t = +d;
+  let t = +startOfDay(d);
   if (min && t < +startOfDay(min)) t = +startOfDay(min);
   if (max && t > +startOfDay(max)) t = +startOfDay(max);
   return new Date(t);
@@ -99,7 +99,7 @@ export const Calendar: React.FC<Props> = ({
   const fmtWeekday = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(2023, 0, 2 + i);
+        const d = new Date(2024, 0, 1 + i); // 1.01.2024 = poniedziałek
         return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(d);
       }),
     [locale]
@@ -139,7 +139,7 @@ export const Calendar: React.FC<Props> = ({
 
   return (
     <View style={{ width: "100%" }}>
-      <View style={styles.header}>
+      <View style={[styles.header, { marginBottom: theme.spacing.xs }]}>
         <Pressable onPress={handlePrev} style={styles.navBtn}>
           <Text
             style={{ color: theme.link, fontSize: theme.typography.size.md }}
@@ -165,7 +165,8 @@ export const Calendar: React.FC<Props> = ({
         </Pressable>
       </View>
 
-      <View style={styles.weekRow}>
+      {/* Weekdays */}
+      <View style={[styles.weekRow, { marginBottom: theme.spacing.xs }]}>
         {fmtWeekday.map((wd, i) => (
           <Text
             key={i}
@@ -176,16 +177,17 @@ export const Calendar: React.FC<Props> = ({
         ))}
       </View>
 
-      <View style={styles.grid}>
+      {/* Grid */}
+      <View style={[styles.grid, { gap: 4 }]}>
         {cells.map((c, i) => {
           const selectedStart = isSameDay(c.date, selStart);
           const selectedEnd = isSameDay(c.date, selEnd);
           const selected = selectedStart || selectedEnd;
           const inSel = inRange(c.date, selStart, selEnd);
           const disabled = isDisabled(c.date);
-          const textColor = c.inMonth ? theme.text : theme.textSecondary;
 
-          const borderWidth =
+          const textColor = c.inMonth ? theme.text : theme.textSecondary;
+          const ringWidth =
             (focus === "start" && selectedStart) ||
             (focus === "end" && selectedEnd)
               ? 3
@@ -210,13 +212,19 @@ export const Calendar: React.FC<Props> = ({
                   <View
                     style={[
                       styles.dotCircle,
-                      { borderColor: theme.accent, borderWidth },
+                      { borderColor: theme.accent, borderWidth: ringWidth },
                     ]}
                   />
                 )}
               </View>
 
-              <Text style={{ color: textColor, textAlign: "center" }}>
+              <Text
+                style={{
+                  color: textColor,
+                  textAlign: "center",
+                  fontSize: theme.typography.size.sm,
+                }}
+              >
                 {c.date.getDate()}
               </Text>
 
@@ -238,24 +246,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8,
   },
   navBtn: { padding: 8 },
   weekRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 6,
   },
   weekText: { width: `${100 / 7}%`, textAlign: "center", fontSize: 12 },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    rowGap: 4,
   },
   cell: {
     width: `${100 / 7}%`,
-    aspectRatio: 1,
-    height: 8,
+    aspectRatio: 1, // kwadrat
     alignItems: "center",
     justifyContent: "center",
   },

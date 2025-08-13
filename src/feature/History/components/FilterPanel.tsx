@@ -63,16 +63,16 @@ export const FilterPanel: React.FC<{
         <DateRangePicker
           startDate={dateRange.start}
           endDate={dateRange.end}
-          onChangeRange={setDateRange}
+          onChange={function (range: { start: Date; end: Date }): void {
+            throw new Error("Function not implemented.");
+          }}
         />
-      </ScrollView>
-      <View>
         <PrimaryButton
           label="Apply filters"
           onPress={() => onApply({ calories, protein, carbs, fat, dateRange })}
         />
         <SecondaryButton label="Clear" onPress={onClear} />
-      </View>
+      </ScrollView>
     </View>
   );
 };
