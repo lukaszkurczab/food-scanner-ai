@@ -9,6 +9,7 @@ import { DateHeaderWithCalendarButton } from "../components/DateHeaderWithCalend
 import { MealListItem } from "../components/MealListItem";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
+import { FilterPanel } from "../components/FilterPanel";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { Layout } from "@/components";
@@ -24,6 +25,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [filterCount, setFilterCount] = useState(0);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -123,38 +125,48 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
       <View
         style={{
           flexDirection: "row",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           padding: 16,
         }}
       >
-        <DateHeaderWithCalendarButton
-          dateLabel={dateLabel}
-          onOpenCalendar={() => {}}
+        <FilterBadgeButton
+          activeCount={filterCount}
+          onPress={() => setShowFilters(!showFilters)}
         />
-        <FilterBadgeButton activeCount={filterCount} onPress={() => {}} />
       </View>
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.cloudId || item.mealId}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refresh} />
-        }
-        renderItem={({ item }) => (
-          <MealListItem
-            meal={item}
-            onPress={() => navigation.navigate("MealDetails", { meal: item })}
-            onEdit={() => onEditMeal(item.cloudId || item.mealId)}
-            onDuplicate={() => onDuplicateMeal(item)}
-            onDelete={() => onDeleteMeal(item.cloudId)}
-          />
-        )}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
-        onEndReachedThreshold={0.2}
-        onEndReached={loadMore}
-        ListFooterComponent={
-          loadingMore ? <LoadingSkeleton height={56} /> : null
-        }
-      />
+      {showFilters ? (
+        <FilterPanel
+          onApply={function (filters: any): void {
+            throw new Error("Function not implemented.");
+          }}
+          onClear={function (): void {
+            throw new Error("Function not implemented.");
+          }}
+        />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.cloudId || item.mealId}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={refresh} />
+          }
+          renderItem={({ item }) => (
+            <MealListItem
+              meal={item}
+              onPress={() => navigation.navigate("MealDetails", { meal: item })}
+              onEdit={() => onEditMeal(item.cloudId || item.mealId)}
+              onDuplicate={() => onDuplicateMeal(item)}
+              onDelete={() => onDeleteMeal(item.cloudId)}
+            />
+          )}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
+          onEndReachedThreshold={0.2}
+          onEndReached={loadMore}
+          ListFooterComponent={
+            loadingMore ? <LoadingSkeleton height={56} /> : null
+          }
+        />
+      )}
     </Layout>
   );
 }
