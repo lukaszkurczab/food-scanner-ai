@@ -1,12 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, FlatList, RefreshControl } from "react-native";
+import { View, SectionList, RefreshControl, Text } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
 import type { Meal } from "@/types/meal";
 import { FilterBadgeButton } from "../components/FilterBadgeButton";
-import { DateHeaderWithCalendarButton } from "../components/DateHeaderWithCalendarButton";
-import { MealListItem } from "../components/MealListItem";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { FilterPanel } from "../components/FilterPanel";
@@ -14,8 +12,51 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { Layout } from "@/components";
 import { getMealsPage } from "@services/mealService";
+import { MealListItem } from "../components/MealListItem";
 
 const PAGE_SIZE = 20;
+
+type DaySection = {
+  title: string;
+  dateKey: string;
+  totalKcal: number;
+  data: Meal[];
+};
+
+const toDate = (val?: string | number | null): Date | null => {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+const getMealDate = (m: Meal): Date => {
+  return (
+    toDate(m.timestamp) ||
+    toDate(m.updatedAt) ||
+    toDate(m.createdAt) ||
+    new Date(0)
+  );
+};
+
+const fmtDateKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+
+const fmtHeader = (d: Date) => {
+  const today = new Date();
+  const isToday =
+    d.getDate() === today.getDate() &&
+    d.getMonth() === today.getMonth() &&
+    d.getFullYear() === today.getFullYear();
+  if (isToday) return "Today";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}.${mm}`;
+};
+
+const mealKcal = (meal: Meal) =>
+  meal.ingredients?.reduce((sum, ing) => sum + (ing.kcal || 0), 0) || 0;
 
 export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const theme = useTheme();
@@ -23,20 +64,14 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const { uid } = useAuthContext();
   const { duplicateMeal, deleteMeal, getMeals } = useMeals(uid || "");
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [filterCount, setFilterCount] = useState(0);
-  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [items, setItems] = useState<Meal[]>([]);
   const [cursorBefore, setCursorBefore] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
-
-  const dateLabel = useMemo(
-    () => (selectedDate || new Date()).toLocaleDateString(),
-    [selectedDate]
-  );
 
   const loadFirstPage = useCallback(async () => {
     if (!uid) {
@@ -75,18 +110,39 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     await loadFirstPage();
   }, [getMeals, loadFirstPage]);
 
-  const filtered = useMemo(() => {
-    let list = items;
-    if (selectedDate) {
-      const target = selectedDate.toDateString();
-      list = list.filter(
-        (m) => new Date(m.timestamp).toDateString() === target
-      );
-    }
-    return list;
-  }, [items, selectedDate]);
+  // grupowanie per dzień (kolejność zachowana: najnowsze -> najstarsze)
+  const sections: DaySection[] = useMemo(() => {
+    if (!items.length) return [];
 
-  const onEditMeal = (mealId: string) => {};
+    const byKey = new Map<string, DaySection>();
+    const keysInOrder: string[] = [];
+
+    for (const meal of items) {
+      const d = getMealDate(meal);
+      const key = fmtDateKey(d);
+
+      if (!byKey.has(key)) {
+        byKey.set(key, {
+          title: fmtHeader(d),
+          dateKey: key,
+          totalKcal: 0,
+          data: [],
+        });
+        keysInOrder.push(key);
+      }
+
+      const sec = byKey.get(key)!;
+      sec.data.push(meal);
+      sec.totalKcal += mealKcal(meal);
+    }
+
+    return keysInOrder.map((k) => {
+      const s = byKey.get(k)!;
+      return { ...s, totalKcal: Math.round(s.totalKcal) };
+    });
+  }, [items]);
+
+  const onEditMeal = (_mealId: string) => {};
   const onDuplicateMeal = (meal: Meal) => duplicateMeal(meal);
   const onDeleteMeal = (mealCloudId?: string) => {
     if (mealCloudId) deleteMeal(mealCloudId);
@@ -94,39 +150,93 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
   if (loading) return <LoadingSkeleton />;
 
-  if (!filtered.length) {
+  if (!sections.length) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.background }}>
         {!netInfo.isConnected && <OfflineBanner />}
         <View
           style={{
             flexDirection: "row",
-            justifyContent: "space-between",
-            padding: 16,
+            justifyContent: "flex-end",
+            padding: theme.spacing.md,
           }}
         >
-          <DateHeaderWithCalendarButton
-            dateLabel={dateLabel}
-            onOpenCalendar={() => {}}
+          <FilterBadgeButton
+            activeCount={filterCount}
+            onPress={() => setShowFilters(!showFilters)}
           />
-          <FilterBadgeButton activeCount={filterCount} onPress={() => {}} />
         </View>
-        <EmptyState
-          title="No meals found"
-          description="Try changing filters or date"
-        />
+        {showFilters ? (
+          <FilterPanel
+            onApply={(filters) => {
+              setFilterCount(
+                Object.values(filters || {}).filter(Boolean).length
+              );
+              setShowFilters(false);
+            }}
+            onClear={() => {
+              setFilterCount(0);
+              setShowFilters(false);
+            }}
+          />
+        ) : (
+          <EmptyState
+            title="No meals found"
+            description="Try changing filters or date"
+          />
+        )}
       </View>
     );
   }
 
+  const SectionHeader = ({
+    title,
+    total,
+  }: {
+    title: string;
+    total: number;
+  }) => (
+    <View
+      style={{
+        paddingHorizontal: theme.spacing.md,
+        paddingTop: theme.spacing.sm,
+        paddingBottom: theme.spacing.sm,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "baseline",
+        backgroundColor: theme.background,
+      }}
+    >
+      <Text
+        style={{
+          color: theme.text,
+          fontSize: theme.typography.size.lg,
+          fontWeight: "600",
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{
+          color: theme.textSecondary,
+          fontSize: theme.typography.size.md,
+          fontWeight: "400",
+        }}
+      >
+        {total} kcal
+      </Text>
+    </View>
+  );
+
   return (
     <Layout>
       {!netInfo.isConnected && <OfflineBanner />}
+
       <View
         style={{
           flexDirection: "row",
           justifyContent: "flex-end",
-          padding: 16,
+          padding: theme.spacing.md,
         }}
       >
         <FilterBadgeButton
@@ -134,37 +244,53 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           onPress={() => setShowFilters(!showFilters)}
         />
       </View>
+
       {showFilters ? (
         <FilterPanel
-          onApply={function (filters: any): void {
-            throw new Error("Function not implemented.");
+          onApply={(filters) => {
+            setFilterCount(Object.values(filters || {}).filter(Boolean).length);
+            setShowFilters(false);
           }}
-          onClear={function (): void {
-            throw new Error("Function not implemented.");
+          onClear={() => {
+            setFilterCount(0);
+            setShowFilters(false);
           }}
         />
       ) : (
-        <FlatList
-          data={filtered}
+        <SectionList
+          sections={sections}
           keyExtractor={(item) => item.cloudId || item.mealId}
           refreshControl={
             <RefreshControl refreshing={loading} onRefresh={refresh} />
           }
-          renderItem={({ item }) => (
-            <MealListItem
-              meal={item}
-              onPress={() => navigation.navigate("MealDetails", { meal: item })}
-              onEdit={() => onEditMeal(item.cloudId || item.mealId)}
-              onDuplicate={() => onDuplicateMeal(item)}
-              onDelete={() => onDeleteMeal(item.cloudId)}
-            />
+          renderSectionHeader={({ section }) => (
+            <SectionHeader title={section.title} total={section.totalKcal} />
           )}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
+          renderItem={({ item }) => (
+            <View
+              style={{
+                paddingHorizontal: theme.spacing.md,
+                marginBottom: theme.spacing.sm,
+              }}
+            >
+              <MealListItem
+                meal={item}
+                onPress={() =>
+                  navigation.navigate("MealDetails", { meal: item })
+                }
+                onEdit={() => onEditMeal(item.cloudId || item.mealId)}
+                onDuplicate={() => onDuplicateMeal(item)}
+                onDelete={() => onDeleteMeal(item.cloudId)}
+              />
+            </View>
+          )}
+          contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
           onEndReachedThreshold={0.2}
           onEndReached={loadMore}
           ListFooterComponent={
             loadingMore ? <LoadingSkeleton height={56} /> : null
           }
+          stickySectionHeadersEnabled
         />
       )}
     </Layout>
