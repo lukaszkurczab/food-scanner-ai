@@ -1,23 +1,137 @@
-import React, { useState } from "react";
-import { View, ScrollView } from "react-native";
+import React, { useMemo, useState } from "react";
+import {
+  View,
+  ScrollView,
+  Modal,
+  Pressable,
+  Text,
+  StyleSheet,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { RangeSlider } from "@/components";
-import { DateRangePicker } from "@/components";
+import { DateRangePicker } from "@/components/DateRangePicker";
 import { PrimaryButton, SecondaryButton } from "@/components";
+import { Calendar } from "@/components/Calendar";
+
+type Range = { start: Date; end: Date };
+type FilterKey = "calories" | "protein" | "carbs" | "fat" | "date";
+
+const monthAgo = (d: Date) => {
+  const x = new Date(d);
+  x.setMonth(x.getMonth() - 1);
+  return x;
+};
+
+const ALL_FILTERS: { key: FilterKey; label: string }[] = [
+  { key: "calories", label: "Calories" },
+  { key: "protein", label: "Protein (g)" },
+  { key: "carbs", label: "Carbs (g)" },
+  { key: "fat", label: "Fat (g)" },
+  { key: "date", label: "Date range" },
+];
 
 export const FilterPanel: React.FC<{
   onApply: (filters: any) => void;
   onClear: () => void;
 }> = ({ onApply, onClear }) => {
   const theme = useTheme();
+
   const [calories, setCalories] = useState<[number, number]>([0, 3000]);
-  const [protein, setProtein] = useState<[number, number]>([0, 200]);
-  const [carbs, setCarbs] = useState<[number, number]>([0, 400]);
-  const [fat, setFat] = useState<[number, number]>([0, 150]);
-  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({
-    start: new Date(),
-    end: new Date(),
-  });
+  const [protein, setProtein] = useState<[number, number]>([0, 100]);
+  const [carbs, setCarbs] = useState<[number, number]>([0, 100]);
+  const [fat, setFat] = useState<[number, number]>([0, 100]);
+
+  const today = new Date();
+  const initialRange: Range = { start: monthAgo(today), end: today };
+  const [dateRange, setDateRange] = useState<Range>(initialRange);
+
+  const [active, setActive] = useState<FilterKey[]>([]);
+
+  const [openCalendar, setOpenCalendar] = useState(false);
+  const [focus, setFocus] = useState<"start" | "end">("start");
+  const [localRange, setLocalRange] = useState<Range>(initialRange);
+
+  const [openPicker, setOpenPicker] = useState(false);
+
+  const addOrRemove = (k: FilterKey) =>
+    setActive((prev) =>
+      prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]
+    );
+  const removeChip = (k: FilterKey) =>
+    setActive((prev) => prev.filter((x) => x !== k));
+
+  const openCalendarModal = () => {
+    setLocalRange(dateRange);
+    setFocus("start");
+    setOpenCalendar(true);
+  };
+  const applyCalendar = () => {
+    const s =
+      +localRange.start <= +localRange.end ? localRange.start : localRange.end;
+    const e =
+      +localRange.start <= +localRange.end ? localRange.end : localRange.start;
+    setDateRange({ start: s, end: e });
+    setOpenCalendar(false);
+  };
+  const cancelCalendar = () => {
+    setLocalRange(dateRange);
+    setFocus("start");
+    setOpenCalendar(false);
+  };
+
+  const apply = () => {
+    const payload: any = {};
+    if (active.includes("calories")) payload.calories = calories;
+    if (active.includes("protein")) payload.protein = protein;
+    if (active.includes("carbs")) payload.carbs = carbs;
+    if (active.includes("fat")) payload.fat = fat;
+    if (active.includes("date")) payload.dateRange = dateRange;
+    onApply(payload);
+  };
+
+  const clearValues = () => {
+    setCalories([0, 3000]);
+    setProtein([0, 200]);
+    setCarbs([0, 400]);
+    setFat([0, 150]);
+    const t = new Date();
+    setDateRange({ start: monthAgo(t), end: t });
+  };
+
+  const clear = () => {
+    clearValues();
+    setActive([]);
+    onClear();
+  };
+
+  const summaryChips = useMemo(
+    () =>
+      active.map((k) => {
+        const meta = ALL_FILTERS.find((f) => f.key === k)!;
+        return (
+          <Pressable
+            key={k}
+            onPress={() => removeChip(k)}
+            style={[
+              styles.chip,
+              {
+                backgroundColor: theme.card,
+                borderColor: theme.accentSecondary,
+                borderRadius: theme.rounded.full,
+              },
+            ]}
+          >
+            <Text style={{ color: theme.text }}>{meta.label}</Text>
+            <Text style={{ color: theme.accentSecondary, marginLeft: 8 }}>
+              ×
+            </Text>
+          </Pressable>
+        );
+      }),
+    [active, theme]
+  );
+
+  const hasActive = active.length > 0;
 
   return (
     <View
@@ -27,52 +141,285 @@ export const FilterPanel: React.FC<{
         paddingHorizontal: theme.spacing.lg,
       }}
     >
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <RangeSlider
-          label="Calories"
-          min={0}
-          max={5000}
-          step={10}
-          value={calories}
-          onChange={setCalories}
-        />
-        <RangeSlider
-          label="Protein (g)"
-          min={0}
-          max={300}
-          step={1}
-          value={protein}
-          onChange={setProtein}
-        />
-        <RangeSlider
-          label="Carbs (g)"
-          min={0}
-          max={500}
-          step={1}
-          value={carbs}
-          onChange={setCarbs}
-        />
-        <RangeSlider
-          label="Fat (g)"
-          min={0}
-          max={200}
-          step={1}
-          value={fat}
-          onChange={setFat}
-        />
-        <DateRangePicker
-          startDate={dateRange.start}
-          endDate={dateRange.end}
-          onChange={function (range: { start: Date; end: Date }): void {
-            throw new Error("Function not implemented.");
-          }}
-        />
-        <PrimaryButton
-          label="Apply filters"
-          onPress={() => onApply({ calories, protein, carbs, fat, dateRange })}
-        />
-        <SecondaryButton label="Clear" onPress={onClear} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingVertical: theme.spacing.md,
+          gap: theme.spacing.lg,
+          paddingBottom: theme.spacing.xl * 3, // miejsce na footer
+        }}
+      >
+        <View>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: theme.spacing.xl,
+              marginBottom: theme.spacing.md,
+            }}
+          >
+            <Text
+              style={{
+                color: theme.text,
+                fontWeight: "700",
+                fontSize: theme.typography.size.md,
+              }}
+            >
+              Selected filters
+            </Text>
+            <SecondaryButton
+              label="Add filter"
+              onPress={() => setOpenPicker(true)}
+              style={{ paddingVertical: 8, flexShrink: 1 }}
+            />
+          </View>
+
+          {hasActive ? (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {summaryChips}
+            </View>
+          ) : (
+            <Text style={{ color: theme.textSecondary }}>
+              No filters selected. Tap “Add filter” to choose.
+            </Text>
+          )}
+        </View>
+
+        {active.includes("calories") && (
+          <RangeSlider
+            label="Calories"
+            min={0}
+            max={2000}
+            step={10}
+            value={calories}
+            onChange={setCalories}
+          />
+        )}
+        {active.includes("protein") && (
+          <RangeSlider
+            label="Protein (g)"
+            min={0}
+            max={100}
+            step={1}
+            value={protein}
+            onChange={setProtein}
+          />
+        )}
+        {active.includes("carbs") && (
+          <RangeSlider
+            label="Carbs (g)"
+            min={0}
+            max={100}
+            step={1}
+            value={carbs}
+            onChange={setCarbs}
+          />
+        )}
+        {active.includes("fat") && (
+          <RangeSlider
+            label="Fat (g)"
+            min={0}
+            max={100}
+            step={1}
+            value={fat}
+            onChange={setFat}
+          />
+        )}
+        {active.includes("date") && (
+          <DateRangePicker
+            startDate={dateRange.start}
+            endDate={dateRange.end}
+            onOpen={openCalendarModal}
+          />
+        )}
       </ScrollView>
+
+      {/* Footer przyklejony do dołu */}
+      <View
+        style={{
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
+          padding: theme.spacing.md,
+          gap: theme.spacing.sm,
+          backgroundColor: theme.background,
+        }}
+      >
+        {hasActive ? (
+          <>
+            <PrimaryButton label="Apply filters" onPress={apply} />
+            <SecondaryButton label="Clear" onPress={clear} />
+          </>
+        ) : (
+          <SecondaryButton label="Cancel" onPress={onClear} />
+        )}
+      </View>
+
+      {/* Modal: wybór filtrów */}
+      <Modal
+        visible={openPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpenPicker(false)}
+      >
+        <Pressable
+          onPress={() => setOpenPicker(false)}
+          style={{
+            flex: 1,
+            backgroundColor: theme.shadow,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: theme.spacing.md,
+          }}
+        >
+          <Pressable
+            onPress={() => {}}
+            style={{
+              width: "100%",
+              maxWidth: 560,
+              borderRadius: theme.rounded.lg,
+              backgroundColor: theme.card,
+              padding: theme.spacing.md,
+              borderWidth: 1,
+              borderColor: theme.border,
+              gap: theme.spacing.md,
+            }}
+          >
+            <Text
+              style={{
+                color: theme.text,
+                fontWeight: "700",
+                fontSize: theme.typography.size.md,
+              }}
+            >
+              Choose filters
+            </Text>
+
+            <View style={{ gap: 10 }}>
+              {ALL_FILTERS.map(({ key, label }) => {
+                const selected = active.includes(key);
+                return (
+                  <Pressable
+                    key={key}
+                    onPress={() => addOrRemove(key)}
+                    style={[
+                      styles.rowItem,
+                      {
+                        borderColor: selected
+                          ? theme.accentSecondary
+                          : theme.border,
+                        backgroundColor: selected
+                          ? theme.overlay
+                          : theme.background,
+                        borderRadius: theme.rounded.md,
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: theme.text }}>{label}</Text>
+                    <Text
+                      style={{
+                        color: selected
+                          ? theme.accentSecondary
+                          : theme.textSecondary,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {selected ? "✓" : "+"}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={{ gap: theme.spacing.sm }}>
+              <PrimaryButton
+                label="Done"
+                onPress={() => setOpenPicker(false)}
+              />
+              <SecondaryButton
+                label="Reset selection"
+                onPress={() => setActive([])}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Modal: kalendarz */}
+      <Modal
+        visible={openCalendar}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelCalendar}
+      >
+        <Pressable
+          onPress={cancelCalendar}
+          style={{
+            flex: 1,
+            backgroundColor: theme.shadow,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: theme.spacing.md,
+          }}
+        >
+          <Pressable
+            onPress={() => {}}
+            style={{
+              width: "100%",
+              maxWidth: 560,
+              borderRadius: theme.rounded.lg,
+              backgroundColor: theme.card,
+              padding: theme.spacing.md,
+              borderWidth: 1,
+              borderColor: theme.border,
+              gap: theme.spacing.md,
+            }}
+          >
+            <Text
+              style={{
+                color: theme.text,
+                fontWeight: "700",
+                fontSize: theme.typography.size.md,
+              }}
+            >
+              Select date range
+            </Text>
+
+            <Calendar
+              startDate={localRange.start}
+              endDate={localRange.end}
+              focus={focus}
+              onChangeRange={(r) => setLocalRange(r)}
+              onToggleFocus={() =>
+                setFocus((f) => (f === "start" ? "end" : "start"))
+              }
+            />
+
+            <View style={{ flexDirection: "column", gap: theme.spacing.sm }}>
+              <PrimaryButton label="Save" onPress={applyCalendar} />
+              <SecondaryButton label="Cancel" onPress={cancelCalendar} />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  chip: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  rowItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+});

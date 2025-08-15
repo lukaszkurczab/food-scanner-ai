@@ -13,6 +13,7 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { Layout } from "@/components";
 import { getMealsPage } from "@services/mealService";
 import { MealListItem } from "../components/MealListItem";
+import { SearchBox } from "../components/SearchBox";
 
 const PAGE_SIZE = 20;
 
@@ -58,6 +59,13 @@ const fmtHeader = (d: Date) => {
 const mealKcal = (meal: Meal) =>
   meal.ingredients?.reduce((sum, ing) => sum + (ing.kcal || 0), 0) || 0;
 
+// helper: porównania case/diacritics-insensitive
+const norm = (s: any) =>
+  String(s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
 export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const theme = useTheme();
   const netInfo = useNetInfo();
@@ -66,6 +74,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
   const [filterCount, setFilterCount] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
+  const [query, setQuery] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -110,14 +119,36 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     await loadFirstPage();
   }, [getMeals, loadFirstPage]);
 
-  // grupowanie per dzień (kolejność zachowana: najnowsze -> najstarsze)
+  // Filtrowanie po nazwie oraz składnikach, sort DESC po dacie
+  const visibleItems: Meal[] = useMemo(() => {
+    const q = norm(query);
+    const base = [...items].sort(
+      (a, b) => +getMealDate(b) - +getMealDate(a) // newest first
+    );
+    if (!q) return base;
+
+    return base.filter((m) => {
+      const title =
+        norm((m as any).title) ||
+        norm((m as any).name) ||
+        norm((m as any).mealName);
+      const ing = norm(
+        (m.ingredients || [])
+          .map((x: any) => x?.name || x?.title || "")
+          .join(" ")
+      );
+      return title.includes(q) || ing.includes(q);
+    });
+  }, [items, query]);
+
+  // Grupowanie po dniu
   const sections: DaySection[] = useMemo(() => {
-    if (!items.length) return [];
+    if (!visibleItems.length) return [];
 
     const byKey = new Map<string, DaySection>();
     const keysInOrder: string[] = [];
 
-    for (const meal of items) {
+    for (const meal of visibleItems) {
       const d = getMealDate(meal);
       const key = fmtDateKey(d);
 
@@ -140,7 +171,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
       const s = byKey.get(k)!;
       return { ...s, totalKcal: Math.round(s.totalKcal) };
     });
-  }, [items]);
+  }, [visibleItems]);
 
   const onEditMeal = (_mealId: string) => {};
   const onDuplicateMeal = (meal: Meal) => duplicateMeal(meal);
@@ -154,18 +185,6 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.background }}>
         {!netInfo.isConnected && <OfflineBanner />}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "flex-end",
-            padding: theme.spacing.md,
-          }}
-        >
-          <FilterBadgeButton
-            activeCount={filterCount}
-            onPress={() => setShowFilters(!showFilters)}
-          />
-        </View>
         {showFilters ? (
           <FilterPanel
             onApply={(filters) => {
@@ -180,10 +199,19 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
             }}
           />
         ) : (
-          <EmptyState
-            title="No meals found"
-            description="Try changing filters or date"
-          />
+          <>
+            <View style={{ padding: theme.spacing.md }}>
+              <SearchBox value={query} onChange={setQuery} />
+            </View>
+            <EmptyState
+              title="No meals found"
+              description={
+                query
+                  ? "Try a different search."
+                  : "Try changing filters or date"
+              }
+            />
+          </>
         )}
       </View>
     );
@@ -231,20 +259,6 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   return (
     <Layout>
       {!netInfo.isConnected && <OfflineBanner />}
-
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "flex-end",
-          padding: theme.spacing.md,
-        }}
-      >
-        <FilterBadgeButton
-          activeCount={filterCount}
-          onPress={() => setShowFilters(!showFilters)}
-        />
-      </View>
-
       {showFilters ? (
         <FilterPanel
           onApply={(filters) => {
@@ -257,41 +271,61 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           }}
         />
       ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.cloudId || item.mealId}
-          refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={refresh} />
-          }
-          renderSectionHeader={({ section }) => (
-            <SectionHeader title={section.title} total={section.totalKcal} />
-          )}
-          renderItem={({ item }) => (
-            <View
-              style={{
-                paddingHorizontal: theme.spacing.md,
-                marginBottom: theme.spacing.sm,
-              }}
-            >
-              <MealListItem
-                meal={item}
-                onPress={() =>
-                  navigation.navigate("MealDetails", { meal: item })
-                }
-                onEdit={() => onEditMeal(item.cloudId || item.mealId)}
-                onDuplicate={() => onDuplicateMeal(item)}
-                onDelete={() => onDeleteMeal(item.cloudId)}
-              />
-            </View>
-          )}
-          contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
-          onEndReachedThreshold={0.2}
-          onEndReached={loadMore}
-          ListFooterComponent={
-            loadingMore ? <LoadingSkeleton height={56} /> : null
-          }
-          stickySectionHeadersEnabled
-        />
+        <>
+          <View style={{ padding: theme.spacing.md }}>
+            <SearchBox value={query} onChange={setQuery} />
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              paddingHorizontal: theme.spacing.md,
+            }}
+          >
+            <FilterBadgeButton
+              activeCount={filterCount}
+              onPress={() => setShowFilters(!showFilters)}
+            />
+          </View>
+
+          <SectionList
+            sections={sections}
+            keyExtractor={(item) => item.cloudId || (item as any).mealId}
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={refresh} />
+            }
+            renderSectionHeader={({ section }) => (
+              <SectionHeader title={section.title} total={section.totalKcal} />
+            )}
+            renderItem={({ item }) => (
+              <View
+                style={{
+                  paddingHorizontal: theme.spacing.md,
+                  marginBottom: theme.spacing.sm,
+                }}
+              >
+                <MealListItem
+                  meal={item}
+                  onPress={() =>
+                    navigation.navigate("MealDetails", { meal: item })
+                  }
+                  onEdit={() =>
+                    onEditMeal((item as any).cloudId || (item as any).mealId)
+                  }
+                  onDuplicate={() => onDuplicateMeal(item)}
+                  onDelete={() => onDeleteMeal((item as any).cloudId)}
+                />
+              </View>
+            )}
+            contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
+            onEndReachedThreshold={0.2}
+            onEndReached={loadMore}
+            ListFooterComponent={
+              loadingMore ? <LoadingSkeleton height={56} /> : null
+            }
+            stickySectionHeadersEnabled
+          />
+        </>
       )}
     </Layout>
   );
