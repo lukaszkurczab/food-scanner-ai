@@ -1,38 +1,55 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { View, Text, Pressable, Modal } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Calendar } from "./Calendar";
 
+type Range = { start: Date; end: Date };
+
 export const DateRangePicker: React.FC<{
   startDate: Date;
   endDate: Date;
-  onChange: (range: { start: Date; end: Date }) => void;
-}> = ({ startDate, endDate, onChange }) => {
+  onChange: (range: Range) => void;
+  minDate?: Date;
+  maxDate?: Date;
+  locale?: string;
+}> = ({ startDate, endDate, onChange, minDate, maxDate, locale }) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   const [focus, setFocus] = useState<"start" | "end">("start");
-  const [local, setLocal] = useState({ start: startDate, end: endDate });
+  const [local, setLocal] = useState<Range>({ start: startDate, end: endDate });
 
-  const fmt = (d: Date) =>
-    new Intl.DateTimeFormat(undefined, {
-      day: "2-digit",
-      month: "2-digit",
-    }).format(d);
+  const fmt = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        day: "2-digit",
+        month: "2-digit",
+      }),
+    [locale]
+  );
+
+  const summary = `${fmt.format(local.start)}-${fmt.format(local.end)}`;
+
+  const openModal = () => {
+    setLocal({ start: startDate, end: endDate });
+    setFocus("start");
+    setOpen(true);
+  };
 
   const apply = () => {
-    onChange(local);
+    const s = +local.start <= +local.end ? local.start : local.end;
+    const e = +local.start <= +local.end ? local.end : local.start;
+    onChange({ start: s, end: e });
     setOpen(false);
   };
 
   const cancel = () => {
-    setLocal({ start: startDate, end: endDate }); // rollback
+    setLocal({ start: startDate, end: endDate });
     setFocus("start");
     setOpen(false);
   };
 
   return (
     <View style={{ gap: theme.spacing.md }}>
-      {/* Row with summary + opener */}
       <View
         style={{
           flexDirection: "row",
@@ -41,13 +58,11 @@ export const DateRangePicker: React.FC<{
         }}
       >
         <Text style={{ color: theme.text, fontWeight: "700" }}>Date range</Text>
-        <Text style={{ color: theme.text }}>
-          {fmt(local.start)}-{fmt(local.end)}
-        </Text>
+        <Text style={{ color: theme.text }}>{summary}</Text>
       </View>
 
       <Pressable
-        onPress={() => setOpen(true)}
+        onPress={openModal}
         style={{
           paddingVertical: 12,
           borderRadius: theme.rounded.md,
@@ -55,31 +70,30 @@ export const DateRangePicker: React.FC<{
           borderColor: theme.accentSecondary,
           alignItems: "center",
         }}
+        accessibilityRole="button"
+        accessibilityLabel="Ustaw zakres dat"
       >
         <Text style={{ color: theme.link, fontWeight: "600" }}>
           Set date range
         </Text>
       </Pressable>
 
-      {/* Centered modal with backdrop */}
       <Modal
         visible={open}
         transparent
         animationType="fade"
         onRequestClose={cancel}
       >
-        {/* Backdrop */}
         <Pressable
           onPress={cancel}
           style={{
             flex: 1,
-            backgroundColor: theme.shadow, // półprzezroczysty
+            backgroundColor: theme.shadow,
             justifyContent: "center",
             alignItems: "center",
             padding: theme.spacing.md,
           }}
         >
-          {/* Stop propagation on card */}
           <Pressable
             onPress={() => {}}
             style={{
@@ -90,21 +104,19 @@ export const DateRangePicker: React.FC<{
               padding: theme.spacing.md,
               borderWidth: 1,
               borderColor: theme.border,
-              // delikatny cień
               shadowColor: "#000",
               shadowOpacity: 0.3,
               shadowRadius: 12,
               shadowOffset: { width: 0, height: 6 },
               elevation: 8,
+              gap: theme.spacing.md,
             }}
           >
-            {/* Header */}
             <View
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: theme.spacing.sm,
               }}
             >
               <Text
@@ -118,7 +130,6 @@ export const DateRangePicker: React.FC<{
               </Text>
             </View>
 
-            {/* Calendar */}
             <Calendar
               startDate={local.start}
               endDate={local.end}
@@ -127,24 +138,23 @@ export const DateRangePicker: React.FC<{
               onToggleFocus={() =>
                 setFocus((f) => (f === "start" ? "end" : "start"))
               }
+              minDate={minDate}
+              maxDate={maxDate}
+              locale={locale}
             />
 
-            {/* Footer actions */}
-            <View
-              style={{
-                flexDirection: "row",
-                gap: theme.spacing.sm,
-              }}
-            >
+            <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
               <Pressable
                 onPress={apply}
                 style={{
                   flex: 1,
                   paddingVertical: 12,
                   borderRadius: theme.rounded.md,
-                  backgroundColor: theme.accent,
+                  backgroundColor: theme.accentSecondary,
                   alignItems: "center",
                 }}
+                accessibilityRole="button"
+                accessibilityLabel="Zapisz zakres dat"
               >
                 <Text style={{ color: theme.onAccent, fontWeight: "700" }}>
                   Save
@@ -161,6 +171,8 @@ export const DateRangePicker: React.FC<{
                   borderColor: theme.accentSecondary,
                   alignItems: "center",
                 }}
+                accessibilityRole="button"
+                accessibilityLabel="Anuluj wybór"
               >
                 <Text style={{ color: theme.text }}>Cancel</Text>
               </Pressable>
