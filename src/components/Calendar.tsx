@@ -52,7 +52,7 @@ export const Calendar: React.FC<Props> = ({
     return { s, e };
   }, [startDate, endDate]);
 
-  const [cursor, setCursor] = useState<Date>(startOfDay(normalized.s));
+  const [cursor, setCursor] = useState<Date>(startOfDay(new Date()));
   const [wrapW, setWrapW] = useState(0);
   const cellSize = wrapW ? Math.floor((wrapW - GAP * 6) / 7) : 0;
 
