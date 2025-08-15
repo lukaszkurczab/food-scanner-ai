@@ -18,23 +18,17 @@ export const MacroPieCard: React.FC<Props> = ({ protein, carbs, fat }) => {
     {
       value: protein,
       color: theme.macro.protein,
-      label: `${t("statistics:tiles.protein")}: ${Math.round(protein)} ${t(
-        "common:gram"
-      )}`,
+      label: "Protein",
     },
     {
       value: fat,
       color: theme.macro.fat,
-      label: `${t("statistics:tiles.fat")}: ${Math.round(fat)} ${t(
-        "common:gram"
-      )}`,
+      label: "Fat",
     },
     {
       value: carbs,
       color: theme.macro.carbs,
-      label: `${t("statistics:tiles.carbs")}: ${Math.round(carbs)} ${t(
-        "common:gram"
-      )}`,
+      label: "Carbs",
     },
   ];
 

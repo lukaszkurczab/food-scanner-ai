@@ -13,17 +13,17 @@ export const TodaysMacrosChart = ({
     {
       value: macros.protein,
       color: theme.macro.protein,
-      label: `Protein: ${macros.protein}g`,
+      label: `Protein`,
     },
     {
       value: macros.fat,
       color: theme.macro.fat,
-      label: `Fat: ${macros.fat}g`,
+      label: `Fat`,
     },
     {
       value: macros.carbs,
       color: theme.macro.carbs,
-      label: `Carbs: ${macros.carbs}g`,
+      label: `Carbs`,
     },
   ];
 

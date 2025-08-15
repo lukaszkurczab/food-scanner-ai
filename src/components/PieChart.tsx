@@ -34,6 +34,8 @@ export const PieChart: React.FC<PieChartProps> = ({
     setParentW(e.nativeEvent.layout.width);
   };
 
+  console.log(data);
+
   const canRow = parentW > 0 && parentW >= minSize + legendWidth + gap;
   const chartSize = parentW
     ? Math.max(

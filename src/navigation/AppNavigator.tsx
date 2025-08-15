@@ -31,6 +31,7 @@ import LanguageScreen from "@/feature/UserProfile/screens/LanguageScreen";
 import SendFeedbackScreen from "@/feature/UserProfile/screens/SendFeedbackScreen";
 import ManageSubscriptionScreen from "@/feature/UserProfile/screens/ManageSubscriptionScreen";
 import MealCameraScreen from "@/feature/Meals/screens/MealCameraScreen";
+import SavedMealsScreen from "@feature/Home/screens/SavedMealsScreen";
 import IngredientsNotRecognizedScreen from "@/feature/Meals/screens/IngredientsNotRecognizedScreen";
 import { MealDraftInactivityGuard } from "@feature/Meals/guards/MealDraftInactivityGuard";
 
@@ -62,6 +63,7 @@ const AppNavigator = () => {
         <>
           <Stack.Screen name="Loading" component={LoadingScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="AvatarCamera" component={AvatarCameraScreen} />
           <Stack.Screen name="HistoryList" component={HistoryListScreen} />
