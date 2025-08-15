@@ -2,11 +2,13 @@ import React, { useMemo, useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
+type Range = { start: Date; end: Date };
+
 type Props = {
   startDate: Date;
   endDate: Date;
   focus: "start" | "end";
-  onChangeRange: (range: { start: Date; end: Date }) => void;
+  onChangeRange: (range: Range) => void;
   onToggleFocus?: () => void;
   minDate?: Date;
   maxDate?: Date;
@@ -16,6 +18,7 @@ type Props = {
 type Cell = { date: Date; inMonth: boolean };
 
 const DAY = 24 * 60 * 60 * 1000;
+const GAP = 6;
 
 const startOfDay = (d: Date) => {
   const x = new Date(d);
@@ -23,18 +26,12 @@ const startOfDay = (d: Date) => {
   return x;
 };
 const isSameDay = (a: Date, b: Date) => +startOfDay(a) === +startOfDay(b);
-const clamp = (d: Date, min?: Date, max?: Date) => {
-  let t = +startOfDay(d);
-  if (min && t < +startOfDay(min)) t = +startOfDay(min);
-  if (max && t > +startOfDay(max)) t = +startOfDay(max);
-  return new Date(t);
-};
-const inRange = (d: Date, a: Date, b: Date) => {
-  const t = +startOfDay(d),
-    aa = +startOfDay(a),
-    bb = +startOfDay(b);
-  const [lo, hi] = aa <= bb ? [aa, bb] : [bb, aa];
-  return t >= lo && t <= hi;
+const clampToBounds = (d: Date, min?: Date, max?: Date) => {
+  const t = +startOfDay(d);
+  let out = t;
+  if (min && t < +startOfDay(min)) out = +startOfDay(min);
+  if (max && t > +startOfDay(max)) out = +startOfDay(max);
+  return new Date(out);
 };
 
 export const Calendar: React.FC<Props> = ({
@@ -48,7 +45,16 @@ export const Calendar: React.FC<Props> = ({
   locale,
 }) => {
   const theme = useTheme();
-  const [cursor, setCursor] = useState<Date>(startOfDay(startDate));
+
+  const normalized = useMemo(() => {
+    let s = startOfDay(startDate);
+    let e = startOfDay(endDate);
+    return { s, e };
+  }, [startDate, endDate]);
+
+  const [cursor, setCursor] = useState<Date>(startOfDay(normalized.s));
+  const [wrapW, setWrapW] = useState(0);
+  const cellSize = wrapW ? Math.floor((wrapW - GAP * 6) / 7) : 0;
 
   const monthStart = useMemo(() => {
     const d = new Date(cursor);
@@ -64,7 +70,6 @@ export const Calendar: React.FC<Props> = ({
     const js = new Date(year, month, 1).getDay();
     return (js + 6) % 7;
   })();
-
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevMonthDays = new Date(year, month, 0).getDate();
 
@@ -87,7 +92,6 @@ export const Calendar: React.FC<Props> = ({
     } else {
       dayNum = i - firstDay + 1;
       cellDate = new Date(year, month, dayNum);
-      inMonth = true;
     }
     cells.push({ date: startOfDay(cellDate), inMonth });
   }
@@ -99,7 +103,7 @@ export const Calendar: React.FC<Props> = ({
   const fmtWeekday = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(2024, 0, 1 + i); // 1.01.2024 = poniedziałek
+        const d = new Date(2024, 0, 1 + i);
         return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(d);
       }),
     [locale]
@@ -109,24 +113,28 @@ export const Calendar: React.FC<Props> = ({
   const handleNext = () => setCursor(new Date(year, month + 1, 1));
 
   const select = (d: Date) => {
-    const bounded = clamp(d, minDate, maxDate);
-    const s = startOfDay(startDate);
-    const e = startOfDay(endDate);
+    const bounded = clampToBounds(d, minDate, maxDate);
+    let s = normalized.s;
+    let e = normalized.e;
 
     if (focus === "start") {
-      let newStart = bounded;
-      let newEnd = e;
-      if (+newEnd < +newStart + DAY) newEnd = new Date(+newStart + DAY);
-      onChangeRange({ start: newStart, end: newEnd });
+      if (isSameDay(bounded, s) && isSameDay(s, e)) {
+        onChangeRange({ start: s, end: s });
+        return;
+      }
+      s = bounded;
+      e = bounded;
+      onChangeRange({ start: s, end: e });
       onToggleFocus?.();
-      return;
+    } else {
+      if (isSameDay(bounded, s)) {
+        onChangeRange({ start: s, end: s });
+      } else {
+        e = bounded;
+        onChangeRange({ start: s, end: e });
+      }
+      onToggleFocus?.();
     }
-
-    let newEnd = bounded;
-    let newStart = s;
-    if (+newEnd < +newStart + DAY) newStart = new Date(+newEnd - DAY);
-    onChangeRange({ start: newStart, end: newEnd });
-    onToggleFocus?.();
   };
 
   const isDisabled = (d: Date) =>
@@ -134,112 +142,144 @@ export const Calendar: React.FC<Props> = ({
     (maxDate && +d > +startOfDay(maxDate));
 
   const today = startOfDay(new Date());
-  const selStart = startOfDay(startDate);
-  const selEnd = startOfDay(endDate);
+  const selStart = normalized.s;
+  const selEnd = normalized.e;
 
   return (
     <View style={{ width: "100%" }}>
-      <View style={[styles.header, { marginBottom: theme.spacing.xs }]}>
-        <Pressable onPress={handlePrev} style={styles.navBtn}>
+      <View
+        style={[
+          styles.header,
+          {
+            marginBottom: theme.spacing.xs,
+            paddingHorizontal: theme.spacing.xs,
+          },
+        ]}
+      >
+        <Pressable
+          onPress={handlePrev}
+          style={[styles.navBtn, { padding: theme.spacing.sm }]}
+        >
           <Text
-            style={{ color: theme.link, fontSize: theme.typography.size.md }}
+            style={{ color: theme.link, fontSize: theme.typography.size.lg }}
           >
             ‹
           </Text>
         </Pressable>
+
         <Text
           style={{
             color: theme.text,
             fontWeight: "700",
-            fontSize: theme.typography.size.md,
+            fontSize: theme.typography.size.lg,
           }}
         >
           {fmtMonth.format(monthStart)}
         </Text>
-        <Pressable onPress={handleNext} style={styles.navBtn}>
+
+        <Pressable
+          onPress={handleNext}
+          style={[styles.navBtn, { padding: theme.spacing.sm }]}
+        >
           <Text
-            style={{ color: theme.link, fontSize: theme.typography.size.md }}
+            style={{ color: theme.link, fontSize: theme.typography.size.lg }}
           >
             ›
           </Text>
         </Pressable>
       </View>
 
-      {/* Weekdays */}
-      <View style={[styles.weekRow, { marginBottom: theme.spacing.xs }]}>
-        {fmtWeekday.map((wd, i) => (
-          <Text
-            key={i}
-            style={[styles.weekText, { color: theme.textSecondary }]}
-          >
-            {wd.toUpperCase()}
-          </Text>
-        ))}
-      </View>
-
-      {/* Grid */}
-      <View style={[styles.grid, { gap: 4 }]}>
-        {cells.map((c, i) => {
-          const selectedStart = isSameDay(c.date, selStart);
-          const selectedEnd = isSameDay(c.date, selEnd);
-          const selected = selectedStart || selectedEnd;
-          const inSel = inRange(c.date, selStart, selEnd);
-          const disabled = isDisabled(c.date);
-
-          const textColor = c.inMonth ? theme.text : theme.textSecondary;
-          const ringWidth =
-            (focus === "start" && selectedStart) ||
-            (focus === "end" && selectedEnd)
-              ? 3
-              : selected
-              ? 2
-              : 0;
-
-          return (
-            <Pressable
+      <View onLayout={(e) => setWrapW(e.nativeEvent.layout.width)}>
+        <View style={[styles.weekRow, { marginBottom: theme.spacing.xs }]}>
+          {fmtWeekday.map((wd, i) => (
+            <Text
               key={i}
-              onPress={() => !disabled && select(c.date)}
-              disabled={disabled}
-              style={[styles.cell, { opacity: disabled ? 0.4 : 1 }]}
+              style={[
+                styles.weekText,
+                {
+                  width: cellSize,
+                  marginRight: i % 7 !== 6 ? GAP : 0,
+                  color: theme.textSecondary,
+                  textAlign: "center",
+                },
+              ]}
             >
-              <View style={styles.circleWrap}>
-                {inSel && (
-                  <View
-                    style={[styles.rangeBg, { backgroundColor: theme.overlay }]}
-                  />
-                )}
+              {wd.toUpperCase()}
+            </Text>
+          ))}
+        </View>
+
+        <View style={styles.grid}>
+          {cells.map((c, i) => {
+            const selectedStart = isSameDay(c.date, selStart);
+            const selectedEnd = isSameDay(c.date, selEnd);
+            const selected =
+              selectedStart ||
+              selectedEnd ||
+              inBetween(c.date, selStart, selEnd);
+
+            const disabled = isDisabled(c.date);
+
+            return (
+              <Pressable
+                key={i}
+                onPress={() => !disabled && select(c.date)}
+                disabled={disabled}
+                style={[
+                  styles.cell,
+                  {
+                    opacity: disabled ? 0.4 : 1,
+                    width: cellSize,
+                    height: cellSize,
+                    marginRight: i % 7 !== 6 ? GAP : 0,
+                    marginBottom: GAP,
+                  },
+                ]}
+              >
                 {selected && (
                   <View
                     style={[
                       styles.dotCircle,
-                      { borderColor: theme.accent, borderWidth: ringWidth },
+                      {
+                        borderColor: theme.accentSecondary,
+                        borderWidth: 2,
+                        borderRadius: theme.rounded.full,
+                      },
                     ]}
                   />
                 )}
-              </View>
-
-              <Text
-                style={{
-                  color: textColor,
-                  textAlign: "center",
-                  fontSize: theme.typography.size.sm,
-                }}
-              >
-                {c.date.getDate()}
-              </Text>
-
-              {isSameDay(c.date, today) && (
-                <View
-                  style={[styles.todayMark, { backgroundColor: theme.link }]}
-                />
-              )}
-            </Pressable>
-          );
-        })}
+                <Text
+                  style={{
+                    color: c.inMonth ? theme.text : theme.textSecondary,
+                  }}
+                >
+                  {c.date.getDate()}
+                </Text>
+                {isSameDay(c.date, today) && (
+                  <View
+                    style={[
+                      styles.todayMark,
+                      { backgroundColor: theme.link, marginTop: 3 },
+                    ]}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
 };
+
+function inBetween(d: Date, s: Date, e: Date) {
+  const t = +startOfDay(d);
+  const ss = +startOfDay(s);
+  const ee = +startOfDay(e);
+  if (ss === ee) return ss === t;
+  const [lo, hi] = ss < ee ? [ss, ee] : [ee, ss];
+  return t >= lo && t <= hi;
+}
 
 const styles = StyleSheet.create({
   header: {
@@ -247,45 +287,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  navBtn: { padding: 8 },
-  weekRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  weekText: { width: `${100 / 7}%`, textAlign: "center", fontSize: 12 },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  cell: {
-    width: `${100 / 7}%`,
-    aspectRatio: 1, // kwadrat
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  circleWrap: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rangeBg: {
-    position: "absolute",
-    width: "90%",
-    height: "90%",
-    borderRadius: 9999,
-  },
-  dotCircle: {
-    position: "absolute",
-    width: "85%",
-    height: "85%",
-    borderRadius: 9999,
-  },
-  todayMark: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 2,
-  },
+  navBtn: { borderRadius: 9999 },
+  weekRow: { flexDirection: "row" },
+  weekText: { fontSize: 12 },
+  grid: { flexDirection: "row", flexWrap: "wrap" },
+  cell: { alignItems: "center", justifyContent: "center" },
+  dotCircle: { position: "absolute", width: "82%", height: "82%" },
+  todayMark: { width: 4, height: 4, borderRadius: 2 },
 });
