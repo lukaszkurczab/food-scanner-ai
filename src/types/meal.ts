@@ -19,14 +19,14 @@ export type Nutrients = {
 };
 
 export interface Meal {
-  userUid: string; // per-user
-  mealId: string; // lokalny identyfikator posiłku
-  timestamp: string; // ISO string (pozostawione)
+  userUid: string;
+  mealId: string;
+  timestamp: string;
   type: MealType;
   name: string | null;
   ingredients: Ingredient[];
-  createdAt: string; // ISO string (pozostawione)
-  updatedAt: string; // ISO string (pozostawione)
+  createdAt: string;
+  updatedAt: string;
   syncState: MealSyncState;
   source: MealSource;
   photoUrl?: string | null;

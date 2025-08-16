@@ -31,7 +31,7 @@ import LanguageScreen from "@/feature/UserProfile/screens/LanguageScreen";
 import SendFeedbackScreen from "@/feature/UserProfile/screens/SendFeedbackScreen";
 import ManageSubscriptionScreen from "@/feature/UserProfile/screens/ManageSubscriptionScreen";
 import MealCameraScreen from "@/feature/Meals/screens/MealCameraScreen";
-import SavedMealsScreen from "@feature/Home/screens/SavedMealsScreen";
+import SavedMealsScreen from "@feature/History/screens/SavedMealsScreen";
 import IngredientsNotRecognizedScreen from "@/feature/Meals/screens/IngredientsNotRecognizedScreen";
 import { MealDraftInactivityGuard } from "@feature/Meals/guards/MealDraftInactivityGuard";
 

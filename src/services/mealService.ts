@@ -3,21 +3,8 @@ import { Q } from "@nozbe/watermelondb";
 import { database } from "@/db/database";
 import MealModel from "@/db/models/Meal";
 import type { Meal } from "@/types/";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  doc,
-  setDoc,
-  getDocs,
-} from "@react-native-firebase/firestore";
-import { getApp } from "@react-native-firebase/app";
-import {
-  getStorage,
-  ref,
-  putFile,
-  getDownloadURL,
-} from "@react-native-firebase/storage";
+import firestore from "@react-native-firebase/firestore";
+import storageMod from "@react-native-firebase/storage";
 import { withRetry, onReconnect } from "@utils/syncUtils";
 
 export async function getMealsLocal(userUid: string): Promise<Meal[]> {
@@ -165,12 +152,7 @@ export async function softDeleteMealLocal(
 const USERS = "users";
 const MEALS = "meals";
 
-function db() {
-  return getFirestore(getApp());
-}
-function storage() {
-  return getStorage();
-}
+const storage = () => storageMod();
 
 function isLocalPhoto(uri?: string | null) {
   return !!uri && uri.startsWith("file:");
@@ -181,18 +163,19 @@ async function uploadPhotoIfNeeded(
   meal: Meal
 ): Promise<string | null> {
   if (!isLocalPhoto(meal.photoUrl)) return meal.photoUrl ?? null;
-
   const path = `meals/${userUid}/${meal.cloudId ?? meal.mealId}.jpg`;
-  const s = storage();
-  const r = ref(s, path);
-  await putFile(r, meal.photoUrl!);
-  return await getDownloadURL(r);
+  const r = storage().ref(path);
+  await r.putFile(meal.photoUrl!);
+  return await r.getDownloadURL();
 }
 
 export async function fetchMealsFromCloud(userUid: string): Promise<Meal[]> {
-  const mealsCol = collection(db(), USERS, userUid, MEALS);
-  const snap = await getDocs(mealsCol);
-  return snap.docs.map((d: any) => ({ ...(d.data() as Meal), cloudId: d.id }));
+  const snap = await firestore()
+    .collection(USERS)
+    .doc(userUid)
+    .collection(MEALS)
+    .get();
+  return snap.docs.map((d) => ({ ...(d.data() as Meal), cloudId: d.id }));
 }
 
 function newer(localIso: string, remoteIso: string) {
@@ -237,12 +220,10 @@ export async function syncMeals(userUid: string): Promise<void> {
       const photoUrl = await uploadPhotoIfNeeded(userUid, m);
       if (photoUrl && photoUrl !== m.photoUrl) m.photoUrl = photoUrl;
 
-      const firestore = db();
+      const col = firestore().collection(USERS).doc(userUid).collection(MEALS);
+
       if (!m.cloudId) {
-        const newRef = await addDoc(
-          collection(firestore, USERS, userUid, MEALS),
-          m
-        );
+        const newRef = await col.add(m);
         await database.write(async () => {
           await rec.update((r) => {
             r.cloudId = newRef.id;
@@ -250,8 +231,7 @@ export async function syncMeals(userUid: string): Promise<void> {
           });
         });
       } else {
-        const refDoc = doc(firestore, USERS, userUid, MEALS, m.cloudId);
-        await setDoc(refDoc, m, { merge: true });
+        await col.doc(m.cloudId).set(m, { merge: true });
         await database.write(async () => {
           await rec.update((r) => {
             r.syncState = "synced";
@@ -319,41 +299,67 @@ export async function upsertMealWithPhoto(
   meal: Meal,
   photoUri: string | null
 ): Promise<void> {
+  const step = (n: string, extra: any = {}) =>
+    console.log("[MEALS] STEP_" + n, extra);
+
   let next = { ...meal };
-  if (photoUri && photoUri.startsWith("file:")) {
-    const url = await uploadPhotoIfNeeded(userUid, {
-      ...meal,
-      photoUrl: photoUri,
-    });
-    if (url) next.photoUrl = url;
-  }
+  try {
+    step("A_BEGIN", { userUid, mealId: meal.mealId, cloudId: meal.cloudId });
 
-  const firestore = db();
-  if (!next.cloudId) {
-    const ref = await addDoc(
-      collection(firestore, USERS, userUid, MEALS),
-      next
-    );
-    next.cloudId = ref.id;
-  } else {
-    await setDoc(doc(firestore, USERS, userUid, MEALS, next.cloudId), next, {
-      merge: true,
-    });
-  }
-
-  const meals = database.get<MealModel>("meals");
-  const rows = await meals
-    .query(Q.where("userUid", userUid), Q.where("mealId", next.mealId))
-    .fetch();
-  if (rows[0]) {
-    await database.write(async () => {
-      await rows[0].update((m: any) => {
-        m.syncState = "synced";
-        if (!m.cloudId) m.cloudId = next.cloudId!;
-        m.updatedAt = new Date().toISOString();
-        if (next.photoUrl) m.photoUrl = next.photoUrl;
+    if (photoUri && photoUri.startsWith("file:")) {
+      step("B_UPLOAD_TRY");
+      const url = await uploadPhotoIfNeeded(userUid, {
+        ...meal,
+        photoUrl: photoUri,
       });
-    });
+      step("B_UPLOAD_OK", { uploaded: !!url });
+      if (url) next.photoUrl = url;
+    }
+
+    const col = firestore().collection(USERS).doc(userUid).collection(MEALS);
+
+    if (!next.cloudId) {
+      step("C_ADD_TRY");
+      const ref = await col.add(next);
+      next.cloudId = ref.id;
+      step("C_ADD_OK", { cloudId: next.cloudId });
+    } else {
+      step("C_SET_TRY", { cloudId: next.cloudId });
+      await col.doc(next.cloudId).set(next, { merge: true });
+      step("C_SET_OK");
+    }
+
+    step("D_LOCAL_FETCH_TRY");
+    const meals = database.get<MealModel>("meals");
+    const rows = await meals
+      .query(Q.where("userUid", userUid), Q.where("mealId", next.mealId))
+      .fetch();
+    step("D_LOCAL_FETCH_OK", { found: rows.length });
+
+    if (rows[0]) {
+      step("E_LOCAL_UPDATE_TRY");
+      await database.write(async () => {
+        await rows[0].update((m: any) => {
+          m.syncState = "synced";
+          if (!m.cloudId) m.cloudId = next.cloudId!;
+          m.updatedAt = new Date().toISOString();
+          if (next.photoUrl) m.photoUrl = next.photoUrl;
+        });
+      });
+      step("E_LOCAL_UPDATE_OK");
+    } else {
+      console.warn("[MEALS] D_LOCAL_NOT_FOUND", { mealId: next.mealId });
+    }
+
+    step("Z_DONE");
+  } catch (e: any) {
+    console.error(
+      "[MEALS] FATAL",
+      e?.message || e,
+      "\nSTACK:\n",
+      e?.stack || "(no stack)"
+    );
+    throw e;
   }
 }
 
@@ -361,10 +367,13 @@ export async function deleteMealInFirestore(
   userUid: string,
   cloudId: string
 ): Promise<void> {
-  const firestore = db();
-  await setDoc(
-    doc(firestore, USERS, userUid, MEALS, cloudId),
-    { deleted: true, syncState: "synced", updatedAt: new Date().toISOString() },
+  const col = firestore().collection(USERS).doc(userUid).collection(MEALS);
+  await col.doc(cloudId).set(
+    {
+      deleted: true,
+      syncState: "synced",
+      updatedAt: new Date().toISOString(),
+    },
     { merge: true }
   );
 
