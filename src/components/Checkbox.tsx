@@ -29,7 +29,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
       style={[
         styles.box,
         {
-          borderColor: checked ? theme.accentSecondary : theme.border,
+          borderColor: checked ? theme.accentSecondary : theme.textSecondary,
           backgroundColor: checked ? theme.accentSecondary : "transparent",
           opacity: disabled ? 0.5 : 1,
         },

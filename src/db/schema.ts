@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from "@nozbe/watermelondb";
 
 export const schema = appSchema({
-  version: 3, // <— bump z 2 na 3
+  version: 4,
   tables: [
     tableSchema({
       name: "users",
@@ -75,6 +75,27 @@ export const schema = appSchema({
         { name: "syncState", type: "string", isIndexed: true }, // index
         { name: "cloudId", type: "string", isOptional: true },
         { name: "deleted", type: "boolean", isOptional: true, isIndexed: true }, // index
+      ],
+    }),
+
+    tableSchema({
+      name: "myMeals",
+      columns: [
+        { name: "userUid", type: "string", isIndexed: true },
+        { name: "mealId", type: "string", isIndexed: true },
+        { name: "timestamp", type: "string", isIndexed: true },
+        { name: "type", type: "string" },
+        { name: "name", type: "string", isOptional: true },
+        { name: "ingredients", type: "string" },
+        { name: "createdAt", type: "string" },
+        { name: "updatedAt", type: "string" },
+        { name: "syncState", type: "string", isIndexed: true },
+        { name: "source", type: "string" },
+        { name: "photoUrl", type: "string", isOptional: true },
+        { name: "notes", type: "string", isOptional: true },
+        { name: "tags", type: "string", isOptional: true },
+        { name: "deleted", type: "boolean", isOptional: true, isIndexed: true },
+        { name: "cloudId", type: "string", isOptional: true },
       ],
     }),
   ],

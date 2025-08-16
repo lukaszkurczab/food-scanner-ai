@@ -53,22 +53,24 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const handleSave = async () => {
     if (!userData?.uid || saving) return;
     setSaving(true);
+
     const newMeal = {
       ...meal,
       cloudId: meal.cloudId,
       userUid: uid,
       name: mealName,
       type: mealType,
-      nutrition,
-      date: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       syncState: "pending",
       updatedAt: new Date().toISOString(),
+      source: meal.source ?? "manual",
     } as any;
+
     try {
-      await addMeal(newMeal);
+      await addMeal(newMeal, { alsoSaveToMyMeals: saveToMyMeals });
       clearMeal(uid);
       navigation.navigate("Home");
-    } catch {
     } finally {
       setSaving(false);
     }
@@ -144,7 +146,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
           style={{ marginVertical: theme.spacing.md }}
           disabled={saving}
         />
-        <Text style={{ marginLeft: 8 }}>
+        <Text style={{ color: theme.text }}>
           {t("add_to_my_meals", { ns: "meals" })}
         </Text>
       </View>

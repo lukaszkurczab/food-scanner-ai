@@ -7,7 +7,8 @@ import {
   softDeleteMealLocal,
   syncMeals as syncMealsRepo,
 } from "@services/mealService";
-import { getMealQueue } from "@/sync/queues";
+import { getMealQueue, getMyMealQueue } from "@/sync/queues";
+import { upsertMyMealLocal } from "@/services/myMealService";
 
 function eqByCloudId(a: Meal[], b: Meal[]) {
   if (a.length !== b.length) return false;
@@ -28,6 +29,7 @@ export function useMeals(userUid: string) {
       return;
     }
     const list = await getMealsLocal(userUid);
+    console.log("[MEALS] getMeals fetched", { count: list.length, userUid });
     setMeals((prev) => (eqByCloudId(prev, list) ? prev : list));
     setLoading(false);
   }, [userUid]);
@@ -37,7 +39,10 @@ export function useMeals(userUid: string) {
   }, [getMeals]);
 
   const addMeal = useCallback(
-    async (meal: Omit<Meal, "syncState" | "updatedAt">) => {
+    async (
+      meal: Omit<Meal, "syncState" | "updatedAt">,
+      opts?: { alsoSaveToMyMeals?: boolean }
+    ) => {
       const now = new Date().toISOString();
       const base: Meal = {
         ...meal,
@@ -49,9 +54,53 @@ export function useMeals(userUid: string) {
         cloudId: meal.cloudId ?? uuidv4(),
         mealId: meal.mealId ?? uuidv4(),
       };
+
+      console.log("[MEALS] addMeal start", {
+        userUid,
+        mealId: base.mealId,
+        cloudId: base.cloudId,
+        alsoSaveToMyMeals: !!opts?.alsoSaveToMyMeals,
+        hasPhoto: !!base.photoUrl,
+      });
+
       await upsertMealLocal(userUid, base);
+      console.log("[MEALS] upsertMealLocal done");
+
       getMealQueue(userUid).enqueue({ kind: "upsert", userUid, meal: base });
+      console.log("[QUEUE] enqueued meal upsert", {
+        kind: "meal",
+        userUid,
+        mealId: base.mealId,
+        cloudId: base.cloudId,
+      });
+
+      if (opts?.alsoSaveToMyMeals) {
+        const libCopy: Meal = {
+          ...base,
+          cloudId: null as any,
+          syncState: "pending",
+          source: "saved",
+        };
+        console.log("[MYMEALS] libCopy prepare", {
+          mealId: libCopy.mealId,
+          cloudId: libCopy.cloudId,
+        });
+        await upsertMyMealLocal(userUid, libCopy);
+        console.log("[MYMEALS] upsertMyMealLocal done");
+        getMyMealQueue(userUid).enqueue({
+          kind: "upsert",
+          userUid,
+          meal: libCopy,
+        });
+        console.log("[QUEUE] enqueued myMeal upsert", {
+          kind: "myMeal",
+          userUid,
+          mealId: libCopy.mealId,
+        });
+      }
+
       await getMeals();
+      console.log("[MEALS] addMeal finish");
     },
     [userUid, getMeals]
   );
