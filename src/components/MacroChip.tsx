@@ -42,7 +42,7 @@ export const MacroChip: React.FC<MacroChipProps> = ({ label, value }) => {
     <View style={styles.macroWrapper}>
       <Text
         style={[
-          { fontSize: theme.typography.size.base, color: theme.text },
+          { fontSize: theme.typography.size.sm, color: theme.text },
           styles.macroLabel,
         ]}
       >
@@ -63,7 +63,7 @@ export const MacroChip: React.FC<MacroChipProps> = ({ label, value }) => {
           style={{
             color: color,
             fontWeight: "bold",
-            fontSize: theme.typography.size.md,
+            fontSize: theme.typography.size.base,
           }}
         >
           {value}

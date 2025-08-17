@@ -1,19 +1,17 @@
-import { v4 as uuidv4 } from "uuid";
-import type { Meal } from "@/types/meal";
 import { getApp } from "@react-native-firebase/app";
+import NetInfo from "@react-native-community/netinfo";
 import {
   getFirestore,
-  writeBatch,
-  onSnapshot,
   collection,
   doc,
   query,
   orderBy,
-  limit,
-  startAfter,
+  where,
   getDocs,
+  onSnapshot,
+  writeBatch,
   setDoc,
-  updateDoc,
+  limit as fsLimit,
 } from "@react-native-firebase/firestore";
 import {
   getStorage,
@@ -21,6 +19,8 @@ import {
   putFile,
   getDownloadURL,
 } from "@react-native-firebase/storage";
+import { v4 as uuidv4 } from "uuid";
+import type { Meal } from "@/types/meal";
 
 const app = getApp();
 const db = getFirestore(app);
@@ -29,165 +29,106 @@ const st = getStorage(app);
 function mealsCol(uid: string) {
   return collection(db, "users", uid, "meals");
 }
-
 function mealDoc(uid: string, cloudId: string) {
   return doc(db, "users", uid, "meals", cloudId);
 }
-
-function myMealsDoc(uid: string, mealId: string) {
+function myMealDoc(uid: string, mealId: string) {
   return doc(db, "users", uid, "myMeals", mealId);
 }
 
-export type MealsPage = {
-  items: Meal[];
-  nextCursor: any | null;
-};
+export type MealsPage = { items: Meal[]; nextBefore: string | null };
 
-export function subscribeMeals(
+export async function getMealsPage(
   uid: string,
-  onUpdate: (meals: Meal[]) => void,
-  pageSize = 100
-) {
-  const q = query(mealsCol(uid), orderBy("timestamp", "desc"), limit(pageSize));
-  return onSnapshot(q, (snap) => {
-    const items = snap.docs.map((d: any) => {
-      const data = d.data() as Meal;
-      return { ...data, cloudId: d.id };
-    });
-    onUpdate(items);
-  });
-}
-
-export async function fetchMealsPage(
-  uid: string,
-  pageSize = 50,
-  cursor?: any | null
+  opts: { limit: number; before?: string | null }
 ): Promise<MealsPage> {
-  const base = query(
-    mealsCol(uid),
+  const { limit, before } = opts;
+  const constraints: any[] = [
     orderBy("timestamp", "desc"),
-    limit(pageSize)
-  );
-  const q = cursor ? query(base, startAfter(cursor)) : base;
+    fsLimit(limit) as any,
+  ];
+  if (before) constraints.unshift(where("timestamp", "<", before));
+  const q = query(mealsCol(uid), ...constraints);
   const snap = await getDocs(q);
   const items = snap.docs.map((d: any) => ({
     ...(d.data() as Meal),
     cloudId: d.id,
   }));
-  const nextCursor =
-    snap.docs.length === pageSize ? snap.docs[snap.docs.length - 1] : null;
-  return { items, nextCursor };
+  const nextBefore = items.length
+    ? String(items[items.length - 1].timestamp)
+    : null;
+  return { items, nextBefore };
 }
 
-export async function upsertMeal(
+export function subscribeMeals(
+  uid: string,
+  cb: (items: Meal[]) => void
+): () => void {
+  const q = query(mealsCol(uid), orderBy("timestamp", "desc"));
+  return onSnapshot(q, (snap) => {
+    const items = snap.docs.map((d: any) => ({
+      ...(d.data() as Meal),
+      cloudId: d.id,
+    }));
+    cb(items);
+  });
+}
+
+export async function addOrUpdateMeal(
   uid: string,
   meal: Meal,
   opts?: { alsoSaveToMyMeals?: boolean }
-): Promise<string> {
+): Promise<Meal> {
+  const cloudId = meal.cloudId ?? uuidv4();
   const now = new Date().toISOString();
-  const cloudId = meal.cloudId || uuidv4();
-  const mealData: Meal = {
-    ...meal,
-    cloudId,
+
+  let photoUrl: string | null | undefined = meal.photoUrl ?? null;
+  if (photoUrl && photoUrl.startsWith("file:")) {
+    const net = await NetInfo.fetch();
+    if (net.isConnected) {
+      const path = `meals/${uid}/${cloudId}.jpg`;
+      const r = ref(st, path);
+      await putFile(r, photoUrl);
+      photoUrl = await getDownloadURL(r);
+    }
+  }
+
+  const normalized: Meal = {
     userUid: uid,
-    createdAt: meal.createdAt || now,
+    mealId: meal.mealId || uuidv4(),
+    timestamp: meal.timestamp,
+    type: meal.type,
+    name: meal.name ?? null,
+    ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
+    createdAt: meal.createdAt ?? now,
     updatedAt: now,
+    syncState: "pending",
+    source: meal.source ?? null,
+    photoUrl: photoUrl ?? null,
+    notes: meal.notes ?? null,
+    tags: meal.tags ?? [],
+    deleted: meal.deleted ?? false,
+    cloudId,
   };
+
   const batch = writeBatch(db);
-  batch.set(mealDoc(uid, cloudId), mealData, { merge: true });
+  batch.set(mealDoc(uid, cloudId), normalized as any, { merge: true });
   if (opts?.alsoSaveToMyMeals) {
     batch.set(
-      myMealsDoc(uid, meal.mealId),
-      { ...mealData, cloudId: meal.mealId, source: "saved" },
+      myMealDoc(uid, normalized.mealId),
+      { ...normalized, cloudId: normalized.mealId, source: "saved" } as any,
       { merge: true }
     );
   }
   await batch.commit();
-  return cloudId;
+
+  return { ...normalized, syncState: "synced" };
 }
 
-export async function updateMeal(uid: string, meal: Meal): Promise<void> {
-  const cloudId = meal.cloudId || uuidv4();
-  const next: Meal = {
-    ...meal,
-    cloudId,
-    userUid: uid,
-    updatedAt: new Date().toISOString(),
-  };
-  await setDoc(mealDoc(uid, cloudId), next, { merge: true });
-}
-
-export async function deleteMeal(uid: string, cloudId: string): Promise<void> {
-  await updateDoc(mealDoc(uid, cloudId), {
-    deleted: true,
-    updatedAt: new Date().toISOString(),
-  } as any);
-}
-
-export async function duplicateMeal(
-  uid: string,
-  original: Meal,
-  dateOverride?: string
-): Promise<string> {
-  const nowIso = new Date().toISOString();
-  const cloudId = uuidv4();
-  const mealId = uuidv4();
-  const copy: Meal = {
-    ...original,
-    cloudId,
-    mealId,
-    userUid: uid,
-    createdAt: nowIso,
-    updatedAt: nowIso,
-    timestamp: dateOverride || nowIso,
-    deleted: false,
-  };
-  await setDoc(mealDoc(uid, cloudId), copy, { merge: true });
-  return cloudId;
-}
-
-export async function createMealWithLocalPhoto(
-  uid: string,
-  meal: Meal,
-  localPhotoUri: string
-): Promise<string> {
-  const cloudId = meal.cloudId || uuidv4();
-  const now = new Date().toISOString();
-  const docData: Meal & {
-    uploadState: "pending" | "done";
-    localPhotoUri: string | null;
-  } = {
-    ...meal,
-    cloudId,
-    userUid: uid,
-    createdAt: meal.createdAt || now,
-    updatedAt: now,
-    photoUrl: meal.photoUrl ?? null,
-    uploadState: "pending",
-    localPhotoUri,
-  };
-  await setDoc(mealDoc(uid, cloudId), docData as any, { merge: true });
-  return cloudId;
-}
-
-export async function uploadMealPhotoOnline(
-  uid: string,
-  cloudId: string,
-  localUri: string
-): Promise<string> {
-  const path = `meals/${uid}/${cloudId}.jpg`;
-  const r = ref(st, path);
-  await putFile(r, localUri);
-  const url = await getDownloadURL(r);
+export async function deleteMealInFirestore(uid: string, cloudId: string) {
   await setDoc(
     mealDoc(uid, cloudId),
-    {
-      photoUrl: url,
-      uploadState: "done",
-      localPhotoUri: null,
-      updatedAt: new Date().toISOString(),
-    } as any,
+    { deleted: true, updatedAt: new Date().toISOString() },
     { merge: true }
   );
-  return url;
 }

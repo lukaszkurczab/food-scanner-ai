@@ -12,8 +12,8 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { Layout } from "@/components";
 import { getMealsPage } from "@services/mealService";
-import { MealListItem } from "../components/MealListItem";
-import { SearchBox } from "../components/SearchBox";
+import { MealListItem } from "../../../components/MealListItem";
+import { SearchBox } from "@/components/SearchBox";
 
 const PAGE_SIZE = 20;
 
@@ -59,7 +59,6 @@ const fmtHeader = (d: Date) => {
 const mealKcal = (meal: Meal) =>
   meal.ingredients?.reduce((sum, ing) => sum + (ing.kcal || 0), 0) || 0;
 
-// helper: porównania case/diacritics-insensitive
 const norm = (s: any) =>
   String(s || "")
     .toLowerCase()
@@ -119,12 +118,9 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     await loadFirstPage();
   }, [getMeals, loadFirstPage]);
 
-  // Filtrowanie po nazwie oraz składnikach, sort DESC po dacie
   const visibleItems: Meal[] = useMemo(() => {
     const q = norm(query);
-    const base = [...items].sort(
-      (a, b) => +getMealDate(b) - +getMealDate(a) // newest first
-    );
+    const base = [...items].sort((a, b) => +getMealDate(b) - +getMealDate(a));
     if (!q) return base;
 
     return base.filter((m) => {
@@ -141,7 +137,6 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     });
   }, [items, query]);
 
-  // Grupowanie po dniu
   const sections: DaySection[] = useMemo(() => {
     if (!visibleItems.length) return [];
 

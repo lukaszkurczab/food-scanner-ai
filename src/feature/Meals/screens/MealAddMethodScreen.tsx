@@ -38,7 +38,7 @@ const options = [
     icon: "library-books",
     titleKey: "savedTitle",
     descKey: "savedDesc",
-    screen: "AddMealFromList",
+    screen: "SelectSavedMeal",
   },
 ];
 
