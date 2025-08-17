@@ -22,6 +22,8 @@ const hiddenRoutes = [
   "IngredientsNotRecognized",
   "MealCamera",
   "HistoryList",
+  "SavedMeals",
+  "SelectSavedMeal",
 ];
 
 type LayoutProps = {

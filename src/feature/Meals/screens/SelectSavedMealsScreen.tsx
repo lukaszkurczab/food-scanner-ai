@@ -8,9 +8,10 @@ import { EmptyState } from "../components/EmptyState";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { Layout } from "@/components";
-import { SearchBox } from "../../../components/SearchBox";
+import { Layout, PrimaryButton, SecondaryButton } from "@/components";
+import { SearchBox } from "@/components/SearchBox";
 import { MealListItem } from "@/components/MealListItem";
+import { useMealContext } from "@contexts/MealDraftContext";
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,
@@ -29,15 +30,21 @@ const norm = (s: any) =>
 const app = getApp();
 const db = getFirestore(app);
 
-export default function SavedMealsScreen({ navigation }: { navigation: any }) {
+export default function SelectSavedMealScreen({
+  navigation,
+}: {
+  navigation: any;
+}) {
   const theme = useTheme();
   const netInfo = useNetInfo();
   const { uid } = useAuthContext();
-  const { duplicateMeal, getMeals } = useMeals(uid || "");
+  const { getMeals } = useMeals(uid || "");
+  const { setMeal, saveDraft, setLastScreen } = useMealContext();
 
   const [queryText, setQueryText] = useState("");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Meal[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const subscribe = useCallback(() => {
     if (!uid) {
@@ -91,7 +98,46 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
     });
   }, [items, queryText]);
 
-  const onDuplicateMeal = (meal: Meal) => duplicateMeal(meal);
+  const handleSelect = useCallback((meal: Meal) => {
+    setSelectedId((prev) =>
+      prev === (meal.cloudId || meal.mealId)
+        ? null
+        : meal.cloudId || meal.mealId
+    );
+  }, []);
+
+  const handleConfirm = useCallback(async () => {
+    if (!uid || !selectedId) return;
+    const picked = visibleItems.find(
+      (m) => (m.cloudId || m.mealId) === selectedId
+    );
+    if (!picked) return;
+    const now = new Date().toISOString();
+    const draft: Meal = {
+      ...picked,
+      timestamp: picked.timestamp || now,
+      createdAt: picked.createdAt || now,
+      updatedAt: now,
+      syncState: "pending",
+      source: picked.source ?? "saved",
+    };
+    setMeal(draft);
+    await saveDraft(uid);
+    await setLastScreen(uid, "ReviewIngredients");
+    navigation.navigate("ReviewIngredients");
+  }, [
+    uid,
+    selectedId,
+    visibleItems,
+    setMeal,
+    saveDraft,
+    setLastScreen,
+    navigation,
+  ]);
+
+  const handleStartOver = useCallback(() => {
+    navigation.replace("MealAddMethod");
+  }, [navigation]);
 
   if (loading) return <LoadingSkeleton />;
 
@@ -110,6 +156,10 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
               : "Save meals to reuse them later."
           }
         />
+        <View style={{ padding: theme.spacing.lg, gap: theme.spacing.md }}>
+          <PrimaryButton label="Select" disabled />
+          <SecondaryButton label="Start over" onPress={handleStartOver} />
+        </View>
       </Layout>
     );
   }
@@ -126,28 +176,44 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refresh} />
         }
-        renderItem={({ item }) => (
-          <View
-            style={{
-              paddingHorizontal: theme.spacing.md,
-              marginBottom: theme.spacing.sm,
-            }}
-          >
-            <MealListItem
-              meal={item}
-              onPress={() => navigation.navigate("MealDetails", { meal: item })}
-              onDuplicate={() => onDuplicateMeal(item)}
-              onEdit={function (): void {
-                throw new Error("Function not implemented.");
+        renderItem={({ item }) => {
+          const id = item.cloudId || item.mealId;
+          const selected = selectedId === id;
+          return (
+            <View
+              style={{
+                paddingHorizontal: theme.spacing.md,
+                marginBottom: theme.spacing.sm,
               }}
-              onDelete={function (): void {
-                throw new Error("Function not implemented.");
-              }}
-            />
-          </View>
-        )}
+            >
+              <MealListItem
+                meal={item}
+                onPress={() => handleSelect(item)}
+                onSelect={() => handleSelect(item)}
+                selected={selected}
+                onDuplicate={() => {}}
+                onEdit={() => {}}
+                onDelete={() => {}}
+              />
+            </View>
+          );
+        }}
         contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
       />
+      <View
+        style={{
+          paddingHorizontal: theme.spacing.lg,
+          paddingBottom: theme.spacing.lg,
+          gap: theme.spacing.md,
+        }}
+      >
+        <PrimaryButton
+          label="Select"
+          onPress={handleConfirm}
+          disabled={!selectedId}
+        />
+        <SecondaryButton label="Start over" onPress={handleStartOver} />
+      </View>
     </Layout>
   );
 }
