@@ -1,168 +1,133 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Meal } from "@/types/meal";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import type { Meal } from "@/types/meal";
+import { getApp } from "@react-native-firebase/app";
 import {
-  getMealsLocal,
-  upsertMealLocal,
-  softDeleteMealLocal,
-  syncMeals as syncMealsRepo,
-} from "@services/mealService";
-import { getMealQueue, getMyMealQueue } from "@/sync/queues";
-import { upsertMyMealLocal } from "@/services/myMealService";
+  getFirestore,
+  collection,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  setDoc,
+  writeBatch,
+} from "@react-native-firebase/firestore";
 
-function eqByCloudId(a: Meal[], b: Meal[]) {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++)
-    if (a[i].cloudId !== b[i].cloudId) return false;
-  return true;
-}
+const app = getApp();
+const db = getFirestore(app);
 
 export function useMeals(userUid: string) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
-  const syncingRef = useRef(false);
 
-  const getMeals = useCallback(async () => {
+  useEffect(() => {
     if (!userUid) {
       setMeals([]);
       setLoading(false);
       return;
     }
-    const list = await getMealsLocal(userUid);
-    console.log("[MEALS] getMeals fetched", { count: list.length, userUid });
-    setMeals((prev) => (eqByCloudId(prev, list) ? prev : list));
-    setLoading(false);
+    const q = query(
+      collection(db, "users", userUid, "meals"),
+      orderBy("timestamp", "desc")
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const items = snap.docs
+        .map((d: any) => {
+          const data = d.data() as Meal;
+          return { ...data, cloudId: d.id };
+        })
+        .filter((m: any) => !m.deleted);
+      setMeals(items);
+      setLoading(false);
+    });
+    return unsub;
   }, [userUid]);
 
-  useEffect(() => {
-    getMeals();
-  }, [getMeals]);
+  const getMeals = useCallback(async () => {}, []);
 
   const addMeal = useCallback(
     async (
-      meal: Omit<Meal, "syncState" | "updatedAt">,
+      meal: Omit<Meal, "updatedAt" | "deleted">,
       opts?: { alsoSaveToMyMeals?: boolean }
     ) => {
+      if (!userUid) return;
       const now = new Date().toISOString();
+      const cloudId = meal.cloudId ?? uuidv4();
+      const mealId = meal.mealId ?? uuidv4();
+
       const base: Meal = {
         ...meal,
         userUid,
-        syncState: "pending",
-        source: meal.source ?? "manual",
-        updatedAt: now,
+        cloudId,
+        mealId,
         createdAt: meal.createdAt ?? now,
-        cloudId: meal.cloudId ?? uuidv4(),
-        mealId: meal.mealId ?? uuidv4(),
+        updatedAt: now,
+        deleted: false,
+        source: meal.source ?? "manual",
       };
 
-      console.log("[MEALS] addMeal start", {
-        userUid,
-        mealId: base.mealId,
-        cloudId: base.cloudId,
-        alsoSaveToMyMeals: !!opts?.alsoSaveToMyMeals,
-        hasPhoto: !!base.photoUrl,
-      });
-
-      await upsertMealLocal(userUid, base);
-      console.log("[MEALS] upsertMealLocal done");
-
-      getMealQueue(userUid).enqueue({ kind: "upsert", userUid, meal: base });
-      console.log("[QUEUE] enqueued meal upsert", {
-        kind: "meal",
-        userUid,
-        mealId: base.mealId,
-        cloudId: base.cloudId,
-      });
+      const batch = writeBatch(db);
+      const mealRef = doc(db, "users", userUid, "meals", cloudId);
+      batch.set(mealRef, base, { merge: true });
 
       if (opts?.alsoSaveToMyMeals) {
-        const libCopy: Meal = {
-          ...base,
-          cloudId: null as any,
-          syncState: "pending",
-          source: "saved",
-        };
-        console.log("[MYMEALS] libCopy prepare", {
-          mealId: libCopy.mealId,
-          cloudId: libCopy.cloudId,
-        });
-        await upsertMyMealLocal(userUid, libCopy);
-        console.log("[MYMEALS] upsertMyMealLocal done");
-        getMyMealQueue(userUid).enqueue({
-          kind: "upsert",
-          userUid,
-          meal: libCopy,
-        });
-        console.log("[QUEUE] enqueued myMeal upsert", {
-          kind: "myMeal",
-          userUid,
-          mealId: libCopy.mealId,
-        });
+        const myRef = doc(db, "users", userUid, "myMeals", mealId);
+        const libCopy: Meal = { ...base, source: "saved" };
+        batch.set(myRef, libCopy, { merge: true });
       }
 
-      await getMeals();
-      console.log("[MEALS] addMeal finish");
+      await batch.commit();
     },
-    [userUid, getMeals]
+    [userUid]
   );
 
   const updateMeal = useCallback(
     async (meal: Meal) => {
-      const updated: Meal = {
-        ...meal,
-        updatedAt: new Date().toISOString(),
-        syncState: "pending",
-      };
-      await upsertMealLocal(userUid, updated);
-      getMealQueue(userUid).enqueue({ kind: "upsert", userUid, meal: updated });
-      await getMeals();
+      if (!userUid) return;
+      const now = new Date().toISOString();
+      const cloudId = meal.cloudId ?? uuidv4();
+      const ref = doc(db, "users", userUid, "meals", cloudId);
+      const payload: Meal = { ...meal, cloudId, updatedAt: now };
+      await setDoc(ref, payload, { merge: true });
     },
-    [userUid, getMeals]
+    [userUid]
   );
 
   const deleteMeal = useCallback(
     async (mealCloudId: string) => {
-      if (!mealCloudId) return;
-      await softDeleteMealLocal(userUid, mealCloudId);
-      getMealQueue(userUid).enqueue({
-        kind: "delete",
-        userUid,
-        cloudId: mealCloudId,
+      if (!userUid || !mealCloudId) return;
+      const now = new Date().toISOString();
+      const ref = doc(db, "users", userUid, "meals", mealCloudId);
+      await setDoc(ref, { deleted: true, updatedAt: now } as Partial<Meal>, {
+        merge: true,
       });
-      await getMeals();
     },
-    [userUid, getMeals]
+    [userUid]
   );
 
   const duplicateMeal = useCallback(
     async (original: Meal, dateOverride?: string) => {
-      const copy: Omit<Meal, "syncState" | "updatedAt"> = {
+      if (!userUid) return;
+      const now = new Date().toISOString();
+      const newCloudId = uuidv4();
+      const newMealId = uuidv4();
+      const copy: Meal = {
         ...original,
-        mealId: uuidv4(),
-        cloudId: uuidv4(),
-        timestamp: dateOverride || new Date().toISOString(),
-        createdAt: new Date().toISOString(),
+        cloudId: newCloudId,
+        mealId: newMealId,
+        timestamp: dateOverride || now,
+        createdAt: now,
+        updatedAt: now,
         deleted: false,
       };
-      await addMeal(copy as any);
+      const ref = doc(db, "users", userUid, "meals", newCloudId);
+      await setDoc(ref, copy, { merge: true });
     },
-    [addMeal]
+    [userUid]
   );
 
-  const syncMeals = useCallback(async () => {
-    if (syncingRef.current) return;
-    syncingRef.current = true;
-    try {
-      await syncMealsRepo(userUid);
-      await getMeals();
-    } finally {
-      syncingRef.current = false;
-    }
-  }, [userUid, getMeals]);
-
-  const getUnsyncedMeals = useCallback(async () => {
-    const list = await getMealsLocal(userUid);
-    return list.filter((m) => m.syncState !== "synced");
-  }, [userUid]);
+  const syncMeals = useCallback(async () => {}, []);
+  const getUnsyncedMeals = useCallback(async () => [] as Meal[], []);
 
   return useMemo(
     () => ({
