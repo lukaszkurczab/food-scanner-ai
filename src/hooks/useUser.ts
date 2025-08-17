@@ -1,70 +1,72 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UserData } from "@/types";
+import { getApp } from "@react-native-firebase/app";
+import {
+  getFirestore,
+  doc,
+  onSnapshot,
+  getDoc,
+  setDoc,
+  deleteDoc,
+} from "@react-native-firebase/firestore";
+import {
+  getStorage,
+  ref,
+  putFile,
+  getDownloadURL,
+} from "@react-native-firebase/storage";
 import { savePhotoLocally } from "@utils/savePhotoLocally";
 import {
-  getUserLocal,
-  upsertUserLocal,
-  syncUserProfile as syncUserProfileRepo,
-  fetchUserFromCloud as fetchUserFromCloudRepo,
-  updateUserLanguageInFirestore,
-  uploadAndSaveAvatar,
   changeUsernameService,
   changeEmailService,
   changePasswordService,
-  exportUserData as exportUserDataRepo,
-  deleteUserInFirestoreWithUsername,
 } from "@/services/userService";
-import { getUserQueue } from "@/sync/queues";
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [syncState, setSyncState] = useState<"synced" | "pending" | "conflict">(
-    "pending"
-  );
   const [language, setLanguage] = useState<string>("en");
 
-  const getUserProfile = useCallback(async () => {
-    setLoading(true);
+  useEffect(() => {
     if (!uid) {
       setUserData(null);
+      setLanguage("en");
       setLoading(false);
-      return null;
+      return;
     }
-    const local = await getUserLocal(uid);
-
-    if (local) {
-      setUserData(local);
-      setSyncState(local.syncState);
-      if (local.language) setLanguage(local.language);
-    }
-    setLoading(false);
-    return local;
+    const app = getApp();
+    const db = getFirestore(app);
+    const userRef = doc(db, "users", uid);
+    const unsub = onSnapshot(userRef, (snap) => {
+      const data = snap.data() as UserData | undefined;
+      setUserData(data ?? null);
+      if (data?.language) setLanguage(data.language);
+      setLoading(false);
+    });
+    return unsub;
   }, [uid]);
 
-  useEffect(() => {
-    getUserProfile();
-  }, [getUserProfile]);
+  const getUserProfile = useCallback(async () => {
+    if (!uid) return null;
+    const app = getApp();
+    const db = getFirestore(app);
+    const d = await getDoc(doc(db, "users", uid));
+    const data = d.data() as UserData | undefined;
+    return data ?? null;
+  }, [uid]);
 
   const updateUserProfile = useCallback(
     async (patch: Partial<UserData>) => {
       if (!uid) return;
-      const prev = await getUserLocal(uid);
-      const next: UserData | null = prev
-        ? {
-            ...prev,
-            ...patch,
-            syncState: (patch.syncState as any) ?? "pending",
-            lastSyncedAt: new Date().toISOString(),
-          }
-        : null;
-      if (next) {
-        await upsertUserLocal(next);
-        getUserQueue(uid).enqueue({ kind: "sync", userUid: uid });
-        setUserData(next);
-        setSyncState(next.syncState);
-        if (patch.language) setLanguage(patch.language);
-      }
+      const app = getApp();
+      const db = getFirestore(app);
+      const now = new Date().toISOString();
+      await setDoc(
+        doc(db, "users", uid),
+        { ...patch, updatedAt: now },
+        { merge: true }
+      );
+      if (patch.language) setLanguage(patch.language);
     },
     [uid]
   );
@@ -77,50 +79,31 @@ export function useUser(uid: string) {
         fileId: "avatar",
         photoUri,
       });
-      await updateUserProfile({
-        avatarLocalPath: localPath,
-        avatarlastSyncedAt: new Date().toISOString(),
-      });
-      try {
-        const res = await uploadAndSaveAvatar({
-          userUid: uid,
-          localUri: localPath,
-        });
-        await updateUserProfile({
-          avatarUrl: res.avatarUrl,
-          avatarlastSyncedAt: res.avatarlastSyncedAt,
-          syncState: "synced",
-        });
-      } catch {
-        // swallow upload error; kolejka i tak spróbuje zsynchronizować
-      }
+      const app = getApp();
+      const st = getStorage(app);
+      const r = ref(st, `avatars/${uid}.jpg`);
+      await putFile(r, localPath);
+      const url = await getDownloadURL(r);
+      await updateUserProfile({ avatarUrl: url });
     },
     [uid, updateUserProfile]
   );
 
   const fetchUserFromCloud = useCallback(async () => {
-    if (!uid) return null;
-    return await fetchUserFromCloudRepo(uid);
-  }, [uid]);
+    return await getUserProfile();
+  }, [getUserProfile]);
 
   const sendUserToCloud = useCallback(async () => {
-    if (!uid) return;
-    await syncUserProfileRepo(uid);
     await getUserProfile();
-  }, [uid, getUserProfile]);
-
-  const markUserAsSynced = useCallback(async () => {
-    if (!uid) return;
-    await syncUserProfileRepo(uid);
-    await getUserProfile();
-    setSyncState("synced");
-  }, [uid, getUserProfile]);
+  }, [getUserProfile]);
 
   const syncUserProfile = useCallback(async () => {
-    if (!uid) return;
-    await syncUserProfileRepo(uid);
     await getUserProfile();
-  }, [uid, getUserProfile]);
+  }, [getUserProfile]);
+
+  const markUserAsSynced = useCallback(async () => {
+    await getUserProfile();
+  }, [getUserProfile]);
 
   const changeUsername = useCallback(
     async (newUsername: string, password: string) => {
@@ -153,7 +136,6 @@ export function useUser(uid: string) {
         return;
       }
       await updateUserProfile({ language: newLang });
-      await updateUserLanguageInFirestore(uid, newLang);
       setLanguage(newLang);
     },
     [uid, updateUserProfile]
@@ -161,21 +143,23 @@ export function useUser(uid: string) {
 
   const exportUserData = useCallback(async (): Promise<string | void> => {
     if (!uid) return;
-    return await exportUserDataRepo(uid);
-  }, [uid]);
+    const data = await getUserProfile();
+    return JSON.stringify({ user: data }, null, 2);
+  }, [uid, getUserProfile]);
 
   const deleteUser = useCallback(async () => {
     if (!uid) return;
-    await deleteUserInFirestoreWithUsername(uid);
+    const app = getApp();
+    const db = getFirestore(app);
+    await deleteDoc(doc(db, "users", uid));
     setUserData(null);
-    setSyncState("pending");
   }, [uid]);
 
   return useMemo(
     () => ({
       userData,
       loading,
-      syncState,
+      syncState: "synced" as const,
       getUserProfile,
       fetchUserFromCloud,
       updateUserProfile,
@@ -194,7 +178,6 @@ export function useUser(uid: string) {
     [
       userData,
       loading,
-      syncState,
       getUserProfile,
       fetchUserFromCloud,
       updateUserProfile,

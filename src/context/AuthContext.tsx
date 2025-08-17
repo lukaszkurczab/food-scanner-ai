@@ -13,7 +13,6 @@ import {
   onAuthStateChanged,
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
-import { attachQueues, disposeQueues } from "@/sync/queues";
 
 type AuthContextType = {
   firebaseUser: FirebaseAuthTypes.User | null;
@@ -60,14 +59,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setFirebaseUser,
     };
   }, [firebaseUser, loading]);
-
-  useEffect(() => {
-    if (!value.uid) return;
-    attachQueues(value.uid);
-    return () => {
-      if (value.uid) disposeQueues(value.uid);
-    };
-  }, [value.uid]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

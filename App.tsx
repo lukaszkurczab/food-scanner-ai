@@ -16,7 +16,6 @@ import { useTheme } from "@/theme";
 import Purchases from "react-native-purchases";
 import { Platform } from "react-native";
 import { InactivityProvider } from "@contexts/InactivityContext";
-import { database } from "@/db/database";
 
 export function initRevenueCat() {
   Purchases.configure({
@@ -33,15 +32,6 @@ export default function App() {
     "Inter-Bold": require("./assets/fonts/Inter-Bold.ttf"),
     "Inter-Light": require("./assets/fonts/Inter-Light.ttf"),
   });
-
-  const handleReset = async () => {
-    await database.write(async () => {
-      await database.unsafeResetDatabase();
-    });
-    alert("Baza została zresetowana");
-  };
-
-  //handleReset();
 
   useEffect(() => {
     if (__DEV__ && typeof ErrorUtils?.getGlobalHandler === "function") {

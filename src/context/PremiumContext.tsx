@@ -18,12 +18,8 @@ export const PremiumProvider = ({
     usePremiumStatus();
 
   useEffect(() => {
-    // po zmianie usera — sprawdź i zasubskrybuj per-user
     checkPremiumStatus(uid);
-    const unsub = subscribeToPremiumChanges(uid, () => {
-      // opcjonalny refresh; najczęściej niepotrzebny, bo listener już ustawia stan
-      // checkPremiumStatus(uid);
-    });
+    const unsub = subscribeToPremiumChanges(uid, () => {});
     return () => {
       if (typeof unsub === "function") unsub();
     };

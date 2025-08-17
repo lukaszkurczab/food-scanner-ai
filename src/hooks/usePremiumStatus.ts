@@ -9,7 +9,6 @@ const keyFor = (uid?: string | null) =>
 export function usePremiumStatus() {
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
 
-  // ✓ akceptuje string | null | undefined
   const checkPremiumStatus = useCallback(async (uid?: string | null) => {
     try {
       const info = await Purchases.getCustomerInfo();
@@ -25,7 +24,6 @@ export function usePremiumStatus() {
     }
   }, []);
 
-  // ✓ zwraca zawsze funkcję unsubscribe
   const subscribeToPremiumChanges = useCallback(
     (
       uid?: string | null,
@@ -39,12 +37,9 @@ export function usePremiumStatus() {
       };
       Purchases.addCustomerInfoUpdateListener(listener);
       return () => {
-        // oficjalny sposób usunięcia listenera
         try {
           Purchases.removeCustomerInfoUpdateListener?.(listener);
-        } catch {
-          /* ignore */
-        }
+        } catch {}
       };
     },
     []
@@ -53,7 +48,7 @@ export function usePremiumStatus() {
   return {
     isPremium,
     setIsPremium,
-    checkPremiumStatus, // (uid?: string | null)
-    subscribeToPremiumChanges, // (uid?: string | null, onChange?) => () => void
+    checkPremiumStatus,
+    subscribeToPremiumChanges,
   };
 }
