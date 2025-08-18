@@ -7,7 +7,6 @@ export default {
     owner: "lkurczab",
     version: "1.0.1",
     orientation: "portrait",
-    icon: "./assets/icon.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
     assetBundlePatterns: ["**/*"],
@@ -20,10 +19,12 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.lkurczab.foodscannerai",
       googleServicesFile: "./GoogleService-Info.plist",
+      icon: "./assets/appstore.png", // <- ikona iOS
     },
     android: {
+      icon: "./assets/playstore.png", // <- ikona Android
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./assets/playstore.png", // możesz zostawić to samo
         backgroundColor: "#ffffff",
       },
       package: "com.lkurczab.foodscannerai",
@@ -39,18 +40,10 @@ export default {
           recordAudioAndroid: true,
         },
       ],
-      [
-        "expo-build-properties",
-        {
-          ios: {
-            useFrameworks: "static",
-          },
-        },
-      ],
+      ["expo-build-properties", { ios: { useFrameworks: "static" } }],
       "expo-font",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "@morrowdigital/watermelondb-expo-plugin",
     ],
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,

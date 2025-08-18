@@ -37,7 +37,6 @@ This project aims for a production-ready release – no MVP phase.
 • OpenAI API – dietitian chatbot
 • i18next – multilingual support (PL/EN)
 • react-native-gifted-charts – pie/line charts
-• WatermelonDB – offline data caching
 • RevenueCat or Stripe (planned) – for subscriptions
 
 ⸻
