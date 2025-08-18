@@ -9,16 +9,17 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { Layout } from "@/components";
-import { SearchBox } from "../../../components/SearchBox";
+import { SearchBox } from "@/components/SearchBox";
 import { MealListItem } from "@/components/MealListItem";
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,
   collection,
-  query,
+  query as fsQuery,
   orderBy,
   onSnapshot,
 } from "@react-native-firebase/firestore";
+import { useTranslation } from "react-i18next";
 
 const norm = (s: any) =>
   String(s || "")
@@ -34,6 +35,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
   const netInfo = useNetInfo();
   const { uid } = useAuthContext();
   const { duplicateMeal, getMeals } = useMeals(uid || "");
+  const { t } = useTranslation(["meals"]);
 
   const [queryText, setQueryText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       setLoading(false);
       return () => {};
     }
-    const q = query(
+    const q = fsQuery(
       collection(db, "users", uid, "myMeals"),
       orderBy("name", "asc")
     );
@@ -103,11 +105,11 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
           <SearchBox value={queryText} onChange={setQueryText} />
         </View>
         <EmptyState
-          title="No saved meals"
+          title={t("meals:noSavedMeals", "No saved meals")}
           description={
             queryText
-              ? "Try a different search."
-              : "Save meals to reuse them later."
+              ? t("meals:tryDifferentSearch", "Try a different search.")
+              : t("meals:saveMealsToReuse", "Save meals to reuse them later.")
           }
         />
       </Layout>
@@ -137,12 +139,8 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
               meal={item}
               onPress={() => navigation.navigate("MealDetails", { meal: item })}
               onDuplicate={() => onDuplicateMeal(item)}
-              onEdit={function (): void {
-                throw new Error("Function not implemented.");
-              }}
-              onDelete={function (): void {
-                throw new Error("Function not implemented.");
-              }}
+              onEdit={() => {}}
+              onDelete={() => {}}
             />
           </View>
         )}
