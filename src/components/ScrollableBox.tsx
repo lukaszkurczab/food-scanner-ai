@@ -1,11 +1,12 @@
 import React from "react";
-import { View, ScrollView, ViewStyle } from "react-native";
+import { View, ViewStyle, StyleProp } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import { useTheme } from "@/theme/useTheme";
 
 type Props = {
   children: React.ReactNode;
-  style?: ViewStyle;
-  contentContainerStyle?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
 };
 
 export const ScrollableBox: React.FC<Props> = ({
@@ -25,12 +26,13 @@ export const ScrollableBox: React.FC<Props> = ({
       ]}
     >
       <ScrollView
-        contentContainerStyle={[{ paddingBottom: 8 }, contentContainerStyle]}
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator
         bounces
-        nestedScrollEnabled={true}
+        contentContainerStyle={contentContainerStyle}
       >
-        <View style={{ flexGrow: 1 }}>{children}</View>
+        {children}
       </ScrollView>
     </View>
   );
