@@ -9,9 +9,10 @@ import {
   StyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
+import { useTranslation } from "react-i18next";
 
 type Props = {
-  placeholder: string;
+  placeholder?: string;
   disabled?: boolean;
   onSend: (text: string) => void;
   helperText?: string;
@@ -24,6 +25,7 @@ export const InputBar: React.FC<Props> = ({
   helperText,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation("chat");
   const [text, setText] = useState("");
 
   const send = useCallback(() => {
@@ -60,7 +62,7 @@ export const InputBar: React.FC<Props> = ({
           <TextInput
             value={text}
             onChangeText={setText}
-            placeholder={placeholder}
+            placeholder={placeholder ?? t("input.placeholder")}
             placeholderTextColor={theme.textSecondary}
             style={[
               styles.input,
@@ -91,7 +93,7 @@ export const InputBar: React.FC<Props> = ({
                 { color: disabled ? theme.disabled.text : theme.onAccent },
               ]}
             >
-              Send
+              {t("input.send")}
             </Text>
           </Pressable>
         </View>

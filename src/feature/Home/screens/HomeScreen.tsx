@@ -13,9 +13,11 @@ import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@hooks/useMeals";
 import type { Meal } from "@/types/meal";
+import { useTranslation } from "react-i18next";
 
 export default function HomeScreen({ navigation }: any) {
   const theme = useTheme();
+  const { t } = useTranslation(["home", "common"]);
   const { userData } = useUserContext();
   const uid = userData?.uid || "";
   const { meals, getMeals } = useMeals(uid);
@@ -29,7 +31,6 @@ export default function HomeScreen({ navigation }: any) {
   useEffect(() => {
     if (!uid) return;
     getMeals();
-    // usunięto syncUserProfile() – zostaje tylko w UserProvider
   }, [uid, getMeals]);
 
   useEffect(() => {
@@ -55,13 +56,14 @@ export default function HomeScreen({ navigation }: any) {
         ) : (
           <View style={styles.caloriesBox}>
             <Text style={[styles.caloriesText, { color: theme.text }]}>
-              Total today: {totalCalories} kcal
+              {t("home:totalToday", "Total today")}: {totalCalories}{" "}
+              {t("common:kcal", "kcal")}
             </Text>
             <Text
               style={[styles.link, { color: theme.link }]}
               onPress={() => navigation.navigate("Onboarding")}
             >
-              Set your daily goal →
+              {t("home:setDailyGoal", "Set your daily goal")} →
             </Text>
           </View>
         )}

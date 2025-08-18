@@ -20,6 +20,7 @@ import {
   orderBy,
   onSnapshot,
 } from "@react-native-firebase/firestore";
+import { useTranslation } from "react-i18next";
 
 const norm = (s: any) =>
   String(s || "")
@@ -40,6 +41,7 @@ export default function SelectSavedMealScreen({
   const { uid } = useAuthContext();
   const { getMeals } = useMeals(uid || "");
   const { setMeal, saveDraft, setLastScreen } = useMealContext();
+  const { t } = useTranslation(["meals"]);
 
   const [queryText, setQueryText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -149,16 +151,19 @@ export default function SelectSavedMealScreen({
           <SearchBox value={queryText} onChange={setQueryText} />
         </View>
         <EmptyState
-          title="No saved meals"
+          title={t("meals:noSavedMeals", "No saved meals")}
           description={
             queryText
-              ? "Try a different search."
-              : "Save meals to reuse them later."
+              ? t("meals:tryDifferentSearch", "Try a different search.")
+              : t("meals:saveMealsToReuse", "Save meals to reuse them later.")
           }
         />
         <View style={{ padding: theme.spacing.lg, gap: theme.spacing.md }}>
-          <PrimaryButton label="Select" disabled />
-          <SecondaryButton label="Start over" onPress={handleStartOver} />
+          <PrimaryButton label={t("meals:select", "Select")} disabled />
+          <SecondaryButton
+            label={t("meals:startOver", "Start over")}
+            onPress={handleStartOver}
+          />
         </View>
       </Layout>
     );
@@ -208,11 +213,14 @@ export default function SelectSavedMealScreen({
         }}
       >
         <PrimaryButton
-          label="Select"
+          label={t("meals:select", "Select")}
           onPress={handleConfirm}
           disabled={!selectedId}
         />
-        <SecondaryButton label="Start over" onPress={handleStartOver} />
+        <SecondaryButton
+          label={t("meals:startOver", "Start over")}
+          onPress={handleStartOver}
+        />
       </View>
     </Layout>
   );

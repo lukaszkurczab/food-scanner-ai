@@ -48,7 +48,6 @@ export default function StatisticsScreen({ navigation }: any) {
 
   useEffect(() => {
     if (!uid) return;
-    // pobierz posiłki przy wejściu na ekran
     if (typeof getMeals === "function") getMeals();
   }, [uid, getMeals]);
 
@@ -87,7 +86,6 @@ export default function StatisticsScreen({ navigation }: any) {
 
   const totals = stats.totals ?? { kcal: 0, protein: 0, carbs: 0, fat: 0 };
 
-  // solidne sprawdzenie czy jest co wyświetlić
   const hasAnySeriesData =
     kcalSeries.some((v) => v > 0) ||
     proteinSeries.some((v) => v > 0) ||

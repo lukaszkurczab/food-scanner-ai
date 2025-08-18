@@ -14,6 +14,7 @@ import { Layout } from "@/components";
 import { getMealsPage } from "@services/mealService";
 import { MealListItem } from "../../../components/MealListItem";
 import { SearchBox } from "@/components/SearchBox";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 20;
 
@@ -44,13 +45,13 @@ const fmtDateKey = (d: Date) =>
     d.getDate()
   ).padStart(2, "0")}`;
 
-const fmtHeader = (d: Date) => {
+const fmtHeader = (d: Date, t: (key: string) => string) => {
   const today = new Date();
   const isToday =
     d.getDate() === today.getDate() &&
     d.getMonth() === today.getMonth() &&
     d.getFullYear() === today.getFullYear();
-  if (isToday) return "Today";
+  if (isToday) return t("common:today");
   const dd = String(d.getDate()).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   return `${dd}.${mm}`;
@@ -70,6 +71,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const netInfo = useNetInfo();
   const { uid } = useAuthContext();
   const { duplicateMeal, deleteMeal, getMeals } = useMeals(uid || "");
+  const { t } = useTranslation(["meals", "common"]);
 
   const [filterCount, setFilterCount] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
@@ -149,7 +151,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
       if (!byKey.has(key)) {
         byKey.set(key, {
-          title: fmtHeader(d),
+          title: fmtHeader(d, t),
           dateKey: key,
           totalKcal: 0,
           data: [],
@@ -166,7 +168,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
       const s = byKey.get(k)!;
       return { ...s, totalKcal: Math.round(s.totalKcal) };
     });
-  }, [visibleItems]);
+  }, [visibleItems, t]);
 
   const onEditMeal = (_mealId: string) => {};
   const onDuplicateMeal = (meal: Meal) => duplicateMeal(meal);
@@ -199,11 +201,11 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
               <SearchBox value={query} onChange={setQuery} />
             </View>
             <EmptyState
-              title="No meals found"
+              title={t("meals:noMealsFound")}
               description={
                 query
-                  ? "Try a different search."
-                  : "Try changing filters or date"
+                  ? t("meals:tryDifferentSearch")
+                  : t("meals:tryChangeFilters")
               }
             />
           </>
@@ -246,7 +248,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           fontWeight: "400",
         }}
       >
-        {total} kcal
+        {total} {t("common:kcal")}
       </Text>
     </View>
   );
