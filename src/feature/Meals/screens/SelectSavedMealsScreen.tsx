@@ -11,7 +11,7 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { Layout, PrimaryButton, SecondaryButton } from "@/components";
 import { SearchBox } from "@/components/SearchBox";
 import { MealListItem } from "@/components/MealListItem";
-import { useMealContext } from "@contexts/MealDraftContext";
+import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,
@@ -40,7 +40,7 @@ export default function SelectSavedMealScreen({
   const netInfo = useNetInfo();
   const { uid } = useAuthContext();
   const { getMeals } = useMeals(uid || "");
-  const { setMeal, saveDraft, setLastScreen } = useMealContext();
+  const { setMeal, saveDraft, setLastScreen } = useMealDraftContext();
   const { t } = useTranslation(["meals"]);
 
   const [queryText, setQueryText] = useState("");

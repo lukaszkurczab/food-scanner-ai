@@ -12,7 +12,7 @@ import {
   Modal,
 } from "@/components";
 import { useTheme } from "@/theme/useTheme";
-import { useMealContext } from "@contexts/MealDraftContext";
+import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useUserContext } from "@contexts/UserContext";
 import { useMeals } from "@hooks/useMeals";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
@@ -30,7 +30,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const { t } = useTranslation(["meals", "common"]);
   const { uid } = useAuthContext();
   const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =
-    useMealContext();
+    useMealDraftContext();
   const { userData } = useUserContext();
   const { addMeal } = useMeals(uid || "");
   const [showCancelModal, setShowCancelModal] = useState(false);

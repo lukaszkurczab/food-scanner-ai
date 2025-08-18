@@ -1,3 +1,4 @@
+// components/IngredientBox.tsx
 import React, { useState, useRef } from "react";
 import {
   View,
@@ -18,20 +19,33 @@ import { useTranslation } from "react-i18next";
 type IngredientBoxProps = {
   ingredient: Ingredient;
   editable?: boolean;
+  initialEdit?: boolean;
   onSave?: (ingredient: Ingredient) => void;
   onRemove?: () => void;
+  onCancelEdit?: () => void;
+};
+
+type FieldErrors = {
+  name?: string;
+  amount?: string;
+  protein?: string;
+  carbs?: string;
+  fat?: string;
+  kcal?: string;
 };
 
 export const IngredientBox: React.FC<IngredientBoxProps> = ({
   ingredient,
   editable = true,
+  initialEdit = false,
   onSave,
   onRemove,
+  onCancelEdit,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const [editMode, setEditMode] = useState<boolean>(initialEdit);
   const [edited, setEdited] = useState<Ingredient>(ingredient);
 
   const [amountStr, setAmountStr] = useState(String(ingredient.amount));
@@ -40,54 +54,92 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
   const [fatStr, setFatStr] = useState(String(ingredient.fat));
   const [kcalStr, setKcalStr] = useState(String(ingredient.kcal));
 
+  const [errors, setErrors] = useState<FieldErrors>({});
+
   const initial = useRef(ingredient);
   const menuAnchor = useRef<View>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
+
+  const setFieldError = (field: keyof FieldErrors, msg?: string) =>
+    setErrors((e) => ({ ...e, [field]: msg }));
 
   const handleAmountChange = (val: string) => {
     setAmountStr(val);
     const n = parseFloat(val.replace(",", "."));
     if (val === "" || isNaN(n) || n <= 0) {
       setEdited({ ...edited, amount: 0 });
+      setFieldError(
+        "amount",
+        t("ingredient_invalid_values", {
+          ns: "meals",
+          defaultValue:
+            "Values must be non-negative and amount must be greater than 0",
+        })
+      );
       return;
     }
-    const factor = n / (initial.current.amount || 1);
-    setEdited({
-      ...edited,
-      amount: n,
-      protein: Math.round(initial.current.protein * factor),
-      carbs: Math.round(initial.current.carbs * factor),
-      fat: Math.round(initial.current.fat * factor),
-      kcal: Math.round(initial.current.kcal * factor),
-    });
-    setProteinStr(String(Math.round(initial.current.protein * factor)));
-    setCarbsStr(String(Math.round(initial.current.carbs * factor)));
-    setFatStr(String(Math.round(initial.current.fat * factor)));
-    setKcalStr(String(Math.round(initial.current.kcal * factor)));
+    setFieldError("amount", undefined);
+    const base = initial.current.amount || 1;
+    const factor = n / base;
+    const p = Math.round(initial.current.protein * factor);
+    const c = Math.round(initial.current.carbs * factor);
+    const f = Math.round(initial.current.fat * factor);
+    const k = Math.round(initial.current.kcal * factor);
+    setEdited({ ...edited, amount: n, protein: p, carbs: c, fat: f, kcal: k });
+    setProteinStr(String(p));
+    setCarbsStr(String(c));
+    setFatStr(String(f));
+    setKcalStr(String(k));
+    setFieldError("protein", undefined);
+    setFieldError("carbs", undefined);
+    setFieldError("fat", undefined);
+    setFieldError("kcal", undefined);
   };
 
   const handleBlur = (field: keyof Ingredient, value: string) => {
     const num = parseFloat(value.replace(",", "."));
-    setEdited((prev) => ({
-      ...prev,
-      [field]: value === "" || isNaN(num) ? 0 : num,
-    }));
-    switch (field) {
-      case "amount":
-        setAmountStr(value === "" || isNaN(num) ? "0" : String(num));
-        break;
-      case "protein":
-        setProteinStr(value === "" || isNaN(num) ? "0" : String(num));
-        break;
-      case "carbs":
-        setCarbsStr(value === "" || isNaN(num) ? "0" : String(num));
-        break;
-      case "fat":
-        setFatStr(value === "" || isNaN(num) ? "0" : String(num));
-        break;
-      case "kcal":
-        setKcalStr(value === "" || isNaN(num) ? "0" : String(num));
-        break;
+    const v = value === "" || isNaN(num) ? 0 : num;
+    setEdited((prev) => ({ ...prev, [field]: v }));
+    if (field === "amount") {
+      setAmountStr(String(v));
+      setFieldError(
+        "amount",
+        v > 0
+          ? undefined
+          : t("ingredient_invalid_values", {
+              ns: "meals",
+              defaultValue:
+                "Values must be non-negative and amount must be greater than 0",
+            })
+      );
+    }
+    if (field === "protein") {
+      setProteinStr(String(v));
+      setFieldError(
+        "protein",
+        v >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
+      );
+    }
+    if (field === "carbs") {
+      setCarbsStr(String(v));
+      setFieldError(
+        "carbs",
+        v >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
+      );
+    }
+    if (field === "fat") {
+      setFatStr(String(v));
+      setFieldError(
+        "fat",
+        v >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
+      );
+    }
+    if (field === "kcal") {
+      setKcalStr(String(v));
+      setFieldError(
+        "kcal",
+        v >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
+      );
     }
   };
 
@@ -95,28 +147,71 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
     setProteinStr(val);
     const n = parseFloat(val.replace(",", "."));
     setEdited({ ...edited, protein: val === "" || isNaN(n) ? 0 : n });
+    setFieldError(
+      "protein",
+      n >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
+    );
   };
   const handleCarbsChange = (val: string) => {
     setCarbsStr(val);
     const n = parseFloat(val.replace(",", "."));
     setEdited({ ...edited, carbs: val === "" || isNaN(n) ? 0 : n });
+    setFieldError(
+      "carbs",
+      n >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
+    );
   };
   const handleFatChange = (val: string) => {
     setFatStr(val);
     const n = parseFloat(val.replace(",", "."));
     setEdited({ ...edited, fat: val === "" || isNaN(n) ? 0 : n });
+    setFieldError(
+      "fat",
+      n >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
+    );
   };
   const handleKcalChange = (val: string) => {
     setKcalStr(val);
     const n = parseFloat(val.replace(",", "."));
     setEdited({ ...edited, kcal: val === "" || isNaN(n) ? 0 : n });
+    setFieldError(
+      "kcal",
+      n >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
+    );
   };
 
   const openMenu = () => {
-    menuAnchor.current?.measureInWindow((x, y, w, h) => {
+    menuAnchor.current?.measureInWindow((x, y) => {
       setMenuPos({ x: x - 200, y });
       setMenuVisible(true);
     });
+  };
+
+  const validateAll = (): boolean => {
+    const next: FieldErrors = {};
+    if (!edited.name.trim()) {
+      next.name = t("ingredient_name_required", {
+        ns: "meals",
+        defaultValue: "Ingredient name cannot be empty",
+      });
+    }
+    if (!(edited.amount > 0)) {
+      next.amount = t("ingredient_invalid_values", {
+        ns: "meals",
+        defaultValue:
+          "Values must be non-negative and amount must be greater than 0",
+      });
+    }
+    if (edited.protein < 0)
+      next.protein = t("ingredient_invalid_values", { ns: "meals" });
+    if (edited.carbs < 0)
+      next.carbs = t("ingredient_invalid_values", { ns: "meals" });
+    if (edited.fat < 0)
+      next.fat = t("ingredient_invalid_values", { ns: "meals" });
+    if (edited.kcal < 0)
+      next.kcal = t("ingredient_invalid_values", { ns: "meals" });
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   if (editMode) {
@@ -144,15 +239,28 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
                 color: theme.text,
                 fontFamily: theme.typography.fontFamily.bold,
                 fontSize: 20,
-                borderColor: theme.border,
+                borderColor: errors.name ? theme.error.text : theme.border,
               },
             ]}
             value={edited.name}
-            onChangeText={(v) => setEdited({ ...edited, name: v })}
+            onChangeText={(v) => {
+              setEdited({ ...edited, name: v });
+              setFieldError(
+                "name",
+                v.trim()
+                  ? undefined
+                  : t("ingredient_name_required", { ns: "meals" })
+              );
+            }}
             placeholder={t("ingredient_name", { ns: "meals" })}
             placeholderTextColor={theme.textSecondary}
             autoFocus
           />
+          {!!errors.name && (
+            <Text style={[styles.errorText, { color: theme.error.text }]}>
+              {errors.name}
+            </Text>
+          )}
 
           <View>
             <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
@@ -161,14 +269,23 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
             <TextInput
               style={[
                 styles.editInput,
-                { color: theme.text, borderColor: theme.border },
+                {
+                  color: theme.text,
+                  borderColor: errors.amount ? theme.error.text : theme.border,
+                },
               ]}
               keyboardType="numeric"
               value={amountStr}
               onChangeText={handleAmountChange}
               onBlur={() => handleBlur("amount", amountStr)}
             />
+            {!!errors.amount && (
+              <Text style={[styles.errorText, { color: theme.error.text }]}>
+                {errors.amount}
+              </Text>
+            )}
           </View>
+
           <View>
             <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
               {t("protein", { ns: "meals" })} [g]
@@ -178,10 +295,12 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
                 styles.editInput,
                 {
                   color: theme.macro.protein,
-                  marginBottom: 14,
-                  backgroundColor: theme.macro.protein + 24,
+                  marginBottom: 6,
+                  backgroundColor: theme.macro.protein + "24",
                   borderWidth: 1,
-                  borderColor: theme.macro.protein,
+                  borderColor: errors.protein
+                    ? theme.error.text
+                    : theme.macro.protein,
                 },
               ]}
               keyboardType="numeric"
@@ -189,7 +308,13 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               onChangeText={handleProteinChange}
               onBlur={() => handleBlur("protein", proteinStr)}
             />
+            {!!errors.protein && (
+              <Text style={[styles.errorText, { color: theme.error.text }]}>
+                {errors.protein}
+              </Text>
+            )}
           </View>
+
           <View>
             <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
               {t("carbs", { ns: "meals" })} [g]
@@ -199,10 +324,12 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
                 styles.editInput,
                 {
                   color: theme.macro.carbs,
-                  marginBottom: 14,
-                  backgroundColor: theme.macro.carbs + 24,
+                  marginBottom: 6,
+                  backgroundColor: theme.macro.carbs + "24",
                   borderWidth: 1,
-                  borderColor: theme.macro.carbs,
+                  borderColor: errors.carbs
+                    ? theme.error.text
+                    : theme.macro.carbs,
                 },
               ]}
               keyboardType="numeric"
@@ -210,7 +337,13 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               onChangeText={handleCarbsChange}
               onBlur={() => handleBlur("carbs", carbsStr)}
             />
+            {!!errors.carbs && (
+              <Text style={[styles.errorText, { color: theme.error.text }]}>
+                {errors.carbs}
+              </Text>
+            )}
           </View>
+
           <View>
             <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
               {t("fat", { ns: "meals" })} [g]
@@ -219,11 +352,11 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               style={[
                 styles.editInput,
                 {
-                  marginBottom: 14,
+                  marginBottom: 6,
                   color: theme.macro.fat,
-                  backgroundColor: theme.macro.fat + 24,
+                  backgroundColor: theme.macro.fat + "24",
                   borderWidth: 1,
-                  borderColor: theme.macro.fat,
+                  borderColor: errors.fat ? theme.error.text : theme.macro.fat,
                 },
               ]}
               keyboardType="numeric"
@@ -231,7 +364,13 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               onChangeText={handleFatChange}
               onBlur={() => handleBlur("fat", fatStr)}
             />
+            {!!errors.fat && (
+              <Text style={[styles.errorText, { color: theme.error.text }]}>
+                {errors.fat}
+              </Text>
+            )}
           </View>
+
           <View>
             <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
               {t("calories", { ns: "meals" })} [kcal]
@@ -241,8 +380,8 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
                 styles.editInput,
                 {
                   color: theme.text,
-                  marginBottom: 14,
-                  borderColor: theme.border,
+                  marginBottom: 6,
+                  borderColor: errors.kcal ? theme.error.text : theme.border,
                 },
               ]}
               keyboardType="numeric"
@@ -250,6 +389,11 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               onChangeText={handleKcalChange}
               onBlur={() => handleBlur("kcal", kcalStr)}
             />
+            {!!errors.kcal && (
+              <Text style={[styles.errorText, { color: theme.error.text }]}>
+                {errors.kcal}
+              </Text>
+            )}
           </View>
 
           <View>
@@ -259,8 +403,10 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
                 { backgroundColor: theme.accentSecondary },
               ]}
               onPress={() => {
+                if (!validateAll()) return;
                 setEditMode(false);
                 if (onSave) onSave(edited);
+                if (onCancelEdit) onCancelEdit();
               }}
             >
               <Text style={[styles.saveBtnText, { color: theme.onAccent }]}>
@@ -280,6 +426,8 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
                 setCarbsStr(String(initial.current.carbs));
                 setFatStr(String(initial.current.fat));
                 setKcalStr(String(initial.current.kcal));
+                setErrors({});
+                if (onCancelEdit) onCancelEdit();
               }}
             >
               <Text
@@ -354,7 +502,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
       </View>
       <MacroChip label="Calories" value={ingredient.kcal} />
       <View style={styles.macrosRow}>
-        <MacroChip label={"Protein"} value={ingredient.protein} />
+        <MacroChip label="Protein" value={ingredient.protein} />
         <MacroChip label="Carbs" value={ingredient.carbs} />
         <MacroChip label="Fat" value={ingredient.fat} />
       </View>
@@ -464,11 +612,6 @@ const styles = StyleSheet.create({
     marginRight: 0,
     padding: 2,
   },
-  menuOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   dropdown: {
     borderRadius: 16,
     paddingVertical: 8,
@@ -498,27 +641,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   editLabel: { marginBottom: 5, fontSize: 15, fontWeight: "600" },
-  macrosEditRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
-    marginBottom: 2,
-  },
-  editMacroBox: {
-    borderWidth: 1.3,
-    borderRadius: 12,
-    padding: 5,
-    alignItems: "center",
-    width: "31%",
-  },
-  editMacroInput: {
-    fontSize: 17,
-    fontWeight: "bold",
-    textAlign: "center",
-    padding: 0,
-    marginBottom: 1,
-  },
-  editMacroLabel: { fontSize: 12, fontWeight: "500" },
+  errorText: { fontSize: 12, marginTop: 2 },
   saveBtn: {
     width: "100%",
     borderRadius: 12,
