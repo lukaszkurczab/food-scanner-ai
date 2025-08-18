@@ -120,7 +120,11 @@ export default function LoginScreen({ navigation }: any) {
           style={{ marginBottom: theme.spacing.xl }}
           icon={
             <Pressable onPress={() => setShowPassword((v) => !v)}>
-              <Feather name={showPassword ? "eye" : "eye-off"} size={22} />
+              <Feather
+                name={showPassword ? "eye" : "eye-off"}
+                size={22}
+                color={theme.text}
+              />
             </Pressable>
           }
           iconPosition="right"

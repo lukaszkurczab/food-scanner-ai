@@ -1,193 +1,295 @@
-import { v4 as uuidv4 } from "uuid";
-import type { Meal } from "@/types/meal";
+import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import type { UserData } from "@/types";
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,
-  writeBatch,
-  onSnapshot,
   collection,
   doc,
-  query,
-  orderBy,
-  limit,
-  startAfter,
-  getDocs,
+  getDoc,
   setDoc,
   updateDoc,
+  getDocs,
+  writeBatch,
+  deleteDoc,
 } from "@react-native-firebase/firestore";
 import {
   getStorage,
-  ref,
+  ref as storageRef,
   putFile,
   getDownloadURL,
 } from "@react-native-firebase/storage";
+import {
+  getAuth,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  verifyBeforeUpdateEmail,
+  updatePassword,
+} from "@react-native-firebase/auth";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { zip } from "react-native-zip-archive";
+import { Appearance } from "react-native";
 
-const app = getApp();
-const db = getFirestore(app);
-const st = getStorage(app);
+export const orUndef = <T>(v: T | null | undefined): T | undefined =>
+  v == null ? undefined : v;
 
-function mealsCol(uid: string) {
-  return collection(db, "users", uid, "meals");
+export const arr = <T>(v: T[] | null | undefined): T[] =>
+  Array.isArray(v) ? v : [];
+
+export function asEnum<T extends string>(
+  val: unknown,
+  allowed: readonly T[],
+  fallback: T
+): T {
+  return typeof val === "string" && (allowed as readonly string[]).includes(val)
+    ? (val as T)
+    : fallback;
 }
 
-function mealDoc(uid: string, cloudId: string) {
-  return doc(db, "users", uid, "meals", cloudId);
+export function asEnumNullable<T extends string>(
+  val: unknown,
+  allowed: readonly T[],
+  fallback: T | null = null
+): T | null {
+  if (val == null) return null;
+  return (allowed as readonly string[]).includes(String(val))
+    ? (val as T)
+    : fallback;
 }
 
-function myMealsDoc(uid: string, mealId: string) {
-  return doc(db, "users", uid, "myMeals", mealId);
+function db() {
+  return getFirestore(getApp());
 }
 
-export type MealsPage = {
-  items: Meal[];
-  nextCursor: any | null;
-};
+const USERS = "users";
 
-export function subscribeMeals(
+export async function getUserLocal(uid: string): Promise<UserData | null> {
+  const snap = await getDoc(doc(collection(db(), USERS), uid));
+  return snap.exists() ? (snap.data() as UserData) : null;
+}
+
+export async function upsertUserLocal(data: UserData): Promise<void> {
+  await setDoc(doc(collection(db(), USERS), data.uid), data, { merge: true });
+}
+
+export async function fetchUserFromCloud(
+  uid: string
+): Promise<UserData | null> {
+  const snap = await getDoc(doc(collection(db(), USERS), uid));
+  return snap.exists() ? (snap.data() as UserData) : null;
+}
+
+export async function syncUserProfile(_uid: string): Promise<void> {
+  return;
+}
+
+export async function updateUserLanguageInFirestore(
   uid: string,
-  onUpdate: (meals: Meal[]) => void,
-  pageSize = 100
+  language: string
 ) {
-  const q = query(mealsCol(uid), orderBy("timestamp", "desc"), limit(pageSize));
-  return onSnapshot(q, (snap) => {
-    const items = snap.docs.map((d: any) => {
-      const data = d.data() as Meal;
-      return { ...data, cloudId: d.id };
-    });
-    onUpdate(items);
+  await updateDoc(doc(collection(db(), USERS), uid), { language });
+}
+
+export async function uploadAndSaveAvatar({
+  userUid,
+  localUri,
+}: {
+  userUid: string;
+  localUri: string;
+}) {
+  const storage = getStorage(getApp());
+  const avatar = storageRef(storage, `avatars/${userUid}/avatar.jpg`);
+  await putFile(avatar, localUri);
+  const avatarUrl = await getDownloadURL(avatar);
+  const now = new Date().toISOString();
+  await updateDoc(doc(collection(db(), USERS), userUid), {
+    avatarUrl,
+    avatarLocalPath: localUri,
+    avatarlastSyncedAt: now,
+  });
+  return { avatarUrl, avatarLocalPath: localUri, avatarlastSyncedAt: now };
+}
+
+export async function changeUsernameService({
+  uid,
+  newUsername,
+  password,
+}: {
+  uid: string;
+  newUsername: string;
+  password: string;
+}) {
+  const auth = getAuth(getApp());
+  const current = auth.currentUser;
+  if (!current) throw new Error("auth/not-logged-in");
+  const cred = EmailAuthProvider.credential(current.email!, password);
+  await reauthenticateWithCredential(current, cred);
+
+  const dbi = db();
+  const nextKey = newUsername.trim().toLowerCase();
+  const userRef = doc(collection(dbi, USERS), uid);
+  const usernamesRef = doc(dbi, "usernames", nextKey);
+
+  const prevSnap = await getDoc(userRef);
+  const prev = (prevSnap.data() as any)?.username;
+
+  const batch = writeBatch(dbi);
+  batch.set(usernamesRef, { uid }, { merge: true });
+  batch.set(userRef, { username: newUsername.trim() }, { merge: true });
+  if (prev && prev !== newUsername.trim()) {
+    batch.delete(doc(dbi, "usernames", String(prev).trim().toLowerCase()));
+  }
+  await batch.commit();
+}
+
+export async function changeEmailService({
+  uid,
+  newEmail,
+  password,
+}: {
+  uid: string;
+  newEmail: string;
+  password: string;
+}) {
+  const auth = getAuth(getApp());
+  const current = auth.currentUser;
+  if (!current) throw new Error("auth/not-logged-in");
+  const cred = EmailAuthProvider.credential(current.email!, password);
+  await reauthenticateWithCredential(current, cred);
+  await verifyBeforeUpdateEmail(current, newEmail.trim());
+  await updateDoc(doc(collection(db(), USERS), uid), {
+    emailPending: newEmail.trim(),
   });
 }
 
-export async function fetchMealsPage(
-  uid: string,
-  pageSize = 50,
-  cursor?: any | null
-): Promise<MealsPage> {
-  const base = query(
-    mealsCol(uid),
-    orderBy("timestamp", "desc"),
-    limit(pageSize)
-  );
-  const q = cursor ? query(base, startAfter(cursor)) : base;
-  const snap = await getDocs(q);
-  const items = snap.docs.map((d: any) => ({
-    ...(d.data() as Meal),
-    cloudId: d.id,
-  }));
-  const nextCursor =
-    snap.docs.length === pageSize ? snap.docs[snap.docs.length - 1] : null;
-  return { items, nextCursor };
+export async function changePasswordService({
+  currentPassword,
+  newPassword,
+}: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  const auth = getAuth(getApp());
+  const current = auth.currentUser;
+  if (!current) throw new Error("auth/not-logged-in");
+  const cred = EmailAuthProvider.credential(current.email!, currentPassword);
+  await reauthenticateWithCredential(current, cred);
+  await updatePassword(current, newPassword);
 }
 
-export async function upsertMeal(
-  uid: string,
-  meal: Meal,
-  opts?: { alsoSaveToMyMeals?: boolean }
-): Promise<string> {
-  const now = new Date().toISOString();
-  const cloudId = meal.cloudId || uuidv4();
-  const mealData: Meal = {
-    ...meal,
-    cloudId,
-    userUid: uid,
-    createdAt: meal.createdAt || now,
-    updatedAt: now,
-  };
-  const batch = writeBatch(db);
-  batch.set(mealDoc(uid, cloudId), mealData, { merge: true });
-  if (opts?.alsoSaveToMyMeals) {
-    batch.set(
-      myMealsDoc(uid, meal.mealId),
-      { ...mealData, cloudId: meal.mealId, source: "saved" },
-      { merge: true }
-    );
+export async function exportUserData(uid: string) {
+  const dbi = db();
+  const userDocRef = doc(collection(dbi, USERS), uid);
+  const userDocSnap = await getDoc(userDocRef);
+  const profile = userDocSnap.exists() ? userDocSnap.data() : null;
+
+  async function fetchSub(name: string) {
+    const snap = await getDocs(collection(dbi, USERS, uid, name));
+    return snap.docs.map((d: any) => d.data());
   }
-  await batch.commit();
-  return cloudId;
-}
 
-export async function updateMeal(uid: string, meal: Meal): Promise<void> {
-  const cloudId = meal.cloudId || uuidv4();
-  const next: Meal = {
-    ...meal,
-    cloudId,
-    userUid: uid,
-    updatedAt: new Date().toISOString(),
-  };
-  await setDoc(mealDoc(uid, cloudId), next, { merge: true });
-}
+  const meals = await fetchSub("meals");
+  const chatMessages = await fetchSub("chat_messages");
 
-export async function deleteMeal(uid: string, cloudId: string): Promise<void> {
-  await updateDoc(mealDoc(uid, cloudId), {
-    deleted: true,
-    updatedAt: new Date().toISOString(),
-  } as any);
-}
+  let avatarUri: string | null = null;
+  try {
+    const url = await getDownloadURL(
+      storageRef(getStorage(getApp()), `avatars/${uid}/avatar.jpg`)
+    );
+    const localPath = FileSystem.documentDirectory + "avatar.jpg";
+    const dl = FileSystem.createDownloadResumable(url, localPath);
+    await dl.downloadAsync();
+    avatarUri = localPath;
+  } catch {
+    avatarUri = null;
+  }
 
-export async function duplicateMeal(
-  uid: string,
-  original: Meal,
-  dateOverride?: string
-): Promise<string> {
-  const nowIso = new Date().toISOString();
-  const cloudId = uuidv4();
-  const mealId = uuidv4();
-  const copy: Meal = {
-    ...original,
-    cloudId,
-    mealId,
-    userUid: uid,
-    createdAt: nowIso,
-    updatedAt: nowIso,
-    timestamp: dateOverride || nowIso,
-    deleted: false,
-  };
-  await setDoc(mealDoc(uid, cloudId), copy, { merge: true });
-  return cloudId;
-}
-
-export async function createMealWithLocalPhoto(
-  uid: string,
-  meal: Meal,
-  localPhotoUri: string
-): Promise<string> {
-  const cloudId = meal.cloudId || uuidv4();
-  const now = new Date().toISOString();
-  const docData: Meal & {
-    uploadState: "pending" | "done";
-    localPhotoUri: string | null;
-  } = {
-    ...meal,
-    cloudId,
-    userUid: uid,
-    createdAt: meal.createdAt || now,
-    updatedAt: now,
-    photoUrl: meal.photoUrl ?? null,
-    uploadState: "pending",
-    localPhotoUri,
-  };
-  await setDoc(mealDoc(uid, cloudId), docData as any, { merge: true });
-  return cloudId;
-}
-
-export async function uploadMealPhotoOnline(
-  uid: string,
-  cloudId: string,
-  localUri: string
-): Promise<string> {
-  const path = `meals/${uid}/${cloudId}.jpg`;
-  const r = ref(st, path);
-  await putFile(r, localUri);
-  const url = await getDownloadURL(r);
-  await setDoc(
-    mealDoc(uid, cloudId),
-    {
-      photoUrl: url,
-      uploadState: "done",
-      localPhotoUri: null,
-      updatedAt: new Date().toISOString(),
-    } as any,
-    { merge: true }
+  const exportData = { profile, meals, chatMessages };
+  const dataJsonPath = FileSystem.documentDirectory + "user_data.json";
+  await FileSystem.writeAsStringAsync(
+    dataJsonPath,
+    JSON.stringify(exportData, null, 2)
   );
-  return url;
+
+  const files = [dataJsonPath];
+  if (avatarUri) files.push(avatarUri);
+
+  const zipPath = FileSystem.documentDirectory + "exported_user_data.zip";
+  await zip(files, zipPath);
+
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(zipPath);
+  }
+  return zipPath;
+}
+
+export async function deleteUserInFirestoreWithUsername(uid: string) {
+  const dbi = db();
+  const userRef = doc(collection(dbi, USERS), uid);
+  const userSnap = await getDoc(userRef);
+  const username: string | null = (userSnap.data() as any)?.username ?? null;
+
+  const subcollections = ["meals", "chat_messages"];
+  for (const sub of subcollections) {
+    const subRef = collection(dbi, USERS, uid, sub);
+    const snap = await getDocs(subRef);
+    const batchSize = 500;
+    for (let i = 0; i < snap.docs.length; i += batchSize) {
+      const batch = writeBatch(dbi);
+      snap.docs
+        .slice(i, i + batchSize)
+        .forEach((d: any) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+
+  await deleteDoc(userRef);
+  if (username) {
+    await deleteDoc(doc(dbi, "usernames", username.trim().toLowerCase()));
+  }
+}
+
+export async function createInitialUserProfile(
+  user: FirebaseAuthTypes.User,
+  username: string
+) {
+  const uid = user.uid;
+  const now = Date.now();
+  const profile: UserData = {
+    uid,
+    email: user.email ?? "",
+    username: username.trim(),
+    createdAt: now,
+    lastLogin: new Date().toISOString(),
+    plan: "free",
+    unitsSystem: "metric",
+    age: "",
+    sex: "",
+    height: "",
+    heightInch: null,
+    weight: "",
+    preferences: [],
+    activityLevel: "",
+    goal: "",
+    calorieDeficit: null,
+    calorieSurplus: null,
+    chronicDiseases: [],
+    chronicDiseasesOther: "",
+    allergies: [],
+    allergiesOther: "",
+    lifestyle: "",
+    aiStyle: "none",
+    aiFocus: "none",
+    aiFocusOther: "",
+    aiNote: "",
+    surveyComplited: false,
+    syncState: "pending",
+    lastSyncedAt: "",
+    darkTheme: Appearance.getColorScheme() === "dark",
+    avatarUrl: "",
+    avatarLocalPath: "",
+    avatarlastSyncedAt: "",
+  } as unknown as UserData;
+
+  await setDoc(doc(collection(db(), USERS), uid), profile, { merge: true });
 }
