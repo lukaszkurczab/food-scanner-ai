@@ -81,11 +81,7 @@ export default function ChangePasswordScreen({ navigation }: any) {
 
   const renderEyeIcon = (show: boolean, toggle: () => void) => (
     <TouchableOpacity onPress={toggle}>
-      <Feather
-        name={show ? "eye-off" : "eye"}
-        size={22}
-        color={theme.textSecondary}
-      />
+      <Feather name={show ? "eye-off" : "eye"} size={22} color={theme.text} />
     </TouchableOpacity>
   );
 

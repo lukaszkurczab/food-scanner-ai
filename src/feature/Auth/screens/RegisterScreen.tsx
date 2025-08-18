@@ -79,11 +79,7 @@ export default function RegisterScreen({ navigation }: any) {
       onPress={toggle}
       accessibilityLabel={t("toggle_password_visibility")}
     >
-      <Feather
-        name={!show ? "eye-off" : "eye"}
-        size={22}
-        color={theme.textSecondary}
-      />
+      <Feather name={!show ? "eye-off" : "eye"} size={22} color={theme.text} />
     </TouchableOpacity>
   );
 
