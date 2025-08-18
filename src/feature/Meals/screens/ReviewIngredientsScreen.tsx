@@ -1,3 +1,4 @@
+// screens/ReviewIngredientsScreen.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -5,9 +6,10 @@ import { useTheme } from "@/theme/useTheme";
 import { Layout, Modal, PrimaryButton, SecondaryButton } from "@/components";
 import { IngredientBox } from "@/components/IngredientBox";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useMealContext } from "@contexts/MealDraftContext";
+import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
+import type { Ingredient } from "@/types";
 
 export default function ReviewIngredientsScreen() {
   const navigation = useNavigation<any>();
@@ -15,16 +17,19 @@ export default function ReviewIngredientsScreen() {
   const { t } = useTranslation(["meals", "common"]);
   const {
     meal,
+    setMeal,
     removeIngredient,
     setLastScreen,
     updateIngredient,
     clearMeal,
     saveDraft,
-  } = useMealContext();
+    addIngredient,
+  } = useMealDraftContext();
   const { uid } = useAuthContext();
   const [showModal, setShowModal] = useState(false);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
 
-  const ingredients = meal?.ingredients ?? [];
+  const ingredients: Ingredient[] = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
 
   useEffect(() => {
@@ -36,16 +41,57 @@ export default function ReviewIngredientsScreen() {
   };
 
   const handleAddIngredient = () => {
-    navigation.navigate("AddMealManual");
+    if (editingIdx !== null) return;
+    const newIng: Ingredient = {
+      name: "",
+      amount: 0,
+      kcal: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+    };
+    if (!meal) {
+      setMeal({
+        ingredients: [newIng],
+        photoUrl: null,
+        tags: [],
+        notes: null,
+        updatedAt: new Date().toISOString(),
+      } as any);
+      setEditingIdx(0);
+    } else {
+      const newIndex = ingredients.length;
+      addIngredient(newIng);
+      setEditingIdx(newIndex);
+    }
+    if (uid) saveDraft(uid);
   };
 
   const handleRemoveIngredient = (idx: number) => {
+    if (editingIdx === idx) setEditingIdx(null);
     removeIngredient(idx);
     if (uid) saveDraft(uid);
   };
 
-  const handleSaveIngredient = (idx: number, updated: any) => {
+  const handleSaveIngredient = (idx: number, updated: Ingredient) => {
     updateIngredient(idx, updated);
+    if (editingIdx === idx) setEditingIdx(null);
+    if (uid) saveDraft(uid);
+  };
+
+  const handleCancelEdit = (idx: number) => {
+    const ing = ingredients[idx];
+    const isEmpty =
+      !ing?.name?.trim() &&
+      (ing?.amount ?? 0) <= 0 &&
+      (ing?.protein ?? 0) <= 0 &&
+      (ing?.carbs ?? 0) <= 0 &&
+      (ing?.fat ?? 0) <= 0 &&
+      (ing?.kcal ?? 0) <= 0;
+    if (isEmpty) {
+      removeIngredient(idx);
+    }
+    setEditingIdx(null);
     if (uid) saveDraft(uid);
   };
 
@@ -95,15 +141,34 @@ export default function ReviewIngredientsScreen() {
           <IngredientBox
             key={idx}
             ingredient={ing}
-            editable={true}
+            editable
+            initialEdit={editingIdx === idx}
             onSave={(updated) => handleSaveIngredient(idx, updated)}
             onRemove={() => handleRemoveIngredient(idx)}
+            onCancelEdit={() => handleCancelEdit(idx)}
           />
         ))}
+
+        {editingIdx !== null && (
+          <Text
+            style={{
+              color: theme.error.text,
+              marginBottom: 8,
+              textAlign: "center",
+              fontSize: 13,
+            }}
+          >
+            {t("finish_current_ingredient_first", {
+              ns: "meals",
+              defaultValue: "Najpierw zakończ edycję bieżącego składnika",
+            })}
+          </Text>
+        )}
 
         <SecondaryButton
           label={t("add_ingredient", { ns: "meals" })}
           onPress={handleAddIngredient}
+          disabled={editingIdx !== null}
           style={styles.addIngredientBtn}
         />
         <PrimaryButton

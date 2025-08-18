@@ -3,7 +3,7 @@ import { View, StyleSheet, Pressable, Text } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
-import { useMealContext } from "@contexts/MealDraftContext";
+import { useMealDraftContext } from "@contexts/MealDraftContext";
 import Loader from "@feature/Meals/components/Loader";
 import { useTranslation } from "react-i18next";
 import { detectIngredientsWithVision } from "@/services/visionService";
@@ -21,7 +21,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { meal, setMeal, updateMeal, setLastScreen } = useMealContext();
+  const { meal, setMeal, updateMeal, setLastScreen } = useMealDraftContext();
   const { t } = useTranslation("common");
   const { uid } = useAuthContext();
 
