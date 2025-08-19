@@ -2,9 +2,11 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import type { Meal } from "@/types/meal";
+import { useTranslation } from "react-i18next";
 
 export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
   const theme = useTheme();
+  const { t } = useTranslation("home");
 
   return (
     <View
@@ -23,14 +25,14 @@ export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
           { color: theme.text, fontSize: theme.typography.size.lg },
         ]}
       >
-        Today’s meals
+        {t("todaysMeals")}
       </Text>
       {meals.map((meal) => (
         <View key={meal.mealId} style={styles.mealRow}>
           <Text
             style={{ color: theme.text, fontSize: theme.typography.size.md }}
           >
-            {meal.name || "Meal"}
+            {meal.name || t("meal")}
           </Text>
           <Text
             style={{

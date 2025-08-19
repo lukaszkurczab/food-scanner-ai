@@ -21,10 +21,13 @@ export default function HomeScreen({ navigation }: any) {
   const { userData } = useUserContext();
   const uid = userData?.uid || "";
   const { meals, getMeals } = useMeals(uid);
+
   const { labels, data } = useMemo(
     () => getLastNDaysAggregated(meals, 7, "kcal"),
     [meals]
   );
+  const showWeeklyGraph = useMemo(() => data.some((v) => v > 0), [data]);
+
   const [todayMeals, setTodayMeals] = useState<Meal[]>([]);
   const hasSurvey = !!userData?.surveyComplited;
 
@@ -79,7 +82,8 @@ export default function HomeScreen({ navigation }: any) {
           </>
         )}
 
-        <WeeklyProgressGraph data={data} labels={labels} />
+        {showWeeklyGraph && <WeeklyProgressGraph data={data} labels={labels} />}
+
         <ButtonSection />
       </View>
     </Layout>
