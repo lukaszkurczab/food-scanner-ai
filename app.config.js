@@ -19,12 +19,12 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.lkurczab.foodscannerai",
       googleServicesFile: "./GoogleService-Info.plist",
-      icon: "./assets/appstore.png", // <- ikona iOS
+      icon: "./assets/appstore.png",
     },
     android: {
-      icon: "./assets/playstore.png", // <- ikona Android
+      icon: "./assets/playstore.png",
       adaptiveIcon: {
-        foregroundImage: "./assets/playstore.png", // możesz zostawić to samo
+        foregroundImage: "./assets/playstore.png",
         backgroundColor: "#ffffff",
       },
       package: "com.lkurczab.foodscannerai",

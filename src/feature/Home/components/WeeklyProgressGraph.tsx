@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { LineGraph } from "@/components";
+import { useTranslation } from "react-i18next";
 
 type WeeklyProgressGraphProps = {
   data: number[];
@@ -13,6 +14,7 @@ export const WeeklyProgressGraph = ({
   labels,
 }: WeeklyProgressGraphProps) => {
   const theme = useTheme();
+  const { t } = useTranslation("home");
 
   return (
     <View
@@ -37,7 +39,7 @@ export const WeeklyProgressGraph = ({
           },
         ]}
       >
-        Weekly Progress
+        {t("weeklyProgress")}
       </Text>
       <LineGraph data={data} labels={labels} stepX={1} />
     </View>

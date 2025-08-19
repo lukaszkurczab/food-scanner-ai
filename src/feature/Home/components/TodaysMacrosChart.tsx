@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { PieChart } from "@/components";
+import { useTranslation } from "react-i18next";
 
 export const TodaysMacrosChart = ({
   macros,
@@ -9,21 +10,23 @@ export const TodaysMacrosChart = ({
   macros: { protein: number; fat: number; carbs: number };
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation("home");
+
   const data = [
     {
       value: macros.protein,
       color: theme.macro.protein,
-      label: `Protein`,
+      label: t("protein"),
     },
     {
       value: macros.fat,
       color: theme.macro.fat,
-      label: `Fat`,
+      label: t("fat"),
     },
     {
       value: macros.carbs,
       color: theme.macro.carbs,
-      label: `Carbs`,
+      label: t("carbs"),
     },
   ];
 
@@ -48,7 +51,7 @@ export const TodaysMacrosChart = ({
           },
         ]}
       >
-        Today’s macros
+        {t("todaysMacros")}
       </Text>
       <PieChart data={data} />
     </View>

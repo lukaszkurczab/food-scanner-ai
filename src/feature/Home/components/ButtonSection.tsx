@@ -1,24 +1,22 @@
 import React from "react";
-import { Text, StyleSheet, Pressable } from "react-native";
-import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { SecondaryButton } from "@components/SecondaryButton";
+import { useTranslation } from "react-i18next";
 
 export const ButtonSection = () => {
-  const theme = useTheme();
   const navigation = useNavigation<any>();
+  const { t } = useTranslation("home");
 
   return (
     <>
       <SecondaryButton
-        label="Ask AI for help"
+        label={t("askAi")}
         onPress={() => {
           navigation.navigate("Chat");
         }}
       />
       <SecondaryButton
-        label="Saved meals"
+        label={t("savedMeals")}
         onPress={() => {
           navigation.navigate("SavedMeals");
         }}
@@ -26,18 +24,3 @@ export const ButtonSection = () => {
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  button: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    padding: 12,
-    borderRadius: 12,
-  },
-  text: {
-    marginLeft: 8,
-    fontWeight: "500",
-  },
-});
