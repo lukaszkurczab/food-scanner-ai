@@ -1,9 +1,14 @@
-// screens/ReviewIngredientsScreen.tsx
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import { View, Text, StyleSheet, Image, Pressable, Modal } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
-import { Layout, Modal, PrimaryButton, SecondaryButton } from "@/components";
+import {
+  Layout,
+  Modal as AppModal,
+  PrimaryButton,
+  SecondaryButton,
+  PhotoPreview,
+} from "@/components";
 import { IngredientBox } from "@/components/IngredientBox";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -17,7 +22,6 @@ export default function ReviewIngredientsScreen() {
   const { t } = useTranslation(["meals", "common"]);
   const {
     meal,
-    setMeal,
     removeIngredient,
     setLastScreen,
     updateIngredient,
@@ -26,8 +30,10 @@ export default function ReviewIngredientsScreen() {
     addIngredient,
   } = useMealDraftContext();
   const { uid } = useAuthContext();
-  const [showModal, setShowModal] = useState(false);
+
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
 
   const ingredients: Ingredient[] = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
@@ -50,20 +56,9 @@ export default function ReviewIngredientsScreen() {
       carbs: 0,
       fat: 0,
     };
-    if (!meal) {
-      setMeal({
-        ingredients: [newIng],
-        photoUrl: null,
-        tags: [],
-        notes: null,
-        updatedAt: new Date().toISOString(),
-      } as any);
-      setEditingIdx(0);
-    } else {
-      const newIndex = ingredients.length;
-      addIngredient(newIng);
-      setEditingIdx(newIndex);
-    }
+    const newIndex = ingredients.length;
+    addIngredient(newIng);
+    setEditingIdx(newIndex);
     if (uid) saveDraft(uid);
   };
 
@@ -88,16 +83,12 @@ export default function ReviewIngredientsScreen() {
       (ing?.carbs ?? 0) <= 0 &&
       (ing?.fat ?? 0) <= 0 &&
       (ing?.kcal ?? 0) <= 0;
-    if (isEmpty) {
-      removeIngredient(idx);
-    }
+    if (isEmpty) removeIngredient(idx);
     setEditingIdx(null);
     if (uid) saveDraft(uid);
   };
 
-  const handleContinue = () => {
-    navigation.navigate("Result");
-  };
+  const handleContinue = () => navigation.navigate("Result");
 
   const handleStartOver = () => {
     if (uid) clearMeal(uid);
@@ -108,16 +99,40 @@ export default function ReviewIngredientsScreen() {
     if (uid) saveDraft(uid);
   }, [ingredients, image, saveDraft, uid]);
 
+  if (previewVisible && image) {
+    return (
+      <PhotoPreview
+        photoUri={image}
+        onRetake={() => setPreviewVisible(false)}
+        onAccept={() => {
+          setPreviewVisible(false);
+          navigation.replace("MealCamera", {
+            skipDetection: true,
+          });
+        }}
+        isLoading={false}
+        secondaryText={t("back", { ns: "common" })}
+        primaryText={t("change_photo", { ns: "meals" })}
+      />
+    );
+  }
+
   return (
     <Layout showNavigation={false}>
       <View style={styles.wrapper}>
         <View style={styles.imageWrapper}>
           {image ? (
-            <Image
-              source={{ uri: image }}
-              style={styles.image}
-              resizeMode="cover"
-            />
+            <Pressable
+              onPress={() => setPreviewVisible(true)}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <Image
+                key={image}
+                source={{ uri: image }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            </Pressable>
           ) : (
             <Pressable
               onPress={handleAddPhoto}
@@ -149,22 +164,6 @@ export default function ReviewIngredientsScreen() {
           />
         ))}
 
-        {editingIdx !== null && (
-          <Text
-            style={{
-              color: theme.error.text,
-              marginBottom: 8,
-              textAlign: "center",
-              fontSize: 13,
-            }}
-          >
-            {t("finish_current_ingredient_first", {
-              ns: "meals",
-              defaultValue: "Najpierw zakończ edycję bieżącego składnika",
-            })}
-          </Text>
-        )}
-
         <SecondaryButton
           label={t("add_ingredient", { ns: "meals" })}
           onPress={handleAddIngredient}
@@ -179,18 +178,19 @@ export default function ReviewIngredientsScreen() {
         />
         <SecondaryButton
           label={t("start_over", { ns: "meals" })}
-          onPress={() => setShowModal(true)}
+          onPress={() => setShowConfirmModal(true)}
           style={styles.startOverBtn}
         />
-        <Modal
-          visible={showModal}
+
+        <AppModal
+          visible={showConfirmModal}
           title={t("start_over_title", { ns: "meals" })}
           message={t("start_over_message", { ns: "meals" })}
           primaryActionLabel={t("quit", { ns: "common" })}
           onPrimaryAction={handleStartOver}
           secondaryActionLabel={t("continue", { ns: "common" })}
-          onSecondaryAction={() => setShowModal(false)}
-          onClose={() => setShowModal(false)}
+          onSecondaryAction={() => setShowConfirmModal(false)}
+          onClose={() => setShowConfirmModal(false)}
         />
       </View>
     </Layout>
@@ -226,11 +226,7 @@ const styles = StyleSheet.create({
     borderColor: "#B2C0C9",
     gap: 4,
   },
-  placeholderText: {
-    fontSize: 15,
-    fontWeight: "500",
-    marginTop: 3,
-  },
+  placeholderText: { fontSize: 15, fontWeight: "500", marginTop: 3 },
   addIngredientBtn: { marginTop: 2, marginBottom: 18, width: "100%" },
   continueBtn: { marginTop: 2, marginBottom: 12, width: "100%" },
   startOverBtn: { marginTop: 0, width: "100%" },

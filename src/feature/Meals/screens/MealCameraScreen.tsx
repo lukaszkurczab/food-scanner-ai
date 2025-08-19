@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, Text } from "react-native";
+import { View, StyleSheet, Pressable, Text, BackHandler } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
@@ -27,15 +27,37 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
 
   const route = useRoute<any>();
   const routeId = route.params?.id as string | undefined;
-  const attemptFromRoute = route.params?.attempt as number | undefined;
   const skipDetection = !!route.params?.skipDetection;
 
   const mealId = meal?.mealId || routeId || uuidv4();
-  const attempt = attemptFromRoute ?? 1;
+
+  const canLeaveRef = useRef(false);
 
   useEffect(() => {
     if (uid && setLastScreen) setLastScreen(uid, "MealCamera");
   }, [setLastScreen, uid]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (photoUri) {
+        setPhotoUri(null);
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => sub.remove();
+  }, [photoUri]);
+
+  useEffect(() => {
+    const unsub = navigation.addListener("beforeRemove", (e: any) => {
+      if (canLeaveRef.current) return;
+      if (!photoUri) return;
+      e.preventDefault();
+      setPhotoUri(null);
+    });
+    return unsub;
+  }, [navigation, photoUri]);
 
   const handleTakePicture = async () => {
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
@@ -48,8 +70,9 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  const handleAccept = async () => {
-    if (!photoUri) return;
+  const handleAccept = async (optimizedUri?: string) => {
+    const finalUri = optimizedUri || photoUri;
+    if (!finalUri) return;
     setIsLoading(true);
 
     try {
@@ -58,7 +81,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
           mealId,
           userUid: uid || "",
           name: null,
-          photoUrl: photoUri,
+          photoUrl: finalUri,
           ingredients: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -72,43 +95,38 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
           cloudId: undefined,
         } as any);
       } else {
-        updateMeal({ photoUrl: photoUri, mealId });
+        updateMeal({ photoUrl: finalUri, mealId });
       }
 
-      if (skipDetection) {
-        setIsLoading(false);
-        navigation.replace("ReviewIngredients");
-        return;
+      if (!skipDetection) {
+        const ingredients = uid
+          ? await detectIngredientsWithVision(uid, finalUri)
+          : null;
+        if (ingredients && ingredients.length > 0) {
+          updateMeal({ ingredients, mealId, photoUrl: finalUri });
+        } else {
+          setIsLoading(false);
+          canLeaveRef.current = true;
+          navigation.replace("IngredientsNotRecognized", {
+            image: finalUri,
+            id: mealId,
+          });
+          return;
+        }
       }
-
-      const ingredients = uid
-        ? await detectIngredientsWithVision(uid, photoUri)
-        : null;
+    } catch {
       setIsLoading(false);
-
-      if (!ingredients || ingredients.length === 0) {
-        navigation.replace("IngredientsNotRecognized", {
-          image: photoUri,
-          id: mealId,
-          attempt,
-        });
-        return;
-      }
-
-      updateMeal({ ingredients, mealId, photoUrl: photoUri });
-      navigation.replace("ReviewIngredients");
-    } catch (error: any) {
-      setIsLoading(false);
-      if (error?.name === "AbortError") {
-        navigation.replace("NoInternet", { image: photoUri, id: mealId });
-      } else {
-        navigation.replace("IngredientsNotRecognized", {
-          image: photoUri,
-          id: mealId,
-          attempt,
-        });
-      }
+      canLeaveRef.current = true;
+      navigation.replace("IngredientsNotRecognized", {
+        image: finalUri,
+        id: mealId,
+      });
+      return;
     }
+
+    setIsLoading(false);
+    canLeaveRef.current = true;
+    navigation.replace("ReviewIngredients");
   };
 
   const handleRetake = () => setPhotoUri(null);
@@ -151,11 +169,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
             }}
           >
             <Text
-              style={{
-                fontWeight: "bold",
-                fontSize: 16,
-                color: theme.text,
-              }}
+              style={{ fontWeight: "bold", fontSize: 16, color: theme.text }}
             >
               {t("camera_grant_access")}
             </Text>
@@ -184,6 +198,8 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
           onRetake={handleRetake}
           onAccept={handleAccept}
           isLoading={isLoading}
+          secondaryText={t("camera_retake")}
+          primaryText={t("camera_use_photo")}
         />
       </Layout>
     );

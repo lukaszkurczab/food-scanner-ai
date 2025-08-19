@@ -100,5 +100,7 @@
   "camera_loader_subtext": "This may take a few seconds.",
   "kcal": "kcal",
   "gram": "g",
-  "loading": "Loading…"
+  "loading": "Loading…",
+  "back": "Back",
+  "save": "Save"
 }
