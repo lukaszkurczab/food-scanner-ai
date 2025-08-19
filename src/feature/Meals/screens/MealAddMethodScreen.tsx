@@ -12,6 +12,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Modal } from "@/components/Modal";
 import { getDraftKey, getScreenKey } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
+import { useMealDraftContext } from "@contexts/MealDraftContext";
+import { v4 as uuidv4 } from "uuid";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -47,10 +49,11 @@ const MealAddMethodScreen = () => {
   const navigation = useNavigation<MealAddMethodNavigationProp>();
   const { t } = useTranslation("meals");
   const { uid } = useAuthContext();
+  const { setMeal, saveDraft, setLastScreen } = useMealDraftContext();
 
   const [showModal, setShowModal] = useState(false);
   const [draftExists, setDraftExists] = useState(false);
-  const [lastScreen, setLastScreen] = useState<string | null>(null);
+  const [lastScreen, setLastScreenState] = useState<string | null>(null);
 
   const checkDraft = useCallback(async () => {
     if (!uid) return;
@@ -58,27 +61,54 @@ const MealAddMethodScreen = () => {
     const lastScreenStored = await AsyncStorage.getItem(getScreenKey(uid));
     if (draft && lastScreenStored) {
       setDraftExists(true);
-      setLastScreen(lastScreenStored);
+      setLastScreenState(lastScreenStored);
     }
   }, [uid]);
 
   useEffect(() => {
     checkDraft();
   }, [checkDraft]);
-
   useEffect(() => {
     if (draftExists) setShowModal(true);
   }, [draftExists]);
 
-  const handleOptionPress = (screen: string) => {
+  const primeEmptyMeal = useCallback(
+    async (nextScreen: string) => {
+      if (!uid) return;
+      const now = new Date().toISOString();
+      setMeal({
+        mealId: uuidv4(),
+        userUid: uid,
+        name: null,
+        photoUrl: null,
+        ingredients: [],
+        createdAt: now,
+        updatedAt: now,
+        syncState: "pending",
+        tags: [],
+        deleted: false,
+        notes: null,
+        type: "other",
+        timestamp: "",
+        source: null,
+        cloudId: undefined,
+      } as any);
+      await saveDraft(uid);
+      await setLastScreen(uid, nextScreen);
+    },
+    [setMeal, saveDraft, setLastScreen, uid]
+  );
+
+  const handleOptionPress = async (screen: string) => {
+    if (screen === "MealCamera" || screen === "ReviewIngredients") {
+      await primeEmptyMeal(screen);
+    }
     navigation.navigate(screen as any);
   };
 
   const handleContinue = () => {
     setShowModal(false);
-    if (lastScreen) {
-      navigation.navigate(lastScreen as any);
-    }
+    if (lastScreen) navigation.navigate(lastScreen as any);
   };
 
   const handleDiscard = async () => {
@@ -87,7 +117,7 @@ const MealAddMethodScreen = () => {
     await AsyncStorage.removeItem(getScreenKey(uid));
     setShowModal(false);
     setDraftExists(false);
-    setLastScreen(null);
+    setLastScreenState(null);
   };
 
   return (

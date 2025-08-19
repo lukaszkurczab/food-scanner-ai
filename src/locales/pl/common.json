@@ -100,5 +100,7 @@
   "camera_loader_subtext": "To może potrwać kilka sekund.",
   "kcal": "kcal",
   "gram": "g",
-  "loading": "Ładowanie…"
+  "loading": "Ładowanie…",
+  "back": "Wróć",
+  "save": "Zapisz"
 }

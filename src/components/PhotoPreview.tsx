@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { useTranslation } from "react-i18next";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -22,6 +21,8 @@ type PhotoPreviewProps = {
   onAccept: (optimizedUri: string) => void;
   isLoading?: boolean;
   noCrop?: boolean;
+  primaryText: string;
+  secondaryText: string;
 };
 
 const CROP_SIZE = 340;
@@ -32,9 +33,10 @@ export const PhotoPreview = ({
   onAccept,
   isLoading = false,
   noCrop = false,
+  primaryText,
+  secondaryText,
 }: PhotoPreviewProps) => {
   const theme = useTheme();
-  const { t } = useTranslation("common");
 
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -178,7 +180,7 @@ export const PhotoPreview = ({
         <Text
           style={[styles.buttonText, { color: theme.text, fontWeight: "bold" }]}
         >
-          {t("camera_retake")}
+          {secondaryText}
         </Text>
       </Pressable>
       <Pressable
@@ -203,7 +205,7 @@ export const PhotoPreview = ({
               { color: theme.onAccent, fontWeight: "bold" },
             ]}
           >
-            {t("camera_use_photo")}
+            {primaryText}
           </Text>
         )}
       </Pressable>
