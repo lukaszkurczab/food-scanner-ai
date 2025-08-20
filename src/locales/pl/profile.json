@@ -86,5 +86,9 @@
   "passwords_do_not_match": "Hasła nie są takie same",
   "new_password_must_be_different": "Nowe hasło musi różnić się od obecnego",
   "invalid_current_password": "Nieprawidłowe obecne hasło",
-  "weak_password": "Nowe hasło jest zbyt słabe"
+  "weak_password": "Nowe hasło jest zbyt słabe",
+  "camera_permission_message": "Aby zrobić zdjęcie profilowe, wymagany jest dostęp do aparatu.",
+  "camera_grant_access": "Udziel dostępu",
+  "avatarPreview_title": "Użyj",
+  "avatarPreview_subtitle": "Odrzuć"
 }

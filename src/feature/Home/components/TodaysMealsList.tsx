@@ -28,7 +28,10 @@ export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
         {t("todaysMeals")}
       </Text>
       {meals.map((meal) => (
-        <View key={meal.mealId} style={styles.mealRow}>
+        <View
+          key={meal.cloudId || meal.mealId || `${meal.name}-${meal.timestamp}`}
+          style={styles.mealRow}
+        >
           <Text
             style={{ color: theme.text, fontSize: theme.typography.size.md }}
           >

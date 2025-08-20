@@ -1,4 +1,3 @@
-// src/services/visionService.ts
 import { uriToBase64 } from "@/utils/uriToBase64";
 import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
 import Constants from "expo-constants";
@@ -11,6 +10,33 @@ const MAX_TOKENS = 600;
 const TIMEOUT_MS = 30000;
 const RETRY_BACKOFF = 3000;
 
+const toNumber = (v: unknown): number => {
+  if (typeof v === "number") return isFinite(v) ? v : 0;
+  if (typeof v === "string") {
+    const n = Number(v.replace(/[^0-9.+-]/g, ""));
+    return isFinite(n) ? n : 0;
+  }
+  return 0;
+};
+
+const normalize = (x: any): Ingredient | null => {
+  if (!x || typeof x.name !== "string" || !x.name.trim()) return null;
+  const amount = toNumber(x.amount);
+  const protein = toNumber(x.protein);
+  const fat = toNumber(x.fat);
+  const carbs = toNumber(x.carbs);
+  const kcal = toNumber(x.kcal) || protein * 4 + carbs * 4 + fat * 9;
+  if (!isFinite(amount) || amount <= 0) return null;
+  return {
+    name: x.name.trim(),
+    amount,
+    protein,
+    fat,
+    carbs,
+    kcal,
+  };
+};
+
 function extractJsonArray(raw: string): string | null {
   const start = raw.indexOf("[");
   const end = raw.lastIndexOf("]");
@@ -20,32 +46,16 @@ function extractJsonArray(raw: string): string | null {
 }
 
 function fallbackJsonArray(raw: string): string | null {
-  const match = raw.match(/\[.*?\]/s);
+  const match = raw.match(/\[[\s\S]*\]/);
   return match ? match[0] : null;
-}
-
-function validateIngredients(arr: any[]): Ingredient[] {
-  return arr.filter(
-    (x) =>
-      typeof x.name === "string" &&
-      typeof x.amount === "number" &&
-      !isNaN(x.amount) &&
-      typeof x.kcal === "number" &&
-      !isNaN(x.kcal) &&
-      typeof x.protein === "number" &&
-      !isNaN(x.protein) &&
-      typeof x.fat === "number" &&
-      !isNaN(x.fat) &&
-      typeof x.carbs === "number" &&
-      !isNaN(x.carbs)
-  );
 }
 
 export async function detectIngredientsWithVision(
   userUid: string,
   imageUri: string
 ): Promise<Ingredient[] | null> {
-  if (IS_DEV) {
+  const FORCE_REAL = true;
+  if (IS_DEV && !FORCE_REAL) {
     return [
       {
         name: "MockIngredient",
@@ -59,6 +69,7 @@ export async function detectIngredientsWithVision(
   }
 
   let lastError: any = null;
+
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const jpegUri = await convertToJpegAndResize(imageUri, 512, 512, {
@@ -70,17 +81,21 @@ export async function detectIngredientsWithVision(
 
       const payload = {
         model: VISION_MODEL,
+        temperature: 0,
+        top_p: 0,
         messages: [
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: `Analyze the image and extract either:
-- a nutrition facts table, or
-- visible food/drink ingredients.
-Return a raw JSON array ONLY like:
-[{ "name":"string","amount":100,"protein":8,"fat":5,"carbs":20,"kcal":180,"type":"food","fromTable":true }]`,
+                text:
+                  `Analyze the image and return ONLY a raw JSON array. No prose. ` +
+                  `Prefer a nutrition facts table if visible. Otherwise infer visible foods/drinks. ` +
+                  `Strict schema per item: { "name": "string", "amount": 123, "protein": 0, "fat": 0, "carbs": 0, "kcal": 0 }. ` +
+                  `Use grams for "amount". Numbers only. If unknown, estimate conservatively or use 0. ` +
+                  `Output example: ` +
+                  `[{"name":"oatmeal","amount":120,"protein":6,"fat":4,"carbs":20,"kcal":148}]`,
               },
               {
                 type: "image_url",
@@ -94,6 +109,7 @@ Return a raw JSON array ONLY like:
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
       const response = await fetch(
         "https://api.openai.com/v1/chat/completions",
         {
@@ -106,9 +122,10 @@ Return a raw JSON array ONLY like:
           signal: controller.signal,
         }
       );
+
       clearTimeout(timeout);
 
-      if (response.status === 429 || response.status === 500) {
+      if (response.status === 429 || response.status >= 500) {
         if (attempt === 0) {
           await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
           continue;
@@ -117,13 +134,11 @@ Return a raw JSON array ONLY like:
       }
 
       const json = await response.json();
-      if (json.error) {
+      if (json?.error) {
         lastError = json.error;
         if (
           attempt === 0 &&
-          (json.error.code === "rate_limit_exceeded" ||
-            json.error.code === 429 ||
-            json.error.code === 500)
+          (json.error.code === "rate_limit_exceeded" || response.status >= 500)
         ) {
           await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
           continue;
@@ -131,26 +146,31 @@ Return a raw JSON array ONLY like:
         return null;
       }
 
-      const raw = json.choices?.[0]?.message?.content;
-      if (!raw) return null;
+      const raw: string | undefined = json?.choices?.[0]?.message?.content;
+      if (!raw || typeof raw !== "string") return null;
 
-      let arrayStr = extractJsonArray(raw) || fallbackJsonArray(raw);
+      const arrayStr = extractJsonArray(raw) || fallbackJsonArray(raw);
       if (!arrayStr) return null;
 
+      let parsed: any;
       try {
-        const parsed = JSON.parse(arrayStr);
-        const data = validateIngredients(parsed);
-        if (!Array.isArray(data)) throw new Error("Not an array");
-        return data;
-      } catch (parseError) {
-        lastError = parseError;
-        if (attempt === 0) {
-          await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
-          continue;
-        }
-        return null;
+        parsed = JSON.parse(arrayStr);
+      } catch (e) {
+        const cleaned = arrayStr
+          .replace(/,\s*]/g, "]")
+          .replace(/,\s*}/g, "}")
+          .replace(/\bNaN\b/gi, "0");
+        parsed = JSON.parse(cleaned);
       }
-    } catch (error: any) {
+
+      if (!Array.isArray(parsed)) return null;
+
+      const normalized: Ingredient[] = parsed
+        .map(normalize)
+        .filter((x): x is Ingredient => !!x);
+
+      return normalized;
+    } catch (error) {
       lastError = error;
       if (attempt === 0) {
         await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
@@ -159,5 +179,6 @@ Return a raw JSON array ONLY like:
       return null;
     }
   }
+
   return null;
 }

@@ -42,5 +42,10 @@
   "dinner": "Dinner",
   "snack": "Snack",
   "other": "Other",
-  "change_photo": "Change photo"
+  "change_photo": "Change photo",
+  "select": "Select",
+  "startOver": "Start over",
+  "noSavedMeals": "No saved meals",
+  "tryDifferentSearch": "Try change filters",
+  "saveMealsToReuse": "Create and save meals to reuse them later"
 }

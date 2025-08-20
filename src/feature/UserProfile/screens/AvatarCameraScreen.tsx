@@ -127,6 +127,8 @@ export default function AvatarCameraScreen({
           }
         }}
         isLoading={isUploading}
+        primaryText={t("avatarPreview_title")}
+        secondaryText={t("avatarPreview_subtitle")}
       />
     );
   }
