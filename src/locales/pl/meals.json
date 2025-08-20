@@ -42,5 +42,10 @@
   "dinner": "Kolacja",
   "snack": "Przekąska",
   "other": "Inne",
-  "change_photo": "Zmień"
+  "change_photo": "Zmień",
+  "select": "Wybierz",
+  "startOver": "Porzuć",
+  "noSavedMeals": "Brak zapisanych posiłków",
+  "tryDifferentSearch": "Spróbuj zmienić filtry",
+  "saveMealsToReuse": "Stwórz i zapisz posiłek żeby użyć go później"
 }

@@ -86,5 +86,9 @@
   "passwords_do_not_match": "Passwords do not match",
   "new_password_must_be_different": "New password must be different from current password",
   "invalid_current_password": "Invalid current password",
-  "weak_password": "The new password is too weak"
+  "weak_password": "The new password is too weak",
+  "camera_permission_message": "Camera access is required to take a profile photo.",
+  "camera_grant_access": "Grant access",
+  "avatarPreview_title": "Confirm photo",
+  "avatarPreview_subtitle": "Try again"
 }

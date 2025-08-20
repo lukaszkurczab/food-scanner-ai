@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, FlatList, RefreshControl } from "react-native";
+import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
@@ -117,6 +118,7 @@ export default function SelectSavedMealScreen({
     const now = new Date().toISOString();
     const draft: Meal = {
       ...picked,
+      mealId: uuidv4(),
       timestamp: picked.timestamp || now,
       createdAt: picked.createdAt || now,
       updatedAt: now,
