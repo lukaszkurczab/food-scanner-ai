@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
+import { useTranslation } from "react-i18next";
 
 type Range = { start: Date; end: Date };
 
@@ -12,7 +13,6 @@ type Props = {
   onToggleFocus?: () => void;
   minDate?: Date;
   maxDate?: Date;
-  locale?: string;
 };
 
 type Cell = { date: Date; inMonth: boolean };
@@ -42,9 +42,10 @@ export const Calendar: React.FC<Props> = ({
   onToggleFocus,
   minDate,
   maxDate,
-  locale,
 }) => {
   const theme = useTheme();
+  const { i18n } = useTranslation();
+  const locale = i18n.language;
 
   const normalized = useMemo(() => {
     let s = startOfDay(startDate);

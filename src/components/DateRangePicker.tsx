@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { View, Text } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { SecondaryButton } from "@/components/SecondaryButton";
+import { useTranslation } from "react-i18next";
 
 export const DateRangePicker: React.FC<{
   startDate: Date;
@@ -10,6 +11,7 @@ export const DateRangePicker: React.FC<{
   locale?: string;
 }> = ({ startDate, endDate, onOpen, locale }) => {
   const theme = useTheme();
+  const { t } = useTranslation("common");
 
   const fmt = useMemo(
     () =>
@@ -20,7 +22,7 @@ export const DateRangePicker: React.FC<{
     [locale]
   );
 
-  const summary = `${fmt.format(startDate)}-${fmt.format(endDate)}`;
+  const summary = `${fmt.format(startDate)} - ${fmt.format(endDate)}`;
 
   return (
     <View style={{ gap: theme.spacing.md }}>
@@ -38,14 +40,14 @@ export const DateRangePicker: React.FC<{
             fontSize: theme.typography.size.md,
           }}
         >
-          Date range
+          {t("dateRange.label")}
         </Text>
         <Text style={{ color: theme.text, fontSize: theme.typography.size.md }}>
           {summary}
         </Text>
       </View>
 
-      <SecondaryButton label="Set date range" onPress={onOpen} />
+      <SecondaryButton label={t("dateRange.set")} onPress={onOpen} />
     </View>
   );
 };

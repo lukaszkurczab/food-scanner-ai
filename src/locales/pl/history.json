@@ -1,0 +1,27 @@
+{
+  "title": "Wybrane filtry",
+  "addFilter": "Dodaj filtr",
+  "noneSelected": "Brak wybranych filtrów. Stuknij „Dodaj filtr”, aby wybrać.",
+  "filters": {
+    "calories": "Kalorie",
+    "protein": "Białko (g)",
+    "carbs": "Węglowodany (g)",
+    "fat": "Tłuszcz (g)",
+    "date": "Zakres dat"
+  },
+  "actions": {
+    "apply": "Zastosuj filtry",
+    "clear": "Wyczyść",
+    "cancel": "Anuluj",
+    "choose": "Wybierz filtry",
+    "done": "Gotowe",
+    "reset": "Resetuj wybór",
+    "selectDateRange": "Wybierz zakres dat",
+    "save": "Zapisz"
+  },
+  "symbols": {
+    "check": "✓",
+    "plus": "+",
+    "times": "×"
+  }
+}

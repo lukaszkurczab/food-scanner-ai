@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, View, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 
 type Props = { onPress: () => void; activeCount?: number };
@@ -9,6 +10,7 @@ export const FilterBadgeButton: React.FC<Props> = ({
   activeCount = 0,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const hasActive = activeCount > 0;
   return (
     <Pressable
@@ -22,7 +24,7 @@ export const FilterBadgeButton: React.FC<Props> = ({
         },
       ]}
     >
-      <Text style={{ color: theme.text }}>Filters</Text>
+      <Text style={{ color: theme.text }}>{t("filters")}</Text>
       {hasActive && (
         <View style={[styles.badge, { backgroundColor: theme.accent }]}>
           <Text

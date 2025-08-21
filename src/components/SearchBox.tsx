@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useState } from "react";
-import { View, TextInput, Pressable, Text } from "react-native";
+import { View, TextInput, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   value: string;
@@ -13,10 +14,11 @@ type Props = {
 export const SearchBox: React.FC<Props> = ({
   value,
   onChange,
-  placeholder = "Search",
+  placeholder,
   debounceMs = 200,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [local, setLocal] = useState(value);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -57,14 +59,6 @@ export const SearchBox: React.FC<Props> = ({
         paddingVertical: 6,
         borderRadius: theme.rounded.sm,
       },
-      clearTxt: {
-        color: theme.textSecondary,
-        fontSize: theme.typography.size.md,
-      },
-      iconTxt: {
-        color: theme.textSecondary,
-        fontSize: theme.typography.size.md,
-      },
     }),
     [theme]
   );
@@ -76,7 +70,7 @@ export const SearchBox: React.FC<Props> = ({
       <TextInput
         value={local}
         onChangeText={onTextChange}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t("input.search")}
         placeholderTextColor={theme.textSecondary}
         style={[{ marginLeft: theme.spacing.sm }, styles.input]}
         returnKeyType="search"

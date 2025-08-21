@@ -1,6 +1,11 @@
 {
   "typing": "…",
   "today": "Dziś",
+  "filters": "Filtry",
+  "dateRange": {
+    "label": "Zakres dat",
+    "set": "Ustaw zakres dat"
+  },
   "offline": {
     "title": "Brak internetu",
     "subtitle": "Sprawdź połączenie i spróbuj ponownie.",
@@ -8,6 +13,7 @@
   },
   "input": {
     "placeholder": "Zapytaj mnie",
+    "search": "Szukaj",
     "send": "Wyślij"
   },
   "limit": {
