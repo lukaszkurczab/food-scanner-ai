@@ -28,7 +28,10 @@ export const PieChart: React.FC<PieChartProps> = ({
   const theme = useTheme();
   const { t } = useTranslation(["meals"]);
   const [parentW, setParentW] = useState(0);
-  const total = data.reduce((s, d) => s + (Number(d.value) || 0), 0);
+
+  const filtered = data.map((s) => ({ ...s, value: Number(s.value) || 0 }));
+  const total = filtered.reduce((s, d) => s + d.value, 0);
+  const EPS = 1e-6;
 
   const onLayout = (e: LayoutChangeEvent) => {
     setParentW(e.nativeEvent.layout.width);
@@ -43,15 +46,18 @@ export const PieChart: React.FC<PieChartProps> = ({
     : maxSize;
 
   const radius = chartSize / 2;
-  let angle = 0;
 
-  const renderSlice = (slice: PieSlice, i: number) => {
-    if (!slice.value) return null;
-    const startAngle = angle;
+  const renderSlice = (slice: PieSlice, i: number, startAngle: number) => {
     const sweep = (slice.value / total) * 360;
-    angle += sweep;
-    const largeArc = sweep > 180 ? 1 : 0;
 
+    // pełne koło, gdy jedyny niezerowy wycinek
+    if (sweep >= 360 - EPS) {
+      return (
+        <Circle key={i} cx={radius} cy={radius} r={radius} fill={slice.color} />
+      );
+    }
+
+    const largeArc = sweep > 180 ? 1 : 0;
     const sr = (Math.PI / 180) * startAngle;
     const er = (Math.PI / 180) * (startAngle + sweep);
     const x1 = radius + radius * Math.sin(sr);
@@ -68,27 +74,22 @@ export const PieChart: React.FC<PieChartProps> = ({
     );
   };
 
-  const getLabel = (label: string | undefined) => {
-    let labelText;
+  const getLabel = (label?: string) => {
     switch (label) {
       case "Carbs":
-        labelText = t("meals:carbs", { ns: "carbs" });
-        break;
+        return t("carbs", { ns: "meals" });
       case "Protein":
-        labelText = t("meals:protein", { ns: "proteins" });
-        break;
+        return t("protein", { ns: "meals" });
       case "Fat":
-        labelText = t("meals:fat", { ns: "fat" });
-        break;
+        return t("fat", { ns: "meals" });
       default:
-        null;
+        return label;
     }
-    return labelText;
   };
 
   const Legend = () => (
     <View style={{ minWidth: canRow ? legendWidth : undefined }}>
-      {data.map((slice, i) => (
+      {filtered.map((slice, i) => (
         <View
           key={i}
           style={{
@@ -116,6 +117,10 @@ export const PieChart: React.FC<PieChartProps> = ({
     </View>
   );
 
+  // preoblicz kolejno kąty, pomijając zera
+  const nonZero = filtered.filter((s) => s.value > 0);
+  let angle = 0;
+
   return (
     <View onLayout={onLayout} style={{ width: "100%" }}>
       <View
@@ -128,7 +133,11 @@ export const PieChart: React.FC<PieChartProps> = ({
       >
         <Svg width={chartSize} height={chartSize}>
           {total > 0 ? (
-            data.map(renderSlice)
+            nonZero.map((slice, i) => {
+              const el = renderSlice(slice, i, angle);
+              angle += (slice.value / total) * 360;
+              return el;
+            })
           ) : (
             <>
               <Circle cx={radius} cy={radius} r={radius} fill="transparent" />
@@ -141,7 +150,6 @@ export const PieChart: React.FC<PieChartProps> = ({
             </>
           )}
         </Svg>
-
         <Legend />
       </View>
     </View>

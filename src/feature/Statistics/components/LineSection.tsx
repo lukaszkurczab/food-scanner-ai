@@ -44,7 +44,6 @@ export const LineSection: React.FC<Props> = ({ labels, data, metric }) => {
       <LineGraph
         data={data}
         labels={labels}
-        stepY={200}
         stepX={Math.ceil(Math.max(1, labels.length) / 7)}
         height={140}
         smooth

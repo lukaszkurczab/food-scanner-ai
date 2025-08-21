@@ -16,17 +16,17 @@ export const TodaysMacrosChart = ({
     {
       value: macros.protein,
       color: theme.macro.protein,
-      label: t("protein"),
+      label: "Protein",
     },
     {
       value: macros.fat,
       color: theme.macro.fat,
-      label: t("fat"),
+      label: "Fat",
     },
     {
       value: macros.carbs,
       color: theme.macro.carbs,
-      label: t("carbs"),
+      label: "Carbs",
     },
   ];
 

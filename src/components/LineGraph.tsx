@@ -19,11 +19,11 @@ type LineGraphProps = {
   data: number[];
   labels: string[];
   title?: string;
-  stepY?: number;
+  stepY?: number; // jeśli podasz, nadpisze auto
   stepX?: number;
   height?: number;
   smooth?: boolean;
-  approxYTicks?: number;
+  approxYTicks?: number; // używane jako punkt startowy w zakresie 4–8
 };
 
 export const LineGraph = ({
@@ -57,49 +57,87 @@ export const LineGraph = ({
     rawMin -= 1;
   }
 
-  function niceNum(range: number, round: boolean) {
-    const exp = Math.floor(Math.log10(range));
-    const f = range / Math.pow(10, exp);
-    let nf: number;
-    if (round) {
-      if (f < 1.5) nf = 1;
-      else if (f < 3) nf = 2;
-      else if (f < 7) nf = 5;
-      else nf = 10;
-    } else {
-      if (f <= 1) nf = 1;
-      else if (f <= 2) nf = 2;
-      else if (f <= 5) nf = 5;
-      else nf = 10;
+  // 1–2–5 „sufit”
+  const niceCeil = (v: number) => {
+    const a = Math.abs(v) || 1;
+    const exp = Math.floor(Math.log10(a));
+    const base = Math.pow(10, exp);
+    const f = a / base;
+    const n = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+    return Math.sign(v || 1) * n * base;
+  };
+
+  // „ładny” krok bazowy
+  const niceStep = (range: number, targetTicks: number) => {
+    const raw = range / Math.max(1, targetTicks);
+    const exp = Math.floor(Math.log10(raw));
+    const base = Math.pow(10, exp);
+    const f = raw / base;
+    const n = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+    return n * base; // zwraca z {1,2,5,10} * 10^exp
+  };
+
+  // gwarancja 4–8 przedziałów na osi Y
+  const clampTicksStep = (
+    yMin0: number,
+    yMax0: number,
+    targetTicks: number,
+    minTicks = 4,
+    maxTicks = 8
+  ) => {
+    let step = niceStep(yMax0 - yMin0, targetTicks);
+    let yMin = Math.floor(yMin0 / step) * step;
+    let yMax = Math.ceil(yMax0 / step) * step;
+    let intervals = Math.round((yMax - yMin) / step);
+
+    // jeśli poza zakresem 4–8, koryguj krokiem ×2 lub ÷2 aż do skutku
+    for (
+      let i = 0;
+      i < 12 && (intervals < minTicks || intervals > maxTicks);
+      i++
+    ) {
+      if (intervals < minTicks) step = step / 2;
+      else step = step * 2;
+
+      yMin = Math.floor(yMin0 / step) * step;
+      yMax = Math.ceil(yMax0 / step) * step;
+      intervals = Math.round((yMax - yMin) / step);
     }
-    return nf * Math.pow(10, exp);
+
+    return { step, yMin, yMax, intervals };
+  };
+
+  // Skala Y: sufit dla max, 0 jeśli wszystko dodatnie, symetria jeśli <0 też występują
+  const yMaxNice = niceCeil(rawMax);
+  let yMin0: number;
+  let yMax0: number;
+
+  if (rawMin >= 0) {
+    yMin0 = 0;
+    yMax0 = yMaxNice;
+  } else {
+    yMin0 = -niceCeil(Math.abs(rawMin));
+    yMax0 = yMaxNice;
   }
 
-  function niceScale(minVal: number, maxVal: number, maxTicks = 4) {
-    const range = niceNum(maxVal - minVal, false);
-    const spacing = niceNum(range / Math.max(1, maxTicks), true);
-    const niceMin = Math.floor(minVal / spacing) * spacing;
-    const niceMax = Math.ceil(maxVal / spacing) * spacing;
-    return { niceMin, niceMax, spacing };
-  }
-
+  // ręczny krok nadpisuje automat
   let yMin: number;
   let yMax: number;
   let yStep: number;
 
   if (stepY && stepY > 0) {
     yStep = stepY;
-    yMin = Math.floor(rawMin / yStep) * yStep;
-    yMax = Math.ceil(rawMax / yStep) * yStep;
+    yMin = Math.floor(yMin0 / yStep) * yStep;
+    yMax = Math.ceil(yMax0 / yStep) * yStep;
   } else {
-    const { niceMin, niceMax, spacing } = niceScale(
-      rawMin,
-      rawMax,
-      approxYTicks
-    );
-    yMin = niceMin;
-    yMax = niceMax;
-    yStep = spacing;
+    const {
+      step,
+      yMin: m,
+      yMax: M,
+    } = clampTicksStep(yMin0, yMax0, Math.min(8, Math.max(4, approxYTicks)));
+    yStep = step;
+    yMin = m;
+    yMax = M;
   }
 
   const chartW = Math.max(1, width - yAxisWidth - rightPad);
@@ -109,7 +147,7 @@ export const LineGraph = ({
     yAxisWidth +
     chartW * (safeData.length <= 1 ? 0 : i / (safeData.length - 1));
   const yAt = (v: number) => {
-    const range = Math.max(1, yMax - yMin);
+    const range = Math.max(1e-9, yMax - yMin);
     return topPad + chartH - ((v - yMin) / range) * chartH;
   };
 
@@ -183,14 +221,28 @@ export const LineGraph = ({
     : "";
 
   const yTicks: number[] = [];
-  for (let v = yMin; v <= yMax + 1e-6; v += yStep) {
-    yTicks.push(v);
+  for (let v = yMin; v <= yMax + 1e-9; v += yStep) {
+    const rounded = Number((Math.round(v / yStep) * yStep).toPrecision(12));
+    if (
+      yTicks.length === 0 ||
+      Math.abs(rounded - yTicks[yTicks.length - 1]) > 1e-9
+    ) {
+      yTicks.push(rounded);
+    }
   }
+
+  const chartTicks = yTicks.length - 1; // liczba przedziałów (4–8)
 
   const colW = chartW / Math.max(1, safeData.length - 1);
   const hitHalf = Math.max(20, colW / 2);
-
   const clampY = (y: number) => Math.max(topPad + 10, y - 8);
+
+  // format etykiet zależny od kroku
+  const formatTick = (v: number) => {
+    if (Number.isInteger(yStep)) return Math.round(v).toString();
+    const dec = yStep < 0.1 ? 2 : 1;
+    return v.toFixed(dec);
+  };
 
   return (
     <View style={styles.container} onLayout={onLayout}>
@@ -230,12 +282,13 @@ export const LineGraph = ({
                   fill={theme.textSecondary}
                   textAnchor="end"
                 >
-                  {Math.round(v)}
+                  {formatTick(v)}
                 </SvgText>
               </G>
             );
           })}
 
+          {/* dolna oś */}
           <Line
             x1={yAxisWidth}
             y1={topPad + chartH}
