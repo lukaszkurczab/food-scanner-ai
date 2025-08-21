@@ -1,0 +1,27 @@
+{
+  "title": "Selected filters",
+  "addFilter": "Add filter",
+  "noneSelected": "No filters selected. Tap “Add filter” to choose.",
+  "filters": {
+    "calories": "Calories",
+    "protein": "Protein (g)",
+    "carbs": "Carbs (g)",
+    "fat": "Fat (g)",
+    "date": "Date range"
+  },
+  "actions": {
+    "apply": "Apply filters",
+    "clear": "Clear",
+    "cancel": "Cancel",
+    "choose": "Choose filters",
+    "done": "Done",
+    "reset": "Reset selection",
+    "selectDateRange": "Select date range",
+    "save": "Save"
+  },
+  "symbols": {
+    "check": "✓",
+    "plus": "+",
+    "times": "×"
+  }
+}

@@ -14,6 +14,7 @@ import en_meals from "./locales/en/meals.json";
 import en_chat from "./locales/en/chat.json";
 import en_statistics from "./locales/en/statistics.json";
 import en_home from "./locales/en/home.json";
+import en_history from "./locales/en/history.json";
 
 import pl_common from "./locales/pl/common.json";
 import pl_login from "./locales/pl/login.json";
@@ -26,6 +27,7 @@ import pl_meals from "./locales/pl/meals.json";
 import pl_chat from "./locales/pl/chat.json";
 import pl_statistics from "./locales/pl/statistics.json";
 import pl_home from "./locales/pl/home.json";
+import pl_history from "./locales/pl/history.json";
 
 const STORAGE_KEY = "APP_LANGUAGE";
 
@@ -67,6 +69,7 @@ i18n
       "statistics",
       "chat",
       "home",
+      "history",
     ],
     defaultNS: "common",
     resources: {
@@ -82,6 +85,7 @@ i18n
         statistics: en_statistics,
         chat: en_chat,
         home: en_home,
+        history: en_history,
       },
       pl: {
         common: pl_common,
@@ -95,6 +99,7 @@ i18n
         statistics: pl_statistics,
         chat: pl_chat,
         home: pl_home,
+        history: pl_history,
       },
     },
     interpolation: { escapeValue: false },

@@ -1,6 +1,11 @@
 {
   "typing": "…",
   "today": "Today",
+  "filters": "Filters",
+  "dateRange": {
+    "label": "Date range",
+    "set": "Set date range"
+  },
   "offline": {
     "title": "No internet connection",
     "subtitle": "Check your connection and try again.",
@@ -8,6 +13,7 @@
   },
   "input": {
     "placeholder": "Ask me anything",
+    "search": "Search",
     "send": "Send"
   },
   "limit": {
