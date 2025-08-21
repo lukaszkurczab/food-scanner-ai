@@ -16,7 +16,7 @@ import {
 const app = getApp();
 const db = getFirestore(app);
 
-export function useMeals(userUid: string) {
+export function useMeals(userUid: string | null) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,10 +26,12 @@ export function useMeals(userUid: string) {
       setLoading(false);
       return;
     }
+
     const q = query(
       collection(db, "users", userUid, "meals"),
       orderBy("timestamp", "desc")
     );
+
     const unsub = onSnapshot(q, (snap) => {
       const items = snap.docs
         .map((d: any) => {
@@ -40,6 +42,7 @@ export function useMeals(userUid: string) {
       setMeals(items);
       setLoading(false);
     });
+
     return unsub;
   }, [userUid]);
 
@@ -113,6 +116,7 @@ export function useMeals(userUid: string) {
       const newMealId = uuidv4();
       const copy: Meal = {
         ...original,
+        userUid,
         cloudId: newCloudId,
         mealId: newMealId,
         timestamp: dateOverride || now,

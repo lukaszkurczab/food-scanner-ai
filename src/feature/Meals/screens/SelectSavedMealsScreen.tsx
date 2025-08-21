@@ -13,6 +13,7 @@ import { Layout, PrimaryButton, SecondaryButton } from "@/components";
 import { SearchBox } from "@/components/SearchBox";
 import { MealListItem } from "@/components/MealListItem";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
+
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,
@@ -40,8 +41,15 @@ export default function SelectSavedMealScreen({
   const theme = useTheme();
   const netInfo = useNetInfo();
   const { uid } = useAuthContext();
-  const { getMeals } = useMeals(uid || "");
-  const { setMeal, saveDraft, setLastScreen } = useMealDraftContext();
+
+  const { getMeals } = useMeals(uid ?? null);
+
+  const {
+    meal: draftMeal,
+    setMeal,
+    saveDraft,
+    setLastScreen,
+  } = useMealDraftContext();
   const { t } = useTranslation(["meals"]);
 
   const [queryText, setQueryText] = useState("");
@@ -55,6 +63,7 @@ export default function SelectSavedMealScreen({
       setLoading(false);
       return () => {};
     }
+
     const q = query(
       collection(db, "users", uid, "myMeals"),
       orderBy("name", "asc")
@@ -67,6 +76,7 @@ export default function SelectSavedMealScreen({
       setItems(data);
       setLoading(false);
     });
+
     return unsub;
   }, [uid]);
 
@@ -115,17 +125,38 @@ export default function SelectSavedMealScreen({
       (m) => (m.cloudId || m.mealId) === selectedId
     );
     if (!picked) return;
+
     const now = new Date().toISOString();
-    const draft: Meal = {
-      ...picked,
-      mealId: uuidv4(),
-      timestamp: picked.timestamp || now,
-      createdAt: picked.createdAt || now,
+
+    // użyj istniejącego draftu; jeśli go nie ma, utwórz minimalny
+    const base: Meal =
+      draftMeal ??
+      ({
+        mealId: uuidv4(),
+        userUid: uid,
+        name: null,
+        photoUrl: null,
+        ingredients: [],
+        createdAt: now,
+        updatedAt: now,
+        syncState: "pending",
+        tags: [],
+        deleted: false,
+        notes: null,
+        type: "other",
+        timestamp: "",
+        source: null,
+        cloudId: undefined,
+      } as any);
+
+    const next: Meal = {
+      ...base,
+      ingredients: Array.isArray(picked.ingredients) ? picked.ingredients : [],
+      photoUrl: picked.photoUrl ?? null,
       updatedAt: now,
-      syncState: "pending",
-      source: picked.source ?? "saved",
     };
-    setMeal(draft);
+
+    setMeal(next);
     await saveDraft(uid);
     await setLastScreen(uid, "ReviewIngredients");
     navigation.navigate("ReviewIngredients");
@@ -133,6 +164,7 @@ export default function SelectSavedMealScreen({
     uid,
     selectedId,
     visibleItems,
+    draftMeal,
     setMeal,
     saveDraft,
     setLastScreen,
