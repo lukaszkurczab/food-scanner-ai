@@ -2,7 +2,6 @@ export * from "./Card";
 export * from "./IconButton";
 export * from "./ListItem";
 export * from "./PrimaryButton";
-export * from "./SearchBar";
 export * from "./Modal";
 export * from "./ProgressBar";
 export * from "./SecondaryButton";
