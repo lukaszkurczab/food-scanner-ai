@@ -32,7 +32,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =
     useMealDraftContext();
   const { userData } = useUserContext();
-  const { addMeal } = useMeals(uid || "");
+  const { addMeal } = useMeals(uid ?? null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [saveToMyMeals, setSaveToMyMeals] = useState(false);
   const [mealName, setMealName] = useState(meal?.name || autoMealName());
@@ -68,10 +68,11 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
     } as any;
 
     try {
+      console.log(newMeal);
       await addMeal(newMeal, { alsoSaveToMyMeals: saveToMyMeals });
       clearMeal(uid);
       navigation.navigate("Home");
-    } finally {
+    } catch (error) {
       setSaving(false);
     }
   };
