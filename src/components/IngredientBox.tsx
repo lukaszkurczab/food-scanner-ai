@@ -15,6 +15,20 @@ import type { Ingredient } from "@/types";
 import { MacroChip } from "./MacroChip";
 import { useTranslation } from "react-i18next";
 
+export type EditLifecyclePolicy = {
+  creation?: "optimistic" | "deferred";
+  leaveWhileEditing?: "discard" | "save" | "block";
+  removeEmptyOn?: Array<"cancel" | "blur" | "leaveScreen">;
+  autoSaveOnFieldBlur?: boolean;
+};
+
+export type IsEmptyPredicate = (i: Ingredient) => boolean;
+
+export type EditSignals = {
+  onDirtyChange?: (dirty: boolean) => void;
+  onRequestLeave?: () => Promise<"proceed" | "stay">;
+};
+
 type IngredientBoxProps = {
   ingredient: Ingredient;
   editable?: boolean;
@@ -22,16 +36,18 @@ type IngredientBoxProps = {
   onSave?: (ingredient: Ingredient) => void;
   onRemove?: () => void;
   onCancelEdit?: () => void;
+  policy?: EditLifecyclePolicy;
+  isEmpty?: IsEmptyPredicate;
+  signals?: EditSignals;
 };
 
-type FieldErrors = {
-  name?: string;
-  amount?: string;
-  protein?: string;
-  carbs?: string;
-  fat?: string;
-  kcal?: string;
-};
+const defaultIsEmpty: IsEmptyPredicate = (i) =>
+  !i?.name?.trim() &&
+  (i?.amount ?? 0) <= 0 &&
+  (i?.protein ?? 0) <= 0 &&
+  (i?.carbs ?? 0) <= 0 &&
+  (i?.fat ?? 0) <= 0 &&
+  (i?.kcal ?? 0) <= 0;
 
 export const IngredientBox: React.FC<IngredientBoxProps> = ({
   ingredient,
@@ -40,6 +56,9 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
   onSave,
   onRemove,
   onCancelEdit,
+  policy,
+  isEmpty = defaultIsEmpty,
+  signals,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
@@ -47,6 +66,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
   const [menuVisible, setMenuVisible] = useState(false);
   const [editMode, setEditMode] = useState<boolean>(initialEdit);
   const [edited, setEdited] = useState<Ingredient>(ingredient);
+  const [dirty, setDirty] = useState(false);
 
   const [amountStr, setAmountStr] = useState(String(ingredient.amount));
   const [proteinStr, setProteinStr] = useState(String(ingredient.protein));
@@ -54,15 +74,17 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
   const [fatStr, setFatStr] = useState(String(ingredient.fat));
   const [kcalStr, setKcalStr] = useState(String(ingredient.kcal));
 
-  const [errors, setErrors] = useState<FieldErrors>({});
+  const [errors, setErrors] = useState<
+    Partial<
+      Record<"name" | "amount" | "protein" | "carbs" | "fat" | "kcal", string>
+    >
+  >({});
 
   const initial = useRef(ingredient);
   const menuAnchor = useRef<View>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    setEditMode(initialEdit);
-  }, [initialEdit]);
+  useEffect(() => setEditMode(initialEdit), [initialEdit]);
 
   useEffect(() => {
     initial.current = ingredient;
@@ -73,12 +95,36 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
     setFatStr(String(ingredient.fat));
     setKcalStr(String(ingredient.kcal));
     setErrors({});
+    setDirty(false);
+    signals?.onDirtyChange?.(false);
   }, [ingredient]);
 
-  const setFieldError = (field: keyof FieldErrors, msg?: string) =>
+  useEffect(() => {
+    if (!signals) return;
+    signals.onRequestLeave = async () => {
+      const action = policy?.leaveWhileEditing ?? "discard";
+      if (!dirty) return "proceed";
+      if (action === "save") {
+        if (validateAll()) onSave?.(edited);
+        return "proceed";
+      }
+      if (action === "discard") return "proceed";
+      return "stay";
+    };
+  }, [dirty, edited, policy, onSave]);
+
+  const markDirty = () => {
+    if (!dirty) {
+      setDirty(true);
+      signals?.onDirtyChange?.(true);
+    }
+  };
+
+  const setFieldError = (field: keyof typeof errors, msg?: string) =>
     setErrors((e) => ({ ...e, [field]: msg }));
 
   const handleAmountChange = (val: string) => {
+    markDirty();
     setAmountStr(val);
     const n = parseFloat(val.replace(",", "."));
     if (val === "" || isNaN(n) || n <= 0) {
@@ -156,9 +202,17 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
         v >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
       );
     }
+    if (policy?.autoSaveOnFieldBlur && validateAll()) {
+      onSave?.({ ...edited, [field]: v });
+      setDirty(false);
+      signals?.onDirtyChange?.(false);
+    } else {
+      markDirty();
+    }
   };
 
   const handleProteinChange = (val: string) => {
+    markDirty();
     setProteinStr(val);
     const n = parseFloat(val.replace(",", "."));
     setEdited({ ...edited, protein: val === "" || isNaN(n) ? 0 : n });
@@ -170,6 +224,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
     );
   };
   const handleCarbsChange = (val: string) => {
+    markDirty();
     setCarbsStr(val);
     const n = parseFloat(val.replace(",", "."));
     setEdited({ ...edited, carbs: val === "" || isNaN(n) ? 0 : n });
@@ -181,6 +236,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
     );
   };
   const handleFatChange = (val: string) => {
+    markDirty();
     setFatStr(val);
     const n = parseFloat(val.replace(",", "."));
     setEdited({ ...edited, fat: val === "" || isNaN(n) ? 0 : n });
@@ -192,6 +248,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
     );
   };
   const handleKcalChange = (val: string) => {
+    markDirty();
     setKcalStr(val);
     const n = parseFloat(val.replace(",", "."));
     setEdited({ ...edited, kcal: val === "" || isNaN(n) ? 0 : n });
@@ -211,7 +268,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
   };
 
   const validateAll = (): boolean => {
-    const next: FieldErrors = {};
+    const next: typeof errors = {};
     if (!edited.name.trim()) {
       next.name = t("ingredient_name_required", {
         ns: "meals",
@@ -268,6 +325,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
             ]}
             value={edited.name}
             onChangeText={(v) => {
+              markDirty();
               setEdited({ ...edited, name: v });
               setFieldError(
                 "name",
@@ -302,6 +360,9 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               value={amountStr}
               onChangeText={handleAmountChange}
               onBlur={() => handleBlur("amount", amountStr)}
+              onFocus={() => {
+                if (amountStr === "0") setAmountStr("");
+              }}
             />
             {!!errors.amount && (
               <Text style={[styles.errorText, { color: theme.error.text }]}>
@@ -331,6 +392,9 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               value={proteinStr}
               onChangeText={handleProteinChange}
               onBlur={() => handleBlur("protein", proteinStr)}
+              onFocus={() => {
+                if (proteinStr === "0") setProteinStr("");
+              }}
             />
             {!!errors.protein && (
               <Text style={[styles.errorText, { color: theme.error.text }]}>
@@ -360,6 +424,9 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               value={carbsStr}
               onChangeText={handleCarbsChange}
               onBlur={() => handleBlur("carbs", carbsStr)}
+              onFocus={() => {
+                if (carbsStr === "0") setCarbsStr("");
+              }}
             />
             {!!errors.carbs && (
               <Text style={[styles.errorText, { color: theme.error.text }]}>
@@ -387,6 +454,9 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               value={fatStr}
               onChangeText={handleFatChange}
               onBlur={() => handleBlur("fat", fatStr)}
+              onFocus={() => {
+                if (fatStr === "0") setFatStr("");
+              }}
             />
             {!!errors.fat && (
               <Text style={[styles.errorText, { color: theme.error.text }]}>
@@ -412,6 +482,9 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               value={kcalStr}
               onChangeText={handleKcalChange}
               onBlur={() => handleBlur("kcal", kcalStr)}
+              onFocus={() => {
+                if (kcalStr === "0") setKcalStr("");
+              }}
             />
             {!!errors.kcal && (
               <Text style={[styles.errorText, { color: theme.error.text }]}>
@@ -430,6 +503,8 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
                 if (!validateAll()) return;
                 setEditMode(false);
                 onSave?.(edited);
+                setDirty(false);
+                signals?.onDirtyChange?.(false);
               }}
             >
               <Text style={[styles.saveBtnText, { color: theme.onAccent }]}>
@@ -450,6 +525,14 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
                 setFatStr(String(initial.current.fat));
                 setKcalStr(String(initial.current.kcal));
                 setErrors({});
+                if (
+                  isEmpty(initial.current) &&
+                  policy?.removeEmptyOn?.includes("cancel")
+                ) {
+                  onRemove?.();
+                }
+                setDirty(false);
+                signals?.onDirtyChange?.(false);
                 onCancelEdit?.();
               }}
             >
