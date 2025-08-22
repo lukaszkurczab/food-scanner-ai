@@ -1,5 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, FlatList, RefreshControl } from "react-native";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { View, FlatList, RefreshControl, ViewToken } from "react-native";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
@@ -24,6 +30,9 @@ import {
 } from "@react-native-firebase/firestore";
 import { useTranslation } from "react-i18next";
 
+const STEP = 20;
+const TAIL_THRESHOLD = 10;
+
 const norm = (s: any) =>
   String(s || "")
     .toLowerCase()
@@ -41,9 +50,7 @@ export default function SelectSavedMealScreen({
   const theme = useTheme();
   const netInfo = useNetInfo();
   const { uid } = useAuthContext();
-
   const { getMeals } = useMeals(uid ?? null);
-
   const {
     meal: draftMeal,
     setMeal,
@@ -57,13 +64,15 @@ export default function SelectSavedMealScreen({
   const [items, setItems] = useState<Meal[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const [limit, setLimit] = useState(STEP);
+  const loadingMoreRef = useRef(false);
+
   const subscribe = useCallback(() => {
     if (!uid) {
       setItems([]);
       setLoading(false);
       return () => {};
     }
-
     const q = query(
       collection(db, "users", uid, "myMeals"),
       orderBy("name", "asc")
@@ -75,8 +84,8 @@ export default function SelectSavedMealScreen({
       }));
       setItems(data);
       setLoading(false);
+      setLimit(STEP);
     });
-
     return unsub;
   }, [uid]);
 
@@ -91,7 +100,7 @@ export default function SelectSavedMealScreen({
     await getMeals();
   }, [getMeals]);
 
-  const visibleItems = useMemo(() => {
+  const visibleAll = useMemo(() => {
     const q = norm(queryText);
     const base = [...items].sort((a, b) => {
       const an = norm(a.name || "");
@@ -111,24 +120,54 @@ export default function SelectSavedMealScreen({
     });
   }, [items, queryText]);
 
+  useEffect(() => {
+    setLimit(STEP);
+  }, [queryText]);
+
+  const pageItems = useMemo(
+    () => visibleAll.slice(0, Math.min(limit, visibleAll.length)),
+    [visibleAll, limit]
+  );
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
+      if (loadingMoreRef.current) return;
+      if (pageItems.length >= visibleAll.length) return;
+
+      const triggerIndex = Math.max(0, limit - TAIL_THRESHOLD);
+      const reached = viewableItems.some((v) => {
+        const idx = typeof v.index === "number" ? v.index : -1;
+        return idx >= triggerIndex;
+      });
+
+      if (reached) {
+        loadingMoreRef.current = true;
+        const newLimit = Math.min(limit + STEP, visibleAll.length);
+        setLimit(newLimit);
+        setTimeout(() => {
+          loadingMoreRef.current = false;
+        }, 50);
+      }
+    }
+  );
+
   const handleSelect = useCallback((meal: Meal) => {
     setSelectedId((prev) =>
       prev === (meal.cloudId || meal.mealId)
         ? null
-        : meal.cloudId || meal.mealId
+        : ((meal.cloudId || meal.mealId) as string)
     );
   }, []);
 
   const handleConfirm = useCallback(async () => {
     if (!uid || !selectedId) return;
-    const picked = visibleItems.find(
+    const picked = pageItems.find(
       (m) => (m.cloudId || m.mealId) === selectedId
     );
     if (!picked) return;
 
     const now = new Date().toISOString();
 
-    // użyj istniejącego draftu; jeśli go nie ma, utwórz minimalny
     const base: Meal =
       draftMeal ??
       ({
@@ -154,6 +193,7 @@ export default function SelectSavedMealScreen({
       ingredients: Array.isArray(picked.ingredients) ? picked.ingredients : [],
       photoUrl: picked.photoUrl ?? null,
       updatedAt: now,
+      name: picked.name ?? null,
     };
 
     setMeal(next);
@@ -163,7 +203,7 @@ export default function SelectSavedMealScreen({
   }, [
     uid,
     selectedId,
-    visibleItems,
+    pageItems,
     draftMeal,
     setMeal,
     saveDraft,
@@ -177,7 +217,7 @@ export default function SelectSavedMealScreen({
 
   if (loading) return <LoadingSkeleton />;
 
-  if (!visibleItems.length) {
+  if (!pageItems.length) {
     return (
       <Layout>
         {!netInfo.isConnected && <OfflineBanner />}
@@ -210,13 +250,13 @@ export default function SelectSavedMealScreen({
         <SearchBox value={queryText} onChange={setQueryText} />
       </View>
       <FlatList
-        data={visibleItems}
-        keyExtractor={(item) => item.cloudId || item.mealId}
+        data={pageItems}
+        keyExtractor={(item) => (item.cloudId || item.mealId) as string}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refresh} />
         }
         renderItem={({ item }) => {
-          const id = item.cloudId || item.mealId;
+          const id = (item.cloudId || item.mealId) as string;
           const selected = selectedId === id;
           return (
             <View
@@ -238,6 +278,11 @@ export default function SelectSavedMealScreen({
           );
         }}
         contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
+        onViewableItemsChanged={onViewableItemsChanged.current}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
+        removeClippedSubviews
+        initialNumToRender={STEP}
+        windowSize={7}
       />
       <View
         style={{
