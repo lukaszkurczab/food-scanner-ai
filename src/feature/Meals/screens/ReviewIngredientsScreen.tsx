@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, Pressable, Modal } from "react-native";
+import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import {
@@ -9,7 +9,10 @@ import {
   SecondaryButton,
   PhotoPreview,
 } from "@/components";
-import { IngredientBox } from "@/components/IngredientBox";
+import {
+  IngredientBox,
+  type EditLifecyclePolicy,
+} from "@/components/IngredientBox";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -35,6 +38,10 @@ export default function ReviewIngredientsScreen() {
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
 
+  // NOWE: lokalny draft dla creation: "deferred"
+  const [localDraft, setLocalDraft] = useState<Ingredient | null>(null);
+  const [localDirty, setLocalDirty] = useState(false);
+
   const ingredients: Ingredient[] = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
 
@@ -42,48 +49,79 @@ export default function ReviewIngredientsScreen() {
     if (uid) setLastScreen(uid, "ReviewIngredients");
   }, [setLastScreen, uid]);
 
+  const policy: EditLifecyclePolicy = {
+    creation: "deferred",
+    leaveWhileEditing: "discard",
+    removeEmptyOn: ["cancel", "leaveScreen"],
+    autoSaveOnFieldBlur: false,
+  };
+
+  const isEmpty = (i: Ingredient) =>
+    !i?.name?.trim() &&
+    (i?.amount ?? 0) <= 0 &&
+    (i?.protein ?? 0) <= 0 &&
+    (i?.carbs ?? 0) <= 0 &&
+    (i?.fat ?? 0) <= 0 &&
+    (i?.kcal ?? 0) <= 0;
+
   const handleAddPhoto = () => {
     navigation.replace("MealCamera", { skipDetection: true });
   };
 
   const handleAddIngredient = () => {
-    if (editingIdx !== null) return;
-    const newIng: Ingredient = {
+    if (editingIdx !== null || localDraft) return;
+    // nie dotykamy globalnego stanu dopóki user nie zapisze
+    setLocalDraft({
       name: "",
       amount: 0,
       kcal: 0,
       protein: 0,
       carbs: 0,
       fat: 0,
-    };
-    const newIndex = ingredients.length;
-    addIngredient(newIng);
-    setEditingIdx(newIndex);
-    if (uid) saveDraft(uid);
+    });
+    setEditingIdx(-1); // -1 oznacza lokalny draft
   };
 
   const handleRemoveIngredient = (idx: number) => {
+    if (idx === -1) {
+      setLocalDraft(null);
+      setEditingIdx(null);
+      setLocalDirty(false);
+      return;
+    }
     if (editingIdx === idx) setEditingIdx(null);
     removeIngredient(idx);
     if (uid) saveDraft(uid);
   };
 
   const handleSaveIngredient = (idx: number, updated: Ingredient) => {
+    if (idx === -1) {
+      // dopiero teraz dodaj do globalnego stanu
+      addIngredient(updated);
+      setLocalDraft(null);
+      setLocalDirty(false);
+      setEditingIdx(null);
+      if (uid) saveDraft(uid);
+      return;
+    }
     updateIngredient(idx, updated);
     if (editingIdx === idx) setEditingIdx(null);
     if (uid) saveDraft(uid);
   };
 
   const handleCancelEdit = (idx: number) => {
+    if (idx === -1) {
+      // porzucenie lokalnego draftu
+      if (!localDraft || isEmpty(localDraft)) {
+        setLocalDraft(null);
+      }
+      setEditingIdx(null);
+      setLocalDirty(false);
+      return;
+    }
     const ing = ingredients[idx];
-    const isEmpty =
-      !ing?.name?.trim() &&
-      (ing?.amount ?? 0) <= 0 &&
-      (ing?.protein ?? 0) <= 0 &&
-      (ing?.carbs ?? 0) <= 0 &&
-      (ing?.fat ?? 0) <= 0 &&
-      (ing?.kcal ?? 0) <= 0;
-    if (isEmpty) removeIngredient(idx);
+    const empty = isEmpty(ing);
+    if (empty) removeIngredient(idx);
     setEditingIdx(null);
     if (uid) saveDraft(uid);
   };
@@ -91,10 +129,14 @@ export default function ReviewIngredientsScreen() {
   const handleContinue = () => navigation.navigate("Result");
 
   const handleStartOver = () => {
+    setLocalDraft(null);
+    setEditingIdx(null);
+    setLocalDirty(false);
     if (uid) clearMeal(uid);
     navigation.replace("MealAddMethod");
   };
 
+  // zapisuj draft tylko gdy globalny stan się zmienia
   useEffect(() => {
     if (uid) saveDraft(uid);
   }, [ingredients, image, saveDraft, uid]);
@@ -106,9 +148,7 @@ export default function ReviewIngredientsScreen() {
         onRetake={() => setPreviewVisible(false)}
         onAccept={() => {
           setPreviewVisible(false);
-          navigation.replace("MealCamera", {
-            skipDetection: true,
-          });
+          navigation.replace("MealCamera", { skipDetection: true });
         }}
         isLoading={false}
         secondaryText={t("back", { ns: "common" })}
@@ -152,12 +192,32 @@ export default function ReviewIngredientsScreen() {
           )}
         </View>
 
+        {/* lokalny draft na górze listy */}
+        {localDraft && (
+          <IngredientBox
+            key="local-draft"
+            ingredient={localDraft}
+            editable
+            initialEdit={editingIdx === -1}
+            policy={policy}
+            isEmpty={isEmpty}
+            signals={{
+              onDirtyChange: setLocalDirty,
+            }}
+            onSave={(updated) => handleSaveIngredient(-1, updated)}
+            onRemove={() => handleRemoveIngredient(-1)}
+            onCancelEdit={() => handleCancelEdit(-1)}
+          />
+        )}
+
         {ingredients.map((ing, idx) => (
           <IngredientBox
             key={idx}
             ingredient={ing}
             editable
             initialEdit={editingIdx === idx}
+            policy={policy}
+            isEmpty={isEmpty}
             onSave={(updated) => handleSaveIngredient(idx, updated)}
             onRemove={() => handleRemoveIngredient(idx)}
             onCancelEdit={() => handleCancelEdit(idx)}
@@ -167,7 +227,7 @@ export default function ReviewIngredientsScreen() {
         <SecondaryButton
           label={t("add_ingredient", { ns: "meals" })}
           onPress={handleAddIngredient}
-          disabled={editingIdx !== null}
+          disabled={editingIdx !== null} // blokuj w trakcie edycji
           style={styles.addIngredientBtn}
         />
         <PrimaryButton
