@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Animated } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { useTheme } from "@/theme/useTheme";
@@ -6,6 +6,14 @@ import { FallbackImage } from "../feature/History/components/FallbackImage";
 import { MacroChip } from "@/components/MacroChip";
 import type { Meal } from "@/types/meal";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
+import * as FileSystem from "expo-file-system";
+import { getApp } from "@react-native-firebase/app";
+import {
+  getStorage,
+  ref,
+  getDownloadURL,
+} from "@react-native-firebase/storage";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   meal: Meal;
@@ -17,6 +25,9 @@ type Props = {
   selected?: boolean;
 };
 
+const app = getApp();
+const st = getStorage(app);
+
 export const MealListItem: React.FC<Props> = ({
   meal,
   onPress,
@@ -27,6 +38,60 @@ export const MealListItem: React.FC<Props> = ({
   selected = false,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["common"]);
+  const [localUri, setLocalUri] = useState<string | null>(null);
+
+  const mealId = useMemo(
+    () => String(meal.cloudId || meal.mealId || ""),
+    [meal.cloudId, meal.mealId]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restore() {
+      if (!mealId) return;
+      const url = meal.photoUrl || "";
+      const isRemote = /^https?:\/\//i.test(url);
+      if (!isRemote) return;
+
+      const dir = `${FileSystem.documentDirectory}meals/${meal.userUid}`;
+      const target = `${dir}/${mealId}.jpg`;
+
+      const info = await FileSystem.getInfoAsync(target);
+      if (info.exists) {
+        if (!cancelled) setLocalUri(target);
+        return;
+      }
+
+      try {
+        const dirInfo = await FileSystem.getInfoAsync(dir);
+        if (!dirInfo.exists)
+          await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+
+        await FileSystem.downloadAsync(url, target);
+        const ok = await FileSystem.getInfoAsync(target);
+        if (ok.exists) {
+          if (!cancelled) setLocalUri(target);
+          return;
+        }
+      } catch {}
+
+      try {
+        const storagePath = `meals/${meal.userUid}/${mealId}.jpg`;
+        const r = ref(st, storagePath);
+        const fresh = await getDownloadURL(r);
+        await FileSystem.downloadAsync(fresh, target);
+        const ok2 = await FileSystem.getInfoAsync(target);
+        if (ok2.exists && !cancelled) setLocalUri(target);
+      } catch {}
+    }
+
+    restore();
+    return () => {
+      cancelled = true;
+    };
+  }, [mealId, meal.photoUrl, meal.userUid]);
 
   const Right = (progress: Animated.AnimatedInterpolation<number>) => {
     const translateX = progress.interpolate({
@@ -37,12 +102,7 @@ export const MealListItem: React.FC<Props> = ({
       <Animated.View
         style={[styles.actionsWrap, { transform: [{ translateX }] }]}
       >
-        <View
-          style={[
-            styles.actions,
-            { backgroundColor: theme.background, borderColor: theme.border },
-          ]}
-        >
+        <View style={[styles.actions, { backgroundColor: theme.background }]}>
           <Pressable
             onPress={onDelete}
             style={[styles.actBtn, { backgroundColor: theme.error.text }]}
@@ -50,10 +110,10 @@ export const MealListItem: React.FC<Props> = ({
             <Text
               style={{
                 color: theme.background,
-                fontSize: theme.typography.size.md,
+                fontSize: theme.typography.size.sm,
               }}
             >
-              Delete
+              {t("remove")}
             </Text>
           </Pressable>
           <Pressable
@@ -61,9 +121,9 @@ export const MealListItem: React.FC<Props> = ({
             style={[styles.actBtn, { backgroundColor: theme.card }]}
           >
             <Text
-              style={{ color: theme.text, fontSize: theme.typography.size.md }}
+              style={{ color: theme.text, fontSize: theme.typography.size.sm }}
             >
-              Edit
+              {t("edit")}
             </Text>
           </Pressable>
           <Pressable
@@ -73,10 +133,10 @@ export const MealListItem: React.FC<Props> = ({
             <Text
               style={{
                 color: theme.onAccent,
-                fontSize: theme.typography.size.md,
+                fontSize: theme.typography.size.sm,
               }}
             >
-              Duplicate
+              {t("duplicate", "Duplicate")}
             </Text>
           </Pressable>
         </View>
@@ -85,6 +145,7 @@ export const MealListItem: React.FC<Props> = ({
   };
 
   const nutrition = calculateTotalNutrients([meal]);
+  const imageUri = localUri || meal.photoUrl || null;
 
   return (
     <Swipeable
@@ -138,9 +199,9 @@ export const MealListItem: React.FC<Props> = ({
           </Pressable>
         ) : null}
 
-        {meal.photoUrl && (
+        {imageUri && (
           <FallbackImage
-            uri={meal.photoUrl || null}
+            uri={imageUri}
             width={72}
             height={72}
             borderRadius={theme.rounded.sm}
@@ -166,7 +227,7 @@ export const MealListItem: React.FC<Props> = ({
                 fontSize: theme.typography.size.lg,
               }}
             >
-              {nutrition.kcal} kcal
+              {nutrition.kcal} {t("kcal")}
             </Text>
           </View>
 
@@ -185,6 +246,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "center",
     padding: 16,
     borderRadius: 24,
     marginBottom: 12,
@@ -193,11 +255,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  selectBoxWrap: {
-    width: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  selectBoxWrap: { width: 40, alignItems: "center", justifyContent: "center" },
   selectCircle: {
     width: 22,
     height: 22,
@@ -212,23 +270,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  chipsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 6,
-  },
-  actionsWrap: {
-    width: 108,
-    justifyContent: "center",
-  },
-  actions: {
-    width: 108,
-    padding: 8,
-    borderLeftWidth: 1,
-    borderRadius: 16,
-    gap: 8,
-    alignItems: "stretch",
-  },
+  chipsRow: { flexDirection: "row", justifyContent: "space-between", gap: 6 },
+  actionsWrap: { width: 108, justifyContent: "center" },
+  actions: { width: 108, padding: 8, gap: 8, alignItems: "stretch" },
   actBtn: {
     height: 40,
     borderRadius: 12,

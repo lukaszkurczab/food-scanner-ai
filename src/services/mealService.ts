@@ -20,6 +20,7 @@ import {
   getDownloadURL,
 } from "@react-native-firebase/storage";
 import { v4 as uuidv4 } from "uuid";
+import * as FileSystem from "expo-file-system";
 import type { Meal } from "@/types/meal";
 
 const app = getApp();
@@ -131,4 +132,56 @@ export async function deleteMealInFirestore(uid: string, cloudId: string) {
     { deleted: true, updatedAt: new Date().toISOString() },
     { merge: true }
   );
+}
+
+async function ensureDir(dir: string) {
+  const info = await FileSystem.getInfoAsync(dir);
+  if (!info.exists)
+    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+}
+function localPhotoPath(uid: string, id: string) {
+  return `${FileSystem.documentDirectory}meals/${uid}/${id}.jpg`;
+}
+
+export async function restoreMissingMealPhotos(
+  uid: string,
+  meals: Meal[]
+): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  if (!uid || !Array.isArray(meals) || meals.length === 0) return out;
+
+  const baseDir = `${FileSystem.documentDirectory}meals/${uid}`;
+  await ensureDir(baseDir);
+
+  for (const m of meals) {
+    const id = String(m.cloudId || m.mealId || "");
+    if (!id) continue;
+
+    const url = m.photoUrl || "";
+    const looksRemote = typeof url === "string" && /^https?:\/\//i.test(url);
+    if (!looksRemote) continue;
+
+    const target = localPhotoPath(uid, id);
+    const info = await FileSystem.getInfoAsync(target);
+
+    if (!info.exists) {
+      try {
+        await FileSystem.downloadAsync(url, target);
+      } catch {
+        try {
+          const path = `meals/${uid}/${id}.jpg`;
+          const r = ref(st, path);
+          const freshUrl = await getDownloadURL(r);
+          await FileSystem.downloadAsync(freshUrl, target);
+        } catch {
+          continue;
+        }
+      }
+    }
+
+    const finalInfo = await FileSystem.getInfoAsync(target);
+    if (finalInfo.exists) out[id] = target;
+  }
+
+  return out;
 }

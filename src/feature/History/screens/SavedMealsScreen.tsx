@@ -1,5 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, FlatList, RefreshControl } from "react-native";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { View, FlatList, RefreshControl, ViewToken } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
@@ -18,8 +24,13 @@ import {
   query as fsQuery,
   orderBy,
   onSnapshot,
+  limit,
+  startAfter,
+  getDocs,
 } from "@react-native-firebase/firestore";
 import { useTranslation } from "react-i18next";
+
+const PAGE_SIZE = 20;
 
 const norm = (s: any) =>
   String(s || "")
@@ -39,9 +50,14 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
 
   const [queryText, setQueryText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [items, setItems] = useState<Meal[]>([]);
+  const [lastDoc, setLastDoc] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
 
-  const subscribe = useCallback(() => {
+  const loadingMoreRef = useRef(false);
+
+  const subscribeFirstPage = useCallback(() => {
     if (!uid) {
       setItems([]);
       setLoading(false);
@@ -49,7 +65,8 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
     }
     const q = fsQuery(
       collection(db, "users", uid, "myMeals"),
-      orderBy("name", "asc")
+      orderBy("name", "asc"),
+      limit(PAGE_SIZE)
     );
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs.map((d: any) => ({
@@ -57,17 +74,43 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
         cloudId: d.id,
       }));
       setItems(data);
+      setLastDoc(snap.docs[snap.docs.length - 1] || null);
+      setHasMore(snap.docs.length === PAGE_SIZE);
       setLoading(false);
     });
     return unsub;
   }, [uid]);
 
   useEffect(() => {
-    const unsub = subscribe();
+    const unsub = subscribeFirstPage();
     return () => {
       if (typeof unsub === "function") unsub();
     };
-  }, [subscribe]);
+  }, [subscribeFirstPage]);
+
+  const loadMore = useCallback(async () => {
+    if (!uid || !hasMore || loadingMoreRef.current || !lastDoc) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    const q = fsQuery(
+      collection(db, "users", uid, "myMeals"),
+      orderBy("name", "asc"),
+      startAfter(lastDoc),
+      limit(PAGE_SIZE)
+    );
+    const snap = await getDocs(q);
+    const data = snap.docs.map((d: any) => ({
+      ...(d.data() as Meal),
+      cloudId: d.id,
+    }));
+    setItems((prev) => [...prev, ...data]);
+    setLastDoc(snap.docs[snap.docs.length - 1] || null);
+    setHasMore(snap.docs.length === PAGE_SIZE);
+    setLoadingMore(false);
+    setTimeout(() => {
+      loadingMoreRef.current = false;
+    }, 50);
+  }, [uid, hasMore, lastDoc]);
 
   const refresh = useCallback(async () => {
     await getMeals();
@@ -92,6 +135,19 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       return title.includes(q) || ing.includes(q);
     });
   }, [items, queryText]);
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
+      if (loadingMoreRef.current || !hasMore || !lastDoc) return;
+      const globalMax =
+        viewableItems.reduce((max, v) => {
+          const idx = typeof v.index === "number" ? v.index : -1;
+          return idx > max ? idx : max;
+        }, -1) ?? -1;
+      const remaining = visibleItems.length - (globalMax + 1);
+      if (remaining <= 10) loadMore();
+    }
+  );
 
   const onDuplicateMeal = (meal: Meal) => duplicateMeal(meal);
 
@@ -145,6 +201,14 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
           </View>
         )}
         contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
+        onViewableItemsChanged={onViewableItemsChanged.current}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
+        ListFooterComponent={
+          loadingMore ? <LoadingSkeleton height={56} /> : null
+        }
+        removeClippedSubviews
+        windowSize={7}
+        initialNumToRender={PAGE_SIZE}
       />
     </Layout>
   );

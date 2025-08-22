@@ -1,5 +1,17 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, SectionList, RefreshControl, Text } from "react-native";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  View,
+  SectionList,
+  RefreshControl,
+  Text,
+  ViewToken,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
@@ -83,6 +95,9 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const [cursorBefore, setCursorBefore] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
+  const loadingMoreRef = useRef(false);
+  const lastCursorRef = useRef<string | null>(null);
+
   const loadFirstPage = useCallback(async () => {
     if (!uid) {
       setItems([]);
@@ -94,22 +109,38 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     const page = await getMealsPage(uid, { limit: PAGE_SIZE, before: null });
     setItems(page.items);
     setCursorBefore(page.nextBefore);
-    setHasMore(page.items.length === PAGE_SIZE);
+    lastCursorRef.current = page.nextBefore;
+    setHasMore(page.items.length === PAGE_SIZE && !!page.nextBefore);
     setLoading(false);
   }, [uid]);
 
   const loadMore = useCallback(async () => {
-    if (!uid || !hasMore || loadingMore) return;
+    if (!uid || !hasMore || loadingMoreRef.current || !cursorBefore) return;
+    if (cursorBefore === lastCursorRef.current && items.length > 0) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     const page = await getMealsPage(uid, {
       limit: PAGE_SIZE,
       before: cursorBefore,
     });
-    setItems((prev) => [...prev, ...page.items]);
+    const merged = new Map<string, Meal>();
+    for (const it of items) merged.set(String(it.cloudId || it.mealId), it);
+    for (const it of page.items)
+      merged.set(String(it.cloudId || it.mealId), it);
+    const next = Array.from(merged.values());
+    setItems(next);
     setCursorBefore(page.nextBefore);
-    setHasMore(page.items.length === PAGE_SIZE);
+    setHasMore(
+      page.items.length === PAGE_SIZE &&
+        !!page.nextBefore &&
+        page.nextBefore !== lastCursorRef.current
+    );
+    lastCursorRef.current = page.nextBefore;
     setLoadingMore(false);
-  }, [uid, hasMore, loadingMore, cursorBefore]);
+    setTimeout(() => {
+      loadingMoreRef.current = false;
+    }, 50);
+  }, [uid, hasMore, cursorBefore, items]);
 
   useEffect(() => {
     loadFirstPage();
@@ -120,11 +151,19 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     await loadFirstPage();
   }, [getMeals, loadFirstPage]);
 
+  const idToIndex = useMemo(() => {
+    const map = new Map<string, number>();
+    items.forEach((m, i) => {
+      const id = String(m.cloudId || (m as any).mealId || "");
+      if (id) map.set(id, i);
+    });
+    return map;
+  }, [items]);
+
   const visibleItems: Meal[] = useMemo(() => {
     const q = norm(query);
     const base = [...items].sort((a, b) => +getMealDate(b) - +getMealDate(a));
     if (!q) return base;
-
     return base.filter((m) => {
       const title =
         norm((m as any).title) ||
@@ -141,14 +180,11 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
   const sections: DaySection[] = useMemo(() => {
     if (!visibleItems.length) return [];
-
     const byKey = new Map<string, DaySection>();
     const keysInOrder: string[] = [];
-
     for (const meal of visibleItems) {
       const d = getMealDate(meal);
       const key = fmtDateKey(d);
-
       if (!byKey.has(key)) {
         byKey.set(key, {
           title: fmtHeader(d, t),
@@ -158,17 +194,32 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
         });
         keysInOrder.push(key);
       }
-
       const sec = byKey.get(key)!;
       sec.data.push(meal);
       sec.totalKcal += mealKcal(meal);
     }
-
     return keysInOrder.map((k) => {
       const s = byKey.get(k)!;
       return { ...s, totalKcal: Math.round(s.totalKcal) };
     });
   }, [visibleItems, t]);
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
+      if (loadingMoreRef.current || !hasMore) return;
+      let maxDataIndex = -1;
+      for (const v of viewableItems) {
+        const item: any = v.item;
+        if (!item) continue;
+        const id = String(item.cloudId || item.mealId || "");
+        const idx = id ? idToIndex.get(id) ?? -1 : -1;
+        if (idx > maxDataIndex) maxDataIndex = idx;
+      }
+      if (maxDataIndex < 0) return;
+      const remaining = items.length - (maxDataIndex + 1);
+      if (remaining <= 10) loadMore();
+    }
+  );
 
   const onEditMeal = (_mealId: string) => {};
   const onDuplicateMeal = (meal: Meal) => duplicateMeal(meal);
@@ -315,12 +366,15 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
               </View>
             )}
             contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
-            onEndReachedThreshold={0.2}
-            onEndReached={loadMore}
+            onViewableItemsChanged={onViewableItemsChanged.current}
+            viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
             ListFooterComponent={
               loadingMore ? <LoadingSkeleton height={56} /> : null
             }
             stickySectionHeadersEnabled
+            removeClippedSubviews
+            windowSize={7}
+            initialNumToRender={PAGE_SIZE}
           />
         </>
       )}
