@@ -5,6 +5,7 @@ export const spacing = {
   lg: 24,
   xl: 32,
   xxl: 40,
+  nav: 82,
 
   container: 20,
   section: 16,

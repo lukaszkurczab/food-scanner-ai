@@ -214,6 +214,7 @@ export const FilterPanel: React.FC<{
         flex: 1,
         backgroundColor: theme.background,
         paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.nav,
       }}
     >
       <ScrollView

@@ -2,6 +2,7 @@ import React from "react";
 import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
+import { navigate } from "@/navigation/navigate";
 
 type TabItem = {
   key: string;
@@ -11,12 +12,40 @@ type TabItem = {
 };
 
 type Props = {
-  tabs: TabItem[];
   renderProfileIcon?: React.ReactNode;
 };
 
-export const BottomTabBar: React.FC<Props> = ({ tabs, renderProfileIcon }) => {
+export const BottomTabBar: React.FC<Props> = ({ renderProfileIcon }) => {
   const theme = useTheme();
+
+  const tabs = [
+    {
+      key: "Home",
+      icon: "home-filled",
+      onPress: () => navigate("Home"),
+    },
+    {
+      key: "Stats",
+      icon: "bar-chart",
+      onPress: () => navigate("Statistics"),
+    },
+    {
+      key: "Add",
+      icon: "add",
+      isFab: true,
+      onPress: () => navigate("MealAddMethod"),
+    },
+    {
+      key: "History",
+      icon: "history",
+      onPress: () => navigate("HistoryList"),
+    },
+    {
+      key: "Profile",
+      icon: "person",
+      onPress: () => navigate("Profile"),
+    },
+  ];
 
   return (
     <View
