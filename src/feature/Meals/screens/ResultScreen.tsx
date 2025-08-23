@@ -68,7 +68,6 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
     } as any;
 
     try {
-      console.log(newMeal);
       await addMeal(newMeal, { alsoSaveToMyMeals: saveToMyMeals });
       clearMeal(uid);
       navigation.navigate("Home");

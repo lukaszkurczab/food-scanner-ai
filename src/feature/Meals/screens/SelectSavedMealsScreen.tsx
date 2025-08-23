@@ -173,7 +173,7 @@ export default function SelectSavedMealScreen({
       ({
         mealId: uuidv4(),
         userUid: uid,
-        name: null,
+        name: "",
         photoUrl: null,
         ingredients: [],
         createdAt: now,
@@ -193,7 +193,7 @@ export default function SelectSavedMealScreen({
       ingredients: Array.isArray(picked.ingredients) ? picked.ingredients : [],
       photoUrl: picked.photoUrl ?? null,
       updatedAt: now,
-      name: picked.name ?? null,
+      name: picked.name ?? "",
     };
 
     setMeal(next);
