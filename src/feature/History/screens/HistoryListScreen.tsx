@@ -27,6 +27,7 @@ import { getMealsPage } from "@services/mealService";
 import { MealListItem } from "../../../components/MealListItem";
 import { SearchBox } from "@/components/SearchBox";
 import { useTranslation } from "react-i18next";
+import { useHistoryContext } from "@/context/HistoryContext";
 
 const PAGE_SIZE = 20;
 
@@ -37,6 +38,26 @@ type DaySection = {
   data: Meal[];
 };
 
+type Filters = {
+  calories?: [number, number];
+  protein?: [number, number];
+  carbs?: [number, number];
+  fat?: [number, number];
+  dateRange?: { start: Date; end: Date };
+};
+
+const mealTotals = (m: Meal) => {
+  const ing = m.ingredients || [];
+  const sum = <K extends "kcal" | "protein" | "carbs" | "fat">(k: K) =>
+    ing.reduce((a, b) => a + (Number((b as any)?.[k]) || 0), 0);
+  return {
+    kcal: sum("kcal"),
+    protein: sum("protein"),
+    carbs: sum("carbs"),
+    fat: sum("fat"),
+  };
+};
+
 const toDate = (val?: string | number | null): Date | null => {
   if (!val) return null;
   const d = new Date(val);
@@ -45,9 +66,9 @@ const toDate = (val?: string | number | null): Date | null => {
 
 const getMealDate = (m: Meal): Date => {
   return (
-    toDate(m.timestamp) ||
-    toDate(m.updatedAt) ||
-    toDate(m.createdAt) ||
+    toDate((m as any).timestamp) ||
+    toDate((m as any).updatedAt) ||
+    toDate((m as any).createdAt) ||
     new Date(0)
   );
 };
@@ -70,7 +91,10 @@ const fmtHeader = (d: Date, t: (key: string) => string) => {
 };
 
 const mealKcal = (meal: Meal) =>
-  meal.ingredients?.reduce((sum, ing) => sum + (ing.kcal || 0), 0) || 0;
+  (meal.ingredients || []).reduce(
+    (sum, ing) => sum + (Number((ing as any).kcal) || 0),
+    0
+  ) || 0;
 
 const norm = (s: any) =>
   String(s || "")
@@ -85,9 +109,17 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const { duplicateMeal, deleteMeal, getMeals } = useMeals(uid || "");
   const { t } = useTranslation(["meals", "common"]);
 
-  const [filterCount, setFilterCount] = useState(0);
-  const [showFilters, setShowFilters] = useState(false);
-  const [query, setQuery] = useState("");
+  const {
+    query,
+    setQuery,
+    filters,
+    applyFilters,
+    clearFilters,
+    showFilters,
+    setShowFilters,
+    toggleShowFilters,
+    filterCount,
+  } = useHistoryContext();
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -124,9 +156,10 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
       before: cursorBefore,
     });
     const merged = new Map<string, Meal>();
-    for (const it of items) merged.set(String(it.cloudId || it.mealId), it);
+    for (const it of items)
+      merged.set(String((it as any).cloudId || (it as any).mealId), it);
     for (const it of page.items)
-      merged.set(String(it.cloudId || it.mealId), it);
+      merged.set(String((it as any).cloudId || (it as any).mealId), it);
     const next = Array.from(merged.values());
     setItems(next);
     setCursorBefore(page.nextBefore);
@@ -154,7 +187,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const idToIndex = useMemo(() => {
     const map = new Map<string, number>();
     items.forEach((m, i) => {
-      const id = String(m.cloudId || (m as any).mealId || "");
+      const id = String((m as any).cloudId || (m as any).mealId || "");
       if (id) map.set(id, i);
     });
     return map;
@@ -163,20 +196,58 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const visibleItems: Meal[] = useMemo(() => {
     const q = norm(query);
     const base = [...items].sort((a, b) => +getMealDate(b) - +getMealDate(a));
-    if (!q) return base;
-    return base.filter((m) => {
-      const title =
-        norm((m as any).title) ||
-        norm((m as any).name) ||
-        norm((m as any).mealName);
-      const ing = norm(
-        (m.ingredients || [])
-          .map((x: any) => x?.name || x?.title || "")
-          .join(" ")
-      );
-      return title.includes(q) || ing.includes(q);
+
+    const byText = !q
+      ? base
+      : base.filter((m) => {
+          const title =
+            norm((m as any).title) ||
+            norm((m as any).name) ||
+            norm((m as any).mealName);
+          const ing = norm(
+            (m.ingredients || [])
+              .map((x: any) => x?.name || x?.title || "")
+              .join(" ")
+          );
+          return title.includes(q) || ing.includes(q);
+        });
+
+    if (!filters) return byText;
+
+    return byText.filter((m) => {
+      const totals = mealTotals(m);
+
+      if (filters.calories) {
+        const [min, max] = filters.calories;
+        if (totals.kcal < min || totals.kcal > max) return false;
+      }
+
+      if (filters.protein) {
+        const [min, max] = filters.protein;
+        if (totals.protein < min || totals.protein > max) return false;
+      }
+
+      if (filters.carbs) {
+        const [min, max] = filters.carbs;
+        if (totals.carbs < min || totals.carbs > max) return false;
+      }
+
+      if (filters.fat) {
+        const [min, max] = filters.fat;
+        if (totals.fat < min || totals.fat > max) return false;
+      }
+
+      if (filters.dateRange) {
+        const d = getMealDate(m);
+        const s = new Date(filters.dateRange.start);
+        const e = new Date(filters.dateRange.end);
+        s.setHours(0, 0, 0, 0);
+        e.setHours(23, 59, 59, 999);
+        if (+d < +s || +d > +e) return false;
+      }
+      return true;
     });
-  }, [items, query]);
+  }, [items, query, filters]);
 
   const sections: DaySection[] = useMemo(() => {
     if (!visibleItems.length) return [];
@@ -235,15 +306,11 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
         {!netInfo.isConnected && <OfflineBanner />}
         {showFilters ? (
           <FilterPanel
-            onApply={(filters) => {
-              setFilterCount(
-                Object.values(filters || {}).filter(Boolean).length
-              );
-              setShowFilters(false);
+            onApply={(payload: Filters) => {
+              applyFilters(payload);
             }}
             onClear={() => {
-              setFilterCount(0);
-              setShowFilters(false);
+              clearFilters();
             }}
           />
         ) : (
@@ -309,13 +376,11 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
       {!netInfo.isConnected && <OfflineBanner />}
       {showFilters ? (
         <FilterPanel
-          onApply={(filters) => {
-            setFilterCount(Object.values(filters || {}).filter(Boolean).length);
-            setShowFilters(false);
+          onApply={(payload: Filters) => {
+            applyFilters(payload);
           }}
           onClear={() => {
-            setFilterCount(0);
-            setShowFilters(false);
+            clearFilters();
           }}
         />
       ) : (
@@ -332,13 +397,15 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           >
             <FilterBadgeButton
               activeCount={filterCount}
-              onPress={() => setShowFilters(!showFilters)}
+              onPress={toggleShowFilters}
             />
           </View>
 
           <SectionList
             sections={sections}
-            keyExtractor={(item) => item.cloudId || (item as any).mealId}
+            keyExtractor={(item) =>
+              (item as any).cloudId || (item as any).mealId
+            }
             refreshControl={
               <RefreshControl refreshing={loading} onRefresh={refresh} />
             }

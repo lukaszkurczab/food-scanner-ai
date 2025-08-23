@@ -16,6 +16,7 @@ import { useTheme } from "@/theme";
 import Purchases from "react-native-purchases";
 import { Platform } from "react-native";
 import { InactivityProvider } from "@contexts/InactivityContext";
+import { HistoryProvider } from "@/context/HistoryContext";
 
 export function initRevenueCat() {
   Purchases.configure({
@@ -34,9 +35,12 @@ export default function App() {
   });
 
   useEffect(() => {
-    if (__DEV__ && typeof ErrorUtils?.getGlobalHandler === "function") {
-      const defaultHandler = ErrorUtils.getGlobalHandler();
-      ErrorUtils.setGlobalHandler((error, isFatal) => {
+    if (
+      __DEV__ &&
+      typeof (ErrorUtils as any)?.getGlobalHandler === "function"
+    ) {
+      const defaultHandler = (ErrorUtils as any).getGlobalHandler();
+      (ErrorUtils as any).setGlobalHandler((error: any, isFatal: any) => {
         console.error("Global Error:", error);
         defaultHandler?.(error, isFatal);
       });
@@ -59,9 +63,11 @@ export default function App() {
           <PremiumProvider>
             <UserProvider>
               <MealDraftProvider>
-                <ThemeController>
-                  <AppNavigator />
-                </ThemeController>
+                <HistoryProvider>
+                  <ThemeController>
+                    <AppNavigator />
+                  </ThemeController>
+                </HistoryProvider>
               </MealDraftProvider>
             </UserProvider>
           </PremiumProvider>
