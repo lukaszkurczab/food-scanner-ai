@@ -14,16 +14,29 @@ export type Filters = {
   dateRange?: { start: Date; end: Date };
 };
 
-type HistoryContextValue = {
+export type FilterScope = "history" | "myMeals";
+
+type Slice = {
   query: string;
-  setQuery: (v: string) => void;
   filters: Filters | null;
-  applyFilters: (f: Filters) => void;
-  clearFilters: () => void;
   showFilters: boolean;
-  setShowFilters: (v: boolean) => void;
-  toggleShowFilters: () => void;
-  filterCount: number;
+};
+
+type HistoryContextValue = {
+  history: Slice;
+  myMeals: Slice;
+  setHistoryQuery: (v: string) => void;
+  setMyMealsQuery: (v: string) => void;
+  applyHistoryFilters: (f: Filters) => void;
+  applyMyMealsFilters: (f: Filters) => void;
+  clearHistoryFilters: () => void;
+  clearMyMealsFilters: () => void;
+  setHistoryShowFilters: (v: boolean) => void;
+  setMyMealsShowFilters: (v: boolean) => void;
+  toggleHistoryShowFilters: () => void;
+  toggleMyMealsShowFilters: () => void;
+  historyFilterCount: number;
+  myMealsFilterCount: number;
 };
 
 const HistoryContext = createContext<HistoryContextValue | undefined>(
@@ -33,39 +46,88 @@ const HistoryContext = createContext<HistoryContextValue | undefined>(
 export const HistoryProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<Filters | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [history, setHistory] = useState<Slice>({
+    query: "",
+    filters: null,
+    showFilters: false,
+  });
+  const [myMeals, setMyMeals] = useState<Slice>({
+    query: "",
+    filters: null,
+    showFilters: false,
+  });
 
-  const filterCount = useMemo(
-    () => Object.values(filters || {}).filter(Boolean).length,
-    [filters]
+  const historyFilterCount = useMemo(
+    () => Object.values(history.filters || {}).filter(Boolean).length,
+    [history.filters]
+  );
+  const myMealsFilterCount = useMemo(
+    () => Object.values(myMeals.filters || {}).filter(Boolean).length,
+    [myMeals.filters]
   );
 
-  const applyFilters = useCallback((f: Filters) => {
-    setFilters(f);
-    setShowFilters(false);
-  }, []);
+  const setHistoryQuery = useCallback(
+    (v: string) => setHistory((s) => ({ ...s, query: v })),
+    []
+  );
+  const setMyMealsQuery = useCallback(
+    (v: string) => setMyMeals((s) => ({ ...s, query: v })),
+    []
+  );
 
-  const clearFilters = useCallback(() => {
-    setFilters(null);
-    setShowFilters(false);
-  }, []);
+  const applyHistoryFilters = useCallback(
+    (f: Filters) =>
+      setHistory((s) => ({ ...s, filters: f, showFilters: false })),
+    []
+  );
+  const applyMyMealsFilters = useCallback(
+    (f: Filters) =>
+      setMyMeals((s) => ({ ...s, filters: f, showFilters: false })),
+    []
+  );
 
-  const toggleShowFilters = useCallback(() => {
-    setShowFilters((v) => !v);
-  }, []);
+  const clearHistoryFilters = useCallback(
+    () => setHistory((s) => ({ ...s, filters: null, showFilters: false })),
+    []
+  );
+  const clearMyMealsFilters = useCallback(
+    () => setMyMeals((s) => ({ ...s, filters: null, showFilters: false })),
+    []
+  );
+
+  const setHistoryShowFilters = useCallback(
+    (v: boolean) => setHistory((s) => ({ ...s, showFilters: v })),
+    []
+  );
+  const setMyMealsShowFilters = useCallback(
+    (v: boolean) => setMyMeals((s) => ({ ...s, showFilters: v })),
+    []
+  );
+
+  const toggleHistoryShowFilters = useCallback(
+    () => setHistory((s) => ({ ...s, showFilters: !s.showFilters })),
+    []
+  );
+  const toggleMyMealsShowFilters = useCallback(
+    () => setMyMeals((s) => ({ ...s, showFilters: !s.showFilters })),
+    []
+  );
 
   const value: HistoryContextValue = {
-    query,
-    setQuery,
-    filters,
-    applyFilters,
-    clearFilters,
-    showFilters,
-    setShowFilters,
-    toggleShowFilters,
-    filterCount,
+    history,
+    myMeals,
+    setHistoryQuery,
+    setMyMealsQuery,
+    applyHistoryFilters,
+    applyMyMealsFilters,
+    clearHistoryFilters,
+    clearMyMealsFilters,
+    setHistoryShowFilters,
+    setMyMealsShowFilters,
+    toggleHistoryShowFilters,
+    toggleMyMealsShowFilters,
+    historyFilterCount,
+    myMealsFilterCount,
   };
 
   return (
@@ -73,9 +135,37 @@ export const HistoryProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-export const useHistoryContext = (): HistoryContextValue => {
+export const useHistoryContextRaw = () => {
   const ctx = useContext(HistoryContext);
   if (!ctx)
-    throw new Error("useHistoryContext must be used within HistoryProvider");
+    throw new Error("useHistoryContextRaw must be used within HistoryProvider");
   return ctx;
+};
+
+export const useFilters = (scope: FilterScope) => {
+  const ctx = useHistoryContextRaw();
+  if (scope === "history") {
+    return {
+      query: ctx.history.query,
+      setQuery: ctx.setHistoryQuery,
+      filters: ctx.history.filters,
+      applyFilters: ctx.applyHistoryFilters,
+      clearFilters: ctx.clearHistoryFilters,
+      showFilters: ctx.history.showFilters,
+      setShowFilters: ctx.setHistoryShowFilters,
+      toggleShowFilters: ctx.toggleHistoryShowFilters,
+      filterCount: ctx.historyFilterCount,
+    };
+  }
+  return {
+    query: ctx.myMeals.query,
+    setQuery: ctx.setMyMealsQuery,
+    filters: ctx.myMeals.filters,
+    applyFilters: ctx.applyMyMealsFilters,
+    clearFilters: ctx.clearMyMealsFilters,
+    showFilters: ctx.myMeals.showFilters,
+    setShowFilters: ctx.setMyMealsShowFilters,
+    toggleShowFilters: ctx.toggleMyMealsShowFilters,
+    filterCount: ctx.myMealsFilterCount,
+  };
 };
