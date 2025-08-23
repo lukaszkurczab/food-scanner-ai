@@ -26,7 +26,7 @@ import { Layout, BottomTabBar, SearchBox, UserIcon } from "@/components";
 import { getMealsPage } from "@services/mealService";
 import { MealListItem } from "../../../components/MealListItem";
 import { useTranslation } from "react-i18next";
-import { useHistoryContext } from "@/context/HistoryContext";
+import { useFilters } from "@/context/HistoryContext";
 
 const PAGE_SIZE = 20;
 
@@ -117,7 +117,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     showFilters,
     toggleShowFilters,
     filterCount,
-  } = useHistoryContext();
+  } = useFilters("history");
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -303,14 +303,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
       <View style={{ flex: 1, backgroundColor: theme.background }}>
         {!netInfo.isConnected && <OfflineBanner />}
         {showFilters ? (
-          <FilterPanel
-            onApply={(payload: Filters) => {
-              applyFilters(payload);
-            }}
-            onClear={() => {
-              clearFilters();
-            }}
-          />
+          <FilterPanel scope="history" />
         ) : (
           <>
             <View style={{ padding: theme.spacing.md }}>
@@ -373,14 +366,9 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     <Layout>
       {!netInfo.isConnected && <OfflineBanner />}
       {showFilters ? (
-        <FilterPanel
-          onApply={(payload: Filters) => {
-            applyFilters(payload);
-          }}
-          onClear={() => {
-            clearFilters();
-          }}
-        />
+        <View style={{ height: "100%", paddingBottom: theme.spacing.nav }}>
+          <FilterPanel scope="history" />
+        </View>
       ) : (
         <View style={{}}>
           <View

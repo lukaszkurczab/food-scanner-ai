@@ -13,7 +13,7 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { PrimaryButton, SecondaryButton } from "@/components";
 import { Calendar } from "@/components/Calendar";
 import { useTranslation } from "react-i18next";
-import { useHistoryContext } from "@/context/HistoryContext";
+import { Filters, FilterScope, useFilters } from "@/context/HistoryContext";
 
 type Range = { start: Date; end: Date };
 type FilterKey = "calories" | "protein" | "carbs" | "fat" | "date";
@@ -32,16 +32,11 @@ const DEFAULTS = {
 };
 
 export const FilterPanel: React.FC<{
-  onApply?: (filters: any) => void;
-  onClear?: () => void;
-}> = ({ onApply, onClear }) => {
+  scope: FilterScope;
+}> = ({ scope }) => {
   const theme = useTheme();
   const { t } = useTranslation(["history", "common"]);
-  const {
-    filters: ctxFilters,
-    applyFilters,
-    clearFilters,
-  } = useHistoryContext();
+  const { filters: ctxFilters, applyFilters, clearFilters } = useFilters(scope);
 
   const ALL_FILTERS: { key: FilterKey; label: string }[] = useMemo(
     () => [
@@ -81,11 +76,9 @@ export const FilterPanel: React.FC<{
   const [dateRange, setDateRange] = useState<Range>(initialRange);
 
   const [active, setActive] = useState<FilterKey[]>([]);
-
   const [openCalendar, setOpenCalendar] = useState(false);
   const [focus, setFocus] = useState<"start" | "end">("start");
   const [localRange, setLocalRange] = useState<Range>(initialRange);
-
   const [openPicker, setOpenPicker] = useState(false);
 
   useEffect(() => {
@@ -147,8 +140,8 @@ export const FilterPanel: React.FC<{
     setOpenCalendar(false);
   };
 
-  const buildPayload = () => {
-    const payload: any = {};
+  const buildPayload = (): Filters => {
+    const payload: Filters = {};
     if (active.includes("calories")) payload.calories = calories;
     if (active.includes("protein")) payload.protein = protein;
     if (active.includes("carbs")) payload.carbs = carbs;
@@ -160,7 +153,6 @@ export const FilterPanel: React.FC<{
   const apply = () => {
     const payload = buildPayload();
     applyFilters(payload);
-    onApply?.(payload);
   };
 
   const clearValues = () => {
@@ -176,7 +168,6 @@ export const FilterPanel: React.FC<{
     clearValues();
     setActive([]);
     clearFilters();
-    onClear?.();
   };
 
   const summaryChips = useMemo(
@@ -214,7 +205,6 @@ export const FilterPanel: React.FC<{
         flex: 1,
         backgroundColor: theme.background,
         paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.nav,
       }}
     >
       <ScrollView
@@ -334,9 +324,7 @@ export const FilterPanel: React.FC<{
         ) : (
           <SecondaryButton
             label={t("actions.cancel", { ns: "history" })}
-            onPress={() => {
-              onClear?.();
-            }}
+            onPress={clear}
           />
         )}
       </View>
