@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   ScrollView,
@@ -13,6 +13,7 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { PrimaryButton, SecondaryButton } from "@/components";
 import { Calendar } from "@/components/Calendar";
 import { useTranslation } from "react-i18next";
+import { useHistoryContext } from "@/context/HistoryContext";
 
 type Range = { start: Date; end: Date };
 type FilterKey = "calories" | "protein" | "carbs" | "fat" | "date";
@@ -23,12 +24,24 @@ const monthAgo = (d: Date) => {
   return x;
 };
 
+const DEFAULTS = {
+  calories: [0, 3000] as [number, number],
+  protein: [0, 100] as [number, number],
+  carbs: [0, 100] as [number, number],
+  fat: [0, 100] as [number, number],
+};
+
 export const FilterPanel: React.FC<{
-  onApply: (filters: any) => void;
-  onClear: () => void;
+  onApply?: (filters: any) => void;
+  onClear?: () => void;
 }> = ({ onApply, onClear }) => {
   const theme = useTheme();
   const { t } = useTranslation(["history", "common"]);
+  const {
+    filters: ctxFilters,
+    applyFilters,
+    clearFilters,
+  } = useHistoryContext();
 
   const ALL_FILTERS: { key: FilterKey; label: string }[] = useMemo(
     () => [
@@ -41,13 +54,30 @@ export const FilterPanel: React.FC<{
     [t]
   );
 
-  const [calories, setCalories] = useState<[number, number]>([0, 3000]);
-  const [protein, setProtein] = useState<[number, number]>([0, 100]);
-  const [carbs, setCarbs] = useState<[number, number]>([0, 100]);
-  const [fat, setFat] = useState<[number, number]>([0, 100]);
-
   const today = new Date();
-  const initialRange: Range = { start: monthAgo(today), end: today };
+  const initialRange: Range = useMemo(
+    () =>
+      ctxFilters?.dateRange
+        ? {
+            start: new Date(ctxFilters.dateRange.start),
+            end: new Date(ctxFilters.dateRange.end),
+          }
+        : { start: monthAgo(today), end: today },
+    [ctxFilters]
+  );
+
+  const [calories, setCalories] = useState<[number, number]>(
+    (ctxFilters?.calories as [number, number]) ?? DEFAULTS.calories
+  );
+  const [protein, setProtein] = useState<[number, number]>(
+    (ctxFilters?.protein as [number, number]) ?? DEFAULTS.protein
+  );
+  const [carbs, setCarbs] = useState<[number, number]>(
+    (ctxFilters?.carbs as [number, number]) ?? DEFAULTS.carbs
+  );
+  const [fat, setFat] = useState<[number, number]>(
+    (ctxFilters?.fat as [number, number]) ?? DEFAULTS.fat
+  );
   const [dateRange, setDateRange] = useState<Range>(initialRange);
 
   const [active, setActive] = useState<FilterKey[]>([]);
@@ -57,6 +87,39 @@ export const FilterPanel: React.FC<{
   const [localRange, setLocalRange] = useState<Range>(initialRange);
 
   const [openPicker, setOpenPicker] = useState(false);
+
+  useEffect(() => {
+    const nextActive: FilterKey[] = [];
+    if (ctxFilters?.calories) nextActive.push("calories");
+    if (ctxFilters?.protein) nextActive.push("protein");
+    if (ctxFilters?.carbs) nextActive.push("carbs");
+    if (ctxFilters?.fat) nextActive.push("fat");
+    if (ctxFilters?.dateRange) nextActive.push("date");
+    setActive(nextActive);
+    setCalories(
+      (ctxFilters?.calories as [number, number]) ?? DEFAULTS.calories
+    );
+    setProtein((ctxFilters?.protein as [number, number]) ?? DEFAULTS.protein);
+    setCarbs((ctxFilters?.carbs as [number, number]) ?? DEFAULTS.carbs);
+    setFat((ctxFilters?.fat as [number, number]) ?? DEFAULTS.fat);
+    setDateRange(
+      ctxFilters?.dateRange
+        ? {
+            start: new Date(ctxFilters.dateRange.start),
+            end: new Date(ctxFilters.dateRange.end),
+          }
+        : { start: monthAgo(today), end: today }
+    );
+    setLocalRange(
+      ctxFilters?.dateRange
+        ? {
+            start: new Date(ctxFilters.dateRange.start),
+            end: new Date(ctxFilters.dateRange.end),
+          }
+        : { start: monthAgo(today), end: today }
+    );
+    setFocus("start");
+  }, [ctxFilters]);
 
   const addOrRemove = (k: FilterKey) =>
     setActive((prev) =>
@@ -84,21 +147,27 @@ export const FilterPanel: React.FC<{
     setOpenCalendar(false);
   };
 
-  const apply = () => {
+  const buildPayload = () => {
     const payload: any = {};
     if (active.includes("calories")) payload.calories = calories;
     if (active.includes("protein")) payload.protein = protein;
     if (active.includes("carbs")) payload.carbs = carbs;
     if (active.includes("fat")) payload.fat = fat;
     if (active.includes("date")) payload.dateRange = dateRange;
-    onApply(payload);
+    return payload;
+  };
+
+  const apply = () => {
+    const payload = buildPayload();
+    applyFilters(payload);
+    onApply?.(payload);
   };
 
   const clearValues = () => {
-    setCalories([0, 3000]);
-    setProtein([0, 200]);
-    setCarbs([0, 400]);
-    setFat([0, 150]);
+    setCalories(DEFAULTS.calories);
+    setProtein(DEFAULTS.protein);
+    setCarbs(DEFAULTS.carbs);
+    setFat(DEFAULTS.fat);
     const tdy = new Date();
     setDateRange({ start: monthAgo(tdy), end: tdy });
   };
@@ -106,7 +175,8 @@ export const FilterPanel: React.FC<{
   const clear = () => {
     clearValues();
     setActive([]);
-    onClear();
+    clearFilters();
+    onClear?.();
   };
 
   const summaryChips = useMemo(
@@ -263,7 +333,9 @@ export const FilterPanel: React.FC<{
         ) : (
           <SecondaryButton
             label={t("actions.cancel", { ns: "history" })}
-            onPress={onClear}
+            onPress={() => {
+              onClear?.();
+            }}
           />
         )}
       </View>
