@@ -15,7 +15,6 @@ import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useInactivity } from "@contexts/InactivityContext";
 import UserIcon from "./UserIcon";
-import { navigate } from "@/navigation/navigate";
 
 const hiddenRoutes = [
   "AvatarCamera",
@@ -137,34 +136,6 @@ export const Layout = ({
           </View>
           {showNavigation && !isKeyboardVisible && isCardVisible && (
             <BottomTabBar
-              tabs={[
-                {
-                  key: "Home",
-                  icon: "home-filled",
-                  onPress: () => navigate("Home"),
-                },
-                {
-                  key: "Stats",
-                  icon: "bar-chart",
-                  onPress: () => navigate("Statistics"),
-                },
-                {
-                  key: "Add",
-                  icon: "add",
-                  isFab: true,
-                  onPress: () => navigate("MealAddMethod"),
-                },
-                {
-                  key: "History",
-                  icon: "history",
-                  onPress: () => navigate("HistoryList"),
-                },
-                {
-                  key: "Profile",
-                  icon: "person",
-                  onPress: () => navigate("Profile"),
-                },
-              ]}
               renderProfileIcon={
                 <UserIcon size={32} accessibilityLabel="Profile picture" />
               }

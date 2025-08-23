@@ -55,5 +55,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
+    position: "absolute",
+    top: -5,
+    right: -5,
   },
 });

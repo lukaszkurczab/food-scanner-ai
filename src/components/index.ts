@@ -30,3 +30,4 @@ export * from "./OfflineBanner";
 export * from "./DateRangePicker";
 export * from "./RangeSlider";
 export * from "./PhotoPreview";
+export * from "./SearchBox";

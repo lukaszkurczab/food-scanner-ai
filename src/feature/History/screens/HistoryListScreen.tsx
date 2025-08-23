@@ -22,10 +22,9 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { FilterPanel } from "../components/FilterPanel";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { Layout } from "@/components";
+import { Layout, BottomTabBar, SearchBox, UserIcon } from "@/components";
 import { getMealsPage } from "@services/mealService";
 import { MealListItem } from "../../../components/MealListItem";
-import { SearchBox } from "@/components/SearchBox";
 import { useTranslation } from "react-i18next";
 import { useHistoryContext } from "@/context/HistoryContext";
 
@@ -116,7 +115,6 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     applyFilters,
     clearFilters,
     showFilters,
-    setShowFilters,
     toggleShowFilters,
     filterCount,
   } = useHistoryContext();
@@ -384,17 +382,15 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           }}
         />
       ) : (
-        <>
-          <View style={{ padding: theme.spacing.md }}>
-            <SearchBox value={query} onChange={setQuery} />
-          </View>
+        <View style={{}}>
           <View
             style={{
+              padding: theme.spacing.md,
               flexDirection: "row",
-              justifyContent: "flex-end",
-              paddingHorizontal: theme.spacing.md,
+              gap: theme.spacing.sm,
             }}
           >
+            <SearchBox value={query} onChange={setQuery} />
             <FilterBadgeButton
               activeCount={filterCount}
               onPress={toggleShowFilters}
@@ -403,6 +399,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
           <SectionList
             sections={sections}
+            style={{ marginBottom: 142 }}
             keyExtractor={(item) =>
               (item as any).cloudId || (item as any).mealId
             }
@@ -443,8 +440,13 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
             windowSize={7}
             initialNumToRender={PAGE_SIZE}
           />
-        </>
+        </View>
       )}
+      <BottomTabBar
+        renderProfileIcon={
+          <UserIcon size={32} accessibilityLabel="Profile picture" />
+        }
+      />
     </Layout>
   );
 }
