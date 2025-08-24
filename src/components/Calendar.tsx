@@ -13,6 +13,8 @@ type Props = {
   onToggleFocus?: () => void;
   minDate?: Date;
   maxDate?: Date;
+  mode?: "range" | "single";
+  onPickSingle?: (date: Date) => void;
 };
 
 type Cell = { date: Date; inMonth: boolean };
@@ -42,6 +44,8 @@ export const Calendar: React.FC<Props> = ({
   onToggleFocus,
   minDate,
   maxDate,
+  mode = "range",
+  onPickSingle,
 }) => {
   const theme = useTheme();
   const { i18n } = useTranslation();
@@ -115,9 +119,12 @@ export const Calendar: React.FC<Props> = ({
 
   const select = (d: Date) => {
     const bounded = clampToBounds(d, minDate, maxDate);
+    if (mode === "single") {
+      onPickSingle?.(bounded);
+      return;
+    }
     let s = normalized.s;
     let e = normalized.e;
-
     if (focus === "start") {
       if (isSameDay(bounded, s) && isSameDay(s, e)) {
         onChangeRange({ start: s, end: s });
@@ -152,17 +159,20 @@ export const Calendar: React.FC<Props> = ({
         style={[
           styles.header,
           {
-            marginBottom: theme.spacing.xs,
-            paddingHorizontal: theme.spacing.xs,
+            marginBottom: useTheme().spacing.xs,
+            paddingHorizontal: useTheme().spacing.xs,
           },
         ]}
       >
         <Pressable
           onPress={handlePrev}
-          style={[styles.navBtn, { padding: theme.spacing.sm }]}
+          style={[styles.navBtn, { padding: useTheme().spacing.sm }]}
         >
           <Text
-            style={{ color: theme.link, fontSize: theme.typography.size.lg }}
+            style={{
+              color: useTheme().link,
+              fontSize: useTheme().typography.size.lg,
+            }}
           >
             ‹
           </Text>
@@ -170,9 +180,9 @@ export const Calendar: React.FC<Props> = ({
 
         <Text
           style={{
-            color: theme.text,
+            color: useTheme().text,
             fontWeight: "700",
-            fontSize: theme.typography.size.lg,
+            fontSize: useTheme().typography.size.lg,
           }}
         >
           {fmtMonth.format(monthStart)}
@@ -180,10 +190,13 @@ export const Calendar: React.FC<Props> = ({
 
         <Pressable
           onPress={handleNext}
-          style={[styles.navBtn, { padding: theme.spacing.sm }]}
+          style={[styles.navBtn, { padding: useTheme().spacing.sm }]}
         >
           <Text
-            style={{ color: theme.link, fontSize: theme.typography.size.lg }}
+            style={{
+              color: useTheme().link,
+              fontSize: useTheme().typography.size.lg,
+            }}
           >
             ›
           </Text>
@@ -191,7 +204,7 @@ export const Calendar: React.FC<Props> = ({
       </View>
 
       <View onLayout={(e) => setWrapW(e.nativeEvent.layout.width)}>
-        <View style={[styles.weekRow, { marginBottom: theme.spacing.xs }]}>
+        <View style={[styles.weekRow, { marginBottom: useTheme().spacing.xs }]}>
           {fmtWeekday.map((wd, i) => (
             <Text
               key={i}
@@ -200,7 +213,7 @@ export const Calendar: React.FC<Props> = ({
                 {
                   width: cellSize,
                   marginRight: i % 7 !== 6 ? GAP : 0,
-                  color: theme.textSecondary,
+                  color: useTheme().textSecondary,
                   textAlign: "center",
                 },
               ]}
@@ -242,16 +255,18 @@ export const Calendar: React.FC<Props> = ({
                     style={[
                       styles.dotCircle,
                       {
-                        borderColor: theme.accentSecondary,
+                        borderColor: useTheme().accentSecondary,
                         borderWidth: 2,
-                        borderRadius: theme.rounded.full,
+                        borderRadius: useTheme().rounded.full,
                       },
                     ]}
                   />
                 )}
                 <Text
                   style={{
-                    color: c.inMonth ? theme.text : theme.textSecondary,
+                    color: c.inMonth
+                      ? useTheme().text
+                      : useTheme().textSecondary,
                   }}
                 >
                   {c.date.getDate()}
@@ -260,7 +275,7 @@ export const Calendar: React.FC<Props> = ({
                   <View
                     style={[
                       styles.todayMark,
-                      { backgroundColor: theme.link, marginTop: 3 },
+                      { backgroundColor: useTheme().link, marginTop: 3 },
                     ]}
                   />
                 )}
