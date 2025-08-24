@@ -1,3 +1,4 @@
+// screens/ResultScreen.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import {
@@ -20,6 +21,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import type { MealType } from "@/types/meal";
 import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
+import { DateTimeSection } from "../components/DateTimeSection";
 
 type ResultScreenProps = {
   navigation: any;
@@ -39,6 +41,9 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const [mealType, setMealType] = useState<MealType>(meal?.type || "breakfast");
   const [showIngredients, setShowIngredients] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
+  const [selectedAt, setSelectedAt] = useState<Date>(
+    meal?.timestamp ? new Date(meal.timestamp) : new Date()
+  );
 
   const image = meal?.photoUrl ?? null;
 
@@ -54,16 +59,18 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
     if (!userData?.uid || saving) return;
     setSaving(true);
 
+    const nowIso = new Date().toISOString();
+
     const newMeal = {
       ...meal,
       cloudId: meal.cloudId,
       userUid: uid,
       name: mealName,
       type: mealType,
-      timestamp: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
+      timestamp: selectedAt.toISOString(),
+      createdAt: nowIso,
       syncState: "pending",
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowIso,
       source: meal.source ?? "manual",
     } as any;
 
@@ -71,7 +78,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
       await addMeal(newMeal, { alsoSaveToMyMeals: saveToMyMeals });
       clearMeal(uid);
       navigation.navigate("Home");
-    } catch (error) {
+    } catch {
       setSaving(false);
     }
   };
@@ -102,6 +109,9 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
         onNameChange={setMealName}
         onTypeChange={setMealType}
       />
+
+      <DateTimeSection value={selectedAt} onChange={setSelectedAt} />
+
       <Card
         variant="outlined"
         onPress={() => !saving && setShowIngredients(!showIngredients)}
