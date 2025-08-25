@@ -31,3 +31,4 @@ export * from "./DateRangePicker";
 export * from "./RangeSlider";
 export * from "./PhotoPreview";
 export * from "./SearchBox";
+export * from "./Clock24h";

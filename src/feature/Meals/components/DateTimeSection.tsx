@@ -3,8 +3,7 @@ import { View, Text, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Card, Modal } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Calendar } from "@/components/Calendar";
-import { Clock } from "@/components/Clock";
+import { Clock24h, Calendar } from "@/components";
 
 type Props = {
   value: Date;
@@ -87,9 +86,15 @@ export const DateTimeSection: React.FC<Props> = ({
         visible={visible}
         message={mode === "date" ? "Wybierz datę" : "Wybierz godzinę"}
         primaryActionLabel={mode === "date" ? "Dalej" : "Zapisz"}
-        secondaryActionLabel="Anuluj"
+        secondaryActionLabel={mode === "date" ? "Anuluj" : "Wstecz"}
         onClose={() => setVisible(false)}
-        onSecondaryAction={() => setVisible(false)}
+        onSecondaryAction={() => {
+          if (mode !== "date") {
+            setMode("date");
+          } else {
+            setVisible(false);
+          }
+        }}
         onPrimaryAction={() => {
           if (mode === "date") {
             setMode("time");
@@ -113,7 +118,7 @@ export const DateTimeSection: React.FC<Props> = ({
               onPickSingle={(d) => setTmp(d)}
             />
           ) : (
-            <Clock
+            <Clock24h
               value={tmp}
               onChange={setTmp}
               onBack={() => setMode("date")}
