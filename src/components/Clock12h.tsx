@@ -5,6 +5,7 @@ import {
   StyleSheet,
   GestureResponderEvent,
   TextInput,
+  Pressable,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -12,12 +13,13 @@ type Props = {
   value: Date;
   onChange: (d: Date) => void;
   onDone: () => void;
+  onBack: () => void;
 };
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const clamp = (n: number, a: number, b: number) => Math.min(Math.max(n, a), b);
 
-export const Clock24h: React.FC<Props> = ({ value }) => {
+export const Clock12h: React.FC<Props> = ({ value, onChange }) => {
   const theme = useTheme();
 
   const size = 280;
@@ -30,6 +32,7 @@ export const Clock24h: React.FC<Props> = ({ value }) => {
   const [phase, setPhase] = useState<"hour" | "minute">("hour");
   const [selectedHour, setSelectedHour] = useState<number>(initHour);
   const [selectedMinute, setSelectedMinute] = useState<number>(initMinute);
+  const [isAM, setIsAM] = useState<boolean>(value.getHours() < 12);
   const [handAngleDeg, setHandAngleDeg] = useState<number>(initHour * 30);
   const [markerPos, setMarkerPos] = useState<{ x: number; y: number }>(() => {
     const ang = (initHour * 30 - 90) * (Math.PI / 180);
@@ -39,10 +42,16 @@ export const Clock24h: React.FC<Props> = ({ value }) => {
     };
   });
 
-  const [hourText, setHourText] = useState<string>(
-    pad2(initHour === 12 ? 12 : initHour)
-  );
+  const [hourText, setHourText] = useState<string>(pad2(initHour));
   const [minuteText, setMinuteText] = useState<string>(pad2(initMinute));
+
+  const updateDate = (h: number, m: number, am: boolean) => {
+    let h24 = h % 12;
+    if (!am) h24 += 12;
+    const d = new Date(value);
+    d.setHours(h24, m, d.getSeconds(), d.getMilliseconds());
+    onChange(d);
+  };
 
   const hourToCoord = (h: number) => {
     const ang = (h * 30 - 90) * (Math.PI / 180);
@@ -53,48 +62,51 @@ export const Clock24h: React.FC<Props> = ({ value }) => {
   };
 
   const commitHour = (txt: string) => {
-    const n = parseInt(txt.replace(/\D/g, ""), 10);
+    const n = parseInt(txt, 10);
     if (Number.isNaN(n)) {
-      setHourText(pad2(selectedHour === 12 ? 12 : selectedHour));
+      setHourText(pad2(selectedHour));
       return;
     }
-    const hClamp = clamp(n, 0, 12);
-    const ring = hClamp === 0 ? 12 : hClamp;
-    setSelectedHour(ring);
-    setHandAngleDeg(ring * 30);
-    const { x, y } = hourToCoord(ring);
+    const h = clamp(n === 0 ? 12 : n, 1, 12);
+    setSelectedHour(h);
+    setHourText(pad2(h));
+    setHandAngleDeg(h * 30);
+    const { x, y } = hourToCoord(h);
     setMarkerPos({ x, y });
-    setHourText(pad2(hClamp));
+    updateDate(h, selectedMinute, isAM);
     setPhase("hour");
   };
 
   const commitMinute = (txt: string) => {
-    const n = parseInt(txt.replace(/\D/g, ""), 10);
+    const n = parseInt(txt, 10);
     if (Number.isNaN(n)) {
       setMinuteText(pad2(selectedMinute));
       return;
     }
     const mm = clamp(n, 0, 59);
     setSelectedMinute(mm);
-    setHandAngleDeg(mm * 6);
     setMinuteText(pad2(mm));
+    setHandAngleDeg(mm * 6);
+    updateDate(selectedHour, mm, isAM);
     setPhase("minute");
   };
 
   const setHourFromDial = (h: number) => {
     const h12 = ((h - 1 + 12) % 12) + 1;
     setSelectedHour(h12);
+    setHourText(pad2(h12));
     setHandAngleDeg(h12 * 30);
     const { x, y } = hourToCoord(h12);
     setMarkerPos({ x, y });
-    setHourText(pad2(h12 === 12 ? 12 : h12));
+    updateDate(h12, selectedMinute, isAM);
   };
 
   const setMinuteFromDial = (m: number) => {
     const mm = ((m % 60) + 60) % 60;
     setSelectedMinute(mm);
-    setHandAngleDeg(mm * 6);
     setMinuteText(pad2(mm));
+    setHandAngleDeg(mm * 6);
+    updateDate(selectedHour, mm, isAM);
   };
 
   const handleClockTouch = (x: number, y: number) => {
@@ -131,16 +143,25 @@ export const Clock24h: React.FC<Props> = ({ value }) => {
     }
   };
 
+  const toggleAm = () => {
+    if (!isAM) {
+      setIsAM(true);
+      updateDate(selectedHour, selectedMinute, true);
+    }
+  };
+  const togglePm = () => {
+    if (isAM) {
+      setIsAM(false);
+      updateDate(selectedHour, selectedMinute, false);
+    }
+  };
+
   return (
     <View style={{ alignItems: "center", gap: 12 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <TextInput
           value={hourText}
           onChangeText={(t) => setHourText(t.replace(/[^\d]/g, "").slice(0, 2))}
-          onFocus={() => {
-            setPhase("hour");
-            setHandAngleDeg(selectedHour * 30);
-          }}
           onBlur={() => commitHour(hourText)}
           keyboardType="number-pad"
           maxLength={2}
@@ -154,15 +175,35 @@ export const Clock24h: React.FC<Props> = ({ value }) => {
           onChangeText={(t) =>
             setMinuteText(t.replace(/[^\d]/g, "").slice(0, 2))
           }
-          onFocus={() => {
-            setPhase("minute");
-            setHandAngleDeg(selectedMinute * 6);
-          }}
           onBlur={() => commitMinute(minuteText)}
           keyboardType="number-pad"
           maxLength={2}
           style={[styles.input, { color: theme.text }]}
         />
+        <View style={{ marginLeft: 8, gap: 6 }}>
+          <Pressable onPress={toggleAm}>
+            <Text
+              style={[
+                styles.ampm,
+                { color: theme.text },
+                isAM ? styles.ampmActive : null,
+              ]}
+            >
+              AM
+            </Text>
+          </Pressable>
+          <Pressable onPress={togglePm}>
+            <Text
+              style={[
+                styles.ampm,
+                { color: theme.text },
+                !isAM ? styles.ampmActive : null,
+              ]}
+            >
+              PM
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <View
@@ -270,6 +311,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     paddingVertical: 6,
     paddingHorizontal: 4,
+  },
+  ampm: {
+    fontSize: 16,
+    fontWeight: "400",
+  },
+  ampmActive: {
+    fontWeight: "700",
   },
   dial: {
     position: "relative",
