@@ -12,12 +12,13 @@ type Props = {
   value: Date;
   onChange: (d: Date) => void;
   onDone: () => void;
+  onBack: () => void;
 };
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const clamp = (n: number, a: number, b: number) => Math.min(Math.max(n, a), b);
 
-export const Clock24h: React.FC<Props> = ({ value }) => {
+export const Clock24h: React.FC<Props> = ({ value, onChange }) => {
   const theme = useTheme();
 
   const size = 280;
@@ -66,6 +67,9 @@ export const Clock24h: React.FC<Props> = ({ value }) => {
     setMarkerPos({ x, y });
     setHandLen(r);
     setHourText(pad2(hh));
+    const d = new Date(value);
+    d.setHours(hh, selectedMinute, d.getSeconds(), d.getMilliseconds());
+    onChange(d);
   };
 
   const setMinute = (m: number) => {
@@ -74,10 +78,13 @@ export const Clock24h: React.FC<Props> = ({ value }) => {
     setHandAngleDeg(mm * 6);
     setHandLen(minuteLen);
     setMinuteText(pad2(mm));
+    const d = new Date(value);
+    d.setHours(selectedHour24, mm, d.getSeconds(), d.getMilliseconds());
+    onChange(d);
   };
 
   const commitHour = (txt: string) => {
-    const n = parseInt(txt.replace(/\D/g, ""), 10);
+    const n = parseInt(txt, 10);
     if (Number.isNaN(n)) {
       setHourText(pad2(selectedHour24));
       return;
@@ -88,7 +95,7 @@ export const Clock24h: React.FC<Props> = ({ value }) => {
   };
 
   const commitMinute = (txt: string) => {
-    const n = parseInt(txt.replace(/\D/g, ""), 10);
+    const n = parseInt(txt, 10);
     if (Number.isNaN(n)) {
       setMinuteText(pad2(selectedMinute));
       return;
@@ -184,13 +191,6 @@ export const Clock24h: React.FC<Props> = ({ value }) => {
         <TextInput
           value={hourText}
           onChangeText={(t) => setHourText(t.replace(/[^\d]/g, "").slice(0, 2))}
-          onFocus={() => {
-            setPhase("hour");
-            setHandAngleDeg((selectedHour24 % 12) * 30);
-            const { x, y, r } = hourToCoord24Outer(selectedHour24);
-            setMarkerPos({ x, y });
-            setHandLen(r);
-          }}
           onBlur={() => commitHour(hourText)}
           keyboardType="number-pad"
           maxLength={2}
@@ -204,11 +204,6 @@ export const Clock24h: React.FC<Props> = ({ value }) => {
           onChangeText={(t) =>
             setMinuteText(t.replace(/[^\d]/g, "").slice(0, 2))
           }
-          onFocus={() => {
-            setPhase("minute");
-            setHandAngleDeg(selectedMinute * 6);
-            setHandLen(minuteLen);
-          }}
           onBlur={() => commitMinute(minuteText)}
           keyboardType="number-pad"
           maxLength={2}

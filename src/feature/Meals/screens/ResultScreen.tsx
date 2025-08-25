@@ -1,5 +1,4 @@
-// screens/ResultScreen.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import {
   MealBox,
@@ -44,6 +43,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const [selectedAt, setSelectedAt] = useState<Date>(
     meal?.timestamp ? new Date(meal.timestamp) : new Date()
   );
+  const [addedAt, setAddedAt] = useState<Date>(new Date());
 
   const image = meal?.photoUrl ?? null;
 
@@ -68,7 +68,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
       name: mealName,
       type: mealType,
       timestamp: selectedAt.toISOString(),
-      createdAt: nowIso,
+      createdAt: addedAt.toISOString(),
       syncState: "pending",
       updatedAt: nowIso,
       source: meal.source ?? "manual",
@@ -110,7 +110,12 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
         onTypeChange={setMealType}
       />
 
-      <DateTimeSection value={selectedAt} onChange={setSelectedAt} />
+      <DateTimeSection
+        value={selectedAt}
+        onChange={setSelectedAt}
+        addedValue={addedAt}
+        onChangeAdded={setAddedAt}
+      />
 
       <Card
         variant="outlined"

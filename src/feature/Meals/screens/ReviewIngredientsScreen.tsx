@@ -38,7 +38,6 @@ export default function ReviewIngredientsScreen() {
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
 
-  // NOWE: lokalny draft dla creation: "deferred"
   const [localDraft, setLocalDraft] = useState<Ingredient | null>(null);
   const [localDirty, setLocalDirty] = useState(false);
 
@@ -70,7 +69,6 @@ export default function ReviewIngredientsScreen() {
 
   const handleAddIngredient = () => {
     if (editingIdx !== null || localDraft) return;
-    // nie dotykamy globalnego stanu dopóki user nie zapisze
     setLocalDraft({
       name: "",
       amount: 0,
@@ -79,7 +77,7 @@ export default function ReviewIngredientsScreen() {
       carbs: 0,
       fat: 0,
     });
-    setEditingIdx(-1); // -1 oznacza lokalny draft
+    setEditingIdx(-1);
   };
 
   const handleRemoveIngredient = (idx: number) => {
@@ -96,7 +94,6 @@ export default function ReviewIngredientsScreen() {
 
   const handleSaveIngredient = (idx: number, updated: Ingredient) => {
     if (idx === -1) {
-      // dopiero teraz dodaj do globalnego stanu
       addIngredient(updated);
       setLocalDraft(null);
       setLocalDirty(false);
@@ -111,7 +108,6 @@ export default function ReviewIngredientsScreen() {
 
   const handleCancelEdit = (idx: number) => {
     if (idx === -1) {
-      // porzucenie lokalnego draftu
       if (!localDraft || isEmpty(localDraft)) {
         setLocalDraft(null);
       }
@@ -136,7 +132,6 @@ export default function ReviewIngredientsScreen() {
     navigation.replace("MealAddMethod");
   };
 
-  // zapisuj draft tylko gdy globalny stan się zmienia
   useEffect(() => {
     if (uid) saveDraft(uid);
   }, [ingredients, image, saveDraft, uid]);
@@ -192,7 +187,6 @@ export default function ReviewIngredientsScreen() {
           )}
         </View>
 
-        {/* lokalny draft na górze listy */}
         {localDraft && (
           <IngredientBox
             key="local-draft"
@@ -227,7 +221,7 @@ export default function ReviewIngredientsScreen() {
         <SecondaryButton
           label={t("add_ingredient", { ns: "meals" })}
           onPress={handleAddIngredient}
-          disabled={editingIdx !== null} // blokuj w trakcie edycji
+          disabled={editingIdx !== null}
           style={styles.addIngredientBtn}
         />
         <PrimaryButton
