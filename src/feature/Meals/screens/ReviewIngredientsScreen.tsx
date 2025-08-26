@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
@@ -9,15 +9,14 @@ import {
   SecondaryButton,
   PhotoPreview,
 } from "@/components";
-import {
-  IngredientBox,
-  type EditLifecyclePolicy,
-} from "@/components/IngredientBox";
+import { IngredientBox } from "@/components/IngredientBox";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
+
+type FieldErrors = Partial<Record<keyof Ingredient, string>>;
 
 export default function ReviewIngredientsScreen() {
   const navigation = useNavigation<any>();
@@ -37,9 +36,7 @@ export default function ReviewIngredientsScreen() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
-
   const [localDraft, setLocalDraft] = useState<Ingredient | null>(null);
-  const [localDirty, setLocalDirty] = useState(false);
 
   const ingredients: Ingredient[] = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
@@ -48,12 +45,35 @@ export default function ReviewIngredientsScreen() {
     if (uid) setLastScreen(uid, "ReviewIngredients");
   }, [setLastScreen, uid]);
 
-  const policy: EditLifecyclePolicy = {
-    creation: "deferred",
-    leaveWhileEditing: "discard",
-    removeEmptyOn: ["cancel", "leaveScreen"],
-    autoSaveOnFieldBlur: false,
+  const validate = (i: Ingredient): FieldErrors => {
+    const e: FieldErrors = {};
+    if (!i.name?.trim())
+      e.name = t("ingredient_name_required", { ns: "meals" });
+    if (!Number.isFinite(i.amount) || i.amount <= 0)
+      e.amount = t("ingredient_invalid_values", { ns: "meals" });
+    if ((i.protein ?? 0) < 0)
+      e.protein = t("ingredient_invalid_values", { ns: "meals" });
+    if ((i.carbs ?? 0) < 0)
+      e.carbs = t("ingredient_invalid_values", { ns: "meals" });
+    if ((i.fat ?? 0) < 0)
+      e.fat = t("ingredient_invalid_values", { ns: "meals" });
+    if ((i.kcal ?? 0) < 0)
+      e.kcal = t("ingredient_invalid_values", { ns: "meals" });
+    return e;
   };
+
+  const errorsByIndex = useMemo(() => {
+    const map = new Map<number, FieldErrors>();
+    ingredients.forEach((ing, idx) => map.set(idx, validate(ing)));
+    if (localDraft) map.set(-1, validate(localDraft));
+    return map;
+  }, [ingredients, localDraft]);
+
+  const hasAnyErrors = useMemo(
+    () =>
+      Array.from(errorsByIndex.values()).some((e) => Object.keys(e).length > 0),
+    [errorsByIndex]
+  );
 
   const isEmpty = (i: Ingredient) =>
     !i?.name?.trim() &&
@@ -62,6 +82,10 @@ export default function ReviewIngredientsScreen() {
     (i?.carbs ?? 0) <= 0 &&
     (i?.fat ?? 0) <= 0 &&
     (i?.kcal ?? 0) <= 0;
+
+  const persist = async () => {
+    if (uid) await saveDraft(uid);
+  };
 
   const handleAddPhoto = () => {
     navigation.replace("MealCamera", { skipDetection: true });
@@ -80,46 +104,51 @@ export default function ReviewIngredientsScreen() {
     setEditingIdx(-1);
   };
 
-  const handleRemoveIngredient = (idx: number) => {
+  const handleRemoveIngredient = async (idx: number) => {
     if (idx === -1) {
       setLocalDraft(null);
       setEditingIdx(null);
-      setLocalDirty(false);
       return;
     }
     if (editingIdx === idx) setEditingIdx(null);
     removeIngredient(idx);
-    if (uid) saveDraft(uid);
+    await persist();
   };
 
-  const handleSaveIngredient = (idx: number, updated: Ingredient) => {
+  const handleSaveIngredient = async (idx: number, updated: Ingredient) => {
     if (idx === -1) {
-      addIngredient(updated);
+      if (!isEmpty(updated)) addIngredient(updated);
       setLocalDraft(null);
-      setLocalDirty(false);
       setEditingIdx(null);
-      if (uid) saveDraft(uid);
+      await persist();
       return;
     }
     updateIngredient(idx, updated);
     if (editingIdx === idx) setEditingIdx(null);
-    if (uid) saveDraft(uid);
+    await persist();
+  };
+
+  const handlePartialChange = async (
+    idx: number,
+    patch: Partial<Ingredient>
+  ) => {
+    if (idx === -1) {
+      setLocalDraft((prev) => ({ ...(prev ?? ({} as Ingredient)), ...patch }));
+      await persist();
+      return;
+    }
+    const current = ingredients[idx];
+    updateIngredient(idx, { ...current, ...patch });
+    await persist();
   };
 
   const handleCancelEdit = (idx: number) => {
     if (idx === -1) {
-      if (!localDraft || isEmpty(localDraft)) {
-        setLocalDraft(null);
-      }
+      setLocalDraft(null);
       setEditingIdx(null);
-      setLocalDirty(false);
       return;
     }
-    const ing = ingredients[idx];
-    const empty = isEmpty(ing);
-    if (empty) removeIngredient(idx);
     setEditingIdx(null);
-    if (uid) saveDraft(uid);
   };
 
   const handleContinue = () => navigation.navigate("Result");
@@ -127,7 +156,6 @@ export default function ReviewIngredientsScreen() {
   const handleStartOver = () => {
     setLocalDraft(null);
     setEditingIdx(null);
-    setLocalDirty(false);
     if (uid) clearMeal(uid);
     navigation.replace("MealAddMethod");
   };
@@ -154,24 +182,29 @@ export default function ReviewIngredientsScreen() {
 
   return (
     <Layout showNavigation={false}>
-      <View style={styles.wrapper}>
-        <View style={styles.imageWrapper}>
+      <View style={styles(theme).container}>
+        <View style={styles(theme).imageWrapper}>
           {image ? (
             <Pressable
               onPress={() => setPreviewVisible(true)}
               style={{ width: "100%", height: "100%" }}
+              disabled={editingIdx != null}
             >
               <Image
                 key={image}
                 source={{ uri: image }}
-                style={styles.image}
+                style={styles(theme).image}
                 resizeMode="cover"
               />
             </Pressable>
           ) : (
             <Pressable
               onPress={handleAddPhoto}
-              style={[styles.placeholder, { backgroundColor: theme.card }]}
+              disabled={editingIdx != null}
+              style={[
+                styles(theme).placeholder,
+                { backgroundColor: theme.card },
+              ]}
             >
               <MaterialIcons
                 name="add-a-photo"
@@ -179,7 +212,10 @@ export default function ReviewIngredientsScreen() {
                 color={theme.textSecondary}
               />
               <Text
-                style={[styles.placeholderText, { color: theme.textSecondary }]}
+                style={[
+                  styles(theme).placeholderText,
+                  { color: theme.textSecondary },
+                ]}
               >
                 {t("add_photo", { ns: "meals" })}
               </Text>
@@ -193,47 +229,56 @@ export default function ReviewIngredientsScreen() {
             ingredient={localDraft}
             editable
             initialEdit={editingIdx === -1}
-            policy={policy}
-            isEmpty={isEmpty}
-            signals={{
-              onDirtyChange: setLocalDirty,
-            }}
+            onEditStart={() => setEditingIdx(-1)}
             onSave={(updated) => handleSaveIngredient(-1, updated)}
             onRemove={() => handleRemoveIngredient(-1)}
             onCancelEdit={() => handleCancelEdit(-1)}
+            onChangePartial={(patch) => handlePartialChange(-1, patch)}
+            errors={errorsByIndex.get(-1)}
+            hasError={Boolean(
+              errorsByIndex.get(-1) &&
+                Object.keys(errorsByIndex.get(-1)!).length
+            )}
           />
         )}
 
-        {ingredients.map((ing, idx) => (
-          <IngredientBox
-            key={idx}
-            ingredient={ing}
-            editable
-            initialEdit={editingIdx === idx}
-            policy={policy}
-            isEmpty={isEmpty}
-            onSave={(updated) => handleSaveIngredient(idx, updated)}
-            onRemove={() => handleRemoveIngredient(idx)}
-            onCancelEdit={() => handleCancelEdit(idx)}
-          />
-        ))}
+        {ingredients.map((ing, idx) => {
+          const e = errorsByIndex.get(idx);
+          return (
+            <IngredientBox
+              key={`${idx}-${ing.name}-${ing.amount}`}
+              ingredient={ing}
+              editable
+              initialEdit={editingIdx === idx}
+              onEditStart={() => setEditingIdx(idx)}
+              onSave={(updated) => handleSaveIngredient(idx, updated)}
+              onRemove={() => handleRemoveIngredient(idx)}
+              onCancelEdit={() => handleCancelEdit(idx)}
+              onChangePartial={(patch) => handlePartialChange(idx, patch)}
+              errors={e}
+              hasError={Boolean(e && Object.keys(e).length)}
+            />
+          );
+        })}
 
         <SecondaryButton
           label={t("add_ingredient", { ns: "meals" })}
           onPress={handleAddIngredient}
           disabled={editingIdx !== null}
-          style={styles.addIngredientBtn}
+          style={styles(theme).addIngredientBtn}
         />
         <PrimaryButton
           label={t("continue", { ns: "common" })}
           onPress={handleContinue}
-          disabled={ingredients.length === 0}
-          style={styles.continueBtn}
+          disabled={
+            ingredients.length === 0 || hasAnyErrors || editingIdx !== null
+          }
+          style={styles(theme).continueBtn}
         />
         <SecondaryButton
           label={t("start_over", { ns: "meals" })}
           onPress={() => setShowConfirmModal(true)}
-          style={styles.startOverBtn}
+          style={styles(theme).startOverBtn}
         />
 
         <AppModal
@@ -253,35 +298,48 @@ export default function ReviewIngredientsScreen() {
 
 const IMAGE_SIZE = 220;
 
-const styles = StyleSheet.create({
-  wrapper: { flex: 1 },
-  imageWrapper: {
-    marginBottom: 22,
-    width: "100%",
-    height: IMAGE_SIZE,
-    borderRadius: 32,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  image: {
-    width: "100%",
-    height: IMAGE_SIZE,
-    borderRadius: 32,
-    backgroundColor: "#B2C0C9",
-  },
-  placeholder: {
-    width: "100%",
-    height: IMAGE_SIZE,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#B2C0C9",
-    gap: 4,
-  },
-  placeholderText: { fontSize: 15, fontWeight: "500", marginTop: 3 },
-  addIngredientBtn: { marginTop: 2, marginBottom: 18, width: "100%" },
-  continueBtn: { marginTop: 2, marginBottom: 12, width: "100%" },
-  startOverBtn: { marginTop: 0, width: "100%" },
-});
+const styles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: { flex: 1, paddingHorizontal: theme.spacing.container },
+    imageWrapper: {
+      marginBottom: theme.spacing.lg,
+      width: "100%",
+      height: IMAGE_SIZE,
+      borderRadius: theme.rounded.lg,
+      overflow: "hidden",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    image: {
+      width: "100%",
+      height: IMAGE_SIZE,
+      borderRadius: theme.rounded.lg,
+      backgroundColor: "#B2C0C9",
+    },
+    placeholder: {
+      width: "100%",
+      height: IMAGE_SIZE,
+      borderRadius: theme.rounded.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      borderColor: "#B2C0C9",
+      gap: theme.spacing.xs,
+    },
+    placeholderText: {
+      fontSize: theme.typography.size.sm,
+      fontWeight: "500",
+      marginTop: 3,
+    },
+    addIngredientBtn: {
+      marginTop: 2,
+      marginBottom: theme.spacing.md,
+      width: "100%",
+    },
+    continueBtn: {
+      marginTop: 2,
+      marginBottom: theme.spacing.sm,
+      width: "100%",
+    },
+    startOverBtn: { marginTop: 0, width: "100%" },
+  });

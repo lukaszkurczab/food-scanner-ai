@@ -19,7 +19,7 @@
   "ingredient_name": "Nazwa składnika",
   "amount": "Ilość [g]",
   "ingredient_name_required": "Nazwa składnika nie może być pusta",
-  "ingredient_invalid_values": "Wartości nie mogą być ujemne, a ilość musi być większa niż 0",
+  "ingredient_invalid_values": "Ilość musi być większa niż 0",
   "calories": "Kalorie",
   "protein": "Białko",
   "protein_short": "B",
