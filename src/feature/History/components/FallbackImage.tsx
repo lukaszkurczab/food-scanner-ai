@@ -20,20 +20,7 @@ export const FallbackImage: React.FC<Props> = ({
   const [error, setError] = useState(!uri);
 
   if (error) {
-    return (
-      <View
-        style={[
-          styles.fallback,
-          {
-            width: width as any,
-            height,
-            borderRadius: borderRadius ?? 16,
-            backgroundColor: theme.card,
-            borderColor: theme.border,
-          },
-        ]}
-      />
-    );
+    return null;
   }
 
   if (!uri)
