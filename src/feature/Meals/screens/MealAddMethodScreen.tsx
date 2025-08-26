@@ -49,7 +49,7 @@ const MealAddMethodScreen = () => {
   const navigation = useNavigation<MealAddMethodNavigationProp>();
   const { t } = useTranslation("meals");
   const { uid } = useAuthContext();
-  const { setMeal, saveDraft, setLastScreen } = useMealDraftContext();
+  const { meal, setMeal, saveDraft, setLastScreen } = useMealDraftContext();
 
   const [showModal, setShowModal] = useState(false);
   const [draftExists, setDraftExists] = useState(false);
@@ -69,7 +69,7 @@ const MealAddMethodScreen = () => {
     checkDraft();
   }, [checkDraft]);
   useEffect(() => {
-    if (draftExists) setShowModal(true);
+    if (draftExists && meal) setShowModal(true);
   }, [draftExists]);
 
   const primeEmptyMeal = useCallback(

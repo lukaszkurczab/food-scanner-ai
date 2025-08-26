@@ -23,6 +23,7 @@ const hiddenRoutes = [
   "HistoryList",
   "SavedMeals",
   "SelectSavedMeal",
+  "ReviewIngredients",
 ];
 
 type LayoutProps = {
