@@ -1,264 +1,50 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  TextInput,
-  TouchableWithoutFeedback,
-  Keyboard,
   Modal,
+  StyleSheet as RNStyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { Ingredient } from "@/types";
 import { MacroChip } from "./MacroChip";
 import { useTranslation } from "react-i18next";
+import { IngredientEditor } from "./IngredientEditor";
 
-export type EditLifecyclePolicy = {
-  creation?: "optimistic" | "deferred";
-  leaveWhileEditing?: "discard" | "save" | "block";
-  removeEmptyOn?: Array<"cancel" | "blur" | "leaveScreen">;
-  autoSaveOnFieldBlur?: boolean;
-};
-
-export type IsEmptyPredicate = (i: Ingredient) => boolean;
-
-export type EditSignals = {
-  onDirtyChange?: (dirty: boolean) => void;
-  onRequestLeave?: () => Promise<"proceed" | "stay">;
-};
-
-type IngredientBoxProps = {
+type Props = {
   ingredient: Ingredient;
   editable?: boolean;
   initialEdit?: boolean;
+  onEditStart?: () => void;
   onSave?: (ingredient: Ingredient) => void;
   onRemove?: () => void;
   onCancelEdit?: () => void;
-  policy?: EditLifecyclePolicy;
-  isEmpty?: IsEmptyPredicate;
-  signals?: EditSignals;
+  onChangePartial?: (patch: Partial<Ingredient>) => void;
+  errors?: Partial<Record<keyof Ingredient, string>>;
+  hasError?: boolean;
 };
 
-const defaultIsEmpty: IsEmptyPredicate = (i) =>
-  !i?.name?.trim() &&
-  (i?.amount ?? 0) <= 0 &&
-  (i?.protein ?? 0) <= 0 &&
-  (i?.carbs ?? 0) <= 0 &&
-  (i?.fat ?? 0) <= 0 &&
-  (i?.kcal ?? 0) <= 0;
-
-export const IngredientBox: React.FC<IngredientBoxProps> = ({
+export const IngredientBox: React.FC<Props> = ({
   ingredient,
   editable = true,
   initialEdit = false,
+  onEditStart,
   onSave,
   onRemove,
   onCancelEdit,
-  policy,
-  isEmpty = defaultIsEmpty,
-  signals,
+  onChangePartial,
+  errors,
+  hasError,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
-
   const [menuVisible, setMenuVisible] = useState(false);
-  const [editMode, setEditMode] = useState<boolean>(initialEdit);
-  const [edited, setEdited] = useState<Ingredient>(ingredient);
-  const [dirty, setDirty] = useState(false);
-
-  const [amountStr, setAmountStr] = useState(String(ingredient.amount));
-  const [proteinStr, setProteinStr] = useState(String(ingredient.protein));
-  const [carbsStr, setCarbsStr] = useState(String(ingredient.carbs));
-  const [fatStr, setFatStr] = useState(String(ingredient.fat));
-  const [kcalStr, setKcalStr] = useState(String(ingredient.kcal));
-
-  const [errors, setErrors] = useState<
-    Partial<
-      Record<"name" | "amount" | "protein" | "carbs" | "fat" | "kcal", string>
-    >
-  >({});
-
-  const initial = useRef(ingredient);
+  const [editMode, setEditMode] = useState(initialEdit);
   const menuAnchor = useRef<View>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
-
-  useEffect(() => setEditMode(initialEdit), [initialEdit]);
-
-  useEffect(() => {
-    initial.current = ingredient;
-    setEdited(ingredient);
-    setAmountStr(String(ingredient.amount));
-    setProteinStr(String(ingredient.protein));
-    setCarbsStr(String(ingredient.carbs));
-    setFatStr(String(ingredient.fat));
-    setKcalStr(String(ingredient.kcal));
-    setErrors({});
-    setDirty(false);
-    signals?.onDirtyChange?.(false);
-  }, [ingredient]);
-
-  useEffect(() => {
-    if (!signals) return;
-    signals.onRequestLeave = async () => {
-      const action = policy?.leaveWhileEditing ?? "discard";
-      if (!dirty) return "proceed";
-      if (action === "save") {
-        if (validateAll()) onSave?.(edited);
-        return "proceed";
-      }
-      if (action === "discard") return "proceed";
-      return "stay";
-    };
-  }, [dirty, edited, policy, onSave]);
-
-  const markDirty = () => {
-    if (!dirty) {
-      setDirty(true);
-      signals?.onDirtyChange?.(true);
-    }
-  };
-
-  const setFieldError = (field: keyof typeof errors, msg?: string) =>
-    setErrors((e) => ({ ...e, [field]: msg }));
-
-  const handleAmountChange = (val: string) => {
-    markDirty();
-    setAmountStr(val);
-    const n = parseFloat(val.replace(",", "."));
-    if (val === "" || isNaN(n) || n <= 0) {
-      setEdited({ ...edited, amount: 0 });
-      setFieldError(
-        "amount",
-        t("ingredient_invalid_values", {
-          ns: "meals",
-          defaultValue:
-            "Values must be non-negative and amount must be greater than 0",
-        })
-      );
-      return;
-    }
-    setFieldError("amount", undefined);
-    const base = initial.current.amount || 1;
-    const factor = n / base;
-    const p = Math.round((initial.current.protein || 0) * factor);
-    const c = Math.round((initial.current.carbs || 0) * factor);
-    const f = Math.round((initial.current.fat || 0) * factor);
-    const k = Math.round((initial.current.kcal || 0) * factor);
-    setEdited({ ...edited, amount: n, protein: p, carbs: c, fat: f, kcal: k });
-    setProteinStr(String(p));
-    setCarbsStr(String(c));
-    setFatStr(String(f));
-    setKcalStr(String(k));
-    setFieldError("protein", undefined);
-    setFieldError("carbs", undefined);
-    setFieldError("fat", undefined);
-    setFieldError("kcal", undefined);
-  };
-
-  const handleBlur = (field: keyof Ingredient, value: string) => {
-    const num = parseFloat(value.replace(",", "."));
-    const v = value === "" || isNaN(num) ? 0 : num;
-    setEdited((prev) => ({ ...prev, [field]: v }));
-    if (field === "amount") {
-      setAmountStr(String(v));
-      setFieldError(
-        "amount",
-        v > 0
-          ? undefined
-          : t("ingredient_invalid_values", {
-              ns: "meals",
-              defaultValue:
-                "Values must be non-negative and amount must be greater than 0",
-            })
-      );
-    }
-    if (field === "protein") {
-      setProteinStr(String(v));
-      setFieldError(
-        "protein",
-        v >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
-      );
-    }
-    if (field === "carbs") {
-      setCarbsStr(String(v));
-      setFieldError(
-        "carbs",
-        v >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
-      );
-    }
-    if (field === "fat") {
-      setFatStr(String(v));
-      setFieldError(
-        "fat",
-        v >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
-      );
-    }
-    if (field === "kcal") {
-      setKcalStr(String(v));
-      setFieldError(
-        "kcal",
-        v >= 0 ? undefined : t("ingredient_invalid_values", { ns: "meals" })
-      );
-    }
-    if (policy?.autoSaveOnFieldBlur && validateAll()) {
-      onSave?.({ ...edited, [field]: v });
-      setDirty(false);
-      signals?.onDirtyChange?.(false);
-    } else {
-      markDirty();
-    }
-  };
-
-  const handleProteinChange = (val: string) => {
-    markDirty();
-    setProteinStr(val);
-    const n = parseFloat(val.replace(",", "."));
-    setEdited({ ...edited, protein: val === "" || isNaN(n) ? 0 : n });
-    setFieldError(
-      "protein",
-      !isNaN(n) && n >= 0
-        ? undefined
-        : t("ingredient_invalid_values", { ns: "meals" })
-    );
-  };
-  const handleCarbsChange = (val: string) => {
-    markDirty();
-    setCarbsStr(val);
-    const n = parseFloat(val.replace(",", "."));
-    setEdited({ ...edited, carbs: val === "" || isNaN(n) ? 0 : n });
-    setFieldError(
-      "carbs",
-      !isNaN(n) && n >= 0
-        ? undefined
-        : t("ingredient_invalid_values", { ns: "meals" })
-    );
-  };
-  const handleFatChange = (val: string) => {
-    markDirty();
-    setFatStr(val);
-    const n = parseFloat(val.replace(",", "."));
-    setEdited({ ...edited, fat: val === "" || isNaN(n) ? 0 : n });
-    setFieldError(
-      "fat",
-      !isNaN(n) && n >= 0
-        ? undefined
-        : t("ingredient_invalid_values", { ns: "meals" })
-    );
-  };
-  const handleKcalChange = (val: string) => {
-    markDirty();
-    setKcalStr(val);
-    const n = parseFloat(val.replace(",", "."));
-    setEdited({ ...edited, kcal: val === "" || isNaN(n) ? 0 : n });
-    setFieldError(
-      "kcal",
-      !isNaN(n) && n >= 0
-        ? undefined
-        : t("ingredient_invalid_values", { ns: "meals" })
-    );
-  };
 
   const openMenu = () => {
     menuAnchor.current?.measureInWindow((x, y) => {
@@ -267,284 +53,25 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
     });
   };
 
-  const validateAll = (): boolean => {
-    const next: typeof errors = {};
-    if (!edited.name.trim()) {
-      next.name = t("ingredient_name_required", {
-        ns: "meals",
-        defaultValue: "Ingredient name cannot be empty",
-      });
-    }
-    if (!(edited.amount > 0)) {
-      next.amount = t("ingredient_invalid_values", {
-        ns: "meals",
-        defaultValue:
-          "Values must be non-negative and amount must be greater than 0",
-      });
-    }
-    if (edited.protein < 0)
-      next.protein = t("ingredient_invalid_values", { ns: "meals" });
-    if (edited.carbs < 0)
-      next.carbs = t("ingredient_invalid_values", { ns: "meals" });
-    if (edited.fat < 0)
-      next.fat = t("ingredient_invalid_values", { ns: "meals" });
-    if (edited.kcal < 0)
-      next.kcal = t("ingredient_invalid_values", { ns: "meals" });
-
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
-
   if (editMode) {
     return (
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View
-          style={[
-            styles.box,
-            {
-              backgroundColor: theme.background,
-              borderRadius: theme.rounded.lg,
-              shadowColor: theme.shadow,
-              borderWidth: 1,
-              borderColor: theme.border,
-              marginBottom: 18,
-              padding: 20,
-              gap: 8,
-            },
-          ]}
-        >
-          <TextInput
-            style={[
-              styles.editInput,
-              {
-                color: theme.text,
-                fontFamily: theme.typography.fontFamily.bold,
-                fontSize: 20,
-                borderColor: errors.name ? theme.error.text : theme.border,
-              },
-            ]}
-            value={edited.name}
-            onChangeText={(v) => {
-              markDirty();
-              setEdited({ ...edited, name: v });
-              setFieldError(
-                "name",
-                v.trim()
-                  ? undefined
-                  : t("ingredient_name_required", { ns: "meals" })
-              );
-            }}
-            placeholder={t("ingredient_name", { ns: "meals" })}
-            placeholderTextColor={theme.textSecondary}
-            autoFocus
-          />
-          {!!errors.name && (
-            <Text style={[styles.errorText, { color: theme.error.text }]}>
-              {errors.name}
-            </Text>
-          )}
-
-          <View>
-            <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-              {t("amount", { ns: "meals" })}
-            </Text>
-            <TextInput
-              style={[
-                styles.editInput,
-                {
-                  color: theme.text,
-                  borderColor: errors.amount ? theme.error.text : theme.border,
-                },
-              ]}
-              keyboardType="numeric"
-              value={amountStr}
-              onChangeText={handleAmountChange}
-              onBlur={() => handleBlur("amount", amountStr)}
-              onFocus={() => {
-                if (amountStr === "0") setAmountStr("");
-              }}
-            />
-            {!!errors.amount && (
-              <Text style={[styles.errorText, { color: theme.error.text }]}>
-                {errors.amount}
-              </Text>
-            )}
-          </View>
-
-          <View>
-            <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-              {t("protein", { ns: "meals" })} [g]
-            </Text>
-            <TextInput
-              style={[
-                styles.editInput,
-                {
-                  color: theme.macro.protein,
-                  marginBottom: 6,
-                  backgroundColor: theme.macro.protein + "24",
-                  borderWidth: 1,
-                  borderColor: errors.protein
-                    ? theme.error.text
-                    : theme.macro.protein,
-                },
-              ]}
-              keyboardType="numeric"
-              value={proteinStr}
-              onChangeText={handleProteinChange}
-              onBlur={() => handleBlur("protein", proteinStr)}
-              onFocus={() => {
-                if (proteinStr === "0") setProteinStr("");
-              }}
-            />
-            {!!errors.protein && (
-              <Text style={[styles.errorText, { color: theme.error.text }]}>
-                {errors.protein}
-              </Text>
-            )}
-          </View>
-
-          <View>
-            <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-              {t("carbs", { ns: "meals" })} [g]
-            </Text>
-            <TextInput
-              style={[
-                styles.editInput,
-                {
-                  color: theme.macro.carbs,
-                  marginBottom: 6,
-                  backgroundColor: theme.macro.carbs + "24",
-                  borderWidth: 1,
-                  borderColor: errors.carbs
-                    ? theme.error.text
-                    : theme.macro.carbs,
-                },
-              ]}
-              keyboardType="numeric"
-              value={carbsStr}
-              onChangeText={handleCarbsChange}
-              onBlur={() => handleBlur("carbs", carbsStr)}
-              onFocus={() => {
-                if (carbsStr === "0") setCarbsStr("");
-              }}
-            />
-            {!!errors.carbs && (
-              <Text style={[styles.errorText, { color: theme.error.text }]}>
-                {errors.carbs}
-              </Text>
-            )}
-          </View>
-
-          <View>
-            <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-              {t("fat", { ns: "meals" })} [g]
-            </Text>
-            <TextInput
-              style={[
-                styles.editInput,
-                {
-                  marginBottom: 6,
-                  color: theme.macro.fat,
-                  backgroundColor: theme.macro.fat + "24",
-                  borderWidth: 1,
-                  borderColor: errors.fat ? theme.error.text : theme.macro.fat,
-                },
-              ]}
-              keyboardType="numeric"
-              value={fatStr}
-              onChangeText={handleFatChange}
-              onBlur={() => handleBlur("fat", fatStr)}
-              onFocus={() => {
-                if (fatStr === "0") setFatStr("");
-              }}
-            />
-            {!!errors.fat && (
-              <Text style={[styles.errorText, { color: theme.error.text }]}>
-                {errors.fat}
-              </Text>
-            )}
-          </View>
-
-          <View>
-            <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-              {t("calories", { ns: "meals" })} [kcal]
-            </Text>
-            <TextInput
-              style={[
-                styles.editInput,
-                {
-                  color: theme.text,
-                  marginBottom: 6,
-                  borderColor: errors.kcal ? theme.error.text : theme.border,
-                },
-              ]}
-              keyboardType="numeric"
-              value={kcalStr}
-              onChangeText={handleKcalChange}
-              onBlur={() => handleBlur("kcal", kcalStr)}
-              onFocus={() => {
-                if (kcalStr === "0") setKcalStr("");
-              }}
-            />
-            {!!errors.kcal && (
-              <Text style={[styles.errorText, { color: theme.error.text }]}>
-                {errors.kcal}
-              </Text>
-            )}
-          </View>
-
-          <View>
-            <Pressable
-              style={[
-                styles.saveBtn,
-                { backgroundColor: theme.accentSecondary },
-              ]}
-              onPress={() => {
-                if (!validateAll()) return;
-                setEditMode(false);
-                onSave?.(edited);
-                setDirty(false);
-                signals?.onDirtyChange?.(false);
-              }}
-            >
-              <Text style={[styles.saveBtnText, { color: theme.onAccent }]}>
-                {t("save_changes", { ns: "common" })}
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.cancelBtn,
-                { borderColor: theme.accentSecondary, marginTop: 10 },
-              ]}
-              onPress={() => {
-                setEditMode(false);
-                setEdited(initial.current);
-                setAmountStr(String(initial.current.amount));
-                setProteinStr(String(initial.current.protein));
-                setCarbsStr(String(initial.current.carbs));
-                setFatStr(String(initial.current.fat));
-                setKcalStr(String(initial.current.kcal));
-                setErrors({});
-                if (
-                  isEmpty(initial.current) &&
-                  policy?.removeEmptyOn?.includes("cancel")
-                ) {
-                  onRemove?.();
-                }
-                setDirty(false);
-                signals?.onDirtyChange?.(false);
-                onCancelEdit?.();
-              }}
-            >
-              <Text
-                style={[styles.cancelBtnText, { color: theme.accentSecondary }]}
-              >
-                {t("cancel", { ns: "common" })}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </TouchableWithoutFeedback>
+      <IngredientEditor
+        initial={ingredient}
+        onCommit={(i) => {
+          setEditMode(false);
+          onSave?.(i);
+        }}
+        onCancel={() => {
+          setEditMode(false);
+          onCancelEdit?.();
+        }}
+        onDelete={() => {
+          setEditMode(false);
+          onRemove?.();
+        }}
+        onChangePartial={onChangePartial}
+        errors={errors}
+      />
     );
   }
 
@@ -553,9 +80,9 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
       style={[
         styles.box,
         {
-          backgroundColor: theme.background,
+          backgroundColor: hasError ? theme.error.background : theme.background,
           borderRadius: theme.rounded.lg,
-          borderColor: theme.border,
+          borderColor: hasError ? theme.error.border : theme.border,
           borderWidth: 1,
           shadowColor: theme.shadow,
           gap: theme.spacing.sm,
@@ -565,53 +92,44 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
     >
       <View style={styles.row}>
         <Text
-          style={[
-            styles.name,
-            {
-              color: theme.text,
-              fontFamily: theme.typography.fontFamily.bold,
-              fontSize: theme.typography.size.lg,
-            },
-          ]}
+          style={{
+            color: theme.text,
+            fontFamily: theme.typography.fontFamily.bold,
+            fontSize: theme.typography.size.lg,
+            flex: 1,
+          }}
         >
-          {ingredient.name}
+          {ingredient.name || t("ingredient_name", { ns: "meals" })}
         </Text>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Text
-            style={[
-              styles.amount,
-              {
-                color: theme.textSecondary,
-                fontFamily: theme.typography.fontFamily.medium,
-                fontSize: theme.typography.size.md,
-              },
-            ]}
+            style={{
+              color: theme.textSecondary,
+              fontFamily: theme.typography.fontFamily.medium,
+              fontSize: theme.typography.size.md,
+            }}
           >
             {ingredient.amount}g
           </Text>
           {editable && (
-            <View style={{ position: "relative" }}>
-              <Pressable
-                ref={menuAnchor}
-                onPress={openMenu}
-                style={styles.icon}
-              >
-                <MaterialIcons
-                  name="more-vert"
-                  size={24}
-                  color={theme.textSecondary}
-                />
-              </Pressable>
-            </View>
+            <Pressable ref={menuAnchor} onPress={openMenu} style={styles.icon}>
+              <MaterialIcons
+                name="more-vert"
+                size={24}
+                color={theme.textSecondary}
+              />
+            </Pressable>
           )}
         </View>
       </View>
+
       <MacroChip label="Calories" value={ingredient.kcal} />
       <View style={styles.macrosRow}>
         <MacroChip label="Protein" value={ingredient.protein} />
         <MacroChip label="Carbs" value={ingredient.carbs} />
         <MacroChip label="Fat" value={ingredient.fat} />
       </View>
+
       <Modal
         visible={menuVisible}
         transparent
@@ -619,14 +137,13 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
         onRequestClose={() => setMenuVisible(false)}
       >
         <Pressable
-          style={[StyleSheet.absoluteFill]}
+          style={[RNStyleSheet.absoluteFill]}
           onPress={() => setMenuVisible(false)}
         >
           <View
             style={[
               styles.dropdown,
               {
-                position: "absolute",
                 left: menuPos.x,
                 top: menuPos.y,
                 backgroundColor: theme.background,
@@ -640,6 +157,7 @@ export const IngredientBox: React.FC<IngredientBoxProps> = ({
               onPress={() => {
                 setMenuVisible(false);
                 setEditMode(true);
+                onEditStart?.();
               }}
             >
               <MaterialIcons
@@ -696,16 +214,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
   },
-  name: {
-    fontSize: 18,
-    flex: 1,
-    fontWeight: "bold",
-  },
-  amount: {
-    fontSize: 16,
-    marginLeft: 8,
-    marginRight: 0,
-  },
   macrosRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -713,12 +221,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     gap: 10,
   },
-  icon: {
-    marginLeft: 6,
-    marginRight: 0,
-    padding: 2,
-  },
+  icon: { marginLeft: 6, padding: 2 },
   dropdown: {
+    position: "absolute",
     borderRadius: 16,
     paddingVertical: 8,
     width: 200,
@@ -726,7 +231,6 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     shadowColor: "#000",
     shadowRadius: 12,
-    position: "absolute",
     right: 24,
   },
   dropdownItem: {
@@ -737,31 +241,4 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   dropdownLabel: { fontSize: 16 },
-  editInput: {
-    borderWidth: 1.2,
-    backgroundColor: "transparent",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginBottom: 7,
-    fontSize: 16,
-  },
-  editLabel: { marginBottom: 5, fontSize: 15, fontWeight: "600" },
-  errorText: { fontSize: 12, marginTop: 2 },
-  saveBtn: {
-    width: "100%",
-    borderRadius: 12,
-    alignItems: "center",
-    paddingVertical: 14,
-    marginTop: 18,
-  },
-  saveBtnText: { fontWeight: "bold", fontSize: 16 },
-  cancelBtn: {
-    width: "100%",
-    borderWidth: 1.5,
-    borderRadius: 12,
-    alignItems: "center",
-    paddingVertical: 13,
-  },
-  cancelBtnText: { fontWeight: "bold", fontSize: 16 },
 });

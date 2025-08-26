@@ -1,3 +1,4 @@
+// src/contexts/MealDraftContext.tsx
 import React, {
   createContext,
   useContext,
@@ -125,7 +126,7 @@ export const MealDraftProvider = ({ children }: Props) => {
       prev
         ? {
             ...prev,
-            ingredients: [...prev.ingredients, ingredient],
+            ingredients: [...(prev.ingredients ?? []), ingredient],
             updatedAt: new Date().toISOString(),
           }
         : null
@@ -137,7 +138,7 @@ export const MealDraftProvider = ({ children }: Props) => {
       prev
         ? {
             ...prev,
-            ingredients: prev.ingredients.filter((_, i) => i !== index),
+            ingredients: (prev.ingredients ?? []).filter((_, i) => i !== index),
             updatedAt: new Date().toISOString(),
           }
         : null
@@ -149,7 +150,7 @@ export const MealDraftProvider = ({ children }: Props) => {
       prev
         ? {
             ...prev,
-            ingredients: prev.ingredients.map((ing, i) =>
+            ingredients: (prev.ingredients ?? []).map((ing, i) =>
               i === index ? ingredient : ing
             ),
             updatedAt: new Date().toISOString(),
