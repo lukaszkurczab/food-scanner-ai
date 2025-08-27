@@ -4,13 +4,6 @@ import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { navigate } from "@/navigation/navigate";
 
-type TabItem = {
-  key: string;
-  icon: string;
-  onPress: () => void;
-  isFab?: boolean;
-};
-
 type Props = {
   renderProfileIcon?: React.ReactNode;
 };
@@ -89,7 +82,7 @@ export const BottomTabBar: React.FC<Props> = ({ renderProfileIcon }) => {
               >
                 <MaterialIcons
                   name={tab.icon as any}
-                  size={42}
+                  size={32}
                   color={theme.card}
                   style={{ alignSelf: "center" }}
                 />
@@ -115,7 +108,7 @@ export const BottomTabBar: React.FC<Props> = ({ renderProfileIcon }) => {
               ) : (
                 <MaterialIcons
                   name={tab.icon as any}
-                  size={32}
+                  size={26}
                   color={theme.text}
                   style={{ alignSelf: "center" }}
                 />
@@ -148,7 +141,7 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 4 },
     elevation: 20,
-    height: 64,
+    height: 56,
   },
   tab: {
     width: 56,
@@ -157,8 +150,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   fab: {
-    width: 72,
-    height: 72,
+    width: 58,
+    height: 58,
     justifyContent: "center",
     alignItems: "center",
     marginTop: -20,

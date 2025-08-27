@@ -66,12 +66,14 @@ export default function UserProfileScreen({ navigation }: any) {
     setExporting(false);
   };
 
+  const avatarSrc = userData.avatarLocalPath || userData.avatarUrl || "";
+
   return (
     <Layout>
       <View style={styles.header}>
-        {userData.avatarLocalPath ? (
+        {avatarSrc ? (
           <Image
-            source={{ uri: userData.avatarLocalPath }}
+            source={{ uri: avatarSrc }}
             style={styles.avatar}
             accessible
             accessibilityLabel={t("profilePicture")}

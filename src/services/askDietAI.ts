@@ -30,7 +30,6 @@ function buildDietContext(p: FormData): DietContext {
   ];
   const prefers: string[] = [];
   const avoid: string[] = [];
-
   if (p.preferences.includes("vegan")) {
     rules.push(
       i18next.t(
@@ -121,7 +120,6 @@ function buildDietContext(p: FormData): DietContext {
         "Bez zbóż, nabiału i produktów przetworzonych."
       )
     );
-
   if (p.allergies?.includes("peanuts")) {
     rules.push(
       i18next.t(
@@ -149,7 +147,6 @@ function buildDietContext(p: FormData): DietContext {
     );
     avoid.push("mleko", "ser", "jogurt", "kefir", "maślanka", "serwatka");
   }
-
   if (p.chronicDiseases?.includes("diabetes"))
     rules.push(
       i18next.t(
@@ -164,7 +161,6 @@ function buildDietContext(p: FormData): DietContext {
         "Ograniczaj sól sodową, preferuj potas, warzywa, DASH-like."
       )
     );
-
   const tone =
     p.aiStyle === "concise"
       ? i18next.t("diet.tone.concise", "Krótko i konkretnie (3–6 zdań).")
@@ -173,7 +169,6 @@ function buildDietContext(p: FormData): DietContext {
       : p.aiStyle === "friendly"
       ? i18next.t("diet.tone.friendly", "Przyjaźnie i motywująco.")
       : i18next.t("diet.tone.neutral", "Neutralnie i rzeczowo.");
-
   const focus =
     p.aiFocus === "mealPlanning"
       ? i18next.t(
@@ -196,7 +191,6 @@ function buildDietContext(p: FormData): DietContext {
           "Dodaj 1–2 zdania wsparcia psychologicznego."
         )
       : i18next.t("diet.focus.default", "Dopasuj odpowiedź do pytania.");
-
   return { rules, prefers, avoid, tone, focus };
 }
 
@@ -224,61 +218,64 @@ const rawKey = Constants.expoConfig?.extra?.openaiApiKey;
 const apiKey = rawKey?.trim();
 const openai = new OpenAI({ apiKey });
 
-function buildProfileSummary(p: FormData) {
-  const lines: string[] = [];
-
-  if (p.goal) lines.push(`Goal: ${p.goal}`);
-  if (p.activityLevel) lines.push(`Activity: ${p.activityLevel}`);
-  if (p.sex) lines.push(`Sex: ${p.sex}`);
-  if (p.age) lines.push(`Age: ${p.age}`);
-  if (p.unitsSystem === "metric") {
-    if (p.height)
-      lines.push(
-        `Height: ${p.height} cm${p.heightInch ? ` (${p.heightInch}")` : ""}`
-      );
-    if (p.weight) lines.push(`Weight: ${p.weight} kg`);
-  } else {
-    if (p.height || p.heightInch)
-      lines.push(`Height: ${p.height || "-"}'${p.heightInch || "-"}`);
-    if (p.weight) lines.push(`Weight: ${p.weight} lbs`);
-  }
-  if (Array.isArray(p.preferences) && p.preferences.length)
-    lines.push(`Diet prefs: ${p.preferences.join(", ")}`);
-  if (Array.isArray(p.allergies) && p.allergies.length)
-    lines.push(`Allergies: ${p.allergies.join(", ")}`);
-  if (Array.isArray(p.chronicDiseases) && p.chronicDiseases.length)
-    lines.push(`Chronic: ${p.chronicDiseases.join(", ")}`);
-  if (typeof p.calorieTarget === "number")
-    lines.push(`Calorie target: ${p.calorieTarget} kcal/day`);
-  if (p.aiNote) lines.push(`Notes: ${p.aiNote}`);
-
-  return lines.length
-    ? lines.join("\n")
-    : i18next.t("diet.user.noProfile", "no profile data");
+function compactProfile(p: FormData) {
+  const obj: any = {
+    g: p.goal || null,
+    act: p.activityLevel || null,
+    s: p.sex || null,
+    a: p.age || null,
+    h: p.unitsSystem === "metric" ? p.height : undefined,
+    w: p.weight ?? undefined,
+    kcal: typeof p.calorieTarget === "number" ? p.calorieTarget : undefined,
+    prefs: Array.isArray(p.preferences) ? p.preferences.slice(0, 5) : [],
+    alg: Array.isArray(p.allergies) ? p.allergies.slice(0, 5) : [],
+    chr: Array.isArray(p.chronicDiseases) ? p.chronicDiseases.slice(0, 5) : [],
+  };
+  return JSON.stringify(obj);
 }
 
-function formatMeals(meals: Meal[]) {
+function formatMealsCompact(meals: Meal[]) {
   if (!meals?.length) return i18next.t("diet.user.noData", "brak danych");
-
   return meals
     .slice()
     .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
-    .slice(0, 20)
-    .map((m) => {
-      const when =
-        typeof m.createdAt === "number"
-          ? new Date(m.createdAt).toISOString().slice(0, 16).replace("T", " ")
-          : m.createdAt;
-      const ing = (m.ingredients || [])
-        .map((it: any) =>
-          [it.name, typeof it.amount === "number" ? `${it.amount}g` : null]
-            .filter(Boolean)
-            .join(" ")
-        )
-        .join(", ");
-      return `• ${when} — ${m.name || m.type || "meal"}: ${ing}`;
-    })
+    .slice(0, 5)
+    .map((m) => `• ${m.name || m.type || "meal"}`)
     .join("\n");
+}
+
+function trimHistory(
+  chatHistory: Message[],
+  n = 5
+): ChatCompletionMessageParam[] {
+  return chatHistory.slice(-n).map((m) => ({
+    role: m.from === "user" ? "user" : "assistant",
+    content: m.text,
+  }));
+}
+
+const MAX_WORDS = 200;
+const MAX_TOKENS = 280;
+
+function safeTrimToSentence(text: string, maxWords = MAX_WORDS): string {
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text.trim();
+  const slice = words.slice(0, maxWords + 30).join(" ");
+  const m = slice.match(/([\s\S]*?[.!?])(?:\s|$)/g);
+  if (m && m.length) {
+    let acc = "";
+    for (const s of m) {
+      if (
+        acc.trim().split(/\s+/).length + s.trim().split(/\s+/).length >
+        maxWords
+      )
+        break;
+      acc += s.trim() + " ";
+    }
+    const trimmed = acc.trim();
+    if (trimmed) return trimmed + " …";
+  }
+  return words.slice(0, maxWords).join(" ") + " …";
 }
 
 export async function askDietAI(
@@ -289,23 +286,29 @@ export async function askDietAI(
 ): Promise<string> {
   const dc = buildDietContext(profile);
   const lang = i18next.language || "en";
+  const profileSummary = compactProfile(profile);
+  const recentMeals = formatMealsCompact(meals);
+  const history = trimHistory(chatHistory, 5);
 
-  const profileSummary = buildProfileSummary(profile);
-  const recentMeals = formatMeals(meals);
+  const hardLimit = i18next.t(
+    "diet.system.lengthLimit",
+    "Bezwzględny limit: maksymalnie 200 słów. Nigdy nie przekraczaj limitu. Zakończ odpowiedź pełnym zdaniem. Jeśli zbliżasz się do limitu, streszczaj."
+  ) as string;
 
   const system = [
     i18next.t(
       "diet.system.role",
       "Jesteś licencjonowanym dietetykiem. Odpowiadasz w języku użytkownika."
     ),
+    hardLimit,
     i18next.t(
       "diet.system.rulesHeader",
-      "Zawsze stosuj poniższe reguły zgodności (nie łam ich)."
+      "Zawsze stosuj poniższe reguły zgodności."
     ),
-    ...dc.rules.map((r) => `- ${r}`),
+    ...dc.rules.slice(0, 6).map((r) => `- ${r}`),
     dc.prefers.length
       ? i18next.t("diet.system.prefers", "Preferencje użytkownika: {{list}}.", {
-          list: dc.prefers.join("; "),
+          list: dc.prefers.slice(0, 4).join("; "),
         })
       : "",
     i18next.t(
@@ -323,20 +326,13 @@ export async function askDietAI(
     .filter(Boolean)
     .join("\n");
 
-  const history: ChatCompletionMessageParam[] = chatHistory
-    .slice(-10)
-    .map((m) => ({
-      role: m.from === "user" ? "user" : "assistant",
-      content: m.text,
-    }));
-
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: system },
     {
       role: "user",
       content: i18next.t(
         "diet.user.profileBlock",
-        "User profile:\n{{profile}}\n\nRecent meals:\n{{meals}}",
+        "User profile (compact JSON):\n{{profile}}\n\nRecent meals (names only):\n{{meals}}",
         { profile: profileSummary, meals: recentMeals }
       ) as string,
     },
@@ -347,13 +343,15 @@ export async function askDietAI(
   const resp = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages,
-    max_tokens: 350,
+    max_tokens: MAX_TOKENS,
     temperature: 0.4,
   });
 
   let text =
     resp.choices[0]?.message?.content?.trim() ||
     i18next.t("diet.errors.empty", "Brak odpowiedzi.");
+
   text = enforceDietConstraints(text, dc.avoid);
+  text = safeTrimToSentence(text, MAX_WORDS);
   return text;
 }
