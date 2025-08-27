@@ -123,7 +123,6 @@ export default function AvatarCameraScreen({
             await setAvatar(photoUri);
             navigation.navigate("Profile");
           } catch (err) {
-            console.log(photoUri);
             console.log(err);
           } finally {
             setIsUploading(false);
