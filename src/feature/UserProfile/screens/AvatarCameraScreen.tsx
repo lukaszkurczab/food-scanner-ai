@@ -21,7 +21,7 @@ export default function AvatarCameraScreen({
   cornerThickness = 8,
   navigation,
 }: AvatarCameraScreenProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "profile"]);
   const theme = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -84,7 +84,7 @@ export default function AvatarCameraScreen({
               color: theme.text,
             }}
           >
-            {t("camera_permission_message")}
+            {t("common:camera_permission_message")}
           </Text>
           <Pressable
             onPress={requestPermission}
@@ -102,7 +102,7 @@ export default function AvatarCameraScreen({
                 color: theme.text,
               }}
             >
-              {t("camera_grant_access")}
+              {t("common:camera_grant_access")}
             </Text>
           </Pressable>
         </View>
@@ -122,13 +122,16 @@ export default function AvatarCameraScreen({
           try {
             await setAvatar(photoUri);
             navigation.navigate("Profile");
+          } catch (err) {
+            console.log(photoUri);
+            console.log(err);
           } finally {
             setIsUploading(false);
           }
         }}
         isLoading={isUploading}
-        primaryText={t("avatarPreview_title")}
-        secondaryText={t("avatarPreview_subtitle")}
+        primaryText={t("profile:avatarPreview_title")}
+        secondaryText={t("profile:avatarPreview_subtitle")}
       />
     );
   }

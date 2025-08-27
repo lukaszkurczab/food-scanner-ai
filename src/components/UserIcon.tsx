@@ -2,6 +2,7 @@ import React from "react";
 import { View, Image } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useUserContext } from "@/context/UserContext";
 
 type Props = {
   size?: number;
@@ -21,10 +22,15 @@ export const UserIcon: React.FC<Props> = ({
   isPremium = false,
 }) => {
   const theme = useTheme();
+  const { userData } = useUserContext();
 
   const borderColor = isPremium ? theme.macro.fat : theme.card;
   const borderWidth = isPremium ? 4 : 2;
-  const sourceUri = avatarLocalPath || avatarUrl || null;
+  const sourceUri = userData
+    ? userData.avatarLocalPath || userData.avatarUrl || null
+    : null;
+
+  console.log(sourceUri);
 
   return (
     <View

@@ -37,9 +37,12 @@ export function useUser(uid: string) {
     const app = getApp();
     const db = getFirestore(app);
     const userRef = doc(db, "users", uid);
+
     const unsub = onSnapshot(userRef, (snap) => {
-      const data = snap.data() as UserData | undefined;
-      setUserData(data ?? null);
+      const data = (snap.data() as UserData | undefined) ?? null;
+      setUserData((prev) =>
+        data ? { ...data, avatarLocalPath: prev?.avatarLocalPath } : null
+      );
       if (data?.language) setLanguage(data.language);
       setLoading(false);
     });
@@ -79,12 +82,19 @@ export function useUser(uid: string) {
         fileId: "avatar",
         photoUri,
       });
+
+      setUserData((prev) =>
+        prev ? { ...prev, avatarLocalPath: localPath } : prev
+      );
       const app = getApp();
       const st = getStorage(app);
-      const r = ref(st, `avatars/${uid}.jpg`);
-      await putFile(r, localPath);
+      const r = ref(st, `avatars/${uid}/avatar.jpg`);
+      await putFile(r, localPath, { contentType: "image/jpeg" });
       const url = await getDownloadURL(r);
       await updateUserProfile({ avatarUrl: url });
+      setUserData((prev) =>
+        prev ? { ...prev, avatarUrl: url, avatarLocalPath: localPath } : prev
+      );
     },
     [uid, updateUserProfile]
   );

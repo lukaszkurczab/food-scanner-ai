@@ -101,7 +101,7 @@ export default function ChatScreen() {
             renderItem={({ item }) => <Bubble msg={item} />}
             onEndReachedThreshold={0.4}
             onEndReached={loadMore}
-            ListFooterComponent={
+            ListHeaderComponent={
               !canSend && !isPremium ? (
                 <View style={{ marginTop: 88 }} />
               ) : typing ? (
