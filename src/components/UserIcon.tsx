@@ -17,8 +17,6 @@ export const UserIcon: React.FC<Props> = ({
   size = 120,
   style,
   accessibilityLabel = "User avatar",
-  avatarLocalPath,
-  avatarUrl,
   isPremium = false,
 }) => {
   const theme = useTheme();
@@ -29,8 +27,6 @@ export const UserIcon: React.FC<Props> = ({
   const sourceUri = userData
     ? userData.avatarLocalPath || userData.avatarUrl || null
     : null;
-
-  console.log(sourceUri);
 
   return (
     <View
