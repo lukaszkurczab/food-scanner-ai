@@ -20,6 +20,7 @@ export default {
       bundleIdentifier: "com.lkurczab.foodscannerai",
       googleServicesFile: "./GoogleService-Info.plist",
       icon: "./assets/appstore.png",
+      infoPlist: { ITSAppUsesNonExemptEncryption: false },
     },
     android: {
       icon: "./assets/playstore.png",
@@ -40,7 +41,10 @@ export default {
           recordAudioAndroid: true,
         },
       ],
-      ["expo-build-properties", { ios: { useFrameworks: "static" } }],
+      [
+        "expo-build-properties",
+        { ios: { useFrameworks: "static", deploymentTarget: "15.5" } },
+      ],
       "expo-font",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
