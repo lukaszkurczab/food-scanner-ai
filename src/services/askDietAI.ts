@@ -177,7 +177,7 @@ export async function askDietAI(
   const prof = compactProfile(profile);
   const mealsComp = mealsSummary(meals);
   const hist = chatHistory.slice(-2).map((m) => m.text);
-  const lang = i18next.language || "pl";
+  const lang = i18next.language || "en";
 
   const system =
     "ROLE: dietitian\n" +
