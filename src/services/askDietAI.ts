@@ -2,41 +2,37 @@ import OpenAI from "openai";
 import Constants from "expo-constants";
 import i18next from "i18next";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import type { Meal, FormData } from "@/types";
+import type {
+  Meal,
+  FormData,
+  ChronicDisease,
+  Preference,
+  Allergy,
+} from "@/types";
 
-export type Message = {
-  from: "user" | "ai";
-  text: string;
-};
+export type Message = { from: "user" | "ai"; text: string };
 
 type DietContext = {
-  rules: string[];
-  prefers: string[];
+  flags: string[];
+  tone: "N" | "C" | "D" | "F";
+  focus: "DEF" | "MP" | "AM" | "QA" | "M";
   avoid: string[];
-  tone: string;
-  focus: string;
 };
 
+const rawKey = Constants.expoConfig?.extra?.openaiApiKey;
+const apiKey = rawKey?.trim();
+const openai = new OpenAI({ apiKey });
+
 function buildDietContext(p: FormData): DietContext {
-  const rules: string[] = [
-    i18next.t(
-      "diet.rules.goalActivity",
-      "Dostosuj zalecenia do celu (lose/maintain/increase) i aktywności."
-    ),
-    i18next.t(
-      "diet.rules.safeRanges",
-      "Udzielaj porad w bezpiecznych zakresach i unikaj skrajności."
-    ),
-  ];
-  const prefers: string[] = [];
+  const flags: string[] = [];
   const avoid: string[] = [];
-  if (p.preferences.includes("vegan")) {
-    rules.push(
-      i18next.t(
-        "diet.rules.vegan",
-        "Nie proponuj mięsa, ryb, owoców morza, jaj ani nabiału."
-      )
-    );
+
+  const pref = (v: Preference) => p.preferences?.includes(v);
+  const dis = (v: ChronicDisease) => p.chronicDiseases?.includes(v);
+  const alg = (v: Allergy) => p.allergies?.includes(v);
+
+  if (pref("vegan")) {
+    flags.push("vegan");
     avoid.push(
       "mięso",
       "wołowina",
@@ -49,51 +45,17 @@ function buildDietContext(p: FormData): DietContext {
       "ser",
       "jogurt"
     );
-    prefers.push(
-      i18next.t(
-        "diet.prefers.veganProteins",
-        "roślinne białka (tofu, tempeh, strączki)"
-      ),
-      i18next.t("diet.prefers.wholeGrains", "pełne ziarna"),
-      i18next.t("diet.prefers.vegFruit", "warzywa, owoce"),
-      i18next.t("diet.prefers.nutsSeeds", "orzechy i nasiona")
-    );
-  } else if (p.preferences.includes("vegetarian")) {
-    rules.push(
-      i18next.t(
-        "diet.rules.vegetarian",
-        "Nie proponuj mięsa ani ryb; nabiał i jaja dozwolone, jeśli nie kolidują z innymi ograniczeniami."
-      )
-    );
+  } else if (pref("vegetarian")) {
+    flags.push("vegetarian");
     avoid.push("mięso", "ryba", "tuńczyk", "łosoś", "kurczak", "wołowina");
-    prefers.push(
-      i18next.t(
-        "diet.prefers.vegetarianSources",
-        "jaja, nabiał, strączki, tofu, produkty zbożowe pełnoziarniste"
-      )
-    );
   }
-  if (p.preferences.includes("pescatarian"))
-    prefers.push(i18next.t("diet.prefers.fishSeafood", "ryby i owoce morza"));
-  if (p.preferences.includes("keto"))
-    rules.push(
-      i18next.t(
-        "diet.rules.keto",
-        "Utrzymuj niski poziom węglowodanów, wyższy tłuszcz."
-      )
-    );
-  if (p.preferences.includes("lowCarb"))
-    rules.push(
-      i18next.t("diet.rules.lowCarb", "Preferuj niski ładunek glikemiczny.")
-    );
-  if (p.preferences.includes("highProtein"))
-    rules.push(
-      i18next.t("diet.rules.highProtein", "Dbaj o wysoką podaż białka.")
-    );
-  if (p.preferences.includes("lowFat"))
-    rules.push(i18next.t("diet.rules.lowFat", "Ograniczaj tłuszcz nasycony."));
-  if (p.preferences.includes("glutenFree")) {
-    rules.push(i18next.t("diet.rules.glutenFree", "Unikaj glutenu."));
+  if (pref("pescatarian")) flags.push("pescatarian");
+  if (pref("keto")) flags.push("keto");
+  if (pref("lowCarb")) flags.push("lowCarb");
+  if (pref("highProtein")) flags.push("highProtein");
+  if (pref("lowFat")) flags.push("lowFat");
+  if (pref("glutenFree") || alg("gluten")) {
+    flags.push("glutenFree");
     avoid.push(
       "pszenica",
       "jęczmień",
@@ -102,180 +64,107 @@ function buildDietContext(p: FormData): DietContext {
       "pieczywo pszenne"
     );
   }
-  if (p.preferences.includes("dairyFree")) {
-    rules.push(i18next.t("diet.rules.dairyFree", "Unikaj nabiału."));
-    avoid.push("mleko", "ser", "jogurt", "maślanka", "śmietana");
-  }
-  if (p.preferences.includes("mediterranean"))
-    prefers.push(
-      i18next.t(
-        "diet.prefers.mediterranean",
-        "oliwa, ryby, warzywa, rośliny strączkowe, pełne ziarna, orzechy"
-      )
-    );
-  if (p.preferences.includes("paleo"))
-    rules.push(
-      i18next.t(
-        "diet.rules.paleo",
-        "Bez zbóż, nabiału i produktów przetworzonych."
-      )
-    );
-  if (p.allergies?.includes("peanuts")) {
-    rules.push(
-      i18next.t(
-        "diet.rules.noPeanuts",
-        "Nigdy nie proponuj orzeszków ziemnych."
-      )
-    );
-    avoid.push("orzeszki ziemne", "masło orzechowe");
-  }
-  if (p.allergies?.includes("gluten")) {
-    rules.push(
-      i18next.t(
-        "diet.rules.noGluten",
-        "Nigdy nie proponuj produktów z glutenem."
-      )
-    );
-    avoid.push("pszenica", "jęczmień", "żyto");
-  }
-  if (p.allergies?.includes("lactose") || p.preferences.includes("dairyFree")) {
-    rules.push(
-      i18next.t(
-        "diet.rules.noLactose",
-        "Nie proponuj produktów mlecznych zawierających laktozę; sugeruj roślinne zamienniki."
-      )
-    );
+  if (pref("dairyFree") || alg("lactose")) {
+    flags.push("dairyFree");
     avoid.push("mleko", "ser", "jogurt", "kefir", "maślanka", "serwatka");
   }
-  if (p.chronicDiseases?.includes("diabetes"))
-    rules.push(
-      i18next.t(
-        "diet.rules.diabetes",
-        "Preferuj niski ładunek glikemiczny, unikanie cukrów prostych."
-      )
-    );
-  if (p.chronicDiseases?.includes("hypertension"))
-    rules.push(
-      i18next.t(
-        "diet.rules.hypertension",
-        "Ograniczaj sól sodową, preferuj potas, warzywa, DASH-like."
-      )
-    );
-  const tone =
+  if (alg("peanuts")) {
+    flags.push("noPeanuts");
+    avoid.push("orzeszki ziemne", "masło orzechowe");
+  }
+  if (dis("diabetes")) flags.push("diabetes");
+  if (dis("hypertension")) flags.push("hypertension");
+
+  const tone: DietContext["tone"] =
     p.aiStyle === "concise"
-      ? i18next.t("diet.tone.concise", "Krótko i konkretnie (3–6 zdań).")
+      ? "C"
       : p.aiStyle === "detailed"
-      ? i18next.t("diet.tone.detailed", "Szczegółowo, z krótką listą punktów.")
+      ? "D"
       : p.aiStyle === "friendly"
-      ? i18next.t("diet.tone.friendly", "Przyjaźnie i motywująco.")
-      : i18next.t("diet.tone.neutral", "Neutralnie i rzeczowo.");
-  const focus =
+      ? "F"
+      : "N";
+
+  const focus: DietContext["focus"] =
     p.aiFocus === "mealPlanning"
-      ? i18next.t(
-          "diet.focus.mealPlanning",
-          "Skup się na gotowych propozycjach posiłków."
-        )
+      ? "MP"
       : p.aiFocus === "analyzingMistakes"
-      ? i18next.t(
-          "diet.focus.analyzingMistakes",
-          "Najpierw wskaż błędy, potem poprawki."
-        )
+      ? "AM"
       : p.aiFocus === "quickAnswers"
-      ? i18next.t(
-          "diet.focus.quickAnswers",
-          "Udziel krótkiej odpowiedzi bez dygresji."
-        )
+      ? "QA"
       : p.aiFocus === "motivation"
-      ? i18next.t(
-          "diet.focus.motivation",
-          "Dodaj 1–2 zdania wsparcia psychologicznego."
-        )
-      : i18next.t("diet.focus.default", "Dopasuj odpowiedź do pytania.");
-  return { rules, prefers, avoid, tone, focus };
+      ? "M"
+      : "DEF";
+
+  return { flags, tone, focus, avoid };
 }
-
-function enforceDietConstraints(output: string, banned: string[]): string {
-  const hit = banned.find((k) =>
-    new RegExp(`\\b${escapeRegex(k)}\\b`, "i").test(output)
-  );
-  if (!hit) return output;
-  return (
-    output.replace(
-      new RegExp(`\\b${escapeRegex(hit)}\\b`, "ig"),
-      i18next.t("diet.replacement", "zamiennik")
-    ) +
-    "\n\n" +
-    i18next.t(
-      "diet.constraintsNote",
-      "(Uwzględniłem Twoje ograniczenia – zaproponowałem zamienniki.)"
-    )
-  );
-}
-
-const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-const rawKey = Constants.expoConfig?.extra?.openaiApiKey;
-const apiKey = rawKey?.trim();
-const openai = new OpenAI({ apiKey });
 
 function compactProfile(p: FormData) {
+  const toNum = (v: any) =>
+    v === null || v === undefined ? undefined : Number(v);
   const obj: any = {
-    g: p.goal || null,
-    act: p.activityLevel || null,
-    s: p.sex || null,
-    a: p.age || null,
-    h: p.unitsSystem === "metric" ? p.height : undefined,
-    w: p.weight ?? undefined,
-    kcal: typeof p.calorieTarget === "number" ? p.calorieTarget : undefined,
-    prefs: Array.isArray(p.preferences) ? p.preferences.slice(0, 5) : [],
-    alg: Array.isArray(p.allergies) ? p.allergies.slice(0, 5) : [],
-    chr: Array.isArray(p.chronicDiseases) ? p.chronicDiseases.slice(0, 5) : [],
+    g: p.goal || undefined,
+    act: p.activityLevel || undefined,
+    s: p.sex || undefined,
+    a: toNum(p.age),
+    h: p.unitsSystem === "metric" ? toNum(p.height) : undefined,
+    w: toNum(p.weight),
+    kcal:
+      typeof p.calorieTarget === "number"
+        ? p.calorieTarget
+        : toNum(p.calorieTarget),
+    lang: i18next.language || "en",
+    unit: p.unitsSystem || "metric",
   };
   return JSON.stringify(obj);
 }
 
-function formatMealsCompact(meals: Meal[]) {
-  if (!meals?.length) return i18next.t("diet.user.noData", "brak danych");
-  return meals
+function mealsSummary(meals: Meal[]) {
+  if (!meals?.length) return "none";
+  const items = meals
     .slice()
-    .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
+    .sort((a, b) => (a.timestamp > b.timestamp ? -1 : 1))
     .slice(0, 5)
-    .map((m) => `• ${m.name || m.type || "meal"}`)
-    .join("\n");
+    .map((m) => {
+      const d = (m.timestamp || m.createdAt || "").slice(0, 10);
+      const n = m.name || m.type || "meal";
+      return `${d}:${n}`;
+    });
+  return `${meals.length}|${items.join(",")}`;
 }
 
-function trimHistory(
-  chatHistory: Message[],
-  n = 5
-): ChatCompletionMessageParam[] {
-  return chatHistory.slice(-n).map((m) => ({
-    role: m.from === "user" ? "user" : "assistant",
-    content: m.text,
-  }));
+function ensureFullSentence(text: string): string {
+  const t = text.trim();
+  const i = Math.max(
+    t.lastIndexOf("."),
+    t.lastIndexOf("!"),
+    t.lastIndexOf("?")
+  );
+  if (i >= 0) return t.slice(0, i + 1);
+  const words = t.split(/\s+/).slice(0, 150).join(" ");
+  return words.replace(/[–—,;:…-]+$/, "").trim() + ".";
 }
 
-const MAX_WORDS = 200;
-const MAX_TOKENS = 280;
+const MAX_WORDS = 150;
+const MAX_TOKENS = 260;
 
-function safeTrimToSentence(text: string, maxWords = MAX_WORDS): string {
-  const words = text.trim().split(/\s+/);
-  if (words.length <= maxWords) return text.trim();
-  const slice = words.slice(0, maxWords + 30).join(" ");
-  const m = slice.match(/([\s\S]*?[.!?])(?:\s|$)/g);
-  if (m && m.length) {
-    let acc = "";
-    for (const s of m) {
-      if (
-        acc.trim().split(/\s+/).length + s.trim().split(/\s+/).length >
-        maxWords
-      )
-        break;
-      acc += s.trim() + " ";
-    }
-    const trimmed = acc.trim();
-    if (trimmed) return trimmed + " …";
-  }
-  return words.slice(0, maxWords).join(" ") + " …";
+function enforceDietConstraints(output: string, banned: string[]): string {
+  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const hit = banned.find((k) =>
+    new RegExp(`\\b${escapeRegex(k)}\\b`, "i").test(output)
+  );
+  if (!hit) return output;
+  const replaced = output.replace(
+    new RegExp(`\\b${escapeRegex(hit)}\\b`, "ig"),
+    i18next.t("diet.replacement", "zamiennik")
+  );
+  return (
+    replaced +
+    "\n\n" +
+    i18next.t(
+      "diet.constraintsNote",
+      "(Uwzględniłem ograniczenia – zaproponowałem zamienniki.)"
+    )
+  );
 }
 
 export async function askDietAI(
@@ -285,66 +174,37 @@ export async function askDietAI(
   profile: FormData
 ): Promise<string> {
   const dc = buildDietContext(profile);
-  const lang = i18next.language || "en";
-  const profileSummary = compactProfile(profile);
-  const recentMeals = formatMealsCompact(meals);
-  const history = trimHistory(chatHistory, 5);
+  const prof = compactProfile(profile);
+  const mealsComp = mealsSummary(meals);
+  const hist = chatHistory.slice(-2).map((m) => m.text);
+  const lang = i18next.language || "pl";
 
-  const hardLimit = i18next.t(
-    "diet.system.lengthLimit",
-    "Bezwzględny limit: maksymalnie 200 słów. Nigdy nie przekraczaj limitu. Zakończ odpowiedź pełnym zdaniem. Jeśli zbliżasz się do limitu, streszczaj."
-  ) as string;
+  const system =
+    "ROLE: dietitian\n" +
+    "LANG: {{lang}}\n" +
+    "WORDS_MAX: 150\n" +
+    "RULES: Use MEALS if available; when asked about past meals, answer from MEALS. Respect FLAGS. Prioritize allergies/medical. Suggest substitutions. No medical advice. Finish with a complete sentence.\n";
 
-  const system = [
-    i18next.t(
-      "diet.system.role",
-      "Jesteś licencjonowanym dietetykiem. Odpowiadasz w języku użytkownika."
-    ),
-    hardLimit,
-    i18next.t(
-      "diet.system.rulesHeader",
-      "Zawsze stosuj poniższe reguły zgodności."
-    ),
-    ...dc.rules.slice(0, 6).map((r) => `- ${r}`),
-    dc.prefers.length
-      ? i18next.t("diet.system.prefers", "Preferencje użytkownika: {{list}}.", {
-          list: dc.prefers.slice(0, 4).join("; "),
-        })
-      : "",
-    i18next.t(
-      "diet.system.substitute",
-      "Jeśli coś jest zabronione, zaproponuj adekwatny zamiennik."
-    ),
-    i18next.t(
-      "diet.system.medical",
-      "Nie udzielasz porad medycznych; w razie wątpliwości zasugeruj konsultację."
-    ),
-    i18next.t("diet.system.language", "Respond in {{lang}}.", { lang }),
-    dc.tone,
-    dc.focus,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const sys = system.replace("{{lang}}", lang);
 
-  const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: system },
-    {
-      role: "user",
-      content: i18next.t(
-        "diet.user.profileBlock",
-        "User profile (compact JSON):\n{{profile}}\n\nRecent meals (names only):\n{{meals}}",
-        { profile: profileSummary, meals: recentMeals }
-      ) as string,
-    },
-    ...history,
-    { role: "user", content: question },
-  ];
+  const payload = JSON.stringify({
+    Q: question,
+    PROFILE: prof,
+    MEALS: mealsComp,
+    FLAGS: dc.flags,
+    TONE: dc.tone,
+    FOCUS: dc.focus,
+    HIST: hist,
+  });
 
   const resp = await openai.chat.completions.create({
     model: "gpt-4o-mini",
-    messages,
+    messages: [
+      { role: "system", content: sys },
+      { role: "user", content: payload },
+    ],
     max_tokens: MAX_TOKENS,
-    temperature: 0.4,
+    temperature: 0.3,
   });
 
   let text =
@@ -352,6 +212,6 @@ export async function askDietAI(
     i18next.t("diet.errors.empty", "Brak odpowiedzi.");
 
   text = enforceDietConstraints(text, dc.avoid);
-  text = safeTrimToSentence(text, MAX_WORDS);
+  text = ensureFullSentence(text);
   return text;
 }
