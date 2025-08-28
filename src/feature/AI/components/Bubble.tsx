@@ -38,19 +38,6 @@ export const Bubble: React.FC<Props> = ({ msg }) => {
         >
           {msg.content}
         </Text>
-        {!!msg.createdAt && (
-          <Text
-            style={[
-              styles.time,
-              { color: isUser ? theme.onAccent : theme.textSecondary },
-            ]}
-          >
-            {new Date(msg.createdAt).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </Text>
-        )}
       </View>
     </View>
   );
