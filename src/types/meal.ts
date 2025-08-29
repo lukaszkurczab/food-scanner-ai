@@ -34,4 +34,5 @@ export interface Meal {
   tags?: string[];
   deleted?: boolean;
   cloudId?: string;
+  totals?: Nutrients;
 }
