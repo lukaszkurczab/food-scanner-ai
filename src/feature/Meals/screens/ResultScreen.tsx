@@ -93,98 +93,102 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   };
 
   return (
-    <Layout showNavigation={false}>
-      {image && (
-        <Image
-          source={{ uri: image }}
-          style={styles.image}
-          resizeMode="cover"
+    <Layout showNavigation={false} disableScroll>
+      <View style={{ padding: theme.spacing.container }}>
+        {image && (
+          <Image
+            source={{ uri: image }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+        )}
+        <MealBox
+          name={mealName}
+          type={mealType}
+          nutrition={nutrition}
+          editable={!saving}
+          onNameChange={setMealName}
+          onTypeChange={setMealType}
         />
-      )}
-      <MealBox
-        name={mealName}
-        type={mealType}
-        nutrition={nutrition}
-        editable={!saving}
-        onNameChange={setMealName}
-        onTypeChange={setMealType}
-      />
 
-      <DateTimeSection
-        value={selectedAt}
-        onChange={setSelectedAt}
-        addedValue={addedAt}
-        onChangeAdded={setAddedAt}
-      />
+        <DateTimeSection
+          value={selectedAt}
+          onChange={setSelectedAt}
+          addedValue={addedAt}
+          onChangeAdded={setAddedAt}
+        />
 
-      <Card
-        variant="outlined"
-        onPress={() => !saving && setShowIngredients(!showIngredients)}
-      >
-        <Text
-          style={{
-            fontSize: theme.typography.size.md,
-            fontWeight: "500",
-            color: theme.text,
-            textAlign: "center",
-          }}
+        <Card
+          variant="outlined"
+          onPress={() => !saving && setShowIngredients(!showIngredients)}
         >
-          {showIngredients
-            ? t("hide_ingredients", { ns: "meals" })
-            : t("show_ingredients", { ns: "meals" })}
-        </Text>
-      </Card>
+          <Text
+            style={{
+              fontSize: theme.typography.size.md,
+              fontWeight: "500",
+              color: theme.text,
+              textAlign: "center",
+            }}
+          >
+            {showIngredients
+              ? t("hide_ingredients", { ns: "meals" })
+              : t("show_ingredients", { ns: "meals" })}
+          </Text>
+        </Card>
 
-      {showIngredients && (
-        <>
-          {meal.ingredients.map((ingredient, idx) => (
-            <IngredientBox
-              key={idx || ingredient.name + idx}
-              ingredient={ingredient}
-              editable={false}
-              onSave={(updated) => !saving && updateIngredient(idx, updated)}
-              onRemove={() => !saving && removeIngredient(idx)}
+        {showIngredients && (
+          <>
+            {meal.ingredients.map((ingredient, idx) => (
+              <IngredientBox
+                key={idx || ingredient.name + idx}
+                ingredient={ingredient}
+                editable={false}
+                onSave={(updated) => !saving && updateIngredient(idx, updated)}
+                onRemove={() => !saving && removeIngredient(idx)}
+              />
+            ))}
+            <SecondaryButton
+              label={t("edit_ingredients", { ns: "meals" })}
+              onPress={() =>
+                !saving && navigation.navigate("ReviewIngredients")
+              }
+              disabled={saving}
             />
-          ))}
-          <SecondaryButton
-            label={t("edit_ingredients", { ns: "meals" })}
-            onPress={() => !saving && navigation.navigate("ReviewIngredients")}
+          </>
+        )}
+
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Checkbox
+            checked={saveToMyMeals}
+            onChange={!saving ? setSaveToMyMeals : () => {}}
+            style={{ marginVertical: theme.spacing.md }}
             disabled={saving}
           />
-        </>
-      )}
+          <Text style={{ color: theme.text }}>
+            {t("add_to_my_meals", { ns: "meals" })}
+          </Text>
+        </View>
 
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <Checkbox
-          checked={saveToMyMeals}
-          onChange={!saving ? setSaveToMyMeals : () => {}}
-          style={{ marginVertical: theme.spacing.md }}
-          disabled={saving}
-        />
-        <Text style={{ color: theme.text }}>
-          {t("add_to_my_meals", { ns: "meals" })}
-        </Text>
-      </View>
-
-      <View
-        style={{
-          justifyContent: "space-between",
-          gap: 16,
-          marginTop: theme.spacing.md,
-        }}
-      >
-        <PrimaryButton
-          label={t("save", { ns: "common" })}
-          onPress={handleSave}
-          loading={saving}
-          disabled={saving}
-        />
-        <ErrorButton
-          label={t("cancel", { ns: "common" })}
-          onPress={handleCancel}
-          loading={saving}
-          disabled={saving}
-        />
+        <View
+          style={{
+            justifyContent: "space-between",
+            gap: 16,
+            marginTop: theme.spacing.md,
+          }}
+        >
+          <PrimaryButton
+            label={t("save", { ns: "common" })}
+            onPress={handleSave}
+            loading={saving}
+            disabled={saving}
+          />
+          <ErrorButton
+            label={t("cancel", { ns: "common" })}
+            onPress={handleCancel}
+            loading={saving}
+            disabled={saving}
+          />
+        </View>
       </View>
 
       <Modal

@@ -272,12 +272,17 @@ const styles = StyleSheet.create({
   },
   chipsRow: { flexDirection: "row", justifyContent: "space-between", gap: 6 },
   actionsWrap: { width: 108, justifyContent: "center" },
-  actions: { width: 108, padding: 8, gap: 8, alignItems: "stretch" },
+  actions: {
+    width: 108,
+    paddingHorizontal: 8,
+    marginBottom: 8,
+    gap: 8,
+    alignItems: "stretch",
+  },
   actBtn: {
-    height: 40,
+    height: 32,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 10,
   },
 });

@@ -12,8 +12,16 @@ import { Layout, TargetProgressBar } from "@/components";
 import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@hooks/useMeals";
-import type { Meal } from "@/types/meal";
+import type { Meal, Nutrients } from "@/types/meal";
 import { useTranslation } from "react-i18next";
+
+function filterNonZeroMacros(n: Nutrients): Partial<Nutrients> {
+  const out: Partial<Nutrients> = {};
+  if (n.protein > 0) out.protein = n.protein;
+  if (n.fat > 0) out.fat = n.fat;
+  if (n.carbs > 0) out.carbs = n.carbs;
+  return out;
+}
 
 export default function HomeScreen({ navigation }: any) {
   const theme = useTheme();
@@ -48,7 +56,19 @@ export default function HomeScreen({ navigation }: any) {
     return sum + mealKcal;
   }, 0);
 
-  const macros = calculateTotalNutrients(todayMeals);
+  const macros = useMemo(
+    () => calculateTotalNutrients(todayMeals),
+    [todayMeals]
+  );
+  const nonZeroMacros = useMemo(() => filterNonZeroMacros(macros), [macros]);
+  const showMacrosChart = useMemo(
+    () =>
+      (nonZeroMacros.protein ?? 0) > 0 ||
+      (nonZeroMacros.fat ?? 0) > 0 ||
+      (nonZeroMacros.carbs ?? 0) > 0,
+    [nonZeroMacros]
+  );
+
   const goalCalories = hasSurvey ? userData?.calorieTarget ?? 0 : 0;
 
   return (
@@ -78,7 +98,9 @@ export default function HomeScreen({ navigation }: any) {
         ) : (
           <>
             <TodaysMealsList meals={todayMeals} />
-            <TodaysMacrosChart macros={macros} />
+            {showMacrosChart && (
+              <TodaysMacrosChart macros={nonZeroMacros as Nutrients} />
+            )}
           </>
         )}
 
@@ -91,15 +113,7 @@ export default function HomeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  caloriesBox: {
-    marginBottom: 16,
-  },
-  caloriesText: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  link: {
-    marginTop: 4,
-    fontSize: 14,
-  },
+  caloriesBox: { marginBottom: 16 },
+  caloriesText: { fontSize: 16, fontWeight: "bold" },
+  link: { marginTop: 4, fontSize: 14 },
 });

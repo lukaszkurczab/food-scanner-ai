@@ -64,6 +64,8 @@ export default function StatisticsScreen({ navigation }: any) {
     Math.round((+range.end - +range.start) / (24 * 60 * 60 * 1000))
   );
 
+  const showLineSection = active !== "custom" || days >= 2;
+
   const { labels, data: nutrientsByDay } = getLastNDaysAggregated(
     meals,
     days,
@@ -192,11 +194,13 @@ export default function StatisticsScreen({ navigation }: any) {
             onSelect={setMetric}
           />
 
-          <LineSection
-            labels={labels}
-            data={seriesByMetric[metric]}
-            metric={metric}
-          />
+          {showLineSection && (
+            <LineSection
+              labels={labels}
+              data={seriesByMetric[metric]}
+              metric={metric}
+            />
+          )}
 
           <MacroPieCard
             protein={totals.protein ?? 0}
@@ -207,34 +211,6 @@ export default function StatisticsScreen({ navigation }: any) {
       )}
 
       <BottomTabBar
-        tabs={[
-          {
-            key: "Home",
-            icon: "home-filled",
-            onPress: () => navigation.navigate("Home"),
-          },
-          {
-            key: "Stats",
-            icon: "bar-chart",
-            onPress: () => navigation.navigate("Statistics"),
-          },
-          {
-            key: "Add",
-            icon: "add",
-            isFab: true,
-            onPress: () => navigation.navigate("MealAddMethod"),
-          },
-          {
-            key: "History",
-            icon: "history",
-            onPress: () => navigation.navigate("HistoryList"),
-          },
-          {
-            key: "Profile",
-            icon: "person",
-            onPress: () => navigation.navigate("Profile"),
-          },
-        ]}
         renderProfileIcon={
           <UserIcon size={32} accessibilityLabel="Profile picture" />
         }
