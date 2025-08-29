@@ -11,6 +11,7 @@ import {
   RefreshControl,
   Text,
   ViewToken,
+  ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
@@ -112,8 +113,6 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     query,
     setQuery,
     filters,
-    applyFilters,
-    clearFilters,
     showFilters,
     toggleShowFilters,
     filterCount,
@@ -296,7 +295,19 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     if (mealCloudId) deleteMeal(mealCloudId);
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading)
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: theme.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={theme.accent} />
+      </View>
+    );
 
   if (!sections.length) {
     return (

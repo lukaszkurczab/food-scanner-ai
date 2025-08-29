@@ -30,12 +30,12 @@ export const PieChart: React.FC<PieChartProps> = ({
   const [parentW, setParentW] = useState(0);
 
   const filtered = data.map((s) => ({ ...s, value: Number(s.value) || 0 }));
+  const nonZero = filtered.filter((s) => s.value > 0);
   const total = filtered.reduce((s, d) => s + d.value, 0);
   const EPS = 1e-6;
 
-  const onLayout = (e: LayoutChangeEvent) => {
+  const onLayout = (e: LayoutChangeEvent) =>
     setParentW(e.nativeEvent.layout.width);
-  };
 
   const canRow = parentW > 0 && parentW >= minSize + legendWidth + gap;
   const chartSize = parentW
@@ -49,21 +49,18 @@ export const PieChart: React.FC<PieChartProps> = ({
 
   const renderSlice = (slice: PieSlice, i: number, startAngle: number) => {
     const sweep = (slice.value / total) * 360;
-
-    // pełne koło, gdy jedyny niezerowy wycinek
     if (sweep >= 360 - EPS) {
       return (
         <Circle key={i} cx={radius} cy={radius} r={radius} fill={slice.color} />
       );
     }
-
     const largeArc = sweep > 180 ? 1 : 0;
     const sr = (Math.PI / 180) * startAngle;
     const er = (Math.PI / 180) * (startAngle + sweep);
     const x1 = radius + radius * Math.sin(sr);
-    const y1 = radius - radius * Math.cos(sr);
+    const y1 = radius - Math.cos(sr) * radius;
     const x2 = radius + radius * Math.sin(er);
-    const y2 = radius - radius * Math.cos(er);
+    const y2 = radius - Math.cos(er) * radius;
 
     return (
       <Path
@@ -87,38 +84,37 @@ export const PieChart: React.FC<PieChartProps> = ({
     }
   };
 
-  const Legend = () => (
-    <View style={{ minWidth: canRow ? legendWidth : undefined }}>
-      {filtered.map((slice, i) => (
-        <View
-          key={i}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 10,
-          }}
-        >
+  const Legend = () =>
+    total > 0 && nonZero.length > 0 ? (
+      <View style={{ minWidth: canRow ? legendWidth : undefined }}>
+        {nonZero.map((slice, i) => (
           <View
+            key={i}
             style={{
-              width: 18,
-              height: 18,
-              borderRadius: 9,
-              backgroundColor: slice.color,
-              marginRight: 10,
-              borderWidth: 1,
-              borderColor: theme.border,
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 10,
             }}
-          />
-          <Text style={{ fontSize, color: theme.text }}>
-            {getLabel(slice.label) ?? slice.value}
-          </Text>
-        </View>
-      ))}
-    </View>
-  );
+          >
+            <View
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: 9,
+                backgroundColor: slice.color,
+                marginRight: 10,
+                borderWidth: 1,
+                borderColor: theme.border,
+              }}
+            />
+            <Text style={{ fontSize, color: theme.text }}>
+              {getLabel(slice.label) ?? slice.value}
+            </Text>
+          </View>
+        ))}
+      </View>
+    ) : null;
 
-  // preoblicz kolejno kąty, pomijając zera
-  const nonZero = filtered.filter((s) => s.value > 0);
   let angle = 0;
 
   return (

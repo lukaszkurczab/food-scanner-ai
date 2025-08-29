@@ -24,6 +24,7 @@ const hiddenRoutes = [
   "SavedMeals",
   "SelectSavedMeal",
   "ReviewIngredients",
+  "Result",
 ];
 
 type LayoutProps = {
@@ -68,9 +69,19 @@ export const Layout = ({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={[styles.root, { backgroundColor: theme.background }]}>
-            {children}
-          </View>
+          {disableScroll ? (
+            <ScrollView
+              contentContainerStyle={{ flexGrow: 1 }}
+              keyboardShouldPersistTaps="handled"
+              style={[styles.root, { backgroundColor: theme.background }]}
+            >
+              {children}
+            </ScrollView>
+          ) : (
+            <View style={[styles.root, { backgroundColor: theme.background }]}>
+              {children}
+            </View>
+          )}
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     );

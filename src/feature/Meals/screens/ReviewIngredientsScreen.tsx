@@ -181,7 +181,7 @@ export default function ReviewIngredientsScreen() {
   }
 
   return (
-    <Layout showNavigation={false}>
+    <Layout showNavigation={false} disableScroll>
       <View style={styles(theme).container}>
         <View style={styles(theme).imageWrapper}>
           {image ? (
@@ -300,7 +300,7 @@ const IMAGE_SIZE = 220;
 
 const styles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: { flex: 1, paddingHorizontal: theme.spacing.container },
+    container: { flex: 1, padding: theme.spacing.container },
     imageWrapper: {
       marginBottom: theme.spacing.lg,
       width: "100%",

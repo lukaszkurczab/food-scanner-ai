@@ -24,10 +24,19 @@ export function getStatsForRange(
   const { labels, data } = getLastNDaysAggregated(meals, days, "kcal");
   const caloriesSeries = data as number[];
 
+  const startMs = new Date(range.start).setHours(0, 0, 0, 0);
+  const endMs = new Date(range.end).setHours(23, 59, 59, 999);
+
+  const toMillis = (raw: unknown): number => {
+    if (typeof raw === "number") return raw < 1e12 ? raw * 1000 : raw;
+    const t = Date.parse(String(raw ?? ""));
+    return Number.isNaN(t) ? NaN : t;
+  };
+
   const mealsInRange = meals.filter((m) => {
-    const raw = m.timestamp && m.timestamp.trim() ? m.timestamp : m.createdAt;
-    const t = typeof raw === "number" ? raw : Date.parse(raw);
-    return !Number.isNaN(t) && t >= +range.start && t < +range.end;
+    const raw = m.timestamp ?? m.createdAt;
+    const t = toMillis(raw);
+    return !Number.isNaN(t) && t >= startMs && t <= endMs;
   });
 
   const totals = calculateTotalNutrients(mealsInRange);
