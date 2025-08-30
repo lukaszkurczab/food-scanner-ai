@@ -51,9 +51,34 @@ export const MealListItem: React.FC<Props> = ({
 
     async function restore() {
       if (!mealId) return;
-      const url = meal.photoUrl || "";
-      const isRemote = /^https?:\/\//i.test(url);
-      if (!isRemote) return;
+
+      let remoteUrl: string | null = null;
+
+      if (meal.imageId) {
+        try {
+          remoteUrl = await getDownloadURL(
+            ref(st, `images/${meal.imageId}.jpg`)
+          );
+        } catch {
+          remoteUrl = null;
+        }
+      }
+
+      if (!remoteUrl) {
+        const url = meal.photoUrl || "";
+        if (/^https?:\/\//i.test(url)) remoteUrl = url;
+      }
+
+      if (!remoteUrl) {
+        try {
+          const legacyRef = ref(st, `meals/${meal.userUid}/${mealId}.jpg`);
+          remoteUrl = await getDownloadURL(legacyRef);
+        } catch {
+          remoteUrl = null;
+        }
+      }
+
+      if (!remoteUrl) return;
 
       const dir = `${FileSystem.documentDirectory}meals/${meal.userUid}`;
       const target = `${dir}/${mealId}.jpg`;
@@ -69,21 +94,9 @@ export const MealListItem: React.FC<Props> = ({
         if (!dirInfo.exists)
           await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
 
-        await FileSystem.downloadAsync(url, target);
+        await FileSystem.downloadAsync(remoteUrl, target);
         const ok = await FileSystem.getInfoAsync(target);
-        if (ok.exists) {
-          if (!cancelled) setLocalUri(target);
-          return;
-        }
-      } catch {}
-
-      try {
-        const storagePath = `meals/${meal.userUid}/${mealId}.jpg`;
-        const r = ref(st, storagePath);
-        const fresh = await getDownloadURL(r);
-        await FileSystem.downloadAsync(fresh, target);
-        const ok2 = await FileSystem.getInfoAsync(target);
-        if (ok2.exists && !cancelled) setLocalUri(target);
+        if (ok.exists && !cancelled) setLocalUri(target);
       } catch {}
     }
 
@@ -91,7 +104,7 @@ export const MealListItem: React.FC<Props> = ({
     return () => {
       cancelled = true;
     };
-  }, [mealId, meal.photoUrl, meal.userUid]);
+  }, [mealId, meal.userUid, meal.imageId, meal.photoUrl]);
 
   const Right = (progress: Animated.AnimatedInterpolation<number>) => {
     const translateX = progress.interpolate({
