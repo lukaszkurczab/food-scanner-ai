@@ -29,6 +29,7 @@ export interface Meal {
   updatedAt: string;
   syncState: MealSyncState;
   source: MealSource;
+  imageId?: string | null;
   photoUrl?: string | null;
   notes?: string | null;
   tags?: string[];
