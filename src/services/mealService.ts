@@ -1,4 +1,3 @@
-// services/mealService.ts
 import { getApp } from "@react-native-firebase/app";
 import NetInfo from "@react-native-community/netinfo";
 import {
@@ -28,6 +27,8 @@ import type { Meal } from "@/types/meal";
 const app = getApp();
 const db = getFirestore(app);
 const st = getStorage(app);
+
+export const FREE_WINDOW_DAYS = 30;
 
 function mealsCol(uid: string) {
   return collection(db, "users", uid, "meals");
@@ -87,6 +88,31 @@ export async function getMealsPage(
   }
 }
 
+function clampDateRange(
+  input: HistoryFilters["dateRange"] | undefined,
+  accessWindowDays?: number
+): HistoryFilters["dateRange"] | undefined {
+  if (!accessWindowDays || accessWindowDays <= 0) return input; // premium lub brak limitu
+  const now = new Date();
+  const startWindow = new Date(now);
+  startWindow.setDate(now.getDate() - accessWindowDays + 1);
+  startWindow.setHours(0, 0, 0, 0);
+  const endWindow = new Date(now);
+  endWindow.setHours(23, 59, 59, 999);
+
+  if (!input) return { start: startWindow, end: endWindow };
+
+  const s = new Date(input.start);
+  const e = new Date(input.end);
+  const start = s < startWindow ? startWindow : s;
+  const end = e > endWindow ? endWindow : e;
+  if (start > end) {
+    // wszystko poza oknem → zwróć pusty zakres, który nic nie zwróci
+    return { start: new Date(0), end: new Date(0) };
+  }
+  return { start, end };
+}
+
 function buildFilteredQuery(uid: string, filters?: HistoryFilters) {
   const parts: any[] = [];
   if (filters?.calories) {
@@ -113,7 +139,7 @@ function buildFilteredQuery(uid: string, filters?: HistoryFilters) {
     parts.push(where("timestamp", ">=", s.toISOString()));
     parts.push(where("timestamp", "<=", e.toISOString()));
   }
-  parts.push(orderBy("timestamp", "desc")); // tylko jeden orderBy
+  parts.push(orderBy("timestamp", "desc"));
   const qBuilt = query(mealsCol(uid), ...parts);
   console.log("[mealService.buildFilteredQuery] filters", filters);
   return qBuilt;
@@ -125,17 +151,27 @@ export async function getMealsPageFiltered(
     limit: number;
     cursor: any | null; // DocumentSnapshot
     filters?: HistoryFilters;
+    accessWindowDays?: number; // NEW: np. 30 dla free, undefined dla premium
   }
 ): Promise<MealsPageV2> {
   console.log("[mealService.getMealsPageFiltered] uid", uid, "opts", {
     limit: opts.limit,
     cursorDoc: !!opts.cursor,
     hasFilters: !!opts.filters,
+    windowDays: opts.accessWindowDays ?? null,
   });
-  const base = buildFilteredQuery(uid, opts.filters);
+
+  const effectiveFilters: HistoryFilters | undefined = (() => {
+    const f = { ...(opts.filters || {}) };
+    f.dateRange = clampDateRange(f.dateRange, opts.accessWindowDays);
+    return f;
+  })();
+
+  const base = buildFilteredQuery(uid, effectiveFilters);
   const q = opts.cursor
     ? query(base, startAfter(opts.cursor), fsLimit(opts.limit))
     : query(base, fsLimit(opts.limit));
+
   try {
     const snap = await getDocs(q);
     console.log("[mealService.getMealsPageFiltered] size", snap.size);

@@ -18,12 +18,6 @@ import { Filters, FilterScope, useFilters } from "@/context/HistoryContext";
 type Range = { start: Date; end: Date };
 type FilterKey = "calories" | "protein" | "carbs" | "fat" | "date";
 
-const monthAgo = (d: Date) => {
-  const x = new Date(d);
-  x.setMonth(x.getMonth() - 1);
-  return x;
-};
-
 const DEFAULTS = {
   calories: [0, 3000] as [number, number],
   protein: [0, 100] as [number, number],
@@ -31,9 +25,28 @@ const DEFAULTS = {
   fat: [0, 100] as [number, number],
 };
 
+function freeWindowStart(
+  today: Date,
+  windowDays?: number,
+  isPremium?: boolean
+) {
+  if (!windowDays || isPremium) {
+    const x = new Date(today);
+    x.setMonth(x.getMonth() - 1);
+    return x;
+  }
+  const c = new Date(today);
+  c.setDate(today.getDate() - (windowDays - 1));
+  c.setHours(0, 0, 0, 0);
+  return c;
+}
+
 export const FilterPanel: React.FC<{
   scope: FilterScope;
-}> = ({ scope }) => {
+  isPremium?: boolean;
+  windowDays?: number;
+  onUpgrade?: () => void;
+}> = ({ scope, isPremium = false, windowDays, onUpgrade }) => {
   const theme = useTheme();
   const { t } = useTranslation(["history", "common"]);
   const { filters: ctxFilters, applyFilters, clearFilters } = useFilters(scope);
@@ -50,16 +63,16 @@ export const FilterPanel: React.FC<{
   );
 
   const today = new Date();
-  const initialRange: Range = useMemo(
-    () =>
-      ctxFilters?.dateRange
-        ? {
-            start: new Date(ctxFilters.dateRange.start),
-            end: new Date(ctxFilters.dateRange.end),
-          }
-        : { start: monthAgo(today), end: today },
-    [ctxFilters]
-  );
+  const initialRange: Range = useMemo(() => {
+    if (ctxFilters?.dateRange) {
+      return {
+        start: new Date(ctxFilters.dateRange.start),
+        end: new Date(ctxFilters.dateRange.end),
+      };
+    }
+    const start = freeWindowStart(today, windowDays, isPremium);
+    return { start, end: today };
+  }, [ctxFilters, windowDays, isPremium]);
 
   const [calories, setCalories] = useState<[number, number]>(
     (ctxFilters?.calories as [number, number]) ?? DEFAULTS.calories
@@ -95,24 +108,32 @@ export const FilterPanel: React.FC<{
     setProtein((ctxFilters?.protein as [number, number]) ?? DEFAULTS.protein);
     setCarbs((ctxFilters?.carbs as [number, number]) ?? DEFAULTS.carbs);
     setFat((ctxFilters?.fat as [number, number]) ?? DEFAULTS.fat);
-    setDateRange(
-      ctxFilters?.dateRange
-        ? {
-            start: new Date(ctxFilters.dateRange.start),
-            end: new Date(ctxFilters.dateRange.end),
-          }
-        : { start: monthAgo(today), end: today }
-    );
-    setLocalRange(
-      ctxFilters?.dateRange
-        ? {
-            start: new Date(ctxFilters.dateRange.start),
-            end: new Date(ctxFilters.dateRange.end),
-          }
-        : { start: monthAgo(today), end: today }
-    );
+    if (ctxFilters?.dateRange) {
+      const s = new Date(ctxFilters.dateRange.start);
+      const e = new Date(ctxFilters.dateRange.end);
+      setDateRange({ start: s, end: e });
+      setLocalRange({ start: s, end: e });
+    } else {
+      const s = freeWindowStart(today, windowDays, isPremium);
+      setDateRange({ start: s, end: today });
+      setLocalRange({ start: s, end: today });
+    }
     setFocus("start");
-  }, [ctxFilters]);
+  }, [ctxFilters, windowDays, isPremium]);
+
+  const cutoff = useMemo(() => {
+    if (!windowDays || isPremium) return null;
+    const now = new Date();
+    const c = new Date(now);
+    c.setDate(now.getDate() - (windowDays - 1));
+    c.setHours(0, 0, 0, 0);
+    return c;
+  }, [windowDays, isPremium]);
+
+  const isDateBelowWindow = useMemo(() => {
+    if (!cutoff) return false;
+    return dateRange.start < cutoff || dateRange.end < cutoff;
+  }, [dateRange, cutoff]);
 
   const addOrRemove = (k: FilterKey) =>
     setActive((prev) =>
@@ -160,8 +181,9 @@ export const FilterPanel: React.FC<{
     setProtein(DEFAULTS.protein);
     setCarbs(DEFAULTS.carbs);
     setFat(DEFAULTS.fat);
-    const tdy = new Date();
-    setDateRange({ start: monthAgo(tdy), end: tdy });
+    const now = new Date();
+    const s = freeWindowStart(now, windowDays, isPremium);
+    setDateRange({ start: s, end: now });
   };
 
   const clear = () => {
@@ -189,12 +211,12 @@ export const FilterPanel: React.FC<{
           >
             <Text style={{ color: theme.text }}>{meta.label}</Text>
             <Text style={{ color: theme.accentSecondary, marginLeft: 8 }}>
-              {t("symbols.times", { ns: "history" })}
+              ×
             </Text>
           </Pressable>
         );
       }),
-    [active, ALL_FILTERS, theme, t]
+    [active, ALL_FILTERS, theme]
   );
 
   const hasActive = active.length > 0;
@@ -207,6 +229,35 @@ export const FilterPanel: React.FC<{
         paddingHorizontal: theme.spacing.lg,
       }}
     >
+      {!isPremium && cutoff && isDateBelowWindow && (
+        <View
+          style={{
+            marginTop: theme.spacing.md,
+            marginBottom: theme.spacing.md,
+            padding: theme.spacing.md,
+            borderRadius: theme.rounded.lg,
+            backgroundColor: theme.overlay,
+            borderWidth: 1,
+            borderColor: theme.accentSecondary,
+          }}
+        >
+          <Text
+            style={{
+              color: theme.text,
+              fontWeight: "700",
+              marginBottom: theme.spacing.xs,
+            }}
+          >
+            Dostęp do danych sprzed 30 dni wymaga Premium
+          </Text>
+          <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>
+            Wybrałeś zakres starszy niż {windowDays ?? 30} dni. Ulepsz do wersji
+            Premium, aby wyświetlić starsze wpisy.
+          </Text>
+          <PrimaryButton label={"Odblokuj Premium"} onPress={onUpgrade} />
+        </View>
+      )}
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -232,10 +283,10 @@ export const FilterPanel: React.FC<{
                 fontSize: theme.typography.size.md,
               }}
             >
-              {t("title", { ns: "history" })}
+              Filtry
             </Text>
             <SecondaryButton
-              label={t("addFilter", { ns: "history" })}
+              label={"Dodaj filtr"}
               onPress={() => setOpenPicker(true)}
               style={{ paddingVertical: 8, flexShrink: 1 }}
             />
@@ -247,14 +298,14 @@ export const FilterPanel: React.FC<{
             </View>
           ) : (
             <Text style={{ color: theme.textSecondary }}>
-              {t("noneSelected", { ns: "history" })}
+              Brak wybranych filtrów
             </Text>
           )}
         </View>
 
         {active.includes("calories") && (
           <RangeSlider
-            label={t("filters.calories", { ns: "history" })}
+            label={"Kalorie"}
             min={0}
             max={2000}
             step={10}
@@ -264,7 +315,7 @@ export const FilterPanel: React.FC<{
         )}
         {active.includes("protein") && (
           <RangeSlider
-            label={t("filters.protein", { ns: "history" })}
+            label={"Białko"}
             min={0}
             max={100}
             step={1}
@@ -274,7 +325,7 @@ export const FilterPanel: React.FC<{
         )}
         {active.includes("carbs") && (
           <RangeSlider
-            label={t("filters.carbs", { ns: "history" })}
+            label={"Węglowodany"}
             min={0}
             max={100}
             step={1}
@@ -284,7 +335,7 @@ export const FilterPanel: React.FC<{
         )}
         {active.includes("fat") && (
           <RangeSlider
-            label={t("filters.fat", { ns: "history" })}
+            label={"Tłuszcz"}
             min={0}
             max={100}
             step={1}
@@ -312,20 +363,11 @@ export const FilterPanel: React.FC<{
       >
         {hasActive ? (
           <>
-            <PrimaryButton
-              label={t("actions.apply", { ns: "history" })}
-              onPress={apply}
-            />
-            <SecondaryButton
-              label={t("actions.clear", { ns: "history" })}
-              onPress={clear}
-            />
+            <PrimaryButton label={"Zastosuj filtry"} onPress={apply} />
+            <SecondaryButton label={"Wyczyść"} onPress={clear} />
           </>
         ) : (
-          <SecondaryButton
-            label={t("actions.cancel", { ns: "history" })}
-            onPress={clear}
-          />
+          <SecondaryButton label={"Anuluj"} onPress={clear} />
         )}
       </View>
 
@@ -365,7 +407,7 @@ export const FilterPanel: React.FC<{
                 fontSize: theme.typography.size.md,
               }}
             >
-              {t("actions.choose", { ns: "history" })}
+              Wybierz filtr
             </Text>
 
             <View style={{ gap: 10 }}>
@@ -397,9 +439,7 @@ export const FilterPanel: React.FC<{
                         fontWeight: "700",
                       }}
                     >
-                      {selected
-                        ? t("symbols.check", { ns: "history" })
-                        : t("symbols.plus", { ns: "history" })}
+                      {selected ? "✓" : "+"}
                     </Text>
                   </Pressable>
                 );
@@ -408,11 +448,11 @@ export const FilterPanel: React.FC<{
 
             <View style={{ gap: theme.spacing.sm }}>
               <PrimaryButton
-                label={t("actions.done", { ns: "history" })}
+                label={"Gotowe"}
                 onPress={() => setOpenPicker(false)}
               />
               <SecondaryButton
-                label={t("actions.reset", { ns: "history" })}
+                label={"Resetuj"}
                 onPress={() => setActive([])}
               />
             </View>
@@ -456,7 +496,7 @@ export const FilterPanel: React.FC<{
                 fontSize: theme.typography.size.md,
               }}
             >
-              {t("actions.selectDateRange", { ns: "history" })}
+              Ustaw zakres dat
             </Text>
 
             <Calendar
@@ -470,14 +510,8 @@ export const FilterPanel: React.FC<{
             />
 
             <View style={{ flexDirection: "column", gap: theme.spacing.sm }}>
-              <PrimaryButton
-                label={t("actions.save", { ns: "history" })}
-                onPress={applyCalendar}
-              />
-              <SecondaryButton
-                label={t("actions.cancel", { ns: "history" })}
-                onPress={cancelCalendar}
-              />
+              <PrimaryButton label={"Zapisz"} onPress={applyCalendar} />
+              <SecondaryButton label={"Anuluj"} onPress={cancelCalendar} />
             </View>
           </Pressable>
         </Pressable>

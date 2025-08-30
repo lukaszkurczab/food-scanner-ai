@@ -9,8 +9,7 @@ function mapToSubscription(premium: boolean | null): Subscription {
 }
 
 export function useSubscriptionData(uid?: string | null) {
-  const { isPremium, checkPremiumStatus, subscribeToPremiumChanges } =
-    usePremiumStatus();
+  const { checkPremiumStatus, subscribeToPremiumChanges } = usePremiumStatus();
   const [sub, setSub] = useState<Subscription | null>(null);
 
   useEffect(() => {
