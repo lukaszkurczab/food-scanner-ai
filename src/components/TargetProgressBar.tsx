@@ -5,12 +5,20 @@ import { useTheme } from "@/theme/useTheme";
 export const TargetProgressBar = ({
   current,
   target,
+  onThreshold,
+  thresholdPct = 0.8,
 }: {
   current: number;
   target: number;
+  onThreshold?: () => void;
+  thresholdPct?: number;
 }) => {
   const theme = useTheme();
-  const percentage = Math.min(100, (current / target) * 100);
+  const percentage = target > 0 ? Math.min(100, (current / target) * 100) : 0;
+
+  if (onThreshold && target > 0 && current / target >= thresholdPct) {
+    onThreshold();
+  }
 
   return (
     <View>
