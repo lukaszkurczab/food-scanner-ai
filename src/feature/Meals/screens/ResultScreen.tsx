@@ -50,11 +50,9 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
 
   useEffect(() => {
     if (uid) setLastScreen(uid, "Result");
-    console.log("[ResultScreen] mount uid", uid);
   }, [setLastScreen, uid]);
 
   if (!meal || !uid) {
-    console.log("[ResultScreen] missing meal or uid", { hasMeal: !!meal, uid });
     return null;
   }
 
@@ -85,14 +83,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
     } as any;
 
     try {
-      console.log("[ResultScreen] handleSave start", {
-        uid,
-        selectedAt: selectedAt.toISOString(),
-        addedAt: addedAt.toISOString(),
-      });
-
       await addMeal(newMeal, { alsoSaveToMyMeals: saveToMyMeals });
-      console.log("[ResultScreen] addMeal done");
 
       const today = new Date(selectedAt);
       const existingTodayKcal =
@@ -104,13 +95,6 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
       const todaysKcal = existingTodayKcal + mealKcal;
 
       const targetKcal = Number(userData?.calorieTarget || 0);
-      console.log("[ResultScreen] streak inputs", {
-        existingTodayKcal,
-        mealKcal,
-        todaysKcal,
-        targetKcal,
-        thresholdPct: 0.8,
-      });
 
       await updateStreakIfThresholdMet({
         uid,
@@ -119,12 +103,9 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
         thresholdPct: 0.8,
       });
 
-      console.log("[ResultScreen] updateStreakIfThresholdMet done");
-
       clearMeal(uid);
       navigation.navigate("Home");
     } catch (e) {
-      console.log("[ResultScreen] handleSave error", e);
       setSaving(false);
     }
   };

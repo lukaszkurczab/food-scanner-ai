@@ -42,7 +42,6 @@ export function useMeals(userUid: string | null) {
   const subRef = useRef<null | (() => void)>(null);
 
   useEffect(() => {
-    console.log("[useMeals.effect] subscribe userUid", userUid);
     if (!userUid) {
       if (subRef.current) {
         subRef.current();
@@ -63,12 +62,10 @@ export function useMeals(userUid: string | null) {
         const items = snap.docs
           .map((d: any) => ({ ...(d.data() as Meal), cloudId: d.id }))
           .filter((m: any) => !m.deleted);
-        console.log("[useMeals.onSnapshot] size", items.length);
         setMeals(items);
         setLoading(false);
       },
       (e) => {
-        console.log("[useMeals.onSnapshot] error", e);
         setLoading(false);
       }
     );
@@ -90,7 +87,6 @@ export function useMeals(userUid: string | null) {
       meal: Omit<Meal, "updatedAt" | "deleted">,
       opts?: { alsoSaveToMyMeals?: boolean }
     ) => {
-      console.log("[useMeals.addMeal] start");
       if (!userUid) return;
       const now = new Date().toISOString();
       const cloudId = (meal as any).cloudId ?? uuidv4();
@@ -142,14 +138,12 @@ export function useMeals(userUid: string | null) {
         );
       }
       await batch.commit();
-      console.log("[useMeals.addMeal] written", cloudId);
     },
     [userUid]
   );
 
   const updateMeal = useCallback(
     async (meal: Meal) => {
-      console.log("[useMeals.updateMeal] cloudId", meal.cloudId);
       if (!userUid) return;
       const now = new Date().toISOString();
       const cloudId = meal.cloudId ?? uuidv4();
@@ -187,14 +181,12 @@ export function useMeals(userUid: string | null) {
         payload as any,
         { merge: true }
       );
-      console.log("[useMeals.updateMeal] written", cloudId);
     },
     [userUid]
   );
 
   const deleteMeal = useCallback(
     async (mealCloudId: string) => {
-      console.log("[useMeals.deleteMeal]", mealCloudId);
       if (!userUid || !mealCloudId) return;
       const now = new Date().toISOString();
       await setDoc(
@@ -208,7 +200,6 @@ export function useMeals(userUid: string | null) {
 
   const duplicateMeal = useCallback(
     async (original: Meal, dateOverride?: string) => {
-      console.log("[useMeals.duplicateMeal] from", original.cloudId);
       if (!userUid) return;
       const now = new Date().toISOString();
       const newCloudId = uuidv4();
@@ -230,7 +221,6 @@ export function useMeals(userUid: string | null) {
         copy as any,
         { merge: true }
       );
-      console.log("[useMeals.duplicateMeal] new", newCloudId);
     },
     [userUid]
   );
@@ -238,8 +228,8 @@ export function useMeals(userUid: string | null) {
   const syncMeals = useCallback(async () => {
     console.log("[useMeals.syncMeals] noop");
   }, []);
+
   const getUnsyncedMeals = useCallback(async () => {
-    console.log("[useMeals.getUnsyncedMeals] noop");
     return [] as Meal[];
   }, []);
 
