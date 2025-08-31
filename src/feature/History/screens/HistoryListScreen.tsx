@@ -172,10 +172,6 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     resetAndLoad();
   }, [uid, serverFilters, accessWindowDays, resetAndLoad]);
 
-  useEffect(() => {
-    console.log("[HistoryListScreen.effect] query", query);
-  }, [query]);
-
   const byText = useMemo(() => {
     const q = norm(query);
     const base = q

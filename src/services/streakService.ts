@@ -52,51 +52,39 @@ const sanitize = (raw: any): StreakDoc | null => {
 
 export async function ensureStreakDoc(uid: string) {
   const ref = doc(db, "users", uid, "streak", "main");
-  console.log("[streakService] ensureStreakDoc", { uid, path: ref.path });
   const snap = await getDoc(ref);
   if (!snap.exists) {
     await setDoc(ref, INIT);
-    console.log("[streakService] ensureStreakDoc created", INIT);
     return INIT;
   }
   const normalized = sanitize(snap.data());
   if (!normalized) {
     await setDoc(ref, INIT, { merge: true });
-    console.log("[streakService] ensureStreakDoc normalized -> INIT");
     return INIT;
   }
-  console.log("[streakService] ensureStreakDoc ok", normalized);
   return normalized;
 }
 
 export async function resetIfMissed(uid: string, now: Date = new Date()) {
   const today = fmt(now);
   const ref = doc(db, "users", uid, "streak", "main");
-  console.log("[streakService] resetIfMissed", { uid, today, path: ref.path });
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists) {
       tx.set(ref, INIT);
-      console.log("[streakService] resetIfMissed init");
       return;
     }
     const data = sanitize(snap.data());
     if (!data) {
       tx.set(ref, INIT, { merge: true });
-      console.log("[streakService] resetIfMissed normalize -> INIT");
       return;
     }
     const miss = missedSince(data.lastDate, today);
-    console.log("[streakService] resetIfMissed check", {
-      lastDate: data.lastDate,
-      miss,
-    });
+
     if (miss) {
       tx.update(ref, { current: 0 });
-      console.log("[streakService] resetIfMissed -> reset");
     }
   });
-  console.log("[streakService] resetIfMissed done");
 }
 
 export async function updateStreakIfThresholdMet(params: {
@@ -109,67 +97,47 @@ export async function updateStreakIfThresholdMet(params: {
   const { uid, todaysKcal, targetKcal } = params;
   const now = params.now ?? new Date();
   const thresholdPct = params.thresholdPct ?? 0.8;
-  console.log("[streakService] updateStreakIfThresholdMet input", {
-    uid,
-    todaysKcal,
-    targetKcal,
-    thresholdPct,
-  });
+
   if (targetKcal <= 0) {
-    console.log("[streakService] targetKcal <= 0 abort");
     return;
   }
   const ratio = todaysKcal / targetKcal;
   const reached = ratio >= thresholdPct;
-  console.log("[streakService] ratio", { ratio, reached });
   if (!reached) return;
 
   const today = fmt(now);
   const ref = doc(db, "users", uid, "streak", "main");
-  console.log("[streakService] update path", ref.path);
 
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists) {
       tx.set(ref, { current: 1, lastDate: today });
-      console.log("[streakService] noDoc -> set 1");
       return;
     }
     const data = sanitize(snap.data());
     if (!data) {
       tx.set(ref, { current: 1, lastDate: today }, { merge: true });
-      console.log("[streakService] normalize -> set 1");
       return;
     }
     if (isSameDay(data.lastDate, today)) {
-      console.log("[streakService] same day -> noop");
       return;
     }
     if (missedSince(data.lastDate, today)) {
       tx.update(ref, { current: 1, lastDate: today });
-      console.log("[streakService] missed -> set 1");
     } else {
       const next = (data.current || 0) + 1;
       tx.update(ref, { current: next, lastDate: today });
-      console.log("[streakService] increment", {
-        from: data.current,
-        to: next,
-      });
     }
   });
-  console.log("[streakService] updateStreakIfThresholdMet done");
 }
 
 export async function getStreak(uid: string) {
   const ref = doc(db, "users", uid, "streak", "main");
-  console.log("[streakService] getStreak", { uid, path: ref.path });
   const snap = await getDoc(ref);
   if (!snap.exists) {
-    console.log("[streakService] getStreak noDoc -> INIT");
     return INIT;
   }
   const d = sanitize(snap.data()) || INIT;
-  console.log("[streakService] getStreak data", d);
   return d;
 }
 
@@ -178,12 +146,10 @@ export function subscribeStreak(
   cb: (data: { current: number; lastDate: string | null }) => void
 ) {
   const ref = doc(db, "users", uid, "streak", "main");
-  console.log("[streakService] subscribeStreak", { uid, path: ref.path });
   return onSnapshot(
     ref,
     (snap) => {
       const d = sanitize(snap.data()) || INIT;
-      console.log("[streakService] subscribeStreak snapshot", d);
       cb(d);
     },
     (e) => {
