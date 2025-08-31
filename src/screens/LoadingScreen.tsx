@@ -4,6 +4,7 @@ import { Layout } from "@/components";
 import { useUserContext } from "@contexts/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUser } from "@hooks/useUser";
+import { resetIfMissed, ensureStreakDoc } from "@/services/streakService";
 
 const LoadingScreen = ({ navigation }: any) => {
   const { firebaseUser, uid } = useAuthContext();
@@ -18,6 +19,9 @@ const LoadingScreen = ({ navigation }: any) => {
         navigation.replace("Login");
         return;
       }
+
+      await ensureStreakDoc(uid!);
+      await resetIfMissed(uid!);
 
       const local = await getUserData();
       if (cancelled) return;
@@ -44,7 +48,14 @@ const LoadingScreen = ({ navigation }: any) => {
     return () => {
       cancelled = true;
     };
-  }, [firebaseUser, userData, getUserData, fetchUserFromCloud, navigation]);
+  }, [
+    firebaseUser,
+    userData,
+    getUserData,
+    fetchUserFromCloud,
+    navigation,
+    uid,
+  ]);
 
   return (
     <Layout showNavigation={false}>

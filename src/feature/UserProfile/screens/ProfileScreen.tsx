@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet, Alert, Image } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -7,15 +7,23 @@ import { ButtonToggle, InputModal, Layout, UserIcon } from "@/components";
 import { getAuth, signOut } from "@react-native-firebase/auth";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
+import { getStreak } from "@/services/streakService";
+import { useAuthContext } from "@/context/AuthContext";
 
 export default function UserProfileScreen({ navigation }: any) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const { userData, updateUser, deleteUser, exportUserData } = useUserContext();
-
+  const { uid } = useAuthContext();
+  const [streak, setStreak] = useState<number>(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [password, setPassword] = useState("");
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    if (!uid) return;
+    getStreak(uid).then((s) => setStreak(s.current || 0));
+  }, [uid]);
 
   if (!userData) {
     navigation.navigate("Login");
@@ -89,6 +97,9 @@ export default function UserProfileScreen({ navigation }: any) {
         </Text>
         <Text style={[styles.email, { color: theme.textSecondary }]}>
           {userData.email}
+        </Text>
+        <Text style={{ color: theme.textSecondary, marginTop: 4 }}>
+          🔥 {streak}
         </Text>
       </View>
 

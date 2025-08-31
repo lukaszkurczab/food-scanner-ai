@@ -14,6 +14,9 @@ import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@hooks/useMeals";
 import type { Meal, Nutrients } from "@/types/meal";
 import { useTranslation } from "react-i18next";
+import { subscribeStreak } from "@/services/streakService";
+import { StreakBadge } from "@/components/StreakBadge";
+import { useAuthContext } from "@/context/AuthContext";
 
 function filterNonZeroMacros(n: Nutrients): Partial<Nutrients> {
   const out: Partial<Nutrients> = {};
@@ -27,7 +30,8 @@ export default function HomeScreen({ navigation }: any) {
   const theme = useTheme();
   const { t } = useTranslation(["home", "common"]);
   const { userData } = useUserContext();
-  const uid = userData?.uid || "";
+  const { uid } = useAuthContext();
+  const [streak, setStreak] = useState(0);
   const { meals, getMeals } = useMeals(uid);
 
   const { labels, data } = useMemo(
@@ -38,6 +42,12 @@ export default function HomeScreen({ navigation }: any) {
 
   const [todayMeals, setTodayMeals] = useState<Meal[]>([]);
   const hasSurvey = !!userData?.surveyComplited;
+
+  useEffect(() => {
+    if (!uid) return;
+    const unsub = subscribeStreak(uid, (s) => setStreak(s.current || 0));
+    return unsub;
+  }, [uid]);
 
   useEffect(() => {
     if (!uid) return;
@@ -75,7 +85,10 @@ export default function HomeScreen({ navigation }: any) {
     <Layout>
       <View style={{ flex: 1, gap: theme.spacing.lg }}>
         {userData?.calorieTarget && userData.calorieTarget > 0 ? (
-          <TargetProgressBar current={totalCalories} target={goalCalories} />
+          <>
+            <TargetProgressBar current={totalCalories} target={goalCalories} />
+            <StreakBadge value={streak} />
+          </>
         ) : (
           <View style={styles.caloriesBox}>
             <Text style={[styles.caloriesText, { color: theme.text }]}>
