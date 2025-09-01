@@ -10,12 +10,13 @@ import Step4AIAssistantPreferences from "@/feature/Onboarding/components/Step4AI
 import Step5Summary from "@/feature/Onboarding/components/Step5Summary";
 import { useUserContext } from "@contexts/UserContext";
 import { calculateCalorieTarget } from "../utils/calculateCalorieTarget";
+import { assertNoUndefined } from "@/utils/findUndefined";
 
 const STEPS = 5;
 export const INITIAL_FORM: FormData = {
   unitsSystem: "metric",
   age: "",
-  sex: "male",
+  sex: "female",
   height: "",
   weight: "",
   preferences: [],
@@ -29,6 +30,7 @@ export const INITIAL_FORM: FormData = {
   allergiesOther: "",
   lifestyle: "",
   aiStyle: "none",
+  avatarLocalPath: "",
   aiFocus: "none",
   aiFocusOther: "",
   aiNote: "",
@@ -58,8 +60,14 @@ export default function OnboardingScreen({ navigation }: any) {
   useEffect(() => {
     (async () => {
       try {
-        if (userData) setForm(userData);
-      } catch (err) {}
+        if (userData) {
+          setForm({
+            ...INITIAL_FORM,
+            ...userData,
+            sex: (userData as any).sex || "female",
+          });
+        }
+      } catch {}
       setIsLoaded(true);
     })();
   }, []);
@@ -79,8 +87,14 @@ export default function OnboardingScreen({ navigation }: any) {
 
   const handleFinish = async () => {
     try {
-      const calorieTarget = calculateCalorieTarget(form);
-      await updateUser({ ...form, surveyComplited: true, calorieTarget });
+      const payload = {
+        ...form,
+        surveyComplited: true,
+        avatarLocalPath: form.avatarLocalPath ?? "",
+        calorieTarget: calculateCalorieTarget(form),
+      };
+      assertNoUndefined(payload, "handleFinish payload");
+      await updateUser(payload);
       await syncUserProfile();
       navigation.replace("Home");
     } catch (err) {
