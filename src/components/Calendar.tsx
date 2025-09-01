@@ -47,7 +47,6 @@ export const Calendar: React.FC<Props> = ({
   mode = "range",
   onPickSingle,
 }) => {
-  const theme = useTheme();
   const { i18n } = useTranslation();
   const locale = i18n.language;
 
