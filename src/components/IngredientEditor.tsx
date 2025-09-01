@@ -24,7 +24,6 @@ export const IngredientEditor: React.FC<Props> = ({
   initial,
   onCommit,
   onCancel,
-  onDelete,
   onChangePartial,
   errors = {},
 }) => {

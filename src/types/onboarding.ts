@@ -58,6 +58,7 @@ export type FormData = {
   calorieDeficit?: number;
   calorieSurplus?: number;
   chronicDiseases?: ChronicDisease[];
+  avatarLocalPath?: string;
   chronicDiseasesOther?: string;
   allergies?: Allergy[];
   allergiesOther?: string;

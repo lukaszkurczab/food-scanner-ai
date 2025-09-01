@@ -21,6 +21,7 @@ import {
   changeEmailService,
   changePasswordService,
 } from "@/services/userService";
+import { assertNoUndefined } from "@/utils/findUndefined";
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -64,9 +65,15 @@ export function useUser(uid: string) {
       const app = getApp();
       const db = getFirestore(app);
       const now = new Date().toISOString();
+      const payload = { ...patch, updatedAt: now };
+      assertNoUndefined(payload, "updateUserProfile payload");
       await setDoc(
         doc(db, "users", uid),
-        { ...patch, updatedAt: now },
+        {
+          ...patch,
+          avatarLocalPath: patch.avatarLocalPath ?? "",
+          updatedAt: now,
+        },
         { merge: true }
       );
       if (patch.language) setLanguage(patch.language);

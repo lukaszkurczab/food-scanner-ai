@@ -8,11 +8,11 @@ export interface UserData extends FormData {
   email: string;
   username: string;
   plan: UserPlan;
-  createdAt: number; // epoch ms
-  lastLogin: string; // ISO string (pozostawione jak w schemacie)
-  surveyComplited: boolean; // (pisownia zachowana zgodnie ze schematem)
+  createdAt: number;
+  lastLogin: string;
+  surveyComplited: boolean;
   syncState: SyncState;
-  lastSyncedAt?: string; // ISO string
+  lastSyncedAt?: string;
   avatarUrl?: string;
   avatarLocalPath?: string;
   avatarlastSyncedAt?: string;
@@ -20,7 +20,6 @@ export interface UserData extends FormData {
   language: string;
 }
 
-// Eksport (jeśli faktycznie to wykorzystujesz)
 export type ExportedUserData = {
   profile: any;
   meals: any[];
