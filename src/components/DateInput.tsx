@@ -14,6 +14,7 @@ type Props = {
   minDate?: Date;
   maxDate?: Date;
   locale?: string;
+  allowSingleDay?: boolean;
 };
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -24,6 +25,7 @@ export const DateInput: React.FC<Props> = ({
   minDate,
   maxDate,
   locale,
+  allowSingleDay = false,
 }) => {
   const theme = useTheme();
   const { t, i18n } = useTranslation(["statistics", "common"]);
@@ -47,15 +49,16 @@ export const DateInput: React.FC<Props> = ({
     setVisible(true);
   };
 
-  const enforceMinTwoDays = (r: DateRange): DateRange => {
+  const normalizeRange = (r: DateRange): DateRange => {
     let s = new Date(r.start);
     let e = new Date(r.end);
-    if (+e < +s + DAY) e = new Date(+s + DAY);
+    if (!allowSingleDay && +e < +s + DAY) e = new Date(+s + DAY);
+    if (allowSingleDay && +e < +s) e = new Date(+s);
     return { start: s, end: e };
   };
 
   const handleCalendarChange = (r: DateRange) => {
-    const fixed = enforceMinTwoDays(r);
+    const fixed = normalizeRange(r);
     setTemp(fixed);
   };
 
@@ -64,7 +67,7 @@ export const DateInput: React.FC<Props> = ({
 
   const confirm = () => {
     setVisible(false);
-    onChange(enforceMinTwoDays(temp));
+    onChange(normalizeRange(temp));
   };
   const cancel = () => {
     setVisible(false);
@@ -151,7 +154,6 @@ export const DateInput: React.FC<Props> = ({
               onToggleFocus={handleToggleFocus}
               minDate={minDate}
               maxDate={maxDate}
-              locale={locale || i18n.language}
             />
 
             <View style={{ height: 16 }} />

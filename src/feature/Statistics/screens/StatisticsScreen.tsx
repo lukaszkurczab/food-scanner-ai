@@ -18,9 +18,10 @@ import { MacroPieCard } from "../components/MacroPieCard";
 import { ProgressAveragesCard } from "../components/ProgressAveragesCard";
 import { BottomTabBar, DateInput, UserIcon } from "@/components";
 import { PrimaryButton } from "@/components/PrimaryButton";
-import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { useTranslation } from "react-i18next";
 import { useMeals } from "@hooks/useMeals";
+import { useSubscriptionData } from "@/hooks/useSubscriptionData";
+import { FREE_WINDOW_DAYS } from "@/services/mealService";
 import type { Meal } from "@/types/meal";
 
 type RangeKey = "7d" | "30d" | "custom";
@@ -32,6 +33,10 @@ export default function StatisticsScreen({ navigation }: any) {
   const { userData } = useUserContext();
 
   const uid = userData?.uid || "";
+  const sub = useSubscriptionData(uid);
+  const isPremium = sub?.state === "premium_active";
+  const accessWindowDays = isPremium ? undefined : FREE_WINDOW_DAYS;
+
   const {
     meals: rawMeals,
     getMeals,
@@ -51,26 +56,95 @@ export default function StatisticsScreen({ navigation }: any) {
     if (typeof getMeals === "function") getMeals();
   }, [uid, getMeals]);
 
-  const range = useMemo(() => {
+  const baseRange = useMemo(() => {
     if (active === "7d") return lastNDaysRange(7);
     if (active === "30d") return lastNDaysRange(30);
     return customRange;
   }, [active, customRange]);
 
-  const stats = useStats(meals, range, userData?.calorieTarget ?? null);
+  const effectiveRange = useMemo(() => {
+    if (!accessWindowDays) return baseRange;
+    const now = new Date();
+    const cutoff = new Date(now);
+    cutoff.setDate(now.getDate() - accessWindowDays + 1);
+    cutoff.setHours(0, 0, 0, 0);
+    const start = baseRange.start < cutoff ? cutoff : baseRange.start;
+    const end = baseRange.end < cutoff ? cutoff : baseRange.end;
+    return { start, end } as const;
+  }, [baseRange, accessWindowDays]);
+
+  const effectiveRangeForStats = useMemo(() => {
+    const start = new Date(effectiveRange.start);
+    const end = new Date(effectiveRange.end);
+    end.setHours(23, 59, 59, 999);
+    return { start, end } as const;
+  }, [effectiveRange]);
+
+  const stats = useStats(
+    meals,
+    effectiveRangeForStats,
+    userData?.calorieTarget ?? null
+  );
 
   const days = Math.max(
     1,
-    Math.round((+range.end - +range.start) / (24 * 60 * 60 * 1000))
+    Math.round(
+      (+effectiveRange.end - +effectiveRange.start) / (24 * 60 * 60 * 1000)
+    ) + 1
   );
 
   const showLineSection = active !== "custom" || days >= 2;
 
-  const { labels, data: nutrientsByDay } = getLastNDaysAggregated(
-    meals,
-    days,
-    "nutrients"
-  );
+  const { labels, nutrientsByDay } = useMemo(() => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const start = new Date(effectiveRange.start);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(effectiveRange.end);
+    end.setHours(0, 0, 0, 0);
+    const bucketCount = Math.max(1, Math.round((+end - +start) / DAY) + 1);
+    const labels: string[] = [];
+    const buckets = Array.from({ length: bucketCount }, () => ({
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+    }));
+    const fmt = (d: Date) => {
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      return `${dd}.${mm}`;
+    };
+    for (let i = 0; i < bucketCount; i++) {
+      const d = new Date(+start + i * DAY);
+      labels.push(fmt(d));
+    }
+    const endInclusive = new Date(+end + DAY - 1);
+    const inRangeMeals = meals.filter((m: any) => {
+      const ts = new Date(m.timestamp || m.updatedAt || m.createdAt);
+      return ts >= start && ts <= endInclusive;
+    });
+    for (const m of inRangeMeals) {
+      const ts = new Date(
+        (m as any).timestamp || (m as any).updatedAt || (m as any).createdAt
+      );
+      ts.setHours(0, 0, 0, 0);
+      const idx = Math.floor((+ts - +start) / DAY);
+      if (idx >= 0 && idx < bucketCount) {
+        const ings = (m as any).ingredients || [];
+        if (ings.length) {
+          for (const ing of ings) {
+            buckets[idx].protein += Number(ing?.protein) || 0;
+            buckets[idx].carbs += Number(ing?.carbs) || 0;
+            buckets[idx].fat += Number(ing?.fat) || 0;
+          }
+        } else if ((m as any).totals) {
+          buckets[idx].protein += Number((m as any).totals.protein) || 0;
+          buckets[idx].carbs += Number((m as any).totals.carbs) || 0;
+          buckets[idx].fat += Number((m as any).totals.fat) || 0;
+        }
+      }
+    }
+    return { labels, nutrientsByDay: buckets } as const;
+  }, [meals, effectiveRange]);
 
   const kcalSeries = stats.caloriesSeries ?? [];
   const proteinSeries = (nutrientsByDay ?? []).map((n) => n.protein ?? 0);
@@ -135,10 +209,46 @@ export default function StatisticsScreen({ navigation }: any) {
         />
         {active === "custom" && (
           <View style={{ marginTop: 8 }}>
-            <DateInput range={customRange} onChange={setCustomRange} />
+            <DateInput
+              range={customRange}
+              onChange={setCustomRange}
+              allowSingleDay
+            />
           </View>
         )}
       </View>
+
+      {!isPremium &&
+        accessWindowDays &&
+        baseRange.start < effectiveRange.start && (
+          <View
+            style={[
+              styles.banner,
+              {
+                backgroundColor: theme.overlay,
+                borderColor: theme.accentSecondary,
+              },
+            ]}
+          >
+            <Text style={{ color: theme.text, fontWeight: "700" }}>
+              {t(
+                "statistics:limitedWindowTitle",
+                "Dostęp do starszych danych wymaga Premium"
+              )}
+            </Text>
+            <Text style={{ color: theme.textSecondary, marginTop: 4 }}>
+              {t("statistics:limitedWindowDesc", {
+                defaultValue: "Zakres został skrócony do ostatnich {{d}} dni.",
+                d: accessWindowDays,
+              })}
+            </Text>
+            <PrimaryButton
+              label={t("statistics:upgrade", "Odblokuj Premium")}
+              onPress={() => navigation.navigate("Paywall")}
+              style={{ marginTop: 8, alignSelf: "flex-start" }}
+            />
+          </View>
+        )}
 
       {loadingMeals ? (
         <View style={styles.loadingBox}>
@@ -161,7 +271,6 @@ export default function StatisticsScreen({ navigation }: any) {
           >
             {t("statistics:empty.desc")}
           </Text>
-
           <PrimaryButton
             label={t("statistics:empty.cta")}
             onPress={() => navigation.navigate("MealAddMethod")}
@@ -202,11 +311,13 @@ export default function StatisticsScreen({ navigation }: any) {
             />
           )}
 
-          <MacroPieCard
-            protein={totals.protein ?? 0}
-            carbs={totals.carbs ?? 0}
-            fat={totals.fat ?? 0}
-          />
+          {hasTotals && (
+            <MacroPieCard
+              protein={totals.protein ?? 0}
+              carbs={totals.carbs ?? 0}
+              fat={totals.fat ?? 0}
+            />
+          )}
         </ScrollView>
       )}
 
