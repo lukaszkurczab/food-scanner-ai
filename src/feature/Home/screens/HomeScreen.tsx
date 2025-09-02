@@ -85,10 +85,16 @@ export default function HomeScreen({ navigation }: any) {
     <Layout>
       <View style={{ flex: 1, gap: theme.spacing.lg }}>
         {userData?.calorieTarget && userData.calorieTarget > 0 ? (
-          <>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+            }}
+          >
             <TargetProgressBar current={totalCalories} target={goalCalories} />
             <StreakBadge value={streak} />
-          </>
+          </View>
         ) : (
           <View style={styles.caloriesBox}>
             <Text style={[styles.caloriesText, { color: theme.text }]}>
