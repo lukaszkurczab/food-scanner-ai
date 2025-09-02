@@ -21,7 +21,7 @@ export const TargetProgressBar = ({
   }
 
   return (
-    <View>
+    <View style={{ flexGrow: 1 }}>
       <View
         style={{
           flexDirection: "row",
