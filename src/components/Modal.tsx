@@ -50,7 +50,7 @@ export const Modal: React.FC<Props> = ({
   const modalBg =
     theme.card || (theme.mode === "dark" ? theme.background : theme.card);
 
-  const maxWidth = 400;
+  const maxWidth = 500;
 
   const handleBackdropPress = () => {
     if (onClose) onClose();

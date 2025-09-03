@@ -10,8 +10,7 @@ import {
   deleteDoc,
   getDoc,
 } from "@react-native-firebase/firestore";
-import type { UserNotification, MotivationMode } from "@/types/notification";
-import { reconcileAll } from "@/services/notifications/engine";
+import type { UserNotification } from "@/types/notification";
 
 export function useNotifications(uid: string | null) {
   const [items, setItems] = useState<UserNotification[]>([]);
@@ -58,7 +57,6 @@ export function useNotifications(uid: string | null) {
         } as any,
         { merge: true }
       );
-      await reconcileAll(uidLocal);
       return id;
     },
     []
@@ -74,7 +72,6 @@ export function useNotifications(uid: string | null) {
         { ...patch, updatedAt: now } as any,
         { merge: true }
       );
-      await reconcileAll(uidLocal);
     },
     []
   );
@@ -83,7 +80,6 @@ export function useNotifications(uid: string | null) {
     const app = getApp();
     const db = getFirestore(app);
     await deleteDoc(doc(db, "users", uidLocal, "notifications", id));
-    await reconcileAll(uidLocal);
   }, []);
 
   const toggle = useCallback(

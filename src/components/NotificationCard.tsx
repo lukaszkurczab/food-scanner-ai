@@ -19,22 +19,20 @@ export const NotificationCard: React.FC<Props> = ({
   const time = `${String(item.time.hour).padStart(2, "0")}:${String(
     item.time.minute
   ).padStart(2, "0")}`;
+
   return (
     <Pressable
       onPress={onPress}
       style={{
-        borderWidth: 1,
+        borderBottomWidth: 1,
         borderColor: theme.border,
-        backgroundColor: theme.card,
-        borderRadius: theme.rounded.md,
-        padding: theme.spacing.md,
+        padding: theme.spacing.sm,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        marginBottom: theme.spacing.md,
       }}
     >
-      <View style={{ gap: 4, maxWidth: "70%" }}>
+      <View style={{ gap: 4 }}>
         <Text
           style={{
             color: theme.text,
@@ -60,7 +58,11 @@ export const NotificationCard: React.FC<Props> = ({
           {time}
         </Text>
       </View>
-      <ButtonToggle value={!!item.enabled} onToggle={onToggle} />
+      <ButtonToggle
+        value={!!item.enabled}
+        onToggle={onToggle}
+        trackColor={item.enabled ? theme.accentSecondary : theme.textSecondary}
+      />
     </Pressable>
   );
 };

@@ -20,6 +20,7 @@ import * as Notifications from "expo-notifications";
 import * as TaskManager from "expo-task-manager";
 import * as BackgroundFetch from "expo-background-fetch";
 import { reconcileAll } from "@/services/notifications/engine";
+import { ensureAndroidChannel } from "@/services/notifications/localScheduler";
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,
@@ -53,7 +54,6 @@ function useBootstrapNotifications() {
   useEffect(() => {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
         shouldPlaySound: false,
         shouldSetBadge: false,
         shouldShowBanner: true,
@@ -64,6 +64,9 @@ function useBootstrapNotifications() {
   useEffect(() => {
     (async () => {
       await Notifications.requestPermissionsAsync();
+      if (Platform.OS === "android") {
+        await ensureAndroidChannel();
+      }
     })();
   }, []);
   useEffect(() => {
@@ -88,17 +91,14 @@ function useBootstrapNotifications() {
   }, []);
   useEffect(() => {
     if (!uid) return;
-    (async () => {
-      await reconcileAll(uid);
-      const db = getFirestore(getApp());
-      const unsub = onSnapshot(
-        collection(db, "users", uid, "notifications"),
-        async () => {
-          await reconcileAll(uid);
-        }
-      );
-      return () => unsub();
-    })();
+    const db = getFirestore(getApp());
+    const unsub = onSnapshot(
+      collection(db, "users", uid, "notifications"),
+      async () => {
+        await reconcileAll(uid);
+      }
+    );
+    return () => unsub();
   }, [uid]);
 }
 

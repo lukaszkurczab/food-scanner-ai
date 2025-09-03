@@ -1,20 +1,35 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, ScrollView, Alert } from "react-native";
-import { Layout, PrimaryButton, SecondaryButton } from "@/components";
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Alert,
+  Pressable,
+} from "react-native";
+import {
+  Layout,
+  PrimaryButton,
+  SecondaryButton,
+  Card,
+  Modal,
+} from "@/components";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { WeekdaySelector } from "@/components/WeekdaySelector";
-import { TimePickerRow } from "@/components/TimePickerRow";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { NotificationType, UserNotification } from "@/types/notification";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { MaterialIcons } from "@expo/vector-icons";
+import { Clock24h, Clock12h } from "@/components";
 
-const TYPES: NotificationType[] = ["meal_reminder", "calorie_goal", "day_fill"];
+const TYPES: NotificationType[] = ["meal_reminder", "calorie_goal"];
 
 export default function NotificationFormScreen() {
   const theme = useTheme();
-  const { t } = useTranslation("notifications");
+  const { t, i18n } = useTranslation("notifications");
+  const locale = i18n.language || undefined;
   const { uid } = useAuthContext();
   const nav = useNavigation<any>();
   const route = useRoute<any>();
@@ -49,6 +64,36 @@ export default function NotificationFormScreen() {
       setEnabled(existing.enabled);
     }
   }, [existing]);
+
+  const [timeVisible, setTimeVisible] = useState(false);
+  const [tmp, setTmp] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(time.hour, time.minute, 0, 0);
+    return d;
+  });
+
+  useEffect(() => {
+    const d = new Date();
+    d.setHours(time.hour, time.minute, 0, 0);
+    setTmp(d);
+  }, [time.hour, time.minute]);
+
+  const prefers12h = useMemo(() => {
+    try {
+      const parts = new Intl.DateTimeFormat(locale, {
+        hour: "numeric",
+        timeZone: "UTC",
+      }).formatToParts(new Date(Date.UTC(2020, 0, 1, 13)));
+      return parts.some((p) => p.type === "dayPeriod");
+    } catch {
+      return false;
+    }
+  }, [locale]);
+
+  const fmtTime = new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   return (
     <Layout>
@@ -86,7 +131,7 @@ export default function NotificationFormScreen() {
           >
             {t("form.type")}
           </Text>
-          <View style={{ flexDirection: "row", gap: 8 }}>
+          <View style={{ gap: 8 }}>
             {TYPES.map((opt) => {
               const active = type === opt;
               return (
@@ -114,12 +159,79 @@ export default function NotificationFormScreen() {
           </View>
         </View>
 
-        <TimePickerRow
-          hour={time.hour}
-          minute={time.minute}
-          onChange={setTime}
-          label={t("form.time")}
-        />
+        <View style={{ gap: 8 }}>
+          <Text
+            style={{
+              color: theme.text,
+              fontFamily: theme.typography.fontFamily.medium,
+            }}
+          >
+            {t("form.time")}
+          </Text>
+          <Pressable
+            onPress={() => {
+              const d = new Date();
+              d.setHours(time.hour, time.minute, 0, 0);
+              setTmp(d);
+              setTimeVisible(true);
+            }}
+          >
+            <Card variant="outlined">
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: theme.spacing.sm,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: theme.typography.size.lg,
+                    color: theme.text,
+                    fontWeight: "700",
+                  }}
+                >
+                  {fmtTime.format(
+                    new Date(new Date().setHours(time.hour, time.minute, 0, 0))
+                  )}
+                </Text>
+                <MaterialIcons name="schedule" size={24} color={theme.link} />
+              </View>
+            </Card>
+          </Pressable>
+
+          <Modal
+            visible={timeVisible}
+            message={t("form.time")}
+            primaryActionLabel={t("form.save")}
+            secondaryActionLabel={t("form.cancel")}
+            onClose={() => setTimeVisible(false)}
+            onSecondaryAction={() => setTimeVisible(false)}
+            onPrimaryAction={() => {
+              setTime({ hour: tmp.getHours(), minute: tmp.getMinutes() });
+              setTimeVisible(false);
+            }}
+          >
+            <View style={{ paddingTop: theme.spacing.sm }}>
+              {prefers12h ? (
+                <Clock12h
+                  value={tmp}
+                  onChange={setTmp}
+                  onDone={() => {}}
+                  onBack={() => {}}
+                />
+              ) : (
+                <Clock24h
+                  value={tmp}
+                  onChange={setTmp}
+                  onDone={() => {}}
+                  onBack={() => {}}
+                />
+              )}
+            </View>
+          </Modal>
+        </View>
 
         <View style={{ gap: 8 }}>
           <Text
@@ -173,12 +285,15 @@ export default function NotificationFormScreen() {
                 days,
                 enabled,
               };
-              if (notifId) {
-                await update(uid, notifId, payload as any);
-              } else {
-                await create(uid, payload);
+              try {
+                await (notifId
+                  ? update(uid, notifId, payload as any)
+                  : create(uid, payload));
+              } catch (error) {
+                console.error("Error saving notification:", error);
               }
-              nav.goBack();
+
+              nav.navigate("Notifications");
             }}
           />
           {notifId ? (

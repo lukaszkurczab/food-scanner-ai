@@ -15,7 +15,7 @@ export function StreakBadge({ value }: { value: number }) {
     >
       <Text
         style={{
-          color: theme.card,
+          color: theme.text,
           fontFamily: theme.typography.fontFamily.bold,
           fontSize: theme.typography.size.md,
         }}
