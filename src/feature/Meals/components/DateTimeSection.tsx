@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Card, Modal } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Clock24h, Clock12h, Calendar } from "@/components";
 import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 
 type Props = {
   value: Date;
@@ -14,6 +15,17 @@ type Props = {
   minDate?: Date;
   maxDate?: Date;
 };
+
+const fmtDate = new Intl.DateTimeFormat(i18n.language || "en", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+const fmtTime = new Intl.DateTimeFormat(i18n.language || "en", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 export const DateTimeSection: React.FC<Props> = ({
   value,
@@ -30,6 +42,8 @@ export const DateTimeSection: React.FC<Props> = ({
   const [visible, setVisible] = useState(false);
   const [mode, setMode] = useState<"date" | "time">("date");
   const [target, setTarget] = useState<"meal" | "added">("meal");
+  const [dateText, setDateText] = useState(fmtDate.format(value));
+  const [timeText, setTimeText] = useState(fmtTime.format(value));
   const [tmp, setTmp] = useState<Date>(value);
 
   const prefers12h = useMemo(() => {
@@ -44,19 +58,11 @@ export const DateTimeSection: React.FC<Props> = ({
     }
   }, [locale]);
 
-  const fmtDate = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  useEffect(() => {
+    setDateText(fmtDate.format(value));
+    setTimeText(fmtTime.format(value));
+  }, [value]);
 
-  const fmtTime = new Intl.DateTimeFormat(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const dateText = fmtDate.format(value);
-  const timeText = fmtTime.format(value);
   const added = addedValue ?? value;
 
   return (
@@ -125,55 +131,6 @@ export const DateTimeSection: React.FC<Props> = ({
         }}
       >
         <View style={{ paddingTop: theme.spacing.sm, gap: theme.spacing.sm }}>
-          <View style={{ flexDirection: "row", gap: 8, alignSelf: "center" }}>
-            <Pressable
-              onPress={() => {
-                setTarget("meal");
-                setTmp(value);
-                setMode("date");
-              }}
-              style={{
-                paddingVertical: 6,
-                paddingHorizontal: 12,
-                borderRadius: 999,
-                backgroundColor:
-                  target === "meal" ? theme.accentSecondary : "transparent",
-              }}
-            >
-              <Text
-                style={{
-                  color: theme.text,
-                  fontWeight: target === "meal" ? "700" : "500",
-                }}
-              >
-                Posiłek
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setTarget("added");
-                setTmp(added);
-                setMode("date");
-              }}
-              style={{
-                paddingVertical: 6,
-                paddingHorizontal: 12,
-                borderRadius: 999,
-                backgroundColor:
-                  target === "added" ? theme.accentSecondary : "transparent",
-              }}
-            >
-              <Text
-                style={{
-                  color: theme.text,
-                  fontWeight: target === "added" ? "700" : "500",
-                }}
-              >
-                Dodanie
-              </Text>
-            </Pressable>
-          </View>
-
           {mode === "date" ? (
             <Calendar
               startDate={tmp}
