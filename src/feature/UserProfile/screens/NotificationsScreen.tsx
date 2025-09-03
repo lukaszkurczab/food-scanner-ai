@@ -1,175 +1,148 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { Layout, PrimaryButton } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { NotificationCard } from "@/components/NotificationCard";
-import type { MotivationMode } from "@/types/notification";
 import { ButtonToggle } from "@/components/ButtonToggle";
 import { useNavigation } from "@react-navigation/native";
+import SectionHeader from "../components/SectionHeader";
+import { MaterialIcons } from "@expo/vector-icons";
 
-export default function NotificationsScreen() {
+export default function NotificationsScreen({ navigation }: any) {
   const { uid } = useAuthContext();
   const theme = useTheme();
   const { t } = useTranslation("notifications");
   const nav = useNavigation<any>();
-  const { items, toggle, loadMotivationPrefs, setMotivationPrefs } =
-    useNotifications(uid);
+  const {
+    items,
+    toggle,
+    loadMotivationPrefs,
+    setMotivationPrefs,
+    setStatsPrefs,
+    loadStatsPrefs,
+  } = useNotifications(uid);
   const [motivationEnabled, setMotivationEnabled] = useState(false);
-  const [motivationMode, setMotivationMode] =
-    useState<MotivationMode>("minimal");
+  const [statsEnabled, setStatsEnabled] = useState(false);
 
   useEffect(() => {
     if (!uid) return;
     (async () => {
       const p = await loadMotivationPrefs(uid);
+      const s = await loadStatsPrefs(uid);
       setMotivationEnabled(p.enabled);
-      setMotivationMode(p.mode);
+      setStatsEnabled(s.enabled);
     })();
-  }, [uid, loadMotivationPrefs]);
+  }, [uid, loadMotivationPrefs, loadStatsPrefs]);
 
   return (
     <Layout>
       <ScrollView contentContainerStyle={{ gap: theme.spacing.lg }}>
-        <View>
+        <Pressable style={styles.header} onPress={() => navigation.goBack()}>
+          <MaterialIcons name="chevron-left" size={28} color={theme.text} />
+
           <Text
-            style={{
-              color: theme.text,
-              fontFamily: theme.typography.fontFamily.bold,
-              fontSize: theme.typography.size.xl,
-            }}
+            style={[styles.heading, { color: theme.text }]}
+            accessibilityRole="header"
           >
             {t("screen.title")}
           </Text>
-        </View>
+        </Pressable>
 
-        <View style={{ gap: theme.spacing.md }}>
+        <SectionHeader label={t("screen.myReminders")} />
+
+        {items.map((it) => (
+          <NotificationCard
+            key={it.id}
+            item={it}
+            onPress={() => nav.navigate("NotificationForm", { id: it.id })}
+            onToggle={(en) => uid && toggle(uid, it.id, en)}
+          />
+        ))}
+        <PrimaryButton
+          label={t("screen.addReminder")}
+          onPress={() => nav.navigate("NotificationForm", { id: null })}
+        />
+        <SectionHeader label={t("screen.motivation")} />
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingVertical: 16,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: theme.border,
+          }}
+        >
           <Text
             style={{
+              flex: 1,
               color: theme.text,
-              fontFamily: theme.typography.fontFamily.medium,
+              fontFamily: theme.typography.fontFamily.bold,
+              fontSize: theme.typography.size.md,
             }}
+            numberOfLines={1}
           >
-            {t("screen.myReminders")}
+            Motivation
           </Text>
-          {items.map((it) => (
-            <NotificationCard
-              key={it.id}
-              item={it}
-              onPress={() => nav.navigate("NotificationForm", { id: it.id })}
-              onToggle={(en) => uid && toggle(uid, it.id, en)}
-            />
-          ))}
-          <PrimaryButton
-            label={t("screen.addReminder")}
-            onPress={() => nav.navigate("NotificationForm", { id: null })}
+          <ButtonToggle
+            value={motivationEnabled}
+            onToggle={async (v) => {
+              setMotivationEnabled(v);
+              if (uid) await setMotivationPrefs(uid, v);
+            }}
+            trackColor={
+              motivationEnabled ? theme.accentSecondary : theme.textSecondary
+            }
           />
         </View>
-
-        <View style={{ gap: theme.spacing.md }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: theme.border,
+            paddingVertical: 16,
+          }}
+        >
           <Text
             style={{
+              flex: 1,
               color: theme.text,
-              fontFamily: theme.typography.fontFamily.medium,
+              fontFamily: theme.typography.fontFamily.bold,
+              fontSize: theme.typography.size.md,
             }}
+            numberOfLines={1}
           >
-            {t("screen.motivation")}
+            Stats
           </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: theme.rounded.md,
-              padding: theme.spacing.md,
+          <ButtonToggle
+            value={statsEnabled}
+            onToggle={async (v) => {
+              setStatsEnabled(v);
+              if (uid) await setStatsPrefs(uid, v);
             }}
-          >
-            <Text
-              style={{
-                color: theme.text,
-                fontFamily: theme.typography.fontFamily.regular,
-              }}
-            >
-              Enabled
-            </Text>
-            <ButtonToggle
-              value={motivationEnabled}
-              onToggle={async (v) => {
-                setMotivationEnabled(v);
-                if (uid) await setMotivationPrefs(uid, v, motivationMode);
-              }}
-            />
-          </View>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <Pressable
-              onPress={async () => {
-                setMotivationMode("minimal");
-                if (uid)
-                  await setMotivationPrefs(uid, motivationEnabled, "minimal");
-              }}
-              style={{
-                flex: 1,
-                borderWidth: 1,
-                borderColor:
-                  motivationMode === "minimal"
-                    ? theme.accentSecondary
-                    : theme.border,
-                backgroundColor:
-                  motivationMode === "minimal"
-                    ? theme.accentSecondary
-                    : theme.card,
-                padding: theme.spacing.md,
-                borderRadius: theme.rounded.md,
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{
-                  color:
-                    motivationMode === "minimal" ? theme.onAccent : theme.text,
-                }}
-              >
-                {t("screen.modeMinimal")}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={async () => {
-                setMotivationMode("full");
-                if (uid)
-                  await setMotivationPrefs(uid, motivationEnabled, "full");
-              }}
-              style={{
-                flex: 1,
-                borderWidth: 1,
-                borderColor:
-                  motivationMode === "full"
-                    ? theme.accentSecondary
-                    : theme.border,
-                backgroundColor:
-                  motivationMode === "full"
-                    ? theme.accentSecondary
-                    : theme.card,
-                padding: theme.spacing.md,
-                borderRadius: theme.rounded.md,
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{
-                  color:
-                    motivationMode === "full" ? theme.onAccent : theme.text,
-                }}
-              >
-                {t("screen.modeFull")}
-              </Text>
-            </Pressable>
-          </View>
+            trackColor={
+              statsEnabled ? theme.accentSecondary : theme.textSecondary
+            }
+          />
         </View>
       </ScrollView>
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    alignItems: "center",
+    flexDirection: "row",
+    marginBottom: 24,
+    gap: 16,
+  },
+  heading: {
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+});
