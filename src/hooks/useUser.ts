@@ -65,7 +65,11 @@ export function useUser(uid: string) {
       const app = getApp();
       const db = getFirestore(app);
       const now = new Date().toISOString();
-      const payload = { ...patch, updatedAt: now };
+      const payload = {
+        ...patch,
+        avatarLocalPath: patch.avatarLocalPath ?? "",
+        updatedAt: now,
+      };
       assertNoUndefined(payload, "updateUserProfile payload");
       await setDoc(
         doc(db, "users", uid),

@@ -53,16 +53,6 @@ export default function NotificationFormScreen() {
   return (
     <Layout>
       <ScrollView contentContainerStyle={{ gap: theme.spacing.lg }}>
-        <Text
-          style={{
-            color: theme.text,
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: theme.typography.size.xl,
-          }}
-        >
-          {notifId ? t("form.edit") : t("form.create")}
-        </Text>
-
         <View style={{ gap: 8 }}>
           <Text
             style={{
@@ -75,7 +65,7 @@ export default function NotificationFormScreen() {
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="Breakfast"
+            placeholder={notifId ? t("form.edit") : t("form.create")}
             placeholderTextColor={theme.textSecondary}
             style={{
               borderWidth: 1,

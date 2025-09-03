@@ -98,18 +98,38 @@ export function useNotifications(uid: string | null) {
     const snap = await getDoc(doc(db, "users", uidLocal, "prefs"));
     const data = snap.exists() ? (snap.data() as any) : {};
     const enabled = !!data?.notifications?.motivationEnabled;
-    const mode: MotivationMode =
-      data?.notifications?.motivationMode || "minimal";
-    return { enabled, mode };
+    return { enabled };
+  }, []);
+
+  const loadStatsPrefs = useCallback(async (uidLocal: string) => {
+    const db = getFirestore(getApp());
+    const snap = await getDoc(doc(db, "users", uidLocal, "prefs"));
+    const data = snap.exists() ? (snap.data() as any) : {};
+    const enabled = !!data?.notifications?.statsEnabled;
+    return { enabled };
   }, []);
 
   const setMotivationPrefs = useCallback(
-    async (uidLocal: string, enabled: boolean, mode: MotivationMode) => {
+    async (uidLocal: string, enabled: boolean) => {
       const db = getFirestore(getApp());
       await setDoc(
         doc(db, "users", uidLocal, "prefs"),
         {
-          notifications: { motivationEnabled: enabled, motivationMode: mode },
+          notifications: { motivationEnabled: enabled },
+        } as any,
+        { merge: true }
+      );
+    },
+    []
+  );
+
+  const setStatsPrefs = useCallback(
+    async (uidLocal: string, enabled: boolean) => {
+      const db = getFirestore(getApp());
+      await setDoc(
+        doc(db, "users", uidLocal, "prefs"),
+        {
+          notifications: { statsEnabled: enabled },
         } as any,
         { merge: true }
       );
@@ -127,6 +147,8 @@ export function useNotifications(uid: string | null) {
       toggle,
       loadMotivationPrefs,
       setMotivationPrefs,
+      setStatsPrefs,
+      loadStatsPrefs,
     }),
     [
       items,
@@ -137,6 +159,8 @@ export function useNotifications(uid: string | null) {
       toggle,
       loadMotivationPrefs,
       setMotivationPrefs,
+      setStatsPrefs,
+      loadStatsPrefs,
     ]
   );
 }
