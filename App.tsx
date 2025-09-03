@@ -6,17 +6,26 @@ import { ThemeController } from "@/theme/ThemeController";
 import AppNavigator from "@/navigation/AppNavigator";
 import { NavigationContainer } from "@react-navigation/native";
 import { navigationRef } from "@/navigation/navigate";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuthContext } from "@/context/AuthContext";
 import { UserProvider } from "@/context/UserContext";
 import { MealDraftProvider } from "@/context/MealDraftContext";
 import { PremiumProvider } from "@/context/PremiumContext";
 import { useFonts } from "expo-font";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Platform } from "react-native";
 import { useTheme } from "@/theme";
 import Purchases from "react-native-purchases";
-import { Platform } from "react-native";
 import { InactivityProvider } from "@contexts/InactivityContext";
 import { HistoryProvider } from "@/context/HistoryContext";
+import * as Notifications from "expo-notifications";
+import * as TaskManager from "expo-task-manager";
+import * as BackgroundFetch from "expo-background-fetch";
+import { reconcileAll } from "@/services/notifications/engine";
+import { getApp } from "@react-native-firebase/app";
+import {
+  getFirestore,
+  collection,
+  onSnapshot,
+} from "@react-native-firebase/firestore";
 
 export function initRevenueCat() {
   Purchases.configure({
@@ -25,7 +34,76 @@ export function initRevenueCat() {
   });
 }
 
-export default function App() {
+const TASK_NAME = "CALORIAI_NOTIFICATION_GUARD";
+
+TaskManager.defineTask(TASK_NAME, async () => {
+  try {
+    const auth = require("@react-native-firebase/auth");
+    const user = auth.default().currentUser;
+    if (!user) return BackgroundFetch.BackgroundFetchResult.NoData;
+    await reconcileAll(user.uid);
+    return BackgroundFetch.BackgroundFetchResult.NewData;
+  } catch {
+    return BackgroundFetch.BackgroundFetchResult.Failed;
+  }
+});
+
+function useBootstrapNotifications() {
+  const { uid } = useAuthContext();
+  useEffect(() => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  }, []);
+  useEffect(() => {
+    (async () => {
+      await Notifications.requestPermissionsAsync();
+    })();
+  }, []);
+  useEffect(() => {
+    (async () => {
+      const status = await BackgroundFetch.getStatusAsync();
+      if (
+        status === BackgroundFetch.BackgroundFetchStatus.Restricted ||
+        status === BackgroundFetch.BackgroundFetchStatus.Denied
+      ) {
+        return;
+      }
+      const tasks = await TaskManager.getRegisteredTasksAsync();
+      const exists = tasks.find((t) => t.taskName === TASK_NAME);
+      if (!exists) {
+        await BackgroundFetch.registerTaskAsync(TASK_NAME, {
+          minimumInterval: 15 * 60,
+          stopOnTerminate: false,
+          startOnBoot: true,
+        });
+      }
+    })();
+  }, []);
+  useEffect(() => {
+    if (!uid) return;
+    (async () => {
+      await reconcileAll(uid);
+      const db = getFirestore(getApp());
+      const unsub = onSnapshot(
+        collection(db, "users", uid, "notifications"),
+        async () => {
+          await reconcileAll(uid);
+        }
+      );
+      return () => unsub();
+    })();
+  }, [uid]);
+}
+
+function Root() {
+  useBootstrapNotifications();
   const theme = useTheme();
   const [fontsLoaded] = useFonts({
     "Inter-Regular": require("./assets/fonts/Inter-Regular.ttf"),
@@ -57,22 +135,28 @@ export default function App() {
   }
 
   return (
+    <NavigationContainer ref={navigationRef}>
+      <InactivityProvider>
+        <PremiumProvider>
+          <UserProvider>
+            <MealDraftProvider>
+              <HistoryProvider>
+                <ThemeController>
+                  <AppNavigator />
+                </ThemeController>
+              </HistoryProvider>
+            </MealDraftProvider>
+          </UserProvider>
+        </PremiumProvider>
+      </InactivityProvider>
+    </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
     <AuthProvider>
-      <NavigationContainer ref={navigationRef}>
-        <InactivityProvider>
-          <PremiumProvider>
-            <UserProvider>
-              <MealDraftProvider>
-                <HistoryProvider>
-                  <ThemeController>
-                    <AppNavigator />
-                  </ThemeController>
-                </HistoryProvider>
-              </MealDraftProvider>
-            </UserProvider>
-          </PremiumProvider>
-        </InactivityProvider>
-      </NavigationContainer>
+      <Root />
     </AuthProvider>
   );
 }

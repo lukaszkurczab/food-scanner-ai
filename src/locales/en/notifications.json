@@ -1,0 +1,28 @@
+{
+  "screen": {
+    "title": "Notifications",
+    "myReminders": "My reminders",
+    "motivation": "Motivation & stats",
+    "modeMinimal": "Minimal",
+    "modeFull": "Full",
+    "addReminder": "Add reminder"
+  },
+  "form": {
+    "create": "New reminder",
+    "edit": "Edit reminder",
+    "name": "Name",
+    "type": "Type",
+    "time": "Time",
+    "days": "Days of week",
+    "textOverride": "Custom text (optional)",
+    "enabled": "Enabled",
+    "save": "Save",
+    "delete": "Delete",
+    "cancel": "Cancel"
+  },
+  "type": {
+    "meal_reminder": "Meal reminder",
+    "calorie_goal": "Calorie goal",
+    "day_fill": "Fill the day"
+  }
+}
