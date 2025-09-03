@@ -37,6 +37,8 @@ export type RootStackParamList = {
   MealDetail: undefined;
   Chat: undefined;
   Summary: undefined;
+  Notifications: undefined;
+  NotificationForm: undefined;
   Loading: undefined;
   MealDetails: { meal: Meal };
 };

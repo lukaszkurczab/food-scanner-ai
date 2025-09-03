@@ -15,6 +15,7 @@ import en_chat from "./locales/en/chat.json";
 import en_statistics from "./locales/en/statistics.json";
 import en_home from "./locales/en/home.json";
 import en_history from "./locales/en/history.json";
+import en_notifications from "./locales/en/notifications.json";
 
 import pl_common from "./locales/pl/common.json";
 import pl_login from "./locales/pl/login.json";
@@ -28,6 +29,7 @@ import pl_chat from "./locales/pl/chat.json";
 import pl_statistics from "./locales/pl/statistics.json";
 import pl_home from "./locales/pl/home.json";
 import pl_history from "./locales/pl/history.json";
+import pl_notifications from "./locales/pl/notifications.json";
 
 const STORAGE_KEY = "APP_LANGUAGE";
 
@@ -70,6 +72,7 @@ i18n
       "chat",
       "home",
       "history",
+      "notifications",
     ],
     defaultNS: "common",
     resources: {
@@ -86,6 +89,7 @@ i18n
         chat: en_chat,
         home: en_home,
         history: en_history,
+        notifications: en_notifications,
       },
       pl: {
         common: pl_common,
@@ -100,6 +104,7 @@ i18n
         chat: pl_chat,
         home: pl_home,
         history: pl_history,
+        notifications: pl_notifications,
       },
     },
     interpolation: { escapeValue: false },

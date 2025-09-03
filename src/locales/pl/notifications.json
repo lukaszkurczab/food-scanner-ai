@@ -1,0 +1,28 @@
+{
+  "screen": {
+    "title": "Powiadomienia",
+    "myReminders": "Moje przypomnienia",
+    "motivation": "Motywacja i statystyki",
+    "modeMinimal": "Minimalne",
+    "modeFull": "Pełne",
+    "addReminder": "Dodaj przypomnienie"
+  },
+  "form": {
+    "create": "Nowe powiadomienie",
+    "edit": "Edytuj powiadomienie",
+    "name": "Nazwa",
+    "type": "Typ",
+    "time": "Godzina",
+    "days": "Dni tygodnia",
+    "textOverride": "Własny tekst (opcjonalnie)",
+    "enabled": "Włączone",
+    "save": "Zapisz",
+    "delete": "Usuń",
+    "cancel": "Anuluj"
+  },
+  "type": {
+    "meal_reminder": "Przypomnienie o posiłkach",
+    "calorie_goal": "Cel kaloryczny",
+    "day_fill": "Uzupełnienie dnia"
+  }
+}

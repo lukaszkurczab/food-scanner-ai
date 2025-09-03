@@ -35,6 +35,8 @@ import SavedMealsScreen from "@feature/History/screens/SavedMealsScreen";
 import SelectSavedMealScreen from "@feature/Meals/screens/SelectSavedMealsScreen";
 import IngredientsNotRecognizedScreen from "@/feature/Meals/screens/IngredientsNotRecognizedScreen";
 import { MealDraftInactivityGuard } from "@feature/Meals/guards/MealDraftInactivityGuard";
+import NotificationsScreen from "@/feature/UserProfile/screens/NotificationsScreen";
+import NotificationFormScreen from "@/feature/UserProfile/screens/NotificationFormScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -128,6 +130,11 @@ const AppNavigator = () => {
           <Stack.Screen
             name="Result"
             component={withMealDraftGuard(ResultScreen, ["Result"])}
+          />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen
+            name="NotificationForm"
+            component={NotificationFormScreen}
           />
         </>
       ) : (

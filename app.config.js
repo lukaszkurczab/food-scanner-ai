@@ -48,6 +48,9 @@ export default {
       "expo-font",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
+      "expo-notifications",
+      "expo-task-manager",
+      "expo-background-fetch",
     ],
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
