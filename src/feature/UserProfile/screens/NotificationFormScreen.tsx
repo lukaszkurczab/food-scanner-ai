@@ -19,12 +19,24 @@ import { useTranslation } from "react-i18next";
 import { WeekdaySelector } from "@/components/WeekdaySelector";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
-import type { NotificationType, UserNotification } from "@/types/notification";
+import type {
+  NotificationType,
+  UserNotification,
+  MealKind,
+} from "@/types/notification";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Clock24h, Clock12h } from "@/components";
+import { Dropdown } from "@/components/Dropdown";
 
 const TYPES: NotificationType[] = ["meal_reminder", "calorie_goal"];
+const MEAL_OPTIONS: Array<{ label: string; value: MealKind | null }> = [
+  { label: "Any meal", value: null },
+  { label: "Breakfast", value: "breakfast" },
+  { label: "Lunch", value: "lunch" },
+  { label: "Dinner", value: "dinner" },
+  { label: "Snack", value: "snack" },
+];
 
 export default function NotificationFormScreen() {
   const theme = useTheme();
@@ -53,6 +65,12 @@ export default function NotificationFormScreen() {
     existing?.days || [1, 2, 3, 4, 5, 6, 0]
   );
   const [enabled, setEnabled] = useState<boolean>(existing?.enabled ?? true);
+  const [mealKind, setMealKind] = useState<MealKind | null>(
+    (existing as any)?.mealKind ?? null
+  );
+  const [kcalByHour, setKcalByHour] = useState<number | null>(
+    (existing as any)?.kcalByHour ?? null
+  );
 
   useEffect(() => {
     if (existing) {
@@ -62,6 +80,8 @@ export default function NotificationFormScreen() {
       setTime(existing.time);
       setDays(existing.days);
       setEnabled(existing.enabled);
+      setMealKind((existing as any)?.mealKind ?? null);
+      setKcalByHour((existing as any)?.kcalByHour ?? null);
     }
   }, [existing]);
 
@@ -245,6 +265,58 @@ export default function NotificationFormScreen() {
           <WeekdaySelector value={days} onChange={setDays} />
         </View>
 
+        {type === "meal_reminder" ? (
+          <View style={{ gap: 8 }}>
+            <Text
+              style={{
+                color: theme.text,
+                fontFamily: theme.typography.fontFamily.medium,
+              }}
+            >
+              {t("form.mealKind", "Meal kind")}
+            </Text>
+            <Dropdown
+              value={mealKind}
+              options={MEAL_OPTIONS}
+              onChange={(val) => setMealKind(val)}
+            />
+          </View>
+        ) : null}
+
+        {type === "calorie_goal" ? (
+          <View style={{ gap: 8 }}>
+            <Text
+              style={{
+                color: theme.text,
+                fontFamily: theme.typography.fontFamily.medium,
+              }}
+            >
+              {t("form.kcalByHour", "Kcal target by this time (optional)")}
+            </Text>
+            <TextInput
+              value={
+                kcalByHour !== null && kcalByHour !== undefined
+                  ? String(kcalByHour)
+                  : ""
+              }
+              onChangeText={(v) => {
+                const n = v.replace(/[^\d]/g, "");
+                setKcalByHour(n.length ? Number(n) : null);
+              }}
+              keyboardType="numeric"
+              placeholder={t("form.kcalPlaceholder", "e.g. 1000")}
+              placeholderTextColor={theme.textSecondary}
+              style={{
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: theme.rounded.md,
+                padding: theme.spacing.md,
+                color: theme.text,
+              }}
+            />
+          </View>
+        ) : null}
+
         <View style={{ gap: 8 }}>
           <Text
             style={{
@@ -284,7 +356,9 @@ export default function NotificationFormScreen() {
                 time,
                 days,
                 enabled,
-              };
+                mealKind: type === "meal_reminder" ? mealKind ?? null : null,
+                kcalByHour: type === "calorie_goal" ? kcalByHour ?? null : null,
+              } as any;
               try {
                 await (notifId
                   ? update(uid, notifId, payload as any)
@@ -292,8 +366,8 @@ export default function NotificationFormScreen() {
               } catch (error) {
                 console.error("Error saving notification:", error);
               }
-
-              nav.navigate("Notifications");
+              if (nav.canGoBack()) nav.goBack();
+              else nav.navigate("Notifications");
             }}
           />
           {notifId ? (

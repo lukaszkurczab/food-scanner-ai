@@ -21,6 +21,7 @@ import * as TaskManager from "expo-task-manager";
 import * as BackgroundFetch from "expo-background-fetch";
 import { reconcileAll } from "@/services/notifications/engine";
 import { ensureAndroidChannel } from "@/services/notifications/localScheduler";
+import { runSystemNotifications } from "@/services/notifications/system";
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,
@@ -43,6 +44,7 @@ TaskManager.defineTask(TASK_NAME, async () => {
     const user = auth.default().currentUser;
     if (!user) return BackgroundFetch.BackgroundFetchResult.NoData;
     await reconcileAll(user.uid);
+    await runSystemNotifications(user.uid);
     return BackgroundFetch.BackgroundFetchResult.NewData;
   } catch {
     return BackgroundFetch.BackgroundFetchResult.Failed;

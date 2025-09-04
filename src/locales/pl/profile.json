@@ -90,5 +90,6 @@
   "camera_permission_message": "Aby zrobić zdjęcie profilowe, wymagany jest dostęp do aparatu.",
   "camera_grant_access": "Udziel dostępu",
   "avatarPreview_title": "Użyj",
-  "avatarPreview_subtitle": "Odrzuć"
+  "avatarPreview_subtitle": "Odrzuć",
+  "manageNotifications": "Zarządzaj powiadomieniami"
 }

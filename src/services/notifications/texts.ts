@@ -1,41 +1,66 @@
 import type { NotificationType, AIStyle } from "@/types/notification";
+import i18n from "@/i18n";
 
 export function getNotificationText(
-  type: NotificationType,
+  type: NotificationType | "day_fill",
   aiStyle: AIStyle,
-  data?: { missingKcal?: number }
+  data?: { missingKcal?: number; mealKindLabel?: string },
+  locale?: string
 ): { title: string; body: string } {
+  const t = i18n.getFixedT(locale ?? i18n.language, "notifications");
+
   const style = aiStyle === "none" ? "friendly" : aiStyle;
+
   if (type === "meal_reminder") {
     if (style === "concise")
-      return { title: "Meal", body: "No breakfast logged." };
+      return {
+        title: t("push.meal_reminder.title_concise"),
+        body: t("push.meal_reminder.body_concise", {
+          meal: data?.mealKindLabel ?? t("meals.any"),
+        }),
+      };
     if (style === "detailed")
       return {
-        title: "Meal reminder",
-        body: "You usually eat breakfast now. Add it to keep your log accurate.",
+        title: t("push.meal_reminder.title"),
+        body: t("push.meal_reminder.body_detailed", {
+          meal: data?.mealKindLabel ?? t("meals.any"),
+        }),
       };
-    return { title: "Time to eat", body: "You haven't added breakfast yet 🍳" };
+    return {
+      title: t("push.meal_reminder.title"),
+      body: t("push.meal_reminder.body", {
+        meal: data?.mealKindLabel ?? t("meals.any"),
+      }),
+    };
   }
+
   if (type === "calorie_goal") {
     const kcal = data?.missingKcal ?? 0;
     if (style === "concise")
-      return { title: "Goal not reached", body: `~${kcal} kcal left.` };
+      return {
+        title: t("push.calorie_goal.title_concise"),
+        body: t("push.calorie_goal.body_concise", { kcal }),
+      };
     if (style === "detailed")
       return {
-        title: "Today's calorie goal",
-        body: `You are about ${kcal} kcal below your goal. Consider a light meal.`,
+        title: t("push.calorie_goal.title"),
+        body: t("push.calorie_goal.body_detailed", { kcal }),
       };
     return {
-      title: "Calorie goal",
-      body: `You're about ${kcal} kcal short today 🎯`,
+      title: t("push.calorie_goal.title"),
+      body: t("push.calorie_goal.body", { kcal }),
     };
   }
+
   if (style === "concise")
-    return { title: "Empty day", body: "No meals today." };
+    return {
+      title: t("push.day_fill.title_concise"),
+      body: t("push.day_fill.body_concise"),
+    };
   if (style === "detailed")
     return {
-      title: "Fill your diary",
-      body: "It looks like today is empty. Add meals to keep your history complete.",
+      title: t("push.day_fill.title"),
+      body: t("push.day_fill.body_detailed"),
     };
-  return { title: "Fill the day", body: "No meals were saved today 📒" };
+  return { title: t("push.day_fill.title"), body: t("push.day_fill.body") };
 }

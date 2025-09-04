@@ -2,7 +2,7 @@ import "dotenv/config";
 
 export default {
   expo: {
-    name: "caloriai",
+    name: "CaloriAI",
     slug: "caloriai",
     owner: "lkurczab",
     version: "1.0.1",
@@ -10,8 +10,9 @@ export default {
     userInterfaceStyle: "light",
     newArchEnabled: true,
     assetBundlePatterns: ["**/*"],
+    icon: "./assets/icon.png",
     splash: {
-      image: "./assets/splash-icon.png",
+      image: "./assets/splash.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff",
     },
@@ -30,6 +31,11 @@ export default {
       },
       package: "com.lkurczab.foodscannerai",
       googleServicesFile: "./google-services.json",
+    },
+    notification: {
+      icon: "./assets/icon.png",
+      color: "#4CAF50",
+      androidCollapsedTitle: "caloriai",
     },
     plugins: [
       [
