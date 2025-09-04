@@ -1,12 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { Layout, PrimaryButton } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -18,6 +11,7 @@ import { useNavigation } from "@react-navigation/native";
 import SectionHeader from "../components/SectionHeader";
 import { MaterialIcons } from "@expo/vector-icons";
 import { cancelAllForNotif } from "@/services/notifications/localScheduler";
+import { Alert as AppAlert } from "@/components/Alert";
 
 export default function NotificationsScreen({ navigation }: any) {
   const { uid } = useAuthContext();
@@ -35,6 +29,8 @@ export default function NotificationsScreen({ navigation }: any) {
   } = useNotifications(uid);
   const [motivationEnabled, setMotivationEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!uid) return;
@@ -46,23 +42,16 @@ export default function NotificationsScreen({ navigation }: any) {
     })();
   }, [uid, loadMotivationPrefs, loadStatsPrefs]);
 
-  const confirmDelete = (id: string) => {
-    Alert.alert(
-      t("screen.deleteTitle", "Delete reminder"),
-      t("screen.deleteMsg", "Are you sure?"),
-      [
-        { text: t("form.cancel", "Cancel"), style: "cancel" },
-        {
-          text: t("form.delete", "Delete"),
-          style: "destructive",
-          onPress: async () => {
-            if (!uid) return;
-            await cancelAllForNotif(id);
-            await remove(uid, id);
-          },
-        },
-      ]
-    );
+  const onConfirmDelete = async () => {
+    if (!uid || !confirmId) return;
+    setDeleting(true);
+    try {
+      await cancelAllForNotif(confirmId);
+      await remove(uid, confirmId);
+    } finally {
+      setDeleting(false);
+      setConfirmId(null);
+    }
   };
 
   return (
@@ -88,27 +77,8 @@ export default function NotificationsScreen({ navigation }: any) {
                   nav.navigate("NotificationForm", { id: item.id })
                 }
                 onToggle={(en) => uid && toggle(uid, item.id, en)}
+                onRemove={() => setConfirmId(item.id)}
               />
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "flex-end",
-                  marginTop: 8,
-                }}
-              >
-                <Pressable
-                  onPress={() => confirmDelete(item.id)}
-                  style={{ paddingHorizontal: 8, paddingVertical: 6 }}
-                >
-                  <Text
-                    style={{
-                      color: theme.error.text || "#d00",
-                    }}
-                  >
-                    {t("form.delete", "Delete")}
-                  </Text>
-                </Pressable>
-              </View>
             </View>
           ))}
         </View>
@@ -138,7 +108,7 @@ export default function NotificationsScreen({ navigation }: any) {
               }}
               numberOfLines={1}
             >
-              Motivation
+              {t("screen.motivation")}
             </Text>
             <ButtonToggle
               value={motivationEnabled}
@@ -169,7 +139,7 @@ export default function NotificationsScreen({ navigation }: any) {
               }}
               numberOfLines={1}
             >
-              Stats
+              {t("screen.stats")}
             </Text>
             <ButtonToggle
               value={statsEnabled}
@@ -184,6 +154,25 @@ export default function NotificationsScreen({ navigation }: any) {
           </View>
         </View>
       </ScrollView>
+
+      <AppAlert
+        visible={!!confirmId}
+        title={t("screen.deleteTitle", "Delete reminder")}
+        message={t("screen.deleteMsg", "Are you sure?")}
+        onClose={() => (!deleting ? setConfirmId(null) : null)}
+        primaryAction={{
+          label: t("form.delete", "Delete"),
+          tone: "destructive",
+          loading: deleting,
+          onPress: onConfirmDelete,
+          testID: "confirm-delete",
+        }}
+        secondaryAction={{
+          label: t("form.cancel", "Cancel"),
+          onPress: () => setConfirmId(null),
+          testID: "cancel-delete",
+        }}
+      />
     </Layout>
   );
 }

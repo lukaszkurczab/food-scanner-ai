@@ -90,5 +90,6 @@
   "camera_permission_message": "Camera access is required to take a profile photo.",
   "camera_grant_access": "Grant access",
   "avatarPreview_title": "Confirm photo",
-  "avatarPreview_subtitle": "Try again"
+  "avatarPreview_subtitle": "Try again",
+  "manageNotifications": "Manage notifications"
 }

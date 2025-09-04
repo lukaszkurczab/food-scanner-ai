@@ -1,21 +1,25 @@
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, TouchableOpacity } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import type { UserNotification } from "@/types/notification";
 import { ButtonToggle } from "@/components/ButtonToggle";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   item: UserNotification;
   onPress: () => void;
   onToggle: (enabled: boolean) => void;
+  onRemove: () => void;
 };
 
 export const NotificationCard: React.FC<Props> = ({
   item,
   onPress,
   onToggle,
+  onRemove,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation("notifications");
   const time = `${String(item.time.hour).padStart(2, "0")}:${String(
     item.time.minute
   ).padStart(2, "0")}`;
@@ -47,7 +51,7 @@ export const NotificationCard: React.FC<Props> = ({
             fontFamily: theme.typography.fontFamily.regular,
           }}
         >
-          {item.type}
+          {t(`type.${item.type}`)}
         </Text>
         <Text
           style={{
@@ -58,11 +62,20 @@ export const NotificationCard: React.FC<Props> = ({
           {time}
         </Text>
       </View>
-      <ButtonToggle
-        value={!!item.enabled}
-        onToggle={onToggle}
-        trackColor={item.enabled ? theme.accentSecondary : theme.textSecondary}
-      />
+      <View style={{ gap: 16, alignItems: "center" }}>
+        <ButtonToggle
+          value={!!item.enabled}
+          onToggle={onToggle}
+          trackColor={
+            item.enabled ? theme.accentSecondary : theme.textSecondary
+          }
+        />
+        <TouchableOpacity onPress={onRemove}>
+          <Text style={{ color: theme.error.text || "#d00" }}>
+            {t("form.delete", "Delete")}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </Pressable>
   );
 };

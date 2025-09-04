@@ -1,3 +1,4 @@
+// src/services/notifications/engine.ts
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,
@@ -11,16 +12,18 @@ import { getNotificationText } from "./texts";
 import {
   fetchTodayMeals,
   sumConsumedKcal,
-  isCalorieGoalNotMet,
   hasAnyMealsToday,
+  isKcalBelowThreshold,
+  hasMealTypeToday,
 } from "./conditions";
 import {
   ensureAndroidChannel,
-  scheduleMealReminder,
+  scheduleDailyAt,
   scheduleOneShotAt,
   cancelAllForNotif,
   nextOccurrenceForDays,
 } from "./localScheduler";
+import i18n from "@/i18n";
 
 const running: Record<string, boolean> = {};
 
@@ -52,33 +55,82 @@ export async function reconcileAll(uid: string) {
     await ensureAndroidChannel();
     const aiStyle = await loadUserAIStyle(uid);
     const items = await listNotifications(uid);
+    const locale = i18n.language;
+
     for (const n of items) {
       await cancelAllForNotif(n.id);
     }
+
     for (const n of items) {
       if (!n.enabled) continue;
+
       if (n.type === "meal_reminder") {
-        const t = getNotificationText("meal_reminder", aiStyle);
-        await scheduleMealReminder(n, t.title, t.body);
+        const mealLabel = (n as any)?.mealKind
+          ? i18n.t(`notifications.meals.${(n as any).mealKind}`)
+          : i18n.t("notifications.meals.any");
+        const tt = getNotificationText(
+          "meal_reminder",
+          aiStyle,
+          { mealKindLabel: mealLabel },
+          locale
+        );
+
+        if (!(n as any)?.mealKind) {
+          await scheduleDailyAt(
+            n.time.hour,
+            n.time.minute,
+            {
+              title: tt.title,
+              body: n.text ?? tt.body,
+              data: { notifId: n.id, type: n.type },
+            },
+            n.id
+          );
+        } else {
+          const meals = await fetchTodayMeals(uid);
+          if (!hasMealTypeToday(meals, (n as any).mealKind)) {
+            const next = nextOccurrenceForDays(n.time, n.days);
+            if (next) {
+              await scheduleOneShotAt(
+                next,
+                {
+                  title: tt.title,
+                  body: n.text ?? tt.body,
+                  data: { notifId: n.id, type: n.type },
+                },
+                n.id
+              );
+            }
+          }
+        }
         continue;
       }
+
       if (n.type === "calorie_goal") {
         const user = await getDoc(doc(getFirestore(getApp()), "users", uid));
         const target = Number((user.data() as any)?.targetKcal || 0);
         const meals = await fetchTodayMeals(uid);
         const consumed = sumConsumedKcal(meals);
-        if (isCalorieGoalNotMet(consumed, target)) {
+        const threshold = (n as any)?.kcalByHour ?? target;
+
+        if (isKcalBelowThreshold(consumed, threshold)) {
           const next = nextOccurrenceForDays(n.time, n.days);
           if (next) {
-            const missing = Math.max(0, Math.round(target - consumed));
-            const t = getNotificationText("calorie_goal", aiStyle, {
-              missingKcal: missing,
-            });
+            const missing = Math.max(
+              0,
+              Math.round((threshold ?? 0) - consumed)
+            );
+            const tt = getNotificationText(
+              "calorie_goal",
+              aiStyle,
+              { missingKcal: missing },
+              locale
+            );
             await scheduleOneShotAt(
               next,
               {
-                title: t.title,
-                body: t.body,
+                title: tt.title,
+                body: n.text ?? tt.body,
                 data: { notifId: n.id, type: n.type },
               },
               n.id
@@ -87,18 +139,24 @@ export async function reconcileAll(uid: string) {
         }
         continue;
       }
+
       if (n.type === "day_fill") {
         const meals = await fetchTodayMeals(uid);
         const anyMeals = hasAnyMealsToday(meals);
         if (!anyMeals) {
           const next = nextOccurrenceForDays(n.time, n.days);
           if (next) {
-            const t = getNotificationText("day_fill", aiStyle);
+            const tt = getNotificationText(
+              "day_fill",
+              aiStyle,
+              undefined,
+              locale
+            );
             await scheduleOneShotAt(
               next,
               {
-                title: t.title,
-                body: t.body,
+                title: tt.title,
+                body: tt.body,
                 data: { notifId: n.id, type: n.type },
               },
               n.id

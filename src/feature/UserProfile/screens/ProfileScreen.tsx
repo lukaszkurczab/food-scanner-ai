@@ -115,7 +115,7 @@ export default function UserProfileScreen({ navigation }: any) {
         accessibilityLabel={t("updateHealthSurvey")}
       />
       <ListItem
-        label="Manage notifications"
+        label={t("manageNotifications")}
         onPress={() => navigation.navigate("Notifications")}
         accessibilityLabel={t("manageNotifications")}
       />

@@ -2,27 +2,59 @@
   "screen": {
     "title": "Powiadomienia",
     "myReminders": "Moje przypomnienia",
-    "motivation": "Motywacja i statystyki",
-    "modeMinimal": "Minimalne",
-    "modeFull": "Pełne",
-    "addReminder": "Dodaj przypomnienie"
+    "addReminder": "Dodaj przypomnienie",
+    "motivation": "Motywacja",
+    "deleteTitle": "Usuń przypomnienie",
+    "deleteMsg": "Na pewno?",
+    "stats": "Statystyki"
   },
   "form": {
-    "create": "Nowe powiadomienie",
-    "edit": "Edytuj powiadomienie",
     "name": "Nazwa",
+    "edit": "Edytuj przypomnienie",
+    "create": "Utwórz przypomnienie",
     "type": "Typ",
     "time": "Godzina",
-    "days": "Dni tygodnia",
-    "textOverride": "Własny tekst (opcjonalnie)",
-    "enabled": "Włączone",
     "save": "Zapisz",
+    "cancel": "Anuluj",
+    "days": "Dni",
+    "textOverride": "Własna treść",
     "delete": "Usuń",
-    "cancel": "Anuluj"
+    "mealKind": "Posiłek",
+    "kcalByHour": "Cel kcal do tej godziny (opcjonalnie)",
+    "kcalPlaceholder": "np. 1000"
   },
   "type": {
-    "meal_reminder": "Przypomnienie o posiłkach",
-    "calorie_goal": "Cel kaloryczny",
-    "day_fill": "Uzupełnienie dnia"
+    "meal_reminder": "Przypomnienie o posiłku",
+    "calorie_goal": "Cel kaloryczny"
+  },
+  "meals": {
+    "any": "Dowolny posiłek",
+    "breakfast": "Śniadanie",
+    "lunch": "Obiad",
+    "dinner": "Kolacja",
+    "snack": "Przekąska"
+  },
+  "push": {
+    "meal_reminder": {
+      "title": "Czas coś zjeść",
+      "body": "Nie dodałeś jeszcze: {{meal}}",
+      "title_concise": "Posiłek",
+      "body_concise": "Zapisz: {{meal}}",
+      "body_detailed": "Zwykle o tej porze jesz: {{meal}}. Dodaj go, aby mieć pełny dziennik."
+    },
+    "calorie_goal": {
+      "title": "Cel kaloryczny",
+      "body": "Brakuje ok. {{kcal}} kcal dzisiaj",
+      "title_concise": "Cel",
+      "body_concise": "~{{kcal}} kcal brakuje",
+      "body_detailed": "Jesteś ok. {{kcal}} kcal poniżej celu. Rozważ lekki posiłek."
+    },
+    "day_fill": {
+      "title": "Uzupełnij dzień",
+      "body": "Dziś nie zapisano żadnych posiłków",
+      "title_concise": "Pusty dzień",
+      "body_concise": "Brak posiłków",
+      "body_detailed": "Wygląda na to, że dziś jest pusto. Dodaj posiłki, aby zachować ciągłość."
+    }
   }
 }

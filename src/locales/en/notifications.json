@@ -2,27 +2,59 @@
   "screen": {
     "title": "Notifications",
     "myReminders": "My reminders",
-    "motivation": "Motivation & stats",
-    "modeMinimal": "Minimal",
-    "modeFull": "Full",
-    "addReminder": "Add reminder"
+    "addReminder": "Add reminder",
+    "motivation": "Motivation",
+    "deleteTitle": "Delete reminder",
+    "deleteMsg": "Are you sure?",
+    "stats": "Stats"
   },
   "form": {
-    "create": "New reminder",
-    "edit": "Edit reminder",
     "name": "Name",
+    "edit": "Edit reminder",
+    "create": "Create reminder",
     "type": "Type",
     "time": "Time",
-    "days": "Days of week",
-    "textOverride": "Custom text (optional)",
-    "enabled": "Enabled",
     "save": "Save",
+    "cancel": "Cancel",
+    "days": "Days",
+    "textOverride": "Custom message",
     "delete": "Delete",
-    "cancel": "Cancel"
+    "mealKind": "Meal",
+    "kcalByHour": "Kcal target by this time (optional)",
+    "kcalPlaceholder": "e.g. 1000"
   },
   "type": {
     "meal_reminder": "Meal reminder",
-    "calorie_goal": "Calorie goal",
-    "day_fill": "Fill the day"
+    "calorie_goal": "Calorie goal"
+  },
+  "meals": {
+    "any": "Any meal",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snack": "Snack"
+  },
+  "push": {
+    "meal_reminder": {
+      "title": "Time to eat",
+      "body": "You haven't added {{meal}} yet",
+      "title_concise": "Meal",
+      "body_concise": "Log {{meal}}",
+      "body_detailed": "You usually eat {{meal}} now. Add it to keep your log accurate."
+    },
+    "calorie_goal": {
+      "title": "Calorie goal",
+      "body": "You're about {{kcal}} kcal short today",
+      "title_concise": "Goal",
+      "body_concise": "~{{kcal}} kcal left",
+      "body_detailed": "You are about {{kcal}} kcal below your goal. Consider a light meal."
+    },
+    "day_fill": {
+      "title": "Fill the day",
+      "body": "No meals were saved today",
+      "title_concise": "Empty day",
+      "body_concise": "No meals today",
+      "body_detailed": "It looks like today is empty. Add meals to keep your history complete."
+    }
   }
 }

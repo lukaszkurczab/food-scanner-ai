@@ -13,14 +13,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 
 type Option<T extends string> = {
   label: string;
-  value: T;
+  value: T | null;
 };
 
 type Props<T extends string> = {
   label?: string;
-  value: T;
+  value: T | null;
   options: Option<T>[];
-  onChange: (value: T) => void;
+  onChange: (value: T | null) => void;
   error?: string;
   disabled?: boolean;
   style?: any;
@@ -46,7 +46,7 @@ export function Dropdown<T extends string>({
 
   const fieldRef = useRef<View>(null);
 
-  const selected = options.find((o) => o.value === value);
+  const selected = options.find((o) => o.value === value) ?? null;
 
   const handleOutsidePress = () => setOpen(false);
 
@@ -160,10 +160,10 @@ export function Dropdown<T extends string>({
                 zIndex: 100,
               }}
             >
-              <ScrollView nestedScrollEnabled={true}>
-                {options.map((item) => (
+              <ScrollView nestedScrollEnabled>
+                {options.map((item, idx) => (
                   <TouchableOpacity
-                    key={item.value}
+                    key={`${item.value ?? "null"}-${idx}`}
                     onPress={() => {
                       setOpen(false);
                       onChange(item.value);

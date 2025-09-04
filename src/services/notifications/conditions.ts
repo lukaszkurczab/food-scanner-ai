@@ -7,6 +7,7 @@ import {
   getDocs,
 } from "@react-native-firebase/firestore";
 import type { Meal } from "@/types/meal";
+import { MealKind } from "@/types/notification";
 
 function startOfDayISO(d: Date) {
   const x = new Date(d);
@@ -17,6 +18,18 @@ function endOfDayISO(d: Date) {
   const x = new Date(d);
   x.setHours(23, 59, 59, 999);
   return x.toISOString();
+}
+
+export function hasMealTypeToday(meals: Meal[], kind: MealKind): boolean {
+  return meals.some((m) => m.type === kind);
+}
+
+export function isKcalBelowThreshold(
+  consumed: number,
+  threshold?: number | null
+) {
+  if (!threshold || threshold <= 0) return true;
+  return consumed < threshold;
 }
 
 export async function fetchTodayMeals(uid: string): Promise<Meal[]> {
