@@ -25,7 +25,8 @@
   },
   "type": {
     "meal_reminder": "Przypomnienie o posiłku",
-    "calorie_goal": "Cel kaloryczny"
+    "calorie_goal": "Cel kaloryczny",
+    "day_fill": "Uzupełnienie dnia"
   },
   "meals": {
     "any": "Dowolny posiłek",

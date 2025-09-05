@@ -90,45 +90,67 @@ export function useNotifications(uid: string | null) {
   );
 
   const loadMotivationPrefs = useCallback(async (uidLocal: string) => {
-    const db = getFirestore(getApp());
-    const snap = await getDoc(doc(db, "users", uidLocal, "prefs"));
-    const data = snap.exists() ? (snap.data() as any) : {};
-    const enabled = !!data?.notifications?.motivationEnabled;
-    return { enabled };
+    try {
+      const db = getFirestore(getApp());
+      const ref = doc(db, "users", uidLocal, "prefs", "global");
+      const snap = await getDoc(ref);
+
+      const data = snap.exists() ? (snap.data() as any) : {};
+      const enabled = !!data?.notifications?.motivationEnabled;
+      return { enabled };
+    } catch (e) {
+      console.error("❌ loadMotivationPrefs error:", e);
+      return { enabled: false };
+    }
   }, []);
 
   const loadStatsPrefs = useCallback(async (uidLocal: string) => {
-    const db = getFirestore(getApp());
-    const snap = await getDoc(doc(db, "users", uidLocal, "prefs"));
-    const data = snap.exists() ? (snap.data() as any) : {};
-    const enabled = !!data?.notifications?.statsEnabled;
-    return { enabled };
+    try {
+      const db = getFirestore(getApp());
+      const ref = doc(db, "users", uidLocal, "prefs", "global");
+      const snap = await getDoc(ref);
+
+      const data = snap.exists() ? (snap.data() as any) : {};
+      const enabled = !!data?.notifications?.statsEnabled;
+      return { enabled };
+    } catch (e) {
+      console.error("❌ loadStatsPrefs error:", e);
+      return { enabled: false };
+    }
   }, []);
 
   const setMotivationPrefs = useCallback(
     async (uidLocal: string, enabled: boolean) => {
-      const db = getFirestore(getApp());
-      await setDoc(
-        doc(db, "users", uidLocal, "prefs"),
-        {
-          notifications: { motivationEnabled: enabled },
-        } as any,
-        { merge: true }
-      );
+      try {
+        const db = getFirestore(getApp());
+        const ref = doc(db, "users", uidLocal, "prefs", "global");
+        await setDoc(
+          ref,
+          { notifications: { motivationEnabled: enabled } },
+          { merge: true }
+        );
+      } catch (e) {
+        console.error("❌ setMotivationPrefs error:", e);
+      }
     },
     []
   );
 
   const setStatsPrefs = useCallback(
     async (uidLocal: string, enabled: boolean) => {
-      const db = getFirestore(getApp());
-      await setDoc(
-        doc(db, "users", uidLocal, "prefs"),
-        {
-          notifications: { statsEnabled: enabled },
-        } as any,
-        { merge: true }
-      );
+      try {
+        const db = getFirestore(getApp());
+        const ref = doc(db, "users", uidLocal, "prefs", "global");
+        console.log("✍️ setStatsPrefs path:", ref.path, "value:", enabled);
+        await setDoc(
+          ref,
+          { notifications: { statsEnabled: enabled } },
+          { merge: true }
+        );
+        console.log("✅ setStatsPrefs success");
+      } catch (e) {
+        console.error("❌ setStatsPrefs error:", e);
+      }
     },
     []
   );

@@ -25,7 +25,8 @@
   },
   "type": {
     "meal_reminder": "Meal reminder",
-    "calorie_goal": "Calorie goal"
+    "calorie_goal": "Calorie goal",
+    "day_fill": "Day fill"
   },
   "meals": {
     "any": "Any meal",

@@ -1,15 +1,16 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import type { ChatMessage } from "@/types";
 import { useTheme } from "@/theme/useTheme";
 
 type Props = {
-  msg: ChatMessage;
+  role: "user" | "ai";
+  text: string;
+  timestamp?: Date;
 };
 
-export const Bubble: React.FC<Props> = ({ msg }) => {
+export const Bubble: React.FC<Props> = ({ role, text, timestamp }) => {
   const theme = useTheme();
-  const isUser = msg.role === "user";
+  const isUser = role === "user";
 
   return (
     <View
@@ -36,8 +37,21 @@ export const Bubble: React.FC<Props> = ({ msg }) => {
         <Text
           style={[styles.text, { color: isUser ? theme.onAccent : theme.text }]}
         >
-          {msg.content}
+          {text}
         </Text>
+        {timestamp && (
+          <Text
+            style={[
+              styles.time,
+              { color: isUser ? theme.onAccent : theme.textSecondary },
+            ]}
+          >
+            {timestamp.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+        )}
       </View>
     </View>
   );

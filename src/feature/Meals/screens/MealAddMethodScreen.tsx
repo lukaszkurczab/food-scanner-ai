@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import { RootStackParamList } from "@/navigation/navigate";
@@ -14,6 +14,8 @@ import { getDraftKey, getScreenKey } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { v4 as uuidv4 } from "uuid";
+import { usePremiumContext } from "@/context/PremiumContext";
+import { canUseAiToday } from "@/services/userService";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -22,11 +24,18 @@ type MealAddMethodNavigationProp = StackNavigationProp<
 
 const options = [
   {
-    key: "ai",
+    key: "ai_photo",
     icon: "camera-alt",
     titleKey: "aiTitle",
     descKey: "aiDesc",
     screen: "MealCamera",
+  },
+  {
+    key: "ai_text",
+    icon: "chat",
+    titleKey: "aiTextTitle",
+    descKey: "aiTextDesc",
+    screen: "MealTextAI",
   },
   {
     key: "manual",
@@ -50,6 +59,7 @@ const MealAddMethodScreen = () => {
   const { t } = useTranslation("meals");
   const { uid } = useAuthContext();
   const { meal, setMeal, saveDraft, setLastScreen } = useMealDraftContext();
+  const { isPremium } = usePremiumContext();
 
   const [showModal, setShowModal] = useState(false);
   const [draftExists, setDraftExists] = useState(false);
@@ -68,9 +78,10 @@ const MealAddMethodScreen = () => {
   useEffect(() => {
     checkDraft();
   }, [checkDraft]);
+
   useEffect(() => {
     if (draftExists && meal) setShowModal(true);
-  }, [draftExists]);
+  }, [draftExists, meal]);
 
   const primeEmptyMeal = useCallback(
     async (nextScreen: string) => {
@@ -100,6 +111,25 @@ const MealAddMethodScreen = () => {
   );
 
   const handleOptionPress = async (screen: string) => {
+    if (screen === "MealCamera" || screen === "MealTextAI") {
+      if (uid) {
+        const allowed = await canUseAiToday(uid, !!isPremium, 1);
+        if (!allowed) {
+          Alert.alert(
+            t("continue"),
+            t("limit.reachedShort", { ns: "chat", used: 1, limit: 1 }),
+            [
+              { text: t("cancel", { ns: "common" }), style: "cancel" },
+              {
+                text: t("limit.upgradeCta", { ns: "chat" }),
+                onPress: () => navigation.navigate("ManageSubscription" as any),
+              },
+            ]
+          );
+          return;
+        }
+      }
+    }
     if (screen === "MealCamera" || screen === "ReviewIngredients") {
       await primeEmptyMeal(screen);
     }
