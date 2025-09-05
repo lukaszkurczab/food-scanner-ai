@@ -25,6 +25,7 @@ const hiddenRoutes = [
   "SelectSavedMeal",
   "ReviewIngredients",
   "Result",
+  "MealTextAI",
 ];
 
 type LayoutProps = {

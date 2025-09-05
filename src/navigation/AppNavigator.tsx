@@ -7,7 +7,6 @@ import { useAuthContext } from "@/context/AuthContext";
 import HomeScreen from "@/feature/Home/screens/HomeScreen";
 import ResultScreen from "@/feature/Meals/screens/ResultScreen";
 import HistoryListScreen from "@/feature/History/screens/HistoryListScreen";
-import ChatScreen from "@/feature/AI/screens/ChatScreen";
 import StatisticsScreen from "@/feature/Statistics/screens/StatisticsScreen";
 import LoginScreen from "@/feature/Auth/screens/LoginScreen";
 import RegisterScreen from "@/feature/Auth/screens/RegisterScreen";
@@ -34,23 +33,14 @@ import MealCameraScreen from "@/feature/Meals/screens/MealCameraScreen";
 import SavedMealsScreen from "@feature/History/screens/SavedMealsScreen";
 import SelectSavedMealScreen from "@feature/Meals/screens/SelectSavedMealsScreen";
 import IngredientsNotRecognizedScreen from "@/feature/Meals/screens/IngredientsNotRecognizedScreen";
-import { MealDraftInactivityGuard } from "@feature/Meals/guards/MealDraftInactivityGuard";
 import NotificationsScreen from "@/feature/UserProfile/screens/NotificationsScreen";
 import NotificationFormScreen from "@/feature/UserProfile/screens/NotificationFormScreen";
+import MealTextAIScreen from "@/feature/Meals/screens/MealTextAIScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   const { isAuthenticated, loading } = useAuthContext();
-
-  const withMealDraftGuard =
-    (Component: React.ComponentType<any>, enabledScreens?: string[]) =>
-    (props: any) =>
-      (
-        <MealDraftInactivityGuard enabledScreens={enabledScreens}>
-          <Component {...props} />
-        </MealDraftInactivityGuard>
-      );
 
   if (loading) {
     return (
@@ -71,7 +61,6 @@ const AppNavigator = () => {
           <Stack.Screen name="AvatarCamera" component={AvatarCameraScreen} />
           <Stack.Screen name="HistoryList" component={HistoryListScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
-          <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Statistics" component={StatisticsScreen} />
           <Stack.Screen name="Language" component={LanguageScreen} />
           <Stack.Screen name="EditUserData" component={EditUserDataScreen} />
@@ -99,38 +88,18 @@ const AppNavigator = () => {
           />
           <Stack.Screen name="SendFeedback" component={SendFeedbackScreen} />
 
-          <Stack.Screen
-            name="MealAddMethod"
-            component={withMealDraftGuard(MealAddMethodScreen, [
-              "MealAddMethod",
-            ])}
-          />
-          <Stack.Screen
-            name="MealCamera"
-            component={withMealDraftGuard(MealCameraScreen, ["MealCamera"])}
-          />
-          {/* <Stack.Screen
-            name="AddMealFromList"
-            component={withMealDraftGuard(AddMealFromListScreen, [
-              "AddMealFromList",
-            ])}
-          /> */}
+          <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
+          <Stack.Screen name="MealCamera" component={MealCameraScreen} />
           <Stack.Screen
             name="IngredientsNotRecognized"
-            component={withMealDraftGuard(IngredientsNotRecognizedScreen, [
-              "IngredientsNotRecognized",
-            ])}
+            component={IngredientsNotRecognizedScreen}
           />
           <Stack.Screen
             name="ReviewIngredients"
-            component={withMealDraftGuard(ReviewIngredientsScreen, [
-              "ReviewIngredients",
-            ])}
+            component={ReviewIngredientsScreen}
           />
-          <Stack.Screen
-            name="Result"
-            component={withMealDraftGuard(ResultScreen, ["Result"])}
-          />
+          <Stack.Screen name="Result" component={ResultScreen} />
+          <Stack.Screen name="MealTextAI" component={MealTextAIScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen
             name="NotificationForm"

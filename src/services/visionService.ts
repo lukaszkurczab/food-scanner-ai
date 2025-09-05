@@ -2,6 +2,7 @@ import { uriToBase64 } from "@/utils/uriToBase64";
 import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
 import Constants from "expo-constants";
 import type { Ingredient } from "@/types";
+import { canUseAiToday, consumeAiUse } from "./userService";
 
 const IS_DEV = typeof __DEV__ !== "undefined" && __DEV__;
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
@@ -27,14 +28,7 @@ const normalize = (x: any): Ingredient | null => {
   const carbs = toNumber(x.carbs);
   const kcal = toNumber(x.kcal) || protein * 4 + carbs * 4 + fat * 9;
   if (!isFinite(amount) || amount <= 0) return null;
-  return {
-    name: x.name.trim(),
-    amount,
-    protein,
-    fat,
-    carbs,
-    kcal,
-  };
+  return { name: x.name.trim(), amount, protein, fat, carbs, kcal };
 };
 
 function extractJsonArray(raw: string): string | null {
@@ -52,10 +46,22 @@ function fallbackJsonArray(raw: string): string | null {
 
 export async function detectIngredientsWithVision(
   userUid: string,
-  imageUri: string
+  imageUri: string,
+  opts?: { isPremium?: boolean; limit?: number }
 ): Promise<Ingredient[] | null> {
+  const isPremium = !!opts?.isPremium;
+  const limit = opts?.limit ?? 1;
+
+  if (!isPremium) {
+    const allowed = await canUseAiToday(userUid, isPremium, limit);
+    if (!allowed) {
+      throw new Error("ai/daily-limit-reached");
+    }
+  }
+
   const FORCE_REAL = true;
   if (IS_DEV && !FORCE_REAL) {
+    if (!isPremium) await consumeAiUse(userUid, isPremium, limit);
     return [
       {
         name: "MockIngredient",
@@ -168,6 +174,8 @@ export async function detectIngredientsWithVision(
       const normalized: Ingredient[] = parsed
         .map(normalize)
         .filter((x): x is Ingredient => !!x);
+
+      if (!isPremium) await consumeAiUse(userUid, isPremium, limit);
 
       return normalized;
     } catch (error) {

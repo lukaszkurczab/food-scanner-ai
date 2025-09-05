@@ -3,6 +3,8 @@
   "subtitle": "Choose how you want to add meal",
   "aiTitle": "Use AI (Photo)",
   "aiDesc": "Snap a photo of your meal",
+  "aiTextTitle": "Use AI (Text)",
+  "aiTextDesc": "Describe your meal to estimate macros",
   "manualTitle": "Manual input",
   "manualDesc": "Add ingredients and nutrition manually",
   "savedTitle": "Pick saved meal",

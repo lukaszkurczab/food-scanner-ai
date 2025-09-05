@@ -9,6 +9,7 @@ import type {
   Preference,
   Allergy,
 } from "@/types";
+import { canUseAiToday, consumeAiUse } from "./userService";
 
 export type Message = { from: "user" | "ai"; text: string };
 
@@ -26,11 +27,9 @@ const openai = new OpenAI({ apiKey });
 function buildDietContext(p: FormData): DietContext {
   const flags: string[] = [];
   const avoid: string[] = [];
-
   const pref = (v: Preference) => p.preferences?.includes(v);
   const dis = (v: ChronicDisease) => p.chronicDiseases?.includes(v);
   const alg = (v: Allergy) => p.allergies?.includes(v);
-
   if (pref("vegan")) {
     flags.push("vegan");
     avoid.push(
@@ -74,7 +73,6 @@ function buildDietContext(p: FormData): DietContext {
   }
   if (dis("diabetes")) flags.push("diabetes");
   if (dis("hypertension")) flags.push("hypertension");
-
   const tone: DietContext["tone"] =
     p.aiStyle === "concise"
       ? "C"
@@ -83,7 +81,6 @@ function buildDietContext(p: FormData): DietContext {
       : p.aiStyle === "friendly"
       ? "F"
       : "N";
-
   const focus: DietContext["focus"] =
     p.aiFocus === "mealPlanning"
       ? "MP"
@@ -94,7 +91,6 @@ function buildDietContext(p: FormData): DietContext {
       : p.aiFocus === "motivation"
       ? "M"
       : "DEF";
-
   return { flags, tone, focus, avoid };
 }
 
@@ -144,7 +140,6 @@ function ensureFullSentence(text: string): string {
   return words.replace(/[–—,;:…-]+$/, "").trim() + ".";
 }
 
-const MAX_WORDS = 150;
 const MAX_TOKENS = 260;
 
 function enforceDietConstraints(output: string, banned: string[]): string {
@@ -171,8 +166,19 @@ export async function askDietAI(
   question: string,
   meals: Meal[],
   chatHistory: Message[],
-  profile: FormData
+  profile: FormData,
+  opts?: { uid?: string; isPremium?: boolean; limit?: number }
 ): Promise<string> {
+  const uid = opts?.uid || "";
+  const isPremium = !!opts?.isPremium;
+  const limit = opts?.limit ?? 1;
+  if (!isPremium && uid) {
+    const allowed = await canUseAiToday(uid, isPremium, limit);
+    if (!allowed) {
+      throw new Error("ai/daily-limit-reached");
+    }
+  }
+
   const dc = buildDietContext(profile);
   const prof = compactProfile(profile);
   const mealsComp = mealsSummary(meals);
@@ -201,7 +207,7 @@ export async function askDietAI(
     model: "gpt-4o-mini",
     messages: [
       { role: "system", content: sys },
-      { role: "user", content: payload },
+      { role: "user", content: payload } as ChatCompletionMessageParam,
     ],
     max_tokens: MAX_TOKENS,
     temperature: 0.3,
@@ -210,8 +216,12 @@ export async function askDietAI(
   let text =
     resp.choices[0]?.message?.content?.trim() ||
     i18next.t("diet.errors.empty", "Brak odpowiedzi.");
-
   text = enforceDietConstraints(text, dc.avoid);
   text = ensureFullSentence(text);
+
+  if (!isPremium && uid) {
+    await consumeAiUse(uid, isPremium, limit);
+  }
+
   return text;
 }

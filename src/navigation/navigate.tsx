@@ -40,6 +40,7 @@ export type RootStackParamList = {
   Notifications: undefined;
   NotificationForm: undefined;
   Loading: undefined;
+  MealTextAI: undefined;
   MealDetails: { meal: Meal };
 };
 

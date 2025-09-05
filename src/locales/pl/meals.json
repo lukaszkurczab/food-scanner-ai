@@ -3,6 +3,8 @@
   "subtitle": "Wybierz, jak chcesz dodać posiłek",
   "aiTitle": "Użyj AI (zdjęcie)",
   "aiDesc": "Zrób zdjęcie swojego posiłku",
+  "aiTextTitle": "Użyj AI (tekst)",
+  "aiTextDesc": "Opisz posiłek, aby oszacować makro",
   "manualTitle": "Wpisz ręcznie",
   "manualDesc": "Dodaj składniki i wartości odżywcze ręcznie",
   "savedTitle": "Wybierz z zapisanych",

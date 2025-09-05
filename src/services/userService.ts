@@ -63,6 +63,14 @@ function db() {
 
 const USERS = "users";
 
+function todayLocal() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export async function getUserLocal(uid: string): Promise<UserData | null> {
   const snap = await getDoc(doc(collection(db(), USERS), uid));
   return snap.exists() ? (snap.data() as UserData) : null;
@@ -292,4 +300,52 @@ export async function createInitialUserProfile(
   } as unknown as UserData;
 
   await setDoc(doc(collection(db(), USERS), uid), profile, { merge: true });
+}
+
+export async function canUseAiToday(
+  uid: string,
+  isPremium: boolean,
+  limit = 1
+) {
+  if (isPremium) return true;
+  const ref = doc(collection(db(), USERS), uid);
+  const snap = await getDoc(ref);
+  const data = snap.exists() ? (snap.data() as any) : {};
+  const usage = data.aiDailyUsage || null;
+  const today = todayLocal();
+  if (!usage || usage.date !== today) return true;
+  return (usage.count as number) < limit;
+}
+
+export async function consumeAiUse(uid: string, isPremium: boolean, limit = 1) {
+  if (isPremium) return;
+  const ref = doc(collection(db(), USERS), uid);
+  const snap = await getDoc(ref);
+  const data = snap.exists() ? (snap.data() as any) : {};
+  const today = todayLocal();
+  const prev =
+    data.aiDailyUsage && data.aiDailyUsage.date === today
+      ? data.aiDailyUsage.count || 0
+      : 0;
+  const next = Math.min(prev + 1, limit);
+  await setDoc(
+    ref,
+    {
+      aiDailyUsage: {
+        date: today,
+        count: next,
+      },
+    },
+    { merge: true }
+  );
+}
+
+export async function getAiUsageState(uid: string) {
+  const ref = doc(collection(db(), USERS), uid);
+  const snap = await getDoc(ref);
+  const data = snap.exists() ? (snap.data() as any) : {};
+  const usage = data.aiDailyUsage || null;
+  const today = todayLocal();
+  if (!usage || usage.date !== today) return { date: today, count: 0 };
+  return { date: usage.date as string, count: Number(usage.count || 0) };
 }
