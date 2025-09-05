@@ -42,6 +42,7 @@ export type RootStackParamList = {
   Loading: undefined;
   MealTextAI: undefined;
   MealDetails: { meal: Meal };
+  MealShare: { meal: Meal; returnTo: "Result" | "MealDetails" };
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();

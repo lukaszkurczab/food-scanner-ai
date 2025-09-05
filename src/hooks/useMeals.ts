@@ -1,4 +1,3 @@
-// hooks/useMeals.ts
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { Meal } from "@/types/meal";
@@ -13,13 +12,8 @@ import {
   setDoc,
   writeBatch,
 } from "@react-native-firebase/firestore";
-import {
-  getStorage,
-  ref as storageRef,
-  putFile,
-  getDownloadURL,
-} from "@react-native-firebase/storage";
 import { savePhotoLocally } from "@utils/savePhotoLocally";
+import { processAndUpload } from "@services/mealService.images";
 
 const app = getApp();
 const db = getFirestore(app);
@@ -65,7 +59,7 @@ export function useMeals(userUid: string | null) {
         setMeals(items);
         setLoading(false);
       },
-      (e) => {
+      () => {
         setLoading(false);
       }
     );
@@ -78,9 +72,7 @@ export function useMeals(userUid: string | null) {
     };
   }, [userUid]);
 
-  const getMeals = useCallback(async () => {
-    console.log("[useMeals.getMeals] noop");
-  }, []);
+  const getMeals = useCallback(async () => {}, []);
 
   const addMeal = useCallback(
     async (
@@ -110,21 +102,16 @@ export function useMeals(userUid: string | null) {
           typeof maybeUri === "string" &&
           (maybeUri.startsWith("file://") || maybeUri.startsWith("content://"));
         if (maybeUri && isLocal) {
-          const localPath = await savePhotoLocally({
+          const up = await processAndUpload(userUid, maybeUri);
+          base.imageId = up.imageId;
+          base.photoUrl = up.cloudUrl as any;
+          (base as any).photoLocalPath = await savePhotoLocally({
             userUid,
             fileId: cloudId,
-            photoUri: maybeUri,
+            photoUri: up.cloudUrl,
           });
-          const st = getStorage(app);
-          const r = storageRef(st, `meals/${userUid}/${cloudId}.jpg`);
-          await putFile(r, localPath, { contentType: "image/jpeg" });
-          const url = await getDownloadURL(r);
-          base.photoUrl = url as any;
-          (base as any).photoLocalPath = localPath;
         }
-      } catch (e) {
-        console.log("[useMeals.addMeal] upload error", e);
-      }
+      } catch {}
       const batch = writeBatch(db);
       batch.set(doc(db, "users", userUid, "meals", cloudId), base as any, {
         merge: true,
@@ -134,7 +121,9 @@ export function useMeals(userUid: string | null) {
         batch.set(
           doc(db, "users", userUid, "myMeals", mealId),
           libCopy as any,
-          { merge: true }
+          {
+            merge: true,
+          }
         );
       }
       await batch.commit();
@@ -161,21 +150,16 @@ export function useMeals(userUid: string | null) {
           typeof maybeUri === "string" &&
           (maybeUri.startsWith("file://") || maybeUri.startsWith("content://"));
         if (maybeUri && isLocal) {
-          const localPath = await savePhotoLocally({
+          const up = await processAndUpload(userUid, maybeUri);
+          payload.imageId = up.imageId;
+          payload.photoUrl = up.cloudUrl as any;
+          (payload as any).photoLocalPath = await savePhotoLocally({
             userUid,
             fileId: cloudId,
-            photoUri: maybeUri,
+            photoUri: up.cloudUrl,
           });
-          const st = getStorage(app);
-          const r = storageRef(st, `meals/${userUid}/${cloudId}.jpg`);
-          await putFile(r, localPath, { contentType: "image/jpeg" });
-          const url = await getDownloadURL(r);
-          payload.photoUrl = url as any;
-          (payload as any).photoLocalPath = localPath;
         }
-      } catch (e) {
-        console.log("[useMeals.updateMeal] upload error", e);
-      }
+      } catch {}
       await setDoc(
         doc(db, "users", userUid, "meals", cloudId),
         payload as any,
@@ -225,10 +209,7 @@ export function useMeals(userUid: string | null) {
     [userUid]
   );
 
-  const syncMeals = useCallback(async () => {
-    console.log("[useMeals.syncMeals] noop");
-  }, []);
-
+  const syncMeals = useCallback(async () => {}, []);
   const getUnsyncedMeals = useCallback(async () => {
     return [] as Meal[];
   }, []);

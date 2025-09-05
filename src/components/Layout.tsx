@@ -26,6 +26,7 @@ const hiddenRoutes = [
   "ReviewIngredients",
   "Result",
   "MealTextAI",
+  "MealShare",
 ];
 
 type LayoutProps = {

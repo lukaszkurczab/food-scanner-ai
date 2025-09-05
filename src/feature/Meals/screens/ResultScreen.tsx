@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import {
   MealBox,
@@ -22,15 +22,18 @@ import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "../components/DateTimeSection";
 import { updateStreakIfThresholdMet } from "@/services/streakService";
+import ViewShot, { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
+import ShareCard from "@/components/ShareCard";
+import { useNavigation } from "@react-navigation/native";
 
-type ResultScreenProps = {
-  navigation: any;
-};
+type ResultScreenProps = { navigation: any };
 
 export default function ResultScreen({ navigation }: ResultScreenProps) {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const { uid } = useAuthContext();
+  const nav = useNavigation<any>();
   const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =
     useMealDraftContext();
   const { userData } = useUserContext();
@@ -47,14 +50,13 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const [addedAt, setAddedAt] = useState<Date>(new Date());
 
   const image = meal?.photoUrl ?? null;
+  const shotRef = useRef<View>(null);
 
   useEffect(() => {
     if (uid) setLastScreen(uid, "Result");
   }, [setLastScreen, uid]);
 
-  if (!meal || !uid) {
-    return null;
-  }
+  if (!meal || !uid) return null;
 
   const nutrition = calculateTotalNutrients([meal]);
 
@@ -63,12 +65,21 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
 
+  const goShare = () => {
+    if (!meal || !uid) return;
+    const pass = {
+      ...meal,
+      name: mealName,
+      type: mealType,
+      timestamp: selectedAt.toISOString(),
+    } as any;
+    nav.navigate("MealShare", { meal: pass, returnTo: "Result" });
+  };
+
   const handleSave = async () => {
     if (!userData?.uid || saving) return;
     setSaving(true);
-
     const nowIso = new Date().toISOString();
-
     const newMeal = {
       ...meal,
       cloudId: meal.cloudId,
@@ -105,15 +116,24 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
 
       clearMeal(uid);
       navigation.navigate("Home");
-    } catch (e) {
+    } catch {
       setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    setShowCancelModal(true);
+  const onShare = async () => {
+    if (!shotRef.current) return;
+    const uri = await captureRef(shotRef, {
+      format: "png",
+      quality: 1,
+      width: 1080,
+      height: 1920,
+      result: "tmpfile",
+    });
+    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri);
   };
 
+  const handleCancel = () => setShowCancelModal(true);
   const handleCancelConfirm = () => {
     if (uid) clearMeal(uid);
     navigation.navigate("Home");
@@ -129,6 +149,20 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
             resizeMode="cover"
           />
         )}
+
+        <View style={{ padding: theme.spacing.container }}>
+          {image && (
+            <Image
+              source={{ uri: image }}
+              style={styles.image}
+              resizeMode="cover"
+            />
+          )}
+          <SecondaryButton label="Share" onPress={goShare} />
+        </View>
+
+        <SecondaryButton label="Share" onPress={onShare} />
+
         <MealBox
           name={mealName}
           type={mealType}
