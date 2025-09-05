@@ -36,6 +36,7 @@ import IngredientsNotRecognizedScreen from "@/feature/Meals/screens/IngredientsN
 import NotificationsScreen from "@/feature/UserProfile/screens/NotificationsScreen";
 import NotificationFormScreen from "@/feature/UserProfile/screens/NotificationFormScreen";
 import MealTextAIScreen from "@/feature/Meals/screens/MealTextAIScreen";
+import MealShareScreen from "@/feature/Meals/screens/MealShareScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -87,7 +88,6 @@ const AppNavigator = () => {
             component={ChangePasswordScreen}
           />
           <Stack.Screen name="SendFeedback" component={SendFeedbackScreen} />
-
           <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
           <Stack.Screen name="MealCamera" component={MealCameraScreen} />
           <Stack.Screen
@@ -105,6 +105,7 @@ const AppNavigator = () => {
             name="NotificationForm"
             component={NotificationFormScreen}
           />
+          <Stack.Screen name="MealShare" component={MealShareScreen} />
         </>
       ) : (
         <>

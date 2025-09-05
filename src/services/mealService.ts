@@ -1,6 +1,5 @@
 import { getApp } from "@react-native-firebase/app";
 import NetInfo from "@react-native-community/netinfo";
-import { uploadImageFromLocal } from "./mealService.images";
 import {
   getFirestore,
   collection,
@@ -18,12 +17,12 @@ import {
 import {
   getStorage,
   ref,
-  putFile,
   getDownloadURL,
 } from "@react-native-firebase/storage";
 import { v4 as uuidv4 } from "uuid";
 import * as FileSystem from "expo-file-system";
 import type { Meal } from "@/types/meal";
+import { processAndUpload } from "./mealService.images";
 
 const app = getApp();
 const db = getFirestore(app);
@@ -192,6 +191,7 @@ export async function addOrUpdateMeal(
   const now = new Date().toISOString();
   let imageId: string | null | undefined = meal.imageId ?? null;
   let photoUrl: string | null | undefined = meal.photoUrl ?? null;
+
   if (
     (photoUrl && photoUrl.startsWith("file:")) ||
     (typeof meal as any).localPhotoUri
@@ -199,11 +199,12 @@ export async function addOrUpdateMeal(
     const localUri = (meal as any).localPhotoUri || photoUrl!;
     const net = await NetInfo.fetch();
     if (net.isConnected) {
-      const up = await uploadImageFromLocal(localUri);
+      const up = await processAndUpload(uid, localUri);
       imageId = up.imageId;
-      photoUrl = up.url;
+      photoUrl = up.cloudUrl;
     }
   }
+
   const totals = computeTotals(meal);
   const normalized: Meal = {
     userUid: uid,
@@ -265,30 +266,25 @@ export async function restoreMissingMealPhotos(
   for (const m of meals) {
     const id = String(m.cloudId || m.mealId || "");
     if (!id) continue;
+
     let url = m.photoUrl || "";
     if (!url && m.imageId) {
       try {
-        url = await getDownloadURL(ref(st, `images/${m.imageId}.jpg`));
+        url = await getDownloadURL(ref(st, `meals/${uid}/${m.imageId}.jpg`));
       } catch {
         url = "";
       }
     }
     const looksRemote = typeof url === "string" && /^https?:\/\//i.test(url);
     if (!looksRemote) continue;
+
     const target = localPhotoPath(uid, id);
     const info = await FileSystem.getInfoAsync(target);
     if (!info.exists) {
       try {
         await FileSystem.downloadAsync(url, target);
       } catch {
-        try {
-          const legacyPath = `meals/${uid}/${id}.jpg`;
-          const r = ref(st, legacyPath);
-          const freshUrl = await getDownloadURL(r);
-          await FileSystem.downloadAsync(freshUrl, target);
-        } catch {
-          continue;
-        }
+        continue;
       }
     }
     const finalInfo = await FileSystem.getInfoAsync(target);

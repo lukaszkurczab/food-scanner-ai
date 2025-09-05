@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,7 @@ import {
   IngredientBox,
   MealBox,
   ErrorButton,
+  SecondaryButton,
 } from "@/components";
 import { FallbackImage } from "../components/FallbackImage";
 import { Modal } from "@/components/Modal";
@@ -17,6 +18,10 @@ import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import type { Meal, MealType, Ingredient } from "@/types/meal";
 import { useMeals } from "@hooks/useMeals";
 import { useAuthContext } from "@/context/AuthContext";
+import ViewShot, { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
+import ShareCard from "@/components/ShareCard";
+import { useNavigation } from "@react-navigation/native";
 
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
 
@@ -28,6 +33,7 @@ export default function MealDetailsScreen() {
 
   const { uid } = useAuthContext();
   const { updateMeal } = useMeals(uid || "");
+  const nav = useNavigation<any>();
 
   const [draft, setDraft] = useState<Meal | null>(initial ?? null);
   const [saving, setSaving] = useState(false);
@@ -35,6 +41,13 @@ export default function MealDetailsScreen() {
   const [editBaseline, setEditBaseline] = useState<Meal | null>(null);
   const [showIngredients, setShowIngredients] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
+
+  const shotRef = useRef<View>(null);
+
+  const goShare = () => {
+    if (!draft) return;
+    nav.navigate("MealShare", { meal: draft, returnTo: "MealDetails" });
+  };
 
   useEffect(() => {
     if (initial) setDraft(initial);
@@ -112,6 +125,18 @@ export default function MealDetailsScreen() {
     setEditBaseline(null);
   };
 
+  const onShare = async () => {
+    if (!shotRef.current) return;
+    const uri = await captureRef(shotRef, {
+      format: "png",
+      quality: 1,
+      width: 1080,
+      height: 1920,
+      result: "tmpfile",
+    });
+    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri);
+  };
+
   return (
     <Layout showNavigation={false}>
       <FallbackImage
@@ -120,6 +145,9 @@ export default function MealDetailsScreen() {
         height={220}
         borderRadius={theme.rounded.lg}
       />
+      <View style={{ alignItems: "center", marginVertical: theme.spacing.md }}>
+        <SecondaryButton label="Share" onPress={goShare} />
+      </View>
 
       <MealBox
         name={draft.name || ""}

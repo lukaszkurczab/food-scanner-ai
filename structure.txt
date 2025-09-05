@@ -15,9 +15,9 @@
 │   │   ├── close.png
 │   │   └── refresh.png
 │   ├── playstore.png
-│   └── splash-icon.png
+│   └── splash.png
 ├── babel.config.js
-├── builds
+├── build-1757072491080.apk
 ├── credentials.json
 ├── docs
 │   ├── PRIVACY.md
@@ -31,6 +31,7 @@
 ├── package.json
 ├── src
 │   ├── components
+│   │   ├── Alert.tsx
 │   │   ├── BottomTabBar.tsx
 │   │   ├── ButtonToggle.tsx
 │   │   ├── Calendar.tsx
@@ -59,6 +60,7 @@
 │   │   ├── MealBox.tsx
 │   │   ├── MealListItem.tsx
 │   │   ├── Modal.tsx
+│   │   ├── NotificationCard.tsx
 │   │   ├── OfflineBanner.tsx
 │   │   ├── PhotoPreview.tsx
 │   │   ├── PieChart.tsx
@@ -72,7 +74,9 @@
 │   │   ├── StreakBadge.tsx
 │   │   ├── TargetProgressBar.tsx
 │   │   ├── TextInput.tsx
-│   │   └── UserIcon.tsx
+│   │   ├── TimePickerRow.tsx
+│   │   ├── UserIcon.tsx
+│   │   └── WeekdaySelector.tsx
 │   ├── context
 │   │   ├── AuthContext.tsx
 │   │   ├── HistoryContext.tsx
@@ -133,12 +137,11 @@
 │   │   │   │   ├── EmptyState.tsx
 │   │   │   │   ├── Loader.tsx
 │   │   │   │   └── LoadingSkeleton.tsx
-│   │   │   ├── guards
-│   │   │   │   └── MealDraftInactivityGuard.tsx
 │   │   │   └── screens
 │   │   │       ├── IngredientsNotRecognizedScreen.tsx
 │   │   │       ├── MealAddMethodScreen.tsx
 │   │   │       ├── MealCameraScreen.tsx
+│   │   │       ├── MealTextAIScreen.tsx
 │   │   │       ├── ResultScreen.tsx
 │   │   │       ├── ReviewIngredientsScreen.tsx
 │   │   │       └── SelectSavedMealsScreen.tsx
@@ -179,6 +182,8 @@
 │   │           ├── EditUserDataScreen.tsx
 │   │           ├── LanguageScreen.tsx
 │   │           ├── ManageSubscriptionScreen.tsx
+│   │           ├── NotificationFormScreen.tsx
+│   │           ├── NotificationsScreen.tsx
 │   │           ├── ProfileScreen.tsx
 │   │           ├── SendFeedbackScreen.tsx
 │   │           └── UsernameChangeScreen.tsx
@@ -186,6 +191,7 @@
 │   ├── hooks
 │   │   ├── useChatHistory.ts
 │   │   ├── useMeals.ts
+│   │   ├── useNotifications.ts
 │   │   ├── usePremiumStatus.ts
 │   │   ├── useStats.ts
 │   │   ├── useSubscriptionData.ts
@@ -199,6 +205,7 @@
 │   │   │   ├── home.json
 │   │   │   ├── login.json
 │   │   │   ├── meals.json
+│   │   │   ├── notifications.json
 │   │   │   ├── onboarding.json
 │   │   │   ├── privacy.json
 │   │   │   ├── profile.json
@@ -212,6 +219,7 @@
 │   │       ├── home.json
 │   │       ├── login.json
 │   │       ├── meals.json
+│   │       ├── notifications.json
 │   │       ├── onboarding.json
 │   │       ├── privacy.json
 │   │       ├── profile.json
@@ -231,7 +239,14 @@
 │   │   ├── mealService.images.ts
 │   │   ├── mealService.ts
 │   │   ├── myMealService.ts
+│   │   ├── notifications
+│   │   │   ├── conditions.ts
+│   │   │   ├── engine.ts
+│   │   │   ├── localScheduler.ts
+│   │   │   ├── system.ts
+│   │   │   └── texts.ts
 │   │   ├── streakService.ts
+│   │   ├── textMealService.ts
 │   │   ├── usernameService.ts
 │   │   ├── userService.ts
 │   │   └── visionService.ts
@@ -250,6 +265,7 @@
 │   │   ├── constants.ts
 │   │   ├── index.ts
 │   │   ├── meal.ts
+│   │   ├── notification.ts
 │   │   ├── onboarding.ts
 │   │   ├── subscription.ts
 │   │   └── user.ts
@@ -272,4 +288,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-48 directories, 225 files
+47 directories, 242 files
