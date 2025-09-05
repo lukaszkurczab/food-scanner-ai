@@ -1,4 +1,4 @@
-export type ShareFilter = "none" | "bw" | "sepia";
+export type ShareFilter = "none" | "bw" | "sepia" | "cool" | "warm";
 export type ShareElement = "title" | "kcal" | "pie";
 
 export type ShareOptions = {
@@ -15,6 +15,9 @@ export type ShareOptions = {
   kcalY: number;
   pieX: number;
   pieY: number;
+  titleRotation: number;
+  kcalRotation: number;
+  pieRotation: number;
 };
 
 export const defaultShareOptions: ShareOptions = {
@@ -31,4 +34,7 @@ export const defaultShareOptions: ShareOptions = {
   kcalY: 0.18,
   pieX: 0.5,
   pieY: 0.6,
+  titleRotation: 0,
+  kcalRotation: 0,
+  pieRotation: 0,
 };

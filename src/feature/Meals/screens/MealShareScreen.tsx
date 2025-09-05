@@ -5,13 +5,7 @@ import ViewShot, { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import ShareCanvas from "@/components/ShareCanvas";
 import { ShareOptions, defaultShareOptions } from "@/types/share";
-import {
-  Layout,
-  PrimaryButton,
-  SecondaryButton,
-  Checkbox,
-  Card,
-} from "@/components";
+import { Layout, PrimaryButton, SecondaryButton, Card } from "@/components";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { Meal } from "@/types/meal";
@@ -63,55 +57,9 @@ export default function MealShareScreen() {
           </ViewShot>
         </View>
 
-        <Card>
-          <Text style={{ fontWeight: "600", marginBottom: 8 }}>Elementy</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <Checkbox
-              checked={opts.showTitle}
-              onChange={(v: boolean) => setOpts({ ...opts, showTitle: v })}
-            />
-            <Text>Tytuł</Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <Checkbox
-              checked={opts.showKcal}
-              onChange={(v: boolean) => setOpts({ ...opts, showKcal: v })}
-            />
-            <Text>Kalorie</Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <Checkbox
-              checked={opts.showPie}
-              onChange={(v: boolean) => setOpts({ ...opts, showPie: v })}
-            />
-            <Text>Wykres</Text>
-          </View>
-          <Text style={{ marginTop: 8, opacity: 0.7 }}>
-            Przesuwaj elementy jednym palcem. Zmieniaj rozmiar szczypaniem.
-          </Text>
-        </Card>
-
-        <Card>
-          <Text style={{ fontWeight: "600", marginBottom: 8 }}>Filtr</Text>
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            <SecondaryButton
-              label="Brak"
-              onPress={() => setOpts({ ...opts, filter: "none" })}
-            />
-            <SecondaryButton
-              label="B/W"
-              onPress={() => setOpts({ ...opts, filter: "bw" })}
-            />
-            <SecondaryButton
-              label="Sepia"
-              onPress={() => setOpts({ ...opts, filter: "sepia" })}
-            />
-          </View>
-        </Card>
-
         <PrimaryButton label="Udostępnij" onPress={share} />
         <SecondaryButton
-          label="Wróć bez udostępniania"
+          label="Wróć"
           onPress={() =>
             nav.navigate(
               returnTo as any,
