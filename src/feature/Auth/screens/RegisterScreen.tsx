@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Keyboard, TouchableOpacity } from "react-native";
+import { View, Text, Keyboard, TouchableOpacity, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
@@ -85,13 +85,7 @@ export default function RegisterScreen({ navigation }: any) {
 
   return (
     <Layout showNavigation={false}>
-      <View
-        style={{
-          flexGrow: 1,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View style={styles.centerBoth}>
         <Text
           style={{
             fontSize: theme.typography.size.xl,
@@ -175,24 +169,13 @@ export default function RegisterScreen({ navigation }: any) {
           style={{ marginBottom: theme.spacing.md }}
         />
 
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginTop: theme.spacing.md,
-          }}
-        >
+        <View style={[styles.rowCenter, { marginTop: theme.spacing.md }]}>
           <Checkbox
             checked={termsAccepted}
             onChange={setTermsAccepted}
             accessibilityLabel={t("accept_terms")}
           />
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "center",
-            }}
-          >
+          <View style={styles.rowJustifyCenter}>
             <Text
               style={{
                 color: theme.textSecondary,
@@ -240,12 +223,7 @@ export default function RegisterScreen({ navigation }: any) {
         />
       </View>
 
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      >
+      <View style={styles.rowJustifyCenter}>
         <Text
           style={{
             color: theme.textSecondary,
@@ -262,3 +240,9 @@ export default function RegisterScreen({ navigation }: any) {
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  centerBoth: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
+  rowCenter: { flexDirection: "row", alignItems: "center" },
+  rowJustifyCenter: { flexDirection: "row", justifyContent: "center" },
+});

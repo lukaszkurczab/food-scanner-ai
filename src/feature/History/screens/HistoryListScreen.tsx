@@ -5,13 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import {
-  View,
-  SectionList,
-  RefreshControl,
-  Text,
-  ActivityIndicator,
-} from "react-native";
+import { View, SectionList, RefreshControl, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNetInfo } from "@react-native-community/netinfo";
@@ -243,14 +237,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
   if (loading)
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: theme.background,
-        }}
-      >
+      <View style={[styles.centerBoth, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.accent} />
       </View>
     );
@@ -404,3 +391,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  centerBoth: { flex: 1, justifyContent: "center", alignItems: "center" },
+});

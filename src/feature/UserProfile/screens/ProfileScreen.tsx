@@ -135,13 +135,14 @@ export default function UserProfileScreen({ navigation }: any) {
 
       <SectionHeader label={t("settingsSection")} />
       <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: theme.border,
-          paddingVertical: 16,
-        }}
+        style={[
+          styles.rowCenter,
+          {
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: theme.border,
+            paddingVertical: 16,
+          },
+        ]}
       >
         <Text
           style={{
@@ -246,6 +247,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 24,
   },
+  rowCenter: { flexDirection: "row", alignItems: "center" },
   deleteText: {
     fontSize: 18,
     fontWeight: "bold",

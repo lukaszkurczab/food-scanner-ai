@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
@@ -160,7 +160,7 @@ export default function Step1BasicData({
   const weightLabel = form.unitsSystem === "metric" ? "kg" : "lbs";
 
   return (
-    <View style={{ gap: theme.spacing.md, flexDirection: "column" }}>
+    <View style={[styles.column, { gap: theme.spacing.md }]}>
       <View>
         <Text
           style={{
@@ -207,12 +207,7 @@ export default function Step1BasicData({
         returnKeyType="next"
       />
 
-      <View
-        style={{
-          flexDirection: "row",
-          gap: theme.spacing.sm,
-        }}
-      >
+      <View style={[styles.row, { gap: theme.spacing.sm }]}>
         {form.sex === "male" ? (
           <>
             <PrimaryButton
@@ -272,7 +267,7 @@ export default function Step1BasicData({
           returnKeyType="next"
         />
       ) : (
-        <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
+        <View style={[styles.row, { gap: theme.spacing.sm }]}>
           <TextInput
             label={t("heightFt")}
             value={dispFt ? String(dispFt) : ""}
@@ -282,7 +277,7 @@ export default function Step1BasicData({
             error={errors.height}
             rightLabel="ft"
             accessibilityLabel={t("heightFt")}
-            style={{ flex: 1 }}
+            style={styles.flex1}
           />
           <TextInput
             label={t("heightIn")}
@@ -293,7 +288,7 @@ export default function Step1BasicData({
             error={errors.heightInch}
             rightLabel="in"
             accessibilityLabel={t("heightIn")}
-            style={{ flex: 1 }}
+            style={styles.flex1}
           />
         </View>
       )}
@@ -329,3 +324,9 @@ export default function Step1BasicData({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  column: { flexDirection: "column" },
+  row: { flexDirection: "row" },
+  flex1: { flex: 1 },
+});

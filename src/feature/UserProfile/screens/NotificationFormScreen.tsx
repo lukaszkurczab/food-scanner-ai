@@ -1,12 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  Alert,
-  Pressable,
-} from "react-native";
+import { View, Text, TextInput, ScrollView, Alert, Pressable, StyleSheet } from "react-native";
 import {
   Layout,
   PrimaryButton,
@@ -197,14 +190,7 @@ export default function NotificationFormScreen() {
             }}
           >
             <Card variant="outlined">
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: theme.spacing.sm,
-                }}
-              >
+              <View style={[styles.rowBetween, { gap: theme.spacing.sm }]}>
                 <Text
                   style={{
                     fontSize: theme.typography.size.lg,
@@ -341,7 +327,7 @@ export default function NotificationFormScreen() {
           />
         </View>
 
-        <View style={{ flexDirection: "row", gap: 12 }}>
+        <View style={[styles.row, { gap: 12 }]}>
           <PrimaryButton
             label={t("form.save")}
             onPress={async () => {
@@ -394,3 +380,8 @@ export default function NotificationFormScreen() {
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  row: { flexDirection: "row" },
+  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+});

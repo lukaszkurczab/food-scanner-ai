@@ -63,13 +63,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           >
             {t("manageSubscription.yourSubscription")}
           </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginBottom: spacing.sm,
-            }}
-          >
+          <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
             <Text
               style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
             >
@@ -79,13 +73,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
             </Text>
           </View>
           {isPremium && subscription.renewDate && (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginBottom: spacing.sm,
-              }}
-            >
+            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
               <Text
                 style={{
                   color: theme.textSecondary,
@@ -103,13 +91,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
             </View>
           )}
           {isPremium && subscription.plan && (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginBottom: spacing.sm,
-              }}
-            >
+            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
               <Text
                 style={{
                   color: theme.textSecondary,
@@ -127,13 +109,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
             </View>
           )}
           {(subscription.lastPaymentAmount || subscription.lastPayment) && (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginBottom: spacing.sm,
-              }}
-            >
+            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
               <Text
                 style={{
                   color: theme.textSecondary,
@@ -228,11 +204,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
               }}
             >
               <TouchableOpacity
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
+                style={styles.rowBetween}
                 onPress={() => setExpanded(expanded === key ? null : key)}
                 activeOpacity={0.7}
               >
@@ -266,13 +238,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
             </View>
           ))}
           <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingVertical: spacing.sm,
-              marginTop: spacing.xl,
-            }}
+            style={[styles.rowBetween, { paddingVertical: spacing.sm, marginTop: spacing.xl }]}
             onPress={() => Linking.openURL(t("manageSubscription.refundLink"))}
             activeOpacity={0.7}
           >
@@ -291,14 +257,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
 
         {showCancel && (
           <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingVertical: spacing.sm,
-              borderTopWidth: 1,
-              borderTopColor: theme.border,
-            }}
+            style={[styles.rowBetween, { paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: theme.border }]}
           >
             <Text
               style={{
@@ -318,14 +277,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
         )}
         {showRenew && (
           <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingVertical: spacing.sm,
-              borderTopWidth: 1,
-              borderTopColor: theme.border,
-            }}
+            style={[styles.rowBetween, { paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: theme.border }]}
           >
             <Text
               style={{
@@ -345,15 +297,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
         )}
         {showStart && (
           <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginTop: spacing.lg,
-              paddingVertical: spacing.sm,
-              borderTopWidth: 1,
-              borderTopColor: theme.border,
-            }}
+            style={[styles.rowBetween, { marginTop: spacing.lg, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: theme.border }]}
           >
             <Text
               style={{
@@ -387,4 +331,5 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
   },
+  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
 });

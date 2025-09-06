@@ -83,15 +83,9 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <Layout>
-      <View style={{ flex: 1, gap: theme.spacing.lg }}>
+      <View style={[styles.flex1, { gap: theme.spacing.lg }]}>
         {userData?.calorieTarget && userData.calorieTarget > 0 ? (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: theme.spacing.sm,
-            }}
-          >
+          <View style={[styles.rowCenter, { gap: theme.spacing.sm }]}>
             <TargetProgressBar current={totalCalories} target={goalCalories} />
             <StreakBadge value={streak} />
           </View>
@@ -132,6 +126,8 @@ export default function HomeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  flex1: { flex: 1 },
+  rowCenter: { flexDirection: "row", alignItems: "center" },
   caloriesBox: { marginBottom: 16 },
   caloriesText: { fontSize: 16, fontWeight: "bold" },
   link: { marginTop: 4, fontSize: 14 },

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
@@ -86,14 +86,7 @@ export default function Step3Health({
   };
 
   return (
-    <View
-      style={{
-        gap: theme.spacing.lg,
-        flexDirection: "column",
-        flex: 1,
-        justifyContent: "center",
-      }}
-    >
+    <View style={[styles.container, { gap: theme.spacing.lg }] }>
       <View>
         <Text
           style={{
@@ -195,3 +188,7 @@ export default function Step3Health({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, flexDirection: "column", justifyContent: "center" },
+});

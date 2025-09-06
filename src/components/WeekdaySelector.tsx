@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Pressable, Text } from "react-native";
+import { View, Pressable, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
 type Props = {
@@ -12,7 +12,7 @@ const labels = ["S", "M", "T", "W", "T", "F", "S"];
 export const WeekdaySelector: React.FC<Props> = ({ value, onChange }) => {
   const theme = useTheme();
   return (
-    <View style={{ flexDirection: "row", gap: 8 }}>
+    <View style={[styles.row, { gap: 8 }]}>
       {labels.map((l, idx) => {
         const active = value.includes(idx);
         return (
@@ -47,3 +47,7 @@ export const WeekdaySelector: React.FC<Props> = ({ value, onChange }) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  row: { flexDirection: "row" },
+});

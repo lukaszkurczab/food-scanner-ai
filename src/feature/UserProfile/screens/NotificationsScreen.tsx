@@ -70,7 +70,7 @@ export default function NotificationsScreen({ navigation }: any) {
         <View>
           <SectionHeader label={t("screen.myReminders")} />
           {items.map((item) => (
-            <View key={item.id} style={{ marginBottom: 12 }}>
+            <View key={item.id} style={styles.mb12}>
               <NotificationCard
                 item={item}
                 onPress={() =>
@@ -90,15 +90,7 @@ export default function NotificationsScreen({ navigation }: any) {
         />
         <View>
           <SectionHeader label={t("screen.motivation")} />
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingVertical: 16,
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: theme.border,
-            }}
-          >
+          <View style={[styles.rowCenter, { paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border }]}>
             <Text
               style={{
                 flex: 1,
@@ -121,15 +113,7 @@ export default function NotificationsScreen({ navigation }: any) {
               }
             />
           </View>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: theme.border,
-              paddingVertical: 16,
-            }}
-          >
+          <View style={[styles.rowCenter, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border, paddingVertical: 16 }]}>
             <Text
               style={{
                 flex: 1,
@@ -188,4 +172,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
   },
+  mb12: { marginBottom: 12 },
+  rowCenter: { flexDirection: "row", alignItems: "center" },
 });

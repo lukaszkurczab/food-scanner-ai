@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  Modal,
-  Pressable,
-  ActivityIndicator,
-  GestureResponderEvent,
-} from "react-native";
+import { View, Text, Modal, Pressable, ActivityIndicator, GestureResponderEvent, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
 type Variant = "info" | "success" | "warning" | "error";
@@ -71,14 +64,7 @@ export function Alert({
     >
       <Pressable
         onPress={dismissOnBackdrop ? onClose : undefined}
-        style={{
-          flex: 1,
-          backgroundColor: theme.shadow,
-          opacity: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          padding: 24,
-        }}
+        style={[styles.backdrop, { backgroundColor: theme.shadow }]}
       >
         <Pressable
           onPress={() => {}}
@@ -126,16 +112,7 @@ export function Alert({
             ) : null}
           </View>
 
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "flex-end",
-              gap: 12,
-              paddingHorizontal: 16,
-              paddingBottom: 16,
-              paddingTop: 4,
-            }}
-          >
+          <View style={styles.actionsRow}>
             {secondaryAction ? (
               <Pressable
                 disabled={secondaryAction.loading}
@@ -206,3 +183,21 @@ export function Alert({
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    opacity: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 4,
+  },
+});

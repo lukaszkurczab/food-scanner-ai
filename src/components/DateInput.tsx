@@ -80,7 +80,7 @@ export const DateInput: React.FC<Props> = ({
         {t("statistics:ranges.custom")}
       </Text>
 
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={[styles.rowCenter, { gap: 8 }]}>
         <Pressable
           onPress={() => open("start")}
           style={[
@@ -170,6 +170,7 @@ export const DateInput: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create({
+  rowCenter: { flexDirection: "row", alignItems: "center" },
   input: {
     flex: 1,
     borderWidth: 1,
