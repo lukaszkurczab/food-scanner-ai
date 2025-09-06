@@ -56,10 +56,17 @@ export default {
       "@react-native-firebase/auth",
       "expo-notifications",
       "expo-task-manager",
-      "expo-background-fetch",
+      "expo-background-task",
     ],
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
+      // RevenueCat config & dev toggles
+      revenuecatAndroidKey: process.env.RC_ANDROID_API_KEY || "",
+      revenuecatIosKey: process.env.RC_IOS_API_KEY || "",
+      // Disable billing integrations in environments where billing isn't available (e.g., simulators)
+      disableBilling: (process.env.DISABLE_BILLING || "").toLowerCase() === "true",
+      // Force premium features on for development/testing without purchases
+      forcePremium: (process.env.FORCE_PREMIUM || "").toLowerCase() === "true",
       eas: {
         projectId: "6126cb31-0485-4b93-b30c-738b65882366",
       },

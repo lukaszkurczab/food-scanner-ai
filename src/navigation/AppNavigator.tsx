@@ -28,7 +28,7 @@ import ChangeEmailCheckMailboxScreen from "@/feature/UserProfile/screens/ChangeE
 import ChangePasswordScreen from "@/feature/UserProfile/screens/ChangePasswordScreen";
 import LanguageScreen from "@/feature/UserProfile/screens/LanguageScreen";
 import SendFeedbackScreen from "@/feature/UserProfile/screens/SendFeedbackScreen";
-import ManageSubscriptionScreen from "@/feature/UserProfile/screens/ManageSubscriptionScreen";
+import ManageSubscriptionScreen from "@/feature/Subscription/screens/ManageSubscriptionScreen";
 import MealCameraScreen from "@/feature/Meals/screens/MealCameraScreen";
 import SavedMealsScreen from "@feature/History/screens/SavedMealsScreen";
 import SelectSavedMealScreen from "@feature/Meals/screens/SelectSavedMealsScreen";

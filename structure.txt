@@ -17,7 +17,6 @@
 │   ├── playstore.png
 │   └── splash.png
 ├── babel.config.js
-├── build-1757072491080.apk
 ├── credentials.json
 ├── docs
 │   ├── PRIVACY.md
@@ -70,6 +69,7 @@
 │   │   ├── ScrollableBox.tsx
 │   │   ├── SearchBox.tsx
 │   │   ├── SecondaryButton.tsx
+│   │   ├── ShareCanvas.tsx
 │   │   ├── Slider.tsx
 │   │   ├── StreakBadge.tsx
 │   │   ├── TargetProgressBar.tsx
@@ -141,6 +141,7 @@
 │   │   │       ├── IngredientsNotRecognizedScreen.tsx
 │   │   │       ├── MealAddMethodScreen.tsx
 │   │   │       ├── MealCameraScreen.tsx
+│   │   │       ├── MealShareScreen.tsx
 │   │   │       ├── MealTextAIScreen.tsx
 │   │   │       ├── ResultScreen.tsx
 │   │   │       ├── ReviewIngredientsScreen.tsx
@@ -267,6 +268,7 @@
 │   │   ├── meal.ts
 │   │   ├── notification.ts
 │   │   ├── onboarding.ts
+│   │   ├── share.ts
 │   │   ├── subscription.ts
 │   │   └── user.ts
 │   └── utils
@@ -280,6 +282,7 @@
 │       ├── mealImage.ts
 │       ├── omitLocalUserKeys.ts
 │       ├── parseMarkdownToReactNative.tsx
+│       ├── photoFilters.ts
 │       ├── savePhotoLocally.ts
 │       ├── syncUtils.ts
 │       ├── units.ts
@@ -288,4 +291,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-47 directories, 242 files
+47 directories, 245 files

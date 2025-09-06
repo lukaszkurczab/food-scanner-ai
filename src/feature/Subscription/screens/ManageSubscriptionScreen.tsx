@@ -6,43 +6,125 @@ import {
   Linking,
   Pressable,
   StyleSheet,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { spacing } from "@/theme";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
-import { Layout } from "@/components/index";
+import { Layout } from "@/components";
+import { usePremiumContext } from "@/context/PremiumContext";
+import {
+  openManageSubscriptions,
+  startOrRenewSubscription,
+  restorePurchases,
+} from "@/feature/Subscription/services/purchase";
 
 const BENEFITS = [
   "unlimitedAiChat",
-  "fullCloudBackup",
   "unlimitedAiMealRecognition",
+  "fullCloudBackup",
+  "fullHistoryAccess",
   "earlyAccess",
-];
+] as const;
 
 export default function ManageSubscriptionScreen({ navigation }: any) {
   const theme = useTheme();
   const { t } = useTranslation("profile");
   const subscription = useSubscriptionData();
+  const { isPremium, setDevPremium } = usePremiumContext();
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   if (!subscription) {
     return <Text style={{ color: theme.text }}>Loading…</Text>;
   }
 
-  const isPremium = subscription.state.startsWith("premium");
-  const isActive = subscription.state.endsWith("active");
-  const showRenew = !isPremium && isActive;
-  const showStart = !isPremium && !isActive;
-  const showCancel = isPremium && isActive;
+  const state = subscription.state;
+  const isPremiumComputed = (isPremium ??
+    state.startsWith("premium")) as boolean;
+  const isExpired = state.endsWith("expired");
+  const isActive = state.endsWith("active");
+  const showCancel = isPremiumComputed && isActive;
+  const showRenew =
+    (!isPremiumComputed && isActive) || (isPremiumComputed && isExpired);
+  const showStart = !isPremiumComputed && !isExpired;
+
+  const headerStatus =
+    isPremiumComputed && isActive
+      ? t("manageSubscription.premium")
+      : isPremiumComputed && isExpired
+      ? `${t("manageSubscription.premium")} (${t("expired", {
+          defaultValue: "expired",
+        })})`
+      : t("manageSubscription.free");
+
+  const tryOpenManage = async () => {
+    setBusy(true);
+    try {
+      const ok = await openManageSubscriptions();
+      if (!ok) {
+        Alert.alert(
+          t("manageSubscription.title"),
+          t("manageSubscription.billingUnavailable", {
+            defaultValue: "Billing is unavailable on this device.",
+          })
+        );
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const tryPurchase = async () => {
+    setBusy(true);
+    try {
+      const res = await startOrRenewSubscription();
+      if (res.status === "success") return;
+      if (res.status === "unavailable") {
+        Alert.alert(
+          t("manageSubscription.title"),
+          t("manageSubscription.billingUnavailable", {
+            defaultValue: "Billing is unavailable on this device.",
+          })
+        );
+      } else if (res.status === "error") {
+        Alert.alert(
+          t("manageSubscription.title"),
+          t("manageSubscription.purchaseFailed", {
+            defaultValue: "Purchase failed. Please try again.",
+          })
+        );
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const tryRestore = async () => {
+    setBusy(true);
+    try {
+      const res = await restorePurchases();
+      if (res.status === "unavailable") {
+        Alert.alert(
+          t("manageSubscription.title"),
+          t("manageSubscription.billingUnavailable", {
+            defaultValue: "Billing is unavailable on this device.",
+          })
+        );
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <Layout>
       <View style={{ flex: 1 }}>
         <Pressable style={styles.header} onPress={() => navigation.goBack()}>
           <MaterialIcons name="chevron-left" size={28} color={theme.text} />
-
           <Text
             style={[styles.heading, { color: theme.text }]}
             accessibilityRole="header"
@@ -63,16 +145,23 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           >
             {t("manageSubscription.yourSubscription")}
           </Text>
-          <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
+          <View
+            style={[
+              styles.rowBetween,
+              { marginBottom: spacing.sm, opacity: busy ? 0.6 : 1 },
+            ]}
+          >
             <Text
               style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
             >
-              {isPremium
-                ? t("manageSubscription.premium")
-                : t("manageSubscription.free")}
+              {headerStatus}
             </Text>
+            {busy && (
+              <ActivityIndicator size="small" color={theme.textSecondary} />
+            )}
           </View>
-          {isPremium && subscription.renewDate && (
+
+          {isPremiumComputed && subscription.renewDate && (
             <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
               <Text
                 style={{
@@ -90,7 +179,8 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
               </Text>
             </View>
           )}
-          {isPremium && subscription.plan && (
+
+          {isPremiumComputed && subscription.plan && (
             <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
               <Text
                 style={{
@@ -108,6 +198,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
               </Text>
             </View>
           )}
+
           {(subscription.lastPaymentAmount || subscription.lastPayment) && (
             <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
               <Text
@@ -131,14 +222,9 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
               </Text>
             </View>
           )}
-          {isPremium && subscription.startDate && (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginBottom: spacing.sm,
-              }}
-            >
+
+          {isPremiumComputed && subscription.startDate && (
+            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
               <Text
                 style={{
                   color: theme.textSecondary,
@@ -155,14 +241,9 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
               </Text>
             </View>
           )}
-          {!isPremium && subscription.endDate && (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginBottom: spacing.sm,
-              }}
-            >
+
+          {!isPremiumComputed && subscription.endDate && (
+            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
               <Text
                 style={{
                   color: theme.textSecondary,
@@ -171,6 +252,27 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
                 }}
               >
                 {t("manageSubscription.subscriptionEnd")}
+              </Text>
+              <Text
+                style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
+              >
+                {subscription.endDate}
+              </Text>
+            </View>
+          )}
+
+          {isPremiumComputed && isExpired && subscription.endDate && (
+            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
+              <Text
+                style={{
+                  color: theme.textSecondary,
+                  fontSize: 18,
+                  fontWeight: "500",
+                }}
+              >
+                {t("manageSubscription.inactiveSince", {
+                  defaultValue: "Inactive since",
+                })}
               </Text>
               <Text
                 style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
@@ -193,6 +295,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           >
             {t("manageSubscription.premiumBenefits")}
           </Text>
+
           {BENEFITS.map((key) => (
             <View
               key={key}
@@ -213,6 +316,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
                     fontSize: 18,
                     fontWeight: "500",
                     color: theme.text,
+                    flexShrink: 1,
                   }}
                 >
                   {t(`manageSubscription.benefit_${key}`)}
@@ -223,6 +327,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
                   color={theme.textSecondary}
                 />
               </TouchableOpacity>
+
               {expanded === key && (
                 <Text
                   style={{
@@ -237,8 +342,12 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
               )}
             </View>
           ))}
+
           <TouchableOpacity
-            style={[styles.rowBetween, { paddingVertical: spacing.sm, marginTop: spacing.xl }]}
+            style={[
+              styles.rowBetween,
+              { paddingVertical: spacing.sm, marginTop: spacing.xl },
+            ]}
             onPress={() => Linking.openURL(t("manageSubscription.refundLink"))}
             activeOpacity={0.7}
           >
@@ -257,7 +366,16 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
 
         {showCancel && (
           <TouchableOpacity
-            style={[styles.rowBetween, { paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: theme.border }]}
+            style={[
+              styles.rowBetween,
+              {
+                paddingVertical: spacing.sm,
+                borderTopWidth: 1,
+                borderTopColor: theme.border,
+              },
+            ]}
+            onPress={tryOpenManage}
+            disabled={busy}
           >
             <Text
               style={{
@@ -275,9 +393,19 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
             />
           </TouchableOpacity>
         )}
+
         {showRenew && (
           <TouchableOpacity
-            style={[styles.rowBetween, { paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: theme.border }]}
+            style={[
+              styles.rowBetween,
+              {
+                paddingVertical: spacing.sm,
+                borderTopWidth: 1,
+                borderTopColor: theme.border,
+              },
+            ]}
+            onPress={tryPurchase}
+            disabled={busy}
           >
             <Text
               style={{
@@ -295,9 +423,20 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
             />
           </TouchableOpacity>
         )}
+
         {showStart && (
           <TouchableOpacity
-            style={[styles.rowBetween, { marginTop: spacing.lg, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: theme.border }]}
+            style={[
+              styles.rowBetween,
+              {
+                marginTop: spacing.lg,
+                paddingVertical: spacing.sm,
+                borderTopWidth: 1,
+                borderTopColor: theme.border,
+              },
+            ]}
+            onPress={tryPurchase}
+            disabled={busy}
           >
             <Text
               style={{
@@ -315,6 +454,25 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
             />
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity
+          style={[
+            styles.rowBetween,
+            {
+              marginTop: spacing.xl,
+              paddingVertical: spacing.sm,
+              borderTopWidth: 1,
+              borderTopColor: theme.border,
+            },
+          ]}
+          onPress={() => setDevPremium(!isPremiumComputed)}
+          activeOpacity={0.7}
+        >
+          <Text style={{ fontWeight: "bold", fontSize: 18, color: theme.text }}>
+            {`DEV: ${isPremiumComputed ? "Disable" : "Enable"} Premium`}
+          </Text>
+          <Ionicons name="build" size={20} color={theme.textSecondary} />
+        </TouchableOpacity>
       </View>
     </Layout>
   );
@@ -327,9 +485,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 16,
   },
-  heading: {
-    fontSize: 22,
-    fontWeight: "bold",
+  heading: { fontSize: 22, fontWeight: "bold" },
+  rowBetween: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
 });
