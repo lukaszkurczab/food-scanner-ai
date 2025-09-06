@@ -93,6 +93,8 @@ export const Modal: React.FC<Props> = ({
               styles.modalContainer,
               {
                 backgroundColor: modalBg,
+                borderWidth: 1,
+                borderColor: theme.border,
                 borderRadius: theme.rounded.md,
                 padding: theme.spacing.lg,
                 maxWidth: maxWidth,
@@ -120,7 +122,7 @@ export const Modal: React.FC<Props> = ({
               <Text
                 style={{
                   color: theme.text,
-                  fontSize: theme.typography.size.lg,
+                  fontSize: theme.typography.size.xl,
                   fontFamily: theme.typography.fontFamily.bold,
                   fontWeight: "bold",
                   textAlign: "center",
@@ -142,7 +144,7 @@ export const Modal: React.FC<Props> = ({
                 <Text
                   style={{
                     color: theme.text,
-                    fontSize: theme.typography.size.base,
+                    fontSize: theme.typography.size.md,
                     fontFamily: theme.typography.fontFamily.regular,
                     marginBottom: theme.spacing.lg,
                     textAlign: "center",

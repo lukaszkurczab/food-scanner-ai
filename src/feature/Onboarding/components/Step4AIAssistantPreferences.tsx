@@ -114,7 +114,9 @@ export default function Step4AIAssistantPreferences({
           label: t(o.label),
           value: o.value,
         }))}
-        onChange={(v) => setForm((prev) => ({ ...prev, aiStyle: v }))}
+        onChange={(v) =>
+          setForm((prev) => ({ ...prev, aiStyle: v ?? "none" }))
+        }
         error={undefined}
       />
 
@@ -128,7 +130,7 @@ export default function Step4AIAssistantPreferences({
         onChange={(v) =>
           setForm((prev) => ({
             ...prev,
-            aiFocus: v,
+            aiFocus: v ?? "none",
             aiFocusOther: v === "other" ? prev.aiFocusOther ?? "" : "",
           }))
         }

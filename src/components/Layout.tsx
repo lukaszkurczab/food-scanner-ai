@@ -27,6 +27,7 @@ const hiddenRoutes = [
   "Result",
   "MealTextAI",
   "MealShare",
+  "MealDetails",
 ];
 
 type LayoutProps = {
@@ -80,7 +81,14 @@ export const Layout = ({
               {children}
             </ScrollView>
           ) : (
-            <View style={[styles.root, { backgroundColor: theme.background }]}>
+            <View
+              style={[
+                styles.root,
+                {
+                  backgroundColor: theme.background,
+                },
+              ]}
+            >
               {children}
             </View>
           )}

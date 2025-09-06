@@ -59,7 +59,13 @@ export const MealBox = ({
   const renderNutritionGraph = () => {
     if (nutrition.protein || nutrition.carbs || nutrition.fat)
       return (
-        <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
+        <View
+          style={{
+            alignItems: "center",
+            marginTop: theme.spacing.md,
+            alignSelf: "center",
+          }}
+        >
           <PieChart data={macroChartData} maxSize={140} />
         </View>
       );
@@ -105,13 +111,15 @@ export const MealBox = ({
       <View style={{ marginVertical: theme.spacing.md }}>
         {editable ? (
           <Dropdown
-            value={type || "breakfast"}
+            value={type ?? "breakfast"}
             style={{ marginTop: theme.spacing.sm }}
             options={mealTypeOptions.map((opt) => ({
               ...opt,
               label: t(opt.label),
             }))}
-            onChange={onTypeChange || (() => {})}
+            onChange={(val) => {
+              if (val) onTypeChange?.(val);
+            }}
           />
         ) : (
           <Text

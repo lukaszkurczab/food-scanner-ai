@@ -19,7 +19,7 @@ type PieChartProps = {
 export const PieChart: React.FC<PieChartProps> = ({
   data,
   maxSize = 200,
-  minSize = 120,
+  minSize = 100,
   legendWidth = 120,
   gap = 16,
   strokeWidth = 0,
@@ -118,12 +118,19 @@ export const PieChart: React.FC<PieChartProps> = ({
   let angle = 0;
 
   return (
-    <View onLayout={onLayout} style={{ width: "100%" }}>
+    <View
+      onLayout={onLayout}
+      style={{
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
       <View
         style={{
-          flexDirection: canRow ? "row" : "column",
+          flexDirection: "row",
           alignItems: "center",
-          justifyContent: canRow ? "flex-start" : "center",
+          justifyContent: "center",
           gap,
         }}
       >

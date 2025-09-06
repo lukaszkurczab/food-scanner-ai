@@ -22,9 +22,8 @@ import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "../components/DateTimeSection";
 import { updateStreakIfThresholdMet } from "@/services/streakService";
-import ViewShot, { captureRef } from "react-native-view-shot";
+import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
-import ShareCard from "@/components/ShareCard";
 import { useNavigation } from "@react-navigation/native";
 
 type ResultScreenProps = { navigation: any };
@@ -121,18 +120,6 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
     }
   };
 
-  const onShare = async () => {
-    if (!shotRef.current) return;
-    const uri = await captureRef(shotRef, {
-      format: "png",
-      quality: 1,
-      width: 1080,
-      height: 1920,
-      result: "tmpfile",
-    });
-    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri);
-  };
-
   const handleCancel = () => setShowCancelModal(true);
   const handleCancelConfirm = () => {
     if (uid) clearMeal(uid);
@@ -149,19 +136,11 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
             resizeMode="cover"
           />
         )}
-
-        <View style={{ padding: theme.spacing.container }}>
-          {image && (
-            <Image
-              source={{ uri: image }}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          )}
-          <SecondaryButton label="Share" onPress={goShare} />
-        </View>
-
-        <SecondaryButton label="Share" onPress={onShare} />
+        <SecondaryButton
+          label="Share"
+          onPress={goShare}
+          style={{ marginTop: theme.spacing.md }}
+        />
 
         <MealBox
           name={mealName}

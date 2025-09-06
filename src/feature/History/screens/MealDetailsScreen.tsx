@@ -18,9 +18,8 @@ import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import type { Meal, MealType, Ingredient } from "@/types/meal";
 import { useMeals } from "@hooks/useMeals";
 import { useAuthContext } from "@/context/AuthContext";
-import ViewShot, { captureRef } from "react-native-view-shot";
+import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
-import ShareCard from "@/components/ShareCard";
 import { useNavigation } from "@react-navigation/native";
 
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -139,102 +138,102 @@ export default function MealDetailsScreen() {
 
   return (
     <Layout showNavigation={false}>
-      <FallbackImage
-        uri={draft.photoUrl || null}
-        width={"100%"}
-        height={220}
-        borderRadius={theme.rounded.lg}
-      />
-      <View style={{ alignItems: "center", marginVertical: theme.spacing.md }}>
-        <SecondaryButton label="Share" onPress={goShare} />
-      </View>
+      <View style={{ flex: 1, padding: theme.spacing.lg }}>
+        <FallbackImage
+          uri={draft.photoUrl || null}
+          width={"100%"}
+          height={220}
+          borderRadius={theme.rounded.lg}
+        />
+        {draft.photoUrl && <SecondaryButton label="Share" onPress={goShare} />}
 
-      <MealBox
-        name={draft.name || ""}
-        type={draft.type}
-        nutrition={nutrition}
-        editable={edit && !saving}
-        onNameChange={edit ? setName : undefined}
-        onTypeChange={edit ? setType : undefined}
-      />
+        <MealBox
+          name={draft.name || ""}
+          type={draft.type}
+          nutrition={nutrition}
+          editable={edit && !saving}
+          onNameChange={edit ? setName : undefined}
+          onTypeChange={edit ? setType : undefined}
+        />
 
-      {!!draft.ingredients.length && (
-        <Card
-          variant="outlined"
-          onPress={() => !saving && setShowIngredients((v) => !v)}
-        >
-          <Text
-            style={{
-              fontSize: theme.typography.size.md,
-              fontWeight: "500",
-              color: theme.text,
-              textAlign: "center",
-            }}
+        {!!draft.ingredients.length && (
+          <Card
+            variant="outlined"
+            onPress={() => !saving && setShowIngredients((v) => !v)}
           >
-            {showIngredients
-              ? t("hide_ingredients", { ns: "meals" })
-              : t("show_ingredients", { ns: "meals" })}
-          </Text>
-        </Card>
-      )}
-
-      {showIngredients &&
-        draft.ingredients.map((ingredient, idx) => (
-          <IngredientBox
-            key={`${ingredient.name}-${idx}`}
-            ingredient={ingredient}
-            editable={edit && !saving}
-            onSave={(updated) => edit && updateIngredientAt(idx, updated)}
-            onRemove={() => edit && removeIngredientAt(idx)}
-          />
-        ))}
-
-      <View style={{ marginTop: theme.spacing.lg }}>
-        {!edit ? (
-          <PrimaryButton
-            label={t("edit_meal", { ns: "meals", defaultValue: "Edit meal" })}
-            onPress={startEdit}
-          />
-        ) : (
-          <View style={{ gap: theme.spacing.sm }}>
-            <PrimaryButton
-              label={t("save_changes", { ns: "common" })}
-              onPress={handleSave}
-              loading={saving}
-              disabled={saving || !isDirty}
-            />
-            <ErrorButton
-              label={t("cancel", { ns: "common" })}
-              onPress={handleCancel}
-              disabled={saving}
-            />
-          </View>
+            <Text
+              style={{
+                fontSize: theme.typography.size.md,
+                fontWeight: "500",
+                color: theme.text,
+                textAlign: "center",
+              }}
+            >
+              {showIngredients
+                ? t("hide_ingredients", { ns: "meals" })
+                : t("show_ingredients", { ns: "meals" })}
+            </Text>
+          </Card>
         )}
-      </View>
 
-      <Modal
-        visible={showDiscardModal}
-        title={t("discard_changes_title", {
-          ns: "meals",
-          defaultValue: "Discard changes?",
-        })}
-        message={t("discard_changes_message", {
-          ns: "meals",
-          defaultValue:
-            "You have unsaved edits. Do you really want to cancel and lose your changes?",
-        })}
-        primaryActionLabel={t("discard", {
-          ns: "common",
-          defaultValue: "Discard",
-        })}
-        onPrimaryAction={confirmDiscard}
-        secondaryActionLabel={t("continue", {
-          ns: "common",
-          defaultValue: "Continue editing",
-        })}
-        onSecondaryAction={() => setShowDiscardModal(false)}
-        onClose={() => setShowDiscardModal(false)}
-      />
+        {showIngredients &&
+          draft.ingredients.map((ingredient, idx) => (
+            <IngredientBox
+              key={`${ingredient.name}-${idx}`}
+              ingredient={ingredient}
+              editable={edit && !saving}
+              onSave={(updated) => edit && updateIngredientAt(idx, updated)}
+              onRemove={() => edit && removeIngredientAt(idx)}
+            />
+          ))}
+
+        <View style={{ marginTop: theme.spacing.lg }}>
+          {!edit ? (
+            <PrimaryButton
+              label={t("edit_meal", { ns: "meals", defaultValue: "Edit meal" })}
+              onPress={startEdit}
+            />
+          ) : (
+            <View style={{ gap: theme.spacing.sm }}>
+              <PrimaryButton
+                label={t("save_changes", { ns: "common" })}
+                onPress={handleSave}
+                loading={saving}
+                disabled={saving || !isDirty}
+              />
+              <ErrorButton
+                label={t("cancel", { ns: "common" })}
+                onPress={handleCancel}
+                disabled={saving}
+              />
+            </View>
+          )}
+        </View>
+
+        <Modal
+          visible={showDiscardModal}
+          title={t("discard_changes_title", {
+            ns: "meals",
+            defaultValue: "Discard changes?",
+          })}
+          message={t("discard_changes_message", {
+            ns: "meals",
+            defaultValue:
+              "You have unsaved edits. Do you really want to cancel and lose your changes?",
+          })}
+          primaryActionLabel={t("discard", {
+            ns: "common",
+            defaultValue: "Discard",
+          })}
+          onPrimaryAction={confirmDiscard}
+          secondaryActionLabel={t("continue", {
+            ns: "common",
+            defaultValue: "Continue editing",
+          })}
+          onSecondaryAction={() => setShowDiscardModal(false)}
+          onClose={() => setShowDiscardModal(false)}
+        />
+      </View>
     </Layout>
   );
 }
