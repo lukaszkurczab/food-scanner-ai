@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, Alert, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import { RootStackParamList } from "@/navigation/navigate";
@@ -15,7 +15,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { v4 as uuidv4 } from "uuid";
 import { usePremiumContext } from "@/context/PremiumContext";
-import { canUseAiToday } from "@/services/userService";
+import { canUseAiTodayFor } from "@/services/userService";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -64,6 +64,7 @@ const MealAddMethodScreen = () => {
   const [showModal, setShowModal] = useState(false);
   const [draftExists, setDraftExists] = useState(false);
   const [lastScreen, setLastScreenState] = useState<string | null>(null);
+  const [showAiLimit, setShowAiLimit] = useState(false);
 
   const checkDraft = useCallback(async () => {
     if (!uid) return;
@@ -113,19 +114,10 @@ const MealAddMethodScreen = () => {
   const handleOptionPress = async (screen: string) => {
     if (screen === "MealCamera" || screen === "MealTextAI") {
       if (uid) {
-        const allowed = await canUseAiToday(uid, !!isPremium, 1);
+        const feature = screen === "MealCamera" ? "camera" : "text";
+        const allowed = await canUseAiTodayFor(uid, !!isPremium, feature, 1);
         if (!allowed) {
-          Alert.alert(
-            t("continue"),
-            t("limit.reachedShort", { ns: "chat", used: 1, limit: 1 }),
-            [
-              { text: t("cancel", { ns: "common" }), style: "cancel" },
-              {
-                text: t("limit.upgradeCta", { ns: "chat" }),
-                onPress: () => navigation.navigate("ManageSubscription" as any),
-              },
-            ]
-          );
+          setShowAiLimit(true);
           return;
         }
       }
@@ -174,7 +166,12 @@ const MealAddMethodScreen = () => {
         {t("subtitle")}
       </Text>
 
-      <View style={[styles.optionsWrap, { gap: spacing.xl, paddingTop: spacing.xl }]}>
+      <View
+        style={[
+          styles.optionsWrap,
+          { gap: spacing.xl, paddingTop: spacing.xl },
+        ]}
+      >
         {options.map((option) => (
           <TouchableOpacity
             key={option.key}
@@ -244,6 +241,32 @@ const MealAddMethodScreen = () => {
         secondaryActionLabel={t("discard")}
         onSecondaryAction={handleDiscard}
         onClose={() => setShowModal(false)}
+      />
+
+      <Modal
+        visible={showAiLimit}
+        title={t("limit.reachedTitle", {
+          ns: "chat",
+          defaultValue: "Daily limit reached",
+        })}
+        message={t("limit.reachedShort", {
+          ns: "chat",
+        })}
+        primaryActionLabel={t("limit.upgradeCta", {
+          ns: "chat",
+          defaultValue: "Upgrade",
+        })}
+        onPrimaryAction={() => {
+          setShowAiLimit(false);
+          navigation.navigate("ManageSubscription" as any);
+        }}
+        secondaryActionLabel={t("cancel", {
+          ns: "common",
+          defaultValue: "Close",
+        })}
+        onSecondaryAction={() => setShowAiLimit(false)}
+        onClose={() => setShowAiLimit(false)}
+        stackActions
       />
     </Layout>
   );

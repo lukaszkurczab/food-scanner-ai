@@ -46,7 +46,7 @@ export default function MealShareScreen() {
   };
 
   return (
-    <Layout showNavigation={false}>
+    <Layout showNavigation={false} disableScroll>
       <ScrollView
         contentContainerStyle={{
           padding: theme.spacing.md,

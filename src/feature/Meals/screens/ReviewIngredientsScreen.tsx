@@ -181,7 +181,7 @@ export default function ReviewIngredientsScreen() {
   }
 
   return (
-    <Layout showNavigation={false} disableScroll>
+    <Layout showNavigation={false}>
       <View style={styles(theme).container}>
         <View style={styles(theme).imageWrapper}>
           {image ? (

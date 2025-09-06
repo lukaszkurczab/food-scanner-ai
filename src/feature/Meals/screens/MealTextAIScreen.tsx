@@ -1,4 +1,3 @@
-// src/feature/Meals/screens/MealTextAIScreen.tsx
 import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
@@ -8,12 +7,12 @@ import {
   Platform,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Layout, PrimaryButton, SecondaryButton } from "@/components";
+import { Layout, PrimaryButton, SecondaryButton, Modal } from "@/components";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useNavigation } from "@react-navigation/native";
-import { canUseAiToday } from "@/services/userService";
+import { canUseAiTodayFor, consumeAiUseFor } from "@/services/userService";
 import { extractIngredientsFromText } from "@/services/textMealService";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { v4 as uuidv4 } from "uuid";
@@ -23,7 +22,7 @@ import type { Ingredient, Meal } from "@/types";
 
 export default function MealTextAIScreen() {
   const theme = useTheme();
-  const { t } = useTranslation(["meals", "chat", "common"]);
+  const { t, i18n } = useTranslation(["meals", "chat", "common"]);
   const { uid } = useAuthContext();
   const { isPremium } = usePremiumContext();
   const navigation = useNavigation<any>();
@@ -34,17 +33,31 @@ export default function MealTextAIScreen() {
   const [amount, setAmount] = useState("");
   const [desc, setDesc] = useState("");
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState<{ name: boolean; amount: boolean }>({
+    name: false,
+    amount: false,
+  });
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
-  const dailyLimit = 1;
+  const FEATURE_LIMIT = 1;
 
-  const errors = useMemo(() => {
-    const e: Record<string, string> = {};
-    if (!name.trim()) e.name = t("ingredient_name_required", { ns: "meals" });
-    const amt = Number(String(amount).replace(/[^0-9.]/g, ""));
-    if (!isFinite(amt) || amt <= 0)
-      e.amount = t("ingredient_invalid_values", { ns: "meals" });
-    return e;
-  }, [name, amount, t]);
+  const sanitizeAmount = (s: string) => String(s).replace(/[^0-9.]/g, "");
+  const amountRaw = useMemo(() => sanitizeAmount(amount), [amount]);
+  const amountNum = useMemo(() => Number(amountRaw), [amountRaw]);
+
+  const nameError: string | undefined = useMemo(() => {
+    if (!touched.name) return undefined;
+    if (!name.trim()) return t("ingredient_name_required", { ns: "meals" });
+    return undefined;
+  }, [touched.name, name, t]);
+
+  const amountError: string | undefined = useMemo(() => {
+    if (!touched.amount) return undefined;
+    if (amountRaw.length === 0) return undefined;
+    if (!isFinite(amountNum) || amountNum <= 0)
+      return t("ingredient_invalid_values", { ns: "meals" });
+    return undefined;
+  }, [touched.amount, amountRaw, amountNum, t]);
 
   const buildInitialMeal = useCallback(
     (u: string): Meal =>
@@ -117,32 +130,62 @@ export default function MealTextAIScreen() {
 
   const onAnalyze = useCallback(async () => {
     if (!uid) return;
-    if (Object.keys(errors).length) return;
-    const allowed = await canUseAiToday(uid, !!isPremium, dailyLimit);
-    if (!allowed) {
-      Alert.alert(
-        t("limit.reachedShort", { ns: "chat", used: 1, limit: dailyLimit })
-      );
+    const missingName = !name.trim();
+    const amountProvided = sanitizeAmount(amount).length > 0;
+    const invalidAmount =
+      amountProvided &&
+      (!isFinite(Number(sanitizeAmount(amount))) ||
+        Number(sanitizeAmount(amount)) <= 0);
+    if (missingName || invalidAmount) {
+      setTouched((prev) => ({
+        name: true,
+        amount: prev.amount || amountProvided,
+      }));
       return;
     }
+
+    // per-feature limit: "text"
+    const allowed = await canUseAiTodayFor(
+      uid,
+      !!isPremium,
+      "text",
+      FEATURE_LIMIT
+    );
+    if (!allowed) {
+      setShowLimitModal(true);
+      return;
+    }
+
     try {
       setLoading(true);
       const description = buildDescription();
       const ings = await extractIngredientsFromText(uid, description, {
         isPremium: !!isPremium,
-        limit: dailyLimit,
+        limit: FEATURE_LIMIT,
+        lang: i18n.language || "en",
       });
       if (!ings || ings.length === 0) {
         navigation.replace("IngredientsNotRecognized");
         return;
       }
+      // consume usage on success
+      await consumeAiUseFor(uid, !!isPremium, "text", FEATURE_LIMIT);
       await fillDraftAndGo(ings);
     } catch {
       Alert.alert(t("default_error", { ns: "common" }));
     } finally {
       setLoading(false);
     }
-  }, [uid, errors, isPremium, t, fillDraftAndGo, navigation]);
+  }, [
+    uid,
+    isPremium,
+    t,
+    fillDraftAndGo,
+    navigation,
+    name,
+    amount,
+    i18n.language,
+  ]);
 
   return (
     <Layout>
@@ -157,18 +200,6 @@ export default function MealTextAIScreen() {
             flex: 1,
           }}
         >
-          <View style={{ alignItems: "center", gap: theme.spacing.xs }}>
-            <Text
-              style={{
-                fontSize: theme.typography.size.md,
-                color: theme.textSecondary,
-                textAlign: "center",
-              }}
-            >
-              {t("aiTextDesc", { ns: "meals" })}
-            </Text>
-          </View>
-
           <View
             style={{
               backgroundColor: theme.card,
@@ -181,51 +212,120 @@ export default function MealTextAIScreen() {
               shadowOpacity: 0.08,
               shadowOffset: { width: 0, height: 2 },
               shadowRadius: 10,
+              flex: 1,
             }}
           >
-            <ShortInput
-              label="Name"
-              value={name}
-              onChangeText={setName}
-              placeholder="Meal name"
-              error={errors.name}
-            />
-            <LongTextInput
-              label="Ingredients (optional)"
-              value={ingPreview}
-              onChangeText={setIngPreview}
-              placeholder="List of sample ingredients"
-              numberOfLines={3}
-            />
-            <ShortInput
-              label="Amount"
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="Total amount [g]"
-              keyboardType="numeric"
-              error={errors.amount}
-            />
-            <LongTextInput
-              label="Description (optional)"
-              value={desc}
-              onChangeText={setDesc}
-              placeholder="Describe meal"
-              numberOfLines={4}
-            />
-
-            <PrimaryButton
-              label={loading ? t("loading", { ns: "common" }) : "Analyze"}
-              onPress={onAnalyze}
-              disabled={loading || Object.keys(errors).length > 0}
-              style={{ marginTop: theme.spacing.sm }}
-            />
-            <SecondaryButton
-              label="Select other method"
-              onPress={() => navigation.navigate("MealAddMethod")}
-            />
+            <View style={{ gap: theme.spacing.md, flexGrow: 1 }}>
+              <ShortInput
+                label={t("ingredient_name", {
+                  ns: "meals",
+                  defaultValue: "Meal name",
+                })}
+                value={name}
+                onChangeText={setName}
+                placeholder={t("ingredient_name", {
+                  ns: "meals",
+                  defaultValue: "Meal name",
+                })}
+                onBlur={() => setTouched((p) => ({ ...p, name: true }))}
+                error={nameError}
+                inputStyle={{ fontSize: theme.typography.size.md }}
+              />
+              <LongTextInput
+                label={t("ingredients_optional", {
+                  ns: "meals",
+                  defaultValue: "Ingredients (optional)",
+                })}
+                value={ingPreview}
+                onChangeText={setIngPreview}
+                placeholder={t("ingredients_optional", {
+                  ns: "meals",
+                  defaultValue: "Ingredients (optional)",
+                })}
+                inputStyle={{ fontSize: theme.typography.size.md }}
+                numberOfLines={5}
+              />
+              <ShortInput
+                label={t("amount", { ns: "meals", defaultValue: "Amount [g]" })}
+                value={amount}
+                onChangeText={setAmount}
+                placeholder={t("amount", {
+                  ns: "meals",
+                  defaultValue: "Amount [g]",
+                })}
+                keyboardType="numeric"
+                onBlur={() => setTouched((p) => ({ ...p, amount: true }))}
+                error={amountError}
+                inputStyle={{ fontSize: theme.typography.size.md }}
+              />
+              <LongTextInput
+                label={t("description_optional", {
+                  ns: "meals",
+                  defaultValue: "Description (optional)",
+                })}
+                value={desc}
+                onChangeText={setDesc}
+                placeholder={t("description_optional", {
+                  ns: "meals",
+                  defaultValue: "Description (optional)",
+                })}
+                numberOfLines={6}
+                inputStyle={{ fontSize: theme.typography.size.md }}
+              />
+            </View>
+            <View style={{ gap: theme.spacing.sm, marginTop: "auto" }}>
+              <PrimaryButton
+                label={
+                  loading
+                    ? t("loading", { ns: "common" })
+                    : t("analyze", { ns: "meals", defaultValue: "Analyze" })
+                }
+                onPress={onAnalyze}
+                disabled={
+                  loading ||
+                  !name.trim() ||
+                  (amountRaw.length > 0 &&
+                    (!isFinite(amountNum) || amountNum <= 0))
+                }
+                style={{ marginTop: theme.spacing.sm }}
+              />
+              <SecondaryButton
+                label={t("select_method", {
+                  ns: "meals",
+                  defaultValue: "Select other method",
+                })}
+                onPress={() => navigation.navigate("MealAddMethod")}
+              />
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
+      <Modal
+        visible={showLimitModal}
+        title={t("limit.reachedTitle", {
+          ns: "chat",
+          defaultValue: "Daily limit reached",
+        })}
+        message={t("limit.reachedShort", {
+          ns: "chat",
+          used: 1,
+          limit: FEATURE_LIMIT,
+        })}
+        primaryActionLabel={t("limit.upgradeCta", {
+          ns: "chat",
+          defaultValue: "Upgrade",
+        })}
+        onPrimaryAction={() => {
+          setShowLimitModal(false);
+          navigation.navigate("ManageSubscription" as any);
+        }}
+        secondaryActionLabel={t("cancel", {
+          ns: "common",
+          defaultValue: "Close",
+        })}
+        onSecondaryAction={() => setShowLimitModal(false)}
+        onClose={() => setShowLimitModal(false)}
+      />
     </Layout>
   );
 }

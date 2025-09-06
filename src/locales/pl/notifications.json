@@ -20,7 +20,7 @@
     "textOverride": "Własna treść",
     "delete": "Usuń",
     "mealKind": "Posiłek",
-    "kcalByHour": "Cel kcal do tej godziny (opcjonalnie)",
+    "kcalByHour": "Cel kcal do tej godziny",
     "kcalPlaceholder": "np. 1000"
   },
   "type": {

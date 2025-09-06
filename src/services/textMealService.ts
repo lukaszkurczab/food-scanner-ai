@@ -38,10 +38,11 @@ function extractJsonArray(raw: string): string | null {
 export async function extractIngredientsFromText(
   uid: string,
   description: string,
-  opts?: { isPremium?: boolean; limit?: number }
+  opts?: { isPremium?: boolean; limit?: number; lang?: string }
 ): Promise<Ingredient[] | null> {
   const isPremium = !!opts?.isPremium;
   const limit = opts?.limit ?? 1;
+  const lang = (opts?.lang || "en").toString();
 
   if (!isPremium) {
     const allowed = await canUseAiToday(uid, isPremium, limit);
@@ -52,6 +53,7 @@ export async function extractIngredientsFromText(
     `From the user's meal description, return ONLY a JSON array of ingredients with grams and macros.\n` +
     `Schema for each item: { "name": "string", "amount": 123, "protein": 0, "fat": 0, "carbs": 0, "kcal": 0 }.\n` +
     `Use grams for "amount". Estimate when missing. Numbers only. No text outside the JSON array.\n` +
+    `Ingredient "name" values MUST be in the user's language: ${lang}. Keep JSON keys (name, amount, protein, fat, carbs, kcal) in English.\n` +
     `User description: """${description.trim()}"""`;
 
   const res = await client.chat.completions.create({

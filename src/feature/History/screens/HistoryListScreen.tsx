@@ -312,7 +312,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   );
 
   return (
-    <Layout>
+    <Layout disableScroll>
       {!netInfo.isConnected && <OfflineBanner />}
       {showFilters ? (
         <View style={{ height: "100%", paddingBottom: theme.spacing.nav }}>
