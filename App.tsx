@@ -13,12 +13,12 @@ import { PremiumProvider } from "@/context/PremiumContext";
 import { useFonts } from "expo-font";
 import { View, ActivityIndicator, Platform } from "react-native";
 import { useTheme } from "@/theme";
-import Purchases from "react-native-purchases";
+import { initRevenueCat } from "@/feature/Subscription";
 import { InactivityProvider } from "@contexts/InactivityContext";
 import { HistoryProvider } from "@/context/HistoryContext";
 import * as Notifications from "expo-notifications";
 import * as TaskManager from "expo-task-manager";
-import * as BackgroundFetch from "expo-background-fetch";
+import * as BackgroundTask from "expo-background-task";
 import { reconcileAll } from "@/services/notifications/engine";
 import { ensureAndroidChannel } from "@/services/notifications/localScheduler";
 import { runSystemNotifications } from "@/services/notifications/system";
@@ -29,25 +29,18 @@ import {
   onSnapshot,
 } from "@react-native-firebase/firestore";
 
-export function initRevenueCat() {
-  Purchases.configure({
-    apiKey: Platform.OS === "android" ? "goog_PJCYrmPITZquBcJXTdOfYxzoeUo" : "",
-    appUserID: null,
-  });
-}
-
 const TASK_NAME = "CALORIAI_NOTIFICATION_GUARD";
 
 TaskManager.defineTask(TASK_NAME, async () => {
   try {
     const auth = require("@react-native-firebase/auth");
     const user = auth.default().currentUser;
-    if (!user) return BackgroundFetch.BackgroundFetchResult.NoData;
+    if (!user) return BackgroundTask.BackgroundTaskResult.Success;
     await reconcileAll(user.uid);
     await runSystemNotifications(user.uid);
-    return BackgroundFetch.BackgroundFetchResult.NewData;
+    return BackgroundTask.BackgroundTaskResult.Success;
   } catch {
-    return BackgroundFetch.BackgroundFetchResult.Failed;
+    return BackgroundTask.BackgroundTaskResult.Failed;
   }
 });
 
@@ -73,20 +66,15 @@ function useBootstrapNotifications() {
   }, []);
   useEffect(() => {
     (async () => {
-      const status = await BackgroundFetch.getStatusAsync();
-      if (
-        status === BackgroundFetch.BackgroundFetchStatus.Restricted ||
-        status === BackgroundFetch.BackgroundFetchStatus.Denied
-      ) {
+      const status = await BackgroundTask.getStatusAsync();
+      if (status !== BackgroundTask.BackgroundTaskStatus.Available) {
         return;
       }
       const tasks = await TaskManager.getRegisteredTasksAsync();
       const exists = tasks.find((t) => t.taskName === TASK_NAME);
       if (!exists) {
-        await BackgroundFetch.registerTaskAsync(TASK_NAME, {
-          minimumInterval: 15 * 60,
-          stopOnTerminate: false,
-          startOnBoot: true,
+        await BackgroundTask.registerTaskAsync(TASK_NAME, {
+          minimumInterval: 15, // minutes
         });
       }
     })();

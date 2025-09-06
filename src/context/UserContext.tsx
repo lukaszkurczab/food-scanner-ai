@@ -7,6 +7,7 @@ import React, {
 import { useAuthContext } from "./AuthContext";
 import { useUser } from "@hooks/useUser";
 import type { UserData } from "@/types";
+import i18n from "@/i18n";
 
 export type UserContextType = {
   userData: UserData | null;
@@ -75,6 +76,15 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     syncUserProfile();
   }, [uid, syncUserProfile]);
+
+  // Ensure user's saved language preference overrides device settings
+  useEffect(() => {
+    const userLang = userData?.language;
+    if (!userLang) return;
+    if (i18n.language !== userLang) {
+      i18n.changeLanguage(userLang).catch(() => {});
+    }
+  }, [userData?.language]);
 
   return (
     <UserContext.Provider

@@ -1,12 +1,17 @@
 import React, { createContext, useContext, useEffect, useMemo } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumStatus } from "@hooks/usePremiumStatus";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type PremiumContextType = {
   isPremium: boolean | null;
+  setDevPremium: (enabled: boolean) => Promise<void>;
 };
 
-const PremiumContext = createContext<PremiumContextType>({ isPremium: null });
+const PremiumContext = createContext<PremiumContextType>({
+  isPremium: null,
+  setDevPremium: async () => {},
+});
 
 export const PremiumProvider = ({
   children,
@@ -14,8 +19,7 @@ export const PremiumProvider = ({
   children: React.ReactNode;
 }) => {
   const { uid } = useAuthContext();
-  const { isPremium, checkPremiumStatus, subscribeToPremiumChanges } =
-    usePremiumStatus();
+  const { isPremium, checkPremiumStatus, subscribeToPremiumChanges } = usePremiumStatus();
 
   useEffect(() => {
     checkPremiumStatus(uid);
@@ -25,7 +29,14 @@ export const PremiumProvider = ({
     };
   }, [uid, checkPremiumStatus, subscribeToPremiumChanges]);
 
-  const value = useMemo(() => ({ isPremium }), [isPremium]);
+  const setDevPremium = async (enabled: boolean) => {
+    try {
+      await AsyncStorage.setItem("dev_force_premium", enabled ? "true" : "false");
+    } catch {}
+    await checkPremiumStatus(uid);
+  };
+
+  const value = useMemo(() => ({ isPremium, setDevPremium }), [isPremium]);
 
   return (
     <PremiumContext.Provider value={value}>{children}</PremiumContext.Provider>
