@@ -7,7 +7,11 @@ export type ShareOptions = {
   showPie: boolean;
   filter: ShareFilter;
   titleSize: number;
+  titleColor?: string;
+  titleWeight?: "regular" | "bold" | "medium";
   kcalSize: number;
+  kcalColor?: string;
+  kcalWeight?: "regular" | "bold" | "medium";
   pieSize: number;
   titleX: number;
   titleY: number;
@@ -26,14 +30,22 @@ export const defaultShareOptions: ShareOptions = {
   showPie: true,
   filter: "none",
   titleSize: 28,
+  titleColor: "#FFFFFF",
+  titleWeight: "bold",
   kcalSize: 22,
+  kcalColor: "#FFFFFF",
+  kcalWeight: "bold",
   pieSize: 0.55,
-  titleX: 0.08,
-  titleY: 0.08,
-  kcalX: 0.08,
-  kcalY: 0.18,
-  pieX: 0.5,
-  pieY: 0.6,
+  // Defaults tuned for a 360x640 canvas:
+  // Title centered, 32px from top (approx)
+  titleX: 0.5,
+  titleY: 0.072,
+  // Calories centered, ~16px below title (approx)
+  kcalX: 0.5,
+  kcalY: 0.136,
+  // Pie chart bottom-left, 32px from left & bottom (approx)
+  pieX: 0.394,
+  pieY: 0.809,
   titleRotation: 0,
   kcalRotation: 0,
   pieRotation: 0,

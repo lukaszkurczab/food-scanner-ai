@@ -18,14 +18,20 @@ export default function MealShareScreen() {
   const { meal, returnTo } = route.params;
   const [opts, setOpts] = useState<ShareOptions>({ ...defaultShareOptions });
   const shotRef = useRef<View>(null);
+  const [menuVisible, setMenuVisible] = useState(true);
 
   const nutrition = useMemo(
     () => calculateTotalNutrients([meal as Meal]),
     [meal]
   );
 
+  const wait = (ms = 0) => new Promise((res) => setTimeout(res, ms));
+
   const share = async () => {
     if (!shotRef.current) return;
+    // Hide editing UI from the captured image
+    setMenuVisible(false);
+    await wait(50);
     const uri = await captureRef(shotRef, {
       format: "png",
       quality: 1,
@@ -33,8 +39,10 @@ export default function MealShareScreen() {
       height: 1920,
       result: "tmpfile",
     });
+    setMenuVisible(true);
     if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri);
-    nav.navigate(returnTo as any, returnTo === "Result" ? undefined : { meal });
+    // Nie nawigujemy automatycznie po zamknięciu arkusza udostępniania,
+    // użytkownik może chcieć wprowadzić dalsze zmiany lub udostępnić ponownie.
   };
 
   return (
@@ -53,6 +61,7 @@ export default function MealShareScreen() {
               carbs={nutrition.carbs}
               options={opts}
               onChange={setOpts}
+              menuVisible={menuVisible}
             />
           </ViewShot>
         </View>

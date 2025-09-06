@@ -98,7 +98,13 @@ export default function ChatScreen() {
             inverted
             data={data}
             keyExtractor={(m) => m.id}
-            renderItem={({ item }) => <Bubble msg={item} />}
+            renderItem={({ item }) => (
+              <Bubble
+                role={item.role === "user" ? "user" : "ai"}
+                text={item.content}
+                timestamp={new Date(item.createdAt)}
+              />
+            )}
             onEndReachedThreshold={0.4}
             onEndReached={loadMore}
             ListHeaderComponent={
