@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { RootStackParamList } from "./navigate";
 import { useAuthContext } from "@/context/AuthContext";
@@ -45,7 +45,7 @@ const AppNavigator = () => {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={styles.centerBoth}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -122,3 +122,7 @@ const AppNavigator = () => {
 };
 
 export default AppNavigator;
+
+const styles = StyleSheet.create({
+  centerBoth: { flex: 1, justifyContent: "center", alignItems: "center" },
+});

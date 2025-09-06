@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
 type Props = { message: string; onRetry?: () => void };
@@ -7,7 +7,7 @@ type Props = { message: string; onRetry?: () => void };
 export const ErrorState: React.FC<Props> = ({ message, onRetry }) => {
   const theme = useTheme();
   return (
-    <View style={{ padding: 24, alignItems: "center" }}>
+    <View style={styles.container}>
       <Text
         style={{ color: theme.error.text, fontWeight: "700", marginBottom: 8 }}
       >
@@ -29,3 +29,7 @@ export const ErrorState: React.FC<Props> = ({ message, onRetry }) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { padding: 24, alignItems: "center" },
+});

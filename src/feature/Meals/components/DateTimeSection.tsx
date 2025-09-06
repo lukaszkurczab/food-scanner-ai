@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Card, Modal } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -75,15 +75,8 @@ export const DateTimeSection: React.FC<Props> = ({
         }}
       >
         <Card variant="outlined">
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: theme.spacing.sm,
-            }}
-          >
-            <View style={{ flex: 1 }}>
+          <View style={[styles.rowBetween, { gap: theme.spacing.sm }]}>
+            <View style={styles.flex1}>
               <Text
                 style={{
                   fontSize: theme.typography.size.lg,
@@ -163,3 +156,8 @@ export const DateTimeSection: React.FC<Props> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  flex1: { flex: 1 },
+});

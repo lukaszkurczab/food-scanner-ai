@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { Layout } from "@/components";
 import { useUserContext } from "@contexts/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -59,7 +59,7 @@ const LoadingScreen = ({ navigation }: any) => {
 
   return (
     <Layout showNavigation={false}>
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={styles.centerBoth}>
         <ActivityIndicator size="large" />
       </View>
     </Layout>
@@ -67,3 +67,7 @@ const LoadingScreen = ({ navigation }: any) => {
 };
 
 export default LoadingScreen;
+
+const styles = StyleSheet.create({
+  centerBoth: { flex: 1, justifyContent: "center", alignItems: "center" },
+});

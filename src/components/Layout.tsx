@@ -73,14 +73,6 @@ export const Layout = ({
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           {disableScroll ? (
-            <ScrollView
-              contentContainerStyle={{ flexGrow: 1 }}
-              keyboardShouldPersistTaps="handled"
-              style={[styles.root, { backgroundColor: theme.background }]}
-            >
-              {children}
-            </ScrollView>
-          ) : (
             <View
               style={[
                 styles.root,
@@ -91,6 +83,14 @@ export const Layout = ({
             >
               {children}
             </View>
+          ) : (
+            <ScrollView
+              contentContainerStyle={{ flexGrow: 1 }}
+              keyboardShouldPersistTaps="handled"
+              style={[styles.root, { backgroundColor: theme.background }]}
+            >
+              {children}
+            </ScrollView>
           )}
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

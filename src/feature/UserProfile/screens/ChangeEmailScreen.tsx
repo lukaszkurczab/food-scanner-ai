@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
@@ -169,7 +169,7 @@ export default function ChangeEmailScreen({ navigation }: any) {
         })}
       </Text>
 
-      <View style={{ gap: 16 }}>
+      <View style={styles.gap16}>
         <PrimaryButton
           label={t("confirm", { ns: "profile" })}
           onPress={onSubmit}
@@ -191,3 +191,7 @@ export default function ChangeEmailScreen({ navigation }: any) {
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  gap16: { gap: 16 },
+});

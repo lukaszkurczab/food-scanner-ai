@@ -217,7 +217,7 @@ export default function Step5Summary({
             borderColor: theme.border,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={styles.rowCenter}>
             <Text
               style={{
                 fontFamily: theme.typography.fontFamily.bold,
@@ -238,27 +238,14 @@ export default function Step5Summary({
               }
               onPress={() => goToStep(section.step)}
               accessibilityLabel={t("summary.edit")}
-              style={{
-                marginLeft: theme.spacing.sm,
-                backgroundColor: "transparent",
-                padding: 0,
-                minHeight: 0,
-                minWidth: 0,
-              }}
+              style={{ marginLeft: theme.spacing.sm, backgroundColor: "transparent", padding: 0, minHeight: 0, minWidth: 0 }}
             />
           </View>
           <View style={{ marginTop: theme.spacing.md }}>
             {section.data.map((item, i) => (
               <View
                 key={item.label + i}
-                style={{
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  paddingVertical: 12,
-                  borderBottomWidth:
-                    i < section.data.length - 1 ? StyleSheet.hairlineWidth : 0,
-                  borderBottomColor: theme.border,
-                }}
+                style={[styles.rowBetween, { borderBottomWidth: i < section.data.length - 1 ? StyleSheet.hairlineWidth : 0, borderBottomColor: theme.border }]}
               >
                 <Text
                   style={{
@@ -295,3 +282,8 @@ export default function Step5Summary({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  rowCenter: { flexDirection: "row", alignItems: "center" },
+  rowBetween: { justifyContent: "space-between", alignItems: "flex-start", paddingVertical: 12 },
+});

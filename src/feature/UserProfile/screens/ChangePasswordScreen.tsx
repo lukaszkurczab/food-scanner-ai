@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Keyboard, TouchableOpacity } from "react-native";
+import { View, Text, Keyboard, TouchableOpacity, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
@@ -87,13 +87,7 @@ export default function ChangePasswordScreen({ navigation }: any) {
 
   return (
     <Layout showNavigation={false}>
-      <View
-        style={{
-          flexGrow: 1,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View style={styles.centerBoth}>
         <Text
           style={{
             fontSize: theme.typography.size.xl,
@@ -190,3 +184,7 @@ export default function ChangePasswordScreen({ navigation }: any) {
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  centerBoth: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
+});

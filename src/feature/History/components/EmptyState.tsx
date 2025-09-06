@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -8,17 +8,12 @@ type Props = { title: string; description?: string };
 export const EmptyState: React.FC<Props> = ({ title, description }) => {
   const theme = useTheme();
   return (
-    <View style={{ alignItems: "center", padding: 24 }}>
+    <View style={styles.container}>
       <View
-        style={{
-          width: 140,
-          height: 140,
-          borderRadius: 20,
-          backgroundColor: theme.card,
-          marginBottom: 16,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+        style={[
+          styles.iconBox,
+          { backgroundColor: theme.card },
+        ]}
       >
         <MaterialIcons name="no-meals" size={76} color={theme.textSecondary} />
       </View>
@@ -47,3 +42,15 @@ export const EmptyState: React.FC<Props> = ({ title, description }) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { alignItems: "center", padding: 24 },
+  iconBox: {
+    width: 140,
+    height: 140,
+    borderRadius: 20,
+    marginBottom: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

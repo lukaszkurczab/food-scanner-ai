@@ -107,10 +107,9 @@ export default function LanguageScreen({ navigation }: any) {
                 {
                   borderBottomColor: theme.border,
                   opacity: pressed || saving ? 0.7 : 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
                 },
+                styles.rowCenter,
+                styles.rowGap8,
               ]}
               onPress={() => handleSelect(item.code)}
               disabled={saving}
@@ -171,4 +170,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  rowCenter: { flexDirection: "row", alignItems: "center" },
+  rowGap8: { gap: 8 },
 });

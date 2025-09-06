@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import { RootStackParamList } from "@/navigation/navigate";
@@ -174,14 +174,7 @@ const MealAddMethodScreen = () => {
         {t("subtitle")}
       </Text>
 
-      <View
-        style={{
-          gap: spacing.xl,
-          flexGrow: 1,
-          justifyContent: "flex-start",
-          paddingTop: spacing.xl,
-        }}
-      >
+      <View style={[styles.optionsWrap, { gap: spacing.xl, paddingTop: spacing.xl }]}>
         {options.map((option) => (
           <TouchableOpacity
             key={option.key}
@@ -257,3 +250,7 @@ const MealAddMethodScreen = () => {
 };
 
 export default MealAddMethodScreen;
+
+const styles = StyleSheet.create({
+  optionsWrap: { flexGrow: 1, justifyContent: "flex-start" },
+});

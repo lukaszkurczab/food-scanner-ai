@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -90,7 +90,7 @@ export default function ChangeEmailCheckMailboxScreen({ navigation }: any) {
 
   return (
     <Layout showNavigation={false}>
-      <View style={{ alignItems: "center", marginBottom: theme.spacing.xl }}>
+      <View style={[styles.center, { marginBottom: theme.spacing.xl }]}>
         <View
           style={{
             backgroundColor: theme.card,
@@ -158,3 +158,7 @@ export default function ChangeEmailCheckMailboxScreen({ navigation }: any) {
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  center: { alignItems: "center" },
+});

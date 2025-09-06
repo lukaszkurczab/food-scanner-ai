@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
@@ -75,7 +75,7 @@ export default function LoginScreen({ navigation }: any) {
     <Layout showNavigation={false}>
       {displayCriticalError && <ErrorBox message={displayCriticalError} />}
 
-      <View style={{ flex: 1, justifyContent: "center" }}>
+      <View style={styles.centerColumn}>
         <Text
           style={{
             color: theme.text,
@@ -146,12 +146,7 @@ export default function LoginScreen({ navigation }: any) {
           {t("forgot_password")}
         </LinkText>
       </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      >
+      <View style={styles.rowCenter}>
         <Text
           style={{
             color: theme.textSecondary,
@@ -171,3 +166,9 @@ export default function LoginScreen({ navigation }: any) {
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  centerColumn: { flex: 1, justifyContent: "center" },
+  rowCenter: { flexDirection: "row", justifyContent: "center" },
+  selfCenter: { alignSelf: "center" },
+});

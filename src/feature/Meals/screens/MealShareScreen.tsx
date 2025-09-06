@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { useTheme } from "@/theme/useTheme";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
@@ -13,6 +14,7 @@ import type { Meal } from "@/types/meal";
 type ScreenRoute = RouteProp<RootStackParamList, "MealShare">;
 
 export default function MealShareScreen() {
+  const theme = useTheme();
   const route = useRoute<ScreenRoute>();
   const nav = useNavigation<any>();
   const { meal, returnTo } = route.params;
@@ -41,14 +43,17 @@ export default function MealShareScreen() {
     });
     setMenuVisible(true);
     if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri);
-    // Nie nawigujemy automatycznie po zamknięciu arkusza udostępniania,
-    // użytkownik może chcieć wprowadzić dalsze zmiany lub udostępnić ponownie.
   };
 
   return (
     <Layout showNavigation={false}>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-        <View style={{ alignItems: "center" }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: theme.spacing.md,
+          gap: theme.spacing.md,
+        }}
+      >
+        <View style={styles.center}>
           <ViewShot ref={shotRef}>
             <ShareCanvas
               width={360}
@@ -80,3 +85,7 @@ export default function MealShareScreen() {
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  center: { alignItems: "center" },
+});

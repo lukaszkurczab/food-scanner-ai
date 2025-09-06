@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { View, FlatList, RefreshControl, ViewToken, Text } from "react-native";
+import { View, FlatList, RefreshControl, ViewToken, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
@@ -265,12 +265,12 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
     <Layout>
       {!netInfo.isConnected && <OfflineBanner />}
       {showFilters ? (
-        <View style={{ height: "100%", paddingBottom: theme.spacing.nav }}>
+        <View style={[styles.fill, { paddingBottom: theme.spacing.nav }]}>
           <FilterPanel scope="myMeals" />
         </View>
       ) : (
         <View style={{ padding: theme.spacing.md, gap: theme.spacing.sm }}>
-          <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
+          <View style={styles.row}>
             <SearchBox value={query} onChange={setQuery} />
             <FilterBadgeButton
               activeCount={filterCount}
@@ -287,12 +287,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
             <RefreshControl refreshing={loading} onRefresh={refresh} />
           }
           renderItem={({ item }) => (
-            <View
-              style={{
-                paddingHorizontal: theme.spacing.md,
-                marginBottom: theme.spacing.sm,
-              }}
-            >
+            <View style={[styles.listItemWrap, { paddingHorizontal: theme.spacing.md, marginBottom: theme.spacing.sm }]}>
               <MealListItem
                 meal={item}
                 onPress={() =>
@@ -323,3 +318,9 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  fill: { height: "100%" },
+  row: { flexDirection: "row", gap: 8 },
+  listItemWrap: {},
+});

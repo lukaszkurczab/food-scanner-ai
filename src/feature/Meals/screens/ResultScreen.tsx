@@ -197,7 +197,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
           </>
         )}
 
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <View style={styles.rowCenter}>
           <Checkbox
             checked={saveToMyMeals}
             onChange={!saving ? setSaveToMyMeals : () => {}}
@@ -209,13 +209,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
           </Text>
         </View>
 
-        <View
-          style={{
-            justifyContent: "space-between",
-            gap: 16,
-            marginTop: theme.spacing.md,
-          }}
-        >
+        <View style={[styles.actions, { gap: theme.spacing.md, marginTop: theme.spacing.md }]}>
           <PrimaryButton
             label={t("save", { ns: "common" })}
             onPress={handleSave}
@@ -253,4 +247,6 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     backgroundColor: "#B2C0C9",
   },
+  rowCenter: { flexDirection: "row", alignItems: "center" },
+  actions: { justifyContent: "space-between" },
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
@@ -164,14 +164,7 @@ export default function Step2Preferences({
   };
 
   return (
-    <View
-      style={{
-        gap: theme.spacing.md,
-        flexDirection: "column",
-        flex: 1,
-        justifyContent: "center",
-      }}
-    >
+    <View style={[styles.container, { gap: theme.spacing.md }] }>
       <View>
         <Text
           style={{
@@ -320,3 +313,7 @@ export default function Step2Preferences({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, flexDirection: "column", justifyContent: "center" },
+});

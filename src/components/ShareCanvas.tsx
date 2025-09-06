@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Image, Text, Pressable } from "react-native";
+import { View, Image, Text, Pressable, StyleSheet } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -16,9 +16,6 @@ import { TextInput as StyledInput } from "@/components/TextInput";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type ElementId = "title" | "kcal" | "pie";
-
-//ReanimatedError: [Reanimated] Tried to synchronously call a non-worklet function `cycleFilter` on the UI thread.
-//See https://docs.swmansion.com/react-native-reanimated/docs/guides/troubleshooting#tried-to-synchronously-call-a-non-worklet-function-on-the-ui-thread for more details., js engine: reanimated
 
 type DraggableItemProps = {
   id: ElementId;
@@ -262,7 +259,6 @@ export default function ShareCanvas({
 
   const { overlayStyle } = getFilterOverlay(options.filter);
 
-  // Build quick color list without duplicates (case-insensitive)
   const baseQuickColors = [
     "#FFFFFF",
     String(theme.text),
@@ -271,7 +267,10 @@ export default function ShareCanvas({
   const uniqueQuickColors: string[] = [];
   {
     const seen = new Set<string>();
-    for (const c of [...baseQuickColors, ...recentColors.map((x) => x.toUpperCase())]) {
+    for (const c of [
+      ...baseQuickColors,
+      ...recentColors.map((x) => x.toUpperCase()),
+    ]) {
       if (!seen.has(c)) {
         seen.add(c);
         uniqueQuickColors.push(c);
@@ -281,9 +280,11 @@ export default function ShareCanvas({
 
   const addRecentColor = async (hex: string) => {
     const HEX = hex.toUpperCase();
-    // Don't store base palette colors as recents
     if (baseQuickColors.includes(HEX)) return;
-    const next = [HEX, ...recentColors.filter((x) => x.toUpperCase() !== HEX)].slice(0, 8);
+    const next = [
+      HEX,
+      ...recentColors.filter((x) => x.toUpperCase() !== HEX),
+    ].slice(0, 8);
     setRecentColors(next);
     try {
       await AsyncStorage.setItem("share.recentColors", JSON.stringify(next));
@@ -292,11 +293,11 @@ export default function ShareCanvas({
 
   const parseColor = (input: string): string | null => {
     const str = input.trim();
-    // HEX formats: #RRGGBB or RRGGBB
     const hexMatch = str.match(/^#?([0-9a-fA-F]{6})$/);
     if (hexMatch) return `#${hexMatch[1].toUpperCase()}`;
-    // RGB formats: rgb(r,g,b) or r,g,b
-    const rgbCall = str.match(/^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i);
+    const rgbCall = str.match(
+      /^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i
+    );
     const rgbFlat = str.match(/^(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})$/);
     const m = rgbCall || rgbFlat;
     if (m) {
@@ -311,7 +312,7 @@ export default function ShareCanvas({
 
   return (
     <GestureDetector gesture={filterSwipeGesture}>
-      <View style={{ width, height, borderRadius: 16, overflow: "hidden" }}>
+      <View style={[styles.canvas, { width, height }]}>
         {photoUri && (
           <Image
             source={{ uri: photoUri }}
@@ -442,7 +443,7 @@ export default function ShareCanvas({
               });
             }}
           >
-            <View style={{ width: 220, alignItems: "center" }}>
+            <View style={styles.pieWrap}>
               <PieChart
                 maxSize={180}
                 minSize={120}
@@ -456,52 +457,14 @@ export default function ShareCanvas({
         )}
 
         {menuVisible && (
-          <View
-            style={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              padding: 4,
-              borderRadius: 999,
-              backgroundColor: "rgba(0,0,0,0.35)",
-            }}
-          >
+          <View style={styles.menuButtonContainer}>
             <Pressable
               onPress={() => setMenuOpen((open) => !open)}
-              style={{
-                width: 28,
-                height: 28,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              style={styles.menuToggle}
             >
-              <View
-                style={{
-                  width: 4,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: "white",
-                  marginVertical: 1,
-                }}
-              />
-              <View
-                style={{
-                  width: 4,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: "white",
-                  marginVertical: 1,
-                }}
-              />
-              <View
-                style={{
-                  width: 4,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: "white",
-                  marginVertical: 1,
-                }}
-              />
+              <View style={styles.menuDot} />
+              <View style={styles.menuDot} />
+              <View style={styles.menuDot} />
             </Pressable>
             {menuOpen && (
               <View
@@ -546,14 +509,12 @@ export default function ShareCanvas({
             )}
           </View>
         )}
-        {/* Style editor modal */}
         <Modal
           visible={styleOpen}
           title={styleTarget === "title" ? "Style title" : "Style calories"}
           onClose={() => setStyleOpen(false)}
         >
           <View style={{ gap: 12 }}>
-            {/* Weight */}
             <View style={{ flexDirection: "row", gap: 8 }}>
               {(["regular", "medium", "bold"] as const).map((w) => {
                 const active =
@@ -574,7 +535,9 @@ export default function ShareCanvas({
                       paddingHorizontal: 12,
                       borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: active ? theme.accentSecondary : theme.border,
+                      borderColor: active
+                        ? theme.accentSecondary
+                        : theme.border,
                       backgroundColor: active ? theme.overlay : theme.card,
                     }}
                   >
@@ -597,7 +560,6 @@ export default function ShareCanvas({
               })}
             </View>
 
-            {/* Size */}
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
             >
@@ -645,9 +607,15 @@ export default function ShareCanvas({
               </Pressable>
             </View>
 
-            {/* Color */}
             <View style={{ gap: 10 }}>
-              <Text style={{ color: theme.text, fontSize: theme.typography.size.md }}>Color</Text>
+              <Text
+                style={{
+                  color: theme.text,
+                  fontSize: theme.typography.size.md,
+                }}
+              >
+                Color
+              </Text>
               <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
                 {uniqueQuickColors.slice(0, 8).map((hex, idx) => {
                   const current =
@@ -659,8 +627,10 @@ export default function ShareCanvas({
                     <Pressable
                       key={`sw-${idx}-${hex}`}
                       onPress={async () => {
-                        if (styleTarget === "title") applyPatch({ titleColor: hex });
-                        else if (styleTarget === "kcal") applyPatch({ kcalColor: hex });
+                        if (styleTarget === "title")
+                          applyPatch({ titleColor: hex });
+                        else if (styleTarget === "kcal")
+                          applyPatch({ kcalColor: hex });
                         await addRecentColor(hex);
                       }}
                     >
@@ -671,7 +641,9 @@ export default function ShareCanvas({
                           borderRadius: 16,
                           backgroundColor: hex,
                           borderWidth: 2,
-                          borderColor: active ? theme.accentSecondary : theme.border,
+                          borderColor: active
+                            ? theme.accentSecondary
+                            : theme.border,
                         }}
                       />
                     </Pressable>
@@ -679,8 +651,9 @@ export default function ShareCanvas({
                 })}
               </View>
 
-              {/* Custom HEX/RGB input */}
-              <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+              <View
+                style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
+              >
                 <View style={{ flex: 1 }}>
                   <StyledInput
                     placeholder="#RRGGBB or R,G,B"
@@ -695,11 +668,23 @@ export default function ShareCanvas({
                   onPress={async () => {
                     const parsed = parseColor(customColor);
                     if (!parsed) return;
-                    if (styleTarget === "title") applyPatch({ titleColor: parsed });
-                    else if (styleTarget === "kcal") applyPatch({ kcalColor: parsed });
-                    const next = [parsed, ...recentColors.filter((x) => x.toUpperCase() !== parsed.toUpperCase())].slice(0, 8);
+                    if (styleTarget === "title")
+                      applyPatch({ titleColor: parsed });
+                    else if (styleTarget === "kcal")
+                      applyPatch({ kcalColor: parsed });
+                    const next = [
+                      parsed,
+                      ...recentColors.filter(
+                        (x) => x.toUpperCase() !== parsed.toUpperCase()
+                      ),
+                    ].slice(0, 8);
                     setRecentColors(next);
-                    try { await AsyncStorage.setItem("share.recentColors", JSON.stringify(next)); } catch {}
+                    try {
+                      await AsyncStorage.setItem(
+                        "share.recentColors",
+                        JSON.stringify(next)
+                      );
+                    } catch {}
                   }}
                   style={{
                     paddingVertical: 10,
@@ -710,7 +695,14 @@ export default function ShareCanvas({
                     backgroundColor: theme.card,
                   }}
                 >
-                  <Text style={{ color: theme.text, fontSize: theme.typography.size.md }}>Apply</Text>
+                  <Text
+                    style={{
+                      color: theme.text,
+                      fontSize: theme.typography.size.md,
+                    }}
+                  >
+                    Apply
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -722,3 +714,29 @@ export default function ShareCanvas({
     </GestureDetector>
   );
 }
+
+const styles = StyleSheet.create({
+  canvas: { borderRadius: 16, overflow: "hidden" },
+  pieWrap: { width: 220, alignItems: "center" },
+  menuButtonContainer: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    padding: 4,
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  menuDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "white",
+    marginVertical: 1,
+  },
+  menuToggle: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
