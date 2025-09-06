@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, ScrollView, Alert, Pressable, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Alert,
+  Pressable,
+  StyleSheet,
+} from "react-native";
 import {
   Layout,
   PrimaryButton,
@@ -277,7 +285,7 @@ export default function NotificationFormScreen() {
                 fontFamily: theme.typography.fontFamily.medium,
               }}
             >
-              {t("form.kcalByHour", "Kcal target by this time (optional)")}
+              {t("form.kcalByHour", "Kcal target by this time ")}
             </Text>
             <TextInput
               value={
@@ -383,5 +391,9 @@ export default function NotificationFormScreen() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row" },
-  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  rowBetween: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
 });

@@ -244,7 +244,7 @@ export default function SelectSavedMealScreen({
   }
 
   return (
-    <Layout>
+    <Layout disableScroll>
       {!netInfo.isConnected && <OfflineBanner />}
       <View style={{ padding: theme.spacing.md }}>
         <SearchBox value={queryText} onChange={setQueryText} />

@@ -235,7 +235,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
 
   if (!visibleItems.length) {
     return (
-      <Layout>
+      <Layout disableScroll>
         {!netInfo.isConnected && <OfflineBanner />}
         {showFilters ? (
           <FilterPanel scope="myMeals" />
@@ -262,7 +262,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <Layout>
+    <Layout disableScroll>
       {!netInfo.isConnected && <OfflineBanner />}
       {showFilters ? (
         <View style={[styles.fill, { paddingBottom: theme.spacing.nav }]}>

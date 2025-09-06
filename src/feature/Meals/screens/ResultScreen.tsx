@@ -127,7 +127,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   };
 
   return (
-    <Layout showNavigation={false} disableScroll>
+    <Layout showNavigation={false}>
       <View style={{ padding: theme.spacing.container }}>
         {image && (
           <Image

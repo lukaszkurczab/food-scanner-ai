@@ -20,7 +20,7 @@
     "textOverride": "Custom message",
     "delete": "Delete",
     "mealKind": "Meal",
-    "kcalByHour": "Kcal target by this time (optional)",
+    "kcalByHour": "Kcal target by this time ",
     "kcalPlaceholder": "e.g. 1000"
   },
   "type": {

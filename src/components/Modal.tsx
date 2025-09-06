@@ -30,6 +30,7 @@ type Props = {
   onClose?: () => void;
   fullScreen?: boolean;
   footer?: React.ReactNode;
+  stackActions?: boolean;
 };
 
 export const Modal: React.FC<Props> = ({
@@ -44,6 +45,7 @@ export const Modal: React.FC<Props> = ({
   onClose,
   fullScreen = false,
   footer,
+  stackActions = false,
 }) => {
   const theme = useTheme();
 
@@ -58,6 +60,7 @@ export const Modal: React.FC<Props> = ({
 
   const actionsSideBySide =
     !fullScreen &&
+    !stackActions &&
     !!primaryActionLabel &&
     !!onPrimaryAction &&
     !!secondaryActionLabel &&
