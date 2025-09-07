@@ -179,7 +179,7 @@ export default function MealDetailsScreen() {
         {showIngredients &&
           draft.ingredients.map((ingredient, idx) => (
             <IngredientBox
-              key={`${ingredient.name}-${idx}`}
+              key={`${(ingredient as any)?.id || idx}`}
               ingredient={ingredient}
               editable={edit && !saving}
               onSave={(updated) => edit && updateIngredientAt(idx, updated)}

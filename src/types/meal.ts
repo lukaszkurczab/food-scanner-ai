@@ -3,6 +3,7 @@ export type MealSource = "ai" | "manual" | "saved" | null;
 export type MealSyncState = "synced" | "pending" | "conflict";
 
 export type Ingredient = {
+  id: string;
   name: string;
   amount: number;
   kcal: number;

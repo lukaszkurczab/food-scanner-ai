@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Meal, Ingredient, MealType } from "@/types/meal";
+import { v4 as uuidv4 } from "uuid";
 
 export function getDraftKey(userUid: string) {
   return `current_meal_draft_${userUid}`;
@@ -125,7 +126,10 @@ export const MealDraftProvider = ({ children }: Props) => {
       prev
         ? {
             ...prev,
-            ingredients: [...(prev.ingredients ?? []), ingredient],
+            ingredients: [
+              ...(prev.ingredients ?? []),
+              { ...ingredient, id: ingredient.id || uuidv4() },
+            ],
             updatedAt: new Date().toISOString(),
           }
         : null
@@ -150,7 +154,9 @@ export const MealDraftProvider = ({ children }: Props) => {
         ? {
             ...prev,
             ingredients: (prev.ingredients ?? []).map((ing, i) =>
-              i === index ? ingredient : ing
+              i === index
+                ? { ...ingredient, id: (ing as any)?.id || ingredient.id || uuidv4() }
+                : ing
             ),
             updatedAt: new Date().toISOString(),
           }

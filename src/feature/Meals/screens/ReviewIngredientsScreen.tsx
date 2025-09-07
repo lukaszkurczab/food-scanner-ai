@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
@@ -15,6 +15,7 @@ import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
+import { v4 as uuidv4 } from "uuid";
 
 type FieldErrors = Partial<Record<keyof Ingredient, string>>;
 
@@ -37,6 +38,9 @@ export default function ReviewIngredientsScreen() {
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [localDraft, setLocalDraft] = useState<Ingredient | null>(null);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const exitActionRef = useRef<any | null>(null);
+  const allowLeaveRef = useRef(false);
 
   const ingredients: Ingredient[] = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
@@ -88,12 +92,14 @@ export default function ReviewIngredientsScreen() {
   };
 
   const handleAddPhoto = () => {
+    allowLeaveRef.current = true;
     navigation.replace("MealCamera", { skipDetection: true });
   };
 
   const handleAddIngredient = () => {
     if (editingIdx !== null || localDraft) return;
     setLocalDraft({
+      id: uuidv4(),
       name: "",
       amount: 0,
       kcal: 0,
@@ -117,7 +123,8 @@ export default function ReviewIngredientsScreen() {
 
   const handleSaveIngredient = async (idx: number, updated: Ingredient) => {
     if (idx === -1) {
-      if (!isEmpty(updated)) addIngredient(updated);
+      if (!isEmpty(updated))
+        addIngredient({ ...updated, id: localDraft?.id || uuidv4() });
       setLocalDraft(null);
       setEditingIdx(null);
       await persist();
@@ -151,9 +158,14 @@ export default function ReviewIngredientsScreen() {
     setEditingIdx(null);
   };
 
-  const handleContinue = () => navigation.navigate("Result");
+  const handleContinue = () => {
+    allowLeaveRef.current = true;
+    navigation.navigate("Result");
+    setTimeout(() => (allowLeaveRef.current = false), 500);
+  };
 
   const handleStartOver = () => {
+    allowLeaveRef.current = true;
     setLocalDraft(null);
     setEditingIdx(null);
     if (uid) clearMeal(uid);
@@ -163,6 +175,29 @@ export default function ReviewIngredientsScreen() {
   useEffect(() => {
     if (uid) saveDraft(uid);
   }, [ingredients, image, saveDraft, uid]);
+
+  useEffect(() => {
+    const sub = navigation.addListener("beforeRemove", (e: any) => {
+      if (allowLeaveRef.current) return;
+      const hasContent =
+        (ingredients?.length ?? 0) > 0 || !!localDraft || !!image;
+      const isEditing = editingIdx !== null;
+      if (!hasContent && !isEditing) return;
+      e.preventDefault();
+      exitActionRef.current = e.data.action;
+      setShowExitModal(true);
+    });
+    return sub;
+  }, [navigation, ingredients?.length, localDraft, image, editingIdx]);
+
+  const confirmExit = () => {
+    const action = exitActionRef.current;
+    setShowExitModal(false);
+    if (action) {
+      allowLeaveRef.current = true;
+      navigation.dispatch(action);
+    }
+  };
 
   if (previewVisible && image) {
     return (
@@ -246,7 +281,7 @@ export default function ReviewIngredientsScreen() {
           const e = errorsByIndex.get(idx);
           return (
             <IngredientBox
-              key={`${idx}-${ing.name}-${ing.amount}`}
+              key={`ing-${(ing as any)?.id || idx}`}
               ingredient={ing}
               editable
               initialEdit={editingIdx === idx}
@@ -290,6 +325,24 @@ export default function ReviewIngredientsScreen() {
           secondaryActionLabel={t("continue", { ns: "common" })}
           onSecondaryAction={() => setShowConfirmModal(false)}
           onClose={() => setShowConfirmModal(false)}
+        />
+
+        <AppModal
+          visible={showExitModal}
+          title={t("confirm_exit_title", {
+            ns: "meals",
+            defaultValue: "Leave meal creation?",
+          })}
+          message={t("confirm_exit_message", {
+            ns: "meals",
+            defaultValue:
+              "You have unsaved edits. Do you really want to leave?",
+          })}
+          primaryActionLabel={t("quit", { ns: "common" })}
+          onPrimaryAction={confirmExit}
+          secondaryActionLabel={t("continue", { ns: "common" })}
+          onSecondaryAction={() => setShowExitModal(false)}
+          onClose={() => setShowExitModal(false)}
         />
       </View>
     </Layout>

@@ -130,17 +130,19 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
     <Layout showNavigation={false}>
       <View style={{ padding: theme.spacing.container }}>
         {image && (
-          <Image
-            source={{ uri: image }}
-            style={styles.image}
-            resizeMode="cover"
-          />
+          <>
+            <Image
+              source={{ uri: image }}
+              style={styles.image}
+              resizeMode="cover"
+            />
+            <SecondaryButton
+              label="Share"
+              onPress={goShare}
+              style={{ marginTop: theme.spacing.md }}
+            />
+          </>
         )}
-        <SecondaryButton
-          label="Share"
-          onPress={goShare}
-          style={{ marginTop: theme.spacing.md }}
-        />
 
         <MealBox
           name={mealName}
@@ -180,7 +182,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
           <>
             {meal.ingredients.map((ingredient, idx) => (
               <IngredientBox
-                key={idx || ingredient.name + idx}
+                key={(ingredient as any)?.id || idx}
                 ingredient={ingredient}
                 editable={false}
                 onSave={(updated) => !saving && updateIngredient(idx, updated)}
@@ -209,7 +211,12 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
           </Text>
         </View>
 
-        <View style={[styles.actions, { gap: theme.spacing.md, marginTop: theme.spacing.md }]}>
+        <View
+          style={[
+            styles.actions,
+            { gap: theme.spacing.md, marginTop: theme.spacing.md },
+          ]}
+        >
           <PrimaryButton
             label={t("save", { ns: "common" })}
             onPress={handleSave}
