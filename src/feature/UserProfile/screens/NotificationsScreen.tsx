@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Platform } from "react-native";
 import { Layout, PrimaryButton } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -10,7 +10,8 @@ import { ButtonToggle } from "@/components/ButtonToggle";
 import { useNavigation } from "@react-navigation/native";
 import SectionHeader from "../components/SectionHeader";
 import { MaterialIcons } from "@expo/vector-icons";
-import { cancelAllForNotif } from "@/services/notifications/localScheduler";
+import { cancelAllForNotif, ensureAndroidChannel } from "@/services/notifications/localScheduler";
+import * as Notifications from "expo-notifications";
 import { Alert as AppAlert } from "@/components/Alert";
 
 export default function NotificationsScreen({ navigation }: any) {
@@ -29,18 +30,63 @@ export default function NotificationsScreen({ navigation }: any) {
   } = useNotifications(uid);
   const [motivationEnabled, setMotivationEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
+  const [systemAllowed, setSystemAllowed] = useState<boolean | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const autoDisabledRef = useRef(false);
 
   useEffect(() => {
     if (!uid) return;
     (async () => {
+      // Load stored prefs
       const p = await loadMotivationPrefs(uid);
       const s = await loadStatsPrefs(uid);
       setMotivationEnabled(p.enabled);
       setStatsEnabled(s.enabled);
+      // Check system permission
+      const perm = await Notifications.getPermissionsAsync();
+      setSystemAllowed(!!perm.granted);
     })();
   }, [uid, loadMotivationPrefs, loadStatsPrefs]);
+
+  // If system blocks notifications, force-disable all toggles and reminders once
+  useEffect(() => {
+    (async () => {
+      if (!uid) return;
+      if (systemAllowed === false && !autoDisabledRef.current) {
+        autoDisabledRef.current = true;
+        try {
+          if (motivationEnabled) {
+            setMotivationEnabled(false);
+            await setMotivationPrefs(uid, false);
+          }
+          if (statsEnabled) {
+            setStatsEnabled(false);
+            await setStatsPrefs(uid, false);
+          }
+          for (const it of items) {
+            if (it.enabled) await toggle(uid, it.id, false);
+          }
+        } catch {}
+      }
+    })();
+  }, [systemAllowed, uid, items, motivationEnabled, statsEnabled, setMotivationPrefs, setStatsPrefs, toggle]);
+
+  const requestSystemPermission = async (): Promise<boolean> => {
+    try {
+      const res = await Notifications.requestPermissionsAsync();
+      const granted = !!res.granted;
+      setSystemAllowed(granted);
+      if (granted && Platform.OS === "android") await ensureAndroidChannel();
+      if (!granted) {
+        // Optionally open settings if denied
+        try { await Linking.openSettings(); } catch {}
+      }
+      return granted;
+    } catch {
+      return false;
+    }
+  };
 
   const onConfirmDelete = async () => {
     if (!uid || !confirmId) return;
@@ -76,7 +122,14 @@ export default function NotificationsScreen({ navigation }: any) {
                 onPress={() =>
                   nav.navigate("NotificationForm", { id: item.id })
                 }
-                onToggle={(en) => uid && toggle(uid, item.id, en)}
+                onToggle={async (en) => {
+                  if (!uid) return;
+                  if (en && systemAllowed === false) {
+                    const ok = await requestSystemPermission();
+                    if (!ok) return;
+                  }
+                  await toggle(uid, item.id, en);
+                }}
                 onRemove={() => setConfirmId(item.id)}
               />
             </View>
@@ -105,6 +158,10 @@ export default function NotificationsScreen({ navigation }: any) {
             <ButtonToggle
               value={motivationEnabled}
               onToggle={async (v) => {
+                if (v && systemAllowed === false) {
+                  const ok = await requestSystemPermission();
+                  if (!ok) return;
+                }
                 setMotivationEnabled(v);
                 if (uid) await setMotivationPrefs(uid, v);
               }}
@@ -128,6 +185,10 @@ export default function NotificationsScreen({ navigation }: any) {
             <ButtonToggle
               value={statsEnabled}
               onToggle={async (v) => {
+                if (v && systemAllowed === false) {
+                  const ok = await requestSystemPermission();
+                  if (!ok) return;
+                }
                 setStatsEnabled(v);
                 if (uid) await setStatsPrefs(uid, v);
               }}
@@ -138,6 +199,30 @@ export default function NotificationsScreen({ navigation }: any) {
           </View>
         </View>
       </ScrollView>
+
+      <PrimaryButton
+        label={t("screen.sendTest", "Send test notification")}
+        onPress={async () => {
+          try {
+            await ensureAndroidChannel();
+            const allowed = systemAllowed ?? (await Notifications.getPermissionsAsync()).granted;
+            if (!allowed) {
+              const ok = await requestSystemPermission();
+              if (!ok) return;
+            }
+            await Notifications.scheduleNotificationAsync({
+              content: { title: "Test", body: "This is a test notification" },
+              trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: new Date(Date.now() + 5000),
+              } as Notifications.NotificationTriggerInput,
+            });
+          } catch (e) {
+            console.warn("Failed to schedule test notification:", e);
+          }
+        }}
+        style={{ marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.lg }}
+      />
 
       <AppAlert
         visible={!!confirmId}
