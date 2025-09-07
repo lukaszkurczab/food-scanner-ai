@@ -2,6 +2,7 @@ import { uriToBase64 } from "@/utils/uriToBase64";
 import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
 import Constants from "expo-constants";
 import type { Ingredient } from "@/types";
+import { v4 as uuidv4 } from "uuid";
 import { canUseAiToday, consumeAiUse } from "./userService";
 
 const IS_DEV = typeof __DEV__ !== "undefined" && __DEV__;
@@ -28,7 +29,7 @@ const normalize = (x: any): Ingredient | null => {
   const carbs = toNumber(x.carbs);
   const kcal = toNumber(x.kcal) || protein * 4 + carbs * 4 + fat * 9;
   if (!isFinite(amount) || amount <= 0) return null;
-  return { name: x.name.trim(), amount, protein, fat, carbs, kcal };
+  return { id: uuidv4(), name: x.name.trim(), amount, protein, fat, carbs, kcal };
 };
 
 function extractJsonArray(raw: string): string | null {
@@ -64,6 +65,7 @@ export async function detectIngredientsWithVision(
     if (!isPremium) await consumeAiUse(userUid, isPremium, limit);
     return [
       {
+        id: uuidv4(),
         name: "MockIngredient",
         amount: 100,
         kcal: 200,

@@ -58,11 +58,10 @@ const MealAddMethodScreen = () => {
   const navigation = useNavigation<MealAddMethodNavigationProp>();
   const { t } = useTranslation("meals");
   const { uid } = useAuthContext();
-  const { meal, setMeal, saveDraft, setLastScreen } = useMealDraftContext();
+  const { meal, setMeal, saveDraft, setLastScreen, loadDraft } = useMealDraftContext();
   const { isPremium } = usePremiumContext();
 
   const [showModal, setShowModal] = useState(false);
-  const [draftExists, setDraftExists] = useState(false);
   const [lastScreen, setLastScreenState] = useState<string | null>(null);
   const [showAiLimit, setShowAiLimit] = useState(false);
 
@@ -71,18 +70,21 @@ const MealAddMethodScreen = () => {
     const draft = await AsyncStorage.getItem(getDraftKey(uid));
     const lastScreenStored = await AsyncStorage.getItem(getScreenKey(uid));
     if (draft && lastScreenStored) {
-      setDraftExists(true);
-      setLastScreenState(lastScreenStored);
+      try {
+        const parsedDraft = JSON.parse(draft);
+        if ((parsedDraft?.name && parsedDraft.name !== null) || (Array.isArray(parsedDraft?.ingredients) && parsedDraft.ingredients.length > 0) || parsedDraft?.photoUrl) {
+          setShowModal(true);
+          setLastScreenState(lastScreenStored);
+        }
+      } catch {
+        // ignore invalid draft
+      }
     }
   }, [uid]);
 
   useEffect(() => {
     checkDraft();
   }, [checkDraft]);
-
-  useEffect(() => {
-    if (draftExists && meal) setShowModal(true);
-  }, [draftExists, meal]);
 
   const primeEmptyMeal = useCallback(
     async (nextScreen: string) => {
@@ -128,7 +130,8 @@ const MealAddMethodScreen = () => {
     navigation.navigate(screen as any);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    if (uid) await loadDraft(uid);
     setShowModal(false);
     if (lastScreen) navigation.navigate(lastScreen as any);
   };
@@ -138,7 +141,6 @@ const MealAddMethodScreen = () => {
     await AsyncStorage.removeItem(getDraftKey(uid));
     await AsyncStorage.removeItem(getScreenKey(uid));
     setShowModal(false);
-    setDraftExists(false);
     setLastScreenState(null);
   };
 

@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import Constants from "expo-constants";
 import type { Ingredient } from "@/types";
+import { v4 as uuidv4 } from "uuid";
 import { canUseAiToday, consumeAiUse } from "./userService";
 
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
@@ -23,7 +24,7 @@ const normalize = (x: any): Ingredient | null => {
   const carbs = toNumber(x.carbs);
   const kcal = toNumber(x.kcal) || protein * 4 + carbs * 4 + fat * 9;
   if (!isFinite(amount) || amount <= 0) return null;
-  return { name: x.name.trim(), amount, protein, fat, carbs, kcal };
+  return { id: uuidv4(), name: x.name.trim(), amount, protein, fat, carbs, kcal };
 };
 
 function extractJsonArray(raw: string): string | null {

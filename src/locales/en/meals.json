@@ -37,6 +37,8 @@
   "start_over": "Start over",
   "start_over_title": "Are you sure you want to start over?",
   "start_over_message": "Every data will be lost",
+  "confirm_exit_title": "Leave meal creation?",
+  "confirm_exit_message": "You have unsaved edits. Do you really want to leave?",
   "show_ingredients": "Show ingredients",
   "hide_ingredients": "Hide ingredients",
   "edit_ingredients": "Edit ingredients",
