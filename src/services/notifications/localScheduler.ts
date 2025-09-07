@@ -31,9 +31,16 @@ export async function cancelAllForNotif(localKey: string) {
 export async function ensureAndroidChannel() {
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.DEFAULT,
-    });
+      name: "General",
+      description: "General notifications",
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      sound: undefined,
+      enableVibrate: true,
+      enableLights: false,
+      showBadge: true,
+    } as any);
   }
 }
 
@@ -144,10 +151,17 @@ export async function scheduleOneShotAt(
 ) {
   const id = await Notifications.scheduleNotificationAsync({
     content,
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: when,
-    },
+    trigger: Platform.select({
+      android: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: when,
+        channelId: "default",
+      },
+      ios: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: when,
+      },
+    }) as Notifications.NotificationTriggerInput,
   });
   await storeId(localKey, id);
 }
