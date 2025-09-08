@@ -37,6 +37,7 @@ import NotificationsScreen from "@/feature/UserProfile/screens/NotificationsScre
 import NotificationFormScreen from "@/feature/UserProfile/screens/NotificationFormScreen";
 import MealTextAIScreen from "@/feature/Meals/screens/MealTextAIScreen";
 import MealShareScreen from "@/feature/Meals/screens/MealShareScreen";
+import BarCodeCameraScreen from "@/feature/Meals/screens/BarCodeCameraScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -106,6 +107,7 @@ const AppNavigator = () => {
             component={NotificationFormScreen}
           />
           <Stack.Screen name="MealShare" component={MealShareScreen} />
+          <Stack.Screen name="BarCodeCamera" component={BarCodeCameraScreen} />
         </>
       ) : (
         <>

@@ -11,6 +11,9 @@ import Step5Summary from "@/feature/Onboarding/components/Step5Summary";
 import { useUserContext } from "@contexts/UserContext";
 import { calculateCalorieTarget } from "../utils/calculateCalorieTarget";
 import { assertNoUndefined } from "@/utils/findUndefined";
+import { useAuthContext } from "@/context/AuthContext";
+import { updateStreakIfThresholdMet } from "@/services/streakService";
+import { fetchTodayMeals, sumConsumedKcal } from "@/services/notifications/conditions";
 
 const STEPS = 5;
 export const INITIAL_FORM: FormData = {
@@ -41,6 +44,7 @@ export const INITIAL_FORM: FormData = {
 export default function OnboardingScreen({ navigation }: any) {
   const { t } = useTranslation("onboarding");
   const { userData, updateUser, syncUserProfile } = useUserContext();
+  const { uid } = useAuthContext();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
@@ -96,6 +100,17 @@ export default function OnboardingScreen({ navigation }: any) {
       assertNoUndefined(payload, "handleFinish payload");
       await updateUser(payload);
       await syncUserProfile();
+
+      // After updating survey/goal, check streak against today's calories (80% threshold handled in service)
+      try {
+        if (uid) {
+          const meals = await fetchTodayMeals(uid);
+          const todaysKcal = sumConsumedKcal(meals);
+          const targetKcal = Number(payload.calorieTarget || 0);
+          await updateStreakIfThresholdMet({ uid, todaysKcal, targetKcal });
+        }
+      } catch {}
+
       navigation.replace("Home");
     } catch (err) {
       console.error(err);
