@@ -1,10 +1,12 @@
-import React, { useState } from "react";
-import { View, TextInput, Text, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, TextInput, Text, StyleSheet, DeviceEventEmitter } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
 import { PrimaryButton } from "./PrimaryButton";
 import { ErrorButton } from "./ErrorButton";
+import { useNavigation } from "@react-navigation/native";
+import { IconButton } from "./IconButton";
 
 type Props = {
   initial: Ingredient;
@@ -29,6 +31,7 @@ export const IngredientEditor: React.FC<Props> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
+  const navigation = useNavigation<any>();
 
   const [name, setName] = useState(initial.name ?? "");
   const [amount, setAmount] = useState(String(initial.amount ?? 0));
@@ -43,6 +46,7 @@ export const IngredientEditor: React.FC<Props> = ({
   const commit = () => {
     if (Object.keys(errors).length) return;
     onCommit({
+      id: initial.id,
       name: name.trim(),
       amount: parseNum(amount) || 0,
       protein: parseNum(protein) || 0,
@@ -75,6 +79,32 @@ export const IngredientEditor: React.FC<Props> = ({
     onChangePartial?.({ name: next });
   };
 
+  // Listen for barcode scan results to prefill fields
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(
+      "barcode.scanned.ingredient",
+      (payload: { ingredient: Ingredient }) => {
+        const ing = payload?.ingredient;
+        if (!ing) return;
+        setName(ing.name || "");
+        setAmount(String(ing.amount ?? 100));
+        setProtein(String(ing.protein ?? 0));
+        setCarbs(String(ing.carbs ?? 0));
+        setFat(String(ing.fat ?? 0));
+        setKcal(String(ing.kcal ?? 0));
+        onChangePartial?.({
+          name: ing.name || "",
+          amount: ing.amount ?? 100,
+          protein: ing.protein ?? 0,
+          carbs: ing.carbs ?? 0,
+          fat: ing.fat ?? 0,
+          kcal: ing.kcal ?? 0,
+        });
+      }
+    );
+    return () => sub.remove();
+  }, [onChangePartial]);
+
   const inputStyle = (hasErr?: boolean, touched?: boolean) => [
     styles.input,
     {
@@ -96,6 +126,13 @@ export const IngredientEditor: React.FC<Props> = ({
         },
       ]}
     >
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 }}>
+        <IconButton
+          icon={<Text style={{ color: theme.text }}>📷</Text>}
+          onPress={() => navigation.navigate("BarCodeCamera")}
+          accessibilityLabel={t("scan_barcode", { defaultValue: "Scan barcode" })}
+        />
+      </View>
       <TextInput
         style={inputStyle(Boolean(errors.name), nameTouched)}
         value={name}
