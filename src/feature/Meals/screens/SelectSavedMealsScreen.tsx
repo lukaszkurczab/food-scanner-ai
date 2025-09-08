@@ -29,6 +29,7 @@ import {
   onSnapshot,
 } from "@react-native-firebase/firestore";
 import { useTranslation } from "react-i18next";
+import { cacheKeys, getJSON, setJSON } from "@/services/cache";
 
 const STEP = 20;
 const TAIL_THRESHOLD = 10;
@@ -73,6 +74,14 @@ export default function SelectSavedMealScreen({
       setLoading(false);
       return () => {};
     }
+    // hydrate from cache first
+    (async () => {
+      const cached = await getJSON<Meal[]>(cacheKeys.myMealsList(uid));
+      if (cached) {
+        setItems(cached);
+        setLoading(false);
+      }
+    })();
     const q = query(
       collection(db, "users", uid, "myMeals"),
       orderBy("name", "asc")
@@ -85,6 +94,8 @@ export default function SelectSavedMealScreen({
       setItems(data);
       setLoading(false);
       setLimit(STEP);
+      // persist to cache per user
+      if (uid) void setJSON(cacheKeys.myMealsList(uid), data);
     });
     return unsub;
   }, [uid]);
@@ -190,6 +201,9 @@ export default function SelectSavedMealScreen({
 
     const next: Meal = {
       ...base,
+      // ensure we keep reference to saved meal for potential update
+      mealId: picked.mealId || base.mealId,
+      source: "saved",
       ingredients: Array.isArray(picked.ingredients) ? picked.ingredients : [],
       photoUrl: picked.photoUrl ?? null,
       updatedAt: now,

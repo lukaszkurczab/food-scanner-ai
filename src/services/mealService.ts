@@ -23,6 +23,7 @@ import { v4 as uuidv4 } from "uuid";
 import * as FileSystem from "expo-file-system";
 import type { Meal } from "@/types/meal";
 import { processAndUpload } from "./mealService.images";
+import { cacheKeys, getJSON } from "./cache";
 
 const app = getApp();
 const db = getFirestore(app);
@@ -140,6 +141,36 @@ export async function getMealsPageFiltered(
     f.dateRange = clampDateRange(f.dateRange, opts.accessWindowDays);
     return f;
   })();
+  // If offline, use cached last 7 days and filter locally
+  const net = await NetInfo.fetch();
+  if (!net.isConnected) {
+    const cached = await getJSON<Meal[]>(cacheKeys.lastWeekMeals(uid));
+    const list = Array.isArray(cached) ? cached : [];
+    const inRange = (() => {
+      if (!effectiveFilters?.dateRange) return list;
+      const s = new Date(effectiveFilters.dateRange.start);
+      const e = new Date(effectiveFilters.dateRange.end);
+      e.setHours(23, 59, 59, 999);
+      return list.filter((m) => {
+        const ts = new Date((m as any).timestamp || (m as any).createdAt);
+        return ts >= s && ts <= e;
+      });
+    })();
+    const withMacros = inRange.filter((m) => {
+      const t = (m as any).totals || computeTotals(m);
+      const between = (val: number, rng?: [number, number]) =>
+        !rng || (val >= rng[0] && val <= rng[1]);
+      return (
+        between(t.kcal, effectiveFilters?.calories) &&
+        between(t.protein, effectiveFilters?.protein) &&
+        between(t.carbs, effectiveFilters?.carbs) &&
+        between(t.fat, effectiveFilters?.fat)
+      );
+    });
+    const page = withMacros.slice(0, opts.limit);
+    return { items: page, nextCursor: null };
+  }
+  // Online path
   const base = buildFilteredQuery(uid, effectiveFilters);
   const q = opts.cursor
     ? query(base, startAfter(opts.cursor), fsLimit(opts.limit))

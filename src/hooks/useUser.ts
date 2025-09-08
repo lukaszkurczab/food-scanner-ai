@@ -22,6 +22,7 @@ import {
   changePasswordService,
 } from "@/services/userService";
 import { assertNoUndefined } from "@/utils/findUndefined";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -35,6 +36,18 @@ export function useUser(uid: string) {
       setLoading(false);
       return;
     }
+    // hydrate from cache for offline support
+    (async () => {
+      try {
+        const cached = await AsyncStorage.getItem(`user:profile:${uid}`);
+        if (cached) {
+          const parsed = JSON.parse(cached) as UserData;
+          setUserData(parsed);
+          if (parsed?.language) setLanguage(parsed.language);
+          setLoading(false);
+        }
+      } catch {}
+    })();
     const app = getApp();
     const db = getFirestore(app);
     const userRef = doc(db, "users", uid);
@@ -46,6 +59,8 @@ export function useUser(uid: string) {
       );
       if (data?.language) setLanguage(data.language);
       setLoading(false);
+      // persist cache
+      if (data) AsyncStorage.setItem(`user:profile:${uid}`, JSON.stringify(data)).catch(() => {});
     });
     return unsub;
   }, [uid]);
@@ -81,6 +96,12 @@ export function useUser(uid: string) {
         { merge: true }
       );
       if (patch.language) setLanguage(patch.language);
+      // update cache optimistically; Firestore will sync later if offline
+      try {
+        const current = await AsyncStorage.getItem(`user:profile:${uid}`);
+        const merged = current ? { ...(JSON.parse(current) as any), ...patch, updatedAt: now } : { ...(patch as any), updatedAt: now };
+        await AsyncStorage.setItem(`user:profile:${uid}`, JSON.stringify(merged));
+      } catch {}
     },
     [uid]
   );

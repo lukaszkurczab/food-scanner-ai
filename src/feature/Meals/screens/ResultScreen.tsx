@@ -49,6 +49,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const [addedAt, setAddedAt] = useState<Date>(new Date());
 
   const image = meal?.photoUrl ?? null;
+  const isFromSaved = (meal as any)?.source === "saved";
   const [imageError, setImageError] = useState(false);
   useEffect(() => setImageError(false), [image]);
   const shotRef = useRef<View>(null);
@@ -210,7 +211,12 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
             disabled={saving}
           />
           <Text style={{ color: theme.text }}>
-            {t("add_to_my_meals", { ns: "meals" })}
+            {isFromSaved
+              ? t("update_in_my_meals", {
+                  ns: "meals",
+                  defaultValue: "Update in My Meals",
+                })
+              : t("add_to_my_meals", { ns: "meals" })}
           </Text>
         </View>
 
