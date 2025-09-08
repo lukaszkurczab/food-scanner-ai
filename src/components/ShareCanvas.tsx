@@ -156,10 +156,7 @@ function DraggableItem({
       { scale: scale.value },
       { rotate: `${rotation.value}deg` },
     ],
-    borderWidth: selected ? 1 : 0,
-    borderColor: "rgba(255,255,255,0.5)",
-    borderStyle: "dashed",
-    borderRadius: 8,
+    borderWidth: 0,
   }));
 
   return (
@@ -206,6 +203,8 @@ export default function ShareCanvas({
 }: ShareCanvasProps) {
   const theme = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
+  useEffect(() => setPhotoError(false), [photoUri]);
   const [selectedId, setSelectedId] = useState<ElementId | null>(null);
   const [styleTarget, setStyleTarget] = useState<ElementId | null>(null);
   const [styleOpen, setStyleOpen] = useState(false);
@@ -313,11 +312,12 @@ export default function ShareCanvas({
   return (
     <GestureDetector gesture={filterSwipeGesture}>
       <View style={[styles.canvas, { width, height }]}>
-        {photoUri && (
+        {photoUri && !photoError && (
           <Image
             source={{ uri: photoUri }}
             style={{ width: "100%", height: "100%", position: "absolute" }}
             resizeMode="cover"
+            onError={() => setPhotoError(true)}
           />
         )}
         {overlayStyle && (
@@ -339,7 +339,7 @@ export default function ShareCanvas({
             initialYRatio={options.titleY}
             initialScale={options.titleSize / 28}
             initialRotation={options.titleRotation}
-            selected={selectedId === "title"}
+            selected={menuVisible && selectedId === "title"}
             onSelect={setSelectedId}
             onLongPress={(id) => {
               if (id === "title") {
@@ -360,13 +360,16 @@ export default function ShareCanvas({
               numberOfLines={2}
               style={{
                 color: options.titleColor || "white",
-                fontWeight:
-                  options.titleWeight === "bold"
-                    ? "bold"
-                    : options.titleWeight === "medium"
-                    ? "500"
-                    : "400",
-                fontSize: options.titleSize,
+                fontFamily:
+                  options.titleFont === "bold"
+                    ? theme.typography.fontFamily.bold
+                    : options.titleFont === "medium"
+                    ? theme.typography.fontFamily.medium
+                    : (options.titleFont as any) === "light"
+                    ? (theme.typography.fontFamily as any).light || theme.typography.fontFamily.regular
+                    : theme.typography.fontFamily.regular,
+                fontStyle: options.titleItalic ? "italic" : "normal",
+                textDecorationLine: options.titleUnderline ? "underline" : "none",
                 textAlign: "center",
                 textShadowColor: "rgba(0,0,0,0.35)",
                 textShadowRadius: 6,
@@ -386,7 +389,7 @@ export default function ShareCanvas({
             initialYRatio={options.kcalY}
             initialScale={options.kcalSize / 22}
             initialRotation={options.kcalRotation}
-            selected={selectedId === "kcal"}
+            selected={menuVisible && selectedId === "kcal"}
             onSelect={setSelectedId}
             onLongPress={(id) => {
               if (id === "kcal") {
@@ -406,19 +409,69 @@ export default function ShareCanvas({
             <Text
               style={{
                 color: options.kcalColor || "white",
-                fontWeight:
-                  options.kcalWeight === "bold"
-                    ? "bold"
-                    : options.kcalWeight === "medium"
-                    ? "500"
-                    : "400",
-                fontSize: options.kcalSize,
+                fontFamily:
+                  options.kcalFont === "bold"
+                    ? theme.typography.fontFamily.bold
+                    : options.kcalFont === "medium"
+                    ? theme.typography.fontFamily.medium
+                    : (options.kcalFont as any) === "light"
+                    ? (theme.typography.fontFamily as any).light || theme.typography.fontFamily.regular
+                    : theme.typography.fontFamily.regular,
+                fontStyle: options.kcalItalic ? "italic" : "normal",
+                textDecorationLine: options.kcalUnderline ? "underline" : "none",
                 textAlign: "center",
                 textShadowColor: "rgba(0,0,0,0.35)",
                 textShadowRadius: 6,
               }}
             >
               {Math.round(kcal)} kcal
+            </Text>
+          </DraggableItem>
+        )}
+
+        {options.showCustom && (
+          <DraggableItem
+            id="custom"
+            canvasW={width}
+            canvasH={height}
+            initialXRatio={options.customX ?? 0.5}
+            initialYRatio={options.customY ?? 0.2}
+            initialScale={(options.customSize ?? 18) / 22}
+            initialRotation={options.customRotation ?? 0}
+            selected={menuVisible && selectedId === "custom"}
+            onSelect={setSelectedId}
+            onLongPress={() => {
+              setStyleTarget("custom");
+              setStyleOpen(true);
+            }}
+            onUpdate={(x, y, sc, rot) => {
+              applyPatch({
+                customX: x,
+                customY: y,
+                customSize: Math.round(22 * sc),
+                customRotation: rot,
+              });
+            }}
+          >
+            <Text
+              style={{
+                color: options.customColor || "white",
+                fontFamily:
+                  options.customFont === "bold"
+                    ? theme.typography.fontFamily.bold
+                    : options.customFont === "medium"
+                    ? theme.typography.fontFamily.medium
+                    : (options.customFont as any) === "light"
+                    ? (theme.typography.fontFamily as any).light || theme.typography.fontFamily.regular
+                    : theme.typography.fontFamily.regular,
+                fontStyle: options.customItalic ? "italic" : "normal",
+                textDecorationLine: options.customUnderline ? "underline" : "none",
+                textAlign: "center",
+                textShadowColor: "rgba(0,0,0,0.35)",
+                textShadowRadius: 6,
+              }}
+            >
+              {options.customText || "Your text"}
             </Text>
           </DraggableItem>
         )}
@@ -432,7 +485,7 @@ export default function ShareCanvas({
             initialYRatio={options.pieY}
             initialScale={options.pieSize}
             initialRotation={options.pieRotation}
-            selected={selectedId === "pie"}
+            selected={menuVisible && selectedId === "pie"}
             onSelect={setSelectedId}
             onUpdate={(x, y, sc, rot) => {
               applyPatch({
@@ -505,105 +558,98 @@ export default function ShareCanvas({
                     {options.showPie ? "✓" : "○"} Macros
                   </Text>
                 </Pressable>
+                <Pressable
+                  onPress={() => applyPatch({ showCustom: !options.showCustom })}
+                  style={{ paddingVertical: 6, paddingHorizontal: 8 }}
+                >
+                  <Text style={{ color: "white", fontWeight: "600" }}>
+                    {options.showCustom ? "✓" : "○"} Custom text
+                  </Text>
+                </Pressable>
               </View>
             )}
           </View>
         )}
-        <Modal
-          visible={styleOpen}
-          title={styleTarget === "title" ? "Style title" : "Style calories"}
-          onClose={() => setStyleOpen(false)}
-        >
+        <Modal visible={styleOpen} onClose={() => setStyleOpen(false)} contentPaddingBottom={8}>
           <View style={{ gap: 12 }}>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              {(["regular", "medium", "bold"] as const).map((w) => {
+            {styleTarget === "custom" && (
+              <View style={{ alignItems: "center", paddingVertical: 4 }}>
+                <Text
+                  style={{
+                    color: options.customColor || "white",
+                    fontFamily:
+                      options.customFont === "bold"
+                        ? theme.typography.fontFamily.bold
+                        : options.customFont === "medium"
+                        ? theme.typography.fontFamily.medium
+                        : (options.customFont as any) === "light"
+                        ? (theme.typography.fontFamily as any).light || theme.typography.fontFamily.regular
+                        : theme.typography.fontFamily.regular,
+                    fontStyle: options.customItalic ? "italic" : "normal",
+                    textDecorationLine: options.customUnderline ? "underline" : "none",
+                    fontSize: 20,
+                    textAlign: "center",
+                  }}
+                >
+                  {options.customText || "Your text"}
+                </Text>
+              </View>
+            )}
+            {/* Font selection */}
+            <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+              {(["regular", "medium", "bold", "light"] as const).map((f) => {
                 const active =
                   styleTarget === "title"
-                    ? (options.titleWeight || "bold") === w
-                    : (options.kcalWeight || "bold") === w;
+                    ? (options.titleFont || "bold") === f
+                    : styleTarget === "kcal"
+                    ? (options.kcalFont || "bold") === f
+                    : (options.customFont || "regular") === f;
                 return (
                   <Pressable
-                    key={w}
+                    key={f}
                     onPress={() => {
-                      if (styleTarget === "title")
-                        applyPatch({ titleWeight: w });
-                      else if (styleTarget === "kcal")
-                        applyPatch({ kcalWeight: w });
+                      if (styleTarget === "title") applyPatch({ titleFont: f });
+                      else if (styleTarget === "kcal") applyPatch({ kcalFont: f });
+                      else if (styleTarget === "custom") applyPatch({ customFont: f });
                     }}
                     style={{
                       paddingVertical: 8,
                       paddingHorizontal: 12,
                       borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: active
-                        ? theme.accentSecondary
-                        : theme.border,
+                      borderColor: active ? theme.accentSecondary : theme.border,
                       backgroundColor: active ? theme.overlay : theme.card,
                     }}
                   >
-                    <Text
-                      style={{
-                        color: theme.text,
-                        fontSize: theme.typography.size.md,
-                        fontFamily:
-                          w === "bold"
-                            ? theme.typography.fontFamily.bold
-                            : w === "medium"
-                            ? theme.typography.fontFamily.medium
-                            : theme.typography.fontFamily.regular,
-                      }}
-                    >
-                      {w}
+                    <Text style={{ color: theme.text, fontFamily: (theme.typography.fontFamily as any)[f] || theme.typography.fontFamily.regular }}>
+                      {f}
                     </Text>
                   </Pressable>
                 );
               })}
             </View>
 
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-            >
-              <Text style={{ color: theme.text, width: 56 }}>Size</Text>
+            {/* Italic / Underline */}
+            <View style={{ flexDirection: "row", gap: 8 }}>
               <Pressable
                 onPress={() => {
-                  if (styleTarget === "title")
-                    applyPatch({
-                      titleSize: Math.max(12, (options.titleSize || 28) - 2),
-                    });
-                  else if (styleTarget === "kcal")
-                    applyPatch({
-                      kcalSize: Math.max(12, (options.kcalSize || 22) - 2),
-                    });
+                  if (styleTarget === "title") applyPatch({ titleItalic: !options.titleItalic });
+                  else if (styleTarget === "kcal") applyPatch({ kcalItalic: !options.kcalItalic });
+                  else if (styleTarget === "custom") applyPatch({ customItalic: !options.customItalic });
                 }}
-                style={{
-                  paddingVertical: 6,
-                  paddingHorizontal: 10,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                }}
+                style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.border }}
               >
-                <Text style={{ color: theme.text }}>-</Text>
+                <Text style={{ color: theme.text, fontStyle: "italic" }}>Italic</Text>
               </Pressable>
-              <Text style={{ color: theme.text }}>
-                {styleTarget === "title" ? options.titleSize : options.kcalSize}
-              </Text>
               <Pressable
                 onPress={() => {
-                  if (styleTarget === "title")
-                    applyPatch({ titleSize: (options.titleSize || 28) + 2 });
-                  else if (styleTarget === "kcal")
-                    applyPatch({ kcalSize: (options.kcalSize || 22) + 2 });
+                  if (styleTarget === "title") applyPatch({ titleUnderline: !options.titleUnderline });
+                  else if (styleTarget === "kcal") applyPatch({ kcalUnderline: !options.kcalUnderline });
+                  else if (styleTarget === "custom") applyPatch({ customUnderline: !options.customUnderline });
                 }}
-                style={{
-                  paddingVertical: 6,
-                  paddingHorizontal: 10,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                }}
+                style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.border }}
               >
-                <Text style={{ color: theme.text }}>+</Text>
+                <Text style={{ color: theme.text, textDecorationLine: "underline" }}>Underline</Text>
               </Pressable>
             </View>
 
@@ -621,7 +667,9 @@ export default function ShareCanvas({
                   const current =
                     styleTarget === "title"
                       ? (options.titleColor || "#FFFFFF").toUpperCase()
-                      : (options.kcalColor || "#FFFFFF").toUpperCase();
+                      : styleTarget === "kcal"
+                      ? (options.kcalColor || "#FFFFFF").toUpperCase()
+                      : (options.customColor || "#FFFFFF").toUpperCase();
                   const active = current === hex;
                   return (
                     <Pressable
@@ -631,6 +679,8 @@ export default function ShareCanvas({
                           applyPatch({ titleColor: hex });
                         else if (styleTarget === "kcal")
                           applyPatch({ kcalColor: hex });
+                        else if (styleTarget === "custom")
+                          applyPatch({ customColor: hex });
                         await addRecentColor(hex);
                       }}
                     >
@@ -672,6 +722,8 @@ export default function ShareCanvas({
                       applyPatch({ titleColor: parsed });
                     else if (styleTarget === "kcal")
                       applyPatch({ kcalColor: parsed });
+                    else if (styleTarget === "custom")
+                      applyPatch({ customColor: parsed });
                     const next = [
                       parsed,
                       ...recentColors.filter(
@@ -705,6 +757,19 @@ export default function ShareCanvas({
                   </Text>
                 </Pressable>
               </View>
+
+            {styleTarget === "custom" && (
+              <View style={{ gap: 10 }}>
+                <Text style={{ color: theme.text, fontSize: theme.typography.size.md }}>
+                  Text
+                </Text>
+                <StyledInput
+                  placeholder="Enter text"
+                  value={options.customText || ""}
+                  onChangeText={(v) => applyPatch({ customText: v })}
+                />
+              </View>
+            )}
             </View>
 
             <View style={{ height: 4 }} />

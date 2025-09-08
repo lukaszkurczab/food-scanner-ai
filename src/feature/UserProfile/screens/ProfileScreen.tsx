@@ -75,16 +75,18 @@ export default function UserProfileScreen({ navigation }: any) {
   };
 
   const avatarSrc = userData.avatarLocalPath || userData.avatarUrl || "";
+  const [avatarError, setAvatarError] = useState(false);
 
   return (
     <Layout>
       <View style={styles.header}>
-        {avatarSrc ? (
+        {avatarSrc && !avatarError ? (
           <Image
             source={{ uri: avatarSrc }}
             style={styles.avatar}
             accessible
             accessibilityLabel={t("profilePicture")}
+            onError={() => setAvatarError(true)}
           />
         ) : (
           <UserIcon size={96} accessibilityLabel={t("profilePictureDefault")} />

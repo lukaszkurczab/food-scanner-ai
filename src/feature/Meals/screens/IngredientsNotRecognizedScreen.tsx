@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Text, Image } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
@@ -19,6 +19,8 @@ export default function IngredientsNotRecognizedScreen() {
   const { t } = useTranslation("meals");
 
   const { image, id, attempt = 1 } = route.params || {};
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => setImgError(false), [image]);
 
   const handleRetake = () => {
     if (attempt < MAX_ATTEMPTS) {
@@ -39,11 +41,16 @@ export default function IngredientsNotRecognizedScreen() {
   return (
     <Layout>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Image
-          source={{ uri: image }}
-          style={styles.image}
-          resizeMode="cover"
-        />
+        {image && !imgError ? (
+          <Image
+            source={{ uri: image }}
+            style={styles.image}
+            resizeMode="cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <View style={[styles.image, { backgroundColor: "#B2C0C9" }]} />
+        )}
         <Text style={[styles.title, { color: theme.text }]}>
           {t("not_recognized_title", "We couldn't recognize the ingredients")}
         </Text>

@@ -31,6 +31,7 @@ type Props = {
   fullScreen?: boolean;
   footer?: React.ReactNode;
   stackActions?: boolean;
+  contentPaddingBottom?: number;
 };
 
 export const Modal: React.FC<Props> = ({
@@ -46,6 +47,7 @@ export const Modal: React.FC<Props> = ({
   fullScreen = false,
   footer,
   stackActions = false,
+  contentPaddingBottom,
 }) => {
   const theme = useTheme();
 
@@ -138,7 +140,7 @@ export const Modal: React.FC<Props> = ({
 
             <ScrollView
               style={{ flexGrow: 0 }}
-              contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
+              contentContainerStyle={{ paddingBottom: contentPaddingBottom ?? theme.spacing.lg }}
               showsVerticalScrollIndicator={false}
             >
               {children ? (
