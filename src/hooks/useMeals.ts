@@ -14,6 +14,7 @@ import {
 } from "@react-native-firebase/firestore";
 import { savePhotoLocally } from "@utils/savePhotoLocally";
 import { processAndUpload } from "@services/mealService.images";
+import { cacheKeys, setJSON } from "@/services/cache";
 
 const app = getApp();
 const db = getFirestore(app);
@@ -58,6 +59,17 @@ export function useMeals(userUid: string | null) {
           .filter((m: any) => !m.deleted);
         setMeals(items);
         setLoading(false);
+        // Persist last 7 days for offline history/stats
+        try {
+          const now = new Date();
+          const cutoff = new Date(now);
+          cutoff.setDate(now.getDate() - 7);
+          const last7d = items.filter((m) => {
+            const ts = new Date((m as any).timestamp || (m as any).createdAt);
+            return ts >= cutoff;
+          });
+          if (userUid) void setJSON(cacheKeys.lastWeekMeals(userUid), last7d);
+        } catch {}
       },
       () => {
         setLoading(false);

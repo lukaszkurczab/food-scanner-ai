@@ -11,6 +11,7 @@ import {
   getDoc,
 } from "@react-native-firebase/firestore";
 import type { UserNotification } from "@/types/notification";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export function useNotifications(uid: string | null) {
   const [items, setItems] = useState<UserNotification[]>([]);
@@ -24,6 +25,15 @@ export function useNotifications(uid: string | null) {
     }
     const app = getApp();
     const db = getFirestore(app);
+    // Hydrate from cache first to support offline cold start
+    (async () => {
+      try {
+        const cached = await AsyncStorage.getItem(`notif:list:${uid}`);
+        if (cached) setItems(JSON.parse(cached));
+      } catch {}
+      setLoading(false);
+    })();
+
     const unsub = onSnapshot(
       collection(db, "users", uid, "notifications"),
       (snap) => {
@@ -32,6 +42,10 @@ export function useNotifications(uid: string | null) {
           ...(d.data() as any),
         })) as UserNotification[];
         setItems(arr);
+        // Persist cache for offline
+        AsyncStorage.setItem(`notif:list:${uid}`, JSON.stringify(arr)).catch(
+          () => {}
+        );
         setLoading(false);
       }
     );
@@ -97,9 +111,18 @@ export function useNotifications(uid: string | null) {
 
       const data = snap.exists() ? (snap.data() as any) : {};
       const enabled = !!data?.notifications?.motivationEnabled;
+      await AsyncStorage.setItem(
+        `notif:prefs:${uidLocal}:motivation`,
+        JSON.stringify({ enabled })
+      );
       return { enabled };
     } catch (e) {
-      console.error("❌ loadMotivationPrefs error:", e);
+      try {
+        const cached = await AsyncStorage.getItem(
+          `notif:prefs:${uidLocal}:motivation`
+        );
+        if (cached) return JSON.parse(cached);
+      } catch {}
       return { enabled: false };
     }
   }, []);
@@ -112,9 +135,18 @@ export function useNotifications(uid: string | null) {
 
       const data = snap.exists() ? (snap.data() as any) : {};
       const enabled = !!data?.notifications?.statsEnabled;
+      await AsyncStorage.setItem(
+        `notif:prefs:${uidLocal}:stats`,
+        JSON.stringify({ enabled })
+      );
       return { enabled };
     } catch (e) {
-      console.error("❌ loadStatsPrefs error:", e);
+      try {
+        const cached = await AsyncStorage.getItem(
+          `notif:prefs:${uidLocal}:stats`
+        );
+        if (cached) return JSON.parse(cached);
+      } catch {}
       return { enabled: false };
     }
   }, []);
@@ -129,8 +161,16 @@ export function useNotifications(uid: string | null) {
           { notifications: { motivationEnabled: enabled } },
           { merge: true }
         );
+        await AsyncStorage.setItem(
+          `notif:prefs:${uidLocal}:motivation`,
+          JSON.stringify({ enabled })
+        );
       } catch (e) {
-        console.error("❌ setMotivationPrefs error:", e);
+        // Persist locally and let Firestore sync later
+        await AsyncStorage.setItem(
+          `notif:prefs:${uidLocal}:motivation`,
+          JSON.stringify({ enabled })
+        );
       }
     },
     []
@@ -141,15 +181,20 @@ export function useNotifications(uid: string | null) {
       try {
         const db = getFirestore(getApp());
         const ref = doc(db, "users", uidLocal, "prefs", "global");
-        console.log("✍️ setStatsPrefs path:", ref.path, "value:", enabled);
         await setDoc(
           ref,
           { notifications: { statsEnabled: enabled } },
           { merge: true }
         );
-        console.log("✅ setStatsPrefs success");
+        await AsyncStorage.setItem(
+          `notif:prefs:${uidLocal}:stats`,
+          JSON.stringify({ enabled })
+        );
       } catch (e) {
-        console.error("❌ setStatsPrefs error:", e);
+        await AsyncStorage.setItem(
+          `notif:prefs:${uidLocal}:stats`,
+          JSON.stringify({ enabled })
+        );
       }
     },
     []
