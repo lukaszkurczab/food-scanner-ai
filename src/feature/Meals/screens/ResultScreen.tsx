@@ -55,7 +55,9 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const shotRef = useRef<View>(null);
 
   useEffect(() => {
-    if (uid) setLastScreen(uid, "Result");
+    if (uid) {
+      setLastScreen(uid, "Result");
+    }
   }, [setLastScreen, uid]);
 
   if (!meal || !uid) return null;
@@ -106,7 +108,6 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
 
       const mealKcal = Number(calculateTotalNutrients([newMeal]).kcal) || 0;
       const todaysKcal = existingTodayKcal + mealKcal;
-
       const targetKcal = Number(userData?.calorieTarget || 0);
 
       await updateStreakIfThresholdMet({

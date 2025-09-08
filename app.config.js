@@ -49,7 +49,9 @@ export default {
       ],
       [
         "expo-build-properties",
-        { ios: { useFrameworks: "static", deploymentTarget: "15.5" } },
+        {
+          ios: { useFrameworks: "static", deploymentTarget: "15.5" },
+        },
       ],
       "expo-font",
       "@react-native-firebase/app",
@@ -64,7 +66,8 @@ export default {
       revenuecatAndroidKey: process.env.RC_ANDROID_API_KEY || "",
       revenuecatIosKey: process.env.RC_IOS_API_KEY || "",
       // Disable billing integrations in environments where billing isn't available (e.g., simulators)
-      disableBilling: (process.env.DISABLE_BILLING || "").toLowerCase() === "true",
+      disableBilling:
+        (process.env.DISABLE_BILLING || "").toLowerCase() === "true",
       // Force premium features on for development/testing without purchases
       forcePremium: (process.env.FORCE_PREMIUM || "").toLowerCase() === "true",
       eas: {

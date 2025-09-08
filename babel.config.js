@@ -8,6 +8,8 @@ module.exports = function (api) {
         {
           extensions: [".js", ".jsx", ".ts", ".tsx"],
           alias: {
+            "@/": "./src/",
+            "@": "./src",
             "@assets": "./assets",
             "@components": "./src/components",
             "@contexts": "./src/context",

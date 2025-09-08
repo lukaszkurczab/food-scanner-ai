@@ -171,6 +171,13 @@
 │   │   │   └── utils
 │   │   │       ├── dateRange.ts
 │   │   │       └── getStatsForRange.ts
+│   │   ├── Subscription
+│   │   │   ├── index.ts
+│   │   │   ├── screens
+│   │   │   │   └── ManageSubscriptionScreen.tsx
+│   │   │   └── services
+│   │   │       ├── purchase.ts
+│   │   │       └── revenuecat.ts
 │   │   └── UserProfile
 │   │       ├── components
 │   │       │   ├── ListItem.tsx
@@ -182,7 +189,6 @@
 │   │           ├── ChangePasswordScreen.tsx
 │   │           ├── EditUserDataScreen.tsx
 │   │           ├── LanguageScreen.tsx
-│   │           ├── ManageSubscriptionScreen.tsx
 │   │           ├── NotificationFormScreen.tsx
 │   │           ├── NotificationsScreen.tsx
 │   │           ├── ProfileScreen.tsx
@@ -234,6 +240,7 @@
 │   │   └── LoadingScreen.tsx
 │   ├── services
 │   │   ├── askDietAI.ts
+│   │   ├── cache.ts
 │   │   ├── chatService.ts
 │   │   ├── feedbackService.ts
 │   │   ├── index.ts
@@ -246,6 +253,7 @@
 │   │   │   ├── localScheduler.ts
 │   │   │   ├── system.ts
 │   │   │   └── texts.ts
+│   │   ├── nutritionTableService.ts
 │   │   ├── streakService.ts
 │   │   ├── textMealService.ts
 │   │   ├── usernameService.ts
@@ -291,4 +299,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-47 directories, 245 files
+50 directories, 250 files

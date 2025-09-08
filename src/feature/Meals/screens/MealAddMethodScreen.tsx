@@ -58,7 +58,8 @@ const MealAddMethodScreen = () => {
   const navigation = useNavigation<MealAddMethodNavigationProp>();
   const { t } = useTranslation("meals");
   const { uid } = useAuthContext();
-  const { meal, setMeal, saveDraft, setLastScreen, loadDraft } = useMealDraftContext();
+  const { meal, setMeal, saveDraft, setLastScreen, loadDraft } =
+    useMealDraftContext();
   const { isPremium } = usePremiumContext();
 
   const [showModal, setShowModal] = useState(false);
@@ -72,13 +73,16 @@ const MealAddMethodScreen = () => {
     if (draft && lastScreenStored) {
       try {
         const parsedDraft = JSON.parse(draft);
-        if ((parsedDraft?.name && parsedDraft.name !== null) || (Array.isArray(parsedDraft?.ingredients) && parsedDraft.ingredients.length > 0) || parsedDraft?.photoUrl) {
+        if (
+          (parsedDraft?.name && parsedDraft.name !== null) ||
+          (Array.isArray(parsedDraft?.ingredients) &&
+            parsedDraft.ingredients.length > 0) ||
+          parsedDraft?.photoUrl
+        ) {
           setShowModal(true);
           setLastScreenState(lastScreenStored);
         }
-      } catch {
-        // ignore invalid draft
-      }
+      } catch {}
     }
   }, [uid]);
 
@@ -114,10 +118,9 @@ const MealAddMethodScreen = () => {
   );
 
   const handleOptionPress = async (screen: string) => {
-    if (screen === "MealCamera" || screen === "MealTextAI") {
+    if (screen === "MealTextAI") {
       if (uid) {
-        const feature = screen === "MealCamera" ? "camera" : "text";
-        const allowed = await canUseAiTodayFor(uid, !!isPremium, feature, 1);
+        const allowed = await canUseAiTodayFor(uid, !!isPremium, "text", 1);
         if (!allowed) {
           setShowAiLimit(true);
           return;
