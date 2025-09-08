@@ -47,7 +47,7 @@ export default function MealTextAIScreen() {
 
   const nameError: string | undefined = useMemo(() => {
     if (!touched.name) return undefined;
-    if (!name.trim()) return t("ingredient_name_required", { ns: "meals" });
+    if (!name.trim()) return t("meal_name_required", { ns: "meals" });
     return undefined;
   }, [touched.name, name, t]);
 
@@ -217,13 +217,13 @@ export default function MealTextAIScreen() {
           >
             <View style={{ gap: theme.spacing.md, flexGrow: 1 }}>
               <ShortInput
-                label={t("ingredient_name", {
+                label={t("meal_name", {
                   ns: "meals",
                   defaultValue: "Meal name",
                 })}
                 value={name}
                 onChangeText={setName}
-                placeholder={t("ingredient_name", {
+                placeholder={t("meal_name", {
                   ns: "meals",
                   defaultValue: "Meal name",
                 })}
