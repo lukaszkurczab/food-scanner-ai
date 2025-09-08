@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Image } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -27,6 +27,12 @@ export const UserIcon: React.FC<Props> = ({
   const sourceUri = userData
     ? userData.avatarLocalPath || userData.avatarUrl || null
     : null;
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    // reset error when source changes
+    setError(false);
+  }, [sourceUri]);
 
   return (
     <View
@@ -47,10 +53,11 @@ export const UserIcon: React.FC<Props> = ({
       accessible
       accessibilityLabel={accessibilityLabel}
     >
-      {sourceUri ? (
+      {sourceUri && !error ? (
         <Image
           source={{ uri: sourceUri }}
           style={{ width: size, height: size, borderRadius: size / 2 }}
+          onError={() => setError(true)}
         />
       ) : (
         <MaterialIcons

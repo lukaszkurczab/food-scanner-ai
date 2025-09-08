@@ -44,6 +44,12 @@ export default function ReviewIngredientsScreen() {
 
   const ingredients: Ingredient[] = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    // Reset error state when image URI changes
+    setImageError(false);
+  }, [image]);
 
   useEffect(() => {
     if (uid) setLastScreen(uid, "ReviewIngredients");
@@ -206,6 +212,8 @@ export default function ReviewIngredientsScreen() {
         onRetake={() => setPreviewVisible(false)}
         onAccept={() => {
           setPreviewVisible(false);
+          // Allow navigation without exit-confirm when changing photo
+          allowLeaveRef.current = true;
           navigation.replace("MealCamera", { skipDetection: true });
         }}
         isLoading={false}
@@ -219,7 +227,7 @@ export default function ReviewIngredientsScreen() {
     <Layout showNavigation={false}>
       <View style={styles(theme).container}>
         <View style={styles(theme).imageWrapper}>
-          {image ? (
+          {image && !imageError ? (
             <Pressable
               onPress={() => setPreviewVisible(true)}
               style={{ width: "100%", height: "100%" }}
@@ -230,6 +238,7 @@ export default function ReviewIngredientsScreen() {
                 source={{ uri: image }}
                 style={styles(theme).image}
                 resizeMode="cover"
+                onError={() => setImageError(true)}
               />
             </Pressable>
           ) : (

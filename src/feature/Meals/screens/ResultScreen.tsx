@@ -49,6 +49,8 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const [addedAt, setAddedAt] = useState<Date>(new Date());
 
   const image = meal?.photoUrl ?? null;
+  const [imageError, setImageError] = useState(false);
+  useEffect(() => setImageError(false), [image]);
   const shotRef = useRef<View>(null);
 
   useEffect(() => {
@@ -129,12 +131,13 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   return (
     <Layout showNavigation={false}>
       <View style={{ padding: theme.spacing.container }}>
-        {image && (
+        {image && !imageError && (
           <>
             <Image
               source={{ uri: image }}
               style={styles.image}
               resizeMode="cover"
+              onError={() => setImageError(true)}
             />
             <SecondaryButton
               label="Share"

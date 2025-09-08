@@ -68,6 +68,8 @@ export const PhotoPreview = ({
       }
     });
   }, [photoUri, noCrop]);
+  const [loadError, setLoadError] = useState(false);
+  useEffect(() => setLoadError(false), [photoUri]);
 
   function clamp(val: number, min: number, max: number) {
     "worklet";
@@ -142,23 +144,29 @@ export const PhotoPreview = ({
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.cropBox}>
         {noCrop ? (
-          <RNImage
-            source={{ uri: photoUri }}
-            style={{
-              width: "100%",
-              height: "100%",
-              resizeMode: "contain",
-              borderRadius: 40,
-            }}
-          />
+          !loadError ? (
+            <RNImage
+              source={{ uri: photoUri }}
+              style={{
+                width: "100%",
+                height: "100%",
+                resizeMode: "contain",
+                borderRadius: 40,
+              }}
+              onError={() => setLoadError(true)}
+            />
+          ) : null
         ) : (
           <GestureDetector gesture={composed}>
             <View style={styles.centerContent}>
-              <Animated.Image
-                source={{ uri: photoUri }}
-                style={[styles.image, animatedImageStyle]}
-                resizeMode="cover"
-              />
+              {!loadError ? (
+                <Animated.Image
+                  source={{ uri: photoUri }}
+                  style={[styles.image, animatedImageStyle]}
+                  resizeMode="cover"
+                  onError={() => setLoadError(true)}
+                />
+              ) : null}
             </View>
           </GestureDetector>
         )}

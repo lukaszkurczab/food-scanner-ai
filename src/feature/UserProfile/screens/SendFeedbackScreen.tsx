@@ -152,6 +152,7 @@ export default function SendFeedbackScreen({ navigation }: any) {
                       marginTop: 4,
                       marginBottom: 2,
                     }}
+                    onError={() => setAttachment(null)}
                   />
                   <Pressable onPress={() => setAttachment(null)} hitSlop={10}>
                     <Text style={{ color: theme.error.text, fontSize: 13 }}>
