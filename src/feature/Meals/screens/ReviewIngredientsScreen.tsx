@@ -31,6 +31,7 @@ export default function ReviewIngredientsScreen() {
     clearMeal,
     saveDraft,
     addIngredient,
+    setPhotoUrl,
   } = useMealDraftContext();
   const { uid } = useAuthContext();
 
@@ -178,6 +179,11 @@ export default function ReviewIngredientsScreen() {
     navigation.replace("MealAddMethod");
   };
 
+  const handleRemovePhoto = async () => {
+    setPhotoUrl(null);
+    await persist();
+  };
+
   useEffect(() => {
     if (uid) saveDraft(uid);
   }, [ingredients, image, saveDraft, uid]);
@@ -266,6 +272,14 @@ export default function ReviewIngredientsScreen() {
             </Pressable>
           )}
         </View>
+        {image && !imageError ? (
+          <SecondaryButton
+            label={t("remove_photo", { ns: "meals", defaultValue: "Remove photo" })}
+            onPress={handleRemovePhoto}
+            disabled={editingIdx !== null}
+            style={styles(theme).removePhotoBtn}
+          />
+        ) : null}
 
         {localDraft && (
           <IngredientBox
@@ -401,6 +415,11 @@ const styles = (theme: ReturnType<typeof useTheme>) =>
     continueBtn: {
       marginTop: 2,
       marginBottom: theme.spacing.sm,
+      width: "100%",
+    },
+    removePhotoBtn: {
+      marginTop: 4,
+      marginBottom: theme.spacing.md,
       width: "100%",
     },
     startOverBtn: { marginTop: 0, width: "100%" },
