@@ -52,6 +52,11 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
     );
   }, [isPremium]);
 
+  // If coming from ReviewIngredients just to attach a photo, don't show modes/barcode flow
+  useEffect(() => {
+    if (skipDetection) setMode("ai");
+  }, [skipDetection]);
+
   // Reset scanned code when leaving barcode mode
   useEffect(() => {
     if (mode !== "barcode" && scannedCode) setScannedCode(null);
@@ -86,8 +91,8 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   }, [navigation, photoUri]);
 
   const handleTakePicture = async () => {
-    // Barcode mode: use last scanned code to fetch nutrition via OFF
-    if (mode === "barcode") {
+    // Barcode mode: only when not in simple capture flow
+    if (mode === "barcode" && !skipDetection) {
       const code = scannedCode;
       if (!code) {
         setBarcodeModal(true);
@@ -354,6 +359,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
           />
           <View style={StyleSheet.absoluteFill}>
             <View style={styles.overlay} pointerEvents="none" />
+            {!skipDetection && (
             <View style={styles.modeSwitch}>
               <Pressable
                 onPress={() => (isPremium ? setMode("ai") : setPremiumModal(true))}
@@ -408,6 +414,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                 />
               </Pressable>
             </View>
+            )}
             <View style={styles.shutterWrapper}>
               <Pressable
                 style={({ pressed }) => [
@@ -418,7 +425,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                 disabled={isTakingPhoto}
               />
             </View>
-            {mode === "barcode" && scannedCode && (
+            {!skipDetection && mode === "barcode" && scannedCode && (
               <View style={styles.detectBadge}>
                 <Text style={{ color: theme.onAccent, fontWeight: "bold" }}>
                   {t("barcode_detected", { defaultValue: "Detected:" })} {scannedCode}

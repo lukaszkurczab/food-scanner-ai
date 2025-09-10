@@ -39,15 +39,19 @@ apply plugin: "com.facebook.react.rootproject"
 
 // Disable lint checks across all subprojects to avoid OOM during release builds
 subprojects { subproject ->
-  afterEvaluate {
-    if (subproject.plugins.hasPlugin('com.android.application') || subproject.plugins.hasPlugin('com.android.library')) {
-      if (subproject.hasProperty('android')) {
+  def configureLint = {
+    if (subproject.hasProperty('android')) {
+      // AGP < 8
+      try {
         subproject.android.lintOptions?.abortOnError = false
         subproject.android.lintOptions?.checkReleaseBuilds = false
-        try {
-          subproject.android.lint { abortOnError = false; checkReleaseBuilds = false }
-        } catch (ignored) {}
-      }
+      } catch (ignored) {}
+      // AGP 8+
+      try {
+        subproject.android.lint { abortOnError = false; checkReleaseBuilds = false }
+      } catch (ignored) {}
     }
   }
+  subproject.plugins.withId('com.android.application') { configureLint() }
+  subproject.plugins.withId('com.android.library') { configureLint() }
 }
