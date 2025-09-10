@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useTheme } from "@/theme/useTheme";
 import { Layout } from "@/components";
 import { useTranslation } from "react-i18next";
-import { fetchProductByBarcode } from "@/services/barcodeService";
+import { fetchProductByBarcode, extractBarcodeFromPayload } from "@/services/barcodeService";
 import { DeviceEventEmitter } from "react-native";
 
 export default function BarCodeCameraScreen({ navigation }: any) {
@@ -49,8 +49,10 @@ export default function BarCodeCameraScreen({ navigation }: any) {
           onBarcodeScanned={async ({ data }: { data: string }) => {
             if (scanned) return;
             if (!data) return;
+            const code = extractBarcodeFromPayload(data);
+            if (!code) return;
             setScanned(true);
-            const off = await fetchProductByBarcode(data);
+            const off = await fetchProductByBarcode(code);
             if (off?.ingredient) {
               DeviceEventEmitter.emit("barcode.scanned.ingredient", {
                 ingredient: off.ingredient,
@@ -71,4 +73,3 @@ const styles = StyleSheet.create({
   overlay: { position: "absolute", inset: 0 },
   center: (theme: any) => ({ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.background }),
 });
-

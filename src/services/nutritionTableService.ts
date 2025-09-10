@@ -1,14 +1,16 @@
 import Constants from "expo-constants";
-import OpenAI from "openai";
 import type { Ingredient } from "@/types";
+import { uriToBase64 } from "@/utils/uriToBase64";
+import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
 
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
-const client = new OpenAI({ apiKey: OPENAI_API_KEY });
+const TIMEOUT_MS = 30000;
 
 const toNumber = (v: unknown): number => {
   if (typeof v === "number") return isFinite(v) ? v : 0;
   if (typeof v === "string") {
-    const n = Number(v.replace(/[^0-9.+-]/g, ""));
+    // Normalize European decimal comma and strip non-numeric chars
+    const n = Number(v.replace(/,/g, ".").replace(/[^0-9.+-]/g, ""));
     return isFinite(n) ? n : 0;
   }
   return 0;
@@ -26,30 +28,49 @@ export async function extractNutritionFromTable(
   _uid: string,
   imageUri: string
 ): Promise<Ingredient[] | null> {
-  // Use Vision to parse nutrition facts into a single ingredient (per 100 g)
+  // Convert to manageable JPEG and embed as base64 (Android-safe)
+  const jpegUri = await convertToJpegAndResize(imageUri, 768, 768, {
+    userUid: _uid || "anon",
+    fileId: `nutrition-${Date.now()}.jpg`,
+    dir: "tmp",
+  });
+  const imageBase64 = await uriToBase64(jpegUri);
+
   const prompt =
-    `Read the nutrition facts label from the image and return ONLY a JSON array of one item.
-Schema: [{"name":"string","amount":100,"protein":0,"fat":0,"carbs":0,"kcal":0}].
-Use 100 as amount (grams). Parse protein/fat/carbs/kcal per 100 g. No text outside the JSON array.`;
+    `Read the nutrition facts label from the image and return ONLY a JSON array with one item. ` +
+    `Schema: [{"name":"string","amount":100,"protein":0,"fat":0,"carbs":0,"kcal":0}]. ` +
+    `Use 100 as amount (grams). Parse protein/fat/carbs/kcal per 100 g. No text outside the JSON array.`;
 
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: "You extract structured nutrition data from labels." },
-    {
-      role: "user",
-      content: [
-        { type: "text", text: prompt },
-        { type: "image_url", image_url: { url: imageUri } as any },
-      ],
-    } as any,
-  ];
-
-  const res = await client.chat.completions.create({
+  const payload = {
     model: "gpt-4o-mini",
     temperature: 0,
     max_tokens: 400,
-    messages,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
+        ],
+      },
+    ],
+  } as const;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    signal: controller.signal,
   });
-  const raw = res.choices[0]?.message?.content || "";
+  clearTimeout(timeout);
+  if (!resp.ok) return null;
+  const json = await resp.json();
+  const raw: string = json?.choices?.[0]?.message?.content || "";
   const arr = extractJsonArray(raw);
   if (!arr) return null;
   let parsed: any;
@@ -72,4 +93,3 @@ Use 100 as amount (grams). Parse protein/fat/carbs/kcal per 100 g. No text outsi
   };
   return [ing];
 }
-

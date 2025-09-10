@@ -8,7 +8,8 @@ import Loader from "@feature/Meals/components/Loader";
 import { useTranslation } from "react-i18next";
 import { detectIngredientsWithVision } from "@/services/visionService";
 import { extractNutritionFromTable } from "@/services/nutritionTableService";
-import { fetchProductByBarcode } from "@/services/barcodeService";
+import { extractNutritionFromTableLocal } from "@/services/localNutritionTable";
+import { fetchProductByBarcode, extractBarcodeFromPayload } from "@/services/barcodeService";
 import { useRoute } from "@react-navigation/native";
 import { useAuthContext } from "@/context/AuthContext";
 import { Layout, PhotoPreview } from "@/components";
@@ -295,10 +296,11 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                 } else {
                   updateMeal({ photoUrl: finalUri, mealId });
                 }
-                const ings = await extractNutritionFromTable(
-                  uid || "",
-                  finalUri
-                );
+                const local = await extractNutritionFromTableLocal(finalUri);
+                let ings = local && local.length ? local : null;
+                if ((!ings || ings.length === 0) && isPremium) {
+                  ings = await extractNutritionFromTable(uid || "", finalUri);
+                }
                 if (ings && ings.length > 0) {
                   updateMeal({ ingredients: ings, mealId, photoUrl: finalUri });
                 }
@@ -332,8 +334,10 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
             onBarcodeScanned={({ data }: { data: string }) => {
               if (mode !== "barcode") return;
               if (!data) return;
-              // Keep the most recent code; avoid re-renders when unchanged
-              setScannedCode((prev) => (prev === data ? prev : data));
+              const code = extractBarcodeFromPayload(data);
+              if (!code) return;
+              // Keep the most recent numeric code; avoid re-renders when unchanged
+              setScannedCode((prev) => (prev === code ? prev : code));
             }}
             barcodeScannerSettings={
               {

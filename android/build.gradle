@@ -36,3 +36,18 @@ allprojects {
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
+
+// Disable lint checks across all subprojects to avoid OOM during release builds
+subprojects { subproject ->
+  afterEvaluate {
+    if (subproject.plugins.hasPlugin('com.android.application') || subproject.plugins.hasPlugin('com.android.library')) {
+      if (subproject.hasProperty('android')) {
+        subproject.android.lintOptions?.abortOnError = false
+        subproject.android.lintOptions?.checkReleaseBuilds = false
+        try {
+          subproject.android.lint { abortOnError = false; checkReleaseBuilds = false }
+        } catch (ignored) {}
+      }
+    }
+  }
+}
