@@ -6,3 +6,4 @@ export * from "./userService";
 export * from "./textMealService";
 export * from "./nutritionTableService";
 export * from "./barcodeService";
+export * from "./localNutritionTable";

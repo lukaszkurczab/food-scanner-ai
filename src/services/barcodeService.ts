@@ -47,3 +47,50 @@ export async function fetchProductByBarcode(barcode: string): Promise<{ name: st
   }
 }
 
+// Try to extract a standard EAN/UPC from arbitrary QR/barcode payloads
+export function extractBarcodeFromPayload(payload: string): string | null {
+  try {
+    const s = String(payload || "").trim();
+    if (!s) return null;
+    const onlyDigits = s.replace(/\D+/g, "");
+    // If payload is only digits and plausible length
+    if (/^\d{8}$/.test(s) || /^\d{12}$/.test(s) || /^\d{13}$/.test(s)) return s;
+    if (/^\d{8}$/.test(onlyDigits) || /^\d{12}$/.test(onlyDigits) || /^\d{13}$/.test(onlyDigits)) {
+      return onlyDigits;
+    }
+    // GS1 AI 01 (GTIN-14)
+    const ai01 = s.match(/(?:\(01\)|01)(\d{14})/);
+    if (ai01) {
+      const gtin14 = ai01[1];
+      // Convert to EAN-13 by dropping leading 0 if present
+      if (gtin14.length === 14) {
+        const ean13 = gtin14.startsWith("0") ? gtin14.slice(1) : gtin14.slice(1);
+        if (/^\d{13}$/.test(ean13)) return ean13;
+      }
+    }
+    // OFF product URL
+    const off = s.match(/openfoodfacts\.org\/(?:product|products)\/(\d{8,14})/i);
+    if (off) {
+      const raw = off[1];
+      if (raw.length === 13 || raw.length === 12 || raw.length === 8) return raw;
+      if (raw.length === 14 && raw.startsWith("0")) return raw.slice(1);
+    }
+    // Query params like ?ean= or ?gtin=
+    const url = s.match(/(?:ean|gtin)=([0-9]{8,14})/i);
+    if (url) {
+      const raw = url[1];
+      if (raw.length === 13 || raw.length === 12 || raw.length === 8) return raw;
+      if (raw.length === 14 && raw.startsWith("0")) return raw.slice(1);
+    }
+    // Fallback: pick a 13-digit run if present, else 12, else 8
+    const d13 = s.match(/\d{13}/);
+    if (d13) return d13[0];
+    const d12 = s.match(/\d{12}/);
+    if (d12) return d12[0];
+    const d8 = s.match(/\d{8}/);
+    if (d8) return d8[0];
+    return null;
+  } catch {
+    return null;
+  }
+}

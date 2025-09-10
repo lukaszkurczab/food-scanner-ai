@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, TextInput, Text, StyleSheet, DeviceEventEmitter } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -7,6 +7,7 @@ import { PrimaryButton } from "./PrimaryButton";
 import { ErrorButton } from "./ErrorButton";
 import { useNavigation } from "@react-navigation/native";
 import { IconButton } from "./IconButton";
+import { Modal } from "@/components";
 
 type Props = {
   initial: Ingredient;
@@ -43,6 +44,16 @@ export const IngredientEditor: React.FC<Props> = ({
   const [nameTouched, setNameTouched] = useState(false);
   const [amountTouched, setAmountTouched] = useState(false);
 
+  const baseline = useRef({
+    amount: Number(initial.amount ?? 0),
+    protein: Number(initial.protein ?? 0),
+    carbs: Number(initial.carbs ?? 0),
+    fat: Number(initial.fat ?? 0),
+    kcal: Number(initial.kcal ?? 0),
+  });
+  const [showRecalc, setShowRecalc] = useState(false);
+  const recalcRatioRef = useRef(1);
+
   const commit = () => {
     if (Object.keys(errors).length) return;
     onCommit({
@@ -70,6 +81,15 @@ export const IngredientEditor: React.FC<Props> = ({
     setter(next);
     const n = parseNum(next);
     if (!Number.isNaN(n)) onChangePartial?.({ [key]: n } as any);
+    if (key === "amount") {
+      const prev = baseline.current.amount;
+      if (prev > 0 && n > 0 && Math.abs(n - prev) > 0.0001) {
+        recalcRatioRef.current = n / prev;
+        setShowRecalc(true);
+      } else {
+        baseline.current.amount = n;
+      }
+    }
   };
 
   const normalizeOnBlurName = (val: string) => {
@@ -319,6 +339,44 @@ export const IngredientEditor: React.FC<Props> = ({
         style={[styles.outlineBtn, { borderColor: theme.error.border }]}
         onPress={onCancel}
         label={t("cancel", { ns: "common" })}
+      />
+
+      <Modal
+        visible={showRecalc}
+        title={t("recalc_title", { defaultValue: "Recalculate values?" })}
+        message={t("recalc_message", {
+          defaultValue: "Adjust protein, carbs, fat and kcal proportionally to the new amount?",
+        })}
+        primaryActionLabel={t("confirm", { ns: "common", defaultValue: "Confirm" })}
+        onPrimaryAction={() => {
+          const r = recalcRatioRef.current;
+          const nextProtein = Number((baseline.current.protein * r).toFixed(1));
+          const nextCarbs = Number((baseline.current.carbs * r).toFixed(1));
+          const nextFat = Number((baseline.current.fat * r).toFixed(1));
+          const nextKcal = Math.round(baseline.current.kcal * r) || Math.round(nextProtein * 4 + nextCarbs * 4 + nextFat * 9);
+          setProtein(String(nextProtein));
+          setCarbs(String(nextCarbs));
+          setFat(String(nextFat));
+          setKcal(String(nextKcal));
+          onChangePartial?.({ protein: nextProtein, carbs: nextCarbs, fat: nextFat, kcal: nextKcal });
+          baseline.current = {
+            amount: parseNum(amount) || baseline.current.amount,
+            protein: nextProtein,
+            carbs: nextCarbs,
+            fat: nextFat,
+            kcal: nextKcal,
+          };
+          setShowRecalc(false);
+        }}
+        secondaryActionLabel={t("cancel", { ns: "common", defaultValue: "Cancel" })}
+        onSecondaryAction={() => {
+          baseline.current.amount = parseNum(amount) || baseline.current.amount;
+          setShowRecalc(false);
+        }}
+        onClose={() => {
+          baseline.current.amount = parseNum(amount) || baseline.current.amount;
+          setShowRecalc(false);
+        }}
       />
     </View>
   );
