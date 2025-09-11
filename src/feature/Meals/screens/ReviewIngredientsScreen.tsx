@@ -42,6 +42,7 @@ export default function ReviewIngredientsScreen() {
   const [showExitModal, setShowExitModal] = useState(false);
   const exitActionRef = useRef<any | null>(null);
   const allowLeaveRef = useRef(false);
+  const [imageMenuOpen, setImageMenuOpen] = useState(false);
 
   const ingredients: Ingredient[] = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
@@ -182,6 +183,7 @@ export default function ReviewIngredientsScreen() {
   const handleRemovePhoto = async () => {
     setPhotoUrl(null);
     await persist();
+    setImageMenuOpen(false);
   };
 
   useEffect(() => {
@@ -234,19 +236,61 @@ export default function ReviewIngredientsScreen() {
       <View style={styles(theme).container}>
         <View style={styles(theme).imageWrapper}>
           {image && !imageError ? (
-            <Pressable
-              onPress={() => setPreviewVisible(true)}
-              style={{ width: "100%", height: "100%" }}
-              disabled={editingIdx != null}
-            >
-              <Image
-                key={image}
-                source={{ uri: image }}
-                style={styles(theme).image}
-                resizeMode="cover"
-                onError={() => setImageError(true)}
-              />
-            </Pressable>
+            <>
+              <Pressable
+                onPress={() => setPreviewVisible(true)}
+                style={{ width: "100%", height: "100%" }}
+                disabled={editingIdx != null}
+              >
+                <Image
+                  key={image}
+                  source={{ uri: image }}
+                  style={styles(theme).image}
+                  resizeMode="cover"
+                  onError={() => setImageError(true)}
+                />
+              </Pressable>
+              {editingIdx == null && (
+                <View style={styles(theme).menuButtonContainer}>
+                  <Pressable
+                    onPress={() => setImageMenuOpen((v) => !v)}
+                    style={styles(theme).menuToggle}
+                    accessibilityLabel={t("options", { ns: "common", defaultValue: "Options" })}
+                    hitSlop={10}
+                  >
+                    <View style={styles(theme).menuDot} />
+                    <View style={styles(theme).menuDot} />
+                    <View style={styles(theme).menuDot} />
+                  </Pressable>
+                  {imageMenuOpen && (
+                    <View
+                      style={styles(theme).menuDropdown}
+                    >
+                      <Pressable
+                        onPress={() => {
+                          setImageMenuOpen(false);
+                          // Go directly to camera to change the photo
+                          handleAddPhoto();
+                        }}
+                        style={styles(theme).menuItem}
+                      >
+                        <Text style={styles(theme).menuItemText}>
+                          {t("change_photo", { ns: "meals" })}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={handleRemovePhoto}
+                        style={styles(theme).menuItem}
+                      >
+                        <Text style={styles(theme).menuItemText}>
+                          {t("remove_photo", { ns: "meals", defaultValue: "Remove photo" })}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              )}
+            </>
           ) : (
             <Pressable
               onPress={handleAddPhoto}
@@ -272,14 +316,7 @@ export default function ReviewIngredientsScreen() {
             </Pressable>
           )}
         </View>
-        {image && !imageError ? (
-          <SecondaryButton
-            label={t("remove_photo", { ns: "meals", defaultValue: "Remove photo" })}
-            onPress={handleRemovePhoto}
-            disabled={editingIdx !== null}
-            style={styles(theme).removePhotoBtn}
-          />
-        ) : null}
+        {/* Remove separate button; now available in the image menu */}
 
         {localDraft && (
           <IngredientBox
@@ -343,7 +380,7 @@ export default function ReviewIngredientsScreen() {
           visible={showConfirmModal}
           title={t("start_over_title", { ns: "meals" })}
           message={t("start_over_message", { ns: "meals" })}
-          primaryActionLabel={t("quit", { ns: "common" })}
+          primaryActionLabel={t("start_over", { ns: "meals" })}
           onPrimaryAction={handleStartOver}
           secondaryActionLabel={t("continue", { ns: "common" })}
           onSecondaryAction={() => setShowConfirmModal(false)}
@@ -361,7 +398,7 @@ export default function ReviewIngredientsScreen() {
             defaultValue:
               "You have unsaved edits. Do you really want to leave?",
           })}
-          primaryActionLabel={t("quit", { ns: "common" })}
+          primaryActionLabel={t("discard", { ns: "meals", defaultValue: "Discard" })}
           onPrimaryAction={confirmExit}
           secondaryActionLabel={t("continue", { ns: "common" })}
           onSecondaryAction={() => setShowExitModal(false)}
@@ -392,6 +429,55 @@ const styles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: theme.rounded.lg,
       backgroundColor: "#B2C0C9",
     },
+    menuButtonContainer: {
+      position: "absolute",
+      top: 8,
+      right: 8,
+      zIndex: 5,
+      alignItems: "flex-end",
+    },
+    menuToggle: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: theme.overlay,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 2,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    menuDot: {
+      width: 3,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: theme.text,
+      opacity: 0.9,
+    },
+    menuDropdown: {
+      position: "absolute",
+      top: 36,
+      right: 0,
+      backgroundColor: theme.card,
+      borderColor: theme.border,
+      borderWidth: 1,
+      borderRadius: 10,
+      paddingVertical: 6,
+      minWidth: 180,
+      shadowColor: "#000",
+      shadowOpacity: 0.2,
+      shadowOffset: { width: 0, height: 2 },
+      shadowRadius: 6,
+      elevation: 4,
+    },
+    menuItem: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+    },
+    menuItemText: {
+      color: theme.text,
+      fontWeight: "600",
+    },
     placeholder: {
       width: "100%",
       height: IMAGE_SIZE,
@@ -415,11 +501,6 @@ const styles = (theme: ReturnType<typeof useTheme>) =>
     continueBtn: {
       marginTop: 2,
       marginBottom: theme.spacing.sm,
-      width: "100%",
-    },
-    removePhotoBtn: {
-      marginTop: 4,
-      marginBottom: theme.spacing.md,
       width: "100%",
     },
     startOverBtn: { marginTop: 0, width: "100%" },

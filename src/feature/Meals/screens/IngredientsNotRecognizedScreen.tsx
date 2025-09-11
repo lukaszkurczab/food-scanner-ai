@@ -74,7 +74,7 @@ export default function IngredientsNotRecognizedScreen() {
           />
         )}
         <SecondaryButton
-          label={t("select_method", "Select other method")}
+          label={t("select_method", "Back to method selection")}
           onPress={handleOtherMethod}
           style={{ marginTop: 12 }}
         />

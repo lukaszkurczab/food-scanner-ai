@@ -1,11 +1,9 @@
-import OpenAI from "openai";
 import Constants from "expo-constants";
 import type { Ingredient } from "@/types";
 import { v4 as uuidv4 } from "uuid";
-import { canUseAiToday, consumeAiUse } from "./userService";
 
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
-const client = new OpenAI({ apiKey: OPENAI_API_KEY });
+const TIMEOUT_MS = 30000;
 
 const toNumber = (v: unknown): number => {
   if (typeof v === "number") return isFinite(v) ? v : 0;
@@ -37,18 +35,11 @@ function extractJsonArray(raw: string): string | null {
 }
 
 export async function extractIngredientsFromText(
-  uid: string,
+  _uid: string,
   description: string,
   opts?: { isPremium?: boolean; limit?: number; lang?: string }
 ): Promise<Ingredient[] | null> {
-  const isPremium = !!opts?.isPremium;
-  const limit = opts?.limit ?? 1;
   const lang = (opts?.lang || "en").toString();
-
-  if (!isPremium) {
-    const allowed = await canUseAiToday(uid, isPremium, limit);
-    if (!allowed) throw new Error("ai/daily-limit-reached");
-  }
 
   const prompt =
     `From the user's meal description, return ONLY a JSON array of ingredients with grams and macros.\n` +
@@ -57,7 +48,7 @@ export async function extractIngredientsFromText(
     `Ingredient "name" values MUST be in the user's language: ${lang}. Keep JSON keys (name, amount, protein, fat, carbs, kcal) in English.\n` +
     `User description: """${description.trim()}"""`;
 
-  const res = await client.chat.completions.create({
+  const payload = {
     model: "gpt-4o-mini",
     temperature: 0,
     max_tokens: 500,
@@ -65,27 +56,44 @@ export async function extractIngredientsFromText(
       { role: "system", content: "You extract structured nutrition data." },
       { role: "user", content: prompt },
     ],
-  });
+  } as const;
 
-  const raw = res.choices[0]?.message?.content || "";
-  const arr = extractJsonArray(raw);
-  if (!arr) return null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-  let parsed: any;
   try {
-    parsed = JSON.parse(arr);
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const json = await resp.json();
+    const raw: string = json?.choices?.[0]?.message?.content || "";
+    const arr = extractJsonArray(raw);
+    if (!arr) return null;
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(arr);
+    } catch {
+      const cleaned = arr
+        .replace(/,\s*]/g, "]")
+        .replace(/,\s*}/g, "}")
+        .replace(/\bNaN\b/gi, "0");
+      parsed = JSON.parse(cleaned);
+    }
+    if (!Array.isArray(parsed)) return null;
+
+    const normalized = parsed.map(normalize).filter((x): x is Ingredient => !!x);
+    return normalized;
   } catch {
-    const cleaned = arr
-      .replace(/,\s*]/g, "]")
-      .replace(/,\s*}/g, "}")
-      .replace(/\bNaN\b/gi, "0");
-    parsed = JSON.parse(cleaned);
+    clearTimeout(timeout);
+    return null;
   }
-  if (!Array.isArray(parsed)) return null;
-
-  const normalized = parsed.map(normalize).filter((x): x is Ingredient => !!x);
-
-  if (!isPremium) await consumeAiUse(uid, isPremium, limit);
-
-  return normalized;
 }
