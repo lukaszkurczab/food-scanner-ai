@@ -275,11 +275,8 @@ export default function MealTextAIScreen() {
             </View>
             <View style={{ gap: theme.spacing.sm, marginTop: "auto" }}>
               <PrimaryButton
-                label={
-                  loading
-                    ? t("loading", { ns: "common" })
-                    : t("analyze", { ns: "meals", defaultValue: "Analyze" })
-                }
+                label={t("analyze", { ns: "meals", defaultValue: "Analyze" })}
+                loading={loading}
                 onPress={onAnalyze}
                 disabled={
                   loading ||
@@ -292,7 +289,7 @@ export default function MealTextAIScreen() {
               <SecondaryButton
                 label={t("select_method", {
                   ns: "meals",
-                  defaultValue: "Select other method",
+                  defaultValue: "Back to method selection",
                 })}
                 onPress={() => navigation.navigate("MealAddMethod")}
               />
