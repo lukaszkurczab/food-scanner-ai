@@ -2,6 +2,7 @@ import type { RecognizeTextResult, RecognizedLine } from "@/services/mlkitTextSe
 import type { Ingredient } from "@/types";
 
 type Basis = "100g" | "serving" | "unknown";
+type Unit = "g" | "ml";
 type ColumnBias = "left" | "right";
 
 const SYN = {
@@ -120,13 +121,20 @@ function numberTokens(text: string): { value: number; unit: "kcal" | "kj" | "g" 
   return out;
 }
 
-function detectBasisAndBias(lines: RecognizedLine[]): { basis: Basis; bias: ColumnBias } {
+function detectBasisAndBias(lines: RecognizedLine[]): { basis: Basis; bias: ColumnBias; unit: Unit } {
   let basis: Basis = "unknown";
   let bias: ColumnBias = "left";
+  let unit: Unit = "g";
   const withIdx = lines.map((l, i) => ({ i, t: l.text, n: norm(l.text) }));
   const headerCandidates = withIdx.filter(
     ({ n }) => fuzzyIncludes(n, SYN.per100) || fuzzyIncludes(n, SYN.serving)
   );
+
+  const inferUnit = (text: string) => {
+    const n = norm(text);
+    if (/\b100\s*ml\b/.test(n) || /\b100ml\b/.test(n) || /\bml\b/.test(n)) return "ml" as Unit;
+    return "g" as Unit;
+  };
 
   if (headerCandidates.length > 0) {
     // Prefer a line that mentions both per100 and serving
@@ -149,6 +157,7 @@ function detectBasisAndBias(lines: RecognizedLine[]): { basis: Basis; bias: Colu
     if (pIdx >= 0 && sIdx >= 0) basis = "100g"; // prefer per 100 g
     // Column bias from order
     if (pIdx >= 0 && sIdx >= 0) bias = pIdx < sIdx ? "left" : "right";
+    unit = inferUnit(header.t);
   } else {
     // Fallback textual only
     const has100 = withIdx.some(({ n }) => includesAny(n, SYN.per100));
@@ -156,8 +165,11 @@ function detectBasisAndBias(lines: RecognizedLine[]): { basis: Basis; bias: Colu
     if (has100 && !hasServing) basis = "100g";
     else if (!has100 && hasServing) basis = "serving";
     else if (has100 && hasServing) basis = "100g";
+    // Try to infer unit from any line mentioning 100
+    const anyPer = withIdx.find(({ n }) => includesAny(n, SYN.per100));
+    if (anyPer) unit = inferUnit(anyPer.t);
   }
-  return { basis, bias };
+  return { basis, bias, unit };
 }
 
 function pickMacroFromLine(line: string, preferPer100: boolean, bias: ColumnBias): number | null {
@@ -197,6 +209,7 @@ function pickKcalFromLine(line: string, bias: ColumnBias): number | null {
 
 export type ParsedNutrition = {
   basis: Basis;
+  unit: Unit;
   protein: number;
   fat: number;
   carbs: number;
@@ -207,7 +220,7 @@ export function parseNutritionFromLines(lines: RecognizedLine[]): ParsedNutritio
   if (!lines || lines.length === 0) return null;
   // Sort lines by vertical position to approximate reading order
   const sorted = [...lines].sort((a, b) => a.bbox.y - b.bbox.y);
-  const { basis, bias } = detectBasisAndBias(sorted);
+  const { basis, bias, unit } = detectBasisAndBias(sorted);
   const preferPer100 = basis === "100g";
 
   let protein: number | null = null;
@@ -248,7 +261,7 @@ export function parseNutritionFromLines(lines: RecognizedLine[]): ParsedNutritio
 
   if (p === 0 && f === 0 && c === 0 && k === 0) return null;
 
-  return { basis, protein: p, fat: f, carbs: c, kcal: k };
+  return { basis, unit, protein: p, fat: f, carbs: c, kcal: k };
 }
 
 export function toIngredient(parsed: ParsedNutrition): Ingredient {
@@ -256,6 +269,7 @@ export function toIngredient(parsed: ParsedNutrition): Ingredient {
     id: `${Date.now()}`,
     name: "Nutrition",
     amount: 100,
+    unit: parsed.unit,
     protein: parsed.protein,
     fat: parsed.fat,
     carbs: parsed.carbs,

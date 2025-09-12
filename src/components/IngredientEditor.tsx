@@ -33,6 +33,7 @@ export const IngredientEditor: React.FC<Props> = ({
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const navigation = useNavigation<any>();
+  const unitLabel = (initial?.unit as any) === "ml" ? "ml" : "g";
 
   const [name, setName] = useState(initial.name ?? "");
   const [amount, setAmount] = useState(String(initial.amount ?? 0));
@@ -60,6 +61,7 @@ export const IngredientEditor: React.FC<Props> = ({
       id: initial.id,
       name: name.trim(),
       amount: parseNum(amount) || 0,
+      unit: initial.unit,
       protein: parseNum(protein) || 0,
       carbs: parseNum(carbs) || 0,
       fat: parseNum(fat) || 0,
@@ -174,7 +176,7 @@ export const IngredientEditor: React.FC<Props> = ({
       ) : null}
 
       <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-        {t("amount", { ns: "meals" })}
+        {String(t("amount", { ns: "meals" })).replace("[g]", `[${unitLabel}]`)}
       </Text>
       <TextInput
         style={[

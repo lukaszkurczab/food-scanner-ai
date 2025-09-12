@@ -109,7 +109,8 @@ export const IngredientBox: React.FC<Props> = ({
               fontSize: theme.typography.size.md,
             }}
           >
-            {ingredient.amount}g
+            {ingredient.amount}
+            {ingredient.unit ? ingredient.unit : "g"}
           </Text>
           {editable && (
             <Pressable ref={menuAnchor} onPress={openMenu} style={styles.icon}>

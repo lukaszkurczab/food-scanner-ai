@@ -1,10 +1,15 @@
 import type { Ingredient } from "@/types";
+import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 
 type OFFProduct = {
   product?: {
     product_name?: string;
     nutriments?: Record<string, any>;
     brands?: string;
+    quantity?: string;
+    serving_size?: string;
+    categories_tags?: string[];
+    nutrition_data_per?: string;
   };
   status?: number;
 };
@@ -26,16 +31,25 @@ export async function fetchProductByBarcode(barcode: string): Promise<{ name: st
     const json = (await res.json()) as OFFProduct;
     if (!json || json.status !== 1 || !json.product) return null;
     const p = json.product;
-    const name = (p.product_name || "") as string;
+    const name = decodeHtmlEntities((p.product_name || "") as string).trim();
     const n = p.nutriments || {};
     const kcal = toNumber(n["energy-kcal_100g"] ?? n["energy-kcal"] ?? n["energy_100g"] ?? n["energy"]);
     const protein = toNumber(n["proteins_100g"] ?? n["proteins"]);
     const carbs = toNumber(n["carbohydrates_100g"] ?? n["carbohydrates"]);
     const fat = toNumber(n["fat_100g"] ?? n["fat"]);
+    // Heuristic: determine unit for 100 based on product hints
+    const q = String(p.quantity || "").toLowerCase();
+    const srv = String(p.serving_size || "").toLowerCase();
+    const tags: string[] = Array.isArray(p.categories_tags) ? p.categories_tags : [];
+    const dataPer = String(p.nutrition_data_per || "").toLowerCase();
+    const isBeverage = tags.some((t) => /beverage|drink|napoje|napój/i.test(String(t))) ||
+      q.includes("ml") || srv.includes("ml");
+    const unit: "g" | "ml" = isBeverage || dataPer.includes("100ml") ? "ml" : "g";
     const ingredient: Ingredient = {
       id: `${Date.now()}`,
       name: name || `Product ${barcode}`,
       amount: 100,
+      unit,
       protein,
       fat,
       carbs,
