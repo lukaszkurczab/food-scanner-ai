@@ -54,9 +54,9 @@ export function useMeals(userUid: string | null) {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const items = snap.docs
-          .map((d: any) => ({ ...(d.data() as Meal), cloudId: d.id }))
-          .filter((m: any) => !m.deleted);
+        const items: Meal[] = snap.docs
+          .map((d: any) => ({ ...(d.data() as Meal), cloudId: d.id } as Meal))
+          .filter((m: Meal) => !m.deleted);
         setMeals(items);
         setLoading(false);
         // Persist last 7 days for offline history/stats
@@ -64,7 +64,7 @@ export function useMeals(userUid: string | null) {
           const now = new Date();
           const cutoff = new Date(now);
           cutoff.setDate(now.getDate() - 7);
-          const last7d = items.filter((m) => {
+          const last7d = items.filter((m: Meal) => {
             const ts = new Date((m as any).timestamp || (m as any).createdAt);
             return ts >= cutoff;
           });

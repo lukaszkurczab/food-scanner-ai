@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { View, StyleSheet, Text, Pressable } from "react-native";
+import { View, StyleSheet, Text, Pressable, ViewStyle } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useTheme } from "@/theme/useTheme";
 import { Layout } from "@/components";
@@ -24,7 +24,7 @@ export default function BarCodeCameraScreen({ navigation }: any) {
   if (!permission.granted) {
     return (
       <Layout>
-        <View style={styles.center(theme)}>
+        <View style={getCenterStyle(theme)}>
           <Text style={{ color: theme.text, fontSize: 18, marginBottom: 16 }}>
             {t("camera_permission_message")}
           </Text>
@@ -71,5 +71,11 @@ export default function BarCodeCameraScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   overlay: { position: "absolute", inset: 0 },
-  center: (theme: any) => ({ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.background }),
+});
+
+const getCenterStyle = (theme: any): ViewStyle => ({
+  flex: 1,
+  justifyContent: "center" as const,
+  alignItems: "center" as const,
+  backgroundColor: theme.background,
 });

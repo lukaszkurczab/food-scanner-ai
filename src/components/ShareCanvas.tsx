@@ -15,7 +15,7 @@ import { Modal } from "@/components/Modal";
 import { TextInput as StyledInput } from "@/components/TextInput";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-type ElementId = "title" | "kcal" | "pie";
+type ElementId = "title" | "kcal" | "pie" | "custom";
 
 type DraggableItemProps = {
   id: ElementId;

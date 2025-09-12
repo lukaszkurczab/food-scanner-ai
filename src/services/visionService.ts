@@ -29,7 +29,8 @@ const normalize = (x: any): Ingredient | null => {
   const carbs = toNumber(x.carbs);
   const kcal = toNumber(x.kcal) || protein * 4 + carbs * 4 + fat * 9;
   if (!isFinite(amount) || amount <= 0) return null;
-  return { id: uuidv4(), name: x.name.trim(), amount, protein, fat, carbs, kcal };
+  const unit = typeof x.unit === "string" && String(x.unit).toLowerCase() === "ml" ? ("ml" as const) : undefined;
+  return { id: uuidv4(), name: x.name.trim(), amount, unit, protein, fat, carbs, kcal };
 };
 
 function extractJsonArray(raw: string): string | null {
