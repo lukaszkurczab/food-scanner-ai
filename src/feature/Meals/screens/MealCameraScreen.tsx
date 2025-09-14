@@ -177,7 +177,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
 
       if (!skipDetection) {
         const ingredients = uid
-          ? await detectIngredientsWithVision(uid, finalUri)
+          ? await detectIngredientsWithVision(uid, finalUri, { isPremium: !!isPremium })
           : null;
         if (ingredients && ingredients.length > 0) {
           updateMeal({ ingredients, mealId, photoUrl: finalUri });
