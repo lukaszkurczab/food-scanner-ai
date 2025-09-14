@@ -3,7 +3,7 @@ import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
 import Constants from "expo-constants";
 import type { Ingredient } from "@/types";
 import { v4 as uuidv4 } from "uuid";
-import { canUseAiToday, consumeAiUse } from "./userService";
+import { canUseAiTodayFor, consumeAiUseFor } from "./userService";
 
 const IS_DEV = typeof __DEV__ !== "undefined" && __DEV__;
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
@@ -54,16 +54,14 @@ export async function detectIngredientsWithVision(
   const isPremium = !!opts?.isPremium;
   const limit = opts?.limit ?? 1;
 
+  // Free users are not allowed to use vision at all
   if (!isPremium) {
-    const allowed = await canUseAiToday(userUid, isPremium, limit);
-    if (!allowed) {
-      throw new Error("ai/daily-limit-reached");
-    }
+    throw new Error("ai/premium-required");
   }
 
   const FORCE_REAL = true;
   if (IS_DEV && !FORCE_REAL) {
-    if (!isPremium) await consumeAiUse(userUid, isPremium, limit);
+    if (!isPremium) await consumeAiUseFor(userUid, isPremium, "camera", limit);
     return [
       {
         id: uuidv4(),
@@ -178,7 +176,7 @@ export async function detectIngredientsWithVision(
         .map(normalize)
         .filter((x): x is Ingredient => !!x);
 
-      if (!isPremium) await consumeAiUse(userUid, isPremium, limit);
+      if (!isPremium) await consumeAiUseFor(userUid, isPremium, "camera", limit);
 
       return normalized;
     } catch (error) {

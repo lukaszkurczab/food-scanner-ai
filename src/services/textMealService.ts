@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import type { Ingredient } from "@/types";
+import { canUseAiTodayFor, consumeAiUseFor } from "@/services/userService";
 import { v4 as uuidv4 } from "uuid";
 
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
@@ -40,6 +41,14 @@ export async function extractIngredientsFromText(
   opts?: { isPremium?: boolean; limit?: number; lang?: string }
 ): Promise<Ingredient[] | null> {
   const lang = (opts?.lang || "en").toString();
+  const isPremium = !!opts?.isPremium;
+  const limit = opts?.limit ?? 1;
+
+  // Enforce daily limit for free users (text feature only)
+  if (!isPremium && _uid) {
+    const allowed = await canUseAiTodayFor(_uid, isPremium, "text", limit);
+    if (!allowed) return null;
+  }
 
   const prompt =
     `From the user's meal description, return ONLY a JSON array of ingredients with grams and macros.\n` +
@@ -91,6 +100,9 @@ export async function extractIngredientsFromText(
     if (!Array.isArray(parsed)) return null;
 
     const normalized = parsed.map(normalize).filter((x): x is Ingredient => !!x);
+    if (!isPremium && _uid) {
+      await consumeAiUseFor(_uid, isPremium, "text", limit);
+    }
     return normalized;
   } catch {
     clearTimeout(timeout);
