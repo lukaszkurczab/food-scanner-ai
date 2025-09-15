@@ -1,0 +1,10 @@
+{
+  "protein": ["protein"],
+  "fat_total": ["fat", "total fat"],
+  "fat_sub": ["saturated", "saturates"],
+  "carbs_total": ["carbohydrates", "carbs"],
+  "carbs_sub": ["sugars"],
+  "energy": ["kcal", "calories", "energy", "kj"],
+  "per100": ["per 100", "100 g", "100 ml"],
+  "serving": ["serving", "portion"]
+}
