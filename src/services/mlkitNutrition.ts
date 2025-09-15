@@ -1,5 +1,5 @@
-// src/services/mlkitNutrition.ts
 import { debugScope } from "@/utils/debug";
+import { getLexicon } from "@/services/nutritionLexicon";
 import type {
   RecognizeTextResult,
   RecognizedLine,
@@ -12,85 +12,7 @@ type Basis = "100g" | "serving" | "unknown";
 type Unit = "g" | "ml";
 type ColumnBias = "left" | "right";
 
-const SYN = {
-  protein: [
-    "protein",
-    "proteina",
-    "proteine",
-    "proteines",
-    "proteinas",
-    "bialko",
-    "białko",
-    "eiweiss",
-    "eiweiß",
-    "proteínas",
-  ],
-  fat: [
-    "fat",
-    "total fat",
-    "grassi",
-    "gras",
-    "lipides",
-    "tluszcz",
-    "tłuszcz",
-    "matiere grasse",
-    "matieres grasses",
-    "fett",
-    "grasa",
-    "grasas",
-  ],
-  carbs: [
-    "carb",
-    "carbs",
-    "carbo",
-    "carbohydrates",
-    "carboidrati",
-    "glucid",
-    "glucides",
-    "weglow",
-    "weglowodany",
-    "węglow",
-    "węglowodany",
-    "kohlenhydrate",
-    "hidratos",
-    "sugars",
-    "cukry",
-  ],
-  kcal: [
-    "kcal",
-    "calorie",
-    "calories",
-    "energy",
-    "energia",
-    "energie",
-    "energi",
-    "cal",
-    "calorias",
-    "calorías",
-    "kJ",
-  ],
-  per100: [
-    "per 100",
-    "per100",
-    "100 g",
-    "100g",
-    "100 ml",
-    "100ml",
-    "na 100",
-    "pour 100",
-    "per 100 g",
-    "per 100 ml",
-  ],
-  serving: [
-    "serving",
-    "porcja",
-    "porcje",
-    "porzione",
-    "portion",
-    "par portion",
-    "per portion",
-  ],
-};
+const LEX = getLexicon();
 
 function stripDiacritics(s: string): string {
   const n = s.normalize("NFD").replace(/\p{Diacritic}/gu, "");
@@ -101,25 +23,23 @@ function stripDiacritics(s: string): string {
     .replace(/œ/gi, "oe");
 }
 function norm(s: string): string {
-  return stripDiacritics(s).toLowerCase();
+  return stripDiacritics(String(s)).toLowerCase();
 }
 function includesAny(hay: string, arr: string[]): boolean {
   const n = norm(hay);
   return arr.some((k) => n.includes(norm(k)));
 }
-function fuzzyIncludes(hay: string, arr: string[], minPrefix = 4): boolean {
+function fuzzyIncludes(hay: string, arr: string[], minPrefix = 3): boolean {
   const n = norm(hay).replace(/[^a-z0-9\s]/g, " ");
   if (includesAny(n, arr)) return true;
   const tokens = n.split(/\s+/).filter(Boolean);
   for (const key of arr) {
     const k = norm(key).replace(/[^a-z0-9]/g, "");
-    const pref = k.slice(0, Math.max(minPrefix, Math.min(5, k.length)));
+    const pref = k.slice(0, Math.max(minPrefix, Math.min(6, k.length)));
     if (!pref) continue;
     if (n.includes(pref)) return true;
-    for (const t of tokens) {
-      if (t.length >= pref.length && (t.startsWith(pref) || pref.startsWith(t)))
-        return true;
-    }
+    for (const t of tokens)
+      if (t.startsWith(pref) || pref.startsWith(t)) return true;
   }
   return false;
 }
@@ -129,7 +49,7 @@ function numberTokens(
 ): { value: number; unit: "kcal" | "kj" | "g" | null }[] {
   const out: { value: number; unit: "kcal" | "kj" | "g" | null }[] = [];
   const ntext = norm(text);
-  const regex = /(-?\d+[\s.,]?\d*)\s*(kcal|kj|g)?/g;
+  const regex = /(-?\d+(?:[\s.,]\d+)?)\s*(kcal|kj|g)?/g;
   let m: RegExpExecArray | null;
   while ((m = regex.exec(ntext)) !== null) {
     const raw = m[1]?.replace(/\s+/g, "").replace(",", ".");
@@ -151,7 +71,7 @@ function detectBasisAndBias(lines: RecognizedLine[]): {
   let unit: Unit = "g";
   const withIdx = lines.map((l, i) => ({ i, t: l.text, n: norm(l.text) }));
   const headerCandidates = withIdx.filter(
-    ({ n }) => fuzzyIncludes(n, SYN.per100) || fuzzyIncludes(n, SYN.serving)
+    ({ n }) => fuzzyIncludes(n, LEX.per100) || fuzzyIncludes(n, LEX.serving)
   );
   const inferUnit = (text: string) =>
     /\b100\s*ml\b/.test(norm(text)) ||
@@ -163,17 +83,17 @@ function detectBasisAndBias(lines: RecognizedLine[]): {
   if (headerCandidates.length > 0) {
     headerCandidates.sort((a, b) => a.i - b.i);
     const both = headerCandidates.find(
-      ({ n }) => fuzzyIncludes(n, SYN.per100) && fuzzyIncludes(n, SYN.serving)
+      ({ n }) => fuzzyIncludes(n, LEX.per100) && fuzzyIncludes(n, LEX.serving)
     );
     const header = both ?? headerCandidates[0];
     const n = header.n;
     const pIdx =
-      SYN.per100
+      LEX.per100
         .map((k) => n.indexOf(norm(k)))
         .filter((x) => x >= 0)
         .sort((a, b) => a - b)[0] ?? -1;
     const sIdx =
-      SYN.serving
+      LEX.serving
         .map((k) => n.indexOf(norm(k)))
         .filter((x) => x >= 0)
         .sort((a, b) => a - b)[0] ?? -1;
@@ -183,12 +103,12 @@ function detectBasisAndBias(lines: RecognizedLine[]): {
     if (pIdx >= 0 && sIdx >= 0) bias = pIdx < sIdx ? "left" : "right";
     unit = inferUnit(header.t);
   } else {
-    const has100 = withIdx.some(({ n }) => includesAny(n, SYN.per100));
-    const hasServing = withIdx.some(({ n }) => includesAny(n, SYN.serving));
+    const has100 = withIdx.some(({ n }) => includesAny(n, LEX.per100));
+    const hasServing = withIdx.some(({ n }) => includesAny(n, LEX.serving));
     if (has100 && !hasServing) basis = "100g";
     else if (!has100 && hasServing) basis = "serving";
     else if (has100 && hasServing) basis = "100g";
-    const anyPer = withIdx.find(({ n }) => includesAny(n, SYN.per100));
+    const anyPer = withIdx.find(({ n }) => includesAny(n, LEX.per100));
     if (anyPer) unit = inferUnit(anyPer.t);
   }
   log.log("basis:", basis, "bias:", bias, "unit:", unit);
@@ -261,6 +181,33 @@ function findValuesNear(
   return null;
 }
 
+const isFatSub = (t: string) =>
+  includesAny(t, LEX.fat_sub) || fuzzyIncludes(t, LEX.fat_sub);
+const isCarbSub = (t: string) =>
+  includesAny(t, LEX.carbs_sub) || fuzzyIncludes(t, LEX.carbs_sub);
+
+function pickInlineValue(
+  fullText: string,
+  keys: string[],
+  want: "g" | "kcal"
+): number | null {
+  const src = norm(fullText);
+  const union = keys
+    .map((k) => norm(k).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  const unitRe = want === "g" ? "(?:\\s*g)?" : "\\s*kcal";
+  const re = new RegExp(
+    `(?:^|\\b)(${union})[^\\n\\r\\d]{0,20}(-?\\d+(?:[\\s.,]\\d+)?)${unitRe}`,
+    "i"
+  );
+  const m = re.exec(src);
+  if (!m) return null;
+  const val = parseFloat(m[2].replace(/\s+/g, "").replace(",", "."));
+  if (!Number.isFinite(val)) return null;
+  if (want === "g" && !saneGram(val)) return null;
+  return val;
+}
+
 export type ParsedNutrition = {
   basis: Basis;
   unit: Unit;
@@ -287,42 +234,49 @@ export function parseNutritionFromLines(
     const t = sorted[i].text;
     const n = norm(t);
 
-    if (
-      protein == null &&
-      (includesAny(n, SYN.protein) || fuzzyIncludes(n, SYN.protein))
-    ) {
+    if (protein == null && fuzzyIncludes(n, LEX.protein)) {
       const src =
         pickMacroFromText(t, preferPer100, bias) ??
         pickMacroFromText(findValuesNear(sorted, i) ?? "", preferPer100, bias);
       if (src != null) protein = src;
       continue;
     }
-    if (fat == null && (includesAny(n, SYN.fat) || fuzzyIncludes(n, SYN.fat))) {
+    if (fat == null && fuzzyIncludes(n, LEX.fat_total)) {
+      if (isFatSub(n)) continue;
       const src =
         pickMacroFromText(t, preferPer100, bias) ??
         pickMacroFromText(findValuesNear(sorted, i) ?? "", preferPer100, bias);
       if (src != null) fat = src;
       continue;
     }
-    if (
-      carbs == null &&
-      (includesAny(n, SYN.carbs) || fuzzyIncludes(n, SYN.carbs))
-    ) {
+    if (carbs == null && fuzzyIncludes(n, LEX.carbs_total)) {
+      if (isCarbSub(n)) continue;
       const src =
         pickMacroFromText(t, preferPer100, bias) ??
         pickMacroFromText(findValuesNear(sorted, i) ?? "", preferPer100, bias);
       if (src != null) carbs = src;
       continue;
     }
-    if (
-      kcal == null &&
-      (includesAny(n, SYN.kcal) || fuzzyIncludes(n, SYN.kcal))
-    ) {
+    if (kcal == null && fuzzyIncludes(n, LEX.energy)) {
       const srcText = t || findValuesNear(sorted, i) || "";
       const k = pickKcalFromText(srcText, bias);
       if (k != null) kcal = k;
       continue;
     }
+  }
+
+  if (protein == null || fat == null || carbs == null || kcal == null) {
+    const full = sorted.map((l) => l.text).join("\n");
+    if (protein == null) protein = pickInlineValue(full, LEX.protein, "g");
+    if (fat == null) {
+      const val = pickInlineValue(full, LEX.fat_total, "g");
+      if (val != null) fat = val;
+    }
+    if (carbs == null) {
+      const val = pickInlineValue(full, LEX.carbs_total, "g");
+      if (val != null) carbs = val;
+    }
+    if (kcal == null) kcal = pickInlineValue(full, LEX.energy, "kcal");
   }
 
   const p = Number(protein ?? 0) || 0;
@@ -333,7 +287,6 @@ export function parseNutritionFromLines(
   if (!k && (p || f || c)) k = Math.round(p * 4 + c * 4 + f * 9);
 
   log.log("parsed:", { basis, unit, p, f, c, k });
-
   if (p === 0 && f === 0 && c === 0 && k === 0) return null;
   return { basis, unit, protein: p, fat: f, carbs: c, kcal: k };
 }
