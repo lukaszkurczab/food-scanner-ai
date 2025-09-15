@@ -9,37 +9,39 @@ import { useTranslation } from "react-i18next";
 import { detectIngredientsWithVision } from "@/services/visionService";
 import { extractNutritionFromTable } from "@/services/nutritionTableService";
 import { extractNutritionFromTableLocal } from "@/services/localNutritionTable";
-import { fetchProductByBarcode, extractBarcodeFromPayload } from "@/services/barcodeService";
+import {
+  fetchProductByBarcode,
+  extractBarcodeFromPayload,
+} from "@/services/barcodeService";
 import { useRoute } from "@react-navigation/native";
 import { useAuthContext } from "@/context/AuthContext";
 import { Layout, PhotoPreview } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Alert as AppAlert } from "@/components/Alert";
+import { getSampleMealUri, getSampleTableUri } from "@/utils/devSamples";
+import { debugScope } from "@/utils/debug";
+
+const log = debugScope("Screen:MealCamera");
 
 export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const theme = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
-
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isTakingPhoto, setIsTakingPhoto] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [premiumModal, setPremiumModal] = useState(false);
   const [barcodeModal, setBarcodeModal] = useState(false);
-
   const { meal, setMeal, updateMeal, setLastScreen } = useMealDraftContext();
   const { t } = useTranslation("common");
   const { uid } = useAuthContext();
   const { isPremium } = usePremiumContext();
-
   const route = useRoute<any>();
   const routeId = route.params?.id as string | undefined;
   const skipDetection = !!route.params?.skipDetection;
-
   const mealId = meal?.mealId || routeId || uuidv4();
-
   const canLeaveRef = useRef(false);
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [mode, setMode] = useState<"ai" | "table" | "barcode">(
@@ -52,20 +54,16 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
     );
   }, [isPremium]);
 
-  // If coming from ReviewIngredients just to attach a photo, don't show modes/barcode flow
   useEffect(() => {
     if (skipDetection) setMode("ai");
   }, [skipDetection]);
 
-  // Reset scanned code when leaving barcode mode
   useEffect(() => {
     if (mode !== "barcode" && scannedCode) setScannedCode(null);
   }, [mode]);
 
   useEffect(() => {
-    if (uid && setLastScreen) {
-      setLastScreen(uid, "MealCamera");
-    }
+    if (uid && setLastScreen) setLastScreen(uid, "MealCamera");
   }, [setLastScreen, uid]);
 
   useEffect(() => {
@@ -91,7 +89,29 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   }, [navigation, photoUri]);
 
   const handleTakePicture = async () => {
-    // Barcode mode: only when not in simple capture flow
+    log.log("takePicture start", {
+      mode,
+      skipDetection,
+      isPremium,
+      isCameraReady,
+    });
+    if (typeof __DEV__ !== "undefined" && __DEV__) {
+      try {
+        if (mode === "table") {
+          const uri = await getSampleTableUri();
+          log.log("DEV sample table uri", uri);
+          setPhotoUri(uri);
+          return;
+        } else if (mode === "ai") {
+          const uri = await getSampleMealUri();
+          log.log("DEV sample meal uri", uri);
+          setPhotoUri(uri);
+          return;
+        }
+      } catch (e) {
+        log.warn("DEV sample load failed", e);
+      }
+    }
     if (mode === "barcode" && !skipDetection) {
       const code = scannedCode;
       if (!code) {
@@ -134,7 +154,6 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
       navigation.replace("ReviewIngredients");
       return;
     }
-    // AI and Table: capture a photo and proceed (table handled in onAccept)
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
     setIsTakingPhoto(true);
     try {
@@ -151,7 +170,6 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
     const finalUri = optimizedUri || photoUri;
     if (!finalUri) return;
     setIsLoading(true);
-
     try {
       if (!meal) {
         setMeal({
@@ -174,10 +192,11 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
       } else {
         updateMeal({ photoUrl: finalUri, mealId });
       }
-
       if (!skipDetection) {
         const ingredients = uid
-          ? await detectIngredientsWithVision(uid, finalUri, { isPremium: !!isPremium })
+          ? await detectIngredientsWithVision(uid, finalUri, {
+              isPremium: !!isPremium,
+            })
           : null;
         if (ingredients && ingredients.length > 0) {
           updateMeal({ ingredients, mealId, photoUrl: finalUri });
@@ -200,7 +219,6 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
       });
       return;
     }
-
     setIsLoading(false);
     canLeaveRef.current = true;
     navigation.replace("ReviewIngredients");
@@ -275,9 +293,11 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
         <PhotoPreview
           photoUri={photoUri}
           onRetake={handleRetake}
+          noCrop
           onAccept={async (optimized) => {
             if (mode === "table") {
               const finalUri = optimized || photoUri;
+              log.log("TABLE mode accept", { finalUri });
               setIsLoading(true);
               try {
                 if (!meal) {
@@ -301,23 +321,28 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                 } else {
                   updateMeal({ photoUrl: finalUri, mealId });
                 }
-                const local = await extractNutritionFromTableLocal(finalUri);
-                let ings = local && local.length ? local : null;
-                if ((!ings || ings.length === 0) && isPremium) {
+                let ings = await extractNutritionFromTableLocal(finalUri);
+                log.log("Local OCR result", ings);
+                if ((!ings || !ings.length) && isPremium) {
+                  log.log("Local failed → remote fallback");
                   ings = await extractNutritionFromTable(uid || "", finalUri);
+                  log.log("Remote OCR result", ings);
                 }
-                if (ings && ings.length > 0) {
+                if (ings && ings.length) {
                   updateMeal({ ingredients: ings, mealId, photoUrl: finalUri });
+                  setIsLoading(false);
+                  canLeaveRef.current = true;
+                  navigation.replace("ReviewIngredients");
+                  return;
                 }
-              } catch {
-                // ignore errors in table extraction
+              } catch (e) {
+                log.error("TABLE pipeline error", e);
               }
               setIsLoading(false);
               canLeaveRef.current = true;
               navigation.replace("ReviewIngredients");
               return;
             }
-            // AI mode
             await handleAccept(optimized);
           }}
           isLoading={isLoading}
@@ -341,7 +366,6 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
               if (!data) return;
               const code = extractBarcodeFromPayload(data);
               if (!code) return;
-              // Keep the most recent numeric code; avoid re-renders when unchanged
               setScannedCode((prev) => (prev === code ? prev : code));
             }}
             barcodeScannerSettings={
@@ -360,60 +384,62 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
           <View style={StyleSheet.absoluteFill}>
             <View style={styles.overlay} pointerEvents="none" />
             {!skipDetection && (
-            <View style={styles.modeSwitch}>
-              <Pressable
-                onPress={() => (isPremium ? setMode("ai") : setPremiumModal(true))}
-                style={[
-                  styles.modeBtn,
-                  {
-                    backgroundColor:
-                      mode === "ai" ? theme.accentSecondary : theme.card,
-                    borderColor: theme.border,
-                    opacity: isPremium ? 1 : 0.6,
-                  },
-                ]}
-              >
-                <MaterialIcons
-                  name="psychology"
-                  size={22}
-                  color={mode === "ai" ? theme.onAccent : theme.text}
-                />
-              </Pressable>
-              <Pressable
-                onPress={() => setMode("table")}
-                style={[
-                  styles.modeBtn,
-                  {
-                    backgroundColor:
-                      mode === "table" ? theme.accentSecondary : theme.card,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                <MaterialIcons
-                  name="table-chart"
-                  size={22}
-                  color={mode === "table" ? theme.onAccent : theme.text}
-                />
-              </Pressable>
-              <Pressable
-                onPress={() => setMode("barcode")}
-                style={[
-                  styles.modeBtn,
-                  {
-                    backgroundColor:
-                      mode === "barcode" ? theme.accentSecondary : theme.card,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                <MaterialIcons
-                  name="qr-code-scanner"
-                  size={22}
-                  color={mode === "barcode" ? theme.onAccent : theme.text}
-                />
-              </Pressable>
-            </View>
+              <View style={styles.modeSwitch}>
+                <Pressable
+                  onPress={() =>
+                    isPremium ? setMode("ai") : setPremiumModal(true)
+                  }
+                  style={[
+                    styles.modeBtn,
+                    {
+                      backgroundColor:
+                        mode === "ai" ? theme.accentSecondary : theme.card,
+                      borderColor: theme.border,
+                      opacity: isPremium ? 1 : 0.6,
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="psychology"
+                    size={22}
+                    color={mode === "ai" ? theme.onAccent : theme.text}
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={() => setMode("table")}
+                  style={[
+                    styles.modeBtn,
+                    {
+                      backgroundColor:
+                        mode === "table" ? theme.accentSecondary : theme.card,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="table-chart"
+                    size={22}
+                    color={mode === "table" ? theme.onAccent : theme.text}
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={() => setMode("barcode")}
+                  style={[
+                    styles.modeBtn,
+                    {
+                      backgroundColor:
+                        mode === "barcode" ? theme.accentSecondary : theme.card,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="qr-code-scanner"
+                    size={22}
+                    color={mode === "barcode" ? theme.onAccent : theme.text}
+                  />
+                </Pressable>
+              </View>
             )}
             <View style={styles.shutterWrapper}>
               <Pressable
@@ -425,20 +451,52 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                 disabled={isTakingPhoto}
               />
             </View>
+            {typeof __DEV__ !== "undefined" && __DEV__ && (
+              <View style={styles.devRow}>
+                <Pressable
+                  onPress={async () => {
+                    const uri = await getSampleMealUri();
+                    setMode("ai");
+                    setPhotoUri(uri);
+                  }}
+                  style={[
+                    styles.devBtn,
+                    { backgroundColor: theme.card, borderColor: theme.border },
+                  ]}
+                >
+                  <Text style={{ color: theme.text }}>Sample Meal</Text>
+                </Pressable>
+                <Pressable
+                  onPress={async () => {
+                    const uri = await getSampleTableUri();
+                    setMode("table");
+                    setPhotoUri(uri);
+                  }}
+                  style={[
+                    styles.devBtn,
+                    { backgroundColor: theme.card, borderColor: theme.border },
+                  ]}
+                >
+                  <Text style={{ color: theme.text }}>Sample Table</Text>
+                </Pressable>
+              </View>
+            )}
             {!skipDetection && mode === "barcode" && scannedCode && (
               <View style={styles.detectBadge}>
                 <Text style={{ color: theme.onAccent, fontWeight: "bold" }}>
-                  {t("barcode_detected", { defaultValue: "Detected:" })} {scannedCode}
+                  {t("barcode_detected", { defaultValue: "Detected:" })}{" "}
+                  {scannedCode}
                 </Text>
               </View>
             )}
           </View>
         </View>
       </View>
-      {/* App-styled alerts */}
       <AppAlert
         visible={premiumModal}
-        title={t("premium_required_title", { defaultValue: "Premium required" })}
+        title={t("premium_required_title", {
+          defaultValue: "Premium required",
+        })}
         message={t("premium_required_body", {
           defaultValue: "AI mode requires a Premium subscription.",
         })}
@@ -457,9 +515,12 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
       />
       <AppAlert
         visible={barcodeModal}
-        title={t("barcode_no_code_title", { defaultValue: "No barcode detected" })}
+        title={t("barcode_no_code_title", {
+          defaultValue: "No barcode detected",
+        })}
         message={t("barcode_no_code_msg", {
-          defaultValue: "Place the code in the frame and try again, then press the button.",
+          defaultValue:
+            "Place the code in the frame and try again, then press the button.",
         })}
         onClose={() => setBarcodeModal(false)}
         primaryAction={{
@@ -526,5 +587,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  devRow: {
+    position: "absolute",
+    top: 24,
+    left: 16,
+    right: 16,
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "flex-start",
+  },
+  devBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
   },
 });

@@ -6,7 +6,6 @@ export type Ingredient = {
   id: string;
   name: string;
   amount: number;
-  // Optional unit for amount; defaults to grams ('g') when omitted
   unit?: "g" | "ml";
   kcal: number;
   protein: number;

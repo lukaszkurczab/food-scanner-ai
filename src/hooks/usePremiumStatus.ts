@@ -14,19 +14,35 @@ export function usePremiumStatus() {
   const extra = (Constants.expoConfig?.extra || {}) as Record<string, any>;
   const forcePremium = !!extra.forcePremium;
   const billingDisabled = !!extra.disableBilling || !Device.isDevice;
-  const getDevForce = async () => (await AsyncStorage.getItem(DEV_FORCE_KEY)) === "true";
+  const getDevOverride = async () => {
+    const raw = await AsyncStorage.getItem(DEV_FORCE_KEY);
+    if (raw === "true" || raw === "false") return raw; // explicit override
+    return null; // no override
+  };
 
   const checkPremiumStatus = useCallback(
     async (uid?: string | null) => {
-      const devForce = await getDevForce();
-      if (forcePremium || devForce) {
+      const devOverride = await getDevOverride();
+      if (devOverride === "true") {
+        await AsyncStorage.setItem(keyFor(uid), "true");
+        setIsPremium(true);
+        return true;
+      }
+      if (devOverride === "false") {
+        await AsyncStorage.setItem(keyFor(uid), "false");
+        setIsPremium(false);
+        return false;
+      }
+      if (forcePremium) {
         await AsyncStorage.setItem(keyFor(uid), "true");
         setIsPremium(true);
         return true;
       }
       if (billingDisabled) {
         const cached = await AsyncStorage.getItem(keyFor(uid));
-        const fromCache = cached === "true";
+        // default to false if not set
+        const fromCache = cached === "true" ? true : false;
+        await AsyncStorage.setItem(keyFor(uid), fromCache ? "true" : "false");
         setIsPremium(fromCache);
         return fromCache;
       }

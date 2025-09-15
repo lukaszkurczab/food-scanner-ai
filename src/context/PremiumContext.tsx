@@ -32,6 +32,9 @@ export const PremiumProvider = ({
   const setDevPremium = async (enabled: boolean) => {
     try {
       await AsyncStorage.setItem("dev_force_premium", enabled ? "true" : "false");
+      // Also update cached premium flag for current user to reflect override immediately
+      const key = uid ? `premium_status:${uid}` : "premium_status";
+      await AsyncStorage.setItem(key, enabled ? "true" : "false");
     } catch {}
     await checkPremiumStatus(uid);
   };

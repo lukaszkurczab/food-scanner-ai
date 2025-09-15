@@ -28,6 +28,7 @@ import {
   collection,
   onSnapshot,
 } from "@react-native-firebase/firestore";
+import { getSampleMealUri, getSampleTableUri } from "@/utils/devSamples";
 
 const TASK_NAME = "CALORIAI_NOTIFICATION_GUARD";
 
@@ -114,6 +115,14 @@ function Root() {
       });
     }
     initRevenueCat();
+    // Warm-up dev sample assets
+    if (__DEV__) {
+      (async () => {
+        try {
+          await Promise.all([getSampleMealUri(), getSampleTableUri()]);
+        } catch {}
+      })();
+    }
   }, []);
 
   if (!fontsLoaded) {

@@ -114,6 +114,7 @@ export default function AvatarCameraScreen({
     return (
       <PhotoPreview
         photoUri={photoUri}
+        noCrop
         onRetake={() => {
           if (!isUploading) setPhotoUri(null);
         }}

@@ -48,13 +48,13 @@ export default function LoginScreen({ navigation }: any) {
     touched.email && !validateEmail(email)
       ? t("invalid_email")
       : errors.email
-      ? t(errors.email)
+      ? t(errors.email, { defaultValue: t("invalid_email") })
       : undefined;
   const passwordError =
     touched.password && password.length < 6
       ? t("invalid_password")
       : errors.password
-      ? t(errors.password)
+      ? t(errors.password, { defaultValue: t("invalid_password") })
       : undefined;
 
   const isFormValid = !!email && !!password && !emailError && !passwordError;
@@ -65,11 +65,18 @@ export default function LoginScreen({ navigation }: any) {
     await login(email.trim(), password);
   };
 
-  let displayCriticalError: string | null = null;
-  if (internetError) displayCriticalError = t("common:no_internet");
-  else if (criticalError) displayCriticalError = t(criticalError);
+  const mapCritical = (key: string | null): string | null => {
+    if (!key) return null;
+    if (key === "no_internet") return t("common:no_internet");
+    if (key === "too_many_requests") return t("too_many_requests");
+    if (key === "login_failed") return t("login_failed");
+    return t("login_failed");
+  };
+  const displayCriticalError: string | null = internetError
+    ? t("common:no_internet")
+    : mapCritical(criticalError);
 
-  const isLoginDisabled = !isFormValid || loading || !!displayCriticalError;
+  const isLoginDisabled = !isFormValid || loading || internetError;
 
   return (
     <Layout showNavigation={false}>
@@ -98,7 +105,7 @@ export default function LoginScreen({ navigation }: any) {
           autoComplete="email"
           textContentType="emailAddress"
           error={emailError}
-          editable={!loading && !displayCriticalError}
+          editable={!loading}
           placeholder={t("enter_email")}
           accessibilityLabel={t("email")}
           style={{ marginBottom: theme.spacing.xl }}
@@ -114,7 +121,7 @@ export default function LoginScreen({ navigation }: any) {
           autoComplete="password"
           textContentType="password"
           error={passwordError}
-          editable={!loading && !displayCriticalError}
+          editable={!loading}
           placeholder={t("enter_password")}
           accessibilityLabel={t("password")}
           style={{ marginBottom: theme.spacing.xl }}

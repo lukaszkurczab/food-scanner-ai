@@ -31,11 +31,22 @@ export async function convertToJpegAndResize(
   maxHeight = 512,
   opts?: TargetOpts
 ): Promise<string> {
+  // Ensure we operate on a local file path; copy from other schemes if needed
+  let srcUri = uri;
+  if (!srcUri.startsWith("file://")) {
+    const temp = `${FileSystem.cacheDirectory}res-${Date.now()}.jpg`;
+    try {
+      await FileSystem.copyAsync({ from: srcUri, to: temp });
+      srcUri = temp;
+    } catch {
+      // proceed with original; Image.getSize might still support it
+    }
+  }
   const { width, height } = await new Promise<{
     width: number;
     height: number;
   }>((resolve, reject) => {
-    Image.getSize(uri, (w, h) => resolve({ width: w, height: h }), reject);
+    Image.getSize(srcUri, (w, h) => resolve({ width: w, height: h }), reject);
   });
 
   let newWidth = width;
@@ -49,7 +60,7 @@ export async function convertToJpegAndResize(
   }
 
   const manipulated = await ImageManipulator.manipulateAsync(
-    uri,
+    srcUri,
     [{ resize: { width: newWidth, height: newHeight } }],
     { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
   );

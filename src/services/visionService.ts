@@ -3,7 +3,7 @@ import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
 import Constants from "expo-constants";
 import type { Ingredient } from "@/types";
 import { v4 as uuidv4 } from "uuid";
-import { canUseAiTodayFor, consumeAiUseFor } from "./userService";
+import { consumeAiUseFor } from "./userService";
 
 const IS_DEV = typeof __DEV__ !== "undefined" && __DEV__;
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
@@ -29,8 +29,20 @@ const normalize = (x: any): Ingredient | null => {
   const carbs = toNumber(x.carbs);
   const kcal = toNumber(x.kcal) || protein * 4 + carbs * 4 + fat * 9;
   if (!isFinite(amount) || amount <= 0) return null;
-  const unit = typeof x.unit === "string" && String(x.unit).toLowerCase() === "ml" ? ("ml" as const) : undefined;
-  return { id: uuidv4(), name: x.name.trim(), amount, unit, protein, fat, carbs, kcal };
+  const unit =
+    typeof x.unit === "string" && String(x.unit).toLowerCase() === "ml"
+      ? ("ml" as const)
+      : undefined;
+  return {
+    id: uuidv4(),
+    name: x.name.trim(),
+    amount,
+    unit,
+    protein,
+    fat,
+    carbs,
+    kcal,
+  };
 };
 
 function extractJsonArray(raw: string): string | null {
@@ -54,7 +66,6 @@ export async function detectIngredientsWithVision(
   const isPremium = !!opts?.isPremium;
   const limit = opts?.limit ?? 1;
 
-  // Free users are not allowed to use vision at all
   if (!isPremium) {
     throw new Error("ai/premium-required");
   }
@@ -176,7 +187,8 @@ export async function detectIngredientsWithVision(
         .map(normalize)
         .filter((x): x is Ingredient => !!x);
 
-      if (!isPremium) await consumeAiUseFor(userUid, isPremium, "camera", limit);
+      if (!isPremium)
+        await consumeAiUseFor(userUid, isPremium, "camera", limit);
 
       return normalized;
     } catch (error) {

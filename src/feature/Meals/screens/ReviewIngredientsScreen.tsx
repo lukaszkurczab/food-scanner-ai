@@ -217,6 +217,7 @@ export default function ReviewIngredientsScreen() {
     return (
       <PhotoPreview
         photoUri={image}
+        noCrop
         onRetake={() => setPreviewVisible(false)}
         onAccept={() => {
           setPreviewVisible(false);
