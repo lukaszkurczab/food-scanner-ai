@@ -3,7 +3,8 @@ import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { authLogin } from "@/feature/Auth/services/authService";
 
 type LoginErrors = { email?: string; password?: string };
-type CriticalError = string | null;
+// Critical error keys map to i18n keys (snake_case)
+type CriticalError = "too_many_requests" | "login_failed" | "no_internet" | null;
 
 export const useLogin = (setUser: (u: FirebaseAuthTypes.User) => void) => {
   const [loading, setLoading] = useState(false);
@@ -19,16 +20,16 @@ export const useLogin = (setUser: (u: FirebaseAuthTypes.User) => void) => {
       setUser(user);
     } catch (error: any) {
       if (error.code === "auth/too-many-requests")
-        setCriticalError("tooManyRequests");
+        setCriticalError("too_many_requests");
       else if (
         error.code === "auth/user-not-found" ||
         error.code === "auth/wrong-password" ||
         error.code === "auth/invalid-credential"
       )
-        setErrors({ password: "invalidEmailOrPassword" });
+        setErrors({ password: "invalid_email_or_password" });
       else if (error.code === "auth/network-request-failed")
-        setCriticalError("noInternet");
-      else setCriticalError("loginFailed");
+        setCriticalError("no_internet");
+      else setCriticalError("login_failed");
     } finally {
       setLoading(false);
     }

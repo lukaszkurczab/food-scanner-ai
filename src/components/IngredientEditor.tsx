@@ -7,7 +7,7 @@ import { PrimaryButton } from "./PrimaryButton";
 import { ErrorButton } from "./ErrorButton";
 import { useNavigation } from "@react-navigation/native";
 import { IconButton } from "./IconButton";
-import { Modal } from "@/components";
+import { Modal } from "./Modal";
 
 type Props = {
   initial: Ingredient;

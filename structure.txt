@@ -15,8 +15,12 @@
 │   │   ├── close.png
 │   │   └── refresh.png
 │   ├── playstore.png
+│   ├── sampleMeal.jpg
+│   ├── sampleTable.jpg
 │   └── splash.png
 ├── babel.config.js
+├── builds
+│   └── prod
 ├── credentials.json
 ├── docs
 │   ├── PRIVACY.md
@@ -28,6 +32,9 @@
 ├── metro.config.js
 ├── package-lock.json
 ├── package.json
+├── scripts
+│   ├── build-number.json
+│   └── build.js
 ├── src
 │   ├── components
 │   │   ├── Alert.tsx
@@ -138,6 +145,7 @@
 │   │   │   │   ├── Loader.tsx
 │   │   │   │   └── LoadingSkeleton.tsx
 │   │   │   └── screens
+│   │   │       ├── BarCodeCameraScreen.tsx
 │   │   │       ├── IngredientsNotRecognizedScreen.tsx
 │   │   │       ├── MealAddMethodScreen.tsx
 │   │   │       ├── MealCameraScreen.tsx
@@ -240,12 +248,16 @@
 │   │   └── LoadingScreen.tsx
 │   ├── services
 │   │   ├── askDietAI.ts
+│   │   ├── barcodeService.ts
 │   │   ├── cache.ts
 │   │   ├── chatService.ts
 │   │   ├── feedbackService.ts
 │   │   ├── index.ts
+│   │   ├── localNutritionTable.ts
 │   │   ├── mealService.images.ts
 │   │   ├── mealService.ts
+│   │   ├── mlkitNutrition.ts
+│   │   ├── mlkitTextService.ts
 │   │   ├── myMealService.ts
 │   │   ├── notifications
 │   │   │   ├── conditions.ts
@@ -283,6 +295,8 @@
 │       ├── autoMealName.ts
 │       ├── calculateTotalNutrients.ts
 │       ├── convertToJpegAndResize.ts
+│       ├── decodeHtmlEntities.ts
+│       ├── devSamples.ts
 │       ├── ensureJpeg.ts
 │       ├── findUndefined.ts
 │       ├── getLastNDaysAggregated.ts
@@ -299,4 +313,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-50 directories, 250 files
+53 directories, 261 files
