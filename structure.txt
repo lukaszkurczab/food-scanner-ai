@@ -227,6 +227,9 @@
 │   │   │   ├── resetPassword.json
 │   │   │   ├── statistics.json
 │   │   │   └── terms.json
+│   │   ├── lexicon
+│   │   │   ├── en.nutrition.json
+│   │   │   └── pl.nutrition.json
 │   │   └── pl
 │   │       ├── chat.json
 │   │       ├── common.json
@@ -265,6 +268,7 @@
 │   │   │   ├── localScheduler.ts
 │   │   │   ├── system.ts
 │   │   │   └── texts.ts
+│   │   ├── nutritionLexicon.ts
 │   │   ├── nutritionTableService.ts
 │   │   ├── streakService.ts
 │   │   ├── textMealService.ts
@@ -295,6 +299,7 @@
 │       ├── autoMealName.ts
 │       ├── calculateTotalNutrients.ts
 │       ├── convertToJpegAndResize.ts
+│       ├── debug.ts
 │       ├── decodeHtmlEntities.ts
 │       ├── devSamples.ts
 │       ├── ensureJpeg.ts
@@ -304,6 +309,7 @@
 │       ├── mealImage.ts
 │       ├── omitLocalUserKeys.ts
 │       ├── parseMarkdownToReactNative.tsx
+│       ├── perf.ts
 │       ├── photoFilters.ts
 │       ├── savePhotoLocally.ts
 │       ├── syncUtils.ts
@@ -313,4 +319,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-53 directories, 261 files
+54 directories, 266 files

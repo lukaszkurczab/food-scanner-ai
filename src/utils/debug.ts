@@ -1,8 +1,17 @@
 const ON = typeof __DEV__ !== "undefined" && __DEV__;
 
-export function debugScope(scope: string) {
+export type DebugLogger = {
+  log: (...args: any[]) => void;
+  warn: (...args: any[]) => void;
+  error: (...args: any[]) => void;
+  time: (label: string) => void;
+  timeEnd: (label: string) => void;
+  child: (subscope: string) => DebugLogger;
+};
+
+export function debugScope(scope: string): DebugLogger {
   const p = `[${scope}]`;
-  return {
+  const base = {
     log: (...args: any[]) => {
       if (ON) console.log(p, ...args);
     },
@@ -15,4 +24,10 @@ export function debugScope(scope: string) {
       if (ON) console.timeEnd(`${p} ${label}`);
     },
   };
+  return {
+    ...base,
+    child: (subscope: string) => debugScope(`${scope}:${subscope}`),
+  };
 }
+
+export const Sync = debugScope("Sync");

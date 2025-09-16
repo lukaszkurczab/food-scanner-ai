@@ -29,6 +29,7 @@ import {
   onSnapshot,
 } from "@react-native-firebase/firestore";
 import { getSampleMealUri, getSampleTableUri } from "@/utils/devSamples";
+import { runMigrations } from "@/services/offline/db";
 
 const TASK_NAME = "CALORIAI_NOTIFICATION_GUARD";
 
@@ -95,13 +96,16 @@ function useBootstrapNotifications() {
 
 function Root() {
   useBootstrapNotifications();
-  const theme = useTheme();
   const [fontsLoaded] = useFonts({
     "Inter-Regular": require("./assets/fonts/Inter-Regular.ttf"),
     "Inter-Medium": require("./assets/fonts/Inter-Medium.ttf"),
     "Inter-Bold": require("./assets/fonts/Inter-Bold.ttf"),
     "Inter-Light": require("./assets/fonts/Inter-Light.ttf"),
   });
+
+  useEffect(() => {
+    runMigrations();
+  }, []);
 
   useEffect(() => {
     if (

@@ -1,3 +1,4 @@
+// src/services/mlkitNutrition.ts
 import { debugScope } from "@/utils/debug";
 import { getLexicon } from "@/services/nutritionLexicon";
 import type {
