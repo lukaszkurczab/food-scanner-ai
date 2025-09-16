@@ -1,9 +1,14 @@
+// src/services/visionService.ts
+import NetInfo from "@react-native-community/netinfo";
 import { uriToBase64 } from "@/utils/uriToBase64";
 import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
 import Constants from "expo-constants";
 import type { Ingredient } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { consumeAiUseFor } from "./userService";
+import { debugScope } from "@/utils/debug";
+
+const log = debugScope("Vision");
 
 const IS_DEV = typeof __DEV__ !== "undefined" && __DEV__;
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
@@ -70,6 +75,12 @@ export async function detectIngredientsWithVision(
     throw new Error("ai/premium-required");
   }
 
+  const net = await NetInfo.fetch();
+  if (!net.isConnected) {
+    log.warn("blocked Vision call: offline");
+    throw new Error("offline");
+  }
+
   const FORCE_REAL = true;
   if (IS_DEV && !FORCE_REAL) {
     if (!isPremium) await consumeAiUseFor(userUid, isPremium, "camera", limit);
@@ -112,8 +123,7 @@ export async function detectIngredientsWithVision(
                   `Prefer a nutrition facts table if visible. Otherwise infer visible foods/drinks. ` +
                   `Strict schema per item: { "name": "string", "amount": 123, "protein": 0, "fat": 0, "carbs": 0, "kcal": 0 }. ` +
                   `Use grams for "amount". Numbers only. If unknown, estimate conservatively or use 0. ` +
-                  `Output example: ` +
-                  `[{"name":"oatmeal","amount":120,"protein":6,"fat":4,"carbs":20,"kcal":148}]`,
+                  `Output example: [ {"name":"oatmeal","amount":120,"protein":6,"fat":4,"carbs":20,"kcal":148} ]`,
               },
               {
                 type: "image_url",
@@ -173,7 +183,7 @@ export async function detectIngredientsWithVision(
       let parsed: any;
       try {
         parsed = JSON.parse(arrayStr);
-      } catch (e) {
+      } catch {
         const cleaned = arrayStr
           .replace(/,\s*]/g, "]")
           .replace(/,\s*}/g, "}")

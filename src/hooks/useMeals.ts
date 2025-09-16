@@ -1,23 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { Meal } from "@/types/meal";
-import { getApp } from "@react-native-firebase/app";
 import {
-  getFirestore,
-  collection,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  setDoc,
-  writeBatch,
-} from "@react-native-firebase/firestore";
-import { savePhotoLocally } from "@utils/savePhotoLocally";
-import { processAndUpload } from "@services/mealService.images";
-import { cacheKeys, setJSON } from "@/services/cache";
+  getMealsPageLocal,
+  upsertMealLocal,
+  markDeletedLocal,
+} from "@/services/offline/meals.repo";
+import { enqueueUpsert, enqueueDelete } from "@/services/offline/queue.repo";
 
-const app = getApp();
-const db = getFirestore(app);
+const PAGE_LIMIT = 50;
 
 function computeTotals(meal: Meal) {
   const ing = (meal.ingredients || []) as any[];
@@ -31,71 +22,66 @@ function computeTotals(meal: Meal) {
   };
 }
 
+function isLocalUri(u?: string | null) {
+  if (!u || typeof u !== "string") return false;
+  return u.startsWith("file://") || u.startsWith("content://");
+}
+
 export function useMeals(userUid: string | null) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
-  const subRef = useRef<null | (() => void)>(null);
+  const beforeRef = useRef<string | null>(null);
 
-  useEffect(() => {
+  const loadFirstPage = useCallback(async () => {
     if (!userUid) {
-      if (subRef.current) {
-        subRef.current();
-        subRef.current = null;
-      }
       setMeals([]);
       setLoading(false);
+      beforeRef.current = null;
       return;
     }
-    if (subRef.current) return;
-    const q = query(
-      collection(db, "users", userUid, "meals"),
-      orderBy("timestamp", "desc")
-    );
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const items: Meal[] = snap.docs
-          .map((d: any) => ({ ...(d.data() as Meal), cloudId: d.id } as Meal))
-          .filter((m: Meal) => !m.deleted);
-        setMeals(items);
-        setLoading(false);
-        // Persist last 7 days for offline history/stats
-        try {
-          const now = new Date();
-          const cutoff = new Date(now);
-          cutoff.setDate(now.getDate() - 7);
-          const last7d = items.filter((m: Meal) => {
-            const ts = new Date((m as any).timestamp || (m as any).createdAt);
-            return ts >= cutoff;
-          });
-          if (userUid) void setJSON(cacheKeys.lastWeekMeals(userUid), last7d);
-        } catch {}
-      },
-      () => {
-        setLoading(false);
-      }
-    );
-    subRef.current = unsub;
-    return () => {
-      if (subRef.current) {
-        subRef.current();
-        subRef.current = null;
-      }
-    };
+    setLoading(true);
+    const page = await getMealsPageLocal(userUid, PAGE_LIMIT, undefined);
+    setMeals(page);
+    beforeRef.current = page.length
+      ? String(page[page.length - 1].timestamp)
+      : null;
+    setLoading(false);
   }, [userUid]);
 
-  const getMeals = useCallback(async () => {}, []);
+  const loadNextPage = useCallback(async () => {
+    if (!userUid || !beforeRef.current) return;
+    const page = await getMealsPageLocal(
+      userUid,
+      PAGE_LIMIT,
+      beforeRef.current
+    );
+    if (!page.length) {
+      beforeRef.current = null;
+      return;
+    }
+    setMeals((prev) => [...prev, ...page]);
+    beforeRef.current = String(page[page.length - 1].timestamp);
+  }, [userUid]);
+
+  useEffect(() => {
+    void loadFirstPage();
+  }, [loadFirstPage]);
+
+  const getMeals = useCallback(async () => {
+    await loadFirstPage();
+  }, [loadFirstPage]);
 
   const addMeal = useCallback(
     async (
       meal: Omit<Meal, "updatedAt" | "deleted">,
-      opts?: { alsoSaveToMyMeals?: boolean }
+      _opts?: { alsoSaveToMyMeals?: boolean }
     ) => {
       if (!userUid) return;
       const now = new Date().toISOString();
       const cloudId = (meal as any).cloudId ?? uuidv4();
       const mealId = (meal as any).mealId ?? uuidv4();
       const totals = computeTotals(meal as Meal);
+
       const base: Meal & { photoLocalPath?: string; totals?: any } = {
         ...(meal as Meal),
         userUid,
@@ -108,39 +94,17 @@ export function useMeals(userUid: string | null) {
         timestamp: (meal as any).timestamp ?? now,
         totals,
       };
-      try {
-        const maybeUri = (meal as any).photoUrl as string | undefined;
-        const isLocal =
-          typeof maybeUri === "string" &&
-          (maybeUri.startsWith("file://") || maybeUri.startsWith("content://"));
-        if (maybeUri && isLocal) {
-          const up = await processAndUpload(userUid, maybeUri);
-          base.imageId = up.imageId;
-          base.photoUrl = up.cloudUrl as any;
-          (base as any).photoLocalPath = await savePhotoLocally({
-            userUid,
-            fileId: cloudId,
-            photoUri: up.cloudUrl,
-          });
-        }
-      } catch {}
-      const batch = writeBatch(db);
-      batch.set(doc(db, "users", userUid, "meals", cloudId), base as any, {
-        merge: true,
-      });
-      if (opts?.alsoSaveToMyMeals) {
-        const libCopy: Meal = { ...(base as Meal), source: "saved" };
-        batch.set(
-          doc(db, "users", userUid, "myMeals", mealId),
-          libCopy as any,
-          {
-            merge: true,
-          }
-        );
+
+      const maybeUri = (meal as any).photoUrl as string | undefined;
+      if (isLocalUri(maybeUri)) {
+        (base as any).photoLocalPath = maybeUri;
       }
-      await batch.commit();
+
+      await upsertMealLocal(base);
+      await enqueueUpsert(userUid, base);
+      await loadFirstPage();
     },
-    [userUid]
+    [userUid, loadFirstPage]
   );
 
   const updateMeal = useCallback(
@@ -149,6 +113,7 @@ export function useMeals(userUid: string | null) {
       const now = new Date().toISOString();
       const cloudId = meal.cloudId ?? uuidv4();
       const totals = computeTotals(meal);
+
       const payload: Meal & { photoLocalPath?: string; totals?: any } = {
         ...meal,
         cloudId,
@@ -156,40 +121,26 @@ export function useMeals(userUid: string | null) {
         totals,
         timestamp: (meal as any).timestamp ?? now,
       };
-      try {
-        const maybeUri = (meal as any).photoUrl as string | undefined;
-        const isLocal =
-          typeof maybeUri === "string" &&
-          (maybeUri.startsWith("file://") || maybeUri.startsWith("content://"));
-        if (maybeUri && isLocal) {
-          const up = await processAndUpload(userUid, maybeUri);
-          payload.imageId = up.imageId;
-          payload.photoUrl = up.cloudUrl as any;
-          (payload as any).photoLocalPath = await savePhotoLocally({
-            userUid,
-            fileId: cloudId,
-            photoUri: up.cloudUrl,
-          });
-        }
-      } catch {}
-      await setDoc(
-        doc(db, "users", userUid, "meals", cloudId),
-        payload as any,
-        { merge: true }
-      );
+
+      const maybeUri = (meal as any).photoUrl as string | undefined;
+      if (isLocalUri(maybeUri)) {
+        (payload as any).photoLocalPath = maybeUri;
+      }
+
+      await upsertMealLocal(payload);
+      await enqueueUpsert(userUid, payload);
+      await loadFirstPage();
     },
-    [userUid]
+    [userUid, loadFirstPage]
   );
 
   const deleteMeal = useCallback(
     async (mealCloudId: string) => {
       if (!userUid || !mealCloudId) return;
       const now = new Date().toISOString();
-      await setDoc(
-        doc(db, "users", userUid, "meals", mealCloudId),
-        { deleted: true, updatedAt: now } as Partial<Meal>,
-        { merge: true }
-      );
+      await markDeletedLocal(mealCloudId, now);
+      await enqueueDelete(userUid, mealCloudId, now);
+      setMeals((prev) => prev.filter((m) => (m.cloudId || "") !== mealCloudId));
     },
     [userUid]
   );
@@ -201,6 +152,7 @@ export function useMeals(userUid: string | null) {
       const newCloudId = uuidv4();
       const newMealId = uuidv4();
       const totals = computeTotals(original);
+
       const copy: Meal = {
         ...original,
         userUid,
@@ -212,13 +164,12 @@ export function useMeals(userUid: string | null) {
         deleted: false,
         totals,
       };
-      await setDoc(
-        doc(db, "users", userUid, "meals", newCloudId),
-        copy as any,
-        { merge: true }
-      );
+
+      await upsertMealLocal(copy);
+      await enqueueUpsert(userUid, copy);
+      await loadFirstPage();
     },
-    [userUid]
+    [userUid, loadFirstPage]
   );
 
   const syncMeals = useCallback(async () => {}, []);
@@ -231,6 +182,7 @@ export function useMeals(userUid: string | null) {
       meals,
       loading,
       getMeals,
+      loadNextPage,
       addMeal,
       updateMeal,
       deleteMeal,
@@ -242,6 +194,7 @@ export function useMeals(userUid: string | null) {
       meals,
       loading,
       getMeals,
+      loadNextPage,
       addMeal,
       updateMeal,
       deleteMeal,
