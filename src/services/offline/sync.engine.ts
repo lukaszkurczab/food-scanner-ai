@@ -1,4 +1,3 @@
-// src/services/offline/sync.engine.ts
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApp } from "@react-native-firebase/app";
@@ -23,6 +22,7 @@ import { getPendingUploads, markUploaded } from "./images.repo";
 import { upsertMealLocal } from "./meals.repo";
 import { getDB } from "./db";
 import { processAndUpload } from "@/services/mealService.images";
+import type { MealRow } from "./types";
 
 const log = Sync;
 
@@ -59,11 +59,7 @@ export async function getLastPullTs(uid: string): Promise<string | null> {
 
 export function startSyncLoop(uid: string) {
   if (!uid) return;
-  if (loopTimer) clearInterval(loopTimer);
-  if (netUnsub) {
-    netUnsub();
-    netUnsub = null;
-  }
+  stopSyncLoop();
 
   const run = async () => {
     const net = await NetInfo.fetch();
@@ -98,6 +94,17 @@ export function startSyncLoop(uid: string) {
 
   log.log("loop:started");
   void run();
+}
+
+export function stopSyncLoop() {
+  if (loopTimer) {
+    clearInterval(loopTimer);
+    loopTimer = null;
+  }
+  if (netUnsub) {
+    netUnsub();
+    netUnsub = null;
+  }
 }
 
 export async function pushQueue(uid: string): Promise<void> {
@@ -269,35 +276,35 @@ export async function processImageUploads(uid: string): Promise<void> {
       const now = nowISO();
       sql.runSync(
         `UPDATE meals
-         SET photo_url=?, updated_at=?
+         SET photo_url=?, image_id=?, updated_at=?
          WHERE user_uid=? AND image_local=?`,
-        [up.cloudUrl, now, uid, row.local_path]
+        [up.cloudUrl, up.imageId, now, uid, row.local_path]
       );
 
-      const meals: any[] = sql.getAllSync(
+      const meals = sql.getAllSync(
         `SELECT * FROM meals WHERE user_uid=? AND image_local=?`,
         [uid, row.local_path]
-      );
+      ) as MealRow[];
 
       for (const m of meals) {
         const tags = safeParseJSON(m.tags) ?? [];
         const normalized: Meal = {
           userUid: m.user_uid,
           mealId: m.meal_id,
-          cloudId: m.cloud_id,
+          cloudId: m.cloud_id ?? undefined,
           timestamp: m.timestamp,
           type: m.type,
           name: m.name,
           ingredients: [],
-          createdAt: m.timestamp,
+          createdAt: m.created_at ?? m.timestamp ?? now,
           updatedAt: now,
           syncState: "pending",
           source: (m.source as any) ?? "manual",
-          imageId: row.image_id,
+          imageId: up.imageId,
           photoUrl: up.cloudUrl,
           notes: m.notes,
           tags,
-          deleted: !!m.deleted,
+          deleted: Number(m.deleted ?? 0) === 1,
           totals: {
             kcal: m.totals_kcal || 0,
             protein: m.totals_protein || 0,

@@ -1,4 +1,3 @@
-// src/services/notifications/engine.ts
 import { getApp } from "@react-native-firebase/app";
 import {
   getFirestore,

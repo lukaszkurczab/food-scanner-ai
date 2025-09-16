@@ -7,17 +7,20 @@ CREATE TABLE IF NOT EXISTS meals (
   name TEXT,
   photo_url TEXT,
   image_local TEXT,
+  image_id TEXT,
   totals_kcal REAL DEFAULT 0,
   totals_protein REAL DEFAULT 0,
   totals_carbs REAL DEFAULT 0,
   totals_fat REAL DEFAULT 0,
   deleted INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   source TEXT,
   notes TEXT,
   tags TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_meals_user_ts ON meals(user_uid, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_meals_user_del_ts ON meals(user_uid, deleted, timestamp DESC);
 
 CREATE TABLE IF NOT EXISTS op_queue (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,4 +41,4 @@ CREATE TABLE IF NOT EXISTS images (
   updated_at TEXT NOT NULL
 );
 
-PRAGMA user_version=1;
+PRAGMA user_version=2;

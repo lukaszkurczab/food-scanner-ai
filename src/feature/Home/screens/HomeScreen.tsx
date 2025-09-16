@@ -59,11 +59,14 @@ export default function HomeScreen({ navigation }: any) {
   }, [meals]);
 
   const totalCalories = todayMeals.reduce((sum, meal) => {
-    const mealKcal = meal.ingredients.reduce(
-      (acc, ing) => acc + (ing.kcal || 0),
-      0
-    );
-    return sum + mealKcal;
+    if (Array.isArray(meal.ingredients) && meal.ingredients.length) {
+      const mealKcal = meal.ingredients.reduce(
+        (acc, ing) => acc + (ing.kcal ?? 0),
+        0
+      );
+      return sum + mealKcal;
+    }
+    return sum + (meal.totals?.kcal ?? 0);
   }, 0);
 
   const macros = useMemo(

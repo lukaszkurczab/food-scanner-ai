@@ -22,7 +22,6 @@ const log = debugScope("Sync:Migration");
 const app = getApp();
 const db = getFirestore(app);
 
-const MIGRATION_FLAG = "initial_migration_done";
 const PAGE_SIZE = 300;
 
 function mealsCol(uid: string) {
@@ -33,9 +32,12 @@ function toISO(d: Date) {
   return d.toISOString();
 }
 
+function migrationFlag(uid: string) {
+  return `initial_migration_done:${uid}`;
+}
+
 async function resolvePremiumWindowDays(uid: string): Promise<number> {
   try {
-    // Heurystyka: sprawdź różne możliwe pola premium w dokumencie użytkownika
     const uref = doc(db, "users", uid);
     const snap = await getDoc(uref);
     const data: any = snap.exists() ? snap.data() : null;
@@ -55,7 +57,8 @@ async function resolvePremiumWindowDays(uid: string): Promise<number> {
 export async function migrateInitialMeals(uid: string): Promise<void> {
   if (!uid) return;
 
-  const already = await AsyncStorage.getItem(MIGRATION_FLAG);
+  const flag = migrationFlag(uid);
+  const already = await AsyncStorage.getItem(flag);
   if (already === "true") {
     log.log("skip migration: already done");
     return;
@@ -110,6 +113,6 @@ export async function migrateInitialMeals(uid: string): Promise<void> {
     await setLastPullTs(uid, maxUpdated);
   }
 
-  await AsyncStorage.setItem(MIGRATION_FLAG, "true");
+  await AsyncStorage.setItem(flag, "true");
   log.log("migration done", { pulled, last_pull_ts: maxUpdated });
 }

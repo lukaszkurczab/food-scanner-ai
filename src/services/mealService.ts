@@ -25,6 +25,12 @@ import type { Meal } from "@/types/meal";
 import { processAndUpload } from "./mealService.images";
 import { cacheKeys, getJSON } from "./cache";
 
+// ⬇️ nowy import: lokalny fallback przez SQLite
+import {
+  getMealsPageLocalFiltered,
+  type LocalHistoryFilters,
+} from "@/services/offline/meals.repo";
+
 const app = getApp();
 const db = getFirestore(app);
 const st = getStorage(app);
@@ -52,29 +58,8 @@ export type HistoryFilters = {
 export type MealsPage = { items: Meal[]; nextBefore: string | null };
 export type MealsPageV2 = {
   items: Meal[];
-  nextCursor: any | null;
+  nextCursor: any | null; // online: Firestore doc; offline: string (ISO)
 };
-
-export async function getMealsPage(
-  uid: string,
-  opts: { limit: number; before?: string | null }
-): Promise<MealsPage> {
-  const { limit, before } = opts;
-  const constraints: any[] = [
-    orderBy("timestamp", "desc"),
-    fsLimit(limit) as any,
-  ];
-  if (before) constraints.unshift(where("timestamp", "<", before));
-  const q = query(mealsCol(uid), ...constraints);
-  const snap = await getDocs(q);
-  const items = snap.docs
-    .map((d: any) => ({ ...(d.data() as Meal), cloudId: d.id }))
-    .filter((m: any) => !m.deleted);
-  const nextBefore = items.length
-    ? String(items[items.length - 1].timestamp)
-    : null;
-  return { items, nextBefore };
-}
 
 function clampDateRange(
   input: HistoryFilters["dateRange"] | undefined,
@@ -131,7 +116,7 @@ export async function getMealsPageFiltered(
   uid: string,
   opts: {
     limit: number;
-    cursor: any | null;
+    cursor: any | null; // online: FS doc; offline: ISO string
     filters?: HistoryFilters;
     accessWindowDays?: number;
   }
@@ -141,36 +126,39 @@ export async function getMealsPageFiltered(
     f.dateRange = clampDateRange(f.dateRange, opts.accessWindowDays);
     return f;
   })();
-  // If offline, use cached last 7 days and filter locally
+
+  // OFFLINE → czytaj z lokalnego SQLite (lepsze niż cache)
   const net = await NetInfo.fetch();
   if (!net.isConnected) {
-    const cached = await getJSON<Meal[]>(cacheKeys.lastWeekMeals(uid));
-    const list = Array.isArray(cached) ? cached : [];
-    const inRange = (() => {
-      if (!effectiveFilters?.dateRange) return list;
-      const s = new Date(effectiveFilters.dateRange.start);
-      const e = new Date(effectiveFilters.dateRange.end);
-      e.setHours(23, 59, 59, 999);
-      return list.filter((m) => {
-        const ts = new Date((m as any).timestamp || (m as any).createdAt);
-        return ts >= s && ts <= e;
-      });
-    })();
-    const withMacros = inRange.filter((m) => {
-      const t = (m as any).totals || computeTotals(m);
-      const between = (val: number, rng?: [number, number]) =>
-        !rng || (val >= rng[0] && val <= rng[1]);
-      return (
-        between(t.kcal, effectiveFilters?.calories) &&
-        between(t.protein, effectiveFilters?.protein) &&
-        between(t.carbs, effectiveFilters?.carbs) &&
-        between(t.fat, effectiveFilters?.fat)
-      );
+    const localFilters: LocalHistoryFilters | undefined = effectiveFilters
+      ? {
+          calories: effectiveFilters.calories,
+          protein: effectiveFilters.protein,
+          carbs: effectiveFilters.carbs,
+          fat: effectiveFilters.fat,
+          dateRange: effectiveFilters.dateRange
+            ? {
+                start: new Date(effectiveFilters.dateRange.start),
+                end: new Date(effectiveFilters.dateRange.end),
+              }
+            : undefined,
+        }
+      : undefined;
+
+    const beforeISO =
+      typeof opts.cursor === "string" && opts.cursor ? opts.cursor : null;
+
+    const page = await getMealsPageLocalFiltered(uid, {
+      limit: opts.limit,
+      beforeISO,
+      filters: localFilters,
     });
-    const page = withMacros.slice(0, opts.limit);
-    return { items: page, nextCursor: null };
+
+    // wsteczna kompatybilność: nextCursor w OFFLINE jest stringiem ISO
+    return { items: page.items, nextCursor: page.nextBefore };
   }
-  // Online path
+
+  // ONLINE → Firestore
   const base = buildFilteredQuery(uid, effectiveFilters);
   const q = opts.cursor
     ? query(base, startAfter(opts.cursor), fsLimit(opts.limit))

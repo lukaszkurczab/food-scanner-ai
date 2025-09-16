@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { Bubble } from "../components/Bubble";
 import { InputBar } from "../components/InputBar";
-import { OfflineBanner } from "../components/OfflineBanner";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { PaywallCard } from "../components/PaywallCard";
 import { TypingDots } from "../components/TypingDots";
 import { TopToast } from "../components/TopToast";

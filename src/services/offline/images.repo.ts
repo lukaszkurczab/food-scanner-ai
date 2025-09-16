@@ -1,14 +1,5 @@
 import { getDB } from "./db";
-
-export type ImageStatus = "pending" | "uploaded" | "failed";
-export type ImageRow = {
-  image_id: string;
-  user_uid: string;
-  local_path: string;
-  cloud_url?: string;
-  status: ImageStatus;
-  updated_at: string;
-};
+import type { ImageRow, ImageStatus } from "./types";
 
 /**
  * Insert or update an image row.

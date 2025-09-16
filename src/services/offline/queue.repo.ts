@@ -1,25 +1,30 @@
 import { getDB } from "./db";
+import type { Meal } from "@/types/meal";
+import type { QueueRow, QueueKind } from "./types";
 
-export type QueueKind = "upsert" | "delete";
-export type QueuedOp = {
-  id: number;
-  cloud_id: string;
-  user_uid: string;
-  kind: QueueKind;
-  payload: any;
-  updated_at: string;
-  attempts: number;
-};
+export type { QueueKind } from "./types";
+
+export type QueuedOp = Omit<QueueRow, "payload"> & { payload: unknown };
+
+function safeParse(payload: string): unknown {
+  try {
+    return JSON.parse(payload);
+  } catch {
+    return payload;
+  }
+}
 
 /**
  * Enqueue an upsert operation.
  */
-export async function enqueueUpsert(uid: string, meal: any): Promise<void> {
+export async function enqueueUpsert(uid: string, meal: Meal): Promise<void> {
   const db = getDB();
+  const cloudId = meal.cloudId ?? meal.mealId;
+  const payload = meal.cloudId ? meal : { ...meal, cloudId };
   db.runSync(
     `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
      VALUES (?, ?, 'upsert', ?, ?)`,
-    [meal.cloudId, uid, JSON.stringify(meal), meal.updatedAt]
+    [cloudId, uid, JSON.stringify(payload), meal.updatedAt]
   );
 }
 
@@ -47,10 +52,10 @@ export async function nextBatch(limit = 20): Promise<QueuedOp[]> {
   const rows = db.getAllSync(`SELECT * FROM op_queue ORDER BY id ASC LIMIT ?`, [
     limit,
   ]);
-  return rows.map((r: any) => ({
+  return (rows as QueueRow[]).map((r) => ({
     ...r,
-    payload: JSON.parse(r.payload),
-  })) as QueuedOp[];
+    payload: safeParse(r.payload),
+  }));
 }
 
 /**

@@ -1,5 +1,6 @@
 import { getDB } from "./db";
 import type { Meal } from "@/types/meal";
+import type { MealRow } from "./types";
 
 /**
  * Insert or update a meal in local SQLite.
@@ -7,14 +8,15 @@ import type { Meal } from "@/types/meal";
 export async function upsertMealLocal(meal: Meal): Promise<void> {
   const db = getDB();
   const tags = JSON.stringify(meal.tags || []);
+  const createdAt = meal.createdAt ?? meal.timestamp ?? meal.updatedAt;
 
   db.runSync(
     `INSERT INTO meals (
       cloud_id, meal_id, user_uid, timestamp, type, name,
-      photo_url, image_local,
+      photo_url, image_local, image_id,
       totals_kcal, totals_protein, totals_carbs, totals_fat,
-      deleted, updated_at, source, notes, tags
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      deleted, created_at, updated_at, source, notes, tags
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(cloud_id) DO UPDATE SET
       meal_id=excluded.meal_id,
       timestamp=excluded.timestamp,
@@ -22,11 +24,13 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       name=excluded.name,
       photo_url=excluded.photo_url,
       image_local=excluded.image_local,
+      image_id=COALESCE(excluded.image_id, image_id),
       totals_kcal=excluded.totals_kcal,
       totals_protein=excluded.totals_protein,
       totals_carbs=excluded.totals_carbs,
       totals_fat=excluded.totals_fat,
       deleted=excluded.deleted,
+      created_at=COALESCE(excluded.created_at, created_at),
       updated_at=excluded.updated_at,
       source=excluded.source,
       notes=excluded.notes,
@@ -40,11 +44,13 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       meal.name,
       meal.photoUrl,
       (meal as any).photoLocalPath || null,
+      meal.imageId ?? null,
       meal.totals?.kcal ?? 0,
       meal.totals?.protein ?? 0,
       meal.totals?.carbs ?? 0,
       meal.totals?.fat ?? 0,
       meal.deleted ? 1 : 0,
+      createdAt,
       meal.updatedAt,
       meal.source,
       meal.notes,
@@ -53,9 +59,39 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
   );
 }
 
-/**
- * Get a page of meals for a user, ordered by timestamp DESC.
- */
+function rowToMeal(r: MealRow): Meal {
+  return {
+    userUid: r.user_uid,
+    mealId: r.meal_id,
+    timestamp: r.timestamp,
+    type: r.type as any,
+    name: r.name,
+    ingredients: [],
+    createdAt: r.created_at ?? r.timestamp ?? r.updated_at,
+    updatedAt: r.updated_at,
+    syncState: "pending",
+    source: (r.source as any) ?? null,
+    imageId: r.image_id ?? null,
+    photoUrl: r.photo_url ?? null,
+    notes: r.notes ?? null,
+    tags: (() => {
+      try {
+        return r.tags ? JSON.parse(r.tags) : [];
+      } catch {
+        return [];
+      }
+    })(),
+    deleted: Number(r.deleted ?? 0) === 1,
+    cloudId: r.cloud_id ?? undefined,
+    totals: {
+      kcal: Number(r.totals_kcal ?? 0),
+      protein: Number(r.totals_protein ?? 0),
+      carbs: Number(r.totals_carbs ?? 0),
+      fat: Number(r.totals_fat ?? 0),
+    },
+  };
+}
+
 export async function getMealsPageLocal(
   uid: string,
   limit: number,
@@ -75,7 +111,80 @@ export async function getMealsPageLocal(
          ORDER BY timestamp DESC LIMIT ?`,
         [uid, limit]
       );
-  return rows as Meal[];
+  return (rows as MealRow[]).map(rowToMeal);
+}
+
+/** FILTRY używane w historii (lokalnie po SQLite) */
+export type LocalHistoryFilters = {
+  calories?: [number, number];
+  protein?: [number, number];
+  carbs?: [number, number];
+  fat?: [number, number];
+  dateRange?: { start: Date; end: Date };
+};
+
+/**
+ * Paginowana lista z filtrami po lokalnej bazie (DESC po timestamp).
+ * Zwraca { items, nextBefore }, gdzie nextBefore to ISO ostatniego elementu tej strony.
+ */
+export async function getMealsPageLocalFiltered(
+  uid: string,
+  opts: {
+    limit: number;
+    beforeISO?: string | null;
+    filters?: LocalHistoryFilters;
+  }
+): Promise<{ items: Meal[]; nextBefore: string | null }> {
+  const db = getDB();
+  const args: any[] = [uid];
+
+  const where: string[] = [`user_uid=?`, `deleted=0`];
+
+  // kursory
+  if (opts.beforeISO) {
+    where.push(`timestamp<?`);
+    args.push(opts.beforeISO);
+  }
+
+  // zakres dat
+  if (opts.filters?.dateRange) {
+    where.push(`timestamp>=?`);
+    where.push(`timestamp<=?`);
+    const s = new Date(opts.filters.dateRange.start);
+    s.setHours(0, 0, 0, 0);
+    const e = new Date(opts.filters.dateRange.end);
+    e.setHours(23, 59, 59, 999);
+    args.push(s.toISOString(), e.toISOString());
+  }
+
+  // makra
+  const pushBetween = (col: string, rng?: [number, number]) => {
+    if (!rng) return;
+    where.push(`${col}>=?`);
+    where.push(`${col}<=?`);
+    args.push(rng[0], rng[1]);
+  };
+  pushBetween("totals_kcal", opts.filters?.calories);
+  pushBetween("totals_protein", opts.filters?.protein);
+  pushBetween("totals_carbs", opts.filters?.carbs);
+  pushBetween("totals_fat", opts.filters?.fat);
+
+  const sql = `
+    SELECT * FROM meals
+    WHERE ${where.join(" AND ")}
+    ORDER BY timestamp DESC
+    LIMIT ?
+  `;
+  args.push(opts.limit);
+
+  const rows = db.getAllSync(sql, args) as MealRow[];
+  const items = rows.map(rowToMeal);
+  const nextBefore =
+    items.length === opts.limit
+      ? String(items[items.length - 1].timestamp)
+      : null;
+
+  return { items, nextBefore };
 }
 
 /**

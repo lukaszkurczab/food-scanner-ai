@@ -6,8 +6,10 @@ import {
   where,
   getDocs,
 } from "@react-native-firebase/firestore";
+import NetInfo from "@react-native-community/netinfo";
 import type { Meal } from "@/types/meal";
 import { MealKind } from "@/types/notification";
+import { getMealsPageLocal } from "@/services/offline/meals.repo";
 
 function startOfDayISO(d: Date) {
   const x = new Date(d);
@@ -33,10 +35,17 @@ export function isKcalBelowThreshold(
 }
 
 export async function fetchTodayMeals(uid: string): Promise<Meal[]> {
-  const app = getApp();
-  const db = getFirestore(app);
+  const net = await NetInfo.fetch();
   const s = startOfDayISO(new Date());
   const e = endOfDayISO(new Date());
+
+  if (!net.isConnected) {
+    const page = await getMealsPageLocal(uid, 200);
+    return page.filter((m) => m.timestamp >= s && m.timestamp <= e);
+  }
+
+  const app = getApp();
+  const db = getFirestore(app);
   const q = query(
     collection(db, "users", uid, "meals"),
     where("timestamp", ">=", s),

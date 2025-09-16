@@ -7,6 +7,7 @@ import {
   markDeletedLocal,
 } from "@/services/offline/meals.repo";
 import { enqueueUpsert, enqueueDelete } from "@/services/offline/queue.repo";
+import { insertOrUpdateImage } from "@/services/offline/images.repo";
 
 const PAGE_LIMIT = 50;
 
@@ -98,6 +99,8 @@ export function useMeals(userUid: string | null) {
       const maybeUri = (meal as any).photoUrl as string | undefined;
       if (isLocalUri(maybeUri)) {
         (base as any).photoLocalPath = maybeUri;
+        // zarejestruj obrazek do uploadu
+        await insertOrUpdateImage(userUid, cloudId, maybeUri!, "pending");
       }
 
       await upsertMealLocal(base);
@@ -125,6 +128,7 @@ export function useMeals(userUid: string | null) {
       const maybeUri = (meal as any).photoUrl as string | undefined;
       if (isLocalUri(maybeUri)) {
         (payload as any).photoLocalPath = maybeUri;
+        await insertOrUpdateImage(userUid, cloudId, maybeUri!, "pending");
       }
 
       await upsertMealLocal(payload);
