@@ -9,6 +9,11 @@ import { useUser } from "@hooks/useUser";
 import type { UserData } from "@/types";
 import i18n from "@/i18n";
 
+// ⬇️ OFFLINE bootstrap
+import { runMigrations } from "@/services/offline/db";
+import { migrateInitialMeals } from "@/services/offline/migrate";
+import { startSyncLoop } from "@/services/offline/sync.engine";
+
 export type UserContextType = {
   userData: UserData | null;
   loadingUser: boolean;
@@ -72,6 +77,24 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshUser = useCallback(async () => {
     await getUserProfile();
   }, [getUserProfile]);
+
+  // ⬇️ uruchom migracje bazy lokalnej raz przy starcie aplikacji
+  useEffect(() => {
+    try {
+      runMigrations();
+    } catch {}
+  }, []);
+
+  // ⬇️ po zalogowaniu: jednorazowa migracja początkowa + start pętli synchronizacji
+  useEffect(() => {
+    if (!uid) return;
+    (async () => {
+      try {
+        await migrateInitialMeals(uid);
+      } catch {}
+      startSyncLoop(uid); // idempotentne – czyści poprzedni timer/listener
+    })();
+  }, [uid]);
 
   useEffect(() => {
     syncUserProfile();

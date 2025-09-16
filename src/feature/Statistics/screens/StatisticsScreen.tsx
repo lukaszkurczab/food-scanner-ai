@@ -23,6 +23,7 @@ import { useMeals } from "@hooks/useMeals";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FREE_WINDOW_DAYS } from "@/services/mealService";
 import type { Meal } from "@/types/meal";
+import OfflineBanner from "@/components/OfflineBanner";
 
 type RangeKey = "7d" | "30d" | "custom";
 
@@ -179,21 +180,7 @@ export default function StatisticsScreen({ navigation }: any) {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
-      {!net.isConnected && (
-        <View
-          style={[
-            styles.banner,
-            {
-              backgroundColor: theme.warning.background,
-              borderColor: theme.border,
-            },
-          ]}
-        >
-          <Text style={{ color: theme.warning.text }}>
-            {t("statistics:offline")}
-          </Text>
-        </View>
-      )}
+      {!net.isConnected && <OfflineBanner />}
 
       <View
         style={[styles.header, { paddingHorizontal: theme.spacing.container }]}
@@ -331,22 +318,26 @@ export default function StatisticsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, paddingBottom: 80 },
-  header: { paddingTop: 12, paddingBottom: 8 },
-  banner: { margin: 12, padding: 10, borderRadius: 10, borderWidth: 1 },
+  root: { flex: 1 },
+  header: { paddingTop: 8, paddingBottom: 8 },
+  banner: {
+    margin: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
   loadingBox: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
   },
   emptyBox: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
-    gap: 10,
+    gap: 8,
   },
-  emptyTitle: { fontSize: 18, fontWeight: "700" },
-  scroll: { gap: 16 },
+  emptyTitle: { fontWeight: "700", fontSize: 18, textAlign: "center" },
+  scroll: {},
 });

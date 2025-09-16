@@ -27,26 +27,34 @@ export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
       >
         {t("todaysMeals")}
       </Text>
-      {meals.map((meal) => (
-        <View
-          key={meal.cloudId || meal.mealId || `${meal.name}-${meal.timestamp}`}
-          style={styles.mealRow}
-        >
-          <Text
-            style={{ color: theme.text, fontSize: theme.typography.size.md }}
+      {meals.map((meal) => {
+        const kcal =
+          Array.isArray(meal.ingredients) && meal.ingredients.length
+            ? meal.ingredients.reduce((sum, i) => sum + (i.kcal ?? 0), 0)
+            : meal.totals?.kcal ?? 0;
+        return (
+          <View
+            key={
+              meal.cloudId || meal.mealId || `${meal.name}-${meal.timestamp}`
+            }
+            style={styles.mealRow}
           >
-            {meal.name || t("meal")}
-          </Text>
-          <Text
-            style={{
-              color: theme.textSecondary,
-              fontSize: theme.typography.size.md,
-            }}
-          >
-            {meal.ingredients.reduce((sum, i) => sum + (i.kcal || 0), 0)} kcal
-          </Text>
-        </View>
-      ))}
+            <Text
+              style={{ color: theme.text, fontSize: theme.typography.size.md }}
+            >
+              {meal.name || t("meal")}
+            </Text>
+            <Text
+              style={{
+                color: theme.textSecondary,
+                fontSize: theme.typography.size.md,
+              }}
+            >
+              {kcal} kcal
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 };

@@ -270,6 +270,16 @@
 │   │   │   └── texts.ts
 │   │   ├── nutritionLexicon.ts
 │   │   ├── nutritionTableService.ts
+│   │   ├── offline
+│   │   │   ├── conflict.ts
+│   │   │   ├── db.ts
+│   │   │   ├── images.repo.ts
+│   │   │   ├── meals.repo.ts
+│   │   │   ├── migrate.ts
+│   │   │   ├── queue.repo.ts
+│   │   │   ├── schema.sql
+│   │   │   ├── sync.engine.ts
+│   │   │   └── types.ts
 │   │   ├── streakService.ts
 │   │   ├── textMealService.ts
 │   │   ├── usernameService.ts
@@ -319,4 +329,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-54 directories, 266 files
+55 directories, 275 files

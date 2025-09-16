@@ -1,4 +1,3 @@
-// src/services/offline/db.ts
 import * as SQLite from "expo-sqlite";
 
 let db: SQLite.SQLiteDatabase | null = null;
@@ -12,7 +11,6 @@ export function getDB(): SQLite.SQLiteDatabase {
   return db;
 }
 
-/** Helpers */
 function getUserVersion(d: SQLite.SQLiteDatabase): number {
   const row = d.getFirstSync<{ user_version: number }>(
     `PRAGMA user_version`
@@ -54,52 +52,55 @@ export function runMigrations() {
       d.execSync(`
         CREATE TABLE IF NOT EXISTS meals (
           cloud_id TEXT PRIMARY KEY,
-          meal_id TEXT,
-          user_uid TEXT,
-          timestamp TEXT,
-          type TEXT,
+          meal_id TEXT NOT NULL,
+          user_uid TEXT NOT NULL,
+          timestamp TEXT NOT NULL,
+          type TEXT NOT NULL,
           name TEXT,
           photo_url TEXT,
           image_local TEXT,
+          image_id TEXT,
           totals_kcal REAL DEFAULT 0,
           totals_protein REAL DEFAULT 0,
           totals_carbs REAL DEFAULT 0,
           totals_fat REAL DEFAULT 0,
           deleted INTEGER DEFAULT 0,
-          updated_at TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
           source TEXT,
+          notes TEXT,
           tags TEXT
         );
       `);
-
       d.execSync(`
         CREATE INDEX IF NOT EXISTS idx_meals_user_ts
           ON meals(user_uid, timestamp DESC);
       `);
-
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_meals_user_del_ts
+          ON meals(user_uid, deleted, timestamp DESC);
+      `);
       d.execSync(`
         CREATE TABLE IF NOT EXISTS op_queue (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           cloud_id TEXT NOT NULL,
           user_uid TEXT NOT NULL,
-          kind TEXT NOT NULL,            -- 'upsert' | 'delete'
-          payload TEXT NOT NULL,         -- JSON
-          updated_at TEXT NOT NULL,      -- ISO
+          kind TEXT NOT NULL,
+          payload TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
           attempts INTEGER DEFAULT 0
         );
       `);
-
       d.execSync(`
         CREATE TABLE IF NOT EXISTS images (
           image_id TEXT PRIMARY KEY,
           user_uid TEXT NOT NULL,
           local_path TEXT NOT NULL,
           cloud_url TEXT,
-          status TEXT NOT NULL,   -- 'pending' | 'uploaded' | 'failed'
+          status TEXT NOT NULL,
           updated_at TEXT NOT NULL
         );
       `);
-
       setUserVersion(d, 1);
       d.execSync("COMMIT");
       v = 1;
@@ -109,12 +110,32 @@ export function runMigrations() {
     }
   }
 
-  // v1 → v2: add "notes" column to meals
+  // v1 → v2: ensure indices exist
   if (v < 2) {
     d.execSync("BEGIN");
     try {
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_meals_user_del_ts
+          ON meals(user_uid, deleted, timestamp DESC);
+      `);
       if (!columnExists(d, "meals", "notes")) {
         d.execSync(`ALTER TABLE meals ADD COLUMN notes TEXT;`);
+      }
+      if (!columnExists(d, "meals", "image_id")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN image_id TEXT;`);
+      }
+      if (!columnExists(d, "meals", "created_at")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN created_at TEXT;`);
+        d.execSync(`
+          UPDATE meals
+          SET created_at = COALESCE(
+            NULLIF(created_at, ''),
+            NULLIF(timestamp, ''),
+            NULLIF(updated_at, ''),
+            datetime('now')
+          )
+          WHERE created_at IS NULL OR created_at='';
+        `);
       }
       setUserVersion(d, 2);
       d.execSync("COMMIT");
@@ -124,7 +145,4 @@ export function runMigrations() {
       throw e;
     }
   }
-
-  // Future migrations:
-  // if (v < 3) { ... setUserVersion(d, 3); }
 }
