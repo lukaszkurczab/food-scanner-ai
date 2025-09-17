@@ -1,4 +1,3 @@
-// src/services/mlkitTextService.ts
 import * as Device from "expo-device";
 import { debugScope } from "@/utils/debug";
 

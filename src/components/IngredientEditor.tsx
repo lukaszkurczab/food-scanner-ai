@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, TextInput, Text, StyleSheet, DeviceEventEmitter } from "react-native";
+import {
+  View,
+  TextInput,
+  Text,
+  StyleSheet,
+  DeviceEventEmitter,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
@@ -45,6 +51,7 @@ export const IngredientEditor: React.FC<Props> = ({
   const [nameTouched, setNameTouched] = useState(false);
   const [amountTouched, setAmountTouched] = useState(false);
 
+  // Bazowa wartość do przeliczeń – zawsze z AKTUALNYCH pól
   const baseline = useRef({
     amount: Number(initial.amount ?? 0),
     protein: Number(initial.protein ?? 0),
@@ -54,6 +61,28 @@ export const IngredientEditor: React.FC<Props> = ({
   });
   const [showRecalc, setShowRecalc] = useState(false);
   const recalcRatioRef = useRef(1);
+
+  const syncBaselineFromState = (keepAmount = true) => {
+    // Jeśli keepAmount=true, nie nadpisuj poprzedniej ilości, żeby ratio liczyć względem poprzedniej ilości.
+    const amt = keepAmount ? baseline.current.amount : parseNum(amount) || 0;
+    const p = parseNum(protein);
+    const c = parseNum(carbs);
+    const f = parseNum(fat);
+    const k = parseNum(kcal);
+    baseline.current = {
+      amount: Number.isFinite(amt) ? amt : 0,
+      protein: Number.isFinite(p) ? p : baseline.current.protein,
+      carbs: Number.isFinite(c) ? c : baseline.current.carbs,
+      fat: Number.isFinite(f) ? f : baseline.current.fat,
+      kcal: Number.isFinite(k) ? k : baseline.current.kcal,
+    };
+  };
+
+  useEffect(() => {
+    // Ustaw bazę na podstawie aktualnych pól po pierwszym renderze
+    syncBaselineFromState(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const commit = () => {
     if (Object.keys(errors).length) return;
@@ -83,14 +112,28 @@ export const IngredientEditor: React.FC<Props> = ({
     setter(next);
     const n = parseNum(next);
     if (!Number.isNaN(n)) onChangePartial?.({ [key]: n } as any);
+
     if (key === "amount") {
-      const prev = baseline.current.amount;
-      if (prev > 0 && n > 0 && Math.abs(n - prev) > 0.0001) {
-        recalcRatioRef.current = n / prev;
+      // Przed wywołaniem przeliczenia zsynchronizuj bazę z AKTUALNYMI makro
+      // ale zostaw poprzednią ilość w baseline, aby ratio było poprawne.
+      syncBaselineFromState(true);
+      const prevAmt = baseline.current.amount;
+      const nextAmt = Number.isFinite(n) ? n : 0;
+
+      if (prevAmt > 0 && nextAmt > 0 && Math.abs(nextAmt - prevAmt) > 0.0001) {
+        recalcRatioRef.current = nextAmt / prevAmt;
         setShowRecalc(true);
       } else {
-        baseline.current.amount = n;
+        // Brak przeliczenia – aktualizuj ilość w bazie do bieżącej
+        baseline.current.amount = nextAmt;
       }
+    } else {
+      // Aktualizacja bazowych makro do bieżącej wartości pola
+      const num = Number.isFinite(n) ? n : 0;
+      if (key === "protein") baseline.current.protein = num;
+      if (key === "carbs") baseline.current.carbs = num;
+      if (key === "fat") baseline.current.fat = num;
+      if (key === "kcal") baseline.current.kcal = num;
     }
   };
 
@@ -101,7 +144,7 @@ export const IngredientEditor: React.FC<Props> = ({
     onChangePartial?.({ name: next });
   };
 
-  // Listen for barcode scan results to prefill fields
+  // Prefill z kodu kreskowego
   useEffect(() => {
     const sub = DeviceEventEmitter.addListener(
       "barcode.scanned.ingredient",
@@ -122,6 +165,14 @@ export const IngredientEditor: React.FC<Props> = ({
           fat: ing.fat ?? 0,
           kcal: ing.kcal ?? 0,
         });
+        // Po wczytaniu z kodu ustaw bazę na te wartości
+        baseline.current = {
+          amount: Number(ing.amount ?? 100),
+          protein: Number(ing.protein ?? 0),
+          carbs: Number(ing.carbs ?? 0),
+          fat: Number(ing.fat ?? 0),
+          kcal: Number(ing.kcal ?? 0),
+        };
       }
     );
     return () => sub.remove();
@@ -148,13 +199,22 @@ export const IngredientEditor: React.FC<Props> = ({
         },
       ]}
     >
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "flex-end",
+          marginBottom: 8,
+        }}
+      >
         <IconButton
           icon={<Text style={{ color: theme.text }}>📷</Text>}
           onPress={() => navigation.navigate("BarCodeCamera")}
-          accessibilityLabel={t("scan_barcode", { defaultValue: "Scan barcode" })}
+          accessibilityLabel={t("scan_barcode", {
+            defaultValue: "Scan barcode",
+          })}
         />
       </View>
+
       <TextInput
         style={inputStyle(Boolean(errors.name), nameTouched)}
         value={name}
@@ -347,20 +407,36 @@ export const IngredientEditor: React.FC<Props> = ({
         visible={showRecalc}
         title={t("recalc_title", { defaultValue: "Recalculate values?" })}
         message={t("recalc_message", {
-          defaultValue: "Adjust protein, carbs, fat and kcal proportionally to the new amount?",
+          defaultValue:
+            "Adjust protein, carbs, fat and kcal proportionally to the new amount?",
         })}
-        primaryActionLabel={t("confirm", { ns: "common", defaultValue: "Confirm" })}
+        primaryActionLabel={t("confirm", {
+          ns: "common",
+          defaultValue: "Confirm",
+        })}
         onPrimaryAction={() => {
           const r = recalcRatioRef.current;
           const nextProtein = Number((baseline.current.protein * r).toFixed(1));
           const nextCarbs = Number((baseline.current.carbs * r).toFixed(1));
           const nextFat = Number((baseline.current.fat * r).toFixed(1));
-          const nextKcal = Math.round(baseline.current.kcal * r) || Math.round(nextProtein * 4 + nextCarbs * 4 + nextFat * 9);
+          const kcalFromMacros = Math.round(
+            nextProtein * 4 + nextCarbs * 4 + nextFat * 9
+          );
+          const nextKcal =
+            Math.round(baseline.current.kcal * r) || kcalFromMacros;
+
           setProtein(String(nextProtein));
           setCarbs(String(nextCarbs));
           setFat(String(nextFat));
           setKcal(String(nextKcal));
-          onChangePartial?.({ protein: nextProtein, carbs: nextCarbs, fat: nextFat, kcal: nextKcal });
+          onChangePartial?.({
+            protein: nextProtein,
+            carbs: nextCarbs,
+            fat: nextFat,
+            kcal: nextKcal,
+          });
+
+          // Po potwierdzeniu baza = aktualne wartości i nowa ilość
           baseline.current = {
             amount: parseNum(amount) || baseline.current.amount,
             protein: nextProtein,
@@ -370,7 +446,10 @@ export const IngredientEditor: React.FC<Props> = ({
           };
           setShowRecalc(false);
         }}
-        secondaryActionLabel={t("cancel", { ns: "common", defaultValue: "Cancel" })}
+        secondaryActionLabel={t("cancel", {
+          ns: "common",
+          defaultValue: "Cancel",
+        })}
         onSecondaryAction={() => {
           baseline.current.amount = parseNum(amount) || baseline.current.amount;
           setShowRecalc(false);
