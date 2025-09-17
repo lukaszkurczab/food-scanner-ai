@@ -1,3 +1,4 @@
+// src/theme/colors.ts
 export const baseColors = {
   accentSecondaryDark: "#03A9F4",
   accentSecondaryLight: "#81D4FA",
@@ -46,4 +47,10 @@ export const baseColors = {
   warningTextLight: "#FFA000",
   white: "#FFFFFF",
   yellow: "#FFD54F",
+
+  // NEW accent palettes
+  purple: "#9C27B0",
+  purpleSecondary: "#CE93D8",
+  orange: "#FB8C00",
+  orangeSecondary: "#FFCC80",
 };

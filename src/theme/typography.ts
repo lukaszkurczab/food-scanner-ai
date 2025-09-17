@@ -1,9 +1,12 @@
+// src/theme/typography.ts
 export const typography = {
   fontFamily: {
     regular: "Inter-Regular",
     medium: "Inter-Medium",
     bold: "Inter-Bold",
     light: "Inter-Light",
+    semiBold: "Inter-SemiBold", // NEW
+    extraBold: "Inter-ExtraBold", // NEW
   },
 
   size: {
@@ -21,6 +24,8 @@ export const typography = {
     regular: "400",
     medium: "500",
     bold: "bold",
+    semiBold: "600", // NEW
+    extraBold: "800", // NEW
   },
 
   lineHeight: {
@@ -28,4 +33,6 @@ export const typography = {
     heading: 32,
     tight: 20,
   },
+
+  rounded: { full: 999 },
 };

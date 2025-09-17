@@ -4,7 +4,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 
 type MacroChipProps = {
-  label: string;
+  label: "Calories" | "Protein" | "Carbs" | "Fat";
   value: number;
 };
 
@@ -12,30 +12,22 @@ export const MacroChip: React.FC<MacroChipProps> = ({ label, value }) => {
   const theme = useTheme();
   const { t } = useTranslation(["meals"]);
 
-  let backgroundColor;
-  let labelText;
-  let color;
+  let backgroundColor = theme.border + "18";
+  let color = theme.text;
+  const labelText =
+    label === "Calories"
+      ? t("meals:calories")
+      : t(`meals:${label.toLowerCase()}`);
 
-  switch (label) {
-    case "Carbs":
-      backgroundColor = theme.macro.carbs + "18";
-      labelText = t("meals:carbs");
-      color = theme.macro.carbs;
-      break;
-    case "Protein":
-      backgroundColor = theme.macro.protein + "18";
-      labelText = t("meals:protein");
-      color = theme.macro.protein;
-      break;
-    case "Fat":
-      labelText = t("meals:fat");
-      backgroundColor = theme.macro.fat + "18";
-      color = theme.macro.fat;
-      break;
-    default:
-      labelText = t("meals:calories");
-      backgroundColor = theme.border + "18";
-      color = theme.text;
+  if (label === "Protein") {
+    backgroundColor = String(theme.macro.protein) + "18";
+    color = theme.macro.protein;
+  } else if (label === "Carbs") {
+    backgroundColor = String(theme.macro.carbs) + "18";
+    color = theme.macro.carbs;
+  } else if (label === "Fat") {
+    backgroundColor = String(theme.macro.fat) + "18";
+    color = theme.macro.fat;
   }
 
   return (
@@ -52,16 +44,16 @@ export const MacroChip: React.FC<MacroChipProps> = ({ label, value }) => {
         style={[
           styles.macro,
           {
-            backgroundColor: backgroundColor,
+            backgroundColor,
             borderWidth: 1,
-            borderRadius: theme.rounded.full,
+            borderRadius: theme.typography.rounded.full,
             borderColor: color,
           },
         ]}
       >
         <Text
           style={{
-            color: color,
+            color,
             fontWeight: "bold",
             fontSize: theme.typography.size.base,
           }}
@@ -74,18 +66,12 @@ export const MacroChip: React.FC<MacroChipProps> = ({ label, value }) => {
 };
 
 const styles = StyleSheet.create({
-  macroWrapper: {
-    width: "50%",
-    flexShrink: 1,
-  },
+  macroWrapper: { width: "50%", flexShrink: 1 },
   macro: {
     alignItems: "center",
+    flexDirection: "row",
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
-  macroLabel: {
-    opacity: 0.7,
-    marginTop: 2,
-    marginBottom: 4,
-  },
+  macroLabel: { opacity: 0.7, marginTop: 2, marginBottom: 4 },
 });

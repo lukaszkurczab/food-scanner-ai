@@ -1,7 +1,38 @@
+// src/theme/themes.ts
 import { baseColors } from "./colors";
 
+const commonTypo = {
+  fontFamily: {
+    regular: "Inter-Regular",
+    medium: "Inter-Medium",
+    bold: "Inter-Bold",
+    light: "Inter-Light",
+    semiBold: "Inter-SemiBold", // NEW
+    extraBold: "Inter-ExtraBold", // NEW
+  },
+  size: {
+    xs: 12,
+    sm: 14,
+    base: 16,
+    md: 18,
+    lg: 20,
+    xl: 24,
+    xxl: 32,
+    title: 36,
+  },
+  weight: {
+    regular: "400",
+    medium: "500",
+    bold: "bold",
+    semiBold: "600",
+    extraBold: "800" as const,
+  },
+  lineHeight: { base: 24, heading: 32, tight: 20 },
+  rounded: { full: 999 },
+};
+
 export const lightTheme = {
-  mode: "light",
+  mode: "light" as const,
   background: baseColors.white,
   card: baseColors.grayLight,
   text: baseColors.textLight,
@@ -36,10 +67,11 @@ export const lightTheme = {
   onAccent: baseColors.onAccentLight,
   overlay: baseColors.overlayLight,
   shadow: baseColors.shadowLight,
+  typography: commonTypo,
 };
 
 export const darkTheme = {
-  mode: "dark",
+  mode: "dark" as const,
   background: baseColors.black,
   card: baseColors.grayDark,
   text: baseColors.textDark,
@@ -74,4 +106,26 @@ export const darkTheme = {
   onAccent: baseColors.onAccentDark,
   overlay: baseColors.overlayDark,
   shadow: baseColors.shadowDark,
+  typography: commonTypo,
+};
+
+// NEW: additional light variants
+export const purpleTheme = {
+  ...lightTheme,
+  accent: baseColors.purple,
+  accentSecondary: baseColors.purpleSecondary,
+};
+
+export const orangeTheme = {
+  ...lightTheme,
+  accent: baseColors.orange,
+  accentSecondary: baseColors.orangeSecondary,
+};
+
+// opcjonalnie eksport aliasów zbiorczych
+export const themes = {
+  light: lightTheme,
+  dark: darkTheme,
+  purple: purpleTheme,
+  orange: orangeTheme,
 };
