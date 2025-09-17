@@ -23,7 +23,8 @@ type LineGraphProps = {
   stepX?: number;
   height?: number;
   smooth?: boolean;
-  approxYTicks?: number; // używane jako punkt startowy w zakresie 4–8
+  approxYTicks?: number;
+  color?: string;
 };
 
 export const LineGraph = ({
@@ -35,8 +36,10 @@ export const LineGraph = ({
   height = 120,
   smooth = true,
   approxYTicks = 4,
+  color,
 }: LineGraphProps) => {
   const theme = useTheme();
+  const strokeColor = color || String(theme.accent);
   const [width, setWidth] = useState(0);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -254,8 +257,8 @@ export const LineGraph = ({
         <Svg width={width} height={topPad + chartH + bottomPad}>
           <Defs>
             <LinearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={theme.accent} stopOpacity={0.22} />
-              <Stop offset="80%" stopColor={theme.accent} stopOpacity={0.03} />
+              <Stop offset="0%" stopColor={strokeColor} stopOpacity={0.22} />
+              <Stop offset="80%" stopColor={strokeColor} stopOpacity={0.03} />
             </LinearGradient>
             <ClipPath id={clipId}>
               <Rect x={yAxisWidth} y={topPad} width={chartW} height={chartH} />
@@ -300,9 +303,12 @@ export const LineGraph = ({
 
           {hasEnoughPoints && (
             <Path
-              d={areaD}
-              fill="url(#areaGradient)"
-              clipPath={`url(#${clipId})`}
+              d={linePath}
+              fill="none"
+              stroke={strokeColor}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
           )}
 
@@ -329,7 +335,7 @@ export const LineGraph = ({
                   setActiveIndex((prev) => (prev === i ? null : i))
                 }
               />
-              <Circle cx={p.x} cy={p.y} r={4} fill={theme.accent} />
+              <Circle cx={p.x} cy={p.y} r={4} fill={strokeColor} />
 
               {activeIndex === i && (
                 <SvgText

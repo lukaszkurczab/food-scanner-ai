@@ -4,7 +4,7 @@ import { useTheme } from "@/theme/useTheme";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
-import ShareCanvas from "@/components/ShareCanvas";
+import { ShareCanvas } from "@/components/index";
 import { ShareOptions, defaultShareOptions } from "@/types/share";
 import { Layout, PrimaryButton, SecondaryButton, Card } from "@/components";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";

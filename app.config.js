@@ -1,3 +1,4 @@
+// app.config.js
 import "dotenv/config";
 
 export default {
@@ -9,7 +10,7 @@ export default {
     orientation: "portrait",
     userInterfaceStyle: "light",
     newArchEnabled: true,
-    assetBundlePatterns: ["**/*"],
+    assetBundlePatterns: ["**/*"], // zawiera assets/fonts/*.ttf (w tym nowe SemiBold/ExtraBold)
     icon: "./assets/icon.png",
     splash: {
       image: "./assets/splash.png",
@@ -49,11 +50,9 @@ export default {
       ],
       [
         "expo-build-properties",
-        {
-          ios: { useFrameworks: "static", deploymentTarget: "15.5" },
-        },
+        { ios: { useFrameworks: "static", deploymentTarget: "15.5" } },
       ],
-      "expo-font",
+      "expo-font", // OK – wczytasz czcionki przez useFonts w kodzie
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "expo-notifications",
@@ -68,9 +67,7 @@ export default {
       disableBilling:
         (process.env.DISABLE_BILLING || "").toLowerCase() === "true",
       forcePremium: (process.env.FORCE_PREMIUM || "").toLowerCase() === "true",
-      eas: {
-        projectId: "6126cb31-0485-4b93-b30c-738b65882366",
-      },
+      eas: { projectId: "6126cb31-0485-4b93-b30c-738b65882366" },
     },
   },
 };
