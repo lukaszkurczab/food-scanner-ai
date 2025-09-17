@@ -1,4 +1,3 @@
-// src/services/visionService.ts
 import NetInfo from "@react-native-community/netinfo";
 import { uriToBase64 } from "@/utils/uriToBase64";
 import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
@@ -20,7 +19,17 @@ const RETRY_BACKOFF = 3000;
 const toNumber = (v: unknown): number => {
   if (typeof v === "number") return isFinite(v) ? v : 0;
   if (typeof v === "string") {
-    const n = Number(v.replace(/[^0-9.+-]/g, ""));
+    let s = String(v);
+    s = s.replace(
+      /(?<=\d)[\u00A0\u2000-\u200B\u202F\u205F\u3000\s](?=\d)/g,
+      "."
+    );
+    s = s.replace(/,(?=\d)/g, ".");
+    s = s.replace(
+      /(?<=\d)[.\u00A0\u2000-\u200B\u202F\u205F\u3000](?=\d{3}\b)/g,
+      ""
+    );
+    const n = Number(s.replace(/[^0-9.+-]/g, ""));
     return isFinite(n) ? n : 0;
   }
   return 0;
@@ -82,20 +91,6 @@ export async function detectIngredientsWithVision(
   }
 
   const FORCE_REAL = true;
-  if (IS_DEV && !FORCE_REAL) {
-    if (!isPremium) await consumeAiUseFor(userUid, isPremium, "camera", limit);
-    return [
-      {
-        id: uuidv4(),
-        name: "MockIngredient",
-        amount: 100,
-        kcal: 200,
-        protein: 10,
-        fat: 5,
-        carbs: 25,
-      },
-    ];
-  }
 
   let lastError: any = null;
 

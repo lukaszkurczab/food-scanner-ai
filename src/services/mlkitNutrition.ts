@@ -1,4 +1,3 @@
-// src/services/mlkitNutrition.ts
 import { debugScope } from "@/utils/debug";
 import { getLexicon } from "@/services/nutritionLexicon";
 import type {
@@ -45,6 +44,16 @@ function fuzzyIncludes(hay: string, arr: string[], minPrefix = 3): boolean {
   return false;
 }
 
+function sanitizeNumberToken(s: string) {
+  s = s.replace(/(?<=\d)[\u00A0\u2000-\u200B\u202F\u205F\u3000\s](?=\d)/g, ".");
+  s = s.replace(/,(?=\d)/g, ".");
+  s = s.replace(
+    /(?<=\d)[.\u00A0\u2000-\u200B\u202F\u205F\u3000](?=\d{3}\b)/g,
+    ""
+  );
+  return s;
+}
+
 function numberTokens(
   text: string
 ): { value: number; unit: "kcal" | "kj" | "g" | null }[] {
@@ -53,7 +62,7 @@ function numberTokens(
   const regex = /(-?\d+(?:[\s.,]\d+)?)\s*(kcal|kj|g)?/g;
   let m: RegExpExecArray | null;
   while ((m = regex.exec(ntext)) !== null) {
-    const raw = m[1]?.replace(/\s+/g, "").replace(",", ".");
+    const raw = sanitizeNumberToken(m[1] || "");
     const val = parseFloat(raw);
     if (!Number.isFinite(val)) continue;
     const unit = (m[2] as any) || null;
@@ -203,7 +212,7 @@ function pickInlineValue(
   );
   const m = re.exec(src);
   if (!m) return null;
-  const val = parseFloat(m[2].replace(/\s+/g, "").replace(",", "."));
+  const val = parseFloat(sanitizeNumberToken(m[2] || ""));
   if (!Number.isFinite(val)) return null;
   if (want === "g" && !saneGram(val)) return null;
   return val;
