@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Image, Text, Pressable, StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 import { useTheme } from "@/theme/useTheme";
 import { lightTheme, darkTheme } from "@/theme/themes";
 import { PieChart } from "@/components/PieChart";
@@ -73,6 +77,9 @@ export function ShareCanvas({
 
   const [editor, setEditor] = useState<EditorState>(null);
   const [colorInput, setColorInput] = useState("");
+
+  const panelTranslateY = useSharedValue(0);
+  const panelStartY = useSharedValue(0);
 
   useEffect(() => {
     if (!menuVisible) {
@@ -157,6 +164,7 @@ export function ShareCanvas({
   const openEditor = (next: EditorState) => {
     setEditor(next);
     setMenuOpen(false);
+    panelTranslateY.value = 0;
     if (!next) {
       setSelectedId(null);
       return;
@@ -175,6 +183,24 @@ export function ShareCanvas({
 
   const chartTogglePatch = (value: boolean) =>
     applyPatch({ showChart: value, showPie: value });
+
+  const panelPanGesture = useMemo(() => {
+    return Gesture.Pan()
+      .onBegin(() => {
+        panelStartY.value = panelTranslateY.value;
+      })
+      .onUpdate((event) => {
+        const next = panelStartY.value + event.translationY;
+        const availableLift = Math.max(0, height - 220);
+        const minY = -availableLift;
+        const clamped = Math.min(Math.max(next, minY), 0);
+        panelTranslateY.value = clamped;
+      });
+  }, [height]);
+
+  const panelStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: panelTranslateY.value || 0 }],
+  }));
 
   const getFontFamily = (key: "regular" | "medium" | "bold" | "light") => {
     const fonts = (palette as any)?.typography?.fontFamily;
@@ -440,20 +466,22 @@ export function ShareCanvas({
           onPress={closeEditor}
           accessibilityLabel="Close element editor"
         />
-        <View
-          style={[
-            styles.editorContainer,
-            {
-              backgroundColor: palette.card,
-              borderColor: palette.border,
-            },
-          ]}
-        >
-          <View style={styles.editorHeader}>
-            <Text style={{ color: palette.text, fontWeight: "700" }}>
-              {headerLabel}
-            </Text>
-            <Pressable onPress={closeEditor}>
+        <GestureDetector gesture={panelPanGesture}>
+          <Animated.View
+            style={[
+              styles.editorContainer,
+              panelStyle,
+              {
+                backgroundColor: palette.card,
+                borderColor: palette.border,
+              },
+            ]}
+          >
+            <View style={styles.editorHeader}>
+              <Text style={{ color: palette.text, fontWeight: "700" }}>
+                {headerLabel}
+              </Text>
+              <Pressable onPress={closeEditor}>
               <Text style={{ color: palette.text }}>✕</Text>
             </Pressable>
           </View>
@@ -539,7 +567,8 @@ export function ShareCanvas({
           )}
 
           {editor.type === "text" && renderTextEditor(editor.target)}
-        </View>
+          </Animated.View>
+        </GestureDetector>
       </>
     );
   };
