@@ -6,5 +6,6 @@
   "carbs_sub": ["sugars"],
   "energy": ["kcal", "calories", "energy", "kj"],
   "per100": ["per 100", "100 g", "100 ml"],
-  "serving": ["serving", "portion"]
+  "serving": ["serving", "portion"],
+  "noise": ["salt", "sodium", "fiber", "fibre", "cholesterol"]
 }

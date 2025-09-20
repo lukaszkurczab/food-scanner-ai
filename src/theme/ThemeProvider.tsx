@@ -11,8 +11,8 @@ import { spacing } from "./spacing";
 import { rounded } from "./rounded";
 import { typography } from "./typography";
 
-type ThemeMode = "light" | "dark";
-type ThemeType = typeof lightTheme & {
+import type { ThemeMode, ThemeDefinition } from "./themes";
+type ThemeType = ThemeDefinition & {
   spacing: typeof spacing;
   rounded: typeof rounded;
   typography: typeof typography;

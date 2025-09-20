@@ -1,10 +1,11 @@
 {
   "protein": ["białko", "bialko"],
   "fat_total": ["tłuszcz", "tluszcz"],
-  "fat_sub": ["kwasy nasycone"],
+  "fat_sub": ["kwasy nasycone", "nasycone"],
   "carbs_total": ["węglowodany", "weglowodany"],
   "carbs_sub": ["cukry"],
   "energy": ["kcal", "energia", "kj"],
-  "per100": ["na 100", "100 g", "100 ml"],
-  "serving": ["porcja", "porcje"]
+  "per100": ["na 100", "100 g", "100 ml", "w 100"],
+  "serving": ["porcja", "porcje"],
+  "noise": ["sól", "sol", "błonnik", "blonnik", "cholesterol"]
 }

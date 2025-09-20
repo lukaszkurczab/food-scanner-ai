@@ -1,131 +1,162 @@
-// src/theme/themes.ts
 import { baseColors } from "./colors";
 
-const commonTypo = {
-  fontFamily: {
-    regular: "Inter-Regular",
-    medium: "Inter-Medium",
-    bold: "Inter-Bold",
-    light: "Inter-Light",
-    semiBold: "Inter-SemiBold", // NEW
-    extraBold: "Inter-ExtraBold", // NEW
-  },
-  size: {
-    xs: 12,
-    sm: 14,
-    base: 16,
-    md: 18,
-    lg: 20,
-    xl: 24,
-    xxl: 32,
-    title: 36,
-  },
-  weight: {
-    regular: "400",
-    medium: "500",
-    bold: "bold",
-    semiBold: "600",
-    extraBold: "800" as const,
-  },
-  lineHeight: { base: 24, heading: 32, tight: 20 },
-  rounded: { full: 999 },
-};
+export type ThemeMode = "light" | "dark";
 
-export const lightTheme = {
-  mode: "light" as const,
-  background: baseColors.white,
-  card: baseColors.grayLight,
-  text: baseColors.textLight,
-  textSecondary: baseColors.textSecondaryLight,
-  accent: baseColors.green,
-  accentSecondary: baseColors.accentSecondaryLight,
-  border: baseColors.borderLight,
+export type ThemeDefinition = {
+  mode: ThemeMode;
+  background: string;
+  card: string;
+  text: string;
+  textSecondary: string;
+  accent: string;
+  accentSecondary: string;
+  border: string;
   disabled: {
-    background: baseColors.disabledBackgroundLight,
-    text: baseColors.disabledTextLight,
-    border: baseColors.disabledBorderLight,
-  },
+    background: string;
+    text: string;
+    border: string;
+  };
   macro: {
-    protein: baseColors.blue,
-    fat: baseColors.fatDark,
-    carbs: baseColors.carbsLight,
-  },
+    protein: string;
+    fat: string;
+    carbs: string;
+  };
   error: {
-    background: baseColors.errorBackgroundLight,
-    border: baseColors.errorBorderLight,
-    text: baseColors.errorTextLight,
-  },
+    background: string;
+    border: string;
+    text: string;
+  };
   success: {
-    background: baseColors.successBackgroundLight,
-    text: baseColors.successTextLight,
-  },
+    background: string;
+    text: string;
+  };
   warning: {
-    background: baseColors.warningBackgroundLight,
-    text: baseColors.warningTextLight,
-  },
-  link: baseColors.linkLight,
-  onAccent: baseColors.onAccentLight,
-  overlay: baseColors.overlayLight,
-  shadow: baseColors.shadowLight,
-  typography: commonTypo,
+    background: string;
+    text: string;
+  };
+  link: string;
+  onAccent: string;
+  overlay: string;
+  shadow: string;
 };
 
-export const darkTheme = {
-  mode: "dark" as const,
-  background: baseColors.black,
-  card: baseColors.grayDark,
-  text: baseColors.textDark,
-  textSecondary: baseColors.textSecondaryDark,
+const sharedTokens = {
   accent: baseColors.green,
-  accentSecondary: baseColors.accentSecondaryDark,
-  border: baseColors.borderDark,
-  disabled: {
-    background: baseColors.disabledBackgroundDark,
-    text: baseColors.disabledTextDark,
-    border: baseColors.disabledBorderDark,
-  },
-  macro: {
-    protein: baseColors.proteinDark,
-    fat: baseColors.fatDark,
-    carbs: baseColors.carbsDark,
-  },
-  error: {
-    background: baseColors.errorBackgroundDark,
-    border: baseColors.errorBorderDark,
-    text: baseColors.errorTextDark,
-  },
-  success: {
-    background: baseColors.successBackgroundDark,
-    text: baseColors.successTextDark,
-  },
-  warning: {
-    background: baseColors.warningBackgroundDark,
-    text: baseColors.warningTextDark,
-  },
-  link: baseColors.linkDark,
-  onAccent: baseColors.onAccentDark,
-  overlay: baseColors.overlayDark,
-  shadow: baseColors.shadowDark,
-  typography: commonTypo,
 };
 
-// NEW: additional light variants
-export const purpleTheme = {
-  ...lightTheme,
+const modeTokens: Record<ThemeMode, Omit<ThemeDefinition, "mode" | "accent">> = {
+  light: {
+    background: baseColors.white,
+    card: baseColors.grayLight,
+    text: baseColors.textLight,
+    textSecondary: baseColors.textSecondaryLight,
+    accentSecondary: baseColors.accentSecondaryLight,
+    border: baseColors.borderLight,
+    disabled: {
+      background: baseColors.disabledBackgroundLight,
+      text: baseColors.disabledTextLight,
+      border: baseColors.disabledBorderLight,
+    },
+    macro: {
+      protein: baseColors.blue,
+      fat: baseColors.fatDark,
+      carbs: baseColors.carbsLight,
+    },
+    error: {
+      background: baseColors.errorBackgroundLight,
+      border: baseColors.errorBorderLight,
+      text: baseColors.errorTextLight,
+    },
+    success: {
+      background: baseColors.successBackgroundLight,
+      text: baseColors.successTextLight,
+    },
+    warning: {
+      background: baseColors.warningBackgroundLight,
+      text: baseColors.warningTextLight,
+    },
+    link: baseColors.linkLight,
+    onAccent: baseColors.onAccentLight,
+    overlay: baseColors.overlayLight,
+    shadow: baseColors.shadowLight,
+  },
+  dark: {
+    background: baseColors.black,
+    card: baseColors.grayDark,
+    text: baseColors.textDark,
+    textSecondary: baseColors.textSecondaryDark,
+    accentSecondary: baseColors.accentSecondaryDark,
+    border: baseColors.borderDark,
+    disabled: {
+      background: baseColors.disabledBackgroundDark,
+      text: baseColors.disabledTextDark,
+      border: baseColors.disabledBorderDark,
+    },
+    macro: {
+      protein: baseColors.proteinDark,
+      fat: baseColors.fatDark,
+      carbs: baseColors.carbsDark,
+    },
+    error: {
+      background: baseColors.errorBackgroundDark,
+      border: baseColors.errorBorderDark,
+      text: baseColors.errorTextDark,
+    },
+    success: {
+      background: baseColors.successBackgroundDark,
+      text: baseColors.successTextDark,
+    },
+    warning: {
+      background: baseColors.warningBackgroundDark,
+      text: baseColors.warningTextDark,
+    },
+    link: baseColors.linkDark,
+    onAccent: baseColors.onAccentDark,
+    overlay: baseColors.overlayDark,
+    shadow: baseColors.shadowDark,
+  },
+};
+
+export const createTheme = (
+  mode: ThemeMode,
+  overrides: Partial<ThemeDefinition> = {}
+): ThemeDefinition => {
+  const base = modeTokens[mode];
+  const theme: ThemeDefinition = {
+    mode,
+    accent: sharedTokens.accent,
+    ...base,
+    disabled: { ...base.disabled },
+    macro: { ...base.macro },
+    error: { ...base.error },
+    success: { ...base.success },
+    warning: { ...base.warning },
+  };
+
+  return {
+    ...theme,
+    ...overrides,
+  };
+};
+
+export const lightTheme = createTheme("light");
+export const darkTheme = createTheme("dark");
+
+export const purpleTheme = createTheme("light", {
   accent: baseColors.purple,
   accentSecondary: baseColors.purpleSecondary,
-};
+});
 
-export const orangeTheme = {
-  ...lightTheme,
+export const orangeTheme = createTheme("light", {
   accent: baseColors.orange,
   accentSecondary: baseColors.orangeSecondary,
-};
+});
 
-// opcjonalnie eksport aliasów zbiorczych
 export const themes = {
   light: lightTheme,
   dark: darkTheme,
   purple: purpleTheme,
   orange: orangeTheme,
 };
+
+export type ThemeName = keyof typeof themes;

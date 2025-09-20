@@ -46,7 +46,7 @@ export const MacroChip: React.FC<MacroChipProps> = ({ label, value }) => {
           {
             backgroundColor,
             borderWidth: 1,
-            borderRadius: theme.typography.rounded.full,
+            borderRadius: theme.rounded.full,
             borderColor: color,
           },
         ]}
