@@ -38,6 +38,7 @@
 ├── src
 │   ├── components
 │   │   ├── Alert.tsx
+│   │   ├── BarChart.tsx
 │   │   ├── BottomTabBar.tsx
 │   │   ├── ButtonToggle.tsx
 │   │   ├── Calendar.tsx
@@ -63,6 +64,7 @@
 │   │   ├── ListItem.tsx
 │   │   ├── LongTextInput.tsx
 │   │   ├── MacroChip.tsx
+│   │   ├── MacroOverlay.tsx
 │   │   ├── MealBox.tsx
 │   │   ├── MealListItem.tsx
 │   │   ├── Modal.tsx
@@ -76,7 +78,13 @@
 │   │   ├── ScrollableBox.tsx
 │   │   ├── SearchBox.tsx
 │   │   ├── SecondaryButton.tsx
-│   │   ├── ShareCanvas.tsx
+│   │   ├── share
+│   │   │   ├── colorUtils.ts
+│   │   │   ├── DraggableItem.tsx
+│   │   │   ├── ShareCanvas.tsx
+│   │   │   ├── StyleModal.tsx
+│   │   │   ├── TextSticker.tsx
+│   │   │   └── useRecentColors.ts
 │   │   ├── Slider.tsx
 │   │   ├── StreakBadge.tsx
 │   │   ├── TargetProgressBar.tsx
@@ -96,7 +104,6 @@
 │   │   │   ├── components
 │   │   │   │   ├── Bubble.tsx
 │   │   │   │   ├── InputBar.tsx
-│   │   │   │   ├── OfflineBanner.tsx
 │   │   │   │   ├── PaywallCard.tsx
 │   │   │   │   ├── TopToast.tsx
 │   │   │   │   └── TypingDots.tsx
@@ -175,6 +182,7 @@
 │   │   │   │   ├── RangeTabs.tsx
 │   │   │   │   └── StatCard.tsx
 │   │   │   ├── screens
+│   │   │   │   ├── ProgressShareScreen.tsx
 │   │   │   │   └── StatisticsScreen.tsx
 │   │   │   └── utils
 │   │   │       ├── dateRange.ts
@@ -329,4 +337,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-55 directories, 275 files
+56 directories, 282 files

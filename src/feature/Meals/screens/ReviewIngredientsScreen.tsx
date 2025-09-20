@@ -49,7 +49,6 @@ export default function ReviewIngredientsScreen() {
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    // Reset error state when image URI changes
     setImageError(false);
   }, [image]);
 
@@ -256,7 +255,10 @@ export default function ReviewIngredientsScreen() {
                   <Pressable
                     onPress={() => setImageMenuOpen((v) => !v)}
                     style={styles(theme).menuToggle}
-                    accessibilityLabel={t("options", { ns: "common", defaultValue: "Options" })}
+                    accessibilityLabel={t("options", {
+                      ns: "common",
+                      defaultValue: "Options",
+                    })}
                     hitSlop={10}
                   >
                     <View style={styles(theme).menuDot} />
@@ -264,9 +266,7 @@ export default function ReviewIngredientsScreen() {
                     <View style={styles(theme).menuDot} />
                   </Pressable>
                   {imageMenuOpen && (
-                    <View
-                      style={styles(theme).menuDropdown}
-                    >
+                    <View style={styles(theme).menuDropdown}>
                       <Pressable
                         onPress={() => {
                           setImageMenuOpen(false);
@@ -284,7 +284,10 @@ export default function ReviewIngredientsScreen() {
                         style={styles(theme).menuItem}
                       >
                         <Text style={styles(theme).menuItemText}>
-                          {t("remove_photo", { ns: "meals", defaultValue: "Remove photo" })}
+                          {t("remove_photo", {
+                            ns: "meals",
+                            defaultValue: "Remove photo",
+                          })}
                         </Text>
                       </Pressable>
                     </View>
@@ -399,7 +402,10 @@ export default function ReviewIngredientsScreen() {
             defaultValue:
               "You have unsaved edits. Do you really want to leave?",
           })}
-          primaryActionLabel={t("discard", { ns: "meals", defaultValue: "Discard" })}
+          primaryActionLabel={t("discard", {
+            ns: "meals",
+            defaultValue: "Discard",
+          })}
           onPrimaryAction={confirmExit}
           secondaryActionLabel={t("continue", { ns: "common" })}
           onSecondaryAction={() => setShowExitModal(false)}

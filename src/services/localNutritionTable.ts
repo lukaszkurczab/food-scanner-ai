@@ -13,11 +13,9 @@ const log = debugScope("OCR:Local");
 
 async function parseFrom(uri: string): Promise<Ingredient[] | null> {
   const res = await withTiming("recognizeText", () => recognizeText(uri));
-  log.log("lines:", res.lines.length);
   const parsed = await withTiming("parseLines", () =>
     Promise.resolve(parseNutritionFromLines(res.lines))
   );
-  log.log("parsed:", parsed);
   return parsed ? [toIngredient(parsed)] : null;
 }
 
@@ -28,22 +26,20 @@ export async function extractNutritionFromTableLocal(
   log.log("start", { onDevice, imageUri });
   try {
     const direct = await parseFrom(imageUri);
-    if (direct?.length) {
-      log.log("success:direct");
-      return direct;
+    if (direct?.length) return direct;
+
+    const sizes = [1600, 1280, 960];
+    for (const w of sizes) {
+      const img = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [{ resize: { width: w } }],
+        { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      const res = await parseFrom(img.uri);
+      if (res?.length) return res;
     }
-    log.log("direct failed → try resized 1280");
-    const img = await ImageManipulator.manipulateAsync(
-      imageUri,
-      [{ resize: { width: 1280 } }],
-      { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
-    );
-    const resized = await parseFrom(img.uri);
-    if (resized?.length) log.log("success:resized");
-    else log.warn("resized failed");
-    return resized ?? null;
-  } catch (e) {
-    log.error("error", e);
+    return null;
+  } catch {
     return null;
   }
 }

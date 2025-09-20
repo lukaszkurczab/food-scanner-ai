@@ -9,6 +9,7 @@ export type Lexicon = {
   energy: string[];
   per100: string[];
   serving: string[];
+  noise: string[];
 };
 
 const base: Lexicon = {
@@ -100,6 +101,18 @@ const base: Lexicon = {
     "par portion",
     "per portion",
   ],
+  noise: [
+    "salt",
+    "sodium",
+    "fiber",
+    "fibre",
+    "cholesterol",
+    "sól",
+    "sol",
+    "błonnik",
+    "blonnik",
+    "cholesterol",
+  ],
 };
 
 const maps: Record<string, Partial<Lexicon>> = {
@@ -121,6 +134,7 @@ function mergeLex(a: Lexicon, b?: Partial<Lexicon>): Lexicon {
     energy: uniq([...(a.energy || []), ...(b.energy || [])]),
     per100: uniq([...(a.per100 || []), ...(b.per100 || [])]),
     serving: uniq([...(a.serving || []), ...(b.serving || [])]),
+    noise: uniq([...(a.noise || []), ...(b.noise || [])]),
   };
 }
 

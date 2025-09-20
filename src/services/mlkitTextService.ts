@@ -17,15 +17,12 @@ function toRect(frame: any, idx: number): Rect {
 }
 
 async function devSimulatorFallback(): Promise<RecognizeTextResult> {
-  log.warn(
-    "Simulator detected — MLKit offline unsupported. Using DEV fallback."
-  );
   const lines: RecognizedLine[] = [
-    { text: "per 100 g  per portion", bbox: toRect({}, 0) },
-    { text: "Energy  250 kcal  400 kcal", bbox: toRect({}, 1) },
-    { text: "Protein  12 g  18 g", bbox: toRect({}, 2) },
-    { text: "Fat  8 g  12 g", bbox: toRect({}, 3) },
-    { text: "Carbohydrates  30 g  45 g", bbox: toRect({}, 4) },
+    { text: "per 100 g    per portion", bbox: toRect({}, 0) },
+    { text: "Energy  250 kcal   400 kcal", bbox: toRect({}, 1) },
+    { text: "Protein  12 g   18 g", bbox: toRect({}, 2) },
+    { text: "Fat  8 g   12 g", bbox: toRect({}, 3) },
+    { text: "Carbohydrates  30 g   45 g", bbox: toRect({}, 4) },
   ];
   return { text: lines.map((l) => l.text).join("\n"), lines };
 }
@@ -39,14 +36,11 @@ export async function recognizeText(uri: string): Promise<RecognizeTextResult> {
     const mod = require("@react-native-ml-kit/text-recognition");
     TextRecognition = mod?.default ?? mod;
   } catch (e) {
-    log.error("Module import failed", e);
     throw new Error("mlkit/unavailable");
   }
   if (!TextRecognition?.recognize) throw new Error("mlkit/unavailable");
 
-  log.time("recognize");
   const res: any = await TextRecognition.recognize(uri);
-  log.timeEnd("recognize");
 
   const lines: RecognizedLine[] = [];
   const text: string = typeof res?.text === "string" ? res.text : "";
@@ -79,7 +73,5 @@ export async function recognizeText(uri: string): Promise<RecognizeTextResult> {
       .filter(Boolean)
       .forEach((t, i) => lines.push({ text: t, bbox: toRect({}, i) }));
   }
-
-  log.log("Result lines:", lines.length, "chars:", text.length);
   return { text, lines };
 }
