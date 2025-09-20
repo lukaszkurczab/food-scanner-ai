@@ -104,7 +104,7 @@ export const Layout = ({
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={[styles.root, { backgroundColor: theme.background }]}>
-          <View style={{ maxHeight: Dimensions.get("window").height - 18 }}>
+          <View style={{ maxHeight: Dimensions.get("window").height }}>
             {disableScroll ? (
               <View
                 style={[

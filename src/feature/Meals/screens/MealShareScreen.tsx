@@ -31,7 +31,6 @@ export default function MealShareScreen() {
 
   const share = async () => {
     if (!shotRef.current) return;
-    // Hide editing UI from the captured image
     setMenuVisible(false);
     await wait(50);
     const uri = await captureRef(shotRef, {

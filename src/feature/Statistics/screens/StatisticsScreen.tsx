@@ -159,9 +159,33 @@ export default function StatisticsScreen({ navigation }: any) {
     fat: fatSeries,
   };
 
-  const sumKcal = kcalSeries.reduce((s, v) => s + (v || 0), 0);
-
   const totals = stats.totals ?? { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  const averages = stats.averages ?? {
+    kcal: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+  };
+  const totalKcal =
+    typeof stats.totals?.kcal === "number"
+      ? stats.totals.kcal
+      : kcalSeries.reduce((s, v) => s + (v || 0), 0);
+  const avgKcal =
+    typeof averages.kcal === "number"
+      ? averages.kcal
+      : Math.round(totalKcal / Math.max(1, days));
+  const avgProtein =
+    typeof averages.protein === "number"
+      ? averages.protein
+      : Math.round((totals.protein ?? 0) / Math.max(1, days));
+  const avgCarbs =
+    typeof averages.carbs === "number"
+      ? averages.carbs
+      : Math.round((totals.carbs ?? 0) / Math.max(1, days));
+  const avgFat =
+    typeof averages.fat === "number"
+      ? averages.fat
+      : Math.round((totals.fat ?? 0) / Math.max(1, days));
 
   const hasAnySeriesData =
     kcalSeries.some((v) => v > 0) ||
@@ -273,18 +297,19 @@ export default function StatisticsScreen({ navigation }: any) {
           showsVerticalScrollIndicator={false}
         >
           <ProgressAveragesCard
+            avgKcal={avgKcal}
             caloriesSeries={kcalSeries}
             dailyGoal={userData?.calorieTarget ?? null}
             days={days}
-            totalKcal={sumKcal}
+            totalKcal={totalKcal}
           />
 
           <MetricsGrid
             values={{
-              kcal: sumKcal,
-              protein: totals.protein ?? 0,
-              carbs: totals.carbs ?? 0,
-              fat: totals.fat ?? 0,
+              kcal: avgKcal,
+              protein: avgProtein,
+              carbs: avgCarbs,
+              fat: avgFat,
             }}
             selected={metric}
             onSelect={setMetric}
@@ -318,8 +343,14 @@ export default function StatisticsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  header: { paddingTop: 8, paddingBottom: 8 },
+  root: {
+    flex: 1,
+    paddingBottom: 48,
+  },
+  header: {
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
   banner: {
     margin: 12,
     padding: 12,
@@ -339,5 +370,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyTitle: { fontWeight: "700", fontSize: 18, textAlign: "center" },
-  scroll: {},
+  scroll: {
+    gap: 16,
+  },
 });

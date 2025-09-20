@@ -20,6 +20,7 @@ export type DraggableItemProps = {
   selected: boolean;
   onSelect: (id: ElementId) => void;
   onLongPress?: (id: ElementId) => void;
+  onTap?: (id: ElementId) => void;
   onUpdate: (
     xRatio: number,
     yRatio: number,
@@ -40,6 +41,7 @@ export function DraggableItem({
   onSelect,
   onUpdate,
   onLongPress,
+  onTap,
   children,
 }: DraggableItemProps) {
   const cx = useSharedValue(initialXRatio * canvasW);
@@ -123,18 +125,36 @@ export function DraggableItem({
       );
     });
 
+  const tapGesture = Gesture.Tap()
+    .maxDuration(250)
+    .maxDistance(12)
+    .onEnd(() => {
+      runOnJS(onSelect)(id);
+      if (onTap) runOnJS(onTap)(id);
+    });
+  tapGesture.requireExternalGestureToFail(panGesture);
+  tapGesture.requireExternalGestureToFail(pinchGesture);
+  tapGesture.requireExternalGestureToFail(rotateGesture);
+
   const longPressGesture = Gesture.LongPress()
     .minDuration(300)
     .onStart(() => {
       if (onLongPress) runOnJS(onLongPress)(id);
     });
+  longPressGesture.requireExternalGestureToFail(panGesture);
+  longPressGesture.requireExternalGestureToFail(pinchGesture);
+  longPressGesture.requireExternalGestureToFail(rotateGesture);
 
   const baseGestures = Gesture.Simultaneous(
     panGesture,
     pinchGesture,
     rotateGesture
   );
-  const combinedGesture = Gesture.Exclusive(longPressGesture, baseGestures);
+  const combinedGesture = Gesture.Simultaneous(
+    baseGestures,
+    tapGesture,
+    longPressGesture
+  );
 
   const style = useAnimatedStyle(() => ({
     position: "absolute",

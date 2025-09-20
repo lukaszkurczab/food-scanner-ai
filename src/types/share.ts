@@ -16,6 +16,7 @@ export type ShareOptions = {
   showTitle: boolean;
   showKcal: boolean;
   showPie: boolean;
+  showChart?: boolean;
   showCustom?: boolean;
 
   filter: ShareFilter;
@@ -68,6 +69,7 @@ export type ShareOptions = {
   barOrientation?: BarOrientation; // "vertical" | "horizontal"
   dataSeries?: DataSeries[]; // for "line" and "bar"
   macroLayout?: MacroLayout; // "pie" | "overlay"
+  showMacroOverlay?: boolean;
   macroColor?: {
     protein?: string;
     carbs?: string;
@@ -139,9 +141,11 @@ export const defaultShareOptions: ShareOptions = {
 
   // NEW defaults (spójne z dotychczasowym wyglądem)
   chartType: "pie",
+  showChart: true,
   barOrientation: "vertical",
   dataSeries: [],
   macroLayout: "pie",
+  showMacroOverlay: true,
   macroColor: {
     protein: "#2196F3", // zbieżne z proteinDark
     carbs: "#81C784", // zbieżne z carbsLight

@@ -177,7 +177,6 @@ export default function ProgressShareScreen() {
     setOpts((prev) => ({
       ...prev,
       chartType,
-      showPie: chartType === "pie",
       dataSeries: chartType === "pie" ? [] : dataSeries,
       barOrientation: prev.barOrientation ?? "vertical",
       // dla czytelności – pie pokazujemy w layoucie "pie", overlay można włączyć z menu ShareCanvas
