@@ -34,8 +34,14 @@ export const ProgressAveragesCard: React.FC<Props> = ({
       (v) => (Number(v) || 0) > 0
     ).length;
     usedDays = countEmptyAsZero ? days : Math.max(1, nonEmptyDays);
-    computedAvg = sumFromSeries / usedDays;
-  } else if (avgKcal == null) {
+    if (avgKcal == null) {
+      computedAvg = sumFromSeries / usedDays;
+    }
+  }
+
+  if (avgKcal != null) {
+    computedAvg = avgKcal;
+  } else if (!Array.isArray(caloriesSeries) || caloriesSeries.length === 0) {
     computedAvg = totalKcal / Math.max(1, days);
   }
 

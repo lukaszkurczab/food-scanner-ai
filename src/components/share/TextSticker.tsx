@@ -3,7 +3,6 @@ import { Text } from "react-native";
 import { DraggableItem, ElementId } from "./DraggableItem";
 import { useTheme } from "@/theme/useTheme";
 import type { ShareOptions } from "@/types/share";
-import type { StyleTarget } from "./StyleModal";
 
 function getFontFamily(
   theme: any,
@@ -23,7 +22,7 @@ type Props = {
   titleText: string;
   kcalValue: number;
   onSelect: (id: ElementId) => void;
-  onOpenStyle: (id: StyleTarget) => void;
+  onOpenStyle: (id: Extract<ElementId, "title" | "kcal" | "custom">) => void;
   onPatch: (patch: Partial<ShareOptions>) => void;
 };
 
@@ -102,7 +101,7 @@ export function TextSticker({
       initialRotation={cfg.rotation}
       selected={false}
       onSelect={onSelect}
-      onLongPress={() => onOpenStyle(id)}
+      onTap={() => onOpenStyle(id)}
       onUpdate={(x, y, sc, rot) => {
         if (id === "title")
           onPatch({

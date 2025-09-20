@@ -45,8 +45,6 @@ export const BottomTabBar: React.FC<Props> = ({ renderProfileIcon }) => {
       style={[
         styles.wrapper,
         {
-          marginHorizontal: theme.spacing.lg,
-          backgroundColor: theme.background,
           borderTopEndRadius: theme.rounded.lg,
           borderTopLeftRadius: theme.rounded.lg,
         },
@@ -57,7 +55,8 @@ export const BottomTabBar: React.FC<Props> = ({ renderProfileIcon }) => {
           styles.container,
           {
             backgroundColor: theme.border,
-            borderRadius: theme.rounded.full,
+            borderTopEndRadius: theme.rounded.md,
+            borderTopLeftRadius: theme.rounded.md,
           },
         ]}
       >
@@ -93,16 +92,7 @@ export const BottomTabBar: React.FC<Props> = ({ renderProfileIcon }) => {
           const isProfile = tab.key.toLowerCase() === "profile";
 
           return (
-            <Pressable
-              key={tab.key}
-              onPress={tab.onPress}
-              style={[
-                styles.tab,
-                {
-                  borderRadius: theme.rounded.sm,
-                },
-              ]}
-            >
+            <Pressable key={tab.key} onPress={tab.onPress} style={[styles.tab]}>
               {isProfile && renderProfileIcon ? (
                 renderProfileIcon
               ) : (
@@ -127,7 +117,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingBottom: 16,
   },
   container: {
     flexDirection: "row",

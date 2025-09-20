@@ -5,7 +5,14 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { View, SectionList, RefreshControl, Text, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  View,
+  SectionList,
+  RefreshControl,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNetInfo } from "@react-native-community/netinfo";
@@ -315,7 +322,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     <Layout disableScroll>
       {!netInfo.isConnected && <OfflineBanner />}
       {showFilters ? (
-        <View style={{ height: "100%", paddingBottom: theme.spacing.nav }}>
+        <View style={{ height: "100%" }}>
           <FilterPanel
             scope="history"
             isPremium={isPremium}
