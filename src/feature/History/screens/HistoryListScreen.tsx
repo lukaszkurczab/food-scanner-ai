@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   SectionList,
@@ -98,6 +99,11 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const [cursor, setCursor] = useState<any | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const loadingMoreRef = useRef(false);
+  const firstFocus = useRef(true);
+
+  const resetAndLoadRef = useRef<
+    null | ((options?: { silent?: boolean }) => Promise<void>)
+  >(null);
 
   const serverFilters: HistoryFilters | undefined = useMemo(() => {
     if (!filters) return undefined;
@@ -110,33 +116,53 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     };
   }, [filters]);
 
-  const resetAndLoad = useCallback(async () => {
-    if (!uid) {
-      setItems([]);
-      setCursor(null);
-      setHasMore(false);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const page = await getMealsPageFiltered(uid, {
-        limit: PAGE,
-        cursor: null,
-        filters: serverFilters,
-        accessWindowDays,
-      });
-      setItems(page.items as any);
-      setCursor(page.nextCursor);
-      setHasMore(!!page.nextCursor && page.items.length === PAGE);
-    } catch {
-      setItems([]);
-      setCursor(null);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [uid, serverFilters, accessWindowDays]);
+  const resetAndLoad = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
+      if (!uid) {
+        setItems([]);
+        setCursor(null);
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+      if (!silent) {
+        setLoading(true);
+      }
+      try {
+        const page = await getMealsPageFiltered(uid, {
+          limit: PAGE,
+          cursor: null,
+          filters: serverFilters,
+          accessWindowDays,
+        });
+        setItems(page.items as any);
+        setCursor(page.nextCursor);
+        setHasMore(!!page.nextCursor && page.items.length === PAGE);
+      } catch {
+        setItems([]);
+        setCursor(null);
+        setHasMore(false);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [uid, serverFilters, accessWindowDays]
+  );
+
+  useEffect(() => {
+    resetAndLoadRef.current = resetAndLoad;
+  }, [resetAndLoad]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      resetAndLoadRef.current?.({ silent: true });
+    }, [])
+  );
 
   const loadMore = useCallback(async () => {
     if (!uid || !hasMore || loadingMoreRef.current || !cursor) return;
@@ -242,7 +268,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const onDuplicateMeal = (_meal: Meal) => {};
   const onDeleteMeal = (_mealCloudId?: string) => {};
 
-  if (loading)
+  if (loading && !items.length)
     return (
       <View style={[styles.centerBoth, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.accent} />
