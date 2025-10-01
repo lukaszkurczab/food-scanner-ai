@@ -34,7 +34,7 @@ export default {
       googleServicesFile: "./google-services.json",
     },
     notification: {
-      icon: "./assets/icon.png",
+      icon: "./assets/notification-icon.png",
       color: "#4CAF50",
       androidCollapsedTitle: "caloriai",
     },
