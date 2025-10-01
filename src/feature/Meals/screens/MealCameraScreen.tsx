@@ -305,7 +305,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                     mealId,
                     userUid: uid || "",
                     name: null,
-                    photoUrl: finalUri,
+                    photoUrl: null,
                     ingredients: [],
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
@@ -318,8 +318,6 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                     source: "manual",
                     cloudId: undefined,
                   } as any);
-                } else {
-                  updateMeal({ photoUrl: finalUri, mealId });
                 }
                 let ings = await extractNutritionFromTableLocal(finalUri);
                 log.log("Local OCR result", ings);
@@ -329,7 +327,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                   log.log("Remote OCR result", ings);
                 }
                 if (ings && ings.length) {
-                  updateMeal({ ingredients: ings, mealId, photoUrl: finalUri });
+                  updateMeal({ ingredients: ings, mealId });
                   setIsLoading(false);
                   canLeaveRef.current = true;
                   navigation.replace("ReviewIngredients");

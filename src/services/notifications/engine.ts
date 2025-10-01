@@ -115,10 +115,8 @@ export async function reconcileAll(uid: string) {
         if (isKcalBelowThreshold(consumed, threshold)) {
           const next = nextOccurrenceForDays(n.time, n.days);
           if (next) {
-            const missing = Math.max(
-              0,
-              Math.round((threshold ?? 0) - consumed)
-            );
+            const goalKcal = target > 0 ? target : threshold ?? 0;
+            const missing = Math.max(0, Math.round(goalKcal - consumed));
             const tt = getNotificationText(
               "calorie_goal",
               aiStyle,
