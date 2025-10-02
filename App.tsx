@@ -10,9 +10,7 @@ import { AuthProvider, useAuthContext } from "@/context/AuthContext";
 import { UserProvider } from "@/context/UserContext";
 import { MealDraftProvider } from "@/context/MealDraftContext";
 import { PremiumProvider } from "@/context/PremiumContext";
-import { useFonts } from "expo-font";
 import { View, ActivityIndicator, Platform } from "react-native";
-import { useTheme } from "@/theme";
 import { initRevenueCat } from "@/feature/Subscription";
 import { InactivityProvider } from "@contexts/InactivityContext";
 import { HistoryProvider } from "@/context/HistoryContext";
@@ -30,6 +28,7 @@ import {
 } from "@react-native-firebase/firestore";
 import { getSampleMealUri, getSampleTableUri } from "@/utils/devSamples";
 import { runMigrations } from "@/services/offline/db";
+import { useAppFonts } from "@hooks/useAppFonts";
 
 const TASK_NAME = "CALORIAI_NOTIFICATION_GUARD";
 
@@ -76,7 +75,7 @@ function useBootstrapNotifications() {
       const exists = tasks.find((t) => t.taskName === TASK_NAME);
       if (!exists) {
         await BackgroundTask.registerTaskAsync(TASK_NAME, {
-          minimumInterval: 15, // minutes
+          minimumInterval: 15,
         });
       }
     })();
@@ -96,12 +95,7 @@ function useBootstrapNotifications() {
 
 function Root() {
   useBootstrapNotifications();
-  const [fontsLoaded] = useFonts({
-    "Inter-Regular": require("./assets/fonts/Inter-Regular.ttf"),
-    "Inter-Medium": require("./assets/fonts/Inter-Medium.ttf"),
-    "Inter-Bold": require("./assets/fonts/Inter-Bold.ttf"),
-    "Inter-Light": require("./assets/fonts/Inter-Light.ttf"),
-  });
+  const fontsLoaded = useAppFonts();
 
   useEffect(() => {
     runMigrations();
