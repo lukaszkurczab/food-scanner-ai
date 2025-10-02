@@ -4,10 +4,7 @@ import { DraggableItem, ElementId } from "./DraggableItem";
 import { useTheme } from "@/theme/useTheme";
 import type { ShareOptions } from "@/types/share";
 
-function getFontFamily(
-  theme: any,
-  key: "regular" | "medium" | "bold" | "light"
-) {
+function themeFont(theme: any, key: "regular" | "medium" | "bold" | "light") {
   return (
     theme?.typography?.fontFamily?.[key] ||
     theme?.typography?.fontFamily?.regular
@@ -18,7 +15,11 @@ type Props = {
   id: Extract<ElementId, "title" | "kcal" | "custom">;
   canvasW: number;
   canvasH: number;
-  options: ShareOptions;
+  options: ShareOptions & {
+    titleFontFamilyKey?: string;
+    kcalFontFamilyKey?: string;
+    customFontFamilyKey?: string;
+  };
   titleText: string;
   kcalValue: number;
   onSelect: (id: ElementId) => void;
@@ -55,6 +56,7 @@ export function TextSticker({
       underline: !!options.titleUnderline,
       base: 28,
       text: titleText || "Meal",
+      familyKey: options.titleFontFamilyKey,
     },
     kcal: {
       x: options.kcalX,
@@ -71,6 +73,7 @@ export function TextSticker({
       underline: !!options.kcalUnderline,
       base: 22,
       text: `${Math.round(kcalValue)} kcal`,
+      familyKey: options.kcalFontFamilyKey,
     },
     custom: {
       x: options.customX ?? 0.5,
@@ -87,8 +90,14 @@ export function TextSticker({
       underline: !!options.customUnderline,
       base: 22,
       text: options.customText || "Your text",
+      familyKey: options.customFontFamilyKey,
     },
   }[id];
+
+  const resolvedFamily =
+    cfg.familyKey && typeof cfg.familyKey === "string"
+      ? cfg.familyKey
+      : themeFont(theme, cfg.font);
 
   return (
     <DraggableItem
@@ -130,7 +139,7 @@ export function TextSticker({
         numberOfLines={id === "title" ? 2 : 1}
         style={{
           color: cfg.color,
-          fontFamily: getFontFamily(theme, cfg.font),
+          fontFamily: resolvedFamily,
           fontStyle: cfg.italic ? "italic" : "normal",
           textDecorationLine: cfg.underline ? "underline" : "none",
           textAlign: "center",
