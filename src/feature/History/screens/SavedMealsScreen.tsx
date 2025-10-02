@@ -14,7 +14,13 @@ import { EmptyState } from "../components/EmptyState";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { BottomTabBar, Layout, SearchBox, UserIcon } from "@/components";
+import {
+  BottomTabBar,
+  FullScreenLoader,
+  Layout,
+  SearchBox,
+  UserIcon,
+} from "@/components";
 import { FilterBadgeButton } from "../components/FilterBadgeButton";
 import { FilterPanel } from "../components/FilterPanel";
 import { MealListItem } from "@/components/MealListItem";
@@ -231,7 +237,12 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
 
   const onDuplicateMeal = (meal: Meal) => duplicateMeal(meal);
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading)
+    return (
+      <Layout disableScroll>
+        <FullScreenLoader />
+      </Layout>
+    );
 
   if (!visibleItems.length) {
     return (

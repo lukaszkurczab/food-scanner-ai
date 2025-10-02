@@ -34,3 +34,4 @@ export * from "./SearchBox";
 export * from "./Clock24h";
 export * from "./Clock12h";
 export * from "./share/ShareCanvas";
+export * from "./FullScreenLoader";

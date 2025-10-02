@@ -14,7 +14,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { spacing } from "@/theme";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
-import { Layout } from "@/components";
+import { FullScreenLoader, Layout } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
 import {
   openManageSubscriptions,
@@ -39,7 +39,11 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   const [busy, setBusy] = useState(false);
 
   if (!subscription) {
-    return <Text style={{ color: theme.text }}>Loading…</Text>;
+    return (
+      <Layout disableScroll>
+        <FullScreenLoader />
+      </Layout>
+    );
   }
 
   const state = subscription.state;
