@@ -28,6 +28,8 @@ export type ShareOptions = {
   titleFont?: ShareFont;
   titleItalic?: boolean;
   titleUnderline?: boolean;
+  titleFontFamily?: string;
+  titleFontWeight?: number;
 
   // Kcal
   kcalSize: number;
@@ -36,6 +38,8 @@ export type ShareOptions = {
   kcalFont?: ShareFont;
   kcalItalic?: boolean;
   kcalUnderline?: boolean;
+  kcalFontFamily?: string;
+  kcalFontWeight?: number;
 
   // Pie
   pieSize: number;
@@ -63,12 +67,14 @@ export type ShareOptions = {
   customY?: number;
   customRotation?: number;
   customSize?: number;
+  customFontFamily?: string;
+  customFontWeight?: number;
 
   // NEW: charting + layout + theming
-  chartType?: ChartType; // "pie" | "bar" | "line"
-  barOrientation?: BarOrientation; // "vertical" | "horizontal"
-  dataSeries?: DataSeries[]; // for "line" and "bar"
-  macroLayout?: MacroLayout; // "pie" | "overlay"
+  chartType?: ChartType;
+  barOrientation?: BarOrientation;
+  dataSeries?: DataSeries[];
+  macroLayout?: MacroLayout;
   showMacroOverlay?: boolean;
   macroColor?: {
     protein?: string;
@@ -82,10 +88,10 @@ export type ShareOptions = {
   macroSize?: number;
   macroRotation?: number;
   macroVariant?: "chips" | "bars";
-  altText?: string; // accessibility alt text
-  themePreset?: ThemePreset; // "auto" | "light" | "dark"
-  lineColor?: string; // primary line color
-  barColor?: string; // primary bar color
+  altText?: string;
+  themePreset?: ThemePreset;
+  lineColor?: string;
+  barColor?: string;
 };
 
 export const defaultShareOptions: ShareOptions = {
@@ -139,7 +145,7 @@ export const defaultShareOptions: ShareOptions = {
   customRotation: 0,
   customSize: 18,
 
-  // NEW defaults (spójne z dotychczasowym wyglądem)
+  // NEW defaults
   chartType: "pie",
   showChart: true,
   barOrientation: "vertical",
@@ -147,9 +153,9 @@ export const defaultShareOptions: ShareOptions = {
   macroLayout: "pie",
   showMacroOverlay: true,
   macroColor: {
-    protein: "#2196F3", // zbieżne z proteinDark
-    carbs: "#81C784", // zbieżne z carbsLight
-    fat: "#C6A025", // zbieżne z fatDark
+    protein: "#2196F3",
+    carbs: "#81C784",
+    fat: "#C6A025",
     text: "#FFFFFF",
     background: "rgba(0,0,0,0.35)",
   },
@@ -160,6 +166,6 @@ export const defaultShareOptions: ShareOptions = {
   macroVariant: "chips",
   altText: "",
   themePreset: "auto",
-  lineColor: "#81D4FA", // zbieżne z accentSecondaryLight
-  barColor: "#64B5F6", // zbieżne z blue
+  lineColor: "#81D4FA",
+  barColor: "#64B5F6",
 };
