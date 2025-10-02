@@ -12,10 +12,9 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
 import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
-import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { Layout, PrimaryButton, SecondaryButton } from "@/components";
+import { FullScreenLoader, Layout, PrimaryButton, SecondaryButton } from "@/components";
 import { SearchBox } from "@/components/SearchBox";
 import { MealListItem } from "@/components/MealListItem";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -229,7 +228,12 @@ export default function SelectSavedMealScreen({
     navigation.replace("MealAddMethod");
   }, [navigation]);
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading)
+    return (
+      <Layout disableScroll>
+        <FullScreenLoader />
+      </Layout>
+    );
 
   if (!pageItems.length) {
     return (
