@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, Alert, Image } from "react-native";
+import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
@@ -9,12 +9,17 @@ import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
 import { getStreak } from "@/services/streakService";
 import { useAuthContext } from "@/context/AuthContext";
+import { useBadges } from "@/hooks/useBadges";
+import { usePremiumContext } from "@/context/PremiumContext";
+import AvatarBadge from "@/components/AvatarBadge";
 
 export default function UserProfileScreen({ navigation }: any) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const { userData, updateUser, deleteUser, exportUserData } = useUserContext();
   const { uid } = useAuthContext();
+  const { isPremium } = usePremiumContext();
+  const { badges, ensurePremiumBadges } = useBadges(uid);
   const [streak, setStreak] = useState<number>(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [password, setPassword] = useState("");
@@ -22,8 +27,16 @@ export default function UserProfileScreen({ navigation }: any) {
 
   useEffect(() => {
     if (!uid) return;
-    getStreak(uid).then((s) => setStreak(s.current || 0));
+    getStreak(uid)
+      .then((s) => setStreak(Number(s?.current) || 0))
+      .catch(() => setStreak(0));
   }, [uid]);
+
+  useEffect(() => {
+    if (!uid) return;
+    if (isPremium === null || isPremium === undefined) return;
+    ensurePremiumBadges(isPremium).catch(() => {});
+  }, [uid, isPremium, ensurePremiumBadges]);
 
   if (!userData) {
     navigation.navigate("Login");
@@ -31,6 +44,11 @@ export default function UserProfileScreen({ navigation }: any) {
   }
 
   const darkTheme = !!userData.darkTheme;
+  const avatarSrc = userData.avatarLocalPath || userData.avatarUrl || "";
+  const safeBadges = Array.isArray(badges) ? badges : [];
+  const hasPremiumBadge = safeBadges.some((b) => b.type === "premium");
+  const overrideColor = isPremium && !hasPremiumBadge ? "#C9A227" : undefined;
+  const overrideEmoji = isPremium && !hasPremiumBadge ? "⭐" : undefined;
 
   const handleThemeToggle = async (newValue: boolean) => {
     theme.setMode(newValue ? "dark" : "light");
@@ -41,14 +59,14 @@ export default function UserProfileScreen({ navigation }: any) {
     try {
       const auth = getAuth();
       await signOut(auth);
-    } catch (e) {}
+    } catch {}
   };
 
   const handleDeleteAccount = async () => {
     setShowDeleteModal(false);
     try {
       await deleteUser(password);
-    } catch (e) {
+    } catch {
       Alert.alert(t("deleteAccountError"), t("wrongPasswordOrUnknownError"));
     }
     setPassword("");
@@ -65,7 +83,7 @@ export default function UserProfileScreen({ navigation }: any) {
             "Your data has been prepared and should appear in your sharing options.",
         })
       );
-    } catch (e: any) {
+    } catch {
       Alert.alert(
         t("downloadYourData"),
         t("exportError", { defaultValue: "Could not export your data." })
@@ -74,23 +92,18 @@ export default function UserProfileScreen({ navigation }: any) {
     setExporting(false);
   };
 
-  const avatarSrc = userData.avatarLocalPath || userData.avatarUrl || "";
-  const [avatarError, setAvatarError] = useState(false);
-
   return (
     <Layout>
       <View style={styles.header}>
-        {avatarSrc && !avatarError ? (
-          <Image
-            source={{ uri: avatarSrc }}
-            style={styles.avatar}
-            accessible
-            accessibilityLabel={t("profilePicture")}
-            onError={() => setAvatarError(true)}
-          />
-        ) : (
-          <UserIcon size={96} accessibilityLabel={t("profilePictureDefault")} />
-        )}
+        <AvatarBadge
+          size={96}
+          uri={avatarSrc || undefined}
+          badges={safeBadges}
+          overrideColor={overrideColor}
+          overrideEmoji={overrideEmoji}
+          fallbackIcon={<UserIcon size={84} />}
+          accessibilityLabel={t("profilePicture")}
+        />
         <Text
           style={[styles.username, { color: theme.text }]}
           accessibilityRole="header"
@@ -188,7 +201,7 @@ export default function UserProfileScreen({ navigation }: any) {
       />
       <ListItem
         label={t("logOut")}
-        onPress={handleLogout}
+        onPress={() => handleLogout()}
         accessibilityLabel={t("logOut")}
       />
 
@@ -229,12 +242,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     marginBottom: 32,
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    marginBottom: 8,
   },
   username: {
     fontSize: 24,

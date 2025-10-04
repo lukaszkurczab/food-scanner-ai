@@ -6,14 +6,11 @@
 │   ├── appstore.png
 │   ├── favicon.png
 │   ├── fonts
-│   │   ├── Inter-Bold.ttf
-│   │   ├── Inter-Light.ttf
-│   │   ├── Inter-Medium.ttf
-│   │   └── Inter-Regular.ttf
 │   ├── icon.png
 │   ├── icons
 │   │   ├── close.png
 │   │   └── refresh.png
+│   ├── notification-icon.png
 │   ├── playstore.png
 │   ├── sampleMeal.jpg
 │   ├── sampleTable.jpg
@@ -34,7 +31,8 @@
 ├── package.json
 ├── scripts
 │   ├── build-number.json
-│   └── build.js
+│   ├── build.js
+│   └── download-fonts.mjs
 ├── src
 │   ├── components
 │   │   ├── Alert.tsx
@@ -53,6 +51,7 @@
 │   │   ├── Dropdown.tsx
 │   │   ├── ErrorBox.tsx
 │   │   ├── ErrorButton.tsx
+│   │   ├── FullScreenLoader.tsx
 │   │   ├── IconButton.tsx
 │   │   ├── index.ts
 │   │   ├── IngredientBox.tsx
@@ -212,6 +211,7 @@
 │   │           └── UsernameChangeScreen.tsx
 │   ├── FirebaseConfig.ts
 │   ├── hooks
+│   │   ├── useAppFonts.ts
 │   │   ├── useChatHistory.ts
 │   │   ├── useMeals.ts
 │   │   ├── useNotifications.ts
@@ -324,6 +324,7 @@
 │       ├── findUndefined.ts
 │       ├── getLastNDaysAggregated.ts
 │       ├── getTodayMeals.ts
+│       ├── loadFonts.generated.ts
 │       ├── mealImage.ts
 │       ├── omitLocalUserKeys.ts
 │       ├── parseMarkdownToReactNative.tsx
@@ -337,4 +338,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-56 directories, 282 files
+56 directories, 351 files

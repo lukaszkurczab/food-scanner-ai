@@ -26,7 +26,6 @@
   "changePassword": "Change password",
   "makePhoto": "Make a photo",
   "addFromGallery": "Add from gallery",
-
   "newUsername": "New username",
   "newUsernamePlaceholder": "Enter new username",
   "password": "Password",
@@ -37,17 +36,14 @@
   "usernameAvailable": "Username is available",
   "passwordRequired": "Password is required",
   "checkingUsername": "Checking availability...",
-
   "newEmail": "New email",
   "emailChangeSecurityNote": "You may be asked to log in again for security reasons.",
-
   "check_mailbox_title": "Check your inbox",
   "check_mailbox_desc": "We sent a link to change your password to {{email}}.",
   "check_mailbox_desc2": "If this email exists in our system, you'll soon receive a link to change your password.",
   "back_to_login": "Back to login",
   "send_again": "Send again",
   "send_again_info": "You can send again in {{seconds}} seconds.",
-
   "manageSubscription": {
     "title": "Manage subscription",
     "yourSubscription": "Your subscription",
@@ -97,5 +93,6 @@
   "camera_grant_access": "Grant access",
   "avatarPreview_title": "Confirm photo",
   "avatarPreview_subtitle": "Try again",
-  "manageNotifications": "Manage notifications"
+  "manageNotifications": "Manage notifications",
+  "badges": "Badges"
 }
