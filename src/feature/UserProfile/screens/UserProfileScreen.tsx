@@ -38,10 +38,14 @@ export default function UserProfileScreen({ navigation }: any) {
     ensurePremiumBadges(isPremium).catch(() => {});
   }, [uid, isPremium, ensurePremiumBadges]);
 
-  if (!userData) {
-    navigation.navigate("Login");
-    return null;
-  }
+  // Nawigacja poza renderem
+  useEffect(() => {
+    if (!userData) {
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    }
+  }, [userData, navigation]);
+
+  if (!userData) return null;
 
   const darkTheme = !!userData.darkTheme;
   const avatarSrc = userData.avatarLocalPath || userData.avatarUrl || "";
@@ -201,7 +205,7 @@ export default function UserProfileScreen({ navigation }: any) {
       />
       <ListItem
         label={t("logOut")}
-        onPress={() => handleLogout()}
+        onPress={handleLogout}
         accessibilityLabel={t("logOut")}
       />
 

@@ -12,7 +12,7 @@ import LoginScreen from "@/feature/Auth/screens/LoginScreen";
 import RegisterScreen from "@/feature/Auth/screens/RegisterScreen";
 import MealAddMethodScreen from "@/feature/Meals/screens/MealAddMethodScreen";
 import ReviewIngredientsScreen from "@/feature/Meals/screens/ReviewIngredientsScreen";
-import ProfileScreen from "@/feature/UserProfile/screens/ProfileScreen";
+import ProfileScreen from "@feature/UserProfile/screens/UserProfileScreen";
 import TermsScreen from "@/feature/Auth/screens/TermsScreen";
 import PrivacyScreen from "@/feature/Auth/screens/PrivacyScreen";
 import ResetPasswordScreen from "@/feature/Auth/screens/ResetPasswordScreen";
