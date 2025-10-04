@@ -17,7 +17,7 @@ export function usePremiumStatus() {
   const getDevOverride = async () => {
     const raw = await AsyncStorage.getItem(DEV_FORCE_KEY);
     if (raw === "true" || raw === "false") return raw; // explicit override
-    return null; // no override
+    return null;
   };
 
   const checkPremiumStatus = useCallback(

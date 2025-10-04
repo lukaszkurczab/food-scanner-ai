@@ -26,7 +26,6 @@
   "changePassword": "Zmień hasło",
   "makePhoto": "Zrób zdjęcie",
   "addFromGallery": "Dodaj z galerii",
-
   "newUsername": "Nowa nazwa użytkownika",
   "newUsernamePlaceholder": "Wpisz nową nazwę",
   "password": "Hasło",
@@ -37,17 +36,14 @@
   "usernameAvailable": "Nazwa jest dostępna",
   "passwordRequired": "Hasło jest wymagane",
   "checkingUsername": "Sprawdzanie dostępności...",
-
   "newEmail": "Nowy adres e-mail",
   "emailChangeSecurityNote": "Ze względów bezpieczeństwa możesz zostać poproszony o ponowne zalogowanie.",
-
   "check_mailbox_title": "Sprawdź skrzynkę",
   "check_mailbox_desc": "Wysłaliśmy link do zmiany hasła na adres {{email}}.",
   "check_mailbox_desc2": "Jeśli ten adres istnieje w naszym systemie, wkrótce otrzymasz link do zmiany hasła.",
   "back_to_login": "Powrót do logowania",
   "send_again": "Wyślij ponownie",
   "send_again_info": "Możesz wysłać ponownie za {{seconds}} sekund.",
-
   "manageSubscription": {
     "title": "Zarządzanie subskrypcją",
     "yourSubscription": "Twoja subskrypcja",
@@ -97,5 +93,6 @@
   "camera_grant_access": "Udziel dostępu",
   "avatarPreview_title": "Użyj",
   "avatarPreview_subtitle": "Odrzuć",
-  "manageNotifications": "Zarządzaj powiadomieniami"
+  "manageNotifications": "Zarządzaj powiadomieniami",
+  "badges": "Odznaki"
 }

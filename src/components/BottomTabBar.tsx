@@ -3,41 +3,47 @@ import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { navigate } from "@/navigation/navigate";
+import AvatarBadge from "@/components/AvatarBadge";
+import { useUserContext } from "@/context/UserContext";
+import { useBadges } from "@/hooks/useBadges";
+import { useAuthContext } from "@/context/AuthContext";
+import { usePremiumContext } from "@/context/PremiumContext";
+import { UserIcon } from "@/components";
 
-type Props = {
-  renderProfileIcon?: React.ReactNode;
-};
-
-export const BottomTabBar: React.FC<Props> = ({ renderProfileIcon }) => {
+export const BottomTabBar: React.FC = () => {
   const theme = useTheme();
+  const { uid } = useAuthContext();
+  const { userData } = useUserContext();
+  const { isPremium } = usePremiumContext();
+  const { badges } = useBadges(uid);
+
+  const avatarSrc = userData?.avatarLocalPath || userData?.avatarUrl || "";
+  const safeBadges = Array.isArray(badges) ? badges : [];
+
+  let borderColor: string;
+  if (isPremium) {
+    borderColor = "#C9A227";
+  } else if (safeBadges.some((b) => b.type === "streak")) {
+    const streakBadges = safeBadges.filter((b) => b.type === "streak");
+    streakBadges.sort(
+      (a, b) => (b.milestone as number) - (a.milestone as number)
+    );
+    borderColor = streakBadges[0].color;
+  } else {
+    borderColor = theme.border;
+  }
 
   const tabs = [
-    {
-      key: "Home",
-      icon: "home-filled",
-      onPress: () => navigate("Home"),
-    },
-    {
-      key: "Stats",
-      icon: "bar-chart",
-      onPress: () => navigate("Statistics"),
-    },
+    { key: "Home", icon: "home-filled", onPress: () => navigate("Home") },
+    { key: "Stats", icon: "bar-chart", onPress: () => navigate("Statistics") },
     {
       key: "Add",
       icon: "add",
       isFab: true,
       onPress: () => navigate("MealAddMethod"),
     },
-    {
-      key: "History",
-      icon: "history",
-      onPress: () => navigate("HistoryList"),
-    },
-    {
-      key: "Profile",
-      icon: "person",
-      onPress: () => navigate("Profile"),
-    },
+    { key: "History", icon: "history", onPress: () => navigate("HistoryList") },
+    { key: "Profile", icon: "person", onPress: () => navigate("Profile") },
   ];
 
   return (
@@ -90,11 +96,18 @@ export const BottomTabBar: React.FC<Props> = ({ renderProfileIcon }) => {
           }
 
           const isProfile = tab.key.toLowerCase() === "profile";
-
           return (
             <Pressable key={tab.key} onPress={tab.onPress} style={[styles.tab]}>
-              {isProfile && renderProfileIcon ? (
-                renderProfileIcon
+              {isProfile ? (
+                <AvatarBadge
+                  size={40}
+                  uri={avatarSrc || undefined}
+                  badges={[]} // puste → brak ikonki
+                  overrideColor={borderColor}
+                  overrideEmoji={undefined}
+                  fallbackIcon={<UserIcon size={32} />}
+                  accessibilityLabel="Profile"
+                />
               ) : (
                 <MaterialIcons
                   name={tab.icon as any}
@@ -112,12 +125,7 @@ export const BottomTabBar: React.FC<Props> = ({ renderProfileIcon }) => {
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
+  wrapper: { position: "absolute", left: 0, right: 0, bottom: 0 },
   container: {
     flexDirection: "row",
     alignSelf: "center",
