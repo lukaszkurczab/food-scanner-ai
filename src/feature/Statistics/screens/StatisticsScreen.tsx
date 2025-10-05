@@ -333,11 +333,7 @@ export default function StatisticsScreen({ navigation }: any) {
         </ScrollView>
       )}
 
-      <BottomTabBar
-        renderProfileIcon={
-          <UserIcon size={32} accessibilityLabel="Profile picture" />
-        }
-      />
+      <BottomTabBar />
     </View>
   );
 }
