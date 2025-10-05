@@ -15,6 +15,7 @@ type SecondaryButtonProps = {
   disabled?: boolean;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<any>;
 } & PressableProps;
 
 export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
@@ -23,29 +24,28 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   disabled = false,
   loading = false,
   style,
+  textStyle,
   ...rest
 }) => {
   const theme = useTheme();
 
-  const borderColor = disabled ? theme.textSecondary : theme.accentSecondary;
   const textColor = disabled ? theme.textSecondary : theme.accentSecondary;
-  const backgroundColor = "transparent";
+  const borderColor = textColor;
 
   return (
     <Pressable
       style={({ pressed }) => [
         {
-          backgroundColor,
           borderColor,
-          borderWidth: 1.5,
-          borderRadius: theme.rounded.md,
+          borderWidth: 1,
+          borderRadius: theme.rounded.lg,
           paddingVertical: theme.spacing.md,
           paddingHorizontal: theme.spacing.lg,
           alignSelf: "stretch",
           width: "100%",
           alignItems: "center",
           justifyContent: "center",
-          opacity: pressed && !disabled ? 0.8 : disabled ? 0.6 : 1,
+          opacity: pressed && !disabled ? 0.9 : disabled ? 0.6 : 1,
         },
         style,
       ]}
@@ -59,14 +59,16 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
         <ActivityIndicator size="small" color={textColor} />
       ) : (
         <Text
-          style={{
-            color: textColor,
-            fontSize: theme.typography.size.base,
-            fontWeight: "bold",
-            fontFamily: theme.typography.fontFamily.bold,
-            letterSpacing: 0.2,
-            textAlign: "center",
-          }}
+          style={[
+            {
+              color: textColor,
+              fontSize: theme.typography.size.base,
+              fontFamily: theme.typography.fontFamily.bold,
+              letterSpacing: 1,
+              textAlign: "center",
+            },
+            textStyle,
+          ]}
         >
           {label}
         </Text>

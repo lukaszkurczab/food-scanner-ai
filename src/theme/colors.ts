@@ -44,7 +44,7 @@ export const baseColors = {
   warningBackgroundLight: "#FFF8E1",
   warningTextDark: "#FFD54F",
   warningTextLight: "#FFA000",
-  white: "#FFFFFF",
+  white: "#F9FAFB",
   yellow: "#FFD54F",
 
   purple: "#9C27B0",

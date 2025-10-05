@@ -15,7 +15,15 @@ export const AddMealPlaceholder: React.FC<AddMealPlaceholderProps> = ({
   const { t } = useTranslation("home");
 
   return (
-    <View style={[styles.container, { borderColor: theme.border }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.card,
+          shadowColor: theme.shadow,
+        },
+      ]}
+    >
       <Text style={[styles.title, { color: theme.text }]}>{t("noMeals")}</Text>
       <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
         {t("addFirstMeal")}
@@ -27,15 +35,17 @@ export const AddMealPlaceholder: React.FC<AddMealPlaceholderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 20,
     alignItems: "center",
     marginBottom: 20,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "700",
     marginBottom: 4,
   },
   subtitle: {

@@ -3,8 +3,17 @@ import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import type { Meal } from "@/types/meal";
 import { useTranslation } from "react-i18next";
+import { PrimaryButton } from "@components/PrimaryButton";
 
-export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
+type TodaysMealsListProps = {
+  meals: Meal[];
+  handleAddMeal: () => void;
+};
+
+export const TodaysMealsList = ({
+  meals,
+  handleAddMeal,
+}: TodaysMealsListProps) => {
   const theme = useTheme();
   const { t } = useTranslation("home");
 
@@ -13,9 +22,14 @@ export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
       style={[
         styles.container,
         {
-          borderColor: theme.border,
+          backgroundColor: theme.card,
           padding: theme.spacing.md,
           borderRadius: theme.rounded.md,
+          shadowColor: theme.shadow,
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          elevation: 2,
+          gap: theme.spacing.md,
         },
       ]}
     >
@@ -55,16 +69,17 @@ export const TodaysMealsList = ({ meals }: { meals: Meal[] }) => {
           </View>
         );
       })}
+      <PrimaryButton label={t("addMeal")} onPress={handleAddMeal} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { borderWidth: 1 },
-  title: { fontWeight: "bold", marginBottom: 8 },
+  container: {},
+  title: { fontWeight: "700" },
   mealRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 4,
+    paddingVertical: 6,
   },
 });

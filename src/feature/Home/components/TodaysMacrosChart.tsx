@@ -13,21 +13,9 @@ export const TodaysMacrosChart = ({
   const { t } = useTranslation("home");
 
   const data = [
-    {
-      value: macros.protein,
-      color: theme.macro.protein,
-      label: "Protein",
-    },
-    {
-      value: macros.fat,
-      color: theme.macro.fat,
-      label: "Fat",
-    },
-    {
-      value: macros.carbs,
-      color: theme.macro.carbs,
-      label: "Carbs",
-    },
+    { value: macros.protein, color: theme.macro.protein, label: "Protein" },
+    { value: macros.fat, color: theme.macro.fat, label: "Fat" },
+    { value: macros.carbs, color: theme.macro.carbs, label: "Carbs" },
   ];
 
   return (
@@ -35,9 +23,13 @@ export const TodaysMacrosChart = ({
       style={[
         styles.container,
         {
-          borderColor: theme.border,
+          backgroundColor: theme.card,
           padding: theme.spacing.md,
           borderRadius: theme.rounded.md,
+          shadowColor: theme.shadow,
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          elevation: 2,
         },
       ]}
     >
@@ -47,18 +39,18 @@ export const TodaysMacrosChart = ({
           {
             color: theme.text,
             fontSize: theme.typography.size.lg,
-            marginBottom: theme.spacing.md,
+            marginBottom: theme.spacing.lg,
           },
         ]}
       >
         {t("todaysMacros")}
       </Text>
-      <PieChart data={data} />
+      <PieChart data={data} maxSize={120} justify="space-around" />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { borderWidth: 1 },
-  title: { fontWeight: "bold" },
+  container: {},
+  title: { fontWeight: "700" },
 });

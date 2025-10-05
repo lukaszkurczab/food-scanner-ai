@@ -7,15 +7,16 @@ export function StreakBadge({ value }: { value: number }) {
   return (
     <View
       style={{
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
         paddingVertical: 4,
         borderRadius: 999,
         backgroundColor: theme.accentSecondary,
+        marginLeft: 8,
       }}
     >
       <Text
         style={{
-          color: theme.text,
+          color: theme.onAccent,
           fontFamily: theme.typography.fontFamily.bold,
           fontSize: theme.typography.size.md,
         }}

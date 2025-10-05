@@ -8,7 +8,7 @@ import { AddMealPlaceholder } from "../components/AddMealPlaceholder";
 import { useUserContext } from "@contexts/UserContext";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import { getTodayMeals } from "@/utils/getTodayMeals";
-import { Layout, TargetProgressBar } from "@/components";
+import { BottomTabBar, Layout, TargetProgressBar } from "@/components";
 import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@hooks/useMeals";
@@ -86,14 +86,19 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <Layout>
-      <View style={[styles.flex1, { gap: theme.spacing.lg }]}>
+      <View
+        style={[
+          styles.screen,
+          { gap: theme.spacing.lg, padding: theme.spacing.lg },
+        ]}
+      >
         {userData?.calorieTarget && userData.calorieTarget > 0 ? (
-          <View style={[styles.rowCenter, { gap: theme.spacing.sm }]}>
+          <View style={[styles.headerRow, { gap: theme.spacing.sm }]}>
             <TargetProgressBar current={totalCalories} target={goalCalories} />
             <StreakBadge value={streak} />
           </View>
         ) : (
-          <View style={styles.caloriesBox}>
+          <View style={[styles.card, styles.cardPad]}>
             <Text style={[styles.caloriesText, { color: theme.text }]}>
               {t("home:totalToday", "Total today")}: {totalCalories}{" "}
               {t("common:kcal", "kcal")}
@@ -113,7 +118,10 @@ export default function HomeScreen({ navigation }: any) {
           />
         ) : (
           <>
-            <TodaysMealsList meals={todayMeals} />
+            <TodaysMealsList
+              meals={todayMeals}
+              handleAddMeal={() => navigation.navigate("MealAddMethod")}
+            />
             {showMacrosChart && (
               <TodaysMacrosChart macros={nonZeroMacros as Nutrients} />
             )}
@@ -124,14 +132,16 @@ export default function HomeScreen({ navigation }: any) {
 
         <ButtonSection />
       </View>
+      <BottomTabBar />
     </Layout>
   );
 }
 
 const styles = StyleSheet.create({
-  flex1: { flex: 1 },
-  rowCenter: { flexDirection: "row", alignItems: "center" },
-  caloriesBox: { marginBottom: 16 },
-  caloriesText: { fontSize: 16, fontWeight: "bold" },
-  link: { marginTop: 4, fontSize: 14 },
+  screen: { flex: 1 },
+  headerRow: { flexDirection: "row", alignItems: "center" },
+  card: { backgroundColor: "transparent", borderRadius: 16 },
+  cardPad: { padding: 16 },
+  caloriesText: { fontSize: 18, fontWeight: "700" },
+  link: { marginTop: 6, fontSize: 14 },
 });

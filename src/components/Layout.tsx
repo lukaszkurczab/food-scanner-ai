@@ -14,7 +14,6 @@ import { useRoute } from "@react-navigation/native";
 import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useInactivity } from "@contexts/InactivityContext";
-import UserIcon from "./UserIcon";
 
 const hiddenRoutes = [
   "AvatarCamera",
@@ -28,6 +27,7 @@ const hiddenRoutes = [
   "MealTextAI",
   "MealShare",
   "MealDetails",
+  "Home",
 ];
 
 type LayoutProps = {
@@ -89,6 +89,12 @@ export const Layout = ({
               keyboardShouldPersistTaps="handled"
               style={[styles.root, { backgroundColor: theme.background }]}
             >
+              <StatusBar
+                barStyle={
+                  theme.mode === "dark" ? "light-content" : "dark-content"
+                }
+                backgroundColor={theme.background}
+              />
               {children}
             </ScrollView>
           )}
@@ -157,11 +163,7 @@ export const Layout = ({
             )}
           </View>
           {showNavigation && !isKeyboardVisible && isCardVisible && (
-            <BottomTabBar
-              renderProfileIcon={
-                <UserIcon size={32} accessibilityLabel="Profile picture" />
-              }
-            />
+            <BottomTabBar />
           )}
         </View>
       </TouchableWithoutFeedback>

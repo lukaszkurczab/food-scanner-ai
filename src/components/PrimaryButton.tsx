@@ -42,7 +42,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
         {
           backgroundColor: isDisabled ? disabledBg : backgroundColor,
           opacity: pressed && !isDisabled ? 0.8 : isDisabled ? 0.6 : 1,
-          borderRadius: theme.rounded.md,
+          borderRadius: theme.rounded.lg,
           paddingVertical: theme.spacing.md,
           paddingHorizontal: theme.spacing.lg,
           shadowColor: theme.shadow,
@@ -63,8 +63,9 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
             styles.label,
             {
               color: isDisabled ? disabledText : textColor,
-              fontSize: theme.typography.size.base,
+              fontSize: theme.typography.size.md,
               fontFamily: theme.typography.fontFamily.bold,
+              letterSpacing: 0.7,
             },
             textStyle,
           ]}
@@ -82,10 +83,10 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    shadowOffset: { width: 1, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
   },
   label: {
     fontWeight: "bold",
