@@ -6,11 +6,13 @@ import {
   Pressable,
   Image as RNImage,
   ActivityIndicator,
+  LayoutChangeEvent,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  withTiming,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -20,157 +22,216 @@ type PhotoPreviewProps = {
   onRetake: () => void;
   onAccept: (optimizedUri: string) => void;
   isLoading?: boolean;
-  noCrop?: boolean;
   primaryText: string;
   secondaryText: string;
 };
 
-const CROP_SIZE = 340;
+const FRAME_RATIO = 4 / 3;
 
 export const PhotoPreview = ({
   photoUri,
   onRetake,
   onAccept,
   isLoading = false,
-  noCrop = false,
   primaryText,
   secondaryText,
 }: PhotoPreviewProps) => {
   const theme = useTheme();
 
+  const [imgW, setImgW] = useState(0);
+  const [imgH, setImgH] = useState(0);
+  const [frameW, setFrameW] = useState(0);
+  const [frameH, setFrameH] = useState(0);
+  const [loadError, setLoadError] = useState(false);
+  const [cropMode, setCropMode] = useState(false);
+
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const savedTranslateX = useSharedValue(0);
-  const savedTranslateY = useSharedValue(0);
-
-  const [imageWidth, setImageWidth] = useState(CROP_SIZE);
-  const [imageHeight, setImageHeight] = useState(CROP_SIZE);
-  const [minScale, setMinScale] = useState(1);
+  const tx = useSharedValue(0);
+  const ty = useSharedValue(0);
+  const stx = useSharedValue(0);
+  const sty = useSharedValue(0);
+  const minScale = useSharedValue(1);
 
   useEffect(() => {
+    setLoadError(false);
     if (!photoUri) return;
-    RNImage.getSize(photoUri, (width, height) => {
-      setImageWidth(width);
-      setImageHeight(height);
-      if (!noCrop) {
-        const scaleW = CROP_SIZE / width;
-        const scaleH = CROP_SIZE / height;
-        const min = Math.max(scaleW, scaleH);
-        setMinScale(min);
-        scale.value = min;
-        savedScale.value = min;
-        translateX.value = 0;
-        translateY.value = 0;
-        savedTranslateX.value = 0;
-        savedTranslateY.value = 0;
-      }
+    RNImage.getSize(photoUri, (w, h) => {
+      setImgW(w);
+      setImgH(h);
     });
-  }, [photoUri, noCrop]);
-  const [loadError, setLoadError] = useState(false);
-  useEffect(() => setLoadError(false), [photoUri]);
+  }, [photoUri]);
 
-  function clamp(val: number, min: number, max: number) {
+  const onLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    const h = Math.round(w / FRAME_RATIO);
+    setFrameW(w);
+    setFrameH(h);
+  };
+
+  const fitCover = () => {
+    if (!imgW || !imgH || !frameW || !frameH) return;
+    const s = Math.max(frameW / imgW, frameH / imgH);
+    minScale.value = s;
+    scale.value = withTiming(s);
+    tx.value = withTiming(0);
+    ty.value = withTiming(0);
+  };
+
+  useEffect(() => {
+    fitCover();
+  }, [imgW, imgH, frameW, frameH]);
+
+  const clamp = (v: number, min: number, max: number) => {
     "worklet";
-    return Math.max(min, Math.min(val, max));
-  }
+    return v < min ? min : v > max ? max : v;
+  };
 
   const pan = Gesture.Pan()
-    .enabled(!noCrop)
+    .enabled(cropMode)
     .onBegin(() => {
-      savedTranslateX.value = translateX.value;
-      savedTranslateY.value = translateY.value;
+      stx.value = tx.value;
+      sty.value = ty.value;
     })
     .onUpdate((e) => {
-      let newX = savedTranslateX.value + e.translationX;
-      let newY = savedTranslateY.value + e.translationY;
-      const scaledW = imageWidth * scale.value;
-      const scaledH = imageHeight * scale.value;
-      let maxX = Math.max((scaledW - CROP_SIZE) / 2, 0);
-      let minX = -maxX;
-      let maxY = Math.max((scaledH - CROP_SIZE) / 2, 0);
-      let minY = -maxY;
-      translateX.value = clamp(newX, minX, maxX);
-      translateY.value = clamp(newY, minY, maxY);
+      const w = imgW * scale.value;
+      const h = imgH * scale.value;
+      const maxX = Math.max((w - frameW) / 2, 0);
+      const maxY = Math.max((h - frameH) / 2, 0);
+      tx.value = clamp(stx.value + e.translationX, -maxX, maxX);
+      ty.value = clamp(sty.value + e.translationY, -maxY, maxY);
     });
 
   const pinch = Gesture.Pinch()
-    .enabled(!noCrop)
+    .enabled(cropMode)
     .onBegin(() => {
       savedScale.value = scale.value;
     })
     .onUpdate((e) => {
-      let nextScale = clamp(savedScale.value * e.scale, minScale, 6);
-      scale.value = nextScale;
-      const scaledW = imageWidth * nextScale;
-      const scaledH = imageHeight * nextScale;
-      let maxX = Math.max((scaledW - CROP_SIZE) / 2, 0);
-      let minX = -maxX;
-      let maxY = Math.max((scaledH - CROP_SIZE) / 2, 0);
-      let minY = -maxY;
-      translateX.value = clamp(translateX.value, minX, maxX);
-      translateY.value = clamp(translateY.value, minY, maxY);
+      const s = clamp(savedScale.value * e.scale, minScale.value, 6);
+      scale.value = s;
+      const w = imgW * s;
+      const h = imgH * s;
+      const maxX = Math.max((w - frameW) / 2, 0);
+      const maxY = Math.max((h - frameH) / 2, 0);
+      tx.value = clamp(tx.value, -maxX, maxX);
+      ty.value = clamp(ty.value, -maxY, maxY);
     });
 
   const composed = Gesture.Simultaneous(pan, pinch);
 
-  const animatedImageStyle = useAnimatedStyle(() => ({
-    width: imageWidth,
-    height: imageHeight,
+  const aStyle = useAnimatedStyle(() => ({
+    width: imgW,
+    height: imgH,
     transform: [
       { scale: scale.value },
-      { translateX: translateX.value },
-      { translateY: translateY.value },
+      { translateX: tx.value },
+      { translateY: ty.value },
     ],
   }));
 
-  const handleAccept = async () => {
-    let outUri = photoUri;
-    try {
-      const manipulated = await ImageManipulator.manipulateAsync(
-        photoUri,
-        [{ resize: { width: 1024 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      outUri = manipulated.uri;
-    } catch (err) {
-      outUri = photoUri;
-    }
-    onAccept(outUri);
+  const computeCrop = () => {
+    const s = scale.value;
+    const w = imgW * s;
+    const h = imgH * s;
+    const left = (frameW - w) / 2 + tx.value;
+    const top = (frameH - h) / 2 + ty.value;
+    const visLeft = Math.max(0 - left, 0);
+    const visTop = Math.max(0 - top, 0);
+    const visRight = Math.min(frameW - left, w);
+    const visBottom = Math.min(frameH - top, h);
+    const cropW = Math.max(0, visRight - visLeft);
+    const cropH = Math.max(0, visBottom - visTop);
+    return {
+      originX: visLeft / s,
+      originY: visTop / s,
+      width: cropW / s,
+      height: cropH / s,
+    };
   };
 
+  const handleAccept = async () => {
+    const { originX, originY, width, height } = computeCrop();
+    const actions: ImageManipulator.Action[] = [
+      { crop: { originX, originY, width, height } },
+      { resize: { width: Math.min(1280, Math.round(width)) } },
+    ];
+    try {
+      const res = await ImageManipulator.manipulateAsync(photoUri, actions, {
+        compress: 0.8,
+        format: ImageManipulator.SaveFormat.JPEG,
+      });
+      onAccept(res.uri);
+    } catch {
+      onAccept(photoUri);
+    }
+  };
+
+  const reset = () => fitCover();
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.cropBox}>
-        {noCrop ? (
-          !loadError ? (
-            <RNImage
-              source={{ uri: photoUri }}
-              style={{
-                width: "100%",
-                height: "100%",
-                resizeMode: "contain",
-                borderRadius: 40,
-              }}
-              onError={() => setLoadError(true)}
-            />
-          ) : null
-        ) : (
-          <GestureDetector gesture={composed}>
-            <View style={styles.centerContent}>
-              {!loadError ? (
-                <Animated.Image
-                  source={{ uri: photoUri }}
-                  style={[styles.image, animatedImageStyle]}
-                  resizeMode="cover"
-                  onError={() => setLoadError(true)}
+    <View
+      style={[styles.container, { backgroundColor: theme.background }]}
+      onLayout={onLayout}
+    >
+      <View style={[styles.frame, { width: frameW, height: frameH }]}>
+        <GestureDetector gesture={composed}>
+          <View style={styles.clip}>
+            {!loadError ? (
+              <Animated.Image
+                source={{ uri: photoUri }}
+                style={[styles.img, aStyle]}
+                resizeMode="cover"
+                onError={() => setLoadError(true)}
+              />
+            ) : null}
+          </View>
+        </GestureDetector>
+
+        {/* Ramka z siatką i znacznikami */}
+        {cropMode && (
+          <View pointerEvents="none" style={styles.overlay}>
+            <View style={styles.grid}>
+              {Array.from({ length: 2 }).map((_, i) => (
+                <View
+                  key={i}
+                  style={[styles.lineV, { left: `${(i + 1) * 33.33}%` }]}
                 />
-              ) : null}
+              ))}
+              {Array.from({ length: 2 }).map((_, i) => (
+                <View
+                  key={i}
+                  style={[styles.lineH, { top: `${(i + 1) * 33.33}%` }]}
+                />
+              ))}
             </View>
-          </GestureDetector>
+
+            {/* znaczniki narożników */}
+            <View style={[styles.corner, styles.tl]} />
+            <View style={[styles.corner, styles.tr]} />
+            <View style={[styles.corner, styles.bl]} />
+            <View style={[styles.corner, styles.br]} />
+          </View>
         )}
       </View>
+
+      <View style={styles.toolbar}>
+        <Pressable
+          onPress={() => setCropMode((v) => !v)}
+          style={[styles.toolBtn, { borderColor: theme.border }]}
+        >
+          <Text style={[styles.toolText, { color: theme.text }]}>
+            {cropMode ? "Zakończ przycinanie" : "Przytnij"}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={reset}
+          style={[styles.toolBtn, { borderColor: theme.border }]}
+        >
+          <Text style={[styles.toolText, { color: theme.text }]}>Reset</Text>
+        </Pressable>
+      </View>
+
       <Pressable
         onPress={onRetake}
         disabled={isLoading}
@@ -180,7 +241,6 @@ export const PhotoPreview = ({
             backgroundColor: "transparent",
             borderColor: theme.accentSecondary,
             borderWidth: 1,
-            marginTop: 40,
             opacity: isLoading ? 0.6 : 1,
           },
         ]}
@@ -191,6 +251,7 @@ export const PhotoPreview = ({
           {secondaryText}
         </Text>
       </Pressable>
+
       <Pressable
         onPress={handleAccept}
         disabled={isLoading}
@@ -199,7 +260,6 @@ export const PhotoPreview = ({
           {
             backgroundColor: theme.accentSecondary,
             borderColor: "transparent",
-            marginTop: 16,
             opacity: isLoading ? 0.6 : 1,
           },
         ]}
@@ -221,37 +281,73 @@ export const PhotoPreview = ({
   );
 };
 
+const RADIUS = 28;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
   },
-  cropBox: {
-    width: CROP_SIZE,
-    height: CROP_SIZE,
-    borderRadius: 40,
+  frame: {
+    borderRadius: RADIUS,
     overflow: "hidden",
-    backgroundColor: "#B2C0C9",
-    marginBottom: 10,
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: "#000",
+    marginBottom: 16,
   },
-  centerContent: {
+  clip: { flex: 1, alignItems: "center", justifyContent: "center" },
+  img: { position: "absolute" },
+
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderColor: "#FFF8",
+    borderWidth: 1,
+  },
+  grid: { ...StyleSheet.absoluteFillObject },
+  lineV: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: "#FFF4",
+  },
+  lineH: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: "#FFF4",
+  },
+
+  corner: {
+    position: "absolute",
+    width: 24,
+    height: 24,
+    borderColor: "#FFF",
+  },
+  tl: { top: 0, left: 0, borderTopWidth: 2, borderLeftWidth: 2 },
+  tr: { top: 0, right: 0, borderTopWidth: 2, borderRightWidth: 2 },
+  bl: { bottom: 0, left: 0, borderBottomWidth: 2, borderLeftWidth: 2 },
+  br: { bottom: 0, right: 0, borderBottomWidth: 2, borderRightWidth: 2 },
+
+  toolbar: { width: "100%", flexDirection: "row", gap: 8, marginBottom: 16 },
+  toolBtn: {
     flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  image: {},
+  toolText: { fontSize: 14 },
   button: {
     width: "100%",
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 12,
   },
-  buttonText: {
-    fontSize: 20,
-  },
+  buttonText: { fontSize: 20 },
 });

@@ -171,12 +171,7 @@ const MealAddMethodScreen = () => {
         {t("subtitle")}
       </Text>
 
-      <View
-        style={[
-          styles.optionsWrap,
-          { gap: spacing.xl, paddingTop: spacing.xl },
-        ]}
-      >
+      <View style={[styles.optionsWrap, { gap: spacing.xl }]}>
         {options.map((option) => (
           <TouchableOpacity
             key={option.key}
@@ -186,7 +181,8 @@ const MealAddMethodScreen = () => {
               alignItems: "center",
               backgroundColor: theme.card,
               borderRadius: rounded.md,
-              padding: spacing.lg,
+              paddingHorizontal: spacing.lg,
+              paddingVertical: spacing.md,
               borderWidth: 1.5,
               borderColor: theme.border,
               shadowColor: theme.shadow,
@@ -208,8 +204,8 @@ const MealAddMethodScreen = () => {
             >
               <MaterialIcons
                 name={option.icon as any}
-                size={36}
-                color={theme.textSecondary}
+                size={48}
+                color={theme.accentSecondary}
               />
             </View>
             <View style={{ flex: 1 }}>
