@@ -1,6 +1,6 @@
 export const baseColors = {
   accentSecondaryDark: "#03A9F4",
-  accentSecondaryLight: "#81D4FA",
+  accentSecondaryLight: "#4cc4fbff",
   black: "#121212",
   blue: "#64B5F6",
   borderDark: "#263238",

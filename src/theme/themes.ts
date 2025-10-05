@@ -44,7 +44,10 @@ const sharedTokens = {
   accent: baseColors.green,
 };
 
-const modeTokens: Record<ThemeMode, Omit<ThemeDefinition, "mode" | "accent">> = {
+const modeTokens: Record<
+  ThemeMode,
+  Omit<ThemeDefinition, "mode" | "accent">
+> = {
   light: {
     background: baseColors.white,
     card: baseColors.grayLight,
@@ -59,8 +62,8 @@ const modeTokens: Record<ThemeMode, Omit<ThemeDefinition, "mode" | "accent">> = 
     },
     macro: {
       protein: baseColors.blue,
-      fat: baseColors.fatDark,
-      carbs: baseColors.carbsLight,
+      fat: baseColors.yellow,
+      carbs: baseColors.green,
     },
     error: {
       background: baseColors.errorBackgroundLight,

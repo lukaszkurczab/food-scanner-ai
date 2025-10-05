@@ -118,13 +118,13 @@ export default function HomeScreen({ navigation }: any) {
           />
         ) : (
           <>
+            {showMacrosChart && (
+              <TodaysMacrosChart macros={nonZeroMacros as Nutrients} />
+            )}
             <TodaysMealsList
               meals={todayMeals}
               handleAddMeal={() => navigation.navigate("MealAddMethod")}
             />
-            {showMacrosChart && (
-              <TodaysMacrosChart macros={nonZeroMacros as Nutrients} />
-            )}
           </>
         )}
 

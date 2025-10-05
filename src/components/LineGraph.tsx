@@ -19,7 +19,7 @@ type LineGraphProps = {
   data: number[];
   labels: string[];
   title?: string;
-  stepY?: number; // jeśli podasz, nadpisze auto
+  stepY?: number;
   stepX?: number;
   height?: number;
   smooth?: boolean;
@@ -55,12 +55,7 @@ export const LineGraph = ({
 
   let rawMax = Math.max(...safeData);
   let rawMin = Math.min(...safeData);
-  if (rawMax === rawMin) {
-    rawMax += 1;
-    rawMin -= 1;
-  }
 
-  // 1–2–5 „sufit”
   const niceCeil = (v: number) => {
     const a = Math.abs(v) || 1;
     const exp = Math.floor(Math.log10(a));
@@ -70,17 +65,15 @@ export const LineGraph = ({
     return Math.sign(v || 1) * n * base;
   };
 
-  // „ładny” krok bazowy
   const niceStep = (range: number, targetTicks: number) => {
     const raw = range / Math.max(1, targetTicks);
     const exp = Math.floor(Math.log10(raw));
     const base = Math.pow(10, exp);
     const f = raw / base;
     const n = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
-    return n * base; // zwraca z {1,2,5,10} * 10^exp
+    return n * base;
   };
 
-  // gwarancja 4–8 przedziałów na osi Y
   const clampTicksStep = (
     yMin0: number,
     yMax0: number,
@@ -93,7 +86,6 @@ export const LineGraph = ({
     let yMax = Math.ceil(yMax0 / step) * step;
     let intervals = Math.round((yMax - yMin) / step);
 
-    // jeśli poza zakresem 4–8, koryguj krokiem ×2 lub ÷2 aż do skutku
     for (
       let i = 0;
       i < 12 && (intervals < minTicks || intervals > maxTicks);
@@ -110,20 +102,31 @@ export const LineGraph = ({
     return { step, yMin, yMax, intervals };
   };
 
-  // Skala Y: sufit dla max, 0 jeśli wszystko dodatnie, symetria jeśli <0 też występują
+  // korekta zakresu:
+  // - jeśli wszystkie wartości są równe 0 -> [0, 1]
+  // - jeśli seria jest nieujemna i płaska -> [0, niceCeil(max || 1)]
+  if (rawMax === rawMin) {
+    if (rawMax <= 0) {
+      rawMin = 0;
+      rawMax = 1;
+    } else {
+      rawMin = 0;
+      rawMax = niceCeil(rawMax);
+    }
+  }
+
   const yMaxNice = niceCeil(rawMax);
   let yMin0: number;
   let yMax0: number;
 
   if (rawMin >= 0) {
     yMin0 = 0;
-    yMax0 = yMaxNice;
+    yMax0 = yMaxNice || 1;
   } else {
     yMin0 = -niceCeil(Math.abs(rawMin));
     yMax0 = yMaxNice;
   }
 
-  // ręczny krok nadpisuje automat
   let yMin: number;
   let yMax: number;
   let yStep: number;
@@ -234,13 +237,10 @@ export const LineGraph = ({
     }
   }
 
-  const chartTicks = yTicks.length - 1; // liczba przedziałów (4–8)
-
   const colW = chartW / Math.max(1, safeData.length - 1);
   const hitHalf = Math.max(20, colW / 2);
   const clampY = (y: number) => Math.max(topPad + 10, y - 8);
 
-  // format etykiet zależny od kroku
   const formatTick = (v: number) => {
     if (Number.isInteger(yStep)) return Math.round(v).toString();
     const dec = yStep < 0.1 ? 2 : 1;
@@ -291,7 +291,6 @@ export const LineGraph = ({
             );
           })}
 
-          {/* dolna oś */}
           <Line
             x1={yAxisWidth}
             y1={topPad + chartH}
@@ -306,17 +305,6 @@ export const LineGraph = ({
               d={linePath}
               fill="none"
               stroke={strokeColor}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          )}
-
-          {hasEnoughPoints && (
-            <Path
-              d={linePath}
-              fill="none"
-              stroke={theme.accent}
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
