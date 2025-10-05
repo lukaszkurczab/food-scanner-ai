@@ -38,11 +38,7 @@ export const TargetProgressBar = ({
         <View
           style={{
             paddingHorizontal: 10,
-            paddingVertical: 2,
-            borderRadius: 999,
-            backgroundColor: theme.card,
-            borderWidth: 1,
-            borderColor: theme.border,
+            height: "100%",
             alignSelf: "center",
           }}
         >
