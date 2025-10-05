@@ -54,7 +54,7 @@ export default function ProgressShareScreen() {
     macroLayout: "pie",
     showTitle: true,
     showKcal: false,
-    showPie: true, // domyślnie pokaż koło gdy chartType=pie
+    showPie: true,
   });
 
   const shotRef = useRef<View>(null);
@@ -63,7 +63,6 @@ export default function ProgressShareScreen() {
   const days = rangeKey === "day" ? 1 : rangeKey === "week" ? 7 : 30;
   const range = lastNDaysRange(days);
 
-  // Zbuduj etykiety dzienne
   const labels = useMemo(() => {
     const out: string[] = [];
     const start = new Date(range.start);
@@ -77,7 +76,6 @@ export default function ProgressShareScreen() {
     return out;
   }, [range.start.getTime(), days]);
 
-  // Zbierz posiłki w zakresie
   const inRangeMeals = useMemo(() => {
     const startMs = new Date(range.start).setHours(0, 0, 0, 0);
     const endMs = new Date(range.end).setHours(23, 59, 59, 999);
@@ -93,7 +91,6 @@ export default function ProgressShareScreen() {
     });
   }, [meals, range.start, range.end]);
 
-  // Zsumuj dziennie makro i kcal
   const bucketed = useMemo(() => {
     const start = new Date(range.start);
     start.setHours(0, 0, 0, 0);
@@ -128,7 +125,6 @@ export default function ProgressShareScreen() {
     return buckets;
   }, [inRangeMeals, range.start, days]);
 
-  // Seria danych dla ShareCanvas (bar/line)
   const dataSeries: DataSeries[] = useMemo(() => {
     const add = (key: MetricKey, label: string) =>
       bucketed.map((b) => b[key] ?? 0);
@@ -139,7 +135,6 @@ export default function ProgressShareScreen() {
     if (selected.carbs)
       out.push({ label: "carbs", values: add("carbs", "carbs") });
     if (selected.fat) out.push({ label: "fat", values: add("fat", "fat") });
-    // Gdy nic nie wybrano dla bar/line, domyślnie kcal
     if (!out.length && chartType !== "pie") {
       out.push({ label: "kcal", values: add("kcal", "kcal") });
     }
@@ -149,7 +144,6 @@ export default function ProgressShareScreen() {
     }));
   }, [bucketed, selected, labels.length, chartType]);
 
-  // Sumy do pie/overlay
   const totals = useMemo(() => {
     return bucketed.reduce(
       (acc, b) => ({
@@ -162,7 +156,6 @@ export default function ProgressShareScreen() {
     );
   }, [bucketed]);
 
-  // Tytuł kadru
   const title = useMemo(() => {
     const map: Record<RangeKey, string> = {
       day: "Postępy — 1 dzień",
@@ -172,14 +165,12 @@ export default function ProgressShareScreen() {
     return map[rangeKey];
   }, [rangeKey]);
 
-  // Aktualizuj opcje kanwy gdy zmienia się typ wykresu/serie
   useEffect(() => {
     setOpts((prev) => ({
       ...prev,
       chartType,
       dataSeries: chartType === "pie" ? [] : dataSeries,
       barOrientation: prev.barOrientation ?? "vertical",
-      // dla czytelności – pie pokazujemy w layoucie "pie", overlay można włączyć z menu ShareCanvas
       macroLayout: prev.macroLayout ?? "pie",
     }));
   }, [chartType, dataSeries]);
@@ -211,7 +202,6 @@ export default function ProgressShareScreen() {
           gap: theme.spacing.md,
         }}
       >
-        {/* Sterowanie */}
         <View style={styles.row}>
           {(["day", "week", "month"] as const).map((rk) => (
             <Pill
@@ -249,7 +239,6 @@ export default function ProgressShareScreen() {
           </View>
         )}
 
-        {/* Podgląd do udostępnienia */}
         <View style={styles.center}>
           <ViewShot ref={shotRef}>
             <ShareCanvas
@@ -275,7 +264,6 @@ export default function ProgressShareScreen() {
   );
 }
 
-/* --- UI pomocnicze --- */
 function Pill({
   label,
   active,
