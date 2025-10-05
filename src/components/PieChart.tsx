@@ -14,6 +14,13 @@ type PieChartProps = {
   gap?: number;
   strokeWidth?: number;
   fontSize?: number;
+  justify?:
+    | "flex-start"
+    | "center"
+    | "flex-end"
+    | "space-between"
+    | "space-around"
+    | null;
 };
 
 export const PieChart: React.FC<PieChartProps> = ({
@@ -24,6 +31,7 @@ export const PieChart: React.FC<PieChartProps> = ({
   gap = 16,
   strokeWidth = 0,
   fontSize = 16,
+  justify = null,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation(["meals"]);
@@ -98,13 +106,11 @@ export const PieChart: React.FC<PieChartProps> = ({
           >
             <View
               style={{
-                width: 18,
-                height: 18,
-                borderRadius: 9,
+                width: 14,
+                height: 14,
+                borderRadius: 7,
                 backgroundColor: slice.color,
                 marginRight: 10,
-                borderWidth: 1,
-                borderColor: theme.border,
               }}
             />
             <Text style={{ fontSize, color: theme.text }}>
@@ -128,9 +134,10 @@ export const PieChart: React.FC<PieChartProps> = ({
     >
       <View
         style={{
+          width: "100%",
           flexDirection: "row",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: justify || "center",
           gap,
         }}
       >

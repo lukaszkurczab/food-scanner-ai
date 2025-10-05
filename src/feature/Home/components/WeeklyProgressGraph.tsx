@@ -21,10 +21,14 @@ export const WeeklyProgressGraph = ({
       style={[
         styles.container,
         {
-          borderColor: theme.border,
+          backgroundColor: theme.card,
           paddingTop: theme.spacing.md,
           paddingRight: theme.spacing.md,
           borderRadius: theme.rounded.md,
+          shadowColor: theme.shadow,
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          elevation: 2,
         },
       ]}
     >
@@ -47,6 +51,6 @@ export const WeeklyProgressGraph = ({
 };
 
 const styles = StyleSheet.create({
-  container: { borderWidth: 1 },
-  title: { fontWeight: "bold" },
+  container: {},
+  title: { fontWeight: "700" },
 });

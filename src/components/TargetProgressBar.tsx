@@ -26,7 +26,7 @@ export const TargetProgressBar = ({
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
-          paddingHorizontal: 8,
+          paddingHorizontal: 4,
         }}
       >
         <Text
@@ -35,14 +35,38 @@ export const TargetProgressBar = ({
             { color: theme.text, fontSize: theme.typography.size.lg },
           ]}
         >{`${current} of ${target} kcal`}</Text>
-        <Text
-          style={[
-            styles.labelSecondary,
-            { color: theme.textSecondary, fontSize: theme.typography.size.lg },
-          ]}
-        >{`${percentage.toFixed(0)} %`}</Text>
+        <View
+          style={{
+            paddingHorizontal: 10,
+            paddingVertical: 2,
+            borderRadius: 999,
+            backgroundColor: theme.card,
+            borderWidth: 1,
+            borderColor: theme.border,
+            alignSelf: "center",
+          }}
+        >
+          <Text
+            style={{
+              color: theme.textSecondary,
+              fontSize: theme.typography.size.md,
+              fontFamily: theme.typography.fontFamily.medium,
+            }}
+          >{`${percentage.toFixed(0)} %`}</Text>
+        </View>
       </View>
       <View style={[styles.bar, { backgroundColor: theme.border }]}>
+        <View
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: theme.accent,
+            position: "absolute",
+            left: 2,
+            top: 3,
+          }}
+        />
         <View
           style={[
             styles.progress,
@@ -58,15 +82,14 @@ export const TargetProgressBar = ({
 };
 
 const styles = StyleSheet.create({
-  label: { marginBottom: 4, fontWeight: "bold" },
-  labelSecondary: { fontWeight: "medium" },
+  label: { marginBottom: 6, fontWeight: "700" },
   bar: {
-    height: 16,
-    borderRadius: 8,
+    height: 14,
+    borderRadius: 999,
     overflow: "hidden",
   },
   progress: {
-    height: 16,
-    borderRadius: 8,
+    height: 14,
+    borderRadius: 999,
   },
 });

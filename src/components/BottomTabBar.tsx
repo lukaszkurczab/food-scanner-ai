@@ -60,7 +60,7 @@ export const BottomTabBar: React.FC = () => {
         style={[
           styles.container,
           {
-            backgroundColor: theme.border,
+            backgroundColor: theme.card,
             borderTopEndRadius: theme.rounded.md,
             borderTopLeftRadius: theme.rounded.md,
           },
@@ -75,7 +75,7 @@ export const BottomTabBar: React.FC = () => {
                 style={[
                   styles.fab,
                   {
-                    backgroundColor: theme.textSecondary,
+                    backgroundColor: theme.accentSecondary,
                     borderRadius: theme.rounded.full,
                     shadowColor: theme.shadow,
                     shadowOpacity: 0.3,
@@ -88,7 +88,7 @@ export const BottomTabBar: React.FC = () => {
                 <MaterialIcons
                   name={tab.icon as any}
                   size={32}
-                  color={theme.card}
+                  color={theme.onAccent}
                   style={{ alignSelf: "center" }}
                 />
               </Pressable>
@@ -102,7 +102,7 @@ export const BottomTabBar: React.FC = () => {
                 <AvatarBadge
                   size={40}
                   uri={avatarSrc || undefined}
-                  badges={[]} // puste → brak ikonki
+                  badges={[]}
                   overrideColor={borderColor}
                   overrideEmoji={undefined}
                   fallbackIcon={<UserIcon size={32} />}
