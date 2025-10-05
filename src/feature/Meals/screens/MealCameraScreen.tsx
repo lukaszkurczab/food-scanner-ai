@@ -293,7 +293,6 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
         <PhotoPreview
           photoUri={photoUri}
           onRetake={handleRetake}
-          noCrop
           onAccept={async (optimized) => {
             if (mode === "table") {
               const finalUri = optimized || photoUri;
