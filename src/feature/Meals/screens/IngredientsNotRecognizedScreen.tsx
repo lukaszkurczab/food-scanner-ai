@@ -9,6 +9,8 @@ import {
   ErrorButton,
   Layout,
 } from "@/components";
+import { useMealDraftContext } from "@contexts/MealDraftContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 const MAX_ATTEMPTS = 3;
 
@@ -17,6 +19,8 @@ export default function IngredientsNotRecognizedScreen() {
   const route = useRoute<any>();
   const theme = useTheme();
   const { t } = useTranslation("meals");
+  const { clearMeal } = useMealDraftContext();
+  const { uid } = useAuthContext();
 
   const { image, id, attempt = 1 } = route.params || {};
   const [imgError, setImgError] = useState(false);
@@ -31,6 +35,9 @@ export default function IngredientsNotRecognizedScreen() {
   };
 
   const handleOtherMethod = () => {
+    if (uid) {
+      clearMeal(uid);
+    }
     navigation.replace("MealAddMethod");
   };
 
