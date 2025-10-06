@@ -8,6 +8,8 @@ import {
 } from "@/services/offline/meals.repo";
 import { enqueueUpsert, enqueueDelete } from "@/services/offline/queue.repo";
 import { insertOrUpdateImage } from "@/services/offline/images.repo";
+import { reconcileAll } from "@/services/notifications/engine";
+import { debugScope } from "@/utils/debug";
 
 const PAGE_LIMIT = 50;
 
@@ -26,6 +28,16 @@ function computeTotals(meal: Meal) {
 function isLocalUri(u?: string | null) {
   if (!u || typeof u !== "string") return false;
   return u.startsWith("file://") || u.startsWith("content://");
+}
+
+const log = debugScope("Hook:useMeals");
+
+function triggerReconcile(uid?: string | null) {
+  if (!uid) return;
+  log.log("trigger reconcile", { uid });
+  void reconcileAll(uid).catch((err) => {
+    log.warn("reconcile failed", err);
+  });
 }
 
 export function useMeals(userUid: string | null) {
@@ -106,6 +118,7 @@ export function useMeals(userUid: string | null) {
       await upsertMealLocal(base);
       await enqueueUpsert(userUid, base);
       await loadFirstPage();
+      triggerReconcile(userUid);
     },
     [userUid, loadFirstPage]
   );
@@ -134,6 +147,7 @@ export function useMeals(userUid: string | null) {
       await upsertMealLocal(payload);
       await enqueueUpsert(userUid, payload);
       await loadFirstPage();
+      triggerReconcile(userUid);
     },
     [userUid, loadFirstPage]
   );
@@ -145,6 +159,7 @@ export function useMeals(userUid: string | null) {
       await markDeletedLocal(mealCloudId, now);
       await enqueueDelete(userUid, mealCloudId, now);
       setMeals((prev) => prev.filter((m) => (m.cloudId || "") !== mealCloudId));
+      triggerReconcile(userUid);
     },
     [userUid]
   );
@@ -172,6 +187,7 @@ export function useMeals(userUid: string | null) {
       await upsertMealLocal(copy);
       await enqueueUpsert(userUid, copy);
       await loadFirstPage();
+      triggerReconcile(userUid);
     },
     [userUid, loadFirstPage]
   );
