@@ -23,8 +23,10 @@ import {
   nextOccurrenceForDays,
 } from "./localScheduler";
 import i18n from "@/i18n";
+import { debugScope } from "@/utils/debug";
 
 const running: Record<string, boolean> = {};
+const log = debugScope("Notifications:Engine");
 
 export async function loadUserAIStyle(uid: string): Promise<AIStyle> {
   const app = getApp();
@@ -54,6 +56,7 @@ export async function reconcileAll(uid: string) {
     await ensureAndroidChannel();
     const aiStyle = await loadUserAIStyle(uid);
     const items = await listNotifications(uid);
+    log.log("reconcile start", { uid, count: items.length });
     const locale = i18n.language;
 
     for (const n of items) {
@@ -61,7 +64,10 @@ export async function reconcileAll(uid: string) {
     }
 
     for (const n of items) {
-      if (!n.enabled) continue;
+      if (!n.enabled) {
+        log.log("skip disabled", { id: n.id, type: n.type });
+        continue;
+      }
 
       if (n.type === "meal_reminder") {
         const mealLabel = (n as any)?.mealKind
@@ -75,6 +81,11 @@ export async function reconcileAll(uid: string) {
         );
 
         if (!(n as any)?.mealKind) {
+          log.log("schedule daily meal reminder", {
+            id: n.id,
+            hour: n.time.hour,
+            minute: n.time.minute,
+          });
           await scheduleDailyAt(
             n.time.hour,
             n.time.minute,
@@ -90,6 +101,10 @@ export async function reconcileAll(uid: string) {
           if (!hasMealTypeToday(meals, (n as any).mealKind)) {
             const next = nextOccurrenceForDays(n.time, n.days);
             if (next) {
+              log.log("schedule one-shot meal reminder", {
+                id: n.id,
+                next,
+              });
               await scheduleOneShotAt(
                 next,
                 {
@@ -107,7 +122,8 @@ export async function reconcileAll(uid: string) {
 
       if (n.type === "calorie_goal") {
         const user = await getDoc(doc(getFirestore(getApp()), "users", uid));
-        const target = Number((user.data() as any)?.targetKcal || 0);
+        const data = user.data() as any;
+        const target = Number(data?.calorieTarget || data?.targetKcal || 0);
         const meals = await fetchTodayMeals(uid);
         const consumed = sumConsumedKcal(meals);
         const threshold = (n as any)?.kcalByHour ?? target;
@@ -117,6 +133,14 @@ export async function reconcileAll(uid: string) {
           if (next) {
             const goalKcal = target > 0 ? target : threshold ?? 0;
             const missing = Math.max(0, Math.round(goalKcal - consumed));
+            log.log("schedule calorie goal", {
+              id: n.id,
+              target,
+              threshold,
+              consumed,
+              missing,
+              next,
+            });
             const tt = getNotificationText(
               "calorie_goal",
               aiStyle,
@@ -143,6 +167,7 @@ export async function reconcileAll(uid: string) {
         if (!anyMeals) {
           const next = nextOccurrenceForDays(n.time, n.days);
           if (next) {
+            log.log("schedule day fill", { id: n.id, next });
             const tt = getNotificationText(
               "day_fill",
               aiStyle,
@@ -153,7 +178,7 @@ export async function reconcileAll(uid: string) {
               next,
               {
                 title: tt.title,
-                body: tt.body,
+                body: n.text ?? tt.body,
                 data: { notifId: n.id, type: n.type },
               },
               n.id
@@ -164,6 +189,7 @@ export async function reconcileAll(uid: string) {
       }
     }
   } finally {
+    log.log("reconcile done", { uid });
     running[uid] = false;
   }
 }
