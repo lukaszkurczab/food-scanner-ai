@@ -5,7 +5,14 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { View, FlatList, RefreshControl, ViewToken, Text, StyleSheet } from "react-native";
+import {
+  View,
+  FlatList,
+  RefreshControl,
+  ViewToken,
+  Text,
+  StyleSheet,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
@@ -298,7 +305,15 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
             <RefreshControl refreshing={loading} onRefresh={refresh} />
           }
           renderItem={({ item }) => (
-            <View style={[styles.listItemWrap, { paddingHorizontal: theme.spacing.md, marginBottom: theme.spacing.sm }]}>
+            <View
+              style={[
+                styles.listItemWrap,
+                {
+                  paddingHorizontal: theme.spacing.md,
+                  marginBottom: theme.spacing.sm,
+                },
+              ]}
+            >
               <MealListItem
                 meal={item}
                 onPress={() =>
@@ -321,11 +336,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
           initialNumToRender={PAGE_SIZE}
         />
       )}
-      <BottomTabBar
-        renderProfileIcon={
-          <UserIcon size={32} accessibilityLabel="Profile picture" />
-        }
-      />
+      <BottomTabBar />
     </Layout>
   );
 }

@@ -7,5 +7,11 @@
   "todaysMacros": "Dzisiejsze makroskładniki",
   "todaysMeals": "Dzisiejsze posiłki",
   "meal": "Posiłek",
-  "weeklyProgress": "Postęp tygodniowy"
+  "weeklyProgress": "Postęp tygodniowy",
+  "emptyDay": {
+    "title": "Brak posiłków tego dnia",
+    "subtitle_today": "Dodaj pierwszy posiłek, aby rozpocząć zapis dnia.",
+    "addMeal": "Dodaj posiłek",
+    "openHistory": "Przejdź do historii"
+  }
 }

@@ -3,6 +3,7 @@ import { View, Text } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { SecondaryButton } from "@/components/SecondaryButton";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   isToday: boolean;
@@ -16,6 +17,7 @@ export default function EmptyDayView({
   onOpenHistory,
 }: Props) {
   const theme = useTheme();
+  const { t } = useTranslation("home");
   return (
     <View
       style={{
@@ -37,7 +39,7 @@ export default function EmptyDayView({
           fontFamily: theme.typography.fontFamily.bold,
         }}
       >
-        Brak posiłków tego dnia
+        {t("emptyDay.title")}
       </Text>
 
       {isToday ? (
@@ -49,17 +51,20 @@ export default function EmptyDayView({
               textAlign: "center",
             }}
           >
-            Dodaj pierwszy posiłek, aby rozpocząć zapis dnia.
+            {t("emptyDay.subtitle_today")}
           </Text>
           {onAddMeal ? (
-            <PrimaryButton label="Dodaj posiłek" onPress={onAddMeal} />
+            <PrimaryButton
+              label={t("emptyDay.addMeal")}
+              onPress={onAddMeal}
+            />
           ) : null}
         </>
       ) : (
         <>
           {onOpenHistory ? (
             <SecondaryButton
-              label="Przejdź do historii"
+              label={t("emptyDay.openHistory")}
               onPress={onOpenHistory}
             />
           ) : null}

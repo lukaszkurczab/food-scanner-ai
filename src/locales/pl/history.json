@@ -23,5 +23,8 @@
     "check": "✓",
     "plus": "+",
     "times": "×"
+  },
+  "weekStrip": {
+    "open_history": "Otwórz kalendarz historii"
   }
 }

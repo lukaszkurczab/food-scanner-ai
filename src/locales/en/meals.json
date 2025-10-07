@@ -58,5 +58,14 @@
   "startOver": "Start over",
   "noSavedMeals": "No saved meals",
   "tryDifferentSearch": "Try change filters",
-  "saveMealsToReuse": "Create and save meals to reuse them later"
+  "saveMealsToReuse": "Create and save meals to reuse them later",
+  "photo_preview": {
+    "crop": "Crop",
+    "finish": "Finish cropping",
+    "reset": "Reset"
+  },
+  "dev": {
+    "sample_meal": "Sample meal",
+    "sample_table": "Sample table"
+  }
 }

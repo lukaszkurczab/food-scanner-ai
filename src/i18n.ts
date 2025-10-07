@@ -16,6 +16,7 @@ import en_statistics from "./locales/en/statistics.json";
 import en_home from "./locales/en/home.json";
 import en_history from "./locales/en/history.json";
 import en_notifications from "./locales/en/notifications.json";
+import en_share from "./locales/en/share.json";
 
 import pl_common from "./locales/pl/common.json";
 import pl_login from "./locales/pl/login.json";
@@ -30,6 +31,7 @@ import pl_statistics from "./locales/pl/statistics.json";
 import pl_home from "./locales/pl/home.json";
 import pl_history from "./locales/pl/history.json";
 import pl_notifications from "./locales/pl/notifications.json";
+import pl_share from "./locales/pl/share.json";
 
 const STORAGE_KEY = "APP_LANGUAGE";
 
@@ -73,6 +75,7 @@ i18n
       "home",
       "history",
       "notifications",
+      "share",
     ],
     defaultNS: "common",
     resources: {
@@ -90,6 +93,7 @@ i18n
         home: en_home,
         history: en_history,
         notifications: en_notifications,
+        share: en_share,
       },
       pl: {
         common: pl_common,
@@ -105,6 +109,7 @@ i18n
         home: pl_home,
         history: pl_history,
         notifications: pl_notifications,
+        share: pl_share,
       },
     },
     interpolation: { escapeValue: false },

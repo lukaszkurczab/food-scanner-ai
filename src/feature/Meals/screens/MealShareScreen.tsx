@@ -10,6 +10,7 @@ import { Layout, PrimaryButton, SecondaryButton, Card } from "@/components";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { Meal } from "@/types/meal";
+import { useTranslation } from "react-i18next";
 
 type ScreenRoute = RouteProp<RootStackParamList, "MealShare">;
 
@@ -21,6 +22,7 @@ export default function MealShareScreen() {
   const [opts, setOpts] = useState<ShareOptions>({ ...defaultShareOptions });
   const shotRef = useRef<View>(null);
   const [menuVisible, setMenuVisible] = useState(true);
+  const { t } = useTranslation("common");
 
   const nutrition = useMemo(
     () => calculateTotalNutrients([meal as Meal]),
@@ -70,9 +72,9 @@ export default function MealShareScreen() {
           </ViewShot>
         </View>
 
-        <PrimaryButton label="Udostępnij" onPress={share} />
+        <PrimaryButton label={t("share") } onPress={share} />
         <SecondaryButton
-          label="Wróć"
+          label={t("back")}
           onPress={() =>
             nav.navigate(
               returnTo as any,

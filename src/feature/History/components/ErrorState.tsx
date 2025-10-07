@@ -1,11 +1,13 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
+import { useTranslation } from "react-i18next";
 
 type Props = { message: string; onRetry?: () => void };
 
 export const ErrorState: React.FC<Props> = ({ message, onRetry }) => {
   const theme = useTheme();
+  const { t } = useTranslation("common");
   return (
     <View style={styles.container}>
       <Text
@@ -23,7 +25,7 @@ export const ErrorState: React.FC<Props> = ({ message, onRetry }) => {
             backgroundColor: theme.accent,
           }}
         >
-          <Text style={{ color: theme.onAccent }}>Retry</Text>
+          <Text style={{ color: theme.onAccent }}>{t("retry")}</Text>
         </Pressable>
       )}
     </View>

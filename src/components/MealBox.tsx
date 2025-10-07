@@ -138,9 +138,18 @@ export const MealBox = ({
         value={nutrition.kcal}
       />
       <View style={styles.macrosRow}>
-        <MacroChip label="Protein" value={nutrition.protein} />
-        <MacroChip label="Carbs" value={nutrition.carbs} />
-        <MacroChip label="Fat" value={nutrition.fat} />
+        <MacroChip
+          label={t("protein", { ns: "meals" })}
+          value={nutrition.protein}
+        />
+        <MacroChip
+          label={t("carbs", { ns: "meals" })}
+          value={nutrition.carbs}
+        />
+        <MacroChip
+          label={t("fat", { ns: "meals" })}
+          value={nutrition.fat}
+        />
       </View>
 
       {renderNutritionGraph()}

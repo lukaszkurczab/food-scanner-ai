@@ -1,0 +1,34 @@
+{
+  "editor": {
+    "preview": "Podgląd",
+    "family": "Rodzina",
+    "system_font": "Systemowa",
+    "weight": "Waga",
+    "style": "Styl",
+    "italic": "Kursywa",
+    "underline": "Podkreślenie",
+    "italic_on": "✓ Kursywa",
+    "italic_off": "○ Kursywa",
+    "underline_on": "✓ Podkreślenie",
+    "underline_off": "○ Podkreślenie",
+    "color": "Kolor",
+    "color_placeholder": "#RRGGBB",
+    "color_placeholder_extended": "#RRGGBB lub R,G,B",
+    "apply": "Zastosuj",
+    "text_label": "Tekst",
+    "enter_text_placeholder": "Wpisz tekst",
+    "image_accessibility": "Zdjęcie posiłku",
+    "close_editor_accessibility": "Zamknij edytor",
+    "default_title": "Posiłek",
+    "default_custom_text": "Twój tekst",
+    "target_title": "Tytuł",
+    "target_calories": "Kalorie",
+    "target_custom": "Własny",
+    "font": {
+      "regular": "Regularna",
+      "medium": "Średnia",
+      "bold": "Pogrubiona",
+      "light": "Lekka"
+    }
+  }
+}

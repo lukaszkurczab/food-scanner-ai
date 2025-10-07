@@ -3,6 +3,7 @@ import { View, Image } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useUserContext } from "@/context/UserContext";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   size?: number;
@@ -16,11 +17,12 @@ type Props = {
 export const UserIcon: React.FC<Props> = ({
   size = 120,
   style,
-  accessibilityLabel = "User avatar",
+  accessibilityLabel,
   isPremium = false,
 }) => {
   const theme = useTheme();
   const { userData } = useUserContext();
+  const { t } = useTranslation("common");
 
   const borderColor = isPremium ? theme.macro.fat : theme.card;
   const borderWidth = isPremium ? 4 : 2;
@@ -28,6 +30,9 @@ export const UserIcon: React.FC<Props> = ({
     ? userData.avatarLocalPath || userData.avatarUrl || null
     : null;
   const [error, setError] = useState(false);
+
+  const computedLabel =
+    accessibilityLabel ?? t("user.avatar_accessibility");
 
   useEffect(() => {
     // reset error when source changes
@@ -51,7 +56,7 @@ export const UserIcon: React.FC<Props> = ({
         style,
       ]}
       accessible
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={computedLabel}
     >
       {sourceUri && !error ? (
         <Image
@@ -79,7 +84,7 @@ export const UserIcon: React.FC<Props> = ({
             elevation: 3,
           }}
           accessible
-          accessibilityLabel="Premium user"
+          accessibilityLabel={t("user.premium_badge_accessibility")}
         >
           <MaterialIcons
             name="star"

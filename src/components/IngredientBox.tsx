@@ -124,11 +124,17 @@ export const IngredientBox: React.FC<Props> = ({
         </View>
       </View>
 
-      <MacroChip label="Calories" value={ingredient.kcal} />
+      <MacroChip label={t("calories", { ns: "meals" })} value={ingredient.kcal} />
       <View style={styles.macrosRow}>
-        <MacroChip label="Protein" value={ingredient.protein} />
-        <MacroChip label="Carbs" value={ingredient.carbs} />
-        <MacroChip label="Fat" value={ingredient.fat} />
+        <MacroChip
+          label={t("protein", { ns: "meals" })}
+          value={ingredient.protein}
+        />
+        <MacroChip
+          label={t("carbs", { ns: "meals" })}
+          value={ingredient.carbs}
+        />
+        <MacroChip label={t("fat", { ns: "meals" })} value={ingredient.fat} />
       </View>
 
       <Modal

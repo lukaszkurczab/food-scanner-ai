@@ -15,7 +15,9 @@
   "input": {
     "placeholder": "Zapytaj mnie",
     "search": "Szukaj",
-    "send": "Wyślij"
+    "send": "Wyślij",
+    "search_accessibility": "Pole wyszukiwania",
+    "clear_search_accessibility": "Wyczyść wyszukiwanie"
   },
   "limit": {
     "title": "Dziękujemy za korzystanie z CaloriAI!",
@@ -104,11 +106,21 @@
   "draft_inactivity_message": "Twój szkic zostanie usunięty z powodu bezczynności. Chcesz kontynuować edycję czy wyjść?",
   "quit": "Wyjdź",
   "continue": "Kontynuuj",
+  "retry": "Ponów",
   "camera_loader_title": "Analizowanie posiłku...",
   "camera_loader_subtext": "To może potrwać kilka sekund.",
   "kcal": "kcal",
   "gram": "g",
   "loading": "Ładowanie…",
   "back": "Wróć",
-  "save": "Zapisz"
+  "save": "Zapisz",
+  "share": "Udostępnij",
+  "tabs": {
+    "profile_accessibility": "Otwórz profil"
+  },
+  "user": {
+    "avatar_accessibility": "Awatar użytkownika",
+    "premium_badge_accessibility": "Użytkownik Premium",
+    "profile_picture_accessibility": "Zdjęcie profilowe"
+  }
 }

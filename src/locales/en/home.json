@@ -7,5 +7,11 @@
   "todaysMacros": "Today’s macros",
   "todaysMeals": "Today’s meals",
   "meal": "Meal",
-  "weeklyProgress": "Weekly Progress"
+  "weeklyProgress": "Weekly Progress",
+  "emptyDay": {
+    "title": "No meals on this day",
+    "subtitle_today": "Add your first meal to start tracking.",
+    "addMeal": "Add meal",
+    "openHistory": "Go to history"
+  }
 }

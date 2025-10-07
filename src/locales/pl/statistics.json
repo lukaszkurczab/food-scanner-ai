@@ -29,5 +29,22 @@
     "carbs": "Węglowodany",
     "fat": "Tłuszcz",
     "macroBreakdown": "Rozkład makroskładników"
+  },
+  "share": {
+    "title": {
+      "day": "Postępy — 1 dzień",
+      "week": "Postępy — 7 dni",
+      "month": "Postępy — 30 dni"
+    },
+    "range": {
+      "day": "Dzień",
+      "week": "Tydzień",
+      "month": "Miesiąc"
+    },
+    "chart": {
+      "pie": "Kołowy",
+      "bar": "Słupkowy",
+      "line": "Liniowy"
+    }
   }
 }

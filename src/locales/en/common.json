@@ -15,7 +15,9 @@
   "input": {
     "placeholder": "Ask me anything",
     "search": "Search",
-    "send": "Send"
+    "send": "Send",
+    "search_accessibility": "Search input",
+    "clear_search_accessibility": "Clear search"
   },
   "limit": {
     "title": "Thanks for exploring CaloriAI!",
@@ -104,11 +106,21 @@
   "draft_inactivity_message": "Your draft will be removed due to inactivity. Do you want to continue editing or quit?",
   "quit": "Quit",
   "continue": "Continue",
+  "retry": "Retry",
   "camera_loader_title": "Analyzing your meal...",
   "camera_loader_subtext": "This may take a few seconds.",
   "kcal": "kcal",
   "gram": "g",
   "loading": "Loading…",
   "back": "Back",
-  "save": "Save"
+  "save": "Save",
+  "share": "Share",
+  "tabs": {
+    "profile_accessibility": "Open profile"
+  },
+  "user": {
+    "avatar_accessibility": "User avatar",
+    "premium_badge_accessibility": "Premium user",
+    "profile_picture_accessibility": "Profile picture"
+  }
 }

@@ -13,6 +13,7 @@ import {
 } from "@/types/share";
 import { useMeals } from "@/hooks/useMeals";
 import { useUserContext } from "@/context/UserContext";
+import { useTranslation } from "react-i18next";
 
 type RangeKey = "day" | "week" | "month";
 type MetricKey = "kcal" | "protein" | "carbs" | "fat";
@@ -33,6 +34,7 @@ export default function ProgressShareScreen() {
   const { userData } = useUserContext();
   const uid = userData?.uid || "";
   const { meals = [], getMeals } = (useMeals(uid) as any) ?? {};
+  const { t } = useTranslation(["statistics", "common"]);
 
   useEffect(() => {
     if (typeof getMeals === "function") getMeals();
@@ -126,23 +128,23 @@ export default function ProgressShareScreen() {
   }, [inRangeMeals, range.start, days]);
 
   const dataSeries: DataSeries[] = useMemo(() => {
-    const add = (key: MetricKey, label: string) =>
-      bucketed.map((b) => b[key] ?? 0);
-    const out: DataSeries[] = [];
-    if (selected.kcal) out.push({ label: "kcal", values: add("kcal", "kcal") });
-    if (selected.protein)
-      out.push({ label: "protein", values: add("protein", "protein") });
-    if (selected.carbs)
-      out.push({ label: "carbs", values: add("carbs", "carbs") });
-    if (selected.fat) out.push({ label: "fat", values: add("fat", "fat") });
-    if (!out.length && chartType !== "pie") {
-      out.push({ label: "kcal", values: add("kcal", "kcal") });
+    const valuesFor = (key: MetricKey) => bucketed.map((b) => b[key] ?? 0);
+    const keys: MetricKey[] = [];
+    if (selected.kcal) keys.push("kcal");
+    if (selected.protein) keys.push("protein");
+    if (selected.carbs) keys.push("carbs");
+    if (selected.fat) keys.push("fat");
+    if (!keys.length && chartType !== "pie") {
+      keys.push("kcal");
     }
-    return out.map((s) => ({
-      label: s.label,
-      values: s.values.slice(0, labels.length),
+    return keys.map((key) => ({
+      label:
+        key === "kcal"
+          ? t("tiles.calories", { ns: "statistics" })
+          : t(`tiles.${key}`, { ns: "statistics" }),
+      values: valuesFor(key).slice(0, labels.length),
     }));
-  }, [bucketed, selected, labels.length, chartType]);
+  }, [bucketed, selected, labels.length, chartType, t]);
 
   const totals = useMemo(() => {
     return bucketed.reduce(
@@ -156,14 +158,10 @@ export default function ProgressShareScreen() {
     );
   }, [bucketed]);
 
-  const title = useMemo(() => {
-    const map: Record<RangeKey, string> = {
-      day: "Postępy — 1 dzień",
-      week: "Postępy — 7 dni",
-      month: "Postępy — 30 dni",
-    };
-    return map[rangeKey];
-  }, [rangeKey]);
+  const title = useMemo(
+    () => t(`share.title.${rangeKey}`, { ns: "statistics" }),
+    [rangeKey, t]
+  );
 
   useEffect(() => {
     setOpts((prev) => ({
@@ -206,9 +204,7 @@ export default function ProgressShareScreen() {
           {(["day", "week", "month"] as const).map((rk) => (
             <Pill
               key={rk}
-              label={
-                rk === "day" ? "Dzień" : rk === "week" ? "Tydzień" : "Miesiąc"
-              }
+              label={t(`share.range.${rk}`, { ns: "statistics" })}
               active={rangeKey === rk}
               onPress={() => setRangeKey(rk)}
             />
@@ -219,7 +215,7 @@ export default function ProgressShareScreen() {
           {(["pie", "bar", "line"] as const).map((ct) => (
             <Pill
               key={ct}
-              label={ct === "pie" ? "Pie" : ct === "bar" ? "Bar" : "Line"}
+              label={t(`share.chart.${ct}`, { ns: "statistics" })}
               active={chartType === ct}
               onPress={() => setChartType(ct)}
             />
@@ -231,7 +227,11 @@ export default function ProgressShareScreen() {
             {(["kcal", "protein", "carbs", "fat"] as const).map((m) => (
               <Pill
                 key={m}
-                label={m}
+                label={
+                  m === "kcal"
+                    ? t("tiles.calories", { ns: "statistics" })
+                    : t(`tiles.${m}`, { ns: "statistics" })
+                }
                 active={!!selected[m]}
                 onPress={() => toggleMetric(m)}
               />
@@ -257,8 +257,11 @@ export default function ProgressShareScreen() {
           </ViewShot>
         </View>
 
-        <PrimaryButton label="Udostępnij" onPress={share} />
-        <SecondaryButton label="Wróć" onPress={() => nav.goBack()} />
+        <PrimaryButton label={t("share", { ns: "common" })} onPress={share} />
+        <SecondaryButton
+          label={t("back", { ns: "common" })}
+          onPress={() => nav.goBack()}
+        />
       </ScrollView>
     </Layout>
   );
