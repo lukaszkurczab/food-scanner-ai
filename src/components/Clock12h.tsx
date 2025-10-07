@@ -252,7 +252,7 @@ export const Clock12h: React.FC<Props> = ({ value, onChange }) => {
         {phase === "minute"
           ? Array.from({ length: 12 }).map((_, k) => {
               const m = (k + 1) * 5;
-              const label = m === 60 ? 60 : m;
+              const label = m === 60 ? 0 : m;
               const ang = (m * 6 - 90) * (Math.PI / 180);
               const x = radius + labelRadius * Math.cos(ang);
               const y = radius + labelRadius * Math.sin(ang);
@@ -263,7 +263,7 @@ export const Clock12h: React.FC<Props> = ({ value, onChange }) => {
                   pointerEvents="none"
                 >
                   <Text style={{ fontSize: 16, color: theme.text }}>
-                    {label}
+                    {pad2(label)}
                   </Text>
                 </View>
               );
