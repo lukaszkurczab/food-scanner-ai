@@ -25,6 +25,7 @@
   "analyze": "Analizuj",
   "meal_name_required": "Nazwa posiłku nie może być pusta",
   "ingredient_invalid_values": "Wartości muszą być nieujemne, a ilość > 0",
+  "ingredient_name": "Nazwa składnika",
   "ingredient_name_required": "Nazwa składnika nie może być pusta",
   "calories": "Kalorie",
   "protein": "Białko",

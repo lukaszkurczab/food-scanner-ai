@@ -34,12 +34,14 @@ type LayoutProps = {
   children: React.ReactNode;
   showNavigation?: boolean;
   disableScroll?: boolean;
+  showNavigationWithoutCard?: boolean;
 };
 
 export const Layout = ({
   children,
   showNavigation = true,
   disableScroll = false,
+  showNavigationWithoutCard = false,
 }: LayoutProps) => {
   const theme = useTheme();
   const route = useRoute();
@@ -72,32 +74,32 @@ export const Layout = ({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          {disableScroll ? (
-            <View
-              style={[
-                styles.root,
-                {
-                  backgroundColor: theme.background,
-                },
-              ]}
-            >
-              {children}
-            </View>
-          ) : (
-            <ScrollView
-              contentContainerStyle={{ flexGrow: 1 }}
-              keyboardShouldPersistTaps="handled"
-              style={[styles.root, { backgroundColor: theme.background }]}
-            >
-              <StatusBar
-                barStyle={
-                  theme.mode === "dark" ? "light-content" : "dark-content"
-                }
-                backgroundColor={theme.background}
-              />
-              {children}
-            </ScrollView>
-          )}
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: theme.background,
+              paddingBottom: showNavigationWithoutCard ? 62 : 0,
+            }}
+          >
+            {disableScroll ? (
+              <View style={styles.root}>{children}</View>
+            ) : (
+              <ScrollView
+                contentContainerStyle={{ flexGrow: 1 }}
+                keyboardShouldPersistTaps="handled"
+                style={[styles.root, { backgroundColor: theme.background }]}
+              >
+                <StatusBar
+                  barStyle={
+                    theme.mode === "dark" ? "light-content" : "dark-content"
+                  }
+                  backgroundColor={theme.background}
+                />
+                {children}
+              </ScrollView>
+            )}
+            {showNavigationWithoutCard && <BottomTabBar />}
+          </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     );

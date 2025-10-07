@@ -17,7 +17,12 @@ import {
 
 import type { Meal } from "@/types/meal";
 import { Sync } from "@/utils/debug";
-import { nextBatch, markDone, bumpAttempts, enqueueUpsert } from "./queue.repo";
+import {
+  nextBatch,
+  markDone,
+  bumpAttempts,
+  enqueueUpsert,
+} from "./queue.repo";
 import { getPendingUploads, markUploaded } from "./images.repo";
 import { upsertMealLocal } from "./meals.repo";
 import { getDB } from "./db";
@@ -177,6 +182,31 @@ export async function pushQueue(uid: string): Promise<void> {
           } else {
             pushLog.warn("delete:skip:LWW_remote_newer", op.cloud_id);
           }
+        } else if (op.kind === "upsert_mymeal") {
+          const payload = op.payload as Meal;
+          const docId = (payload as any).mealId || payload.cloudId;
+          if (!docId) throw new Error("mymeal/missing-id");
+          const ref = doc(db, "users", uid, "myMeals", docId);
+          await setDoc(
+            ref,
+            {
+              ...payload,
+              mealId: docId,
+              cloudId: docId,
+              source: payload.source ?? "saved",
+              updatedAt: payload.updatedAt || nowISO(),
+            } as any,
+            { merge: true }
+          );
+          pushLog.log("mymeal:upsert", docId);
+        } else if (op.kind === "delete_mymeal") {
+          const ref = doc(db, "users", uid, "myMeals", op.cloud_id);
+          await setDoc(
+            ref,
+            { deleted: true, updatedAt: op.updated_at },
+            { merge: true }
+          );
+          pushLog.log("mymeal:delete", op.cloud_id);
         } else {
           pushLog.warn("unknown_op", op.kind);
         }

@@ -1,6 +1,7 @@
 import { getDB } from "./db";
 import type { Meal } from "@/types/meal";
 import type { QueueRow, QueueKind } from "./types";
+import { v4 as uuidv4 } from "uuid";
 
 export type { QueueKind } from "./types";
 
@@ -28,6 +29,25 @@ export async function enqueueUpsert(uid: string, meal: Meal): Promise<void> {
   );
 }
 
+export async function enqueueMyMealUpsert(
+  uid: string,
+  meal: Meal
+): Promise<void> {
+  const db = getDB();
+  const docId = meal.mealId ?? meal.cloudId ?? uuidv4();
+  const payload = {
+    ...meal,
+    mealId: docId,
+    cloudId: docId,
+    source: meal.source ?? "saved",
+  };
+  db.runSync(
+    `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
+     VALUES (?, ?, 'upsert_mymeal', ?, ?)`,
+    [docId, uid, JSON.stringify(payload), meal.updatedAt]
+  );
+}
+
 /**
  * Enqueue a delete operation.
  */
@@ -40,6 +60,19 @@ export async function enqueueDelete(
   db.runSync(
     `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
      VALUES (?, ?, 'delete', ?, ?)`,
+    [cloudId, uid, JSON.stringify({ cloudId, deleted: true }), updatedAt]
+  );
+}
+
+export async function enqueueMyMealDelete(
+  uid: string,
+  cloudId: string,
+  updatedAt: string
+): Promise<void> {
+  const db = getDB();
+  db.runSync(
+    `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
+     VALUES (?, ?, 'delete_mymeal', ?, ?)`,
     [cloudId, uid, JSON.stringify({ cloudId, deleted: true }), updatedAt]
   );
 }

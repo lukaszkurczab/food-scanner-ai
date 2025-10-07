@@ -1,4 +1,8 @@
-export type QueueKind = "upsert" | "delete";
+export type QueueKind =
+  | "upsert"
+  | "delete"
+  | "upsert_mymeal"
+  | "delete_mymeal";
 
 export type MealRow = {
   cloud_id: string | null;
