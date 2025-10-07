@@ -6,7 +6,7 @@ import { TodaysMacrosChart } from "../components/TodaysMacrosChart";
 import { ButtonSection } from "../components/ButtonSection";
 import { useUserContext } from "@contexts/UserContext";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
-import { BottomTabBar, Layout, TargetProgressBar } from "@/components";
+import { Layout, TargetProgressBar } from "@/components";
 import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@hooks/useMeals";
@@ -119,7 +119,7 @@ export default function HomeScreen({ navigation }: any) {
   const goalCalories = hasSurvey ? userData?.calorieTarget ?? 0 : 0;
 
   return (
-    <Layout>
+    <Layout showNavigationWithoutCard={true}>
       <View
         style={[
           styles.screen,
@@ -182,7 +182,6 @@ export default function HomeScreen({ navigation }: any) {
 
         <ButtonSection />
       </View>
-      <BottomTabBar />
     </Layout>
   );
 }

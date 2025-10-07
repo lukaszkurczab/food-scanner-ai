@@ -6,7 +6,11 @@ import {
   upsertMealLocal,
   markDeletedLocal,
 } from "@/services/offline/meals.repo";
-import { enqueueUpsert, enqueueDelete } from "@/services/offline/queue.repo";
+import {
+  enqueueUpsert,
+  enqueueDelete,
+  enqueueMyMealUpsert,
+} from "@/services/offline/queue.repo";
 import { insertOrUpdateImage } from "@/services/offline/images.repo";
 import { reconcileAll } from "@/services/notifications/engine";
 import { debugScope } from "@/utils/debug";
@@ -117,6 +121,15 @@ export function useMeals(userUid: string | null) {
 
       await upsertMealLocal(base);
       await enqueueUpsert(userUid, base);
+      if (_opts?.alsoSaveToMyMeals) {
+        const saved: Meal = {
+          ...base,
+          mealId: base.mealId,
+          cloudId: base.mealId,
+          source: "saved",
+        } as Meal;
+        await enqueueMyMealUpsert(userUid, saved);
+      }
       await loadFirstPage();
       triggerReconcile(userUid);
     },

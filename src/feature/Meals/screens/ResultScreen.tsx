@@ -37,8 +37,9 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
     useMealDraftContext();
   const { userData } = useUserContext();
   const { addMeal, meals } = useMeals(uid ?? null);
+  const isFromSaved = (meal as any)?.source === "saved";
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [saveToMyMeals, setSaveToMyMeals] = useState(false);
+  const [saveToMyMeals, setSaveToMyMeals] = useState(isFromSaved);
   const [mealName, setMealName] = useState(meal?.name || autoMealName());
   const [mealType, setMealType] = useState<MealType>(meal?.type || "breakfast");
   const [showIngredients, setShowIngredients] = useState<boolean>(false);
@@ -49,7 +50,6 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const [addedAt, setAddedAt] = useState<Date>(new Date());
 
   const image = meal?.photoUrl ?? null;
-  const isFromSaved = (meal as any)?.source === "saved";
   const [imageError, setImageError] = useState(false);
   useEffect(() => setImageError(false), [image]);
   const shotRef = useRef<View>(null);
