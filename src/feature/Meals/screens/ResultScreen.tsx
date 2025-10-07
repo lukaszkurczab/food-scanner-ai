@@ -142,7 +142,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
               onError={() => setImageError(true)}
             />
             <SecondaryButton
-              label="Share"
+              label={t("share", { ns: "common" })}
               onPress={goShare}
               style={{ marginTop: theme.spacing.md }}
             />

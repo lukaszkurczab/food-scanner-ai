@@ -461,7 +461,9 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                     { backgroundColor: theme.card, borderColor: theme.border },
                   ]}
                 >
-                  <Text style={{ color: theme.text }}>Sample Meal</Text>
+                  <Text style={{ color: theme.text }}>
+                    {t("dev.sample_meal", { ns: "meals" })}
+                  </Text>
                 </Pressable>
                 <Pressable
                   onPress={async () => {
@@ -474,7 +476,9 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                     { backgroundColor: theme.card, borderColor: theme.border },
                   ]}
                 >
-                  <Text style={{ color: theme.text }}>Sample Table</Text>
+                  <Text style={{ color: theme.text }}>
+                    {t("dev.sample_table", { ns: "meals" })}
+                  </Text>
                 </Pressable>
               </View>
             )}

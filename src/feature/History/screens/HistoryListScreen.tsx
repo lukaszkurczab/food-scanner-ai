@@ -416,11 +416,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           />
         </View>
       )}
-      <BottomTabBar
-        renderProfileIcon={
-          <UserIcon size={32} accessibilityLabel="Profile picture" />
-        }
-      />
+      <BottomTabBar />
     </Layout>
   );
 }

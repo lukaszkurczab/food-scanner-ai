@@ -58,5 +58,14 @@
   "discard": "Porzuć",
   "noSavedMeals": "Brak zapisanych posiłków",
   "tryDifferentSearch": "Spróbuj zmienić filtry",
-  "saveMealsToReuse": "Stwórz i zapisz posiłek żeby użyć go później"
+  "saveMealsToReuse": "Stwórz i zapisz posiłek żeby użyć go później",
+  "photo_preview": {
+    "crop": "Przytnij",
+    "finish": "Zakończ przycinanie",
+    "reset": "Resetuj"
+  },
+  "dev": {
+    "sample_meal": "Przykładowy posiłek",
+    "sample_table": "Przykładowa tabela"
+  }
 }

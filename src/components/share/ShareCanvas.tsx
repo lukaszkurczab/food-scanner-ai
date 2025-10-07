@@ -20,6 +20,7 @@ import { parseColor } from "./colorUtils";
 import MacroOverlay from "../MacroOverlay";
 import { FONT_MAP } from "@/utils/loadFonts.generated";
 import { Dropdown } from "@/components/Dropdown";
+import { useTranslation } from "react-i18next";
 
 export type ShareCanvasProps = {
   width: number;
@@ -79,6 +80,7 @@ export function ShareCanvas({
   menuVisible = true,
 }: ShareCanvasProps) {
   const themeSys = useTheme();
+  const { t } = useTranslation(["share", "meals", "common"]);
   const palette =
     options.themePreset === "light"
       ? lightTheme
@@ -153,12 +155,20 @@ export function ShareCanvas({
       {
         value: Math.max(0, protein),
         color: palette.macro.protein,
-        label: "Protein",
+        label: t("protein", { ns: "meals" }),
       },
-      { value: Math.max(0, fat), color: palette.macro.fat, label: "Fat" },
-      { value: Math.max(0, carbs), color: palette.macro.carbs, label: "Carbs" },
+      {
+        value: Math.max(0, fat),
+        color: palette.macro.fat,
+        label: t("fat", { ns: "meals" }),
+      },
+      {
+        value: Math.max(0, carbs),
+        color: palette.macro.carbs,
+        label: t("carbs", { ns: "meals" }),
+      },
     ],
-    [protein, fat, carbs, palette]
+    [protein, fat, carbs, palette, t]
   );
 
   const { overlayStyle } = getFilterOverlay(options.filter);
@@ -241,7 +251,7 @@ export function ShareCanvas({
         italic: !!options.titleItalic,
         underline: !!options.titleUnderline,
         color: options.titleColor || "#FFFFFF",
-        text: title || "Meal",
+        text: title || t("editor.default_title"),
       };
     }
     if (target === "kcal") {
@@ -252,7 +262,7 @@ export function ShareCanvas({
         italic: !!options.kcalItalic,
         underline: !!options.kcalUnderline,
         color: options.kcalColor || "#FFFFFF",
-        text: `${Math.round(kcal)} kcal`,
+        text: `${Math.round(kcal)} ${t("kcal", { ns: "common" })}`,
       };
     }
     return {
@@ -262,7 +272,7 @@ export function ShareCanvas({
       italic: !!options.customItalic,
       underline: !!options.customUnderline,
       color: options.customColor || "#FFFFFF",
-      text: options.customText || "Your text",
+      text: options.customText || t("editor.default_custom_text"),
     };
   };
 
@@ -318,7 +328,11 @@ export function ShareCanvas({
   };
 
   const textTargetLabel = (target: TextTarget) =>
-    target === "title" ? "Title" : target === "kcal" ? "Calories" : "Custom";
+    target === "title"
+      ? t("editor.target_title")
+      : target === "kcal"
+      ? t("editor.target_calories")
+      : t("editor.target_custom");
 
   // Zmapowane klucze rodzin dla Stickerów (aby zmiana była widoczna na canvasie)
   const mappedOptions = useMemo(() => {
@@ -365,7 +379,7 @@ export function ShareCanvas({
 
       return (
         <View style={{ gap: 10 }}>
-          {sectionLabel("Preview")}
+          {sectionLabel(t("editor.preview"))}
           <View style={styles.textPreviewBox}>
             <Text
               style={{
@@ -381,11 +395,11 @@ export function ShareCanvas({
             </Text>
           </View>
 
-          {sectionLabel("Family")}
+          {sectionLabel(t("editor.family"))}
           <Dropdown
             value={state.family ?? null}
             options={[
-              { label: "System", value: null },
+              { label: t("editor.system_font"), value: null },
               ...FONT_FAMILIES.map((fam) => ({ label: fam, value: fam })),
             ]}
             onChange={(fam) => setTextFontFamily(target, fam || undefined)}
@@ -393,7 +407,7 @@ export function ShareCanvas({
 
           {state.family && (
             <>
-              {sectionLabel("Weight")}
+              {sectionLabel(t("editor.weight"))}
               <Dropdown
                 value={state.weight ? String(state.weight) : null}
                 options={FAMILY_WEIGHTS(state.family).map((w) => ({
@@ -407,21 +421,29 @@ export function ShareCanvas({
             </>
           )}
 
-          {sectionLabel("Style")}
+          {sectionLabel(t("editor.style"))}
           <View style={styles.optionRow}>
             <Pressable onPress={() => toggleTextItalic(target)}>
               <Text style={{ color: palette.text }}>
-                {state.italic ? "✓ Italic" : "○ Italic"}
+                {t(
+                  state.italic
+                    ? "editor.italic_on"
+                    : "editor.italic_off"
+                )}
               </Text>
             </Pressable>
             <Pressable onPress={() => toggleTextUnderline(target)}>
               <Text style={{ color: palette.text }}>
-                {state.underline ? "✓ Underline" : "○ Underline"}
+                {t(
+                  state.underline
+                    ? "editor.underline_on"
+                    : "editor.underline_off"
+                )}
               </Text>
             </Pressable>
           </View>
 
-          {sectionLabel("Color")}
+          {sectionLabel(t("editor.color"))}
           <View style={styles.optionRow}>
             {uniqueQuickColors.map((hex) => (
               <Pressable
@@ -444,7 +466,7 @@ export function ShareCanvas({
           </View>
 
           <StyledInput
-            placeholder="#RRGGBB"
+            placeholder={t("editor.color_placeholder")}
             value={colorInput}
             onChangeText={setColorInput}
             onSubmitEditing={() => {
@@ -465,7 +487,7 @@ export function ShareCanvas({
           <Pressable
             style={styles.editorBackdrop}
             onPress={closeEditor}
-            accessibilityLabel="Close editor"
+            accessibilityLabel={t("editor.close_editor_accessibility")}
           />
           <Animated.View
             style={[
@@ -490,7 +512,9 @@ export function ShareCanvas({
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
             onError={() => setPhotoError(true)}
-            accessibilityLabel={options.altText || title || "Meal photo"}
+            accessibilityLabel={
+              options.altText || title || t("editor.image_accessibility")
+            }
           />
         )}
         {overlayStyle && (

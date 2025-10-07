@@ -145,7 +145,12 @@ export default function MealDetailsScreen() {
           height={220}
           borderRadius={theme.rounded.lg}
         />
-        {draft.photoUrl && <SecondaryButton label="Share" onPress={goShare} />}
+        {draft.photoUrl && (
+          <SecondaryButton
+            label={t("share", { ns: "common" })}
+            onPress={goShare}
+          />
+        )}
 
         <MealBox
           name={draft.name || ""}

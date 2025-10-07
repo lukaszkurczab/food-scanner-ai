@@ -16,6 +16,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import * as ImageManipulator from "expo-image-manipulator";
+import { useTranslation } from "react-i18next";
 
 type PhotoPreviewProps = {
   photoUri: string;
@@ -37,6 +38,7 @@ export const PhotoPreview = ({
   secondaryText,
 }: PhotoPreviewProps) => {
   const theme = useTheme();
+  const { t } = useTranslation("meals");
 
   const [imgW, setImgW] = useState(0);
   const [imgH, setImgH] = useState(0);
@@ -221,14 +223,18 @@ export const PhotoPreview = ({
           style={[styles.toolBtn, { borderColor: theme.border }]}
         >
           <Text style={[styles.toolText, { color: theme.text }]}>
-            {cropMode ? "Zakończ przycinanie" : "Przytnij"}
+            {cropMode
+              ? t("photo_preview.finish")
+              : t("photo_preview.crop")}
           </Text>
         </Pressable>
         <Pressable
           onPress={reset}
           style={[styles.toolBtn, { borderColor: theme.border }]}
         >
-          <Text style={[styles.toolText, { color: theme.text }]}>Reset</Text>
+          <Text style={[styles.toolText, { color: theme.text }]}>
+            {t("photo_preview.reset")}
+          </Text>
         </Pressable>
       </View>
 

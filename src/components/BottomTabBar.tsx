@@ -9,6 +9,7 @@ import { useBadges } from "@/hooks/useBadges";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { UserIcon } from "@/components";
+import { useTranslation } from "react-i18next";
 
 export const BottomTabBar: React.FC = () => {
   const theme = useTheme();
@@ -16,6 +17,7 @@ export const BottomTabBar: React.FC = () => {
   const { userData } = useUserContext();
   const { isPremium } = usePremiumContext();
   const { badges } = useBadges(uid);
+  const { t } = useTranslation("common");
 
   const avatarSrc = userData?.avatarLocalPath || userData?.avatarUrl || "";
   const safeBadges = Array.isArray(badges) ? badges : [];
@@ -99,15 +101,15 @@ export const BottomTabBar: React.FC = () => {
           return (
             <Pressable key={tab.key} onPress={tab.onPress} style={[styles.tab]}>
               {isProfile ? (
-                <AvatarBadge
-                  size={40}
-                  uri={avatarSrc || undefined}
-                  badges={[]}
-                  overrideColor={borderColor}
-                  overrideEmoji={undefined}
-                  fallbackIcon={<UserIcon size={32} />}
-                  accessibilityLabel="Profile"
-                />
+              <AvatarBadge
+                size={40}
+                uri={avatarSrc || undefined}
+                badges={[]}
+                overrideColor={borderColor}
+                overrideEmoji={undefined}
+                fallbackIcon={<UserIcon size={32} />}
+                accessibilityLabel={t("tabs.profile_accessibility")}
+              />
               ) : (
                 <MaterialIcons
                   name={tab.icon as any}

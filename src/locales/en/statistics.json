@@ -25,5 +25,22 @@
     "carbs": "Carbs",
     "fat": "Fat",
     "macroBreakdown": "Macro Breakdown"
+  },
+  "share": {
+    "title": {
+      "day": "Progress — 1 day",
+      "week": "Progress — 7 days",
+      "month": "Progress — 30 days"
+    },
+    "range": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
+    "chart": {
+      "pie": "Pie",
+      "bar": "Bar",
+      "line": "Line"
+    }
   }
 }

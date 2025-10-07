@@ -3,6 +3,7 @@ import { View, Text, Pressable } from "react-native";
 import { Modal } from "@/components/Modal";
 import { TextInput as StyledInput } from "@/components/TextInput";
 import { parseColor } from "./colorUtils";
+import { useTranslation } from "react-i18next";
 
 export type StyleTarget = "title" | "kcal" | "custom";
 
@@ -46,6 +47,7 @@ export function StyleModal({
   onChangeCustomText,
 }: Props) {
   const [input, setInput] = useState("");
+  const { t } = useTranslation("share");
 
   return (
     <Modal visible={visible} onClose={onClose} contentPaddingBottom={8}>
@@ -83,7 +85,7 @@ export function StyleModal({
                       theme.typography.fontFamily.regular,
                   }}
                 >
-                  {f}
+                  {t(`editor.font.${f}`)}
                 </Text>
               </Pressable>
             );
@@ -103,7 +105,7 @@ export function StyleModal({
             }}
           >
             <Text style={{ color: theme.text, fontStyle: "italic" }}>
-              Italic
+              {t("editor.italic")}
             </Text>
           </Pressable>
           <Pressable
@@ -119,7 +121,7 @@ export function StyleModal({
             <Text
               style={{ color: theme.text, textDecorationLine: "underline" }}
             >
-              Underline
+              {t("editor.underline")}
             </Text>
           </Pressable>
         </View>
@@ -129,7 +131,7 @@ export function StyleModal({
           <Text
             style={{ color: theme.text, fontSize: theme.typography.size.md }}
           >
-            Color
+            {t("editor.color")}
           </Text>
           <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
             {uniqueQuickColors.slice(0, 8).map((hex, idx) => {
@@ -162,7 +164,7 @@ export function StyleModal({
           <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
             <View style={{ flex: 1 }}>
               <StyledInput
-                placeholder="#RRGGBB or R,G,B"
+                placeholder={t("editor.color_placeholder_extended")}
                 value={input}
                 onChangeText={setInput}
                 autoCapitalize="none"
@@ -192,7 +194,7 @@ export function StyleModal({
                   fontSize: theme.typography.size.md,
                 }}
               >
-                Apply
+                {t("editor.apply")}
               </Text>
             </Pressable>
           </View>
@@ -205,10 +207,10 @@ export function StyleModal({
                   fontSize: theme.typography.size.md,
                 }}
               >
-                Text
+                {t("editor.text_label")}
               </Text>
               <StyledInput
-                placeholder="Enter text"
+                placeholder={t("editor.enter_text_placeholder")}
                 value={customText}
                 onChangeText={onChangeCustomText}
               />

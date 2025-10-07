@@ -38,7 +38,7 @@ export const MealListItem: React.FC<Props> = ({
   selected = false,
 }) => {
   const theme = useTheme();
-  const { t } = useTranslation(["common"]);
+  const { t } = useTranslation(["common", "meals", "home"]);
   const [localUri, setLocalUri] = useState<string | null>(null);
 
   const mealId = useMemo(
@@ -231,7 +231,7 @@ export const MealListItem: React.FC<Props> = ({
                 fontSize: theme.typography.size.lg,
               }}
             >
-              {meal.name || "Meal"}
+              {meal.name || t("meal", { ns: "home" })}
             </Text>
             <Text
               style={{
@@ -245,9 +245,18 @@ export const MealListItem: React.FC<Props> = ({
           </View>
 
           <View style={styles.chipsRow}>
-            <MacroChip label="Protein" value={nutrition.protein} />
-            <MacroChip label="Carbs" value={nutrition.carbs} />
-            <MacroChip label="Fat" value={nutrition.fat} />
+            <MacroChip
+              label={t("protein", { ns: "meals" })}
+              value={nutrition.protein}
+            />
+            <MacroChip
+              label={t("carbs", { ns: "meals" })}
+              value={nutrition.carbs}
+            />
+            <MacroChip
+              label={t("fat", { ns: "meals" })}
+              value={nutrition.fat}
+            />
           </View>
         </View>
       </Pressable>

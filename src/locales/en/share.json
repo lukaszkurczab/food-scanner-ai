@@ -1,0 +1,34 @@
+{
+  "editor": {
+    "preview": "Preview",
+    "family": "Family",
+    "system_font": "System",
+    "weight": "Weight",
+    "style": "Style",
+    "italic": "Italic",
+    "underline": "Underline",
+    "italic_on": "✓ Italic",
+    "italic_off": "○ Italic",
+    "underline_on": "✓ Underline",
+    "underline_off": "○ Underline",
+    "color": "Color",
+    "color_placeholder": "#RRGGBB",
+    "color_placeholder_extended": "#RRGGBB or R,G,B",
+    "apply": "Apply",
+    "text_label": "Text",
+    "enter_text_placeholder": "Enter text",
+    "image_accessibility": "Meal photo",
+    "close_editor_accessibility": "Close editor",
+    "default_title": "Meal",
+    "default_custom_text": "Your text",
+    "target_title": "Title",
+    "target_calories": "Calories",
+    "target_custom": "Custom",
+    "font": {
+      "regular": "Regular",
+      "medium": "Medium",
+      "bold": "Bold",
+      "light": "Light"
+    }
+  }
+}

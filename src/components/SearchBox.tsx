@@ -74,14 +74,14 @@ export const SearchBox: React.FC<Props> = ({
         placeholderTextColor={theme.textSecondary}
         style={[{ marginLeft: theme.spacing.sm }, styles.input]}
         returnKeyType="search"
-        accessibilityLabel="Search input"
+        accessibilityLabel={t("input.search_accessibility")}
       />
 
       {local.length > 0 && (
         <Pressable
           onPress={clear}
           accessibilityRole="button"
-          accessibilityLabel="Clear search"
+          accessibilityLabel={t("input.clear_search_accessibility")}
           style={styles.clearBtn}
         >
           <MaterialIcons name="close" size={24} color={theme.textSecondary} />

@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { IconButton } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 export type WeekDayItem = { date: Date; label: string; isToday: boolean };
 
@@ -22,6 +23,7 @@ export default function WeekStrip({
 }: Props) {
   const theme = useTheme();
   const ref = useRef<ScrollView>(null);
+  const { t } = useTranslation("history");
 
   useEffect(() => {
     ref.current?.scrollToEnd({ animated: false });
@@ -59,7 +61,7 @@ export default function WeekStrip({
 
       <View style={styles.rightBox}>
         <IconButton
-          accessibilityLabel="Otwórz kalendarz historii"
+          accessibilityLabel={t("weekStrip.open_history")}
           variant="ghost"
           onPress={onOpenHistory}
           icon={<MaterialIcons name="calendar-today" />}
