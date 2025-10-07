@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Platform } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  Linking,
+  Platform,
+} from "react-native";
 import { Layout, PrimaryButton } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -10,7 +18,10 @@ import { ButtonToggle } from "@/components/ButtonToggle";
 import { useNavigation } from "@react-navigation/native";
 import SectionHeader from "../components/SectionHeader";
 import { MaterialIcons } from "@expo/vector-icons";
-import { cancelAllForNotif, ensureAndroidChannel } from "@/services/notifications/localScheduler";
+import {
+  cancelAllForNotif,
+  ensureAndroidChannel,
+} from "@/services/notifications/localScheduler";
 import * as Notifications from "expo-notifications";
 import { Alert as AppAlert } from "@/components/Alert";
 
@@ -38,18 +49,15 @@ export default function NotificationsScreen({ navigation }: any) {
   useEffect(() => {
     if (!uid) return;
     (async () => {
-      // Load stored prefs
       const p = await loadMotivationPrefs(uid);
       const s = await loadStatsPrefs(uid);
       setMotivationEnabled(p.enabled);
       setStatsEnabled(s.enabled);
-      // Check system permission
       const perm = await Notifications.getPermissionsAsync();
       setSystemAllowed(!!perm.granted);
     })();
   }, [uid, loadMotivationPrefs, loadStatsPrefs]);
 
-  // If system blocks notifications, force-disable all toggles and reminders once
   useEffect(() => {
     (async () => {
       if (!uid) return;
@@ -70,7 +78,16 @@ export default function NotificationsScreen({ navigation }: any) {
         } catch {}
       }
     })();
-  }, [systemAllowed, uid, items, motivationEnabled, statsEnabled, setMotivationPrefs, setStatsPrefs, toggle]);
+  }, [
+    systemAllowed,
+    uid,
+    items,
+    motivationEnabled,
+    statsEnabled,
+    setMotivationPrefs,
+    setStatsPrefs,
+    toggle,
+  ]);
 
   const requestSystemPermission = async (): Promise<boolean> => {
     try {
@@ -79,8 +96,9 @@ export default function NotificationsScreen({ navigation }: any) {
       setSystemAllowed(granted);
       if (granted && Platform.OS === "android") await ensureAndroidChannel();
       if (!granted) {
-        // Optionally open settings if denied
-        try { await Linking.openSettings(); } catch {}
+        try {
+          await Linking.openSettings();
+        } catch {}
       }
       return granted;
     } catch {
@@ -143,7 +161,16 @@ export default function NotificationsScreen({ navigation }: any) {
         />
         <View>
           <SectionHeader label={t("screen.motivation")} />
-          <View style={[styles.rowCenter, { paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border }]}>
+          <View
+            style={[
+              styles.rowCenter,
+              {
+                paddingVertical: 16,
+                borderBottomWidth: StyleSheet.hairlineWidth,
+                borderBottomColor: theme.border,
+              },
+            ]}
+          >
             <Text
               style={{
                 flex: 1,
@@ -170,7 +197,16 @@ export default function NotificationsScreen({ navigation }: any) {
               }
             />
           </View>
-          <View style={[styles.rowCenter, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border, paddingVertical: 16 }]}>
+          <View
+            style={[
+              styles.rowCenter,
+              {
+                borderBottomWidth: StyleSheet.hairlineWidth,
+                borderBottomColor: theme.border,
+                paddingVertical: 16,
+              },
+            ]}
+          >
             <Text
               style={{
                 flex: 1,
@@ -205,7 +241,9 @@ export default function NotificationsScreen({ navigation }: any) {
         onPress={async () => {
           try {
             await ensureAndroidChannel();
-            const allowed = systemAllowed ?? (await Notifications.getPermissionsAsync()).granted;
+            const allowed =
+              systemAllowed ??
+              (await Notifications.getPermissionsAsync()).granted;
             if (!allowed) {
               const ok = await requestSystemPermission();
               if (!ok) return;
@@ -221,7 +259,10 @@ export default function NotificationsScreen({ navigation }: any) {
             console.warn("Failed to schedule test notification:", e);
           }
         }}
-        style={{ marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.lg }}
+        style={{
+          marginHorizontal: theme.spacing.lg,
+          marginBottom: theme.spacing.lg,
+        }}
       />
 
       <AppAlert

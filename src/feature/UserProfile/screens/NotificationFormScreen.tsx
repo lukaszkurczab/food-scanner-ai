@@ -277,40 +277,6 @@ export default function NotificationFormScreen() {
           </View>
         ) : null}
 
-        {type === "calorie_goal" ? (
-          <View style={{ gap: 8 }}>
-            <Text
-              style={{
-                color: theme.text,
-                fontFamily: theme.typography.fontFamily.medium,
-              }}
-            >
-              {t("form.kcalByHour", "Kcal target by this time ")}
-            </Text>
-            <TextInput
-              value={
-                kcalByHour !== null && kcalByHour !== undefined
-                  ? String(kcalByHour)
-                  : ""
-              }
-              onChangeText={(v) => {
-                const n = v.replace(/[^\d]/g, "");
-                setKcalByHour(n.length ? Number(n) : null);
-              }}
-              keyboardType="numeric"
-              placeholder={t("form.kcalPlaceholder", "e.g. 1000")}
-              placeholderTextColor={theme.textSecondary}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: theme.rounded.md,
-                padding: theme.spacing.md,
-                color: theme.text,
-              }}
-            />
-          </View>
-        ) : null}
-
         <View style={{ gap: 8 }}>
           <Text
             style={{
