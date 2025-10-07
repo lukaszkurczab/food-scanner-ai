@@ -29,13 +29,7 @@ export default function WeekStrip({
 
   return (
     <View style={[styles.row, { width: "100%" }]}>
-      <ScrollView
-        ref={ref}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ flex: 1, minWidth: 0 }}
-        contentContainerStyle={{ gap: 8 }}
-      >
+      <View style={{ flex: 1, minWidth: 0, gap: 8, flexDirection: "row" }}>
         {days.map((d) => {
           const selected =
             d.date.toDateString() === selectedDate.toDateString();
@@ -61,7 +55,7 @@ export default function WeekStrip({
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
 
       <View style={styles.rightBox}>
         <IconButton
@@ -92,7 +86,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   rightBox: {
-    width: 56, // kompaktowe, nie nachodzi na listę dni
+    width: 56,
     alignItems: "flex-end",
     justifyContent: "center",
     marginLeft: 8,
