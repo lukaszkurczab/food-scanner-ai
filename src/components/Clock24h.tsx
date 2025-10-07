@@ -239,7 +239,7 @@ export const Clock24h: React.FC<Props> = ({ value, onChange }) => {
         {phase === "minute"
           ? Array.from({ length: 12 }).map((_, k) => {
               const m = (k + 1) * 5;
-              const label = m === 60 ? 60 : m;
+              const label = m === 60 ? 0 : m;
               const ang = (m * 6 - 90) * (Math.PI / 180);
               const x = radius + outerRadius * Math.cos(ang);
               const y = radius + outerRadius * Math.sin(ang);

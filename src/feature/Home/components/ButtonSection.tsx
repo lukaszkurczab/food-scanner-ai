@@ -12,16 +12,6 @@ export const ButtonSection = () => {
   return (
     <>
       <SecondaryButton
-        label={t("askAi")}
-        onPress={() => {
-          navigation.navigate("Chat");
-        }}
-        textStyle={{
-          letterSpacing: 1.2,
-          fontFamily: theme.typography.fontFamily.medium,
-        }}
-      />
-      <SecondaryButton
         label={t("savedMeals")}
         onPress={() => {
           navigation.navigate("SavedMeals");

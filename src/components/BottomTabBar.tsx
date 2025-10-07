@@ -42,7 +42,7 @@ export const BottomTabBar: React.FC = () => {
       isFab: true,
       onPress: () => navigate("MealAddMethod"),
     },
-    { key: "History", icon: "history", onPress: () => navigate("HistoryList") },
+    { key: "History", icon: "assistant", onPress: () => navigate("Chat") },
     { key: "Profile", icon: "person", onPress: () => navigate("Profile") },
   ];
 
