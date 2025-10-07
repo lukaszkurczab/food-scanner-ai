@@ -50,7 +50,6 @@ export default function ChatScreen() {
 
   const [toast, setToast] = useState<string | null>(null);
   const showToast = useCallback((msg: string) => setToast(msg), []);
-  const hideToast = useCallback(() => setToast(null), []);
 
   const limitReached = !isPremium && countToday >= 5;
 
