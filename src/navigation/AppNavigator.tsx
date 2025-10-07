@@ -39,6 +39,7 @@ import MealTextAIScreen from "@/feature/Meals/screens/MealTextAIScreen";
 import MealShareScreen from "@/feature/Meals/screens/MealShareScreen";
 import BarCodeCameraScreen from "@/feature/Meals/screens/BarCodeCameraScreen";
 import ProgressShareScreen from "@/feature/Statistics/screens/ProgressShareScreen";
+import ChatScreen from "@/feature/AI/screens/ChatScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -66,6 +67,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Statistics" component={StatisticsScreen} />
           <Stack.Screen name="Language" component={LanguageScreen} />
+          <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="EditUserData" component={EditUserDataScreen} />
           <Stack.Screen name="MealDetails" component={MealDetailsScreen} />
           <Stack.Screen
