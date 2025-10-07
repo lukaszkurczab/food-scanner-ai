@@ -5,15 +5,12 @@ import type { Meal } from "@/types/meal";
 import { useTranslation } from "react-i18next";
 import { PrimaryButton } from "@components/PrimaryButton";
 
-type TodaysMealsListProps = {
+type Props = {
   meals: Meal[];
-  handleAddMeal: () => void;
+  handleAddMeal?: () => void; // opcjonalne dla dni z przeszłości
 };
 
-export const TodaysMealsList = ({
-  meals,
-  handleAddMeal,
-}: TodaysMealsListProps) => {
+export const TodaysMealsList = ({ meals, handleAddMeal }: Props) => {
   const theme = useTheme();
   const { t } = useTranslation("home");
 
@@ -41,6 +38,7 @@ export const TodaysMealsList = ({
       >
         {t("todaysMeals")}
       </Text>
+
       {meals.map((meal) => {
         const kcal =
           Array.isArray(meal.ingredients) && meal.ingredients.length
@@ -69,7 +67,10 @@ export const TodaysMealsList = ({
           </View>
         );
       })}
-      <PrimaryButton label={t("addMeal")} onPress={handleAddMeal} />
+
+      {handleAddMeal ? (
+        <PrimaryButton label={t("addMeal")} onPress={handleAddMeal} />
+      ) : null}
     </View>
   );
 };

@@ -3,7 +3,6 @@ export * from "./IconButton";
 export * from "./ListItem";
 export * from "./PrimaryButton";
 export * from "./Modal";
-export * from "./ProgressBar";
 export * from "./SecondaryButton";
 export * from "./Slider";
 export * from "./TextInput";
