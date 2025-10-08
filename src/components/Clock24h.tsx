@@ -51,6 +51,7 @@ export const Clock24h: React.FC<Props> = ({ value, onChange }) => {
 
   const [hourText, setHourText] = useState<string>(pad2(initHour24));
   const [minuteText, setMinuteText] = useState<string>(pad2(initMinute));
+  const [swapLockUntil, setSwapLockUntil] = useState<number>(0);
 
   const hourToCoord24Outer = (h24: number) => {
     const ang = ((h24 % 12) * 30 - 90) * (Math.PI / 180);
@@ -58,10 +59,20 @@ export const Clock24h: React.FC<Props> = ({ value, onChange }) => {
     return { x: radius + r * Math.cos(ang), y: radius + r * Math.sin(ang), r };
   };
 
-  const setHour24 = (h24: number) => {
+  const setHour24 = (h24: number, opts?: { fromInner?: boolean }) => {
     const hh = ((h24 % 24) + 24) % 24;
+    let nextOuterStart = hh < 12 ? 0 : 12;
+    if (opts?.fromInner) {
+      const now = Date.now();
+      if (now < swapLockUntil) {
+        nextOuterStart = outerStart;
+      } else {
+        nextOuterStart = outerStart ^ 12;
+        setSwapLockUntil(now + 1500);
+      }
+    }
     setSelectedHour24(hh);
-    setOuterStart(hh < 12 ? 0 : 12);
+    setOuterStart(nextOuterStart);
     setHandAngleDeg((hh % 12) * 30);
     const { x, y, r } = hourToCoord24Outer(hh);
     setMarkerPos({ x, y });
@@ -117,7 +128,7 @@ export const Clock24h: React.FC<Props> = ({ value, onChange }) => {
       const isOuterTap = r >= threshold;
       const base = isOuterTap ? outerStart : outerStart ^ 12;
       const h24 = (base + idx) % 24;
-      setHour24(h24);
+      setHour24(h24, { fromInner: !isOuterTap });
       setPhase("hour");
     } else {
       const m = Math.round(deg / 6) % 60;
