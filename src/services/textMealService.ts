@@ -23,7 +23,15 @@ const normalize = (x: any): Ingredient | null => {
   const carbs = toNumber(x.carbs);
   const kcal = toNumber(x.kcal) || protein * 4 + carbs * 4 + fat * 9;
   if (!isFinite(amount) || amount <= 0) return null;
-  return { id: uuidv4(), name: x.name.trim(), amount, protein, fat, carbs, kcal };
+  return {
+    id: uuidv4(),
+    name: x.name.trim(),
+    amount,
+    protein,
+    fat,
+    carbs,
+    kcal,
+  };
 };
 
 function extractJsonArray(raw: string): string | null {
@@ -44,25 +52,31 @@ export async function extractIngredientsFromText(
   const isPremium = !!opts?.isPremium;
   const limit = opts?.limit ?? 1;
 
-  // Enforce daily limit for free users (text feature only)
   if (!isPremium && _uid) {
     const allowed = await canUseAiTodayFor(_uid, isPremium, "text", limit);
     if (!allowed) return null;
   }
 
   const prompt =
-    `From the user's meal description, return ONLY a JSON array of ingredients with grams and macros.\n` +
-    `Schema for each item: { "name": "string", "amount": 123, "protein": 0, "fat": 0, "carbs": 0, "kcal": 0 }.\n` +
-    `Use grams for "amount". Estimate when missing. Numbers only. No text outside the JSON array.\n` +
-    `Ingredient "name" values MUST be in the user's language: ${lang}. Keep JSON keys (name, amount, protein, fat, carbs, kcal) in English.\n` +
-    `User description: """${description.trim()}"""`;
+    `You are an assistant that extracts structured nutrition data from meal descriptions.\n` +
+    `You must decide if the user's text describes a single ready-made dish or multiple separate items.\n` +
+    `If it is a single known dish (e.g., pizza, pierogi, burger, kebab, lasagne, soup, salad, curry, etc.), return it as ONE ingredient with estimated macros and grams — do NOT split it into parts (no dough, sauce, etc.).\n` +
+    `If it lists multiple distinct items (like "apple and sandwich" or "eggs, tomato"), return multiple entries.\n` +
+    `Prefer simplification and readability over detailed precision.\n` +
+    `Output ONLY a JSON array of ingredients following this schema:\n` +
+    `[{ "name": "string", "amount": 123, "protein": 0, "fat": 0, "carbs": 0, "kcal": 0 }]\n` +
+    `Use grams for "amount". Numbers only. No text outside the JSON array.\n` +
+    `Ingredient "name" values MUST be in the user's language (${lang}). Keep JSON keys (name, amount, protein, fat, carbs, kcal) in English.\n`;
 
   const payload = {
-    model: "gpt-4o-mini",
+    model: "gpt-4.1-mini",
     temperature: 0,
     max_tokens: 500,
     messages: [
-      { role: "system", content: "You extract structured nutrition data." },
+      {
+        role: "system",
+        content: `You extract simplified nutrition data and decide dish granularity. User description: """${description.trim()}"""`,
+      },
       { role: "user", content: prompt },
     ],
   } as const;
@@ -99,7 +113,9 @@ export async function extractIngredientsFromText(
     }
     if (!Array.isArray(parsed)) return null;
 
-    const normalized = parsed.map(normalize).filter((x): x is Ingredient => !!x);
+    const normalized = parsed
+      .map(normalize)
+      .filter((x): x is Ingredient => !!x);
     if (!isPremium && _uid) {
       await consumeAiUseFor(_uid, isPremium, "text", limit);
     }
