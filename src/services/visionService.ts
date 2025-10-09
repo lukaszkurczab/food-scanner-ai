@@ -105,20 +105,20 @@ export async function detectIngredientsWithVision(
 
       const payload = {
         model: VISION_MODEL,
-        temperature: 0,
+        temperature: 0.1,
         top_p: 0,
         messages: [
+          {
+            role: "system",
+            content:
+              "You extract simplified nutrition data from images. Prioritize macro accuracy and simplicity. Decide granularity: if the image depicts a ready-made dish, return a single combined entry; do not decompose into sub-ingredients. If clearly multiple separate foods are present, return multiple entries. Prefer exact values from any visible nutrition facts table; otherwise estimate conservatively.",
+          },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text:
-                  `Analyze the image and return ONLY a raw JSON array. No prose. ` +
-                  `Prefer a nutrition facts table if visible. Otherwise infer visible foods/drinks. ` +
-                  `Strict schema per item: { "name": "string", "amount": 123, "protein": 0, "fat": 0, "carbs": 0, "kcal": 0 }. ` +
-                  `Use grams for "amount". Numbers only. If unknown, estimate conservatively or use 0. ` +
-                  `Output example: [ {"name":"oatmeal","amount":120,"protein":6,"fat":4,"carbs":20,"kcal":148} ]`,
+                text: 'Analyze the image and return ONLY a raw JSON array. No prose. Strict schema per item: {"name":"string","amount":123,"protein":0,"fat":0,"carbs":0,"kcal":0,"unit":"ml"}. The "unit" key is optional and used only for liquids; otherwise omit it. Use grams for "amount" by default. If a nutrition facts table is visible, read and convert per-serving data to grams if needed; otherwise infer from what is visible. Prefer one combined item for composite dishes (pizza, burger, kebab, lasagna, pierogi, salad, soup, curry, fish and chips, etc.). Do not split into dough/cheese/sauce or similar. If multiple distinct foods are clearly separate (e.g., an apple next to a sandwich and a bottle), list them separately. Numbers only. No text outside the JSON array. Output example: [{"name":"oatmeal","amount":120,"protein":6,"fat":4,"carbs":20,"kcal":148}]',
               },
               {
                 type: "image_url",
