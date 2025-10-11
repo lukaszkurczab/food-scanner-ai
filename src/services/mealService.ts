@@ -23,9 +23,7 @@ import { v4 as uuidv4 } from "uuid";
 import * as FileSystem from "expo-file-system";
 import type { Meal } from "@/types/meal";
 import { processAndUpload } from "./mealService.images";
-import { cacheKeys, getJSON } from "./cache";
 
-// ⬇️ nowy import: lokalny fallback przez SQLite
 import {
   getMealsPageLocalFiltered,
   type LocalHistoryFilters,
@@ -58,7 +56,7 @@ export type HistoryFilters = {
 export type MealsPage = { items: Meal[]; nextBefore: string | null };
 export type MealsPageV2 = {
   items: Meal[];
-  nextCursor: any | null; // online: Firestore doc; offline: string (ISO)
+  nextCursor: any | null;
 };
 
 function clampDateRange(
@@ -116,7 +114,7 @@ export async function getMealsPageFiltered(
   uid: string,
   opts: {
     limit: number;
-    cursor: any | null; // online: FS doc; offline: ISO string
+    cursor: any | null;
     filters?: HistoryFilters;
     accessWindowDays?: number;
   }
@@ -127,7 +125,6 @@ export async function getMealsPageFiltered(
     return f;
   })();
 
-  // OFFLINE → czytaj z lokalnego SQLite (lepsze niż cache)
   const net = await NetInfo.fetch();
   if (!net.isConnected) {
     const localFilters: LocalHistoryFilters | undefined = effectiveFilters
@@ -154,11 +151,9 @@ export async function getMealsPageFiltered(
       filters: localFilters,
     });
 
-    // wsteczna kompatybilność: nextCursor w OFFLINE jest stringiem ISO
     return { items: page.items, nextCursor: page.nextBefore };
   }
 
-  // ONLINE → Firestore
   const base = buildFilteredQuery(uid, effectiveFilters);
   const q = opts.cursor
     ? query(base, startAfter(opts.cursor), fsLimit(opts.limit))

@@ -9,7 +9,6 @@ import { useUser } from "@hooks/useUser";
 import type { UserData } from "@/types";
 import i18n from "@/i18n";
 
-// ⬇️ OFFLINE bootstrap
 import { runMigrations } from "@/services/offline/db";
 import { migrateInitialMeals } from "@/services/offline/migrate";
 import { startSyncLoop } from "@/services/offline/sync.engine";
@@ -78,21 +77,19 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     await getUserProfile();
   }, [getUserProfile]);
 
-  // ⬇️ uruchom migracje bazy lokalnej raz przy starcie aplikacji
   useEffect(() => {
     try {
       runMigrations();
     } catch {}
   }, []);
 
-  // ⬇️ po zalogowaniu: jednorazowa migracja początkowa + start pętli synchronizacji
   useEffect(() => {
     if (!uid) return;
     (async () => {
       try {
         await migrateInitialMeals(uid);
       } catch {}
-      startSyncLoop(uid); // idempotentne – czyści poprzedni timer/listener
+      startSyncLoop(uid);
     })();
   }, [uid]);
 
@@ -100,7 +97,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     syncUserProfile();
   }, [uid, syncUserProfile]);
 
-  // Ensure user's saved language preference overrides device settings
   useEffect(() => {
     const userLang = userData?.language;
     if (!userLang) return;

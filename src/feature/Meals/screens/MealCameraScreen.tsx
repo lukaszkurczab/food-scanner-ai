@@ -21,6 +21,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Alert as AppAlert } from "@/components/Alert";
 import { getSampleMealUri, getSampleTableUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
+import { useUserContext } from "@contexts/UserContext";
 
 const log = debugScope("Screen:MealCamera");
 
@@ -37,6 +38,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const { meal, setMeal, updateMeal, setLastScreen } = useMealDraftContext();
   const { t } = useTranslation("common");
   const { uid } = useAuthContext();
+  const { language } = useUserContext();
   const { isPremium } = usePremiumContext();
   const route = useRoute<any>();
   const routeId = route.params?.id as string | undefined;
@@ -196,6 +198,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
         const ingredients = uid
           ? await detectIngredientsWithVision(uid, finalUri, {
               isPremium: !!isPremium,
+              lang: language,
             })
           : null;
         if (ingredients && ingredients.length > 0) {
