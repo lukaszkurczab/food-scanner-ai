@@ -5,7 +5,6 @@ import { Card, Modal } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Clock24h, Clock12h, Calendar } from "@/components";
 import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
 
 type Props = {
   value: Date;
@@ -16,17 +15,6 @@ type Props = {
   maxDate?: Date;
 };
 
-const fmtDate = new Intl.DateTimeFormat(i18n.language || "en", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
-
-const fmtTime = new Intl.DateTimeFormat(i18n.language || "en", {
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
 export const DateTimeSection: React.FC<Props> = ({
   value,
   onChange,
@@ -36,15 +24,8 @@ export const DateTimeSection: React.FC<Props> = ({
   maxDate,
 }) => {
   const theme = useTheme();
-  const { i18n } = useTranslation();
-  const locale = i18n.language || undefined;
-
-  const [visible, setVisible] = useState(false);
-  const [mode, setMode] = useState<"date" | "time">("date");
-  const [target, setTarget] = useState<"meal" | "added">("meal");
-  const [dateText, setDateText] = useState(fmtDate.format(value));
-  const [timeText, setTimeText] = useState(fmtTime.format(value));
-  const [tmp, setTmp] = useState<Date>(value);
+  const { i18n, t } = useTranslation();
+  const locale = i18n.language || "en";
 
   const prefers12h = useMemo(() => {
     try {
@@ -58,10 +39,37 @@ export const DateTimeSection: React.FC<Props> = ({
     }
   }, [locale]);
 
+  const fmtDate = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }),
+    [locale]
+  );
+
+  const fmtTime = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: prefers12h,
+      }),
+    [locale, prefers12h]
+  );
+
+  const [visible, setVisible] = useState(false);
+  const [mode, setMode] = useState<"date" | "time">("date");
+  const [target, setTarget] = useState<"meal" | "added">("meal");
+  const [dateText, setDateText] = useState(fmtDate.format(value));
+  const [timeText, setTimeText] = useState(fmtTime.format(value));
+  const [tmp, setTmp] = useState<Date>(value);
+
   useEffect(() => {
     setDateText(fmtDate.format(value));
     setTimeText(fmtTime.format(value));
-  }, [value]);
+  }, [value, fmtDate, fmtTime]);
 
   const added = addedValue ?? value;
 
@@ -103,11 +111,23 @@ export const DateTimeSection: React.FC<Props> = ({
       <Modal
         visible={visible}
         message={
-          (target === "meal" ? "Czas posiłku" : "Czas dodania") +
-          (mode === "date" ? " — wybierz datę" : " — wybierz godzinę")
+          (target === "meal"
+            ? t("meals:meal_time", "Czas posiłku")
+            : t("meals:added_time", "Czas dodania")) +
+          (mode === "date"
+            ? " — " + t("meals:pick_date", "wybierz datę")
+            : " — " + t("meals:pick_time", "wybierz godzinę"))
         }
-        primaryActionLabel={mode === "date" ? "Dalej" : "Zapisz"}
-        secondaryActionLabel={mode === "date" ? "Anuluj" : "Wstecz"}
+        primaryActionLabel={
+          mode === "date"
+            ? t("common:next", "Dalej")
+            : t("common:save", "Zapisz")
+        }
+        secondaryActionLabel={
+          mode === "date"
+            ? t("common:cancel", "Anuluj")
+            : t("common:back", "Wstecz")
+        }
         onClose={() => setVisible(false)}
         onSecondaryAction={() => {
           if (mode !== "date") setMode("date");
@@ -158,6 +178,10 @@ export const DateTimeSection: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create({
-  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  rowBetween: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   flex1: { flex: 1 },
 });
