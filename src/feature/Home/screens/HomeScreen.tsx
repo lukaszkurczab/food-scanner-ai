@@ -174,6 +174,9 @@ export default function HomeScreen({ navigation }: any) {
               handleAddMeal={
                 isToday ? () => navigation.navigate("MealAddMethod") : undefined
               }
+              onOpenMeal={(meal: Meal) =>
+                navigation.navigate("MealDetails", { meal })
+              }
             />
           </>
         )}

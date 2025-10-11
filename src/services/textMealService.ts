@@ -43,6 +43,17 @@ function extractJsonArray(raw: string): string | null {
   return match ? match[0] : null;
 }
 
+function unwrapIfWrapped(s: string): string {
+  try {
+    const obj = JSON.parse(s);
+    if (obj && typeof obj === "object" && typeof obj.description === "string")
+      return obj.description;
+    return s;
+  } catch {
+    return s;
+  }
+}
+
 export async function extractIngredientsFromText(
   _uid: string,
   description: string,
@@ -57,27 +68,30 @@ export async function extractIngredientsFromText(
     if (!allowed) return null;
   }
 
-  const prompt =
-    `You are an assistant that extracts structured nutrition data from meal descriptions.\n` +
-    `You must decide if the user's text describes a single ready-made dish or multiple separate items.\n` +
-    `If it is a single known dish (e.g., pizza, pierogi, burger, kebab, lasagne, soup, salad, curry, etc.), return it as ONE ingredient with estimated macros and grams — do NOT split it into parts (no dough, sauce, etc.).\n` +
-    `If it lists multiple distinct items (like "apple and sandwich" or "eggs, tomato"), return multiple entries.\n` +
-    `Prefer simplification and readability over detailed precision.\n` +
-    `Output ONLY a JSON array of ingredients following this schema:\n` +
-    `[{ "name": "string", "amount": 123, "protein": 0, "fat": 0, "carbs": 0, "kcal": 0 }]\n` +
-    `Use grams for "amount". Numbers only. No text outside the JSON array.\n` +
-    `Ingredient "name" values MUST be in the user's language (${lang}). Keep JSON keys (name, amount, protein, fat, carbs, kcal) in English.\n`;
+  console.log("Extracting ingredients from text:", description);
+
+  const userPayload = unwrapIfWrapped(description);
+
+  const systemPrompt =
+    `You are a nutrition assistant. Analyze a JSON payload describing a meal.\n` +
+    `Decide granularity: treat a prepared dish as ONE item; list multiple items only when clearly separate.\n` +
+    `Convert household measures to grams/ml when present (teaspoon≈5g, tablespoon≈15g, cup≈240ml, slice bread≈30g, handful nuts≈30g, medium fruit≈150g).\n` +
+    `Return ONLY a JSON array. Each item: {"name":"string","amount":123,"protein":0,"fat":0,"carbs":0,"kcal":0}.\n` +
+    `Amount in grams (ml only for liquids). Numbers only. No prose.\n` +
+    `The "name" must be in the user's language from the payload. Keep keys in English.\n` +
+    `Example 1 (PL): Input {"name":"owsianka","ingredients":"pół szklanki płatków, szklanka mleka 2%, garść jagód, łyżeczka miodu","amount_g":null,"notes":null,"lang":"pl"} -> ` +
+    `[{"name":"płatki owsiane","amount":40,"protein":5,"fat":3,"carbs":27,"kcal":150},{"name":"mleko 2%","amount":240,"protein":8,"fat":5,"carbs":12,"kcal":120},{"name":"jagody","amount":50,"protein":0,"fat":0,"carbs":8,"kcal":30},{"name":"miód","amount":7,"protein":0,"fat":0,"carbs":6,"kcal":20}]\n` +
+    `Example 2 (EN): Input {"name":"burger","ingredients":"cheeseburger with fries","amount_g":null,"notes":null,"lang":"en"} -> ` +
+    `[{"name":"cheeseburger with fries","amount":350,"protein":20,"fat":22,"carbs":35,"kcal":450}]`;
 
   const payload = {
-    model: "gpt-4.1-mini",
+    model: "gpt-4o-mini",
     temperature: 0,
+    top_p: 0,
     max_tokens: 500,
     messages: [
-      {
-        role: "system",
-        content: `You extract simplified nutrition data and decide dish granularity. User description: """${description.trim()}"""`,
-      },
-      { role: "user", content: prompt },
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPayload },
     ],
   } as const;
 
@@ -116,9 +130,8 @@ export async function extractIngredientsFromText(
     const normalized = parsed
       .map(normalize)
       .filter((x): x is Ingredient => !!x);
-    if (!isPremium && _uid) {
+    if (!isPremium && _uid)
       await consumeAiUseFor(_uid, isPremium, "text", limit);
-    }
     return normalized;
   } catch {
     clearTimeout(timeout);

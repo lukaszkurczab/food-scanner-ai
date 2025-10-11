@@ -22,8 +22,6 @@ import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "../components/DateTimeSection";
 import { updateStreakIfThresholdMet } from "@/services/streakService";
-import { captureRef } from "react-native-view-shot";
-import * as Sharing from "expo-sharing";
 import { useNavigation } from "@react-navigation/native";
 
 type ResultScreenProps = { navigation: any };

@@ -1,13 +1,13 @@
 import React, { useCallback, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Layout, PrimaryButton, SecondaryButton, Modal } from "@/components";
+import {
+  Layout,
+  PrimaryButton,
+  SecondaryButton,
+  Modal,
+  Toast,
+} from "@/components";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
@@ -38,10 +38,14 @@ export default function MealTextAIScreen() {
     amount: false,
   });
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [retries, setRetries] = useState(0);
 
   const FEATURE_LIMIT = 1;
 
-  const sanitizeAmount = (s: string) => String(s).replace(/[^0-9.]/g, "");
+  const sanitizeAmount = (s: string) =>
+    String(s)
+      .replace(/[^0-9.,]/g, "")
+      .replace(",", ".");
   const amountRaw = useMemo(() => sanitizeAmount(amount), [amount]);
   const amountNum = useMemo(() => Number(amountRaw), [amountRaw]);
 
@@ -119,23 +123,31 @@ export default function MealTextAIScreen() {
   );
 
   const buildDescription = () => {
-    const parts: string[] = [];
-    if (name.trim()) parts.push(`Meal: ${name.trim()}`);
-    const amt = Number(String(amount).replace(/[^0-9.]/g, ""));
-    if (isFinite(amt) && amt > 0) parts.push(`Total amount: ${amt} g`);
-    if (ingPreview.trim()) parts.push(`Ingredients: ${ingPreview.trim()}`);
-    if (desc.trim()) parts.push(`Notes: ${desc.trim()}`);
-    return parts.join(" | ");
+    const amt = Number(sanitizeAmount(amount));
+    const amount_g = isFinite(amt) && amt > 0 ? Math.round(amt) : null;
+    const ingredientsText = ingPreview.trim();
+    const nameText = name.trim();
+    const payload = {
+      name: nameText || null,
+      ingredients: ingredientsText || nameText || null,
+      amount_g,
+      notes: desc.trim() || null,
+      lang: i18n.language || "pl",
+    };
+    return JSON.stringify(payload);
   };
 
   const onAnalyze = useCallback(async () => {
     if (!uid) return;
+
+    Keyboard.dismiss();
+    await new Promise((r) => requestAnimationFrame(r));
+
     const missingName = !name.trim();
-    const amountProvided = sanitizeAmount(amount).length > 0;
+    const amountProvided = amountRaw.length > 0;
     const invalidAmount =
       amountProvided &&
-      (!isFinite(Number(sanitizeAmount(amount))) ||
-        Number(sanitizeAmount(amount)) <= 0);
+      (!isFinite(Number(amountRaw)) || Number(amountRaw) <= 0);
     if (missingName || invalidAmount) {
       setTouched((prev) => ({
         name: true,
@@ -144,7 +156,17 @@ export default function MealTextAIScreen() {
       return;
     }
 
-    // per-feature limit: "text"
+    if (!name.trim() && !ingPreview.trim()) {
+      Toast.show("Podaj nazwę lub składniki.");
+      return;
+    }
+    if (!ingPreview.trim() && !amountRaw) {
+      Toast.show("Podaj składniki lub ilość [g].");
+      return;
+    }
+
+    if (retries >= 3) return;
+
     const allowed = await canUseAiTodayFor(
       uid,
       !!isPremium,
@@ -165,14 +187,18 @@ export default function MealTextAIScreen() {
         lang: i18n.language || "en",
       });
       if (!ings || ings.length === 0) {
-        navigation.replace("IngredientsNotRecognized");
+        setRetries((r) => r + 1);
+        Toast.show(
+          "Nie udało się rozpoznać składników. Spróbuj doprecyzować opis."
+        );
         return;
       }
-      // consume usage on success
       await consumeAiUseFor(uid, !!isPremium, "text", FEATURE_LIMIT);
+      setRetries(0);
       await fillDraftAndGo(ings);
     } catch {
-      Alert.alert(t("default_error", { ns: "common" }));
+      setRetries((r) => r + 1);
+      Toast.show("Wystąpił błąd. Spróbuj ponownie.");
     } finally {
       setLoading(false);
     }
@@ -181,11 +207,18 @@ export default function MealTextAIScreen() {
     isPremium,
     t,
     fillDraftAndGo,
-    navigation,
     name,
-    amount,
+    amountRaw,
     i18n.language,
+    retries,
+    ingPreview,
   ]);
+
+  const analyzeDisabled =
+    loading ||
+    !name.trim() ||
+    (amountRaw.length > 0 && (!isFinite(amountNum) || amountNum <= 0)) ||
+    retries >= 3;
 
   return (
     <Layout>
@@ -275,15 +308,17 @@ export default function MealTextAIScreen() {
             </View>
             <View style={{ gap: theme.spacing.sm, marginTop: "auto" }}>
               <PrimaryButton
-                label={t("analyze", { ns: "meals", defaultValue: "Analyze" })}
+                label={
+                  retries > 0
+                    ? `${t("analyze", {
+                        ns: "meals",
+                        defaultValue: "Analyze",
+                      })} (${retries}/3)`
+                    : t("analyze", { ns: "meals", defaultValue: "Analyze" })
+                }
                 loading={loading}
                 onPress={onAnalyze}
-                disabled={
-                  loading ||
-                  !name.trim() ||
-                  (amountRaw.length > 0 &&
-                    (!isFinite(amountNum) || amountNum <= 0))
-                }
+                disabled={analyzeDisabled}
                 style={{ marginTop: theme.spacing.sm }}
               />
               <SecondaryButton
