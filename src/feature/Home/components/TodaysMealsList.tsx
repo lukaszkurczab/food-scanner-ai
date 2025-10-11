@@ -7,10 +7,15 @@ import { PrimaryButton } from "@components/PrimaryButton";
 
 type Props = {
   meals: Meal[];
-  handleAddMeal?: () => void; // opcjonalne dla dni z przeszłości
+  handleAddMeal?: () => void;
+  onOpenMeal?: (meal: Meal) => void;
 };
 
-export const TodaysMealsList = ({ meals, handleAddMeal }: Props) => {
+export const TodaysMealsList = ({
+  meals,
+  handleAddMeal,
+  onOpenMeal,
+}: Props) => {
   const theme = useTheme();
   const { t } = useTranslation("home");
 
@@ -53,6 +58,7 @@ export const TodaysMealsList = ({ meals, handleAddMeal }: Props) => {
           >
             <Text
               style={{ color: theme.text, fontSize: theme.typography.size.md }}
+              onPress={onOpenMeal ? () => onOpenMeal(meal) : undefined}
             >
               {meal.name || t("meal")}
             </Text>
