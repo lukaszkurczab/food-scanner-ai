@@ -35,6 +35,8 @@ const toNumber = (v: unknown): number => {
   return 0;
 };
 
+const capFirst = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
 const normalize = (x: any): Ingredient | null => {
   if (!x || typeof x.name !== "string" || !x.name.trim()) return null;
   const amount = toNumber(x.amount);
@@ -49,7 +51,7 @@ const normalize = (x: any): Ingredient | null => {
       : undefined;
   return {
     id: uuidv4(),
-    name: x.name.trim(),
+    name: capFirst(x.name.trim()),
     amount,
     unit,
     protein,
@@ -72,13 +74,20 @@ function fallbackJsonArray(raw: string): string | null {
   return match ? match[0] : null;
 }
 
+type VisionOpts = {
+  isPremium?: boolean;
+  limit?: number;
+  lang?: string;
+};
+
 export async function detectIngredientsWithVision(
   userUid: string,
   imageUri: string,
-  opts?: { isPremium?: boolean; limit?: number }
+  opts?: VisionOpts
 ): Promise<Ingredient[] | null> {
   const isPremium = !!opts?.isPremium;
   const limit = opts?.limit ?? 1;
+  const USER_LANG = (opts?.lang || "pl").toLowerCase();
 
   if (!isPremium) {
     throw new Error("ai/premium-required");
@@ -118,7 +127,7 @@ export async function detectIngredientsWithVision(
             content: [
               {
                 type: "text",
-                text: 'Analyze the image and return ONLY a raw JSON array. No prose. Strict schema per item: {"name":"string","amount":123,"protein":0,"fat":0,"carbs":0,"kcal":0,"unit":"ml"}. The "unit" key is optional and used only for liquids; otherwise omit it. Use grams for "amount" by default. If a nutrition facts table is visible, read and convert per-serving data to grams if needed; otherwise infer from what is visible. Prefer one combined item for composite dishes (pizza, burger, kebab, lasagna, pierogi, salad, soup, curry, fish and chips, etc.). Do not split into dough/cheese/sauce or similar. If multiple distinct foods are clearly separate (e.g., an apple next to a sandwich and a bottle), list them separately. Numbers only. No text outside the JSON array. Output example: [{"name":"oatmeal","amount":120,"protein":6,"fat":4,"carbs":20,"kcal":148}]',
+                text: `Language: ${USER_LANG}. Return names in ${USER_LANG}. Capitalize the first letter of each "name". Analyze the image and return ONLY a raw JSON array. No prose. Strict schema per item: {"name":"string","amount":123,"protein":0,"fat":0,"carbs":0,"kcal":0,"unit":"ml"}. The "unit" key is optional and used only for liquids; otherwise omit it. Use grams for "amount" by default. If a nutrition facts table is visible, read and convert per-serving data to grams if needed; otherwise infer from what is visible. Prefer one combined item for composite dishes (pizza, burger, kebab, lasagna, pierogi, salad, soup, curry, fish and chips, etc.). Do not split into dough/cheese/sauce or similar. If multiple distinct foods are clearly separate (e.g., an apple next to a sandwich and a bottle), list them separately. Numbers only. No text outside the JSON array. Output example: [{"name":"Owsianka","amount":120,"protein":6,"fat":4,"carbs":20,"kcal":148}]`,
               },
               {
                 type: "image_url",

@@ -36,7 +36,6 @@ export function useUser(uid: string) {
       setLoading(false);
       return;
     }
-    // hydrate from cache for offline support
     (async () => {
       try {
         const cached = await AsyncStorage.getItem(`user:profile:${uid}`);
@@ -59,8 +58,10 @@ export function useUser(uid: string) {
       );
       if (data?.language) setLanguage(data.language);
       setLoading(false);
-      // persist cache
-      if (data) AsyncStorage.setItem(`user:profile:${uid}`, JSON.stringify(data)).catch(() => {});
+      if (data)
+        AsyncStorage.setItem(`user:profile:${uid}`, JSON.stringify(data)).catch(
+          () => {}
+        );
     });
     return unsub;
   }, [uid]);
@@ -96,11 +97,16 @@ export function useUser(uid: string) {
         { merge: true }
       );
       if (patch.language) setLanguage(patch.language);
-      // update cache optimistically; Firestore will sync later if offline
+
       try {
         const current = await AsyncStorage.getItem(`user:profile:${uid}`);
-        const merged = current ? { ...(JSON.parse(current) as any), ...patch, updatedAt: now } : { ...(patch as any), updatedAt: now };
-        await AsyncStorage.setItem(`user:profile:${uid}`, JSON.stringify(merged));
+        const merged = current
+          ? { ...(JSON.parse(current) as any), ...patch, updatedAt: now }
+          : { ...(patch as any), updatedAt: now };
+        await AsyncStorage.setItem(
+          `user:profile:${uid}`,
+          JSON.stringify(merged)
+        );
       } catch {}
     },
     [uid]
