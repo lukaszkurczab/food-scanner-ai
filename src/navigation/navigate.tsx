@@ -20,6 +20,8 @@ export type RootStackParamList = {
   Statistics: undefined;
   Result: undefined;
   ReviewIngredients: undefined;
+  EditReviewIngredients: { savedCloudId?: string } | undefined;
+  EditResult: { savedCloudId?: string } | undefined;
   Privacy: undefined;
   ManageSubscription: undefined;
   ChangePassword: undefined;

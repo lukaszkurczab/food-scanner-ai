@@ -3,7 +3,6 @@ import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { RootStackParamList } from "./navigate";
 import { useAuthContext } from "@/context/AuthContext";
-
 import HomeScreen from "@/feature/Home/screens/HomeScreen";
 import ResultScreen from "@/feature/Meals/screens/ResultScreen";
 import HistoryListScreen from "@/feature/History/screens/HistoryListScreen";
@@ -40,6 +39,8 @@ import MealShareScreen from "@/feature/Meals/screens/MealShareScreen";
 import BarCodeCameraScreen from "@/feature/Meals/screens/BarCodeCameraScreen";
 import ProgressShareScreen from "@/feature/Statistics/screens/ProgressShareScreen";
 import ChatScreen from "@/feature/AI/screens/ChatScreen";
+import EditReviewIngredientsScreen from "@/feature/History/screens/EditReviewIngredientsScreen";
+import EditResultScreen from "@/feature/History/screens/EditResultScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -103,6 +104,11 @@ const AppNavigator = () => {
             component={ReviewIngredientsScreen}
           />
           <Stack.Screen name="Result" component={ResultScreen} />
+          <Stack.Screen
+            name="EditReviewIngredients"
+            component={EditReviewIngredientsScreen}
+          />
+          <Stack.Screen name="EditResult" component={EditResultScreen} />
           <Stack.Screen name="MealTextAI" component={MealTextAIScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen

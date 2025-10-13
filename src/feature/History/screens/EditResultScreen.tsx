@@ -1,43 +1,42 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
-import {
-  MealBox,
-  PrimaryButton,
-  Checkbox,
-  Layout,
-  Card,
-  IngredientBox,
-  SecondaryButton,
-  ErrorButton,
-  Modal,
-} from "@/components";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useUserContext } from "@contexts/UserContext";
-import { useMeals } from "@hooks/useMeals";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import { useAuthContext } from "@/context/AuthContext";
 import type { MealType } from "@/types/meal";
 import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
-import { DateTimeSection } from "../../../components/DateTimeSection";
-import { updateStreakIfThresholdMet } from "@/services/streakService";
-import { useNavigation } from "@react-navigation/native";
+import { DateTimeSection } from "@/components/DateTimeSection";
+import {
+  Layout,
+  PrimaryButton,
+  SecondaryButton,
+  Card,
+  Modal,
+} from "@/components";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { getApp } from "@react-native-firebase/app";
+import { getFirestore, doc, setDoc } from "@react-native-firebase/firestore";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-type ResultScreenProps = { navigation: any };
+type ScreenRoute = RouteProp<RootStackParamList, "EditResult">;
 
-export default function ResultScreen({ navigation }: ResultScreenProps) {
+const app = getApp();
+const db = getFirestore(app);
+
+export default function EditResultScreen({ navigation }: { navigation: any }) {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const { uid } = useAuthContext();
+  const route = useRoute<ScreenRoute>();
+  const savedCloudId = route.params?.savedCloudId;
   const nav = useNavigation<any>();
-  const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =
-    useMealDraftContext();
+  const { meal, setLastScreen } = useMealDraftContext();
   const { userData } = useUserContext();
-  const { addMeal, meals } = useMeals(uid ?? null);
-  const isFromSaved = (meal as any)?.source === "saved";
+
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [saveToMyMeals, setSaveToMyMeals] = useState(isFromSaved);
   const [mealName, setMealName] = useState(meal?.name || autoMealName());
   const [mealType, setMealType] = useState<MealType>(meal?.type || "breakfast");
   const [showIngredients, setShowIngredients] = useState<boolean>(false);
@@ -53,19 +52,12 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const shotRef = useRef<View>(null);
 
   useEffect(() => {
-    if (uid) {
-      setLastScreen(uid, "Result");
-    }
+    if (uid) setLastScreen(uid, "EditResult");
   }, [setLastScreen, uid]);
 
   if (!meal || !uid) return null;
 
-  const nutrition = calculateTotalNutrients([meal]);
-
-  const isSameLocalDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
+  const nutrition = useMemo(() => calculateTotalNutrients([meal]), [meal]);
 
   const goShare = () => {
     if (!meal || !uid) return;
@@ -75,58 +67,35 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
       type: mealType,
       timestamp: selectedAt.toISOString(),
     } as any;
-    nav.navigate("MealShare", { meal: pass, returnTo: "Result" });
+    nav.navigate("MealShare", { meal: pass, returnTo: "MealDetails" });
   };
 
   const handleSave = async () => {
     if (!userData?.uid || saving) return;
+    if (!savedCloudId) return;
     setSaving(true);
     const nowIso = new Date().toISOString();
-    const newMeal = {
-      ...meal,
-      cloudId: meal.cloudId,
-      userUid: uid,
+    const payload = {
+      ...(meal as any),
       name: mealName,
       type: mealType,
       timestamp: selectedAt.toISOString(),
       createdAt: addedAt.toISOString(),
-      syncState: "pending",
       updatedAt: nowIso,
-      source: meal.source ?? "manual",
-    } as any;
-
+      source: "saved",
+    };
     try {
-      await addMeal(newMeal, { alsoSaveToMyMeals: saveToMyMeals });
-
-      const today = new Date(selectedAt);
-      const existingTodayKcal =
-        meals
-          .filter((m) => isSameLocalDay(new Date(m.timestamp), today))
-          .reduce((s, m) => s + Number(m?.totals?.kcal || 0), 0) || 0;
-
-      const mealKcal = Number(calculateTotalNutrients([newMeal]).kcal) || 0;
-      const todaysKcal = existingTodayKcal + mealKcal;
-      const targetKcal = Number(userData?.calorieTarget || 0);
-
-      await updateStreakIfThresholdMet({
-        uid,
-        todaysKcal,
-        targetKcal,
-        thresholdPct: 0.8,
+      await setDoc(doc(db, "users", uid, "myMeals", savedCloudId), payload, {
+        merge: true,
       });
-
-      clearMeal(uid);
-      navigation.navigate("Home");
-    } catch {
+      navigation.navigate("SavedMeals");
+    } finally {
       setSaving(false);
     }
   };
 
   const handleCancel = () => setShowCancelModal(true);
-  const handleCancelConfirm = () => {
-    if (uid) clearMeal(uid);
-    navigation.navigate("Home");
-  };
+  const handleCancelConfirm = () => navigation.navigate("SavedMeals");
 
   return (
     <Layout showNavigation={false}>
@@ -147,14 +116,27 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
           </>
         )}
 
-        <MealBox
-          name={mealName}
-          type={mealType}
-          nutrition={nutrition}
-          editable={!saving}
-          onNameChange={setMealName}
-          onTypeChange={setMealType}
-        />
+        <Card>
+          <Text
+            style={{
+              fontSize: theme.typography.size.md,
+              color: theme.text,
+              fontWeight: "600",
+              marginBottom: theme.spacing.sm,
+            }}
+          >
+            {t("meal_name", { ns: "meals", defaultValue: "Nazwa posiłku" })}
+          </Text>
+          <Text
+            style={{
+              color: theme.text,
+              opacity: 0.8,
+              marginBottom: theme.spacing.xs,
+            }}
+          >
+            {mealName}
+          </Text>
+        </Card>
 
         <DateTimeSection
           value={selectedAt}
@@ -181,44 +163,6 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
           </Text>
         </Card>
 
-        {showIngredients && (
-          <>
-            {meal.ingredients.map((ingredient, idx) => (
-              <IngredientBox
-                key={(ingredient as any)?.id || idx}
-                ingredient={ingredient}
-                editable={false}
-                onSave={(updated) => !saving && updateIngredient(idx, updated)}
-                onRemove={() => !saving && removeIngredient(idx)}
-              />
-            ))}
-            <SecondaryButton
-              label={t("edit_ingredients", { ns: "meals" })}
-              onPress={() =>
-                !saving && navigation.navigate("ReviewIngredients")
-              }
-              disabled={saving}
-            />
-          </>
-        )}
-
-        <View style={styles.rowCenter}>
-          <Checkbox
-            checked={saveToMyMeals}
-            onChange={!saving ? setSaveToMyMeals : () => {}}
-            style={{ marginVertical: theme.spacing.md }}
-            disabled={saving}
-          />
-          <Text style={{ color: theme.text }}>
-            {isFromSaved
-              ? t("update_in_my_meals", {
-                  ns: "meals",
-                  defaultValue: "Update in My Meals",
-                })
-              : t("add_to_my_meals", { ns: "meals" })}
-          </Text>
-        </View>
-
         <View
           style={[
             styles.actions,
@@ -229,12 +173,14 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
             label={t("save", { ns: "common" })}
             onPress={handleSave}
             loading={saving}
-            disabled={saving}
+            disabled={saving || !savedCloudId}
           />
-          <ErrorButton
-            label={t("cancel", { ns: "common" })}
+          <SecondaryButton
+            label={t("back_to_saved", {
+              ns: "meals",
+              defaultValue: "Wróć do zapisanych",
+            })}
             onPress={handleCancel}
-            loading={saving}
             disabled={saving}
           />
         </View>
@@ -242,7 +188,10 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
 
       <Modal
         visible={showCancelModal}
-        message={t("cancel_result_message", { ns: "meals" })}
+        message={t("cancel_edit_message", {
+          ns: "meals",
+          defaultValue: "Porzucić zmiany i wrócić do zapisanych posiłków?",
+        })}
         primaryActionLabel={t("confirm", { ns: "common" })}
         onClose={() => setShowCancelModal(false)}
         onPrimaryAction={handleCancelConfirm}
@@ -262,6 +211,5 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     backgroundColor: "#B2C0C9",
   },
-  rowCenter: { flexDirection: "row", alignItems: "center" },
   actions: { justifyContent: "space-between" },
 });
