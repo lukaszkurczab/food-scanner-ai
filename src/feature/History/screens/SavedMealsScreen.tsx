@@ -41,9 +41,13 @@ import {
   limit,
   startAfter,
   getDocs,
+  deleteDoc,
+  doc,
 } from "@react-native-firebase/firestore";
 import { useTranslation } from "react-i18next";
 import { useFilters } from "@/context/HistoryContext";
+import { useMealDraftContext } from "@contexts/MealDraftContext";
+import { v4 as uuidv4 } from "uuid";
 
 const PAGE_SIZE = 20;
 
@@ -94,13 +98,17 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
   const { uid } = useAuthContext();
   const { duplicateMeal, getMeals } = useMeals(uid || "");
   const { t } = useTranslation(["meals", "common"]);
+  const {
+    meal: draftMeal,
+    setMeal,
+    saveDraft,
+    setLastScreen,
+  } = useMealDraftContext();
 
   const {
     query,
     setQuery,
     filters,
-    applyFilters,
-    clearFilters,
     showFilters,
     toggleShowFilters,
     filterCount,
@@ -232,14 +240,85 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
       if (loadingMoreRef.current || !hasMore || !lastDoc) return;
-      const globalMax =
-        viewableItems.reduce((max, v) => {
-          const idx = typeof v.index === "number" ? v.index : -1;
-          return idx > max ? idx : max;
-        }, -1) ?? -1;
+      const globalMax = viewableItems.reduce((max, v) => {
+        const idx = typeof v.index === "number" ? v.index : -1;
+        return idx > max ? idx : max;
+      }, -1);
       const remaining = visibleItems.length - (globalMax + 1);
       if (remaining <= 10) loadMore();
     }
+  );
+
+  const buildDraftFromSaved = useCallback(
+    (picked: Meal): Meal => {
+      const now = new Date().toISOString();
+      const base: Meal =
+        draftMeal ??
+        ({
+          mealId: uuidv4(),
+          userUid: uid!,
+          name: "",
+          photoUrl: null,
+          ingredients: [],
+          createdAt: now,
+          updatedAt: now,
+          syncState: "pending",
+          tags: [],
+          deleted: false,
+          notes: null,
+          type: "other",
+          timestamp: "",
+          source: null,
+          cloudId: undefined,
+        } as any);
+      return {
+        ...base,
+        mealId: uuidv4(),
+        source: "saved",
+        ingredients: Array.isArray(picked.ingredients)
+          ? picked.ingredients
+          : [],
+        photoUrl: picked.photoUrl ?? null,
+        updatedAt: now,
+        name: picked.name ?? "",
+      };
+    },
+    [draftMeal, uid]
+  );
+
+  const onDuplicate = useCallback(
+    async (m: Meal) => {
+      if (!uid) return;
+      const next = buildDraftFromSaved(m);
+      setMeal(next);
+      await saveDraft(uid);
+      await setLastScreen(uid, "ReviewIngredients");
+      navigation.navigate("ReviewIngredients");
+    },
+    [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation]
+  );
+
+  const onEdit = useCallback(
+    async (m: Meal) => {
+      if (!uid) return;
+      const next = buildDraftFromSaved(m);
+      setMeal(next);
+      await saveDraft(uid);
+      await setLastScreen(uid, "EditReviewIngredients");
+      navigation.navigate("EditReviewIngredients", {
+        mode: "edit-saved",
+        savedCloudId: m.cloudId,
+      });
+    },
+    [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation]
+  );
+
+  const onDelete = useCallback(
+    async (m: Meal) => {
+      if (!uid || !m.cloudId) return;
+      await deleteDoc(doc(db, "users", uid, "myMeals", m.cloudId));
+    },
+    [uid]
   );
 
   const onDuplicateMeal = (meal: Meal) => duplicateMeal(meal);
@@ -319,9 +398,9 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
                 onPress={() =>
                   navigation.navigate("MealDetails", { meal: item })
                 }
-                onDuplicate={() => onDuplicateMeal(item)}
-                onEdit={() => {}}
-                onDelete={() => {}}
+                onDuplicate={() => onDuplicate(item)}
+                onEdit={() => onEdit(item)}
+                onDelete={() => onDelete(item)}
               />
             </View>
           )}

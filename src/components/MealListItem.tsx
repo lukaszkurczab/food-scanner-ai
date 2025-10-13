@@ -149,7 +149,7 @@ export const MealListItem: React.FC<Props> = ({
                 fontSize: theme.typography.size.sm,
               }}
             >
-              {t("duplicate", "Duplicate")}
+              {t("common:use", "Use")}
             </Text>
           </Pressable>
         </View>
@@ -245,18 +245,9 @@ export const MealListItem: React.FC<Props> = ({
           </View>
 
           <View style={styles.chipsRow}>
-            <MacroChip
-              label={t("protein", { ns: "meals" })}
-              value={nutrition.protein}
-            />
-            <MacroChip
-              label={t("carbs", { ns: "meals" })}
-              value={nutrition.carbs}
-            />
-            <MacroChip
-              label={t("fat", { ns: "meals" })}
-              value={nutrition.fat}
-            />
+            <MacroChip label="Protein" value={nutrition.protein} />
+            <MacroChip label="Carbs" value={nutrition.carbs} />
+            <MacroChip label="Fat" value={nutrition.fat} />
           </View>
         </View>
       </Pressable>

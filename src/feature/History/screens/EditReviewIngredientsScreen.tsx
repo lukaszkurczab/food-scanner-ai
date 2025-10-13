@@ -1,6 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import {
   Layout,
@@ -16,11 +22,17 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
 import { v4 as uuidv4 } from "uuid";
+import type { RootStackParamList } from "@/navigation/navigate";
 
+type ScreenRoute = RouteProp<RootStackParamList, "EditReviewIngredients">;
 type FieldErrors = Partial<Record<keyof Ingredient, string>>;
 
-export default function ReviewIngredientsScreen() {
+export default function EditReviewIngredientsScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<ScreenRoute>();
+  const savedCloudId = route.params as any as
+    | { savedCloudId?: string }
+    | undefined;
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const {
@@ -48,12 +60,9 @@ export default function ReviewIngredientsScreen() {
   const image = meal?.photoUrl ?? null;
   const [imageError, setImageError] = useState(false);
 
+  useEffect(() => setImageError(false), [image]);
   useEffect(() => {
-    setImageError(false);
-  }, [image]);
-
-  useEffect(() => {
-    if (uid) setLastScreen(uid, "ReviewIngredients");
+    if (uid) setLastScreen(uid, "EditReviewIngredients");
   }, [setLastScreen, uid]);
 
   const validate = (i: Ingredient): FieldErrors => {
@@ -94,9 +103,9 @@ export default function ReviewIngredientsScreen() {
     (i?.fat ?? 0) <= 0 &&
     (i?.kcal ?? 0) <= 0;
 
-  const persist = async () => {
+  const persist = useCallback(async () => {
     if (uid) await saveDraft(uid);
-  };
+  }, [saveDraft, uid]);
 
   const handleAddPhoto = () => {
     allowLeaveRef.current = true;
@@ -167,8 +176,13 @@ export default function ReviewIngredientsScreen() {
 
   const handleContinue = () => {
     allowLeaveRef.current = true;
-    navigation.navigate("Result");
-    setTimeout(() => (allowLeaveRef.current = false), 500);
+    navigation.navigate(
+      "EditResult",
+      savedCloudId?.savedCloudId
+        ? { savedCloudId: savedCloudId.savedCloudId }
+        : undefined
+    );
+    setTimeout(() => (allowLeaveRef.current = false), 300);
   };
 
   const handleStartOver = () => {
@@ -176,7 +190,7 @@ export default function ReviewIngredientsScreen() {
     setLocalDraft(null);
     setEditingIdx(null);
     if (uid) clearMeal(uid);
-    navigation.replace("MealAddMethod");
+    navigation.replace("SavedMeals");
   };
 
   const handleRemovePhoto = async () => {
@@ -268,7 +282,6 @@ export default function ReviewIngredientsScreen() {
                       <Pressable
                         onPress={() => {
                           setImageMenuOpen(false);
-                          // Go directly to camera to change the photo
                           handleAddPhoto();
                         }}
                         style={styles(theme).menuItem}
@@ -372,18 +385,33 @@ export default function ReviewIngredientsScreen() {
           style={styles(theme).continueBtn}
         />
         <SecondaryButton
-          label={t("start_over", { ns: "meals" })}
+          label={t("back_to_saved", {
+            ns: "meals",
+            defaultValue: "Wróć do zapisanych",
+          })}
           onPress={() => setShowConfirmModal(true)}
           style={styles(theme).startOverBtn}
         />
 
         <AppModal
           visible={showConfirmModal}
-          title={t("start_over_title", { ns: "meals" })}
-          message={t("start_over_message", { ns: "meals" })}
-          primaryActionLabel={t("start_over", { ns: "meals" })}
+          title={t("leave_edit_title", {
+            ns: "meals",
+            defaultValue: "Zakończyć edycję?",
+          })}
+          message={t("leave_edit_message", {
+            ns: "meals",
+            defaultValue: "Porzucić zmiany i wrócić do zapisanych posiłków?",
+          })}
+          primaryActionLabel={t("back_to_saved", {
+            ns: "meals",
+            defaultValue: "Wróć do zapisanych",
+          })}
           onPrimaryAction={handleStartOver}
-          secondaryActionLabel={t("continue", { ns: "common" })}
+          secondaryActionLabel={t("continue_editing", {
+            ns: "meals",
+            defaultValue: "Kontynuuj edycję",
+          })}
           onSecondaryAction={() => setShowConfirmModal(false)}
           onClose={() => setShowConfirmModal(false)}
         />
@@ -392,16 +420,15 @@ export default function ReviewIngredientsScreen() {
           visible={showExitModal}
           title={t("confirm_exit_title", {
             ns: "meals",
-            defaultValue: "Leave meal creation?",
+            defaultValue: "Wyjść z edycji?",
           })}
           message={t("confirm_exit_message", {
             ns: "meals",
-            defaultValue:
-              "You have unsaved edits. Do you really want to leave?",
+            defaultValue: "Masz niezapisane zmiany. Na pewno wyjść?",
           })}
-          primaryActionLabel={t("discard", {
-            ns: "meals",
-            defaultValue: "Discard",
+          primaryActionLabel={t("leave", {
+            ns: "common",
+            defaultValue: "Wyjdź",
           })}
           onPrimaryAction={confirmExit}
           secondaryActionLabel={t("continue", { ns: "common" })}
@@ -474,14 +501,8 @@ const styles = (theme: ReturnType<typeof useTheme>) =>
       shadowRadius: 6,
       elevation: 4,
     },
-    menuItem: {
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-    },
-    menuItemText: {
-      color: theme.text,
-      fontWeight: "600",
-    },
+    menuItem: { paddingVertical: 8, paddingHorizontal: 12 },
+    menuItemText: { color: theme.text, fontWeight: "600" },
     placeholder: {
       width: "100%",
       height: IMAGE_SIZE,
