@@ -21,6 +21,7 @@ import {
   getDownloadURL,
 } from "@react-native-firebase/storage";
 import { useTranslation } from "react-i18next";
+import { MaterialIcons } from "@expo/vector-icons";
 
 type Props = {
   meal: Meal;
@@ -34,7 +35,7 @@ type Props = {
 
 const app = getApp();
 const st = getStorage(app);
-const ACTION_WIDTH = 108;
+const ACTION_WIDTH = 168;
 
 export const MealListItem: React.FC<Props> = ({
   meal,
@@ -161,39 +162,29 @@ export const MealListItem: React.FC<Props> = ({
         <View style={[styles.actions, { backgroundColor: theme.background }]}>
           <Pressable
             onPress={onDelete}
-            style={[styles.actBtn, { backgroundColor: theme.error.text }]}
+            accessibilityLabel={t("delete", { ns: "common" })}
+            hitSlop={8}
+            style={[styles.actBtn, { borderColor: theme.border }]}
           >
-            <Text
-              style={{
-                color: theme.background,
-                fontSize: theme.typography.size.sm,
-              }}
-            >
-              {t("remove")}
-            </Text>
+            <MaterialIcons name="delete-outline" size={24} color={theme.text} />
           </Pressable>
+
           <Pressable
             onPress={onEdit}
-            style={[styles.actBtn, { backgroundColor: theme.card }]}
+            accessibilityLabel={t("edit", { ns: "common" })}
+            hitSlop={8}
+            style={[styles.actBtn, { borderColor: theme.border }]}
           >
-            <Text
-              style={{ color: theme.text, fontSize: theme.typography.size.sm }}
-            >
-              {t("edit")}
-            </Text>
+            <MaterialIcons name="edit" size={24} color={theme.text} />
           </Pressable>
+
           <Pressable
             onPress={onDuplicate}
-            style={[styles.actBtn, { backgroundColor: theme.accent }]}
+            accessibilityLabel={t("duplicate", { ns: "common" })}
+            hitSlop={8}
+            style={[styles.actBtn, { borderColor: theme.border }]}
           >
-            <Text
-              style={{
-                color: theme.onAccent,
-                fontSize: theme.typography.size.sm,
-              }}
-            >
-              {t("common:use", "Use")}
-            </Text>
+            <MaterialIcons name="content-copy" size={24} color={theme.text} />
           </Pressable>
         </View>
       </View>
@@ -294,7 +285,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "center",
     padding: 16,
-    borderRadius: 24,
+    borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
     shadowRadius: 12,
@@ -321,18 +312,29 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     bottom: 0,
+    right: 0,
     justifyContent: "center",
   },
   actions: {
-    width: ACTION_WIDTH,
-    paddingHorizontal: 8,
+    paddingBottom: 12,
+    paddingLeft: 8,
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    alignItems: "stretch",
+    borderRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
+    flex: 1,
   },
   actBtn: {
-    height: 32,
+    width: 48,
+    height: "100%",
     borderRadius: 12,
+    borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
+    flex: 1,
   },
 });
