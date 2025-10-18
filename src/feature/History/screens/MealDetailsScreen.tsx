@@ -156,6 +156,7 @@ export default function MealDetailsScreen() {
           name={draft.name || ""}
           type={draft.type}
           nutrition={nutrition}
+          addedAt={draft.timestamp || draft.createdAt}
           editable={edit && !saving}
           onNameChange={edit ? setName : undefined}
           onTypeChange={edit ? setType : undefined}

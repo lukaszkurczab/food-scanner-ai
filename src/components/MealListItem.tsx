@@ -310,9 +310,9 @@ export const MealListItem: React.FC<Props> = ({
             </View>
 
             <View style={styles.chipsRow}>
-              <MacroChip label="Protein" value={nutrition.protein} />
-              <MacroChip label="Carbs" value={nutrition.carbs} />
-              <MacroChip label="Fat" value={nutrition.fat} />
+              <MacroChip kind="protein" value={nutrition.protein} />
+              <MacroChip kind="carbs" value={nutrition.carbs} />
+              <MacroChip kind="fat" value={nutrition.fat} />
             </View>
           </View>
         </Pressable>
