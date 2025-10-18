@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, Image } from "react-native";
+import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useUserContext } from "@contexts/UserContext";
@@ -9,17 +9,12 @@ import type { MealType } from "@/types/meal";
 import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "@/components/DateTimeSection";
-import {
-  Layout,
-  PrimaryButton,
-  SecondaryButton,
-  Card,
-  Modal,
-} from "@/components";
+import { Layout, PrimaryButton, SecondaryButton, Card, Modal } from "@/components";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { getApp } from "@react-native-firebase/app";
 import { getFirestore, doc, setDoc } from "@react-native-firebase/firestore";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { MaterialIcons } from "@expo/vector-icons";
 
 type ScreenRoute = RouteProp<RootStackParamList, "EditResult">;
 
@@ -101,19 +96,30 @@ export default function EditResultScreen({ navigation }: { navigation: any }) {
     <Layout showNavigation={false}>
       <View style={{ padding: theme.spacing.container }}>
         {image && !imageError && (
-          <>
+          <View style={styles.imageWrap}>
             <Image
               source={{ uri: image }}
               style={styles.image}
               resizeMode="cover"
               onError={() => setImageError(true)}
             />
-            <SecondaryButton
-              label={t("share", { ns: "common" })}
+            <Pressable
               onPress={goShare}
-              style={{ marginTop: theme.spacing.md }}
-            />
-          </>
+              accessibilityRole="button"
+              accessibilityLabel={t("share", { ns: "common" })}
+              hitSlop={8}
+              style={[
+                styles.fab,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.border,
+                  shadowColor: theme.shadow,
+                },
+              ]}
+            >
+              <MaterialIcons name="ios-share" size={22} color={theme.text} />
+            </Pressable>
+          </View>
         )}
 
         <Card>
@@ -205,11 +211,29 @@ export default function EditResultScreen({ navigation }: { navigation: any }) {
 const IMAGE_SIZE = 220;
 
 const styles = StyleSheet.create({
+  imageWrap: {
+    position: "relative",
+  },
   image: {
     width: "100%",
     height: IMAGE_SIZE,
     borderRadius: 32,
     backgroundColor: "#B2C0C9",
+  },
+  fab: {
+    position: "absolute",
+    right: 12,
+    bottom: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   actions: { justifyContent: "space-between" },
 });
