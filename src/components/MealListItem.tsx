@@ -106,6 +106,7 @@ export const MealListItem: React.FC<Props> = ({
   }, [mealId, meal.userUid, meal.imageId, meal.photoUrl]);
 
   const reveal = useRef(new Animated.Value(0)).current;
+  const isOpen = useRef(false);
 
   const clamp = (v: number, a: number, b: number) =>
     Math.min(Math.max(v, a), b);
@@ -123,23 +124,27 @@ export const MealListItem: React.FC<Props> = ({
       },
       onPanResponderRelease: (_, g) => {
         const velocity = -g.vx;
-        const current = Math.max(0, Math.min(ACTION_WIDTH, -g.dx));
+        const current = clamp(-g.dx, 0, ACTION_WIDTH);
         const target =
           current > ACTION_WIDTH * 0.4 || velocity > 0.6 ? ACTION_WIDTH : 0;
         Animated.spring(reveal, {
           toValue: target,
-          useNativeDriver: false,
+          useNativeDriver: true,
           bounciness: 0,
           speed: 18,
-        }).start();
+        }).start(() => {
+          isOpen.current = target === ACTION_WIDTH;
+        });
       },
       onPanResponderTerminate: () => {
         Animated.spring(reveal, {
           toValue: 0,
-          useNativeDriver: false,
+          useNativeDriver: true,
           bounciness: 0,
           speed: 18,
-        }).start();
+        }).start(() => {
+          isOpen.current = false;
+        });
       },
     })
   ).current;
@@ -150,16 +155,45 @@ export const MealListItem: React.FC<Props> = ({
   const nutrition = calculateTotalNutrients([meal]);
   const imageUri = localUri || meal.photoUrl || null;
 
+  const translateX = reveal.interpolate({
+    inputRange: [0, ACTION_WIDTH],
+    outputRange: [0, -ACTION_WIDTH],
+    extrapolate: "clamp",
+  });
+
+  const handleCardPress = () => {
+    if (isOpen.current) {
+      Animated.spring(reveal, {
+        toValue: 0,
+        useNativeDriver: true,
+        bounciness: 0,
+        speed: 18,
+      }).start(() => {
+        isOpen.current = false;
+      });
+      return;
+    }
+    onPress();
+  };
+
   return (
     <View onLayout={onLayout} style={{ position: "relative" }}>
       <View
         pointerEvents="box-none"
-        style={[
-          styles.actionsWrap,
-          { width: ACTION_WIDTH, right: 0, backgroundColor: "transparent" },
-        ]}
+        style={[StyleSheet.absoluteFill, { justifyContent: "center" }]}
       >
-        <View style={[styles.actions, { backgroundColor: theme.background }]}>
+        <View
+          style={[
+            styles.actions,
+            {
+              width: ACTION_WIDTH,
+              right: 0,
+              position: "absolute",
+              backgroundColor: theme.background,
+              shadowColor: theme.shadow,
+            },
+          ]}
+        >
           <Pressable
             onPress={onDelete}
             accessibilityLabel={t("delete", { ns: "common" })}
@@ -168,7 +202,6 @@ export const MealListItem: React.FC<Props> = ({
           >
             <MaterialIcons name="delete-outline" size={24} color={theme.text} />
           </Pressable>
-
           <Pressable
             onPress={onEdit}
             accessibilityLabel={t("edit", { ns: "common" })}
@@ -177,7 +210,6 @@ export const MealListItem: React.FC<Props> = ({
           >
             <MaterialIcons name="edit" size={24} color={theme.text} />
           </Pressable>
-
           <Pressable
             onPress={onDuplicate}
             accessibilityLabel={t("duplicate", { ns: "common" })}
@@ -189,9 +221,12 @@ export const MealListItem: React.FC<Props> = ({
         </View>
       </View>
 
-      <Animated.View {...pan.panHandlers} style={{ marginRight: reveal }}>
+      <Animated.View
+        {...pan.panHandlers}
+        style={{ transform: [{ translateX }], width: rowWidth || undefined }}
+      >
         <Pressable
-          onPress={onPress}
+          onPress={handleCardPress}
           style={[
             styles.card,
             {
@@ -251,16 +286,23 @@ export const MealListItem: React.FC<Props> = ({
                 style={{
                   color: theme.text,
                   fontFamily: theme.typography.fontFamily.bold,
-                  fontSize: theme.typography.size.lg,
+                  fontSize: theme.typography.size.md,
+                  flexGrow: 1,
+                  flexShrink: 1,
+                  minWidth: 0,
+                  marginRight: 8,
+                  maxWidth: "68%",
                 }}
               >
                 {meal.name || t("meal", { ns: "home" })}
               </Text>
               <Text
+                numberOfLines={1}
                 style={{
                   color: theme.text,
                   fontFamily: theme.typography.fontFamily.bold,
                   fontSize: theme.typography.size.lg,
+                  flexShrink: 0,
                 }}
               >
                 {nutrition.kcal} {t("kcal")}
@@ -308,13 +350,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   chipsRow: { flexDirection: "row", justifyContent: "space-between", gap: 6 },
-  actionsWrap: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    right: 0,
-    justifyContent: "center",
-  },
   actions: {
     paddingBottom: 12,
     paddingLeft: 8,
@@ -326,7 +361,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 10,
     elevation: 3,
-    flex: 1,
+    top: 0,
+    bottom: 0,
   },
   actBtn: {
     width: 48,
