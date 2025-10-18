@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, useNavigation } from "@react-navigation/native";
 import {
   Layout,
   Card,
@@ -10,7 +10,6 @@ import {
   IngredientBox,
   MealBox,
   ErrorButton,
-  SecondaryButton,
 } from "@/components";
 import { FallbackImage } from "../components/FallbackImage";
 import { Modal } from "@/components/Modal";
@@ -18,9 +17,7 @@ import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import type { Meal, MealType, Ingredient } from "@/types/meal";
 import { useMeals } from "@hooks/useMeals";
 import { useAuthContext } from "@/context/AuthContext";
-import { captureRef } from "react-native-view-shot";
-import * as Sharing from "expo-sharing";
-import { useNavigation } from "@react-navigation/native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
 
@@ -40,8 +37,6 @@ export default function MealDetailsScreen() {
   const [editBaseline, setEditBaseline] = useState<Meal | null>(null);
   const [showIngredients, setShowIngredients] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
-
-  const shotRef = useRef<View>(null);
 
   const goShare = () => {
     if (!draft) return;
@@ -124,33 +119,35 @@ export default function MealDetailsScreen() {
     setEditBaseline(null);
   };
 
-  const onShare = async () => {
-    if (!shotRef.current) return;
-    const uri = await captureRef(shotRef, {
-      format: "png",
-      quality: 1,
-      width: 1080,
-      height: 1920,
-      result: "tmpfile",
-    });
-    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri);
-  };
-
   return (
     <Layout showNavigation={false}>
       <View style={{ flex: 1, padding: theme.spacing.lg }}>
-        <FallbackImage
-          uri={draft.photoUrl || null}
-          width={"100%"}
-          height={220}
-          borderRadius={theme.rounded.lg}
-        />
-        {draft.photoUrl && (
-          <SecondaryButton
-            label={t("share", { ns: "common" })}
-            onPress={goShare}
+        <View style={styles.imageWrap}>
+          <FallbackImage
+            uri={draft.photoUrl || null}
+            width={"100%"}
+            height={220}
+            borderRadius={theme.rounded.lg}
           />
-        )}
+          {draft.photoUrl ? (
+            <Pressable
+              onPress={goShare}
+              accessibilityRole="button"
+              accessibilityLabel={t("share", { ns: "common" })}
+              hitSlop={8}
+              style={[
+                styles.fab,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.border,
+                  shadowColor: theme.shadow,
+                },
+              ]}
+            >
+              <MaterialIcons name="ios-share" size={22} color={theme.text} />
+            </Pressable>
+          ) : null}
+        </View>
 
         <MealBox
           name={draft.name || ""}
@@ -243,3 +240,24 @@ export default function MealDetailsScreen() {
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  imageWrap: {
+    position: "relative",
+  },
+  fab: {
+    position: "absolute",
+    right: 12,
+    bottom: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+});
