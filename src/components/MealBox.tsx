@@ -22,15 +22,40 @@ type MealBoxProps = {
   name: string;
   type: MealType | null;
   nutrition: Nutrients;
+  addedAt?: string;
   editable?: boolean;
   onNameChange?: (val: string) => void;
   onTypeChange?: (val: MealType) => void;
+};
+
+const dateTimeOptions: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+};
+
+const fmt = (iso?: string) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  if (typeof Intl !== "undefined" && typeof Intl.DateTimeFormat === "function") {
+    try {
+      return new Intl.DateTimeFormat(undefined, dateTimeOptions).format(d);
+    } catch {
+      // fall through to fallback below
+    }
+  }
+
+  return d.toLocaleString(undefined, dateTimeOptions);
 };
 
 export const MealBox = ({
   name,
   type,
   nutrition,
+  addedAt,
   editable = false,
   onNameChange,
   onTypeChange,
@@ -42,17 +67,13 @@ export const MealBox = ({
     {
       value: nutrition.protein,
       color: theme.macro.protein,
-      label: "Protein",
+      label: t("meals:protein"),
     },
-    {
-      value: nutrition.fat,
-      color: theme.macro.fat,
-      label: "Fat",
-    },
+    { value: nutrition.fat, color: theme.macro.fat, label: t("meals:fat") },
     {
       value: nutrition.carbs,
       color: theme.macro.carbs,
-      label: "Carbs",
+      label: t("meals:carbs"),
     },
   ];
 
@@ -122,34 +143,36 @@ export const MealBox = ({
             }}
           />
         ) : (
-          <Text
-            style={{
-              fontSize: theme.typography.size.md,
-              color: theme.text,
-            }}
-          >
-            {type ? t(`meals:${type}`) : ""}
-          </Text>
+          <>
+            <Text
+              style={{
+                fontSize: theme.typography.size.md,
+                color: theme.text,
+              }}
+            >
+              {type ? t(`meals:${type}`) : ""}
+            </Text>
+            {!!addedAt && (
+              <Text
+                style={{
+                  marginTop: 4,
+                  fontSize: theme.typography.size.sm,
+                  color: theme.text,
+                  opacity: 0.7,
+                }}
+              >
+                {t("meals:added_at")}: {fmt(addedAt)}
+              </Text>
+            )}
+          </>
         )}
       </View>
 
-      <MacroChip
-        label={t("calories", { ns: "meals" })}
-        value={nutrition.kcal}
-      />
+      <MacroChip kind="kcal" value={nutrition.kcal} />
       <View style={styles.macrosRow}>
-        <MacroChip
-          label={t("protein", { ns: "meals" })}
-          value={nutrition.protein}
-        />
-        <MacroChip
-          label={t("carbs", { ns: "meals" })}
-          value={nutrition.carbs}
-        />
-        <MacroChip
-          label={t("fat", { ns: "meals" })}
-          value={nutrition.fat}
-        />
+        <MacroChip kind="protein" value={nutrition.protein} />
+        <MacroChip kind="carbs" value={nutrition.carbs} />
+        <MacroChip kind="fat" value={nutrition.fat} />
       </View>
 
       {renderNutritionGraph()}
