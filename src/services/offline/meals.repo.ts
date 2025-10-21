@@ -1,10 +1,8 @@
 import { getDB } from "./db";
 import type { Meal } from "@/types/meal";
 import type { MealRow } from "./types";
+import { emit } from "@/services/events";
 
-/**
- * Insert or update a meal in local SQLite.
- */
 export async function upsertMealLocal(meal: Meal): Promise<void> {
   const db = getDB();
   const tags = JSON.stringify(meal.tags || []);
@@ -57,6 +55,7 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       tags,
     ]
   );
+  emit("meal:local:upserted", { cloudId: meal.cloudId, ts: meal.updatedAt });
 }
 
 function rowToMeal(r: MealRow): Meal {
@@ -114,7 +113,6 @@ export async function getMealsPageLocal(
   return (rows as MealRow[]).map(rowToMeal);
 }
 
-/** FILTRY używane w historii (lokalnie po SQLite) */
 export type LocalHistoryFilters = {
   calories?: [number, number];
   protein?: [number, number];
@@ -123,10 +121,6 @@ export type LocalHistoryFilters = {
   dateRange?: { start: Date; end: Date };
 };
 
-/**
- * Paginowana lista z filtrami po lokalnej bazie (DESC po timestamp).
- * Zwraca { items, nextBefore }, gdzie nextBefore to ISO ostatniego elementu tej strony.
- */
 export async function getMealsPageLocalFiltered(
   uid: string,
   opts: {
@@ -187,9 +181,6 @@ export async function getMealsPageLocalFiltered(
   return { items, nextBefore };
 }
 
-/**
- * Mark a meal as deleted (soft delete).
- */
 export async function markDeletedLocal(
   cloudId: string,
   updatedAt: string
@@ -199,4 +190,5 @@ export async function markDeletedLocal(
     updatedAt,
     cloudId,
   ]);
+  emit("meal:local:deleted", { cloudId, ts: updatedAt });
 }

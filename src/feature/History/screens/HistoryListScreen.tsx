@@ -33,6 +33,7 @@ import {
   type HistoryFilters,
   FREE_WINDOW_DAYS,
 } from "@services/mealService";
+import { on } from "@/services/events";
 
 const PAGE = 10;
 
@@ -154,6 +155,28 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     resetAndLoadRef.current = resetAndLoad;
   }, [resetAndLoad]);
 
+  useEffect(() => {
+    if (!uid) return;
+    const unsub1 = on("meal:added", () =>
+      resetAndLoadRef.current?.({ silent: true })
+    );
+    const unsub2 = on("meal:updated", () =>
+      resetAndLoadRef.current?.({ silent: true })
+    );
+    const unsub3 = on("meal:deleted", () =>
+      resetAndLoadRef.current?.({ silent: true })
+    );
+    const unsub4 = on("meal:synced", () =>
+      resetAndLoadRef.current?.({ silent: true })
+    );
+    const unsub5 = on("meal:pushed", () =>
+      resetAndLoadRef.current?.({ silent: true })
+    );
+    const unsub6 = on("meal:failed", () => {});
+    return () =>
+      [unsub1, unsub2, unsub3, unsub4, unsub5, unsub6].forEach((u) => u && u());
+  }, [uid]);
+
   useFocusEffect(
     useCallback(() => {
       if (firstFocus.current) {
@@ -192,6 +215,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   }, [hasMore, loadMore]);
 
   const prevKey = useRef<string>("");
+
   useEffect(() => {
     const key = JSON.stringify({ uid, serverFilters, accessWindowDays });
     if (!uid || key === prevKey.current) return;
