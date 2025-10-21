@@ -23,6 +23,7 @@ import { v4 as uuidv4 } from "uuid";
 import * as FileSystem from "expo-file-system";
 import type { Meal } from "@/types/meal";
 import { processAndUpload } from "./mealService.images";
+import { emit } from "@/services/events";
 
 import {
   getMealsPageLocalFiltered,
@@ -249,6 +250,7 @@ export async function addOrUpdateMeal(
     );
   }
   await batch.commit();
+  emit("meal:added", { uid, meal: { ...normalized, syncState: "synced" } });
   return { ...normalized, syncState: "synced" };
 }
 

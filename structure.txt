@@ -36,6 +36,7 @@
 ├── src
 │   ├── components
 │   │   ├── Alert.tsx
+│   │   ├── AvatarBadge.tsx
 │   │   ├── BarChart.tsx
 │   │   ├── BottomTabBar.tsx
 │   │   ├── ButtonToggle.tsx
@@ -48,6 +49,7 @@
 │   │   ├── DangerButton.tsx
 │   │   ├── DateInput.tsx
 │   │   ├── DateRangePicker.tsx
+│   │   ├── DateTimeSection.tsx
 │   │   ├── Dropdown.tsx
 │   │   ├── ErrorBox.tsx
 │   │   ├── ErrorButton.tsx
@@ -72,7 +74,6 @@
 │   │   ├── PhotoPreview.tsx
 │   │   ├── PieChart.tsx
 │   │   ├── PrimaryButton.tsx
-│   │   ├── ProgressBar.tsx
 │   │   ├── RangeSlider.tsx
 │   │   ├── ScrollableBox.tsx
 │   │   ├── SearchBox.tsx
@@ -89,8 +90,10 @@
 │   │   ├── TargetProgressBar.tsx
 │   │   ├── TextInput.tsx
 │   │   ├── TimePickerRow.tsx
+│   │   ├── Toast.tsx
 │   │   ├── UserIcon.tsx
-│   │   └── WeekdaySelector.tsx
+│   │   ├── WeekdaySelector.tsx
+│   │   └── WeekStrip.tsx
 │   ├── context
 │   │   ├── AuthContext.tsx
 │   │   ├── HistoryContext.tsx
@@ -132,6 +135,8 @@
 │   │   │   │   ├── LoadingSkeleton.tsx
 │   │   │   │   └── StickyFooterActions.tsx
 │   │   │   └── screens
+│   │   │       ├── EditResultScreen.tsx
+│   │   │       ├── EditReviewIngredientsScreen.tsx
 │   │   │       ├── HistoryListScreen.tsx
 │   │   │       ├── MealDetailsScreen.tsx
 │   │   │       └── SavedMealsScreen.tsx
@@ -139,6 +144,7 @@
 │   │   │   ├── components
 │   │   │   │   ├── AddMealPlaceholder.tsx
 │   │   │   │   ├── ButtonSection.tsx
+│   │   │   │   ├── EmptyDayView.tsx
 │   │   │   │   ├── TodaysMacrosChart.tsx
 │   │   │   │   ├── TodaysMealsList.tsx
 │   │   │   │   └── WeeklyProgressGraph.tsx
@@ -146,7 +152,6 @@
 │   │   │       └── HomeScreen.tsx
 │   │   ├── Meals
 │   │   │   ├── components
-│   │   │   │   ├── DateTimeSection.tsx
 │   │   │   │   ├── EmptyState.tsx
 │   │   │   │   ├── Loader.tsx
 │   │   │   │   └── LoadingSkeleton.tsx
@@ -206,12 +211,13 @@
 │   │           ├── LanguageScreen.tsx
 │   │           ├── NotificationFormScreen.tsx
 │   │           ├── NotificationsScreen.tsx
-│   │           ├── ProfileScreen.tsx
 │   │           ├── SendFeedbackScreen.tsx
-│   │           └── UsernameChangeScreen.tsx
+│   │           ├── UsernameChangeScreen.tsx
+│   │           └── UserProfileScreen.tsx
 │   ├── FirebaseConfig.ts
 │   ├── hooks
 │   │   ├── useAppFonts.ts
+│   │   ├── useBadges.ts
 │   │   ├── useChatHistory.ts
 │   │   ├── useMeals.ts
 │   │   ├── useNotifications.ts
@@ -233,6 +239,7 @@
 │   │   │   ├── privacy.json
 │   │   │   ├── profile.json
 │   │   │   ├── resetPassword.json
+│   │   │   ├── share.json
 │   │   │   ├── statistics.json
 │   │   │   └── terms.json
 │   │   ├── lexicon
@@ -250,6 +257,7 @@
 │   │       ├── privacy.json
 │   │       ├── profile.json
 │   │       ├── resetPassword.json
+│   │       ├── share.json
 │   │       ├── statistics.json
 │   │       └── terms.json
 │   ├── navigation
@@ -259,6 +267,7 @@
 │   │   └── LoadingScreen.tsx
 │   ├── services
 │   │   ├── askDietAI.ts
+│   │   ├── badgeService.ts
 │   │   ├── barcodeService.ts
 │   │   ├── cache.ts
 │   │   ├── chatService.ts
@@ -304,6 +313,7 @@
 │   │   ├── typography.ts
 │   │   └── useTheme.ts
 │   ├── types
+│   │   ├── badge.ts
 │   │   ├── chatMessage.ts
 │   │   ├── constants.ts
 │   │   ├── index.ts
@@ -338,4 +348,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-56 directories, 351 files
+56 directories, 361 files
