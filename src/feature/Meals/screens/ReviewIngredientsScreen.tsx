@@ -268,7 +268,6 @@ export default function ReviewIngredientsScreen() {
                       <Pressable
                         onPress={() => {
                           setImageMenuOpen(false);
-                          // Go directly to camera to change the photo
                           handleAddPhoto();
                         }}
                         style={styles(theme).menuItem}

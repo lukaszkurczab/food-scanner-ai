@@ -8,6 +8,11 @@ type TargetOpts = {
   dir?: "images" | "tmp";
 };
 
+type EnhanceOpts = {
+  grayscale?: boolean;
+  threshold?: number;
+};
+
 function buildTargetPath({
   userUid,
   fileId,
@@ -27,21 +32,20 @@ async function ensureDir(path: string) {
 
 export async function convertToJpegAndResize(
   uri: string,
-  maxWidth = 512,
-  maxHeight = 512,
-  opts?: TargetOpts
+  maxWidth = 1600,
+  maxHeight = 1600,
+  opts?: TargetOpts,
+  _enhance?: EnhanceOpts
 ): Promise<string> {
-  // Ensure we operate on a local file path; copy from other schemes if needed
   let srcUri = uri;
   if (!srcUri.startsWith("file://")) {
     const temp = `${FileSystem.cacheDirectory}res-${Date.now()}.jpg`;
     try {
       await FileSystem.copyAsync({ from: srcUri, to: temp });
       srcUri = temp;
-    } catch {
-      // proceed with original; Image.getSize might still support it
-    }
+    } catch {}
   }
+
   const { width, height } = await new Promise<{
     width: number;
     height: number;
@@ -59,16 +63,21 @@ export async function convertToJpegAndResize(
     newHeight = Math.round(height * ratio);
   }
 
-  const manipulated = await ImageManipulator.manipulateAsync(
-    srcUri,
-    [{ resize: { width: newWidth, height: newHeight } }],
-    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-  );
+  const actions: ImageManipulator.Action[] = [
+    { resize: { width: newWidth, height: newHeight } },
+  ];
 
-  if (!opts) return manipulated.uri;
+  const first = await ImageManipulator.manipulateAsync(srcUri, actions, {
+    compress: 0.75,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+
+  const finalUri = first.uri;
+
+  if (!opts) return finalUri;
 
   const target = buildTargetPath(opts);
   await ensureDir(target);
-  await FileSystem.copyAsync({ from: manipulated.uri, to: target });
+  await FileSystem.copyAsync({ from: finalUri, to: target });
   return target;
 }
