@@ -7,8 +7,6 @@ import { useMealDraftContext } from "@contexts/MealDraftContext";
 import Loader from "@feature/Meals/components/Loader";
 import { useTranslation } from "react-i18next";
 import { detectIngredientsWithVision } from "@/services/visionService";
-import { extractNutritionFromTable } from "@/services/nutritionTableService";
-import { extractNutritionFromTableLocal } from "@/services/localNutritionTable";
 import {
   fetchProductByBarcode,
   extractBarcodeFromPayload,
@@ -19,7 +17,7 @@ import { Layout, PhotoPreview } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Alert as AppAlert } from "@/components/Alert";
-import { getSampleMealUri, getSampleTableUri } from "@/utils/devSamples";
+import { getSampleMealUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
 import { useUserContext } from "@contexts/UserContext";
 
@@ -46,7 +44,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const mealId = meal?.mealId || routeId || uuidv4();
   const canLeaveRef = useRef(false);
   const [scannedCode, setScannedCode] = useState<string | null>(null);
-  const [mode, setMode] = useState<"ai" | "table" | "barcode">(
+  const [mode, setMode] = useState<"ai" | "barcode">(
     isPremium ? "ai" : "barcode"
   );
 
@@ -99,17 +97,10 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
     });
     if (typeof __DEV__ !== "undefined" && __DEV__) {
       try {
-        if (mode === "table") {
-          const uri = await getSampleTableUri();
-          log.log("DEV sample table uri", uri);
-          setPhotoUri(uri);
-          return;
-        } else if (mode === "ai") {
-          const uri = await getSampleMealUri();
-          log.log("DEV sample meal uri", uri);
-          setPhotoUri(uri);
-          return;
-        }
+        const uri = await getSampleMealUri();
+        log.log("DEV sample meal uri", uri);
+        setPhotoUri(uri);
+        return;
       } catch (e) {
         log.warn("DEV sample load failed", e);
       }
@@ -296,55 +287,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
         <PhotoPreview
           photoUri={photoUri}
           onRetake={handleRetake}
-          onAccept={async (optimized) => {
-            if (mode === "table") {
-              const finalUri = optimized || photoUri;
-              log.log("TABLE mode accept", { finalUri });
-              setIsLoading(true);
-              try {
-                if (!meal) {
-                  setMeal({
-                    mealId,
-                    userUid: uid || "",
-                    name: null,
-                    photoUrl: null,
-                    ingredients: [],
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    syncState: "pending",
-                    tags: [],
-                    deleted: false,
-                    notes: null,
-                    type: "other",
-                    timestamp: "",
-                    source: "manual",
-                    cloudId: undefined,
-                  } as any);
-                }
-                let ings = await extractNutritionFromTableLocal(finalUri);
-                log.log("Local OCR result", ings);
-                if ((!ings || !ings.length) && isPremium) {
-                  log.log("Local failed → remote fallback");
-                  ings = await extractNutritionFromTable(uid || "", finalUri);
-                  log.log("Remote OCR result", ings);
-                }
-                if (ings && ings.length) {
-                  updateMeal({ ingredients: ings, mealId });
-                  setIsLoading(false);
-                  canLeaveRef.current = true;
-                  navigation.replace("ReviewIngredients");
-                  return;
-                }
-              } catch (e) {
-                log.error("TABLE pipeline error", e);
-              }
-              setIsLoading(false);
-              canLeaveRef.current = true;
-              navigation.replace("ReviewIngredients");
-              return;
-            }
-            await handleAccept(optimized);
-          }}
+          onAccept={handleAccept}
           isLoading={isLoading}
           secondaryText={t("camera_retake")}
           primaryText={t("camera_use_photo")}
@@ -406,23 +349,6 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                   />
                 </Pressable>
                 <Pressable
-                  onPress={() => setMode("table")}
-                  style={[
-                    styles.modeBtn,
-                    {
-                      backgroundColor:
-                        mode === "table" ? theme.accentSecondary : theme.card,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                >
-                  <MaterialIcons
-                    name="table-chart"
-                    size={22}
-                    color={mode === "table" ? theme.onAccent : theme.text}
-                  />
-                </Pressable>
-                <Pressable
                   onPress={() => setMode("barcode")}
                   style={[
                     styles.modeBtn,
@@ -466,21 +392,6 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                 >
                   <Text style={{ color: theme.text }}>
                     {t("dev.sample_meal", { ns: "meals" })}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={async () => {
-                    const uri = await getSampleTableUri();
-                    setMode("table");
-                    setPhotoUri(uri);
-                  }}
-                  style={[
-                    styles.devBtn,
-                    { backgroundColor: theme.card, borderColor: theme.border },
-                  ]}
-                >
-                  <Text style={{ color: theme.text }}>
-                    {t("dev.sample_table", { ns: "meals" })}
                   </Text>
                 </Pressable>
               </View>

@@ -199,22 +199,6 @@ export const IngredientEditor: React.FC<Props> = ({
         },
       ]}
     >
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "flex-end",
-          marginBottom: 8,
-        }}
-      >
-        <IconButton
-          icon={<Text style={{ color: theme.text }}>📷</Text>}
-          onPress={() => navigation.navigate("BarCodeCamera")}
-          accessibilityLabel={t("scan_barcode", {
-            defaultValue: "Scan barcode",
-          })}
-        />
-      </View>
-
       <TextInput
         style={inputStyle(Boolean(errors.name), nameTouched)}
         value={name}
