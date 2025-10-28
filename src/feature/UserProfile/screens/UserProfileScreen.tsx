@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
@@ -12,6 +12,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useBadges } from "@/hooks/useBadges";
 import { usePremiumContext } from "@/context/PremiumContext";
 import AvatarBadge from "@/components/AvatarBadge";
+import { Modal } from "@/components/Modal";
 
 export default function UserProfileScreen({ navigation }: any) {
   const { t } = useTranslation("profile");
@@ -24,6 +25,9 @@ export default function UserProfileScreen({ navigation }: any) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [password, setPassword] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [exportModalVisible, setExportModalVisible] = useState(false);
+  const [exportModalMessage, setExportModalMessage] = useState("");
+  const [exportModalTitle, setExportModalTitle] = useState("");
 
   useEffect(() => {
     if (!uid) return;
@@ -38,7 +42,6 @@ export default function UserProfileScreen({ navigation }: any) {
     ensurePremiumBadges(isPremium).catch(() => {});
   }, [uid, isPremium, ensurePremiumBadges]);
 
-  // Nawigacja poza renderem
   useEffect(() => {
     if (!userData) {
       navigation.reset({ index: 0, routes: [{ name: "Login" }] });
@@ -71,7 +74,9 @@ export default function UserProfileScreen({ navigation }: any) {
     try {
       await deleteUser(password);
     } catch {
-      Alert.alert(t("deleteAccountError"), t("wrongPasswordOrUnknownError"));
+      setExportModalTitle(t("deleteAccountError"));
+      setExportModalMessage(t("wrongPasswordOrUnknownError"));
+      setExportModalVisible(true);
     }
     setPassword("");
   };
@@ -80,20 +85,23 @@ export default function UserProfileScreen({ navigation }: any) {
     setExporting(true);
     try {
       await exportUserData();
-      Alert.alert(
-        t("downloadYourData"),
+      setExportModalTitle(t("downloadYourData"));
+      setExportModalMessage(
         t("exportSuccess", {
           defaultValue:
             "Your data has been prepared and should appear in your sharing options.",
         })
       );
+      setExportModalVisible(true);
     } catch {
-      Alert.alert(
-        t("downloadYourData"),
+      setExportModalTitle(t("downloadYourData"));
+      setExportModalMessage(
         t("exportError", { defaultValue: "Could not export your data." })
       );
+      setExportModalVisible(true);
+    } finally {
+      setExporting(false);
     }
-    setExporting(false);
   };
 
   return (
@@ -141,7 +149,7 @@ export default function UserProfileScreen({ navigation }: any) {
       <ListItem
         label={t("manageSubscription.title")}
         onPress={() => navigation.navigate("ManageSubscription")}
-        accessibilityLabel={t("manageSubscription")}
+        accessibilityLabel={t("manageSubscription.title")}
       />
       <ListItem
         label={t("downloadYourData")}
@@ -221,7 +229,7 @@ export default function UserProfileScreen({ navigation }: any) {
       </Pressable>
 
       <Text style={[styles.version, { color: theme.textSecondary }]}>
-        CaloriAI 1.0.0
+        {t("appVersion")} 1.0.0
       </Text>
 
       <InputModal
@@ -237,6 +245,15 @@ export default function UserProfileScreen({ navigation }: any) {
         value={password}
         onChange={setPassword}
         secureTextEntry={true}
+      />
+
+      <Modal
+        visible={exportModalVisible}
+        title={exportModalTitle}
+        message={exportModalMessage}
+        primaryActionLabel={t("confirm")}
+        onPrimaryAction={() => setExportModalVisible(false)}
+        onClose={() => setExportModalVisible(false)}
       />
     </Layout>
   );

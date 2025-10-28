@@ -5,20 +5,19 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
 import { Layout, PhotoPreview } from "@/components";
+import { MaterialIcons } from "@expo/vector-icons";
+
+const SHUTTER = 72;
+const SWITCH = 50;
+const GAP = 24;
 
 type AvatarCameraScreenProps = {
   onPhotoTaken?: (uri: string) => void;
-  frameSize?: number;
-  cornerLength?: number;
-  cornerThickness?: number;
   navigation: any;
 };
 
 export default function AvatarCameraScreen({
   onPhotoTaken,
-  frameSize = 220,
-  cornerLength = 48,
-  cornerThickness = 8,
   navigation,
 }: AvatarCameraScreenProps) {
   const { t } = useTranslation(["common", "profile"]);
@@ -26,13 +25,11 @@ export default function AvatarCameraScreen({
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const { setAvatar } = useUserContext();
-
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isTakingPhoto, setIsTakingPhoto] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [facing, setFacing] = useState<"back" | "front">("back");
-  const lastTap = useRef<number>(0);
 
   const handleTakePicture = async () => {
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
@@ -41,7 +38,7 @@ export default function AvatarCameraScreen({
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
       if (photo?.uri) {
         setPhotoUri(photo.uri);
-        if (onPhotoTaken) onPhotoTaken(photo.uri);
+        onPhotoTaken?.(photo.uri);
       }
     } catch (err) {
       console.error("Error taking picture:", err);
@@ -50,58 +47,25 @@ export default function AvatarCameraScreen({
     }
   };
 
-  const handleScreenPress = () => {
-    const now = Date.now();
-    if (now - lastTap.current < 300) {
-      setFacing((f) => (f === "back" ? "front" : "back"));
-    }
-    lastTap.current = now;
-  };
-
   if (!permission)
     return (
       <Layout>
         <View style={{ flex: 1, backgroundColor: theme.background }} />
       </Layout>
     );
+
   if (!permission.granted) {
     return (
       <Layout>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 20,
-            backgroundColor: theme.background,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 18,
-              textAlign: "center",
-              marginBottom: 20,
-              color: theme.text,
-            }}
-          >
+        <View style={styles.permissionContainer}>
+          <Text style={[styles.permissionText, { color: theme.text }]}>
             {t("common:camera_permission_message")}
           </Text>
           <Pressable
             onPress={requestPermission}
-            style={{
-              paddingVertical: 12,
-              paddingHorizontal: 32,
-              borderRadius: 32,
-              backgroundColor: theme.card,
-            }}
+            style={[styles.permissionButton, { backgroundColor: theme.card }]}
           >
-            <Text
-              style={{
-                fontWeight: "bold",
-                fontSize: 16,
-                color: theme.text,
-              }}
-            >
+            <Text style={[styles.permissionButtonText, { color: theme.text }]}>
               {t("common:camera_grant_access")}
             </Text>
           </Pressable>
@@ -114,7 +78,6 @@ export default function AvatarCameraScreen({
     return (
       <PhotoPreview
         photoUri={photoUri}
-        noCrop
         onRetake={() => {
           if (!isUploading) setPhotoUri(null);
         }}
@@ -138,132 +101,97 @@ export default function AvatarCameraScreen({
 
   return (
     <Layout>
-      <Pressable style={{ flex: 1 }} onPress={handleScreenPress}>
-        <View style={{ flex: 1, backgroundColor: theme.background }}>
-          <CameraView
-            ref={cameraRef}
-            style={{ flex: 1 }}
-            facing={facing}
-            onCameraReady={() => setIsCameraReady(true)}
-          />
-          <View style={StyleSheet.absoluteFill}>
-            <View style={styles.overlay} pointerEvents="none">
-              <View
-                style={[
-                  styles.corner,
-                  {
-                    borderLeftWidth: cornerThickness,
-                    borderTopWidth: cornerThickness,
-                    borderColor: theme.textSecondary,
-                    top: `50%`,
-                    left: `50%`,
-                    marginLeft: -frameSize / 2,
-                    marginTop: -frameSize / 2,
-                    width: cornerLength,
-                    height: cornerLength,
-                    borderTopLeftRadius: 18,
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  styles.corner,
-                  {
-                    borderRightWidth: cornerThickness,
-                    borderTopWidth: cornerThickness,
-                    borderColor: theme.textSecondary,
-                    top: `50%`,
-                    left: `50%`,
-                    marginLeft: frameSize / 2 - cornerLength,
-                    marginTop: -frameSize / 2,
-                    width: cornerLength,
-                    height: cornerLength,
-                    borderTopRightRadius: 18,
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  styles.corner,
-                  {
-                    borderLeftWidth: cornerThickness,
-                    borderBottomWidth: cornerThickness,
-                    borderColor: theme.textSecondary,
-                    top: `50%`,
-                    left: `50%`,
-                    marginLeft: -frameSize / 2,
-                    marginTop: frameSize / 2 - cornerLength,
-                    width: cornerLength,
-                    height: cornerLength,
-                    borderBottomLeftRadius: 18,
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  styles.corner,
-                  {
-                    borderRightWidth: cornerThickness,
-                    borderBottomWidth: cornerThickness,
-                    borderColor: theme.textSecondary,
-                    top: `50%`,
-                    left: `50%`,
-                    marginLeft: frameSize / 2 - cornerLength,
-                    marginTop: frameSize / 2 - cornerLength,
-                    width: cornerLength,
-                    height: cornerLength,
-                    borderBottomRightRadius: 18,
-                  },
-                ]}
-              />
-            </View>
-            <View style={styles.shutterWrapper}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.shutterButton,
-                  {
-                    opacity: pressed ? 0.7 : 1,
-                    backgroundColor: "transparent",
-                  },
-                ]}
-                onPress={handleTakePicture}
-                disabled={isTakingPhoto}
-              />
-            </View>
+      <View style={{ flex: 1, backgroundColor: theme.background }}>
+        <CameraView
+          ref={cameraRef}
+          style={{ flex: 1 }}
+          facing={facing}
+          onCameraReady={() => setIsCameraReady(true)}
+        />
+        <View style={StyleSheet.absoluteFill}>
+          <View style={styles.controlsWrapper}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.shutterButton,
+                {
+                  opacity: pressed ? 0.7 : 1,
+                  left: "50%",
+                  transform: [{ translateX: -SHUTTER / 2 }],
+                },
+              ]}
+              onPress={handleTakePicture}
+              disabled={isTakingPhoto}
+            />
+            <Pressable
+              style={({ pressed }) => [
+                styles.switchButton,
+                {
+                  opacity: pressed ? 0.7 : 1,
+                  left: "50%",
+                  transform: [{ translateX: SHUTTER / 2 + GAP }],
+                },
+              ]}
+              onPress={() =>
+                setFacing((f) => (f === "back" ? "front" : "back"))
+              }
+              accessibilityLabel={t("common:switch_camera") || "Switch camera"}
+            >
+              <MaterialIcons name="flip-camera-ios" size={26} color="#fff" />
+            </Pressable>
           </View>
         </View>
-      </Pressable>
+      </View>
     </Layout>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  permissionContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    position: "absolute",
-    width: "100%",
-    height: "100%",
+    padding: 20,
   },
-  corner: {
-    position: "absolute",
-    backgroundColor: "transparent",
+  permissionText: {
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 20,
   },
-  shutterWrapper: {
+  permissionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 32,
+  },
+  permissionButtonText: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  controlsWrapper: {
     position: "absolute",
     bottom: 48,
     left: 0,
     right: 0,
-    alignItems: "center",
-    justifyContent: "flex-end",
+    height: SHUTTER,
+    justifyContent: "center",
   },
   shutterButton: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    position: "absolute",
+    width: SHUTTER,
+    height: SHUTTER,
+    borderRadius: SHUTTER / 2,
     borderWidth: 4,
-    backgroundColor: "transparent",
     borderColor: "white",
+    backgroundColor: "transparent",
+  },
+  switchButton: {
+    position: "absolute",
+    width: SWITCH,
+    height: SWITCH,
+    borderRadius: SWITCH / 2,
+    borderWidth: 2,
+    borderColor: "white",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
