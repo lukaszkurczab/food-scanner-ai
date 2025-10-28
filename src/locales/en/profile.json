@@ -94,5 +94,7 @@
   "avatarPreview_title": "Confirm photo",
   "avatarPreview_subtitle": "Try again",
   "manageNotifications": "Manage notifications",
-  "badges": "Badges"
+  "badges": "Badges",
+  "exportSuccess": "Your data has been prepared and should appear in your sharing options.",
+  "exportError": "Could not export your data."
 }

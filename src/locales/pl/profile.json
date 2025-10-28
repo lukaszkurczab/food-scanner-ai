@@ -94,5 +94,7 @@
   "avatarPreview_title": "Użyj",
   "avatarPreview_subtitle": "Odrzuć",
   "manageNotifications": "Zarządzaj powiadomieniami",
-  "badges": "Odznaki"
+  "badges": "Odznaki",
+  "exportSuccess": "Twoje dane zostały przygotowane i powinny pojawić się w opcjach udostępniania.",
+  "exportError": "Nie udało się wyeksportować danych."
 }
