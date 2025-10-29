@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   detectBadge: {
     position: "absolute",
-    bottom: 88,
+    bottom: 188,
     left: 16,
     right: 16,
     borderRadius: 16,
