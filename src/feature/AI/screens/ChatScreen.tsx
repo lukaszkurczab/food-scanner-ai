@@ -1,11 +1,5 @@
 import React, { useMemo, useState, useCallback } from "react";
-import {
-  View,
-  FlatList,
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-} from "react-native";
+import { View, FlatList, ActivityIndicator, StyleSheet } from "react-native";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUser } from "@hooks/useUser";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
@@ -18,7 +12,6 @@ import { InputBar } from "../components/InputBar";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { PaywallCard } from "../components/PaywallCard";
 import { TypingDots } from "../components/TypingDots";
-import { TopToast } from "../components/TopToast";
 import { useMeals } from "@hooks/useMeals";
 
 export default function ChatScreen() {
@@ -107,16 +100,12 @@ export default function ChatScreen() {
             onEndReachedThreshold={0.4}
             onEndReached={loadMore}
             ListHeaderComponent={
-              !canSend && !isPremium ? (
-                <View style={{ marginTop: 88 }} />
-              ) : typing ? (
-                <TypingDots />
-              ) : null
+              !canSend && !isPremium ? <View /> : typing ? <TypingDots /> : null
             }
             contentContainerStyle={{
               paddingHorizontal: 16,
-              paddingBottom: 96,
-              paddingTop: 16 + (limitReached ? 48 : 0),
+              paddingBottom: 16 + (limitReached ? 160 : 0),
+              paddingTop: 16,
             }}
           />
           <InputBar
