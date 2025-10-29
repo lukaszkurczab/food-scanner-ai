@@ -39,7 +39,7 @@ export const ErrorButton: React.FC<ErrorButtonProps> = ({
           backgroundColor,
           borderColor,
           borderWidth: 1.5,
-          borderRadius: theme.rounded.md,
+          borderRadius: theme.rounded.full,
           paddingVertical: theme.spacing.md,
           paddingHorizontal: theme.spacing.lg,
           alignSelf: "stretch",
