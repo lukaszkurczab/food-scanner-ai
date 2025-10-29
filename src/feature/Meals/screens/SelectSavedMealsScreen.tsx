@@ -14,7 +14,12 @@ import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { FullScreenLoader, Layout, PrimaryButton, SecondaryButton } from "@/components";
+import {
+  FullScreenLoader,
+  Layout,
+  PrimaryButton,
+  SecondaryButton,
+} from "@/components";
 import { SearchBox } from "@/components/SearchBox";
 import { MealListItem } from "@/components/MealListItem";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -253,7 +258,7 @@ export default function SelectSavedMealScreen({
         <View style={{ padding: theme.spacing.lg, gap: theme.spacing.md }}>
           <PrimaryButton label={t("meals:select", "Select")} disabled />
           <SecondaryButton
-            label={t("meals:startOver", "Start over")}
+            label={t("meals:start_over", "Start over")}
             onPress={handleStartOver}
           />
         </View>
@@ -315,7 +320,7 @@ export default function SelectSavedMealScreen({
           disabled={!selectedId}
         />
         <SecondaryButton
-          label={t("meals:startOver", "Start over")}
+          label={t("meals:start_over", "Start over")}
           onPress={handleStartOver}
         />
       </View>

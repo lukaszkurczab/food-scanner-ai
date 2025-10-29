@@ -1,6 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
-import { MealBox, PrimaryButton, Checkbox, Layout, Card, IngredientBox, SecondaryButton, ErrorButton, Modal } from "@/components";
+import {
+  MealBox,
+  PrimaryButton,
+  Checkbox,
+  Layout,
+  Card,
+  IngredientBox,
+  SecondaryButton,
+  ErrorButton,
+  Modal,
+} from "@/components";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useUserContext } from "@contexts/UserContext";
@@ -244,7 +254,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
 
       <Modal
         visible={showCancelModal}
-        message={t("cancel_result_message", { ns: "meals" })}
+        message={t("confirm_exit_message", { ns: "meals" })}
         primaryActionLabel={t("confirm", { ns: "common" })}
         onClose={() => setShowCancelModal(false)}
         onPrimaryAction={handleCancelConfirm}

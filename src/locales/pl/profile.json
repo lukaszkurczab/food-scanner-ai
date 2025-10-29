@@ -96,5 +96,17 @@
   "manageNotifications": "Zarządzaj powiadomieniami",
   "badges": "Odznaki",
   "exportSuccess": "Twoje dane zostały przygotowane i powinny pojawić się w opcjach udostępniania.",
-  "exportError": "Nie udało się wyeksportować danych."
+  "exportError": "Nie udało się wyeksportować danych.",
+  "feedbackDescription": "Podziel się swoimi przemyśleniami, sugestiami lub problemami. Doceniamy każdą wiadomość!",
+  "feedbackPlaceholder": "Wpisz tutaj swoją wiadomość...",
+  "addAttachment": "Dodaj załącznik",
+  "addAttachmentDescription": "Opcjonalnie: dołącz zrzut ekranu, aby pomóc nam zrozumieć problem",
+  "removeAttachment": "Usuń",
+  "feedbackAppInfo": "Informacje o wersji aplikacji i urządzeniu zostaną wysłane automatycznie, aby pomóc nam ulepszyć CaloriAI.",
+  "send": "Wyślij",
+  "feedbackThankYou": "Dziękujemy za Twoją opinię!",
+  "noInternet": "Brak połączenia z internetem",
+  "checkConnection": "Sprawdź swoje połączenie i spróbuj ponownie.",
+  "error": "Błąd",
+  "feedbackSendError": "Nie udało się wysłać opinii. Spróbuj ponownie później."
 }
