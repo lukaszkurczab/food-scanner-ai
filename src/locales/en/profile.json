@@ -96,5 +96,17 @@
   "manageNotifications": "Manage notifications",
   "badges": "Badges",
   "exportSuccess": "Your data has been prepared and should appear in your sharing options.",
-  "exportError": "Could not export your data."
+  "exportError": "Could not export your data.",
+  "feedbackDescription": "Share your thoughts, suggestions, or issues. We appreciate every message!",
+  "feedbackPlaceholder": "Type your message here...",
+  "addAttachment": "Add attachment",
+  "addAttachmentDescription": "Optional: attach a screenshot to help us understand the issue",
+  "removeAttachment": "Remove",
+  "feedbackAppInfo": "Your app version and device info will be sent automatically to help us improve CaloriAI.",
+  "send": "Send",
+  "feedbackThankYou": "Thank you for your feedback!",
+  "noInternet": "No internet connection",
+  "checkConnection": "Please check your connection and try again.",
+  "error": "Error",
+  "feedbackSendError": "Failed to send feedback. Try again later."
 }

@@ -37,6 +37,14 @@ export default function PrivacyScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  centerBoth: { flex: 1, justifyContent: "center", alignItems: "center" },
-  cta: { width: 200, alignSelf: "center" },
+  centerBoth: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  cta: {
+    width: 200,
+    alignSelf: "center",
+  },
 });
