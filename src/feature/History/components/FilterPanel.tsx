@@ -102,24 +102,7 @@ export const FilterPanel: React.FC<{
     if (ctxFilters?.fat) nextActive.push("fat");
     if (ctxFilters?.dateRange) nextActive.push("date");
     setActive(nextActive);
-    setCalories(
-      (ctxFilters?.calories as [number, number]) ?? DEFAULTS.calories
-    );
-    setProtein((ctxFilters?.protein as [number, number]) ?? DEFAULTS.protein);
-    setCarbs((ctxFilters?.carbs as [number, number]) ?? DEFAULTS.carbs);
-    setFat((ctxFilters?.fat as [number, number]) ?? DEFAULTS.fat);
-    if (ctxFilters?.dateRange) {
-      const s = new Date(ctxFilters.dateRange.start);
-      const e = new Date(ctxFilters.dateRange.end);
-      setDateRange({ start: s, end: e });
-      setLocalRange({ start: s, end: e });
-    } else {
-      const s = freeWindowStart(today, windowDays, isPremium);
-      setDateRange({ start: s, end: today });
-      setLocalRange({ start: s, end: today });
-    }
-    setFocus("start");
-  }, [ctxFilters, windowDays, isPremium]);
+  }, [ctxFilters]);
 
   const cutoff = useMemo(() => {
     if (!windowDays || isPremium) return null;
@@ -155,11 +138,6 @@ export const FilterPanel: React.FC<{
     setDateRange({ start: s, end: e });
     setOpenCalendar(false);
   };
-  const cancelCalendar = () => {
-    setLocalRange(dateRange);
-    setFocus("start");
-    setOpenCalendar(false);
-  };
 
   const buildPayload = (): Filters => {
     const payload: Filters = {};
@@ -176,18 +154,7 @@ export const FilterPanel: React.FC<{
     applyFilters(payload);
   };
 
-  const clearValues = () => {
-    setCalories(DEFAULTS.calories);
-    setProtein(DEFAULTS.protein);
-    setCarbs(DEFAULTS.carbs);
-    setFat(DEFAULTS.fat);
-    const now = new Date();
-    const s = freeWindowStart(now, windowDays, isPremium);
-    setDateRange({ start: s, end: now });
-  };
-
   const clear = () => {
-    clearValues();
     setActive([]);
     clearFilters();
   };
@@ -211,12 +178,12 @@ export const FilterPanel: React.FC<{
           >
             <Text style={{ color: theme.text }}>{meta.label}</Text>
             <Text style={{ color: theme.accentSecondary, marginLeft: 8 }}>
-              ×
+              {t("symbols.times", { ns: "history" })}
             </Text>
           </Pressable>
         );
       }),
-    [active, ALL_FILTERS, theme]
+    [active, ALL_FILTERS, theme, t]
   );
 
   const hasActive = active.length > 0;
@@ -227,37 +194,9 @@ export const FilterPanel: React.FC<{
         flex: 1,
         backgroundColor: theme.background,
         paddingHorizontal: theme.spacing.lg,
+        paddingBottom: 64,
       }}
     >
-      {!isPremium && cutoff && isDateBelowWindow && (
-        <View
-          style={{
-            marginTop: theme.spacing.md,
-            marginBottom: theme.spacing.md,
-            padding: theme.spacing.md,
-            borderRadius: theme.rounded.lg,
-            backgroundColor: theme.overlay,
-            borderWidth: 1,
-            borderColor: theme.accentSecondary,
-          }}
-        >
-          <Text
-            style={{
-              color: theme.text,
-              fontWeight: "700",
-              marginBottom: theme.spacing.xs,
-            }}
-          >
-            Dostęp do danych sprzed 30 dni wymaga Premium
-          </Text>
-          <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>
-            Wybrałeś zakres starszy niż {windowDays ?? 30} dni. Ulepsz do wersji
-            Premium, aby wyświetlić starsze wpisy.
-          </Text>
-          <PrimaryButton label={"Odblokuj Premium"} onPress={onUpgrade} />
-        </View>
-      )}
-
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -272,7 +211,6 @@ export const FilterPanel: React.FC<{
               flexDirection: "row",
               justifyContent: "space-between",
               alignItems: "center",
-              gap: theme.spacing.xl,
               marginBottom: theme.spacing.md,
             }}
           >
@@ -283,12 +221,12 @@ export const FilterPanel: React.FC<{
                 fontSize: theme.typography.size.md,
               }}
             >
-              Filtry
+              {t("title", { ns: "history" })}
             </Text>
             <SecondaryButton
-              label={"Dodaj filtr"}
+              label={t("addFilter", { ns: "history" })}
               onPress={() => setOpenPicker(true)}
-              style={{ paddingVertical: 8, flexShrink: 1 }}
+              style={{ paddingVertical: 8 }}
             />
           </View>
 
@@ -298,14 +236,14 @@ export const FilterPanel: React.FC<{
             </View>
           ) : (
             <Text style={{ color: theme.textSecondary }}>
-              Brak wybranych filtrów
+              {t("noneSelected", { ns: "history" })}
             </Text>
           )}
         </View>
 
         {active.includes("calories") && (
           <RangeSlider
-            label={"Kalorie"}
+            label={t("filters.calories", { ns: "history" })}
             min={0}
             max={2000}
             step={10}
@@ -315,7 +253,7 @@ export const FilterPanel: React.FC<{
         )}
         {active.includes("protein") && (
           <RangeSlider
-            label={"Białko"}
+            label={t("filters.protein", { ns: "history" })}
             min={0}
             max={100}
             step={1}
@@ -325,7 +263,7 @@ export const FilterPanel: React.FC<{
         )}
         {active.includes("carbs") && (
           <RangeSlider
-            label={"Węglowodany"}
+            label={t("filters.carbs", { ns: "history" })}
             min={0}
             max={100}
             step={1}
@@ -335,7 +273,7 @@ export const FilterPanel: React.FC<{
         )}
         {active.includes("fat") && (
           <RangeSlider
-            label={"Tłuszcz"}
+            label={t("filters.fat", { ns: "history" })}
             min={0}
             max={100}
             step={1}
@@ -358,19 +296,28 @@ export const FilterPanel: React.FC<{
           borderTopColor: theme.border,
           padding: theme.spacing.md,
           gap: theme.spacing.sm,
-          backgroundColor: theme.background,
         }}
       >
         {hasActive ? (
           <>
-            <PrimaryButton label={"Zastosuj filtry"} onPress={apply} />
-            <SecondaryButton label={"Wyczyść"} onPress={clear} />
+            <PrimaryButton
+              label={t("actions.apply", { ns: "history" })}
+              onPress={apply}
+            />
+            <SecondaryButton
+              label={t("actions.clear", { ns: "history" })}
+              onPress={clear}
+            />
           </>
         ) : (
-          <SecondaryButton label={"Anuluj"} onPress={clear} />
+          <SecondaryButton
+            label={t("actions.cancel", { ns: "history" })}
+            onPress={clear}
+          />
         )}
       </View>
 
+      {/* Picker Modal */}
       <Modal
         visible={openPicker}
         transparent
@@ -407,7 +354,7 @@ export const FilterPanel: React.FC<{
                 fontSize: theme.typography.size.md,
               }}
             >
-              Wybierz filtr
+              {t("actions.choose", { ns: "history" })}
             </Text>
 
             <View style={{ gap: 10 }}>
@@ -426,7 +373,6 @@ export const FilterPanel: React.FC<{
                         backgroundColor: selected
                           ? theme.overlay
                           : theme.background,
-                        borderRadius: theme.rounded.md,
                       },
                     ]}
                   >
@@ -439,7 +385,9 @@ export const FilterPanel: React.FC<{
                         fontWeight: "700",
                       }}
                     >
-                      {selected ? "✓" : "+"}
+                      {selected
+                        ? t("symbols.check", { ns: "history" })
+                        : t("symbols.plus", { ns: "history" })}
                     </Text>
                   </Pressable>
                 );
@@ -448,11 +396,11 @@ export const FilterPanel: React.FC<{
 
             <View style={{ gap: theme.spacing.sm }}>
               <PrimaryButton
-                label={"Gotowe"}
+                label={t("actions.done", { ns: "history" })}
                 onPress={() => setOpenPicker(false)}
               />
               <SecondaryButton
-                label={"Resetuj"}
+                label={t("actions.reset", { ns: "history" })}
                 onPress={() => setActive([])}
               />
             </View>
@@ -460,14 +408,15 @@ export const FilterPanel: React.FC<{
         </Pressable>
       </Modal>
 
+      {/* Calendar Modal */}
       <Modal
         visible={openCalendar}
         transparent
         animationType="fade"
-        onRequestClose={cancelCalendar}
+        onRequestClose={() => setOpenCalendar(false)}
       >
         <Pressable
-          onPress={cancelCalendar}
+          onPress={() => setOpenCalendar(false)}
           style={{
             flex: 1,
             backgroundColor: theme.shadow,
@@ -496,7 +445,7 @@ export const FilterPanel: React.FC<{
                 fontSize: theme.typography.size.md,
               }}
             >
-              Ustaw zakres dat
+              {t("actions.selectDateRange", { ns: "history" })}
             </Text>
 
             <Calendar
@@ -509,9 +458,15 @@ export const FilterPanel: React.FC<{
               }
             />
 
-            <View style={{ flexDirection: "column", gap: theme.spacing.sm }}>
-              <PrimaryButton label={"Zapisz"} onPress={applyCalendar} />
-              <SecondaryButton label={"Anuluj"} onPress={cancelCalendar} />
+            <View style={{ gap: theme.spacing.sm }}>
+              <PrimaryButton
+                label={t("actions.save", { ns: "history" })}
+                onPress={applyCalendar}
+              />
+              <SecondaryButton
+                label={t("actions.cancel", { ns: "history" })}
+                onPress={() => setOpenCalendar(false)}
+              />
             </View>
           </Pressable>
         </Pressable>
