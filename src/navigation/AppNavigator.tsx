@@ -36,7 +36,6 @@ import NotificationsScreen from "@/feature/UserProfile/screens/NotificationsScre
 import NotificationFormScreen from "@/feature/UserProfile/screens/NotificationFormScreen";
 import MealTextAIScreen from "@/feature/Meals/screens/MealTextAIScreen";
 import MealShareScreen from "@/feature/Meals/screens/MealShareScreen";
-import BarCodeCameraScreen from "@/feature/Meals/screens/BarCodeCameraScreen";
 import ProgressShareScreen from "@/feature/Statistics/screens/ProgressShareScreen";
 import ChatScreen from "@/feature/AI/screens/ChatScreen";
 import EditReviewIngredientsScreen from "@/feature/History/screens/EditReviewIngredientsScreen";
@@ -117,7 +116,6 @@ const AppNavigator = () => {
           />
           <Stack.Screen name="ProgressShare" component={ProgressShareScreen} />
           <Stack.Screen name="MealShare" component={MealShareScreen} />
-          <Stack.Screen name="BarCodeCamera" component={BarCodeCameraScreen} />
         </>
       ) : (
         <>
