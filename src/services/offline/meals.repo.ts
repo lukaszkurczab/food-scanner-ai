@@ -134,13 +134,11 @@ export async function getMealsPageLocalFiltered(
 
   const where: string[] = [`user_uid=?`, `deleted=0`];
 
-  // kursory
   if (opts.beforeISO) {
     where.push(`timestamp<?`);
     args.push(opts.beforeISO);
   }
 
-  // zakres dat
   if (opts.filters?.dateRange) {
     where.push(`timestamp>=?`);
     where.push(`timestamp<=?`);
@@ -151,7 +149,6 @@ export async function getMealsPageLocalFiltered(
     args.push(s.toISOString(), e.toISOString());
   }
 
-  // makra
   const pushBetween = (col: string, rng?: [number, number]) => {
     if (!rng) return;
     where.push(`${col}>=?`);

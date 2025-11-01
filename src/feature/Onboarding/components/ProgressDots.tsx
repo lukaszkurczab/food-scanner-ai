@@ -15,7 +15,13 @@ const ProgressDots: React.FC<Props> = ({ step, total, style }) => {
   const theme = useTheme();
 
   return (
-    <View style={[styles.row, { marginBottom: theme.spacing.lg, gap: DOT_SPACING }, style]}>
+    <View
+      style={[
+        styles.row,
+        { marginBottom: theme.spacing.lg, gap: DOT_SPACING },
+        style,
+      ]}
+    >
       {Array.from({ length: total }).map((_, i) => (
         <View
           key={i}
@@ -36,5 +42,8 @@ const ProgressDots: React.FC<Props> = ({ step, total, style }) => {
 export default ProgressDots;
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row" },
+  row: {
+    flexDirection: "row",
+    paddingRight: 28,
+  },
 });

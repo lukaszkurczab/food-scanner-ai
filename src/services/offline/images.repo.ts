@@ -1,9 +1,6 @@
 import { getDB } from "./db";
 import type { ImageRow, ImageStatus } from "./types";
 
-/**
- * Insert or update an image row.
- */
 export async function insertOrUpdateImage(
   userUid: string,
   imageId: string,
@@ -33,9 +30,6 @@ export async function insertOrUpdateImage(
   );
 }
 
-/**
- * Get all images with status "pending".
- */
 export async function getPendingUploads(uid: string): Promise<ImageRow[]> {
   const db = getDB();
   const rows = db.getAllSync(
@@ -45,9 +39,6 @@ export async function getPendingUploads(uid: string): Promise<ImageRow[]> {
   return rows as ImageRow[];
 }
 
-/**
- * Mark an image as uploaded.
- */
 export async function markUploaded(
   imageId: string,
   cloudUrl: string
