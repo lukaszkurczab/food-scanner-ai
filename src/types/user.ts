@@ -11,6 +11,7 @@ export interface UserData extends FormData {
   createdAt: number;
   lastLogin: string;
   surveyComplited: boolean;
+  surveyCompletedAt?: string;
   syncState: SyncState;
   lastSyncedAt?: string;
   avatarUrl?: string;

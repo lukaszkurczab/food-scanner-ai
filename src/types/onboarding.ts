@@ -1,16 +1,12 @@
 export type UnitsSystem = "metric" | "imperial";
-
 export type Sex = "male" | "female" | null;
-
 export type Goal = "lose" | "maintain" | "increase";
-
 export type ActivityLevel =
   | "sedentary"
   | "light"
   | "moderate"
   | "active"
   | "very_active";
-
 export type Preference =
   | "lowCarb"
   | "keto"
@@ -25,18 +21,14 @@ export type Preference =
   | "glutenFree"
   | "dairyFree"
   | "paleo";
-
 export type ChronicDisease =
   | "none"
   | "diabetes"
   | "hypertension"
   | "asthma"
   | "other";
-
 export type Allergy = "none" | "peanuts" | "gluten" | "lactose" | "other";
-
 export type AiStyle = "none" | "concise" | "friendly" | "detailed";
-
 export type AiFocus =
   | "none"
   | "mealPlanning"
@@ -44,6 +36,8 @@ export type AiFocus =
   | "quickAnswers"
   | "motivation"
   | "other";
+
+export type OnboardingMode = "first" | "refill";
 
 export type FormData = {
   unitsSystem: UnitsSystem;

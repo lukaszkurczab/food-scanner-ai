@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import ProgressDots from "@/feature/Onboarding/components/ProgressDots";
-import { Modal, Layout } from "@/components";
+import { Modal, Layout, IconButton } from "@/components";
 import { FormData } from "@/types";
 import Step1BasicData from "@/feature/Onboarding/components/Step1BasicData";
 import Step2Preferences from "@/feature/Onboarding/components/Step2Preferences";
@@ -13,9 +14,14 @@ import { calculateCalorieTarget } from "../utils/calculateCalorieTarget";
 import { assertNoUndefined } from "@/utils/findUndefined";
 import { useAuthContext } from "@/context/AuthContext";
 import { updateStreakIfThresholdMet } from "@/services/streakService";
-import { fetchTodayMeals, sumConsumedKcal } from "@/services/notifications/conditions";
+import {
+  fetchTodayMeals,
+  sumConsumedKcal,
+} from "@/services/notifications/conditions";
+import { MaterialIcons } from "@expo/vector-icons";
 
 const STEPS = 5;
+
 export const INITIAL_FORM: FormData = {
   unitsSystem: "metric",
   age: "",
@@ -41,7 +47,9 @@ export const INITIAL_FORM: FormData = {
   calorieTarget: 0,
 };
 
-export default function OnboardingScreen({ navigation }: any) {
+type Mode = "first" | "refill";
+
+export default function OnboardingScreen({ navigation, route }: any) {
   const { t } = useTranslation("onboarding");
   const { userData, updateUser, syncUserProfile } = useUserContext();
   const { uid } = useAuthContext();
@@ -50,7 +58,7 @@ export default function OnboardingScreen({ navigation }: any) {
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
     {}
   );
-  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const [editMode, setEditMode] = useState<{
@@ -60,6 +68,22 @@ export default function OnboardingScreen({ navigation }: any) {
     editing: false,
     returnStep: STEPS,
   });
+
+  const mode: Mode = useMemo(() => {
+    const param = route?.params?.mode as Mode | undefined;
+    if (param) return param;
+    if (userData?.surveyComplited) return "refill";
+    return "first";
+  }, [route?.params?.mode, userData?.surveyComplited]);
+
+  useEffect(() => {
+    if (!navigation?.setOptions) return;
+    if (mode === "first") {
+      navigation.setOptions({ gestureEnabled: false });
+    } else {
+      navigation.setOptions({ gestureEnabled: true });
+    }
+  }, [navigation, mode]);
 
   useEffect(() => {
     (async () => {
@@ -96,12 +120,11 @@ export default function OnboardingScreen({ navigation }: any) {
         surveyComplited: true,
         avatarLocalPath: form.avatarLocalPath ?? "",
         calorieTarget: calculateCalorieTarget(form),
-      };
+        surveyCompletedAt: new Date().toISOString(),
+      } as any;
       assertNoUndefined(payload, "handleFinish payload");
       await updateUser(payload);
       await syncUserProfile();
-
-      // After updating survey/goal, check streak against today's calories (80% threshold handled in service)
       try {
         if (uid) {
           const meals = await fetchTodayMeals(uid);
@@ -110,24 +133,58 @@ export default function OnboardingScreen({ navigation }: any) {
           await updateStreakIfThresholdMet({ uid, todaysKcal, targetKcal });
         }
       } catch {}
+      if (mode === "first") {
+        navigation.replace("Home");
+      } else {
+        navigation.navigate("Profile");
+      }
+    } catch {}
+  };
 
-      navigation.replace("Home");
-    } catch (err) {
-      console.error(err);
+  const handleExitPress = () => setShowExitModal(true);
+
+  const exitPrimary = async () => {
+    setShowExitModal(false);
+    if (mode === "first") {
+      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+      return;
+    }
+    await handleFinish();
+  };
+
+  const exitSecondary = () => {
+    setShowExitModal(false);
+    if (mode === "refill") {
+      navigation.navigate("Profile");
     }
   };
 
-  const handleCancel = () => setShowCancelModal(true);
-  const confirmCancel = () => {
-    setShowCancelModal(false);
-    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-  };
+  const exitTitle =
+    mode === "first" ? t("exit_first_title") : t("exit_refill_title");
+  const exitDesc =
+    mode === "first" ? t("exit_first_desc") : t("exit_refill_desc");
+  const exitPrimaryLabel =
+    mode === "first" ? t("exit_first_primary") : t("exit_refill_save");
+  const exitSecondaryLabel =
+    mode === "first" ? t("exit_first_secondary") : t("exit_refill_discard");
 
   if (!isLoaded) return null;
 
   return (
     <Layout showNavigation={false}>
+      <View style={{ position: "absolute", right: 12, top: 14, zIndex: 10 }}>
+        <IconButton
+          icon={<MaterialIcons name="close" />}
+          onPress={handleExitPress}
+          variant="ghost"
+          accessibilityLabel={
+            mode === "first" ? t("exit_first_a11y") : t("exit_refill_a11y")
+          }
+        />
+      </View>
+
       <ProgressDots step={step} total={STEPS} />
+
       {step === 1 && (
         <Step1BasicData
           form={form}
@@ -135,7 +192,7 @@ export default function OnboardingScreen({ navigation }: any) {
           errors={errors}
           setErrors={setErrors}
           onNext={editMode.editing ? confirmEdit : nextStep}
-          onCancel={handleCancel}
+          onCancel={handleExitPress}
           editMode={editMode.editing}
           onConfirmEdit={confirmEdit}
         />
@@ -182,17 +239,19 @@ export default function OnboardingScreen({ navigation }: any) {
           goToStep={goToStep}
           onFinish={handleFinish}
           onBack={prevStep}
+          mode={mode}
         />
       )}
+
       <Modal
-        visible={showCancelModal}
-        title={t("cancelTitle")}
-        message={t("cancelDesc")}
-        primaryActionLabel={t("cancelConfirm")}
-        onPrimaryAction={confirmCancel}
-        secondaryActionLabel={t("cancelDismiss")}
-        onSecondaryAction={() => setShowCancelModal(false)}
-        onClose={() => setShowCancelModal(false)}
+        visible={showExitModal}
+        title={exitTitle}
+        message={exitDesc}
+        primaryActionLabel={exitPrimaryLabel}
+        onPrimaryAction={exitPrimary}
+        secondaryActionLabel={exitSecondaryLabel}
+        onSecondaryAction={exitSecondary}
+        onClose={() => setShowExitModal(false)}
       />
     </Layout>
   );

@@ -12,6 +12,7 @@ type Props = {
   goToStep: (step: number) => void;
   onFinish: () => void;
   onBack: () => void;
+  mode: "first" | "refill";
 };
 
 function parseArray(val: any): string[] {
@@ -32,6 +33,7 @@ export default function Step5Summary({
   goToStep,
   onFinish,
   onBack,
+  mode,
 }: Props) {
   const theme = useTheme();
   const { t } = useTranslation("onboarding");
@@ -175,6 +177,11 @@ export default function Step5Summary({
     },
   ];
 
+  const finishLabel =
+    mode === "first"
+      ? t("summary.finish_first")
+      : t("summary.save_and_close_refill");
+
   return (
     <View>
       <View style={{ marginBottom: theme.spacing.xl }}>
@@ -229,23 +236,32 @@ export default function Step5Summary({
               {section.title}
             </Text>
             <IconButton
-              icon={
-                <MaterialIcons
-                  name="edit"
-                  size={22}
-                  color={theme.accentSecondary}
-                />
-              }
+              icon={<MaterialIcons name="edit" size={22} />}
               onPress={() => goToStep(section.step)}
               accessibilityLabel={t("summary.edit")}
-              style={{ marginLeft: theme.spacing.sm, backgroundColor: "transparent", padding: 0, minHeight: 0, minWidth: 0 }}
+              style={{
+                marginLeft: theme.spacing.sm,
+                backgroundColor: "transparent",
+                padding: 0,
+                minHeight: 0,
+                minWidth: 0,
+              }}
             />
           </View>
           <View style={{ marginTop: theme.spacing.md }}>
             {section.data.map((item, i) => (
               <View
                 key={item.label + i}
-                style={[styles.rowBetween, { borderBottomWidth: i < section.data.length - 1 ? StyleSheet.hairlineWidth : 0, borderBottomColor: theme.border }]}
+                style={[
+                  styles.rowBetween,
+                  {
+                    borderBottomWidth:
+                      i < section.data.length - 1
+                        ? StyleSheet.hairlineWidth
+                        : 0,
+                    borderBottomColor: theme.border,
+                  },
+                ]}
               >
                 <Text
                   style={{
@@ -272,11 +288,9 @@ export default function Step5Summary({
       ))}
 
       <PrimaryButton
-        label={t("summary.finish")}
+        label={finishLabel}
         onPress={onFinish}
-        style={{
-          marginBottom: theme.spacing.md,
-        }}
+        style={{ marginBottom: theme.spacing.md }}
       />
       <SecondaryButton label={t("back")} onPress={onBack} />
     </View>
@@ -285,5 +299,9 @@ export default function Step5Summary({
 
 const styles = StyleSheet.create({
   rowCenter: { flexDirection: "row", alignItems: "center" },
-  rowBetween: { justifyContent: "space-between", alignItems: "flex-start", paddingVertical: 12 },
+  rowBetween: {
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingVertical: 12,
+  },
 });

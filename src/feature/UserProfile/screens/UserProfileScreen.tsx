@@ -138,7 +138,7 @@ export default function UserProfileScreen({ navigation }: any) {
       />
       <ListItem
         label={t("updateHealthSurvey")}
-        onPress={() => navigation.navigate("Onboarding")}
+        onPress={() => navigation.navigate("Onboarding", { mode: "refill" })}
         accessibilityLabel={t("updateHealthSurvey")}
       />
       <ListItem
