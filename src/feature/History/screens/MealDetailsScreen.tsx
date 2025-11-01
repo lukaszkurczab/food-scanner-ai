@@ -129,7 +129,7 @@ export default function MealDetailsScreen() {
             height={220}
             borderRadius={theme.rounded.lg}
           />
-          {draft.photoUrl ? (
+          {draft.photoUrl && draft.photoUrl != "" ? (
             <Pressable
               onPress={goShare}
               accessibilityRole="button"
@@ -236,6 +236,7 @@ export default function MealDetailsScreen() {
           onSecondaryAction={() => setShowDiscardModal(false)}
           onClose={() => setShowDiscardModal(false)}
         />
+        <Text>Draft: {draft.photoUrl}</Text>
       </View>
     </Layout>
   );
