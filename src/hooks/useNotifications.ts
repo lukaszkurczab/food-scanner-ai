@@ -1,3 +1,4 @@
+// src/hooks/useNotifications.ts
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { getApp } from "@react-native-firebase/app";
@@ -25,7 +26,6 @@ export function useNotifications(uid: string | null) {
     }
     const app = getApp();
     const db = getFirestore(app);
-    // Hydrate from cache first to support offline cold start
     (async () => {
       try {
         const cached = await AsyncStorage.getItem(`notif:list:${uid}`);
@@ -42,7 +42,6 @@ export function useNotifications(uid: string | null) {
           ...(d.data() as any),
         })) as UserNotification[];
         setItems(arr);
-        // Persist cache for offline
         AsyncStorage.setItem(`notif:list:${uid}`, JSON.stringify(arr)).catch(
           () => {}
         );
@@ -166,7 +165,6 @@ export function useNotifications(uid: string | null) {
           JSON.stringify({ enabled })
         );
       } catch (e) {
-        // Persist locally and let Firestore sync later
         await AsyncStorage.setItem(
           `notif:prefs:${uidLocal}:motivation`,
           JSON.stringify({ enabled })

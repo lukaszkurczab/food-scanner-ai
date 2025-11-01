@@ -113,7 +113,6 @@ function Root() {
       });
     }
     initRevenueCat();
-    // Warm-up dev sample assets
     if (__DEV__) {
       (async () => {
         try {

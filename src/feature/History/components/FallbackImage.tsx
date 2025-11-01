@@ -8,6 +8,7 @@ type Props = {
   width: number | string;
   height: number;
   borderRadius?: number;
+  onError?: () => void;
 };
 
 export const FallbackImage: React.FC<Props> = ({
@@ -15,18 +16,22 @@ export const FallbackImage: React.FC<Props> = ({
   width,
   height,
   borderRadius,
+  onError,
 }) => {
   const theme = useTheme();
   const [error, setError] = useState(!uri);
 
-  if (error) {
-    return null;
-  }
+  if (error) return null;
 
   if (!uri)
     return (
       <MaterialIcons name="add-a-photo" size={44} color={theme.textSecondary} />
     );
+
+  const handleError = () => {
+    setError(true);
+    onError?.();
+  };
 
   return (
     <Image
@@ -37,7 +42,7 @@ export const FallbackImage: React.FC<Props> = ({
         borderRadius: borderRadius ?? 16,
         backgroundColor: theme.card,
       }}
-      onError={() => setError(true)}
+      onError={handleError}
       resizeMode="cover"
     />
   );

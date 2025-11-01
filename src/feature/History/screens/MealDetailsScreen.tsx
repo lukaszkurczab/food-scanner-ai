@@ -128,8 +128,13 @@ export default function MealDetailsScreen() {
             width={"100%"}
             height={220}
             borderRadius={theme.rounded.lg}
+            onError={
+              draft.photoUrl
+                ? () => setDraft((d) => (d ? { ...d, photoUrl: "" } : d))
+                : undefined
+            }
           />
-          {draft.photoUrl && draft.photoUrl != "" ? (
+          {draft.photoUrl ? (
             <Pressable
               onPress={goShare}
               accessibilityRole="button"

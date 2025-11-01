@@ -84,7 +84,7 @@ export async function runSystemNotifications(uid: string) {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: "Keep it up",
-            body: "You’re on a streak!",
+            body: "You\u2019re on a streak!",
             data: { sys: "motivation_streak" },
           },
           trigger: {
@@ -173,7 +173,7 @@ export async function runSystemNotifications(uid: string) {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: "Monthly progress",
-            body: "You’re moving toward your target.",
+            body: "You\u2019re moving toward your target.",
             data: { sys: "stats_goal_progress" },
           },
           trigger: {
@@ -196,7 +196,7 @@ export async function runSystemNotifications(uid: string) {
           await Notifications.scheduleNotificationAsync({
             content: {
               title: "Trend detected",
-              body: "You’re logging fewer meals than last week.",
+              body: "You\u2019re logging fewer meals than last week.",
               data: { sys: "stats_trend_detected" },
             },
             trigger: {
