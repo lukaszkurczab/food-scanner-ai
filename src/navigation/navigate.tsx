@@ -13,7 +13,12 @@ export type RootStackParamList = {
   IngredientsNotRecognized: { image: string; id: string; attempt?: number };
   AddMealManual: { id?: string; image?: string } | undefined;
   MealCamera:
-    | { id?: string; attempt?: number; skipDetection?: boolean }
+    | {
+        id?: string;
+        attempt?: number;
+        skipDetection?: boolean;
+        returnTo?: keyof RootStackParamList;
+      }
     | undefined;
   AddMealFromList: undefined;
   MealAddMethod: undefined;

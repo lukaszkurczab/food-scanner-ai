@@ -3,6 +3,8 @@
   "today": "Today",
   "filters": "Filters",
   "use": "Use",
+  "yes": "Yes",
+  "no": "No",
   "dateRange": {
     "label": "Date range",
     "set": "Set date range"

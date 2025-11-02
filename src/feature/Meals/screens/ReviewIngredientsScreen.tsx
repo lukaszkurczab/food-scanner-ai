@@ -100,7 +100,10 @@ export default function ReviewIngredientsScreen() {
 
   const handleAddPhoto = () => {
     allowLeaveRef.current = true;
-    navigation.replace("MealCamera", { skipDetection: true });
+    navigation.navigate("MealCamera", {
+      skipDetection: true,
+      returnTo: "ReviewIngredients",
+    });
   };
 
   const handleAddIngredient = () => {
@@ -220,7 +223,10 @@ export default function ReviewIngredientsScreen() {
         onAccept={() => {
           setPreviewVisible(false);
           allowLeaveRef.current = true;
-          navigation.replace("MealCamera", { skipDetection: true });
+          navigation.navigate("MealCamera", {
+            skipDetection: true,
+            returnTo: "ReviewIngredients",
+          });
         }}
         isLoading={false}
         secondaryText={t("back", { ns: "common" })}
@@ -380,9 +386,9 @@ export default function ReviewIngredientsScreen() {
           visible={showConfirmModal}
           title={t("start_over_title", { ns: "meals" })}
           message={t("start_over_message", { ns: "meals" })}
-          primaryActionLabel={t("start_over", { ns: "meals" })}
+          primaryActionLabel={t("yes", { ns: "common" })}
           onPrimaryAction={handleStartOver}
-          secondaryActionLabel={t("continue", { ns: "common" })}
+          secondaryActionLabel={t("no", { ns: "common" })}
           onSecondaryAction={() => setShowConfirmModal(false)}
           onClose={() => setShowConfirmModal(false)}
         />

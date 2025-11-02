@@ -28,7 +28,11 @@ export default function IngredientsNotRecognizedScreen() {
 
   const handleRetake = () => {
     if (attempt < MAX_ATTEMPTS) {
-      navigation.replace("MealCamera", { id, attempt: attempt + 1 });
+      navigation.replace("MealCamera", {
+        id,
+        attempt: attempt + 1,
+        returnTo: "IngredientsNotRecognized",
+      });
     } else {
       navigation.replace("AddMealManual", { id, image });
     }
