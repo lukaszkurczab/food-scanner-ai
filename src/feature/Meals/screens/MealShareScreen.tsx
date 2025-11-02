@@ -72,16 +72,7 @@ export default function MealShareScreen() {
           </ViewShot>
         </View>
 
-        <PrimaryButton label={t("share") } onPress={share} />
-        <SecondaryButton
-          label={t("back")}
-          onPress={() =>
-            nav.navigate(
-              returnTo as any,
-              returnTo === "Result" ? undefined : { meal }
-            )
-          }
-        />
+        <PrimaryButton label={t("share")} onPress={share} />
       </ScrollView>
     </Layout>
   );
