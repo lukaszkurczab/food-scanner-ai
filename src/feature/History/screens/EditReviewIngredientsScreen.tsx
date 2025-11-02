@@ -109,7 +109,10 @@ export default function EditReviewIngredientsScreen() {
 
   const handleAddPhoto = () => {
     allowLeaveRef.current = true;
-    navigation.replace("MealCamera", { skipDetection: true });
+    navigation.replace("MealCamera", {
+      returnTo: "IngredientsNotRecognized",
+      skipDetection: true,
+    });
   };
 
   const handleAddIngredient = () => {
@@ -234,7 +237,10 @@ export default function EditReviewIngredientsScreen() {
         onAccept={() => {
           setPreviewVisible(false);
           allowLeaveRef.current = true;
-          navigation.replace("MealCamera", { skipDetection: true });
+          navigation.replace("MealCamera", {
+            returnTo: "IngredientsNotRecognized",
+            skipDetection: true,
+          });
         }}
         isLoading={false}
         secondaryText={t("back", { ns: "common" })}

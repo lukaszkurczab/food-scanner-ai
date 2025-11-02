@@ -20,6 +20,7 @@ import { Alert as AppAlert } from "@/components/Alert";
 import { getSampleMealUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
 import { useUserContext } from "@contexts/UserContext";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 const log = debugScope("Screen:MealCamera");
 
@@ -41,6 +42,8 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const route = useRoute<any>();
   const routeId = route.params?.id as string | undefined;
   const skipDetection = !!route.params?.skipDetection;
+  const returnTo =
+    (route.params?.returnTo as keyof RootStackParamList) || "ReviewIngredients";
   const mealId = meal?.mealId || routeId || uuidv4();
   const canLeaveRef = useRef(false);
   const [scannedCode, setScannedCode] = useState<string | null>(null);
@@ -81,12 +84,22 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   useEffect(() => {
     const unsub = navigation.addListener("beforeRemove", (e: any) => {
       if (canLeaveRef.current) return;
-      if (!photoUri) return;
-      e.preventDefault();
-      setPhotoUri(null);
+      if (photoUri) {
+        e.preventDefault();
+        setPhotoUri(null);
+        return;
+      }
+      if (returnTo) {
+        if (navigation.canGoBack()) {
+          return;
+        } else {
+          e.preventDefault();
+          navigation.replace(returnTo as any);
+        }
+      }
     });
     return unsub;
-  }, [navigation, photoUri]);
+  }, [navigation, photoUri, returnTo]);
 
   const handleTakePicture = async () => {
     log.log("takePicture start", {
