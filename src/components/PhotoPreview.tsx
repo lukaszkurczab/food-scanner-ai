@@ -2,11 +2,10 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
-  Text,
   Pressable,
   Image as RNImage,
-  ActivityIndicator,
   LayoutChangeEvent,
+  Dimensions,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import Animated, {
@@ -17,6 +16,10 @@ import Animated, {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useTranslation } from "react-i18next";
+import { PrimaryButton } from "./PrimaryButton";
+import { SecondaryButton } from "./SecondaryButton";
+import { MaterialIcons } from "@expo/vector-icons";
+import ZoomModal from "./ZoomModal";
 
 type PhotoPreviewProps = {
   photoUri: string;
@@ -27,10 +30,8 @@ type PhotoPreviewProps = {
   secondaryText: string;
 };
 
-const FRAME_RATIO = 4 / 3;
-
 export const PhotoPreview = ({
-  photoUri,
+  photoUri: initialUri,
   onRetake,
   onAccept,
   isLoading = false,
@@ -40,20 +41,29 @@ export const PhotoPreview = ({
   const theme = useTheme();
   const { t } = useTranslation("meals");
 
+  const [photoUri, setPhotoUri] = useState(initialUri);
+  const [originalUri, setOriginalUri] = useState<string | null>(null);
   const [imgW, setImgW] = useState(0);
   const [imgH, setImgH] = useState(0);
   const [frameW, setFrameW] = useState(0);
   const [frameH, setFrameH] = useState(0);
+  const [containerW, setContainerW] = useState(0);
   const [loadError, setLoadError] = useState(false);
   const [cropMode, setCropMode] = useState(false);
+  const [zoomVisible, setZoomVisible] = useState(false);
 
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
-  const tx = useSharedValue(0);
-  const ty = useSharedValue(0);
-  const stx = useSharedValue(0);
-  const sty = useSharedValue(0);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
   const minScale = useSharedValue(1);
+  const maxImageAreaH = Math.round(Dimensions.get("window").height * 0.68);
+
+  useEffect(() => {
+    setPhotoUri(initialUri);
+  }, [initialUri]);
 
   useEffect(() => {
     setLoadError(false);
@@ -64,20 +74,31 @@ export const PhotoPreview = ({
     });
   }, [photoUri]);
 
-  const onLayout = (e: LayoutChangeEvent) => {
-    const w = e.nativeEvent.layout.width;
-    const h = Math.round(w / FRAME_RATIO);
-    setFrameW(w);
+  const recalcFrame = (width: number, iW: number, iH: number) => {
+    if (!width || !iW || !iH) return;
+    const naturalH = Math.round((width * iH) / iW);
+    const h = Math.min(naturalH, maxImageAreaH);
+    setFrameW(width);
     setFrameH(h);
   };
+
+  const onLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    setContainerW(w);
+    recalcFrame(w, imgW, imgH);
+  };
+
+  useEffect(() => {
+    recalcFrame(containerW, imgW, imgH);
+  }, [containerW, imgW, imgH]);
 
   const fitCover = () => {
     if (!imgW || !imgH || !frameW || !frameH) return;
     const s = Math.max(frameW / imgW, frameH / imgH);
     minScale.value = s;
     scale.value = withTiming(s);
-    tx.value = withTiming(0);
-    ty.value = withTiming(0);
+    translateX.value = withTiming(0);
+    translateY.value = withTiming(0);
   };
 
   useEffect(() => {
@@ -92,16 +113,16 @@ export const PhotoPreview = ({
   const pan = Gesture.Pan()
     .enabled(cropMode)
     .onBegin(() => {
-      stx.value = tx.value;
-      sty.value = ty.value;
+      startX.value = translateX.value;
+      startY.value = translateY.value;
     })
     .onUpdate((e) => {
       const w = imgW * scale.value;
       const h = imgH * scale.value;
       const maxX = Math.max((w - frameW) / 2, 0);
       const maxY = Math.max((h - frameH) / 2, 0);
-      tx.value = clamp(stx.value + e.translationX, -maxX, maxX);
-      ty.value = clamp(sty.value + e.translationY, -maxY, maxY);
+      translateX.value = clamp(startX.value + e.translationX, -maxX, maxX);
+      translateY.value = clamp(startY.value + e.translationY, -maxY, maxY);
     });
 
   const pinch = Gesture.Pinch()
@@ -116,8 +137,8 @@ export const PhotoPreview = ({
       const h = imgH * s;
       const maxX = Math.max((w - frameW) / 2, 0);
       const maxY = Math.max((h - frameH) / 2, 0);
-      tx.value = clamp(tx.value, -maxX, maxX);
-      ty.value = clamp(ty.value, -maxY, maxY);
+      translateX.value = clamp(translateX.value, -maxX, maxX);
+      translateY.value = clamp(translateY.value, -maxY, maxY);
     });
 
   const composed = Gesture.Simultaneous(pan, pinch);
@@ -127,8 +148,8 @@ export const PhotoPreview = ({
     height: imgH,
     transform: [
       { scale: scale.value },
-      { translateX: tx.value },
-      { translateY: ty.value },
+      { translateX: translateX.value },
+      { translateY: translateY.value },
     ],
   }));
 
@@ -136,175 +157,198 @@ export const PhotoPreview = ({
     const s = scale.value;
     const w = imgW * s;
     const h = imgH * s;
-    const left = (frameW - w) / 2 + tx.value;
-    const top = (frameH - h) / 2 + ty.value;
+    const left = (frameW - w) / 2 + translateX.value;
+    const top = (frameH - h) / 2 + translateY.value;
     const visLeft = Math.max(0 - left, 0);
     const visTop = Math.max(0 - top, 0);
     const visRight = Math.min(frameW - left, w);
     const visBottom = Math.min(frameH - top, h);
-    const cropW = Math.max(0, visRight - visLeft);
-    const cropH = Math.max(0, visBottom - visTop);
-    return {
-      originX: visLeft / s,
-      originY: visTop / s,
-      width: cropW / s,
-      height: cropH / s,
-    };
+    let originX = Math.round(visLeft / s);
+    let originY = Math.round(visTop / s);
+    let width = Math.round((visRight - visLeft) / s);
+    let height = Math.round((visBottom - visTop) / s);
+    originX = clamp(originX, 0, Math.max(imgW - 1, 0));
+    originY = clamp(originY, 0, Math.max(imgH - 1, 0));
+    width = clamp(width, 1, imgW - originX);
+    height = clamp(height, 1, imgH - originY);
+    return { originX, originY, width, height };
   };
 
-  const handleAccept = async () => {
-    const { originX, originY, width, height } = computeCrop();
-    const actions: ImageManipulator.Action[] = [
-      { crop: { originX, originY, width, height } },
-      { resize: { width: Math.min(1280, Math.round(width)) } },
-    ];
+  const handleCropConfirm = async () => {
     try {
-      const res = await ImageManipulator.manipulateAsync(photoUri, actions, {
-        compress: 0.8,
+      const crop = computeCrop();
+      const res = await ImageManipulator.manipulateAsync(photoUri, [{ crop }], {
+        compress: 0.9,
         format: ImageManipulator.SaveFormat.JPEG,
       });
-      onAccept(res.uri);
-    } catch {
-      onAccept(photoUri);
+      setPhotoUri(res.uri);
+      setCropMode(false);
+      setOriginalUri(null);
+    } catch (err) {
+      console.error("Crop failed", err);
     }
   };
 
-  const reset = () => fitCover();
+  const handleCropCancel = () => {
+    if (originalUri) setPhotoUri(originalUri);
+    setCropMode(false);
+  };
+
+  const toggleCrop = () => {
+    setCropMode((v) => {
+      const next = !v;
+      if (next) {
+        setOriginalUri(photoUri);
+        fitCover();
+      }
+      return next;
+    });
+  };
+
+  const openZoom = () => {
+    if (cropMode) return;
+    setZoomVisible(true);
+  };
+
+  const closeZoom = () => setZoomVisible(false);
 
   return (
     <View
       style={[styles.container, { backgroundColor: theme.background }]}
       onLayout={onLayout}
     >
-      <View style={[styles.frame, { width: frameW, height: frameH }]}>
-        <GestureDetector gesture={composed}>
-          <View style={styles.clip}>
-            {!loadError ? (
-              <Animated.Image
-                source={{ uri: photoUri }}
-                style={[styles.img, aStyle]}
-                resizeMode="cover"
-                onError={() => setLoadError(true)}
-              />
-            ) : null}
-          </View>
-        </GestureDetector>
+      <View
+        style={[
+          styles.frame,
+          { width: frameW, height: frameH, borderRadius: theme.rounded.lg },
+        ]}
+      >
+        <Pressable style={styles.fill} onPress={openZoom}>
+          <GestureDetector gesture={composed}>
+            <View style={styles.clip}>
+              {!loadError ? (
+                <Animated.Image
+                  source={{ uri: photoUri }}
+                  style={[styles.img, aStyle, { backgroundColor: theme.card }]}
+                  resizeMode="cover"
+                  onError={() => setLoadError(true)}
+                />
+              ) : null}
+            </View>
+          </GestureDetector>
+        </Pressable>
 
-        {/* Ramka z siatką i znacznikami */}
+        {cropMode ? (
+          <>
+            <Pressable
+              onPress={handleCropConfirm}
+              style={[
+                styles.fab,
+                {
+                  right: 60,
+                  bottom: 10,
+                  backgroundColor: theme.disabled.border,
+                },
+              ]}
+            >
+              <MaterialIcons name="check" size={24} color="#fff" />
+            </Pressable>
+            <Pressable
+              onPress={handleCropCancel}
+              style={[
+                styles.fab,
+                {
+                  right: 10,
+                  bottom: 10,
+                  backgroundColor: theme.disabled.border,
+                },
+              ]}
+            >
+              <MaterialIcons name="close" size={24} color="#fff" />
+            </Pressable>
+          </>
+        ) : (
+          <Pressable
+            onPress={toggleCrop}
+            style={[
+              styles.fab,
+              {
+                right: 10,
+                bottom: 10,
+                backgroundColor: "rgba(0,0,0,0.55)",
+              },
+            ]}
+          >
+            <MaterialIcons name="crop" size={24} color="#fff" />
+          </Pressable>
+        )}
+
         {cropMode && (
-          <View pointerEvents="none" style={styles.overlay}>
+          <View
+            pointerEvents="none"
+            style={[styles.overlay, { borderRadius: theme.rounded.lg }]}
+          >
             <View style={styles.grid}>
               {Array.from({ length: 2 }).map((_, i) => (
                 <View
-                  key={i}
+                  key={`v-${i}`}
                   style={[styles.lineV, { left: `${(i + 1) * 33.33}%` }]}
                 />
               ))}
               {Array.from({ length: 2 }).map((_, i) => (
                 <View
-                  key={i}
+                  key={`h-${i}`}
                   style={[styles.lineH, { top: `${(i + 1) * 33.33}%` }]}
                 />
               ))}
             </View>
-
-            {/* znaczniki narożników */}
-            <View style={[styles.corner, styles.tl]} />
-            <View style={[styles.corner, styles.tr]} />
-            <View style={[styles.corner, styles.bl]} />
-            <View style={[styles.corner, styles.br]} />
           </View>
         )}
       </View>
 
-      <View style={styles.toolbar}>
-        <Pressable
-          onPress={() => setCropMode((v) => !v)}
-          style={[styles.toolBtn, { borderColor: theme.border }]}
-        >
-          <Text style={[styles.toolText, { color: theme.text }]}>
-            {cropMode
-              ? t("photo_preview.finish")
-              : t("photo_preview.crop")}
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={reset}
-          style={[styles.toolBtn, { borderColor: theme.border }]}
-        >
-          <Text style={[styles.toolText, { color: theme.text }]}>
-            {t("photo_preview.reset")}
-          </Text>
-        </Pressable>
+      <View style={styles.actionsBar}>
+        <SecondaryButton
+          label={secondaryText}
+          onPress={onRetake}
+          disabled={isLoading}
+          style={styles.action}
+        />
+        <PrimaryButton
+          label={primaryText}
+          onPress={() => onAccept(photoUri)}
+          loading={isLoading}
+          disabled={isLoading}
+          style={styles.action}
+        />
       </View>
 
-      <Pressable
-        onPress={onRetake}
-        disabled={isLoading}
-        style={[
-          styles.button,
-          {
-            backgroundColor: "transparent",
-            borderColor: theme.accentSecondary,
-            borderWidth: 1,
-            opacity: isLoading ? 0.6 : 1,
-          },
-        ]}
-      >
-        <Text
-          style={[styles.buttonText, { color: theme.text, fontWeight: "bold" }]}
-        >
-          {secondaryText}
-        </Text>
-      </Pressable>
-
-      <Pressable
-        onPress={handleAccept}
-        disabled={isLoading}
-        style={[
-          styles.button,
-          {
-            backgroundColor: theme.accentSecondary,
-            borderColor: "transparent",
-            opacity: isLoading ? 0.6 : 1,
-          },
-        ]}
-      >
-        {isLoading ? (
-          <ActivityIndicator color={theme.onAccent} />
-        ) : (
-          <Text
-            style={[
-              styles.buttonText,
-              { color: theme.onAccent, fontWeight: "bold" },
-            ]}
-          >
-            {primaryText}
-          </Text>
-        )}
-      </Pressable>
+      <ZoomModal visible={zoomVisible} uri={photoUri} onClose={closeZoom} />
     </View>
   );
 };
 
-const RADIUS = 28;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 16,
+    gap: 32,
+    alignItems: "center",
   },
   frame: {
-    borderRadius: RADIUS,
     overflow: "hidden",
     backgroundColor: "#000",
-    marginBottom: 16,
+    marginBottom: 14,
+    width: "100%",
+  },
+  fill: {
+    width: "100%",
+    height: "100%",
   },
   clip: { flex: 1, alignItems: "center", justifyContent: "center" },
   img: { position: "absolute" },
-
   overlay: {
     ...StyleSheet.absoluteFillObject,
     borderColor: "#FFF8",
@@ -325,35 +369,21 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#FFF4",
   },
-
-  corner: {
-    position: "absolute",
-    width: 24,
-    height: 24,
-    borderColor: "#FFF",
-  },
-  tl: { top: 0, left: 0, borderTopWidth: 2, borderLeftWidth: 2 },
-  tr: { top: 0, right: 0, borderTopWidth: 2, borderRightWidth: 2 },
-  bl: { bottom: 0, left: 0, borderBottomWidth: 2, borderLeftWidth: 2 },
-  br: { bottom: 0, right: 0, borderBottomWidth: 2, borderRightWidth: 2 },
-
-  toolbar: { width: "100%", flexDirection: "row", gap: 8, marginBottom: 16 },
-  toolBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+  actionsBar: {
+    flexDirection: "row",
+    gap: 12,
     alignItems: "center",
-    justifyContent: "center",
-  },
-  toolText: { fontSize: 14 },
-  button: {
     width: "100%",
-    paddingVertical: 16,
-    borderRadius: 16,
+  },
+  action: { flex: 1 },
+  fab: {
+    position: "absolute",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 12,
   },
-  buttonText: { fontSize: 20 },
 });
+
+export default PhotoPreview;
