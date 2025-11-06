@@ -84,20 +84,19 @@ export default function UserProfileScreen({ navigation }: any) {
   const handleExportData = async () => {
     setExporting(true);
     try {
-      await exportUserData();
+      const fileUri = (await exportUserData()) as string | undefined;
+      const fileName = fileUri?.split("/").pop() ?? "caloriai_user_data.pdf";
       setExportModalTitle(t("downloadYourData"));
       setExportModalMessage(
-        t("exportSuccess", {
-          defaultValue:
-            "Your data has been prepared and should appear in your sharing options.",
-        })
+        `${t("exportSavedSuccess", { filename: fileName })}\n${t(
+          "exportSavedPathHint",
+          { path: fileUri || "-" }
+        )}`
       );
       setExportModalVisible(true);
     } catch {
       setExportModalTitle(t("downloadYourData"));
-      setExportModalMessage(
-        t("exportError", { defaultValue: "Could not export your data." })
-      );
+      setExportModalMessage(t("exportError"));
       setExportModalVisible(true);
     } finally {
       setExporting(false);
@@ -119,10 +118,14 @@ export default function UserProfileScreen({ navigation }: any) {
         <Text
           style={[styles.username, { color: theme.text }]}
           accessibilityRole="header"
+          numberOfLines={1}
         >
           {userData.username}
         </Text>
-        <Text style={[styles.email, { color: theme.textSecondary }]}>
+        <Text
+          style={[styles.email, { color: theme.textSecondary }]}
+          numberOfLines={1}
+        >
           {userData.email}
         </Text>
         <Text style={{ color: theme.textSecondary, marginTop: 4 }}>

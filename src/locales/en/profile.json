@@ -108,5 +108,7 @@
   "noInternet": "No internet connection",
   "checkConnection": "Please check your connection and try again.",
   "error": "Error",
-  "feedbackSendError": "Failed to send feedback. Try again later."
+  "feedbackSendError": "Failed to send feedback. Try again later.",
+  "exportSavedSuccess": "Your data has been saved as a PDF: {{filename}}. A sharing window has been opened.",
+  "exportSavedPathHint": "Saved to: {{path}}"
 }
