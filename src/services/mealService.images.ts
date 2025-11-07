@@ -22,11 +22,12 @@ export type UploadedImage = {
   aiLocalUri: string;
 };
 
-async function ensureDir(p: string) {
-  const dir = p.replace(/[^/]+$/, "");
-  try {
+async function ensureDirFor(filePath: string) {
+  const dir = filePath.replace(/[^/]+$/, "");
+  const info = await FileSystem.getInfoAsync(dir);
+  if (!info.exists) {
     await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-  } catch {}
+  }
 }
 
 async function toJpegMaxSide(uri: string, maxSide: number, q: number) {
@@ -36,6 +37,10 @@ async function toJpegMaxSide(uri: string, maxSide: number, q: number) {
     { compress: q, format: ImageManipulator.SaveFormat.JPEG }
   );
   return result.uri;
+}
+
+export function localPhotoPath(uid: string, id: string) {
+  return `${FileSystem.documentDirectory}meals/${uid}/${id}.jpg`;
 }
 
 export async function processAndUpload(
@@ -48,7 +53,7 @@ export async function processAndUpload(
   const cloudJpeg = await toJpegMaxSide(localUri, CLOUD_MAX, CLOUD_Q);
 
   const aiTmp = `${FileSystem.cacheDirectory}ai/${uuidv4()}.jpg`;
-  await ensureDir(aiTmp);
+  await ensureDirFor(aiTmp);
   const aiJpeg = await toJpegMaxSide(localUri, AI_MAX, AI_Q);
   await FileSystem.copyAsync({ from: aiJpeg, to: aiTmp });
 
@@ -61,28 +66,57 @@ export async function processAndUpload(
   return { imageId, cloudUrl, aiLocalUri: aiTmp };
 }
 
-export async function resolveMealImageUrl(
+export async function getCloudImageUrl(
   uid: string,
-  meal: { imageId?: string | null; photoUrl?: string | null }
-) {
-  if (meal?.photoUrl && /^https?:\/\//i.test(meal.photoUrl))
-    return meal.photoUrl;
-  if (meal?.imageId) {
-    try {
-      const r = ref(st, `meals/${uid}/${meal.imageId}.jpg`);
-      return await getDownloadURL(r);
-    } catch {}
-  }
-  return null;
+  imageIdOrCloudId: string
+): Promise<string> {
+  const r = ref(st, `meals/${uid}/${imageIdOrCloudId}.jpg`);
+  return getDownloadURL(r);
 }
 
-export async function recoverLocalImage(
-  uid: string,
-  cloudUrl: string,
-  fileId: string
-) {
-  const target = `${FileSystem.documentDirectory}users/${uid}/images/${fileId}.jpg`;
-  await ensureDir(target);
-  await FileSystem.downloadAsync(cloudUrl, target);
-  return target;
+export async function ensureLocalMealPhoto(args: {
+  uid: string;
+  cloudId?: string | null;
+  imageId?: string | null;
+  photoUrl?: string | null;
+}): Promise<string | null> {
+  const { uid, cloudId, imageId, photoUrl } = args;
+  const id = String(cloudId || imageId || "").trim();
+  if (!uid || !id) return null;
+
+  const target = localPhotoPath(uid, id);
+  await ensureDirFor(target);
+
+  const info = await FileSystem.getInfoAsync(target);
+  if (info.exists) return target;
+
+  let remoteUrl: string | null = null;
+
+  if (photoUrl && /^https?:\/\//i.test(photoUrl)) {
+    remoteUrl = photoUrl;
+  } else if (imageId) {
+    try {
+      remoteUrl = await getCloudImageUrl(uid, imageId);
+    } catch {
+      remoteUrl = null;
+    }
+  }
+
+  if (!remoteUrl && cloudId) {
+    try {
+      remoteUrl = await getCloudImageUrl(uid, cloudId);
+    } catch {
+      remoteUrl = null;
+    }
+  }
+
+  if (!remoteUrl) return null;
+
+  try {
+    await FileSystem.downloadAsync(remoteUrl, target);
+    const ok = await FileSystem.getInfoAsync(target);
+    return ok.exists ? target : null;
+  } catch {
+    return null;
+  }
 }

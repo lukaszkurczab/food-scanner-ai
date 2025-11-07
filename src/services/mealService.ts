@@ -14,17 +14,15 @@ import {
   limit as fsLimit,
   startAfter,
 } from "@react-native-firebase/firestore";
-import {
-  getStorage,
-  ref,
-  getDownloadURL,
-} from "@react-native-firebase/storage";
 import { v4 as uuidv4 } from "uuid";
 import * as FileSystem from "expo-file-system";
 import type { Meal } from "@/types/meal";
-import { processAndUpload } from "./mealService.images";
+import {
+  processAndUpload,
+  ensureLocalMealPhoto,
+  localPhotoPath,
+} from "./mealService.images";
 import { emit } from "@/services/events";
-
 import {
   getMealsPageLocalFiltered,
   type LocalHistoryFilters,
@@ -32,7 +30,6 @@ import {
 
 const app = getApp();
 const db = getFirestore(app);
-const st = getStorage(app);
 
 export const FREE_WINDOW_DAYS = 30;
 
@@ -208,7 +205,8 @@ export async function addOrUpdateMeal(
   let photoUrl: string | null | undefined = meal.photoUrl ?? null;
 
   if (
-    (photoUrl && photoUrl.startsWith("file:")) ||
+    (photoUrl &&
+      (photoUrl.startsWith("file:") || photoUrl.startsWith("content:"))) ||
     (typeof meal as any).localPhotoUri
   ) {
     const localUri = (meal as any).localPhotoUri || photoUrl!;
@@ -267,9 +265,6 @@ async function ensureDir(dir: string) {
   if (!info.exists)
     await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
 }
-function localPhotoPath(uid: string, id: string) {
-  return `${FileSystem.documentDirectory}meals/${uid}/${id}.jpg`;
-}
 
 export async function restoreMissingMealPhotos(
   uid: string,
@@ -279,32 +274,26 @@ export async function restoreMissingMealPhotos(
   if (!uid || !Array.isArray(meals) || meals.length === 0) return out;
   const baseDir = `${FileSystem.documentDirectory}meals/${uid}`;
   await ensureDir(baseDir);
-  for (const m of meals) {
-    const id = String(m.cloudId || m.mealId || "");
-    if (!id) continue;
 
-    let url = m.photoUrl || "";
-    if (!url && m.imageId) {
-      try {
-        url = await getDownloadURL(ref(st, `meals/${uid}/${m.imageId}.jpg`));
-      } catch {
-        url = "";
-      }
-    }
-    const looksRemote = typeof url === "string" && /^https?:\/\//i.test(url);
-    if (!looksRemote) continue;
+  for (const m of meals) {
+    const id = String(m.cloudId || m.mealId || "").trim();
+    if (!id) continue;
 
     const target = localPhotoPath(uid, id);
     const info = await FileSystem.getInfoAsync(target);
-    if (!info.exists) {
-      try {
-        await FileSystem.downloadAsync(url, target);
-      } catch {
-        continue;
-      }
+    if (info.exists) {
+      out[id] = target;
+      continue;
     }
-    const finalInfo = await FileSystem.getInfoAsync(target);
-    if (finalInfo.exists) out[id] = target;
+
+    const local = await ensureLocalMealPhoto({
+      uid,
+      cloudId: m.cloudId ?? null,
+      imageId: m.imageId ?? null,
+      photoUrl: m.photoUrl ?? null,
+    });
+
+    if (local) out[id] = local;
   }
   return out;
 }

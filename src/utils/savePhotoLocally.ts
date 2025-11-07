@@ -14,14 +14,21 @@ function targetPath({ userUid, fileId, dir = "images" }: SaveArgs) {
 async function ensureDirFor(filePath: string) {
   const parts = filePath.split("/");
   const dir = parts.slice(0, parts.length - 1).join("/") + "/";
-  try {
+  const info = await FileSystem.getInfoAsync(dir);
+  if (!info.exists) {
     await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-  } catch {}
+  }
 }
 
 export async function savePhotoLocally(args: SaveArgs) {
   const path = targetPath(args);
   await ensureDirFor(path);
+  try {
+    const exists = await FileSystem.getInfoAsync(path);
+    if (exists.exists) {
+      await FileSystem.deleteAsync(path, { idempotent: true });
+    }
+  } catch {}
   await FileSystem.copyAsync({ from: args.photoUri, to: path });
   return path;
 }
