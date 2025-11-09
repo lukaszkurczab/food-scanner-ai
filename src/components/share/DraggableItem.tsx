@@ -1,183 +1,210 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { ViewStyle } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
   runOnJS,
 } from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
-export type ElementId = "title" | "kcal" | "pie" | "custom" | "macros";
+export type ElementId =
+  | "title"
+  | "kcal"
+  | "custom"
+  | "pie"
+  | "line"
+  | "bar"
+  | "macros"
+  | "photo";
 
-export type DraggableItemProps = {
+type Props = {
   id: ElementId;
-  canvasW: number;
-  canvasH: number;
-  initialXRatio: number;
-  initialYRatio: number;
-  initialScale: number;
-  initialRotation: number; // degrees
-  selected: boolean;
-  onSelect: (id: ElementId) => void;
-  onLongPress?: (id: ElementId) => void;
-  onTap?: (id: ElementId) => void;
-  onUpdate: (
+  areaX: number;
+  areaY: number;
+  areaW: number;
+  areaH: number;
+  initialXRatio?: number | null;
+  initialYRatio?: number | null;
+  initialScale?: number | null;
+  initialRotation?: number | null;
+  selected?: boolean;
+  onSelect?: (id: ElementId) => void;
+  onTap?: () => void;
+  onUpdate?: (
     xRatio: number,
     yRatio: number,
     scale: number,
     rotation: number
   ) => void;
   children: React.ReactNode;
+  style?: ViewStyle;
 };
 
-export function DraggableItem({
+export default function DraggableItem({
   id,
-  canvasW,
-  canvasH,
-  initialXRatio,
-  initialYRatio,
-  initialScale,
-  initialRotation,
+  areaX,
+  areaY,
+  areaW,
+  areaH,
+  initialXRatio = 0.5,
+  initialYRatio = 0.5,
+  initialScale = 1,
+  initialRotation = 0,
+  selected = false,
   onSelect,
-  onUpdate,
-  onLongPress,
   onTap,
+  onUpdate,
   children,
-}: DraggableItemProps) {
-  const cx = useSharedValue(initialXRatio * canvasW);
-  const cy = useSharedValue(initialYRatio * canvasH);
-  const scale = useSharedValue(initialScale);
-  const rotation = useSharedValue(initialRotation);
+  style,
+}: Props) {
+  const xRatio = useSharedValue(
+    Number.isFinite(initialXRatio as number) ? (initialXRatio as number) : 0.5
+  );
+  const yRatio = useSharedValue(
+    Number.isFinite(initialYRatio as number) ? (initialYRatio as number) : 0.5
+  );
+  const scale = useSharedValue(
+    Number.isFinite(initialScale as number) ? (initialScale as number) : 1
+  );
+  const rotation = useSharedValue(
+    Number.isFinite(initialRotation as number) ? (initialRotation as number) : 0
+  );
 
-  const w = useSharedValue(0);
-  const h = useSharedValue(0);
+  const offsetX = useSharedValue(xRatio.value);
+  const offsetY = useSharedValue(yRatio.value);
+  const savedScale = useSharedValue(scale.value);
+  const savedRotation = useSharedValue(rotation.value);
 
-  const startCX = useSharedValue(0);
-  const startCY = useSharedValue(0);
-  const startScale = useSharedValue(1);
-  const startRotation = useSharedValue(0);
+  const [size, setSize] = useState({ w: 0, h: 0 });
 
   useEffect(() => {
-    cx.value = withTiming(initialXRatio * canvasW);
-    cy.value = withTiming(initialYRatio * canvasH);
-    scale.value = withTiming(initialScale);
-    rotation.value = withTiming(initialRotation);
-  }, [
-    canvasW,
-    canvasH,
-    initialXRatio,
-    initialYRatio,
-    initialScale,
-    initialRotation,
-  ]);
+    const xr = Number.isFinite(initialXRatio as number)
+      ? (initialXRatio as number)
+      : 0.5;
+    const yr = Number.isFinite(initialYRatio as number)
+      ? (initialYRatio as number)
+      : 0.5;
+    const sc = Number.isFinite(initialScale as number)
+      ? (initialScale as number)
+      : 1;
+    const rot = Number.isFinite(initialRotation as number)
+      ? (initialRotation as number)
+      : 0;
+    xRatio.value = xr;
+    yRatio.value = yr;
+    scale.value = sc;
+    rotation.value = rot;
+    offsetX.value = xr;
+    offsetY.value = yr;
+    savedScale.value = sc;
+    savedRotation.value = rot;
+  }, [initialXRatio, initialYRatio, initialScale, initialRotation]);
 
-  const panGesture = Gesture.Pan()
+  const pan = Gesture.Pan()
     .averageTouches(true)
-    .onBegin(() => {
-      startCX.value = cx.value;
-      startCY.value = cy.value;
-      runOnJS(onSelect)(id);
+    .onStart(() => {
+      offsetX.value = xRatio.value;
+      offsetY.value = yRatio.value;
     })
     .onUpdate((e) => {
-      cx.value = startCX.value + e.translationX;
-      cy.value = startCY.value + e.translationY;
+      const nx = offsetX.value + e.translationX / areaW;
+      const ny = offsetY.value + e.translationY / areaH;
+      const clampedX = Math.min(Math.max(nx, 0), 1);
+      const clampedY = Math.min(Math.max(ny, 0), 1);
+      xRatio.value = clampedX;
+      yRatio.value = clampedY;
     })
     .onEnd(() => {
-      runOnJS(onUpdate)(
-        cx.value / canvasW,
-        cy.value / canvasH,
-        scale.value,
-        rotation.value
-      );
+      offsetX.value = xRatio.value;
+      offsetY.value = yRatio.value;
+      if (onUpdate)
+        runOnJS(onUpdate)(
+          xRatio.value,
+          yRatio.value,
+          scale.value,
+          rotation.value
+        );
     });
 
-  const pinchGesture = Gesture.Pinch()
+  const pinch = Gesture.Pinch()
     .onStart(() => {
-      startScale.value = scale.value;
-      runOnJS(onSelect)(id);
+      savedScale.value = scale.value;
     })
     .onUpdate((e) => {
-      scale.value = startScale.value * e.scale;
+      const next = savedScale.value * (e.scale || 1);
+      scale.value = Math.min(Math.max(next, 0.2), 4);
     })
     .onEnd(() => {
-      runOnJS(onUpdate)(
-        cx.value / canvasW,
-        cy.value / canvasH,
-        scale.value,
-        rotation.value
-      );
+      savedScale.value = scale.value;
+      if (onUpdate)
+        runOnJS(onUpdate)(
+          xRatio.value,
+          yRatio.value,
+          scale.value,
+          rotation.value
+        );
     });
 
-  const rotateGesture = Gesture.Rotation()
+  const rotate = Gesture.Rotation()
     .onStart(() => {
-      startRotation.value = rotation.value;
-      runOnJS(onSelect)(id);
+      savedRotation.value = rotation.value;
     })
     .onUpdate((e) => {
-      rotation.value = startRotation.value + (e.rotation * 180) / Math.PI;
+      const next = savedRotation.value + (e.rotation || 0);
+      rotation.value = Number.isFinite(next) ? next : 0;
     })
     .onEnd(() => {
-      runOnJS(onUpdate)(
-        cx.value / canvasW,
-        cy.value / canvasH,
-        scale.value,
-        rotation.value
-      );
+      savedRotation.value = rotation.value;
+      if (onUpdate)
+        runOnJS(onUpdate)(
+          xRatio.value,
+          yRatio.value,
+          scale.value,
+          rotation.value
+        );
     });
 
-  const tapGesture = Gesture.Tap()
-    .maxDuration(250)
-    .maxDistance(12)
-    .onEnd(() => {
-      runOnJS(onSelect)(id);
-      if (onTap) runOnJS(onTap)(id);
-    });
-  tapGesture.requireExternalGestureToFail(panGesture);
-  tapGesture.requireExternalGestureToFail(pinchGesture);
-  tapGesture.requireExternalGestureToFail(rotateGesture);
+  const tap = Gesture.Tap().onEnd(() => {
+    if (onSelect) runOnJS(onSelect)(id);
+    if (onTap) runOnJS(onTap)();
+  });
 
-  const longPressGesture = Gesture.LongPress()
-    .minDuration(300)
-    .onStart(() => {
-      if (onLongPress) runOnJS(onLongPress)(id);
-    });
-  longPressGesture.requireExternalGestureToFail(panGesture);
-  longPressGesture.requireExternalGestureToFail(pinchGesture);
-  longPressGesture.requireExternalGestureToFail(rotateGesture);
+  const gesture = Gesture.Simultaneous(pan, pinch, rotate, tap);
 
-  const baseGestures = Gesture.Simultaneous(
-    panGesture,
-    pinchGesture,
-    rotateGesture
-  );
-  const combinedGesture = Gesture.Simultaneous(
-    baseGestures,
-    tapGesture,
-    longPressGesture
-  );
+  const styleOuter = useAnimatedStyle(() => {
+    const xr = Math.min(Math.max(xRatio.value, 0), 1);
+    const yr = Math.min(Math.max(yRatio.value, 0), 1);
+    const cx = areaX + xr * areaW;
+    const cy = areaY + yr * areaH;
+    const left = cx - size.w / 2;
+    const top = cy - size.h / 2;
+    return {
+      position: "absolute",
+      left,
+      top,
+    } as any;
+  });
 
-  const style = useAnimatedStyle(() => ({
-    position: "absolute",
-    left: cx.value,
-    top: cy.value,
-    transform: [
-      { translateX: -w.value / 2 },
-      { translateY: -h.value / 2 },
-      { scale: scale.value },
-      { rotate: `${rotation.value}deg` },
-    ],
-  }));
+  const styleInner = useAnimatedStyle(() => {
+    const sc = Number.isFinite(scale.value) ? scale.value : 1;
+    const rot = Number.isFinite(rotation.value) ? rotation.value : 0;
+    return {
+      transform: [{ scale: sc }, { rotate: `${rot}rad` }],
+    } as any;
+  });
 
   return (
-    <GestureDetector gesture={combinedGesture}>
+    <GestureDetector gesture={gesture}>
       <Animated.View
-        onLayout={(e) => {
-          w.value = e.nativeEvent.layout.width;
-          h.value = e.nativeEvent.layout.height;
-        }}
-        style={style}
+        onLayout={(e) =>
+          setSize({
+            w: e.nativeEvent.layout.width,
+            h: e.nativeEvent.layout.height,
+          })
+        }
+        style={[styleOuter, selected ? { zIndex: 5 } : null]}
       >
-        {children}
+        <Animated.View style={[styleInner, style]}>{children}</Animated.View>
       </Animated.View>
     </GestureDetector>
   );
