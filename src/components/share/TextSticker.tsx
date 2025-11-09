@@ -1,36 +1,27 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Text } from "react-native";
-import { DraggableItem, ElementId } from "./DraggableItem";
-import { useTheme } from "@/theme/useTheme";
-import type { ShareOptions } from "@/types/share";
-
-function themeFont(theme: any, key: "regular" | "medium" | "bold" | "light") {
-  return (
-    theme?.typography?.fontFamily?.[key] ||
-    theme?.typography?.fontFamily?.regular
-  );
-}
+import DraggableItem, { ElementId } from "./DraggableItem";
 
 type Props = {
-  id: Extract<ElementId, "title" | "kcal" | "custom">;
-  canvasW: number;
-  canvasH: number;
-  options: ShareOptions & {
-    titleFontFamilyKey?: string;
-    kcalFontFamilyKey?: string;
-    customFontFamilyKey?: string;
-  };
-  titleText: string;
-  kcalValue: number;
-  onSelect: (id: ElementId) => void;
-  onOpenStyle: (id: Extract<ElementId, "title" | "kcal" | "custom">) => void;
-  onPatch: (patch: Partial<ShareOptions>) => void;
+  id: ElementId;
+  areaX: number;
+  areaY: number;
+  areaW: number;
+  areaH: number;
+  options: any;
+  titleText?: string;
+  kcalValue?: number;
+  onSelect?: (id: ElementId) => void;
+  onOpenStyle?: (id: ElementId) => void;
+  onPatch?: (patch: any) => void;
 };
 
-export function TextSticker({
+export default function TextSticker({
   id,
-  canvasW,
-  canvasH,
+  areaX,
+  areaY,
+  areaW,
+  areaH,
   options,
   titleText,
   kcalValue,
@@ -38,113 +29,78 @@ export function TextSticker({
   onOpenStyle,
   onPatch,
 }: Props) {
-  const theme = useTheme();
-
-  const cfg = {
-    title: {
-      x: options.titleX,
-      y: options.titleY,
-      size: options.titleSize,
-      rotation: options.titleRotation,
-      color: options.titleColor || "white",
-      font: (options.titleFont || "bold") as
-        | "regular"
-        | "medium"
-        | "bold"
-        | "light",
-      italic: !!options.titleItalic,
-      underline: !!options.titleUnderline,
-      base: 28,
-      text: titleText || "Meal",
-      familyKey: options.titleFontFamilyKey,
-    },
-    kcal: {
-      x: options.kcalX,
-      y: options.kcalY,
-      size: options.kcalSize,
-      rotation: options.kcalRotation,
-      color: options.kcalColor || "white",
-      font: (options.kcalFont || "bold") as
-        | "regular"
-        | "medium"
-        | "bold"
-        | "light",
-      italic: !!options.kcalItalic,
-      underline: !!options.kcalUnderline,
-      base: 22,
-      text: `${Math.round(kcalValue)} kcal`,
-      familyKey: options.kcalFontFamilyKey,
-    },
-    custom: {
+  const cfg = useMemo(() => {
+    if (id === "title") {
+      return {
+        text: titleText || "",
+        color: options.titleColor || "#FFFFFF",
+        x: options.titleX ?? 0.5,
+        y: options.titleY ?? 0.15,
+        size: options.titleSize ?? 1,
+        rot: options.titleRotation ?? 0,
+        family: options.titleFontFamilyKey || undefined,
+        italic: !!options.titleItalic,
+        underline: !!options.titleUnderline,
+      };
+    }
+    if (id === "kcal") {
+      return {
+        text: `${Math.round(kcalValue || 0)} kcal`,
+        color: options.kcalColor || "#FFFFFF",
+        x: options.kcalX ?? 0.5,
+        y: options.kcalY ?? 0.28,
+        size: options.kcalSize ?? 1,
+        rot: options.kcalRotation ?? 0,
+        family: options.kcalFontFamilyKey || undefined,
+        italic: !!options.kcalItalic,
+        underline: !!options.kcalUnderline,
+      };
+    }
+    return {
+      text: options.customText || "",
+      color: options.customColor || "#FFFFFF",
       x: options.customX ?? 0.5,
-      y: options.customY ?? 0.2,
-      size: options.customSize ?? 18,
-      rotation: options.customRotation ?? 0,
-      color: options.customColor || "white",
-      font: (options.customFont || "regular") as
-        | "regular"
-        | "medium"
-        | "bold"
-        | "light",
+      y: options.customY ?? 0.42,
+      size: options.customSize ?? 1,
+      rot: options.customRotation ?? 0,
+      family: options.customFontFamilyKey || undefined,
       italic: !!options.customItalic,
       underline: !!options.customUnderline,
-      base: 22,
-      text: options.customText || "Your text",
-      familyKey: options.customFontFamilyKey,
-    },
-  }[id];
+    };
+  }, [id, options, titleText, kcalValue]);
 
-  const resolvedFamily =
-    cfg.familyKey && typeof cfg.familyKey === "string"
-      ? cfg.familyKey
-      : themeFont(theme, cfg.font);
+  const onUpdate = (x: number, y: number, sc: number, rot: number) => {
+    const patch: any = {};
+    const key = id;
+    patch[`${key}X`] = x;
+    patch[`${key}Y`] = y;
+    patch[`${key}Size`] = sc;
+    patch[`${key}Rotation`] = rot;
+    onPatch?.(patch);
+  };
 
   return (
     <DraggableItem
       id={id}
-      canvasW={canvasW}
-      canvasH={canvasH}
+      areaX={areaX}
+      areaY={areaY}
+      areaW={areaW}
+      areaH={areaH}
       initialXRatio={cfg.x}
       initialYRatio={cfg.y}
-      initialScale={cfg.size / cfg.base}
-      initialRotation={cfg.rotation}
-      selected={false}
+      initialScale={cfg.size}
+      initialRotation={cfg.rot}
       onSelect={onSelect}
-      onTap={() => onOpenStyle(id)}
-      onUpdate={(x, y, sc, rot) => {
-        if (id === "title")
-          onPatch({
-            titleX: x,
-            titleY: y,
-            titleSize: Math.round(cfg.base * sc),
-            titleRotation: rot,
-          });
-        if (id === "kcal")
-          onPatch({
-            kcalX: x,
-            kcalY: y,
-            kcalSize: Math.round(cfg.base * sc),
-            kcalRotation: rot,
-          });
-        if (id === "custom")
-          onPatch({
-            customX: x,
-            customY: y,
-            customSize: Math.round(cfg.base * sc),
-            customRotation: rot,
-          });
-      }}
+      onTap={() => onOpenStyle?.(id)}
+      onUpdate={onUpdate}
     >
       <Text
-        numberOfLines={id === "title" ? 2 : 1}
         style={{
           color: cfg.color,
-          fontFamily: resolvedFamily,
+          fontSize: 26,
           fontStyle: cfg.italic ? "italic" : "normal",
           textDecorationLine: cfg.underline ? "underline" : "none",
-          textAlign: "center",
-          textShadowColor: "rgba(0,0,0,0.35)",
-          textShadowRadius: 6,
+          fontFamily: cfg.family,
         }}
       >
         {cfg.text}
