@@ -1,4 +1,3 @@
-// app.config.js
 import "dotenv/config";
 
 export default {
@@ -10,7 +9,7 @@ export default {
     orientation: "portrait",
     userInterfaceStyle: "light",
     newArchEnabled: true,
-    assetBundlePatterns: ["**/*"], // zawiera assets/fonts/*.ttf (w tym nowe SemiBold/ExtraBold)
+    assetBundlePatterns: ["**/*"],
     icon: "./assets/icon.png",
     splash: {
       image: "./assets/splash.png",
@@ -39,6 +38,7 @@ export default {
       androidCollapsedTitle: "caloriai",
     },
     plugins: [
+      ["react-native-purchases", { ios: { useStoreKit2: true } }],
       [
         "expo-camera",
         {
@@ -52,7 +52,7 @@ export default {
         "expo-build-properties",
         { ios: { useFrameworks: "static", deploymentTarget: "15.5" } },
       ],
-      "expo-font", // OK – wczytasz czcionki przez useFonts w kodzie
+      "expo-font",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "expo-notifications",

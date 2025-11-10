@@ -52,13 +52,13 @@ export async function startOrRenewSubscription(): Promise<PurchaseResult> {
     const offerings = await Purchases.getOfferings();
     const current = offerings.current;
     const packages = current?.availablePackages ?? [];
-    // Prefer monthly, then annual, then first available
     const findById = (id: string) => packages.find((p) => p.identifier === id);
     const monthly =
       findById("$rc_monthly") ||
       packages.find((p) => p.packageType === "MONTHLY");
     const annual =
-      findById("$rc_annual") || packages.find((p) => p.packageType === "ANNUAL");
+      findById("$rc_annual") ||
+      packages.find((p) => p.packageType === "ANNUAL");
     const selected = monthly || annual || packages[0];
     if (!selected) return { status: "unavailable", message: "No packages" };
 
@@ -70,4 +70,3 @@ export async function startOrRenewSubscription(): Promise<PurchaseResult> {
     return { status: "error", message: e?.message };
   }
 }
-

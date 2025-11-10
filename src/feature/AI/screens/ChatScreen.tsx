@@ -13,6 +13,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { PaywallCard } from "../components/PaywallCard";
 import { TypingDots } from "../components/TypingDots";
 import { useMeals } from "@hooks/useMeals";
+import { useNavigation } from "@react-navigation/native";
 
 export default function ChatScreen() {
   const { firebaseUser: user } = useAuthContext();
@@ -24,6 +25,7 @@ export default function ChatScreen() {
   const subscription = useSubscriptionData();
   const isPremium = subscription?.state === "premium_active";
   const { meals } = useMeals(uid);
+  const navigation = useNavigation();
 
   const {
     messages,
@@ -74,7 +76,13 @@ export default function ChatScreen() {
             },
           ]}
         >
-          <PaywallCard used={countToday} limit={5} />
+          <PaywallCard
+            used={countToday}
+            limit={5}
+            onUpgrade={() =>
+              (navigation as any)?.navigate?.("ManageSubscription")
+            }
+          />
         </View>
       )}
 
