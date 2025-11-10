@@ -16,7 +16,7 @@ export function usePremiumStatus() {
   const billingDisabled = !!extra.disableBilling || !Device.isDevice;
   const getDevOverride = async () => {
     const raw = await AsyncStorage.getItem(DEV_FORCE_KEY);
-    if (raw === "true" || raw === "false") return raw; // explicit override
+    if (raw === "true" || raw === "false") return raw;
     return null;
   };
 
@@ -40,7 +40,6 @@ export function usePremiumStatus() {
       }
       if (billingDisabled) {
         const cached = await AsyncStorage.getItem(keyFor(uid));
-        // default to false if not set
         const fromCache = cached === "true" ? true : false;
         await AsyncStorage.setItem(keyFor(uid), fromCache ? "true" : "false");
         setIsPremium(fromCache);
@@ -67,10 +66,7 @@ export function usePremiumStatus() {
       uid?: string | null,
       onChange?: (premium: boolean) => void
     ): (() => void) => {
-      // Avoid attaching live RC listeners when forced or on devices without billing
-      // Note: devForce is read in checkPremiumStatus; listener is not required here
       if (forcePremium || billingDisabled) {
-        // No live updates when forced or billing disabled
         return () => {};
       }
       const listener = async (info: any) => {
