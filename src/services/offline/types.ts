@@ -1,8 +1,4 @@
-export type QueueKind =
-  | "upsert"
-  | "delete"
-  | "upsert_mymeal"
-  | "delete_mymeal";
+export type QueueKind = "upsert" | "delete" | "upsert_mymeal" | "delete_mymeal";
 
 export type MealRow = {
   cloud_id: string | null;
@@ -11,6 +7,7 @@ export type MealRow = {
   timestamp: string;
   type: string;
   name: string | null;
+  photo_local_path: string | null;
   photo_url: string | null;
   image_local: string | null;
   image_id: string | null;

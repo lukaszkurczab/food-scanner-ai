@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -39,7 +39,7 @@ export const PhotoPreview = ({
   secondaryText,
 }: PhotoPreviewProps) => {
   const theme = useTheme();
-  const { t } = useTranslation("meals");
+  useTranslation("meals");
 
   const [photoUri, setPhotoUri] = useState(initialUri);
   const [originalUri, setOriginalUri] = useState<string | null>(null);
@@ -184,9 +184,7 @@ export const PhotoPreview = ({
       setPhotoUri(res.uri);
       setCropMode(false);
       setOriginalUri(null);
-    } catch (err) {
-      console.error("Crop failed", err);
-    }
+    } catch {}
   };
 
   const handleCropCancel = () => {
@@ -316,8 +314,8 @@ export const PhotoPreview = ({
         <PrimaryButton
           label={primaryText}
           onPress={() => onAccept(photoUri)}
-          loading={isLoading}
-          disabled={isLoading}
+          loading={false}
+          disabled={false}
           style={styles.action}
         />
       </View>

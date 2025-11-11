@@ -1,20 +1,33 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useUserContext } from "@contexts/UserContext";
-import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import { useAuthContext } from "@/context/AuthContext";
 import type { MealType } from "@/types/meal";
 import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "@/components/DateTimeSection";
-import { Layout, PrimaryButton, SecondaryButton, Card, Modal } from "@/components";
+import {
+  Layout,
+  PrimaryButton,
+  SecondaryButton,
+  Card,
+  Modal,
+} from "@/components";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { getApp } from "@react-native-firebase/app";
 import { getFirestore, doc, setDoc } from "@react-native-firebase/firestore";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { MaterialIcons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system";
 
 type ScreenRoute = RouteProp<RootStackParamList, "EditResult">;
 
@@ -28,7 +41,7 @@ export default function EditResultScreen({ navigation }: { navigation: any }) {
   const route = useRoute<ScreenRoute>();
   const savedCloudId = route.params?.savedCloudId;
   const nav = useNavigation<any>();
-  const { meal, setLastScreen } = useMealDraftContext();
+  const { meal, setLastScreen, setPhotoUrl } = useMealDraftContext();
   const { userData } = useUserContext();
 
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -43,16 +56,33 @@ export default function EditResultScreen({ navigation }: { navigation: any }) {
 
   const image = meal?.photoUrl ?? null;
   const [imageError, setImageError] = useState(false);
+  const [checkingImage, setCheckingImage] = useState(false);
   useEffect(() => setImageError(false), [image]);
-  const shotRef = useRef<View>(null);
 
   useEffect(() => {
     if (uid) setLastScreen(uid, "EditResult");
   }, [setLastScreen, uid]);
 
-  if (!meal || !uid) return null;
+  useEffect(() => {
+    const checkLocal = async () => {
+      if (!meal?.photoUrl) return;
+      setCheckingImage(true);
+      try {
+        const isLocal = meal.photoUrl.startsWith("file://");
+        if (!isLocal) {
+          setPhotoUrl(null);
+          return;
+        }
+        const info = await FileSystem.getInfoAsync(meal.photoUrl);
+        if (!info.exists) setPhotoUrl(null);
+      } finally {
+        setCheckingImage(false);
+      }
+    };
+    void checkLocal();
+  }, [meal?.photoUrl, setPhotoUrl]);
 
-  const nutrition = useMemo(() => calculateTotalNutrients([meal]), [meal]);
+  if (!meal || !uid) return null;
 
   const goShare = () => {
     if (!meal || !uid) return;
@@ -63,6 +93,13 @@ export default function EditResultScreen({ navigation }: { navigation: any }) {
       timestamp: selectedAt.toISOString(),
     } as any;
     nav.navigate("MealShare", { meal: pass, returnTo: "MealDetails" });
+  };
+
+  const handleAddPhoto = () => {
+    navigation.navigate("MealCamera", {
+      skipDetection: true,
+      returnTo: "EditResult",
+    });
   };
 
   const handleSave = async () => {
@@ -95,32 +132,65 @@ export default function EditResultScreen({ navigation }: { navigation: any }) {
   return (
     <Layout showNavigation={false}>
       <View style={{ padding: theme.spacing.container }}>
-        {image && !imageError && (
-          <View style={styles.imageWrap}>
-            <Image
-              source={{ uri: image }}
-              style={styles.image}
-              resizeMode="cover"
-              onError={() => setImageError(true)}
-            />
-            <Pressable
-              onPress={goShare}
-              accessibilityRole="button"
-              accessibilityLabel={t("share", { ns: "common" })}
-              hitSlop={8}
-              style={[
-                styles.fab,
-                {
-                  backgroundColor: theme.background,
-                  borderColor: theme.border,
-                  shadowColor: theme.shadow,
-                },
-              ]}
-            >
-              <MaterialIcons name="ios-share" size={22} color={theme.text} />
-            </Pressable>
-          </View>
-        )}
+        <View style={styles.imageWrap}>
+          {checkingImage ? (
+            <ActivityIndicator size="large" color={theme.accent} />
+          ) : image && !imageError ? (
+            <>
+              {console.log("Rendering image:", image)}
+              <Image
+                source={{ uri: image }}
+                style={styles.image}
+                resizeMode="cover"
+                onError={() => setImageError(true)}
+              />
+              <Pressable
+                onPress={goShare}
+                accessibilityRole="button"
+                accessibilityLabel={t("share", { ns: "common" })}
+                hitSlop={8}
+                style={[
+                  styles.fab,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.border,
+                    shadowColor: theme.shadow,
+                  },
+                ]}
+              >
+                <MaterialIcons name="ios-share" size={22} color={theme.text} />
+              </Pressable>
+            </>
+          ) : (
+            <>
+              {console.log("Rendering image:", image)}
+              <Pressable
+                onPress={handleAddPhoto}
+                style={[
+                  styles.placeholder,
+                  { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t("add_photo", { ns: "meals" })}
+              >
+                <MaterialIcons
+                  name="add-a-photo"
+                  size={44}
+                  color={theme.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: theme.textSecondary,
+                    fontWeight: "600",
+                    marginTop: 6,
+                  }}
+                >
+                  {t("add_photo", { ns: "meals" })}
+                </Text>
+              </Pressable>
+            </>
+          )}
+        </View>
 
         <Card>
           <Text
@@ -213,12 +283,28 @@ const IMAGE_SIZE = 220;
 const styles = StyleSheet.create({
   imageWrap: {
     position: "relative",
+    width: "100%",
+    height: IMAGE_SIZE,
+    borderRadius: 32,
+    overflow: "hidden",
+    marginBottom: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
   image: {
     width: "100%",
     height: IMAGE_SIZE,
     borderRadius: 32,
     backgroundColor: "#B2C0C9",
+  },
+  placeholder: {
+    width: "100%",
+    height: IMAGE_SIZE,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    gap: 6,
   },
   fab: {
     position: "absolute",

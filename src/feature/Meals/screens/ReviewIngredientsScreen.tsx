@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import {
@@ -16,6 +23,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
 import { v4 as uuidv4 } from "uuid";
+import * as FileSystem from "expo-file-system";
 
 type FieldErrors = Partial<Record<keyof Ingredient, string>>;
 
@@ -43,6 +51,7 @@ export default function ReviewIngredientsScreen() {
   const exitActionRef = useRef<any | null>(null);
   const allowLeaveRef = useRef(false);
   const [imageMenuOpen, setImageMenuOpen] = useState(false);
+  const [checkingImage, setCheckingImage] = useState(false);
 
   const ingredients: Ingredient[] = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
@@ -55,6 +64,29 @@ export default function ReviewIngredientsScreen() {
   useEffect(() => {
     if (uid) setLastScreen(uid, "ReviewIngredients");
   }, [setLastScreen, uid]);
+
+  useEffect(() => {
+    const validateLocalImage = async () => {
+      if (!meal?.photoUrl) return;
+      setCheckingImage(true);
+      try {
+        const isLocal = meal.photoUrl.startsWith("file://");
+        if (!isLocal) {
+          setPhotoUrl(null);
+          if (uid) await saveDraft(uid);
+          return;
+        }
+        const info = await FileSystem.getInfoAsync(meal.photoUrl);
+        if (!info.exists) {
+          setPhotoUrl(null);
+          if (uid) await saveDraft(uid);
+        }
+      } finally {
+        setCheckingImage(false);
+      }
+    };
+    void validateLocalImage();
+  }, [meal?.photoUrl, saveDraft, setPhotoUrl, uid]);
 
   const validate = (i: Ingredient): FieldErrors => {
     const e: FieldErrors = {};
@@ -239,7 +271,9 @@ export default function ReviewIngredientsScreen() {
     <Layout showNavigation={false}>
       <View style={styles(theme).container}>
         <View style={styles(theme).imageWrapper}>
-          {image && !imageError ? (
+          {checkingImage ? (
+            <ActivityIndicator size="large" color={theme.accent} />
+          ) : image && !imageError ? (
             <>
               <Pressable
                 onPress={() => setPreviewVisible(true)}

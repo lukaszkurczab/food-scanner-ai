@@ -32,7 +32,9 @@ export interface Meal {
   syncState: MealSyncState;
   source: MealSource;
   imageId?: string | null;
+  photoLocalPath?: string | null;
   photoUrl?: string | null;
+  localPhotoUrl?: string | null;
   notes?: string | null;
   tags?: string[];
   deleted?: boolean;

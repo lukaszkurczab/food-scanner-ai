@@ -1,6 +1,6 @@
 import { getDB } from "./db";
 import type { Meal } from "@/types/meal";
-import type { QueueRow, QueueKind } from "./types";
+import type { QueueRow } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
 export type { QueueKind } from "./types";
@@ -15,9 +15,6 @@ function safeParse(payload: string): unknown {
   }
 }
 
-/**
- * Enqueue an upsert operation.
- */
 export async function enqueueUpsert(uid: string, meal: Meal): Promise<void> {
   const db = getDB();
   const cloudId = meal.cloudId ?? meal.mealId;
@@ -48,9 +45,6 @@ export async function enqueueMyMealUpsert(
   );
 }
 
-/**
- * Enqueue a delete operation.
- */
 export async function enqueueDelete(
   uid: string,
   cloudId: string,
@@ -77,9 +71,6 @@ export async function enqueueMyMealDelete(
   );
 }
 
-/**
- * Get the next batch of queued operations.
- */
 export async function nextBatch(limit = 20): Promise<QueuedOp[]> {
   const db = getDB();
   const rows = db.getAllSync(`SELECT * FROM op_queue ORDER BY id ASC LIMIT ?`, [
@@ -91,17 +82,11 @@ export async function nextBatch(limit = 20): Promise<QueuedOp[]> {
   }));
 }
 
-/**
- * Mark an operation as done (remove from queue).
- */
 export async function markDone(id: number): Promise<void> {
   const db = getDB();
   db.runSync(`DELETE FROM op_queue WHERE id=?`, [id]);
 }
 
-/**
- * Increase attempts counter for an operation.
- */
 export async function bumpAttempts(id: number): Promise<void> {
   const db = getDB();
   db.runSync(`UPDATE op_queue SET attempts=attempts+1 WHERE id=?`, [id]);

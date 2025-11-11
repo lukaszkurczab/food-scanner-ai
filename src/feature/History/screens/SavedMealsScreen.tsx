@@ -1,3 +1,4 @@
+// src/feature/History/screens/SavedMealsScreen.tsx
 import React, {
   useCallback,
   useEffect,
@@ -10,8 +11,8 @@ import {
   FlatList,
   RefreshControl,
   ViewToken,
-  Text,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
@@ -26,7 +27,6 @@ import {
   FullScreenLoader,
   Layout,
   SearchBox,
-  UserIcon,
 } from "@/components";
 import { FilterBadgeButton } from "../components/FilterBadgeButton";
 import { FilterPanel } from "../components/FilterPanel";
@@ -43,11 +43,13 @@ import {
   getDocs,
   deleteDoc,
   doc,
+  setDoc,
 } from "@react-native-firebase/firestore";
 import { useTranslation } from "react-i18next";
 import { useFilters } from "@/context/HistoryContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { v4 as uuidv4 } from "uuid";
+import * as FileSystem from "expo-file-system";
 
 const PAGE_SIZE = 20;
 
@@ -119,6 +121,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
   const [items, setItems] = useState<Meal[]>([]);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [validating, setValidating] = useState(false);
 
   const loadingMoreRef = useRef(false);
 
@@ -133,7 +136,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       orderBy("name", "asc"),
       limit(PAGE_SIZE)
     );
-    const unsub = onSnapshot(q, (snap) => {
+    const unsub = onSnapshot(q, async (snap) => {
       const data = snap.docs.map((d: any) => ({
         ...(d.data() as Meal),
         cloudId: d.id,
@@ -142,6 +145,62 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       setLastDoc(snap.docs[snap.docs.length - 1] || null);
       setHasMore(snap.docs.length === PAGE_SIZE);
       setLoading(false);
+      setValidating(true);
+      try {
+        const updated: Meal[] = [];
+        for (const m of data) {
+          const localUri =
+            (m as any).photoLocalPath ??
+            (m.photoUrl?.startsWith("file://") ? m.photoUrl : null);
+          if (localUri) {
+            try {
+              const info = await FileSystem.getInfoAsync(localUri);
+              if (!info.exists) {
+                await setDoc(
+                  doc(
+                    db,
+                    "users",
+                    uid,
+                    "myMeals",
+                    (m as any).cloudId || m.mealId
+                  ),
+                  { photoUrl: null, photoLocalPath: null },
+                  { merge: true }
+                );
+                updated.push({
+                  ...m,
+                  photoUrl: null,
+                  photoLocalPath: null,
+                } as any);
+              } else {
+                updated.push(m);
+              }
+            } catch {
+              await setDoc(
+                doc(
+                  db,
+                  "users",
+                  uid,
+                  "myMeals",
+                  (m as any).cloudId || m.mealId
+                ),
+                { photoUrl: null, photoLocalPath: null },
+                { merge: true }
+              );
+              updated.push({
+                ...m,
+                photoUrl: null,
+                photoLocalPath: null,
+              } as any);
+            }
+          } else {
+            updated.push(m);
+          }
+        }
+        setItems(updated);
+      } finally {
+        setValidating(false);
+      }
     });
     return unsub;
   }, [uid]);
@@ -168,7 +227,41 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       ...(d.data() as Meal),
       cloudId: d.id,
     }));
-    setItems((prev) => [...prev, ...data]);
+    const validated: Meal[] = [];
+    for (const m of data) {
+      const localUri =
+        (m as any).photoLocalPath ??
+        (m.photoUrl?.startsWith("file://") ? m.photoUrl : null);
+      if (localUri) {
+        try {
+          const info = await FileSystem.getInfoAsync(localUri);
+          if (!info.exists) {
+            await setDoc(
+              doc(db, "users", uid, "myMeals", (m as any).cloudId || m.mealId),
+              { photoUrl: null, photoLocalPath: null },
+              { merge: true }
+            );
+            validated.push({
+              ...m,
+              photoUrl: null,
+              photoLocalPath: null,
+            } as any);
+          } else {
+            validated.push(m);
+          }
+        } catch {
+          await setDoc(
+            doc(db, "users", uid, "myMeals", (m as any).cloudId || m.mealId),
+            { photoUrl: null, photoLocalPath: null },
+            { merge: true }
+          );
+          validated.push({ ...m, photoUrl: null, photoLocalPath: null } as any);
+        }
+      } else {
+        validated.push(m);
+      }
+    }
+    setItems((prev) => [...prev, ...validated]);
     setLastDoc(snap.docs[snap.docs.length - 1] || null);
     setHasMore(snap.docs.length === PAGE_SIZE);
     setLoadingMore(false);
@@ -321,8 +414,6 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
     [uid]
   );
 
-  const onDuplicateMeal = (meal: Meal) => duplicateMeal(meal);
-
   if (loading)
     return (
       <Layout disableScroll>
@@ -377,43 +468,57 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
         </View>
       )}
       {!showFilters && (
-        <FlatList
-          data={visibleItems}
-          keyExtractor={(item) => (item as any).cloudId || (item as any).mealId}
-          refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={refresh} />
-          }
-          renderItem={({ item }) => (
+        <>
+          {validating && (
             <View
-              style={[
-                styles.listItemWrap,
-                {
-                  paddingHorizontal: theme.spacing.md,
-                  marginBottom: theme.spacing.sm,
-                },
-              ]}
+              style={{
+                paddingHorizontal: theme.spacing.md,
+                marginBottom: theme.spacing.xs,
+              }}
             >
-              <MealListItem
-                meal={item}
-                onPress={() =>
-                  navigation.navigate("MealDetails", { meal: item })
-                }
-                onDuplicate={() => onDuplicate(item)}
-                onEdit={() => onEdit(item)}
-                onDelete={() => onDelete(item)}
-              />
+              <ActivityIndicator size="large" color={theme.accent} />
             </View>
           )}
-          contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
-          onViewableItemsChanged={onViewableItemsChanged.current}
-          viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
-          ListFooterComponent={
-            loadingMore ? <LoadingSkeleton height={56} /> : null
-          }
-          removeClippedSubviews
-          windowSize={7}
-          initialNumToRender={PAGE_SIZE}
-        />
+          <FlatList
+            data={visibleItems}
+            keyExtractor={(item) =>
+              (item as any).cloudId || (item as any).mealId
+            }
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={refresh} />
+            }
+            renderItem={({ item }) => (
+              <View
+                style={[
+                  styles.listItemWrap,
+                  {
+                    paddingHorizontal: theme.spacing.md,
+                    marginBottom: theme.spacing.sm,
+                  },
+                ]}
+              >
+                <MealListItem
+                  meal={item}
+                  onPress={() =>
+                    navigation.navigate("MealDetails", { meal: item })
+                  }
+                  onDuplicate={() => onDuplicate(item)}
+                  onEdit={() => onEdit(item)}
+                  onDelete={() => onDelete(item)}
+                />
+              </View>
+            )}
+            contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
+            onViewableItemsChanged={onViewableItemsChanged.current}
+            viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
+            ListFooterComponent={
+              loadingMore ? <LoadingSkeleton height={56} /> : null
+            }
+            removeClippedSubviews
+            windowSize={7}
+            initialNumToRender={PAGE_SIZE}
+          />
+        </>
       )}
       <BottomTabBar />
     </Layout>

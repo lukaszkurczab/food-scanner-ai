@@ -49,9 +49,15 @@ export type RootStackParamList = {
   NotificationForm: undefined;
   Loading: undefined;
   MealTextAI: undefined;
-  MealDetails: { meal: Meal };
+  MealDetails: { meal: Meal; edit?: boolean; baseline?: Meal };
   MealShare: { meal: Meal; returnTo: "Result" | "MealDetails" };
   BarCodeCamera: undefined;
+  SavedMealsCamera:
+    | {
+        id?: string;
+        meal?: Meal;
+      }
+    | undefined;
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
