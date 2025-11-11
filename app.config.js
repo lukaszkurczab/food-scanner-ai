@@ -38,7 +38,6 @@ export default {
       androidCollapsedTitle: "caloriai",
     },
     plugins: [
-      ["react-native-purchases", { ios: { useStoreKit2: true } }],
       [
         "expo-camera",
         {

@@ -16,6 +16,7 @@ import { reconcileAll } from "@/services/notifications/engine";
 import { debugScope } from "@/utils/debug";
 import { emit } from "@/services/events";
 import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
+import { upsertMyMealWithPhoto } from "@/services/myMealService";
 
 const PAGE_LIMIT = 50;
 
@@ -120,7 +121,7 @@ export function useMeals(userUid: string | null) {
       const mealId = (meal as any).mealId ?? uuidv4();
       const totals = computeTotals(meal as Meal);
 
-      const base: Meal & { photoLocalPath?: string; totals?: any } = {
+      const base: Meal & { photoLocalPath?: string | null; totals?: any } = {
         ...(meal as Meal),
         userUid,
         cloudId,
@@ -133,14 +134,19 @@ export function useMeals(userUid: string | null) {
         totals,
       };
 
-      const maybeUri = (meal as any).photoUrl as string | undefined;
+      const maybeUri = (meal as any).photoUrl as string | null | undefined;
       if (isLocalUri(maybeUri)) {
-        base.photoLocalPath = maybeUri;
+        base.photoLocalPath = maybeUri as string;
         console.log("[useMeals] register image for upload", {
           cloudId,
           uri: maybeUri,
         });
-        await insertOrUpdateImage(userUid, cloudId, maybeUri!, "pending");
+        await insertOrUpdateImage(
+          userUid,
+          cloudId,
+          base.photoLocalPath,
+          "pending"
+        );
       }
 
       await upsertMealLocal(base);
@@ -178,12 +184,35 @@ export function useMeals(userUid: string | null) {
   const updateMeal = useCallback(
     async (meal: Meal) => {
       if (!userUid) return;
-      console.log("[useMeals] updateMeal start", { cloudId: meal.cloudId });
+      console.log("[useMeals] updateMeal start", {
+        cloudId: meal.cloudId,
+        source: meal.source,
+      });
+
+      if (meal.source === "saved") {
+        const now = new Date().toISOString();
+        const docId = meal.mealId || meal.cloudId || uuidv4();
+        const localPhoto = isLocalUri(meal.photoUrl)
+          ? (meal.photoUrl as string)
+          : null;
+        const toSave: Meal = {
+          ...meal,
+          userUid,
+          mealId: docId,
+          cloudId: docId,
+          updatedAt: now,
+        };
+        await upsertMyMealWithPhoto(userUid, toSave, localPhoto);
+        emit("meal:updated", { uid: userUid, meal: toSave });
+        triggerReconcile(userUid);
+        return;
+      }
+
       const now = new Date().toISOString();
       const cloudId = meal.cloudId ?? uuidv4();
       const totals = computeTotals(meal);
 
-      const payload: Meal & { photoLocalPath?: string; totals?: any } = {
+      const payload: Meal & { photoLocalPath?: string | null; totals?: any } = {
         ...meal,
         cloudId,
         updatedAt: now,
@@ -191,14 +220,19 @@ export function useMeals(userUid: string | null) {
         timestamp: (meal as any).timestamp ?? now,
       };
 
-      const maybeUri = (meal as any).photoUrl as string | undefined;
+      const maybeUri = (meal as any).photoUrl as string | null | undefined;
       if (isLocalUri(maybeUri)) {
-        payload.photoLocalPath = maybeUri;
+        payload.photoLocalPath = maybeUri as string;
         console.log("[useMeals] register image for upload (update)", {
           cloudId,
           uri: maybeUri,
         });
-        await insertOrUpdateImage(userUid, cloudId, maybeUri!, "pending");
+        await insertOrUpdateImage(
+          userUid,
+          cloudId,
+          payload.photoLocalPath,
+          "pending"
+        );
       }
 
       await upsertMealLocal(payload);

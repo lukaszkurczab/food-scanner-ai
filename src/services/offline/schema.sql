@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS meals (
   timestamp TEXT NOT NULL,
   type TEXT NOT NULL,
   name TEXT,
+  photo_local_path TEXT,
   photo_url TEXT,
   image_local TEXT,
   image_id TEXT,

@@ -40,6 +40,7 @@ import ProgressShareScreen from "@/feature/Statistics/screens/ProgressShareScree
 import ChatScreen from "@/feature/AI/screens/ChatScreen";
 import EditReviewIngredientsScreen from "@/feature/History/screens/EditReviewIngredientsScreen";
 import EditResultScreen from "@/feature/History/screens/EditResultScreen";
+import SavedMealsCameraScreen from "@/feature/History/screens/SavedMealsCameraScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -94,6 +95,10 @@ const AppNavigator = () => {
           <Stack.Screen name="SendFeedback" component={SendFeedbackScreen} />
           <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
           <Stack.Screen name="MealCamera" component={MealCameraScreen} />
+          <Stack.Screen
+            name="SavedMealsCamera"
+            component={SavedMealsCameraScreen}
+          />
           <Stack.Screen
             name="IngredientsNotRecognized"
             component={IngredientsNotRecognizedScreen}
