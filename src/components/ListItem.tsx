@@ -1,183 +1,165 @@
-import React from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ViewStyle,
-  StyleProp,
-} from "react-native";
-import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
+import * as SQLite from "expo-sqlite";
 
-type ListItemProps = {
-  title: string;
-  subtitle?: string;
-  icon?: React.ReactElement<{ size?: number; color?: string }>;
-  value?: string | number | React.ReactNode;
-  onPress?: () => void;
-  selected?: boolean;
-  disabled?: boolean;
-  style?: StyleProp<ViewStyle>;
-};
+let db: SQLite.SQLiteDatabase | null = null;
 
-export const ListItem: React.FC<ListItemProps> = ({
-  title,
-  subtitle,
-  icon,
-  value,
-  onPress,
-  selected = false,
-  disabled = false,
-  style,
-}) => {
-  const theme = useTheme();
+export function getDB(): SQLite.SQLiteDatabase {
+  if (!db) {
+    db = SQLite.openDatabaseSync("caloriai.db");
+    db.execSync(`PRAGMA journal_mode = WAL;`);
+    db.execSync(`PRAGMA foreign_keys = ON;`);
+  }
+  return db;
+}
 
-  const isClickable = !!onPress && !disabled;
-  const isSelected = !!selected;
-  const colorTitle = disabled
-    ? theme.disabled.text
-    : isSelected
-    ? theme.accent
-    : theme.text;
-  const colorSubtitle = disabled ? theme.disabled.text : theme.textSecondary;
-  const iconColor = disabled
-    ? theme.disabled.text
-    : isSelected
-    ? theme.accent
-    : theme.textSecondary;
-  const rightColor = disabled ? theme.disabled.text : theme.textSecondary;
+function getUserVersion(d: SQLite.SQLiteDatabase): number {
+  const row = d.getFirstSync<{ user_version: number }>(
+    `PRAGMA user_version`
+  ) as { user_version: number } | undefined;
+  return row?.user_version ?? 0;
+}
+function setUserVersion(d: SQLite.SQLiteDatabase, v: number) {
+  d.execSync(`PRAGMA user_version = ${v};`);
+}
+function columnExists(
+  d: SQLite.SQLiteDatabase,
+  table: string,
+  column: string
+): boolean {
+  try {
+    const rows = d.getAllSync<{ name: string }>(
+      `PRAGMA table_info(${table})`
+    ) as any[];
+    return Array.isArray(rows)
+      ? rows.some((r) => String(r.name).toLowerCase() === column.toLowerCase())
+      : false;
+  } catch {
+    return false;
+  }
+}
 
-  const backgroundColor = isSelected ? theme.card : "transparent";
+export function runMigrations() {
+  const d = getDB();
+  let v = getUserVersion(d);
 
-  const renderRight = () => {
-    if (isSelected)
-      return <MaterialIcons name="check" size={24} color={theme.accent} />;
-    if (value !== undefined && value !== null) {
-      if (typeof value === "string" || typeof value === "number") {
-        return (
-          <Text
-            style={{
-              color: rightColor,
-              fontSize: theme.typography.size.base,
-              fontFamily: theme.typography.fontFamily.medium,
-            }}
-          >
-            {value}
-          </Text>
+  if (v < 1) {
+    d.execSync("BEGIN");
+    try {
+      d.execSync(`
+        CREATE TABLE IF NOT EXISTS meals (
+          cloud_id TEXT PRIMARY KEY,
+          meal_id TEXT NOT NULL,
+          user_uid TEXT NOT NULL,
+          timestamp TEXT NOT NULL,
+          type TEXT NOT NULL,
+          name TEXT,
+          photo_url TEXT,
+          image_local TEXT,
+          image_id TEXT,
+          totals_kcal REAL DEFAULT 0,
+          totals_protein REAL DEFAULT 0,
+          totals_carbs REAL DEFAULT 0,
+          totals_fat REAL DEFAULT 0,
+          deleted INTEGER DEFAULT 0,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          source TEXT,
+          notes TEXT,
+          tags TEXT
         );
-      }
-      return value;
+      `);
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_meals_user_ts
+          ON meals(user_uid, timestamp DESC);
+      `);
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_meals_user_del_ts
+          ON meals(user_uid, deleted, timestamp DESC);
+      `);
+      d.execSync(`
+        CREATE TABLE IF NOT EXISTS op_queue (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          cloud_id TEXT NOT NULL,
+          user_uid TEXT NOT NULL,
+          kind TEXT NOT NULL,
+          payload TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          attempts INTEGER DEFAULT 0
+        );
+      `);
+      d.execSync(`
+        CREATE TABLE IF NOT EXISTS images (
+          image_id TEXT PRIMARY KEY,
+          user_uid TEXT NOT NULL,
+          local_path TEXT NOT NULL,
+          cloud_url TEXT,
+          status TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+      `);
+      setUserVersion(d, 1);
+      d.execSync("COMMIT");
+      v = 1;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
     }
-    if (isClickable)
-      return (
-        <MaterialIcons
-          name="chevron-right"
-          size={24}
-          color={theme.textSecondary}
-        />
-      );
-    return null;
-  };
-
-  const Content = (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor,
-          borderRadius: theme.rounded.md,
-          opacity: disabled ? 0.6 : 1,
-        },
-        style,
-      ]}
-    >
-      {icon && (
-        <View style={[styles.iconBox, { marginRight: theme.spacing.md }]}>
-          {React.isValidElement(icon)
-            ? React.cloneElement(icon, {
-                size: icon.props.size || 24,
-                color: icon.props.color || iconColor,
-              })
-            : icon}
-        </View>
-      )}
-      <View style={styles.textContainer}>
-        <Text
-          numberOfLines={1}
-          style={{
-            color: colorTitle,
-            fontSize: theme.typography.size.base,
-            fontFamily: theme.typography.fontFamily.medium,
-            fontWeight: "500",
-          }}
-        >
-          {title}
-        </Text>
-        {!!subtitle && (
-          <Text
-            numberOfLines={2}
-            style={{
-              color: colorSubtitle,
-              fontSize: theme.typography.size.sm,
-              fontFamily: theme.typography.fontFamily.regular,
-              marginTop: 2,
-            }}
-          >
-            {subtitle}
-          </Text>
-        )}
-      </View>
-      <View style={styles.right}>{renderRight()}</View>
-    </View>
-  );
-
-  if (isClickable) {
-    return (
-      <Pressable
-        style={({ pressed }) => [
-          styles.pressable,
-          { opacity: pressed ? 0.85 : 1 },
-        ]}
-        onPress={onPress}
-        disabled={disabled}
-        android_ripple={{ color: theme.overlay }}
-      >
-        {Content}
-      </Pressable>
-    );
   }
 
-  return Content;
-};
+  if (v < 2) {
+    d.execSync("BEGIN");
+    try {
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_meals_user_del_ts
+          ON meals(user_uid, deleted, timestamp DESC);
+      `);
+      if (!columnExists(d, "meals", "notes")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN notes TEXT;`);
+      }
+      if (!columnExists(d, "meals", "image_id")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN image_id TEXT;`);
+      }
+      if (!columnExists(d, "meals", "created_at")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN created_at TEXT;`);
+        d.execSync(`
+          UPDATE meals
+          SET created_at = COALESCE(
+            NULLIF(created_at, ''),
+            NULLIF(timestamp, ''),
+            NULLIF(updated_at, ''),
+            datetime('now')
+          )
+          WHERE created_at IS NULL OR created_at='';
+        `);
+      }
+      setUserVersion(d, 2);
+      d.execSync("COMMIT");
+      v = 2;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
 
-const styles = StyleSheet.create({
-  pressable: {
-    width: "100%",
-  },
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    minHeight: 52,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    width: "100%",
-  },
-  iconBox: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 32,
-    height: 32,
-  },
-  textContainer: {
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 32,
-  },
-  right: {
-    minWidth: 32,
-    alignItems: "flex-end",
-    justifyContent: "center",
-    marginLeft: 8,
-  },
-});
+  if (v < 3) {
+    d.execSync("BEGIN");
+    try {
+      if (!columnExists(d, "meals", "photo_local_path")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN photo_local_path TEXT;`);
+      }
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_meals_user_updated
+          ON meals(user_uid, updated_at DESC);
+      `);
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_meals_cloud_id
+          ON meals(cloud_id);
+      `);
+      setUserVersion(d, 3);
+      d.execSync("COMMIT");
+      v = 3;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
+}

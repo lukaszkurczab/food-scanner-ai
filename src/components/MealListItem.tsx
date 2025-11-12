@@ -37,7 +37,7 @@ const app = getApp();
 const st = getStorage(app);
 const ACTION_WIDTH = 168;
 
-export const MealListItem: React.FC<Props> = ({
+const MealListItemBase: React.FC<Props> = ({
   meal,
   onPress,
   onEdit,
@@ -320,6 +320,36 @@ export const MealListItem: React.FC<Props> = ({
     </View>
   );
 };
+
+function areMealsEqual(a?: Meal, b?: Meal) {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return (
+    (a.cloudId || a.mealId) === (b.cloudId || b.mealId) &&
+    a.updatedAt === b.updatedAt &&
+    a.name === b.name &&
+    (a.totals?.kcal ?? 0) === (b.totals?.kcal ?? 0) &&
+    (a.totals?.protein ?? 0) === (b.totals?.protein ?? 0) &&
+    (a.totals?.carbs ?? 0) === (b.totals?.carbs ?? 0) &&
+    (a.totals?.fat ?? 0) === (b.totals?.fat ?? 0) &&
+    (a.imageId ?? null) === (b.imageId ?? null) &&
+    (a.photoUrl ?? null) === (b.photoUrl ?? null)
+  );
+}
+
+function propsEqual(prev: Props, next: Props) {
+  return (
+    areMealsEqual(prev.meal, next.meal) &&
+    prev.selected === next.selected &&
+    prev.onPress === next.onPress &&
+    prev.onEdit === next.onEdit &&
+    prev.onDelete === next.onDelete &&
+    prev.onDuplicate === next.onDuplicate &&
+    prev.onSelect === next.onSelect
+  );
+}
+
+export const MealListItem = React.memo(MealListItemBase, propsEqual);
 
 const styles = StyleSheet.create({
   card: {

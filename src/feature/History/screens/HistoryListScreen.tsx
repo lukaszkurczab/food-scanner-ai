@@ -17,7 +17,7 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { Layout, BottomTabBar, SearchBox, UserIcon } from "@/components";
+import { Layout, BottomTabBar, SearchBox } from "@/components";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { FilterBadgeButton } from "../components/FilterBadgeButton";
@@ -28,14 +28,16 @@ import type { Meal } from "@/types/meal";
 import { useTranslation } from "react-i18next";
 import { useFilters } from "@/context/HistoryContext";
 import { useSubscriptionData } from "@hooks/useSubscriptionData";
+import { FREE_WINDOW_DAYS } from "@services/mealService";
 import {
-  getMealsPageFiltered,
-  type HistoryFilters,
-  FREE_WINDOW_DAYS,
-} from "@services/mealService";
+  getMealsPageLocalFiltered,
+  type LocalHistoryFilters,
+  getMealByCloudIdLocal,
+} from "@/services/offline/meals.repo";
+import { pullChanges } from "@/services/offline/sync.engine";
 import { on } from "@/services/events";
 
-const PAGE = 10;
+const PAGE = 20;
 
 type DaySection = {
   title: string;
@@ -77,6 +79,65 @@ const norm = (s: any) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+function groupAddOrUpdate(
+  sections: Map<string, DaySection>,
+  t: (k: string) => string,
+  meal: Meal
+) {
+  const d = toDate(meal.timestamp || meal.updatedAt || meal.createdAt);
+  const key = fmtDateKey(d);
+  const title = fmtHeader(d, t);
+  const section = sections.get(key) ?? {
+    title,
+    dateKey: key,
+    totalKcal: 0,
+    data: [],
+  };
+  const id = String(meal.cloudId || meal.mealId);
+  const without = section.data.filter(
+    (m) => String(m.cloudId || m.mealId) !== id
+  );
+  const nextData = [...without, meal].sort((a, b) =>
+    String(b.timestamp || b.updatedAt || "").localeCompare(
+      String(a.timestamp || a.updatedAt || "")
+    )
+  );
+  const total = nextData.reduce((acc, m) => acc + mealKcal(m), 0);
+  sections.set(key, {
+    title,
+    dateKey: key,
+    totalKcal: Math.round(total),
+    data: nextData,
+  });
+}
+
+function groupRemove(sections: Map<string, DaySection>, id: string) {
+  for (const [key, sec] of sections.entries()) {
+    const filtered = sec.data.filter(
+      (m) => String(m.cloudId || m.mealId) !== id
+    );
+    if (filtered.length !== sec.data.length) {
+      const total = filtered.reduce((acc, m) => acc + mealKcal(m), 0);
+      if (filtered.length === 0) {
+        sections.delete(key);
+      } else {
+        sections.set(key, {
+          ...sec,
+          data: filtered,
+          totalKcal: Math.round(total),
+        });
+      }
+      break;
+    }
+  }
+}
+
+function sectionsToArray(sections: Map<string, DaySection>): DaySection[] {
+  return Array.from(sections.values()).sort((a, b) =>
+    b.dateKey.localeCompare(a.dateKey)
+  );
+}
+
 export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const theme = useTheme();
   const netInfo = useNetInfo();
@@ -96,86 +157,72 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [items, setItems] = useState<Meal[]>([]);
-  const [cursor, setCursor] = useState<any | null>(null);
+  const [sectionsMap, setSectionsMap] = useState<Map<string, DaySection>>(
+    () => new Map()
+  );
+  const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const loadingMoreRef = useRef(false);
   const firstFocus = useRef(true);
 
-  const resetAndLoadRef = useRef<
-    null | ((options?: { silent?: boolean }) => Promise<void>)
-  >(null);
-
-  const serverFilters: HistoryFilters | undefined = useMemo(() => {
+  const localFilters: LocalHistoryFilters | undefined = useMemo(() => {
     if (!filters) return undefined;
     return {
       calories: filters.calories,
       protein: filters.protein,
       carbs: filters.carbs,
       fat: filters.fat,
-      dateRange: filters.dateRange,
+      dateRange: filters.dateRange
+        ? {
+            start: new Date(filters.dateRange.start),
+            end: new Date(filters.dateRange.end),
+          }
+        : undefined,
     };
   }, [filters]);
 
-  const resetAndLoad = useCallback(
+  const resetAndLoadLocal = useCallback(
     async (options?: { silent?: boolean }) => {
       const silent = options?.silent ?? false;
       if (!uid) {
-        setItems([]);
+        setSectionsMap(new Map());
         setCursor(null);
         setHasMore(false);
         setLoading(false);
         return;
       }
-      if (!silent) {
-        setLoading(true);
-      }
+      if (!silent) setLoading(true);
       try {
-        const page = await getMealsPageFiltered(uid, {
+        const page = await getMealsPageLocalFiltered(uid, {
           limit: PAGE,
-          cursor: null,
-          filters: serverFilters,
-          accessWindowDays,
+          beforeISO: null,
+          filters: localFilters,
         });
-        setItems(page.items as any);
-        setCursor(page.nextCursor);
-        setHasMore(!!page.nextCursor && page.items.length === PAGE);
-      } catch {
-        setItems([]);
-        setCursor(null);
-        setHasMore(false);
+        const map = new Map<string, DaySection>();
+        for (const meal of page.items) groupAddOrUpdate(map, t, meal);
+        setSectionsMap(map);
+        setCursor(page.nextBefore);
+        setHasMore(!!page.nextBefore && page.items.length === PAGE);
       } finally {
         setLoading(false);
       }
     },
-    [uid, serverFilters, accessWindowDays]
+    [uid, localFilters, t]
   );
 
   useEffect(() => {
-    resetAndLoadRef.current = resetAndLoad;
-  }, [resetAndLoad]);
+    void resetAndLoadLocal();
+    if (uid) void pullChanges(uid);
+  }, [uid, resetAndLoadLocal]);
 
+  const prevKey = useRef<string>("");
   useEffect(() => {
-    if (!uid) return;
-    const unsub1 = on("meal:added", () =>
-      resetAndLoadRef.current?.({ silent: true })
-    );
-    const unsub2 = on("meal:updated", () =>
-      resetAndLoadRef.current?.({ silent: true })
-    );
-    const unsub3 = on("meal:deleted", () =>
-      resetAndLoadRef.current?.({ silent: true })
-    );
-    const unsub4 = on("meal:synced", () =>
-      resetAndLoadRef.current?.({ silent: true })
-    );
-    const unsub5 = on("meal:pushed", () =>
-      resetAndLoadRef.current?.({ silent: true })
-    );
-    const unsub6 = on("meal:failed", () => {});
-    return () =>
-      [unsub1, unsub2, unsub3, unsub4, unsub5, unsub6].forEach((u) => u && u());
-  }, [uid]);
+    const key = JSON.stringify({ uid, localFilters, accessWindowDays });
+    if (!uid || key === prevKey.current) return;
+    prevKey.current = key;
+    void resetAndLoadLocal();
+    if (uid) void pullChanges(uid);
+  }, [uid, localFilters, accessWindowDays, resetAndLoadLocal]);
 
   useFocusEffect(
     useCallback(() => {
@@ -183,151 +230,97 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
         firstFocus.current = false;
         return;
       }
-      resetAndLoadRef.current?.({ silent: true });
-    }, [])
+      if (uid) void pullChanges(uid);
+    }, [uid])
   );
+
+  useEffect(() => {
+    if (!uid) return;
+
+    const up = on("meal:local:upserted", async (e: any) => {
+      const id = String(e?.cloudId || "");
+      if (!id) return;
+      const m = await getMealByCloudIdLocal(uid, id);
+      if (!m || m.deleted) return;
+      setSectionsMap((prev) => {
+        const next = new Map(prev);
+        groupAddOrUpdate(next, t, m);
+        return next;
+      });
+    });
+
+    const del = on("meal:local:deleted", async (e: any) => {
+      const id = String(e?.cloudId || "");
+      if (!id) return;
+      setSectionsMap((prev) => {
+        const next = new Map(prev);
+        groupRemove(next, id);
+        return next;
+      });
+    });
+
+    const pushed = on("meal:pushed", () => {});
+    const synced = on("meal:synced", () => {});
+
+    return () => {
+      [up, del, pushed, synced].forEach((u) => u && u());
+    };
+  }, [uid, t]);
 
   const loadMore = useCallback(async () => {
     if (!uid || !hasMore || loadingMoreRef.current || !cursor) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
-      const page = await getMealsPageFiltered(uid, {
+      const page = await getMealsPageLocalFiltered(uid, {
         limit: PAGE,
-        cursor,
-        filters: serverFilters,
-        accessWindowDays,
+        beforeISO: cursor,
+        filters: localFilters,
       });
-      setItems((prev) => [...prev, ...(page.items as any)]);
-      setCursor(page.nextCursor);
-      setHasMore(!!page.nextCursor && page.items.length === PAGE);
-    } catch {
-      setHasMore(false);
+      setSectionsMap((prev) => {
+        const next = new Map(prev);
+        for (const meal of page.items) groupAddOrUpdate(next, t, meal);
+        return next;
+      });
+      setCursor(page.nextBefore);
+      setHasMore(!!page.nextBefore && page.items.length === PAGE);
     } finally {
       setLoadingMore(false);
       setTimeout(() => (loadingMoreRef.current = false), 50);
     }
-  }, [uid, hasMore, cursor, serverFilters, accessWindowDays]);
+  }, [uid, hasMore, cursor, localFilters, t]);
 
   const onEndReached = useCallback(() => {
     if (!hasMore || loadingMoreRef.current) return;
     loadMore();
   }, [hasMore, loadMore]);
 
-  const prevKey = useRef<string>("");
-
-  useEffect(() => {
-    const key = JSON.stringify({ uid, serverFilters, accessWindowDays });
-    if (!uid || key === prevKey.current) return;
-    prevKey.current = key;
-    resetAndLoad();
-  }, [uid, serverFilters, accessWindowDays, resetAndLoad]);
-
-  const byText = useMemo(() => {
-    const q = norm(query);
-    const base = q
-      ? items.filter((m) => {
-          const title = norm(
-            (m as any).title || (m as any).name || (m as any).mealName
-          );
-          const ing = norm(
-            (m.ingredients || [])
-              .map((x: any) => x?.name || x?.title || "")
-              .join(" ")
-          );
-          return title.includes(q) || ing.includes(q);
-        })
-      : items;
-
-    if (!accessWindowDays) return base;
-
-    const now = new Date();
-    const cutoff = new Date(now);
-    cutoff.setDate(now.getDate() - accessWindowDays + 1);
-    cutoff.setHours(0, 0, 0, 0);
-
-    return base.filter((m) => {
-      const d = new Date(
-        (m as any).timestamp || (m as any).updatedAt || (m as any).createdAt
-      );
-      return d >= cutoff;
-    });
-  }, [items, query, accessWindowDays]);
+  const refresh = useCallback(async () => {
+    if (uid) await pullChanges(uid);
+  }, [uid]);
 
   const sections: DaySection[] = useMemo(() => {
-    if (!byText.length) return [];
-    const byKey = new Map<string, DaySection>();
-    const keys: string[] = [];
-    for (const meal of byText) {
-      const d = toDate(
-        (meal as any).timestamp ||
-          (meal as any).updatedAt ||
-          (meal as any).createdAt
-      );
-      const key = fmtDateKey(d);
-      if (!byKey.has(key)) {
-        byKey.set(key, {
-          title: fmtHeader(d, t),
-          dateKey: key,
-          totalKcal: 0,
-          data: [],
-        });
-        keys.push(key);
+    const all = sectionsToArray(sectionsMap);
+    if (!query) return all;
+    const q = norm(query);
+    const filtered: DaySection[] = [];
+    for (const sec of all) {
+      const data = sec.data.filter((m) => {
+        const title = norm((m as any).title || (m as any).name || "");
+        const ing = norm(
+          (m.ingredients || [])
+            .map((x: any) => x?.name || x?.title || "")
+            .join(" ")
+        );
+        return title.includes(q) || ing.includes(q);
+      });
+      if (data.length) {
+        const total = data.reduce((acc, m) => acc + mealKcal(m), 0);
+        filtered.push({ ...sec, data, totalKcal: Math.round(total) });
       }
-      const s = byKey.get(key)!;
-      s.data.push(meal);
-      s.totalKcal += mealKcal(meal);
     }
-    return keys.map((k) => {
-      const s = byKey.get(k)!;
-      return { ...s, totalKcal: Math.round(s.totalKcal) };
-    });
-  }, [byText, t]);
-
-  const refresh = useCallback(async () => {
-    await resetAndLoad();
-  }, [resetAndLoad]);
-
-  const onEditMeal = (_mealId: string) => {};
-  const onDuplicateMeal = (_meal: Meal) => {};
-  const onDeleteMeal = (_mealCloudId?: string) => {};
-
-  if (loading && !items.length)
-    return (
-      <View style={[styles.centerBoth, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={theme.accent} />
-      </View>
-    );
-
-  if (!sections.length) {
-    return (
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        {!netInfo.isConnected && <OfflineBanner />}
-        {showFilters ? (
-          <FilterPanel
-            scope="history"
-            isPremium={isPremium}
-            windowDays={FREE_WINDOW_DAYS}
-            onUpgrade={() => navigation.navigate("Paywall")}
-          />
-        ) : (
-          <>
-            <View style={{ padding: theme.spacing.md }}>
-              <SearchBox value={query} onChange={setQuery} />
-            </View>
-            <EmptyState
-              title={t("meals:noMealsFound")}
-              description={
-                query
-                  ? t("meals:tryDifferentSearch")
-                  : t("meals:tryChangeFilters")
-              }
-            />
-          </>
-        )}
-      </View>
-    );
-  }
+    return filtered;
+  }, [sectionsMap, query]);
 
   const SectionHeader = ({
     title,
@@ -367,6 +360,43 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
       </Text>
     </View>
   );
+
+  if (loading && sections.length === 0)
+    return (
+      <View style={[styles.centerBoth, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.accent} />
+      </View>
+    );
+
+  if (sections.length === 0) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.background }}>
+        {!netInfo.isConnected && <OfflineBanner />}
+        {showFilters ? (
+          <FilterPanel
+            scope="history"
+            isPremium={isPremium}
+            windowDays={FREE_WINDOW_DAYS}
+            onUpgrade={() => navigation.navigate("Paywall")}
+          />
+        ) : (
+          <>
+            <View style={{ padding: theme.spacing.md }}>
+              <SearchBox value={query} onChange={setQuery} />
+            </View>
+            <EmptyState
+              title={t("meals:noMealsFound")}
+              description={
+                query
+                  ? t("meals:tryDifferentSearch")
+                  : t("meals:tryChangeFilters")
+              }
+            />
+          </>
+        )}
+      </View>
+    );
+  }
 
   return (
     <Layout disableScroll>
@@ -419,11 +449,9 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
                   onPress={() =>
                     navigation.navigate("MealDetails", { meal: item })
                   }
-                  onEdit={() =>
-                    onEditMeal((item as any).cloudId || (item as any).mealId)
-                  }
-                  onDuplicate={() => onDuplicateMeal(item)}
-                  onDelete={() => onDeleteMeal((item as any).cloudId)}
+                  onEdit={() => {}}
+                  onDuplicate={() => {}}
+                  onDelete={() => {}}
                 />
               </View>
             )}
@@ -435,8 +463,11 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
             }
             stickySectionHeadersEnabled
             removeClippedSubviews
-            windowSize={7}
+            windowSize={9}
             initialNumToRender={PAGE}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+            }}
           />
         </View>
       )}
