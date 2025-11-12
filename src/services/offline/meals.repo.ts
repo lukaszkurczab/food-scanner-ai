@@ -170,10 +170,12 @@ export async function getMealsPageLocalFiltered(
 
   const rows = db.getAllSync(sql, args) as MealRow[];
   const items = rows.map(rowToMeal);
+  const last = items.length ? items[items.length - 1] : null;
+  const lastTs = last
+    ? String(last.timestamp || last.updatedAt || last.createdAt || "")
+    : null;
   const nextBefore =
-    items.length === opts.limit
-      ? String(items[items.length - 1].timestamp)
-      : null;
+    items.length === opts.limit && lastTs && lastTs.length > 0 ? lastTs : null;
 
   return { items, nextBefore };
 }
@@ -188,4 +190,38 @@ export async function markDeletedLocal(
     cloudId,
   ]);
   emit("meal:local:deleted", { cloudId, ts: updatedAt });
+}
+
+export async function getMealByCloudIdLocal(
+  uid: string,
+  cloudId: string
+): Promise<Meal | null> {
+  const db = getDB();
+  const row = db.getFirstSync(
+    `SELECT * FROM meals WHERE user_uid=? AND cloud_id=? LIMIT 1`,
+    [uid, cloudId]
+  ) as MealRow | undefined;
+  return row ? rowToMeal(row) : null;
+}
+
+export async function getMealsPageLocalByUpdated(
+  uid: string,
+  limit: number,
+  afterISO?: string | null
+): Promise<Meal[]> {
+  const db = getDB();
+  const rows = afterISO
+    ? db.getAllSync(
+        `SELECT * FROM meals
+         WHERE user_uid=? AND deleted=0 AND updated_at>?
+         ORDER BY updated_at ASC LIMIT ?`,
+        [uid, afterISO, limit]
+      )
+    : db.getAllSync(
+        `SELECT * FROM meals
+         WHERE user_uid=? AND deleted=0
+         ORDER BY updated_at ASC LIMIT ?`,
+        [uid, limit]
+      );
+  return (rows as MealRow[]).map(rowToMeal);
 }
