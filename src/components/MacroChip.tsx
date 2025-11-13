@@ -94,7 +94,7 @@ export const MacroChip: React.FC<MacroChipProps> = ({
             fontSize: theme.typography.size.base,
           }}
         >
-          {value}
+          {value.toFixed(0)}
         </Text>
       </View>
     </View>

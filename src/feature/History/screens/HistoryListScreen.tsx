@@ -51,10 +51,12 @@ const toDate = (val?: string | number | null): Date => {
   const d = new Date(val);
   return isNaN(d.getTime()) ? new Date(0) : d;
 };
+
 const fmtDateKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate()
   ).padStart(2, "0")}`;
+
 const fmtHeader = (d: Date, t: (k: string) => string) => {
   const today = new Date();
   const isToday =
@@ -66,6 +68,7 @@ const fmtHeader = (d: Date, t: (k: string) => string) => {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   return `${dd}.${mm}`;
 };
+
 const mealKcal = (meal: Meal) =>
   (meal.ingredients || []).reduce(
     (sum, ing: any) => sum + (Number(ing?.kcal) || 0),
@@ -73,6 +76,7 @@ const mealKcal = (meal: Meal) =>
   ) ||
   (meal as any)?.totals?.kcal ||
   0;
+
 const norm = (s: any) =>
   String(s || "")
     .toLowerCase()
@@ -137,6 +141,79 @@ function sectionsToArray(sections: Map<string, DaySection>): DaySection[] {
     b.dateKey.localeCompare(a.dateKey)
   );
 }
+
+type SectionHeaderProps = {
+  title: string;
+  total: number;
+  theme: any;
+  kcalLabel: string;
+};
+
+const SectionHeader = React.memo(
+  ({ title, total, theme, kcalLabel }: SectionHeaderProps) => (
+    <View
+      style={[
+        styles.sectionHeader,
+        {
+          paddingHorizontal: theme.spacing.md,
+          paddingTop: theme.spacing.sm,
+          paddingBottom: theme.spacing.sm,
+          backgroundColor: theme.background,
+        },
+      ]}
+    >
+      <Text
+        style={{
+          color: theme.text,
+          fontSize: theme.typography.size.lg,
+          fontWeight: "600",
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{
+          color: theme.textSecondary,
+          fontSize: theme.typography.size.md,
+          fontWeight: "400",
+        }}
+      >
+        {total} {kcalLabel}
+      </Text>
+    </View>
+  )
+);
+
+const MemoMealListItem = React.memo(MealListItem);
+
+type HistoryRowProps = {
+  meal: Meal;
+  navigation: any;
+  theme: any;
+};
+
+const HistoryRow = React.memo(
+  ({ meal, navigation, theme }: HistoryRowProps) => (
+    <View
+      style={[
+        styles.rowContainer,
+        {
+          paddingHorizontal: theme.spacing.md,
+          marginBottom: theme.spacing.sm,
+        },
+      ]}
+    >
+      <MemoMealListItem
+        meal={meal}
+        onPress={() => navigation.navigate("MealDetails", { meal })}
+        onEdit={() => {}}
+        onDuplicate={() => {}}
+        onDelete={() => {}}
+      />
+    </View>
+  ),
+  (prev, next) => prev.meal === next.meal
+);
 
 export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const theme = useTheme();
@@ -286,7 +363,9 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
       setHasMore(!!page.nextBefore && page.items.length === PAGE);
     } finally {
       setLoadingMore(false);
-      setTimeout(() => (loadingMoreRef.current = false), 50);
+      setTimeout(() => {
+        loadingMoreRef.current = false;
+      }, 50);
     }
   }, [uid, hasMore, cursor, localFilters, t]);
 
@@ -322,43 +401,30 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     return filtered;
   }, [sectionsMap, query]);
 
-  const SectionHeader = ({
-    title,
-    total,
-  }: {
-    title: string;
-    total: number;
-  }) => (
-    <View
-      style={{
-        paddingHorizontal: theme.spacing.md,
-        paddingTop: theme.spacing.sm,
-        paddingBottom: theme.spacing.sm,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "baseline",
-        backgroundColor: theme.background,
-      }}
-    >
-      <Text
-        style={{
-          color: theme.text,
-          fontSize: theme.typography.size.lg,
-          fontWeight: "600",
-        }}
-      >
-        {title}
-      </Text>
-      <Text
-        style={{
-          color: theme.textSecondary,
-          fontSize: theme.typography.size.md,
-          fontWeight: "400",
-        }}
-      >
-        {total} {t("common:kcal")}
-      </Text>
-    </View>
+  const kcalLabel = t("common:kcal");
+
+  const keyExtractor = useCallback(
+    (item: Meal) => (item as any).cloudId || (item as any).mealId,
+    []
+  );
+
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: DaySection }) => (
+      <SectionHeader
+        title={section.title}
+        total={section.totalKcal}
+        theme={theme}
+        kcalLabel={kcalLabel}
+      />
+    ),
+    [theme, kcalLabel]
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: Meal }) => (
+      <HistoryRow meal={item} navigation={navigation} theme={theme} />
+    ),
+    [navigation, theme]
   );
 
   if (loading && sections.length === 0)
@@ -413,11 +479,13 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
       ) : (
         <View>
           <View
-            style={{
-              padding: theme.spacing.md,
-              flexDirection: "row",
-              gap: theme.spacing.sm,
-            }}
+            style={[
+              styles.topBar,
+              {
+                padding: theme.spacing.md,
+                gap: theme.spacing.sm,
+              },
+            ]}
           >
             <SearchBox value={query} onChange={setQuery} />
             <FilterBadgeButton
@@ -427,34 +495,13 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           </View>
           <SectionList
             sections={sections}
-            style={{ marginBottom: 142 }}
-            keyExtractor={(item) =>
-              (item as any).cloudId || (item as any).mealId
-            }
+            style={styles.list}
+            keyExtractor={keyExtractor}
             refreshControl={
               <RefreshControl refreshing={loading} onRefresh={refresh} />
             }
-            renderSectionHeader={({ section }) => (
-              <SectionHeader title={section.title} total={section.totalKcal} />
-            )}
-            renderItem={({ item }) => (
-              <View
-                style={{
-                  paddingHorizontal: theme.spacing.md,
-                  marginBottom: theme.spacing.sm,
-                }}
-              >
-                <MealListItem
-                  meal={item}
-                  onPress={() =>
-                    navigation.navigate("MealDetails", { meal: item })
-                  }
-                  onEdit={() => {}}
-                  onDuplicate={() => {}}
-                  onDelete={() => {}}
-                />
-              </View>
-            )}
+            renderSectionHeader={renderSectionHeader}
+            renderItem={renderItem}
             contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
             onEndReached={onEndReached}
             onEndReachedThreshold={0.2}
@@ -463,8 +510,11 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
             }
             stickySectionHeadersEnabled
             removeClippedSubviews
-            windowSize={9}
-            initialNumToRender={PAGE}
+            windowSize={7}
+            initialNumToRender={12}
+            maxToRenderPerBatch={8}
+            updateCellsBatchingPeriod={60}
+            scrollEventThrottle={16}
             maintainVisibleContentPosition={{
               minIndexForVisible: 0,
             }}
@@ -478,4 +528,16 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   centerBoth: { flex: 1, justifyContent: "center", alignItems: "center" },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+  },
+  rowContainer: {},
+  topBar: {
+    flexDirection: "row",
+  },
+  list: {
+    marginBottom: 142,
+  },
 });

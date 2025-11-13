@@ -169,9 +169,16 @@ export async function askDietAI(
   profile: FormData,
   opts?: { uid?: string; isPremium?: boolean; limit?: number }
 ): Promise<string> {
+  const lang = i18next.language || "en";
+  const outOfScopeReply = i18next.t(
+    "diet.outOfScope",
+    "Przykro mi, ale odpowiadam tylko na pytania o dietę, odżywianie i posiłki."
+  );
+
   const uid = opts?.uid || "";
   const isPremium = !!opts?.isPremium;
   const limit = opts?.limit ?? 1;
+
   if (!isPremium && uid) {
     const allowed = await canUseAiToday(uid, isPremium, limit);
     if (!allowed) {
@@ -183,15 +190,19 @@ export async function askDietAI(
   const prof = compactProfile(profile);
   const mealsComp = mealsSummary(meals);
   const hist = chatHistory.slice(-2).map((m) => m.text);
-  const lang = i18next.language || "en";
 
   const system =
     "ROLE: dietitian\n" +
-    "LANG: {{lang}}\n" +
+    `LANG: ${lang}\n` +
     "WORDS_MAX: 150\n" +
-    "RULES: Use MEALS if available; when asked about past meals, answer from MEALS. Respect FLAGS. Prioritize allergies/medical. Suggest substitutions. No medical advice. Finish with a complete sentence.\n";
-
-  const sys = system.replace("{{lang}}", lang);
+    `OUT_OF_SCOPE_REPLY: "${outOfScopeReply.replace(/"/g, '\\"')}"\n` +
+    "RULES:\n" +
+    "1) Use MEALS if available; when asked about past meals, answer from MEALS.\n" +
+    "2) Respect FLAGS. Prioritize allergies and medical conditions.\n" +
+    "3) Suggest substitutions instead of zakazując jedzenia.\n" +
+    "4) Do not give medical advice (diagnosis, leczenie, dawki leków).\n" +
+    "5) Finish with a complete sentence.\n" +
+    "6) If Q is not about diet, food, nutrition, meals, calories or eating habits, reply EXACTLY with OUT_OF_SCOPE_REPLY and nothing else.\n";
 
   const payload = JSON.stringify({
     Q: question,
@@ -206,7 +217,7 @@ export async function askDietAI(
   const resp = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
-      { role: "system", content: sys },
+      { role: "system", content: system },
       { role: "user", content: payload } as ChatCompletionMessageParam,
     ],
     max_tokens: MAX_TOKENS,
