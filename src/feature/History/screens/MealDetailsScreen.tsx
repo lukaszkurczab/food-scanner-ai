@@ -79,7 +79,6 @@ export default function MealDetailsScreen() {
     }
   }, [routeMealId]);
 
-  // odbiór URI z kamery
   useEffect(() => {
     const localFromParams: string | undefined = params.localPhotoUrl;
     if (!localFromParams) return;
@@ -87,9 +86,9 @@ export default function MealDetailsScreen() {
       d
         ? ({
             ...d,
-            localPhotoUrl: localFromParams, // do natychmiastowego renderu
-            photoLocalPath: localFromParams, // dla spójności z resztą warstw
-            photoUrl: localFromParams, // by updateMeal wykrył lokalny URI
+            localPhotoUrl: localFromParams,
+            photoLocalPath: localFromParams,
+            photoUrl: localFromParams,
           } as Meal)
         : d
     );
@@ -109,7 +108,11 @@ export default function MealDetailsScreen() {
         setShowLeaveModal(true);
         return true;
       }
-      navigation.replace("SavedMeals");
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate("SavedMeals");
+      }
       return true;
     });
     return () => sub.remove();
@@ -128,7 +131,6 @@ export default function MealDetailsScreen() {
   const effectivePhotoUri =
     draft?.localPhotoUrl || draft?.photoLocalPath || draft?.photoUrl || "";
 
-  // sanity-check lokalnego pliku
   useEffect(() => {
     const url = effectivePhotoUri;
     if (!url) return;
@@ -202,7 +204,7 @@ export default function MealDetailsScreen() {
     if (!draft || saving) return;
     setSaving(true);
     const next: Meal = { ...draft, updatedAt: new Date().toISOString() };
-    const { localPhotoUrl, ...toPersist } = next as any; // nie zapisuj localPhotoUrl do Firestore
+    const { localPhotoUrl, ...toPersist } = next as any;
     try {
       await updateMeal(toPersist as Meal);
       setEdit(false);
@@ -232,7 +234,11 @@ export default function MealDetailsScreen() {
 
   const confirmLeave = () => {
     setShowLeaveModal(false);
-    navigation.replace("SavedMeals");
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate("SavedMeals");
+    }
   };
 
   const showImageBlock =

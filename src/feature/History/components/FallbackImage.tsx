@@ -26,9 +26,7 @@ export const FallbackImage: React.FC<Props> = ({
   }, [uri]);
 
   if (!uri || errored) {
-    return (
-      <MaterialIcons name="add-a-photo" size={44} color={theme.textSecondary} />
-    );
+    return null;
   }
 
   return (
