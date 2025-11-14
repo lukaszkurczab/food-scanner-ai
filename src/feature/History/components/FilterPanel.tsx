@@ -226,7 +226,7 @@ export const FilterPanel: React.FC<{
             <SecondaryButton
               label={t("addFilter", { ns: "history" })}
               onPress={() => setOpenPicker(true)}
-              style={{ paddingVertical: 8 }}
+              style={{ paddingVertical: 8, maxWidth: 200 }}
             />
           </View>
 
@@ -317,7 +317,6 @@ export const FilterPanel: React.FC<{
         )}
       </View>
 
-      {/* Picker Modal */}
       <Modal
         visible={openPicker}
         transparent

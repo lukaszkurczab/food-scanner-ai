@@ -22,6 +22,8 @@
   "amount": "Ilość [g]",
   "ingredients_optional": "Składniki",
   "description_optional": "Opis",
+  "text_ai_require_name_or_ingredients": "Podaj nazwę lub składniki.",
+  "text_ai_require_ingredients_or_amount": "Podaj składniki lub ilość [g].",
   "analyze": "Analizuj",
   "meal_name_required": "Nazwa posiłku nie może być pusta",
   "ingredient_invalid_values": "Wartości muszą być nieujemne, a ilość > 0",
