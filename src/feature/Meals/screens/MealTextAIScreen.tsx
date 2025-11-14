@@ -39,6 +39,9 @@ export default function MealTextAIScreen() {
   });
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [retries, setRetries] = useState(0);
+  const [ingredientsError, setIngredientsError] = useState<
+    string | undefined
+  >();
 
   const FEATURE_LIMIT = 1;
 
@@ -143,25 +146,38 @@ export default function MealTextAIScreen() {
     Keyboard.dismiss();
     await new Promise((r) => requestAnimationFrame(r));
 
+    setIngredientsError(undefined);
+
     const missingName = !name.trim();
     const amountProvided = amountRaw.length > 0;
     const invalidAmount =
       amountProvided &&
       (!isFinite(Number(amountRaw)) || Number(amountRaw) <= 0);
-    if (missingName || invalidAmount) {
+    const missingIngredientsAndAmount = !ingPreview.trim() && !amountRaw.length;
+
+    // nazwa
+    if (missingName) {
+      setTouched((prev) => ({ ...prev, name: true }));
+      return;
+    }
+
+    // ilość
+    if (invalidAmount) {
       setTouched((prev) => ({
-        name: true,
-        amount: prev.amount || amountProvided,
+        ...prev,
+        amount: true,
       }));
       return;
     }
 
-    if (!name.trim() && !ingPreview.trim()) {
-      Toast.show("Podaj nazwę lub składniki.");
-      return;
-    }
-    if (!ingPreview.trim() && !amountRaw) {
-      Toast.show("Podaj składniki lub ilość [g].");
+    // składniki LUB ilość
+    if (missingIngredientsAndAmount) {
+      setIngredientsError(
+        t("text_ai_require_ingredients_or_amount", {
+          ns: "meals",
+          defaultValue: "Enter ingredients or amount [g].",
+        })
+      );
       return;
     }
 
@@ -189,7 +205,10 @@ export default function MealTextAIScreen() {
       if (!ings || ings.length === 0) {
         setRetries((r) => r + 1);
         Toast.show(
-          "Nie udało się rozpoznać składników. Spróbuj doprecyzować opis."
+          t("not_recognized_title", {
+            ns: "meals",
+            defaultValue: "We couldn't recognize the ingredients",
+          })
         );
         return;
       }
@@ -218,6 +237,7 @@ export default function MealTextAIScreen() {
     loading ||
     !name.trim() ||
     (amountRaw.length > 0 && (!isFinite(amountNum) || amountNum <= 0)) ||
+    (!ingPreview.trim() && !amountRaw.length) ||
     retries >= 3;
 
   return (
@@ -255,7 +275,9 @@ export default function MealTextAIScreen() {
                   defaultValue: "Meal name",
                 })}
                 value={name}
-                onChangeText={setName}
+                onChangeText={(text) => {
+                  setName(text);
+                }}
                 placeholder={t("meal_name", {
                   ns: "meals",
                   defaultValue: "Meal name",
@@ -270,18 +292,28 @@ export default function MealTextAIScreen() {
                   defaultValue: "Ingredients (optional)",
                 })}
                 value={ingPreview}
-                onChangeText={setIngPreview}
+                onChangeText={(text) => {
+                  setIngPreview(text);
+                  if (ingredientsError) setIngredientsError(undefined);
+                }}
                 placeholder={t("ingredients_optional", {
                   ns: "meals",
                   defaultValue: "Ingredients (optional)",
                 })}
                 inputStyle={{ fontSize: theme.typography.size.md }}
                 numberOfLines={5}
+                error={ingredientsError}
               />
               <ShortInput
-                label={t("amount", { ns: "meals", defaultValue: "Amount [g]" })}
+                label={t("amount", {
+                  ns: "meals",
+                  defaultValue: "Amount [g]",
+                })}
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={(text) => {
+                  setAmount(text);
+                  if (ingredientsError) setIngredientsError(undefined);
+                }}
                 placeholder={t("amount", {
                   ns: "meals",
                   defaultValue: "Amount [g]",

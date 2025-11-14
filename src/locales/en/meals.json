@@ -22,6 +22,8 @@
   "amount": "Amount [g]",
   "ingredients_optional": "Ingredients ",
   "description_optional": "Description ",
+  "text_ai_require_name_or_ingredients": "Enter a name or ingredients.",
+  "text_ai_require_ingredients_or_amount": "Enter ingredients or amount [g].",
   "analyze": "Analyze",
   "calories": "Calories",
   "protein": "Protein",
