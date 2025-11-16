@@ -396,12 +396,13 @@ export default function ReviewIngredientsScreen() {
           );
         })}
 
-        <SecondaryButton
-          label={t("add_ingredient", { ns: "meals" })}
-          onPress={handleAddIngredient}
-          disabled={editingIdx !== null}
-          style={styles(theme).addIngredientBtn}
-        />
+        {editingIdx === null && (
+          <PrimaryButton
+            label={t("add_ingredient", { ns: "meals" })}
+            onPress={handleAddIngredient}
+            style={styles(theme).addIngredientBtn}
+          />
+        )}
         <PrimaryButton
           label={t("continue", { ns: "common" })}
           onPress={handleContinue}

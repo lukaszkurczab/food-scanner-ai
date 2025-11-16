@@ -21,6 +21,7 @@ const hiddenRoutes = [
   "MealCamera",
   "HistoryList",
   "SavedMeals",
+  "BarCodeCamera",
   "SelectSavedMeal",
   "ReviewIngredients",
   "Result",
