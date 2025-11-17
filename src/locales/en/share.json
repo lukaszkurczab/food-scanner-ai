@@ -11,6 +11,10 @@
     "italic_off": "○ Italic",
     "underline_on": "✓ Underline",
     "underline_off": "○ Underline",
+    "done": "Done",
+    "chart_type": "Chart Type",
+    "font_family": "Font Family",
+    "background_color": "Background Color",
     "color": "Color",
     "color_placeholder": "#RRGGBB",
     "color_placeholder_extended": "#RRGGBB or R,G,B",
@@ -24,11 +28,20 @@
     "target_title": "Title",
     "target_calories": "Calories",
     "target_custom": "Custom",
+    "elements": "Elements",
+
+    "show_title": "Title",
+    "show_kcal": "Calories",
+    "show_custom": "Custom text",
+    "show_chart": "Chart",
+    "show_macros": "Macro overlay",
+
     "font": {
       "regular": "Regular",
       "medium": "Medium",
       "bold": "Bold",
       "light": "Light"
     }
-  }
+  },
+  "share": "Share"
 }
