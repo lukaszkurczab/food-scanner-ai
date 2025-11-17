@@ -3,7 +3,7 @@
     "preview": "Podgląd",
     "family": "Rodzina",
     "system_font": "Systemowa",
-    "weight": "Waga",
+    "weight": "Grubość",
     "style": "Styl",
     "italic": "Kursywa",
     "underline": "Podkreślenie",
@@ -11,6 +11,10 @@
     "italic_off": "○ Kursywa",
     "underline_on": "✓ Podkreślenie",
     "underline_off": "○ Podkreślenie",
+    "done": "Gotowe",
+    "chart_type": "Typ wykresu",
+    "font_family": "Krój pisma",
+    "background_color": "Kolor tła",
     "color": "Kolor",
     "color_placeholder": "#RRGGBB",
     "color_placeholder_extended": "#RRGGBB lub R,G,B",
@@ -24,11 +28,20 @@
     "target_title": "Tytuł",
     "target_calories": "Kalorie",
     "target_custom": "Własny",
+    "elements": "Elementy",
+
+    "show_title": "Tytuł",
+    "show_kcal": "Kalorie",
+    "show_custom": "Własny tekst",
+    "show_chart": "Wykres",
+    "show_macros": "Nakładka makro",
+
     "font": {
       "regular": "Regularna",
       "medium": "Średnia",
-      "bold": "Pogrubiona",
+      "bold": "Szerokie",
       "light": "Lekka"
     }
-  }
+  },
+  "share": "Udostępnij"
 }

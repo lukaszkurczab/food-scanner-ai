@@ -4,7 +4,7 @@ import { useTheme } from "@/theme/useTheme";
 import { lightTheme, darkTheme } from "@/theme/themes";
 import { getFilterOverlay } from "@/utils/photoFilters";
 import TextSticker from "./TextSticker";
-import DraggableItem from "./DraggableItem";
+import DraggableItem, { ElementId } from "./DraggableItem";
 import MacroOverlay from "../../../components/MacroOverlay";
 import BarChart from "../../../components/BarChart";
 import { LineGraph } from "../../../components/LineGraph";
@@ -23,6 +23,9 @@ type Props = {
   options: any;
   onChange?: (next: any) => void;
   uiHidden?: boolean;
+  selectedId?: ElementId | null;
+  onSelectElement?: (id: ElementId) => void;
+  onTapTextElement?: (id: ElementId) => void;
 };
 
 export default function ShareCanvas({
@@ -37,6 +40,9 @@ export default function ShareCanvas({
   options,
   onChange,
   uiHidden = false,
+  selectedId = null,
+  onSelectElement,
+  onTapTextElement,
 }: Props) {
   const themeSys = useTheme();
   const { t } = useTranslation(["meals"]);
@@ -82,6 +88,11 @@ export default function ShareCanvas({
     ],
     [protein, fat, carbs, palette, t]
   );
+
+  const handleTextTap = (id: ElementId) => {
+    onSelectElement?.(id);
+    onTapTextElement?.(id);
+  };
 
   return (
     <View
@@ -146,6 +157,9 @@ export default function ShareCanvas({
             areaH={height}
             options={options}
             titleText={title}
+            selected={selectedId === "title"}
+            onSelect={onSelectElement}
+            onTap={handleTextTap}
             onPatch={applyPatch}
           />
         )}
@@ -159,6 +173,9 @@ export default function ShareCanvas({
             areaH={height}
             options={options}
             kcalValue={kcal}
+            selected={selectedId === "kcal"}
+            onSelect={onSelectElement}
+            onTap={handleTextTap}
             onPatch={applyPatch}
           />
         )}
@@ -171,6 +188,9 @@ export default function ShareCanvas({
             areaW={width}
             areaH={height}
             options={options}
+            selected={selectedId === "custom"}
+            onSelect={onSelectElement}
+            onTap={handleTextTap}
             onPatch={applyPatch}
           />
         )}

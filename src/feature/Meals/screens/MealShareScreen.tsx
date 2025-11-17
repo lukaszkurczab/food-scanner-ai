@@ -12,23 +12,37 @@ import ShareEditorPanel, {
   ShareEditorMode,
 } from "@feature/Meals/share/ShareEditorPanel";
 import { defaultShareOptions } from "../share/defaultShareOptions";
+import { useTranslation } from "react-i18next";
+import type { ElementId } from "@feature/Meals/share/DraggableItem";
 
 type ScreenRoute = RouteProp<RootStackParamList, "MealShare">;
 
 export default function MealShareScreen() {
   const theme = useTheme();
   const route = useRoute<ScreenRoute>();
+  const { t } = useTranslation("share");
   const { meal } = route.params;
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const shotRef = useRef<View>(null);
 
-  const [opts, setOpts] = useState({
-    ...defaultShareOptions,
-  } as any);
+  const nutrition = meal.totals ?? { kcal: 0, protein: 0, fat: 0, carbs: 0 };
+
+  const [opts, setOpts] = useState(() => {
+    const defaultKcalText = `${Math.round(nutrition.kcal || 0)} kcal`;
+    return {
+      ...defaultShareOptions,
+      titleText: meal.name || "",
+      kcalText: defaultKcalText,
+      customText: defaultShareOptions.customText ?? "",
+      textFontFamilyKey: "Inter",
+      textFontWeight: "400",
+      textFontFamily: "Inter-400",
+    } as any;
+  });
+
   const [panelMode, setPanelMode] = useState<ShareEditorMode | null>(null);
   const [uiHidden, setUiHidden] = useState(false);
-
-  const nutrition = meal.totals ?? { kcal: 0, protein: 0, fat: 0, carbs: 0 };
+  const [selectedId, setSelectedId] = useState<ElementId | null>("title");
 
   const { canvasWidth, canvasHeight } = useMemo(() => {
     const aspectW = 9;
@@ -69,6 +83,15 @@ export default function MealShareScreen() {
   const openMode = (m: ShareEditorMode) =>
     setPanelMode((prev) => (prev === m ? null : m));
 
+  const handleSelectElement = (id: ElementId) => {
+    setSelectedId(id);
+  };
+
+  const handleTapTextElement = (id: ElementId) => {
+    setSelectedId(id);
+    setPanelMode("text");
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <ViewShot
@@ -90,6 +113,9 @@ export default function MealShareScreen() {
           options={opts as any}
           onChange={setOpts as any}
           uiHidden={uiHidden}
+          selectedId={selectedId}
+          onSelectElement={handleSelectElement}
+          onTapTextElement={handleTapTextElement}
         />
       </ViewShot>
 
@@ -97,11 +123,24 @@ export default function MealShareScreen() {
         <>
           <View style={[styles.rightBar, { top: 24 }]}>
             <Pressable
+              onPress={() => openMode("options")}
+              style={[
+                styles.iconBtn,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                },
+              ]}
+              hitSlop={8}
+            >
+              <MaterialIcons name="add" size={22} color={theme.text} />
+            </Pressable>
+            <Pressable
               onPress={() => openMode("text")}
               style={[
                 styles.iconBtn,
                 {
-                  backgroundColor: theme.background,
+                  backgroundColor: theme.card,
                   borderColor: theme.border,
                 },
               ]}
@@ -114,7 +153,7 @@ export default function MealShareScreen() {
               style={[
                 styles.iconBtn,
                 {
-                  backgroundColor: theme.background,
+                  backgroundColor: theme.card,
                   borderColor: theme.border,
                 },
               ]}
@@ -131,7 +170,7 @@ export default function MealShareScreen() {
               style={[
                 styles.iconBtn,
                 {
-                  backgroundColor: theme.background,
+                  backgroundColor: theme.card,
                   borderColor: theme.border,
                 },
               ]}
@@ -144,15 +183,17 @@ export default function MealShareScreen() {
       )}
 
       <View style={styles.shareBtnWrap}>
-        <PrimaryButton label="Share" onPress={share} />
+        <PrimaryButton label={t("share")} onPress={share} />
       </View>
 
       <ShareEditorPanel
         visible={!!panelMode && !uiHidden}
         mode={panelMode}
         options={opts as any}
+        selectedId={selectedId}
         onChange={setOpts as any}
         onClose={() => setPanelMode(null)}
+        onTapTextElement={handleTapTextElement}
       />
     </View>
   );

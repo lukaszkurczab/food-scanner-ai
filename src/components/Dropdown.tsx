@@ -24,6 +24,7 @@ type Props<T extends string> = {
   error?: string;
   disabled?: boolean;
   style?: any;
+  renderLabel?: (option: Option<T>) => React.ReactNode;
 };
 
 export function Dropdown<T extends string>({
@@ -34,6 +35,7 @@ export function Dropdown<T extends string>({
   error,
   disabled,
   style,
+  renderLabel,
 }: Props<T>) {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
@@ -99,17 +101,24 @@ export function Dropdown<T extends string>({
         accessibilityLabel={label}
         accessibilityState={{ disabled }}
       >
-        <Text
-          style={{
-            color: theme.text,
-            fontSize: theme.typography.size.base,
-            flex: 1,
-            fontFamily: theme.typography.fontFamily.regular,
-          }}
-          numberOfLines={1}
-        >
-          {selected ? selected.label : ""}
-        </Text>
+        <View style={{ flex: 1 }}>
+          {selected ? (
+            renderLabel ? (
+              renderLabel(selected)
+            ) : (
+              <Text
+                style={{
+                  color: theme.text,
+                  fontSize: theme.typography.size.base,
+                  fontFamily: theme.typography.fontFamily.regular,
+                }}
+                numberOfLines={1}
+              >
+                {selected.label}
+              </Text>
+            )
+          ) : null}
+        </View>
         <MaterialIcons
           name={open ? "keyboard-arrow-up" : "keyboard-arrow-down"}
           size={24}
@@ -178,16 +187,20 @@ export function Dropdown<T extends string>({
                     accessibilityRole="button"
                     accessibilityLabel={item.label}
                   >
-                    <Text
-                      style={{
-                        color: theme.text,
-                        fontSize: theme.typography.size.base,
-                        fontFamily: theme.typography.fontFamily.regular,
-                        fontWeight: value === item.value ? "bold" : "normal",
-                      }}
-                    >
-                      {item.label}
-                    </Text>
+                    {renderLabel ? (
+                      renderLabel(item)
+                    ) : (
+                      <Text
+                        style={{
+                          color: theme.text,
+                          fontSize: theme.typography.size.base,
+                          fontFamily: theme.typography.fontFamily.regular,
+                          fontWeight: value === item.value ? "bold" : "normal",
+                        }}
+                      >
+                        {item.label}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 ))}
               </ScrollView>

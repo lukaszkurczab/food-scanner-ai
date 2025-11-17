@@ -10,14 +10,14 @@ export const defaultShareOptions: ShareOptions = {
   filter: "none",
   bgColor: "#000000",
 
-  titleSize: 28,
+  titleSize: 1,
   titleColor: "#FFFFFF",
   titleWeight: "bold",
   titleFont: "bold",
   titleItalic: false,
   titleUnderline: false,
 
-  kcalSize: 22,
+  kcalSize: 1,
   kcalColor: "#FFFFFF",
   kcalWeight: "bold",
   kcalFont: "bold",
@@ -45,7 +45,7 @@ export const defaultShareOptions: ShareOptions = {
   customX: 0.5,
   customY: 0.2,
   customRotation: 0,
-  customSize: 18,
+  customSize: 1,
 
   chartType: "pie",
   barOrientation: "vertical",
