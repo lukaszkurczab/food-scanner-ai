@@ -18,7 +18,7 @@ export default function ColorPickerPanel({ value, onChange }: Props) {
     <View style={styles.wrap}>
       <ColorPicker
         value={value}
-        onChange={({ hex }: any) => onChange(hex)}
+        onChangeJS={(color: any) => onChange(color.hex)}
         boundedThumb
         adaptSpectrum
         thumbSize={20}

@@ -99,6 +99,7 @@
   "default_error": "Coś poszło nie tak. Spróbuj ponownie.",
   "cancel": "Anuluj",
   "confirm": "Potwierdź",
+  "barcode_hint": "Umieść kod w ramce",
   "save_changes": "Zapisz",
   "edit": "Edytuj",
   "remove": "Usuń",
