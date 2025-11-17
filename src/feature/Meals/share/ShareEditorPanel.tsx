@@ -26,7 +26,17 @@ export default function ShareEditorPanel({
   const { t } = useTranslation(["share", "common"]);
   if (!visible || !mode) return null;
 
-  const patch = (p: any) => onChange({ ...options, ...p });
+  const patch = (p: any) => {
+    let changed = false;
+    for (const key in p) {
+      if (p[key] !== options[key]) {
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) return;
+    onChange({ ...options, ...p });
+  };
 
   return (
     <View

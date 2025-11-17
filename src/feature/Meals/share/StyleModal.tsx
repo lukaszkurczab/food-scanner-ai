@@ -33,8 +33,6 @@ export function StyleModal({
   target,
   previewText,
   currentFont,
-  italic,
-  underline,
   color,
   uniqueQuickColors,
   theme,
@@ -60,7 +58,6 @@ export function StyleModal({
           </View>
         )}
 
-        {/* Font selection */}
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
           {(["regular", "medium", "bold", "light"] as const).map((f) => {
             const active = currentFont === f;
@@ -92,7 +89,6 @@ export function StyleModal({
           })}
         </View>
 
-        {/* Italic / Underline */}
         <View style={{ flexDirection: "row", gap: 8 }}>
           <Pressable
             onPress={onToggleItalic}
@@ -126,7 +122,6 @@ export function StyleModal({
           </Pressable>
         </View>
 
-        {/* Colors */}
         <View style={{ gap: 10 }}>
           <Text
             style={{ color: theme.text, fontSize: theme.typography.size.md }}

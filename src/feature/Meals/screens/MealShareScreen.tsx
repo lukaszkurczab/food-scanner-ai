@@ -4,16 +4,14 @@ import { useTheme } from "@/theme/useTheme";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
-import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import type { RootStackParamList } from "@/navigation/navigate";
-import type { Meal } from "@/types/meal";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { MaterialIcons } from "@expo/vector-icons";
-import ShareCanvas from "@/components/share/ShareCanvas";
+import ShareCanvas from "@feature/Meals/share/ShareCanvas";
 import ShareEditorPanel, {
   ShareEditorMode,
-} from "@/components/share/ShareEditorPanel";
-import { defaultShareOptions } from "@/types/share";
+} from "@feature/Meals/share/ShareEditorPanel";
+import { defaultShareOptions } from "../share/defaultShareOptions";
 
 type ScreenRoute = RouteProp<RootStackParamList, "MealShare">;
 
@@ -21,36 +19,51 @@ export default function MealShareScreen() {
   const theme = useTheme();
   const route = useRoute<ScreenRoute>();
   const { meal } = route.params;
-  const { width, height } = useWindowDimensions();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const shotRef = useRef<View>(null);
 
   const [opts, setOpts] = useState({
     ...defaultShareOptions,
-    bgColor: "#000000",
   } as any);
   const [panelMode, setPanelMode] = useState<ShareEditorMode | null>(null);
   const [uiHidden, setUiHidden] = useState(false);
 
-  const nutrition = useMemo(
-    () => calculateTotalNutrients([meal as Meal]),
-    [meal]
-  );
+  const nutrition = meal.totals ?? { kcal: 0, protein: 0, fat: 0, carbs: 0 };
 
-  const wait = (ms = 0) => new Promise((res) => setTimeout(res, ms));
+  const { canvasWidth, canvasHeight } = useMemo(() => {
+    const aspectW = 9;
+    const aspectH = 16;
+    const targetRatio = aspectW / aspectH;
+    const screenRatio = screenWidth / screenHeight;
+
+    let w: number;
+    let h: number;
+
+    if (screenRatio > targetRatio) {
+      h = screenHeight;
+      w = Math.round(screenHeight * targetRatio);
+    } else {
+      w = screenWidth;
+      h = Math.round(screenWidth * (aspectH / aspectW));
+    }
+
+    return { canvasWidth: w, canvasHeight: h };
+  }, [screenWidth, screenHeight]);
 
   const share = async () => {
     if (!shotRef.current) return;
     setUiHidden(true);
-    await wait(50);
     const uri = await captureRef(shotRef, {
       format: "png",
       quality: 1,
-      width: Math.round(width),
-      height: Math.round(height),
+      width: Math.round(canvasWidth),
+      height: Math.round(canvasHeight),
       result: "tmpfile",
     });
     setUiHidden(false);
-    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri);
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri);
+    }
   };
 
   const openMode = (m: ShareEditorMode) =>
@@ -58,10 +71,16 @@ export default function MealShareScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
-      <ViewShot ref={shotRef} style={{ flex: 1 }}>
+      <ViewShot
+        ref={shotRef}
+        style={[
+          styles.shareCanvas,
+          { width: canvasWidth, height: canvasHeight },
+        ]}
+      >
         <ShareCanvas
-          width={Math.round(width)}
-          height={Math.round(height)}
+          width={canvasWidth}
+          height={canvasHeight}
           photoUri={meal.photoUrl || null}
           title={meal.name || ""}
           kcal={nutrition.kcal}
@@ -121,12 +140,12 @@ export default function MealShareScreen() {
               <MaterialIcons name="color-lens" size={22} color={theme.text} />
             </Pressable>
           </View>
-
-          <View style={styles.shareWrap}>
-            <PrimaryButton label="Share" onPress={share} />
-          </View>
         </>
       )}
+
+      <View style={styles.shareBtnWrap}>
+        <PrimaryButton label="Share" onPress={share} />
+      </View>
 
       <ShareEditorPanel
         visible={!!panelMode && !uiHidden}
@@ -140,7 +159,13 @@ export default function MealShareScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: {
+    flex: 1,
+    flexDirection: "column",
+    gap: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   rightBar: {
     position: "absolute",
     right: 12,
@@ -155,12 +180,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  shareWrap: {
-    position: "absolute",
-    bottom: 20,
-    left: 0,
-    right: 0,
+  shareBtnWrap: {
     alignItems: "center",
     zIndex: 10,
+    marginTop: 12,
+  },
+  shareCanvas: {
+    alignSelf: "center",
   },
 });

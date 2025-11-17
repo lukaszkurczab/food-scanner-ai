@@ -8,7 +8,7 @@ import { useUserContext } from "@/context/UserContext";
 import { useBadges } from "@/hooks/useBadges";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
-import { UserIcon } from "@/components";
+import { UserIcon } from "@/components/UserIcon";
 import { useTranslation } from "react-i18next";
 
 export const BottomTabBar: React.FC = () => {
@@ -101,15 +101,15 @@ export const BottomTabBar: React.FC = () => {
           return (
             <Pressable key={tab.key} onPress={tab.onPress} style={[styles.tab]}>
               {isProfile ? (
-              <AvatarBadge
-                size={40}
-                uri={avatarSrc || undefined}
-                badges={[]}
-                overrideColor={borderColor}
-                overrideEmoji={undefined}
-                fallbackIcon={<UserIcon size={32} />}
-                accessibilityLabel={t("tabs.profile_accessibility")}
-              />
+                <AvatarBadge
+                  size={40}
+                  uri={avatarSrc || undefined}
+                  badges={[]}
+                  overrideColor={borderColor}
+                  overrideEmoji={undefined}
+                  fallbackIcon={<UserIcon size={32} />}
+                  accessibilityLabel={t("tabs.profile_accessibility")}
+                />
               ) : (
                 <MaterialIcons
                   name={tab.icon as any}

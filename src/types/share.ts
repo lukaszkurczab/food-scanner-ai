@@ -15,13 +15,12 @@ export type DataSeries = {
 export type ShareOptions = {
   showTitle: boolean;
   showKcal: boolean;
-  showPie: boolean;
   showChart?: boolean;
   showCustom?: boolean;
 
   filter: ShareFilter;
+  bgColor?: string;
 
-  // Title
   titleSize: number;
   titleColor?: string;
   titleWeight?: "regular" | "bold" | "medium";
@@ -31,7 +30,6 @@ export type ShareOptions = {
   titleFontFamily?: string;
   titleFontWeight?: number;
 
-  // Kcal
   kcalSize: number;
   kcalColor?: string;
   kcalWeight?: "regular" | "bold" | "medium";
@@ -41,10 +39,8 @@ export type ShareOptions = {
   kcalFontFamily?: string;
   kcalFontWeight?: number;
 
-  // Pie
   pieSize: number;
 
-  // Positions (ratios 0..1)
   titleX: number;
   titleY: number;
   kcalX: number;
@@ -52,12 +48,10 @@ export type ShareOptions = {
   pieX: number;
   pieY: number;
 
-  // Rotations (deg)
   titleRotation: number;
   kcalRotation: number;
   pieRotation: number;
 
-  // Custom text sticker
   customText?: string;
   customColor?: string;
   customFont?: ShareFont;
@@ -70,7 +64,6 @@ export type ShareOptions = {
   customFontFamily?: string;
   customFontWeight?: number;
 
-  // NEW: charting + layout + theming
   chartType?: ChartType;
   barOrientation?: BarOrientation;
   dataSeries?: DataSeries[];
@@ -92,80 +85,4 @@ export type ShareOptions = {
   themePreset?: ThemePreset;
   lineColor?: string;
   barColor?: string;
-};
-
-export const defaultShareOptions: ShareOptions = {
-  showTitle: true,
-  showKcal: true,
-  showPie: true,
-  showCustom: false,
-
-  filter: "none",
-
-  // Title
-  titleSize: 28,
-  titleColor: "#FFFFFF",
-  titleWeight: "bold",
-  titleFont: "bold",
-  titleItalic: false,
-  titleUnderline: false,
-
-  // Kcal
-  kcalSize: 22,
-  kcalColor: "#FFFFFF",
-  kcalWeight: "bold",
-  kcalFont: "bold",
-  kcalItalic: false,
-  kcalUnderline: false,
-
-  // Pie
-  pieSize: 0.55,
-
-  // Positions
-  titleX: 0.5,
-  titleY: 0.072,
-  kcalX: 0.5,
-  kcalY: 0.136,
-  pieX: 0.394,
-  pieY: 0.809,
-
-  // Rotations
-  titleRotation: 0,
-  kcalRotation: 0,
-  pieRotation: 0,
-
-  // Custom text
-  customText: "",
-  customColor: "#FFFFFF",
-  customFont: "regular",
-  customItalic: false,
-  customUnderline: false,
-  customX: 0.5,
-  customY: 0.2,
-  customRotation: 0,
-  customSize: 18,
-
-  // NEW defaults
-  chartType: "pie",
-  showChart: true,
-  barOrientation: "vertical",
-  dataSeries: [],
-  macroLayout: "pie",
-  showMacroOverlay: true,
-  macroColor: {
-    protein: "#2196F3",
-    carbs: "#81C784",
-    fat: "#C6A025",
-    text: "#FFFFFF",
-    background: "rgba(0,0,0,0.35)",
-  },
-  macroX: 0.5,
-  macroY: 0.85,
-  macroSize: 1,
-  macroRotation: 0,
-  macroVariant: "chips",
-  altText: "",
-  themePreset: "auto",
-  lineColor: "#81D4FA",
-  barColor: "#64B5F6",
 };

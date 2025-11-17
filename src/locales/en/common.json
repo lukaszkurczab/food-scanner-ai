@@ -117,6 +117,7 @@
   "back": "Back",
   "save": "Save",
   "share": "Share",
+  "barcode_hint": "Place the code within the frame",
   "tabs": {
     "profile_accessibility": "Open profile"
   },

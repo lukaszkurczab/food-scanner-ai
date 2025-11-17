@@ -5,10 +5,10 @@ import { lightTheme, darkTheme } from "@/theme/themes";
 import { getFilterOverlay } from "@/utils/photoFilters";
 import TextSticker from "./TextSticker";
 import DraggableItem from "./DraggableItem";
-import MacroOverlay from "../MacroOverlay";
-import BarChart from "../BarChart";
-import { LineGraph } from "../LineGraph";
-import { PieChart } from "../PieChart";
+import MacroOverlay from "../../../components/MacroOverlay";
+import BarChart from "../../../components/BarChart";
+import { LineGraph } from "../../../components/LineGraph";
+import { PieChart } from "../../../components/PieChart";
 import { useTranslation } from "react-i18next";
 
 type Props = {
@@ -40,6 +40,7 @@ export default function ShareCanvas({
 }: Props) {
   const themeSys = useTheme();
   const { t } = useTranslation(["meals"]);
+
   const palette =
     options.themePreset === "light"
       ? lightTheme
@@ -50,7 +51,15 @@ export default function ShareCanvas({
   const [photoErr, setPhotoErr] = useState(false);
   useEffect(() => setPhotoErr(false), [photoUri]);
 
-  const applyPatch = (p: any) => onChange?.({ ...options, ...p });
+  const applyPatch = (p: any) => {
+    if (!onChange) return;
+    for (const key in p) {
+      if (p[key] !== options[key]) {
+        onChange({ ...options, ...p });
+        return;
+      }
+    }
+  };
 
   const chartType = options.chartType || "pie";
   const showChart = options.showChart ?? true;
@@ -74,23 +83,6 @@ export default function ShareCanvas({
     [protein, fat, carbs, palette, t]
   );
 
-  const aspectW = 9;
-  const aspectH = 16;
-  const containerRatio = width / height;
-  const targetRatio = aspectW / aspectH;
-
-  let frameW = width;
-  let frameH = height;
-  if (containerRatio > targetRatio) {
-    frameH = height;
-    frameW = Math.round(height * targetRatio);
-  } else {
-    frameW = width;
-    frameH = Math.round(width * (aspectH / aspectW));
-  }
-  const frameX = Math.round((width - frameW) / 2);
-  const frameY = Math.round((height - frameH) / 2);
-
   return (
     <View
       style={[
@@ -105,10 +97,10 @@ export default function ShareCanvas({
       <View
         style={{
           position: "absolute",
-          left: frameX,
-          top: frameY,
-          width: frameW,
-          height: frameH,
+          left: 0,
+          top: 0,
+          width,
+          height,
           overflow: "hidden",
         }}
       >
@@ -117,8 +109,8 @@ export default function ShareCanvas({
             id="photo"
             areaX={0}
             areaY={0}
-            areaW={frameW}
-            areaH={frameH}
+            areaW={width}
+            areaH={height}
             initialXRatio={options.photoX ?? 0.5}
             initialYRatio={options.photoY ?? 0.5}
             initialScale={options.photoScale ?? 1}
@@ -134,7 +126,7 @@ export default function ShareCanvas({
           >
             <Image
               source={{ uri: photoUri }}
-              style={{ width: frameW, height: frameH }}
+              style={{ width, height }}
               resizeMode="cover"
               onError={() => setPhotoErr(true)}
             />
@@ -150,8 +142,8 @@ export default function ShareCanvas({
             id="title"
             areaX={0}
             areaY={0}
-            areaW={frameW}
-            areaH={frameH}
+            areaW={width}
+            areaH={height}
             options={options}
             titleText={title}
             onPatch={applyPatch}
@@ -163,8 +155,8 @@ export default function ShareCanvas({
             id="kcal"
             areaX={0}
             areaY={0}
-            areaW={frameW}
-            areaH={frameH}
+            areaW={width}
+            areaH={height}
             options={options}
             kcalValue={kcal}
             onPatch={applyPatch}
@@ -176,8 +168,8 @@ export default function ShareCanvas({
             id="custom"
             areaX={0}
             areaY={0}
-            areaW={frameW}
-            areaH={frameH}
+            areaW={width}
+            areaH={height}
             options={options}
             onPatch={applyPatch}
           />
@@ -188,8 +180,8 @@ export default function ShareCanvas({
             id="pie"
             areaX={0}
             areaY={0}
-            areaW={frameW}
-            areaH={frameH}
+            areaW={width}
+            areaH={height}
             initialXRatio={options.pieX ?? 0.85}
             initialYRatio={options.pieY ?? 0.18}
             initialScale={options.pieSize ?? 1}
@@ -216,8 +208,8 @@ export default function ShareCanvas({
             id="line"
             areaX={0}
             areaY={0}
-            areaW={frameW}
-            areaH={frameH}
+            areaW={width}
+            areaH={height}
             initialXRatio={options.pieX ?? 0.85}
             initialYRatio={options.pieY ?? 0.18}
             initialScale={options.pieSize ?? 1}
@@ -241,8 +233,8 @@ export default function ShareCanvas({
             id="bar"
             areaX={0}
             areaY={0}
-            areaW={frameW}
-            areaH={frameH}
+            areaW={width}
+            areaH={height}
             initialXRatio={options.pieX ?? 0.85}
             initialYRatio={options.pieY ?? 0.18}
             initialScale={options.pieSize ?? 1}
@@ -267,8 +259,8 @@ export default function ShareCanvas({
             id="macros"
             areaX={0}
             areaY={0}
-            areaW={frameW}
-            areaH={frameH}
+            areaW={width}
+            areaH={height}
             initialXRatio={options.macroX ?? 0.5}
             initialYRatio={options.macroY ?? 0.85}
             initialScale={options.macroSize ?? 1}
@@ -301,10 +293,10 @@ export default function ShareCanvas({
         pointerEvents="none"
         style={{
           position: "absolute",
-          left: frameX,
-          top: frameY,
-          width: frameW,
-          height: frameH,
+          left: 0,
+          top: 0,
+          width,
+          height,
           borderWidth: 1,
           borderColor: "rgba(255,255,255,0.9)",
         }}
