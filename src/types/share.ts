@@ -1,6 +1,6 @@
 export type ShareFilter = "none" | "bw" | "sepia" | "cool" | "warm";
 export type ShareElement = "title" | "kcal" | "pie";
-export type ShareFont = "regular" | "medium" | "bold" | "light";
+export type ShareFont = "300" | "500" | "700";
 
 export type ChartType = "pie" | "bar" | "line";
 export type BarOrientation = "vertical" | "horizontal";
@@ -23,7 +23,7 @@ export type ShareOptions = {
 
   titleSize: number;
   titleColor?: string;
-  titleWeight?: "regular" | "bold" | "medium";
+  titleWeight?: "300" | "700" | "500";
   titleFont?: ShareFont;
   titleItalic?: boolean;
   titleUnderline?: boolean;
@@ -32,7 +32,7 @@ export type ShareOptions = {
 
   kcalSize: number;
   kcalColor?: string;
-  kcalWeight?: "regular" | "bold" | "medium";
+  kcalWeight?: "300" | "500" | "700";
   kcalFont?: ShareFont;
   kcalItalic?: boolean;
   kcalUnderline?: boolean;

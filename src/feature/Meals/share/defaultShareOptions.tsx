@@ -12,15 +12,15 @@ export const defaultShareOptions: ShareOptions = {
 
   titleSize: 1,
   titleColor: "#FFFFFF",
-  titleWeight: "bold",
-  titleFont: "bold",
+  titleWeight: "500",
+  titleFont: "500",
   titleItalic: false,
   titleUnderline: false,
 
   kcalSize: 1,
   kcalColor: "#FFFFFF",
-  kcalWeight: "bold",
-  kcalFont: "bold",
+  kcalWeight: "500",
+  kcalFont: "500",
   kcalItalic: false,
   kcalUnderline: false,
 
@@ -39,7 +39,7 @@ export const defaultShareOptions: ShareOptions = {
 
   customText: "",
   customColor: "#FFFFFF",
-  customFont: "regular",
+  customFont: "500",
   customItalic: false,
   customUnderline: false,
   customX: 0.5,
