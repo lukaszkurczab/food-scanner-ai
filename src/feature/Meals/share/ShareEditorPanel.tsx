@@ -105,29 +105,29 @@ export default function ShareEditorPanel({
       value: null,
       previewFamily: undefined,
     },
-    { label: "Inter", value: "Inter", previewFamily: "Inter-400" },
-    { label: "Lato", value: "Lato", previewFamily: "Lato-400" },
-    { label: "Manrope", value: "Manrope", previewFamily: "Manrope-400" },
+    { label: "Inter", value: "Inter", previewFamily: "Inter-500" },
+    { label: "Lato", value: "Lato", previewFamily: "Lato-500" },
+    { label: "Manrope", value: "Manrope", previewFamily: "Manrope-500" },
     {
       label: "Merriweather",
       value: "Merriweather",
-      previewFamily: "Merriweather-400",
+      previewFamily: "Merriweather-500",
     },
     {
       label: "Montserrat",
       value: "Montserrat",
-      previewFamily: "Montserrat-400",
+      previewFamily: "Montserrat-500",
     },
-    { label: "Nunito", value: "Nunito", previewFamily: "Nunito-400" },
-    { label: "Open Sans", value: "OpenSans", previewFamily: "OpenSans-400" },
-    { label: "Oswald", value: "Oswald", previewFamily: "Oswald-400" },
-    { label: "Poppins", value: "Poppins", previewFamily: "Poppins-400" },
-    { label: "Raleway", value: "Raleway", previewFamily: "Raleway-400" },
-    { label: "Roboto", value: "Roboto", previewFamily: "Roboto-400" },
-    { label: "Rubik", value: "Rubik", previewFamily: "Rubik-400" },
-    { label: "Ubuntu", value: "Ubuntu", previewFamily: "Ubuntu-400" },
-    { label: "Work Sans", value: "WorkSans", previewFamily: "WorkSans-400" },
-    { label: "DM Sans", value: "DMSans", previewFamily: "DMSans-400" },
+    { label: "Nunito", value: "Nunito", previewFamily: "Nunito-500" },
+    { label: "Open Sans", value: "OpenSans", previewFamily: "OpenSans-500" },
+    { label: "Oswald", value: "Oswald", previewFamily: "Oswald-500" },
+    { label: "Poppins", value: "Poppins", previewFamily: "Poppins-500" },
+    { label: "Raleway", value: "Raleway", previewFamily: "Raleway-500" },
+    { label: "Roboto", value: "Roboto", previewFamily: "Roboto-500" },
+    { label: "Rubik", value: "Rubik", previewFamily: "Rubik-500" },
+    { label: "Ubuntu", value: "Ubuntu", previewFamily: "Ubuntu-500" },
+    { label: "Work Sans", value: "WorkSans", previewFamily: "WorkSans-500" },
+    { label: "DM Sans", value: "DMSans", previewFamily: "DMSans-500" },
   ];
 
   const fontWeightOptions: FontWeightOption[] = [
@@ -148,6 +148,7 @@ export default function ShareEditorPanel({
   const currentFamilyKey: string | null = options.textFontFamilyKey ?? null;
   const currentWeight: string | null = options.textFontWeight ?? "500";
 
+  console.log(options.textFontWeight);
   return (
     <View
       style={[

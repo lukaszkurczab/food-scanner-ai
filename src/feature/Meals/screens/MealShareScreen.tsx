@@ -35,8 +35,8 @@ export default function MealShareScreen() {
       kcalText: defaultKcalText,
       customText: defaultShareOptions.customText ?? "",
       textFontFamilyKey: "Inter",
-      textFontWeight: "400",
-      textFontFamily: "Inter-400",
+      textFontWeight: "500",
+      textFontFamily: "Inter-500",
     } as any;
   });
 
