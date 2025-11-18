@@ -46,6 +46,7 @@ export const defaultShareOptions: ShareOptions = {
   customY: 0.2,
   customRotation: 0,
   customSize: 1,
+  customTexts: [],
 
   chartType: "pie",
   barOrientation: "vertical",
