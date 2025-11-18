@@ -63,7 +63,10 @@ export const defaultShareOptions: ShareOptions = {
   macroY: 0.85,
   macroSize: 1,
   macroRotation: 0,
-  macroVariant: "chips",
+
+  cardVariant: "macroSummaryCard",
+  chartVariant: "macroPieWithLegend",
+
   altText: "",
   themePreset: "auto",
   lineColor: "#81D4FA",

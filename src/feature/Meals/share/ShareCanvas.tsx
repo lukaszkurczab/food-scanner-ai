@@ -5,11 +5,10 @@ import { lightTheme, darkTheme } from "@/theme/themes";
 import { getFilterOverlay } from "@/utils/photoFilters";
 import TextSticker from "./TextSticker";
 import DraggableItem, { ElementId } from "./DraggableItem";
-import MacroOverlay from "../../../components/MacroOverlay";
-import BarChart from "../../../components/BarChart";
-import { LineGraph } from "../../../components/LineGraph";
-import { PieChart } from "../../../components/PieChart";
+import CardOverlay from "../components/CardOverlay";
+import ChartOverlay from "../components/ChartOverlay";
 import { useTranslation } from "react-i18next";
+import type { ChartVariant, CardVariant } from "@/types/share";
 
 type Props = {
   width: number;
@@ -67,26 +66,17 @@ export default function ShareCanvas({
   };
 
   const chartType = options.chartType || "pie";
-  const showChart = options.showChart ?? true;
+  const chartVariant: ChartVariant =
+    options.chartVariant ??
+    (chartType === "line"
+      ? "macroLineMini"
+      : chartType === "bar"
+      ? "macroBarMini"
+      : "macroPieWithLegend");
+
+  const cardVariant: CardVariant = options.cardVariant ?? "macroSummaryCard";
 
   const { overlayStyle } = getFilterOverlay(options.filter);
-
-  const pieData = useMemo(
-    () => [
-      {
-        value: Math.max(0, protein),
-        color: palette.macro.protein,
-        label: t("protein"),
-      },
-      { value: Math.max(0, fat), color: palette.macro.fat, label: t("fat") },
-      {
-        value: Math.max(0, carbs),
-        color: palette.macro.carbs,
-        label: t("carbs"),
-      },
-    ],
-    [protein, fat, carbs, palette, t]
-  );
 
   const handleTextTap = (id: ElementId) => {
     onSelectElement?.(id);
@@ -253,9 +243,9 @@ export default function ShareCanvas({
           </DraggableItem>
         ))}
 
-        {showChart && chartType === "pie" && (
+        {options.showChart && (
           <DraggableItem
-            id="pie"
+            id="chart"
             areaX={0}
             areaY={0}
             areaW={width}
@@ -264,71 +254,29 @@ export default function ShareCanvas({
             initialYRatio={options.pieY ?? 0.18}
             initialScale={options.pieSize ?? 1}
             initialRotation={options.pieRotation ?? 0}
+            selected={selectedId === "chart"}
+            onSelect={onSelectElement}
+            onTap={() => handleTextTap("chart")}
             onUpdate={(x, y, sc, rot) =>
               applyPatch({ pieX: x, pieY: y, pieSize: sc, pieRotation: rot })
             }
           >
-            <View style={{ width: 220, alignItems: "center" }}>
-              <PieChart
-                maxSize={180}
-                minSize={120}
-                legendWidth={0}
-                gap={8}
-                fontSize={12}
-                data={pieData}
-              />
-            </View>
-          </DraggableItem>
-        )}
-
-        {showChart && chartType === "line" && (
-          <DraggableItem
-            id="line"
-            areaX={0}
-            areaY={0}
-            areaW={width}
-            areaH={height}
-            initialXRatio={options.pieX ?? 0.85}
-            initialYRatio={options.pieY ?? 0.18}
-            initialScale={options.pieSize ?? 1}
-            initialRotation={options.pieRotation ?? 0}
-            onUpdate={(x, y, sc, rot) =>
-              applyPatch({ pieX: x, pieY: y, pieSize: sc, pieRotation: rot })
-            }
-          >
-            <View style={{ width: 260 }}>
-              <LineGraph
-                labels={["1", "2", "3", "4", "5"]}
-                data={[1, 3, 2, 5, 4]}
-                color={String(palette.accent)}
-              />
-            </View>
-          </DraggableItem>
-        )}
-
-        {showChart && chartType === "bar" && (
-          <DraggableItem
-            id="bar"
-            areaX={0}
-            areaY={0}
-            areaW={width}
-            areaH={height}
-            initialXRatio={options.pieX ?? 0.85}
-            initialYRatio={options.pieY ?? 0.18}
-            initialScale={options.pieSize ?? 1}
-            initialRotation={options.pieRotation ?? 0}
-            onUpdate={(x, y, sc, rot) =>
-              applyPatch({ pieX: x, pieY: y, pieSize: sc, pieRotation: rot })
-            }
-          >
-            <View style={{ width: 260 }}>
-              <BarChart
-                labels={["1", "2", "3", "4", "5"]}
-                data={[2, 5, 3, 6, 4]}
-                barColor={String(palette.accentSecondary)}
-                orientation="vertical"
-              />
-            </View>
+            <ChartOverlay
+              variant={chartVariant}
+              protein={protein}
+              fat={fat}
+              carbs={carbs}
+              kcal={kcal}
+              palette={{
+                macro: {
+                  protein: String(palette.macro.protein),
+                  carbs: String(palette.macro.carbs),
+                  fat: String(palette.macro.fat),
+                },
+                accent: String(palette.accent),
+                accentSecondary: String(palette.accentSecondary),
+              }}
+            />
           </DraggableItem>
         )}
 
@@ -343,6 +291,9 @@ export default function ShareCanvas({
             initialYRatio={options.macroY ?? 0.85}
             initialScale={options.macroSize ?? 1}
             initialRotation={options.macroRotation ?? 0}
+            selected={selectedId === "macros"}
+            onSelect={onSelectElement}
+            onTap={() => handleTextTap("macros")}
             onUpdate={(x, y, sc, rot) =>
               applyPatch({
                 macroX: x,
@@ -353,14 +304,14 @@ export default function ShareCanvas({
             }
           >
             <View style={{ padding: 4 }}>
-              <MacroOverlay
+              <CardOverlay
                 protein={protein}
                 fat={fat}
                 carbs={carbs}
                 kcal={kcal}
                 color={options.macroColor?.text}
                 backgroundColor={options.macroColor?.background}
-                variant={options.macroVariant || "chips"}
+                variant={cardVariant}
               />
             </View>
           </DraggableItem>
