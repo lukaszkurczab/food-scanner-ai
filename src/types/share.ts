@@ -21,6 +21,18 @@ export type CustomTextItem = {
   rotation: number;
 };
 
+export type CardVariant =
+  | "macroSummaryCard"
+  | "macroVerticalStackCard"
+  | "macroBadgeCard"
+  | "macroSplitCard"
+  | "macroTagStripCard";
+
+export type ChartVariant =
+  | "macroPieWithLegend"
+  | "macroLineMini"
+  | "macroBarMini";
+
 export type ShareOptions = {
   showTitle: boolean;
   showKcal: boolean;
@@ -90,7 +102,10 @@ export type ShareOptions = {
   macroY?: number;
   macroSize?: number;
   macroRotation?: number;
-  macroVariant?: "chips" | "bars";
+
+  cardVariant?: CardVariant;
+  chartVariant?: ChartVariant;
+
   altText?: string;
   themePreset?: ThemePreset;
   lineColor?: string;
