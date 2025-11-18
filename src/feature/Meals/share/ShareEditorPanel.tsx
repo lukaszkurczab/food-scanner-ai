@@ -17,7 +17,6 @@ type Props = {
   selectedId: ElementId | null;
   onChange: (next: any) => void;
   onClose: () => void;
-  // użyj tego samego handlera, który przekazujesz do ShareCanvas.onTapTextElement
   onTapTextElement?: (id: ElementId) => void;
 };
 
@@ -58,6 +57,27 @@ export default function ShareEditorPanel({
     onChange({ ...options, ...p });
   };
 
+  const customTexts = Array.isArray(options.customTexts)
+    ? options.customTexts
+    : [];
+
+  const addCustomText = () => {
+    const id = `custom:${Date.now()}`;
+    const next = [
+      ...customTexts,
+      {
+        id,
+        text: "",
+        x: 0.5,
+        y: 0.42,
+        size: 1,
+        rotation: 0,
+      },
+    ];
+    onChange({ ...options, showCustom: true, customTexts: next });
+    onTapTextElement?.(id as ElementId);
+  };
+
   const elementItems: { key: string; label: string }[] = [
     { key: "showTitle", label: t("editor.show_title", "Title") },
     { key: "showKcal", label: t("editor.show_kcal", "Calories") },
@@ -66,7 +86,7 @@ export default function ShareEditorPanel({
       key: "showMacroOverlay",
       label: t("editor.show_macros", "Macro overlay"),
     },
-    { key: "showCustom", label: t("editor.show_custom", "Custom text") }, // własny tekst na końcu
+    { key: "showCustom", label: t("editor.show_custom", "Custom text") },
   ];
 
   const resolveActiveText = () => {
@@ -89,6 +109,17 @@ export default function ShareEditorPanel({
         value: options.kcalText ?? "",
       };
     }
+
+    if (selectedId) {
+      const item = customTexts.find((ct: any) => ct.id === selectedId) ?? null;
+      return {
+        key: "customText" as const,
+        label: t("editor.custom", "Custom text"),
+        placeholder: t("editor.custom_placeholder", "Your custom caption"),
+        value: item?.text ?? "",
+      };
+    }
+
     return {
       key: "customText" as const,
       label: t("editor.custom", "Custom text"),
@@ -148,7 +179,6 @@ export default function ShareEditorPanel({
   const currentFamilyKey: string | null = options.textFontFamilyKey ?? null;
   const currentWeight: string | null = options.textFontWeight ?? "500";
 
-  console.log(options.textFontWeight);
   return (
     <View
       style={[
@@ -168,22 +198,20 @@ export default function ShareEditorPanel({
 
               if (isCustom) {
                 const hasCustomText =
-                  typeof options.customText === "string" &&
-                  options.customText.trim().length > 0;
+                  customTexts.length > 0 &&
+                  customTexts.some(
+                    (ct: any) =>
+                      typeof ct.text === "string" && ct.text.trim().length > 0
+                  );
 
                 return (
                   <Pressable
                     key={item.key}
                     style={styles.dropdownRow}
-                    onPress={() => {
-                      // zawsze włączamy element
-                      patch({ showCustom: true });
-                      // i prosimy rodzica o otwarcie edytora tekstu dla "custom"
-                      onTapTextElement?.("custom");
-                    }}
+                    onPress={addCustomText}
                   >
                     <MaterialIcons
-                      name={hasCustomText ? "edit" : "add-comment"}
+                      name={hasCustomText ? "edit" : "add"}
                       size={20}
                       color={
                         hasCustomText
@@ -246,7 +274,35 @@ export default function ShareEditorPanel({
           <TextInput
             value={activeText.value}
             placeholder={activeText.placeholder}
-            onChangeText={(txt) => patch({ [activeText.key]: txt })}
+            onChangeText={(txt) => {
+              if (selectedId === "title" || selectedId === "kcal") {
+                patch({ [activeText.key]: txt });
+                return;
+              }
+
+              const id = selectedId as string | null;
+              if (!id) return;
+
+              const list = Array.isArray(options.customTexts)
+                ? [...options.customTexts]
+                : [];
+
+              const idx = list.findIndex((ct: any) => ct.id === id);
+              if (idx >= 0) {
+                list[idx] = { ...list[idx], text: txt };
+              } else {
+                list.push({
+                  id,
+                  text: txt,
+                  x: 0.5,
+                  y: 0.42,
+                  size: 1,
+                  rotation: 0,
+                });
+              }
+
+              onChange({ ...options, customTexts: list });
+            }}
           />
 
           <View style={{ height: 16 }} />
@@ -292,7 +348,7 @@ export default function ShareEditorPanel({
           </Text>
           <Dropdown
             value={currentWeight}
-            options={fontWeightOptions as any}
+            options={fontWeightOptions}
             renderLabel={(opt) => {
               const o = opt as FontWeightOption;
               const previewFamily =

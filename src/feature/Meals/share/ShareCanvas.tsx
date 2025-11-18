@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { View, Image, StyleSheet } from "react-native";
+import { View, Image, StyleSheet, Text } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { lightTheme, darkTheme } from "@/theme/themes";
 import { getFilterOverlay } from "@/utils/photoFilters";
@@ -39,7 +39,6 @@ export default function ShareCanvas({
   carbs,
   options,
   onChange,
-  uiHidden = false,
   selectedId = null,
   onSelectElement,
   onTapTextElement,
@@ -93,6 +92,39 @@ export default function ShareCanvas({
     onSelectElement?.(id);
     onTapTextElement?.(id);
   };
+
+  const customTexts = useMemo(() => {
+    if (Array.isArray(options.customTexts) && options.customTexts.length > 0) {
+      return options.customTexts;
+    }
+
+    if (
+      options.showCustom &&
+      typeof options.customText === "string" &&
+      options.customText.trim().length > 0
+    ) {
+      return [
+        {
+          id: "custom:legacy",
+          text: options.customText,
+          x: options.customX ?? 0.5,
+          y: options.customY ?? 0.42,
+          size: options.customSize ?? 1,
+          rotation: options.customRotation ?? 0,
+        },
+      ];
+    }
+
+    return [];
+  }, [
+    options.customTexts,
+    options.showCustom,
+    options.customText,
+    options.customX,
+    options.customY,
+    options.customSize,
+    options.customRotation,
+  ]);
 
   return (
     <View
@@ -180,20 +212,46 @@ export default function ShareCanvas({
           />
         )}
 
-        {options.showCustom && (
-          <TextSticker
-            id="custom"
+        {customTexts.map((ct: any) => (
+          <DraggableItem
+            key={ct.id}
+            id={ct.id as ElementId}
             areaX={0}
             areaY={0}
             areaW={width}
             areaH={height}
-            options={options}
-            selected={selectedId === "custom"}
+            initialXRatio={ct.x ?? 0.5}
+            initialYRatio={ct.y ?? 0.42}
+            initialScale={ct.size ?? 1}
+            initialRotation={ct.rotation ?? 0}
+            selected={selectedId === ct.id}
             onSelect={onSelectElement}
-            onTap={handleTextTap}
-            onPatch={applyPatch}
-          />
-        )}
+            onTap={() => handleTextTap(ct.id as ElementId)}
+            onUpdate={(x, y, sc, rot) => {
+              if (!onChange) return;
+              const next = customTexts.map((item: any) =>
+                item.id === ct.id
+                  ? { ...item, x, y, size: sc, rotation: rot }
+                  : item
+              );
+              applyPatch({ customTexts: next });
+            }}
+          >
+            <Text
+              style={{
+                color: options.customColor || "#FFFFFF",
+                fontSize: 26,
+                fontStyle: options.customItalic ? "italic" : "normal",
+                textDecorationLine: options.customUnderline
+                  ? "underline"
+                  : "none",
+                fontFamily: options.textFontFamily || undefined,
+              }}
+            >
+              {ct.text}
+            </Text>
+          </DraggableItem>
+        ))}
 
         {showChart && chartType === "pie" && (
           <DraggableItem

@@ -12,6 +12,15 @@ export type DataSeries = {
   values: number[];
 };
 
+export type CustomTextItem = {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  size: number;
+  rotation: number;
+};
+
 export type ShareOptions = {
   showTitle: boolean;
   showKcal: boolean;
@@ -63,6 +72,7 @@ export type ShareOptions = {
   customSize?: number;
   customFontFamily?: string;
   customFontWeight?: number;
+  customTexts?: CustomTextItem[];
 
   chartType?: ChartType;
   barOrientation?: BarOrientation;

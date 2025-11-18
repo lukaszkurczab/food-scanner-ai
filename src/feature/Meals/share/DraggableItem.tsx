@@ -10,12 +10,12 @@ import Animated, {
 export type ElementId =
   | "title"
   | "kcal"
-  | "custom"
   | "pie"
   | "line"
   | "bar"
   | "macros"
-  | "photo";
+  | "photo"
+  | `custom:${string}`;
 
 type Props = {
   id: ElementId;

@@ -136,36 +136,6 @@ export default function MealShareScreen() {
               <MaterialIcons name="add" size={22} color={theme.text} />
             </Pressable>
             <Pressable
-              onPress={() => openMode("text")}
-              style={[
-                styles.iconBtn,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: theme.border,
-                },
-              ]}
-              hitSlop={8}
-            >
-              <MaterialIcons name="text-fields" size={22} color={theme.text} />
-            </Pressable>
-            <Pressable
-              onPress={() => openMode("chart")}
-              style={[
-                styles.iconBtn,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: theme.border,
-                },
-              ]}
-              hitSlop={8}
-            >
-              <MaterialIcons
-                name="insert-chart-outlined"
-                size={22}
-                color={theme.text}
-              />
-            </Pressable>
-            <Pressable
               onPress={() => openMode("background")}
               style={[
                 styles.iconBtn,
