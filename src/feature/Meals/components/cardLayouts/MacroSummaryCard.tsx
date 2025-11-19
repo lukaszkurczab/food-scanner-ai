@@ -10,18 +10,30 @@ export default function MacroSummaryCard({
   textColor,
   bgColor,
   macroColors,
+  showKcal,
+  showMacros,
 }: MacroCardProps) {
   return (
     <View style={[styles.card, { backgroundColor: bgColor }]}>
-      <Text style={[styles.kcal, { color: textColor }]}>{kcal} kcal</Text>
-      <Text style={[styles.row, { color: textColor }]}>
-        P {protein} g • C {carbs} g • F {fat} g
-      </Text>
-      <View style={styles.dotsRow}>
-        <View style={[styles.dot, { backgroundColor: macroColors.protein }]} />
-        <View style={[styles.dot, { backgroundColor: macroColors.carbs }]} />
-        <View style={[styles.dot, { backgroundColor: macroColors.fat }]} />
-      </View>
+      {showKcal && (
+        <Text style={[styles.kcal, { color: textColor }]}>{kcal} kcal</Text>
+      )}
+      {showMacros && (
+        <>
+          <Text style={[styles.row, { color: textColor }]}>
+            P {protein} g • C {carbs} g • F {fat} g
+          </Text>
+          <View style={styles.dotsRow}>
+            <View
+              style={[styles.dot, { backgroundColor: macroColors.protein }]}
+            />
+            <View
+              style={[styles.dot, { backgroundColor: macroColors.carbs }]}
+            />
+            <View style={[styles.dot, { backgroundColor: macroColors.fat }]} />
+          </View>
+        </>
+      )}
     </View>
   );
 }

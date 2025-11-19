@@ -11,7 +11,7 @@ type Props = {
   showLegend?: boolean;
 };
 
-export default function MacroPieWithLegend({
+export default function MacroPolarAreaChart({
   data,
   kcal,
   showKcalLabel = true,
@@ -25,7 +25,7 @@ export default function MacroPieWithLegend({
     <View style={styles.wrap}>
       {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
       <MacroChartJs
-        kind="pie"
+        kind="polarArea"
         labels={labels}
         values={values}
         colors={colors}

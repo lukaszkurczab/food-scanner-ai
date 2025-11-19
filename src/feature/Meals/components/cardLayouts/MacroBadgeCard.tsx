@@ -16,18 +16,24 @@ export default function MacroBadgeCard({
   kcal,
   textColor,
   bgColor,
+  showKcal,
+  showMacros,
 }: MacroCardProps) {
   const label = getLabel(protein, carbs, fat);
 
   return (
-    <View style={[styles.wrap]}>
+    <View style={styles.wrap}>
       <View style={[styles.badge, { backgroundColor: bgColor }]}>
         <Text style={[styles.badgeText, { color: textColor }]}>{label}</Text>
       </View>
-      <Text style={[styles.kcal, { color: textColor }]}>{kcal} kcal</Text>
-      <Text style={[styles.details, { color: textColor }]}>
-        P {protein} g • C {carbs} g • F {fat} g
-      </Text>
+      {showKcal && (
+        <Text style={[styles.kcal, { color: textColor }]}>{kcal} kcal</Text>
+      )}
+      {showMacros && (
+        <Text style={[styles.details, { color: textColor }]}>
+          P {protein} g • C {carbs} g • F {fat} g
+        </Text>
+      )}
     </View>
   );
 }

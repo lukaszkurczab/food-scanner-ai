@@ -7,8 +7,7 @@ import TextSticker from "./TextSticker";
 import DraggableItem, { ElementId } from "./DraggableItem";
 import CardOverlay from "../components/CardOverlay";
 import ChartOverlay from "../components/ChartOverlay";
-import { useTranslation } from "react-i18next";
-import type { ChartVariant, CardVariant } from "@/types/share";
+import type { ChartVariant, CardVariant, ChartType } from "@/types/share";
 
 type Props = {
   width: number;
@@ -43,7 +42,6 @@ export default function ShareCanvas({
   onTapTextElement,
 }: Props) {
   const themeSys = useTheme();
-  const { t } = useTranslation(["meals"]);
 
   const palette =
     options.themePreset === "light"
@@ -65,14 +63,18 @@ export default function ShareCanvas({
     }
   };
 
-  const chartType = options.chartType || "pie";
+  const chartType: ChartType = (options.chartType || "donut") as ChartType;
   const chartVariant: ChartVariant =
     options.chartVariant ??
-    (chartType === "line"
-      ? "macroLineMini"
+    (chartType === "pie"
+      ? "macroPieWithLegend"
       : chartType === "bar"
       ? "macroBarMini"
-      : "macroPieWithLegend");
+      : chartType === "gauge"
+      ? "macroGauge"
+      : chartType === "triangle"
+      ? "macroTriangle"
+      : "macroDonut");
 
   const cardVariant: CardVariant = options.cardVariant ?? "macroSummaryCard";
 
@@ -276,6 +278,10 @@ export default function ShareCanvas({
                 accent: String(palette.accent),
                 accentSecondary: String(palette.accentSecondary),
               }}
+              showKcalLabel={options.showChartKcalLabel !== false}
+              showLegend={options.showChartLegend !== false}
+              lineColor={options.lineColor}
+              barColor={options.barColor}
             />
           </DraggableItem>
         )}
@@ -312,6 +318,8 @@ export default function ShareCanvas({
                 color={options.macroColor?.text}
                 backgroundColor={options.macroColor?.background}
                 variant={cardVariant}
+                showKcal={options.cardShowKcal !== false}
+                showMacros={options.cardShowMacros !== false}
               />
             </View>
           </DraggableItem>

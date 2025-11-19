@@ -10,35 +10,43 @@ export default function MacroSplitCard({
   textColor,
   bgColor,
   macroColors,
+  showKcal,
+  showMacros,
 }: MacroCardProps) {
   return (
     <View style={[styles.card, { backgroundColor: bgColor }]}>
       <View style={styles.left}>
-        <Text style={[styles.kcal, { color: textColor }]}>{kcal} kcal</Text>
+        {showKcal && (
+          <Text style={[styles.kcal, { color: textColor }]}>{kcal} kcal</Text>
+        )}
         <Text style={[styles.label, { color: textColor }]}>
           Today&apos;s meal
         </Text>
       </View>
-      <View style={styles.right}>
-        <View style={styles.row}>
-          <View
-            style={[styles.dot, { backgroundColor: macroColors.protein }]}
-          />
-          <Text style={[styles.text, { color: textColor }]}>
-            Protein {protein} g
-          </Text>
+      {showMacros && (
+        <View style={styles.right}>
+          <View style={styles.row}>
+            <View
+              style={[styles.dot, { backgroundColor: macroColors.protein }]}
+            />
+            <Text style={[styles.text, { color: textColor }]}>
+              Protein {protein} g
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <View
+              style={[styles.dot, { backgroundColor: macroColors.carbs }]}
+            />
+            <Text style={[styles.text, { color: textColor }]}>
+              Carbs {carbs} g
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <View style={[styles.dot, { backgroundColor: macroColors.fat }]} />
+            <Text style={[styles.text, { color: textColor }]}>Fat {fat} g</Text>
+          </View>
         </View>
-        <View style={styles.row}>
-          <View style={[styles.dot, { backgroundColor: macroColors.carbs }]} />
-          <Text style={[styles.text, { color: textColor }]}>
-            Carbs {carbs} g
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <View style={[styles.dot, { backgroundColor: macroColors.fat }]} />
-          <Text style={[styles.text, { color: textColor }]}>Fat {fat} g</Text>
-        </View>
-      </View>
+      )}
     </View>
   );
 }

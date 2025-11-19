@@ -2,32 +2,28 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import MacroChartJs from "./MacroChartJs";
 
+type PieDatum = { value: number; color: string; label: string };
+
 type Props = {
-  protein: number;
-  fat: number;
-  carbs: number;
+  data: PieDatum[];
   kcal: number;
-  barColor: string;
   showKcalLabel?: boolean;
 };
 
-export default function MacroBarMini({
-  protein,
-  fat,
-  carbs,
+export default function MacroRadarChart({
+  data,
   kcal,
-  barColor,
   showKcalLabel = true,
 }: Props) {
-  const labels = ["Protein", "Carbs", "Fat"];
-  const values = [Math.max(0, protein), Math.max(0, carbs), Math.max(0, fat)];
-  const colors = [barColor, barColor, barColor];
+  const labels = data.map((d) => d.label);
+  const values = data.map((d) => Math.max(0, d.value));
+  const colors = data.map((d) => d.color);
 
   return (
     <View style={styles.wrap}>
       {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
       <MacroChartJs
-        kind="bar"
+        kind="radar"
         labels={labels}
         values={values}
         colors={colors}
