@@ -3,8 +3,10 @@ import { useTranslation } from "react-i18next";
 import type { ChartVariant } from "@/types/share";
 
 import MacroPieWithLegend from "./chartLayouts/MacroPieWithLegend";
-import MacroLineMini from "./chartLayouts/MacroLineMini";
+import DonutMacroChart from "./chartLayouts/DonutMacroChart";
 import MacroBarMini from "./chartLayouts/MacroBarMini";
+import MacroPolarAreaChart from "./chartLayouts/MacroPolarAreaChart";
+import MacroRadarChart from "./chartLayouts/MacroRadarChart";
 
 type Palette = {
   macro: {
@@ -23,6 +25,9 @@ type Props = {
   carbs: number;
   kcal: number;
   palette: Palette;
+  showKcalLabel?: boolean;
+  showLegend?: boolean;
+  barColor?: string | null;
 };
 
 export default function ChartOverlay({
@@ -32,6 +37,9 @@ export default function ChartOverlay({
   carbs,
   kcal,
   palette,
+  showKcalLabel = true,
+  showLegend = true,
+  barColor,
 }: Props) {
   const { t } = useTranslation(["meals"]);
 
@@ -52,14 +60,13 @@ export default function ChartOverlay({
     [protein, fat, carbs, palette, t]
   );
 
-  if (variant === "macroLineMini") {
+  if (variant === "macroDonut") {
     return (
-      <MacroLineMini
-        protein={protein}
-        fat={fat}
-        carbs={carbs}
+      <DonutMacroChart
+        data={pieData}
         kcal={kcal}
-        accent={palette.accent}
+        showKcalLabel={showKcalLabel}
+        showLegend={showLegend}
       />
     );
   }
@@ -71,10 +78,39 @@ export default function ChartOverlay({
         fat={fat}
         carbs={carbs}
         kcal={kcal}
-        accentSecondary={palette.accentSecondary}
+        barColor={barColor || palette.accentSecondary}
+        showKcalLabel={showKcalLabel}
       />
     );
   }
 
-  return <MacroPieWithLegend data={pieData} kcal={kcal} />;
+  if (variant === "macroPolarArea") {
+    return (
+      <MacroPolarAreaChart
+        data={pieData}
+        kcal={kcal}
+        showKcalLabel={showKcalLabel}
+        showLegend={showLegend}
+      />
+    );
+  }
+
+  if (variant === "macroRadar") {
+    return (
+      <MacroRadarChart
+        data={pieData}
+        kcal={kcal}
+        showKcalLabel={showKcalLabel}
+      />
+    );
+  }
+
+  return (
+    <MacroPieWithLegend
+      data={pieData}
+      kcal={kcal}
+      showKcalLabel={showKcalLabel}
+      showLegend={showLegend}
+    />
+  );
 }

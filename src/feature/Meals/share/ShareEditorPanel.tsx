@@ -7,8 +7,14 @@ import ColorPickerPanel from "./ColorPickerPanel";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { ElementId } from "./DraggableItem";
 import { TextInput } from "@/components/TextInput";
+import type { ChartType, ChartVariant, CardVariant } from "@/types/share";
 
-export type ShareEditorMode = "options" | "text" | "chart" | "background";
+export type ShareEditorMode =
+  | "options"
+  | "text"
+  | "chart"
+  | "card"
+  | "background";
 
 type Props = {
   visible: boolean;
@@ -178,6 +184,29 @@ export default function ShareEditorPanel({
 
   const currentFamilyKey: string | null = options.textFontFamilyKey ?? null;
   const currentWeight: string | null = options.textFontWeight ?? "500";
+
+  const cardVariantOptions: { label: string; value: CardVariant }[] = [
+    {
+      label: t("editor.card.summary", "Summary card"),
+      value: "macroSummaryCard",
+    },
+    {
+      label: t("editor.card.vertical", "Vertical stack"),
+      value: "macroVerticalStackCard",
+    },
+    {
+      label: t("editor.card.badge", "Badge card"),
+      value: "macroBadgeCard",
+    },
+    {
+      label: t("editor.card.split", "Split card"),
+      value: "macroSplitCard",
+    },
+    {
+      label: t("editor.card.tags", "Tag strip"),
+      value: "macroTagStripCard",
+    },
+  ];
 
   return (
     <View
@@ -391,10 +420,53 @@ export default function ShareEditorPanel({
             value={options.chartType || "pie"}
             options={[
               { label: "Pie", value: "pie" },
-              { label: "Line", value: "line" },
+              { label: "Donut", value: "donut" },
               { label: "Bar", value: "bar" },
+              { label: "Polar area", value: "polarArea" },
+              { label: "Radar", value: "radar" },
             ]}
-            onChange={(type) => patch({ chartType: type })}
+            onChange={(val) => {
+              const type = (val || "pie") as ChartType;
+              let variant: ChartVariant;
+
+              switch (type) {
+                case "donut":
+                  variant = "macroDonut";
+                  break;
+                case "bar":
+                  variant = "macroBarMini";
+                  break;
+                case "polarArea":
+                  variant = "macroPolarArea";
+                  break;
+                case "radar":
+                  variant = "macroRadar";
+                  break;
+                default:
+                  variant = "macroPieWithLegend";
+              }
+
+              patch({
+                chartType: type,
+                chartVariant: variant,
+              });
+            }}
+          />
+        </View>
+      )}
+
+      {mode === "card" && (
+        <View style={styles.section}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            {t("editor.card_type", "Card style")}
+          </Text>
+          <Dropdown
+            value={options.cardVariant || "macroSummaryCard"}
+            options={cardVariantOptions}
+            onChange={(val) => {
+              const variant = (val || "macroSummaryCard") as CardVariant;
+              patch({ cardVariant: variant });
+            }}
           />
         </View>
       )}
@@ -441,7 +513,6 @@ const styles = StyleSheet.create({
   label: { fontSize: 16 },
   actions: { alignItems: "center", marginTop: 8 },
   button: { paddingHorizontal: 24, paddingVertical: 8, borderRadius: 8 },
-
   checklistContainer: {
     marginTop: 6,
   },

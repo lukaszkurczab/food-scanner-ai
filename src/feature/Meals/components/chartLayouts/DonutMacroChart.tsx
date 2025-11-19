@@ -11,11 +11,11 @@ type Props = {
   showLegend?: boolean;
 };
 
-export default function MacroPieWithLegend({
+export default function DonutMacroChart({
   data,
   kcal,
   showKcalLabel = true,
-  showLegend = true,
+  showLegend = false,
 }: Props) {
   const labels = data.map((d) => d.label);
   const values = data.map((d) => Math.max(0, d.value));
@@ -25,7 +25,7 @@ export default function MacroPieWithLegend({
     <View style={styles.wrap}>
       {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
       <MacroChartJs
-        kind="pie"
+        kind="doughnut"
         labels={labels}
         values={values}
         colors={colors}

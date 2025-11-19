@@ -10,6 +10,8 @@ export default function MacroVerticalStackCard({
   textColor,
   bgColor,
   macroColors,
+  showKcal,
+  showMacros,
 }: MacroCardProps) {
   const rows = [
     { label: "Protein", value: protein, color: macroColors.protein },
@@ -19,17 +21,21 @@ export default function MacroVerticalStackCard({
 
   return (
     <View style={[styles.card, { backgroundColor: bgColor }]}>
-      <Text style={[styles.kcal, { color: textColor }]}>{kcal} kcal</Text>
-      <View style={styles.list}>
-        {rows.map((r) => (
-          <View key={r.label} style={styles.row}>
-            <View style={[styles.marker, { backgroundColor: r.color }]} />
-            <Text style={[styles.rowText, { color: textColor }]}>
-              {r.label} {r.value} g
-            </Text>
-          </View>
-        ))}
-      </View>
+      {showKcal && (
+        <Text style={[styles.kcal, { color: textColor }]}>{kcal} kcal</Text>
+      )}
+      {showMacros && (
+        <View style={styles.list}>
+          {rows.map((r) => (
+            <View key={r.label} style={styles.row}>
+              <View style={[styles.marker, { backgroundColor: r.color }]} />
+              <Text style={[styles.rowText, { color: textColor }]}>
+                {r.label} {r.value} g
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }

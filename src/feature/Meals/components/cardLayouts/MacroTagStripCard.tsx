@@ -10,13 +10,26 @@ export default function MacroTagStripCard({
   textColor,
   bgColor,
   macroColors,
+  showKcal,
+  showMacros,
 }: MacroCardProps) {
-  const items = [
-    { key: "kcal", label: `${kcal} kcal`, color: textColor },
-    { key: "P", label: `P ${protein} g`, color: macroColors.protein },
-    { key: "C", label: `C ${carbs} g`, color: macroColors.carbs },
-    { key: "F", label: `F ${fat} g`, color: macroColors.fat },
-  ];
+  const items: { key: string; label: string; color: string }[] = [];
+
+  if (showKcal) {
+    items.push({ key: "kcal", label: `${kcal} kcal`, color: textColor });
+  }
+
+  if (showMacros) {
+    items.push(
+      { key: "P", label: `P ${protein} g`, color: macroColors.protein },
+      { key: "C", label: `C ${carbs} g`, color: macroColors.carbs },
+      { key: "F", label: `F ${fat} g`, color: macroColors.fat }
+    );
+  }
+
+  if (items.length === 0) {
+    return null;
+  }
 
   return (
     <View style={styles.row}>

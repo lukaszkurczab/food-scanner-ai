@@ -2,7 +2,7 @@ export type ShareFilter = "none" | "bw" | "sepia" | "cool" | "warm";
 export type ShareElement = "title" | "kcal" | "pie";
 export type ShareFont = "300" | "500" | "700";
 
-export type ChartType = "pie" | "bar" | "line";
+export type ChartType = "pie" | "donut" | "bar" | "polarArea" | "radar";
 export type BarOrientation = "vertical" | "horizontal";
 export type MacroLayout = "pie" | "overlay";
 export type ThemePreset = "auto" | "light" | "dark";
@@ -30,8 +30,10 @@ export type CardVariant =
 
 export type ChartVariant =
   | "macroPieWithLegend"
-  | "macroLineMini"
-  | "macroBarMini";
+  | "macroDonut"
+  | "macroBarMini"
+  | "macroPolarArea"
+  | "macroRadar";
 
 export type ShareOptions = {
   showTitle: boolean;
@@ -89,6 +91,10 @@ export type ShareOptions = {
   chartType?: ChartType;
   barOrientation?: BarOrientation;
   dataSeries?: DataSeries[];
+
+  showChartKcalLabel?: boolean;
+  showChartLegend?: boolean;
+
   macroLayout?: MacroLayout;
   showMacroOverlay?: boolean;
   macroColor?: {
@@ -105,6 +111,9 @@ export type ShareOptions = {
 
   cardVariant?: CardVariant;
   chartVariant?: ChartVariant;
+
+  cardShowKcal?: boolean;
+  cardShowMacros?: boolean;
 
   altText?: string;
   themePreset?: ThemePreset;

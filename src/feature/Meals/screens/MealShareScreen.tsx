@@ -87,8 +87,19 @@ export default function MealShareScreen() {
     setSelectedId(id);
   };
 
-  const handleTapTextElement = (id: ElementId) => {
+  const handleTapElement = (id: ElementId) => {
     setSelectedId(id);
+
+    if (id === "chart") {
+      setPanelMode("chart");
+      return;
+    }
+
+    if (id === "macros") {
+      setPanelMode("card");
+      return;
+    }
+
     setPanelMode("text");
   };
 
@@ -115,7 +126,7 @@ export default function MealShareScreen() {
           uiHidden={uiHidden}
           selectedId={selectedId}
           onSelectElement={handleSelectElement}
-          onTapTextElement={handleTapTextElement}
+          onTapTextElement={handleTapElement}
         />
       </ViewShot>
 
@@ -163,7 +174,7 @@ export default function MealShareScreen() {
         selectedId={selectedId}
         onChange={setOpts as any}
         onClose={() => setPanelMode(null)}
-        onTapTextElement={handleTapTextElement}
+        onTapTextElement={handleTapElement}
       />
     </View>
   );

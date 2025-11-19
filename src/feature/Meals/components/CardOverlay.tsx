@@ -16,6 +16,8 @@ type Props = {
   color?: string;
   backgroundColor?: string;
   variant?: CardVariant;
+  showKcal?: boolean;
+  showMacros?: boolean;
 };
 
 type MacroColors = {
@@ -32,6 +34,8 @@ export type MacroCardProps = {
   textColor: string;
   bgColor: string;
   macroColors: MacroColors;
+  showKcal: boolean;
+  showMacros: boolean;
 };
 
 export default function CardOverlay({
@@ -42,6 +46,8 @@ export default function CardOverlay({
   color,
   backgroundColor,
   variant = "macroSummaryCard",
+  showKcal = true,
+  showMacros = true,
 }: Props) {
   const theme = useTheme();
   const textColor = color || String(theme.text);
@@ -61,6 +67,8 @@ export default function CardOverlay({
     textColor,
     bgColor: bg,
     macroColors,
+    showKcal,
+    showMacros,
   };
 
   switch (variant) {

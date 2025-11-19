@@ -48,7 +48,7 @@ export const defaultShareOptions: ShareOptions = {
   customSize: 1,
   customTexts: [],
 
-  chartType: "pie",
+  chartType: "donut",
   barOrientation: "vertical",
   dataSeries: [],
   macroLayout: "pie",
@@ -65,10 +65,16 @@ export const defaultShareOptions: ShareOptions = {
   macroRotation: 0,
 
   cardVariant: "macroSummaryCard",
-  chartVariant: "macroPieWithLegend",
+  chartVariant: "macroDonut",
 
   altText: "",
   themePreset: "auto",
   lineColor: "#81D4FA",
   barColor: "#64B5F6",
+
+  showChartKcalLabel: true,
+  showChartLegend: true,
+
+  cardShowKcal: true,
+  cardShowMacros: true,
 };
