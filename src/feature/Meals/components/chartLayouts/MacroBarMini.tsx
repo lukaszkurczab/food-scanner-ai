@@ -6,8 +6,11 @@ type Props = {
   fat: number;
   carbs: number;
   kcal: number;
-  barColor: string;
+  barColor?: string;
   showKcalLabel?: boolean;
+  textColor?: string;
+  fontFamily?: string;
+  backgroundColor?: string;
 };
 
 export default function MacroBarMini({
@@ -17,6 +20,9 @@ export default function MacroBarMini({
   kcal,
   barColor,
   showKcalLabel = true,
+  textColor,
+  fontFamily,
+  backgroundColor,
 }: Props) {
   const items = useMemo(
     () => [
@@ -29,9 +35,21 @@ export default function MacroBarMini({
 
   const maxVal = Math.max(1, ...items.map((i) => i.value));
 
+  const kcalStyle = [styles.kcal, { color: textColor || "#000", fontFamily }];
+
+  const labelStyle = [
+    styles.barLabel,
+    { color: textColor || "#000", fontFamily },
+  ];
+
   return (
-    <View style={styles.wrap}>
-      {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
+    <View
+      style={[
+        styles.wrap,
+        { backgroundColor: backgroundColor || "transparent" },
+      ]}
+    >
+      {showKcalLabel && <Text style={kcalStyle}>{kcal} kcal</Text>}
       <View style={styles.chartRow}>
         {items.map((item) => (
           <View key={item.key} style={styles.barCol}>
@@ -40,13 +58,13 @@ export default function MacroBarMini({
                 style={[
                   styles.barFill,
                   {
-                    backgroundColor: barColor,
+                    backgroundColor: barColor || "#4c6fff",
                     height: `${(item.value / maxVal) * 100}%`,
                   },
                 ]}
               />
             </View>
-            <Text style={styles.barLabel}>{item.label}</Text>
+            <Text style={labelStyle}>{item.label}</Text>
           </View>
         ))}
       </View>
@@ -62,6 +80,7 @@ const styles = StyleSheet.create({
   kcal: {
     fontWeight: "700",
     marginBottom: 4,
+    fontSize: 16,
   },
   chartRow: {
     flexDirection: "row",

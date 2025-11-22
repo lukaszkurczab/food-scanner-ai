@@ -5,7 +5,6 @@ import ColorPicker, {
   Swatches,
   Preview,
   OpacitySlider,
-  BrightnessSlider,
 } from "reanimated-color-picker";
 
 type Props = {
@@ -26,7 +25,6 @@ export default function ColorPickerPanel({ value, onChange }: Props) {
       >
         <Preview />
         <Panel1 />
-        <BrightnessSlider />
         <OpacitySlider />
         <Swatches />
       </ColorPicker>

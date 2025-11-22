@@ -28,6 +28,11 @@ type Props = {
   showKcalLabel?: boolean;
   showLegend?: boolean;
   barColor?: string | null;
+
+  textColor?: string | null;
+  fontFamily?: string | undefined;
+  backgroundColor?: string | null;
+  innerRadiusRatio?: number | null;
 };
 
 type PieDatum = { value: number; color: string; label: string };
@@ -42,6 +47,10 @@ export default function ChartOverlay({
   showKcalLabel = true,
   showLegend = true,
   barColor,
+  textColor,
+  fontFamily,
+  backgroundColor,
+  innerRadiusRatio,
 }: Props) {
   const { t } = useTranslation(["meals"]);
 
@@ -70,6 +79,10 @@ export default function ChartOverlay({
           kcal={kcal}
           showKcalLabel={showKcalLabel}
           showLegend={showLegend}
+          innerRadiusRatio={innerRadiusRatio ?? undefined}
+          textColor={textColor ?? undefined}
+          fontFamily={fontFamily}
+          backgroundColor={backgroundColor ?? undefined}
         />
       );
 
@@ -82,6 +95,9 @@ export default function ChartOverlay({
           kcal={kcal}
           barColor={barColor || palette.accentSecondary}
           showKcalLabel={showKcalLabel}
+          textColor={textColor ?? undefined}
+          fontFamily={fontFamily}
+          backgroundColor={backgroundColor ?? undefined}
         />
       );
 
@@ -92,6 +108,9 @@ export default function ChartOverlay({
           kcal={kcal}
           showKcalLabel={showKcalLabel}
           showLegend={showLegend}
+          textColor={textColor ?? undefined}
+          fontFamily={fontFamily}
+          backgroundColor={backgroundColor ?? undefined}
         />
       );
 
@@ -101,6 +120,9 @@ export default function ChartOverlay({
           data={pieData}
           kcal={kcal}
           showKcalLabel={showKcalLabel}
+          textColor={textColor ?? undefined}
+          fontFamily={fontFamily}
+          backgroundColor={backgroundColor ?? undefined}
         />
       );
 
@@ -111,6 +133,9 @@ export default function ChartOverlay({
           kcal={kcal}
           showKcalLabel={showKcalLabel}
           showLegend={showLegend}
+          textColor={textColor ?? undefined}
+          fontFamily={fontFamily}
+          backgroundColor={backgroundColor ?? undefined}
         />
       );
   }

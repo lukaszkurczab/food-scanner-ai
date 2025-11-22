@@ -13,6 +13,9 @@ type Props = {
   kcal: number;
   showKcalLabel?: boolean;
   showLegend?: boolean;
+  textColor?: string;
+  fontFamily?: string;
+  backgroundColor?: string;
 };
 
 const SIZE = 180;
@@ -51,6 +54,9 @@ export default function MacroPolarAreaChart({
   kcal,
   showKcalLabel = true,
   showLegend = true,
+  textColor,
+  fontFamily,
+  backgroundColor,
 }: Props) {
   const cx = SIZE / 2;
   const cy = SIZE / 2;
@@ -58,8 +64,19 @@ export default function MacroPolarAreaChart({
 
   if (!data || data.length === 0) {
     return (
-      <View style={styles.wrap}>
-        {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
+      <View
+        style={[
+          styles.wrap,
+          { backgroundColor: backgroundColor || "transparent" },
+        ]}
+      >
+        {showKcalLabel && (
+          <Text
+            style={[styles.kcal, { color: textColor || "#000", fontFamily }]}
+          >
+            {kcal} kcal
+          </Text>
+        )}
       </View>
     );
   }
@@ -80,8 +97,20 @@ export default function MacroPolarAreaChart({
   const angleStep = 360 / n;
   const baseAngle = -90;
 
+  const kcalStyle = [styles.kcal, { color: textColor || "#000", fontFamily }];
+
+  const legendTextStyle = [
+    styles.legendText,
+    { color: textColor || "#000", fontFamily },
+  ];
+
   return (
-    <View style={styles.wrap}>
+    <View
+      style={[
+        styles.wrap,
+        { backgroundColor: backgroundColor || "transparent" },
+      ]}
+    >
       <View style={styles.chartContainer}>
         <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {n === 1 ? (
@@ -99,13 +128,14 @@ export default function MacroPolarAreaChart({
               const startAngle = baseAngle + index * angleStep;
               const endAngle = startAngle + angleStep;
               const ratio = d.value / maxVal;
+
               let radius = hasPositive ? maxRadius * ratio : maxRadius;
               if (d.value > 0) {
                 radius = Math.max(MIN_RADIUS, radius);
               }
-              if (radius <= 0) {
-                return null;
-              }
+
+              if (radius <= 0) return null;
+
               const path = buildSectorPath(
                 cx,
                 cy,
@@ -122,14 +152,14 @@ export default function MacroPolarAreaChart({
         </Svg>
       </View>
 
-      {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
+      {showKcalLabel && <Text style={kcalStyle}>{kcal} kcal</Text>}
 
       {showLegend && (
         <View style={styles.legendRow}>
           {sanitized.map((d) => (
             <View key={d.label} style={styles.legendItem}>
               <View style={[styles.dot, { backgroundColor: d.color }]} />
-              <Text style={styles.legendText}>
+              <Text style={legendTextStyle}>
                 {d.label}: {Math.round(d.value)} g
               </Text>
             </View>
