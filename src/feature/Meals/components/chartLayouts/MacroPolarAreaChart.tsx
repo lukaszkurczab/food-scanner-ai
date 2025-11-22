@@ -1,8 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import MacroChartJs from "./MacroChartJs";
+import Svg, { Path, Circle } from "react-native-svg";
 
-type PieDatum = { value: number; color: string; label: string };
+type PieDatum = {
+  value: number;
+  color: string;
+  label: string;
+};
 
 type Props = {
   data: PieDatum[];
@@ -11,28 +15,118 @@ type Props = {
   showLegend?: boolean;
 };
 
+const SIZE = 180;
+const PADDING = 8;
+const MIN_RADIUS = 3;
+
+const degToRad = (deg: number) => (deg * Math.PI) / 180;
+
+function buildSectorPath(
+  cx: number,
+  cy: number,
+  radius: number,
+  startAngleDeg: number,
+  endAngleDeg: number
+): string {
+  const startRad = degToRad(startAngleDeg);
+  const endRad = degToRad(endAngleDeg);
+
+  const x1 = cx + radius * Math.cos(startRad);
+  const y1 = cy + radius * Math.sin(startRad);
+  const x2 = cx + radius * Math.cos(endRad);
+  const y2 = cy + radius * Math.sin(endRad);
+
+  const largeArcFlag = endAngleDeg - startAngleDeg > 180 ? 1 : 0;
+
+  return [
+    `M ${cx} ${cy}`,
+    `L ${x1} ${y1}`,
+    `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+    "Z",
+  ].join(" ");
+}
+
 export default function MacroPolarAreaChart({
   data,
   kcal,
   showKcalLabel = true,
   showLegend = true,
 }: Props) {
-  const labels = data.map((d) => d.label);
-  const values = data.map((d) => Math.max(0, d.value));
-  const colors = data.map((d) => d.color);
+  const cx = SIZE / 2;
+  const cy = SIZE / 2;
+  const maxRadius = SIZE / 2 - PADDING;
+
+  if (!data || data.length === 0) {
+    return (
+      <View style={styles.wrap}>
+        {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
+      </View>
+    );
+  }
+
+  const sanitized = data.map((d) => ({
+    ...d,
+    value: Math.max(0, d.value),
+  }));
+
+  const hasPositive = sanitized.some((d) => d.value > 0);
+  const normalized = hasPositive
+    ? sanitized
+    : sanitized.map((d) => ({ ...d, value: 1 }));
+
+  const maxVal = Math.max(1, ...normalized.map((d) => d.value));
+
+  const n = normalized.length;
+  const angleStep = 360 / n;
+  const baseAngle = -90;
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.chartContainer}>
+        <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+          {n === 1 ? (
+            <Circle
+              cx={cx}
+              cy={cy}
+              r={Math.max(
+                MIN_RADIUS,
+                (normalized[0].value / maxVal) * maxRadius
+              )}
+              fill={normalized[0].color}
+            />
+          ) : (
+            normalized.map((d, index) => {
+              const startAngle = baseAngle + index * angleStep;
+              const endAngle = startAngle + angleStep;
+              const ratio = d.value / maxVal;
+              let radius = hasPositive ? maxRadius * ratio : maxRadius;
+              if (d.value > 0) {
+                radius = Math.max(MIN_RADIUS, radius);
+              }
+              if (radius <= 0) {
+                return null;
+              }
+              const path = buildSectorPath(
+                cx,
+                cy,
+                radius,
+                startAngle,
+                endAngle
+              );
+
+              return (
+                <Path key={`${d.label}-${index}`} d={path} fill={d.color} />
+              );
+            })
+          )}
+        </Svg>
+      </View>
+
       {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
-      <MacroChartJs
-        kind="polarArea"
-        labels={labels}
-        values={values}
-        colors={colors}
-      />
+
       {showLegend && (
         <View style={styles.legendRow}>
-          {data.map((d) => (
+          {sanitized.map((d) => (
             <View key={d.label} style={styles.legendItem}>
               <View style={[styles.dot, { backgroundColor: d.color }]} />
               <Text style={styles.legendText}>
@@ -51,7 +145,17 @@ const styles = StyleSheet.create({
     width: 220,
     alignItems: "center",
   },
-  kcal: { fontWeight: "700", marginBottom: 4 },
+  chartContainer: {
+    width: SIZE,
+    height: SIZE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  kcal: {
+    marginTop: 6,
+    fontSize: 16,
+    fontWeight: "700",
+  },
   legendRow: {
     flexDirection: "row",
     gap: 8,
@@ -59,7 +163,19 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
   },
-  legendItem: { flexDirection: "row", alignItems: "center" },
-  legendText: { fontSize: 11 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 4 },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 4,
+    marginVertical: 2,
+  },
+  legendText: {
+    fontSize: 11,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4,
+  },
 });

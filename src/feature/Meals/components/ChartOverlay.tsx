@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { ChartVariant } from "@/types/share";
 
-import MacroPieWithLegend from "./chartLayouts/MacroPieWithLegend";
+import MacroPieChart from "./chartLayouts/MacroPieChart";
 import DonutMacroChart from "./chartLayouts/DonutMacroChart";
 import MacroBarMini from "./chartLayouts/MacroBarMini";
 import MacroPolarAreaChart from "./chartLayouts/MacroPolarAreaChart";
@@ -30,6 +30,8 @@ type Props = {
   barColor?: string | null;
 };
 
+type PieDatum = { value: number; color: string; label: string };
+
 export default function ChartOverlay({
   variant,
   protein,
@@ -43,7 +45,7 @@ export default function ChartOverlay({
 }: Props) {
   const { t } = useTranslation(["meals"]);
 
-  const pieData = useMemo(
+  const pieData: PieDatum[] = useMemo(
     () => [
       {
         value: Math.max(0, protein),
@@ -60,57 +62,56 @@ export default function ChartOverlay({
     [protein, fat, carbs, palette, t]
   );
 
-  if (variant === "macroDonut") {
-    return (
-      <DonutMacroChart
-        data={pieData}
-        kcal={kcal}
-        showKcalLabel={showKcalLabel}
-        showLegend={showLegend}
-      />
-    );
-  }
+  switch (variant) {
+    case "macroDonut":
+      return (
+        <DonutMacroChart
+          data={pieData}
+          kcal={kcal}
+          showKcalLabel={showKcalLabel}
+          showLegend={showLegend}
+        />
+      );
 
-  if (variant === "macroBarMini") {
-    return (
-      <MacroBarMini
-        protein={protein}
-        fat={fat}
-        carbs={carbs}
-        kcal={kcal}
-        barColor={barColor || palette.accentSecondary}
-        showKcalLabel={showKcalLabel}
-      />
-    );
-  }
+    case "macroBarMini":
+      return (
+        <MacroBarMini
+          protein={protein}
+          fat={fat}
+          carbs={carbs}
+          kcal={kcal}
+          barColor={barColor || palette.accentSecondary}
+          showKcalLabel={showKcalLabel}
+        />
+      );
 
-  if (variant === "macroPolarArea") {
-    return (
-      <MacroPolarAreaChart
-        data={pieData}
-        kcal={kcal}
-        showKcalLabel={showKcalLabel}
-        showLegend={showLegend}
-      />
-    );
-  }
+    case "macroPolarArea":
+      return (
+        <MacroPolarAreaChart
+          data={pieData}
+          kcal={kcal}
+          showKcalLabel={showKcalLabel}
+          showLegend={showLegend}
+        />
+      );
 
-  if (variant === "macroRadar") {
-    return (
-      <MacroRadarChart
-        data={pieData}
-        kcal={kcal}
-        showKcalLabel={showKcalLabel}
-      />
-    );
-  }
+    case "macroRadar":
+      return (
+        <MacroRadarChart
+          data={pieData}
+          kcal={kcal}
+          showKcalLabel={showKcalLabel}
+        />
+      );
 
-  return (
-    <MacroPieWithLegend
-      data={pieData}
-      kcal={kcal}
-      showKcalLabel={showKcalLabel}
-      showLegend={showLegend}
-    />
-  );
+    default:
+      return (
+        <MacroPieChart
+          data={pieData}
+          kcal={kcal}
+          showKcalLabel={showKcalLabel}
+          showLegend={showLegend}
+        />
+      );
+  }
 }
