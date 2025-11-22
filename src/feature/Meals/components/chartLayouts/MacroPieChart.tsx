@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import MacroChartJs from "./MacroChartJs";
+import { PieChart } from "@/components/PieChart";
 
 type PieDatum = { value: number; color: string; label: string };
 
@@ -11,28 +11,31 @@ type Props = {
   showLegend?: boolean;
 };
 
-export default function MacroPieWithLegend({
+export default function MacroPieChart({
   data,
   kcal,
   showKcalLabel = true,
   showLegend = true,
 }: Props) {
-  const labels = data.map((d) => d.label);
-  const values = data.map((d) => Math.max(0, d.value));
-  const colors = data.map((d) => d.color);
+  const safeData = data.map((d) => ({
+    ...d,
+    value: Math.max(0, d.value),
+  }));
 
   return (
     <View style={styles.wrap}>
       {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
-      <MacroChartJs
-        kind="pie"
-        labels={labels}
-        values={values}
-        colors={colors}
+      <PieChart
+        data={safeData}
+        maxSize={170}
+        minSize={0} // pełny pie
+        legendWidth={0}
+        gap={0}
+        fontSize={11}
       />
       {showLegend && (
         <View style={styles.legendRow}>
-          {data.map((d) => (
+          {safeData.map((d) => (
             <View key={d.label} style={styles.legendItem}>
               <View style={[styles.dot, { backgroundColor: d.color }]} />
               <Text style={styles.legendText}>

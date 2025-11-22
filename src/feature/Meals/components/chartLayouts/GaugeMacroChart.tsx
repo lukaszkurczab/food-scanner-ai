@@ -14,35 +14,32 @@ export default function GaugeMacroChart({
   kcal,
   showLabel = true,
 }: Props) {
-  const total = Math.max(
-    1,
-    data.reduce((s, d) => s + d.value, 0)
-  );
-  let start = 0;
+  // zabezpieczenie przed ujemnymi i samymi zerami
+  const safeData = data.map((d) => ({
+    ...d,
+    value: Math.max(0, d.value),
+  }));
+
+  const hasPositive = safeData.some((d) => d.value > 0);
+  const normalized = hasPositive
+    ? safeData
+    : safeData.map((d) => ({ ...d, value: 1 }));
 
   return (
     <View style={styles.wrap}>
       <View style={styles.gaugeOuter}>
-        {data.map((d, i) => {
-          const pct = d.value / total;
-          const sweep = pct * 180; // kąt w półkole
-          const rotate = start * 180;
-          start += pct;
-
-          return (
-            <View
-              key={i}
-              style={[
-                styles.segment,
-                {
-                  backgroundColor: d.color,
-                  transform: [{ rotate: `${rotate}deg` }],
-                  flexBasis: `${sweep}%`,
-                },
-              ]}
-            />
-          );
-        })}
+        {normalized.map((d, i) => (
+          <View
+            key={i}
+            style={[
+              styles.segment,
+              {
+                backgroundColor: d.color,
+                flex: d.value, // proporcje szerokości zamiast "deg -> %"
+              },
+            ]}
+          />
+        ))}
       </View>
 
       {showLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
