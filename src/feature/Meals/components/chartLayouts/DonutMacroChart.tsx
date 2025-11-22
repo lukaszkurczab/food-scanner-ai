@@ -13,13 +13,15 @@ type Props = {
   kcal: number;
   showKcalLabel?: boolean;
   showLegend?: boolean;
+  innerRadiusRatio?: number;
+  textColor?: string;
+  fontFamily?: string;
+  backgroundColor?: string;
 };
 
 const SIZE = 180;
 const OUTER_RADIUS = SIZE / 2;
-const INNER_RADIUS_RATIO = 0.64;
-const INNER_RADIUS = OUTER_RADIUS * INNER_RADIUS_RATIO;
-const MIN_SHARE = 0.05; // 5%
+const MIN_SHARE = 0.05;
 
 const degToRad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -88,6 +90,10 @@ export default function DonutMacroChart({
   kcal,
   showKcalLabel = true,
   showLegend = false,
+  innerRadiusRatio,
+  textColor,
+  fontFamily,
+  backgroundColor,
 }: Props) {
   const safeData: PieDatum[] = (data || []).map((d) => ({
     ...d,
@@ -99,14 +105,33 @@ export default function DonutMacroChart({
 
   if (!safeData.length) {
     return (
-      <View style={styles.wrap}>
-        {showKcalLabel && <Text style={styles.kcalText}>{kcal} kcal</Text>}
+      <View
+        style={[
+          styles.wrap,
+          { backgroundColor: backgroundColor || "transparent" },
+        ]}
+      >
+        {showKcalLabel && (
+          <Text
+            style={[
+              styles.kcalText,
+              { color: textColor || "#000", fontFamily },
+            ]}
+          >
+            {kcal} kcal
+          </Text>
+        )}
       </View>
     );
   }
 
   const values = safeData.map((d) => d.value);
   const shares = normalizeShares(values);
+
+  const ratioRaw =
+    typeof innerRadiusRatio === "number" ? innerRadiusRatio : 0.64;
+  const ratio = Math.min(Math.max(ratioRaw, 0.5), 0.8);
+  const innerR = OUTER_RADIUS * ratio;
 
   let currentAngle = -90;
   const slices = safeData.map((d, index) => {
@@ -127,7 +152,7 @@ export default function DonutMacroChart({
     const path = buildDonutSlicePath(
       cx,
       cy,
-      INNER_RADIUS,
+      innerR,
       OUTER_RADIUS,
       startAngle,
       endAngle
@@ -136,16 +161,34 @@ export default function DonutMacroChart({
     return <Path key={`${d.label}-${index}`} d={path} fill={d.color} />;
   });
 
+  const textStyleBig = [
+    styles.kcalBig,
+    { color: textColor || "#000", fontFamily },
+  ];
+  const textStyleSmall = [
+    styles.kcalSmall,
+    { color: textColor || "#000", fontFamily },
+  ];
+  const legendTextStyle = [
+    styles.legendText,
+    { color: textColor || "#000", fontFamily },
+  ];
+
   return (
-    <View style={styles.wrap}>
+    <View
+      style={[
+        styles.wrap,
+        { backgroundColor: backgroundColor || "transparent" },
+      ]}
+    >
       <View style={styles.chartContainer}>
         <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {slices}
         </Svg>
         {showKcalLabel && (
           <View style={styles.centerLabel}>
-            <Text style={styles.kcalBig}>{kcal}</Text>
-            <Text style={styles.kcalSmall}>kcal</Text>
+            <Text style={textStyleBig}>{kcal}</Text>
+            <Text style={textStyleSmall}>kcal</Text>
           </View>
         )}
       </View>
@@ -155,7 +198,7 @@ export default function DonutMacroChart({
           {safeData.map((d) => (
             <View key={d.label} style={styles.legendItem}>
               <View style={[styles.dot, { backgroundColor: d.color }]} />
-              <Text style={styles.legendText}>
+              <Text style={legendTextStyle}>
                 {d.label}: {Math.round(d.value)} g
               </Text>
             </View>

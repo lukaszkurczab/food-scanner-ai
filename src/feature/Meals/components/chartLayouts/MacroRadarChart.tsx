@@ -12,6 +12,10 @@ type Props = {
   data: PieDatum[];
   kcal: number;
   showKcalLabel?: boolean;
+  showLegend?: boolean;
+  textColor?: string;
+  fontFamily?: string;
+  backgroundColor?: string;
 };
 
 const SIZE = 180;
@@ -24,6 +28,10 @@ export default function MacroRadarChart({
   data,
   kcal,
   showKcalLabel = true,
+  showLegend = true,
+  textColor,
+  fontFamily,
+  backgroundColor,
 }: Props) {
   const cx = SIZE / 2;
   const cy = SIZE / 2;
@@ -36,8 +44,19 @@ export default function MacroRadarChart({
 
   if (!sanitized.length) {
     return (
-      <View style={styles.wrap}>
-        {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
+      <View
+        style={[
+          styles.wrap,
+          { backgroundColor: backgroundColor || "transparent" },
+        ]}
+      >
+        {showKcalLabel && (
+          <Text
+            style={[styles.kcal, { color: textColor || "#000", fontFamily }]}
+          >
+            {kcal} kcal
+          </Text>
+        )}
       </View>
     );
   }
@@ -69,7 +88,7 @@ export default function MacroRadarChart({
         : 0;
     const x = cx + radius * Math.cos(angleRad);
     const y = cy + radius * Math.sin(angleRad);
-    return { x, y, color: d.color };
+    return { x, y, color: d.color, label: d.label, value: d.value };
   });
 
   const polygonPoints =
@@ -77,8 +96,20 @@ export default function MacroRadarChart({
       ? points.map((p) => `${p.x},${p.y}`).join(" ")
       : `${cx + maxRadius},${cy}`;
 
+  const kcalStyle = [styles.kcal, { color: textColor || "#000", fontFamily }];
+
+  const legendTextStyle = [
+    styles.legendText,
+    { color: textColor || "#000", fontFamily },
+  ];
+
   return (
-    <View style={styles.wrap}>
+    <View
+      style={[
+        styles.wrap,
+        { backgroundColor: backgroundColor || "transparent" },
+      ]}
+    >
       <View style={styles.chartContainer}>
         <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {gridRadii.map((r, i) => (
@@ -92,6 +123,7 @@ export default function MacroRadarChart({
               fill="none"
             />
           ))}
+
           {normalized.map((_, index) => {
             const angleRad = degToRad(baseAngle + index * angleStep);
             const x = cx + maxRadius * Math.cos(angleRad);
@@ -108,12 +140,14 @@ export default function MacroRadarChart({
               />
             );
           })}
+
           <Polygon
             points={polygonPoints}
             fill="rgba(255,255,255,0.35)"
             stroke="rgba(255,255,255,0.85)"
             strokeWidth={1.5}
           />
+
           {points.map((p, i) => (
             <Circle
               key={`point-${i}`}
@@ -125,7 +159,21 @@ export default function MacroRadarChart({
           ))}
         </Svg>
       </View>
-      {showKcalLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
+
+      {showKcalLabel && <Text style={kcalStyle}>{kcal} kcal</Text>}
+
+      {showLegend && (
+        <View style={styles.legendRow}>
+          {sanitized.map((d) => (
+            <View key={d.label} style={styles.legendItem}>
+              <View style={[styles.dot, { backgroundColor: d.color }]} />
+              <Text style={legendTextStyle}>
+                {d.label}: {Math.round(d.value)} g
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -145,5 +193,27 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 16,
     fontWeight: "700",
+  },
+  legendRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 6,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 4,
+    marginVertical: 2,
+  },
+  legendText: {
+    fontSize: 11,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4,
   },
 });

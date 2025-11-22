@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Modal } from "@/components/Modal";
 import { TextInput as StyledInput } from "@/components/TextInput";
-import { parseColor } from "./colorUtils";
+import { parseColor } from "./types/colorUtils";
 import { useTranslation } from "react-i18next";
 
 export type StyleTarget = "title" | "kcal" | "custom";

@@ -88,6 +88,18 @@ export type ShareOptions = {
   customFontWeight?: number;
   customTexts?: CustomTextItem[];
 
+  photoX?: number;
+  photoY?: number;
+  photoScale?: number;
+  photoRotation?: number;
+
+  titleText?: string;
+  kcalText?: string;
+
+  textFontFamilyKey?: string | null;
+  textFontFamily?: string;
+  textFontWeight?: string | null;
+
   chartType?: ChartType;
   barOrientation?: BarOrientation;
   dataSeries?: DataSeries[];
@@ -117,6 +129,16 @@ export type ShareOptions = {
 
   altText?: string;
   themePreset?: ThemePreset;
+
   lineColor?: string;
   barColor?: string;
+
+  chartTextColor?: string;
+  chartFontFamilyKey?: string | null;
+  chartFontWeight?: "300" | "500" | "700";
+  chartProteinColor?: string;
+  chartCarbsColor?: string;
+  chartFatColor?: string;
+  chartBackgroundColor?: string;
+  chartInnerRadiusRatio?: number;
 };

@@ -7,7 +7,8 @@ import ColorPickerPanel from "./ColorPickerPanel";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { ElementId } from "./DraggableItem";
 import { TextInput } from "@/components/TextInput";
-import type { ChartType, ChartVariant, CardVariant } from "@/types/share";
+import type { CardVariant } from "@/types/share";
+import ChartEditorPanel from "./editors/ChartEditorPanel";
 
 export type ShareEditorMode =
   | "options"
@@ -50,6 +51,16 @@ export default function ShareEditorPanel({
   const { t } = useTranslation(["share", "common"]);
 
   if (!visible || !mode) return null;
+
+  if (mode === "chart") {
+    return (
+      <ChartEditorPanel
+        options={options}
+        onChange={onChange}
+        onClose={onClose}
+      />
+    );
+  }
 
   const patch = (p: any) => {
     let changed = false;
@@ -405,50 +416,6 @@ export default function ShareEditorPanel({
                 textFontWeight: weight,
                 textFontFamily:
                   famKey && weight ? `${famKey}-${weight}` : undefined,
-              });
-            }}
-          />
-        </View>
-      )}
-
-      {mode === "chart" && (
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>
-            {t("editor.chart_type")}
-          </Text>
-          <Dropdown
-            value={options.chartType || "pie"}
-            options={[
-              { label: "Pie", value: "pie" },
-              { label: "Donut", value: "donut" },
-              { label: "Bar", value: "bar" },
-              { label: "Polar area", value: "polarArea" },
-              { label: "Radar", value: "radar" },
-            ]}
-            onChange={(val) => {
-              const type = (val || "pie") as ChartType;
-              let variant: ChartVariant;
-
-              switch (type) {
-                case "donut":
-                  variant = "macroDonut";
-                  break;
-                case "bar":
-                  variant = "macroBarMini";
-                  break;
-                case "polarArea":
-                  variant = "macroPolarArea";
-                  break;
-                case "radar":
-                  variant = "macroRadar";
-                  break;
-                default:
-                  variant = "macroPieWithLegend";
-              }
-
-              patch({
-                chartType: type,
-                chartVariant: variant,
               });
             }}
           />

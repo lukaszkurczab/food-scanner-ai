@@ -7,7 +7,12 @@ import TextSticker from "./TextSticker";
 import DraggableItem, { ElementId } from "./DraggableItem";
 import CardOverlay from "../components/CardOverlay";
 import ChartOverlay from "../components/ChartOverlay";
-import type { ChartVariant, CardVariant, ChartType } from "@/types/share";
+import type {
+  ChartVariant,
+  CardVariant,
+  ChartType,
+  ShareOptions,
+} from "@/types/share";
 
 type Props = {
   width: number;
@@ -18,8 +23,8 @@ type Props = {
   protein: number;
   fat: number;
   carbs: number;
-  options: any;
-  onChange?: (next: any) => void;
+  options: ShareOptions;
+  onChange?: (next: ShareOptions) => void;
   uiHidden?: boolean;
   selectedId?: ElementId | null;
   onSelectElement?: (id: ElementId) => void;
@@ -53,10 +58,10 @@ export default function ShareCanvas({
   const [photoErr, setPhotoErr] = useState(false);
   useEffect(() => setPhotoErr(false), [photoUri]);
 
-  const applyPatch = (p: any) => {
+  const applyPatch = (p: Partial<ShareOptions>) => {
     if (!onChange) return;
     for (const key in p) {
-      if (p[key] !== options[key]) {
+      if ((p as any)[key] !== (options as any)[key]) {
         onChange({ ...options, ...p });
         return;
       }
@@ -70,10 +75,10 @@ export default function ShareCanvas({
       ? "macroPieWithLegend"
       : chartType === "bar"
       ? "macroBarMini"
-      : chartType === "gauge"
-      ? "macroGauge"
-      : chartType === "triangle"
-      ? "macroTriangle"
+      : chartType === "polarArea"
+      ? "macroPolarArea"
+      : chartType === "radar"
+      ? "macroRadar"
       : "macroDonut");
 
   const cardVariant: CardVariant = options.cardVariant ?? "macroSummaryCard";
@@ -117,6 +122,12 @@ export default function ShareCanvas({
     options.customSize,
     options.customRotation,
   ]);
+
+  const textFontFamily =
+    options.textFontFamily ??
+    (options.textFontFamilyKey && options.textFontWeight
+      ? `${options.textFontFamilyKey}-${options.textFontWeight}`
+      : undefined);
 
   return (
     <View
@@ -180,7 +191,7 @@ export default function ShareCanvas({
             areaW={width}
             areaH={height}
             options={options}
-            titleText={title}
+            titleText={options.titleText ?? title}
             selected={selectedId === "title"}
             onSelect={onSelectElement}
             onTap={handleTextTap}
@@ -237,7 +248,7 @@ export default function ShareCanvas({
                 textDecorationLine: options.customUnderline
                   ? "underline"
                   : "none",
-                fontFamily: options.textFontFamily || undefined,
+                fontFamily: textFontFamily,
               }}
             >
               {ct.text}
@@ -271,17 +282,25 @@ export default function ShareCanvas({
               kcal={kcal}
               palette={{
                 macro: {
-                  protein: String(palette.macro.protein),
-                  carbs: String(palette.macro.carbs),
-                  fat: String(palette.macro.fat),
+                  protein:
+                    options.chartProteinColor ?? String(palette.macro.protein),
+                  carbs: options.chartCarbsColor ?? String(palette.macro.carbs),
+                  fat: options.chartFatColor ?? String(palette.macro.fat),
                 },
                 accent: String(palette.accent),
                 accentSecondary: String(palette.accentSecondary),
               }}
               showKcalLabel={options.showChartKcalLabel !== false}
               showLegend={options.showChartLegend !== false}
-              lineColor={options.lineColor}
               barColor={options.barColor}
+              textColor={options.chartTextColor}
+              fontFamily={
+                options.chartFontFamilyKey && options.chartFontWeight
+                  ? `${options.chartFontFamilyKey}-${options.chartFontWeight}`
+                  : undefined
+              }
+              backgroundColor={options.chartBackgroundColor}
+              innerRadiusRatio={options.chartInnerRadiusRatio}
             />
           </DraggableItem>
         )}

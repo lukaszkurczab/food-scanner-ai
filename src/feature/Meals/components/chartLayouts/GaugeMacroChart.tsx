@@ -7,14 +7,19 @@ type Props = {
   data: Datum[];
   kcal: number;
   showLabel?: boolean;
+  textColor?: string;
+  fontFamily?: string;
+  backgroundColor?: string;
 };
 
 export default function GaugeMacroChart({
   data,
   kcal,
   showLabel = true,
+  textColor,
+  fontFamily,
+  backgroundColor,
 }: Props) {
-  // zabezpieczenie przed ujemnymi i samymi zerami
   const safeData = data.map((d) => ({
     ...d,
     value: Math.max(0, d.value),
@@ -25,8 +30,15 @@ export default function GaugeMacroChart({
     ? safeData
     : safeData.map((d) => ({ ...d, value: 1 }));
 
+  const labelStyle = [styles.kcal, { color: textColor || "#000", fontFamily }];
+
   return (
-    <View style={styles.wrap}>
+    <View
+      style={[
+        styles.wrap,
+        { backgroundColor: backgroundColor || "transparent" },
+      ]}
+    >
       <View style={styles.gaugeOuter}>
         {normalized.map((d, i) => (
           <View
@@ -35,14 +47,14 @@ export default function GaugeMacroChart({
               styles.segment,
               {
                 backgroundColor: d.color,
-                flex: d.value, // proporcje szerokości zamiast "deg -> %"
+                flex: d.value,
               },
             ]}
           />
         ))}
       </View>
 
-      {showLabel && <Text style={styles.kcal}>{kcal} kcal</Text>}
+      {showLabel && <Text style={labelStyle}>{kcal} kcal</Text>}
     </View>
   );
 }
