@@ -10,6 +10,7 @@ import type { ShareOptions, CardVariant } from "@/types/share";
 type Props = {
   options: ShareOptions;
   onChange: (next: ShareOptions) => void;
+  onColorPickingChange?: (isPicking: boolean) => void;
 };
 
 type ColorTarget =
@@ -32,7 +33,11 @@ type FontWeightOption = {
 
 type TabKey = "type" | "text" | "colors";
 
-export default function CardEditorPanel({ options, onChange }: Props) {
+export default function CardEditorPanel({
+  options,
+  onChange,
+  onColorPickingChange,
+}: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["share", "common"]);
   const [colorTarget, setColorTarget] = useState<ColorTarget | null>(null);
@@ -121,7 +126,24 @@ export default function CardEditorPanel({ options, onChange }: Props) {
     },
   ];
 
-  const currentFamilyKey: string | null = options.cardFontFamilyKey ?? null;
+  const currentFamilyKey:
+    | "DMSans"
+    | "Inter"
+    | "Lato"
+    | "Manrope"
+    | "Merriweather"
+    | "Montserrat"
+    | "Nunito"
+    | "OpenSans"
+    | "Oswald"
+    | "Poppins"
+    | "Raleway"
+    | "Roboto"
+    | "Rubik"
+    | "Ubuntu"
+    | "WorkSans"
+    | null = (options.cardFontFamilyKey as any) ?? null;
+
   const currentWeight: "300" | "500" | "700" = options.cardFontWeight ?? "500";
 
   const openColorPicker = (target: ColorTarget) => {
@@ -138,22 +160,26 @@ export default function CardEditorPanel({ options, onChange }: Props) {
     const current = (options as any)[target] || fallback;
     setColorTarget(target);
     setTempColor(current);
+    onColorPickingChange?.(true);
   };
 
   const confirmColor = () => {
     if (!colorTarget || !tempColor) {
       setColorTarget(null);
       setTempColor(null);
+      onColorPickingChange?.(false);
       return;
     }
     patch({ [colorTarget]: tempColor } as any);
     setColorTarget(null);
     setTempColor(null);
+    onColorPickingChange?.(false);
   };
 
   const cancelColor = () => {
     setColorTarget(null);
     setTempColor(null);
+    onColorPickingChange?.(false);
   };
 
   if (colorTarget) {
