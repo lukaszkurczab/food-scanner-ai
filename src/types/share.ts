@@ -2,7 +2,13 @@ export type ShareFilter = "none" | "bw" | "sepia" | "cool" | "warm";
 export type ShareElement = "title" | "kcal" | "pie";
 export type ShareFont = "300" | "500" | "700";
 
-export type ChartType = "pie" | "donut" | "bar" | "polarArea" | "radar";
+export type ChartType =
+  | "pie"
+  | "donut"
+  | "bar"
+  | "polarArea"
+  | "radar"
+  | "gauge";
 export type BarOrientation = "vertical" | "horizontal";
 export type MacroLayout = "pie" | "overlay";
 export type ThemePreset = "auto" | "light" | "dark";
@@ -33,7 +39,8 @@ export type ChartVariant =
   | "macroDonut"
   | "macroBarMini"
   | "macroPolarArea"
-  | "macroRadar";
+  | "macroRadar"
+  | "macroGauge";
 
 export type ShareOptions = {
   showTitle: boolean;
@@ -88,18 +95,6 @@ export type ShareOptions = {
   customFontWeight?: number;
   customTexts?: CustomTextItem[];
 
-  photoX?: number;
-  photoY?: number;
-  photoScale?: number;
-  photoRotation?: number;
-
-  titleText?: string;
-  kcalText?: string;
-
-  textFontFamilyKey?: string | null;
-  textFontFamily?: string;
-  textFontWeight?: string | null;
-
   chartType?: ChartType;
   barOrientation?: BarOrientation;
   dataSeries?: DataSeries[];
@@ -136,9 +131,40 @@ export type ShareOptions = {
   chartTextColor?: string;
   chartFontFamilyKey?: string | null;
   chartFontWeight?: "300" | "500" | "700";
+  chartMacroColors?: {
+    protein?: string;
+    carbs?: string;
+    fat?: string;
+  };
+  chartBackgroundColor?: string;
+  chartInnerRadiusRatio?: number;
   chartProteinColor?: string;
   chartCarbsColor?: string;
   chartFatColor?: string;
-  chartBackgroundColor?: string;
-  chartInnerRadiusRatio?: number;
+
+  photoX?: number;
+  photoY?: number;
+  photoScale?: number;
+  photoRotation?: number;
+
+  textFontFamilyKey?: string | null;
+  textFontWeight?: string | null;
+
+  titleText?: string;
+  kcalText?: string;
+
+  cardTextColor?: string;
+  cardFontFamilyKey?: string | null;
+  cardFontWeight?: "300" | "500" | "700";
+  cardMacroProteinColor?: string;
+  cardMacroCarbsColor?: string;
+  cardMacroFatColor?: string;
+  cardBackgroundColor?: string;
 };
+
+export type ShareEditorMode =
+  | "options"
+  | "text"
+  | "chart"
+  | "card"
+  | "background";

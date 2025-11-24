@@ -12,14 +12,39 @@ export default function MacroSplitCard({
   macroColors,
   showKcal,
   showMacros,
+  fontFamily,
+  fontWeight,
 }: MacroCardProps) {
+  const effectiveFontFamily = fontFamily ?? undefined;
+  const effectiveFontWeight = fontWeight ?? "500";
+
   return (
     <View style={[styles.card, { backgroundColor: bgColor }]}>
       <View style={styles.left}>
         {showKcal && (
-          <Text style={[styles.kcal, { color: textColor }]}>{kcal} kcal</Text>
+          <Text
+            style={[
+              styles.kcal,
+              {
+                color: textColor,
+                fontFamily: effectiveFontFamily,
+                fontWeight: effectiveFontWeight,
+              },
+            ]}
+          >
+            {kcal} kcal
+          </Text>
         )}
-        <Text style={[styles.label, { color: textColor }]}>
+        <Text
+          style={[
+            styles.label,
+            {
+              color: textColor,
+              fontFamily: effectiveFontFamily,
+              fontWeight: effectiveFontWeight,
+            },
+          ]}
+        >
           Today&apos;s meal
         </Text>
       </View>
@@ -29,7 +54,16 @@ export default function MacroSplitCard({
             <View
               style={[styles.dot, { backgroundColor: macroColors.protein }]}
             />
-            <Text style={[styles.text, { color: textColor }]}>
+            <Text
+              style={[
+                styles.text,
+                {
+                  color: textColor,
+                  fontFamily: effectiveFontFamily,
+                  fontWeight: effectiveFontWeight,
+                },
+              ]}
+            >
               Protein {protein} g
             </Text>
           </View>
@@ -37,13 +71,33 @@ export default function MacroSplitCard({
             <View
               style={[styles.dot, { backgroundColor: macroColors.carbs }]}
             />
-            <Text style={[styles.text, { color: textColor }]}>
+            <Text
+              style={[
+                styles.text,
+                {
+                  color: textColor,
+                  fontFamily: effectiveFontFamily,
+                  fontWeight: effectiveFontWeight,
+                },
+              ]}
+            >
               Carbs {carbs} g
             </Text>
           </View>
           <View style={styles.row}>
             <View style={[styles.dot, { backgroundColor: macroColors.fat }]} />
-            <Text style={[styles.text, { color: textColor }]}>Fat {fat} g</Text>
+            <Text
+              style={[
+                styles.text,
+                {
+                  color: textColor,
+                  fontFamily: effectiveFontFamily,
+                  fontWeight: effectiveFontWeight,
+                },
+              ]}
+            >
+              Fat {fat} g
+            </Text>
           </View>
         </View>
       )}

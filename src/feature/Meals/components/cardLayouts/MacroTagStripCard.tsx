@@ -12,7 +12,12 @@ export default function MacroTagStripCard({
   macroColors,
   showKcal,
   showMacros,
+  fontFamily,
+  fontWeight,
 }: MacroCardProps) {
+  const effectiveFontFamily = fontFamily ?? undefined;
+  const baseWeight = fontWeight ?? "500";
+
   const items: { key: string; label: string; color: string }[] = [];
 
   if (showKcal) {
@@ -33,25 +38,29 @@ export default function MacroTagStripCard({
 
   return (
     <View style={styles.row}>
-      {items.map((it) => (
-        <View
-          key={it.key}
-          style={[
-            styles.tag,
-            { backgroundColor: bgColor, borderColor: it.color },
-          ]}
-        >
-          <Text
-            style={{
-              color: it.color,
-              fontSize: 12,
-              fontWeight: it.key === "kcal" ? "700" : "500",
-            }}
+      {items.map((it) => {
+        const effectiveWeight = it.key === "kcal" ? "700" : baseWeight;
+        return (
+          <View
+            key={it.key}
+            style={[
+              styles.tag,
+              { backgroundColor: bgColor, borderColor: it.color },
+            ]}
           >
-            {it.label}
-          </Text>
-        </View>
-      ))}
+            <Text
+              style={{
+                color: it.color,
+                fontSize: 12,
+                fontWeight: effectiveWeight,
+                fontFamily: effectiveFontFamily,
+              }}
+            >
+              {it.label}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }

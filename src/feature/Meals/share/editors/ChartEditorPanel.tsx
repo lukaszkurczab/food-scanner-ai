@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Dropdown } from "@/components/Dropdown";
 import { useTranslation } from "react-i18next";
 import { MaterialIcons } from "@expo/vector-icons";
 import ColorPickerPanel from "../ColorPickerPanel";
-import type { ChartType, ShareOptions } from "@/types/share";
+import type { ChartType, ShareOptions, ChartVariant } from "@/types/share";
 
 type Props = {
   options: ShareOptions;
@@ -31,6 +31,13 @@ type FontWeightOption = {
   value: "300" | "500" | "700";
 };
 
+type TabKey = "type" | "text" | "colors";
+
+const DEFAULT_PROTEIN = "#2196F3";
+const DEFAULT_CARBS = "#81C784";
+const DEFAULT_FAT = "#C6A025";
+const DEFAULT_TEXT = "#000000";
+
 export default function ChartEditorPanel({
   options,
   onChange,
@@ -40,6 +47,7 @@ export default function ChartEditorPanel({
   const { t } = useTranslation(["share", "common"]);
   const [colorTarget, setColorTarget] = useState<ColorTarget | null>(null);
   const [tempColor, setTempColor] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabKey>("type");
 
   const chartType: ChartType = (options.chartType || "donut") as ChartType;
 
@@ -61,24 +69,25 @@ export default function ChartEditorPanel({
       value: null,
       previewFamily: undefined,
     },
+    { label: "DMSans", value: "DMSans", previewFamily: "DMSans-500" },
     { label: "Inter", value: "Inter", previewFamily: "Inter-500" },
     { label: "Lato", value: "Lato", previewFamily: "Lato-500" },
-    { label: "Manrope", value: "Manrope", previewFamily: "Manrope-500" },
+    { label: "Manrope", value: "Manrope", previewFamily: "Manrope-400" },
     {
       label: "Merriweather",
       value: "Merriweather",
-      previewFamily: "Merriweather-500",
+      previewFamily: "Merriweather-400",
     },
     {
       label: "Montserrat",
       value: "Montserrat",
-      previewFamily: "Montserrat-500",
+      previewFamily: "Montserrat-400",
     },
-    { label: "Nunito", value: "Nunito", previewFamily: "Nunito-500" },
-    { label: "Open Sans", value: "OpenSans", previewFamily: "OpenSans-500" },
+    { label: "Nunito", value: "Nunito", previewFamily: "Nunito-400" },
+    { label: "Open Sans", value: "OpenSans", previewFamily: "OpenSans-400" },
     { label: "Oswald", value: "Oswald", previewFamily: "Oswald-500" },
     { label: "Poppins", value: "Poppins", previewFamily: "Poppins-500" },
-    { label: "Raleway", value: "Raleway", previewFamily: "Raleway-500" },
+    { label: "Raleway", value: "Raleway", previewFamily: "Raleway-400" },
     { label: "Roboto", value: "Roboto", previewFamily: "Roboto-500" },
     { label: "Rubik", value: "Rubik", previewFamily: "Rubik-500" },
     { label: "Ubuntu", value: "Ubuntu", previewFamily: "Ubuntu-500" },
@@ -104,10 +113,31 @@ export default function ChartEditorPanel({
   const currentFamilyKey: string | null = options.chartFontFamilyKey ?? null;
   const currentWeight: "300" | "500" | "700" = options.chartFontWeight ?? "500";
 
+  const macroBase = options.chartMacroColors ||
+    options.macroColor || {
+      protein: DEFAULT_PROTEIN,
+      carbs: DEFAULT_CARBS,
+      fat: DEFAULT_FAT,
+    };
+
   const openColorPicker = (target: ColorTarget) => {
-    const current =
-      (options as any)[target] ??
-      (target === "chartBackgroundColor" ? "transparent" : "#ffffff");
+    let base: string;
+    if (target === "chartProteinColor") {
+      base = macroBase.protein || DEFAULT_PROTEIN;
+    } else if (target === "chartCarbsColor") {
+      base = macroBase.carbs || DEFAULT_CARBS;
+    } else if (target === "chartFatColor") {
+      base = macroBase.fat || DEFAULT_FAT;
+    } else if (target === "chartBackgroundColor") {
+      base =
+        options.chartBackgroundColor ||
+        options.macroColor?.background ||
+        "transparent";
+    } else {
+      base = options.chartTextColor || DEFAULT_TEXT;
+    }
+
+    const current = (options as any)[target] ?? base;
     setColorTarget(target);
     setTempColor(current);
   };
@@ -118,7 +148,39 @@ export default function ChartEditorPanel({
       setTempColor(null);
       return;
     }
-    patch({ [colorTarget]: tempColor } as any);
+
+    const next: Partial<ShareOptions> = {
+      [colorTarget]: tempColor,
+    } as any;
+
+    if (
+      colorTarget === "chartProteinColor" ||
+      colorTarget === "chartCarbsColor" ||
+      colorTarget === "chartFatColor"
+    ) {
+      const prev = options.chartMacroColors || options.macroColor || {};
+      next.chartMacroColors = {
+        ...prev,
+        protein:
+          colorTarget === "chartProteinColor"
+            ? tempColor
+            : prev.protein || macroBase.protein || DEFAULT_PROTEIN,
+        carbs:
+          colorTarget === "chartCarbsColor"
+            ? tempColor
+            : prev.carbs || macroBase.carbs || DEFAULT_CARBS,
+        fat:
+          colorTarget === "chartFatColor"
+            ? tempColor
+            : prev.fat || macroBase.fat || DEFAULT_FAT,
+      };
+    }
+
+    if (colorTarget === "chartBackgroundColor") {
+      next.chartBackgroundColor = tempColor;
+    }
+
+    patch(next);
     setColorTarget(null);
     setTempColor(null);
   };
@@ -146,17 +208,56 @@ export default function ChartEditorPanel({
   };
 
   const innerRadiusRaw =
-    typeof options.chartInnerRadiusRatio === "number"
-      ? options.chartInnerRadiusRatio
+    typeof (options as any).chartInnerRadiusRatio === "number"
+      ? (options as any).chartInnerRadiusRatio
       : 0.64;
   const innerRadius = Math.min(Math.max(innerRadiusRaw, 0.5), 0.8);
 
+  const mapTypeToVariant = (type: ChartType): ChartVariant => {
+    switch (type) {
+      case "pie":
+        return "macroPieWithLegend";
+      case "donut":
+        return "macroDonut";
+      case "bar":
+        return "macroBarMini";
+      case "polarArea":
+        return "macroPolarArea";
+      case "radar":
+        return "macroRadar";
+      case "gauge":
+        return "macroGauge";
+      default:
+        return "macroDonut";
+    }
+  };
+
+  const handleChartTypeChange = (val: string | null) => {
+    const type = (val || "pie") as ChartType;
+    const variant = mapTypeToVariant(type);
+    patch({ chartType: type, chartVariant: variant });
+  };
+
   if (colorTarget) {
     const label = renderColorLabel(colorTarget);
-    const value =
-      tempColor ||
-      (options as any)[colorTarget] ||
-      (colorTarget === "chartBackgroundColor" ? "transparent" : "#ffffff");
+
+    let base: string;
+    if (colorTarget === "chartProteinColor") {
+      base = macroBase.protein || DEFAULT_PROTEIN;
+    } else if (colorTarget === "chartCarbsColor") {
+      base = macroBase.carbs || DEFAULT_CARBS;
+    } else if (colorTarget === "chartFatColor") {
+      base = macroBase.fat || DEFAULT_FAT;
+    } else if (colorTarget === "chartBackgroundColor") {
+      base =
+        options.chartBackgroundColor ||
+        options.macroColor?.background ||
+        "transparent";
+    } else {
+      base = options.chartTextColor || DEFAULT_TEXT;
+    }
+
+    const value = tempColor || base;
 
     return (
       <View
@@ -195,18 +296,8 @@ export default function ChartEditorPanel({
     patch({ [key]: !(options as any)[key] } as any);
   };
 
-  const handleChartTypeChange = (val: string | null) => {
-    const type = (val || "pie") as ChartType;
-    patch({ chartType: type });
-  };
-
-  return (
-    <View
-      style={[
-        styles.panel,
-        { backgroundColor: theme.card, borderColor: theme.border },
-      ]}
-    >
+  const renderTypeTab = () => (
+    <>
       <View style={styles.section}>
         <Text style={[styles.label, { color: theme.textSecondary }]}>
           {t("editor.chart_type", "Chart type")}
@@ -219,6 +310,7 @@ export default function ChartEditorPanel({
             { label: "Bar", value: "bar" },
             { label: "Polar area", value: "polarArea" },
             { label: "Radar", value: "radar" },
+            { label: "Gauge", value: "gauge" },
           ]}
           onChange={handleChartTypeChange}
         />
@@ -273,7 +365,11 @@ export default function ChartEditorPanel({
           </Text>
         </Pressable>
       </View>
+    </>
+  );
 
+  const renderTextTab = () => (
+    <>
       <View style={styles.section}>
         <Text style={[styles.label, { color: theme.textSecondary }]}>
           {t("editor.chart_text", "Text")}
@@ -289,17 +385,16 @@ export default function ChartEditorPanel({
           <View
             style={[
               styles.colorPreview,
-              { backgroundColor: options.chartTextColor || theme.text },
+              {
+                backgroundColor: options.chartTextColor || DEFAULT_TEXT,
+              },
             ]}
           />
         </Pressable>
+      </View>
 
-        <Text
-          style={[
-            styles.subLabel,
-            { color: theme.textSecondary, marginTop: 8 },
-          ]}
-        >
+      <View style={styles.section}>
+        <Text style={[styles.subLabel, { color: theme.textSecondary }]}>
           {t("editor.font_family", "Font family")}
         </Text>
         <Dropdown
@@ -326,13 +421,10 @@ export default function ChartEditorPanel({
             patch({ chartFontFamilyKey: famKey });
           }}
         />
+      </View>
 
-        <Text
-          style={[
-            styles.subLabel,
-            { color: theme.textSecondary, marginTop: 8 },
-          ]}
-        >
+      <View style={styles.section}>
+        <Text style={[styles.subLabel, { color: theme.textSecondary }]}>
           {t("editor.weight", "Weight")}
         </Text>
         <Dropdown
@@ -364,117 +456,161 @@ export default function ChartEditorPanel({
           }}
         />
       </View>
+    </>
+  );
 
-      <View style={styles.section}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
-          {t("editor.chart_colors", "Macro colors")}
-        </Text>
+  const renderColorsTab = () => {
+    const proteinPreview =
+      options.chartProteinColor || macroBase.protein || DEFAULT_PROTEIN;
+    const carbsPreview =
+      options.chartCarbsColor || macroBase.carbs || DEFAULT_CARBS;
+    const fatPreview = options.chartFatColor || macroBase.fat || DEFAULT_FAT;
+    const bgPreview =
+      options.chartBackgroundColor ||
+      options.macroColor?.background ||
+      "transparent";
 
-        <Pressable
-          style={styles.colorRow}
-          onPress={() => openColorPicker("chartProteinColor")}
-        >
-          <Text style={{ color: theme.text, fontSize: 14 }}>
-            {t("meals:protein", "Protein")}
-          </Text>
-          <View
-            style={[
-              styles.colorPreview,
-              { backgroundColor: options.chartProteinColor || theme.accent },
-            ]}
-          />
-        </Pressable>
-
-        <Pressable
-          style={styles.colorRow}
-          onPress={() => openColorPicker("chartCarbsColor")}
-        >
-          <Text style={{ color: theme.text, fontSize: 14 }}>
-            {t("meals:carbs", "Carbs")}
-          </Text>
-          <View
-            style={[
-              styles.colorPreview,
-              { backgroundColor: options.chartCarbsColor || theme.accent },
-            ]}
-          />
-        </Pressable>
-
-        <Pressable
-          style={styles.colorRow}
-          onPress={() => openColorPicker("chartFatColor")}
-        >
-          <Text style={{ color: theme.text, fontSize: 14 }}>
-            {t("meals:fat", "Fat")}
-          </Text>
-          <View
-            style={[
-              styles.colorPreview,
-              { backgroundColor: options.chartFatColor || theme.accent },
-            ]}
-          />
-        </Pressable>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
-          {t("editor.chart_bg_color", "Chart background")}
-        </Text>
-        <Pressable
-          style={styles.colorRow}
-          onPress={() => openColorPicker("chartBackgroundColor")}
-        >
-          <Text style={{ color: theme.text, fontSize: 14 }}>
-            {t("editor.chart_bg_color", "Background color")}
-          </Text>
-          <View
-            style={[
-              styles.colorPreview,
-              {
-                backgroundColor: options.chartBackgroundColor || "transparent",
-              },
-            ]}
-          />
-        </Pressable>
-      </View>
-
-      {chartType === "donut" && (
+    return (
+      <>
         <View style={styles.section}>
           <Text style={[styles.label, { color: theme.textSecondary }]}>
-            {t("editor.donut_style", "Donut width")}
+            {t("editor.chart_colors", "Macro colors")}
           </Text>
-          <View style={styles.innerRadiusRow}>
-            <Text style={{ color: theme.textSecondary, fontSize: 14 }}>
-              {t("editor.inner_radius", "Inner radius")}
-            </Text>
+
+          <Pressable
+            style={styles.colorRow}
+            onPress={() => openColorPicker("chartProteinColor")}
+          >
             <Text style={{ color: theme.text, fontSize: 14 }}>
-              {(innerRadius * 100).toFixed(0)}%
+              {t("meals:protein", "Protein")}
             </Text>
-          </View>
-          <View style={styles.innerRadiusControls}>
-            <Pressable
-              style={[styles.stepButton, { backgroundColor: theme.background }]}
-              onPress={() =>
-                patch({
-                  chartInnerRadiusRatio: Math.max(innerRadius - 0.02, 0.5),
-                })
-              }
-            >
-              <Text style={{ color: theme.text, fontSize: 16 }}>−</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.stepButton, { backgroundColor: theme.background }]}
-              onPress={() =>
-                patch({
-                  chartInnerRadiusRatio: Math.min(innerRadius + 0.02, 0.8),
-                })
-              }
-            >
-              <Text style={{ color: theme.text, fontSize: 16 }}>+</Text>
-            </Pressable>
-          </View>
+            <View
+              style={[styles.colorPreview, { backgroundColor: proteinPreview }]}
+            />
+          </Pressable>
+
+          <Pressable
+            style={styles.colorRow}
+            onPress={() => openColorPicker("chartCarbsColor")}
+          >
+            <Text style={{ color: theme.text, fontSize: 14 }}>
+              {t("meals:carbs", "Carbs")}
+            </Text>
+            <View
+              style={[styles.colorPreview, { backgroundColor: carbsPreview }]}
+            />
+          </Pressable>
+
+          <Pressable
+            style={styles.colorRow}
+            onPress={() => openColorPicker("chartFatColor")}
+          >
+            <Text style={{ color: theme.text, fontSize: 14 }}>
+              {t("meals:fat", "Fat")}
+            </Text>
+            <View
+              style={[styles.colorPreview, { backgroundColor: fatPreview }]}
+            />
+          </Pressable>
         </View>
-      )}
+
+        <View style={styles.section}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            {t("editor.chart_bg_color", "Chart background")}
+          </Text>
+          <Pressable
+            style={styles.colorRow}
+            onPress={() => openColorPicker("chartBackgroundColor")}
+          >
+            <Text style={{ color: theme.text, fontSize: 14 }}>
+              {t("editor.chart_bg_color", "Background color")}
+            </Text>
+            <View
+              style={[
+                styles.colorPreview,
+                {
+                  backgroundColor: bgPreview,
+                },
+              ]}
+            />
+          </Pressable>
+        </View>
+      </>
+    );
+  };
+
+  return (
+    <View
+      style={[
+        styles.panel,
+        { backgroundColor: theme.card, borderColor: theme.border },
+      ]}
+    >
+      <View style={styles.tabsRow}>
+        <Pressable
+          style={[
+            styles.tab,
+            tab === "type" && {
+              backgroundColor: theme.accentSecondary,
+            },
+          ]}
+          onPress={() => setTab("type")}
+        >
+          <Text
+            style={{
+              color: tab === "type" ? theme.onAccent : theme.textSecondary,
+              fontSize: 14,
+            }}
+          >
+            {t("editor.tab_type", "Type")}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[
+            styles.tab,
+            tab === "text" && {
+              backgroundColor: theme.accentSecondary,
+            },
+          ]}
+          onPress={() => setTab("text")}
+        >
+          <Text
+            style={{
+              color: tab === "text" ? theme.onAccent : theme.textSecondary,
+              fontSize: 14,
+            }}
+          >
+            {t("editor.tab_text", "Text")}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[
+            styles.tab,
+            tab === "colors" && {
+              backgroundColor: theme.accentSecondary,
+            },
+          ]}
+          onPress={() => setTab("colors")}
+        >
+          <Text
+            style={{
+              color: tab === "colors" ? theme.onAccent : theme.textSecondary,
+              fontSize: 14,
+            }}
+          >
+            {t("editor.tab_colors", "Colors")}
+          </Text>
+        </Pressable>
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: 8 }}
+      >
+        {tab === "type" && renderTypeTab()}
+        {tab === "text" && renderTextTab()}
+        {tab === "colors" && renderColorsTab()}
+      </ScrollView>
 
       <View style={styles.actions}>
         <Pressable
@@ -501,6 +637,23 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     zIndex: 30,
+    maxHeight: 520,
+  },
+  tabsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+    gap: 8,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scroll: {
+    flexGrow: 0,
   },
   section: {
     marginBottom: 12,
@@ -536,7 +689,7 @@ const styles = StyleSheet.create({
   },
   actions: {
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 4,
   },
   button: {
     paddingHorizontal: 24,

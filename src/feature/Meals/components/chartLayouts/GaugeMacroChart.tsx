@@ -33,12 +33,7 @@ export default function GaugeMacroChart({
   const labelStyle = [styles.kcal, { color: textColor || "#000", fontFamily }];
 
   return (
-    <View
-      style={[
-        styles.wrap,
-        { backgroundColor: backgroundColor || "transparent" },
-      ]}
-    >
+    <View style={styles.wrap}>
       <View style={styles.gaugeOuter}>
         {normalized.map((d, i) => (
           <View

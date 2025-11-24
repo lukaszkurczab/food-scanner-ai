@@ -124,10 +124,30 @@ export default function ShareCanvas({
   ]);
 
   const textFontFamily =
-    options.textFontFamily ??
-    (options.textFontFamilyKey && options.textFontWeight
+    options.textFontFamilyKey && options.textFontWeight
       ? `${options.textFontFamilyKey}-${options.textFontWeight}`
-      : undefined);
+      : undefined;
+
+  const cardTextColor =
+    options.cardTextColor || options.macroColor?.text || String(palette.text);
+
+  const cardBackgroundColor =
+    options.cardBackgroundColor ||
+    options.macroColor?.background ||
+    "rgba(0,0,0,0.35)";
+
+  const cardMacroProtein =
+    options.cardMacroProteinColor || String(palette.macro.protein);
+  const cardMacroCarbs =
+    options.cardMacroCarbsColor || String(palette.macro.carbs);
+  const cardMacroFat = options.cardMacroFatColor || String(palette.macro.fat);
+
+  const cardFontFamilyKey = options.cardFontFamilyKey || null;
+  const cardFontWeight = options.cardFontWeight || "500";
+  const cardFontFamily =
+    cardFontFamilyKey && cardFontWeight
+      ? `${cardFontFamilyKey}-${cardFontWeight}`
+      : undefined;
 
   return (
     <View
@@ -281,6 +301,7 @@ export default function ShareCanvas({
               carbs={carbs}
               kcal={kcal}
               palette={{
+                text: options.chartTextColor || String(palette.text),
                 macro: {
                   protein:
                     options.chartProteinColor ?? String(palette.macro.protein),
@@ -300,7 +321,6 @@ export default function ShareCanvas({
                   : undefined
               }
               backgroundColor={options.chartBackgroundColor}
-              innerRadiusRatio={options.chartInnerRadiusRatio}
             />
           </DraggableItem>
         )}
@@ -334,11 +354,18 @@ export default function ShareCanvas({
                 fat={fat}
                 carbs={carbs}
                 kcal={kcal}
-                color={options.macroColor?.text}
-                backgroundColor={options.macroColor?.background}
+                color={cardTextColor}
+                backgroundColor={cardBackgroundColor}
                 variant={cardVariant}
                 showKcal={options.cardShowKcal !== false}
                 showMacros={options.cardShowMacros !== false}
+                macroColorsOverride={{
+                  protein: cardMacroProtein,
+                  carbs: cardMacroCarbs,
+                  fat: cardMacroFat,
+                }}
+                fontFamily={cardFontFamily}
+                fontWeight={cardFontWeight as any}
               />
             </View>
           </DraggableItem>

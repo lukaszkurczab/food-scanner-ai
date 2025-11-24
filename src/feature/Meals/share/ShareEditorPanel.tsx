@@ -7,8 +7,8 @@ import ColorPickerPanel from "./ColorPickerPanel";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { ElementId } from "./DraggableItem";
 import { TextInput } from "@/components/TextInput";
-import type { CardVariant } from "@/types/share";
 import ChartEditorPanel from "./editors/ChartEditorPanel";
+import CardEditorPanel from "./editors/CardEditorPanel";
 
 export type ShareEditorMode =
   | "options"
@@ -195,29 +195,6 @@ export default function ShareEditorPanel({
 
   const currentFamilyKey: string | null = options.textFontFamilyKey ?? null;
   const currentWeight: string | null = options.textFontWeight ?? "500";
-
-  const cardVariantOptions: { label: string; value: CardVariant }[] = [
-    {
-      label: t("editor.card.summary", "Summary card"),
-      value: "macroSummaryCard",
-    },
-    {
-      label: t("editor.card.vertical", "Vertical stack"),
-      value: "macroVerticalStackCard",
-    },
-    {
-      label: t("editor.card.badge", "Badge card"),
-      value: "macroBadgeCard",
-    },
-    {
-      label: t("editor.card.split", "Split card"),
-      value: "macroSplitCard",
-    },
-    {
-      label: t("editor.card.tags", "Tag strip"),
-      value: "macroTagStripCard",
-    },
-  ];
 
   return (
     <View
@@ -423,19 +400,7 @@ export default function ShareEditorPanel({
       )}
 
       {mode === "card" && (
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>
-            {t("editor.card_type", "Card style")}
-          </Text>
-          <Dropdown
-            value={options.cardVariant || "macroSummaryCard"}
-            options={cardVariantOptions}
-            onChange={(val) => {
-              const variant = (val || "macroSummaryCard") as CardVariant;
-              patch({ cardVariant: variant });
-            }}
-          />
-        </View>
+        <CardEditorPanel options={options} onChange={onChange} />
       )}
 
       {mode === "background" && (

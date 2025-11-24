@@ -64,12 +64,7 @@ export default function MacroPolarAreaChart({
 
   if (!data || data.length === 0) {
     return (
-      <View
-        style={[
-          styles.wrap,
-          { backgroundColor: backgroundColor || "transparent" },
-        ]}
-      >
+      <View style={styles.wrap}>
         {showKcalLabel && (
           <Text
             style={[styles.kcal, { color: textColor || "#000", fontFamily }]}
@@ -105,12 +100,7 @@ export default function MacroPolarAreaChart({
   ];
 
   return (
-    <View
-      style={[
-        styles.wrap,
-        { backgroundColor: backgroundColor || "transparent" },
-      ]}
-    >
+    <View style={styles.wrap}>
       <View style={styles.chartContainer}>
         <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {n === 1 ? (

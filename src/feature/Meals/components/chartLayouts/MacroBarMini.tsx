@@ -6,19 +6,33 @@ type Props = {
   fat: number;
   carbs: number;
   kcal: number;
-  barColor?: string;
+  chartMacroColors?: {
+    protein?: string;
+    carbs?: string;
+    fat?: string;
+  };
+  macroColor?: {
+    protein?: string;
+    carbs?: string;
+    fat?: string;
+  };
   showKcalLabel?: boolean;
   textColor?: string;
   fontFamily?: string;
   backgroundColor?: string;
 };
 
+const DEFAULT_PROTEIN = "#2196F3";
+const DEFAULT_CARBS = "#81C784";
+const DEFAULT_FAT = "#C6A025";
+
 export default function MacroBarMini({
   protein,
   fat,
   carbs,
   kcal,
-  barColor,
+  chartMacroColors,
+  macroColor,
   showKcalLabel = true,
   textColor,
   fontFamily,
@@ -42,13 +56,15 @@ export default function MacroBarMini({
     { color: textColor || "#000", fontFamily },
   ];
 
+  const colors = {
+    protein:
+      chartMacroColors?.protein || macroColor?.protein || DEFAULT_PROTEIN,
+    carbs: chartMacroColors?.carbs || macroColor?.carbs || DEFAULT_CARBS,
+    fat: chartMacroColors?.fat || macroColor?.fat || DEFAULT_FAT,
+  };
+
   return (
-    <View
-      style={[
-        styles.wrap,
-        { backgroundColor: backgroundColor || "transparent" },
-      ]}
-    >
+    <View style={styles.wrap}>
       {showKcalLabel && <Text style={kcalStyle}>{kcal} kcal</Text>}
       <View style={styles.chartRow}>
         {items.map((item) => (
@@ -58,7 +74,7 @@ export default function MacroBarMini({
                 style={[
                   styles.barFill,
                   {
-                    backgroundColor: barColor || "#4c6fff",
+                    backgroundColor: colors[item.key as keyof typeof colors],
                     height: `${(item.value / maxVal) * 100}%`,
                   },
                 ]}
