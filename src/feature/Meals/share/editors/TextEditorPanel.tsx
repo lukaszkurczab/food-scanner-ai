@@ -1,9 +1,10 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { TextInput } from "@/components/TextInput";
 import { Dropdown } from "@/components/Dropdown";
+import ColorPickerPanel from "../ColorPickerPanel";
 import type { ElementId } from "../DraggableItem";
 import type { ShareOptions } from "@/types/share";
 
@@ -15,23 +16,30 @@ type FontFamilyOption = {
 
 type FontWeightOption = {
   label: string;
-  value: string | null;
+  value: "300" | "500" | "700";
 };
+
+type ColorTarget = "customColor";
 
 type Props = {
   options: ShareOptions;
   selectedId: ElementId | null;
   onChange: (next: ShareOptions) => void;
   onTapTextElement?: (id: ElementId) => void;
+  onColorPickingChange?: (isPicking: boolean) => void;
 };
 
 export default function TextEditorPanel({
   options,
   selectedId,
   onChange,
+  onTapTextElement,
+  onColorPickingChange,
 }: Props) {
   const theme = useTheme();
-  const { t } = useTranslation(["share"]);
+  const { t } = useTranslation(["share", "common"]);
+  const [colorTarget, setColorTarget] = useState<ColorTarget | null>(null);
+  const [tempColor, setTempColor] = useState<string | null>(null);
 
   const patch = (p: Partial<ShareOptions>) => {
     let changed = false;
@@ -96,29 +104,29 @@ export default function TextEditorPanel({
       value: null,
       previewFamily: undefined,
     },
+    { label: "DMSans", value: "DMSans", previewFamily: "DMSans-500" },
     { label: "Inter", value: "Inter", previewFamily: "Inter-500" },
     { label: "Lato", value: "Lato", previewFamily: "Lato-500" },
-    { label: "Manrope", value: "Manrope", previewFamily: "Manrope-500" },
+    { label: "Manrope", value: "Manrope", previewFamily: "Manrope-400" },
     {
       label: "Merriweather",
       value: "Merriweather",
-      previewFamily: "Merriweather-500",
+      previewFamily: "Merriweather-400",
     },
     {
       label: "Montserrat",
       value: "Montserrat",
-      previewFamily: "Montserrat-500",
+      previewFamily: "Montserrat-400",
     },
-    { label: "Nunito", value: "Nunito", previewFamily: "Nunito-500" },
-    { label: "Open Sans", value: "OpenSans", previewFamily: "OpenSans-500" },
+    { label: "Nunito", value: "Nunito", previewFamily: "Nunito-400" },
+    { label: "Open Sans", value: "OpenSans", previewFamily: "OpenSans-400" },
     { label: "Oswald", value: "Oswald", previewFamily: "Oswald-500" },
     { label: "Poppins", value: "Poppins", previewFamily: "Poppins-500" },
-    { label: "Raleway", value: "Raleway", previewFamily: "Raleway-500" },
+    { label: "Raleway", value: "Raleway", previewFamily: "Raleway-400" },
     { label: "Roboto", value: "Roboto", previewFamily: "Roboto-500" },
     { label: "Rubik", value: "Rubik", previewFamily: "Rubik-500" },
     { label: "Ubuntu", value: "Ubuntu", previewFamily: "Ubuntu-500" },
     { label: "Work Sans", value: "WorkSans", previewFamily: "WorkSans-500" },
-    { label: "DM Sans", value: "DMSans", previewFamily: "DMSans-500" },
   ];
 
   const fontWeightOptions: FontWeightOption[] = [
@@ -137,7 +145,65 @@ export default function TextEditorPanel({
   ];
 
   const currentFamilyKey: string | null = options.textFontFamilyKey ?? null;
-  const currentWeight: string | null = options.textFontWeight ?? "500";
+  const currentWeight: "300" | "500" | "700" =
+    (options.textFontWeight as "300" | "500" | "700") ?? "500";
+
+  const openColorPicker = () => {
+    const current = options.customColor || String(theme.text);
+    setColorTarget("customColor");
+    setTempColor(current);
+    onColorPickingChange?.(true);
+  };
+
+  const confirmColor = () => {
+    if (!colorTarget || !tempColor) {
+      setColorTarget(null);
+      setTempColor(null);
+      onColorPickingChange?.(false);
+      return;
+    }
+    patch({ customColor: tempColor });
+    setColorTarget(null);
+    setTempColor(null);
+    onColorPickingChange?.(false);
+  };
+
+  const cancelColor = () => {
+    setColorTarget(null);
+    setTempColor(null);
+    onColorPickingChange?.(false);
+  };
+
+  if (colorTarget) {
+    const value = tempColor || options.customColor || String(theme.text);
+
+    return (
+      <View>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>
+          {t("editor.chart_text_color", "Text color")}
+        </Text>
+        <ColorPickerPanel value={value} onChange={setTempColor} />
+        <View style={styles.colorActions}>
+          <Pressable
+            onPress={cancelColor}
+            style={[styles.button, { backgroundColor: theme.background }]}
+          >
+            <Text style={{ color: theme.text, fontSize: 14 }}>
+              {t("common:back", "Back")}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={confirmColor}
+            style={[styles.button, { backgroundColor: theme.accentSecondary }]}
+          >
+            <Text style={{ color: theme.onAccent, fontSize: 14 }}>
+              {t("common:confirm", "Confirm")}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View>
@@ -182,6 +248,7 @@ export default function TextEditorPanel({
           onChange({ ...options, customTexts: list });
         }}
       />
+
       <View style={{ height: 16 }} />
       <Text style={[styles.label, { color: theme.textSecondary }]}>
         {t("editor.font_family", "Font family")}
@@ -240,16 +307,55 @@ export default function TextEditorPanel({
           );
         }}
         onChange={(w) => {
-          const weight = w || "500";
+          const weight = (w as "300" | "500" | "700") || "500";
           patch({
             textFontWeight: weight,
           });
         }}
       />
+
+      <View style={{ height: 16 }} />
+      <Pressable style={styles.colorRow} onPress={openColorPicker}>
+        <Text style={{ color: theme.text, fontSize: 14 }}>
+          {t("editor.chart_text_color", "Text color")}
+        </Text>
+        <View
+          style={[
+            styles.colorPreview,
+            {
+              backgroundColor: options.customColor || String(theme.text),
+            },
+          ]}
+        />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   label: { fontSize: 16 },
+  colorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+  },
+  colorPreview: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.5)",
+  },
+  colorActions: {
+    marginTop: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  button: {
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
 });
