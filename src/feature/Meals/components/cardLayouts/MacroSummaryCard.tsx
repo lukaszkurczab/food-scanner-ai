@@ -12,15 +12,40 @@ export default function MacroSummaryCard({
   macroColors,
   showKcal,
   showMacros,
+  fontFamily,
+  fontWeight,
 }: MacroCardProps) {
+  const effectiveFontFamily = fontFamily ?? undefined;
+  const effectiveFontWeight = fontWeight ?? "500";
+
   return (
     <View style={[styles.card, { backgroundColor: bgColor }]}>
       {showKcal && (
-        <Text style={[styles.kcal, { color: textColor }]}>{kcal} kcal</Text>
+        <Text
+          style={[
+            styles.kcal,
+            {
+              color: textColor,
+              fontFamily: effectiveFontFamily,
+              fontWeight: effectiveFontWeight,
+            },
+          ]}
+        >
+          {kcal} kcal
+        </Text>
       )}
       {showMacros && (
         <>
-          <Text style={[styles.row, { color: textColor }]}>
+          <Text
+            style={[
+              styles.row,
+              {
+                color: textColor,
+                fontFamily: effectiveFontFamily,
+                fontWeight: effectiveFontWeight,
+              },
+            ]}
+          >
             P {protein} g • C {carbs} g • F {fat} g
           </Text>
           <View style={styles.dotsRow}>

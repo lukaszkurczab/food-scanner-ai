@@ -207,12 +207,8 @@ export default function TextEditorPanel({
         }}
         onChange={(fam) => {
           const famKey = fam || null;
-          const weight = currentWeight || "500";
           patch({
             textFontFamilyKey: famKey,
-            textFontWeight: weight,
-            textFontFamily:
-              famKey && weight ? `${famKey}-${weight}` : undefined,
           });
         }}
       />
@@ -245,11 +241,8 @@ export default function TextEditorPanel({
         }}
         onChange={(w) => {
           const weight = w || "500";
-          const famKey = currentFamilyKey;
           patch({
             textFontWeight: weight,
-            textFontFamily:
-              famKey && weight ? `${famKey}-${weight}` : undefined,
           });
         }}
       />

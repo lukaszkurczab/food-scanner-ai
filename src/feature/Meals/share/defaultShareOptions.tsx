@@ -57,7 +57,7 @@ export const defaultShareOptions: ShareOptions = {
     carbs: "#81C784",
     fat: "#C6A025",
     text: "#FFFFFF",
-    background: "rgba(0,0,0,0.35)",
+    background: "#000000",
   },
   macroX: 0.5,
   macroY: 0.85,

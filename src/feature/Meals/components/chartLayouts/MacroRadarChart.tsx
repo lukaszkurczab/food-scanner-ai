@@ -44,12 +44,7 @@ export default function MacroRadarChart({
 
   if (!sanitized.length) {
     return (
-      <View
-        style={[
-          styles.wrap,
-          { backgroundColor: backgroundColor || "transparent" },
-        ]}
-      >
+      <View style={styles.wrap}>
         {showKcalLabel && (
           <Text
             style={[styles.kcal, { color: textColor || "#000", fontFamily }]}
@@ -104,12 +99,7 @@ export default function MacroRadarChart({
   ];
 
   return (
-    <View
-      style={[
-        styles.wrap,
-        { backgroundColor: backgroundColor || "transparent" },
-      ]}
-    >
+    <View style={styles.wrap}>
       <View style={styles.chartContainer}>
         <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {gridRadii.map((r, i) => (

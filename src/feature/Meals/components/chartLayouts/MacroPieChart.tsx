@@ -36,12 +36,7 @@ export default function MacroPieChart({
   ];
 
   return (
-    <View
-      style={[
-        styles.wrap,
-        { backgroundColor: backgroundColor || "transparent" },
-      ]}
-    >
+    <View style={styles.wrap}>
       {showKcalLabel && <Text style={kcalStyle}>{kcal} kcal</Text>}
 
       <PieChart

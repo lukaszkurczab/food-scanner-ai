@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import type { ElementId } from "./DraggableItem";
+import type { ElementId } from "../DraggableItem";
 import type { ShareOptions } from "@/types/share";
 
 type Props = {

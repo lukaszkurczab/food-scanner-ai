@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { ChartVariant } from "@/types/share";
 
@@ -7,6 +8,7 @@ import DonutMacroChart from "./chartLayouts/DonutMacroChart";
 import MacroBarMini from "./chartLayouts/MacroBarMini";
 import MacroPolarAreaChart from "./chartLayouts/MacroPolarAreaChart";
 import MacroRadarChart from "./chartLayouts/MacroRadarChart";
+import GaugeMacroChart from "./chartLayouts/GaugeMacroChart";
 
 type Palette = {
   macro: {
@@ -16,6 +18,7 @@ type Palette = {
   };
   accent: string;
   accentSecondary: string;
+  text: string;
 };
 
 type Props = {
@@ -28,11 +31,16 @@ type Props = {
   showKcalLabel?: boolean;
   showLegend?: boolean;
   barColor?: string | null;
-
+  lineColor?: string | null;
   textColor?: string | null;
-  fontFamily?: string | undefined;
+  fontFamily?: string | null;
+  fontWeight?: "300" | "500" | "700" | null;
+  macroColors?: {
+    protein?: string;
+    carbs?: string;
+    fat?: string;
+  } | null;
   backgroundColor?: string | null;
-  innerRadiusRatio?: number | null;
 };
 
 type PieDatum = { value: number; color: string; label: string };
@@ -49,94 +57,120 @@ export default function ChartOverlay({
   barColor,
   textColor,
   fontFamily,
+  fontWeight,
+  macroColors,
   backgroundColor,
-  innerRadiusRatio,
 }: Props) {
   const { t } = useTranslation(["meals"]);
+
+  const proteinColor = macroColors?.protein ?? palette.macro.protein;
+  const fatColor = macroColors?.fat ?? palette.macro.fat;
+  const carbsColor = macroColors?.carbs ?? palette.macro.carbs;
 
   const pieData: PieDatum[] = useMemo(
     () => [
       {
         value: Math.max(0, protein),
-        color: palette.macro.protein,
+        color: proteinColor,
         label: t("protein"),
       },
-      { value: Math.max(0, fat), color: palette.macro.fat, label: t("fat") },
+      { value: Math.max(0, fat), color: fatColor, label: t("fat") },
       {
         value: Math.max(0, carbs),
-        color: palette.macro.carbs,
+        color: carbsColor,
         label: t("carbs"),
       },
     ],
-    [protein, fat, carbs, palette, t]
+    [protein, fat, carbs, proteinColor, fatColor, carbsColor, t]
   );
 
-  switch (variant) {
-    case "macroDonut":
-      return (
-        <DonutMacroChart
-          data={pieData}
-          kcal={kcal}
-          showKcalLabel={showKcalLabel}
-          showLegend={showLegend}
-          innerRadiusRatio={innerRadiusRatio ?? undefined}
-          textColor={textColor ?? undefined}
-          fontFamily={fontFamily}
-          backgroundColor={backgroundColor ?? undefined}
-        />
-      );
+  const sharedTextColor = textColor || palette.text;
+  const sharedFontFamily = fontFamily || undefined;
+  const sharedFontWeight = fontWeight || "700";
+  const chartBg = backgroundColor || "transparent";
 
-    case "macroBarMini":
-      return (
-        <MacroBarMini
-          protein={protein}
-          fat={fat}
-          carbs={carbs}
-          kcal={kcal}
-          barColor={barColor || palette.accentSecondary}
-          showKcalLabel={showKcalLabel}
-          textColor={textColor ?? undefined}
-          fontFamily={fontFamily}
-          backgroundColor={backgroundColor ?? undefined}
-        />
-      );
+  const commonTextProps = {
+    textColor: sharedTextColor,
+    fontFamily: sharedFontFamily,
+    fontWeight: sharedFontWeight,
+    backgroundColor: chartBg,
+  };
 
-    case "macroPolarArea":
-      return (
-        <MacroPolarAreaChart
-          data={pieData}
-          kcal={kcal}
-          showKcalLabel={showKcalLabel}
-          showLegend={showLegend}
-          textColor={textColor ?? undefined}
-          fontFamily={fontFamily}
-          backgroundColor={backgroundColor ?? undefined}
-        />
-      );
+  const content = (() => {
+    switch (variant) {
+      case "macroDonut":
+        return (
+          <DonutMacroChart
+            data={pieData}
+            kcal={kcal}
+            showKcalLabel={showKcalLabel}
+            showLegend={showLegend}
+            {...commonTextProps}
+          />
+        );
+      case "macroBarMini":
+        return (
+          <MacroBarMini
+            protein={protein}
+            fat={fat}
+            carbs={carbs}
+            kcal={kcal}
+            showKcalLabel={showKcalLabel}
+            {...commonTextProps}
+          />
+        );
+      case "macroPolarArea":
+        return (
+          <MacroPolarAreaChart
+            data={pieData}
+            kcal={kcal}
+            showKcalLabel={showKcalLabel}
+            showLegend={showLegend}
+            {...commonTextProps}
+          />
+        );
+      case "macroRadar":
+        return (
+          <MacroRadarChart
+            data={pieData}
+            kcal={kcal}
+            showKcalLabel={showKcalLabel}
+            {...commonTextProps}
+          />
+        );
+      case "macroGauge":
+        return (
+          <GaugeMacroChart
+            data={pieData}
+            kcal={kcal}
+            showLabel={showKcalLabel}
+            {...commonTextProps}
+          />
+        );
+      case "macroPieWithLegend":
+      default:
+        return (
+          <MacroPieChart
+            data={pieData}
+            kcal={kcal}
+            showKcalLabel={showKcalLabel}
+            showLegend={showLegend}
+            {...commonTextProps}
+          />
+        );
+    }
+  })();
 
-    case "macroRadar":
-      return (
-        <MacroRadarChart
-          data={pieData}
-          kcal={kcal}
-          showKcalLabel={showKcalLabel}
-          textColor={textColor ?? undefined}
-          fontFamily={fontFamily}
-          backgroundColor={backgroundColor ?? undefined}
-        />
-      );
-
-    default:
-      return (
-        <MacroPieChart
-          data={pieData}
-          kcal={kcal}
-          showKcalLabel={showKcalLabel}
-          showLegend={showLegend}
-          textColor={textColor ?? undefined}
-          fontFamily={fontFamily}
-          backgroundColor={backgroundColor ?? undefined}
-        />
-      );
-  }
+  return (
+    <View style={[styles.card, { backgroundColor: chartBg }]}>{content}</View>
+  );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 18,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    overflow: "hidden",
+  },
+});

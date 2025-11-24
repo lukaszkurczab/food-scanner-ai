@@ -105,12 +105,7 @@ export default function DonutMacroChart({
 
   if (!safeData.length) {
     return (
-      <View
-        style={[
-          styles.wrap,
-          { backgroundColor: backgroundColor || "transparent" },
-        ]}
-      >
+      <View style={styles.wrap}>
         {showKcalLabel && (
           <Text
             style={[
@@ -175,12 +170,7 @@ export default function DonutMacroChart({
   ];
 
   return (
-    <View
-      style={[
-        styles.wrap,
-        { backgroundColor: backgroundColor || "transparent" },
-      ]}
-    >
+    <View style={styles.wrap}>
       <View style={styles.chartContainer}>
         <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {slices}
