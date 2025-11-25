@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { View, Image, StyleSheet, Text } from "react-native";
+import { View, Image, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { lightTheme, darkTheme } from "@/theme/themes";
 import { getFilterOverlay } from "@/utils/photoFilters";
@@ -12,6 +12,7 @@ import type {
   CardVariant,
   ChartType,
   ShareOptions,
+  CustomTextItem,
 } from "@/types/share";
 
 type Props = {
@@ -42,6 +43,7 @@ export default function ShareCanvas({
   carbs,
   options,
   onChange,
+  uiHidden,
   selectedId = null,
   onSelectElement,
   onTapTextElement,
@@ -90,7 +92,7 @@ export default function ShareCanvas({
     onTapTextElement?.(id);
   };
 
-  const customTexts = useMemo(() => {
+  const customTexts: CustomTextItem[] = useMemo(() => {
     if (Array.isArray(options.customTexts) && options.customTexts.length > 0) {
       return options.customTexts;
     }
@@ -108,6 +110,14 @@ export default function ShareCanvas({
           y: options.customY ?? 0.42,
           size: options.customSize ?? 1,
           rotation: options.customRotation ?? 0,
+          color: options.customColor,
+          backgroundColor: options.customBackgroundColor,
+          fontFamilyKey:
+            options.customFontFamilyKey ?? options.textFontFamilyKey ?? null,
+          fontWeight:
+            options.customFontWeight ?? options.textFontWeight ?? "500",
+          italic: options.customItalic,
+          underline: options.customUnderline,
         },
       ];
     }
@@ -121,12 +131,15 @@ export default function ShareCanvas({
     options.customY,
     options.customSize,
     options.customRotation,
+    options.customColor,
+    options.customBackgroundColor,
+    options.customFontFamilyKey,
+    options.customFontWeight,
+    options.textFontFamilyKey,
+    options.textFontWeight,
+    options.customItalic,
+    options.customUnderline,
   ]);
-
-  const textFontFamily =
-    options.textFontFamilyKey && options.textFontWeight
-      ? `${options.textFontFamilyKey}-${options.textFontWeight}`
-      : undefined;
 
   const cardTextColor =
     options.cardTextColor || options.macroColor?.text || String(palette.text);
@@ -148,6 +161,14 @@ export default function ShareCanvas({
     cardFontFamilyKey && cardFontWeight
       ? `${cardFontFamilyKey}-${cardFontWeight}`
       : undefined;
+
+  const handlePatchCustom = (id: ElementId, patch: Partial<CustomTextItem>) => {
+    if (!onChange) return;
+    const next = customTexts.map((item) =>
+      item.id === id ? { ...item, ...patch } : item
+    );
+    applyPatch({ customTexts: next });
+  };
 
   return (
     <View
@@ -235,45 +256,21 @@ export default function ShareCanvas({
           />
         )}
 
-        {customTexts.map((ct: any) => (
-          <DraggableItem
+        {customTexts.map((ct) => (
+          <TextSticker
             key={ct.id}
             id={ct.id as ElementId}
             areaX={0}
             areaY={0}
             areaW={width}
             areaH={height}
-            initialXRatio={ct.x ?? 0.5}
-            initialYRatio={ct.y ?? 0.42}
-            initialScale={ct.size ?? 1}
-            initialRotation={ct.rotation ?? 0}
+            options={options}
             selected={selectedId === ct.id}
             onSelect={onSelectElement}
-            onTap={() => handleTextTap(ct.id as ElementId)}
-            onUpdate={(x, y, sc, rot) => {
-              if (!onChange) return;
-              const next = customTexts.map((item: any) =>
-                item.id === ct.id
-                  ? { ...item, x, y, size: sc, rotation: rot }
-                  : item
-              );
-              applyPatch({ customTexts: next });
-            }}
-          >
-            <Text
-              style={{
-                color: options.customColor || "#FFFFFF",
-                fontSize: 26,
-                fontStyle: options.customItalic ? "italic" : "normal",
-                textDecorationLine: options.customUnderline
-                  ? "underline"
-                  : "none",
-                fontFamily: textFontFamily,
-              }}
-            >
-              {ct.text}
-            </Text>
-          </DraggableItem>
+            onTap={handleTextTap}
+            customItem={ct}
+            onPatchCustom={handlePatchCustom}
+          />
         ))}
 
         {options.showChart && (

@@ -1,3 +1,10 @@
+export type ShareEditorMode =
+  | "options"
+  | "text"
+  | "chart"
+  | "card"
+  | "background";
+
 export type ShareFilter = "none" | "bw" | "sepia" | "cool" | "warm";
 export type ShareElement = "title" | "kcal" | "pie";
 export type ShareFont = "300" | "500" | "700";
@@ -9,6 +16,7 @@ export type ChartType =
   | "polarArea"
   | "radar"
   | "gauge";
+
 export type BarOrientation = "vertical" | "horizontal";
 export type MacroLayout = "pie" | "overlay";
 export type ThemePreset = "auto" | "light" | "dark";
@@ -25,6 +33,12 @@ export type CustomTextItem = {
   y: number;
   size: number;
   rotation: number;
+  color?: string;
+  backgroundColor?: string;
+  fontFamilyKey?: string | null;
+  fontWeight?: ShareFont;
+  italic?: boolean;
+  underline?: boolean;
 };
 
 export type CardVariant =
@@ -53,21 +67,25 @@ export type ShareOptions = {
 
   titleSize: number;
   titleColor?: string;
-  titleWeight?: "300" | "700" | "500";
+  titleBackgroundColor?: string;
+  titleWeight?: ShareFont;
   titleFont?: ShareFont;
   titleItalic?: boolean;
   titleUnderline?: boolean;
   titleFontFamily?: string;
-  titleFontWeight?: number;
+  titleFontFamilyKey?: string | null;
+  titleFontWeight?: ShareFont;
 
   kcalSize: number;
   kcalColor?: string;
-  kcalWeight?: "300" | "500" | "700";
+  kcalBackgroundColor?: string;
+  kcalWeight?: ShareFont;
   kcalFont?: ShareFont;
   kcalItalic?: boolean;
   kcalUnderline?: boolean;
   kcalFontFamily?: string;
-  kcalFontWeight?: number;
+  kcalFontFamilyKey?: string | null;
+  kcalFontWeight?: ShareFont;
 
   pieSize: number;
 
@@ -84,6 +102,7 @@ export type ShareOptions = {
 
   customText?: string;
   customColor?: string;
+  customBackgroundColor?: string;
   customFont?: ShareFont;
   customItalic?: boolean;
   customUnderline?: boolean;
@@ -92,7 +111,8 @@ export type ShareOptions = {
   customRotation?: number;
   customSize?: number;
   customFontFamily?: string;
-  customFontWeight?: number;
+  customFontFamilyKey?: string | null;
+  customFontWeight?: ShareFont;
   customTexts?: CustomTextItem[];
 
   chartType?: ChartType;
@@ -130,7 +150,7 @@ export type ShareOptions = {
 
   chartTextColor?: string;
   chartFontFamilyKey?: string | null;
-  chartFontWeight?: "300" | "500" | "700";
+  chartFontWeight?: ShareFont;
   chartMacroColors?: {
     protein?: string;
     carbs?: string;
@@ -148,23 +168,16 @@ export type ShareOptions = {
   photoRotation?: number;
 
   textFontFamilyKey?: string | null;
-  textFontWeight?: string | null;
+  textFontWeight?: ShareFont | null;
 
   titleText?: string;
   kcalText?: string;
 
   cardTextColor?: string;
   cardFontFamilyKey?: string | null;
-  cardFontWeight?: "300" | "500" | "700";
+  cardFontWeight?: ShareFont;
   cardMacroProteinColor?: string;
   cardMacroCarbsColor?: string;
   cardMacroFatColor?: string;
   cardBackgroundColor?: string;
 };
-
-export type ShareEditorMode =
-  | "options"
-  | "text"
-  | "chart"
-  | "card"
-  | "background";
