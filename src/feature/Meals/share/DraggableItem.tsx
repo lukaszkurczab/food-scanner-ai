@@ -162,10 +162,15 @@ export default function DraggableItem({
         );
     });
 
-  const tap = Gesture.Tap().onEnd(() => {
-    if (onSelect) runOnJS(onSelect)(id);
-    if (onTap) runOnJS(onTap)();
-  });
+  // WAŻNE: tap tylko jeśli gest był naprawdę tapnięciem (mały dystans, krótki czas)
+  const tap = Gesture.Tap()
+    .maxDuration(250)
+    .maxDistance(10)
+    .onEnd((_e, success) => {
+      if (!success) return;
+      if (onSelect) runOnJS(onSelect)(id);
+      if (onTap) runOnJS(onTap)();
+    });
 
   const gesture = Gesture.Simultaneous(pan, pinch, rotate, tap);
 

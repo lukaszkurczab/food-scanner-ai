@@ -6,7 +6,7 @@ import { TextInput } from "@/components/TextInput";
 import { Dropdown } from "@/components/Dropdown";
 import ColorPickerPanel from "../ColorPickerPanel";
 import type { ElementId } from "../DraggableItem";
-import type { ShareOptions } from "@/types/share";
+import type { ShareOptions, ShareFont, CustomTextItem } from "@/types/share";
 
 type FontFamilyOption = {
   label: string;
@@ -16,10 +16,16 @@ type FontFamilyOption = {
 
 type FontWeightOption = {
   label: string;
-  value: "300" | "500" | "700";
+  value: ShareFont;
 };
 
-type ColorTarget = "customColor";
+type ColorTarget =
+  | "titleColor"
+  | "kcalColor"
+  | "customColor"
+  | "titleBackgroundColor"
+  | "kcalBackgroundColor"
+  | "customBackgroundColor";
 
 type Props = {
   options: ShareOptions;
@@ -53,9 +59,16 @@ export default function TextEditorPanel({
     onChange({ ...options, ...p });
   };
 
-  const customTexts = Array.isArray(options.customTexts)
+  const customTexts: CustomTextItem[] = Array.isArray(options.customTexts)
     ? options.customTexts
     : [];
+
+  const findCustomItem = (): CustomTextItem | null => {
+    if (!selectedId) return null;
+    return customTexts.find((ct) => ct.id === selectedId) ?? null;
+  };
+
+  const customItem = findCustomItem();
 
   const resolveActiveText = () => {
     if (selectedId === "title") {
@@ -78,13 +91,12 @@ export default function TextEditorPanel({
       };
     }
 
-    if (selectedId) {
-      const item = customTexts.find((ct: any) => ct.id === selectedId) ?? null;
+    if (customItem) {
       return {
         key: "customText" as const,
         label: t("editor.custom", "Custom text"),
         placeholder: t("editor.custom_placeholder", "Your custom caption"),
-        value: item?.text ?? "",
+        value: customItem.text ?? "",
       };
     }
 
@@ -97,6 +109,60 @@ export default function TextEditorPanel({
   };
 
   const activeText = resolveActiveText();
+
+  const isTitle = selectedId === "title";
+  const isKcal = selectedId === "kcal";
+  const isCustom = !isTitle && !isKcal;
+
+  const textColorPreview = isTitle
+    ? options.titleColor || String(theme.text)
+    : isKcal
+    ? options.kcalColor || String(theme.text)
+    : customItem?.color || options.customColor || String(theme.text);
+
+  const bgColorPreview = isTitle
+    ? options.titleBackgroundColor || "transparent"
+    : isKcal
+    ? options.kcalBackgroundColor || "transparent"
+    : customItem?.backgroundColor ||
+      options.customBackgroundColor ||
+      "transparent";
+
+  const currentFamilyKey: string | null = (() => {
+    if (isTitle) {
+      return options.titleFontFamilyKey ?? options.textFontFamilyKey ?? null;
+    }
+    if (isKcal) {
+      return options.kcalFontFamilyKey ?? options.textFontFamilyKey ?? null;
+    }
+    if (customItem) {
+      return (
+        customItem.fontFamilyKey ??
+        options.customFontFamilyKey ??
+        options.textFontFamilyKey ??
+        null
+      );
+    }
+    return options.customFontFamilyKey ?? options.textFontFamilyKey ?? null;
+  })();
+
+  const currentWeight: ShareFont = (() => {
+    if (isTitle) {
+      return options.titleFontWeight ?? options.textFontWeight ?? "500";
+    }
+    if (isKcal) {
+      return options.kcalFontWeight ?? options.textFontWeight ?? "500";
+    }
+    if (customItem) {
+      return (
+        customItem.fontWeight ??
+        options.customFontWeight ??
+        options.textFontWeight ??
+        "500"
+      );
+    }
+    return options.customFontWeight ?? options.textFontWeight ?? "500";
+  })();
 
   const fontFamilyOptions: FontFamilyOption[] = [
     {
@@ -144,43 +210,117 @@ export default function TextEditorPanel({
     },
   ];
 
-  const currentFamilyKey: string | null = options.textFontFamilyKey ?? null;
-  const currentWeight: "300" | "500" | "700" =
-    (options.textFontWeight as "300" | "500" | "700") ?? "500";
-
-  const openColorPicker = () => {
-    const current = options.customColor || String(theme.text);
-    setColorTarget("customColor");
-    setTempColor(current);
+  const startColorPicking = () => {
     onColorPickingChange?.(true);
+  };
+
+  const stopColorPicking = () => {
+    onColorPickingChange?.(false);
+  };
+
+  const openColorPickerText = () => {
+    const target: ColorTarget = isTitle
+      ? "titleColor"
+      : isKcal
+      ? "kcalColor"
+      : "customColor";
+    setColorTarget(target);
+    setTempColor(textColorPreview);
+    startColorPicking();
+  };
+
+  const openColorPickerBg = () => {
+    const target: ColorTarget = isTitle
+      ? "titleBackgroundColor"
+      : isKcal
+      ? "kcalBackgroundColor"
+      : "customBackgroundColor";
+    setColorTarget(target);
+    setTempColor(bgColorPreview);
+    startColorPicking();
   };
 
   const confirmColor = () => {
     if (!colorTarget || !tempColor) {
       setColorTarget(null);
       setTempColor(null);
-      onColorPickingChange?.(false);
+      stopColorPicking();
       return;
     }
-    patch({ customColor: tempColor });
+
+    if (colorTarget === "titleColor") {
+      patch({ titleColor: tempColor });
+    } else if (colorTarget === "kcalColor") {
+      patch({ kcalColor: tempColor });
+    } else if (colorTarget === "titleBackgroundColor") {
+      patch({ titleBackgroundColor: tempColor });
+    } else if (colorTarget === "kcalBackgroundColor") {
+      patch({ kcalBackgroundColor: tempColor });
+    } else if (colorTarget === "customColor") {
+      if (customItem && selectedId) {
+        const next = customTexts.map((ct) =>
+          ct.id === selectedId ? { ...ct, color: tempColor } : ct
+        );
+        patch({ customTexts: next });
+      } else {
+        patch({ customColor: tempColor });
+      }
+    } else if (colorTarget === "customBackgroundColor") {
+      if (customItem && selectedId) {
+        const next = customTexts.map((ct) =>
+          ct.id === selectedId ? { ...ct, backgroundColor: tempColor } : ct
+        );
+        patch({ customTexts: next });
+      } else {
+        patch({ customBackgroundColor: tempColor });
+      }
+    }
+
     setColorTarget(null);
     setTempColor(null);
-    onColorPickingChange?.(false);
+    stopColorPicking();
   };
 
   const cancelColor = () => {
     setColorTarget(null);
     setTempColor(null);
-    onColorPickingChange?.(false);
+    stopColorPicking();
   };
 
   if (colorTarget) {
-    const value = tempColor || options.customColor || String(theme.text);
+    const isBg =
+      colorTarget === "titleBackgroundColor" ||
+      colorTarget === "kcalBackgroundColor" ||
+      colorTarget === "customBackgroundColor";
+
+    const label = isBg
+      ? t("editor.text_bg_color", "Background color")
+      : t("editor.chart_text_color", "Text color");
+
+    let base: string;
+    if (colorTarget === "titleColor") {
+      base = options.titleColor || String(theme.text);
+    } else if (colorTarget === "kcalColor") {
+      base = options.kcalColor || String(theme.text);
+    } else if (colorTarget === "customColor") {
+      base = customItem?.color || options.customColor || String(theme.text);
+    } else if (colorTarget === "titleBackgroundColor") {
+      base = options.titleBackgroundColor || "transparent";
+    } else if (colorTarget === "kcalBackgroundColor") {
+      base = options.kcalBackgroundColor || "transparent";
+    } else {
+      base =
+        customItem?.backgroundColor ||
+        options.customBackgroundColor ||
+        "transparent";
+    }
+
+    const value = tempColor ?? base;
 
     return (
       <View>
         <Text style={[styles.label, { color: theme.textSecondary }]}>
-          {t("editor.chart_text_color", "Text color")}
+          {label}
         </Text>
         <ColorPickerPanel value={value} onChange={setTempColor} />
         <View style={styles.colorActions}>
@@ -225,13 +365,16 @@ export default function TextEditorPanel({
           }
 
           const id = selectedId as string | null;
-          if (!id) return;
+          if (!id) {
+            patch({ customText: txt });
+            return;
+          }
 
           const list = Array.isArray(options.customTexts)
             ? [...options.customTexts]
             : [];
 
-          const idx = list.findIndex((ct: any) => ct.id === id);
+          const idx = list.findIndex((ct) => ct.id === id);
           if (idx >= 0) {
             list[idx] = { ...list[idx], text: txt };
           } else {
@@ -274,11 +417,27 @@ export default function TextEditorPanel({
         }}
         onChange={(fam) => {
           const famKey = fam || null;
-          patch({
-            textFontFamilyKey: famKey,
-          });
+
+          if (isTitle) {
+            patch({ titleFontFamilyKey: famKey });
+            return;
+          }
+          if (isKcal) {
+            patch({ kcalFontFamilyKey: famKey });
+            return;
+          }
+
+          if (customItem && selectedId) {
+            const next = customTexts.map((ct) =>
+              ct.id === selectedId ? { ...ct, fontFamilyKey: famKey } : ct
+            );
+            patch({ customTexts: next });
+          } else {
+            patch({ customFontFamilyKey: famKey });
+          }
         }}
       />
+
       <View style={{ height: 16 }} />
       <Text style={[styles.label, { color: theme.textSecondary }]}>
         {t("editor.weight", "Weight")}
@@ -307,15 +466,30 @@ export default function TextEditorPanel({
           );
         }}
         onChange={(w) => {
-          const weight = (w as "300" | "500" | "700") || "500";
-          patch({
-            textFontWeight: weight,
-          });
+          const weight = (w as ShareFont) || "500";
+
+          if (isTitle) {
+            patch({ titleFontWeight: weight });
+            return;
+          }
+          if (isKcal) {
+            patch({ kcalFontWeight: weight });
+            return;
+          }
+
+          if (customItem && selectedId) {
+            const next = customTexts.map((ct) =>
+              ct.id === selectedId ? { ...ct, fontWeight: weight } : ct
+            );
+            patch({ customTexts: next });
+          } else {
+            patch({ customFontWeight: weight });
+          }
         }}
       />
 
       <View style={{ height: 16 }} />
-      <Pressable style={styles.colorRow} onPress={openColorPicker}>
+      <Pressable style={styles.colorRow} onPress={openColorPickerText}>
         <Text style={{ color: theme.text, fontSize: 14 }}>
           {t("editor.chart_text_color", "Text color")}
         </Text>
@@ -323,7 +497,21 @@ export default function TextEditorPanel({
           style={[
             styles.colorPreview,
             {
-              backgroundColor: options.customColor || String(theme.text),
+              backgroundColor: textColorPreview,
+            },
+          ]}
+        />
+      </Pressable>
+
+      <Pressable style={styles.colorRow} onPress={openColorPickerBg}>
+        <Text style={{ color: theme.text, fontSize: 14 }}>
+          {t("editor.text_bg_color", "Background color")}
+        </Text>
+        <View
+          style={[
+            styles.colorPreview,
+            {
+              backgroundColor: bgColorPreview,
             },
           ]}
         />
