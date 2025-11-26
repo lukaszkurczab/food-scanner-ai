@@ -17,6 +17,8 @@ import { useAuthContext } from "@/context/AuthContext";
 import WeekStrip, { WeekDayItem } from "@/components/WeekStrip";
 import EmptyDayView from "../components/EmptyDayView";
 import { StreakBadge } from "@components/StreakBadge";
+import { calculateMacroTargets } from "@/utils/calculateMacroTargets";
+import { MacroTargetsRow } from "../components/MacroTargetsRow";
 
 function filterNonZeroMacros(n: Nutrients): Partial<Nutrients> {
   const out: Partial<Nutrients> = {};
@@ -118,6 +120,27 @@ export default function HomeScreen({ navigation }: any) {
 
   const goalCalories = hasSurvey ? userData?.calorieTarget ?? 0 : 0;
 
+  const macroTargets = useMemo(
+    () =>
+      userData?.calorieTarget && userData.calorieTarget > 0
+        ? calculateMacroTargets({
+            calorieTarget: userData.calorieTarget,
+            preferences: userData.preferences,
+            goal: userData.goal,
+          })
+        : null,
+    [userData?.calorieTarget, userData?.preferences, userData?.goal]
+  );
+
+  useEffect(() => {
+    if (macroTargets && goalCalories > 0) {
+      console.log("CaloriAI macro targets", {
+        kcalTarget: goalCalories,
+        macros: macroTargets,
+      });
+    }
+  }, [macroTargets, goalCalories]);
+
   return (
     <Layout showNavigationWithoutCard={true}>
       <View
@@ -154,6 +177,17 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         )}
 
+        {macroTargets && (
+          <MacroTargetsRow
+            macroTargets={macroTargets}
+            consumed={{
+              protein: macros.protein,
+              fat: macros.fat,
+              carbs: macros.carbs,
+            }}
+          />
+        )}
+
         {dayMeals.length === 0 ? (
           <EmptyDayView
             isToday={isToday}
@@ -166,9 +200,6 @@ export default function HomeScreen({ navigation }: any) {
           />
         ) : (
           <>
-            {showMacrosChart && (
-              <TodaysMacrosChart macros={nonZeroMacros as Nutrients} />
-            )}
             <TodaysMealsList
               meals={dayMeals}
               handleAddMeal={
