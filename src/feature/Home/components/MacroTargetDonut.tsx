@@ -202,7 +202,6 @@ export function MacroTargetDonut({ macro, targetGrams, consumedGrams }: Props) {
     {
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.regular,
-      borderColor: theme.text,
     },
   ];
 
@@ -213,8 +212,8 @@ export function MacroTargetDonut({ macro, targetGrams, consumedGrams }: Props) {
           {slices}
         </Svg>
         <View style={styles.centerLabel}>
-          <Text style={textStyleBig}>{consumedGrams}</Text>
-          <Text style={textStyleSmall}>{targetGrams}</Text>
+          <Text style={textStyleBig}>{remainingLabel}</Text>
+          <Text style={textStyleSmall}>g</Text>
         </View>
       </View>
     </View>
@@ -238,10 +237,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   centerBig: {
-    fontSize: 14,
+    fontSize: 16,
   },
   centerSmall: {
-    borderTopWidth: 1,
-    fontSize: 16,
+    fontSize: 10,
   },
 });

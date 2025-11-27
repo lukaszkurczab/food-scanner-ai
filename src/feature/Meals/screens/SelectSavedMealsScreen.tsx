@@ -258,7 +258,7 @@ export default function SelectSavedMealScreen({
         <View style={{ padding: theme.spacing.lg, gap: theme.spacing.md }}>
           <PrimaryButton label={t("meals:select", "Select")} disabled />
           <SecondaryButton
-            label={t("meals:start_over", "Start over")}
+            label={t("meals:select_method", "Start over")}
             onPress={handleStartOver}
           />
         </View>
@@ -320,7 +320,7 @@ export default function SelectSavedMealScreen({
           disabled={!selectedId}
         />
         <SecondaryButton
-          label={t("meals:start_over", "Start over")}
+          label={t("meals:select_method", "Start over")}
           onPress={handleStartOver}
         />
       </View>

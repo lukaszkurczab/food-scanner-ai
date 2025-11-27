@@ -212,7 +212,13 @@ export const IngredientEditor: React.FC<Props> = ({
         />
 
         <Pressable
-          onPress={() => navigation.navigate("BarCodeCamera")}
+          onPress={() =>
+            navigation.navigate("MealCamera", {
+              barcodeOnly: true,
+              returnTo: "ReviewIngredients",
+              attempt: 1,
+            })
+          }
           style={[
             styles.barcodeButton,
             { borderColor: theme.border, backgroundColor: theme.card },

@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
@@ -127,9 +133,22 @@ const MealAddMethodScreen = () => {
         }
       }
     }
-    if (screen === "MealCamera" || screen === "ReviewIngredients") {
-      await primeEmptyMeal(screen);
+
+    if (screen === "MealCamera") {
+      await primeEmptyMeal("ReviewIngredients");
+      navigation.navigate("MealCamera" as any, {
+        returnTo: "MealAddMethod",
+        attempt: 1,
+      });
+      return;
     }
+
+    if (screen === "ReviewIngredients") {
+      await primeEmptyMeal("ReviewIngredients");
+      navigation.navigate("ReviewIngredients" as any);
+      return;
+    }
+
     navigation.navigate(screen as any);
   };
 

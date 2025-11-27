@@ -40,26 +40,30 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const { language } = useUserContext();
   const { isPremium } = usePremiumContext();
   const route = useRoute<any>();
+  const barcodeOnly = !!route.params?.barcodeOnly;
   const routeId = route.params?.id as string | undefined;
   const skipDetection = !!route.params?.skipDetection;
   const returnTo =
     (route.params?.returnTo as keyof RootStackParamList) || "ReviewIngredients";
+  const attempt = (route.params?.attempt as number | undefined) || 1;
   const mealId = meal?.mealId || routeId || uuidv4();
   const canLeaveRef = useRef(false);
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [mode, setMode] = useState<"ai" | "barcode">(
-    isPremium ? "ai" : "barcode"
+    barcodeOnly ? "barcode" : isPremium ? "ai" : "barcode"
   );
 
   useEffect(() => {
+    if (barcodeOnly) return;
     setMode((prev) =>
       isPremium ? (prev === "barcode" ? "ai" : prev) : "barcode"
     );
-  }, [isPremium]);
+  }, [isPremium, barcodeOnly]);
 
   useEffect(() => {
+    if (barcodeOnly) return;
     if (skipDetection) setMode("ai");
-  }, [skipDetection]);
+  }, [skipDetection, barcodeOnly]);
 
   useEffect(() => {
     if (mode !== "barcode" && scannedCode) setScannedCode(null);
@@ -75,7 +79,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
         setPhotoUri(null);
         return true;
       }
-      return false;
+      return true;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
     return () => sub.remove();
@@ -84,19 +88,12 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   useEffect(() => {
     const unsub = navigation.addListener("beforeRemove", (e: any) => {
       if (canLeaveRef.current) return;
+      e.preventDefault();
       if (photoUri) {
-        e.preventDefault();
         setPhotoUri(null);
         return;
       }
-      if (returnTo) {
-        if (navigation.canGoBack()) {
-          return;
-        } else {
-          e.preventDefault();
-          navigation.replace(returnTo as any);
-        }
-      }
+      navigation.replace(returnTo as any);
     });
     return unsub;
   }, [navigation, photoUri, returnTo]);
@@ -108,33 +105,46 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
       isPremium,
       isCameraReady,
     });
+
     if (typeof __DEV__ !== "undefined" && __DEV__) {
       try {
         const uri = await getSampleMealUri();
         log.log("DEV sample meal uri", uri);
         setPhotoUri(uri);
         return;
-      } catch (e) {
-        log.warn("DEV sample load failed", e);
-      }
+      } catch {}
     }
+
     if (mode === "barcode" && !skipDetection) {
       const code = scannedCode;
       if (!code) {
         setBarcodeModal(true);
         return;
       }
+
       setIsLoading(true);
       try {
         const off = await fetchProductByBarcode(code);
-        const name = off?.name || `Barcode ${code}`;
+
+        if (!off) {
+          canLeaveRef.current = true;
+          navigation.replace("BarcodeProductNotFound" as any, {
+            code,
+            attempt,
+            returnTo,
+          });
+          return;
+        }
+
+        const name = off.name || `Barcode ${code}`;
+
         if (!meal) {
           setMeal({
             mealId,
             userUid: uid || "",
             name,
             photoUrl: null,
-            ingredients: off ? [off.ingredient] : [],
+            ingredients: [off.ingredient],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             syncState: "pending",
@@ -148,18 +158,29 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
           } as any);
         } else {
           updateMeal({
+            mealId,
             name,
             notes: `barcode:${code}`,
-            ingredients: off ? [off.ingredient] : meal.ingredients || [],
+            ingredients: [off.ingredient],
           } as any);
         }
+
+        canLeaveRef.current = true;
+        navigation.replace("ReviewIngredients");
+        return;
+      } catch {
+        canLeaveRef.current = true;
+        navigation.replace("BarcodeProductNotFound" as any, {
+          code,
+          attempt,
+          returnTo,
+        });
+        return;
       } finally {
         setIsLoading(false);
       }
-      canLeaveRef.current = true;
-      navigation.replace("ReviewIngredients");
-      return;
     }
+
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
     setIsTakingPhoto(true);
     try {
@@ -284,11 +305,23 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   }
 
   if (isLoading) {
+    const isBarcodeFlow = mode === "barcode" && !skipDetection;
     return (
       <Layout>
         <Loader
-          text={t("camera_loader_title", "Analyzing your meal...")}
-          subtext={t("camera_loader_subtext", "This may take a few seconds.")}
+          text={
+            isBarcodeFlow
+              ? t("barcode_loader_title", "Looking up product...")
+              : t("camera_loader_title", "Analyzing your meal...")
+          }
+          subtext={
+            isBarcodeFlow
+              ? t(
+                  "barcode_loader_subtext",
+                  "Fetching product data from the database."
+                )
+              : t("camera_loader_subtext", "This may take a few seconds.")
+          }
         />
       </Layout>
     );
@@ -339,7 +372,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
           />
           <View style={StyleSheet.absoluteFill}>
             <View style={styles.overlay} pointerEvents="none" />
-            {!skipDetection && (
+            {!skipDetection && !barcodeOnly && (
               <View style={styles.modeSwitch}>
                 <Pressable
                   onPress={() =>
