@@ -412,15 +412,15 @@ export default function ReviewIngredientsScreen() {
           style={styles(theme).continueBtn}
         />
         <SecondaryButton
-          label={t("start_over", { ns: "meals" })}
+          label={t("select_method", { ns: "meals" })}
           onPress={() => setShowConfirmModal(true)}
           style={styles(theme).startOverBtn}
         />
 
         <AppModal
           visible={showConfirmModal}
-          title={t("start_over_title", { ns: "meals" })}
-          message={t("start_over_message", { ns: "meals" })}
+          title={t("select_method_title", { ns: "meals" })}
+          message={t("select_method_message", { ns: "meals" })}
           primaryActionLabel={t("yes", { ns: "common" })}
           onPrimaryAction={handleStartOver}
           secondaryActionLabel={t("no", { ns: "common" })}

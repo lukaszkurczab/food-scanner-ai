@@ -96,7 +96,6 @@ const AppNavigator = () => {
           <Stack.Screen name="SendFeedback" component={SendFeedbackScreen} />
           <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
           <Stack.Screen name="MealCamera" component={MealCameraScreen} />
-          <Stack.Screen name="BarCodeCamera" component={BarCodeCameraScreen} />
           <Stack.Screen
             name="SavedMealsCamera"
             component={SavedMealsCameraScreen}

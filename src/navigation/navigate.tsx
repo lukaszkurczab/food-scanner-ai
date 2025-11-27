@@ -18,6 +18,7 @@ export type RootStackParamList = {
         attempt?: number;
         skipDetection?: boolean;
         returnTo?: keyof RootStackParamList;
+        barcodeOnly?: boolean;
       }
     | undefined;
   AddMealFromList: undefined;
