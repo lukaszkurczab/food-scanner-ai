@@ -1,5 +1,12 @@
 import React, { useRef, useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, Text, BackHandler } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Text,
+  BackHandler,
+  DeviceEventEmitter,
+} from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
@@ -21,6 +28,7 @@ import { getSampleMealUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
 import { useUserContext } from "@contexts/UserContext";
 import type { RootStackParamList } from "@/navigation/navigate";
+import type { Ingredient } from "@/types";
 
 const log = debugScope("Screen:MealCamera");
 
@@ -40,12 +48,14 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const { language } = useUserContext();
   const { isPremium } = usePremiumContext();
   const route = useRoute<any>();
+
   const barcodeOnly = !!route.params?.barcodeOnly;
   const routeId = route.params?.id as string | undefined;
   const skipDetection = !!route.params?.skipDetection;
   const returnTo =
     (route.params?.returnTo as keyof RootStackParamList) || "ReviewIngredients";
   const attempt = (route.params?.attempt as number | undefined) || 1;
+
   const mealId = meal?.mealId || routeId || uuidv4();
   const canLeaveRef = useRef(false);
   const [scannedCode, setScannedCode] = useState<string | null>(null);
@@ -79,11 +89,13 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
         setPhotoUri(null);
         return true;
       }
+      canLeaveRef.current = true;
+      navigation.replace(returnTo as any);
       return true;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
     return () => sub.remove();
-  }, [photoUri]);
+  }, [photoUri, navigation, returnTo]);
 
   useEffect(() => {
     const unsub = navigation.addListener("beforeRemove", (e: any) => {
@@ -93,10 +105,80 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
         setPhotoUri(null);
         return;
       }
+      canLeaveRef.current = true;
       navigation.replace(returnTo as any);
     });
     return unsub;
   }, [navigation, photoUri, returnTo]);
+
+  const handleBarcodeFlow = async (code: string) => {
+    setIsLoading(true);
+    try {
+      const off = await fetchProductByBarcode(code);
+
+      if (!off || off === null) {
+        canLeaveRef.current = true;
+        navigation.replace("BarcodeProductNotFound" as any, {
+          code,
+          attempt,
+          returnTo,
+        });
+        return;
+      }
+
+      const { ingredient, name } = off;
+
+      if (barcodeOnly) {
+        DeviceEventEmitter.emit("barcode.scanned.ingredient", {
+          ingredient,
+        } as { ingredient: Ingredient });
+        canLeaveRef.current = true;
+        navigation.replace(returnTo as any);
+        return;
+      }
+
+      const resolvedName = name || `Barcode ${code}`;
+
+      if (!meal) {
+        setMeal({
+          mealId,
+          userUid: uid || "",
+          name: resolvedName,
+          photoUrl: null,
+          ingredients: [ingredient],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          syncState: "pending",
+          tags: [],
+          deleted: false,
+          notes: `barcode:${code}`,
+          type: "other",
+          timestamp: "",
+          source: "manual",
+          cloudId: undefined,
+        } as any);
+      } else {
+        updateMeal({
+          mealId,
+          name: resolvedName,
+          notes: `barcode:${code}`,
+          ingredients: [ingredient],
+        } as any);
+      }
+
+      canLeaveRef.current = true;
+      navigation.replace("ReviewIngredients" as any);
+    } catch {
+      canLeaveRef.current = true;
+      navigation.replace("BarcodeProductNotFound" as any, {
+        code,
+        attempt,
+        returnTo,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleTakePicture = async () => {
     log.log("takePicture start", {
@@ -104,6 +186,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
       skipDetection,
       isPremium,
       isCameraReady,
+      barcodeOnly,
     });
 
     if (typeof __DEV__ !== "undefined" && __DEV__) {
@@ -116,69 +199,12 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
     }
 
     if (mode === "barcode" && !skipDetection) {
-      const code = scannedCode;
-      if (!code) {
+      if (!scannedCode) {
         setBarcodeModal(true);
         return;
       }
-
-      setIsLoading(true);
-      try {
-        const off = await fetchProductByBarcode(code);
-
-        if (!off) {
-          canLeaveRef.current = true;
-          navigation.replace("BarcodeProductNotFound" as any, {
-            code,
-            attempt,
-            returnTo,
-          });
-          return;
-        }
-
-        const name = off.name || `Barcode ${code}`;
-
-        if (!meal) {
-          setMeal({
-            mealId,
-            userUid: uid || "",
-            name,
-            photoUrl: null,
-            ingredients: [off.ingredient],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            syncState: "pending",
-            tags: [],
-            deleted: false,
-            notes: `barcode:${code}`,
-            type: "other",
-            timestamp: "",
-            source: "manual",
-            cloudId: undefined,
-          } as any);
-        } else {
-          updateMeal({
-            mealId,
-            name,
-            notes: `barcode:${code}`,
-            ingredients: [off.ingredient],
-          } as any);
-        }
-
-        canLeaveRef.current = true;
-        navigation.replace("ReviewIngredients");
-        return;
-      } catch {
-        canLeaveRef.current = true;
-        navigation.replace("BarcodeProductNotFound" as any, {
-          code,
-          attempt,
-          returnTo,
-        });
-        return;
-      } finally {
-        setIsLoading(false);
-      }
+      await handleBarcodeFlow(scannedCode);
+      return;
     }
 
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
@@ -219,6 +245,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
       } else {
         updateMeal({ photoUrl: finalUri, mealId });
       }
+
       if (!skipDetection) {
         const ingredients = uid
           ? await detectIngredientsWithVision(uid, finalUri, {
@@ -226,6 +253,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
               lang: language,
             })
           : null;
+
         if (ingredients && ingredients.length > 0) {
           updateMeal({ ingredients, mealId, photoUrl: finalUri });
         } else {
@@ -247,6 +275,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
       });
       return;
     }
+
     setIsLoading(false);
     canLeaveRef.current = true;
     navigation.replace("ReviewIngredients");

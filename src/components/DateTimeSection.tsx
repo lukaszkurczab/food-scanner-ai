@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Card, Modal } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -60,28 +60,34 @@ export const DateTimeSection: React.FC<Props> = ({
   );
 
   const [visible, setVisible] = useState(false);
-  const [mode, setMode] = useState<"date" | "time">("date");
-  const [target, setTarget] = useState<"meal" | "added">("meal");
+  const [tmp, setTmp] = useState<Date>(value);
   const [dateText, setDateText] = useState(fmtDate.format(value));
   const [timeText, setTimeText] = useState(fmtTime.format(value));
-  const [tmp, setTmp] = useState<Date>(value);
 
   useEffect(() => {
+    setTmp(value);
     setDateText(fmtDate.format(value));
     setTimeText(fmtTime.format(value));
   }, [value, fmtDate, fmtTime]);
 
-  const added = addedValue ?? value;
+  const handleOpen = () => {
+    setTmp(value);
+    setVisible(true);
+  };
+
+  const handleSave = () => {
+    onChange(tmp);
+    setVisible(false);
+  };
+
+  const handleCancel = () => {
+    setTmp(value);
+    setVisible(false);
+  };
 
   return (
     <View style={{ gap: theme.spacing.sm }}>
-      <Pressable
-        onPress={() => {
-          setTmp(target === "meal" ? value : added);
-          setMode("date");
-          setVisible(true);
-        }}
-      >
+      <Pressable onPress={handleOpen}>
         <Card variant="outlined">
           <View style={[styles.rowBetween, { gap: theme.spacing.sm }]}>
             <View style={styles.flex1}>
@@ -111,66 +117,33 @@ export const DateTimeSection: React.FC<Props> = ({
       <Modal
         visible={visible}
         message={
-          (target === "meal"
-            ? t("meals:meal_time", "Czas posiłku")
-            : t("meals:added_time", "Czas dodania")) +
-          (mode === "date"
-            ? " — " + t("meals:pick_date", "wybierz datę")
-            : " — " + t("meals:pick_time", "wybierz godzinę"))
+          t("meals:meal_time", "Czas posiłku") +
+          " — " +
+          t("meals:pick_date_time", "Wybierz datę i godzinę")
         }
-        primaryActionLabel={
-          mode === "date"
-            ? t("common:next", "Dalej")
-            : t("common:save", "Zapisz")
-        }
-        secondaryActionLabel={
-          mode === "date"
-            ? t("common:cancel", "Anuluj")
-            : t("common:back", "Wstecz")
-        }
-        onClose={() => setVisible(false)}
-        onSecondaryAction={() => {
-          if (mode !== "date") setMode("date");
-          else setVisible(false);
-        }}
-        onPrimaryAction={() => {
-          if (mode === "date") {
-            setMode("time");
-          } else {
-            if (target === "meal") onChange(tmp);
-            else onChangeAdded?.(tmp);
-            setVisible(false);
-          }
-        }}
+        primaryActionLabel={t("common:save", "Zapisz")}
+        secondaryActionLabel={t("common:cancel", "Anuluj")}
+        onClose={handleCancel}
+        onSecondaryAction={handleCancel}
+        onPrimaryAction={handleSave}
       >
-        <View style={{ paddingTop: theme.spacing.sm, gap: theme.spacing.sm }}>
-          {mode === "date" ? (
-            <Calendar
-              startDate={tmp}
-              endDate={tmp}
-              focus="start"
-              onChangeRange={({ start }) => setTmp(start)}
-              onToggleFocus={() => {}}
-              minDate={minDate}
-              maxDate={maxDate}
-              mode="single"
-              onPickSingle={(d) => setTmp(d)}
-            />
-          ) : prefers12h ? (
-            <Clock12h
-              value={tmp}
-              onChange={setTmp}
-              onDone={() => {}}
-              onBack={() => setMode("date")}
-            />
+        <View style={{ paddingTop: theme.spacing.sm, gap: theme.spacing.md }}>
+          {prefers12h ? (
+            <Clock12h value={tmp} onChange={setTmp} />
           ) : (
-            <Clock24h
-              value={tmp}
-              onChange={setTmp}
-              onDone={() => {}}
-              onBack={() => setMode("date")}
-            />
+            <Clock24h value={tmp} onChange={setTmp} />
           )}
+          <Calendar
+            startDate={tmp}
+            endDate={tmp}
+            focus="start"
+            onChangeRange={({ start }) => setTmp(start)}
+            onToggleFocus={() => {}}
+            minDate={minDate}
+            maxDate={maxDate}
+            mode="single"
+            onPickSingle={(d) => setTmp(d)}
+          />
         </View>
       </Modal>
     </View>
