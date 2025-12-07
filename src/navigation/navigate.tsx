@@ -52,7 +52,6 @@ export type RootStackParamList = {
   MealTextAI: undefined;
   MealDetails: { meal: Meal; edit?: boolean; baseline?: Meal };
   MealShare: { meal: Meal; returnTo: "Result" | "MealDetails" };
-  BarCodeCamera: undefined;
   SavedMealsCamera:
     | {
         id?: string;

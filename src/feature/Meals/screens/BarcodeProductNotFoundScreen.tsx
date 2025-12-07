@@ -18,18 +18,18 @@ export default function BarcodeProductNotFoundScreen() {
   const code = route.params?.code as string | undefined;
   const attempt = (route.params?.attempt as number | undefined) || 1;
   const returnTo =
-    (route.params?.returnTo as keyof RootStackParamList) || "MealAddMethod";
+    (route.params?.returnTo as keyof RootStackParamList) || "ReviewIngredients";
+
+  const isLastAttempt = attempt >= MAX_ATTEMPTS;
 
   const handleRetry = () => {
-    if (attempt >= MAX_ATTEMPTS) {
+    if (isLastAttempt) {
       handleBack();
       return;
     }
 
-    const targetScreen =
-      returnTo === "ReviewIngredients" ? "MealCamera" : "BarCodeCamera";
-
-    navigation.replace(targetScreen as any, {
+    navigation.replace("MealCamera", {
+      barcodeOnly: true,
       attempt: attempt + 1,
       returnTo,
     });
@@ -38,8 +38,6 @@ export default function BarcodeProductNotFoundScreen() {
   const handleBack = () => {
     navigation.replace(returnTo as any);
   };
-
-  const isLastAttempt = attempt >= MAX_ATTEMPTS;
 
   return (
     <Layout>
@@ -68,9 +66,13 @@ export default function BarcodeProductNotFoundScreen() {
             : t("barcode_not_found_sub", {
                 defaultValue:
                   "We couldn't get nutrition data for this barcode. You can try again or choose a different method.",
-                code,
               })}
         </Text>
+        {code ? (
+          <Text style={[styles.code, { color: theme.textSecondary }]}>
+            {t("barcode_code_label", "Scanned code")}: {code}
+          </Text>
+        ) : null}
         <View style={{ height: 24 }} />
         {!isLastAttempt && (
           <PrimaryButton
@@ -114,4 +116,5 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 22, fontWeight: "bold", textAlign: "center" },
   subtitle: { fontSize: 16, textAlign: "center", marginTop: 10 },
+  code: { fontSize: 14, textAlign: "center", marginTop: 10 },
 });
