@@ -21,15 +21,15 @@
 
   "exit_first_title": "Wyjść z ankiety?",
   "exit_first_desc": "Ankietę możesz uzupełnić później w profilu. Obecny postęp nie zostanie zapisany.",
-  "exit_first_primary": "Przejdź do ekranu głównego",
+  "exit_first_primary": "Wyjdź",
   "exit_first_secondary": "Kontynuuj",
-  "exit_first_a11y": "Wyjdź",
+  "exit_first_a11y": "Pomiń",
 
   "exit_refill_title": "Zapisać zmiany przed wyjściem?",
   "exit_refill_desc": "Możesz zapisać zaktualizowane preferencje lub je porzucić.",
   "exit_refill_save": "Zapisz",
   "exit_refill_discard": "Odrzuć",
-  "exit_refill_a11y": "Wyjdź",
+  "exit_refill_a11y": "Zamknij",
 
   "step2_title": "Spersonalizuj swój plan",
   "step2_description": "Podaj swoje preferencje żywieniowe, poziom aktywności i cel.",

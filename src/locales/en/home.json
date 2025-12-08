@@ -8,6 +8,11 @@
   "todaysMeals": "Today’s meals",
   "meal": "Meal",
   "weeklyProgress": "Weekly Progress",
+
+  "totalToday": "Total today",
+  "noGoalSet": "No daily goal",
+  "setDailyGoal": "Set your daily goal",
+
   "emptyDay": {
     "title": "No meals on this day",
     "subtitle_today": "Add your first meal to start tracking.",

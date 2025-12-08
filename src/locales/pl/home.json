@@ -8,6 +8,11 @@
   "todaysMeals": "Dzisiejsze posiłki",
   "meal": "Posiłek",
   "weeklyProgress": "Postęp tygodniowy",
+
+  "totalToday": "Razem dzisiaj",
+  "noGoalSet": "Brak celu dziennego",
+  "setDailyGoal": "Ustaw cel dzienny",
+
   "emptyDay": {
     "title": "Brak posiłków tego dnia",
     "subtitle_today": "Dodaj pierwszy posiłek, aby rozpocząć zapis dnia.",
