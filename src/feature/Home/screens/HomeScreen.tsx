@@ -2,11 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { TodaysMealsList } from "../components/TodaysMealsList";
-import { TodaysMacrosChart } from "../components/TodaysMacrosChart";
 import { ButtonSection } from "../components/ButtonSection";
 import { useUserContext } from "@contexts/UserContext";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
-import { Layout, TargetProgressBar } from "@/components";
+import { Layout, TargetProgressBar, PrimaryButton } from "@/components";
 import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@hooks/useMeals";
@@ -132,15 +131,6 @@ export default function HomeScreen({ navigation }: any) {
     [userData?.calorieTarget, userData?.preferences, userData?.goal]
   );
 
-  useEffect(() => {
-    if (macroTargets && goalCalories > 0) {
-      console.log("CaloriAI macro targets", {
-        kcalTarget: goalCalories,
-        macros: macroTargets,
-      });
-    }
-  }, [macroTargets, goalCalories]);
-
   return (
     <Layout showNavigationWithoutCard={true}>
       <View
@@ -163,17 +153,77 @@ export default function HomeScreen({ navigation }: any) {
             <StreakBadge value={streak} />
           </View>
         ) : (
-          <View style={[styles.card, styles.cardPad]}>
-            <Text style={[styles.caloriesText, { color: theme.text }]}>
-              {t("home:totalToday", "Total today")}: {totalCalories}{" "}
-              {t("common:kcal", "kcal")}
-            </Text>
-            <Text
-              style={[styles.link, { color: theme.link }]}
-              onPress={() => navigation.navigate("Onboarding")}
+          <View
+            style={{
+              backgroundColor: theme.card,
+              padding: theme.spacing.lg,
+              borderRadius: theme.rounded.md,
+              shadowColor: theme.shadow,
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 2,
+              gap: theme.spacing.md,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
-              {t("home:setDailyGoal", "Set your daily goal")} →
-            </Text>
+              <View>
+                <Text
+                  style={[
+                    styles.goalLabel,
+                    {
+                      color: theme.textSecondary,
+                      fontFamily: theme.typography.fontFamily.medium,
+                    },
+                  ]}
+                >
+                  {t("home:totalToday", "Total today")}
+                </Text>
+                <Text
+                  style={[
+                    styles.goalValue,
+                    {
+                      color: theme.text,
+                      fontFamily: theme.typography.fontFamily.semiBold,
+                    },
+                  ]}
+                >
+                  {totalCalories} {t("common:kcal", "kcal")}
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.goalStatusPill,
+                  {
+                    borderColor: theme.border,
+                    backgroundColor: theme.background,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.goalStatusText,
+                    {
+                      color: theme.textSecondary,
+                      fontFamily: theme.typography.fontFamily.regular,
+                    },
+                  ]}
+                >
+                  {t("home:noGoalSet", "No daily goal")}
+                </Text>
+              </View>
+            </View>
+
+            <PrimaryButton
+              label={t("home:setDailyGoal", "Set your daily goal")}
+              onPress={() => navigation.navigate("Onboarding")}
+            />
           </View>
         )}
 
@@ -199,17 +249,15 @@ export default function HomeScreen({ navigation }: any) {
             }
           />
         ) : (
-          <>
-            <TodaysMealsList
-              meals={dayMeals}
-              handleAddMeal={
-                isToday ? () => navigation.navigate("MealAddMethod") : undefined
-              }
-              onOpenMeal={(meal: Meal) =>
-                navigation.navigate("MealDetails", { meal })
-              }
-            />
-          </>
+          <TodaysMealsList
+            meals={dayMeals}
+            handleAddMeal={
+              isToday ? () => navigation.navigate("MealAddMethod") : undefined
+            }
+            onOpenMeal={(meal: Meal) =>
+              navigation.navigate("MealDetails", { meal })
+            }
+          />
         )}
 
         {showWeeklyGraph && <WeeklyProgressGraph data={data} labels={labels} />}
@@ -223,8 +271,20 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   headerRow: { flexDirection: "row", alignItems: "center" },
-  card: { backgroundColor: "transparent", borderRadius: 16 },
-  cardPad: { padding: 16 },
-  caloriesText: { fontSize: 18, fontWeight: "700" },
-  link: { marginTop: 6, fontSize: 14 },
+  goalLabel: {
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  goalValue: {
+    fontSize: 24,
+  },
+  goalStatusPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  goalStatusText: {
+    fontSize: 12,
+  },
 });
