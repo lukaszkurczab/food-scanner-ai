@@ -172,7 +172,14 @@ export default function HomeScreen({ navigation }: any) {
                 alignItems: "center",
               }}
             >
-              <View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
                 <Text
                   style={[
                     styles.goalLabel,
@@ -194,28 +201,6 @@ export default function HomeScreen({ navigation }: any) {
                   ]}
                 >
                   {totalCalories} {t("common:kcal", "kcal")}
-                </Text>
-              </View>
-
-              <View
-                style={[
-                  styles.goalStatusPill,
-                  {
-                    borderColor: theme.border,
-                    backgroundColor: theme.background,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.goalStatusText,
-                    {
-                      color: theme.textSecondary,
-                      fontFamily: theme.typography.fontFamily.regular,
-                    },
-                  ]}
-                >
-                  {t("home:noGoalSet", "No daily goal")}
                 </Text>
               </View>
             </View>
@@ -272,11 +257,11 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   headerRow: { flexDirection: "row", alignItems: "center" },
   goalLabel: {
-    fontSize: 14,
+    fontSize: 18,
     marginBottom: 2,
   },
   goalValue: {
-    fontSize: 24,
+    fontSize: 22,
   },
   goalStatusPill: {
     paddingHorizontal: 12,
