@@ -18,29 +18,41 @@ export const RangeTabs: React.FC<RangeTabsProps> = ({
   const theme = useTheme();
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.card,
+          borderRadius: theme.rounded.full,
+          padding: theme.spacing.xs,
+          borderWidth: 1,
+          borderColor: theme.border,
+        },
+      ]}
+    >
       {options.map((opt) => {
         const isActive = active === opt.key;
+
         return (
           <Pressable
             key={opt.key}
             onPress={() => onChange(opt.key)}
-            style={[
+            style={({ pressed }) => [
               styles.tab,
               {
-                backgroundColor: isActive ? theme.accent : "transparent",
-                borderColor: theme.border,
-                borderRadius: theme.rounded.sm,
-                width: "37%",
-                flexShrink: 1,
+                backgroundColor: isActive
+                  ? theme.accentSecondary
+                  : "transparent",
+                borderRadius: theme.rounded.full,
               },
+              pressed && { opacity: 0.9 },
             ]}
           >
             <Text
               style={{
-                color: isActive ? theme.onAccent : theme.text,
-                fontWeight: "500",
+                color: isActive ? theme.onAccent : theme.textSecondary,
                 fontSize: theme.typography.size.base,
+                fontFamily: theme.typography.fontFamily.medium,
                 textAlign: "center",
               }}
             >
@@ -56,11 +68,14 @@ export const RangeTabs: React.FC<RangeTabsProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    gap: 8,
+    alignSelf: "stretch",
+    gap: 4,
   },
   tab: {
+    flex: 1,
     paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

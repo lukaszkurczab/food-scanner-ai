@@ -30,7 +30,10 @@ export const ScrollableBox: React.FC<Props> = ({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator
         bounces
-        contentContainerStyle={contentContainerStyle}
+        contentContainerStyle={[
+          { paddingHorizontal: 8 },
+          contentContainerStyle,
+        ]}
       >
         {children}
       </ScrollView>
