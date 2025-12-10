@@ -236,35 +236,6 @@ export default function NotificationsScreen({ navigation }: any) {
         </View>
       </ScrollView>
 
-      <PrimaryButton
-        label={t("screen.sendTest", "Send test notification")}
-        onPress={async () => {
-          try {
-            await ensureAndroidChannel();
-            const allowed =
-              systemAllowed ??
-              (await Notifications.getPermissionsAsync()).granted;
-            if (!allowed) {
-              const ok = await requestSystemPermission();
-              if (!ok) return;
-            }
-            await Notifications.scheduleNotificationAsync({
-              content: { title: "Test", body: "This is a test notification" },
-              trigger: {
-                type: Notifications.SchedulableTriggerInputTypes.DATE,
-                date: new Date(Date.now() + 5000),
-              } as Notifications.NotificationTriggerInput,
-            });
-          } catch (e) {
-            console.warn("Failed to schedule test notification:", e);
-          }
-        }}
-        style={{
-          marginHorizontal: theme.spacing.lg,
-          marginBottom: theme.spacing.lg,
-        }}
-      />
-
       <AppAlert
         visible={!!confirmId}
         title={t("screen.deleteTitle", "Delete reminder")}
