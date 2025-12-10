@@ -31,13 +31,6 @@ import { Clock24h, Clock12h } from "@/components";
 import { Dropdown } from "@/components/Dropdown";
 
 const TYPES: NotificationType[] = ["meal_reminder", "calorie_goal"];
-const MEAL_OPTIONS: Array<{ label: string; value: MealKind | null }> = [
-  { label: "Any meal", value: null },
-  { label: "Breakfast", value: "breakfast" },
-  { label: "Lunch", value: "lunch" },
-  { label: "Dinner", value: "dinner" },
-  { label: "Snack", value: "snack" },
-];
 
 export default function NotificationFormScreen() {
   const theme = useTheme();
@@ -111,10 +104,41 @@ export default function NotificationFormScreen() {
     }
   }, [locale]);
 
-  const fmtTime = new Intl.DateTimeFormat(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const fmtTime = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [locale]
+  );
+
+  // NOWE: opcje posiłków zależne od języka
+  const mealOptions: Array<{ label: string; value: MealKind | null }> = useMemo(
+    () => [
+      {
+        label: t("mealKind.any", "Any meal"),
+        value: null,
+      },
+      {
+        label: t("mealKind.breakfast", "Breakfast"),
+        value: "breakfast",
+      },
+      {
+        label: t("mealKind.lunch", "Lunch"),
+        value: "lunch",
+      },
+      {
+        label: t("mealKind.dinner", "Dinner"),
+        value: "dinner",
+      },
+      {
+        label: t("mealKind.snack", "Snack"),
+        value: "snack",
+      },
+    ],
+    [t]
+  );
 
   return (
     <Layout>
@@ -229,19 +253,9 @@ export default function NotificationFormScreen() {
           >
             <View style={{ paddingTop: theme.spacing.sm }}>
               {prefers12h ? (
-                <Clock12h
-                  value={tmp}
-                  onChange={setTmp}
-                  onDone={() => {}}
-                  onBack={() => {}}
-                />
+                <Clock12h value={tmp} onChange={setTmp} />
               ) : (
-                <Clock24h
-                  value={tmp}
-                  onChange={setTmp}
-                  onDone={() => {}}
-                  onBack={() => {}}
-                />
+                <Clock24h value={tmp} onChange={setTmp} />
               )}
             </View>
           </Modal>
@@ -271,7 +285,7 @@ export default function NotificationFormScreen() {
             </Text>
             <Dropdown
               value={mealKind}
-              options={MEAL_OPTIONS}
+              options={mealOptions}
               onChange={(val) => setMealKind(val)}
             />
           </View>

@@ -110,5 +110,12 @@
   "error": "Błąd",
   "feedbackSendError": "Nie udało się wysłać opinii. Spróbuj ponownie później.",
   "exportSavedSuccess": "Twoje dane zostały zapisane jako plik PDF: {{filename}}. Otworzono okno udostępniania.",
-  "exportSavedPathHint": "Zapisano w: {{path}}"
+  "exportSavedPathHint": "Zapisano w: {{path}}",
+  "mealKind": {
+    "any": "Dowolny posiłek",
+    "breakfast": "Śniadanie",
+    "lunch": "Lunch",
+    "dinner": "Kolacja",
+    "snack": "Przekąska"
+  }
 }

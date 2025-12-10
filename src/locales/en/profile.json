@@ -110,5 +110,12 @@
   "error": "Error",
   "feedbackSendError": "Failed to send feedback. Try again later.",
   "exportSavedSuccess": "Your data has been saved as a PDF: {{filename}}. A sharing window has been opened.",
-  "exportSavedPathHint": "Saved to: {{path}}"
+  "exportSavedPathHint": "Saved to: {{path}}",
+  "mealKind": {
+    "any": "Any meal",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snack": "Snack"
+  }
 }
