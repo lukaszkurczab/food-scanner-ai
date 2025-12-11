@@ -17,7 +17,7 @@ export default {
       backgroundColor: "#ffffff",
     },
     ios: {
-      supportsTablet: true,
+      supportsTablet: false,
       bundleIdentifier: "com.lkurczab.foodscannerai",
       googleServicesFile: "./GoogleService-Info.plist",
       icon: "./assets/appstore.png",
