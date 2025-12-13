@@ -16,7 +16,6 @@ export default {
       resizeMode: "contain",
       backgroundColor: "#ffffff",
     },
-
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.lkurczab.foodscannerai",
@@ -30,7 +29,6 @@ export default {
           "CaloriAI allows you to select photos from your library for profile pictures and feedback attachments.",
       },
     },
-
     android: {
       icon: "./assets/playstore.png",
       adaptiveIcon: {
@@ -39,15 +37,12 @@ export default {
       },
       package: "com.lkurczab.foodscannerai",
       googleServicesFile: "./google-services.json",
-      permissions: ["CAMERA", "READ_MEDIA_IMAGES", "POST_NOTIFICATIONS"],
     },
-
     notification: {
       icon: "./assets/notification-icon.png",
       color: "#4CAF50",
       androidCollapsedTitle: "caloriai",
     },
-
     plugins: [
       [
         "expo-camera",
@@ -59,12 +54,7 @@ export default {
       ],
       [
         "expo-build-properties",
-        {
-          ios: {
-            useFrameworks: "static",
-            deploymentTarget: "15.5",
-          },
-        },
+        { ios: { useFrameworks: "static", deploymentTarget: "15.5" } },
       ],
       "expo-font",
       "@react-native-firebase/app",
@@ -73,7 +63,6 @@ export default {
       "expo-task-manager",
       "expo-background-task",
     ],
-
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
       debugOcr: (process.env.DEBUG_OCR || "true").toLowerCase() === "true",
@@ -82,9 +71,9 @@ export default {
       disableBilling:
         (process.env.DISABLE_BILLING || "").toLowerCase() === "true",
       forcePremium: (process.env.FORCE_PREMIUM || "").toLowerCase() === "true",
-      eas: {
-        projectId: "6126cb31-0485-4b93-b30c-738b65882366",
-      },
+      termsUrl: process.env.TERMS_URL || "",
+      privacyUrl: process.env.PRIVACY_URL || "",
+      eas: { projectId: "6126cb31-0485-4b93-b30c-738b65882366" },
     },
   },
 };

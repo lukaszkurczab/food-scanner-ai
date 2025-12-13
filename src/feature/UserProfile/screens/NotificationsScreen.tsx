@@ -51,6 +51,8 @@ export default function NotificationsScreen({ navigation }: any) {
   const [deleting, setDeleting] = useState(false);
   const autoDisabledRef = useRef(false);
 
+  const [settingsCtaVisible, setSettingsCtaVisible] = useState(false);
+
   useEffect(() => {
     if (!uid) return;
     (async () => {
@@ -105,15 +107,18 @@ export default function NotificationsScreen({ navigation }: any) {
       const granted = !!res.granted;
       setSystemAllowed(granted);
       if (granted && Platform.OS === "android") await ensureAndroidChannel();
-      if (!granted) {
-        try {
-          await Linking.openSettings();
-        } catch {}
-      }
+      if (!granted) setSettingsCtaVisible(true);
       return granted;
     } catch {
       return false;
     }
+  };
+
+  const openSettings = async () => {
+    setSettingsCtaVisible(false);
+    try {
+      await Linking.openSettings();
+    } catch {}
   };
 
   const onConfirmDelete = async () => {
@@ -271,6 +276,26 @@ export default function NotificationsScreen({ navigation }: any) {
           </View>
         </View>
       </ScrollView>
+
+      <AppAlert
+        visible={settingsCtaVisible}
+        title={t("permissions.title", "Enable notifications")}
+        message={t(
+          "permissions.message",
+          "Notifications are disabled. You can enable them in Settings."
+        )}
+        onClose={() => setSettingsCtaVisible(false)}
+        primaryAction={{
+          label: t("permissions.openSettings", "Open Settings"),
+          onPress: openSettings,
+          testID: "open-settings",
+        }}
+        secondaryAction={{
+          label: t("permissions.notNow", "Not now"),
+          onPress: () => setSettingsCtaVisible(false),
+          testID: "not-now",
+        }}
+      />
 
       <AppAlert
         visible={!!confirmId}
