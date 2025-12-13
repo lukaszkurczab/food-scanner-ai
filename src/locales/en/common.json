@@ -93,7 +93,7 @@
   "no_internet": "No internet connection",
   "none": "None",
   "camera_permission_title": "Camera requires permission",
-  "camera_permission_message": "Grant access to the camera to continue.",
+  "camera_permission_message": "Camera access is used to take photos of meals for nutrition analysis.",
   "camera_grant_access": "Grant Access",
   "camera_take_photo": "Take photo",
   "camera_retake": "Retake",

@@ -13,7 +13,7 @@
     "short": "Jesteś offline"
   },
   "input": {
-    "placeholder": "Zapytaj mnie",
+    "placeholder": "Zapytaj mnie o cokolwiek",
     "search": "Szukaj",
     "send": "Wyślij",
     "search_accessibility": "Pole wyszukiwania",
@@ -91,7 +91,7 @@
   "no_internet": "Brak połączenia z internetem",
   "none": "Brak",
   "camera_permission_title": "Kamera wymaga uprawnień",
-  "camera_permission_message": "Nadaj dostęp do kamery, aby kontynuować.",
+  "camera_permission_message": "Dostęp do kamery służy do robienia zdjęć posiłków w celu analizy wartości odżywczych.",
   "camera_grant_access": "Nadaj dostęp",
   "camera_take_photo": "Zrób zdjęcie",
   "camera_retake": "Zrób ponownie",

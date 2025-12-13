@@ -37,8 +37,10 @@ TaskManager.defineTask(TASK_NAME, async () => {
     const auth = require("@react-native-firebase/auth");
     const user = auth.default().currentUser;
     if (!user) return BackgroundTask.BackgroundTaskResult.Success;
+
     await reconcileAll(user.uid);
     await runSystemNotifications(user.uid);
+
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch {
     return BackgroundTask.BackgroundTaskResult.Failed;
@@ -47,6 +49,7 @@ TaskManager.defineTask(TASK_NAME, async () => {
 
 function useBootstrapNotifications() {
   const { uid } = useAuthContext();
+
   useEffect(() => {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
@@ -57,20 +60,21 @@ function useBootstrapNotifications() {
       }),
     });
   }, []);
+
   useEffect(() => {
     (async () => {
-      await Notifications.requestPermissionsAsync();
-      if (Platform.OS === "android") {
+      const perm = await Notifications.getPermissionsAsync();
+      if (perm.granted && Platform.OS === "android") {
         await ensureAndroidChannel();
       }
     })();
   }, []);
+
   useEffect(() => {
     (async () => {
       const status = await BackgroundTask.getStatusAsync();
-      if (status !== BackgroundTask.BackgroundTaskStatus.Available) {
-        return;
-      }
+      if (status !== BackgroundTask.BackgroundTaskStatus.Available) return;
+
       const tasks = await TaskManager.getRegisteredTasksAsync();
       const exists = tasks.find((t) => t.taskName === TASK_NAME);
       if (!exists) {
@@ -80,6 +84,7 @@ function useBootstrapNotifications() {
       }
     })();
   }, []);
+
   useEffect(() => {
     if (!uid) return;
     const db = getFirestore(getApp());
@@ -112,7 +117,9 @@ function Root() {
         defaultHandler?.(error, isFatal);
       });
     }
+
     initRevenueCat();
+
     if (__DEV__) {
       (async () => {
         try {
