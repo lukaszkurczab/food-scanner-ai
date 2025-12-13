@@ -1,0 +1,9 @@
+{
+  "outOfScope": "Sorry — I can only help with questions about food, nutrition, meals, calories, and eating habits.",
+  "medicalRedirect": "I can’t help with diagnosis or treatment. If this is about symptoms, medication, or a health issue, please contact a qualified clinician. I can still help with general nutrition and meal ideas that fit your preferences.",
+  "replacement": "substitute",
+  "constraintsNote": "(I respected your restrictions and suggested substitutions.)",
+  "errors": {
+    "empty": "No response."
+  }
+}

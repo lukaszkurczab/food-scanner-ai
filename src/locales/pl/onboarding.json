@@ -18,19 +18,16 @@
   "next": "Dalej",
   "cancel": "Anuluj",
   "back": "Wstecz",
-
   "exit_first_title": "Wyjść z ankiety?",
   "exit_first_desc": "Ankietę możesz uzupełnić później w profilu. Obecny postęp nie zostanie zapisany.",
   "exit_first_primary": "Wyjdź",
   "exit_first_secondary": "Kontynuuj",
   "exit_first_a11y": "Pomiń",
-
   "exit_refill_title": "Zapisać zmiany przed wyjściem?",
   "exit_refill_desc": "Możesz zapisać zaktualizowane preferencje lub je porzucić.",
   "exit_refill_save": "Zapisz",
   "exit_refill_discard": "Odrzuć",
   "exit_refill_a11y": "Zamknij",
-
   "step2_title": "Spersonalizuj swój plan",
   "step2_description": "Podaj swoje preferencje żywieniowe, poziom aktywności i cel.",
   "activityLevel": "Poziom aktywności",
@@ -49,7 +46,6 @@
   },
   "calorieDeficit": "Deficyt kaloryczny:",
   "calorieSurplus": "Nadwyżka kalorii:",
-
   "errors": {
     "ageRequired": "Wymagany wiek",
     "ageInvalid": "Podaj prawidłowy wiek (16-120)",
@@ -65,7 +61,6 @@
     "selectSurplus": "Ustaw oczekiwaną nadwyżkę kalorii",
     "aiFocusOther": "Podaj własny obszar wsparcia"
   },
-
   "preferences": {
     "label": "Preferencje żywieniowe",
     "none": "Brak",
@@ -83,7 +78,6 @@
     "dairyFree": "Bezmleczna",
     "paleo": "Paleo"
   },
-
   "step3_title": "Twój profil zdrowotny",
   "step3_description": "Znajomość chorób przewlekłych lub alergii pozwoli nam zapewnić bezpieczne i dopasowane rekomendacje.",
   "healthProfile": {
@@ -111,7 +105,6 @@
   "validation": {
     "otherRequired": "Wymagane"
   },
-
   "step4_title": "Spersonalizuj wsparcie AI",
   "step4_description": "Powiedz nam, jak AI może Cię wspierać. Twoje preferencje pozwolą nam lepiej dopasować asystenta do Twoich potrzeb.",
   "ai": {
@@ -136,9 +129,9 @@
     "focus_placeholder": "Podaj własny obszar...",
     "errors": {
       "aiFocusOther": "Podaj własny obszar wsparcia"
-    }
+    },
+    "disclaimer": "Odpowiedzi AI mają charakter informacyjny i nie stanowią porady medycznej."
   },
-
   "summary": {
     "title": "Podsumowanie",
     "desc": "Oto podsumowanie Twoich odpowiedzi. Wróć i popraw, jeśli coś wymaga zmiany.",
