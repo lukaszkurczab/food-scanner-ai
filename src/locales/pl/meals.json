@@ -9,6 +9,7 @@
   "manualDesc": "Dodaj składniki i wartości odżywcze ręcznie",
   "savedTitle": "Wybierz z zapisanych",
   "savedDesc": "Wybierz posiłek, który wcześniej zapisałeś",
+  "camera_permission_blocked_message": "Dostęp do kamery jest zablokowany. Proszę włączyć go w ustawieniach, aby korzystać z funkcji skanowania posiłków i kodów kreskowych.",
   "continue_draft_title": "Kontynuować rozpoczęty posiłek?",
   "continue_draft_message": "Masz niezapisany posiłek w trakcie dodawania. Czy chcesz kontynuować czy zacząć od nowa?",
   "continue": "Kontynuuj",

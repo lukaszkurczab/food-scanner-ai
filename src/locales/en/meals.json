@@ -9,6 +9,7 @@
   "manualDesc": "Add ingredients and nutrition manually",
   "savedTitle": "Pick saved meal",
   "savedDesc": "Select a meal you've added before",
+  "camera_permission_blocked_message": "Camera access is blocked. Please enable it in settings to use meal scanning and barcode features.",
   "continue_draft_title": "Continue started meal?",
   "continue_draft_message": "You have an unsaved meal draft. Do you want to continue or start over?",
   "continue": "Continue",

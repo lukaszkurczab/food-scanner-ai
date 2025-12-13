@@ -87,6 +87,7 @@
   "password_min_length": "Password must be at least {{count}} characters",
   "passwords_do_not_match": "Passwords do not match",
   "new_password_must_be_different": "New password must be different from current password",
+  "camera_permission_blocked_message": "Camera access is currently disabled. CaloriAI needs it to take profile photos. You can enable it in system Settings.",
   "invalid_current_password": "Invalid current password",
   "weak_password": "The new password is too weak",
   "camera_permission_message": "Camera access is required to take meal photos and a profile photo.",

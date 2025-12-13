@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { View, StyleSheet, Pressable, Text } from "react-native";
+import { View, StyleSheet, Pressable, Text, Linking } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -47,26 +47,45 @@ export default function AvatarCameraScreen({
     }
   };
 
-  if (!permission)
+  if (!permission) {
     return (
       <Layout>
         <View style={{ flex: 1, backgroundColor: theme.background }} />
       </Layout>
     );
+  }
 
   if (!permission.granted) {
+    const blocked = permission.canAskAgain === false;
     return (
       <Layout>
         <View style={styles.permissionContainer}>
-          <Text style={[styles.permissionText, { color: theme.text }]}>
-            {t("common:camera_permission_message")}
+          <Text style={[styles.permissionTitle, { color: theme.text }]}>
+            {t("common:camera_permission_title", {
+              defaultValue: "Camera requires permission",
+            })}
           </Text>
+
+          <Text style={[styles.permissionText, { color: theme.text }]}>
+            {blocked
+              ? t("profile:camera_permission_blocked_message", {
+                  defaultValue:
+                    "Camera access is currently disabled. You can enable it in system Settings.",
+                })
+              : t("common:camera_permission_message", {
+                  defaultValue:
+                    "CaloriAI uses the camera to scan meals and barcodes and to take profile photos.",
+                })}
+          </Text>
+
           <Pressable
-            onPress={requestPermission}
+            onPress={blocked ? () => Linking.openSettings() : requestPermission}
             style={[styles.permissionButton, { backgroundColor: theme.card }]}
           >
             <Text style={[styles.permissionButtonText, { color: theme.text }]}>
-              {t("common:camera_grant_access")}
+              {blocked
+                ? t("common:open_settings", { defaultValue: "Open Settings" })
+                : t("common:continue", { defaultValue: "Continue" })}
             </Text>
           </Pressable>
         </View>
@@ -152,10 +171,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-  permissionText: {
+  permissionTitle: {
     fontSize: 18,
     textAlign: "center",
+    marginBottom: 12,
+    fontWeight: "700",
+  },
+  permissionText: {
+    fontSize: 16,
+    textAlign: "center",
     marginBottom: 20,
+    opacity: 0.9,
   },
   permissionButton: {
     paddingVertical: 12,

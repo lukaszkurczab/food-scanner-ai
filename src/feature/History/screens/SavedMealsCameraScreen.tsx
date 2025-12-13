@@ -140,7 +140,7 @@ export default function SavedMealsCameraScreen({
             <Text
               style={{ fontWeight: "bold", fontSize: 16, color: theme.text }}
             >
-              {t("camera_grant_access")}
+              {t("continue")}
             </Text>
           </Pressable>
         </View>
