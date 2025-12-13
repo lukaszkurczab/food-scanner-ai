@@ -48,7 +48,7 @@ export default {
         "expo-camera",
         {
           cameraPermission:
-            "Camera access is used to take photos of meals for nutrition analysis.",
+            "CaloriAI uses the camera to scan meals and barcodes and to take profile photos.",
           recordAudioAndroid: false,
         },
       ],
