@@ -94,7 +94,7 @@
   "none": "None",
   "camera_permission_title": "Camera requires permission",
   "camera_permission_message": "CaloriAI uses the camera to scan meals and barcodes and to take profile photos.",
-  "camera_grant_access": "Grant Access",
+  "open_settings": "Open Settings",
   "camera_take_photo": "Take photo",
   "camera_retake": "Retake",
   "camera_use_photo": "Use photo",

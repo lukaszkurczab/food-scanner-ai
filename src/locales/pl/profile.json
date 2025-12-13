@@ -90,6 +90,7 @@
   "invalid_current_password": "Nieprawidłowe obecne hasło",
   "weak_password": "Nowe hasło jest zbyt słabe",
   "camera_permission_message": "Aby robić zdjęcia posiłków i zdjęcie profilowe, wymagany jest dostęp do aparatu.",
+  "camera_permission_blocked_message": "Dostęp do kamery jest zablokowany. CaloriAI potrzebuje go do robienia zdjęć profilowych. Możesz go włączyć w ustawieniach systemu.",
   "avatarPreview_title": "Użyj",
   "avatarPreview_subtitle": "Odrzuć",
   "manageNotifications": "Zarządzaj powiadomieniami",

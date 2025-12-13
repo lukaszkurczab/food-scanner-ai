@@ -6,6 +6,7 @@ import {
   Text,
   BackHandler,
   DeviceEventEmitter,
+  Linking,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
@@ -43,7 +44,8 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const [premiumModal, setPremiumModal] = useState(false);
   const [barcodeModal, setBarcodeModal] = useState(false);
   const { meal, setMeal, updateMeal, setLastScreen } = useMealDraftContext();
-  const { t } = useTranslation("common");
+  const { t: tCommon } = useTranslation("common");
+  const { t: tMeals } = useTranslation("meals");
   const { uid } = useAuthContext();
   const { language } = useUserContext();
   const { isPremium } = usePremiumContext();
@@ -77,7 +79,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
 
   useEffect(() => {
     if (mode !== "barcode" && scannedCode) setScannedCode(null);
-  }, [mode]);
+  }, [mode, scannedCode]);
 
   useEffect(() => {
     if (uid && setLastScreen) setLastScreen(uid, "MealCamera");
@@ -292,6 +294,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   }
 
   if (!permission.granted) {
+    const blocked = permission.canAskAgain === false;
     return (
       <Layout>
         <View
@@ -307,14 +310,30 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
             style={{
               fontSize: 18,
               textAlign: "center",
-              marginBottom: 20,
+              marginBottom: 12,
               color: theme.text,
+              fontWeight: "700",
             }}
           >
-            {t("camera_permission_message")}
+            {tCommon("camera_permission_title")}
           </Text>
+
+          <Text
+            style={{
+              fontSize: 16,
+              textAlign: "center",
+              marginBottom: 20,
+              color: theme.text,
+              opacity: 0.9,
+            }}
+          >
+            {blocked
+              ? tMeals("camera_permission_blocked_message")
+              : tCommon("camera_permission_message")}
+          </Text>
+
           <Pressable
-            onPress={requestPermission}
+            onPress={blocked ? () => Linking.openSettings() : requestPermission}
             style={{
               paddingVertical: 12,
               paddingHorizontal: 32,
@@ -325,7 +344,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
             <Text
               style={{ fontWeight: "bold", fontSize: 16, color: theme.text }}
             >
-              {t("camera_grant_access")}
+              {blocked ? tCommon("open_settings") : tCommon("continue")}
             </Text>
           </Pressable>
         </View>
@@ -340,16 +359,16 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
         <Loader
           text={
             isBarcodeFlow
-              ? t("barcode_loader_title", "Looking up product...")
-              : t("camera_loader_title", "Analyzing your meal...")
+              ? tCommon("barcode_loader_title", "Looking up product...")
+              : tCommon("camera_loader_title", "Analyzing your meal...")
           }
           subtext={
             isBarcodeFlow
-              ? t(
+              ? tCommon(
                   "barcode_loader_subtext",
                   "Fetching product data from the database."
                 )
-              : t("camera_loader_subtext", "This may take a few seconds.")
+              : tCommon("camera_loader_subtext", "This may take a few seconds.")
           }
         />
       </Layout>
@@ -364,8 +383,8 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
           onRetake={handleRetake}
           onAccept={handleAccept}
           isLoading={isLoading}
-          secondaryText={t("camera_retake")}
-          primaryText={t("camera_use_photo")}
+          secondaryText={tCommon("camera_retake")}
+          primaryText={tCommon("camera_use_photo")}
         />
       </Layout>
     );
@@ -466,7 +485,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                   ]}
                 >
                   <Text style={{ color: theme.text }}>
-                    {t("dev.sample_meal", { ns: "meals" })}
+                    {tMeals("dev.sample_meal")}
                   </Text>
                 </Pressable>
               </View>
@@ -474,7 +493,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
             {!skipDetection && mode === "barcode" && scannedCode && (
               <View style={styles.detectBadge}>
                 <Text style={{ color: theme.onAccent, fontWeight: "bold" }}>
-                  {t("barcode_detected", { defaultValue: "Detected:" })}{" "}
+                  {tMeals("barcode_detected", { defaultValue: "Detected:" })}{" "}
                   {scannedCode}
                 </Text>
               </View>
@@ -484,37 +503,37 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
       </View>
       <AppAlert
         visible={premiumModal}
-        title={t("premium_required_title", {
+        title={tMeals("premium_required_title", {
           defaultValue: "Premium required",
         })}
-        message={t("premium_required_body", {
+        message={tMeals("premium_required_body", {
           defaultValue: "AI mode requires a Premium subscription.",
         })}
         onClose={() => setPremiumModal(false)}
         primaryAction={{
-          label: t("go_premium", { defaultValue: "Go Premium" }),
+          label: tMeals("go_premium", { defaultValue: "Go Premium" }),
           onPress: () => {
             setPremiumModal(false);
             navigation.navigate("ManageSubscription");
           },
         }}
         secondaryAction={{
-          label: t("cancel", { defaultValue: "Cancel", ns: "common" }),
+          label: tCommon("cancel"),
           onPress: () => setPremiumModal(false),
         }}
       />
       <AppAlert
         visible={barcodeModal}
-        title={t("barcode_no_code_title", {
+        title={tMeals("barcode_no_code_title", {
           defaultValue: "No barcode detected",
         })}
-        message={t("barcode_no_code_msg", {
+        message={tMeals("barcode_no_code_msg", {
           defaultValue:
             "Place the code in the frame and try again, then press the button.",
         })}
         onClose={() => setBarcodeModal(false)}
         primaryAction={{
-          label: t("ok", { defaultValue: "OK" }),
+          label: tCommon("confirm", { defaultValue: "OK" }),
           onPress: () => setBarcodeModal(false),
         }}
       />
