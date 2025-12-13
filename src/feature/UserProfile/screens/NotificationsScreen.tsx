@@ -24,6 +24,10 @@ import {
 } from "@/services/notifications/localScheduler";
 import * as Notifications from "expo-notifications";
 import { Alert as AppAlert } from "@/components/Alert";
+import {
+  cancelSystemNotifications,
+  runSystemNotifications,
+} from "@/services/notifications/system";
 
 export default function NotificationsScreen({ navigation }: any) {
   const { uid } = useAuthContext();
@@ -39,6 +43,7 @@ export default function NotificationsScreen({ navigation }: any) {
     loadStatsPrefs,
     remove,
   } = useNotifications(uid);
+
   const [motivationEnabled, setMotivationEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
   const [systemAllowed, setSystemAllowed] = useState<boolean | null>(null);
@@ -51,10 +56,13 @@ export default function NotificationsScreen({ navigation }: any) {
     (async () => {
       const p = await loadMotivationPrefs(uid);
       const s = await loadStatsPrefs(uid);
-      setMotivationEnabled(p.enabled);
-      setStatsEnabled(s.enabled);
+      setMotivationEnabled(!!p.enabled);
+      setStatsEnabled(!!s.enabled);
       const perm = await Notifications.getPermissionsAsync();
       setSystemAllowed(!!perm.granted);
+      if (perm.granted && Platform.OS === "android")
+        await ensureAndroidChannel();
+      if (perm.granted) await runSystemNotifications(uid);
     })();
   }, [uid, loadMotivationPrefs, loadStatsPrefs]);
 
@@ -75,6 +83,8 @@ export default function NotificationsScreen({ navigation }: any) {
           for (const it of items) {
             if (it.enabled) await toggle(uid, it.id, false);
           }
+          await cancelSystemNotifications(uid, "motivation_dont_give_up");
+          await cancelSystemNotifications(uid, "stats_weekly_summary");
         } catch {}
       }
     })();
@@ -159,8 +169,10 @@ export default function NotificationsScreen({ navigation }: any) {
           onPress={() => nav.navigate("NotificationForm", { id: null })}
           style={{ marginBottom: theme.spacing.md }}
         />
+
         <View>
           <SectionHeader label={t("screen.motivation")} />
+
           <View
             style={[
               styles.rowCenter,
@@ -182,21 +194,35 @@ export default function NotificationsScreen({ navigation }: any) {
             >
               {t("screen.motivation")}
             </Text>
+
             <ButtonToggle
               value={motivationEnabled}
               onToggle={async (v) => {
+                if (!uid) return;
+
                 if (v && systemAllowed === false) {
                   const ok = await requestSystemPermission();
                   if (!ok) return;
                 }
+
                 setMotivationEnabled(v);
-                if (uid) await setMotivationPrefs(uid, v);
+                await setMotivationPrefs(uid, v);
+
+                if (v) {
+                  await runSystemNotifications(uid);
+                } else {
+                  await cancelSystemNotifications(
+                    uid,
+                    "motivation_dont_give_up"
+                  );
+                }
               }}
               trackColor={
                 motivationEnabled ? theme.accentSecondary : theme.textSecondary
               }
             />
           </View>
+
           <View
             style={[
               styles.rowCenter,
@@ -218,15 +244,25 @@ export default function NotificationsScreen({ navigation }: any) {
             >
               {t("screen.stats")}
             </Text>
+
             <ButtonToggle
               value={statsEnabled}
               onToggle={async (v) => {
+                if (!uid) return;
+
                 if (v && systemAllowed === false) {
                   const ok = await requestSystemPermission();
                   if (!ok) return;
                 }
+
                 setStatsEnabled(v);
-                if (uid) await setStatsPrefs(uid, v);
+                await setStatsPrefs(uid, v);
+
+                if (v) {
+                  await runSystemNotifications(uid);
+                } else {
+                  await cancelSystemNotifications(uid, "stats_weekly_summary");
+                }
               }}
               trackColor={
                 statsEnabled ? theme.accentSecondary : theme.textSecondary

@@ -6,80 +6,6 @@
 │   ├── appstore.png
 │   ├── favicon.png
 │   ├── fonts
-│   │   ├── DMSans-300.ttf
-│   │   ├── DMSans-400.ttf
-│   │   ├── DMSans-500.ttf
-│   │   ├── DMSans-700.ttf
-│   │   ├── Inter-300.ttf
-│   │   ├── Inter-400.ttf
-│   │   ├── Inter-500.ttf
-│   │   ├── Inter-600.ttf
-│   │   ├── Inter-700.ttf
-│   │   ├── Inter-Bold.ttf
-│   │   ├── Inter-Light.ttf
-│   │   ├── Inter-Medium.ttf
-│   │   ├── Inter-Regular.ttf
-│   │   ├── Lato-300.ttf
-│   │   ├── Lato-400.ttf
-│   │   ├── Lato-500.ttf
-│   │   ├── Lato-600.ttf
-│   │   ├── Lato-700.ttf
-│   │   ├── Lato-800.ttf
-│   │   ├── Lato-900.ttf
-│   │   ├── Manrope-300.ttf
-│   │   ├── Manrope-400.ttf
-│   │   ├── Manrope-600.ttf
-│   │   ├── Manrope-700.ttf
-│   │   ├── Merriweather-300.ttf
-│   │   ├── Merriweather-400.ttf
-│   │   ├── Merriweather-700.ttf
-│   │   ├── Merriweather-900.ttf
-│   │   ├── Montserrat-300.ttf
-│   │   ├── Montserrat-400.ttf
-│   │   ├── Montserrat-600.ttf
-│   │   ├── Montserrat-700.ttf
-│   │   ├── Nunito-300.ttf
-│   │   ├── Nunito-400.ttf
-│   │   ├── Nunito-600.ttf
-│   │   ├── Nunito-700.ttf
-│   │   ├── OpenSans-300.ttf
-│   │   ├── OpenSans-400.ttf
-│   │   ├── OpenSans-600.ttf
-│   │   ├── OpenSans-700.ttf
-│   │   ├── Oswald-300.ttf
-│   │   ├── Oswald-400.ttf
-│   │   ├── Oswald-500.ttf
-│   │   ├── Oswald-700.ttf
-│   │   ├── PlayfairDisplay-400.ttf
-│   │   ├── PlayfairDisplay-600.ttf
-│   │   ├── PlayfairDisplay-700.ttf
-│   │   ├── Poppins-300.ttf
-│   │   ├── Poppins-400.ttf
-│   │   ├── Poppins-500.ttf
-│   │   ├── Poppins-600.ttf
-│   │   ├── Poppins-700.ttf
-│   │   ├── Poppins-800.ttf
-│   │   ├── Poppins-900.ttf
-│   │   ├── Raleway-300.ttf
-│   │   ├── Raleway-400.ttf
-│   │   ├── Raleway-600.ttf
-│   │   ├── Raleway-700.ttf
-│   │   ├── Roboto-300.ttf
-│   │   ├── Roboto-400.ttf
-│   │   ├── Roboto-500.ttf
-│   │   ├── Roboto-700.ttf
-│   │   ├── Rubik-300.ttf
-│   │   ├── Rubik-400.ttf
-│   │   ├── Rubik-500.ttf
-│   │   ├── Rubik-700.ttf
-│   │   ├── Ubuntu-300.ttf
-│   │   ├── Ubuntu-400.ttf
-│   │   ├── Ubuntu-500.ttf
-│   │   ├── Ubuntu-700.ttf
-│   │   ├── WorkSans-300.ttf
-│   │   ├── WorkSans-400.ttf
-│   │   ├── WorkSans-500.ttf
-│   │   └── WorkSans-700.ttf
 │   ├── icon.png
 │   ├── icons
 │   │   ├── close.png
@@ -93,9 +19,6 @@
 ├── builds
 │   └── prod
 ├── credentials.json
-├── docs
-│   ├── PRIVACY.md
-│   └── README.md
 ├── eas.json
 ├── google-services.json
 ├── GoogleService-Info.plist
@@ -140,7 +63,6 @@
 │   │   ├── ListItem.tsx
 │   │   ├── LongTextInput.tsx
 │   │   ├── MacroChip.tsx
-│   │   ├── MacroOverlay.tsx
 │   │   ├── MealBox.tsx
 │   │   ├── MealListItem.tsx
 │   │   ├── Modal.tsx
@@ -215,6 +137,8 @@
 │   │   │   │   ├── AddMealPlaceholder.tsx
 │   │   │   │   ├── ButtonSection.tsx
 │   │   │   │   ├── EmptyDayView.tsx
+│   │   │   │   ├── MacroTargetDonut.tsx
+│   │   │   │   ├── MacroTargetsRow.tsx
 │   │   │   │   ├── TodaysMacrosChart.tsx
 │   │   │   │   ├── TodaysMealsList.tsx
 │   │   │   │   └── WeeklyProgressGraph.tsx
@@ -222,11 +146,26 @@
 │   │   │       └── HomeScreen.tsx
 │   │   ├── Meals
 │   │   │   ├── components
+│   │   │   │   ├── cardLayouts
+│   │   │   │   │   ├── MacroBadgeCard.tsx
+│   │   │   │   │   ├── MacroSplitCard.tsx
+│   │   │   │   │   ├── MacroSummaryCard.tsx
+│   │   │   │   │   ├── MacroTagStripCard.tsx
+│   │   │   │   │   └── MacroVerticalStackCard.tsx
+│   │   │   │   ├── CardOverlay.tsx
+│   │   │   │   ├── chartLayouts
+│   │   │   │   │   ├── DonutMacroChart.tsx
+│   │   │   │   │   ├── GaugeMacroChart.tsx
+│   │   │   │   │   ├── MacroBarMini.tsx
+│   │   │   │   │   ├── MacroPieChart.tsx
+│   │   │   │   │   ├── MacroPolarAreaChart.tsx
+│   │   │   │   │   └── MacroRadarChart.tsx
+│   │   │   │   ├── ChartOverlay.tsx
 │   │   │   │   ├── EmptyState.tsx
 │   │   │   │   ├── Loader.tsx
 │   │   │   │   └── LoadingSkeleton.tsx
 │   │   │   ├── screens
-│   │   │   │   ├── BarCodeCameraScreen.tsx
+│   │   │   │   ├── BarcodeProductNotFoundScreen.tsx
 │   │   │   │   ├── IngredientsNotRecognizedScreen.tsx
 │   │   │   │   ├── MealAddMethodScreen.tsx
 │   │   │   │   ├── MealCameraScreen.tsx
@@ -237,13 +176,21 @@
 │   │   │   │   └── SelectSavedMealsScreen.tsx
 │   │   │   └── share
 │   │   │       ├── ColorPickerPanel.tsx
-│   │   │       ├── colorUtils.ts
 │   │   │       ├── defaultShareOptions.tsx
 │   │   │       ├── DraggableItem.tsx
+│   │   │       ├── editors
+│   │   │       │   ├── BackgroundEditorPanel.tsx
+│   │   │       │   ├── CardEditorPanel.tsx
+│   │   │       │   ├── ChartEditorPanel.tsx
+│   │   │       │   ├── OptionsEditorPanel.tsx
+│   │   │       │   └── TextEditorPanel.tsx
 │   │   │       ├── ShareCanvas.tsx
 │   │   │       ├── ShareEditorPanel.tsx
 │   │   │       ├── StyleModal.tsx
 │   │   │       ├── TextSticker.tsx
+│   │   │       ├── types
+│   │   │       │   ├── colorUtils.ts
+│   │   │       │   └── ShareEditorPanelTypes.ts
 │   │   │       └── useRecentColors.ts
 │   │   ├── Onboarding
 │   │   │   ├── components
@@ -402,6 +349,7 @@
 │   │   └── user.ts
 │   └── utils
 │       ├── autoMealName.ts
+│       ├── calculateMacroTargets.ts
 │       ├── calculateTotalNutrients.ts
 │       ├── convertToJpegAndResize.ts
 │       ├── debug.ts
@@ -425,4 +373,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-56 directories, 370 files
+59 directories, 397 files
