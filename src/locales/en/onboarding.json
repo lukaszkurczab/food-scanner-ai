@@ -18,19 +18,16 @@
   "next": "Next",
   "cancel": "Cancel",
   "back": "Back",
-
   "exit_first_title": "Skip for now?",
   "exit_first_desc": "You can fill this survey later in your profile. Your current progress will not be saved.",
   "exit_first_primary": "Go to Home",
   "exit_first_secondary": "Continue survey",
   "exit_first_a11y": "Skip onboarding",
-
   "exit_refill_title": "Save changes before exit?",
   "exit_refill_desc": "You can save your updated preferences now or discard them.",
   "exit_refill_save": "Save",
   "exit_refill_discard": "Discard",
   "exit_refill_a11y": "Close survey",
-
   "step2_title": "Personalize your plan",
   "step2_description": "Let us know your dietary preferences, activity level, and your goal.",
   "activityLevel": "Activity level",
@@ -49,7 +46,6 @@
   },
   "calorieDeficit": "Calorie deficit:",
   "calorieSurplus": "Calorie surplus:",
-
   "errors": {
     "ageRequired": "Age is required",
     "ageInvalid": "Enter a valid age (16-120)",
@@ -65,7 +61,6 @@
     "selectSurplus": "Set your desired calorie surplus",
     "aiFocusOther": "Please specify your focus area"
   },
-
   "preferences": {
     "label": "Dietary preferences",
     "none": "None",
@@ -83,7 +78,6 @@
     "dairyFree": "Dairy-free",
     "paleo": "Paleo"
   },
-
   "step3_title": "Your health profile",
   "step3_description": "Knowing about any health conditions or allergies ensures that our recommendations are safe and suitable for you.",
   "healthProfile": {
@@ -111,7 +105,6 @@
   "validation": {
     "otherRequired": "Please specify"
   },
-
   "step4_title": "Personalize your experience",
   "step4_description": "Tell us how you'd like our AI assistant to support you on your journey. Your preferences help us tailor the experience just for you.",
   "ai": {
@@ -136,9 +129,9 @@
     "focus_placeholder": "Type your own focus...",
     "errors": {
       "aiFocusOther": "Please specify your focus area"
-    }
+    },
+    "disclaimer": "AI responses are for informational purposes only and are not medical advice."
   },
-
   "summary": {
     "title": "Review your info",
     "desc": "Here’s a summary of what you’ve shared. Feel free to go back and make any changes before we get started!",

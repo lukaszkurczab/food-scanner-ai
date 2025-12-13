@@ -1,0 +1,9 @@
+{
+  "outOfScope": "Przepraszam — mogę pomóc tylko w pytaniach o jedzenie, odżywianie, posiłki, kalorie oraz nawyki żywieniowe.",
+  "medicalRedirect": "Nie mogę pomóc w diagnozie ani leczeniu. Jeśli to dotyczy objawów, leków lub problemu zdrowotnego, skontaktuj się z wykwalifikowanym specjalistą. Mogę natomiast pomóc w ogólnych wskazówkach żywieniowych i pomysłach na posiłki dopasowanych do Twoich preferencji.",
+  "replacement": "zamiennik",
+  "constraintsNote": "(Uwzględniłem Twoje ograniczenia i zaproponowałem zamienniki.)",
+  "errors": {
+    "empty": "Brak odpowiedzi."
+  }
+}
