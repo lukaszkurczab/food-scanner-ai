@@ -20,12 +20,6 @@ import * as BackgroundTask from "expo-background-task";
 import { reconcileAll } from "@/services/notifications/engine";
 import { ensureAndroidChannel } from "@/services/notifications/localScheduler";
 import { runSystemNotifications } from "@/services/notifications/system";
-import { getApp } from "@react-native-firebase/app";
-import {
-  getFirestore,
-  collection,
-  onSnapshot,
-} from "@react-native-firebase/firestore";
 import { getSampleMealUri, getSampleTableUri } from "@/utils/devSamples";
 import { runMigrations } from "@/services/offline/db";
 import { useAppFonts } from "@hooks/useAppFonts";
@@ -72,6 +66,8 @@ function useBootstrapNotifications() {
 
   useEffect(() => {
     (async () => {
+      if (Platform.OS !== "android") return;
+
       const status = await BackgroundTask.getStatusAsync();
       if (status !== BackgroundTask.BackgroundTaskStatus.Available) return;
 
@@ -87,6 +83,12 @@ function useBootstrapNotifications() {
 
   useEffect(() => {
     if (!uid) return;
+    const { getApp } = require("@react-native-firebase/app");
+    const {
+      getFirestore,
+      collection,
+      onSnapshot,
+    } = require("@react-native-firebase/firestore");
     const db = getFirestore(getApp());
     const unsub = onSnapshot(
       collection(db, "users", uid, "notifications"),

@@ -16,6 +16,7 @@ import { spacing } from "@/theme";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FullScreenLoader, Layout } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
+import Constants from "expo-constants";
 import {
   openManageSubscriptions,
   startOrRenewSubscription,
@@ -37,6 +38,11 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   const { isPremium, setDevPremium } = usePremiumContext();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const extra = (Constants.expoConfig?.extra || {}) as Record<string, any>;
+  const termsUrl = typeof extra.termsUrl === "string" ? extra.termsUrl : "";
+  const privacyUrl =
+    typeof extra.privacyUrl === "string" ? extra.privacyUrl : "";
 
   if (!subscription) {
     return (
@@ -86,7 +92,15 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
     setBusy(true);
     try {
       const res = await startOrRenewSubscription();
-      if (res.status === "success") return;
+      if (res.status === "success") {
+        Alert.alert(
+          t("manageSubscription.title"),
+          t("manageSubscription.purchaseSuccess", {
+            defaultValue: "Purchase successful.",
+          })
+        );
+        return;
+      }
       if (res.status === "unavailable") {
         Alert.alert(
           t("manageSubscription.title"),
@@ -111,11 +125,32 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
     setBusy(true);
     try {
       const res = await restorePurchases();
-      if (res.status === "unavailable") {
+      if (res.status === "success") {
+        Alert.alert(
+          t("manageSubscription.title"),
+          t("manageSubscription.restoreSuccess", {
+            defaultValue: "Purchases restored.",
+          })
+        );
+      } else if (res.status === "cancelled") {
+        Alert.alert(
+          t("manageSubscription.title"),
+          t("manageSubscription.restoreNothing", {
+            defaultValue: "No purchases to restore.",
+          })
+        );
+      } else if (res.status === "unavailable") {
         Alert.alert(
           t("manageSubscription.title"),
           t("manageSubscription.billingUnavailable", {
             defaultValue: "Billing is unavailable on this device.",
+          })
+        );
+      } else {
+        Alert.alert(
+          t("manageSubscription.title"),
+          t("manageSubscription.restoreFailed", {
+            defaultValue: "Restore failed. Try again later.",
           })
         );
       }
@@ -149,6 +184,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           >
             {t("manageSubscription.yourSubscription")}
           </Text>
+
           <View
             style={[
               styles.rowBetween,
@@ -314,6 +350,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
                 style={styles.rowBetween}
                 onPress={() => setExpanded(expanded === key ? null : key)}
                 activeOpacity={0.7}
+                disabled={busy}
               >
                 <Text
                   style={{
@@ -352,8 +389,25 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
               styles.rowBetween,
               { paddingVertical: spacing.sm, marginTop: spacing.xl },
             ]}
+            onPress={tryRestore}
+            activeOpacity={0.7}
+            disabled={busy}
+          >
+            <Text
+              style={{ fontSize: 18, fontWeight: "500", color: theme.text }}
+            >
+              {t("manageSubscription.restorePurchases", {
+                defaultValue: "Restore Purchases",
+              })}
+            </Text>
+            <Ionicons name="refresh" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.rowBetween, { paddingVertical: spacing.sm }]}
             onPress={() => Linking.openURL(t("manageSubscription.refundLink"))}
             activeOpacity={0.7}
+            disabled={busy}
           >
             <Text
               style={{ fontSize: 18, fontWeight: "500", color: theme.text }}
@@ -366,6 +420,56 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
               color={theme.textSecondary}
             />
           </TouchableOpacity>
+
+          {!!termsUrl && !!privacyUrl && (
+            <View style={{ marginTop: spacing.lg, gap: 10 }}>
+              <Text
+                style={{
+                  color: theme.textSecondary,
+                  fontSize: 13,
+                  lineHeight: 18,
+                }}
+              >
+                {t("manageSubscription.autorenewInfo", {
+                  defaultValue:
+                    "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. You can manage or cancel in your App Store / Google Play account settings.",
+                })}
+              </Text>
+
+              <View style={{ flexDirection: "row", gap: 14 }}>
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(termsUrl)}
+                  activeOpacity={0.7}
+                  disabled={busy}
+                >
+                  <Text
+                    style={{
+                      color: theme.accentSecondary,
+                      fontSize: 15,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {t("termsOfService", { defaultValue: "Terms of Service" })}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(privacyUrl)}
+                  activeOpacity={0.7}
+                  disabled={busy}
+                >
+                  <Text
+                    style={{
+                      color: theme.accentSecondary,
+                      fontSize: 15,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {t("privacyPolicy", { defaultValue: "Privacy Policy" })}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         {showCancel && (
@@ -376,10 +480,12 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
                 paddingVertical: spacing.sm,
                 borderTopWidth: 1,
                 borderTopColor: theme.border,
+                marginTop: spacing.xl,
               },
             ]}
             onPress={tryOpenManage}
             disabled={busy}
+            activeOpacity={0.7}
           >
             <Text
               style={{
@@ -406,10 +512,12 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
                 paddingVertical: spacing.sm,
                 borderTopWidth: 1,
                 borderTopColor: theme.border,
+                marginTop: spacing.md,
               },
             ]}
             onPress={tryPurchase}
             disabled={busy}
+            activeOpacity={0.7}
           >
             <Text
               style={{
@@ -441,6 +549,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
             ]}
             onPress={tryPurchase}
             disabled={busy}
+            activeOpacity={0.7}
           >
             <Text
               style={{
@@ -471,6 +580,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           ]}
           onPress={() => setDevPremium(!isPremiumComputed)}
           activeOpacity={0.7}
+          disabled={busy}
         >
           <Text style={{ fontWeight: "bold", fontSize: 18, color: theme.text }}>
             {`DEV: ${isPremiumComputed ? "Disable" : "Enable"} Premium`}
