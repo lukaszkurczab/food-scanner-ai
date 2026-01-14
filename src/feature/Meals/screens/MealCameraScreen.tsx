@@ -344,7 +344,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
             <Text
               style={{ fontWeight: "bold", fontSize: 16, color: theme.text }}
             >
-              {blocked ? tCommon("open_settings") : tCommon("continue")}
+              {tCommon("continue")}
             </Text>
           </Pressable>
         </View>
