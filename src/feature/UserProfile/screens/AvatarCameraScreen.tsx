@@ -83,9 +83,7 @@ export default function AvatarCameraScreen({
             style={[styles.permissionButton, { backgroundColor: theme.card }]}
           >
             <Text style={[styles.permissionButtonText, { color: theme.text }]}>
-              {blocked
-                ? t("common:open_settings", { defaultValue: "Open Settings" })
-                : t("common:continue", { defaultValue: "Continue" })}
+              {t("common:continue", { defaultValue: "Continue" })}
             </Text>
           </Pressable>
         </View>
