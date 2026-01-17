@@ -40,7 +40,6 @@ export type RootStackParamList = {
   SavedMeals: undefined;
   EditUserData: undefined;
   ChangeEmail: undefined;
-  ProgressShare: undefined;
   AvatarCamera: undefined;
   HistoryList: undefined;
   MealDetail: undefined;

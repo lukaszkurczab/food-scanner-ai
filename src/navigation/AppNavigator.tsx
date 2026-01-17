@@ -36,7 +36,6 @@ import NotificationsScreen from "@/feature/UserProfile/screens/NotificationsScre
 import NotificationFormScreen from "@/feature/UserProfile/screens/NotificationFormScreen";
 import MealTextAIScreen from "@/feature/Meals/screens/MealTextAIScreen";
 import MealShareScreen from "@/feature/Meals/screens/MealShareScreen";
-import ProgressShareScreen from "@/feature/Statistics/screens/ProgressShareScreen";
 import ChatScreen from "@/feature/AI/screens/ChatScreen";
 import EditReviewIngredientsScreen from "@/feature/History/screens/EditReviewIngredientsScreen";
 import EditResultScreen from "@/feature/History/screens/EditResultScreen";
@@ -119,7 +118,6 @@ const AppNavigator = () => {
             name="NotificationForm"
             component={NotificationFormScreen}
           />
-          <Stack.Screen name="ProgressShare" component={ProgressShareScreen} />
           <Stack.Screen name="MealShare" component={MealShareScreen} />
         </>
       ) : (
