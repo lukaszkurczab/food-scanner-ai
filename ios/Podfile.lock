@@ -1200,7 +1200,7 @@ PODS:
   - DoubleConversion (1.1.6)
   - EXApplication (6.1.5):
     - ExpoModulesCore
-  - EXConstants (17.1.7):
+  - EXConstants (17.1.8):
     - ExpoModulesCore
   - EXImageLoader (5.1.0):
     - ExpoModulesCore
@@ -1473,7 +1473,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - ExpoAsset (12.0.8):
+  - ExpoAsset (12.0.12):
     - ExpoModulesCore
   - ExpoBackgroundTask (0.2.8):
     - ExpoModulesCore
@@ -1494,8 +1494,6 @@ PODS:
     - ExpoModulesCore
     - SDWebImageWebPCoder
   - ExpoImagePicker (16.1.4):
-    - ExpoModulesCore
-  - ExpoKeepAwake (14.1.4):
     - ExpoModulesCore
   - ExpoLocalization (16.1.6):
     - ExpoModulesCore
@@ -1533,7 +1531,7 @@ PODS:
     - ExpoModulesCore
   - ExpoSharing (13.1.5):
     - ExpoModulesCore
-  - ExpoSQLite (16.0.8):
+  - ExpoSQLite (16.0.10):
     - ExpoModulesCore
   - EXTaskManager (13.1.6):
     - ExpoModulesCore
@@ -1737,8 +1735,8 @@ PODS:
     - nanopb/encode (= 3.30910.0)
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
-  - PurchasesHybridCommon (16.2.2):
-    - RevenueCat (= 5.34.0)
+  - PurchasesHybridCommon (17.28.0):
+    - RevenueCat (= 5.55.1)
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion
@@ -3142,7 +3140,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-slider (5.1.1):
+  - react-native-slider (5.1.2):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -3157,7 +3155,7 @@ PODS:
     - React-hermes
     - React-ImageManager
     - React-jsi
-    - react-native-slider/common (= 5.1.1)
+    - react-native-slider/common (= 5.1.2)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -3167,7 +3165,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-slider/common (5.1.1):
+  - react-native-slider/common (5.1.2):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -3538,7 +3536,7 @@ PODS:
     - React-perflogger (= 0.79.5)
     - React-utils (= 0.79.5)
   - RecaptchaInterop (101.0.0)
-  - RevenueCat (5.34.0)
+  - RevenueCat (5.55.1)
   - RNCAsyncStorage (2.1.2):
     - DoubleConversion
     - glog
@@ -3587,7 +3585,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNDeviceInfo (14.0.4):
+  - RNDeviceInfo (14.1.1):
     - React-Core
   - RNFBApp (22.4.0):
     - Firebase/CoreOnly (= 11.15.0)
@@ -3629,8 +3627,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNPurchases (9.2.1):
-    - PurchasesHybridCommon (= 16.2.2)
+  - RNPurchases (9.7.1):
+    - PurchasesHybridCommon (= 17.28.0)
     - React-Core
   - RNReanimated (3.17.5):
     - DoubleConversion
@@ -3887,8 +3885,8 @@ PODS:
   - RNZipArchive/Core (7.0.2):
     - React-Core
     - SSZipArchive (~> 2.5.5)
-  - SDWebImage/Core (5.21.1)
-  - SDWebImageWebPCoder (0.14.6):
+  - SDWebImage/Core (5.21.5)
+  - SDWebImageWebPCoder (0.15.0):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
   - SocketRocket (0.7.1)
@@ -3925,7 +3923,6 @@ DEPENDENCIES:
   - ExpoHaptics (from `../node_modules/expo-haptics/ios`)
   - ExpoImageManipulator (from `../node_modules/expo-image-manipulator/ios`)
   - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
-  - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
   - ExpoLocalization (from `../node_modules/expo-localization/ios`)
   - ExpoMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
@@ -4104,8 +4101,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-image-manipulator/ios"
   ExpoImagePicker:
     :path: "../node_modules/expo-image-picker/ios"
-  ExpoKeepAwake:
-    :path: "../node_modules/expo-keep-awake/ios"
   ExpoLocalization:
     :path: "../node_modules/expo-localization/ios"
   ExpoMediaLibrary:
@@ -4309,7 +4304,7 @@ SPEC CHECKSUMS:
   BVLinearGradient: 880f91a7854faff2df62518f0281afb1c60d49a3
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   EXApplication: 50cc8ea58c138da6e3f25cd789634219c86b90d5
-  EXConstants: 9d62a46a36eae6d28cb978efcbc68aef354d1704
+  EXConstants: 7b84e6fc99a2bc8c589b647336b6005b419b280b
   EXImageLoader: ab4fcf9240cf3636a83c00e3fc5229d692899428
   EXJSONUtils: 1d3e4590438c3ee593684186007028a14b3686cd
   EXManifests: f4cc4a62ee4f1c8a9cf2bb79d325eac6cb9f5684
@@ -4319,7 +4314,7 @@ SPEC CHECKSUMS:
   expo-dev-launcher: 772afd177066a622ab6622b65e6fa9783640433b
   expo-dev-menu: 126a85a8ab88dd745c00c603c6673675af88fd33
   expo-dev-menu-interface: 609c35ae8b97479cdd4c9e23c8cf6adc44beea0e
-  ExpoAsset: 4375a46b45b12bbfcf6efac8c8a33aebdb8ba12b
+  ExpoAsset: d999f3bbd998a750f3b74cb913229848901b926b
   ExpoBackgroundTask: 9a714431a3510646bdd3317bac6d894f9b560318
   ExpoCamera: fc1ab0e1c665b543a307c577df107e37cc2edc8e
   ExpoDevice: 7a961caede6638aa0d37d0d3aa884ab957a2e3d3
@@ -4328,14 +4323,13 @@ SPEC CHECKSUMS:
   ExpoHaptics: 68c215e070f660e0a29c45dcda4f60eeff08aefb
   ExpoImageManipulator: 094b748056f2654d5d7813370c910e20ef3d79b4
   ExpoImagePicker: d2fff488a0738343a3cc21e98544ee9feafaa0e6
-  ExpoKeepAwake: e8dedc115d9f6f24b153ccd2d1d8efcdfd68a527
   ExpoLocalization: 677e45c2536bf918119962f78d7ffeeea317e07d
   ExpoMediaLibrary: 68f0c81280fe7efef3588ab498dae313b85932e9
   ExpoModulesCore: fdcc7469efc73d085a42bbe73dfb0fed21e7e836
   ExpoPrint: 187f43f5d16bc8db93fb6609707ed40b8e90d3a6
   ExpoSecureStore: 833b24a0d7feffef4505184910c058221066011e
   ExpoSharing: 04b346bdd7c8ea1fa87047ac7bba65c37bde4f51
-  ExpoSQLite: f9d1202877e12bfa78a58309a3977ee4ea0b1314
+  ExpoSQLite: 087db2057a7f1e9da38a8126f4388a324f9a4522
   EXTaskManager: 2b246319ee42b15142caa0b9a168d52979821700
   EXUpdatesInterface: 64f35449b8ef89ce08cdd8952a4d119b5de6821d
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
@@ -4361,7 +4355,7 @@ SPEC CHECKSUMS:
   leveldb-library: cc8b8f8e013647a295ad3f8cd2ddf49a6f19be19
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
-  PurchasesHybridCommon: 62f852419aae7041792217593998f7ac3f8b567d
+  PurchasesHybridCommon: c2f8f5fcd2e472c585fccd1ab2fe317a3dc1171e
   RCT-Folly: 36fe2295e44b10d831836cc0d1daec5f8abcf809
   RCTDeprecation: 5f638f65935e273753b1f31a365db6a8d6dc53b5
   RCTRequired: 8b46a520ea9071e2bc47d474aa9ca31b4a935bd8
@@ -4396,7 +4390,7 @@ SPEC CHECKSUMS:
   react-native-get-random-values: 21325b2244dfa6b58878f51f9aa42821e7ba3d06
   react-native-netinfo: f0a9899081c185db1de5bb2fdc1c88c202a059ac
   react-native-safe-area-context: 6cec90ce53951d3b52dc73e873323a4a7662fc0c
-  react-native-slider: f87adcf59d11862e6af9e55a8d83fc028fb7f3d3
+  react-native-slider: 6ca8d241e5f8d5f77d4482dc273ef137336ba755
   react-native-view-shot: 92c37eb33b41948a68d0c4a07674cb8ac1a487a9
   React-NativeModulesApple: d2b9bd7d55dfd864e56c76592777ad32e8ab1f3d
   React-oscompat: 0592889a9fcf0eacb205532028e4a364e22907dd
@@ -4430,23 +4424,23 @@ SPEC CHECKSUMS:
   ReactCodegen: 28eb66b3670b0f91cae893a4b3b34813c305c34f
   ReactCommon: 3dbed0a44e9e5d7b77b0f35983633aa5d33c9694
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
-  RevenueCat: eb2aa042789d9c99ad5172bd96e28b96286d6ada
+  RevenueCat: 347221fad5ab0ed5636546867deae2c32c64749f
   RNCAsyncStorage: e25fda4679876e5204c4c502d297757ec1f17ced
   RNDateTimePicker: 9d94d39bcece53d0dfdb64e18b409d9005529191
-  RNDeviceInfo: feea80a690d2bde1fe51461cf548039258bd03f2
+  RNDeviceInfo: 8b6fa8379062949dd79a009cf3d6b02a9c03ca59
   RNFBApp: d15dab17b5639fb7f95712d07c204912a534b8c6
   RNFBAuth: d671a6c27eac871a90c7fbc000e5236b070af055
   RNFBFirestore: 1361e2bc9fc45d91d609807cd0539d812cfd5af1
   RNFBStorage: 59b481153863edd47a709fd27a23d70aeb763587
   RNGestureHandler: 85b0463dbfed54eaba4360e31c0aa1a0fe83a6a6
-  RNPurchases: 41a59bf3e7986ac3551fb45ed6d4dcd809fe92a7
+  RNPurchases: bf7031528a609e0e0e5e5e8f6db213e83925ebbb
   RNReanimated: 7b926938d4190114e5848b5b022d83dbc2c0fe2c
   RNScreens: d9d5d8a2a484bb4446968bfa00db991f1117db44
   RNSVG: 257f59c952e296c9c36035a8f49b61fda48e398a
   RNVectorIcons: a61c8928c6a9b36cb66fb98c17ed60591e540fba
   RNZipArchive: 421f5f056eddfe72f56ac4400608d202d2c53674
-  SDWebImage: f29024626962457f3470184232766516dee8dfea
-  SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
+  SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838
+  SDWebImageWebPCoder: 0e06e365080397465cc73a7a9b472d8a3bd0f377
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   SSZipArchive: c69881e8ac5521f0e622291387add5f60f30f3c4
   UMAppLoader: 55159b69750129faa7a51c493cb8ea55a7b64eb9
