@@ -8,30 +8,30 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		14C615277CB64C278E1CCAD9 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A6521D7D8BE94E46BFB6B348 /* GoogleService-Info.plist */; };
-		25B487B7A0D75543BE8D81FF /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A089824505BFD523EBC8C7 /* ExpoModulesProvider.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		63756032F3139852660BB839 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 96F2F6556B01E448F978AE7E /* PrivacyInfo.xcprivacy */; };
-		913896892E0B55FBA6B9493A /* Pods_caloriai.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 57260018739227B8A8AEECA9 /* Pods_caloriai.framework */; };
+		42844130422A666B92FAF996 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D45121EF32303240CFF9690 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		DBB2F325DE7CDFDCA8C8A86E /* Pods_CaloriAI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B644CF37E4AA315CF59EA87 /* Pods_CaloriAI.framework */; };
+		F0E99E5EA3C945F5856D2274 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C68F5736CF4E4E90ACE8FB14 /* GoogleService-Info.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		F3C504A6B3311BE0C6C7521A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 89859D14B03FC0E7703B6E74 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		085EF6644386D64B0FAA86A2 /* Pods-caloriai.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-caloriai.release.xcconfig"; path = "Target Support Files/Pods-caloriai/Pods-caloriai.release.xcconfig"; sourceTree = "<group>"; };
-		13B07F961A680F5B00A75B9A /* caloriai.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = caloriai.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = caloriai/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = caloriai/Info.plist; sourceTree = "<group>"; };
-		57260018739227B8A8AEECA9 /* Pods_caloriai.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_caloriai.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		84A089824505BFD523EBC8C7 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-caloriai/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		96F2F6556B01E448F978AE7E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = caloriai/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		A6521D7D8BE94E46BFB6B348 /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "caloriai/GoogleService-Info.plist"; sourceTree = "<group>"; };
-		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = caloriai/SplashScreen.storyboard; sourceTree = "<group>"; };
+		0932A5407AE60940F3CE04AE /* Pods-CaloriAI.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CaloriAI.release.xcconfig"; path = "Target Support Files/Pods-CaloriAI/Pods-CaloriAI.release.xcconfig"; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* CaloriAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaloriAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = CaloriAI/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = CaloriAI/Info.plist; sourceTree = "<group>"; };
+		89859D14B03FC0E7703B6E74 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = CaloriAI/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		8B644CF37E4AA315CF59EA87 /* Pods_CaloriAI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CaloriAI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D45121EF32303240CFF9690 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-CaloriAI/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		8D685BDAE5FB9796EA9A421C /* Pods-CaloriAI.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CaloriAI.debug.xcconfig"; path = "Target Support Files/Pods-CaloriAI/Pods-CaloriAI.debug.xcconfig"; sourceTree = "<group>"; };
+		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = CaloriAI/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		E8933A218ABBE1CE49AB676C /* Pods-caloriai.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-caloriai.debug.xcconfig"; path = "Target Support Files/Pods-caloriai/Pods-caloriai.debug.xcconfig"; sourceTree = "<group>"; };
+		C68F5736CF4E4E90ACE8FB14 /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "CaloriAI/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = caloriai/AppDelegate.swift; sourceTree = "<group>"; };
-		F11748442D0722820044C1D9 /* caloriai-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "caloriai-Bridging-Header.h"; path = "caloriai/caloriai-Bridging-Header.h"; sourceTree = "<group>"; };
+		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = CaloriAI/AppDelegate.swift; sourceTree = "<group>"; };
+		F11748442D0722820044C1D9 /* CaloriAI-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "CaloriAI-Bridging-Header.h"; path = "CaloriAI/CaloriAI-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,52 +39,43 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				913896892E0B55FBA6B9493A /* Pods_caloriai.framework in Frameworks */,
+				DBB2F325DE7CDFDCA8C8A86E /* Pods_CaloriAI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		13B07FAE1A68108700A75B9A /* caloriai */ = {
+		13B07FAE1A68108700A75B9A /* CaloriAI */ = {
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
-				F11748442D0722820044C1D9 /* caloriai-Bridging-Header.h */,
+				F11748442D0722820044C1D9 /* CaloriAI-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				A6521D7D8BE94E46BFB6B348 /* GoogleService-Info.plist */,
-				96F2F6556B01E448F978AE7E /* PrivacyInfo.xcprivacy */,
+				C68F5736CF4E4E90ACE8FB14 /* GoogleService-Info.plist */,
+				89859D14B03FC0E7703B6E74 /* PrivacyInfo.xcprivacy */,
 			);
-			name = caloriai;
-			sourceTree = "<group>";
-		};
-		1979EE6AF56CA2AAB7B8019E /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				E8933A218ABBE1CE49AB676C /* Pods-caloriai.debug.xcconfig */,
-				085EF6644386D64B0FAA86A2 /* Pods-caloriai.release.xcconfig */,
-			);
-			path = Pods;
+			name = CaloriAI;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				57260018739227B8A8AEECA9 /* Pods_caloriai.framework */,
+				8B644CF37E4AA315CF59EA87 /* Pods_CaloriAI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		2DA40DB792C530AA76215045 /* ExpoModulesProviders */ = {
+		817BCF4FD78639A4C7C96F22 /* CaloriAI */ = {
 			isa = PBXGroup;
 			children = (
-				F8A3418CC7DE6B3CD2C9EB19 /* caloriai */,
+				8D45121EF32303240CFF9690 /* ExpoModulesProvider.swift */,
 			);
-			name = ExpoModulesProviders;
+			name = CaloriAI;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -97,12 +88,12 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* caloriai */,
+				13B07FAE1A68108700A75B9A /* CaloriAI */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				1979EE6AF56CA2AAB7B8019E /* Pods */,
-				2DA40DB792C530AA76215045 /* ExpoModulesProviders */,
+				94853D1177A4CAD085A62CFD /* Pods */,
+				F81546D16BC98D4EC93140AF /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -112,9 +103,19 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* caloriai.app */,
+				13B07F961A680F5B00A75B9A /* CaloriAI.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		94853D1177A4CAD085A62CFD /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				8D685BDAE5FB9796EA9A421C /* Pods-CaloriAI.debug.xcconfig */,
+				0932A5407AE60940F3CE04AE /* Pods-CaloriAI.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -123,41 +124,41 @@
 				BB2F792C24A3F905000567C9 /* Expo.plist */,
 			);
 			name = Supporting;
-			path = caloriai/Supporting;
+			path = CaloriAI/Supporting;
 			sourceTree = "<group>";
 		};
-		F8A3418CC7DE6B3CD2C9EB19 /* caloriai */ = {
+		F81546D16BC98D4EC93140AF /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				84A089824505BFD523EBC8C7 /* ExpoModulesProvider.swift */,
+				817BCF4FD78639A4C7C96F22 /* CaloriAI */,
 			);
-			name = caloriai;
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* caloriai */ = {
+		13B07F861A680F5B00A75B9A /* CaloriAI */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "caloriai" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "CaloriAI" */;
 			buildPhases = (
-				C96F271E3CF6FE3DF2551AB4 /* [CP] Check Pods Manifest.lock */,
-				66FC2C298DD740CD98DB1187 /* [Expo] Configure project */,
+				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
+				1E07BB3FAC00786112C87CC0 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				4B3D9C87F1A6D6B1ECEAA0FE /* [CP] Embed Pods Frameworks */,
-				112D8A2CD417B24A22695969 /* [CP] Copy Pods Resources */,
-				FA8992E94FFDAAFF995A39CA /* [CP-User] [RNFB] Core Configuration */,
+				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
+				1F48299FF71E0B670A1DF8CF /* [CP] Embed Pods Frameworks */,
+				E1F72437D2BFF8EA181ECAA5 /* [CP-User] [RNFB] Core Configuration */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = caloriai;
-			productName = caloriai;
-			productReference = 13B07F961A680F5B00A75B9A /* caloriai.app */;
+			name = CaloriAI;
+			productName = CaloriAI;
+			productReference = 13B07F961A680F5B00A75B9A /* CaloriAI.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -166,15 +167,14 @@
 		83CBB9F71A601CBA00E9B192 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1250;
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "caloriai" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "CaloriAI" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -187,7 +187,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* caloriai */,
+				13B07F861A680F5B00A75B9A /* CaloriAI */,
 			);
 		};
 /* End PBXProject section */
@@ -200,8 +200,8 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				14C615277CB64C278E1CCAD9 /* GoogleService-Info.plist in Resources */,
-				63756032F3139852660BB839 /* PrivacyInfo.xcprivacy in Resources */,
+				F0E99E5EA3C945F5856D2274 /* GoogleService-Info.plist in Resources */,
+				F3C504A6B3311BE0C6C7521A /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -223,13 +223,72 @@
 			shellPath = /bin/sh;
 			shellScript = "if [[ -f \"$PODS_ROOT/../.xcode.env\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env\"\nfi\nif [[ -f \"$PODS_ROOT/../.xcode.env.local\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.local\"\nfi\n\n# The project root by default is one level up from the ios directory\nexport PROJECT_ROOT=\"$PROJECT_DIR\"/..\n\nif [[ \"$CONFIGURATION\" = *Debug* ]]; then\n  export SKIP_BUNDLING=1\nfi\nif [[ -z \"$ENTRY_FILE\" ]]; then\n  # Set the entry JS file using the bundler's entry resolution.\n  export ENTRY_FILE=\"$(\"$NODE_BINARY\" -e \"require('expo/scripts/resolveAppEntry')\" \"$PROJECT_ROOT\" ios absolute | tail -n 1)\"\nfi\n\nif [[ -z \"$CLI_PATH\" ]]; then\n  # Use Expo CLI\n  export CLI_PATH=\"$(\"$NODE_BINARY\" --print \"require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })\")\"\nfi\nif [[ -z \"$BUNDLE_COMMAND\" ]]; then\n  # Default Expo CLI command for bundling\n  export BUNDLE_COMMAND=\"export:embed\"\nfi\n\n# Source .xcode.env.updates if it exists to allow\n# SKIP_BUNDLING to be unset if needed\nif [[ -f \"$PODS_ROOT/../.xcode.env.updates\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.updates\"\nfi\n# Source local changes to allow overrides\n# if needed\nif [[ -f \"$PODS_ROOT/../.xcode.env.local\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.local\"\nfi\n\n`\"$NODE_BINARY\" --print \"require('path').dirname(require.resolve('react-native/package.json')) + '/scripts/react-native-xcode.sh'\"`\n\n";
 		};
-		112D8A2CD417B24A22695969 /* [CP] Copy Pods Resources */ = {
+		08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-CaloriAI-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		1E07BB3FAC00786112C87CC0 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-CaloriAI/expo-configure-project.sh\"\n";
+		};
+		1F48299FF71E0B670A1DF8CF /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-caloriai/Pods-caloriai-resources.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-CaloriAI/Pods-CaloriAI-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CaloriAI/Pods-CaloriAI-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CaloriAI/Pods-CaloriAI-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/BoringSSL-GRPC/openssl_grpc.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
@@ -350,69 +409,10 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-caloriai/Pods-caloriai-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CaloriAI/Pods-CaloriAI-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		4B3D9C87F1A6D6B1ECEAA0FE /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-caloriai/Pods-caloriai-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-caloriai/Pods-caloriai-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		66FC2C298DD740CD98DB1187 /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-caloriai/expo-configure-project.sh\"\n";
-		};
-		C96F271E3CF6FE3DF2551AB4 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-caloriai-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		FA8992E94FFDAAFF995A39CA /* [CP-User] [RNFB] Core Configuration */ = {
+		E1F72437D2BFF8EA181ECAA5 /* [CP-User] [RNFB] Core Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -433,7 +433,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				25B487B7A0D75543BE8D81FF /* ExpoModulesProvider.swift in Sources */,
+				42844130422A666B92FAF996 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -442,18 +442,18 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E8933A218ABBE1CE49AB676C /* Pods-caloriai.debug.xcconfig */;
+			baseConfigurationReference = 8D685BDAE5FB9796EA9A421C /* Pods-CaloriAI.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = caloriai/caloriai.entitlements;
+				CODE_SIGN_ENTITLEMENTS = CaloriAI/CaloriAI.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
 				);
-				INFOPLIST_FILE = caloriai/Info.plist;
+				INFOPLIST_FILE = CaloriAI/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -467,26 +467,24 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.lkurczab.foodscannerai;
-				PRODUCT_NAME = caloriai;
-				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
-				SWIFT_OBJC_BRIDGING_HEADER = "caloriai/caloriai-Bridging-Header.h";
+				PRODUCT_NAME = CaloriAI;
+				SWIFT_OBJC_BRIDGING_HEADER = "CaloriAI/CaloriAI-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 085EF6644386D64B0FAA86A2 /* Pods-caloriai.release.xcconfig */;
+			baseConfigurationReference = 0932A5407AE60940F3CE04AE /* Pods-CaloriAI.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = caloriai/caloriai.entitlements;
+				CODE_SIGN_ENTITLEMENTS = CaloriAI/CaloriAI.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				INFOPLIST_FILE = caloriai/Info.plist;
+				INFOPLIST_FILE = CaloriAI/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -500,12 +498,10 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.lkurczab.foodscannerai;
-				PRODUCT_NAME = caloriai;
-				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
-				SWIFT_OBJC_BRIDGING_HEADER = "caloriai/caloriai-Bridging-Header.h";
+				PRODUCT_NAME = CaloriAI;
+				SWIFT_OBJC_BRIDGING_HEADER = "CaloriAI/CaloriAI-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
@@ -533,7 +529,6 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -543,7 +538,6 @@
 				COPY_PHASE_STRIP = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -570,7 +564,7 @@
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -612,7 +606,6 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -622,7 +615,6 @@
 				COPY_PHASE_STRIP = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -642,7 +634,7 @@
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -655,7 +647,6 @@
 				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
-				SWIFT_COMPILATION_MODE = wholemodule;
 				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -664,7 +655,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "caloriai" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "CaloriAI" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -673,7 +664,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "caloriai" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "CaloriAI" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,

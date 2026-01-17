@@ -94,8 +94,6 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.1"
-        // Enable native multidex on API 21+ to reduce DEX merge memory pressure
-        multiDexEnabled true
     }
     signingConfigs {
         debug {
@@ -127,11 +125,6 @@ android {
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
-    lint {
-        abortOnError false
-        checkReleaseBuilds false
-        checkDependencies false
-    }
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
@@ -157,7 +150,6 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-    implementation 'androidx.multidex:multidex:2.0.1'
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
