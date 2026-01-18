@@ -62,13 +62,13 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const canLeaveRef = useRef(false);
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [mode, setMode] = useState<"ai" | "barcode">(
-    barcodeOnly ? "barcode" : isPremium ? "ai" : "barcode"
+    barcodeOnly ? "barcode" : isPremium ? "ai" : "barcode",
   );
 
   useEffect(() => {
     if (barcodeOnly) return;
     setMode((prev) =>
-      isPremium ? (prev === "barcode" ? "ai" : prev) : "barcode"
+      isPremium ? (prev === "barcode" ? "ai" : prev) : "barcode",
     );
   }, [isPremium, barcodeOnly]);
 
@@ -194,7 +194,6 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
     if (typeof __DEV__ !== "undefined" && __DEV__) {
       try {
         const uri = await getSampleMealUri();
-        log.log("DEV sample meal uri", uri);
         setPhotoUri(uri);
         return;
       } catch {}
@@ -366,7 +365,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
             isBarcodeFlow
               ? tCommon(
                   "barcode_loader_subtext",
-                  "Fetching product data from the database."
+                  "Fetching product data from the database.",
                 )
               : tCommon("camera_loader_subtext", "This may take a few seconds.")
           }
@@ -389,6 +388,8 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
       </Layout>
     );
   }
+
+  const showBarcodeOverlay = !skipDetection && mode === "barcode";
 
   return (
     <Layout>
@@ -461,6 +462,36 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                 </Pressable>
               </View>
             )}
+            {showBarcodeOverlay && (
+              <View pointerEvents="none" style={styles.barcodeOverlay}>
+                <View
+                  style={[styles.barcodeFrame, { borderColor: theme.onAccent }]}
+                />
+                <View
+                  style={[
+                    styles.barcodeHintCard,
+                    {
+                      borderColor: theme.border,
+                      top: "50%",
+                      transform: [{ translateY: -144 }],
+                    } as any,
+                  ]}
+                >
+                  <Text
+                    style={[styles.barcodeHintText, { color: theme.onAccent }]}
+                  >
+                    {scannedCode
+                      ? tMeals("barcode_detected", {
+                          defaultValue: "Detected:",
+                        }) + ` ${scannedCode}`
+                      : tMeals("barcode_hint", {
+                          defaultValue:
+                            "Scan the barcode by placing it inside the frame",
+                        })}
+                  </Text>
+                </View>
+              </View>
+            )}
             <View style={styles.shutterWrapper}>
               <Pressable
                 style={({ pressed }) => [
@@ -488,14 +519,6 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                     {tMeals("dev.sample_meal")}
                   </Text>
                 </Pressable>
-              </View>
-            )}
-            {!skipDetection && mode === "barcode" && scannedCode && (
-              <View style={styles.detectBadge}>
-                <Text style={{ color: theme.onAccent, fontWeight: "bold" }}>
-                  {tMeals("barcode_detected", { defaultValue: "Detected:" })}{" "}
-                  {scannedCode}
-                </Text>
               </View>
             )}
           </View>
@@ -585,18 +608,6 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     backgroundColor: "transparent",
   },
-  detectBadge: {
-    position: "absolute",
-    bottom: 188,
-    left: 16,
-    right: 16,
-    borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
-  },
   devRow: {
     position: "absolute",
     top: 24,
@@ -611,5 +622,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
+  },
+  barcodeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  barcodeHintCard: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+  },
+  barcodeHintText: {
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  barcodeFrame: {
+    width: "78%",
+    aspectRatio: 1.6,
+    borderRadius: 18,
+    borderWidth: 2,
+    backgroundColor: "rgba(0,0,0,0.18)",
   },
 });
