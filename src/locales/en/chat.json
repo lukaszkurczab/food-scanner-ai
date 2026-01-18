@@ -74,5 +74,19 @@
     "errors": {
       "empty": "No answer."
     }
+  },
+  "empty": {
+    "title": "Start a conversation",
+    "subtitle": "Ask about your meals, macros, or what to improve today.",
+    "s1": "Summarize my day",
+    "v1": "Summarize my meals today and give 3 concrete improvements.",
+    "s2": "What to improve?",
+    "v2": "What are the biggest gaps in my diet based on my recent meals?",
+    "s3": "Dinner idea",
+    "v3": "Suggest a high-protein dinner idea tailored to me.",
+    "s4": "Protein today",
+    "v4": "How much protein did I eat today based on my logged meals?",
+    "footerFree": "Free plan: {{used}}/{{limit}} messages today",
+    "footerPremium": "Premium active"
   }
 }

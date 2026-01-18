@@ -13,7 +13,7 @@
     "description": "Wykorzystałeś {{used}} z {{limit}} wiadomości dziennie. Przejdź na Premium, aby mieć nielimitowany czat.",
     "upgradeCta": "Przejdź na Premium",
     "title": "Dziękujemy za korzystanie z CaloriAI!",
-    "body": "Wykorzystano {{used}} z {{limit}} darmowych pytań dziennie. Wróć jutro lub odblokuj nielimitowany dostęp.",
+    "body": "Wykorzystałeś {{used}} z {{limit}} darmowych pytań dziennie. Wróć jutro lub odblokuj nielimitowany dostęp.",
     "button": "Odblokuj Premium",
     "reached": "Osiągnięto limit dzienny ({{used}}/{{limit}})",
     "reachedShort": "Limit dzienny osiągnięty ({{used}}/{{limit}})"
@@ -35,14 +35,14 @@
       "noGluten": "Nigdy nie proponuj produktów z glutenem.",
       "noLactose": "Nie proponuj produktów mlecznych zawierających laktozę; sugeruj roślinne zamienniki.",
       "diabetes": "Preferuj niski ładunek glikemiczny, unikaj cukrów prostych.",
-      "hypertension": "Ograniczaj sól sodową, preferuj potas, warzywa, dieta DASH."
+      "hypertension": "Ograniczaj sól, preferuj potas, warzywa, dieta DASH."
     },
     "prefers": {
       "veganProteins": "roślinne białka (tofu, tempeh, strączki)",
       "wholeGrains": "pełne ziarna",
       "vegFruit": "warzywa, owoce",
       "nutsSeeds": "orzechy i nasiona",
-      "vegetarianSources": "jaja, nabiał, strączki, tofu, produkty zbożowe pełnoziarniste",
+      "vegetarianSources": "jaja, nabiał, strączki, tofu, produkty pełnoziarniste",
       "fishSeafood": "ryby i owoce morza",
       "mediterranean": "oliwa, ryby, warzywa, rośliny strączkowe, pełne ziarna, orzechy"
     },
@@ -56,7 +56,7 @@
       "mealPlanning": "Skup się na gotowych propozycjach posiłków.",
       "analyzingMistakes": "Najpierw wskaż błędy, potem poprawki.",
       "quickAnswers": "Udziel krótkiej odpowiedzi bez dygresji.",
-      "motivation": "Dodaj 1–2 zdania wsparcia psychologicznego.",
+      "motivation": "Dodaj 1–2 zdania wsparcia.",
       "default": "Dopasuj odpowiedź do pytania."
     },
     "replacement": "zamiennik",
@@ -76,5 +76,19 @@
     "errors": {
       "empty": "Brak odpowiedzi."
     }
+  },
+  "empty": {
+    "title": "Zacznij rozmowę",
+    "subtitle": "Zapytaj o posiłki, makro lub co poprawić dziś w diecie.",
+    "s1": "Podsumuj mój dzień",
+    "v1": "Podsumuj moje posiłki z dzisiaj i podaj 3 konkretne rzeczy do poprawy.",
+    "s2": "Co poprawić?",
+    "v2": "Jakie są największe braki w mojej diecie na podstawie ostatnich posiłków?",
+    "s3": "Pomysł na kolację",
+    "v3": "Zaproponuj wysokobiałkową kolację dopasowaną do mnie.",
+    "s4": "Białko dziś",
+    "v4": "Ile białka zjadłem dziś na podstawie zapisanych posiłków?",
+    "footerFree": "Plan darmowy: {{used}}/{{limit}} wiadomości dzisiaj",
+    "footerPremium": "Premium aktywne"
   }
 }
