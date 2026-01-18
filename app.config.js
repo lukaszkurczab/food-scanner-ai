@@ -3,6 +3,7 @@ import "dotenv/config";
 export default {
   expo: {
     name: "CaloriAI",
+    scheme: "caloriai",
     slug: "caloriai",
     owner: "lkurczab",
     version: "1.0.1",

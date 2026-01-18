@@ -1,5 +1,13 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { View, FlatList, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  View,
+  FlatList,
+  ActivityIndicator,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUser } from "@hooks/useUser";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
@@ -13,7 +21,11 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { PaywallCard } from "../components/PaywallCard";
 import { TypingDots } from "../components/TypingDots";
 import { useMeals } from "@hooks/useMeals";
-import { useNavigation } from "@react-navigation/native";
+import { EmptyState } from "../components/EmptyState";
+import { ChatHistorySheet } from "../components/ChatHistorySheet";
+import { IconButton } from "@/components/IconButton";
+import { MaterialIcons } from "@expo/vector-icons";
+import { v4 as uuidv4 } from "uuid";
 
 export default function ChatScreen() {
   const { firebaseUser: user } = useAuthContext();
@@ -25,7 +37,11 @@ export default function ChatScreen() {
   const subscription = useSubscriptionData();
   const isPremium = subscription?.state === "premium_active";
   const { meals } = useMeals(uid);
-  const navigation = useNavigation();
+
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [threadId, setThreadId] = useState<string>(() => `local-${uuidv4()}`);
+
+  const limit = 5;
 
   const {
     messages,
@@ -36,35 +52,64 @@ export default function ChatScreen() {
     countToday,
     send,
     loadMore,
-  } = useChatHistory(uid, !!isPremium, meals || [], userData || ({} as any));
+  } = useChatHistory(
+    uid,
+    !!isPremium,
+    meals || [],
+    userData || ({} as any),
+    threadId,
+  );
 
   const data = useMemo(
     () => [...messages].sort((a, b) => b.createdAt - a.createdAt),
-    [messages]
+    [messages],
   );
 
-  const [toast, setToast] = useState<string | null>(null);
-  const showToast = useCallback((msg: string) => setToast(msg), []);
-
-  const limitReached = !isPremium && countToday >= 5;
+  const limitReached = !isPremium && countToday >= limit;
 
   const handleSend = useCallback(
-    (text: string) => {
-      if (!net.isConnected) {
-        showToast(t("offline.short"));
-        return;
-      }
-      if (limitReached) {
-        showToast(t("limit.reachedShort", { used: countToday, limit: 5 }));
-        return;
-      }
-      send(text);
+    async (text: string) => {
+      if (!net.isConnected) return;
+      if (limitReached) return;
+      const createdThreadId = await send(text);
+      if (createdThreadId) setThreadId(createdThreadId);
     },
-    [net.isConnected, limitReached, countToday, send, showToast, t]
+    [net.isConnected, limitReached, send],
   );
 
+  const suggestions = useMemo(
+    () => [
+      { label: t("empty.s1"), value: t("empty.v1") },
+      { label: t("empty.s2"), value: t("empty.v2") },
+      { label: t("empty.s3"), value: t("empty.v3") },
+      { label: t("empty.s4"), value: t("empty.v4") },
+    ],
+    [t],
+  );
+
+  const footerText = useMemo(() => {
+    if (!isPremium) return t("empty.footerFree", { used: countToday, limit });
+    return t("empty.footerPremium");
+  }, [isPremium, countToday, limit, t]);
+
+  const emptyDisabled = sending || limitReached || !net.isConnected;
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      edges={["top"]}
+    >
+      <View style={styles.header}>
+        <IconButton
+          icon={<MaterialIcons name="menu" />}
+          onPress={() => setHistoryOpen(true)}
+          variant="ghost"
+          size={40}
+          iconColor={theme.textSecondary}
+          accessibilityLabel={t("history.open")}
+        />
+      </View>
+
       {limitReached && (
         <View
           style={[
@@ -75,14 +120,9 @@ export default function ChatScreen() {
               shadowColor: theme.shadow,
             },
           ]}
+          pointerEvents="box-none"
         >
-          <PaywallCard
-            used={countToday}
-            limit={5}
-            onUpgrade={() =>
-              (navigation as any)?.navigate?.("ManageSubscription")
-            }
-          />
+          <PaywallCard used={countToday} limit={limit} onUpgrade={() => {}} />
         </View>
       )}
 
@@ -93,11 +133,15 @@ export default function ChatScreen() {
           <ActivityIndicator />
         </View>
       ) : (
-        <>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
           <FlatList
             inverted
             data={data}
             keyExtractor={(m) => m.id}
+            keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <Bubble
                 role={item.role === "user" ? "user" : "ai"}
@@ -110,10 +154,20 @@ export default function ChatScreen() {
             ListHeaderComponent={
               !canSend && !isPremium ? <View /> : typing ? <TypingDots /> : null
             }
+            ListEmptyComponent={
+              <EmptyState
+                title={t("empty.title")}
+                subtitle={t("empty.subtitle")}
+                suggestions={suggestions}
+                disabled={emptyDisabled}
+                footerText={footerText}
+                onPick={handleSend}
+              />
+            }
             contentContainerStyle={{
               paddingHorizontal: 16,
+              paddingTop: 8,
               paddingBottom: 16 + (limitReached ? 160 : 0),
-              paddingTop: 16,
             }}
           />
           <InputBar
@@ -121,14 +175,29 @@ export default function ChatScreen() {
             disabled={sending || limitReached || !net.isConnected}
             onSend={handleSend}
           />
-        </>
+        </KeyboardAvoidingView>
       )}
-    </View>
+
+      <ChatHistorySheet
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        userUid={uid}
+        activeThreadId={threadId}
+        onSelectThread={(id) => setThreadId(id)}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   container: { flex: 1 },
+  header: {
+    height: 44,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   stickyBanner: {
     position: "absolute",
@@ -139,9 +208,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     zIndex: 20,
     elevation: 4,
-  },
-  bannerText: {
-    fontSize: 14,
-    fontWeight: "600",
   },
 });

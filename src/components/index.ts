@@ -35,3 +35,4 @@ export * from "./Clock12h";
 export * from "./FullScreenLoader";
 export * from "./Toast";
 export * from "./ZoomModal";
+export * from "./Drawer";

@@ -214,12 +214,14 @@ export default function Step1BasicData({
               label={t("male")}
               onPress={() => handleChange("sex", "male")}
               style={{ flex: 1 }}
+              textStyle={{ fontSize: theme.typography.size.sm }}
               accessibilityState={{ selected: true }}
             />
             <SecondaryButton
               label={t("female")}
               onPress={() => handleChange("sex", "female")}
               style={{ flex: 1 }}
+              textStyle={{ fontSize: theme.typography.size.sm }}
               accessibilityState={{ selected: false }}
             />
           </>
@@ -229,12 +231,14 @@ export default function Step1BasicData({
               label={t("male")}
               onPress={() => handleChange("sex", "male")}
               style={{ flex: 1 }}
+              textStyle={{ fontSize: theme.typography.size.sm }}
               accessibilityState={{ selected: false }}
             />
             <PrimaryButton
               label={t("female")}
               onPress={() => handleChange("sex", "female")}
               style={{ flex: 1 }}
+              textStyle={{ fontSize: theme.typography.size.sm }}
               accessibilityState={{ selected: true }}
             />
           </>
