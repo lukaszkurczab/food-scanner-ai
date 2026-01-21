@@ -78,7 +78,7 @@ export default function HomeScreen({ navigation }: any) {
 
   const dayMeals = useMemo(
     () => getMealsForDate(meals, selectedDate),
-    [meals, selectedDate]
+    [meals, selectedDate],
   );
   const hasSurvey = !!userData?.surveyComplited;
 
@@ -95,7 +95,7 @@ export default function HomeScreen({ navigation }: any) {
 
   const { labels, data } = useMemo(
     () => getLastNDaysAggregated(meals, 7, "kcal"),
-    [meals]
+    [meals],
   );
   const showWeeklyGraph = useMemo(() => data.some((v) => v > 0), [data]);
 
@@ -103,7 +103,7 @@ export default function HomeScreen({ navigation }: any) {
     if (Array.isArray(meal.ingredients) && meal.ingredients.length) {
       const mealKcal = meal.ingredients.reduce(
         (acc, ing) => acc + (ing.kcal ?? 0),
-        0
+        0,
       );
       return sum + mealKcal;
     }
@@ -117,7 +117,7 @@ export default function HomeScreen({ navigation }: any) {
     (nonZeroMacros.fat ?? 0) > 0 ||
     (nonZeroMacros.carbs ?? 0) > 0;
 
-  const goalCalories = hasSurvey ? userData?.calorieTarget ?? 0 : 0;
+  const goalCalories = hasSurvey ? (userData?.calorieTarget ?? 0) : 0;
 
   const macroTargets = useMemo(
     () =>
@@ -128,17 +128,12 @@ export default function HomeScreen({ navigation }: any) {
             goal: userData.goal,
           })
         : null,
-    [userData?.calorieTarget, userData?.preferences, userData?.goal]
+    [userData?.calorieTarget, userData?.preferences, userData?.goal],
   );
 
   return (
-    <Layout showNavigationWithoutCard={true}>
-      <View
-        style={[
-          styles.screen,
-          { gap: theme.spacing.lg, padding: theme.spacing.lg },
-        ]}
-      >
+    <Layout>
+      <View style={[styles.screen, { gap: theme.spacing.lg }]}>
         <WeekStrip
           days={last7Days}
           selectedDate={selectedDate}

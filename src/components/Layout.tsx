@@ -7,51 +7,32 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  Dimensions,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useRoute } from "@react-navigation/native";
 import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useInactivity } from "@contexts/InactivityContext";
-
-const hiddenRoutes = [
-  "AvatarCamera",
-  "IngredientsNotRecognized",
-  "MealCamera",
-  "HistoryList",
-  "SavedMeals",
-  "BarcodeProductNotFound",
-  "SelectSavedMeal",
-  "ReviewIngredients",
-  "Result",
-  "SavedMealsCamera",
-  "MealTextAI",
-  "MealShare",
-  "MealDetails",
-  "Home",
-  "Terms",
-  "Privacy",
-];
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type LayoutProps = {
   children: React.ReactNode;
   showNavigation?: boolean;
   disableScroll?: boolean;
-  showNavigationWithoutCard?: boolean;
 };
+
+const TAB_BAR_HEIGHT = 36;
 
 export const Layout = ({
   children,
   showNavigation = true,
   disableScroll = false,
-  showNavigationWithoutCard = false,
 }: LayoutProps) => {
   const theme = useTheme();
   const route = useRoute();
   const { setScreenName } = useInactivity();
+  const insets = useSafeAreaInsets();
 
-  const isCardVisible = !hiddenRoutes.includes(route.name);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
@@ -60,117 +41,59 @@ export const Layout = ({
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", () =>
-      setIsKeyboardVisible(true)
+      setIsKeyboardVisible(true),
     );
     const hideSub = Keyboard.addListener("keyboardDidHide", () =>
-      setIsKeyboardVisible(false)
+      setIsKeyboardVisible(false),
     );
+
     return () => {
       showSub.remove();
       hideSub.remove();
     };
   }, []);
 
-  if (!isCardVisible) {
-    return (
-      <KeyboardAvoidingView
-        style={{ flex: 1, flexGrow: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: theme.background,
-              paddingBottom: showNavigationWithoutCard ? 62 : 0,
-            }}
-          >
-            {disableScroll ? (
-              <View style={styles.root}>{children}</View>
-            ) : (
-              <ScrollView
-                contentContainerStyle={{ flexGrow: 1 }}
-                keyboardShouldPersistTaps="handled"
-                style={[styles.root, { backgroundColor: theme.background }]}
-              >
-                <StatusBar
-                  barStyle={
-                    theme.mode === "dark" ? "light-content" : "dark-content"
-                  }
-                  backgroundColor={theme.background}
-                />
-                {children}
-              </ScrollView>
-            )}
-            {showNavigationWithoutCard && <BottomTabBar />}
-          </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    );
-  }
+  const shouldShowTabBar = showNavigation && !isKeyboardVisible;
+  const bottomPadding = shouldShowTabBar
+    ? TAB_BAR_HEIGHT + insets.bottom
+    : insets.bottom;
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, flexGrow: 1 }}
+      style={styles.flex}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? insets.top : 0}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={[styles.root, { backgroundColor: theme.background }]}>
-          <View style={{ maxHeight: Dimensions.get("window").height }}>
-            {disableScroll ? (
-              <View
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: theme.card,
-                    borderRadius: theme.rounded.lg,
-                    margin: theme.spacing.lg,
-                    padding: theme.spacing.lg,
-                    justifyContent: "center",
-                    paddingBottom: showNavigation ? 62 : 32,
-                    minHeight: Dimensions.get("window").height - 64,
-                  },
-                ]}
-              >
-                {children}
-              </View>
-            ) : (
-              <ScrollView
-                contentContainerStyle={{
-                  flexGrow: 1,
-                  justifyContent: "center",
-                  marginBottom: 16,
-                }}
-                keyboardShouldPersistTaps="handled"
-              >
-                <StatusBar
-                  barStyle={
-                    theme.mode === "dark" ? "light-content" : "dark-content"
-                  }
-                  backgroundColor={theme.background}
-                />
-                <View
-                  style={[
-                    styles.card,
-                    {
-                      backgroundColor: theme.card,
-                      borderRadius: theme.rounded.lg,
-                      margin: theme.spacing.lg,
-                      padding: theme.spacing.lg,
-                      justifyContent: "center",
-                      paddingBottom: showNavigation ? 62 : 32,
-                      minHeight: Dimensions.get("window").height - 64,
-                    },
-                  ]}
-                >
-                  {children}
-                </View>
-              </ScrollView>
-            )}
-          </View>
-          {showNavigation && !isKeyboardVisible && isCardVisible && (
-            <BottomTabBar />
+        <View
+          style={[
+            styles.root,
+            {
+              backgroundColor: theme.background,
+              paddingTop: insets.top + 16,
+              paddingBottom: bottomPadding,
+              paddingLeft: insets.left + 32,
+              paddingRight: insets.right + 32,
+            },
+          ]}
+        >
+          <StatusBar
+            barStyle={theme.mode === "dark" ? "light-content" : "dark-content"}
+            backgroundColor={theme.background}
+          />
+
+          {disableScroll ? (
+            <View style={styles.content}>{children}</View>
+          ) : (
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {children}
+            </ScrollView>
           )}
+
+          {shouldShowTabBar && <BottomTabBar />}
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -178,10 +101,8 @@ export const Layout = ({
 };
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  card: {
-    flex: 1,
-  },
+  flex: { flex: 1 },
+  root: { flex: 1 },
+  content: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
 });

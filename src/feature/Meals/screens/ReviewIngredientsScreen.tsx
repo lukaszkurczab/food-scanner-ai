@@ -115,7 +115,7 @@ export default function ReviewIngredientsScreen() {
   const hasAnyErrors = useMemo(
     () =>
       Array.from(errorsByIndex.values()).some((e) => Object.keys(e).length > 0),
-    [errorsByIndex]
+    [errorsByIndex],
   );
 
   const isEmpty = (i: Ingredient) =>
@@ -179,7 +179,7 @@ export default function ReviewIngredientsScreen() {
 
   const handlePartialChange = async (
     idx: number,
-    patch: Partial<Ingredient>
+    patch: Partial<Ingredient>,
   ) => {
     if (idx === -1) {
       setLocalDraft((prev) => ({ ...(prev ?? ({} as Ingredient)), ...patch }));
@@ -372,7 +372,7 @@ export default function ReviewIngredientsScreen() {
             errors={errorsByIndex.get(-1)}
             hasError={Boolean(
               errorsByIndex.get(-1) &&
-                Object.keys(errorsByIndex.get(-1)!).length
+              Object.keys(errorsByIndex.get(-1)!).length,
             )}
           />
         )}
@@ -419,8 +419,8 @@ export default function ReviewIngredientsScreen() {
 
         <AppModal
           visible={showConfirmModal}
-          title={t("select_method_title", { ns: "meals" })}
-          message={t("select_method_message", { ns: "meals" })}
+          title={t("confirm_exit_title", { ns: "meals" })}
+          message={t("confirm_exit_message", { ns: "meals" })}
           primaryActionLabel={t("yes", { ns: "common" })}
           onPrimaryAction={handleStartOver}
           secondaryActionLabel={t("no", { ns: "common" })}

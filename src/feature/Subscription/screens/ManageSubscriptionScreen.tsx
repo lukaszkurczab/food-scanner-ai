@@ -19,9 +19,9 @@ import { usePremiumContext } from "@/context/PremiumContext";
 import Constants from "expo-constants";
 import {
   openManageSubscriptions,
-  startOrRenewSubscription,
   restorePurchases,
 } from "@/feature/Subscription/services/purchase";
+import { PaywallModal } from "@/feature/Subscription/components/PaywallModal";
 
 const BENEFITS = [
   "unlimitedAiChat",
@@ -38,6 +38,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   const { isPremium, setDevPremium } = usePremiumContext();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [paywallVisible, setPaywallVisible] = useState(false);
 
   const extra = (Constants.expoConfig?.extra || {}) as Record<string, any>;
   const termsUrl = typeof extra.termsUrl === "string" ? extra.termsUrl : "";
@@ -57,6 +58,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
     state.startsWith("premium")) as boolean;
   const isExpired = state.endsWith("expired");
   const isActive = state.endsWith("active");
+
   const showCancel = isPremiumComputed && isActive;
   const showRenew =
     (!isPremiumComputed && isActive) || (isPremiumComputed && isExpired);
@@ -66,10 +68,12 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
     isPremiumComputed && isActive
       ? t("manageSubscription.premium")
       : isPremiumComputed && isExpired
-      ? `${t("manageSubscription.premium")} (${t("expired", {
-          defaultValue: "expired",
-        })})`
-      : t("manageSubscription.free");
+        ? `${t("manageSubscription.premium")} (${t("expired", { defaultValue: "expired" })})`
+        : t("manageSubscription.free");
+
+  const priceText = t("paywall.priceText", {
+    defaultValue: "29,99 zł / month",
+  });
 
   const tryOpenManage = async () => {
     setBusy(true);
@@ -80,40 +84,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           t("manageSubscription.title"),
           t("manageSubscription.billingUnavailable", {
             defaultValue: "Billing is unavailable on this device.",
-          })
-        );
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const tryPurchase = async () => {
-    setBusy(true);
-    try {
-      const res = await startOrRenewSubscription();
-      if (res.status === "success") {
-        Alert.alert(
-          t("manageSubscription.title"),
-          t("manageSubscription.purchaseSuccess", {
-            defaultValue: "Purchase successful.",
-          })
-        );
-        return;
-      }
-      if (res.status === "unavailable") {
-        Alert.alert(
-          t("manageSubscription.title"),
-          t("manageSubscription.billingUnavailable", {
-            defaultValue: "Billing is unavailable on this device.",
-          })
-        );
-      } else if (res.status === "error") {
-        Alert.alert(
-          t("manageSubscription.title"),
-          t("manageSubscription.purchaseFailed", {
-            defaultValue: "Purchase failed. Please try again.",
-          })
+          }),
         );
       }
     } finally {
@@ -130,34 +101,37 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           t("manageSubscription.title"),
           t("manageSubscription.restoreSuccess", {
             defaultValue: "Purchases restored.",
-          })
+          }),
         );
       } else if (res.status === "cancelled") {
         Alert.alert(
           t("manageSubscription.title"),
           t("manageSubscription.restoreNothing", {
             defaultValue: "No purchases to restore.",
-          })
+          }),
         );
       } else if (res.status === "unavailable") {
         Alert.alert(
           t("manageSubscription.title"),
           t("manageSubscription.billingUnavailable", {
             defaultValue: "Billing is unavailable on this device.",
-          })
+          }),
         );
       } else {
         Alert.alert(
           t("manageSubscription.title"),
           t("manageSubscription.restoreFailed", {
             defaultValue: "Restore failed. Try again later.",
-          })
+          }),
         );
       }
     } finally {
       setBusy(false);
     }
   };
+
+  const openPaywall = () => setPaywallVisible(true);
+  const closePaywall = () => setPaywallVisible(false);
 
   return (
     <Layout>
@@ -452,6 +426,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
                     {t("termsOfService", { defaultValue: "Terms of Service" })}
                   </Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
                   onPress={() => Linking.openURL(privacyUrl)}
                   activeOpacity={0.7}
@@ -515,7 +490,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
                 marginTop: spacing.md,
               },
             ]}
-            onPress={tryPurchase}
+            onPress={openPaywall}
             disabled={busy}
             activeOpacity={0.7}
           >
@@ -547,7 +522,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
                 borderTopColor: theme.border,
               },
             ]}
-            onPress={tryPurchase}
+            onPress={openPaywall}
             disabled={busy}
             activeOpacity={0.7}
           >
@@ -567,6 +542,26 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
             />
           </TouchableOpacity>
         )}
+
+        <PaywallModal
+          visible={paywallVisible}
+          busy={busy}
+          priceText={priceText}
+          onClose={closePaywall}
+          onSubscribe={async () => {
+            closePaywall();
+            Alert.alert(
+              t("manageSubscription.title"),
+              t("paywall.purchaseNotReady", {
+                defaultValue:
+                  "Purchases are not available yet. Submit the in-app purchase with a new app version for review.",
+              }),
+            );
+          }}
+          onRestore={tryRestore}
+          termsUrl={termsUrl}
+          privacyUrl={privacyUrl}
+        />
 
         <TouchableOpacity
           style={[
