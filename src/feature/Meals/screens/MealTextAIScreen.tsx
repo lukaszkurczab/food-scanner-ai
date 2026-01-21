@@ -84,8 +84,8 @@ export default function MealTextAIScreen() {
         timestamp: "",
         source: "ai",
         cloudId: undefined,
-      } as unknown as Meal),
-    []
+      }) as unknown as Meal,
+    [],
   );
 
   const ensureDraft = useCallback(async (): Promise<Meal | null> => {
@@ -122,7 +122,7 @@ export default function MealTextAIScreen() {
       uid,
       name,
       desc,
-    ]
+    ],
   );
 
   const buildDescription = () => {
@@ -176,7 +176,7 @@ export default function MealTextAIScreen() {
         t("text_ai_require_ingredients_or_amount", {
           ns: "meals",
           defaultValue: "Enter ingredients or amount [g].",
-        })
+        }),
       );
       return;
     }
@@ -187,7 +187,7 @@ export default function MealTextAIScreen() {
       uid,
       !!isPremium,
       "text",
-      FEATURE_LIMIT
+      FEATURE_LIMIT,
     );
     if (!allowed) {
       setShowLimitModal(true);
@@ -208,7 +208,7 @@ export default function MealTextAIScreen() {
           t("not_recognized_title", {
             ns: "meals",
             defaultValue: "We couldn't recognize the ingredients",
-          })
+          }),
         );
         return;
       }
@@ -248,119 +248,102 @@ export default function MealTextAIScreen() {
       >
         <View
           style={{
-            padding: theme.spacing.container,
             gap: theme.spacing.lg,
             flex: 1,
           }}
         >
-          <View
-            style={{
-              backgroundColor: theme.card,
-              borderColor: theme.border,
-              borderWidth: 1,
-              borderRadius: theme.rounded.lg,
-              padding: theme.spacing.lg,
-              gap: theme.spacing.md,
-              shadowColor: theme.shadow,
-              shadowOpacity: 0.08,
-              shadowOffset: { width: 0, height: 2 },
-              shadowRadius: 10,
-              flex: 1,
-            }}
-          >
-            <View style={{ gap: theme.spacing.md, flexGrow: 1 }}>
-              <ShortInput
-                label={t("meal_name", {
-                  ns: "meals",
-                  defaultValue: "Meal name",
-                })}
-                value={name}
-                onChangeText={(text) => {
-                  setName(text);
-                }}
-                placeholder={t("meal_name", {
-                  ns: "meals",
-                  defaultValue: "Meal name",
-                })}
-                onBlur={() => setTouched((p) => ({ ...p, name: true }))}
-                error={nameError}
-                inputStyle={{ fontSize: theme.typography.size.md }}
-              />
-              <LongTextInput
-                label={t("ingredients_optional", {
-                  ns: "meals",
-                  defaultValue: "Ingredients (optional)",
-                })}
-                value={ingPreview}
-                onChangeText={(text) => {
-                  setIngPreview(text);
-                  if (ingredientsError) setIngredientsError(undefined);
-                }}
-                placeholder={t("ingredients_optional", {
-                  ns: "meals",
-                  defaultValue: "Ingredients (optional)",
-                })}
-                inputStyle={{ fontSize: theme.typography.size.md }}
-                numberOfLines={5}
-                error={ingredientsError}
-              />
-              <ShortInput
-                label={t("amount", {
-                  ns: "meals",
-                  defaultValue: "Amount [g]",
-                })}
-                value={amount}
-                onChangeText={(text) => {
-                  setAmount(text);
-                  if (ingredientsError) setIngredientsError(undefined);
-                }}
-                placeholder={t("amount", {
-                  ns: "meals",
-                  defaultValue: "Amount [g]",
-                })}
-                keyboardType="numeric"
-                onBlur={() => setTouched((p) => ({ ...p, amount: true }))}
-                error={amountError}
-                inputStyle={{ fontSize: theme.typography.size.md }}
-              />
-              <LongTextInput
-                label={t("description_optional", {
-                  ns: "meals",
-                  defaultValue: "Description (optional)",
-                })}
-                value={desc}
-                onChangeText={setDesc}
-                placeholder={t("description_optional", {
-                  ns: "meals",
-                  defaultValue: "Description (optional)",
-                })}
-                numberOfLines={6}
-                inputStyle={{ fontSize: theme.typography.size.md }}
-              />
-            </View>
-            <View style={{ gap: theme.spacing.sm, marginTop: "auto" }}>
-              <PrimaryButton
-                label={
-                  retries > 0
-                    ? `${t("analyze", {
-                        ns: "meals",
-                        defaultValue: "Analyze",
-                      })} (${retries}/3)`
-                    : t("analyze", { ns: "meals", defaultValue: "Analyze" })
-                }
-                loading={loading}
-                onPress={onAnalyze}
-                disabled={analyzeDisabled}
-                style={{ marginTop: theme.spacing.sm }}
-              />
-              <SecondaryButton
-                label={t("select_method", {
-                  ns: "meals",
-                  defaultValue: "Back to method selection",
-                })}
-                onPress={() => navigation.navigate("MealAddMethod")}
-              />
-            </View>
+          <View style={{ gap: theme.spacing.md, flexGrow: 1 }}>
+            <ShortInput
+              label={t("meal_name", {
+                ns: "meals",
+                defaultValue: "Meal name",
+              })}
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+              }}
+              placeholder={t("meal_name", {
+                ns: "meals",
+                defaultValue: "Meal name",
+              })}
+              onBlur={() => setTouched((p) => ({ ...p, name: true }))}
+              error={nameError}
+              inputStyle={{ fontSize: theme.typography.size.md }}
+            />
+            <LongTextInput
+              label={t("ingredients_optional", {
+                ns: "meals",
+                defaultValue: "Ingredients (optional)",
+              })}
+              value={ingPreview}
+              onChangeText={(text) => {
+                setIngPreview(text);
+                if (ingredientsError) setIngredientsError(undefined);
+              }}
+              placeholder={t("ingredients_optional", {
+                ns: "meals",
+                defaultValue: "Ingredients (optional)",
+              })}
+              inputStyle={{ fontSize: theme.typography.size.md }}
+              numberOfLines={5}
+              error={ingredientsError}
+            />
+            <ShortInput
+              label={t("amount", {
+                ns: "meals",
+                defaultValue: "Amount [g]",
+              })}
+              value={amount}
+              onChangeText={(text) => {
+                setAmount(text);
+                if (ingredientsError) setIngredientsError(undefined);
+              }}
+              placeholder={t("amount", {
+                ns: "meals",
+                defaultValue: "Amount [g]",
+              })}
+              keyboardType="numeric"
+              onBlur={() => setTouched((p) => ({ ...p, amount: true }))}
+              error={amountError}
+              inputStyle={{ fontSize: theme.typography.size.md }}
+            />
+            <LongTextInput
+              label={t("description_optional", {
+                ns: "meals",
+                defaultValue: "Description (optional)",
+              })}
+              value={desc}
+              onChangeText={setDesc}
+              placeholder={t("description_optional", {
+                ns: "meals",
+                defaultValue: "Description (optional)",
+              })}
+              numberOfLines={6}
+              inputStyle={{ fontSize: theme.typography.size.md }}
+            />
+          </View>
+          <View style={{ gap: theme.spacing.sm, marginTop: "auto" }}>
+            <PrimaryButton
+              label={
+                retries > 0
+                  ? `${t("analyze", {
+                      ns: "meals",
+                      defaultValue: "Analyze",
+                    })} (${retries}/3)`
+                  : t("analyze", { ns: "meals", defaultValue: "Analyze" })
+              }
+              loading={loading}
+              onPress={onAnalyze}
+              disabled={analyzeDisabled}
+              style={{ marginTop: theme.spacing.sm }}
+            />
+            <SecondaryButton
+              label={t("select_method", {
+                ns: "meals",
+                defaultValue: "Back to method selection",
+              })}
+              onPress={() => navigation.navigate("MealAddMethod")}
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
