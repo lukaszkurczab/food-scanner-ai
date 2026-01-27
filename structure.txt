@@ -1,27 +1,72 @@
 .
-├── app.config.js
+├── .DS_Store
+├── .easignore
+├── .env
+├── .eslintrc.js
+├── .expo
+│   ├── README.md
+│   ├── devices.json
+│   ├── packager-info.json
+│   ├── prebuild
+│   │   └── cached-packages.json
+│   ├── settings.json
+│   ├── web
+│   │   └── cache
+│   │       └── production
+│   │           └── images
+│   │               ├── android-adaptive-foreground
+│   │               │   └── android-adaptive-foreground-c30cd4680bfb93ccb41dd916b9851eaa1eff4402a46f0eaa5813e3990bdc8e99-cover-transparent
+│   │               │       ├── icon_108.png
+│   │               │       ├── icon_162.png
+│   │               │       ├── icon_216.png
+│   │               │       ├── icon_324.png
+│   │               │       └── icon_432.png
+│   │               ├── android-notification
+│   │               │   └── android-notification-fe1f62d1c13658a9d7eec3cc2e6b759691283de9643bca18e33bb8749cab8c87-cover-transparent
+│   │               │       ├── icon_24.png
+│   │               │       ├── icon_36.png
+│   │               │       ├── icon_48.png
+│   │               │       ├── icon_72.png
+│   │               │       └── icon_96.png
+│   │               ├── android-standard-circle
+│   │               │   └── android-standard-circle-c30cd4680bfb93ccb41dd916b9851eaa1eff4402a46f0eaa5813e3990bdc8e99-cover-#ffffff
+│   │               │       ├── icon_144.png
+│   │               │       ├── icon_192.png
+│   │               │       ├── icon_48.png
+│   │               │       ├── icon_72.png
+│   │               │       └── icon_96.png
+│   │               ├── android-standard-square
+│   │               │   └── android-standard-square-c30cd4680bfb93ccb41dd916b9851eaa1eff4402a46f0eaa5813e3990bdc8e99-cover-#ffffff
+│   │               │       ├── icon_144.png
+│   │               │       ├── icon_192.png
+│   │               │       ├── icon_48.png
+│   │               │       ├── icon_72.png
+│   │               │       └── icon_96.png
+│   │               ├── iconsuniversal-icon
+│   │               │   └── iconsuniversal-icon-f04cb521272c9da03fe1c52c0ca71b3314832c91b16083fc3e65a220d61e124c-cover-#ffffff
+│   │               │       └── App-Icon-1024x1024@1x.png
+│   │               ├── splash-android
+│   │               │   └── splash-android-897d10abb31ae8081c9b88cd91c6794dedc2537e63cf3659c4c5e548a84b4d16-contain
+│   │               │       ├── icon_200.png
+│   │               │       ├── icon_300.png
+│   │               │       ├── icon_400.png
+│   │               │       ├── icon_600.png
+│   │               │       └── icon_800.png
+│   │               └── splash-ios
+│   │                   └── splash-ios-897d10abb31ae8081c9b88cd91c6794dedc2537e63cf3659c4c5e548a84b4d16-contain
+│   │                       └── icon_undefined.png
+│   ├── xcodebuild-error.log
+│   └── xcodebuild.log
+├── .gitignore
+├── .vscode
+│   └── launch.json
 ├── App.tsx
-├── assets
-│   ├── adaptive-icon.png
-│   ├── appstore.png
-│   ├── favicon.png
-│   ├── fonts
-│   ├── icon.png
-│   ├── icons
-│   │   ├── close.png
-│   │   └── refresh.png
-│   ├── notification-icon.png
-│   ├── playstore.png
-│   ├── sampleMeal.jpg
-│   ├── sampleTable.jpg
-│   └── splash.png
+├── GoogleService-Info.plist
+├── app.config.js
 ├── babel.config.js
-├── builds
-│   └── prod
 ├── credentials.json
 ├── eas.json
 ├── google-services.json
-├── GoogleService-Info.plist
 ├── index.ts
 ├── metro.config.js
 ├── package-lock.json
@@ -29,9 +74,11 @@
 ├── scripts
 │   ├── build-number.json
 │   ├── build.js
-│   ├── download_missing_fonts.py
-│   └── download-fonts.mjs
+│   ├── download-fonts.mjs
+│   └── download_missing_fonts.py
 ├── src
+│   ├── .DS_Store
+│   ├── FirebaseConfig.ts
 │   ├── components
 │   │   ├── Alert.tsx
 │   │   ├── AvatarBadge.tsx
@@ -48,12 +95,12 @@
 │   │   ├── DateInput.tsx
 │   │   ├── DateRangePicker.tsx
 │   │   ├── DateTimeSection.tsx
+│   │   ├── Drawer.tsx
 │   │   ├── Dropdown.tsx
 │   │   ├── ErrorBox.tsx
 │   │   ├── ErrorButton.tsx
 │   │   ├── FullScreenLoader.tsx
 │   │   ├── IconButton.tsx
-│   │   ├── index.ts
 │   │   ├── IngredientBox.tsx
 │   │   ├── IngredientEditor.tsx
 │   │   ├── InputModal.tsx
@@ -82,9 +129,10 @@
 │   │   ├── TimePickerRow.tsx
 │   │   ├── Toast.tsx
 │   │   ├── UserIcon.tsx
-│   │   ├── WeekdaySelector.tsx
 │   │   ├── WeekStrip.tsx
-│   │   └── ZoomModal.tsx
+│   │   ├── WeekdaySelector.tsx
+│   │   ├── ZoomModal.tsx
+│   │   └── index.ts
 │   ├── context
 │   │   ├── AuthContext.tsx
 │   │   ├── HistoryContext.tsx
@@ -96,6 +144,8 @@
 │   │   ├── AI
 │   │   │   ├── components
 │   │   │   │   ├── Bubble.tsx
+│   │   │   │   ├── ChatHistorySheet.tsx
+│   │   │   │   ├── EmptyState.tsx
 │   │   │   │   ├── InputBar.tsx
 │   │   │   │   ├── PaywallCard.tsx
 │   │   │   │   ├── TopToast.tsx
@@ -146,24 +196,24 @@
 │   │   │       └── HomeScreen.tsx
 │   │   ├── Meals
 │   │   │   ├── components
+│   │   │   │   ├── CardOverlay.tsx
+│   │   │   │   ├── ChartOverlay.tsx
+│   │   │   │   ├── EmptyState.tsx
+│   │   │   │   ├── Loader.tsx
+│   │   │   │   ├── LoadingSkeleton.tsx
 │   │   │   │   ├── cardLayouts
 │   │   │   │   │   ├── MacroBadgeCard.tsx
 │   │   │   │   │   ├── MacroSplitCard.tsx
 │   │   │   │   │   ├── MacroSummaryCard.tsx
 │   │   │   │   │   ├── MacroTagStripCard.tsx
 │   │   │   │   │   └── MacroVerticalStackCard.tsx
-│   │   │   │   ├── CardOverlay.tsx
-│   │   │   │   ├── chartLayouts
-│   │   │   │   │   ├── DonutMacroChart.tsx
-│   │   │   │   │   ├── GaugeMacroChart.tsx
-│   │   │   │   │   ├── MacroBarMini.tsx
-│   │   │   │   │   ├── MacroPieChart.tsx
-│   │   │   │   │   ├── MacroPolarAreaChart.tsx
-│   │   │   │   │   └── MacroRadarChart.tsx
-│   │   │   │   ├── ChartOverlay.tsx
-│   │   │   │   ├── EmptyState.tsx
-│   │   │   │   ├── Loader.tsx
-│   │   │   │   └── LoadingSkeleton.tsx
+│   │   │   │   └── chartLayouts
+│   │   │   │       ├── DonutMacroChart.tsx
+│   │   │   │       ├── GaugeMacroChart.tsx
+│   │   │   │       ├── MacroBarMini.tsx
+│   │   │   │       ├── MacroPieChart.tsx
+│   │   │   │       ├── MacroPolarAreaChart.tsx
+│   │   │   │       └── MacroRadarChart.tsx
 │   │   │   ├── screens
 │   │   │   │   ├── BarcodeProductNotFoundScreen.tsx
 │   │   │   │   ├── IngredientsNotRecognizedScreen.tsx
@@ -176,21 +226,21 @@
 │   │   │   │   └── SelectSavedMealsScreen.tsx
 │   │   │   └── share
 │   │   │       ├── ColorPickerPanel.tsx
-│   │   │       ├── defaultShareOptions.tsx
 │   │   │       ├── DraggableItem.tsx
+│   │   │       ├── ShareCanvas.tsx
+│   │   │       ├── ShareEditorPanel.tsx
+│   │   │       ├── StyleModal.tsx
+│   │   │       ├── TextSticker.tsx
+│   │   │       ├── defaultShareOptions.tsx
 │   │   │       ├── editors
 │   │   │       │   ├── BackgroundEditorPanel.tsx
 │   │   │       │   ├── CardEditorPanel.tsx
 │   │   │       │   ├── ChartEditorPanel.tsx
 │   │   │       │   ├── OptionsEditorPanel.tsx
 │   │   │       │   └── TextEditorPanel.tsx
-│   │   │       ├── ShareCanvas.tsx
-│   │   │       ├── ShareEditorPanel.tsx
-│   │   │       ├── StyleModal.tsx
-│   │   │       ├── TextSticker.tsx
 │   │   │       ├── types
-│   │   │       │   ├── colorUtils.ts
-│   │   │       │   └── ShareEditorPanelTypes.ts
+│   │   │       │   ├── ShareEditorPanelTypes.ts
+│   │   │       │   └── colorUtils.ts
 │   │   │       └── useRecentColors.ts
 │   │   ├── Onboarding
 │   │   │   ├── components
@@ -213,12 +263,13 @@
 │   │   │   │   ├── RangeTabs.tsx
 │   │   │   │   └── StatCard.tsx
 │   │   │   ├── screens
-│   │   │   │   ├── ProgressShareScreen.tsx
 │   │   │   │   └── StatisticsScreen.tsx
 │   │   │   └── utils
 │   │   │       ├── dateRange.ts
 │   │   │       └── getStatsForRange.ts
 │   │   ├── Subscription
+│   │   │   ├── components
+│   │   │   │   └── PaywallModal.tsx
 │   │   │   ├── index.ts
 │   │   │   ├── screens
 │   │   │   │   └── ManageSubscriptionScreen.tsx
@@ -239,9 +290,8 @@
 │   │           ├── NotificationFormScreen.tsx
 │   │           ├── NotificationsScreen.tsx
 │   │           ├── SendFeedbackScreen.tsx
-│   │           ├── UsernameChangeScreen.tsx
-│   │           └── UserProfileScreen.tsx
-│   ├── FirebaseConfig.ts
+│   │           ├── UserProfileScreen.tsx
+│   │           └── UsernameChangeScreen.tsx
 │   ├── hooks
 │   │   ├── useAppFonts.ts
 │   │   ├── useBadges.ts
@@ -257,6 +307,7 @@
 │   │   ├── en
 │   │   │   ├── chat.json
 │   │   │   ├── common.json
+│   │   │   ├── diet.json
 │   │   │   ├── history.json
 │   │   │   ├── home.json
 │   │   │   ├── login.json
@@ -275,6 +326,7 @@
 │   │   └── pl
 │   │       ├── chat.json
 │   │       ├── common.json
+│   │       ├── diet.json
 │   │       ├── history.json
 │   │       ├── home.json
 │   │       ├── login.json
@@ -322,22 +374,23 @@
 │   │   │   └── types.ts
 │   │   ├── streakService.ts
 │   │   ├── textMealService.ts
-│   │   ├── usernameService.ts
 │   │   ├── userService.ts
+│   │   ├── usernameService.ts
 │   │   └── visionService.ts
 │   ├── theme
+│   │   ├── ThemeController.tsx
+│   │   ├── ThemeProvider.tsx
 │   │   ├── colors.ts
 │   │   ├── index.ts
 │   │   ├── rounded.ts
 │   │   ├── spacing.ts
-│   │   ├── ThemeController.tsx
-│   │   ├── ThemeProvider.tsx
 │   │   ├── themes.ts
 │   │   ├── typography.ts
 │   │   └── useTheme.ts
 │   ├── types
 │   │   ├── badge.ts
 │   │   ├── chatMessage.ts
+│   │   ├── chatThread.ts
 │   │   ├── constants.ts
 │   │   ├── index.ts
 │   │   ├── meal.ts
@@ -373,4 +426,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-59 directories, 397 files
+76 directories, 351 files

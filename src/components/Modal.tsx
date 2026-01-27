@@ -32,6 +32,7 @@ type Props = {
   footer?: React.ReactNode;
   stackActions?: boolean;
   contentPaddingBottom?: number;
+  closeOnBackdropPress?: boolean;
 };
 
 export const Modal: React.FC<Props> = ({
@@ -48,6 +49,7 @@ export const Modal: React.FC<Props> = ({
   footer,
   stackActions = false,
   contentPaddingBottom,
+  closeOnBackdropPress = true,
 }) => {
   const theme = useTheme();
 
@@ -57,7 +59,8 @@ export const Modal: React.FC<Props> = ({
   const maxWidth = 500;
 
   const handleBackdropPress = () => {
-    if (onClose) onClose();
+    if (!closeOnBackdropPress) return;
+    onClose?.();
   };
 
   const actionsSideBySide =
@@ -92,6 +95,7 @@ export const Modal: React.FC<Props> = ({
               justifyContent: "flex-start",
             },
           ]}
+          pointerEvents="box-none"
         >
           <View
             style={[
@@ -119,6 +123,7 @@ export const Modal: React.FC<Props> = ({
                   onPress={onClose}
                   size={28}
                   iconColor={theme.textSecondary}
+                  accessibilityLabel="Close"
                 />
               </View>
             )}
@@ -140,7 +145,9 @@ export const Modal: React.FC<Props> = ({
 
             <ScrollView
               style={{ flexGrow: 0 }}
-              contentContainerStyle={{ paddingBottom: contentPaddingBottom ?? theme.spacing.lg }}
+              contentContainerStyle={{
+                paddingBottom: contentPaddingBottom ?? theme.spacing.lg,
+              }}
               showsVerticalScrollIndicator={false}
             >
               {children ? (

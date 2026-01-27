@@ -11,32 +11,39 @@ function getExtra() {
 
 function isBillingDisabled() {
   const extra = getExtra();
-  return !!extra.disableBilling || !Device.isDevice;
+  if (__DEV__) return !!extra.disableBilling || !Device.isDevice;
+  return false;
 }
 
 export function initRevenueCat() {
   if (configured) return;
+
   const extra = getExtra();
-  if (isBillingDisabled()) {
-    configured = true;
-    return;
-  }
+
   try {
     Purchases.setLogLevel?.(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR);
   } catch {}
+
   const androidKey = (extra.revenuecatAndroidKey as string) || "";
   const iosKey = (extra.revenuecatIosKey as string) || "";
   const apiKey = Platform.OS === "android" ? androidKey : iosKey;
+
   if (!apiKey) {
     configured = true;
     return;
   }
+
+  if (isBillingDisabled()) {
+    configured = true;
+    return;
+  }
+
   Purchases.configure({ apiKey, appUserID: null });
   configured = true;
 }
 
 export async function rcLogIn(
-  uid: string | null | undefined
+  uid: string | null | undefined,
 ): Promise<boolean> {
   if (isBillingDisabled()) return false;
   if (!uid) return false;

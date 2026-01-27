@@ -8,6 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUser } from "@hooks/useUser";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
@@ -28,14 +29,18 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { v4 as uuidv4 } from "uuid";
 
 export default function ChatScreen() {
+  const navigation = useNavigation<any>();
   const { firebaseUser: user } = useAuthContext();
   const theme = useTheme();
   const { t } = useTranslation("chat");
   const net = useNetInfo();
+
   const uid = user?.uid || "";
   const { userData, loading: loadingUser } = useUser(uid);
-  const subscription = useSubscriptionData();
+
+  const subscription = useSubscriptionData(uid);
   const isPremium = subscription?.state === "premium_active";
+
   const { meals } = useMeals(uid);
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -122,7 +127,11 @@ export default function ChatScreen() {
           ]}
           pointerEvents="box-none"
         >
-          <PaywallCard used={countToday} limit={limit} onUpgrade={() => {}} />
+          <PaywallCard
+            used={countToday}
+            limit={limit}
+            onUpgrade={() => navigation.navigate("ManageSubscription")}
+          />
         </View>
       )}
 

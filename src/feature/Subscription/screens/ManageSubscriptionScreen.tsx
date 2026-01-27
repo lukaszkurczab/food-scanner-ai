@@ -16,10 +16,12 @@ import { spacing } from "@/theme";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FullScreenLoader, Layout } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
+import { useAuthContext } from "@/context/AuthContext";
 import Constants from "expo-constants";
 import {
   openManageSubscriptions,
   restorePurchases,
+  startOrRenewSubscription,
 } from "@/feature/Subscription/services/purchase";
 import { PaywallModal } from "@/feature/Subscription/components/PaywallModal";
 
@@ -34,8 +36,11 @@ const BENEFITS = [
 export default function ManageSubscriptionScreen({ navigation }: any) {
   const theme = useTheme();
   const { t } = useTranslation("profile");
-  const subscription = useSubscriptionData();
+  const { uid } = useAuthContext();
+
+  const subscription = useSubscriptionData(uid);
   const { isPremium, setDevPremium } = usePremiumContext();
+
   const [expanded, setExpanded] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
@@ -104,12 +109,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           }),
         );
       } else if (res.status === "cancelled") {
-        Alert.alert(
-          t("manageSubscription.title"),
-          t("manageSubscription.restoreNothing", {
-            defaultValue: "No purchases to restore.",
-          }),
-        );
+        // user cancelled restore sheet
       } else if (res.status === "unavailable") {
         Alert.alert(
           t("manageSubscription.title"),
@@ -120,9 +120,45 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
       } else {
         Alert.alert(
           t("manageSubscription.title"),
-          t("manageSubscription.restoreFailed", {
-            defaultValue: "Restore failed. Try again later.",
+          res.message ||
+            t("manageSubscription.restoreFailed", {
+              defaultValue: "Restore failed. Try again later.",
+            }),
+        );
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const trySubscribe = async () => {
+    setBusy(true);
+    try {
+      const res = await startOrRenewSubscription();
+      if (res.status === "success") {
+        setPaywallVisible(false);
+        Alert.alert(
+          t("manageSubscription.title"),
+          t("manageSubscription.purchaseSuccess", {
+            defaultValue: "Subscription active.",
           }),
+        );
+      } else if (res.status === "cancelled") {
+        // user cancelled purchase
+      } else if (res.status === "unavailable") {
+        Alert.alert(
+          t("manageSubscription.title"),
+          t("manageSubscription.billingUnavailable", {
+            defaultValue: "Billing is unavailable on this device.",
+          }),
+        );
+      } else {
+        Alert.alert(
+          t("manageSubscription.title"),
+          res.message ||
+            t("manageSubscription.purchaseFailed", {
+              defaultValue: "Purchase failed.",
+            }),
         );
       }
     } finally {
@@ -174,127 +210,6 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
               <ActivityIndicator size="small" color={theme.textSecondary} />
             )}
           </View>
-
-          {isPremiumComputed && subscription.renewDate && (
-            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
-              <Text
-                style={{
-                  color: theme.textSecondary,
-                  fontSize: 18,
-                  fontWeight: "500",
-                }}
-              >
-                {t("manageSubscription.renew")}
-              </Text>
-              <Text
-                style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
-              >
-                {subscription.renewDate}
-              </Text>
-            </View>
-          )}
-
-          {isPremiumComputed && subscription.plan && (
-            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
-              <Text
-                style={{
-                  color: theme.textSecondary,
-                  fontSize: 18,
-                  fontWeight: "500",
-                }}
-              >
-                {t("manageSubscription.plan")}
-              </Text>
-              <Text
-                style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
-              >
-                {t(`manageSubscription.plan_${subscription.plan}`)}
-              </Text>
-            </View>
-          )}
-
-          {(subscription.lastPaymentAmount || subscription.lastPayment) && (
-            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
-              <Text
-                style={{
-                  color: theme.textSecondary,
-                  fontSize: 18,
-                  fontWeight: "500",
-                }}
-              >
-                {t("manageSubscription.lastPayment")}
-              </Text>
-              <Text
-                style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
-              >
-                {subscription.lastPaymentAmount
-                  ? `${subscription.lastPaymentAmount} `
-                  : ""}
-                {subscription.lastPayment
-                  ? `(${subscription.lastPayment})`
-                  : ""}
-              </Text>
-            </View>
-          )}
-
-          {isPremiumComputed && subscription.startDate && (
-            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
-              <Text
-                style={{
-                  color: theme.textSecondary,
-                  fontSize: 18,
-                  fontWeight: "500",
-                }}
-              >
-                {t("manageSubscription.subscriptionStart")}
-              </Text>
-              <Text
-                style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
-              >
-                {subscription.startDate}
-              </Text>
-            </View>
-          )}
-
-          {!isPremiumComputed && subscription.endDate && (
-            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
-              <Text
-                style={{
-                  color: theme.textSecondary,
-                  fontSize: 18,
-                  fontWeight: "500",
-                }}
-              >
-                {t("manageSubscription.subscriptionEnd")}
-              </Text>
-              <Text
-                style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
-              >
-                {subscription.endDate}
-              </Text>
-            </View>
-          )}
-
-          {isPremiumComputed && isExpired && subscription.endDate && (
-            <View style={[styles.rowBetween, { marginBottom: spacing.sm }]}>
-              <Text
-                style={{
-                  color: theme.textSecondary,
-                  fontSize: 18,
-                  fontWeight: "500",
-                }}
-              >
-                {t("manageSubscription.inactiveSince", {
-                  defaultValue: "Inactive since",
-                })}
-              </Text>
-              <Text
-                style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
-              >
-                {subscription.endDate}
-              </Text>
-            </View>
-          )}
         </View>
 
         <View>
@@ -479,7 +394,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           </TouchableOpacity>
         )}
 
-        {showRenew && (
+        {(showRenew || showStart) && (
           <TouchableOpacity
             style={[
               styles.rowBetween,
@@ -501,39 +416,9 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
                 color: theme.accentSecondary,
               }}
             >
-              {t("manageSubscription.renewSubscription")}
-            </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.accentSecondary}
-            />
-          </TouchableOpacity>
-        )}
-
-        {showStart && (
-          <TouchableOpacity
-            style={[
-              styles.rowBetween,
-              {
-                marginTop: spacing.lg,
-                paddingVertical: spacing.sm,
-                borderTopWidth: 1,
-                borderTopColor: theme.border,
-              },
-            ]}
-            onPress={openPaywall}
-            disabled={busy}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={{
-                fontWeight: "bold",
-                fontSize: 18,
-                color: theme.accentSecondary,
-              }}
-            >
-              {t("manageSubscription.startSubscription")}
+              {showRenew
+                ? t("manageSubscription.renewSubscription")
+                : t("manageSubscription.startSubscription")}
             </Text>
             <Ionicons
               name="chevron-forward"
@@ -548,40 +433,35 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           busy={busy}
           priceText={priceText}
           onClose={closePaywall}
-          onSubscribe={async () => {
-            closePaywall();
-            Alert.alert(
-              t("manageSubscription.title"),
-              t("paywall.purchaseNotReady", {
-                defaultValue:
-                  "Purchases are not available yet. Submit the in-app purchase with a new app version for review.",
-              }),
-            );
-          }}
+          onSubscribe={trySubscribe}
           onRestore={tryRestore}
           termsUrl={termsUrl}
           privacyUrl={privacyUrl}
         />
 
-        <TouchableOpacity
-          style={[
-            styles.rowBetween,
-            {
-              marginTop: spacing.xl,
-              paddingVertical: spacing.sm,
-              borderTopWidth: 1,
-              borderTopColor: theme.border,
-            },
-          ]}
-          onPress={() => setDevPremium(!isPremiumComputed)}
-          activeOpacity={0.7}
-          disabled={busy}
-        >
-          <Text style={{ fontWeight: "bold", fontSize: 18, color: theme.text }}>
-            {`DEV: ${isPremiumComputed ? "Disable" : "Enable"} Premium`}
-          </Text>
-          <Ionicons name="build" size={20} color={theme.textSecondary} />
-        </TouchableOpacity>
+        {__DEV__ && (
+          <TouchableOpacity
+            style={[
+              styles.rowBetween,
+              {
+                marginTop: spacing.xl,
+                paddingVertical: spacing.sm,
+                borderTopWidth: 1,
+                borderTopColor: theme.border,
+              },
+            ]}
+            onPress={() => setDevPremium(!isPremiumComputed)}
+            activeOpacity={0.7}
+            disabled={busy}
+          >
+            <Text
+              style={{ fontWeight: "bold", fontSize: 18, color: theme.text }}
+            >
+              {`DEV: ${isPremiumComputed ? "Disable" : "Enable"} Premium`}
+            </Text>
+            <Ionicons name="build" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
+        )}
       </View>
     </Layout>
   );
