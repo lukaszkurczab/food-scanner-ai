@@ -8,19 +8,22 @@ function mapToSubscription(premium: boolean | null): Subscription {
   return { state: "free_active" };
 }
 
-export function useSubscriptionData(uid?: string | null) {
+export function useSubscriptionData(uid: string | null) {
   const { checkPremiumStatus, subscribeToPremiumChanges } = usePremiumStatus();
   const [sub, setSub] = useState<Subscription | null>(null);
 
   useEffect(() => {
     const u = uid ?? null;
+
     (async () => {
       const p = await checkPremiumStatus(u);
       setSub(mapToSubscription(p));
     })();
+
     const unsub = subscribeToPremiumChanges(u, (p) =>
-      setSub(mapToSubscription(p))
+      setSub(mapToSubscription(p)),
     );
+
     return () => unsub();
   }, [uid, checkPremiumStatus, subscribeToPremiumChanges]);
 
