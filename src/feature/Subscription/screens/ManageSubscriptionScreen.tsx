@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -39,7 +39,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   const { uid } = useAuthContext();
 
   const subscription = useSubscriptionData(uid);
-  const { isPremium, setDevPremium } = usePremiumContext();
+  const { isPremium, setDevPremium, refreshPremium } = usePremiumContext();
 
   const [expanded, setExpanded] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -50,6 +50,11 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   const privacyUrl =
     typeof extra.privacyUrl === "string" ? extra.privacyUrl : "";
 
+  const refundUrl = useMemo(() => {
+    const u = t("manageSubscription.refundLink", { defaultValue: "" });
+    return typeof u === "string" ? u.trim() : "";
+  }, [t]);
+
   if (!subscription) {
     return (
       <Layout disableScroll>
@@ -59,20 +64,21 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   }
 
   const state = subscription.state;
-  const isPremiumComputed = (isPremium ??
-    state.startsWith("premium")) as boolean;
+
+  const isPremiumByState = state.startsWith("premium");
   const isExpired = state.endsWith("expired");
   const isActive = state.endsWith("active");
 
-  const showCancel = isPremiumComputed && isActive;
-  const showRenew =
-    (!isPremiumComputed && isActive) || (isPremiumComputed && isExpired);
-  const showStart = !isPremiumComputed && !isExpired;
+  const isPremiumComputed = (isPremium ?? isPremiumByState) as boolean;
+
+  const showCancel = state === "premium_active";
+  const showRenew = state === "premium_expired";
+  const showStart = state === "free_active" || state === "free_expired";
 
   const headerStatus =
-    isPremiumComputed && isActive
+    state === "premium_active"
       ? t("manageSubscription.premium")
-      : isPremiumComputed && isExpired
+      : state === "premium_expired"
         ? `${t("manageSubscription.premium")} (${t("expired", { defaultValue: "expired" })})`
         : t("manageSubscription.free");
 
@@ -80,7 +86,20 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
     defaultValue: "29,99 zł / month",
   });
 
+  const requireAuthOrAlert = (): boolean => {
+    if (!!uid) return true;
+    Alert.alert(
+      t("manageSubscription.title"),
+      t("manageSubscription.signInRequired", {
+        defaultValue: "Please sign in to manage subscriptions.",
+      }),
+    );
+    return false;
+  };
+
   const tryOpenManage = async () => {
+    if (!requireAuthOrAlert()) return;
+
     setBusy(true);
     try {
       const ok = await openManageSubscriptions();
@@ -98,10 +117,13 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   };
 
   const tryRestore = async () => {
+    if (!requireAuthOrAlert()) return;
+
     setBusy(true);
     try {
-      const res = await restorePurchases();
+      const res = await restorePurchases(uid);
       if (res.status === "success") {
+        await refreshPremium();
         Alert.alert(
           t("manageSubscription.title"),
           t("manageSubscription.restoreSuccess", {
@@ -109,7 +131,6 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           }),
         );
       } else if (res.status === "cancelled") {
-        // user cancelled restore sheet
       } else if (res.status === "unavailable") {
         Alert.alert(
           t("manageSubscription.title"),
@@ -132,10 +153,13 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   };
 
   const trySubscribe = async () => {
+    if (!requireAuthOrAlert()) return;
+
     setBusy(true);
     try {
-      const res = await startOrRenewSubscription();
+      const res = await startOrRenewSubscription(uid);
       if (res.status === "success") {
+        await refreshPremium();
         setPaywallVisible(false);
         Alert.alert(
           t("manageSubscription.title"),
@@ -144,7 +168,6 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           }),
         );
       } else if (res.status === "cancelled") {
-        // user cancelled purchase
       } else if (res.status === "unavailable") {
         Alert.alert(
           t("manageSubscription.title"),
@@ -163,6 +186,30 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
       }
     } finally {
       setBusy(false);
+    }
+  };
+
+  const tryOpenRefundPolicy = async () => {
+    const url = refundUrl;
+    if (!url || !(url.startsWith("http://") || url.startsWith("https://"))) {
+      Alert.alert(
+        t("manageSubscription.title"),
+        t("manageSubscription.refundLinkUnavailable", {
+          defaultValue: "Refund policy link is unavailable.",
+        }),
+      );
+      return;
+    }
+
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert(
+        t("manageSubscription.title"),
+        t("manageSubscription.refundLinkUnavailable", {
+          defaultValue: "Refund policy link is unavailable.",
+        }),
+      );
     }
   };
 
@@ -294,7 +341,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
 
           <TouchableOpacity
             style={[styles.rowBetween, { paddingVertical: spacing.sm }]}
-            onPress={() => Linking.openURL(t("manageSubscription.refundLink"))}
+            onPress={tryOpenRefundPolicy}
             activeOpacity={0.7}
             disabled={busy}
           >

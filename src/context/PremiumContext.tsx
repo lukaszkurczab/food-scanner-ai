@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumStatus } from "@hooks/usePremiumStatus";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -11,11 +17,13 @@ import {
 type PremiumContextType = {
   isPremium: boolean | null;
   setDevPremium: (enabled: boolean) => Promise<void>;
+  refreshPremium: () => Promise<boolean>;
 };
 
 const PremiumContext = createContext<PremiumContextType>({
   isPremium: null,
   setDevPremium: async () => {},
+  refreshPremium: async () => false,
 });
 
 export const PremiumProvider = ({
@@ -24,44 +32,60 @@ export const PremiumProvider = ({
   children: React.ReactNode;
 }) => {
   const { uid, email } = useAuthContext();
-  const { isPremium, checkPremiumStatus, subscribeToPremiumChanges } =
-    usePremiumStatus();
+  const { isPremium, checkPremiumStatus } = usePremiumStatus(uid);
 
   useEffect(() => {
-    checkPremiumStatus(uid);
-    const unsub = subscribeToPremiumChanges(uid, () => {});
-    return () => {
-      if (typeof unsub === "function") unsub();
-    };
-  }, [uid, checkPremiumStatus, subscribeToPremiumChanges]);
+    let cancelled = false;
 
-  useEffect(() => {
     (async () => {
-      if (uid) {
-        await rcLogIn(uid);
-        await rcSetAttributes({
-          email: email ?? null,
-          locale: Intl.DateTimeFormat().resolvedOptions().locale || "en",
-        });
-      } else {
-        await rcLogOut();
+      try {
+        if (uid) {
+          await rcLogIn(uid);
+          await rcSetAttributes({
+            email: email ?? null,
+            locale: Intl.DateTimeFormat().resolvedOptions().locale || "en",
+          });
+        } else {
+          await rcLogOut();
+        }
+      } finally {
+        if (!cancelled) {
+          await checkPremiumStatus();
+        }
       }
     })();
-  }, [uid, email]);
 
-  const setDevPremium = async (enabled: boolean) => {
-    try {
-      await AsyncStorage.setItem(
-        "dev_force_premium",
-        enabled ? "true" : "false"
-      );
-      const key = uid ? `premium_status:${uid}` : "premium_status";
-      await AsyncStorage.setItem(key, enabled ? "true" : "false");
-    } catch {}
-    await checkPremiumStatus(uid);
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [uid, email, checkPremiumStatus]);
 
-  const value = useMemo(() => ({ isPremium, setDevPremium }), [isPremium]);
+  const refreshPremium = useCallback(
+    () => checkPremiumStatus(),
+    [checkPremiumStatus],
+  );
+
+  const setDevPremium = useCallback(
+    async (enabled: boolean) => {
+      try {
+        await AsyncStorage.setItem(
+          "dev_force_premium",
+          enabled ? "true" : "false",
+        );
+        await AsyncStorage.setItem(
+          `premium_status:${uid ?? "anon"}`,
+          enabled ? "true" : "false",
+        );
+      } catch {}
+      await checkPremiumStatus();
+    },
+    [uid, checkPremiumStatus],
+  );
+
+  const value = useMemo(
+    () => ({ isPremium, setDevPremium, refreshPremium }),
+    [isPremium, setDevPremium, refreshPremium],
+  );
 
   return (
     <PremiumContext.Provider value={value}>{children}</PremiumContext.Provider>

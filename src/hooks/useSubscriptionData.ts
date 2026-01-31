@@ -1,31 +1,49 @@
 import { useEffect, useMemo, useState } from "react";
+import { AppState } from "react-native";
 import { usePremiumStatus } from "@hooks/usePremiumStatus";
 import type { Subscription } from "@/types/subscription";
 
-function mapToSubscription(premium: boolean | null): Subscription {
+function mapToSubscription(premium: boolean): Subscription {
   if (premium) return { state: "premium_active" };
-  if (premium === false) return { state: "free_active" };
   return { state: "free_active" };
 }
 
-export function useSubscriptionData(uid: string | null) {
-  const { checkPremiumStatus, subscribeToPremiumChanges } = usePremiumStatus();
+export function useSubscriptionData(uid?: string | null) {
+  const { checkPremiumStatus } = usePremiumStatus(uid);
   const [sub, setSub] = useState<Subscription | null>(null);
 
   useEffect(() => {
-    const u = uid ?? null;
+    let cancelled = false;
 
-    (async () => {
-      const p = await checkPremiumStatus(u);
-      setSub(mapToSubscription(p));
-    })();
+    const load = async () => {
+      const p = await checkPremiumStatus();
+      if (!cancelled) setSub(mapToSubscription(p));
+    };
 
-    const unsub = subscribeToPremiumChanges(u, (p) =>
-      setSub(mapToSubscription(p)),
-    );
+    load();
 
-    return () => unsub();
-  }, [uid, checkPremiumStatus, subscribeToPremiumChanges]);
+    return () => {
+      cancelled = true;
+    };
+  }, [uid, checkPremiumStatus]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        (async () => {
+          const p = await checkPremiumStatus();
+          if (mounted) setSub(mapToSubscription(p));
+        })();
+      }
+    });
+
+    return () => {
+      mounted = false;
+      sub.remove();
+    };
+  }, [checkPremiumStatus]);
 
   return useMemo(() => sub, [sub]);
 }

@@ -1,7 +1,11 @@
 import { Platform, Linking } from "react-native";
 import Purchases from "react-native-purchases";
-import Constants from "expo-constants";
-import * as Device from "expo-device";
+import {
+  initRevenueCat,
+  isBillingDisabled,
+  isRevenueCatConfigured,
+  rcLogIn,
+} from "./revenuecat";
 
 type PurchaseResult =
   | { status: "success" }
@@ -9,40 +13,122 @@ type PurchaseResult =
   | { status: "unavailable"; message?: string }
   | { status: "error"; message?: string };
 
-function billingDisabled(): boolean {
-  const extra = (Constants.expoConfig?.extra || {}) as Record<string, any>;
-  if (__DEV__) return !!extra.disableBilling || !Device.isDevice;
-  return false;
+function log(...args: any[]) {
+  console.log("[IAP]", ...args);
 }
 
-export async function openManageSubscriptions(): Promise<boolean> {
+function errToObj(e: any) {
+  return {
+    message: e?.message,
+    code: e?.code,
+    userCancelled: e?.userCancelled,
+    readableErrorCode: e?.readableErrorCode,
+  };
+}
+
+export async function startOrRenewSubscription(
+  uid?: string | null,
+): Promise<PurchaseResult> {
+  initRevenueCat();
+
+  if (!isRevenueCatConfigured()) {
+    return {
+      status: "error",
+      message: "Billing not initialized (RevenueCat not configured).",
+    };
+  }
+
+  if (isBillingDisabled()) return { status: "unavailable" };
+
+  if (!uid) {
+    return {
+      status: "error",
+      message: "You must be signed in to start a subscription.",
+    };
+  }
+
+  const loggedIn = await rcLogIn(uid);
+  if (!loggedIn) {
+    return {
+      status: "error",
+      message: "Unable to sign in to billing. Please try again.",
+    };
+  }
+
   try {
-    if (billingDisabled()) return false;
+    const offerings = await Purchases.getOfferings();
+    const current = offerings.current;
 
-    const androidPkg = (Constants.expoConfig?.android as any)?.package as
-      | string
-      | undefined;
+    log("getOfferings", {
+      hasCurrent: !!current,
+      packages: current?.availablePackages.map((p) => ({
+        id: p.identifier,
+        type: p.packageType,
+        productId: p.product?.identifier,
+        price: p.product?.priceString,
+      })),
+    });
 
-    if (Platform.OS === "android" && androidPkg) {
-      const url = `https://play.google.com/store/account/subscriptions?package=${androidPkg}`;
-      await Linking.openURL(url);
-      return true;
+    if (!current || current.availablePackages.length === 0) {
+      return { status: "error", message: "No offerings available." };
     }
 
-    if (Platform.OS === "ios") {
-      const url = "itms-apps://apps.apple.com/account/subscriptions";
-      await Linking.openURL(url);
-      return true;
+    const selected =
+      current.availablePackages.find((p) => p.packageType === "MONTHLY") ??
+      current.availablePackages[0];
+
+    const { customerInfo } = await Purchases.purchasePackage(selected);
+    const premium = !!customerInfo.entitlements.active["premium"];
+
+    log("purchase result", {
+      premium,
+      activeEntitlements: Object.keys(customerInfo.entitlements.active),
+    });
+
+    if (!premium) {
+      return {
+        status: "error",
+        message: "Purchase completed but entitlement not active.",
+      };
     }
 
-    return false;
-  } catch {
-    return false;
+    return { status: "success" };
+  } catch (e: any) {
+    log("purchase FAILED", errToObj(e));
+    if (e?.userCancelled) return { status: "cancelled" };
+    return { status: "error", message: e?.message };
   }
 }
 
-export async function restorePurchases(): Promise<PurchaseResult> {
-  if (billingDisabled()) return { status: "unavailable" };
+export async function restorePurchases(
+  uid?: string | null,
+): Promise<PurchaseResult> {
+  initRevenueCat();
+
+  if (!isRevenueCatConfigured()) {
+    return {
+      status: "error",
+      message: "Billing not initialized (RevenueCat not configured).",
+    };
+  }
+
+  if (isBillingDisabled()) return { status: "unavailable" };
+
+  if (!uid) {
+    return {
+      status: "error",
+      message: "You must be signed in to restore purchases.",
+    };
+  }
+
+  const loggedIn = await rcLogIn(uid);
+  if (!loggedIn) {
+    return {
+      status: "error",
+      message: "Unable to sign in to billing. Please try again.",
+    };
+  }
+
   try {
     const info = await Purchases.restorePurchases();
     const premium = !!info.entitlements.active["premium"];
@@ -59,47 +145,17 @@ export async function restorePurchases(): Promise<PurchaseResult> {
   }
 }
 
-export async function startOrRenewSubscription(): Promise<PurchaseResult> {
-  if (billingDisabled()) return { status: "unavailable" };
-
+export async function openManageSubscriptions(): Promise<boolean> {
   try {
-    const offerings = await Purchases.getOfferings();
-    const current = offerings.current;
-    const packages = current?.availablePackages ?? [];
-
-    if (!current || packages.length === 0) {
-      return {
-        status: "error",
-        message: "No current offering / packages available.",
-      };
+    if (Platform.OS === "ios") {
+      await Linking.openURL("https://apps.apple.com/account/subscriptions");
+      return true;
     }
-
-    const findById = (id: string) => packages.find((p) => p.identifier === id);
-
-    const monthly =
-      findById("$rc_monthly") ||
-      packages.find((p) => p.packageType === "MONTHLY");
-
-    const annual =
-      findById("$rc_annual") ||
-      packages.find((p) => p.packageType === "ANNUAL");
-
-    const selected = monthly || annual || packages[0];
-    if (!selected) {
-      return { status: "error", message: "No package selected." };
-    }
-
-    const { customerInfo } = await Purchases.purchasePackage(selected);
-    const premium = !!customerInfo.entitlements.active["premium"];
-
-    if (premium) return { status: "success" };
-
-    return {
-      status: "error",
-      message: "Purchase completed but premium entitlement is not active.",
-    };
-  } catch (e: any) {
-    if (e?.userCancelled) return { status: "cancelled" };
-    return { status: "error", message: e?.message };
+    await Linking.openURL(
+      "https://play.google.com/store/account/subscriptions",
+    );
+    return true;
+  } catch {
+    return false;
   }
 }

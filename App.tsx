@@ -1,135 +1,26 @@
 import "@/i18n";
 import "@/FirebaseConfig";
 import "react-native-get-random-values";
-import { useEffect } from "react";
+
+import { initRevenueCat } from "@/feature/Subscription";
+
+initRevenueCat();
+
 import { ThemeController } from "@/theme/ThemeController";
 import AppNavigator from "@/navigation/AppNavigator";
 import { NavigationContainer } from "@react-navigation/native";
 import { navigationRef } from "@/navigation/navigate";
-import { AuthProvider, useAuthContext } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { UserProvider } from "@/context/UserContext";
 import { MealDraftProvider } from "@/context/MealDraftContext";
 import { PremiumProvider } from "@/context/PremiumContext";
-import { View, ActivityIndicator, Platform } from "react-native";
-import { initRevenueCat } from "@/feature/Subscription";
-import { InactivityProvider } from "@contexts/InactivityContext";
+import { InactivityProvider } from "@/context/InactivityContext";
 import { HistoryProvider } from "@/context/HistoryContext";
-import * as Notifications from "expo-notifications";
-import * as TaskManager from "expo-task-manager";
-import * as BackgroundTask from "expo-background-task";
-import { reconcileAll } from "@/services/notifications/engine";
-import { ensureAndroidChannel } from "@/services/notifications/localScheduler";
-import { runSystemNotifications } from "@/services/notifications/system";
-import { getSampleMealUri, getSampleTableUri } from "@/utils/devSamples";
-import { runMigrations } from "@/services/offline/db";
+import { View, ActivityIndicator } from "react-native";
 import { useAppFonts } from "@hooks/useAppFonts";
 
-const TASK_NAME = "CALORIAI_NOTIFICATION_GUARD";
-
-TaskManager.defineTask(TASK_NAME, async () => {
-  try {
-    const auth = require("@react-native-firebase/auth");
-    const user = auth.default().currentUser;
-    if (!user) return BackgroundTask.BackgroundTaskResult.Success;
-
-    await reconcileAll(user.uid);
-    await runSystemNotifications(user.uid);
-
-    return BackgroundTask.BackgroundTaskResult.Success;
-  } catch {
-    return BackgroundTask.BackgroundTaskResult.Failed;
-  }
-});
-
-function useBootstrapNotifications() {
-  const { uid } = useAuthContext();
-
-  useEffect(() => {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowBanner: true,
-        shouldShowList: true,
-        shouldPlaySound: false,
-        shouldSetBadge: false,
-      }),
-    });
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const perm = await Notifications.getPermissionsAsync();
-      if (perm.granted && Platform.OS === "android") {
-        await ensureAndroidChannel();
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      if (Platform.OS !== "android") return;
-
-      const status = await BackgroundTask.getStatusAsync();
-      if (status !== BackgroundTask.BackgroundTaskStatus.Available) return;
-
-      const tasks = await TaskManager.getRegisteredTasksAsync();
-      const exists = tasks.find((t) => t.taskName === TASK_NAME);
-      if (!exists) {
-        await BackgroundTask.registerTaskAsync(TASK_NAME, {
-          minimumInterval: 15,
-        });
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (!uid) return;
-    const { getApp } = require("@react-native-firebase/app");
-    const {
-      getFirestore,
-      collection,
-      onSnapshot,
-    } = require("@react-native-firebase/firestore");
-    const db = getFirestore(getApp());
-    const unsub = onSnapshot(
-      collection(db, "users", uid, "notifications"),
-      async () => {
-        await reconcileAll(uid);
-      }
-    );
-    return () => unsub();
-  }, [uid]);
-}
-
 function Root() {
-  useBootstrapNotifications();
   const fontsLoaded = useAppFonts();
-
-  useEffect(() => {
-    runMigrations();
-  }, []);
-
-  useEffect(() => {
-    if (
-      __DEV__ &&
-      typeof (ErrorUtils as any)?.getGlobalHandler === "function"
-    ) {
-      const defaultHandler = (ErrorUtils as any).getGlobalHandler();
-      (ErrorUtils as any).setGlobalHandler((error: any, isFatal: any) => {
-        console.error("Global Error:", error);
-        defaultHandler?.(error, isFatal);
-      });
-    }
-
-    initRevenueCat();
-
-    if (__DEV__) {
-      (async () => {
-        try {
-          await Promise.all([getSampleMealUri(), getSampleTableUri()]);
-        } catch {}
-      })();
-    }
-  }, []);
 
   if (!fontsLoaded) {
     return (
