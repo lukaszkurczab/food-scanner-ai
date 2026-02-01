@@ -155,7 +155,6 @@ const SectionHeader = React.memo(
       style={[
         styles.sectionHeader,
         {
-          paddingHorizontal: theme.spacing.md,
           paddingBottom: theme.spacing.sm,
         },
       ]}
@@ -194,7 +193,6 @@ const HistoryRow = React.memo(
   ({ meal, navigation, theme }: HistoryRowProps) => (
     <View
       style={{
-        paddingHorizontal: theme.spacing.md,
         marginBottom: theme.spacing.sm,
       }}
     >
@@ -475,7 +473,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
             style={[
               styles.topBar,
               {
-                padding: theme.spacing.md,
+                marginBottom: theme.spacing.md,
                 gap: theme.spacing.sm,
               },
             ]}
@@ -514,7 +512,6 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           />
         </>
       )}
-      <BottomTabBar />
     </Layout>
   );
 }

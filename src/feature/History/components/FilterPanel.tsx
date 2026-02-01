@@ -28,7 +28,7 @@ const DEFAULTS = {
 function freeWindowStart(
   today: Date,
   windowDays?: number,
-  isPremium?: boolean
+  isPremium?: boolean,
 ) {
   if (!windowDays || isPremium) {
     const x = new Date(today);
@@ -59,7 +59,7 @@ export const FilterPanel: React.FC<{
       { key: "fat", label: t("filters.fat", { ns: "history" }) },
       { key: "date", label: t("filters.date", { ns: "history" }) },
     ],
-    [t]
+    [t],
   );
 
   const today = new Date();
@@ -75,16 +75,16 @@ export const FilterPanel: React.FC<{
   }, [ctxFilters, windowDays, isPremium]);
 
   const [calories, setCalories] = useState<[number, number]>(
-    (ctxFilters?.calories as [number, number]) ?? DEFAULTS.calories
+    (ctxFilters?.calories as [number, number]) ?? DEFAULTS.calories,
   );
   const [protein, setProtein] = useState<[number, number]>(
-    (ctxFilters?.protein as [number, number]) ?? DEFAULTS.protein
+    (ctxFilters?.protein as [number, number]) ?? DEFAULTS.protein,
   );
   const [carbs, setCarbs] = useState<[number, number]>(
-    (ctxFilters?.carbs as [number, number]) ?? DEFAULTS.carbs
+    (ctxFilters?.carbs as [number, number]) ?? DEFAULTS.carbs,
   );
   const [fat, setFat] = useState<[number, number]>(
-    (ctxFilters?.fat as [number, number]) ?? DEFAULTS.fat
+    (ctxFilters?.fat as [number, number]) ?? DEFAULTS.fat,
   );
   const [dateRange, setDateRange] = useState<Range>(initialRange);
 
@@ -120,7 +120,7 @@ export const FilterPanel: React.FC<{
 
   const addOrRemove = (k: FilterKey) =>
     setActive((prev) =>
-      prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]
+      prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k],
     );
   const removeChip = (k: FilterKey) =>
     setActive((prev) => prev.filter((x) => x !== k));
@@ -183,7 +183,7 @@ export const FilterPanel: React.FC<{
           </Pressable>
         );
       }),
-    [active, ALL_FILTERS, theme, t]
+    [active, ALL_FILTERS, theme, t],
   );
 
   const hasActive = active.length > 0;
@@ -193,16 +193,12 @@ export const FilterPanel: React.FC<{
       style={{
         flex: 1,
         backgroundColor: theme.background,
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: 64,
       }}
     >
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingVertical: theme.spacing.md,
           gap: theme.spacing.lg,
-          paddingBottom: theme.spacing.xl * 3,
         }}
       >
         <View>

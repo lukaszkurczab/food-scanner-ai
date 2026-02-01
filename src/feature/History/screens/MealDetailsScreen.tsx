@@ -90,7 +90,7 @@ export default function MealDetailsScreen() {
             photoLocalPath: localFromParams,
             photoUrl: localFromParams,
           } as Meal)
-        : d
+        : d,
     );
     navigation.setParams({ ...params, localPhotoUrl: undefined });
   }, [params?.localPhotoUrl]);
@@ -152,7 +152,7 @@ export default function MealDetailsScreen() {
                   photoLocalPath: null,
                   photoUrl: "",
                 }
-              : d
+              : d,
           );
         }
       })
@@ -181,7 +181,7 @@ export default function MealDetailsScreen() {
             ingredients: d.ingredients.map((it, i) => (i === index ? ing : it)),
             updatedAt: new Date().toISOString(),
           }
-        : d
+        : d,
     );
 
   const removeIngredientAt = (index: number) =>
@@ -192,7 +192,7 @@ export default function MealDetailsScreen() {
             ingredients: d.ingredients.filter((_, i) => i !== index),
             updatedAt: new Date().toISOString(),
           }
-        : d
+        : d,
     );
 
   const startEdit = () => {
@@ -246,7 +246,7 @@ export default function MealDetailsScreen() {
 
   return (
     <Layout showNavigation={false}>
-      <View style={{ flex: 1, padding: theme.spacing.lg }}>
+      <>
         {showImageBlock ? (
           <View style={styles.imageWrap}>
             {checkingImage ? (
@@ -267,7 +267,7 @@ export default function MealDetailsScreen() {
                             photoLocalPath: null,
                             photoUrl: "",
                           }
-                        : d
+                        : d,
                     )
                   }
                 />
@@ -435,7 +435,7 @@ export default function MealDetailsScreen() {
           onSecondaryAction={() => setShowLeaveModal(false)}
           onClose={() => setShowLeaveModal(false)}
         />
-      </View>
+      </>
     </Layout>
   );
 }
