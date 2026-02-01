@@ -47,6 +47,7 @@ export const SearchBox: React.FC<Props> = ({
         backgroundColor: theme.background,
         borderRadius: theme.rounded.md,
         paddingHorizontal: 12,
+        flexGrow: 1,
       },
       input: {
         flex: 1,
