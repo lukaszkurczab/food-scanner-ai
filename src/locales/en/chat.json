@@ -1,5 +1,7 @@
 {
   "typing": "…",
+  "new": "New chat",
+  "label": "Chats",
   "offline": {
     "title": "No internet connection",
     "subtitle": "Check your connection and try again.",

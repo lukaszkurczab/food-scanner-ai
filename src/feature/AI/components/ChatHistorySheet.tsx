@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import type { ChatThread } from "@/types";
 import { Drawer } from "@/components/Drawer";
+import { useTranslation } from "node_modules/react-i18next";
 
 type Props = {
   open: boolean;
@@ -30,6 +31,8 @@ export function ChatHistorySheet({
 }: Props) {
   const theme = useTheme();
   const [threads, setThreads] = useState<ChatThread[]>([]);
+
+  const { t } = useTranslation("chat");
 
   useEffect(() => {
     if (!open || !userUid) return;
@@ -73,7 +76,9 @@ export function ChatHistorySheet({
   return (
     <Drawer open={open} onClose={onClose}>
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Chats</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          {t("label")}
+        </Text>
 
         <Pressable
           onPress={createNewChat}
@@ -88,14 +93,12 @@ export function ChatHistorySheet({
           accessibilityLabel="New chat"
         >
           <Text style={[styles.newBtnText, { color: theme.onAccent }]}>
-            New chat
+            {t("new")}
           </Text>
         </Pressable>
       </View>
 
       <View style={styles.listWrap}>
-        <View style={[styles.sep, { backgroundColor: theme.border }]} />
-
         <FlatList
           data={rows}
           keyExtractor={(i) => i.id}

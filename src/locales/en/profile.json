@@ -116,5 +116,12 @@
     "lunch": "Lunch",
     "dinner": "Dinner",
     "snack": "Snack"
+  },
+  "paywall": {
+    "title": "Premium monthly",
+    "priceLabel": "Price",
+    "priceText": "29.99 zł  / month",
+    "subscribe": "Subscribe",
+    "disclaimer": "Subscription renews automatically. Manage subscriptions in account settings."
   }
 }

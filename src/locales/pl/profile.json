@@ -117,5 +117,12 @@
     "lunch": "Lunch",
     "dinner": "Kolacja",
     "snack": "Przekąska"
+  },
+  "paywall": {
+    "title": "Premium na miesiąc",
+    "priceLabel": "Cena",
+    "priceText": "29,99 zł  / miesiąc",
+    "subscribe": "Subskrybuj",
+    "disclaimer": "Subskrypcja odnawia się automatycznie. Zarządzaj subskrypcjami w ustawieniach konta."
   }
 }
