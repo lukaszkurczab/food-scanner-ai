@@ -16,7 +16,7 @@ import { MetricsGrid, type MetricKey } from "../components/MetricsGrid";
 import { LineSection } from "../components/LineSection";
 import { MacroPieCard } from "../components/MacroPieCard";
 import { ProgressAveragesCard } from "../components/ProgressAveragesCard";
-import { BottomTabBar, DateInput, UserIcon } from "@/components";
+import { BottomTabBar, DateInput, Layout, UserIcon } from "@/components";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { useTranslation } from "react-i18next";
 import { useMeals } from "@hooks/useMeals";
@@ -84,14 +84,14 @@ export default function StatisticsScreen({ navigation }: any) {
   const stats = useStats(
     meals,
     effectiveRangeForStats,
-    userData?.calorieTarget ?? null
+    userData?.calorieTarget ?? null,
   );
 
   const days = Math.max(
     1,
     Math.round(
-      (+effectiveRange.end - +effectiveRange.start) / (24 * 60 * 60 * 1000)
-    ) + 1
+      (+effectiveRange.end - +effectiveRange.start) / (24 * 60 * 60 * 1000),
+    ) + 1,
   );
 
   const showLineSection = active !== "custom" || days >= 2;
@@ -125,7 +125,7 @@ export default function StatisticsScreen({ navigation }: any) {
     });
     for (const m of inRangeMeals) {
       const ts = new Date(
-        (m as any).timestamp || (m as any).updatedAt || (m as any).createdAt
+        (m as any).timestamp || (m as any).updatedAt || (m as any).createdAt,
       );
       ts.setHours(0, 0, 0, 0);
       const idx = Math.floor((+ts - +start) / DAY);
@@ -203,12 +203,10 @@ export default function StatisticsScreen({ navigation }: any) {
     !loadingMeals && meals.length === 0 && !hasAnySeriesData && !hasTotals;
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.background }]}>
+    <Layout>
       {!net.isConnected && <OfflineBanner />}
 
-      <View
-        style={[styles.header, { paddingHorizontal: theme.spacing.container }]}
-      >
+      <View style={styles.header}>
         <RangeTabs
           options={[
             { key: "7d", label: t("statistics:ranges.7d") },
@@ -244,7 +242,7 @@ export default function StatisticsScreen({ navigation }: any) {
             <Text style={{ color: theme.text, fontWeight: "700" }}>
               {t(
                 "statistics:limitedWindowTitle",
-                "Dostęp do starszych danych wymaga Premium"
+                "Dostęp do starszych danych wymaga Premium",
               )}
             </Text>
             <Text style={{ color: theme.textSecondary, marginTop: 4 }}>
@@ -290,10 +288,7 @@ export default function StatisticsScreen({ navigation }: any) {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={[
-            styles.scroll,
-            { paddingHorizontal: theme.spacing.container, paddingBottom: 28 },
-          ]}
+          contentContainerStyle={[styles.scroll, { paddingBottom: 28 }]}
           showsVerticalScrollIndicator={false}
         >
           <ProgressAveragesCard
@@ -332,9 +327,7 @@ export default function StatisticsScreen({ navigation }: any) {
           )}
         </ScrollView>
       )}
-
-      <BottomTabBar />
-    </View>
+    </Layout>
   );
 }
 
@@ -362,7 +355,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
     gap: 8,
   },
   emptyTitle: { fontWeight: "700", fontSize: 18, textAlign: "center" },

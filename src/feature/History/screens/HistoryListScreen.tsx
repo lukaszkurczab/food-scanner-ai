@@ -54,7 +54,7 @@ const toDate = (val?: string | number | null): Date => {
 
 const fmtDateKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
+    d.getDate(),
   ).padStart(2, "0")}`;
 
 const fmtHeader = (d: Date, t: (k: string) => string) => {
@@ -72,7 +72,7 @@ const fmtHeader = (d: Date, t: (k: string) => string) => {
 const mealKcal = (meal: Meal) =>
   (meal.ingredients || []).reduce(
     (sum, ing: any) => sum + (Number(ing?.kcal) || 0),
-    0
+    0,
   ) ||
   (meal as any)?.totals?.kcal ||
   0;
@@ -86,7 +86,7 @@ const norm = (s: any) =>
 function groupAddOrUpdate(
   sections: Map<string, DaySection>,
   t: (k: string) => string,
-  meal: Meal
+  meal: Meal,
 ) {
   const d = toDate(meal.timestamp || meal.updatedAt || meal.createdAt);
   const key = fmtDateKey(d);
@@ -99,12 +99,12 @@ function groupAddOrUpdate(
   };
   const id = String(meal.cloudId || meal.mealId);
   const without = section.data.filter(
-    (m) => String(m.cloudId || m.mealId) !== id
+    (m) => String(m.cloudId || m.mealId) !== id,
   );
   const nextData = [...without, meal].sort((a, b) =>
     String(b.timestamp || b.updatedAt || "").localeCompare(
-      String(a.timestamp || a.updatedAt || "")
-    )
+      String(a.timestamp || a.updatedAt || ""),
+    ),
   );
   const total = nextData.reduce((acc, m) => acc + mealKcal(m), 0);
   sections.set(key, {
@@ -118,7 +118,7 @@ function groupAddOrUpdate(
 function groupRemove(sections: Map<string, DaySection>, id: string) {
   for (const [key, sec] of sections.entries()) {
     const filtered = sec.data.filter(
-      (m) => String(m.cloudId || m.mealId) !== id
+      (m) => String(m.cloudId || m.mealId) !== id,
     );
     if (filtered.length !== sec.data.length) {
       const total = filtered.reduce((acc, m) => acc + mealKcal(m), 0);
@@ -138,7 +138,7 @@ function groupRemove(sections: Map<string, DaySection>, id: string) {
 
 function sectionsToArray(sections: Map<string, DaySection>): DaySection[] {
   return Array.from(sections.values()).sort((a, b) =>
-    b.dateKey.localeCompare(a.dateKey)
+    b.dateKey.localeCompare(a.dateKey),
   );
 }
 
@@ -156,9 +156,7 @@ const SectionHeader = React.memo(
         styles.sectionHeader,
         {
           paddingHorizontal: theme.spacing.md,
-          paddingTop: theme.spacing.sm,
           paddingBottom: theme.spacing.sm,
-          backgroundColor: theme.background,
         },
       ]}
     >
@@ -181,7 +179,7 @@ const SectionHeader = React.memo(
         {total} {kcalLabel}
       </Text>
     </View>
-  )
+  ),
 );
 
 const MemoMealListItem = React.memo(MealListItem);
@@ -195,13 +193,10 @@ type HistoryRowProps = {
 const HistoryRow = React.memo(
   ({ meal, navigation, theme }: HistoryRowProps) => (
     <View
-      style={[
-        styles.rowContainer,
-        {
-          paddingHorizontal: theme.spacing.md,
-          marginBottom: theme.spacing.sm,
-        },
-      ]}
+      style={{
+        paddingHorizontal: theme.spacing.md,
+        marginBottom: theme.spacing.sm,
+      }}
     >
       <MemoMealListItem
         meal={meal}
@@ -212,7 +207,7 @@ const HistoryRow = React.memo(
       />
     </View>
   ),
-  (prev, next) => prev.meal === next.meal
+  (prev, next) => prev.meal === next.meal,
 );
 
 export default function HistoryListScreen({ navigation }: { navigation: any }) {
@@ -235,7 +230,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [sectionsMap, setSectionsMap] = useState<Map<string, DaySection>>(
-    () => new Map()
+    () => new Map(),
   );
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -284,7 +279,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
         setLoading(false);
       }
     },
-    [uid, localFilters, t]
+    [uid, localFilters, t],
   );
 
   useEffect(() => {
@@ -308,7 +303,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
         return;
       }
       if (uid) void pullChanges(uid);
-    }, [uid])
+    }, [uid]),
   );
 
   useEffect(() => {
@@ -389,7 +384,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
         const ing = norm(
           (m.ingredients || [])
             .map((x: any) => x?.name || x?.title || "")
-            .join(" ")
+            .join(" "),
         );
         return title.includes(q) || ing.includes(q);
       });
@@ -405,7 +400,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
   const keyExtractor = useCallback(
     (item: Meal) => (item as any).cloudId || (item as any).mealId,
-    []
+    [],
   );
 
   const renderSectionHeader = useCallback(
@@ -417,14 +412,14 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
         kcalLabel={kcalLabel}
       />
     ),
-    [theme, kcalLabel]
+    [theme, kcalLabel],
   );
 
   const renderItem = useCallback(
     ({ item }: { item: Meal }) => (
       <HistoryRow meal={item} navigation={navigation} theme={theme} />
     ),
-    [navigation, theme]
+    [navigation, theme],
   );
 
   if (loading && sections.length === 0)
@@ -436,7 +431,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
 
   if (sections.length === 0) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <Layout>
         {!netInfo.isConnected && <OfflineBanner />}
         {showFilters ? (
           <FilterPanel
@@ -447,9 +442,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           />
         ) : (
           <>
-            <View style={{ padding: theme.spacing.md }}>
-              <SearchBox value={query} onChange={setQuery} />
-            </View>
+            <SearchBox value={query} onChange={setQuery} />
             <EmptyState
               title={t("meals:noMealsFound")}
               description={
@@ -460,7 +453,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
             />
           </>
         )}
-      </View>
+      </Layout>
     );
   }
 
@@ -477,7 +470,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           />
         </View>
       ) : (
-        <View>
+        <>
           <View
             style={[
               styles.topBar,
@@ -519,7 +512,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
               minIndexForVisible: 0,
             }}
           />
-        </View>
+        </>
       )}
       <BottomTabBar />
     </Layout>
@@ -533,7 +526,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "baseline",
   },
-  rowContainer: {},
   topBar: {
     flexDirection: "row",
   },

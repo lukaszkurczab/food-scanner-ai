@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { View, TextInput, Pressable } from "react-native";
+import { View, TextInput, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -47,10 +47,10 @@ export const SearchBox: React.FC<Props> = ({
         backgroundColor: theme.background,
         borderRadius: theme.rounded.md,
         paddingHorizontal: 12,
-        flexGrow: 1,
       },
       input: {
         flex: 1,
+        paddingVertical: 8,
         color: theme.text,
         fontSize: theme.typography.size.md,
       },
@@ -60,7 +60,7 @@ export const SearchBox: React.FC<Props> = ({
         borderRadius: theme.rounded.sm,
       },
     }),
-    [theme]
+    [theme],
   );
 
   return (
