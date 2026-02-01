@@ -134,7 +134,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
     const q = fsQuery(
       collection(db, "users", uid, "myMeals"),
       orderBy("name", "asc"),
-      limit(PAGE_SIZE)
+      limit(PAGE_SIZE),
     );
     const unsub = onSnapshot(q, async (snap) => {
       const data = snap.docs.map((d: any) => ({
@@ -162,10 +162,10 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
                     "users",
                     uid,
                     "myMeals",
-                    (m as any).cloudId || m.mealId
+                    (m as any).cloudId || m.mealId,
                   ),
                   { photoUrl: null, photoLocalPath: null },
-                  { merge: true }
+                  { merge: true },
                 );
                 updated.push({
                   ...m,
@@ -182,10 +182,10 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
                   "users",
                   uid,
                   "myMeals",
-                  (m as any).cloudId || m.mealId
+                  (m as any).cloudId || m.mealId,
                 ),
                 { photoUrl: null, photoLocalPath: null },
-                { merge: true }
+                { merge: true },
               );
               updated.push({
                 ...m,
@@ -220,7 +220,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       collection(db, "users", uid, "myMeals"),
       orderBy("name", "asc"),
       startAfter(lastDoc),
-      limit(PAGE_SIZE)
+      limit(PAGE_SIZE),
     );
     const snap = await getDocs(q);
     const data = snap.docs.map((d: any) => ({
@@ -239,7 +239,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
             await setDoc(
               doc(db, "users", uid, "myMeals", (m as any).cloudId || m.mealId),
               { photoUrl: null, photoLocalPath: null },
-              { merge: true }
+              { merge: true },
             );
             validated.push({
               ...m,
@@ -253,7 +253,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
           await setDoc(
             doc(db, "users", uid, "myMeals", (m as any).cloudId || m.mealId),
             { photoUrl: null, photoLocalPath: null },
-            { merge: true }
+            { merge: true },
           );
           validated.push({ ...m, photoUrl: null, photoLocalPath: null } as any);
         }
@@ -290,7 +290,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       : base.filter((m) => {
           const title = norm(m.name) || "";
           const ing = norm(
-            (m.ingredients || []).map((x: any) => x?.name || "").join(" ")
+            (m.ingredients || []).map((x: any) => x?.name || "").join(" "),
           );
           return title.includes(q) || ing.includes(q);
         });
@@ -339,7 +339,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       }, -1);
       const remaining = visibleItems.length - (globalMax + 1);
       if (remaining <= 10) loadMore();
-    }
+    },
   );
 
   const buildDraftFromSaved = useCallback(
@@ -376,7 +376,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
         name: picked.name ?? "",
       };
     },
-    [draftMeal, uid]
+    [draftMeal, uid],
   );
 
   const onDuplicate = useCallback(
@@ -388,7 +388,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       await setLastScreen(uid, "ReviewIngredients");
       navigation.navigate("ReviewIngredients");
     },
-    [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation]
+    [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation],
   );
 
   const onEdit = useCallback(
@@ -403,7 +403,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
         savedCloudId: m.cloudId,
       });
     },
-    [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation]
+    [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation],
   );
 
   const onDelete = useCallback(
@@ -411,7 +411,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       if (!uid || !m.cloudId) return;
       await deleteDoc(doc(db, "users", uid, "myMeals", m.cloudId));
     },
-    [uid]
+    [uid],
   );
 
   if (loading)
@@ -429,9 +429,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
           <FilterPanel scope="myMeals" />
         ) : (
           <>
-            <View style={{ padding: theme.spacing.md }}>
-              <SearchBox value={query} onChange={setQuery} />
-            </View>
+            <SearchBox value={query} onChange={setQuery} />
             <EmptyState
               title={t("meals:noSavedMeals", "No saved meals")}
               description={
@@ -439,7 +437,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
                   ? t("meals:tryDifferentSearch", "Try a different search.")
                   : t(
                       "meals:saveMealsToReuse",
-                      "Save meals to reuse them later."
+                      "Save meals to reuse them later.",
                     )
               }
             />
