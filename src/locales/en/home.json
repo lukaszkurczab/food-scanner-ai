@@ -12,6 +12,7 @@
   "totalToday": "Total today",
   "noGoalSet": "No daily goal",
   "setDailyGoal": "Set your daily goal",
+  "missingMacrosTitle": "Remaining macros",
 
   "emptyDay": {
     "title": "No meals on this day",

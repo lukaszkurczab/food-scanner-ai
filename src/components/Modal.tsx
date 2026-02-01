@@ -80,7 +80,7 @@ export const Modal: React.FC<Props> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <View style={[styles.overlay, { backgroundColor: theme.overlay }]} />
+        <View style={styles.overlay} />
       </TouchableWithoutFeedback>
 
       <KeyboardAvoidingView
@@ -111,7 +111,7 @@ export const Modal: React.FC<Props> = ({
                 maxHeight: fullScreen
                   ? windowHeight * 0.96
                   : windowHeight * 0.8,
-                marginTop: fullScreen ? theme.spacing.xxl : 0,
+                marginTop: fullScreen ? theme.spacing.nav : 0,
               },
               fullScreen && { flex: 1, width: "98%" },
             ]}
