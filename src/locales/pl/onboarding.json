@@ -140,7 +140,6 @@
     "health": "Zdrowie",
     "ai": "Ustawienia asystenta",
     "edit": "Edytuj",
-    "finish_first": "Zakończ",
-    "save_and_close_refill": "Zapisz"
+    "save": "Zapisz"
   }
 }

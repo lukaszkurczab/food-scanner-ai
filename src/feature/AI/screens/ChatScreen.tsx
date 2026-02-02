@@ -27,6 +27,7 @@ import { ChatHistorySheet } from "../components/ChatHistorySheet";
 import { IconButton } from "@/components/IconButton";
 import { MaterialIcons } from "@expo/vector-icons";
 import { v4 as uuidv4 } from "uuid";
+import { Layout } from "@components/Layout";
 
 export default function ChatScreen() {
   const navigation = useNavigation<any>();
@@ -100,10 +101,7 @@ export default function ChatScreen() {
   const emptyDisabled = sending || limitReached || !net.isConnected;
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      edges={["top"]}
-    >
+    <Layout disableScroll style={{ paddingLeft: 0, paddingRight: 0 }}>
       <View style={styles.header}>
         <IconButton
           icon={<MaterialIcons name="menu" />}
@@ -142,10 +140,7 @@ export default function ChatScreen() {
           <ActivityIndicator />
         </View>
       ) : (
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
+        <>
           <FlatList
             inverted
             data={data}
@@ -184,7 +179,7 @@ export default function ChatScreen() {
             disabled={sending || limitReached || !net.isConnected}
             onSend={handleSend}
           />
-        </KeyboardAvoidingView>
+        </>
       )}
 
       <ChatHistorySheet
@@ -194,7 +189,7 @@ export default function ChatScreen() {
         activeThreadId={threadId}
         onSelectThread={(id) => setThreadId(id)}
       />
-    </SafeAreaView>
+    </Layout>
   );
 }
 

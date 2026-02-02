@@ -156,10 +156,9 @@ export function Dropdown<T extends string>({
                 borderWidth: 1,
                 borderRadius: theme.rounded.sm,
                 maxHeight: Math.min(
-                  220,
+                  240,
                   Dimensions.get("window").height -
-                    (dropdownPos.y + dropdownPos.height) -
-                    32
+                    (dropdownPos.y + dropdownPos.height),
                 ),
                 shadowColor: "#000",
                 shadowOpacity: 0.1,
@@ -169,7 +168,10 @@ export function Dropdown<T extends string>({
                 zIndex: 100,
               }}
             >
-              <ScrollView nestedScrollEnabled>
+              <ScrollView
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+              >
                 {options.map((item, idx) => (
                   <TouchableOpacity
                     key={`${item.value ?? "null"}-${idx}`}

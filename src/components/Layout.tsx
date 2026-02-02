@@ -19,6 +19,7 @@ type LayoutProps = {
   children: React.ReactNode;
   showNavigation?: boolean;
   disableScroll?: boolean;
+  style?: any;
 };
 
 const TAB_BAR_HEIGHT = 36;
@@ -27,6 +28,7 @@ export const Layout = ({
   children,
   showNavigation = true,
   disableScroll = false,
+  style,
 }: LayoutProps) => {
   const theme = useTheme();
   const route = useRoute();
@@ -75,6 +77,7 @@ export const Layout = ({
               paddingLeft: insets.left + 32,
               paddingRight: insets.right + 32,
             },
+            style,
           ]}
         >
           <StatusBar

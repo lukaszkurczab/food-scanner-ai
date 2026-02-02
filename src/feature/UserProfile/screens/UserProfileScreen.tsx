@@ -90,8 +90,8 @@ export default function UserProfileScreen({ navigation }: any) {
       setExportModalMessage(
         `${t("exportSavedSuccess", { filename: fileName })}\n${t(
           "exportSavedPathHint",
-          { path: fileUri || "-" }
-        )}`
+          { path: fileUri || "-" },
+        )}`,
       );
       setExportModalVisible(true);
     } catch {
@@ -232,7 +232,7 @@ export default function UserProfileScreen({ navigation }: any) {
       </Pressable>
 
       <Text style={[styles.version, { color: theme.textSecondary }]}>
-        {t("appVersion")} 1.0.0
+        {t("appVersion")} 1.0.1
       </Text>
 
       <InputModal

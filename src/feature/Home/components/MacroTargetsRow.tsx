@@ -33,16 +33,6 @@ export function MacroTargetsRow({ macroTargets, consumed }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.card }]}>
-      <Text
-        style={{
-          fontSize: theme.typography.size.base,
-          fontFamily: theme.typography.fontFamily.medium,
-          color: theme.text,
-          marginBottom: theme.spacing.sm,
-        }}
-      >
-        {t("home:missingMacrosTitle", "Remaining macros today")}
-      </Text>
       <View style={[styles.row, { gap: theme.spacing.md }]}>
         <View style={styles.item}>
           <MacroTargetDonut
