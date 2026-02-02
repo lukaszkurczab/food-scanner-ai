@@ -140,7 +140,6 @@
     "health": "Health",
     "ai": "Assistant Settings",
     "edit": "Edit",
-    "finish_first": "Finish",
-    "save_and_close_refill": "Save and close"
+    "save": "Save"
   }
 }

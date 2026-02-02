@@ -20,29 +20,21 @@ export default function PrivacyScreen({ navigation }: any) {
   };
 
   return (
-    <Layout showNavigation={false}>
-      <View style={styles.centerBoth}>
-        <ScrollableBox style={{ height: calculatedHeight }}>
-          {parseMarkdownToReactNative(privacyText, theme)}
-        </ScrollableBox>
+    <Layout showNavigation={false} disableScroll>
+      <ScrollableBox style={{ height: calculatedHeight }}>
+        {parseMarkdownToReactNative(privacyText, theme)}
+      </ScrollableBox>
 
-        <PrimaryButton
-          label={t("close")}
-          onPress={handleClose}
-          style={styles.cta}
-        />
-      </View>
+      <PrimaryButton
+        label={t("close")}
+        onPress={handleClose}
+        style={styles.cta}
+      />
     </Layout>
   );
 }
 
 const styles = StyleSheet.create({
-  centerBoth: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
   cta: {
     width: 200,
     alignSelf: "center",

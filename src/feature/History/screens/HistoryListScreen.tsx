@@ -17,7 +17,7 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { Layout, BottomTabBar, SearchBox } from "@/components";
+import { Layout, SearchBox } from "@/components";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { FilterBadgeButton } from "../components/FilterBadgeButton";
@@ -486,7 +486,6 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
           </View>
           <SectionList
             sections={sections}
-            style={styles.list}
             keyExtractor={keyExtractor}
             refreshControl={
               <RefreshControl refreshing={loading} onRefresh={refresh} />
@@ -506,6 +505,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
             maxToRenderPerBatch={8}
             updateCellsBatchingPeriod={60}
             scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
             maintainVisibleContentPosition={{
               minIndexForVisible: 0,
             }}
@@ -525,8 +525,5 @@ const styles = StyleSheet.create({
   },
   topBar: {
     flexDirection: "row",
-  },
-  list: {
-    marginBottom: 142,
   },
 });

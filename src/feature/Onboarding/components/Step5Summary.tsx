@@ -105,13 +105,13 @@ export default function Step5Summary({
               },
             ]
           : form.goal === "increase"
-          ? [
-              {
-                label: t("calorieSurplus"),
-                value: `${Math.round((form.calorieSurplus ?? 0) * 100)}%`,
-              },
-            ]
-          : []),
+            ? [
+                {
+                  label: t("calorieSurplus"),
+                  value: `${Math.round((form.calorieSurplus ?? 0) * 100)}%`,
+                },
+              ]
+            : []),
       ],
     },
     {
@@ -127,7 +127,7 @@ export default function Step5Summary({
                     ? form.chronicDiseasesOther
                       ? form.chronicDiseasesOther
                       : t("none")
-                    : t(`healthProfile.disease.${d}`)
+                    : t(`healthProfile.disease.${d}`),
                 )
                 .join(", ")
             : t("none"),
@@ -141,7 +141,7 @@ export default function Step5Summary({
                     ? form.allergiesOther
                       ? form.allergiesOther
                       : t("none")
-                    : t(`healthProfile.allergy.${a}`)
+                    : t(`healthProfile.allergy.${a}`),
                 )
                 .join(", ")
             : t("none"),
@@ -166,8 +166,8 @@ export default function Step5Summary({
             form.aiFocus === "other"
               ? form.aiFocusOther || t("none")
               : form.aiFocus
-              ? t(`ai.focus.${form.aiFocus}`)
-              : t("none"),
+                ? t(`ai.focus.${form.aiFocus}`)
+                : t("none"),
         },
         {
           label: t("ai.anythingElse"),
@@ -176,11 +176,6 @@ export default function Step5Summary({
       ],
     },
   ];
-
-  const finishLabel =
-    mode === "first"
-      ? t("summary.finish_first")
-      : t("summary.save_and_close_refill");
 
   return (
     <View>
@@ -288,7 +283,7 @@ export default function Step5Summary({
       ))}
 
       <PrimaryButton
-        label={finishLabel}
+        label={t("summary.save")}
         onPress={onFinish}
         style={{ marginBottom: theme.spacing.md }}
       />
