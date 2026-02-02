@@ -490,7 +490,6 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
                 style={[
                   styles.listItemWrap,
                   {
-                    paddingHorizontal: theme.spacing.md,
                     marginBottom: theme.spacing.sm,
                   },
                 ]}
@@ -518,7 +517,6 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
           />
         </>
       )}
-      <BottomTabBar />
     </Layout>
   );
 }
