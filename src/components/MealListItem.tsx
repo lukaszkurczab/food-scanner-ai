@@ -53,7 +53,7 @@ const MealListItemBase: React.FC<Props> = ({
 
   const mealId = useMemo(
     () => String(meal.cloudId || meal.mealId || ""),
-    [meal.cloudId, meal.mealId]
+    [meal.cloudId, meal.mealId],
   );
 
   useEffect(() => {
@@ -64,7 +64,7 @@ const MealListItemBase: React.FC<Props> = ({
       if (meal.imageId) {
         try {
           remoteUrl = await getDownloadURL(
-            ref(st, `images/${meal.imageId}.jpg`)
+            ref(st, `images/${meal.imageId}.jpg`),
           );
         } catch {
           remoteUrl = null;
@@ -146,7 +146,7 @@ const MealListItemBase: React.FC<Props> = ({
           isOpen.current = false;
         });
       },
-    })
+    }),
   ).current;
 
   const onLayout = (e: LayoutChangeEvent) =>
@@ -189,8 +189,6 @@ const MealListItemBase: React.FC<Props> = ({
               width: ACTION_WIDTH,
               right: 0,
               position: "absolute",
-              backgroundColor: theme.background,
-              shadowColor: theme.shadow,
             },
           ]}
         >
