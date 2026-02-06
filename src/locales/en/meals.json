@@ -65,6 +65,7 @@
   "tryDifferentSearch": "Try different search",
   "tryChangeFilters": "Try changing filters",
   "saveMealsToReuse": "Create and save meals to reuse them later",
+  "barcode_detected": "Detected: ",
   "photo_preview": {
     "crop": "Crop",
     "finish": "Finish cropping",

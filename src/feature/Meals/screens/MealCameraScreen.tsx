@@ -484,7 +484,7 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
                       ? tMeals("barcode_detected", {
                           defaultValue: "Detected:",
                         }) + ` ${scannedCode}`
-                      : tMeals("barcode_hint", {
+                      : tCommon("barcode_hint", {
                           defaultValue:
                             "Scan the barcode by placing it inside the frame",
                         })}
