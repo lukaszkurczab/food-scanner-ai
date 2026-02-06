@@ -65,6 +65,7 @@
   "tryChangeFilters": "Spróbuj zmienić filtry",
   "saveMealsToReuse": "Stwórz i zapisz posiłek, żeby użyć go później",
   "edit_meal": "Edytuj posiłek",
+  "barcode_detected": "Wykryto: ",
   "photo_preview": {
     "crop": "Przytnij",
     "finish": "Zakończ przycinanie",
