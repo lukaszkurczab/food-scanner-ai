@@ -50,7 +50,7 @@ export default function Step1BasicData({
 
   const validate = (
     field: keyof FormData,
-    value: string
+    value: string,
   ): string | undefined => {
     switch (field) {
       case "age": {
@@ -160,176 +160,189 @@ export default function Step1BasicData({
   const weightLabel = form.unitsSystem === "metric" ? "kg" : "lbs";
 
   return (
-    <View style={[styles.column, { gap: theme.spacing.md }]}>
-      <View>
-        <Text
-          style={{
-            fontSize: theme.typography.size.xl,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            textAlign: "center",
-            marginBottom: theme.spacing.sm,
-          }}
-        >
-          {t("step1_title")}
-        </Text>
-        <Text
-          style={{
-            fontSize: theme.typography.size.base,
-            color: theme.textSecondary,
-            textAlign: "center",
-          }}
-        >
-          {t("step1_description")}
-        </Text>
-      </View>
+    <View style={styles.container}>
+      <View style={{ gap: theme.spacing.lg }}>
+        <View>
+          <Text
+            style={{
+              fontSize: theme.typography.size.xl,
+              fontFamily: theme.typography.fontFamily.bold,
+              color: theme.text,
+              textAlign: "center",
+              marginBottom: theme.spacing.sm,
+            }}
+          >
+            {t("step1_title")}
+          </Text>
+          <Text
+            style={{
+              fontSize: theme.typography.size.base,
+              color: theme.textSecondary,
+              textAlign: "center",
+            }}
+          >
+            {t("step1_description")}
+          </Text>
+        </View>
 
-      <Dropdown
-        label={t("unitsSystem")}
-        value={form.unitsSystem}
-        options={[
-          { label: t("metric"), value: "metric" },
-          { label: t("imperial"), value: "imperial" },
-        ]}
-        onChange={(val) =>
-          setForm((prev) => ({ ...prev, unitsSystem: val as UnitsSystem }))
-        }
-      />
+        <Dropdown
+          label={t("unitsSystem")}
+          value={form.unitsSystem}
+          options={[
+            { label: t("metric"), value: "metric" },
+            { label: t("imperial"), value: "imperial" },
+          ]}
+          onChange={(val) =>
+            setForm((prev) => ({ ...prev, unitsSystem: val as UnitsSystem }))
+          }
+        />
 
-      <TextInput
-        label={t("age")}
-        value={getString(form.age)}
-        onChangeText={(val) => handleChange("age", val.replace(/[^0-9]/g, ""))}
-        keyboardType="number-pad"
-        onBlur={() => handleBlur("age")}
-        error={errors.age}
-        accessibilityLabel={t("age")}
-        returnKeyType="next"
-      />
-
-      <View style={[styles.row, { gap: theme.spacing.sm }]}>
-        {form.sex === "male" ? (
-          <>
-            <PrimaryButton
-              label={t("male")}
-              onPress={() => handleChange("sex", "male")}
-              style={{ flex: 1 }}
-              textStyle={{ fontSize: theme.typography.size.sm }}
-              accessibilityState={{ selected: true }}
-            />
-            <SecondaryButton
-              label={t("female")}
-              onPress={() => handleChange("sex", "female")}
-              style={{ flex: 1 }}
-              textStyle={{ fontSize: theme.typography.size.sm }}
-              accessibilityState={{ selected: false }}
-            />
-          </>
-        ) : (
-          <>
-            <SecondaryButton
-              label={t("male")}
-              onPress={() => handleChange("sex", "male")}
-              style={{ flex: 1 }}
-              textStyle={{ fontSize: theme.typography.size.sm }}
-              accessibilityState={{ selected: false }}
-            />
-            <PrimaryButton
-              label={t("female")}
-              onPress={() => handleChange("sex", "female")}
-              style={{ flex: 1 }}
-              textStyle={{ fontSize: theme.typography.size.sm }}
-              accessibilityState={{ selected: true }}
-            />
-          </>
-        )}
-      </View>
-      {errors.sex && (
-        <Text
-          style={{
-            color: theme.error.text,
-            fontSize: theme.typography.size.sm,
-            textAlign: "center",
-          }}
-        >
-          {errors.sex}
-        </Text>
-      )}
-
-      {form.unitsSystem === "metric" ? (
         <TextInput
-          label={t("height")}
-          value={getString(form.height)} // cm w form
+          label={`${t("age")}*`}
+          value={getString(form.age)}
           onChangeText={(val) =>
-            setForm((p) => ({ ...p, height: val.replace(/[^0-9]/g, "") }))
+            handleChange("age", val.replace(/[^0-9]/g, ""))
           }
           keyboardType="number-pad"
-          onBlur={() => handleBlur("height")}
-          error={errors.height}
-          rightLabel={heightLabel}
-          accessibilityLabel={t("height")}
+          onBlur={() => handleBlur("age")}
+          error={errors.age}
+          accessibilityLabel={t("age")}
           returnKeyType="next"
         />
-      ) : (
+
         <View style={[styles.row, { gap: theme.spacing.sm }]}>
+          {form.sex === "male" ? (
+            <>
+              <PrimaryButton
+                label={t("male")}
+                onPress={() => handleChange("sex", "male")}
+                style={{ flex: 1 }}
+                textStyle={{ fontSize: theme.typography.size.sm }}
+                accessibilityState={{ selected: true }}
+              />
+              <SecondaryButton
+                label={t("female")}
+                onPress={() => handleChange("sex", "female")}
+                style={{ flex: 1 }}
+                textStyle={{ fontSize: theme.typography.size.sm }}
+                accessibilityState={{ selected: false }}
+              />
+            </>
+          ) : (
+            <>
+              <SecondaryButton
+                label={t("male")}
+                onPress={() => handleChange("sex", "male")}
+                style={{ flex: 1 }}
+                textStyle={{ fontSize: theme.typography.size.sm }}
+                accessibilityState={{ selected: false }}
+              />
+              <PrimaryButton
+                label={t("female")}
+                onPress={() => handleChange("sex", "female")}
+                style={{ flex: 1 }}
+                textStyle={{ fontSize: theme.typography.size.sm }}
+                accessibilityState={{ selected: true }}
+              />
+            </>
+          )}
+        </View>
+        {errors.sex && (
+          <Text
+            style={{
+              color: theme.error.text,
+              fontSize: theme.typography.size.sm,
+              textAlign: "center",
+            }}
+          >
+            {errors.sex}
+          </Text>
+        )}
+
+        {form.unitsSystem === "metric" ? (
           <TextInput
-            label={t("heightFt")}
-            value={dispFt ? String(dispFt) : ""}
-            onChangeText={handleHeightFtChange}
+            label={`${t("height")}*`}
+            value={getString(form.height)}
+            onChangeText={(val) =>
+              setForm((p) => ({ ...p, height: val.replace(/[^0-9]/g, "") }))
+            }
             keyboardType="number-pad"
             onBlur={() => handleBlur("height")}
             error={errors.height}
-            rightLabel="ft"
-            accessibilityLabel={t("heightFt")}
-            style={styles.flex1}
+            rightLabel={heightLabel}
+            accessibilityLabel={t("height")}
+            returnKeyType="next"
           />
-          <TextInput
-            label={t("heightIn")}
-            value={String(dispIn ?? 0)}
-            onChangeText={handleHeightInChange}
-            keyboardType="number-pad"
-            onBlur={() => handleBlur("heightInch")}
-            error={errors.heightInch}
-            rightLabel="in"
-            accessibilityLabel={t("heightIn")}
-            style={styles.flex1}
-          />
-        </View>
-      )}
+        ) : (
+          <View style={[styles.row, { gap: theme.spacing.sm }]}>
+            <TextInput
+              label={`${t("heightFt")}*`}
+              value={dispFt ? String(dispFt) : ""}
+              onChangeText={handleHeightFtChange}
+              keyboardType="number-pad"
+              onBlur={() => handleBlur("height")}
+              error={errors.height}
+              rightLabel="ft"
+              accessibilityLabel={t("heightFt")}
+              style={styles.flex1}
+            />
+            <TextInput
+              label={`${t("heightIn")}*`}
+              value={String(dispIn ?? 0)}
+              onChangeText={handleHeightInChange}
+              keyboardType="number-pad"
+              onBlur={() => handleBlur("heightInch")}
+              error={errors.heightInch}
+              rightLabel="in"
+              accessibilityLabel={t("heightIn")}
+              style={styles.flex1}
+            />
+          </View>
+        )}
 
-      <TextInput
-        label={t("weight")}
-        value={
-          form.unitsSystem === "metric"
-            ? getString(form.weight)
-            : String(dispLbs || "")
-        }
-        onChangeText={
-          form.unitsSystem === "metric"
-            ? (val) => {
-                setForm((p) => ({ ...p, weight: val.replace(/[^0-9]/g, "") }));
-                setErrors((e) => ({ ...e, weight: undefined }));
-              }
-            : handleWeightLbsChange
-        }
-        keyboardType="number-pad"
-        onBlur={() => handleBlur("weight")}
-        error={errors.weight}
-        rightLabel={weightLabel}
-        accessibilityLabel={t("weight")}
-      />
-
-      <PrimaryButton
-        label={editMode ? t("summary.confirm", "Confirm") : t("next")}
-        onPress={editMode ? onConfirmEdit : onNext}
-        disabled={!canNext()}
-      />
-      <SecondaryButton label={t("cancel")} onPress={onCancel} />
+        <TextInput
+          label={`${t("weight")}*`}
+          value={
+            form.unitsSystem === "metric"
+              ? getString(form.weight)
+              : String(dispLbs || "")
+          }
+          onChangeText={
+            form.unitsSystem === "metric"
+              ? (val) => {
+                  setForm((p) => ({
+                    ...p,
+                    weight: val.replace(/[^0-9]/g, ""),
+                  }));
+                  setErrors((e) => ({ ...e, weight: undefined }));
+                }
+              : handleWeightLbsChange
+          }
+          keyboardType="number-pad"
+          onBlur={() => handleBlur("weight")}
+          error={errors.weight}
+          rightLabel={weightLabel}
+          accessibilityLabel={t("weight")}
+        />
+      </View>
+      <View style={{ gap: theme.spacing.lg }}>
+        <PrimaryButton
+          label={editMode ? t("summary.confirm", "Confirm") : t("next")}
+          onPress={editMode ? onConfirmEdit : onNext}
+          disabled={!canNext()}
+        />
+        <SecondaryButton label={t("cancel")} onPress={onCancel} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
   column: { flexDirection: "column" },
   row: { flexDirection: "row" },
   flex1: { flex: 1 },

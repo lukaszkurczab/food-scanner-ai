@@ -16,6 +16,7 @@ const ASSISTANT_STYLE_OPTIONS: { label: string; value: AiStyle }[] = [
   { label: "ai.style.concise", value: "concise" },
   { label: "ai.style.friendly", value: "friendly" },
   { label: "ai.style.detailed", value: "detailed" },
+  { label: "ai.style.strict", value: "strict" },
 ];
 
 const AREA_OF_FOCUS_OPTIONS: { label: string; value: AiFocus }[] = [
@@ -44,7 +45,6 @@ export default function Step4AIAssistantPreferences({
   form,
   setForm,
   errors,
-  setErrors,
   editMode,
   onConfirmEdit,
   onNext,
@@ -55,17 +55,6 @@ export default function Step4AIAssistantPreferences({
 
   const isOtherFocus = form.aiFocus === "other";
 
-  function validate() {
-    let valid = true;
-    let newErrors: Partial<Record<keyof FormData, string>> = {};
-    if (form.aiFocus === "other" && !form.aiFocusOther?.trim()) {
-      newErrors.aiFocusOther = t("ai.errors.aiFocusOther");
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  }
-
   const canNext = useMemo(() => {
     if (form.aiFocus === "other" && !form.aiFocusOther?.trim()) return false;
     return true;
@@ -75,92 +64,90 @@ export default function Step4AIAssistantPreferences({
   const areaOfFocusValue = form.aiFocus ?? "none";
 
   return (
-    <View style={[styles.container, { gap: theme.spacing.lg }]}>
-      <View>
-        <Text
-          style={{
-            fontSize: theme.typography.size.xl,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            textAlign: "center",
-            marginBottom: theme.spacing.sm,
-          }}
-        >
-          {t("step4_title")}
-        </Text>
-        <Text
-          style={{
-            fontSize: theme.typography.size.base,
-            color: theme.textSecondary,
-            textAlign: "center",
-            marginBottom: theme.spacing.md,
-          }}
-        >
-          {t("step4_description")}
-        </Text>
-      </View>
+    <View style={styles.container}>
+      <View style={{ gap: theme.spacing.lg }}>
+        <View>
+          <Text
+            style={{
+              fontSize: theme.typography.size.xl,
+              fontFamily: theme.typography.fontFamily.bold,
+              color: theme.text,
+              textAlign: "center",
+              marginBottom: theme.spacing.sm,
+            }}
+          >
+            {t("step4_title")}
+          </Text>
+          <Text
+            style={{
+              fontSize: theme.typography.size.base,
+              color: theme.textSecondary,
+              textAlign: "center",
+              marginBottom: theme.spacing.md,
+            }}
+          >
+            {t("step4_description")}
+          </Text>
+        </View>
 
-      <Dropdown
-        label={t("ai.assistantStyle")}
-        value={assistantStyleValue}
-        options={ASSISTANT_STYLE_OPTIONS.map((o) => ({
-          label: t(o.label),
-          value: o.value,
-        }))}
-        onChange={(v) =>
-          setForm((prev) => ({ ...prev, aiStyle: v ?? "none" }))
-        }
-        error={undefined}
-      />
-
-      <Dropdown
-        label={t("ai.areaOfFocus")}
-        value={areaOfFocusValue}
-        options={AREA_OF_FOCUS_OPTIONS.map((o) => ({
-          label: t(o.label),
-          value: o.value,
-        }))}
-        onChange={(v) =>
-          setForm((prev) => ({
-            ...prev,
-            aiFocus: v ?? "none",
-            aiFocusOther: v === "other" ? prev.aiFocusOther ?? "" : "",
-          }))
-        }
-        error={undefined}
-      />
-
-      {isOtherFocus && (
-        <TextInput
-          placeholder={t("ai.focus_placeholder")}
-          value={form.aiFocusOther ?? ""}
-          onChangeText={(val) =>
-            setForm((prev) => ({ ...prev, aiFocusOther: val }))
+        <Dropdown
+          label={t("ai.assistantStyle")}
+          value={assistantStyleValue}
+          options={ASSISTANT_STYLE_OPTIONS.map((o) => ({
+            label: t(o.label),
+            value: o.value,
+          }))}
+          onChange={(v) =>
+            setForm((prev) => ({ ...prev, aiStyle: v ?? "none" }))
           }
-          error={errors.aiFocusOther}
-          maxLength={100}
+          error={undefined}
         />
-      )}
 
-      <LongTextInput
-        label={t("ai.anythingElse")}
-        placeholder={t("ai.anythingElse_placeholder")}
-        value={form.aiNote ?? ""}
-        onChangeText={(val) => setForm((prev) => ({ ...prev, aiNote: val }))}
-        error={undefined}
-        maxLength={250}
-      />
+        <Dropdown
+          label={t("ai.areaOfFocus")}
+          value={areaOfFocusValue}
+          options={AREA_OF_FOCUS_OPTIONS.map((o) => ({
+            label: t(o.label),
+            value: o.value,
+          }))}
+          onChange={(v) =>
+            setForm((prev) => ({
+              ...prev,
+              aiFocus: v ?? "none",
+              aiFocusOther: v === "other" ? (prev.aiFocusOther ?? "") : "",
+            }))
+          }
+          error={undefined}
+        />
 
-      <PrimaryButton
-        label={editMode ? t("summary.confirm", "Confirm") : t("next")}
-        onPress={editMode ? onConfirmEdit : onNext}
-        disabled={!canNext}
-      />
-      <SecondaryButton label={t("back")} onPress={onBack} />
+        {isOtherFocus && (
+          <TextInput
+            placeholder={t("ai.focus_placeholder")}
+            value={form.aiFocusOther ?? ""}
+            onChangeText={(val) =>
+              setForm((prev) => ({ ...prev, aiFocusOther: val }))
+            }
+            error={errors.aiFocusOther}
+            maxLength={100}
+          />
+        )}
+      </View>
+      <View style={{ gap: theme.spacing.lg }}>
+        <PrimaryButton
+          label={editMode ? t("summary.confirm", "Confirm") : t("skip")}
+          onPress={editMode ? onConfirmEdit : onNext}
+          disabled={!canNext}
+        />
+        <SecondaryButton label={t("back")} onPress={onBack} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: "column", justifyContent: "center" },
+  container: {
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
 });

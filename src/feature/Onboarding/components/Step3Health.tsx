@@ -86,109 +86,118 @@ export default function Step3Health({
   };
 
   return (
-    <View style={[styles.container, { gap: theme.spacing.lg }] }>
-      <View>
-        <Text
-          style={{
-            fontSize: theme.typography.size.xl,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            textAlign: "center",
-            marginBottom: theme.spacing.sm,
-          }}
-        >
-          {t("healthProfile.title")}
-        </Text>
-        <Text
-          style={{
-            fontSize: theme.typography.size.base,
-            color: theme.textSecondary,
-            textAlign: "center",
-            marginBottom: theme.spacing.md,
-          }}
-        >
-          {t("healthProfile.desc")}
-        </Text>
-      </View>
+    <View style={styles.container}>
+      <View style={{ gap: theme.spacing.lg }}>
+        <View>
+          <Text
+            style={{
+              fontSize: theme.typography.size.xl,
+              fontFamily: theme.typography.fontFamily.bold,
+              color: theme.text,
+              textAlign: "center",
+              marginBottom: theme.spacing.sm,
+            }}
+          >
+            {t("healthProfile.title")}
+          </Text>
+          <Text
+            style={{
+              fontSize: theme.typography.size.base,
+              color: theme.textSecondary,
+              textAlign: "center",
+              marginBottom: theme.spacing.md,
+            }}
+          >
+            {t("healthProfile.desc")}
+          </Text>
+        </View>
 
-      <View>
-        <CheckboxDropdown<ChronicDisease>
-          label={t("healthProfile.chronicDisease")}
-          options={CHRONIC_DISEASE_OPTIONS.map((o) => ({
-            ...o,
-            label: t(`healthProfile.disease.${o.value}`),
-          }))}
-          values={form.chronicDiseases ?? []}
-          onChange={(val) =>
-            setForm((prev) => ({
-              ...prev,
-              chronicDiseases: val as ChronicDisease[],
-              chronicDiseasesOther: val.includes("other")
-                ? prev.chronicDiseasesOther ?? ""
-                : undefined,
-            }))
-          }
-        />
-        {hasChronicOther && (
-          <TextInput
-            value={form.chronicDiseasesOther ?? ""}
-            onChangeText={(v) =>
-              setForm((prev) => ({ ...prev, chronicDiseasesOther: v }))
+        <View>
+          <CheckboxDropdown<ChronicDisease>
+            label={t("healthProfile.chronicDisease")}
+            options={CHRONIC_DISEASE_OPTIONS.map((o) => ({
+              ...o,
+              label: t(`healthProfile.disease.${o.value}`),
+            }))}
+            values={form.chronicDiseases ?? []}
+            onChange={(val) =>
+              setForm((prev) => ({
+                ...prev,
+                chronicDiseases: val as ChronicDisease[],
+                chronicDiseasesOther: val.includes("other")
+                  ? (prev.chronicDiseasesOther ?? "")
+                  : undefined,
+              }))
             }
-            placeholder={t("healthProfile.disease.otherPlaceholder")}
-            error={errors.chronicDiseasesOther}
-            style={{ marginTop: theme.spacing.md }}
           />
-        )}
-      </View>
+          {hasChronicOther && (
+            <TextInput
+              value={form.chronicDiseasesOther ?? ""}
+              onChangeText={(v) =>
+                setForm((prev) => ({ ...prev, chronicDiseasesOther: v }))
+              }
+              placeholder={t("healthProfile.disease.otherPlaceholder")}
+              error={errors.chronicDiseasesOther}
+              style={{ marginTop: theme.spacing.md }}
+            />
+          )}
+        </View>
 
-      <View>
-        <CheckboxDropdown<Allergy>
-          label={t("healthProfile.allergies")}
-          options={ALLERGIES_OPTIONS.map((o) => ({
-            ...o,
-            label: t(`healthProfile.allergy.${o.value}`),
-          }))}
-          values={form.allergies ?? []}
-          onChange={(val) =>
-            setForm((prev) => ({
-              ...prev,
-              allergies: val as Allergy[],
-              allergiesOther: val.includes("other")
-                ? prev.allergiesOther ?? ""
-                : undefined,
-            }))
-          }
-        />
-        {hasAllergyOther && (
-          <TextInput
-            value={form.allergiesOther ?? ""}
-            onChangeText={(v) =>
-              setForm((prev) => ({ ...prev, allergiesOther: v }))
+        <View>
+          <CheckboxDropdown<Allergy>
+            label={t("healthProfile.allergies")}
+            options={ALLERGIES_OPTIONS.map((o) => ({
+              ...o,
+              label: t(`healthProfile.allergy.${o.value}`),
+            }))}
+            values={form.allergies ?? []}
+            onChange={(val) =>
+              setForm((prev) => ({
+                ...prev,
+                allergies: val as Allergy[],
+                allergiesOther: val.includes("other")
+                  ? (prev.allergiesOther ?? "")
+                  : undefined,
+              }))
             }
-            placeholder={t("healthProfile.allergy.otherPlaceholder")}
-            error={errors.allergiesOther}
-            style={{ marginTop: theme.spacing.md }}
           />
-        )}
+          {hasAllergyOther && (
+            <TextInput
+              value={form.allergiesOther ?? ""}
+              onChangeText={(v) =>
+                setForm((prev) => ({ ...prev, allergiesOther: v }))
+              }
+              placeholder={t("healthProfile.allergy.otherPlaceholder")}
+              error={errors.allergiesOther}
+              style={{ marginTop: theme.spacing.md }}
+            />
+          )}
+        </View>
+
+        <LongTextInput
+          label={t("healthProfile.lifestyle")}
+          value={form.lifestyle ?? ""}
+          onChangeText={(val) =>
+            setForm((prev) => ({ ...prev, lifestyle: val }))
+          }
+          placeholder={t("healthProfile.lifestylePlaceholder")}
+        />
       </View>
-
-      <LongTextInput
-        label={t("healthProfile.lifestyle")}
-        value={form.lifestyle ?? ""}
-        onChangeText={(val) => setForm((prev) => ({ ...prev, lifestyle: val }))}
-        placeholder={t("healthProfile.lifestylePlaceholder")}
-      />
-
-      <PrimaryButton
-        label={editMode ? t("summary.confirm", "Confirm") : t("next")}
-        onPress={editMode ? onConfirmEdit : handleNext}
-      />
-      <SecondaryButton label={t("back")} onPress={onBack} />
+      <View style={{ gap: theme.spacing.lg }}>
+        <PrimaryButton
+          label={editMode ? t("summary.confirm", "Confirm") : t("skip")}
+          onPress={editMode ? onConfirmEdit : handleNext}
+        />
+        <SecondaryButton label={t("back")} onPress={onBack} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: "column", justifyContent: "center" },
+  container: {
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
 });

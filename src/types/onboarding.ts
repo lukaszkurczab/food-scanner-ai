@@ -28,7 +28,7 @@ export type ChronicDisease =
   | "asthma"
   | "other";
 export type Allergy = "none" | "peanuts" | "gluten" | "lactose" | "other";
-export type AiStyle = "none" | "concise" | "friendly" | "detailed";
+export type AiStyle = "none" | "concise" | "friendly" | "detailed" | "strict";
 export type AiFocus =
   | "none"
   | "mealPlanning"

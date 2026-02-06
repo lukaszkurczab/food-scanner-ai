@@ -56,7 +56,7 @@ export default function OnboardingScreen({ navigation, route }: any) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
-    {}
+    {},
   );
   const [showExitModal, setShowExitModal] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -172,17 +172,6 @@ export default function OnboardingScreen({ navigation, route }: any) {
 
   return (
     <Layout showNavigation={false}>
-      <View style={{ position: "absolute", right: 12, top: 14, zIndex: 10 }}>
-        <IconButton
-          icon={<MaterialIcons name="close" />}
-          onPress={handleExitPress}
-          variant="ghost"
-          accessibilityLabel={
-            mode === "first" ? t("exit_first_a11y") : t("exit_refill_a11y")
-          }
-        />
-      </View>
-
       <ProgressDots step={step} total={STEPS} />
 
       {step === 1 && (

@@ -4,18 +4,17 @@
   "unitsSystem": "Units system",
   "metric": "Metric",
   "imperial": "Imperial",
-  "age": "Age",
+  "age": "Age*",
   "sex": "Sex",
-  "sex.male": "Male",
-  "sex.female": "Female",
   "male": "Male",
   "female": "Female",
   "none": "None",
-  "height": "Height",
-  "heightFt": "Height (ft)",
-  "heightIn": "Height (in)",
-  "weight": "Weight",
+  "height": "Height*",
+  "heightFt": "Height (ft)*",
+  "heightIn": "Height (in)*",
+  "weight": "Weight*",
   "next": "Next",
+  "skip": "Skip",
   "cancel": "Cancel",
   "back": "Back",
   "exit_first_title": "Skip for now?",
@@ -30,7 +29,7 @@
   "exit_refill_a11y": "Close survey",
   "step2_title": "Personalize your plan",
   "step2_description": "Let us know your dietary preferences, activity level, and your goal.",
-  "activityLevel": "Activity level",
+  "activityLevel": "Activity level*",
   "activity": {
     "sedentary": "Sedentary (little or no exercise)",
     "light": "Lightly active (light exercise/sports 1-3 days/week)",
@@ -38,7 +37,7 @@
     "active": "Active (hard exercise/sports 6-7 days/week)",
     "very_active": "Very active (very hard exercise or physical job)"
   },
-  "goalTitle": "Goal",
+  "goalTitle": "Goal*",
   "goal": {
     "lose": "Lose weight",
     "maintain": "Maintain weight",
@@ -113,7 +112,8 @@
       "none": "No preference",
       "concise": "Concise",
       "friendly": "Friendly & motivational",
-      "detailed": "Detailed & scientific"
+      "detailed": "Detailed & scientific",
+      "strict": "Strict & direct"
     },
     "areaOfFocus": "Area of focus",
     "focus": {

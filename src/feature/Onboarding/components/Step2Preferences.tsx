@@ -131,8 +131,8 @@ export default function Step2Preferences({
     setForm((prev) => ({
       ...prev,
       goal: val,
-      calorieDeficit: val === "lose" ? prev.calorieDeficit ?? 0.2 : 0.2,
-      calorieSurplus: val === "increase" ? prev.calorieSurplus ?? 0.2 : 0.2,
+      calorieDeficit: val === "lose" ? (prev.calorieDeficit ?? 0.2) : 0.2,
+      calorieSurplus: val === "increase" ? (prev.calorieSurplus ?? 0.2) : 0.2,
     }));
   }
 
@@ -164,156 +164,166 @@ export default function Step2Preferences({
   };
 
   return (
-    <View style={[styles.container, { gap: theme.spacing.md }] }>
-      <View>
-        <Text
-          style={{
-            fontSize: theme.typography.size.xl,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            textAlign: "center",
-            marginBottom: theme.spacing.sm,
-          }}
-        >
-          {t("step2_title")}
-        </Text>
-        <Text
-          style={{
-            fontSize: theme.typography.size.base,
-            color: theme.textSecondary,
-            textAlign: "center",
-            marginBottom: theme.spacing.md,
-          }}
-        >
-          {t("step2_description")}
-        </Text>
+    <View style={styles.container}>
+      <View style={{ gap: theme.spacing.lg }}>
+        <View>
+          <Text
+            style={{
+              fontSize: theme.typography.size.xl,
+              fontFamily: theme.typography.fontFamily.bold,
+              color: theme.text,
+              textAlign: "center",
+              marginBottom: theme.spacing.sm,
+            }}
+          >
+            {t("step2_title")}
+          </Text>
+          <Text
+            style={{
+              fontSize: theme.typography.size.base,
+              color: theme.textSecondary,
+              textAlign: "center",
+              marginBottom: theme.spacing.md,
+            }}
+          >
+            {t("step2_description")}
+          </Text>
+        </View>
+
+        <CheckboxDropdown
+          label={t("preferences.label")}
+          options={PREFERENCE_OPTIONS.map((o) => ({
+            ...o,
+            label: t(o.label),
+          }))}
+          values={form.preferences}
+          onChange={(newPrefs) =>
+            setForm((prev) => ({ ...prev, preferences: newPrefs }))
+          }
+          error={undefined}
+          disabled={false}
+          disabledValues={disabledPreferences}
+        />
+
+        <Dropdown
+          label={`${t("activityLevel")}*`}
+          value={form.activityLevel}
+          options={[
+            { label: t("activity.sedentary"), value: "sedentary" },
+            { label: t("activity.light"), value: "light" },
+            { label: t("activity.moderate"), value: "moderate" },
+            { label: t("activity.active"), value: "active" },
+            { label: t("activity.very_active"), value: "very_active" },
+          ]}
+          onChange={(val) =>
+            setForm((prev) => ({
+              ...prev,
+              activityLevel: val as ActivityLevel,
+            }))
+          }
+          error={errors.activityLevel}
+        />
+
+        <Dropdown
+          label={`${t("goalTitle")}*`}
+          value={form.goal}
+          options={[
+            { label: t("goal.lose"), value: "lose" },
+            { label: t("goal.maintain"), value: "maintain" },
+            { label: t("goal.increase"), value: "increase" },
+          ]}
+          onChange={(val) =>
+            handleGoalChange(val as "lose" | "maintain" | "increase")
+          }
+          error={errors.goal}
+        />
+
+        {form.goal === "lose" && (
+          <View>
+            <Text
+              style={{
+                fontFamily: theme.typography.fontFamily.medium,
+                color: theme.textSecondary,
+                fontSize: theme.typography.size.base,
+                marginBottom: theme.spacing.xs,
+              }}
+            >
+              {t("calorieDeficit")}{" "}
+              {Math.round((form.calorieDeficit ?? 0.2) * 100)}%
+            </Text>
+            <Slider
+              value={form.calorieDeficit ?? 0.2}
+              minimumValue={MIN_DEFICIT}
+              maximumValue={MAX_DEFICIT}
+              step={0.01}
+              onValueChange={(v) =>
+                setForm((prev) => ({ ...prev, calorieDeficit: v }))
+              }
+            />
+            {errors.calorieDeficit && (
+              <Text
+                style={{
+                  color: theme.error.text,
+                  fontSize: theme.typography.size.sm,
+                }}
+              >
+                {errors.calorieDeficit}
+              </Text>
+            )}
+          </View>
+        )}
+
+        {form.goal === "increase" && (
+          <View>
+            <Text
+              style={{
+                fontFamily: theme.typography.fontFamily.medium,
+                color: theme.textSecondary,
+                fontSize: theme.typography.size.base,
+                marginBottom: theme.spacing.xs,
+              }}
+            >
+              {t("calorieSurplus")}{" "}
+              {Math.round((form.calorieSurplus ?? 0.2) * 100)}%
+            </Text>
+            <Slider
+              value={form.calorieSurplus ?? 0.2}
+              minimumValue={MIN_SURPLUS}
+              maximumValue={MAX_SURPLUS}
+              step={0.01}
+              onValueChange={(v) =>
+                setForm((prev) => ({ ...prev, calorieSurplus: v }))
+              }
+            />
+            {errors.calorieSurplus && (
+              <Text
+                style={{
+                  color: theme.error.text,
+                  fontSize: theme.typography.size.sm,
+                }}
+              >
+                {errors.calorieSurplus}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
-
-      <CheckboxDropdown
-        label={t("preferences.label")}
-        options={PREFERENCE_OPTIONS.map((o) => ({
-          ...o,
-          label: t(o.label),
-        }))}
-        values={form.preferences}
-        onChange={(newPrefs) =>
-          setForm((prev) => ({ ...prev, preferences: newPrefs }))
-        }
-        error={undefined}
-        disabled={false}
-        disabledValues={disabledPreferences}
-      />
-
-      <Dropdown
-        label={t("activityLevel")}
-        value={form.activityLevel}
-        options={[
-          { label: t("activity.sedentary"), value: "sedentary" },
-          { label: t("activity.light"), value: "light" },
-          { label: t("activity.moderate"), value: "moderate" },
-          { label: t("activity.active"), value: "active" },
-          { label: t("activity.very_active"), value: "very_active" },
-        ]}
-        onChange={(val) =>
-          setForm((prev) => ({ ...prev, activityLevel: val as ActivityLevel }))
-        }
-        error={errors.activityLevel}
-      />
-
-      <Dropdown
-        label={t("goalTitle")}
-        value={form.goal}
-        options={[
-          { label: t("goal.lose"), value: "lose" },
-          { label: t("goal.maintain"), value: "maintain" },
-          { label: t("goal.increase"), value: "increase" },
-        ]}
-        onChange={(val) =>
-          handleGoalChange(val as "lose" | "maintain" | "increase")
-        }
-        error={errors.goal}
-      />
-
-      {form.goal === "lose" && (
-        <View>
-          <Text
-            style={{
-              fontFamily: theme.typography.fontFamily.medium,
-              color: theme.textSecondary,
-              fontSize: theme.typography.size.base,
-              marginBottom: theme.spacing.xs,
-            }}
-          >
-            {t("calorieDeficit")}{" "}
-            {Math.round((form.calorieDeficit ?? 0.2) * 100)}%
-          </Text>
-          <Slider
-            value={form.calorieDeficit ?? 0.2}
-            minimumValue={MIN_DEFICIT}
-            maximumValue={MAX_DEFICIT}
-            step={0.01}
-            onValueChange={(v) =>
-              setForm((prev) => ({ ...prev, calorieDeficit: v }))
-            }
-          />
-          {errors.calorieDeficit && (
-            <Text
-              style={{
-                color: theme.error.text,
-                fontSize: theme.typography.size.sm,
-              }}
-            >
-              {errors.calorieDeficit}
-            </Text>
-          )}
-        </View>
-      )}
-
-      {form.goal === "increase" && (
-        <View>
-          <Text
-            style={{
-              fontFamily: theme.typography.fontFamily.medium,
-              color: theme.textSecondary,
-              fontSize: theme.typography.size.base,
-              marginBottom: theme.spacing.xs,
-            }}
-          >
-            {t("calorieSurplus")}{" "}
-            {Math.round((form.calorieSurplus ?? 0.2) * 100)}%
-          </Text>
-          <Slider
-            value={form.calorieSurplus ?? 0.2}
-            minimumValue={MIN_SURPLUS}
-            maximumValue={MAX_SURPLUS}
-            step={0.01}
-            onValueChange={(v) =>
-              setForm((prev) => ({ ...prev, calorieSurplus: v }))
-            }
-          />
-          {errors.calorieSurplus && (
-            <Text
-              style={{
-                color: theme.error.text,
-                fontSize: theme.typography.size.sm,
-              }}
-            >
-              {errors.calorieSurplus}
-            </Text>
-          )}
-        </View>
-      )}
-
-      <PrimaryButton
-        label={editMode ? t("summary.confirm", "Confirm") : t("next")}
-        onPress={editMode ? onConfirmEdit : handleNext}
-        disabled={!canNext}
-      />
-      <SecondaryButton label={t("back")} onPress={onBack} />
+      <View style={{ gap: theme.spacing.lg }}>
+        <PrimaryButton
+          label={editMode ? t("summary.confirm", "Confirm") : t("next")}
+          onPress={editMode ? onConfirmEdit : handleNext}
+          disabled={!canNext}
+        />
+        <SecondaryButton label={t("back")} onPress={onBack} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: "column", justifyContent: "center" },
+  container: {
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
 });

@@ -61,7 +61,7 @@ export default function Step5Summary({
 
   function renderSex() {
     if (form.sex === "male" || form.sex === "female") {
-      return t(`sex.${form.sex}`);
+      return t(`${form.sex}`);
     }
     return t("none");
   }
