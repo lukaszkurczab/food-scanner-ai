@@ -6,8 +6,6 @@
   "imperial": "Imperialny",
   "age": "Wiek",
   "sex": "Płeć",
-  "sex.male": "Mężczyzna",
-  "sex.female": "Kobieta",
   "male": "Mężczyzna",
   "female": "Kobieta",
   "none": "Brak",
@@ -16,6 +14,7 @@
   "heightIn": "Wzrost (cal)",
   "weight": "Waga",
   "next": "Dalej",
+  "skip": "Pomiń",
   "cancel": "Anuluj",
   "back": "Wstecz",
   "exit_first_title": "Wyjść z ankiety?",
@@ -113,7 +112,8 @@
       "none": "Brak preferencji",
       "concise": "Zwięzły",
       "friendly": "Przyjazny i motywujący",
-      "detailed": "Szczegółowy i naukowy"
+      "detailed": "Szczegółowy i naukowy",
+      "strict": "Surowy i bezpośredni"
     },
     "areaOfFocus": "Obszar wsparcia",
     "focus": {
