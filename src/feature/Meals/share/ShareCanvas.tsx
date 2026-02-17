@@ -43,7 +43,6 @@ export default function ShareCanvas({
   carbs,
   options,
   onChange,
-  uiHidden,
   selectedId = null,
   onSelectElement,
   onTapTextElement,
@@ -54,8 +53,8 @@ export default function ShareCanvas({
     options.themePreset === "light"
       ? lightTheme
       : options.themePreset === "dark"
-      ? darkTheme
-      : themeSys;
+        ? darkTheme
+        : themeSys;
 
   const [photoErr, setPhotoErr] = useState(false);
   useEffect(() => setPhotoErr(false), [photoUri]);
@@ -76,12 +75,12 @@ export default function ShareCanvas({
     (chartType === "pie"
       ? "macroPieWithLegend"
       : chartType === "bar"
-      ? "macroBarMini"
-      : chartType === "polarArea"
-      ? "macroPolarArea"
-      : chartType === "radar"
-      ? "macroRadar"
-      : "macroDonut");
+        ? "macroBarMini"
+        : chartType === "polarArea"
+          ? "macroPolarArea"
+          : chartType === "radar"
+            ? "macroRadar"
+            : "macroDonut");
 
   const cardVariant: CardVariant = options.cardVariant ?? "macroSummaryCard";
 
@@ -165,7 +164,7 @@ export default function ShareCanvas({
   const handlePatchCustom = (id: ElementId, patch: Partial<CustomTextItem>) => {
     if (!onChange) return;
     const next = customTexts.map((item) =>
-      item.id === id ? { ...item, ...patch } : item
+      item.id === id ? { ...item, ...patch } : item,
     );
     applyPatch({ customTexts: next });
   };
