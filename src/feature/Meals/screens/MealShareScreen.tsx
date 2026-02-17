@@ -14,6 +14,7 @@ import ShareEditorPanel, {
 import { defaultShareOptions } from "../share/defaultShareOptions";
 import { useTranslation } from "react-i18next";
 import type { ElementId } from "@feature/Meals/share/DraggableItem";
+import { Layout } from "@components/Layout";
 
 type ScreenRoute = RouteProp<RootStackParamList, "MealShare">;
 
@@ -104,17 +105,17 @@ export default function MealShareScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.background }]}>
+    <Layout showNavigation={false} style={styles.root}>
       <ViewShot
         ref={shotRef}
         style={[
           styles.shareCanvas,
-          { width: canvasWidth, height: canvasHeight },
+          { width: canvasWidth - 18, height: canvasHeight - 32 },
         ]}
       >
         <ShareCanvas
-          width={canvasWidth}
-          height={canvasHeight}
+          width={canvasWidth - 18}
+          height={canvasHeight - 32}
           photoUri={meal.photoUrl || null}
           title={meal.name || ""}
           kcal={nutrition.kcal}
@@ -175,18 +176,18 @@ export default function MealShareScreen() {
         onChange={setOpts as any}
         onClose={() => setPanelMode(null)}
         onTapTextElement={handleTapElement}
+        draggable
+        areaW={canvasWidth - 18}
+        areaH={canvasHeight - 32}
       />
-    </View>
+    </Layout>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
-    flexDirection: "column",
-    gap: 12,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingLeft: 8,
+    paddingRight: 8,
   },
   rightBar: {
     position: "absolute",

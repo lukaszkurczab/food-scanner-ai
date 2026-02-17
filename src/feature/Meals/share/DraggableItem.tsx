@@ -13,7 +13,8 @@ export type ElementId =
   | "macros"
   | "photo"
   | "chart"
-  | `custom:${string}`;
+  | `custom:${string}`
+  | "editor-panel";
 
 type Props = {
   id: ElementId;
@@ -32,10 +33,15 @@ type Props = {
     xRatio: number,
     yRatio: number,
     scale: number,
-    rotation: number
+    rotation: number,
   ) => void;
   children: React.ReactNode;
   style?: ViewStyle;
+
+  enablePan?: boolean;
+  enablePinch?: boolean;
+  enableRotate?: boolean;
+  enableTap?: boolean;
 };
 
 export default function DraggableItem({
@@ -54,18 +60,24 @@ export default function DraggableItem({
   onUpdate,
   children,
   style,
+  enablePan = true,
+  enablePinch = true,
+  enableRotate = true,
+  enableTap = true,
 }: Props) {
   const xRatio = useSharedValue(
-    Number.isFinite(initialXRatio as number) ? (initialXRatio as number) : 0.5
+    Number.isFinite(initialXRatio as number) ? (initialXRatio as number) : 0.5,
   );
   const yRatio = useSharedValue(
-    Number.isFinite(initialYRatio as number) ? (initialYRatio as number) : 0.5
+    Number.isFinite(initialYRatio as number) ? (initialYRatio as number) : 0.5,
   );
   const scale = useSharedValue(
-    Number.isFinite(initialScale as number) ? (initialScale as number) : 1
+    Number.isFinite(initialScale as number) ? (initialScale as number) : 1,
   );
   const rotation = useSharedValue(
-    Number.isFinite(initialRotation as number) ? (initialRotation as number) : 0
+    Number.isFinite(initialRotation as number)
+      ? (initialRotation as number)
+      : 0,
   );
 
   const offsetX = useSharedValue(xRatio.value);
@@ -99,6 +111,7 @@ export default function DraggableItem({
   }, [initialXRatio, initialYRatio, initialScale, initialRotation]);
 
   const pan = Gesture.Pan()
+    .enabled(enablePan)
     .averageTouches(true)
     .onStart(() => {
       offsetX.value = xRatio.value;
@@ -115,16 +128,18 @@ export default function DraggableItem({
     .onEnd(() => {
       offsetX.value = xRatio.value;
       offsetY.value = yRatio.value;
-      if (onUpdate)
+      if (onUpdate) {
         runOnJS(onUpdate)(
           xRatio.value,
           yRatio.value,
           scale.value,
-          rotation.value
+          rotation.value,
         );
+      }
     });
 
   const pinch = Gesture.Pinch()
+    .enabled(enablePinch)
     .onStart(() => {
       savedScale.value = scale.value;
     })
@@ -134,16 +149,18 @@ export default function DraggableItem({
     })
     .onEnd(() => {
       savedScale.value = scale.value;
-      if (onUpdate)
+      if (onUpdate) {
         runOnJS(onUpdate)(
           xRatio.value,
           yRatio.value,
           scale.value,
-          rotation.value
+          rotation.value,
         );
+      }
     });
 
   const rotate = Gesture.Rotation()
+    .enabled(enableRotate)
     .onStart(() => {
       savedRotation.value = rotation.value;
     })
@@ -153,17 +170,18 @@ export default function DraggableItem({
     })
     .onEnd(() => {
       savedRotation.value = rotation.value;
-      if (onUpdate)
+      if (onUpdate) {
         runOnJS(onUpdate)(
           xRatio.value,
           yRatio.value,
           scale.value,
-          rotation.value
+          rotation.value,
         );
+      }
     });
 
-  // WAŻNE: tap tylko jeśli gest był naprawdę tapnięciem (mały dystans, krótki czas)
   const tap = Gesture.Tap()
+    .enabled(enableTap)
     .maxDuration(250)
     .maxDistance(10)
     .onEnd((_e, success) => {
@@ -205,7 +223,7 @@ export default function DraggableItem({
             h: e.nativeEvent.layout.height,
           })
         }
-        style={[styleOuter, selected ? { zIndex: 5 } : null]}
+        style={[styleOuter, selected ? { zIndex: 50 } : null]}
       >
         <Animated.View style={[styleInner, style]}>{children}</Animated.View>
       </Animated.View>

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import ColorPickerPanel from "./ColorPickerPanel";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { ElementId } from "./DraggableItem";
+import DraggableItem from "./DraggableItem";
 import ChartEditorPanel from "./editors/ChartEditorPanel";
 import CardEditorPanel from "./editors/CardEditorPanel";
 import TextEditorPanel from "./editors/TextEditorPanel";
@@ -24,6 +25,10 @@ type Props = {
   onChange: (next: any) => void;
   onClose: () => void;
   onTapTextElement?: (id: ElementId) => void;
+
+  draggable?: boolean;
+  areaW?: number;
+  areaH?: number;
 };
 
 export default function ShareEditorPanel({
@@ -34,6 +39,9 @@ export default function ShareEditorPanel({
   onChange,
   onClose,
   onTapTextElement,
+  draggable = false,
+  areaW = 0,
+  areaH = 0,
 }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["share", "common"]);
@@ -100,7 +108,7 @@ export default function ShareEditorPanel({
     (mode !== "text" || !isTextColorEditing) &&
     (mode !== "card" || !isCardColorEditing);
 
-  return (
+  const panelBody = (
     <View
       style={[
         styles.panel,
@@ -122,7 +130,7 @@ export default function ShareEditorPanel({
                   customTexts.length > 0 &&
                   customTexts.some(
                     (ct: any) =>
-                      typeof ct.text === "string" && ct.text.trim().length > 0
+                      typeof ct.text === "string" && ct.text.trim().length > 0,
                   );
 
                 return (
@@ -141,11 +149,7 @@ export default function ShareEditorPanel({
                       }
                     />
                     <Text
-                      style={{
-                        marginLeft: 8,
-                        color: theme.text,
-                        fontSize: 18,
-                      }}
+                      style={{ marginLeft: 8, color: theme.text, fontSize: 18 }}
                     >
                       {item.label}
                     </Text>
@@ -166,11 +170,7 @@ export default function ShareEditorPanel({
                     color={active ? theme.accentSecondary : theme.textSecondary}
                   />
                   <Text
-                    style={{
-                      marginLeft: 8,
-                      color: theme.text,
-                      fontSize: 18,
-                    }}
+                    style={{ marginLeft: 8, color: theme.text, fontSize: 18 }}
                   >
                     {item.label}
                   </Text>
@@ -225,27 +225,55 @@ export default function ShareEditorPanel({
       )}
     </View>
   );
+
+  if (!draggable) return panelBody;
+  if (!areaW || !areaH) return panelBody;
+
+  return (
+    <DraggableItem
+      id="editor-panel"
+      areaX={0}
+      areaY={0}
+      areaW={areaW}
+      areaH={areaH}
+      initialXRatio={options.editorPanelX ?? 0.51}
+      initialYRatio={options.editorPanelY ?? 0.27}
+      initialScale={options.editorPanelScale ?? 1}
+      initialRotation={options.editorPanelRotation ?? 0}
+      enablePan
+      enableTap={false}
+      enablePinch={false}
+      enableRotate={false}
+      onUpdate={(x, y, sc, rot) =>
+        onChange({
+          ...options,
+          editorPanelX: x,
+          editorPanelY: y,
+          editorPanelScale: sc,
+          editorPanelRotation: rot,
+        })
+      }
+      style={{ zIndex: 60 }}
+    >
+      {panelBody}
+    </DraggableItem>
+  );
 }
 
 const styles = StyleSheet.create({
   panel: {
-    position: "absolute",
-    left: 16,
-    right: 64,
-    top: 16,
+    minWidth: 260,
+    maxWidth: 340,
     borderWidth: 1,
     borderRadius: 14,
     padding: 16,
     gap: 12,
-    zIndex: 30,
   },
   section: { marginBottom: 12 },
   label: { fontSize: 16 },
   actions: { alignItems: "center", marginTop: 8 },
   button: { paddingHorizontal: 24, paddingVertical: 8, borderRadius: 8 },
-  checklistContainer: {
-    marginTop: 6,
-  },
+  checklistContainer: { marginTop: 6 },
   dropdownRow: {
     flexDirection: "row",
     alignItems: "center",

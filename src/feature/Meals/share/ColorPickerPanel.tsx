@@ -23,10 +23,9 @@ export default function ColorPickerPanel({ value, onChange }: Props) {
         thumbSize={20}
         style={{ width: "100%" }}
       >
-        <Preview />
+        <Preview hideText={true} />
         <Panel1 />
         <OpacitySlider />
-        <Swatches />
       </ColorPicker>
     </View>
   );
