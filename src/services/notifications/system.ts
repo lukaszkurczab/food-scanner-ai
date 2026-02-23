@@ -10,6 +10,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
 type QuietHours = { startHour: number; endHour: number };
+type NotificationsPrefsDoc = {
+  notifications?: {
+    motivationEnabled?: boolean;
+    statsEnabled?: boolean;
+    weekdays0to6?: number[];
+    quietHours?: { startHour?: number; endHour?: number };
+    daysAhead?: number;
+  };
+};
+
+type SystemMetaDoc = Record<string, { plannedUntil?: number } | undefined>;
 
 const SYS_KEY_PREFIX = "notif:sys:ids:";
 
@@ -29,7 +40,9 @@ async function getStoredIds(uid: string, key: string): Promise<string[]> {
 async function storeIds(uid: string, key: string, ids: string[]) {
   try {
     await AsyncStorage.setItem(sysKey(uid, key), JSON.stringify(ids));
-  } catch {}
+  } catch {
+    // Ignore cache write failures for notification ids.
+  }
 }
 
 async function cancelStored(uid: string, key: string) {
@@ -37,7 +50,9 @@ async function cancelStored(uid: string, key: string) {
   for (const id of ids) {
     try {
       await Notifications.cancelScheduledNotificationAsync(id);
-    } catch {}
+    } catch {
+      // Ignore cancellation failures for stale ids.
+    }
   }
   await storeIds(uid, key, []);
 }
@@ -82,7 +97,7 @@ function upcomingDays(n: number) {
 async function getPrefs(uid: string) {
   const db = getFirestore(getApp());
   const snap = await getDoc(doc(db, "users", uid, "prefs", "global"));
-  const data = snap.exists() ? (snap.data() as any) : {};
+  const data = (snap.exists() ? snap.data() : {}) as NotificationsPrefsDoc;
 
   const motivationOn = !!data?.notifications?.motivationEnabled;
   const statsOn = !!data?.notifications?.statsEnabled;
@@ -110,7 +125,7 @@ async function gatePlanned(uid: string, key: string) {
   const db = getFirestore(getApp());
   const ref = doc(db, "users", uid, "notif_meta", "system");
   const snap = await getDoc(ref);
-  const data = snap.exists() ? (snap.data() as any) : {};
+  const data = (snap.exists() ? snap.data() : {}) as SystemMetaDoc;
   const plannedUntil = Number(data?.[key]?.plannedUntil ?? 0);
 
   return {
@@ -132,7 +147,7 @@ async function scheduleKeyForNextDays(args: {
   weekdays0to6: number[];
   quiet: QuietHours;
   daysAhead: number;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }) {
   const {
     uid,

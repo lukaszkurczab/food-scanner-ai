@@ -1,4 +1,5 @@
 import i18n from "i18next";
+import type { LanguageDetectorAsyncModule } from "i18next";
 import { initReactI18next } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Localization from "expo-localization";
@@ -37,28 +38,32 @@ import pl_diet from "./locales/pl/diet.json";
 
 const STORAGE_KEY = "APP_LANGUAGE";
 
-const languageDetector = {
+const languageDetector: LanguageDetectorAsyncModule = {
   type: "languageDetector",
   async: true,
-  detect: async (cb: (lang: string) => void) => {
+  detect: async () => {
     try {
       const saved = await AsyncStorage.getItem(STORAGE_KEY);
-      if (saved) return cb(saved);
-    } catch {}
+      if (saved) return saved;
+    } catch {
+      // Fallback to device locale when storage is unavailable.
+    }
     const locales = Localization.getLocales?.() || [];
     const code = locales[0]?.languageCode?.toLowerCase() || "en";
-    cb(code === "pl" ? "pl" : "en");
+    return code === "pl" ? "pl" : "en";
   },
   init: () => {},
   cacheUserLanguage: async (lang: string) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, lang);
-    } catch {}
+    } catch {
+      // Ignore persistence errors; language still applies for current session.
+    }
   },
 };
 
 i18n
-  .use(languageDetector as any)
+  .use(languageDetector)
   .use(initReactI18next)
   .init({
     fallbackLng: "en",

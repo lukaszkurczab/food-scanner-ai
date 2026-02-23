@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { View, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import {
@@ -11,7 +11,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, type ParamListBase } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { canUseAiTodayFor, consumeAiUseFor } from "@/services/userService";
 import { extractIngredientsFromText } from "@/services/textMealService";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -25,7 +26,7 @@ export default function MealTextAIScreen() {
   const { t, i18n } = useTranslation(["meals", "chat", "common"]);
   const { uid } = useAuthContext();
   const { isPremium } = usePremiumContext();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
   const { meal, setMeal, saveDraft, setLastScreen } = useMealDraftContext();
 
   const [name, setName] = useState("");
@@ -84,7 +85,7 @@ export default function MealTextAIScreen() {
         timestamp: "",
         source: "ai",
         cloudId: undefined,
-      }) as unknown as Meal,
+      }),
     [],
   );
 
@@ -100,7 +101,8 @@ export default function MealTextAIScreen() {
   const fillDraftAndGo = useCallback(
     async (ings: Ingredient[]) => {
       if (!uid) return;
-      const base = (await ensureDraft()) as Meal;
+      const base = await ensureDraft();
+      if (!base) return;
       const next: Meal = {
         ...base,
         name: name.trim() || base.name,
@@ -364,7 +366,7 @@ export default function MealTextAIScreen() {
         })}
         onPrimaryAction={() => {
           setShowLimitModal(false);
-          navigation.navigate("ManageSubscription" as any);
+          navigation.navigate("ManageSubscription");
         }}
         secondaryActionLabel={t("cancel", {
           ns: "common",

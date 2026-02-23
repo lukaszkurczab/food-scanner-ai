@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { View, Text } from "react-native";
 import DraggableItem, { ElementId } from "./DraggableItem";
 import type { ShareOptions, ShareFont, CustomTextItem } from "@/types/share";
@@ -160,13 +160,32 @@ export default function TextSticker({
       return;
     }
 
-    const patch: Partial<ShareOptions> = {};
-    const key = id; // "title" | "kcal" | "custom:..." (legacy)
-    (patch as any)[`${key}X`] = x;
-    (patch as any)[`${key}Y`] = y;
-    (patch as any)[`${key}Size`] = sc;
-    (patch as any)[`${key}Rotation`] = rot;
-    onPatch?.(patch);
+    if (id === "title") {
+      onPatch?.({
+        titleX: x,
+        titleY: y,
+        titleSize: sc,
+        titleRotation: rot,
+      });
+      return;
+    }
+
+    if (id === "kcal") {
+      onPatch?.({
+        kcalX: x,
+        kcalY: y,
+        kcalSize: sc,
+        kcalRotation: rot,
+      });
+      return;
+    }
+
+    onPatch?.({
+      customX: x,
+      customY: y,
+      customSize: sc,
+      customRotation: rot,
+    });
   };
 
   return (

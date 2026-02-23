@@ -1,4 +1,6 @@
 import type { FormData } from "./onboarding";
+import type { Meal } from "./meal";
+import type { ChatMessage } from "./chatMessage";
 
 export type UserPlan = "free" | "premium";
 export type SyncState = "synced" | "pending" | "conflict";
@@ -22,7 +24,7 @@ export interface UserData extends FormData {
 }
 
 export type ExportedUserData = {
-  profile: any;
-  meals: any[];
-  chatMessages: any[];
+  profile: UserData;
+  meals: Meal[];
+  chatMessages: ChatMessage[];
 };

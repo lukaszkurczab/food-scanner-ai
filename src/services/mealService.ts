@@ -13,6 +13,7 @@ import {
   setDoc,
   limit as fsLimit,
   startAfter,
+  type FirebaseFirestoreTypes,
 } from "@react-native-firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import * as FileSystem from "expo-file-system";
@@ -54,7 +55,7 @@ export type HistoryFilters = {
 export type MealsPage = { items: Meal[]; nextBefore: string | null };
 export type MealsPageV2 = {
   items: Meal[];
-  nextCursor: any | null;
+  nextCursor: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal> | string | null;
 };
 
 function clampDateRange(
@@ -78,33 +79,48 @@ function clampDateRange(
 }
 
 function buildFilteredQuery(uid: string, filters?: HistoryFilters) {
-  const parts: any[] = [];
+  let qBuilt = query(mealsCol(uid), orderBy("timestamp", "desc"));
+
   if (filters?.calories) {
-    parts.push(where("totals.kcal", ">=", filters.calories[0]));
-    parts.push(where("totals.kcal", "<=", filters.calories[1]));
+    qBuilt = query(
+      qBuilt,
+      where("totals.kcal", ">=", filters.calories[0]),
+      where("totals.kcal", "<=", filters.calories[1])
+    );
   }
   if (filters?.protein) {
-    parts.push(where("totals.protein", ">=", filters.protein[0]));
-    parts.push(where("totals.protein", "<=", filters.protein[1]));
+    qBuilt = query(
+      qBuilt,
+      where("totals.protein", ">=", filters.protein[0]),
+      where("totals.protein", "<=", filters.protein[1])
+    );
   }
   if (filters?.carbs) {
-    parts.push(where("totals.carbs", ">=", filters.carbs[0]));
-    parts.push(where("totals.carbs", "<=", filters.carbs[1]));
+    qBuilt = query(
+      qBuilt,
+      where("totals.carbs", ">=", filters.carbs[0]),
+      where("totals.carbs", "<=", filters.carbs[1])
+    );
   }
   if (filters?.fat) {
-    parts.push(where("totals.fat", ">=", filters.fat[0]));
-    parts.push(where("totals.fat", "<=", filters.fat[1]));
+    qBuilt = query(
+      qBuilt,
+      where("totals.fat", ">=", filters.fat[0]),
+      where("totals.fat", "<=", filters.fat[1])
+    );
   }
   if (filters?.dateRange) {
     const s = new Date(filters.dateRange.start);
     const e = new Date(filters.dateRange.end);
     s.setHours(0, 0, 0, 0);
     e.setHours(23, 59, 59, 999);
-    parts.push(where("timestamp", ">=", s.toISOString()));
-    parts.push(where("timestamp", "<=", e.toISOString()));
+    qBuilt = query(
+      qBuilt,
+      where("timestamp", ">=", s.toISOString()),
+      where("timestamp", "<=", e.toISOString())
+    );
   }
-  parts.push(orderBy("timestamp", "desc"));
-  const qBuilt = query(mealsCol(uid), ...parts);
+
   return qBuilt;
 }
 
@@ -112,7 +128,7 @@ export async function getMealsPageFiltered(
   uid: string,
   opts: {
     limit: number;
-    cursor: any | null;
+    cursor: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal> | string | null;
     filters?: HistoryFilters;
     accessWindowDays?: number;
   }
@@ -153,13 +169,17 @@ export async function getMealsPageFiltered(
   }
 
   const base = buildFilteredQuery(uid, effectiveFilters);
-  const q = opts.cursor
+  const q =
+    opts.cursor && typeof opts.cursor !== "string"
     ? query(base, startAfter(opts.cursor), fsLimit(opts.limit))
     : query(base, fsLimit(opts.limit));
   const snap = await getDocs(q);
   const items = snap.docs
-    .map((d: any) => ({ ...(d.data() as Meal), cloudId: d.id }))
-    .filter((m: any) => !m.deleted);
+    .map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal>) => ({
+      ...(d.data() as Meal),
+      cloudId: d.id,
+    }))
+    .filter((m: Meal) => !m.deleted);
   if (!items.length) return { items: [], nextCursor: null };
   const lastDoc = snap.docs[snap.docs.length - 1] ?? null;
   return { items, nextCursor: lastDoc };
@@ -174,8 +194,11 @@ export function subscribeMeals(
     q,
     (snap) => {
       const items = snap.docs
-        .map((d: any) => ({ ...(d.data() as Meal), cloudId: d.id }))
-        .filter((m: any) => !m.deleted);
+        .map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal>) => ({
+          ...(d.data() as Meal),
+          cloudId: d.id,
+        }))
+        .filter((m: Meal) => !m.deleted);
       cb(items);
     },
     () => {}
@@ -183,7 +206,7 @@ export function subscribeMeals(
 }
 
 function computeTotals(meal: Meal) {
-  const ing = (meal.ingredients || []) as any[];
+  const ing = meal.ingredients || [];
   const sum = (k: "kcal" | "protein" | "carbs" | "fat") =>
     ing.reduce((a, b) => a + (Number(b?.[k]) || 0), 0);
   return {
@@ -203,13 +226,15 @@ export async function addOrUpdateMeal(
   const now = new Date().toISOString();
   let imageId: string | null | undefined = meal.imageId ?? null;
   let photoUrl: string | null | undefined = meal.photoUrl ?? null;
+  const mealWithLegacyLocal = meal as Meal & { localPhotoUri?: string | null };
+  const legacyLocalUri = mealWithLegacyLocal.localPhotoUri ?? null;
 
   if (
     (photoUrl &&
       (photoUrl.startsWith("file:") || photoUrl.startsWith("content:"))) ||
-    (typeof meal as any).localPhotoUri
+    legacyLocalUri
   ) {
-    const localUri = (meal as any).localPhotoUri || photoUrl!;
+    const localUri = legacyLocalUri || photoUrl!;
     const net = await NetInfo.fetch();
     if (net.isConnected) {
       const up = await processAndUpload(uid, localUri);
@@ -236,14 +261,14 @@ export async function addOrUpdateMeal(
     tags: meal.tags ?? [],
     deleted: meal.deleted ?? false,
     cloudId,
-    totals: totals as any,
+    totals,
   };
   const batch = writeBatch(db);
-  batch.set(mealDoc(uid, cloudId), normalized as any, { merge: true });
+  batch.set(mealDoc(uid, cloudId), normalized, { merge: true });
   if (opts?.alsoSaveToMyMeals) {
     batch.set(
       myMealDoc(uid, normalized.mealId),
-      { ...normalized, cloudId: normalized.mealId, source: "saved" } as any,
+      { ...normalized, cloudId: normalized.mealId, source: "saved" },
       { merge: true }
     );
   }

@@ -16,17 +16,40 @@ import {
   getDocs,
   setDoc,
   writeBatch,
-  FirebaseFirestoreTypes,
 } from "@react-native-firebase/firestore";
+import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import type { Meal, FormData, ChatMessage } from "@/types";
 import { askDietAI, type Message } from "@/services/askDietAI";
 
 type Options = { pageSize?: number };
+type ChatMessageDoc = {
+  role?: ChatMessage["role"];
+  content?: string;
+  createdAt?: number;
+  lastSyncedAt?: number;
+  deleted?: boolean;
+};
 
-function startOfDayMs(now: number) {
-  const d = new Date(now);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
+function toChatMessage(
+  d: FirebaseFirestoreTypes.QueryDocumentSnapshot,
+  userUid: string,
+): ChatMessage {
+  const data = d.data() as ChatMessageDoc;
+  const role = data.role;
+  return {
+    id: d.id,
+    userUid,
+    role:
+      role === "user" || role === "assistant" || role === "system"
+        ? role
+        : "assistant",
+    content: typeof data.content === "string" ? data.content : "",
+    createdAt: typeof data.createdAt === "number" ? data.createdAt : 0,
+    lastSyncedAt: typeof data.lastSyncedAt === "number" ? data.lastSyncedAt : 0,
+    syncState: "synced",
+    deleted: !!data.deleted,
+    cloudId: d.id,
+  };
 }
 
 function dayKey(ts = Date.now()) {
@@ -111,21 +134,9 @@ export function useChatHistory(
       (snap) => {
         if (!snap) return;
 
-        const items = snap.docs.map((d: { data: () => any; id: any }) => {
-          const data = d.data() as any;
-          return {
-            id: d.id,
-            userUid,
-            role: data.role,
-            content: data.content,
-            createdAt: typeof data.createdAt === "number" ? data.createdAt : 0,
-            lastSyncedAt:
-              typeof data.lastSyncedAt === "number" ? data.lastSyncedAt : 0,
-            syncState: "synced",
-            deleted: !!data.deleted,
-            cloudId: d.id,
-          } as ChatMessage;
-        });
+        const items = snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+          toChatMessage(d, userUid),
+        );
 
         setMessages(items);
         lastDocRef.current = snap.docs[snap.docs.length - 1] ?? null;
@@ -151,21 +162,9 @@ export function useChatHistory(
     );
 
     const snap = await getDocs(q);
-    const older = snap.docs.map((d: { data: () => any; id: any }) => {
-      const data = d.data() as any;
-      return {
-        id: d.id,
-        userUid,
-        role: data.role,
-        content: data.content,
-        createdAt: typeof data.createdAt === "number" ? data.createdAt : 0,
-        lastSyncedAt:
-          typeof data.lastSyncedAt === "number" ? data.lastSyncedAt : 0,
-        syncState: "synced",
-        deleted: !!data.deleted,
-        cloudId: d.id,
-      } as ChatMessage;
-    });
+    const older = snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+      toChatMessage(d, userUid),
+    );
 
     setMessages((prev) => {
       const map = new Map(prev.map((m) => [m.id, m]));

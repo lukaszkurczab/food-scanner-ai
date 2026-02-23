@@ -1,7 +1,10 @@
 import React from "react";
 import { Text, View } from "react-native";
+import type { useTheme } from "@/theme/useTheme";
 
-export const parseMarkdownToReactNative = (text: string, theme: any) => {
+type Theme = ReturnType<typeof useTheme>;
+
+export const parseMarkdownToReactNative = (text: string, theme: Theme) => {
   const lines = text.split("\n");
   const elements: React.ReactNode[] = [];
   let key = 0;
@@ -44,7 +47,7 @@ export const parseMarkdownToReactNative = (text: string, theme: any) => {
     }
 
     if (/^- /.test(line)) {
-      let l = line.replace(/^- /, "");
+      const l = line.replace(/^- /, "");
       const bold = l.match(/\*\*(.+?)\*\*/);
       if (bold) {
         const before = l.split("**")[0];

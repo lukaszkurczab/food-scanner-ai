@@ -1,9 +1,9 @@
 const ON = typeof __DEV__ !== "undefined" && __DEV__;
 
 export type DebugLogger = {
-  log: (...args: any[]) => void;
-  warn: (...args: any[]) => void;
-  error: (...args: any[]) => void;
+  log: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
   time: (label: string) => void;
   timeEnd: (label: string) => void;
   child: (subscope: string) => DebugLogger;
@@ -12,11 +12,11 @@ export type DebugLogger = {
 export function debugScope(scope: string): DebugLogger {
   const p = `[${scope}]`;
   const base = {
-    log: (...args: any[]) => {
+    log: (...args: unknown[]) => {
       if (ON) console.log(p, ...args);
     },
-    warn: (...args: any[]) => console.warn(p, ...args),
-    error: (...args: any[]) => console.error(p, ...args),
+    warn: (...args: unknown[]) => console.warn(p, ...args),
+    error: (...args: unknown[]) => console.error(p, ...args),
     time: (label: string) => {
       if (ON) console.time(`${p} ${label}`);
     },

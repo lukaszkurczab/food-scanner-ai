@@ -5,7 +5,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, type ParamListBase } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import {
   View,
   SectionList,
@@ -71,13 +72,13 @@ const fmtHeader = (d: Date, t: (k: string) => string) => {
 
 const mealKcal = (meal: Meal) =>
   (meal.ingredients || []).reduce(
-    (sum, ing: any) => sum + (Number(ing?.kcal) || 0),
+    (sum, ing) => sum + (Number(ing?.kcal) || 0),
     0,
   ) ||
-  (meal as any)?.totals?.kcal ||
+  meal.totals?.kcal ||
   0;
 
-const norm = (s: any) =>
+const norm = (s: unknown) =>
   String(s || "")
     .toLowerCase()
     .normalize("NFD")
@@ -145,70 +146,83 @@ function sectionsToArray(sections: Map<string, DaySection>): DaySection[] {
 type SectionHeaderProps = {
   title: string;
   total: number;
-  theme: any;
+  theme: ReturnType<typeof useTheme>;
   kcalLabel: string;
 };
 
-const SectionHeader = React.memo(
-  ({ title, total, theme, kcalLabel }: SectionHeaderProps) => (
-    <View
-      style={[
-        styles.sectionHeader,
-        {
-          paddingBottom: theme.spacing.sm,
-        },
-      ]}
+const SectionHeaderComponent = ({
+  title,
+  total,
+  theme,
+  kcalLabel,
+}: SectionHeaderProps) => (
+  <View
+    style={[
+      styles.sectionHeader,
+      {
+        paddingBottom: theme.spacing.sm,
+      },
+    ]}
+  >
+    <Text
+      style={{
+        color: theme.text,
+        fontSize: theme.typography.size.lg,
+        fontWeight: "600",
+      }}
     >
-      <Text
-        style={{
-          color: theme.text,
-          fontSize: theme.typography.size.lg,
-          fontWeight: "600",
-        }}
-      >
-        {title}
-      </Text>
-      <Text
-        style={{
-          color: theme.textSecondary,
-          fontSize: theme.typography.size.md,
-          fontWeight: "400",
-        }}
-      >
-        {total} {kcalLabel}
-      </Text>
-    </View>
-  ),
+      {title}
+    </Text>
+    <Text
+      style={{
+        color: theme.textSecondary,
+        fontSize: theme.typography.size.md,
+        fontWeight: "400",
+      }}
+    >
+      {total} {kcalLabel}
+    </Text>
+  </View>
 );
+
+const SectionHeader = React.memo(SectionHeaderComponent);
+SectionHeader.displayName = "SectionHeader";
 
 const MemoMealListItem = React.memo(MealListItem);
 
 type HistoryRowProps = {
   meal: Meal;
-  navigation: any;
-  theme: any;
+  navigation: StackNavigationProp<ParamListBase>;
+  theme: ReturnType<typeof useTheme>;
 };
 
-const HistoryRow = React.memo(
-  ({ meal, navigation, theme }: HistoryRowProps) => (
-    <View
-      style={{
-        marginBottom: theme.spacing.sm,
-      }}
-    >
-      <MemoMealListItem
-        meal={meal}
-        onPress={() => navigation.navigate("MealDetails", { meal })}
-        onEdit={() => {}}
-        onDuplicate={() => {}}
-        onDelete={() => {}}
-      />
-    </View>
-  ),
-  (prev, next) => prev.meal === next.meal,
+const HistoryRowComponent = ({ meal, navigation, theme }: HistoryRowProps) => (
+  <View
+    style={{
+      marginBottom: theme.spacing.sm,
+    }}
+  >
+    <MemoMealListItem
+      meal={meal}
+      onPress={() => navigation.navigate("MealDetails", { meal })}
+      onEdit={() => {}}
+      onDuplicate={() => {}}
+      onDelete={() => {}}
+    />
+  </View>
 );
 
-export default function HistoryListScreen({ navigation }: { navigation: any }) {
+const HistoryRow = React.memo(
+  HistoryRowComponent,
+  (prev, next) => prev.meal === next.meal,
+);
+HistoryRow.displayName = "HistoryRow";
+
+export default function HistoryListScreen({
+  navigation,
+}: {
+  navigation: StackNavigationProp<ParamListBase>;
+}) {
   const theme = useTheme();
   const netInfo = useNetInfo();
   const { uid } = useAuthContext();
@@ -307,7 +321,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   useEffect(() => {
     if (!uid) return;
 
-    const up = on("meal:local:upserted", async (e: any) => {
+    const up = on("meal:local:upserted", async (e?: { cloudId?: string }) => {
       const id = String(e?.cloudId || "");
       if (!id) return;
       const m = await getMealByCloudIdLocal(uid, id);
@@ -319,7 +333,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
       });
     });
 
-    const del = on("meal:local:deleted", async (e: any) => {
+    const del = on("meal:local:deleted", async (e?: { cloudId?: string }) => {
       const id = String(e?.cloudId || "");
       if (!id) return;
       setSectionsMap((prev) => {
@@ -378,10 +392,10 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
     const filtered: DaySection[] = [];
     for (const sec of all) {
       const data = sec.data.filter((m) => {
-        const title = norm((m as any).title || (m as any).name || "");
+        const title = norm(m.name || "");
         const ing = norm(
           (m.ingredients || [])
-            .map((x: any) => x?.name || x?.title || "")
+            .map((x) => x?.name || "")
             .join(" "),
         );
         return title.includes(q) || ing.includes(q);
@@ -397,7 +411,7 @@ export default function HistoryListScreen({ navigation }: { navigation: any }) {
   const kcalLabel = t("common:kcal");
 
   const keyExtractor = useCallback(
-    (item: Meal) => (item as any).cloudId || (item as any).mealId,
+    (item: Meal) => item.cloudId || item.mealId,
     [],
   );
 

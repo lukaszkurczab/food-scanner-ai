@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,18 +16,23 @@ import { MetricsGrid, type MetricKey } from "../components/MetricsGrid";
 import { LineSection } from "../components/LineSection";
 import { MacroPieCard } from "../components/MacroPieCard";
 import { ProgressAveragesCard } from "../components/ProgressAveragesCard";
-import { BottomTabBar, DateInput, Layout, UserIcon } from "@/components";
+import { DateInput, Layout } from "@/components";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { useTranslation } from "react-i18next";
 import { useMeals } from "@hooks/useMeals";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FREE_WINDOW_DAYS } from "@/services/mealService";
-import type { Meal } from "@/types/meal";
+import type { ParamListBase } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import OfflineBanner from "@/components/OfflineBanner";
 
 type RangeKey = "7d" | "30d" | "custom";
+type StatisticsNavigation = StackNavigationProp<ParamListBase>;
+type Props = {
+  navigation: StatisticsNavigation;
+};
 
-export default function StatisticsScreen({ navigation }: any) {
+export default function StatisticsScreen({ navigation }: Props) {
   const theme = useTheme();
   const net = useNetInfo();
   const { t } = useTranslation(["statistics", "common"]);
@@ -38,12 +43,7 @@ export default function StatisticsScreen({ navigation }: any) {
   const isPremium = sub?.state === "premium_active";
   const accessWindowDays = isPremium ? undefined : FREE_WINDOW_DAYS;
 
-  const {
-    meals: rawMeals,
-    getMeals,
-    loadingMeals,
-  } = (useMeals(uid) as any) ?? {};
-  const meals: Meal[] = Array.isArray(rawMeals) ? rawMeals : [];
+  const { meals, getMeals, loading: loadingMeals } = useMeals(uid);
 
   const [active, setActive] = useState<RangeKey>("7d");
   const [customRange, setCustomRange] = useState({
@@ -119,28 +119,26 @@ export default function StatisticsScreen({ navigation }: any) {
       labels.push(fmt(d));
     }
     const endInclusive = new Date(+end + DAY - 1);
-    const inRangeMeals = meals.filter((m: any) => {
+    const inRangeMeals = meals.filter((m) => {
       const ts = new Date(m.timestamp || m.updatedAt || m.createdAt);
       return ts >= start && ts <= endInclusive;
     });
     for (const m of inRangeMeals) {
-      const ts = new Date(
-        (m as any).timestamp || (m as any).updatedAt || (m as any).createdAt,
-      );
+      const ts = new Date(m.timestamp || m.updatedAt || m.createdAt);
       ts.setHours(0, 0, 0, 0);
       const idx = Math.floor((+ts - +start) / DAY);
       if (idx >= 0 && idx < bucketCount) {
-        const ings = (m as any).ingredients || [];
+        const ings = m.ingredients || [];
         if (ings.length) {
           for (const ing of ings) {
             buckets[idx].protein += Number(ing?.protein) || 0;
             buckets[idx].carbs += Number(ing?.carbs) || 0;
             buckets[idx].fat += Number(ing?.fat) || 0;
           }
-        } else if ((m as any).totals) {
-          buckets[idx].protein += Number((m as any).totals.protein) || 0;
-          buckets[idx].carbs += Number((m as any).totals.carbs) || 0;
-          buckets[idx].fat += Number((m as any).totals.fat) || 0;
+        } else if (m.totals) {
+          buckets[idx].protein += Number(m.totals.protein) || 0;
+          buckets[idx].carbs += Number(m.totals.carbs) || 0;
+          buckets[idx].fat += Number(m.totals.fat) || 0;
         }
       }
     }

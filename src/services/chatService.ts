@@ -13,6 +13,7 @@ import {
   startAfter,
   getDocs,
 } from "@react-native-firebase/firestore";
+import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import type { ChatMessage } from "@/types";
 
 function db() {
@@ -23,7 +24,10 @@ function col(userUid: string) {
   return collection(db(), "users", userUid, "chat_messages");
 }
 
-export type ChatPage = { items: ChatMessage[]; nextCursor: any | null };
+type ChatMessageDoc = Omit<ChatMessage, "id"> & { id?: string };
+type ChatCursor = FirebaseFirestoreTypes.QueryDocumentSnapshot;
+
+export type ChatPage = { items: ChatMessage[]; nextCursor: ChatCursor | null };
 
 export function subscribeToChat(
   userUid: string,
@@ -32,8 +36,8 @@ export function subscribeToChat(
 ) {
   const q = query(col(userUid), orderBy("createdAt", "desc"), limit(pageSize));
   return onSnapshot(q, (snap) => {
-    const items = snap.docs.map((d: any) => ({
-      ...(d.data() as ChatMessage),
+    const items = snap.docs.map((d: ChatCursor) => ({
+      ...(d.data() as ChatMessageDoc),
       id: d.id,
     }));
     onUpdate(items);
@@ -43,7 +47,7 @@ export function subscribeToChat(
 export async function fetchPage(
   userUid: string,
   pageSize = 50,
-  cursor?: any | null
+  cursor?: ChatCursor | null
 ): Promise<ChatPage> {
   const base = query(
     col(userUid),
@@ -52,8 +56,8 @@ export async function fetchPage(
   );
   const q = cursor ? query(base, startAfter(cursor)) : base;
   const snap = await getDocs(q);
-  const items = snap.docs.map((d: any) => ({
-    ...(d.data() as ChatMessage),
+  const items = snap.docs.map((d: ChatCursor) => ({
+    ...(d.data() as ChatMessageDoc),
     id: d.id,
   }));
   const nextCursor =

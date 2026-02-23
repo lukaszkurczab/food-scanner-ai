@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -14,8 +14,18 @@ import ListItem from "../components/ListItem";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useUserContext } from "@contexts/UserContext";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function ChangeUserDataScreen({ navigation }: any) {
+type EditUserDataNavigation = StackNavigationProp<RootStackParamList, "EditUserData">;
+
+type ChangeUserDataScreenProps = {
+  navigation: EditUserDataNavigation;
+};
+
+export default function ChangeUserDataScreen({
+  navigation,
+}: ChangeUserDataScreenProps) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const [photoModal, setPhotoModal] = useState(false);
@@ -102,7 +112,9 @@ export default function ChangeUserDataScreen({ navigation }: any) {
                   setIsUploading(true);
                   try {
                     await setAvatar(result.assets[0].uri);
-                  } catch (e) {}
+                  } catch {
+                    // Keep current avatar if upload fails.
+                  }
                   setIsUploading(false);
                 }
               }}

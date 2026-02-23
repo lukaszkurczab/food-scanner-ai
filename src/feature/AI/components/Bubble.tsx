@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import type { TextStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
 type Props = {
@@ -16,7 +17,7 @@ export const Bubble: React.FC<Props> = ({ role, text, timestamp }) => {
   const INLINE_MARK = /\*\*[^*]+\*\*|\*[^*]+\*/g;
 
   const renderInlineSegments = (content: string, keyPrefix: string) => {
-    const segments: Array<{ key: string; value: string; style?: any }> = [];
+    const segments: Array<{ key: string; value: string; style?: TextStyle }> = [];
     let lastIndex = 0;
 
     content.replace(INLINE_MARK, (match, offset) => {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { View, Image, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { lightTheme, darkTheme } from "@/theme/themes";
@@ -61,8 +61,8 @@ export default function ShareCanvas({
 
   const applyPatch = (p: Partial<ShareOptions>) => {
     if (!onChange) return;
-    for (const key in p) {
-      if ((p as any)[key] !== (options as any)[key]) {
+    for (const key of Object.keys(p) as Array<keyof ShareOptions>) {
+      if (p[key] !== options[key]) {
         onChange({ ...options, ...p });
         return;
       }
@@ -155,7 +155,8 @@ export default function ShareCanvas({
   const cardMacroFat = options.cardMacroFatColor || String(palette.macro.fat);
 
   const cardFontFamilyKey = options.cardFontFamilyKey || null;
-  const cardFontWeight = options.cardFontWeight || "500";
+  const cardFontWeight: "300" | "500" | "700" | "normal" | "bold" =
+    options.cardFontWeight || "500";
   const cardFontFamily =
     cardFontFamilyKey && cardFontWeight
       ? `${cardFontFamilyKey}-${cardFontWeight}`
@@ -220,7 +221,7 @@ export default function ShareCanvas({
         )}
 
         {overlayStyle && (
-          <View style={[StyleSheet.absoluteFill, overlayStyle as any]} />
+          <View style={[StyleSheet.absoluteFill, overlayStyle]} />
         )}
 
         {options.showTitle !== false && (
@@ -361,7 +362,7 @@ export default function ShareCanvas({
                   fat: cardMacroFat,
                 }}
                 fontFamily={cardFontFamily}
-                fontWeight={cardFontWeight as any}
+                fontWeight={cardFontWeight}
               />
             </View>
           </DraggableItem>

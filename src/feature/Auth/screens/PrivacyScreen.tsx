@@ -1,12 +1,19 @@
-import React from "react";
-import { View, Dimensions, StyleSheet } from "react-native";
+import { Dimensions, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { Layout, PrimaryButton } from "@/components";
 import { ScrollableBox } from "@/components/ScrollableBox";
 import { parseMarkdownToReactNative } from "@/utils/parseMarkdownToReactNative";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function PrivacyScreen({ navigation }: any) {
+type PrivacyNavigation = StackNavigationProp<RootStackParamList, "Privacy">;
+
+type PrivacyScreenProps = {
+  navigation: PrivacyNavigation;
+};
+
+export default function PrivacyScreen({ navigation }: PrivacyScreenProps) {
   const { t } = useTranslation("privacy");
   const theme = useTheme();
 

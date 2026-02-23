@@ -14,6 +14,8 @@ import {
   Modal,
   StyleSheet,
   Dimensions,
+  StyleProp,
+  ViewStyle,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -33,7 +35,7 @@ type CheckboxDropdownProps<T extends string | number> = {
   error?: string;
   disabled?: boolean;
   disabledValues?: T[];
-  style?: any;
+  style?: StyleProp<ViewStyle>;
   renderLabel?: (option: Option<T>) => React.ReactNode;
 };
 

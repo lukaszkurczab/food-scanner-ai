@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -8,7 +8,7 @@ import {
   DeviceEventEmitter,
   Linking,
 } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { CameraView, useCameraPermissions, type BarcodeType } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -27,7 +27,7 @@ import { Alert as AppAlert } from "@/components/Alert";
 import { getSampleMealUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
 import { useUserContext } from "@contexts/UserContext";
-import type { Ingredient } from "@/types";
+import type { Ingredient, Meal } from "@/types";
 import type {
   MealAddScreenProps,
   MealAddScreenName,
@@ -60,8 +60,8 @@ export default function MealCameraScreen({
   const routeId = params?.id as string | undefined;
   const skipDetection = !!params?.skipDetection;
   const returnTo: MealAddScreenName =
-    (params?.returnTo as MealAddScreenName) || "ReviewIngredients";
-  const attempt = (params?.attempt as number | undefined) || 1;
+    params?.returnTo || "ReviewIngredients";
+  const attempt = params?.attempt || 1;
 
   const mealId = meal?.mealId || routeId || uuidv4();
   const [scannedCode, setScannedCode] = useState<string | null>(null);
@@ -123,14 +123,18 @@ export default function MealCameraScreen({
           DeviceEventEmitter.emit("barcode.scanned.ingredient", {
             ingredient,
           } as { ingredient: Ingredient });
-          flow.goTo(returnTo, {} as any);
+          if (returnTo === "Result") {
+            flow.goTo("Result", {});
+          } else {
+            flow.goTo("ReviewIngredients", {});
+          }
           return;
         }
 
         const resolvedName = name || `Barcode ${code}`;
 
         if (!meal) {
-          setMeal({
+          const nextMeal: Meal = {
             mealId,
             userUid: uid || "",
             name: resolvedName,
@@ -145,15 +149,15 @@ export default function MealCameraScreen({
             type: "other",
             timestamp: "",
             source: "manual",
-            cloudId: undefined,
-          } as any);
+          };
+          setMeal(nextMeal);
         } else {
           updateMeal({
             mealId,
             name: resolvedName,
             notes: `barcode:${code}`,
             ingredients: [ingredient],
-          } as any);
+          });
         }
 
         flow.goTo("ReviewIngredients", {});
@@ -194,7 +198,9 @@ export default function MealCameraScreen({
         const uri = await getSampleMealUri();
         setPhotoUri(uri);
         return;
-      } catch {}
+      } catch {
+        // Ignore missing local sample image in development mode.
+      }
     }
 
     if (mode === "barcode" && !skipDetection) {
@@ -224,7 +230,7 @@ export default function MealCameraScreen({
     setIsLoading(true);
     try {
       if (!meal) {
-        setMeal({
+        const nextMeal: Meal = {
           mealId,
           userUid: uid || "",
           name: null,
@@ -239,8 +245,8 @@ export default function MealCameraScreen({
           type: "other",
           timestamp: "",
           source: null,
-          cloudId: undefined,
-        } as any);
+        };
+        setMeal(nextMeal);
       } else {
         updateMeal({ photoUrl: finalUri, mealId });
       }
@@ -280,6 +286,15 @@ export default function MealCameraScreen({
   };
 
   const handleRetake = () => setPhotoUri(null);
+
+  const barcodeTypes: BarcodeType[] = [
+    "ean13",
+    "ean8",
+    "upc_a",
+    "upc_e",
+    "qr",
+    "code128",
+  ];
 
   if (!permission) {
     return (
@@ -405,15 +420,8 @@ export default function MealCameraScreen({
             }}
             barcodeScannerSettings={
               {
-                barcodeTypes: [
-                  "ean13",
-                  "ean8",
-                  "upc_a",
-                  "upc_e",
-                  "qr",
-                  "code128",
-                ],
-              } as any
+                barcodeTypes,
+              }
             }
           />
           <View style={StyleSheet.absoluteFill}>
@@ -471,7 +479,7 @@ export default function MealCameraScreen({
                       borderColor: theme.border,
                       top: "50%",
                       transform: [{ translateY: -144 }],
-                    } as any,
+                    },
                   ]}
                 >
                   <Text

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import {
   Layout,
   Card,
@@ -22,31 +23,36 @@ import {
 import { FallbackImage } from "../components/FallbackImage";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import type { Meal, MealType, Ingredient } from "@/types/meal";
+import type { RootStackParamList } from "@/navigation/navigate";
 import { useMeals } from "@hooks/useMeals";
 import { useAuthContext } from "@/context/AuthContext";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system";
 
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
+type ScreenRoute = RouteProp<RootStackParamList, "MealDetails">;
+type MealDetailsNavigation = StackNavigationProp<RootStackParamList>;
+
 function normalizeForCompare(m: Meal) {
-  const { updatedAt, localPhotoUrl, photoLocalPath, ...rest } = m as any;
-  return rest;
+  return {
+    ...m,
+    updatedAt: "",
+    localPhotoUrl: undefined,
+    photoLocalPath: undefined,
+  };
 }
 
 export default function MealDetailsScreen() {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
-  const route = useRoute<any>();
-  const navigation = useNavigation<any>();
-  const params = route.params || {};
+  const route = useRoute<ScreenRoute>();
+  const navigation = useNavigation<MealDetailsNavigation>();
+  const params = route.params;
   const initialMeal: Meal | undefined = params.meal;
   const forceEdit: boolean = !!params.edit;
   const baselineFromRoute: Meal | undefined = params.baseline;
 
-  const routeMealId =
-    (initialMeal?.cloudId as string | undefined) ??
-    (initialMeal?.mealId as string | undefined) ??
-    null;
+  const routeMealId = initialMeal?.cloudId ?? initialMeal?.mealId ?? null;
 
   const { uid } = useAuthContext();
   const { updateMeal } = useMeals(uid || "");
@@ -66,10 +72,7 @@ export default function MealDetailsScreen() {
 
   useEffect(() => {
     if (!routeMealId) return;
-    const currentId =
-      (draft?.cloudId as string | undefined) ??
-      (draft?.mealId as string | undefined) ??
-      null;
+    const currentId = draft?.cloudId ?? draft?.mealId ?? null;
     if (currentId !== routeMealId) {
       setDraft(initialMeal ?? null);
       if (forceEdit && initialMeal) {
@@ -80,16 +83,16 @@ export default function MealDetailsScreen() {
   }, [routeMealId]);
 
   useEffect(() => {
-    const localFromParams: string | undefined = params.localPhotoUrl;
+    const localFromParams = params.localPhotoUrl ?? undefined;
     if (!localFromParams) return;
     setDraft((d) =>
       d
-        ? ({
+        ? {
             ...d,
             localPhotoUrl: localFromParams,
             photoLocalPath: localFromParams,
             photoUrl: localFromParams,
-          } as Meal)
+          }
         : d,
     );
     navigation.setParams({ ...params, localPhotoUrl: undefined });
@@ -204,9 +207,9 @@ export default function MealDetailsScreen() {
     if (!draft || saving) return;
     setSaving(true);
     const next: Meal = { ...draft, updatedAt: new Date().toISOString() };
-    const { localPhotoUrl, ...toPersist } = next as any;
+    const toPersist: Meal = { ...next, localPhotoUrl: undefined };
     try {
-      await updateMeal(toPersist as Meal);
+      await updateMeal(toPersist);
       setEdit(false);
       setEditBaseline(null);
       setDraft(next);
@@ -357,7 +360,7 @@ export default function MealDetailsScreen() {
         {showIngredients &&
           draft.ingredients.map((ingredient, idx) => (
             <IngredientBox
-              key={`${(ingredient as any)?.id || idx}`}
+              key={ingredient.id || String(idx)}
               ingredient={ingredient}
               editable={edit && !saving}
               onSave={(updated) => edit && updateIngredientAt(idx, updated)}

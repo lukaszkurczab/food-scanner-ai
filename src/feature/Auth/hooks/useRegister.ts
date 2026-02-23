@@ -14,6 +14,12 @@ type RegisterErrors = {
   general?: string;
 };
 
+const getErrorCode = (error: unknown): string | null => {
+  if (typeof error !== "object" || !error) return null;
+  const maybeCode = (error as { code?: unknown }).code;
+  return typeof maybeCode === "string" ? maybeCode : null;
+};
+
 async function createDefaultKeepLogging(uid: string) {
   const db = getFirestore(getApp());
   const id = "motivation_keep_logging";
@@ -41,8 +47,9 @@ export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
 
   const clearError = (key: keyof RegisterErrors) => {
     setErrors((prev) => {
-      const { [key]: _, ...rest } = prev;
-      return rest;
+      const next = { ...prev };
+      delete next[key];
+      return next;
     });
   };
 
@@ -85,11 +92,12 @@ export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
       const user = await authRegister(email.trim(), password, username.trim());
       await createDefaultKeepLogging(user.uid);
       setUser(user);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const code = getErrorCode(error);
       const e: RegisterErrors = {};
-      if (error.code === "auth/email-already-in-use") e.email = "email_in_use";
-      else if (error.code === "auth/invalid-email") e.email = "invalid_email";
-      else if (error.code === "auth/weak-password")
+      if (code === "auth/email-already-in-use") e.email = "email_in_use";
+      else if (code === "auth/invalid-email") e.email = "invalid_email";
+      else if (code === "auth/weak-password")
         e.password = "password_too_weak";
       else e.general = "registration_failed";
       setErrors(e);

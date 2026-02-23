@@ -11,8 +11,28 @@ import {
   deleteDoc,
   getDoc,
 } from "@react-native-firebase/firestore";
+import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import type { UserNotification } from "@/types/notification";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+type GlobalPrefsDoc = {
+  notifications?: {
+    motivationEnabled?: boolean;
+    statsEnabled?: boolean;
+  };
+};
+
+type BoolPrefs = { enabled: boolean };
+
+function parseCachedBoolPrefs(cached: string | null): BoolPrefs | null {
+  if (!cached) return null;
+  try {
+    const parsed = JSON.parse(cached) as Partial<BoolPrefs>;
+    return { enabled: !!parsed.enabled };
+  } catch {
+    return null;
+  }
+}
 
 export function useNotifications(uid: string | null) {
   const [items, setItems] = useState<UserNotification[]>([]);
@@ -29,18 +49,25 @@ export function useNotifications(uid: string | null) {
     (async () => {
       try {
         const cached = await AsyncStorage.getItem(`notif:list:${uid}`);
-        if (cached) setItems(JSON.parse(cached));
-      } catch {}
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) setItems(parsed as UserNotification[]);
+        }
+      } catch {
+        // Ignore malformed cache and continue with fresh data.
+      }
       setLoading(false);
     })();
 
     const unsub = onSnapshot(
       collection(db, "users", uid, "notifications"),
       (snap) => {
-        const arr = snap.docs.map((d: any) => ({
+        const arr: UserNotification[] = snap.docs.map(
+          (d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
           id: d.id,
-          ...(d.data() as any),
-        })) as UserNotification[];
+          ...(d.data() as Omit<UserNotification, "id">),
+          })
+        );
         setItems(arr);
         AsyncStorage.setItem(`notif:list:${uid}`, JSON.stringify(arr)).catch(
           () => {}
@@ -60,14 +87,15 @@ export function useNotifications(uid: string | null) {
       const db = getFirestore(app);
       const id = uuidv4();
       const now = Date.now();
+      const payload: UserNotification = {
+        ...data,
+        id,
+        createdAt: now,
+        updatedAt: now,
+      };
       await setDoc(
         doc(db, "users", uidLocal, "notifications", id),
-        {
-          ...data,
-          id,
-          createdAt: now,
-          updatedAt: now,
-        } as any,
+        payload,
         { merge: true }
       );
       return id;
@@ -80,9 +108,13 @@ export function useNotifications(uid: string | null) {
       const app = getApp();
       const db = getFirestore(app);
       const now = Date.now();
+      const payload: Partial<UserNotification> & Pick<UserNotification, "updatedAt"> = {
+        ...patch,
+        updatedAt: now,
+      };
       await setDoc(
         doc(db, "users", uidLocal, "notifications", id),
-        { ...patch, updatedAt: now } as any,
+        payload,
         { merge: true }
       );
     },
@@ -108,20 +140,23 @@ export function useNotifications(uid: string | null) {
       const ref = doc(db, "users", uidLocal, "prefs", "global");
       const snap = await getDoc(ref);
 
-      const data = snap.exists() ? (snap.data() as any) : {};
+      const data = (snap.exists() ? snap.data() : {}) as GlobalPrefsDoc;
       const enabled = !!data?.notifications?.motivationEnabled;
       await AsyncStorage.setItem(
         `notif:prefs:${uidLocal}:motivation`,
         JSON.stringify({ enabled })
       );
       return { enabled };
-    } catch (e) {
+    } catch {
       try {
         const cached = await AsyncStorage.getItem(
           `notif:prefs:${uidLocal}:motivation`
         );
-        if (cached) return JSON.parse(cached);
-      } catch {}
+        const parsed = parseCachedBoolPrefs(cached);
+        if (parsed) return parsed;
+      } catch {
+        // Ignore malformed local cache fallback.
+      }
       return { enabled: false };
     }
   }, []);
@@ -132,20 +167,23 @@ export function useNotifications(uid: string | null) {
       const ref = doc(db, "users", uidLocal, "prefs", "global");
       const snap = await getDoc(ref);
 
-      const data = snap.exists() ? (snap.data() as any) : {};
+      const data = (snap.exists() ? snap.data() : {}) as GlobalPrefsDoc;
       const enabled = !!data?.notifications?.statsEnabled;
       await AsyncStorage.setItem(
         `notif:prefs:${uidLocal}:stats`,
         JSON.stringify({ enabled })
       );
       return { enabled };
-    } catch (e) {
+    } catch {
       try {
         const cached = await AsyncStorage.getItem(
           `notif:prefs:${uidLocal}:stats`
         );
-        if (cached) return JSON.parse(cached);
-      } catch {}
+        const parsed = parseCachedBoolPrefs(cached);
+        if (parsed) return parsed;
+      } catch {
+        // Ignore malformed local cache fallback.
+      }
       return { enabled: false };
     }
   }, []);
@@ -164,7 +202,7 @@ export function useNotifications(uid: string | null) {
           `notif:prefs:${uidLocal}:motivation`,
           JSON.stringify({ enabled })
         );
-      } catch (e) {
+      } catch {
         await AsyncStorage.setItem(
           `notif:prefs:${uidLocal}:motivation`,
           JSON.stringify({ enabled })
@@ -188,7 +226,7 @@ export function useNotifications(uid: string | null) {
           `notif:prefs:${uidLocal}:stats`,
           JSON.stringify({ enabled })
         );
-      } catch (e) {
+      } catch {
         await AsyncStorage.setItem(
           `notif:prefs:${uidLocal}:stats`,
           JSON.stringify({ enabled })

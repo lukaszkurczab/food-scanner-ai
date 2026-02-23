@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import {
   MealBox,
@@ -17,7 +17,7 @@ import { useUserContext } from "@contexts/UserContext";
 import { useMeals } from "@hooks/useMeals";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import { useAuthContext } from "@/context/AuthContext";
-import type { MealType } from "@/types/meal";
+import type { Meal, MealType } from "@/types/meal";
 import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "@/components/DateTimeSection";
@@ -37,7 +37,7 @@ export default function ResultScreen({
   const { userData } = useUserContext();
   const { addMeal, meals } = useMeals(uid ?? null);
 
-  const isFromSaved = (meal as any)?.source === "saved";
+  const isFromSaved = meal?.source === "saved";
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [saveToMyMeals, setSaveToMyMeals] = useState(isFromSaved);
   const [mealName, setMealName] = useState(meal?.name || autoMealName());
@@ -71,13 +71,13 @@ export default function ResultScreen({
 
   const goShare = () => {
     if (!meal || !uid) return;
-    const pass = {
+    const passMeal: Meal = {
       ...meal,
       name: mealName,
       type: mealType,
       timestamp: selectedAt.toISOString(),
-    } as any;
-    navigation.navigate("MealShare", { meal: pass, returnTo: "Result" });
+    };
+    navigation.navigate("MealShare", { meal: passMeal, returnTo: "Result" });
   };
 
   const handleSave = async () => {
@@ -85,7 +85,7 @@ export default function ResultScreen({
     setSaving(true);
 
     const nowIso = new Date().toISOString();
-    const newMeal = {
+    const newMeal: Meal = {
       ...meal,
       cloudId: meal.cloudId,
       userUid: uid,
@@ -96,7 +96,7 @@ export default function ResultScreen({
       syncState: "pending",
       updatedAt: nowIso,
       source: meal.source ?? "manual",
-    } as any;
+    };
 
     try {
       await addMeal(newMeal, { alsoSaveToMyMeals: saveToMyMeals });
@@ -199,7 +199,7 @@ export default function ResultScreen({
         <>
           {meal.ingredients.map((ingredient, idx) => (
             <IngredientBox
-              key={(ingredient as any)?.id || idx}
+              key={ingredient.id || idx}
               ingredient={ingredient}
               editable={false}
               onSave={(updated) => !saving && updateIngredient(idx, updated)}

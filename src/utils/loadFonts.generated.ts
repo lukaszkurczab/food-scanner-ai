@@ -1,4 +1,4 @@
-export const FONT_MAP: Record<string, any> = {
+export const FONT_MAP: Record<string, number> = {
   "Inter-300": require("@/../assets/fonts/Inter-300.ttf"),
   "Inter-400": require("@/../assets/fonts/Inter-400.ttf"),
   "Inter-500": require("@/../assets/fonts/Inter-500.ttf"),

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,6 @@ import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { NotificationCard } from "@/components/NotificationCard";
 import { ButtonToggle } from "@/components/ButtonToggle";
-import { useNavigation } from "@react-navigation/native";
 import SectionHeader from "../components/SectionHeader";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
@@ -28,12 +27,24 @@ import {
   cancelSystemNotifications,
   runSystemNotifications,
 } from "@/services/notifications/system";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function NotificationsScreen({ navigation }: any) {
+type NotificationsNavigation = StackNavigationProp<
+  RootStackParamList,
+  "Notifications"
+>;
+
+type NotificationsScreenProps = {
+  navigation: NotificationsNavigation;
+};
+
+export default function NotificationsScreen({
+  navigation,
+}: NotificationsScreenProps) {
   const { uid } = useAuthContext();
   const theme = useTheme();
   const { t } = useTranslation("notifications");
-  const nav = useNavigation<any>();
   const {
     items,
     toggle,
@@ -87,7 +98,9 @@ export default function NotificationsScreen({ navigation }: any) {
           }
           await cancelSystemNotifications(uid, "motivation_dont_give_up");
           await cancelSystemNotifications(uid, "stats_weekly_summary");
-        } catch {}
+        } catch {
+          // Keep local toggles unchanged if sync fails.
+        }
       }
     })();
   }, [
@@ -118,7 +131,9 @@ export default function NotificationsScreen({ navigation }: any) {
     setSettingsCtaVisible(false);
     try {
       await Linking.openSettings();
-    } catch {}
+    } catch {
+      // Ignore settings deep-link failures.
+    }
   };
 
   const onConfirmDelete = async () => {
@@ -153,7 +168,7 @@ export default function NotificationsScreen({ navigation }: any) {
               <NotificationCard
                 item={item}
                 onPress={() =>
-                  nav.navigate("NotificationForm", { id: item.id })
+                  navigation.navigate("NotificationForm", { id: item.id })
                 }
                 onToggle={async (en) => {
                   if (!uid) return;
@@ -171,7 +186,7 @@ export default function NotificationsScreen({ navigation }: any) {
 
         <PrimaryButton
           label={t("screen.addReminder")}
-          onPress={() => nav.navigate("NotificationForm", { id: null })}
+          onPress={() => navigation.navigate("NotificationForm", { id: null })}
           style={{ marginBottom: theme.spacing.md }}
         />
 

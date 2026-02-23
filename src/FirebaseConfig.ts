@@ -12,7 +12,9 @@ const firebaseConfig = {
   measurementId: "G-QNQBTJVFEW",
 };
 
-let appPromise: Promise<any>;
+type FirebaseApp = ReturnType<typeof getApp>;
+
+let appPromise: Promise<FirebaseApp>;
 
 if (!getApps().length) {
   appPromise = initializeApp(firebaseConfig);

@@ -1,4 +1,4 @@
-import { createNavigationContainerRef } from "@react-navigation/native";
+import { createNavigationContainerRef, CommonActions } from "@react-navigation/native";
 import type { Meal } from "@/types";
 
 export type RootStackParamList = {
@@ -29,7 +29,7 @@ export type RootStackParamList = {
   Login: undefined;
   CheckMailbox: { email: string };
   ChangeEmailCheckMailbox: { email: string };
-  Onboarding: undefined;
+  Onboarding: { mode?: "first" | "refill" } | undefined;
   Profile: undefined;
   ResetPassword: undefined;
   Terms: undefined;
@@ -57,10 +57,15 @@ export type RootStackParamList = {
   Chat: undefined;
   Summary: undefined;
   Notifications: undefined;
-  NotificationForm: undefined;
+  NotificationForm: { id?: string | null } | undefined;
   Loading: undefined;
   MealTextAI: undefined;
-  MealDetails: { meal: Meal; edit?: boolean; baseline?: Meal };
+  MealDetails: {
+    meal: Meal;
+    edit?: boolean;
+    baseline?: Meal;
+    localPhotoUrl?: string | null;
+  };
   MealShare: { meal: Meal; returnTo: "Result" | "MealDetails" };
   SavedMealsCamera:
     | {
@@ -81,7 +86,12 @@ export function navigate<Name extends ScreenNames>(
   params?: RootStackParamList[Name],
 ) {
   if (navigationRef.isReady()) {
-    navigationRef.navigate(name as any, params as any);
+    navigationRef.dispatch(
+      CommonActions.navigate({
+        name: name as string,
+        params,
+      }),
+    );
   }
 }
 

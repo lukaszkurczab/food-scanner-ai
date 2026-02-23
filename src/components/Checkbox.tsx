@@ -1,12 +1,12 @@
 import React from "react";
-import { TouchableOpacity, StyleSheet } from "react-native";
+import { TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Feather } from "@expo/vector-icons";
 
 type CheckboxProps = {
   checked: boolean;
   onChange: (checked: boolean) => void;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
   disabled?: boolean;
   accessibilityLabel?: string;
 };

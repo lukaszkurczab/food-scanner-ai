@@ -3,8 +3,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ViewStyle,
   TextStyle,
+  StyleProp,
   GestureResponderEvent,
   TouchableOpacityProps,
 } from "react-native";
@@ -13,7 +13,7 @@ import { useTheme } from "@/theme/useTheme";
 type LinkTextProps = {
   children?: React.ReactNode;
   text?: string;
-  style?: ViewStyle | TextStyle;
+  style?: StyleProp<TextStyle>;
   disabled?: boolean;
   onPress?: (event: GestureResponderEvent) => void;
 } & TouchableOpacityProps;
@@ -36,7 +36,7 @@ export const LinkText: React.FC<LinkTextProps> = ({
   );
 };
 
-const styles = (theme: any) =>
+const styles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     link: {
       color: theme.link,

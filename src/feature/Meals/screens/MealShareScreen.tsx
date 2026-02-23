@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { View, StyleSheet, useWindowDimensions, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { RouteProp, useRoute } from "@react-navigation/native";
@@ -10,6 +10,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import ShareCanvas from "@feature/Meals/share/ShareCanvas";
 import ShareEditorPanel, {
   ShareEditorMode,
+  type ShareEditorPanelOptions,
 } from "@feature/Meals/share/ShareEditorPanel";
 import { defaultShareOptions } from "../share/defaultShareOptions";
 import { useTranslation } from "react-i18next";
@@ -28,7 +29,7 @@ export default function MealShareScreen() {
 
   const nutrition = meal.totals ?? { kcal: 0, protein: 0, fat: 0, carbs: 0 };
 
-  const [opts, setOpts] = useState(() => {
+  const [opts, setOpts] = useState<ShareEditorPanelOptions>(() => {
     const defaultKcalText = `${Math.round(nutrition.kcal || 0)} kcal`;
     return {
       ...defaultShareOptions,
@@ -38,7 +39,7 @@ export default function MealShareScreen() {
       textFontFamilyKey: "Inter",
       textFontWeight: "500",
       textFontFamily: "Inter-500",
-    } as any;
+    };
   });
 
   const [panelMode, setPanelMode] = useState<ShareEditorMode | null>(null);
@@ -122,8 +123,8 @@ export default function MealShareScreen() {
           protein={nutrition.protein}
           fat={nutrition.fat}
           carbs={nutrition.carbs}
-          options={opts as any}
-          onChange={setOpts as any}
+          options={opts}
+          onChange={setOpts}
           uiHidden={uiHidden}
           selectedId={selectedId}
           onSelectElement={handleSelectElement}
@@ -171,9 +172,9 @@ export default function MealShareScreen() {
       <ShareEditorPanel
         visible={!!panelMode && !uiHidden}
         mode={panelMode}
-        options={opts as any}
+        options={opts}
         selectedId={selectedId}
-        onChange={setOpts as any}
+        onChange={setOpts}
         onClose={() => setPanelMode(null)}
         onTapTextElement={handleTapElement}
         draggable

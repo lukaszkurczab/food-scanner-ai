@@ -15,7 +15,7 @@ export const ThemeController: React.FC<{ children: React.ReactNode }> = ({
       : undefined;
 
   return (
-    <ThemeProvider mode={mode as any} followSystem={mode === undefined}>
+    <ThemeProvider mode={mode} followSystem={mode === undefined}>
       {children}
     </ThemeProvider>
   );

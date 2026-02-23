@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable, Alert } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Layout, LongTextInput } from "@/components";
@@ -10,8 +10,21 @@ import NetInfo from "@react-native-community/netinfo";
 import * as Device from "expo-device";
 import { sendFeedback } from "@/services/feedbackService";
 import { useAuthContext } from "@/context/AuthContext";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function SendFeedbackScreen({ navigation }: any) {
+type SendFeedbackNavigation = StackNavigationProp<
+  RootStackParamList,
+  "SendFeedback"
+>;
+
+type SendFeedbackScreenProps = {
+  navigation: SendFeedbackNavigation;
+};
+
+export default function SendFeedbackScreen({
+  navigation,
+}: SendFeedbackScreenProps) {
   const theme = useTheme();
   const { t } = useTranslation("profile");
   const [message, setMessage] = useState("");
@@ -59,7 +72,7 @@ export default function SendFeedbackScreen({ navigation }: any) {
       setSent(true);
       setMessage("");
       setAttachment(null);
-    } catch (e) {
+    } catch {
       Alert.alert(
         t("error", { defaultValue: "Error" }),
         t("feedbackSendError", {

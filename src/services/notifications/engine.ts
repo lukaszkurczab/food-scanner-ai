@@ -5,6 +5,7 @@ import {
   getDoc,
   collection,
   getDocs,
+  type FirebaseFirestoreTypes,
 } from "@react-native-firebase/firestore";
 import type { UserNotification, AIStyle } from "@/types/notification";
 import { getNotificationText } from "./texts";
@@ -27,13 +28,20 @@ import { debugScope } from "@/utils/debug";
 
 const running: Record<string, boolean> = {};
 const log = debugScope("Notifications:Engine");
+type UserDoc = { aiStyle?: AIStyle; calorieTarget?: number; targetKcal?: number };
+
+const isAIStyle = (value: unknown): value is AIStyle =>
+  value === "none" ||
+  value === "concise" ||
+  value === "friendly" ||
+  value === "detailed";
 
 export async function loadUserAIStyle(uid: string): Promise<AIStyle> {
   const app = getApp();
   const db = getFirestore(app);
   const snap = await getDoc(doc(db, "users", uid));
-  const style = (snap.data() as any)?.aiStyle || "none";
-  return style as AIStyle;
+  const style = (snap.data() as UserDoc | undefined)?.aiStyle;
+  return isAIStyle(style) ? style : "none";
 }
 
 export async function listNotifications(
@@ -42,10 +50,12 @@ export async function listNotifications(
   const app = getApp();
   const db = getFirestore(app);
   const snap = await getDocs(collection(db, "users", uid, "notifications"));
-  const items = snap.docs.map((d: any) => ({
-    id: d.id,
-    ...(d.data() as any),
-  })) as UserNotification[];
+  const items = snap.docs.map(
+    (d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
+      id: d.id,
+      ...(d.data() as Omit<UserNotification, "id">),
+    }),
+  ) as UserNotification[];
   return items.filter((n) => !!n.type);
 }
 
@@ -70,8 +80,8 @@ export async function reconcileAll(uid: string) {
       }
 
       if (n.type === "meal_reminder") {
-        const mealLabel = (n as any)?.mealKind
-          ? i18n.t(`notifications.meals.${(n as any).mealKind}`)
+        const mealLabel = n.mealKind
+          ? i18n.t(`notifications.meals.${n.mealKind}`)
           : i18n.t("notifications.meals.any");
         const tt = getNotificationText(
           "meal_reminder",
@@ -80,7 +90,7 @@ export async function reconcileAll(uid: string) {
           locale
         );
 
-        if (!(n as any)?.mealKind) {
+        if (!n.mealKind) {
           log.log("schedule daily meal reminder", {
             id: n.id,
             hour: n.time.hour,
@@ -98,7 +108,7 @@ export async function reconcileAll(uid: string) {
           );
         } else {
           const meals = await fetchTodayMeals(uid);
-          if (!hasMealTypeToday(meals, (n as any).mealKind)) {
+          if (!hasMealTypeToday(meals, n.mealKind)) {
             const next = nextOccurrenceForDays(n.time, n.days);
             if (next) {
               log.log("schedule one-shot meal reminder", {
@@ -122,11 +132,11 @@ export async function reconcileAll(uid: string) {
 
       if (n.type === "calorie_goal") {
         const user = await getDoc(doc(getFirestore(getApp()), "users", uid));
-        const data = user.data() as any;
+        const data = user.data() as UserDoc | undefined;
         const target = Number(data?.calorieTarget || data?.targetKcal || 0);
         const meals = await fetchTodayMeals(uid);
         const consumed = sumConsumedKcal(meals);
-        const threshold = (n as any)?.kcalByHour ?? target;
+        const threshold = n.kcalByHour ?? target;
 
         if (isKcalBelowThreshold(consumed, threshold)) {
           const next = nextOccurrenceForDays(n.time, n.days);

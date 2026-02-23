@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -39,7 +39,6 @@ export default function TextEditorPanel({
   options,
   selectedId,
   onChange,
-  onTapTextElement,
   onColorPickingChange,
 }: Props) {
   const theme = useTheme();
@@ -48,13 +47,9 @@ export default function TextEditorPanel({
   const [tempColor, setTempColor] = useState<string | null>(null);
 
   const patch = (p: Partial<ShareOptions>) => {
-    let changed = false;
-    for (const key in p) {
-      if ((p as any)[key] !== (options as any)[key]) {
-        changed = true;
-        break;
-      }
-    }
+    const changed = (Object.keys(p) as Array<keyof ShareOptions>).some(
+      (key) => p[key] !== options[key],
+    );
     if (!changed) return;
     onChange({ ...options, ...p });
   };
@@ -112,7 +107,6 @@ export default function TextEditorPanel({
 
   const isTitle = selectedId === "title";
   const isKcal = selectedId === "kcal";
-  const isCustom = !isTitle && !isKcal;
 
   const textColorPreview = isTitle
     ? options.titleColor || String(theme.text)

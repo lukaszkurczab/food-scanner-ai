@@ -35,7 +35,15 @@ export const BottomTabBar: React.FC = () => {
     borderColor = theme.border;
   }
 
-  const tabs = [
+  type MaterialIconName = React.ComponentProps<typeof MaterialIcons>["name"];
+  type TabItem = {
+    key: string;
+    icon: MaterialIconName;
+    onPress: () => void;
+    isFab?: boolean;
+  };
+
+  const tabs: TabItem[] = [
     { key: "Home", icon: "home-filled", onPress: () => navigate("Home") },
     { key: "Stats", icon: "bar-chart", onPress: () => navigate("Statistics") },
     {
@@ -88,7 +96,7 @@ export const BottomTabBar: React.FC = () => {
                 ]}
               >
                 <MaterialIcons
-                  name={tab.icon as any}
+                  name={tab.icon}
                   size={32}
                   color={theme.onAccent}
                   style={{ alignSelf: "center" }}
@@ -112,7 +120,7 @@ export const BottomTabBar: React.FC = () => {
                 />
               ) : (
                 <MaterialIcons
-                  name={tab.icon as any}
+                  name={tab.icon}
                   size={26}
                   color={theme.text}
                   style={{ alignSelf: "center" }}

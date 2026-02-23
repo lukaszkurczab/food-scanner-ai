@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Meal, Ingredient, MealType } from "@/types/meal";
 import { v4 as uuidv4 } from "uuid";
@@ -175,8 +169,8 @@ export const MealDraftProvider = ({ children }: Props) => {
             ingredients: (prev.ingredients ?? []).map((ing, i) =>
               i === index
                 ? {
-                    ...ingredient,
-                    id: (ing as any)?.id || ingredient.id || uuidv4(),
+                  ...ingredient,
+                    id: ing.id || ingredient.id || uuidv4(),
                   }
                 : ing,
             ),

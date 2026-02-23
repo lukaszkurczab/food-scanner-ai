@@ -22,7 +22,9 @@ export async function cancelAllForNotif(localKey: string) {
     for (const id of ids) {
       try {
         await Notifications.cancelScheduledNotificationAsync(id);
-      } catch {}
+      } catch {
+        // Ignore missing/already-cancelled local IDs.
+      }
     }
   }
   await AsyncStorage.setItem(key(localKey), JSON.stringify([]));
@@ -40,7 +42,7 @@ export async function ensureAndroidChannel() {
       enableVibrate: true,
       enableLights: false,
       showBadge: true,
-    } as any);
+    });
   }
 }
 

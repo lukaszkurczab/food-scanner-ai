@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   StatusBar,
   View,
@@ -7,6 +7,8 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { ScrollView } from "react-native-gesture-handler";
@@ -14,10 +16,10 @@ import BottomTabBar from "@/components/BottomTabBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type LayoutProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   showNavigation?: boolean;
   disableScroll?: boolean;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
 };
 
 const TAB_BAR_HEIGHT = 36;

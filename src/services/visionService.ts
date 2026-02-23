@@ -9,7 +9,6 @@ import { debugScope } from "@/utils/debug";
 
 const log = debugScope("Vision");
 
-const IS_DEV = typeof __DEV__ !== "undefined" && __DEV__;
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
 const VISION_MODEL = "gpt-4o";
 const MAX_TOKENS = 600;
@@ -37,21 +36,40 @@ const toNumber = (v: unknown): number => {
 
 const capFirst = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
-const normalize = (x: any): Ingredient | null => {
-  if (!x || typeof x.name !== "string" || !x.name.trim()) return null;
-  const amount = toNumber(x.amount);
-  const protein = toNumber(x.protein);
-  const fat = toNumber(x.fat);
-  const carbs = toNumber(x.carbs);
-  const kcal = toNumber(x.kcal) || protein * 4 + carbs * 4 + fat * 9;
+type VisionIngredientCandidate = {
+  name?: unknown;
+  amount?: unknown;
+  unit?: unknown;
+  protein?: unknown;
+  fat?: unknown;
+  carbs?: unknown;
+  kcal?: unknown;
+};
+
+type VisionResponse = {
+  error?: { code?: string } | null;
+  choices?: Array<{ message?: { content?: string } }>;
+};
+
+const normalize = (x: unknown): Ingredient | null => {
+  if (!x || typeof x !== "object") return null;
+  const candidate = x as VisionIngredientCandidate;
+  if (typeof candidate.name !== "string" || !candidate.name.trim()) return null;
+
+  const amount = toNumber(candidate.amount);
+  const protein = toNumber(candidate.protein);
+  const fat = toNumber(candidate.fat);
+  const carbs = toNumber(candidate.carbs);
+  const kcal = toNumber(candidate.kcal) || protein * 4 + carbs * 4 + fat * 9;
   if (!isFinite(amount) || amount <= 0) return null;
   const unit =
-    typeof x.unit === "string" && String(x.unit).toLowerCase() === "ml"
+    typeof candidate.unit === "string" &&
+    String(candidate.unit).toLowerCase() === "ml"
       ? ("ml" as const)
       : undefined;
   return {
     id: uuidv4(),
-    name: capFirst(x.name.trim()),
+    name: capFirst(candidate.name.trim()),
     amount,
     unit,
     protein,
@@ -98,10 +116,6 @@ export async function detectIngredientsWithVision(
     log.warn("blocked Vision call: offline");
     throw new Error("offline");
   }
-
-  const FORCE_REAL = true;
-
-  let lastError: any = null;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -165,9 +179,8 @@ export async function detectIngredientsWithVision(
         return null;
       }
 
-      const json = await response.json();
+      const json = (await response.json()) as VisionResponse;
       if (json?.error) {
-        lastError = json.error;
         if (
           attempt === 0 &&
           (json.error.code === "rate_limit_exceeded" || response.status >= 500)
@@ -184,7 +197,7 @@ export async function detectIngredientsWithVision(
       const arrayStr = extractJsonArray(raw) || fallbackJsonArray(raw);
       if (!arrayStr) return null;
 
-      let parsed: any;
+      let parsed: unknown;
       try {
         parsed = JSON.parse(arrayStr);
       } catch {
@@ -205,8 +218,7 @@ export async function detectIngredientsWithVision(
         await consumeAiUseFor(userUid, isPremium, "camera", limit);
 
       return normalized;
-    } catch (error) {
-      lastError = error;
+    } catch {
       if (attempt === 0) {
         await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
         continue;

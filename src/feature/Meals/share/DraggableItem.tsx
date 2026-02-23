@@ -203,7 +203,7 @@ export default function DraggableItem({
       position: "absolute",
       left,
       top,
-    } as any;
+    };
   });
 
   const styleInner = useAnimatedStyle(() => {
@@ -211,7 +211,7 @@ export default function DraggableItem({
     const rot = Number.isFinite(rotation.value) ? rotation.value : 0;
     return {
       transform: [{ scale: sc }, { rotate: `${rot}rad` }],
-    } as any;
+    };
   });
 
   return (

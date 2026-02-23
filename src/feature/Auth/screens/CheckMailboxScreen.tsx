@@ -1,18 +1,32 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { PrimaryButton, ErrorBox, Layout, SecondaryButton } from "@/components";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, type RouteProp } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getFirebaseAuth } from "@/FirebaseConfig";
 import { authSendPasswordReset } from "@/feature/Auth/services/authService";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function CheckMailboxScreen({ navigation }: any) {
+type CheckMailboxRoute = RouteProp<RootStackParamList, "CheckMailbox">;
+type CheckMailboxNavigation = StackNavigationProp<RootStackParamList>;
+type Props = {
+  navigation: CheckMailboxNavigation;
+};
+
+function getErrorCode(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
+}
+
+export default function CheckMailboxScreen({ navigation }: Props) {
   const { t } = useTranslation("resetPassword");
   const theme = useTheme();
-  const route = useRoute<any>();
+  const route = useRoute<CheckMailboxRoute>();
 
   const email =
     route?.params?.email && typeof route.params.email === "string"
@@ -68,14 +82,15 @@ export default function CheckMailboxScreen({ navigation }: any) {
     setSending(true);
     setError(null);
     try {
-      const auth = await getFirebaseAuth();
+      await getFirebaseAuth();
       await authSendPasswordReset(email.trim().toLowerCase());
       setSendAgainDisabled(true);
       setTimer(60);
-    } catch (err: any) {
-      if (err.code === "auth/network-request-failed" || noInternet) {
+    } catch (err: unknown) {
+      const code = getErrorCode(err);
+      if (code === "auth/network-request-failed" || noInternet) {
         setError(t("errorNoInternet"));
-      } else if (err.code === "auth/user-not-found") {
+      } else if (code === "auth/user-not-found") {
         setError(t("errorNotFound") ?? "User not found");
       } else {
         setError(t("errorDefault"));

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
 import { getApp } from "@react-native-firebase/app";
 import {
@@ -8,11 +8,12 @@ import {
   orderBy,
   query,
 } from "@react-native-firebase/firestore";
+import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import type { ChatThread } from "@/types";
 import { Drawer } from "@/components/Drawer";
-import { useTranslation } from "node_modules/react-i18next";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   open: boolean;
@@ -21,6 +22,13 @@ type Props = {
   activeThreadId: string;
   onSelectThread: (threadId: string) => void;
 };
+
+type ChatThreadDoc = Partial<
+  Pick<
+    ChatThread,
+    "title" | "createdAt" | "updatedAt" | "lastMessage" | "lastMessageAt"
+  >
+>;
 
 export function ChatHistorySheet({
   open,
@@ -45,8 +53,8 @@ export function ChatHistorySheet({
       if (!snap) return;
 
       const items: ChatThread[] = snap.docs.map(
-        (d: { data: () => any; id: any }) => {
-          const data = d.data() as any;
+        (d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => {
+          const data = d.data() as ChatThreadDoc;
           return {
             id: d.id,
             userUid,

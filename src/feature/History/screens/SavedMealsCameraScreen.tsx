@@ -1,23 +1,31 @@
-import React, { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text, BackHandler } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, type RouteProp } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { useAuthContext } from "@/context/AuthContext";
 import { Layout, PhotoPreview } from "@/components";
 import { getSampleMealUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
 import type { Meal } from "@/types/meal";
 import { useMeals } from "@hooks/useMeals";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 const log = debugScope("Screen:SavedMealsCamera");
+
+type SavedMealsCameraNavigation = StackNavigationProp<
+  RootStackParamList,
+  "SavedMealsCamera"
+>;
+type SavedMealsCameraRoute = RouteProp<RootStackParamList, "SavedMealsCamera">;
 
 export default function SavedMealsCameraScreen({
   navigation,
 }: {
-  navigation: any;
+  navigation: SavedMealsCameraNavigation;
 }) {
   const theme = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
@@ -27,7 +35,7 @@ export default function SavedMealsCameraScreen({
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const { t } = useTranslation("common");
   const { uid } = useAuthContext();
-  const route = useRoute<any>();
+  const route = useRoute<SavedMealsCameraRoute>();
   const mealFromRoute: Meal | undefined = route.params?.meal;
   const mealId = route.params?.id || mealFromRoute?.mealId || uuidv4();
   const canLeaveRef = useRef(false);
@@ -46,13 +54,14 @@ export default function SavedMealsCameraScreen({
   }, [photoUri]);
 
   useEffect(() => {
-    const unsub = navigation.addListener("beforeRemove", (e: any) => {
+    const unsub = navigation.addListener("beforeRemove", (e) => {
       if (canLeaveRef.current) return;
       if (photoUri) {
         e.preventDefault();
         setPhotoUri(null);
         return;
       }
+      if (!mealFromRoute) return;
       e.preventDefault();
       navigation.replace("MealDetails", { meal: mealFromRoute, edit: true });
     });
@@ -66,7 +75,9 @@ export default function SavedMealsCameraScreen({
         const uri = await getSampleMealUri();
         setPhotoUri(uri);
         return;
-      } catch {}
+      } catch {
+        // Ignore sample loading errors and fallback to real camera.
+      }
     }
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
     setIsTakingPhoto(true);
@@ -83,10 +94,10 @@ export default function SavedMealsCameraScreen({
     if (!finalUri || !mealFromRoute) return;
     const updated: Meal = {
       ...mealFromRoute,
-      mealId: mealId,
+      mealId,
       photoUrl: finalUri,
       updatedAt: new Date().toISOString(),
-    } as Meal;
+    };
     await updateMeal(updated);
     canLeaveRef.current = true;
     navigation.replace("MealDetails", {

@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   StyleProp,
   ViewStyle,
+  TextStyle,
   StyleSheet,
   PressableProps,
 } from "react-native";
@@ -15,7 +16,7 @@ type PrimaryButtonProps = {
   children?: React.ReactNode;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
-  textStyle?: StyleProp<any>;
+  textStyle?: StyleProp<TextStyle>;
 } & PressableProps;
 
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({

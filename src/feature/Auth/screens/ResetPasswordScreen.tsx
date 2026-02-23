@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { View, Keyboard, Platform, Text } from "react-native";
+import { useState, useRef, useEffect } from "react";
+import { View, Keyboard, Platform, Text, TextInput as RNTextInput } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -13,8 +13,21 @@ import {
 } from "@/components";
 import { validateEmail } from "@/utils/validation";
 import { authSendPasswordReset } from "@/feature/Auth/services/authService";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function ResetPasswordScreen({ navigation }: any) {
+type ResetPasswordNavigation = StackNavigationProp<RootStackParamList>;
+type Props = {
+  navigation: ResetPasswordNavigation;
+};
+
+function getErrorCode(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
+}
+
+export default function ResetPasswordScreen({ navigation }: Props) {
   const { t } = useTranslation("resetPassword");
   const theme = useTheme();
 
@@ -24,11 +37,11 @@ export default function ResetPasswordScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [noInternet, setNoInternet] = useState(false);
 
-  const inputRef = useRef<any>(null);
+  const inputRef = useRef<RNTextInput | null>(null);
 
   useEffect(() => {
     if (inputRef.current && Platform.OS !== "web") {
-      setTimeout(() => inputRef.current.focus(), 300);
+      setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, []);
 
@@ -70,16 +83,17 @@ export default function ResetPasswordScreen({ navigation }: any) {
     setError(null);
     setLoading(true);
     try {
-      const auth = await getFirebaseAuth();
+      await getFirebaseAuth();
       await authSendPasswordReset(email.trim().toLowerCase());
       navigation.navigate("CheckMailbox", {
         email: email.trim().toLowerCase(),
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const code = getErrorCode(err);
       setLoading(false);
-      if (err.code === "auth/network-request-failed" || noInternet) {
+      if (code === "auth/network-request-failed" || noInternet) {
         setError(t("errorNoInternet"));
-      } else if (err.code === "auth/user-not-found") {
+      } else if (code === "auth/user-not-found") {
         setError(t("errorNotFound") ?? "User not found");
       } else {
         setError(t("errorGeneric") ?? "Unexpected error");
