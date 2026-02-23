@@ -34,10 +34,10 @@ export type MealDraftContextType = {
   saveDraft: (userUid: string) => Promise<void>;
   loadDraft: (userUid: string) => Promise<void>;
   removeDraft: (userUid: string) => Promise<void>;
-  loadLastScreen: (userUid: string) => void;
+  loadLastScreen: (userUid: string) => Promise<void>;
   lastScreen: string | null;
-  setLastScreen: (userUid: string, screen: string) => void;
-  clearLastScreen: (userUid: string) => void;
+  setLastScreen: (userUid: string, screen: string) => Promise<void>;
+  clearLastScreen: (userUid: string) => Promise<void>;
 };
 
 const MealDraftContext = createContext<MealDraftContextType>({
@@ -59,9 +59,9 @@ const MealDraftContext = createContext<MealDraftContextType>({
   loadDraft: async () => {},
   removeDraft: async () => {},
   lastScreen: null,
-  setLastScreen: () => {},
-  loadLastScreen: () => {},
-  clearLastScreen: () => {},
+  setLastScreen: async () => {},
+  loadLastScreen: async () => {},
+  clearLastScreen: async () => {},
 });
 
 type Props = { children: ReactNode };
@@ -78,7 +78,7 @@ export const MealDraftProvider = ({ children }: Props) => {
         setIsDraft(true);
       }
     },
-    [meal]
+    [meal],
   );
 
   const loadDraft = useCallback(async (userUid: string) => {
@@ -92,32 +92,51 @@ export const MealDraftProvider = ({ children }: Props) => {
     }
   }, []);
 
-  const removeDraft = useCallback(async (userUid: string) => {
-    await AsyncStorage.removeItem(getDraftKey(userUid));
-    setIsDraft(false);
-    clearLastScreen(userUid);
-  }, []);
-
-  const setLastScreen = useCallback(async (userUid: string, screen: string) => {
-    setLastScreenState(screen);
-    await AsyncStorage.setItem(getScreenKey(userUid), screen);
-  }, []);
-
   const clearLastScreen = useCallback(async (userUid: string) => {
     setLastScreenState(null);
     await AsyncStorage.removeItem(getScreenKey(userUid));
   }, []);
 
+  const removeDraft = useCallback(
+    async (userUid: string) => {
+      await AsyncStorage.removeItem(getDraftKey(userUid));
+      setIsDraft(false);
+      await clearLastScreen(userUid);
+    },
+    [clearLastScreen],
+  );
+
+  const setLastScreen = useCallback(async (userUid: string, screen: string) => {
+    const normalized =
+      screen === "MealCamera" ||
+      screen === "ReviewIngredients" ||
+      screen === "IngredientsNotRecognized" ||
+      screen === "BarcodeProductNotFound"
+        ? "AddMeal"
+        : screen;
+
+    setLastScreenState(normalized);
+    await AsyncStorage.setItem(getScreenKey(userUid), normalized);
+  }, []);
+
   const loadLastScreen = useCallback(async (userUid: string) => {
     const screen = await AsyncStorage.getItem(getScreenKey(userUid));
-    setLastScreenState(screen || null);
+    const normalized =
+      screen === "MealCamera" ||
+      screen === "ReviewIngredients" ||
+      screen === "IngredientsNotRecognized" ||
+      screen === "BarcodeProductNotFound"
+        ? "AddMeal"
+        : screen;
+
+    setLastScreenState(normalized || null);
   }, []);
 
   const setMeal = (meal: Meal) => setMealState(meal);
 
   const updateMeal = (patch: Partial<Meal>) => {
     setMealState((prev) =>
-      prev ? { ...prev, ...patch, updatedAt: new Date().toISOString() } : null
+      prev ? { ...prev, ...patch, updatedAt: new Date().toISOString() } : null,
     );
   };
 
@@ -132,7 +151,7 @@ export const MealDraftProvider = ({ children }: Props) => {
             ],
             updatedAt: new Date().toISOString(),
           }
-        : null
+        : null,
     );
   };
 
@@ -144,7 +163,7 @@ export const MealDraftProvider = ({ children }: Props) => {
             ingredients: (prev.ingredients ?? []).filter((_, i) => i !== index),
             updatedAt: new Date().toISOString(),
           }
-        : null
+        : null,
     );
   };
 
@@ -155,12 +174,15 @@ export const MealDraftProvider = ({ children }: Props) => {
             ...prev,
             ingredients: (prev.ingredients ?? []).map((ing, i) =>
               i === index
-                ? { ...ingredient, id: (ing as any)?.id || ingredient.id || uuidv4() }
-                : ing
+                ? {
+                    ...ingredient,
+                    id: (ing as any)?.id || ingredient.id || uuidv4(),
+                  }
+                : ing,
             ),
             updatedAt: new Date().toISOString(),
           }
-        : null
+        : null,
     );
   };
 
@@ -177,7 +199,7 @@ export const MealDraftProvider = ({ children }: Props) => {
             tags: prev.tags ? [...prev.tags, tag] : [tag],
             updatedAt: new Date().toISOString(),
           }
-        : prev
+        : prev,
     );
   };
 
@@ -189,17 +211,16 @@ export const MealDraftProvider = ({ children }: Props) => {
             tags: prev.tags?.filter((t) => t !== tag) || [],
             updatedAt: new Date().toISOString(),
           }
-        : prev
+        : prev,
     );
   };
 
   const clearMeal = useCallback(
     (userUid: string) => {
       setMealState(null);
-      removeDraft(userUid);
-      clearLastScreen(userUid);
+      void removeDraft(userUid);
     },
-    [removeDraft, clearLastScreen]
+    [removeDraft],
   );
 
   return (

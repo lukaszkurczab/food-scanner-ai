@@ -1,6 +1,38 @@
-import { resolveMealImageUrl } from "@/services/mealService.images";
+import * as FileSystem from "expo-file-system";
+import { ensureLocalMealPhoto } from "@/services/mealService.images";
 import type { Meal } from "@/types/meal";
 
+const isLocalUri = (value?: string | null) =>
+  !!value && (value.startsWith("file://") || value.startsWith("content://"));
+
+async function firstExistingLocalUri(meal: Meal): Promise<string | null> {
+  const candidates = [meal.localPhotoUrl, meal.photoLocalPath, meal.photoUrl].filter(
+    isLocalUri
+  ) as string[];
+
+  for (const uri of candidates) {
+    try {
+      const info = await FileSystem.getInfoAsync(uri);
+      if (info.exists) return uri;
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
 export async function getMealImage(meal: Meal): Promise<string | null> {
-  return resolveMealImageUrl(meal.userUid, meal);
+  const existingLocal = await firstExistingLocalUri(meal);
+  if (existingLocal) return existingLocal;
+
+  const ensuredLocal = await ensureLocalMealPhoto({
+    uid: meal.userUid,
+    cloudId: meal.cloudId ?? null,
+    imageId: meal.imageId ?? null,
+    photoUrl: meal.photoUrl ?? null,
+  });
+  if (ensuredLocal) return ensuredLocal;
+
+  return meal.photoUrl ?? null;
 }

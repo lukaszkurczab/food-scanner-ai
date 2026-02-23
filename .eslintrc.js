@@ -4,10 +4,14 @@ module.exports = {
   extends: [
     "eslint:recommended",
     "plugin:react/recommended",
+    "plugin:react/jsx-runtime",
     "plugin:@typescript-eslint/recommended",
   ],
   plugins: ["import"],
   settings: {
+    react: {
+      version: "detect",
+    },
     "import/resolver": {
       alias: {
         map: [

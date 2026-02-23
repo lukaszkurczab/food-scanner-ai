@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Text, Image } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,24 +10,30 @@ import {
 } from "@/components";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
+import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 
 const MAX_ATTEMPTS = 3;
 
-export default function IngredientsNotRecognizedScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+export default function IngredientsNotRecognizedScreen({
+  navigation,
+  flow,
+  params,
+}: MealAddScreenProps<"IngredientsNotRecognized">) {
   const theme = useTheme();
   const { t } = useTranslation("meals");
   const { clearMeal } = useMealDraftContext();
   const { uid } = useAuthContext();
 
-  const { image, id, attempt = 1 } = route.params || {};
+  const image = params?.image;
+  const id = params?.id;
+  const attempt = params?.attempt ?? 1;
+
   const [imgError, setImgError] = useState(false);
   useEffect(() => setImgError(false), [image]);
 
   const handleRetake = () => {
     if (attempt < MAX_ATTEMPTS) {
-      navigation.replace("MealCamera", {
+      flow.goTo("MealCamera", {
         id,
         attempt: attempt + 1,
         returnTo: "IngredientsNotRecognized",
@@ -39,14 +44,12 @@ export default function IngredientsNotRecognizedScreen() {
   };
 
   const handleOtherMethod = () => {
-    if (uid) {
-      clearMeal(uid);
-    }
+    if (uid) clearMeal(uid);
     navigation.replace("MealAddMethod");
   };
 
   const handleCancel = () => {
-    navigation.goBack();
+    flow.goBack();
   };
 
   return (
@@ -70,16 +73,13 @@ export default function IngredientsNotRecognizedScreen() {
             ? t("not_recognized_sub", "Try again or select other method")
             : t(
                 "not_recognized_last",
-                "Please add the meal manually or try later."
+                "Please add the meal manually or try later.",
               )}
         </Text>
         <View style={{ height: 24 }} />
         {attempt < MAX_ATTEMPTS && (
           <PrimaryButton
-            label={`${t(
-              "retake",
-              "Retake photo"
-            )} (${attempt}/${MAX_ATTEMPTS})`}
+            label={`${t("retake", "Retake photo")} (${attempt}/${MAX_ATTEMPTS})`}
             onPress={handleRetake}
             style={{ marginTop: 0 }}
           />
