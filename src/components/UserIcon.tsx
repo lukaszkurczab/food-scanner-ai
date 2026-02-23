@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Image } from "react-native";
+import { View, Image, StyleProp, ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useUserContext } from "@/context/UserContext";
@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 
 type Props = {
   size?: number;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
   avatarLocalPath?: string | null;
   avatarUrl?: string | null;

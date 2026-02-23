@@ -10,6 +10,7 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import Purchases from "react-native-purchases";
+import type { PurchasesPackage } from "react-native-purchases";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import { restorePurchases } from "@/feature/Subscription/services/purchase";
@@ -20,18 +21,36 @@ type Props = {
   onUpgrade?: () => void;
 };
 
-function billingDisabled(): boolean {
-  const extra = (Constants.expoConfig?.extra || {}) as Record<string, any>;
-  return !!extra.disableBilling || !Device.isDevice;
-}
-
 type PriceInfo = {
   priceText: string | null;
   periodText: string | null;
 };
 
-function packagePeriodLabel(p: any): string | null {
-  const type = p?.packageType;
+type ExtraConfig = {
+  disableBilling?: boolean;
+  termsUrl?: string;
+  privacyUrl?: string;
+};
+
+function getExtraConfig(): ExtraConfig {
+  const raw = Constants.expoConfig?.extra;
+  if (!raw || typeof raw !== "object") return {};
+  const extra = raw as Record<string, unknown>;
+  return {
+    disableBilling:
+      typeof extra.disableBilling === "boolean" ? extra.disableBilling : undefined,
+    termsUrl: typeof extra.termsUrl === "string" ? extra.termsUrl : undefined,
+    privacyUrl: typeof extra.privacyUrl === "string" ? extra.privacyUrl : undefined,
+  };
+}
+
+function billingDisabled(): boolean {
+  const extra = getExtraConfig();
+  return !!extra.disableBilling || !Device.isDevice;
+}
+
+function packagePeriodLabel(p: PurchasesPackage): string | null {
+  const type = p.packageType;
   if (type === "MONTHLY") return "per month";
   if (type === "ANNUAL") return "per year";
   return null;
@@ -40,10 +59,9 @@ function packagePeriodLabel(p: any): string | null {
 export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
   const theme = useTheme();
   const { t } = useTranslation("chat");
-  const extra = (Constants.expoConfig?.extra || {}) as Record<string, any>;
-  const termsUrl = typeof extra.termsUrl === "string" ? extra.termsUrl : "";
-  const privacyUrl =
-    typeof extra.privacyUrl === "string" ? extra.privacyUrl : "";
+  const extra = getExtraConfig();
+  const termsUrl = extra.termsUrl ?? "";
+  const privacyUrl = extra.privacyUrl ?? "";
 
   const [loading, setLoading] = useState(false);
   const [priceInfo, setPriceInfo] = useState<PriceInfo>({
@@ -67,14 +85,14 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
         const current = offerings.current;
         const packages = current?.availablePackages ?? [];
         const findById = (id: string) =>
-          packages.find((p: any) => p.identifier === id);
+          packages.find((p) => p.identifier === id);
         const monthly =
           findById("$rc_monthly") ||
-          packages.find((p: any) => p.packageType === "MONTHLY");
+          packages.find((p) => p.packageType === "MONTHLY");
         const annual =
           findById("$rc_annual") ||
-          packages.find((p: any) => p.packageType === "ANNUAL");
-        const selected: any = monthly || annual || packages[0];
+          packages.find((p) => p.packageType === "ANNUAL");
+        const selected = monthly || annual || packages[0] || null;
 
         const product = selected?.product;
         const priceText = product?.priceString

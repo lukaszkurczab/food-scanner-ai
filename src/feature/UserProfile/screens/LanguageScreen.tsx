@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet, FlatList } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Layout, TextInput } from "@/components";
@@ -6,6 +6,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { useUserContext } from "@contexts/UserContext";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 type Language = {
   code: string;
@@ -17,7 +19,13 @@ const LANGUAGES: Language[] = [
   { code: "pl", label: "Polski" },
 ];
 
-export default function LanguageScreen({ navigation }: any) {
+type LanguageNavigation = StackNavigationProp<RootStackParamList, "Language">;
+
+type LanguageScreenProps = {
+  navigation: LanguageNavigation;
+};
+
+export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   const theme = useTheme();
   const { t } = useTranslation();
   const { userData, updateUser } = useUserContext();

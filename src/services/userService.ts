@@ -12,6 +12,7 @@ import {
   writeBatch,
   deleteDoc,
 } from "@react-native-firebase/firestore";
+import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import {
   getStorage,
   ref as storageRef,
@@ -87,7 +88,7 @@ export async function fetchUserFromCloud(
   return snap.exists() ? (snap.data() as UserData) : null;
 }
 
-export async function syncUserProfile(_uid: string): Promise<void> {
+export async function syncUserProfile(): Promise<void> {
   return;
 }
 
@@ -139,7 +140,8 @@ export async function changeUsernameService({
   const usernamesRef = doc(dbi, "usernames", nextKey);
 
   const prevSnap = await getDoc(userRef);
-  const prev = (prevSnap.data() as any)?.username;
+  const prevData = prevSnap.data() as { username?: string } | undefined;
+  const prev = typeof prevData?.username === "string" ? prevData.username : null;
 
   const batch = writeBatch(dbi);
   batch.set(usernamesRef, { uid }, { merge: true });
@@ -193,7 +195,9 @@ export async function exportUserData(uid: string) {
 
   async function fetchSub(name: string) {
     const snap = await getDocs(collection(dbi, USERS, uid, name));
-    return snap.docs.map((d: any) => d.data());
+    return snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+      d.data()
+    );
   }
 
   const meals = await fetchSub("meals");
@@ -235,7 +239,8 @@ export async function deleteUserInFirestoreWithUsername(uid: string) {
   const dbi = db();
   const userRef = doc(collection(dbi, USERS), uid);
   const userSnap = await getDoc(userRef);
-  const username: string | null = (userSnap.data() as any)?.username ?? null;
+  const userData = userSnap.data() as { username?: string } | undefined;
+  const username = typeof userData?.username === "string" ? userData.username : null;
 
   const subcollections = ["meals", "chat_messages"];
   for (const sub of subcollections) {
@@ -246,7 +251,9 @@ export async function deleteUserInFirestoreWithUsername(uid: string) {
       const batch = writeBatch(dbi);
       snap.docs
         .slice(i, i + batchSize)
-        .forEach((d: any) => batch.delete(d.ref));
+        .forEach((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+          batch.delete(d.ref)
+        );
       await batch.commit();
     }
   }
@@ -310,7 +317,13 @@ async function readAiUsage(uid: string): Promise<{
 }> {
   const ref = doc(collection(db(), USERS), uid);
   const snap = await getDoc(ref);
-  const data = snap.exists() ? (snap.data() as any) : {};
+  const data = (snap.exists() ? snap.data() : {}) as {
+    aiDailyUsage?: {
+      date?: string;
+      count?: number;
+      counts?: Partial<Record<AiFeature, number>>;
+    };
+  };
   const today = todayLocal();
 
   const usage = data.aiDailyUsage || null;

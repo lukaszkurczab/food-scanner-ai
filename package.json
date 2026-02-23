@@ -8,6 +8,8 @@
     "android": "npx expo run:android",
     "ios": "npx expo run:ios",
     "prod:test": "npx expo start --no-dev --minify",
+    "tsc": "tsc",
+    "typecheck": "tsc --noEmit",
     "publish:android": "npx eas build -p android --profile production",
     "publish:ios": "npx eas build -p ios --profile production",
     "build:android": "node scripts/build.js android production",

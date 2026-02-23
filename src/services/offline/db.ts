@@ -26,9 +26,7 @@ function columnExists(
   column: string
 ): boolean {
   try {
-    const rows = d.getAllSync<{ name: string }>(
-      `PRAGMA table_info(${table})`
-    ) as any[];
+    const rows = d.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`);
     return Array.isArray(rows)
       ? rows.some((r) => String(r.name).toLowerCase() === column.toLowerCase())
       : false;

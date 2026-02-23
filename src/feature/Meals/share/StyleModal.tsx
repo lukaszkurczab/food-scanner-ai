@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Modal } from "@/components/Modal";
 import { TextInput as StyledInput } from "@/components/TextInput";
 import { parseColor } from "./types/colorUtils";
 import { useTranslation } from "react-i18next";
+import type { useTheme } from "@/theme/useTheme";
 
 export type StyleTarget = "title" | "kcal" | "custom";
 
@@ -17,7 +18,7 @@ type Props = {
   underline: boolean;
   color: string;
   uniqueQuickColors: string[];
-  theme: any;
+  theme: ReturnType<typeof useTheme>;
   onChangeFont: (v: "regular" | "medium" | "bold" | "light") => void;
   onToggleItalic: () => void;
   onToggleUnderline: () => void;

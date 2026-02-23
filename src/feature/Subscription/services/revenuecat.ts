@@ -5,8 +5,28 @@ import * as Device from "expo-device";
 
 let configured = false;
 
+type RevenueCatExtra = {
+  disableBilling?: boolean;
+  revenuecatIosKey?: string;
+  revenuecatAndroidKey?: string;
+};
+
 function getExtra() {
-  return (Constants.expoConfig?.extra || {}) as Record<string, any>;
+  const raw = Constants.expoConfig?.extra;
+  if (!raw || typeof raw !== "object") return {} as RevenueCatExtra;
+  const extra = raw as Record<string, unknown>;
+  return {
+    disableBilling:
+      typeof extra.disableBilling === "boolean" ? extra.disableBilling : undefined,
+    revenuecatIosKey:
+      typeof extra.revenuecatIosKey === "string"
+        ? extra.revenuecatIosKey
+        : undefined,
+    revenuecatAndroidKey:
+      typeof extra.revenuecatAndroidKey === "string"
+        ? extra.revenuecatAndroidKey
+        : undefined,
+  } as RevenueCatExtra;
 }
 
 function maskKey(k: string) {
@@ -20,8 +40,18 @@ export function isBillingDisabled(): boolean {
   return false;
 }
 
-function log(...args: any[]) {
+function log(...args: unknown[]) {
   console.log("[RC]", ...args);
+}
+
+function getErrorMeta(err: unknown) {
+  if (!err || typeof err !== "object") return { message: undefined, code: undefined };
+  const obj = err as { message?: unknown; code?: unknown; userInfo?: unknown };
+  return {
+    message: typeof obj.message === "string" ? obj.message : undefined,
+    code: typeof obj.code === "string" ? obj.code : undefined,
+    userInfo: obj.userInfo,
+  };
 }
 
 export function initRevenueCat() {
@@ -33,8 +63,8 @@ export function initRevenueCat() {
   const extra = getExtra();
   const disabled = isBillingDisabled();
 
-  const iosKey = extra.revenuecatIosKey as string | undefined;
-  const androidKey = extra.revenuecatAndroidKey as string | undefined;
+  const iosKey = extra.revenuecatIosKey;
+  const androidKey = extra.revenuecatAndroidKey;
 
   const apiKey = Platform.OS === "ios" ? iosKey : androidKey;
 
@@ -70,12 +100,13 @@ export function initRevenueCat() {
 
     configured = true;
     log("✅ Purchases.configure OK");
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const meta = getErrorMeta(e);
     configured = false;
     log("❌ Purchases.configure FAILED", {
-      message: e?.message,
-      code: e?.code,
-      userInfo: e?.userInfo,
+      message: meta.message,
+      code: meta.code,
+      userInfo: meta.userInfo,
     });
   }
 }
@@ -92,8 +123,9 @@ export async function rcLogIn(uid: string): Promise<boolean> {
     await Purchases.logIn(uid);
     log("rcLogIn OK", { uid });
     return true;
-  } catch (e: any) {
-    log("rcLogIn FAILED", { message: e?.message, code: e?.code });
+  } catch (e: unknown) {
+    const meta = getErrorMeta(e);
+    log("rcLogIn FAILED", { message: meta.message, code: meta.code });
     return false;
   }
 }
@@ -105,8 +137,9 @@ export async function rcLogOut(): Promise<void> {
   try {
     await Purchases.logOut();
     log("rcLogOut OK");
-  } catch (e: any) {
-    log("rcLogOut FAILED", { message: e?.message, code: e?.code });
+  } catch (e: unknown) {
+    const meta = getErrorMeta(e);
+    log("rcLogOut FAILED", { message: meta.message, code: meta.code });
   }
 }
 
@@ -125,7 +158,8 @@ export async function rcSetAttributes(
 
     await Purchases.setAttributes(filtered);
     log("rcSetAttributes OK", { keys: Object.keys(filtered) });
-  } catch (e: any) {
-    log("rcSetAttributes FAILED", { message: e?.message, code: e?.code });
+  } catch (e: unknown) {
+    const meta = getErrorMeta(e);
+    log("rcSetAttributes FAILED", { message: meta.message, code: meta.code });
   }
 }

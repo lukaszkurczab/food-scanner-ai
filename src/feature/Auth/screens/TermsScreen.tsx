@@ -1,12 +1,19 @@
-import React from "react";
-import { View, Dimensions, StyleSheet } from "react-native";
+import { Dimensions, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { Layout, PrimaryButton } from "@/components";
 import { ScrollableBox } from "@/components/ScrollableBox";
 import { parseMarkdownToReactNative } from "@/utils/parseMarkdownToReactNative";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function TermsScreen({ navigation }: any) {
+type TermsNavigation = StackNavigationProp<RootStackParamList, "Terms">;
+
+type TermsScreenProps = {
+  navigation: TermsNavigation;
+};
+
+export default function TermsScreen({ navigation }: TermsScreenProps) {
   const { t } = useTranslation("terms");
   const theme = useTheme();
 

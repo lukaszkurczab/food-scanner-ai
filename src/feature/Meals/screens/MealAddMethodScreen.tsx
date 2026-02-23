@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
@@ -16,13 +16,35 @@ import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { v4 as uuidv4 } from "uuid";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { canUseAiTodayFor } from "@/services/userService";
+import type { Meal } from "@/types/meal";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
   "MealAddMethod"
 >;
+type DraftResumeScreen = "AddMeal" | "EditReviewIngredients" | "EditResult";
 
-const options = [
+type AddMealStart = NonNullable<NonNullable<RootStackParamList["AddMeal"]>["start"]>;
+
+type MethodOptionBase = {
+  key: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  titleKey: string;
+  descKey: string;
+};
+
+type AddMealMethodOption = MethodOptionBase & {
+  screen: "AddMeal";
+  params: NonNullable<RootStackParamList["AddMeal"]>;
+};
+
+type NonAddMealMethodOption = MethodOptionBase & {
+  screen: "MealTextAI" | "SelectSavedMeal";
+};
+
+type MethodOption = AddMealMethodOption | NonAddMealMethodOption;
+
+const options: readonly MethodOption[] = [
   {
     key: "ai_photo",
     icon: "camera-alt",
@@ -61,6 +83,11 @@ const options = [
   },
 ] as const;
 
+const isDraftResumeScreen = (value: string): value is DraftResumeScreen =>
+  value === "AddMeal" ||
+  value === "EditReviewIngredients" ||
+  value === "EditResult";
+
 const MealAddMethodScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation<MealAddMethodNavigationProp>();
@@ -71,14 +98,16 @@ const MealAddMethodScreen = () => {
   const { isPremium } = usePremiumContext();
 
   const [showModal, setShowModal] = useState(false);
-  const [lastScreen, setLastScreenState] = useState<string | null>(null);
+  const [lastScreen, setLastScreenState] = useState<DraftResumeScreen | null>(
+    null
+  );
   const [showAiLimit, setShowAiLimit] = useState(false);
 
   const checkDraft = useCallback(async () => {
     if (!uid) return;
     const draft = await AsyncStorage.getItem(getDraftKey(uid));
     const lastScreenStored = await AsyncStorage.getItem(getScreenKey(uid));
-    if (draft && lastScreenStored) {
+    if (draft && lastScreenStored && isDraftResumeScreen(lastScreenStored)) {
       try {
         const parsedDraft = JSON.parse(draft);
         if (
@@ -90,7 +119,9 @@ const MealAddMethodScreen = () => {
           setShowModal(true);
           setLastScreenState(lastScreenStored);
         }
-      } catch {}
+      } catch {
+        // Ignore malformed draft payload in storage.
+      }
     }
   }, [uid]);
 
@@ -99,10 +130,10 @@ const MealAddMethodScreen = () => {
   }, [checkDraft]);
 
   const primeEmptyMeal = useCallback(
-    async (nextScreen: string) => {
+    async (nextScreen: AddMealStart) => {
       if (!uid) return;
       const now = new Date().toISOString();
-      setMeal({
+      const emptyMeal: Meal = {
         mealId: uuidv4(),
         userUid: uid,
         name: null,
@@ -117,15 +148,15 @@ const MealAddMethodScreen = () => {
         type: "other",
         timestamp: "",
         source: null,
-        cloudId: undefined,
-      } as any);
+      };
+      setMeal(emptyMeal);
       await saveDraft(uid);
       await setLastScreen(uid, nextScreen);
     },
     [setMeal, saveDraft, setLastScreen, uid],
   );
 
-  const handleOptionPress = async (option: (typeof options)[number]) => {
+  const handleOptionPress = async (option: MethodOption) => {
     if (option.screen === "MealTextAI") {
       if (uid) {
         const allowed = await canUseAiTodayFor(uid, !!isPremium, "text", 1);
@@ -137,19 +168,19 @@ const MealAddMethodScreen = () => {
     }
 
     if (option.screen === "AddMeal") {
-      const start = (option as any).params?.start as string | undefined;
+      const start = option.params.start;
       await primeEmptyMeal(start || "ReviewIngredients");
-      navigation.navigate("AddMeal", (option as any).params);
+      navigation.navigate("AddMeal", option.params);
       return;
     }
 
-    navigation.navigate(option.screen as any);
+    navigation.navigate(option.screen);
   };
 
   const handleContinue = async () => {
     if (uid) await loadDraft(uid);
     setShowModal(false);
-    if (lastScreen) navigation.navigate(lastScreen as any);
+    if (lastScreen) navigation.navigate(lastScreen);
   };
 
   const handleDiscard = async () => {
@@ -216,7 +247,7 @@ const MealAddMethodScreen = () => {
               }}
             >
               <MaterialIcons
-                name={option.icon as any}
+                name={option.icon}
                 size={48}
                 color={theme.accentSecondary}
               />
@@ -270,7 +301,7 @@ const MealAddMethodScreen = () => {
         })}
         onPrimaryAction={() => {
           setShowAiLimit(false);
-          navigation.navigate("ManageSubscription" as any);
+          navigation.navigate("ManageSubscription");
         }}
         secondaryActionLabel={t("cancel", {
           ns: "common",

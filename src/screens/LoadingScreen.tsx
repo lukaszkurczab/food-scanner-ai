@@ -5,8 +5,15 @@ import { useUserContext } from "@contexts/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUser } from "@hooks/useUser";
 import { resetIfMissed, ensureStreakDoc } from "@/services/streakService";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-const LoadingScreen = ({ navigation }: any) => {
+type LoadingScreenNavigation = StackNavigationProp<RootStackParamList, "Loading">;
+type Props = {
+  navigation: LoadingScreenNavigation;
+};
+
+const LoadingScreen = ({ navigation }: Props) => {
   const { firebaseUser, uid } = useAuthContext();
   const { userData, getUserData } = useUserContext();
   const { fetchUserFromCloud } = useUser(uid!);

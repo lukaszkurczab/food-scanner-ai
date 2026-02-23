@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { PrimaryButton, SecondaryButton, IconButton } from "@/components";
@@ -12,15 +11,16 @@ type Props = {
   goToStep: (step: number) => void;
   onFinish: () => void;
   onBack: () => void;
-  mode: "first" | "refill";
 };
 
-function parseArray(val: any): string[] {
-  if (Array.isArray(val)) return val;
+function parseArray(val: unknown): string[] {
+  if (Array.isArray(val)) return val.filter((item): item is string => typeof item === "string");
   if (typeof val === "string") {
     try {
       const arr = JSON.parse(val);
-      return Array.isArray(arr) ? arr : [];
+      return Array.isArray(arr)
+        ? arr.filter((item): item is string => typeof item === "string")
+        : [];
     } catch {
       return [];
     }
@@ -33,7 +33,6 @@ export default function Step5Summary({
   goToStep,
   onFinish,
   onBack,
-  mode,
 }: Props) {
   const theme = useTheme();
   const { t } = useTranslation("onboarding");

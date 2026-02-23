@@ -3,6 +3,8 @@ import BarcodeProductNotFoundScreen from "../screens/MealAdd/BarcodeProductNotFo
 import IngredientsNotRecognizedScreen from "../screens/MealAdd/IngredientsNotRecognizedScreen";
 import ReviewIngredientsScreen from "../screens/MealAdd/ReviewIngredientsScreen";
 import ResultScreen from "../screens/MealAdd/ResultScreen";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 export type MealAddScreenName =
   | "MealCamera"
@@ -29,8 +31,8 @@ export type MealAddStepParams = {
     id?: string;
     attempt?: number;
   };
-  ReviewIngredients: {};
-  Result: {};
+  ReviewIngredients: Record<string, unknown>;
+  Result: Record<string, unknown>;
 };
 
 export type MealAddFlowApi = {
@@ -46,7 +48,7 @@ export type MealAddFlowApi = {
 };
 
 export type MealAddScreenProps<N extends MealAddScreenName> = {
-  navigation: any;
+  navigation: StackNavigationProp<RootStackParamList, "AddMeal">;
   flow: MealAddFlowApi;
   params: MealAddStepParams[N];
 };

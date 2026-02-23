@@ -6,6 +6,12 @@ type LoginErrors = { email?: string; password?: string };
 // Critical error keys map to i18n keys (snake_case)
 type CriticalError = "too_many_requests" | "login_failed" | "no_internet" | null;
 
+const getErrorCode = (error: unknown): string | null => {
+  if (typeof error !== "object" || !error) return null;
+  const maybeCode = (error as { code?: unknown }).code;
+  return typeof maybeCode === "string" ? maybeCode : null;
+};
+
 export const useLogin = (setUser: (u: FirebaseAuthTypes.User) => void) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<LoginErrors>({});
@@ -18,16 +24,17 @@ export const useLogin = (setUser: (u: FirebaseAuthTypes.User) => void) => {
     try {
       const user = await authLogin(email, password);
       setUser(user);
-    } catch (error: any) {
-      if (error.code === "auth/too-many-requests")
+    } catch (error: unknown) {
+      const code = getErrorCode(error);
+      if (code === "auth/too-many-requests")
         setCriticalError("too_many_requests");
       else if (
-        error.code === "auth/user-not-found" ||
-        error.code === "auth/wrong-password" ||
-        error.code === "auth/invalid-credential"
+        code === "auth/user-not-found" ||
+        code === "auth/wrong-password" ||
+        code === "auth/invalid-credential"
       )
         setErrors({ password: "invalid_email_or_password" });
-      else if (error.code === "auth/network-request-failed")
+      else if (code === "auth/network-request-failed")
         setCriticalError("no_internet");
       else setCriticalError("login_failed");
     } finally {

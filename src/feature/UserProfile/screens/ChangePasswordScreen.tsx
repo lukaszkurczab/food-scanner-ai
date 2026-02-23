@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, Keyboard, TouchableOpacity, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
@@ -12,8 +12,21 @@ import {
 } from "@/components";
 import { Feather } from "@expo/vector-icons";
 import { useUserContext } from "@contexts/UserContext";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function ChangePasswordScreen({ navigation }: any) {
+type ChangePasswordNavigation = StackNavigationProp<RootStackParamList>;
+type Props = {
+  navigation: ChangePasswordNavigation;
+};
+
+function getErrorCode(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
+}
+
+export default function ChangePasswordScreen({ navigation }: Props) {
   const { t } = useTranslation(["profile", "common"]);
   const theme = useTheme();
   const { changePassword } = useUserContext();
@@ -33,7 +46,7 @@ export default function ChangePasswordScreen({ navigation }: any) {
   const [error, setError] = useState<string | null>(null);
   const [noInternet, setNoInternet] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       setNoInternet(!state.isConnected);
     });
@@ -67,11 +80,12 @@ export default function ChangePasswordScreen({ navigation }: any) {
     try {
       await changePassword(oldPassword, newPassword);
       navigation.goBack();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const code = getErrorCode(err);
       let msg = t("common:default_error");
-      if (err?.code === "auth/wrong-password") {
+      if (code === "auth/wrong-password") {
         msg = t("profile:invalid_current_password");
-      } else if (err?.code === "auth/weak-password") {
+      } else if (code === "auth/weak-password") {
         msg = t("profile:weak_password");
       }
       setError(msg);

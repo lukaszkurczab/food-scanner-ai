@@ -35,16 +35,24 @@ const missedSince = (last: string | null, today: string) => {
   return diffDays >= 2;
 };
 
-const sanitize = (raw: any): StreakDoc | null => {
+type StreakDocCandidate = {
+  current?: unknown;
+  lastDate?: unknown;
+};
+
+const sanitize = (raw: unknown): StreakDoc | null => {
   if (!raw || typeof raw !== "object") return null;
+  const candidate = raw as StreakDocCandidate;
   const cur =
-    typeof raw.current === "number" && raw.current >= 0 ? raw.current : null;
+    typeof candidate.current === "number" && candidate.current >= 0
+      ? candidate.current
+      : null;
   const ld =
-    raw.lastDate == null
+    candidate.lastDate == null
       ? null
-      : typeof raw.lastDate === "string" &&
-        /^\d{4}-\d{2}-\d{2}$/.test(raw.lastDate)
-      ? raw.lastDate
+      : typeof candidate.lastDate === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(candidate.lastDate)
+      ? candidate.lastDate
       : undefined;
   if (cur === null || ld === undefined) return null;
   return { current: cur, lastDate: ld };

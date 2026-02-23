@@ -1,17 +1,29 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { PrimaryButton, ErrorBox, Layout, SecondaryButton } from "@/components";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, type RouteProp } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getAuth, signOut } from "@react-native-firebase/auth";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function ChangeEmailCheckMailboxScreen({ navigation }: any) {
+type ChangeEmailCheckMailboxRoute = RouteProp<
+  RootStackParamList,
+  "ChangeEmailCheckMailbox"
+>;
+
+function getErrorCode(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
+}
+
+export default function ChangeEmailCheckMailboxScreen() {
   const { t } = useTranslation(["change_password", "common"]);
   const theme = useTheme();
-  const route = useRoute<any>();
+  const route = useRoute<ChangeEmailCheckMailboxRoute>();
 
   const email =
     route?.params?.email && typeof route.params.email === "string"
@@ -66,7 +78,9 @@ export default function ChangeEmailCheckMailboxScreen({ navigation }: any) {
     try {
       const auth = getAuth();
       await signOut(auth);
-    } catch (e) {}
+    } catch {
+      // Ignore sign-out errors here.
+    }
   };
 
   const handleSendAgain = async () => {
@@ -76,10 +90,11 @@ export default function ChangeEmailCheckMailboxScreen({ navigation }: any) {
     try {
       setSendAgainDisabled(true);
       setTimer(60);
-    } catch (err: any) {
-      if (err.code === "auth/network-request-failed" || noInternet) {
+    } catch (err: unknown) {
+      const code = getErrorCode(err);
+      if (code === "auth/network-request-failed" || noInternet) {
         setError(t("common:no_internet"));
-      } else if (err.code === "auth/user-not-found") {
+      } else if (code === "auth/user-not-found") {
         setError(t("common:user_not_found") ?? "User not found");
       } else {
         setError(t("common:default_error"));

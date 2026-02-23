@@ -15,8 +15,16 @@ import { Feather } from "@expo/vector-icons";
 import { useAuthContext } from "@/context/AuthContext";
 import { useRegister } from "@/feature/Auth/hooks/useRegister";
 import { validateEmail } from "@/utils/validation";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function RegisterScreen({ navigation }: any) {
+type RegisterNavigation = StackNavigationProp<RootStackParamList, "Register">;
+
+type RegisterScreenProps = {
+  navigation: RegisterNavigation;
+};
+
+export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const { t } = useTranslation(["login", "common"]);
   const theme = useTheme();
 

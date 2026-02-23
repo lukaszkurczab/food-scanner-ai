@@ -2,6 +2,7 @@ import { getDB } from "./db";
 import type { Meal } from "@/types/meal";
 import type { MealRow } from "./types";
 import { emit } from "@/services/events";
+import type { SQLiteBindValue } from "expo-sqlite";
 
 export async function upsertMealLocal(meal: Meal): Promise<void> {
   const db = getDB();
@@ -34,14 +35,14 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       notes=excluded.notes,
       tags=excluded.tags`,
     [
-      meal.cloudId,
+      meal.cloudId ?? meal.mealId,
       meal.mealId,
       meal.userUid,
       meal.timestamp,
       meal.type,
       meal.name,
-      meal.photoUrl,
-      (meal as any).photoLocalPath || null,
+      meal.photoUrl ?? null,
+      meal.photoLocalPath || null,
       meal.imageId ?? null,
       meal.totals?.kcal ?? 0,
       meal.totals?.protein ?? 0,
@@ -50,12 +51,44 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       meal.deleted ? 1 : 0,
       createdAt,
       meal.updatedAt,
-      meal.source,
-      meal.notes,
+      meal.source ?? null,
+      meal.notes ?? null,
       tags,
     ]
   );
   emit("meal:local:upserted", { cloudId: meal.cloudId, ts: meal.updatedAt });
+}
+
+const MEAL_TYPES: Meal["type"][] = [
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+  "other",
+];
+
+function parseMealType(value: string | null): Meal["type"] {
+  if (value && MEAL_TYPES.includes(value as Meal["type"])) {
+    return value as Meal["type"];
+  }
+  return "other";
+}
+
+function parseMealSource(value: string | null): Meal["source"] {
+  if (value === "ai" || value === "manual" || value === "saved") return value;
+  return null;
+}
+
+function parseTags(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((v): v is string => typeof v === "string")
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 function rowToMeal(r: MealRow): Meal {
@@ -63,23 +96,17 @@ function rowToMeal(r: MealRow): Meal {
     userUid: r.user_uid,
     mealId: r.meal_id,
     timestamp: r.timestamp,
-    type: r.type as any,
+    type: parseMealType(r.type),
     name: r.name,
     ingredients: [],
     createdAt: r.created_at ?? r.timestamp ?? r.updated_at,
     updatedAt: r.updated_at,
     syncState: "pending",
-    source: (r.source as any) ?? null,
+    source: parseMealSource(r.source),
     imageId: r.image_id ?? null,
     photoUrl: r.photo_url ?? null,
     notes: r.notes ?? null,
-    tags: (() => {
-      try {
-        return r.tags ? JSON.parse(r.tags) : [];
-      } catch {
-        return [];
-      }
-    })(),
+    tags: parseTags(r.tags),
     deleted: Number(r.deleted ?? 0) === 1,
     cloudId: r.cloud_id ?? undefined,
     totals: {
@@ -130,7 +157,7 @@ export async function getMealsPageLocalFiltered(
   }
 ): Promise<{ items: Meal[]; nextBefore: string | null }> {
   const db = getDB();
-  const args: any[] = [uid];
+  const args: SQLiteBindValue[] = [uid];
 
   const where: string[] = [`user_uid=?`, `deleted=0`];
 

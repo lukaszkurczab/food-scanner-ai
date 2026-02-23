@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -25,20 +25,27 @@ import type {
   UserNotification,
   MealKind,
 } from "@/types/notification";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Clock24h, Clock12h } from "@/components";
 import { Dropdown } from "@/components/Dropdown";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 const TYPES: NotificationType[] = ["meal_reminder", "calorie_goal"];
+type NotificationFormNavigation = StackNavigationProp<
+  RootStackParamList,
+  "NotificationForm"
+>;
+type NotificationFormRoute = RouteProp<RootStackParamList, "NotificationForm">;
 
 export default function NotificationFormScreen() {
   const theme = useTheme();
   const { t, i18n } = useTranslation("notifications");
   const locale = i18n.language || undefined;
   const { uid } = useAuthContext();
-  const nav = useNavigation<any>();
-  const route = useRoute<any>();
+  const nav = useNavigation<NotificationFormNavigation>();
+  const route = useRoute<NotificationFormRoute>();
   const notifId: string | null = route.params?.id ?? null;
 
   const { items, create, update, remove } = useNotifications(uid);
@@ -60,10 +67,10 @@ export default function NotificationFormScreen() {
   );
   const [enabled, setEnabled] = useState<boolean>(existing?.enabled ?? true);
   const [mealKind, setMealKind] = useState<MealKind | null>(
-    (existing as any)?.mealKind ?? null
+    existing?.mealKind ?? null
   );
   const [kcalByHour, setKcalByHour] = useState<number | null>(
-    (existing as any)?.kcalByHour ?? null
+    existing?.kcalByHour ?? null
   );
 
   useEffect(() => {
@@ -74,8 +81,8 @@ export default function NotificationFormScreen() {
       setTime(existing.time);
       setDays(existing.days);
       setEnabled(existing.enabled);
-      setMealKind((existing as any)?.mealKind ?? null);
-      setKcalByHour((existing as any)?.kcalByHour ?? null);
+      setMealKind(existing.mealKind ?? null);
+      setKcalByHour(existing.kcalByHour ?? null);
     }
   }, [existing]);
 
@@ -332,11 +339,9 @@ export default function NotificationFormScreen() {
                 enabled,
                 mealKind: type === "meal_reminder" ? mealKind ?? null : null,
                 kcalByHour: type === "calorie_goal" ? kcalByHour ?? null : null,
-              } as any;
+              };
               try {
-                await (notifId
-                  ? update(uid, notifId, payload as any)
-                  : create(uid, payload));
+                await (notifId ? update(uid, notifId, payload) : create(uid, payload));
               } catch (error) {
                 console.error("Error saving notification:", error);
               }

@@ -1,11 +1,12 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { PrimaryButton, SecondaryButton, Layout } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
-import type { RootStackParamList } from "@/navigation/navigate";
-import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
+import type {
+  MealAddScreenName,
+  MealAddScreenProps,
+} from "@/feature/Meals/feature/MapMealAddScreens";
 
 const MAX_ATTEMPTS = 3;
 
@@ -16,10 +17,9 @@ export default function BarcodeProductNotFoundScreen({
   const theme = useTheme();
   const { t } = useTranslation("meals");
 
-  const code = params?.code as string | undefined;
-  const attempt = (params?.attempt as number | undefined) || 1;
-  const returnTo =
-    (params?.returnTo as keyof RootStackParamList) || "ReviewIngredients";
+  const code = params?.code;
+  const attempt = params?.attempt || 1;
+  const returnTo: MealAddScreenName = params?.returnTo || "ReviewIngredients";
 
   const isLastAttempt = attempt >= MAX_ATTEMPTS;
 
@@ -32,12 +32,12 @@ export default function BarcodeProductNotFoundScreen({
     flow.goTo("MealCamera", {
       barcodeOnly: true,
       attempt: attempt + 1,
-      returnTo: returnTo as any,
+      returnTo,
     });
   };
 
   const handleBack = () => {
-    flow.goTo(returnTo as any, {} as any);
+    flow.goTo(returnTo, {});
   };
 
   return (

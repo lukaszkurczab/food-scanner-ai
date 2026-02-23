@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -14,8 +14,16 @@ import { validateEmail } from "@/utils/validation";
 import { Feather } from "@expo/vector-icons";
 import { useAuthContext } from "@/context/AuthContext";
 import { useLogin } from "@/feature/Auth/hooks/useLogin";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function LoginScreen({ navigation }: any) {
+type LoginNavigation = StackNavigationProp<RootStackParamList, "Login">;
+
+type LoginScreenProps = {
+  navigation: LoginNavigation;
+};
+
+export default function LoginScreen({ navigation }: LoginScreenProps) {
   const { t } = useTranslation(["login", "common"]);
   const theme = useTheme();
 

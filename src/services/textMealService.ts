@@ -15,17 +15,38 @@ const toNumber = (v: unknown): number => {
   return 0;
 };
 
-const normalize = (x: any): Ingredient | null => {
-  if (!x || typeof x.name !== "string" || !x.name.trim()) return null;
-  const amount = toNumber(x.amount);
-  const protein = toNumber(x.protein);
-  const fat = toNumber(x.fat);
-  const carbs = toNumber(x.carbs);
-  const kcal = toNumber(x.kcal) || protein * 4 + carbs * 4 + fat * 9;
+type IngredientCandidate = {
+  name?: unknown;
+  amount?: unknown;
+  protein?: unknown;
+  fat?: unknown;
+  carbs?: unknown;
+  kcal?: unknown;
+};
+
+type OpenAiChatCompletionResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
+};
+
+const normalize = (x: unknown): Ingredient | null => {
+  if (!x || typeof x !== "object") return null;
+  const candidate = x as IngredientCandidate;
+  if (typeof candidate.name !== "string" || !candidate.name.trim()) return null;
+
+  const amount = toNumber(candidate.amount);
+  const protein = toNumber(candidate.protein);
+  const fat = toNumber(candidate.fat);
+  const carbs = toNumber(candidate.carbs);
+  const kcal = toNumber(candidate.kcal) || protein * 4 + carbs * 4 + fat * 9;
   if (!isFinite(amount) || amount <= 0) return null;
+
   return {
     id: uuidv4(),
-    name: x.name.trim(),
+    name: candidate.name.trim(),
     amount,
     protein,
     fat,
@@ -59,7 +80,6 @@ export async function extractIngredientsFromText(
   description: string,
   opts?: { isPremium?: boolean; limit?: number; lang?: string }
 ): Promise<Ingredient[] | null> {
-  const lang = (opts?.lang || "en").toString();
   const isPremium = !!opts?.isPremium;
   const limit = opts?.limit ?? 1;
 
@@ -110,12 +130,12 @@ export async function extractIngredientsFromText(
     });
     clearTimeout(timeout);
     if (!resp.ok) return null;
-    const json = await resp.json();
+    const json = (await resp.json()) as OpenAiChatCompletionResponse;
     const raw: string = json?.choices?.[0]?.message?.content || "";
     const arr = extractJsonArray(raw);
     if (!arr) return null;
 
-    let parsed: any;
+    let parsed: unknown;
     try {
       parsed = JSON.parse(arr);
     } catch {

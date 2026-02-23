@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -9,6 +9,7 @@ import DraggableItem from "./DraggableItem";
 import ChartEditorPanel from "./editors/ChartEditorPanel";
 import CardEditorPanel from "./editors/CardEditorPanel";
 import TextEditorPanel from "./editors/TextEditorPanel";
+import type { CustomTextItem, ShareOptions } from "@/types/share";
 
 export type ShareEditorMode =
   | "options"
@@ -17,12 +18,19 @@ export type ShareEditorMode =
   | "card"
   | "background";
 
+export type ShareEditorPanelOptions = ShareOptions & {
+  editorPanelX?: number;
+  editorPanelY?: number;
+  editorPanelScale?: number;
+  editorPanelRotation?: number;
+};
+
 type Props = {
   visible: boolean;
   mode: ShareEditorMode | null;
-  options: any;
+  options: ShareEditorPanelOptions;
   selectedId: ElementId | null;
-  onChange: (next: any) => void;
+  onChange: (next: ShareEditorPanelOptions) => void;
   onClose: () => void;
   onTapTextElement?: (id: ElementId) => void;
 
@@ -60,9 +68,9 @@ export default function ShareEditorPanel({
     );
   }
 
-  const patch = (p: any) => {
+  const patch = (p: Partial<ShareEditorPanelOptions>) => {
     let changed = false;
-    for (const key in p) {
+    for (const key of Object.keys(p) as Array<keyof ShareEditorPanelOptions>) {
       if (p[key] !== options[key]) {
         changed = true;
         break;
@@ -72,7 +80,7 @@ export default function ShareEditorPanel({
     onChange({ ...options, ...p });
   };
 
-  const customTexts = Array.isArray(options.customTexts)
+  const customTexts: CustomTextItem[] = Array.isArray(options.customTexts)
     ? options.customTexts
     : [];
 
@@ -93,7 +101,10 @@ export default function ShareEditorPanel({
     onTapTextElement?.(id as ElementId);
   };
 
-  const elementItems: { key: string; label: string }[] = [
+  const elementItems: {
+    key: "showTitle" | "showKcal" | "showChart" | "showMacroOverlay" | "showCustom";
+    label: string;
+  }[] = [
     { key: "showTitle", label: t("editor.show_title", "Title") },
     { key: "showKcal", label: t("editor.show_kcal", "Calories") },
     { key: "showChart", label: t("editor.show_chart", "Chart") },
@@ -129,7 +140,7 @@ export default function ShareEditorPanel({
                 const hasCustomText =
                   customTexts.length > 0 &&
                   customTexts.some(
-                    (ct: any) =>
+                    (ct) =>
                       typeof ct.text === "string" && ct.text.trim().length > 0,
                   );
 

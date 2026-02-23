@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
 import { PrimaryButton } from "./PrimaryButton";
 import { ErrorButton } from "./ErrorButton";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, type NavigationProp, type ParamListBase } from "@react-navigation/native";
 import { Modal } from "./Modal";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -29,6 +29,7 @@ const parseNum = (v: string) => {
   const n = parseFloat(v.replace(",", "."));
   return Number.isFinite(n) ? n : NaN;
 };
+type NumericIngredientKey = "amount" | "protein" | "carbs" | "fat" | "kcal";
 
 export const IngredientEditor: React.FC<Props> = ({
   initial,
@@ -39,8 +40,8 @@ export const IngredientEditor: React.FC<Props> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
-  const navigation = useNavigation<any>();
-  const unitLabel = (initial?.unit as any) === "ml" ? "ml" : "g";
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const unitLabel = initial?.unit === "ml" ? "ml" : "g";
 
   const [name, setName] = useState(initial.name ?? "");
   const [amount, setAmount] = useState(String(initial.amount ?? 0));
@@ -102,13 +103,31 @@ export const IngredientEditor: React.FC<Props> = ({
   const normalizeOnBlurNumber = (
     val: string,
     setter: (s: string) => void,
-    key: keyof Ingredient
+    key: NumericIngredientKey
   ) => {
     const v = val.trim();
     const next = v === "" ? "0" : v;
     setter(next);
     const n = parseNum(next);
-    if (!Number.isNaN(n)) onChangePartial?.({ [key]: n } as any);
+    if (!Number.isNaN(n)) {
+      switch (key) {
+        case "amount":
+          onChangePartial?.({ amount: n });
+          break;
+        case "protein":
+          onChangePartial?.({ protein: n });
+          break;
+        case "carbs":
+          onChangePartial?.({ carbs: n });
+          break;
+        case "fat":
+          onChangePartial?.({ fat: n });
+          break;
+        case "kcal":
+          onChangePartial?.({ kcal: n });
+          break;
+      }
+    }
 
     if (key === "amount") {
       syncBaselineFromState(true);

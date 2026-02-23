@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -10,6 +10,8 @@ import {
   TextInput,
   ErrorBox,
 } from "@/components";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 function mapFirebaseErrorToKey(code: string): string {
   switch (code) {
@@ -28,7 +30,18 @@ function mapFirebaseErrorToKey(code: string): string {
   }
 }
 
-export default function ChangeEmailScreen({ navigation }: any) {
+type ChangeEmailNavigation = StackNavigationProp<RootStackParamList>;
+type Props = {
+  navigation: ChangeEmailNavigation;
+};
+
+function getErrorCode(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
+}
+
+export default function ChangeEmailScreen({ navigation }: Props) {
   const { t } = useTranslation(["profile", "login"]);
   const theme = useTheme();
   const { changeEmail } = useUserContext();
@@ -45,7 +58,7 @@ export default function ChangeEmailScreen({ navigation }: any) {
   const validateEmail = (v: string) => /\S+@\S+\.\S+/.test(v);
 
   const validate = async () => {
-    let newErrors: { email?: string; password?: string } = {};
+    const newErrors: { email?: string; password?: string } = {};
 
     if (!email) newErrors.email = t("enter_email", { ns: "login" });
     else if (!validateEmail(email))
@@ -74,11 +87,10 @@ export default function ChangeEmailScreen({ navigation }: any) {
       navigation.navigate("ChangeEmailCheckMailbox", {
         email: email.trim(),
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const code = getErrorCode(e);
       let errKey = "login_failed";
-      if (e && typeof e.code === "string") {
-        errKey = mapFirebaseErrorToKey(e.code);
-      }
+      if (code) errKey = mapFirebaseErrorToKey(code);
       if (errKey === "invalid_password") {
         setErrors((old) => ({
           ...old,

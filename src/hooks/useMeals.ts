@@ -20,8 +20,8 @@ import { upsertMyMealWithPhoto } from "@/services/myMealService";
 
 const PAGE_LIMIT = 50;
 
-function computeTotals(meal: Meal) {
-  const ing = (meal.ingredients || []) as any[];
+function computeTotals(meal: Pick<Meal, "ingredients">) {
+  const ing = meal.ingredients || [];
   const sum = (k: "kcal" | "protein" | "carbs" | "fat") =>
     ing.reduce((a, b) => a + (Number(b?.[k]) || 0), 0);
   return {
@@ -32,7 +32,7 @@ function computeTotals(meal: Meal) {
   };
 }
 
-function isLocalUri(u?: string | null) {
+function isLocalUri(u?: string | null): u is string {
   if (!u || typeof u !== "string") return false;
   return u.startsWith("file://") || u.startsWith("content://");
 }
@@ -114,29 +114,29 @@ export function useMeals(userUid: string | null) {
     ) => {
       if (!userUid) return;
       console.log("[useMeals] addMeal start", {
-        hasPhoto: !!(meal as any).photoUrl,
+        hasPhoto: !!meal.photoUrl,
       });
       const now = new Date().toISOString();
-      const cloudId = (meal as any).cloudId ?? uuidv4();
-      const mealId = (meal as any).mealId ?? uuidv4();
-      const totals = computeTotals(meal as Meal);
+      const cloudId = meal.cloudId ?? uuidv4();
+      const mealId = meal.mealId ?? uuidv4();
+      const totals = computeTotals(meal);
 
-      const base: Meal & { photoLocalPath?: string | null; totals?: any } = {
-        ...(meal as Meal),
+      const base: Meal = {
+        ...meal,
         userUid,
         cloudId,
         mealId,
-        createdAt: (meal as any).createdAt ?? now,
+        createdAt: meal.createdAt ?? now,
         updatedAt: now,
         deleted: false,
-        source: (meal as any).source ?? "manual",
-        timestamp: (meal as any).timestamp ?? now,
+        source: meal.source ?? "manual",
+        timestamp: meal.timestamp ?? now,
         totals,
       };
 
-      const maybeUri = (meal as any).photoUrl as string | null | undefined;
+      const maybeUri = meal.photoUrl;
       if (isLocalUri(maybeUri)) {
-        base.photoLocalPath = maybeUri as string;
+        base.photoLocalPath = maybeUri;
         console.log("[useMeals] register image for upload", {
           cloudId,
           uri: maybeUri,
@@ -161,7 +161,7 @@ export function useMeals(userUid: string | null) {
           mealId: base.mealId,
           cloudId: base.mealId,
           source: "saved",
-        } as Meal;
+        };
         await enqueueMyMealUpsert(userUid, saved);
         console.log("[useMeals] enqueueMyMealUpsert ok", { id: base.mealId });
       }
@@ -212,17 +212,17 @@ export function useMeals(userUid: string | null) {
       const cloudId = meal.cloudId ?? uuidv4();
       const totals = computeTotals(meal);
 
-      const payload: Meal & { photoLocalPath?: string | null; totals?: any } = {
+      const payload: Meal = {
         ...meal,
         cloudId,
         updatedAt: now,
         totals,
-        timestamp: (meal as any).timestamp ?? now,
+        timestamp: meal.timestamp ?? now,
       };
 
-      const maybeUri = (meal as any).photoUrl as string | null | undefined;
+      const maybeUri = meal.photoUrl;
       if (isLocalUri(maybeUri)) {
-        payload.photoLocalPath = maybeUri as string;
+        payload.photoLocalPath = maybeUri;
         console.log("[useMeals] register image for upload (update)", {
           cloudId,
           uri: maybeUri,

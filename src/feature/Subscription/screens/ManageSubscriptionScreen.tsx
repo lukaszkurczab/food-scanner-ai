@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,8 @@ import {
   startOrRenewSubscription,
 } from "@/feature/Subscription/services/purchase";
 import { PaywallModal } from "@/feature/Subscription/components/PaywallModal";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 const BENEFITS = [
   "unlimitedAiChat",
@@ -33,7 +35,18 @@ const BENEFITS = [
   "earlyAccess",
 ] as const;
 
-export default function ManageSubscriptionScreen({ navigation }: any) {
+type ManageSubscriptionNavigation = StackNavigationProp<
+  RootStackParamList,
+  "ManageSubscription"
+>;
+
+type ManageSubscriptionScreenProps = {
+  navigation: ManageSubscriptionNavigation;
+};
+
+export default function ManageSubscriptionScreen({
+  navigation,
+}: ManageSubscriptionScreenProps) {
   const theme = useTheme();
   const { t } = useTranslation("profile");
   const { uid } = useAuthContext();
@@ -45,7 +58,10 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   const [busy, setBusy] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
 
-  const extra = (Constants.expoConfig?.extra || {}) as Record<string, any>;
+  const extra = (Constants.expoConfig?.extra ?? {}) as {
+    termsUrl?: unknown;
+    privacyUrl?: unknown;
+  };
   const termsUrl = typeof extra.termsUrl === "string" ? extra.termsUrl : "";
   const privacyUrl =
     typeof extra.privacyUrl === "string" ? extra.privacyUrl : "";
@@ -66,9 +82,6 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   const state = subscription.state;
 
   const isPremiumByState = state.startsWith("premium");
-  const isExpired = state.endsWith("expired");
-  const isActive = state.endsWith("active");
-
   const isPremiumComputed = (isPremium ?? isPremiumByState) as boolean;
 
   const showCancel = state === "premium_active";
@@ -87,7 +100,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
   });
 
   const requireAuthOrAlert = (): boolean => {
-    if (!!uid) return true;
+    if (uid) return true;
     Alert.alert(
       t("manageSubscription.title"),
       t("manageSubscription.signInRequired", {
@@ -131,6 +144,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           }),
         );
       } else if (res.status === "cancelled") {
+        return;
       } else if (res.status === "unavailable") {
         Alert.alert(
           t("manageSubscription.title"),
@@ -168,6 +182,7 @@ export default function ManageSubscriptionScreen({ navigation }: any) {
           }),
         );
       } else if (res.status === "cancelled") {
+        return;
       } else if (res.status === "unavailable") {
         Alert.alert(
           t("manageSubscription.title"),

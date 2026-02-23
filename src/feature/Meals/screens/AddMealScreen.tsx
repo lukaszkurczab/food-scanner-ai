@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BackHandler } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 import MapMealAddScreens, {
   type MealAddFlowApi,
   type MealAddScreenName,
@@ -12,20 +14,24 @@ type Step<N extends MealAddScreenName = MealAddScreenName> = {
   params: MealAddStepParams[N];
 };
 
+type AddMealNavigationProp = StackNavigationProp<RootStackParamList, "AddMeal">;
+type AddMealRouteProp = RouteProp<RootStackParamList, "AddMeal">;
+
+const createStep = <N extends MealAddScreenName>(
+  name: N,
+  params?: MealAddStepParams[N]
+): Step<N> => ({
+  name,
+  params: params ?? ({} as MealAddStepParams[N]),
+});
+
 export default function AddMealScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation<AddMealNavigationProp>();
+  const route = useRoute<AddMealRouteProp>();
 
   const initialStep: Step = useMemo(() => {
-    const p = (route.params || {}) as Partial<
-      MealAddStepParams["MealCamera"]
-    > & {
-      start?: MealAddScreenName;
-      code?: string;
-      image?: string;
-    };
-
-    const start = (p.start as MealAddScreenName | undefined) || "MealCamera";
+    const p = (route.params ?? {}) as NonNullable<RootStackParamList["AddMeal"]>;
+    const start = p.start ?? "MealCamera";
 
     if (start === "MealCamera") {
       return {
@@ -34,7 +40,7 @@ export default function AddMealScreen() {
           barcodeOnly: !!p.barcodeOnly,
           id: p.id,
           skipDetection: !!p.skipDetection,
-          returnTo: (p.returnTo as MealAddScreenName | undefined) || "Result",
+          returnTo: p.returnTo || "Result",
           attempt: typeof p.attempt === "number" ? p.attempt : 1,
         },
       };
@@ -46,7 +52,7 @@ export default function AddMealScreen() {
         params: {
           code: p.code,
           attempt: typeof p.attempt === "number" ? p.attempt : 1,
-          returnTo: (p.returnTo as MealAddScreenName | undefined) || "Result",
+          returnTo: p.returnTo || "Result",
         },
       };
     }
@@ -76,16 +82,13 @@ export default function AddMealScreen() {
   }, [initialStep]);
 
   const goTo = useCallback<MealAddFlowApi["goTo"]>((name, params) => {
-    setStack((prev) => [
-      ...prev,
-      { name, params: (params ?? ({} as any)) as any },
-    ]);
+    setStack((prev) => [...prev, createStep(name, params)]);
   }, []);
 
   const replace = useCallback<MealAddFlowApi["replace"]>((name, params) => {
     setStack((prev) => {
       const next = [...prev];
-      next[next.length - 1] = { name, params: (params ?? ({} as any)) as any };
+      next[next.length - 1] = createStep(name, params);
       return next;
     });
   }, []);

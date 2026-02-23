@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Dropdown } from "@/components/Dropdown";
@@ -52,13 +52,9 @@ export default function ChartEditorPanel({
   const chartType: ChartType = (options.chartType || "donut") as ChartType;
 
   const patch = (p: Partial<ShareOptions>) => {
-    let changed = false;
-    for (const key in p) {
-      if ((p as any)[key] !== (options as any)[key]) {
-        changed = true;
-        break;
-      }
-    }
+    const changed = (Object.keys(p) as Array<keyof ShareOptions>).some(
+      (key) => p[key] !== options[key],
+    );
     if (!changed) return;
     onChange({ ...options, ...p });
   };
@@ -137,7 +133,16 @@ export default function ChartEditorPanel({
       base = options.chartTextColor || DEFAULT_TEXT;
     }
 
-    const current = (options as any)[target] ?? base;
+    const current =
+      target === "chartTextColor"
+        ? options.chartTextColor ?? base
+        : target === "chartProteinColor"
+        ? options.chartProteinColor ?? base
+        : target === "chartCarbsColor"
+        ? options.chartCarbsColor ?? base
+        : target === "chartFatColor"
+        ? options.chartFatColor ?? base
+        : options.chartBackgroundColor ?? base;
     setColorTarget(target);
     setTempColor(current);
   };
@@ -149,9 +154,18 @@ export default function ChartEditorPanel({
       return;
     }
 
-    const next: Partial<ShareOptions> = {
-      [colorTarget]: tempColor,
-    } as any;
+    const next: Partial<ShareOptions> = {};
+    if (colorTarget === "chartTextColor") {
+      next.chartTextColor = tempColor;
+    } else if (colorTarget === "chartProteinColor") {
+      next.chartProteinColor = tempColor;
+    } else if (colorTarget === "chartCarbsColor") {
+      next.chartCarbsColor = tempColor;
+    } else if (colorTarget === "chartFatColor") {
+      next.chartFatColor = tempColor;
+    } else {
+      next.chartBackgroundColor = tempColor;
+    }
 
     if (
       colorTarget === "chartProteinColor" ||
@@ -206,12 +220,6 @@ export default function ChartEditorPanel({
         return "";
     }
   };
-
-  const innerRadiusRaw =
-    typeof (options as any).chartInnerRadiusRatio === "number"
-      ? (options as any).chartInnerRadiusRatio
-      : 0.64;
-  const innerRadius = Math.min(Math.max(innerRadiusRaw, 0.5), 0.8);
 
   const mapTypeToVariant = (type: ChartType): ChartVariant => {
     switch (type) {
@@ -292,8 +300,12 @@ export default function ChartEditorPanel({
     );
   }
 
-  const toggleBool = (key: keyof ShareOptions) => {
-    patch({ [key]: !(options as any)[key] } as any);
+  const toggleBool = (key: "showChartKcalLabel" | "showChartLegend") => {
+    if (key === "showChartKcalLabel") {
+      patch({ showChartKcalLabel: options.showChartKcalLabel === false });
+      return;
+    }
+    patch({ showChartLegend: options.showChartLegend === false });
   };
 
   const renderTypeTab = () => (

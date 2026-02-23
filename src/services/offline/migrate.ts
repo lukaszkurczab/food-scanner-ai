@@ -12,6 +12,7 @@ import {
   startAfter,
   limit as fsLimit,
 } from "@react-native-firebase/firestore";
+import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import type { Meal } from "@/types/meal";
 import { upsertMealLocal } from "@/services/offline/meals.repo";
 import { setLastPullTs } from "@/services/offline/sync.engine";
@@ -36,11 +37,18 @@ function migrationFlag(uid: string) {
   return `initial_migration_done:${uid}`;
 }
 
+type PremiumFlags = {
+  isPremium?: boolean;
+  premium?: boolean;
+  subscription?: { active?: boolean };
+  premiumUntil?: string | number | Date | null;
+};
+
 async function resolvePremiumWindowDays(uid: string): Promise<number> {
   try {
     const uref = doc(db, "users", uid);
     const snap = await getDoc(uref);
-    const data: any = snap.exists() ? snap.data() : null;
+    const data = (snap.exists() ? snap.data() : null) as PremiumFlags | null;
 
     const isPremium =
       !!data?.isPremium ||
@@ -72,7 +80,7 @@ export async function migrateInitialMeals(uid: string): Promise<void> {
 
   log.log("start migration", { uid, windowDays, since: sinceISO });
 
-  let cursor: any = null;
+  let cursor: FirebaseFirestoreTypes.QueryDocumentSnapshot | null = null;
   let pulled = 0;
   let maxUpdated = "1970-01-01T00:00:00.000Z";
 
@@ -82,26 +90,31 @@ export async function migrateInitialMeals(uid: string): Promise<void> {
     orderBy("timestamp", "asc")
   );
 
-  while (true) {
-    const q = cursor
-      ? query(base, startAfter(cursor), fsLimit(PAGE_SIZE))
-      : query(base, fsLimit(PAGE_SIZE));
-
+  for (;;) {
+    const q = (
+      cursor
+        ? query(base, startAfter(cursor), fsLimit(PAGE_SIZE))
+        : query(base, fsLimit(PAGE_SIZE))
+    ) as FirebaseFirestoreTypes.Query<Meal>;
     const snap = await getDocs(q);
     if (snap.empty) break;
 
     for (const d of snap.docs) {
-      const meal = d.data() as Meal;
-      (meal as any).cloudId = d.id;
+      const mealData = d.data() as Meal;
+      const meal: Meal = { ...mealData, cloudId: d.id };
 
       try {
         await upsertMealLocal(meal);
         pulled++;
 
-        const u = (meal as any).updatedAt || (meal as any).timestamp || "";
+        const u = meal.updatedAt || meal.timestamp || "";
         if (u && u > maxUpdated) maxUpdated = u;
-      } catch (e: any) {
-        log.error("upsert local failed", d.id, e?.message || e);
+      } catch (e: unknown) {
+        const msg =
+          e && typeof e === "object" && "message" in e
+            ? String((e as { message?: unknown }).message ?? e)
+            : String(e);
+        log.error("upsert local failed", d.id, msg);
       }
     }
 

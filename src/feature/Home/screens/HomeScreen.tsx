@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { TodaysMealsList } from "../components/TodaysMealsList";
@@ -9,7 +9,7 @@ import { Layout, TargetProgressBar, PrimaryButton } from "@/components";
 import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@hooks/useMeals";
-import type { Meal, Nutrients } from "@/types/meal";
+import type { Meal } from "@/types/meal";
 import { useTranslation } from "react-i18next";
 import { subscribeStreak } from "@/services/streakService";
 import { useAuthContext } from "@/context/AuthContext";
@@ -18,14 +18,8 @@ import EmptyDayView from "../components/EmptyDayView";
 import { StreakBadge } from "@components/StreakBadge";
 import { calculateMacroTargets } from "@/utils/calculateMacroTargets";
 import { MacroTargetsRow } from "../components/MacroTargetsRow";
-
-function filterNonZeroMacros(n: Nutrients): Partial<Nutrients> {
-  const out: Partial<Nutrients> = {};
-  if (n.protein > 0) out.protein = n.protein;
-  if (n.fat > 0) out.fat = n.fat;
-  if (n.carbs > 0) out.carbs = n.carbs;
-  return out;
-}
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 function startEndOfLocalDay(d: Date) {
   const s = new Date(d);
@@ -35,7 +29,7 @@ function startEndOfLocalDay(d: Date) {
 }
 
 function parseMealTs(m: Meal): number | null {
-  const raw = m.timestamp || (m as any).createdAt;
+  const raw = m.timestamp || m.createdAt;
   if (!raw) return null;
   if (typeof raw === "number") return raw;
   const t = Date.parse(raw);
@@ -64,7 +58,12 @@ function buildLast7Days(): WeekDayItem[] {
   }));
 }
 
-export default function HomeScreen({ navigation }: any) {
+type HomeNavigation = StackNavigationProp<RootStackParamList>;
+type Props = {
+  navigation: HomeNavigation;
+};
+
+export default function HomeScreen({ navigation }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["home", "common"]);
   const { userData } = useUserContext();
@@ -111,11 +110,6 @@ export default function HomeScreen({ navigation }: any) {
   }, 0);
 
   const macros = useMemo(() => calculateTotalNutrients(dayMeals), [dayMeals]);
-  const nonZeroMacros = useMemo(() => filterNonZeroMacros(macros), [macros]);
-  const showMacrosChart =
-    (nonZeroMacros.protein ?? 0) > 0 ||
-    (nonZeroMacros.fat ?? 0) > 0 ||
-    (nonZeroMacros.carbs ?? 0) > 0;
 
   const goalCalories = hasSurvey ? (userData?.calorieTarget ?? 0) : 0;
 

@@ -104,10 +104,10 @@ function buildDietContext(p: FormData): DietContext {
 }
 
 function compactProfile(p: FormData) {
-  const toNum = (v: any) =>
+  const toNum = (v: unknown): number | undefined =>
     v === null || v === undefined ? undefined : Number(v);
 
-  const obj: any = {
+  const obj = {
     g: p.goal || undefined,
     act: p.activityLevel || undefined,
     s: p.sex || undefined,

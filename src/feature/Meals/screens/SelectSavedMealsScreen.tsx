@@ -1,4 +1,4 @@
-import React, {
+import {
   useCallback,
   useEffect,
   useMemo,
@@ -7,6 +7,8 @@ import React, {
 } from "react";
 import { View, FlatList, RefreshControl, ViewToken } from "react-native";
 import { v4 as uuidv4 } from "uuid";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { ParamListBase } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
@@ -31,6 +33,7 @@ import {
   query,
   orderBy,
   onSnapshot,
+  type FirebaseFirestoreTypes,
 } from "@react-native-firebase/firestore";
 import { useTranslation } from "react-i18next";
 import { cacheKeys, getJSON, setJSON } from "@/services/cache";
@@ -38,7 +41,7 @@ import { cacheKeys, getJSON, setJSON } from "@/services/cache";
 const STEP = 20;
 const TAIL_THRESHOLD = 10;
 
-const norm = (s: any) =>
+const norm = (s: unknown) =>
   String(s || "")
     .toLowerCase()
     .normalize("NFD")
@@ -47,10 +50,12 @@ const norm = (s: any) =>
 const app = getApp();
 const db = getFirestore(app);
 
+type SelectSavedMealNavigation = StackNavigationProp<ParamListBase>;
+
 export default function SelectSavedMealScreen({
   navigation,
 }: {
-  navigation: any;
+  navigation: SelectSavedMealNavigation;
 }) {
   const theme = useTheme();
   const netInfo = useNetInfo();
@@ -91,10 +96,12 @@ export default function SelectSavedMealScreen({
       orderBy("name", "asc")
     );
     const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map((d: any) => ({
-        ...(d.data() as Meal),
-        cloudId: d.id,
-      }));
+      const data = snap.docs.map(
+        (d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
+          ...(d.data() as Meal),
+          cloudId: d.id,
+        })
+      );
       setItems(data);
       setLoading(false);
       setLimit(STEP);
@@ -126,13 +133,13 @@ export default function SelectSavedMealScreen({
       return 0;
     });
     if (!q) return base;
-    return base.filter((m) => {
-      const title = norm(m.name) || "";
-      const ing = norm(
-        (m.ingredients || []).map((x: any) => x?.name || "").join(" ")
-      );
-      return title.includes(q) || ing.includes(q);
-    });
+      return base.filter((m) => {
+        const title = norm(m.name) || "";
+        const ing = norm(
+          (m.ingredients || []).map((x) => x?.name || "").join(" ")
+        );
+        return title.includes(q) || ing.includes(q);
+      });
   }, [items, queryText]);
 
   useEffect(() => {
@@ -185,7 +192,7 @@ export default function SelectSavedMealScreen({
 
     const base: Meal =
       draftMeal ??
-      ({
+      {
         mealId: uuidv4(),
         userUid: uid,
         name: "",
@@ -200,8 +207,7 @@ export default function SelectSavedMealScreen({
         type: "other",
         timestamp: "",
         source: null,
-        cloudId: undefined,
-      } as any);
+      };
 
     const next: Meal = {
       ...base,
@@ -274,12 +280,12 @@ export default function SelectSavedMealScreen({
       </View>
       <FlatList
         data={pageItems}
-        keyExtractor={(item) => (item.cloudId || item.mealId) as string}
+        keyExtractor={(item) => item.cloudId || item.mealId}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refresh} />
         }
         renderItem={({ item }) => {
-          const id = (item.cloudId || item.mealId) as string;
+          const id = item.cloudId || item.mealId;
           const selected = selectedId === id;
           return (
             <View

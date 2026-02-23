@@ -1,12 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export async function setJSON(key: string, value: any) {
+export async function setJSON(key: string, value: unknown) {
   try {
     await AsyncStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+  } catch {
+    // Ignore storage write failures for best-effort cache.
+  }
 }
 
-export async function getJSON<T = any>(key: string): Promise<T | null> {
+export async function getJSON<T = unknown>(key: string): Promise<T | null> {
   try {
     const raw = await AsyncStorage.getItem(key);
     if (!raw) return null;
@@ -20,4 +22,3 @@ export const cacheKeys = {
   myMealsList: (uid: string) => `myMeals:list:${uid}`,
   lastWeekMeals: (uid: string) => `meals:last7d:${uid}`,
 };
-

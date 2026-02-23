@@ -13,6 +13,7 @@ import {
   limit as fsLimit,
   getDocs,
   startAfter,
+  type FirebaseFirestoreTypes,
 } from "@react-native-firebase/firestore";
 import type { Meal } from "@/types/meal";
 import { Sync } from "@/utils/debug";
@@ -33,9 +34,35 @@ const PULL_PAGE_SIZE = 100;
 const PUSH_BATCH_SIZE = 25;
 const LOOP_INTERVAL_MS = 5 * 60 * 1000;
 
-let loopTimer: any = null;
+let loopTimer: ReturnType<typeof setInterval> | null = null;
 let netUnsub: null | (() => void) = null;
 let running = false;
+
+type MealPayload = Partial<Meal> & { cloudId?: string | null; mealId?: string | null };
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+function toMealPayload(payload: unknown): MealPayload | null {
+  if (!payload || typeof payload !== "object") return null;
+  return payload as MealPayload;
+}
+
+function toMealSource(value: string | null): Meal["source"] {
+  return value === "ai" || value === "manual" || value === "saved" ? value : null;
+}
+
+function toMealType(value: string): Meal["type"] {
+  return value === "breakfast" ||
+    value === "lunch" ||
+    value === "dinner" ||
+    value === "snack" ||
+    value === "other"
+    ? value
+    : "other";
+}
 
 function mealsCol(uid: string) {
   return collection(db, "users", uid, "meals");
@@ -84,9 +111,9 @@ export function startSyncLoop(uid: string) {
       console.log("[sync] pullChanges");
       await pullChanges(uid);
       console.log("[sync] run done");
-    } catch (e: any) {
-      log.error("loop:error", e?.message || e);
-      console.log("[sync] run error", e?.message || e);
+    } catch (e: unknown) {
+      log.error("loop:error", getErrorMessage(e));
+      console.log("[sync] run error", getErrorMessage(e));
     } finally {
       running = false;
     }
@@ -132,7 +159,7 @@ export async function pushQueue(uid: string): Promise<void> {
   pushLog.time("exec");
   let processed = 0;
 
-  while (true) {
+  for (;;) {
     const batch = await nextBatch(PUSH_BATCH_SIZE);
     console.log("[push] nextBatch", { size: batch.length });
     if (batch.length === 0) break;
@@ -141,12 +168,13 @@ export async function pushQueue(uid: string): Promise<void> {
       console.log("[push] op", { id: op.id, kind: op.kind });
       try {
         if (op.kind === "upsert") {
-          const payload = op.payload as Meal;
-          const id = (payload as any).cloudId || payload.mealId;
+          const payload = toMealPayload(op.payload);
+          const id = payload?.cloudId || payload?.mealId;
+          if (!payload || !id) throw new Error("upsert/missing-id");
           const ref = doc(db, "users", uid, "meals", id);
           const remoteSnap = await getDoc(ref);
           const remote = remoteSnap.exists()
-            ? (remoteSnap.data() as any)
+            ? (remoteSnap.data() as Partial<Meal>)
             : null;
           const localUpdated = new Date(
             payload.updatedAt || "1970-01-01"
@@ -162,7 +190,7 @@ export async function pushQueue(uid: string): Promise<void> {
           });
 
           if (!remote || localUpdated >= remoteUpdated) {
-            await setDoc(ref, payload as any, { merge: true });
+            await setDoc(ref, payload, { merge: true });
             pushLog.log("upsert:ok", id);
             console.log("[push] upsert ok", { id });
             emit("meal:pushed", { uid, cloudId: id });
@@ -174,7 +202,7 @@ export async function pushQueue(uid: string): Promise<void> {
           const ref = doc(db, "users", uid, "meals", op.cloud_id);
           const remoteSnap = await getDoc(ref);
           const remote = remoteSnap.exists()
-            ? (remoteSnap.data() as any)
+            ? (remoteSnap.data() as Partial<Meal>)
             : null;
           const localUpdated = new Date(op.updated_at).getTime();
           const remoteUpdated = new Date(
@@ -190,7 +218,7 @@ export async function pushQueue(uid: string): Promise<void> {
           if (!remote || localUpdated >= remoteUpdated) {
             await setDoc(
               ref,
-              { deleted: true, updatedAt: op.updated_at } as any,
+              { deleted: true, updatedAt: op.updated_at },
               { merge: true }
             );
             pushLog.log("delete:ok", op.cloud_id);
@@ -201,8 +229,8 @@ export async function pushQueue(uid: string): Promise<void> {
             console.log("[push] delete skip newer remote", { id: op.cloud_id });
           }
         } else if (op.kind === "upsert_mymeal") {
-          const payload = op.payload as Meal;
-          const docId = (payload as any).mealId || payload.cloudId;
+          const payload = toMealPayload(op.payload);
+          const docId = payload?.mealId || payload?.cloudId;
           if (!docId) throw new Error("mymeal/missing-id");
           const ref = doc(db, "users", uid, "myMeals", docId);
           await setDoc(
@@ -213,7 +241,7 @@ export async function pushQueue(uid: string): Promise<void> {
               cloudId: docId,
               source: payload.source ?? "saved",
               updatedAt: payload.updatedAt || nowISO(),
-            } as any,
+            },
             { merge: true }
           );
           pushLog.log("mymeal:upsert", docId);
@@ -235,11 +263,11 @@ export async function pushQueue(uid: string): Promise<void> {
         await markDone(op.id);
         processed++;
         console.log("[push] markDone", { id: op.id });
-      } catch (e: any) {
-        pushLog.error("op:fail", op.id, e?.message || e);
+      } catch (e: unknown) {
+        pushLog.error("op:fail", op.id, getErrorMessage(e));
         console.log("[push] op fail", {
           id: op.id,
-          err: e?.message || String(e),
+          err: getErrorMessage(e),
         });
         await bumpAttempts(op.id);
         console.log("[push] bumpAttempts", { id: op.id });
@@ -268,7 +296,7 @@ export async function pullChanges(uid: string): Promise<void> {
   pullLog.time("exec");
 
   const last = (await getLastPullTs(uid)) || "1970-01-01T00:00:00.000Z";
-  let cursor: any = null;
+  let cursor: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal> | null = null;
   let maxUpdated = last;
   let total = 0;
   console.log("[pull] since", { last });
@@ -279,17 +307,18 @@ export async function pullChanges(uid: string): Promise<void> {
     orderBy("updatedAt", "asc")
   );
 
-  while (true) {
-    const q = cursor
-      ? query(base, startAfter(cursor), fsLimit(PULL_PAGE_SIZE))
-      : query(base, fsLimit(PULL_PAGE_SIZE));
-    const snap = await getDocs(q);
+  for (;;) {
+    const pullQuery = (
+      cursor
+        ? query(base, startAfter(cursor), fsLimit(PULL_PAGE_SIZE))
+        : query(base, fsLimit(PULL_PAGE_SIZE))
+    ) as FirebaseFirestoreTypes.Query<Meal>;
+    const snap = await getDocs(pullQuery);
     console.log("[pull] page", { size: snap.size });
     if (snap.empty) break;
 
     for (const d of snap.docs) {
-      const meal = d.data() as Meal;
-      (meal as any).cloudId = d.id;
+      const meal: Meal = { ...(d.data() as Meal), cloudId: d.id };
       try {
         await upsertMealLocal(meal);
         emit("meal:synced", {
@@ -304,11 +333,11 @@ export async function pullChanges(uid: string): Promise<void> {
           id: d.id,
           updatedAt: meal.updatedAt,
         });
-      } catch (e: any) {
-        pullLog.error("local_upsert:fail", d.id, e?.message || e);
+      } catch (e: unknown) {
+        pullLog.error("local_upsert:fail", d.id, getErrorMessage(e));
         console.log("[pull] upsert local fail", {
           id: d.id,
-          err: e?.message || String(e),
+          err: getErrorMessage(e),
         });
       }
     }
@@ -379,13 +408,13 @@ export async function processImageUploads(uid: string): Promise<void> {
           mealId: m.meal_id,
           cloudId: m.cloud_id ?? undefined,
           timestamp: m.timestamp,
-          type: m.type,
+          type: toMealType(m.type),
           name: m.name,
           ingredients: [],
           createdAt: m.created_at ?? m.timestamp ?? now,
           updatedAt: now,
           syncState: "pending",
-          source: (m.source as any) ?? "manual",
+          source: toMealSource(m.source) ?? "manual",
           imageId: up.imageId,
           photoUrl: up.cloudUrl,
           notes: m.notes,
@@ -397,19 +426,19 @@ export async function processImageUploads(uid: string): Promise<void> {
             carbs: m.totals_carbs || 0,
             fat: m.totals_fat || 0,
           },
-        } as any;
+        };
 
         await enqueueUpsert(uid, normalized);
         upLog.log("meal_enqueued", m.cloud_id);
         console.log("[upload] meal enqueued", { cloud_id: m.cloud_id });
       }
       ok++;
-    } catch (e: any) {
+    } catch (e: unknown) {
       fail++;
-      upLog.error("upload:fail", row.image_id, e?.message || e);
+      upLog.error("upload:fail", row.image_id, getErrorMessage(e));
       console.log("[upload] fail", {
         image_id: row.image_id,
-        err: e?.message || String(e),
+        err: getErrorMessage(e),
       });
     }
   }
@@ -419,7 +448,7 @@ export async function processImageUploads(uid: string): Promise<void> {
   console.log("[upload] done", { ok, fail, pending: pending.length });
 }
 
-function safeParseJSON(s: any) {
+function safeParseJSON(s: unknown) {
   try {
     if (typeof s !== "string") return null;
     return JSON.parse(s);

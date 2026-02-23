@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   StyleProp,
   ViewStyle,
+  TextStyle,
   PressableProps,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
@@ -15,7 +16,7 @@ type SecondaryButtonProps = {
   disabled?: boolean;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
-  textStyle?: StyleProp<any>;
+  textStyle?: StyleProp<TextStyle>;
 } & PressableProps;
 
 export const SecondaryButton: React.FC<SecondaryButtonProps> = ({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -13,8 +13,16 @@ import { useBadges } from "@/hooks/useBadges";
 import { usePremiumContext } from "@/context/PremiumContext";
 import AvatarBadge from "@/components/AvatarBadge";
 import { Modal } from "@/components/Modal";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-export default function UserProfileScreen({ navigation }: any) {
+type ProfileNavigation = StackNavigationProp<RootStackParamList, "Profile">;
+
+type UserProfileScreenProps = {
+  navigation: ProfileNavigation;
+};
+
+export default function UserProfileScreen({ navigation }: UserProfileScreenProps) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const { userData, updateUser, deleteUser, exportUserData } = useUserContext();
@@ -66,7 +74,9 @@ export default function UserProfileScreen({ navigation }: any) {
     try {
       const auth = getAuth();
       await signOut(auth);
-    } catch {}
+    } catch {
+      // Ignore sign-out errors to avoid blocking local logout flow.
+    }
   };
 
   const handleDeleteAccount = async () => {

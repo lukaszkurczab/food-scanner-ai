@@ -49,7 +49,9 @@ export function useUser(uid: string) {
           if (parsed?.language) setLanguage(parsed.language);
           setLoading(false);
         }
-      } catch {}
+      } catch {
+        // Ignore malformed local cache and continue with remote snapshot.
+      }
     })();
     const app = getApp();
     const db = getFirestore(app);
@@ -104,14 +106,21 @@ export function useUser(uid: string) {
 
       try {
         const current = await AsyncStorage.getItem(`user:profile:${uid}`);
-        const merged = current
-          ? { ...(JSON.parse(current) as any), ...patch, updatedAt: now }
-          : { ...(patch as any), updatedAt: now };
+        const parsedCurrent = current
+          ? (JSON.parse(current) as Record<string, unknown>)
+          : {};
+        const merged = {
+          ...parsedCurrent,
+          ...patch,
+          updatedAt: now,
+        };
         await AsyncStorage.setItem(
           `user:profile:${uid}`,
           JSON.stringify(merged)
         );
-      } catch {}
+      } catch {
+        // Ignore cache write failures for profile mirror.
+      }
     },
     [uid]
   );

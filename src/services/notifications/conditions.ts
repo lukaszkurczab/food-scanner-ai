@@ -6,6 +6,7 @@ import {
   where,
   getDocs,
 } from "@react-native-firebase/firestore";
+import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import NetInfo from "@react-native-community/netinfo";
 import type { Meal } from "@/types/meal";
 import { MealKind } from "@/types/notification";
@@ -52,14 +53,14 @@ export async function fetchTodayMeals(uid: string): Promise<Meal[]> {
     where("timestamp", "<=", e)
   );
   const snap = await getDocs(q);
-  const items = snap.docs
-    .map((d: any) => d.data() as Meal)
-    .filter((m: any) => !m.deleted);
+  const items: Meal[] = snap.docs
+    .map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => d.data() as Meal)
+    .filter((m: Meal) => !m.deleted);
   return items;
 }
 
 export function sumConsumedKcal(meals: Meal[]): number {
-  return meals.reduce((acc, m: any) => acc + Number(m?.totals?.kcal || 0), 0);
+  return meals.reduce((acc, m) => acc + Number(m.totals?.kcal || 0), 0);
 }
 
 export function isCalorieGoalNotMet(

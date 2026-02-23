@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -45,13 +45,9 @@ export default function CardEditorPanel({
   const [tab, setTab] = useState<TabKey>("type");
 
   const patch = (p: Partial<ShareOptions>) => {
-    let changed = false;
-    for (const key in p) {
-      if ((p as any)[key] !== (options as any)[key]) {
-        changed = true;
-        break;
-      }
-    }
+    const changed = (Object.keys(p) as Array<keyof ShareOptions>).some(
+      (key) => p[key] !== options[key],
+    );
     if (!changed) return;
     onChange({ ...options, ...p });
   };
@@ -126,23 +122,7 @@ export default function CardEditorPanel({
     },
   ];
 
-  const currentFamilyKey:
-    | "DMSans"
-    | "Inter"
-    | "Lato"
-    | "Manrope"
-    | "Merriweather"
-    | "Montserrat"
-    | "Nunito"
-    | "OpenSans"
-    | "Oswald"
-    | "Poppins"
-    | "Raleway"
-    | "Roboto"
-    | "Rubik"
-    | "Ubuntu"
-    | "WorkSans"
-    | null = (options.cardFontFamilyKey as any) ?? null;
+  const currentFamilyKey: string | null = options.cardFontFamilyKey ?? null;
 
   const currentWeight: "300" | "500" | "700" = options.cardFontWeight ?? "500";
 
@@ -157,7 +137,16 @@ export default function CardEditorPanel({
         : target === "cardMacroFatColor"
         ? String(theme.macro.fat)
         : String(theme.text);
-    const current = (options as any)[target] || fallback;
+    const current =
+      target === "cardTextColor"
+        ? options.cardTextColor || fallback
+        : target === "cardMacroProteinColor"
+        ? options.cardMacroProteinColor || fallback
+        : target === "cardMacroCarbsColor"
+        ? options.cardMacroCarbsColor || fallback
+        : target === "cardMacroFatColor"
+        ? options.cardMacroFatColor || fallback
+        : options.cardBackgroundColor || fallback;
     setColorTarget(target);
     setTempColor(current);
     onColorPickingChange?.(true);
@@ -170,7 +159,17 @@ export default function CardEditorPanel({
       onColorPickingChange?.(false);
       return;
     }
-    patch({ [colorTarget]: tempColor } as any);
+    if (colorTarget === "cardTextColor") {
+      patch({ cardTextColor: tempColor });
+    } else if (colorTarget === "cardMacroProteinColor") {
+      patch({ cardMacroProteinColor: tempColor });
+    } else if (colorTarget === "cardMacroCarbsColor") {
+      patch({ cardMacroCarbsColor: tempColor });
+    } else if (colorTarget === "cardMacroFatColor") {
+      patch({ cardMacroFatColor: tempColor });
+    } else {
+      patch({ cardBackgroundColor: tempColor });
+    }
     setColorTarget(null);
     setTempColor(null);
     onColorPickingChange?.(false);

@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -15,13 +14,9 @@ export default function BackgroundEditorPanel({ options, onChange }: Props) {
   const { t } = useTranslation(["share"]);
 
   const patch = (p: Partial<ShareOptions>) => {
-    let changed = false;
-    for (const key in p) {
-      if ((p as any)[key] !== (options as any)[key]) {
-        changed = true;
-        break;
-      }
-    }
+    const changed = (Object.keys(p) as Array<keyof ShareOptions>).some(
+      (key) => p[key] !== options[key],
+    );
     if (!changed) return;
     onChange({ ...options, ...p });
   };

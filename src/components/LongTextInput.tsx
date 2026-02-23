@@ -1,6 +1,7 @@
-import React, { forwardRef } from "react";
+import { forwardRef } from "react";
 import { View, TextInput as RNTextInput, Text } from "react-native";
 import { useTheme } from "@/theme/useTheme";
+import type { ViewStyle, TextStyle } from "react-native";
 
 type Props = {
   value: string;
@@ -8,8 +9,8 @@ type Props = {
   placeholder?: string;
   label?: string;
   error?: string;
-  style?: any;
-  inputStyle?: any;
+  style?: ViewStyle;
+  inputStyle?: TextStyle;
   disabled?: boolean;
   editable?: boolean;
   numberOfLines?: number;
@@ -128,3 +129,5 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
     );
   }
 );
+
+LongTextInput.displayName = "LongTextInput";

@@ -19,6 +19,33 @@ function getDayRangeLocal(d: Date) {
   return { start: start.getTime(), end: end.getTime() };
 }
 
+type IngredientKcalCandidate = {
+  kcal?: unknown;
+};
+
+type MealWithSerializedIngredients = Omit<Meal, "ingredients"> & {
+  ingredients?: Meal["ingredients"] | string | null;
+};
+
+function getIngredients(meal: Meal): IngredientKcalCandidate[] {
+  const raw = (meal as MealWithSerializedIngredients).ingredients;
+  if (Array.isArray(raw)) return raw as IngredientKcalCandidate[];
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed)
+        ? parsed.filter(
+            (item): item is IngredientKcalCandidate =>
+              typeof item === "object" && item !== null,
+          )
+        : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 export function getLastNDaysAggregated(
   meals: Meal[],
   days?: number,
@@ -49,37 +76,33 @@ export function getLastNDaysAggregated(
       : d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
   );
 
+  if (aggregation === "nutrients") {
+    const data = periods.map((day) => {
+      const { start, end } = getDayRangeLocal(day);
+      const mealsForDay = meals.filter((m) => {
+        const ts = parseMealTime(m);
+        return ts !== null && ts >= start && ts < end;
+      });
+      return calculateTotalNutrients(mealsForDay);
+    });
+    return { labels, data };
+  }
+
   const data = periods.map((day) => {
     const { start, end } = getDayRangeLocal(day);
-
     const mealsForDay = meals.filter((m) => {
       const ts = parseMealTime(m);
       return ts !== null && ts >= start && ts < end;
     });
 
-    if (aggregation === "nutrients") {
-      return calculateTotalNutrients(mealsForDay);
-    }
-
-    const dayKcal = mealsForDay.reduce((sum, meal) => {
-      const ingredients = Array.isArray(meal.ingredients)
-        ? meal.ingredients
-        : (() => {
-            try {
-              return JSON.parse((meal as any).ingredients ?? "[]");
-            } catch {
-              return [];
-            }
-          })();
-      const kcal = ingredients.reduce(
-        (acc: number, ing: any) => acc + (Number(ing?.kcal) || 0),
-        0
+    return mealsForDay.reduce((sum, meal) => {
+      const kcal = getIngredients(meal).reduce(
+        (acc, ing) => acc + (Number(ing.kcal) || 0),
+        0,
       );
       return sum + kcal;
     }, 0);
-
-    return dayKcal;
   });
 
-  return { labels, data } as any;
+  return { labels, data };
 }

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Text, Linking } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useTranslation } from "react-i18next";
@@ -6,6 +6,8 @@ import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
 import { Layout, PhotoPreview } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
+import type { StackScreenProps } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 const SHUTTER = 72;
 const SWITCH = 50;
@@ -13,8 +15,7 @@ const GAP = 24;
 
 type AvatarCameraScreenProps = {
   onPhotoTaken?: (uri: string) => void;
-  navigation: any;
-};
+} & StackScreenProps<RootStackParamList, "AvatarCamera">;
 
 export default function AvatarCameraScreen({
   onPhotoTaken,

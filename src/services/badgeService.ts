@@ -10,6 +10,7 @@ import {
   query,
   where,
 } from "@react-native-firebase/firestore";
+import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import type { Badge, BadgeId } from "@/types/badge";
 import { baseColors } from "@/theme/colors";
 import { subscribeStreak } from "@/services/streakService";
@@ -89,12 +90,22 @@ async function giveBadge(uid: string, badge: Omit<Badge, "unlockedAt">) {
   return payload;
 }
 
+function sortByUnlockedAtAsc(a: Badge, b: Badge): number {
+  return a.unlockedAt - b.unlockedAt;
+}
+
+function docsToBadges(
+  docs: FirebaseFirestoreTypes.QueryDocumentSnapshot[]
+): Badge[] {
+  return docs
+    .map((d) => d.data() as Badge)
+    .sort(sortByUnlockedAtAsc);
+}
+
 export async function listBadges(uid: string): Promise<Badge[]> {
   try {
     const snap = await getDocs(col(uid));
-    return snap.docs
-      .map((d: any) => d.data() as Badge)
-      .sort((a: any, b: any) => a.unlockedAt - b.unlockedAt);
+    return docsToBadges(snap.docs);
   } catch {
     return [];
   }
@@ -103,14 +114,12 @@ export async function listBadges(uid: string): Promise<Badge[]> {
 export function subscribeBadges(uid: string, cb: (badges: Badge[]) => void) {
   const ref = col(uid);
   return onSnapshot(ref, {
-    next: (snap: any) => {
+    next: (snap: FirebaseFirestoreTypes.QuerySnapshot) => {
       if (!snap || !Array.isArray(snap.docs)) {
         cb([]);
         return;
       }
-      const items = snap.docs
-        .map((d: any) => d.data() as Badge)
-        .sort((a: any, b: any) => a.unlockedAt - b.unlockedAt);
+      const items = docsToBadges(snap.docs);
       cb(items);
     },
     error: () => {

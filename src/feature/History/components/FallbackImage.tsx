@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Image } from "react-native";
+import type { DimensionValue } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
 
 type Props = {
   uri?: string | null;
-  width: number | string;
+  width: DimensionValue;
   height: number;
   borderRadius?: number;
   onError?: () => void;
@@ -33,7 +33,7 @@ export const FallbackImage: React.FC<Props> = ({
     <Image
       source={{ uri }}
       style={{
-        width: width as any,
+        width,
         height,
         borderRadius: borderRadius ?? 16,
         backgroundColor: theme.card,

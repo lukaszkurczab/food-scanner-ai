@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -22,7 +22,8 @@ import {
   Card,
   Modal,
 } from "@/components";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useRoute, type RouteProp, type ParamListBase } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { getApp } from "@react-native-firebase/app";
 import { getFirestore, doc, setDoc } from "@react-native-firebase/firestore";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -30,23 +31,26 @@ import { MaterialIcons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system";
 
 type ScreenRoute = RouteProp<RootStackParamList, "EditResult">;
+type EditResultNavigation = StackNavigationProp<ParamListBase>;
+type Props = {
+  navigation: EditResultNavigation;
+};
 
 const app = getApp();
 const db = getFirestore(app);
 
-export default function EditResultScreen({ navigation }: { navigation: any }) {
+export default function EditResultScreen({ navigation }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const { uid } = useAuthContext();
   const route = useRoute<ScreenRoute>();
   const savedCloudId = route.params?.savedCloudId;
-  const nav = useNavigation<any>();
   const { meal, setLastScreen, setPhotoUrl } = useMealDraftContext();
   const { userData } = useUserContext();
 
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [mealName, setMealName] = useState(meal?.name || autoMealName());
-  const [mealType, setMealType] = useState<MealType>(meal?.type || "breakfast");
+  const mealName = meal?.name || autoMealName();
+  const mealType: MealType = meal?.type || "breakfast";
   const [showIngredients, setShowIngredients] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
   const [selectedAt, setSelectedAt] = useState<Date>(
@@ -91,8 +95,8 @@ export default function EditResultScreen({ navigation }: { navigation: any }) {
       name: mealName,
       type: mealType,
       timestamp: selectedAt.toISOString(),
-    } as any;
-    nav.navigate("MealShare", { meal: pass, returnTo: "MealDetails" });
+    };
+    navigation.navigate("MealShare", { meal: pass, returnTo: "MealDetails" });
   };
 
   const handleAddPhoto = () => {
@@ -108,7 +112,7 @@ export default function EditResultScreen({ navigation }: { navigation: any }) {
     setSaving(true);
     const nowIso = new Date().toISOString();
     const payload = {
-      ...(meal as any),
+      ...meal,
       name: mealName,
       type: mealType,
       timestamp: selectedAt.toISOString(),

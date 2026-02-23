@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { View } from "react-native";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import ProgressDots from "@/feature/Onboarding/components/ProgressDots";
-import { Modal, Layout, IconButton } from "@/components";
-import { FormData } from "@/types";
+import { Modal, Layout } from "@/components";
+import type { FormData, OnboardingMode, UserData } from "@/types";
 import Step1BasicData from "@/feature/Onboarding/components/Step1BasicData";
 import Step2Preferences from "@/feature/Onboarding/components/Step2Preferences";
 import Step3Health from "@/feature/Onboarding/components/Step3Health";
@@ -18,7 +17,8 @@ import {
   fetchTodayMeals,
   sumConsumedKcal,
 } from "@/services/notifications/conditions";
-import { MaterialIcons } from "@expo/vector-icons";
+import type { StackScreenProps } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 const STEPS = 5;
 
@@ -47,9 +47,12 @@ export const INITIAL_FORM: FormData = {
   calorieTarget: 0,
 };
 
-type Mode = "first" | "refill";
+type OnboardingScreenProps = StackScreenProps<RootStackParamList, "Onboarding">;
 
-export default function OnboardingScreen({ navigation, route }: any) {
+export default function OnboardingScreen({
+  navigation,
+  route,
+}: OnboardingScreenProps) {
   const { t } = useTranslation("onboarding");
   const { userData, updateUser, syncUserProfile } = useUserContext();
   const { uid } = useAuthContext();
@@ -69,12 +72,12 @@ export default function OnboardingScreen({ navigation, route }: any) {
     returnStep: STEPS,
   });
 
-  const mode: Mode = useMemo(() => {
-    const param = route?.params?.mode as Mode | undefined;
+  const mode: OnboardingMode = useMemo(() => {
+    const param = route.params?.mode;
     if (param) return param;
     if (userData?.surveyComplited) return "refill";
     return "first";
-  }, [route?.params?.mode, userData?.surveyComplited]);
+  }, [route.params?.mode, userData?.surveyComplited]);
 
   useEffect(() => {
     if (!navigation?.setOptions) return;
@@ -86,19 +89,15 @@ export default function OnboardingScreen({ navigation, route }: any) {
   }, [navigation, mode]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        if (userData) {
-          setForm({
-            ...INITIAL_FORM,
-            ...userData,
-            sex: (userData as any).sex || "female",
-          });
-        }
-      } catch {}
-      setIsLoaded(true);
-    })();
-  }, []);
+    if (userData) {
+      setForm({
+        ...INITIAL_FORM,
+        ...userData,
+        sex: userData.sex ?? "female",
+      });
+    }
+    setIsLoaded(true);
+  }, [userData]);
 
   const nextStep = () => setStep((s) => Math.min(STEPS, s + 1));
   const prevStep = () => setStep((s) => Math.max(1, s - 1));
@@ -121,7 +120,7 @@ export default function OnboardingScreen({ navigation, route }: any) {
         avatarLocalPath: form.avatarLocalPath ?? "",
         calorieTarget: calculateCalorieTarget(form),
         surveyCompletedAt: new Date().toISOString(),
-      } as any;
+      } satisfies Partial<UserData>;
       assertNoUndefined(payload, "handleFinish payload");
       await updateUser(payload);
       await syncUserProfile();
@@ -132,13 +131,17 @@ export default function OnboardingScreen({ navigation, route }: any) {
           const targetKcal = Number(payload.calorieTarget || 0);
           await updateStreakIfThresholdMet({ uid, todaysKcal, targetKcal });
         }
-      } catch {}
+      } catch {
+        // Streak refresh is best-effort and should not block onboarding completion.
+      }
       if (mode === "first") {
         navigation.replace("Home");
       } else {
         navigation.navigate("Profile");
       }
-    } catch {}
+    } catch {
+      // Keep user on onboarding if profile update fails.
+    }
   };
 
   const handleExitPress = () => setShowExitModal(true);
@@ -228,7 +231,6 @@ export default function OnboardingScreen({ navigation, route }: any) {
           goToStep={goToStep}
           onFinish={handleFinish}
           onBack={prevStep}
-          mode={mode}
         />
       )}
 

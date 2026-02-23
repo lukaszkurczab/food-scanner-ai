@@ -8,6 +8,7 @@ import {
   getDocs,
   setDoc,
 } from "@react-native-firebase/firestore";
+import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import {
   getStorage,
   ref,
@@ -22,6 +23,11 @@ const MY_MEALS = "myMeals";
 const app = getApp();
 const db = getFirestore(app);
 const st = getStorage(app);
+
+type MyMealDoc = Meal & {
+  uploadState?: "pending" | "done";
+  localPhotoUri?: string | null;
+};
 
 const isLocalPhoto = (uri?: string | null) => !!uri && uri.startsWith("file:");
 
@@ -45,7 +51,7 @@ export async function upsertMyMealLocal(
 ): Promise<void> {
   const now = new Date().toISOString();
   const docId = meal.mealId ?? meal.cloudId!;
-  const next: any = {
+  const next: MyMealDoc = {
     ...meal,
     mealId: docId,
     cloudId: docId,
@@ -67,12 +73,9 @@ export async function upsertMyMealLocal(
 
 export async function fetchMyMealsFromCloud(userUid: string): Promise<Meal[]> {
   const snap = await getDocs(collection(db, USERS, userUid, MY_MEALS));
-  return snap.docs.map((d: any) => {
-    const data = d.data() as Meal & {
-      uploadState?: "pending" | "done";
-      localPhotoUri?: string | null;
-    };
-    return { ...data, cloudId: d.id, mealId: (data as any).mealId ?? d.id };
+  return snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => {
+    const data = d.data() as MyMealDoc;
+    return { ...data, cloudId: d.id, mealId: data.mealId ?? d.id };
   });
 }
 
@@ -88,7 +91,7 @@ export async function upsertMyMealWithPhoto(
   const uploaded = await uploadPhotoIfNeeded(userUid, docId, effectivePhoto);
   if (uploaded) photoUrl = uploaded;
 
-  const next: any = {
+  const next: MyMealDoc = {
     ...meal,
     mealId: docId,
     cloudId: docId,
@@ -123,6 +126,6 @@ export async function deleteMyMealInFirestore(
   );
 }
 
-export async function syncMyMeals(_userUid: string): Promise<void> {
+export async function syncMyMeals(): Promise<void> {
   return;
 }

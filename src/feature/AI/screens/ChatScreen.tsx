@@ -1,14 +1,7 @@
-import React, { useMemo, useState, useCallback } from "react";
-import {
-  View,
-  FlatList,
-  ActivityIndicator,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useMemo, useState, useCallback } from "react";
+import { View, FlatList, ActivityIndicator, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUser } from "@hooks/useUser";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
@@ -28,9 +21,24 @@ import { IconButton } from "@/components/IconButton";
 import { MaterialIcons } from "@expo/vector-icons";
 import { v4 as uuidv4 } from "uuid";
 import { Layout } from "@components/Layout";
+import type { RootStackParamList } from "@/navigation/navigate";
+import type { FormData } from "@/types";
+
+const EMPTY_PROFILE: FormData = {
+  unitsSystem: "metric",
+  age: "",
+  sex: "female",
+  height: "",
+  weight: "",
+  preferences: [],
+  activityLevel: "",
+  goal: "",
+  surveyComplited: false,
+  calorieTarget: 0,
+};
 
 export default function ChatScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { firebaseUser: user } = useAuthContext();
   const theme = useTheme();
   const { t } = useTranslation("chat");
@@ -62,7 +70,7 @@ export default function ChatScreen() {
     uid,
     !!isPremium,
     meals || [],
-    userData || ({} as any),
+    userData ?? EMPTY_PROFILE,
     threadId,
   );
 

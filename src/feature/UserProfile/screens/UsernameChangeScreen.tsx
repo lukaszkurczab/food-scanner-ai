@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -14,6 +14,8 @@ import {
   isUsernameAvailable,
   normalizeUsername,
 } from "@/services/usernameService";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 function mapFirebaseErrorToKey(code: string): string {
   switch (code) {
@@ -32,7 +34,18 @@ function mapFirebaseErrorToKey(code: string): string {
   }
 }
 
-export default function UsernameChangeScreen({ navigation }: any) {
+type UsernameChangeNavigation = StackNavigationProp<RootStackParamList>;
+type Props = {
+  navigation: UsernameChangeNavigation;
+};
+
+function getErrorCode(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
+}
+
+export default function UsernameChangeScreen({ navigation }: Props) {
   const { t } = useTranslation(["profile", "login"]);
   const theme = useTheme();
   const { changeUsername, userData } = useUserContext();
@@ -82,10 +95,10 @@ export default function UsernameChangeScreen({ navigation }: any) {
     try {
       await changeUsername(normalizeUsername(username), password);
       navigation.goBack();
-    } catch (e: any) {
+    } catch (e: unknown) {
       let errKey = "login_failed";
-      if (e && typeof e.code === "string")
-        errKey = mapFirebaseErrorToKey(e.code);
+      const code = getErrorCode(e);
+      if (code) errKey = mapFirebaseErrorToKey(code);
 
       if (errKey === "invalid_password") {
         setErrors((old) => ({

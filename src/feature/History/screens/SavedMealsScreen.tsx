@@ -1,11 +1,5 @@
 // src/feature/History/screens/SavedMealsScreen.tsx
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   FlatList,
@@ -14,6 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import type { ParamListBase } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
@@ -23,7 +19,6 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
 import {
-  BottomTabBar,
   FullScreenLoader,
   Layout,
   SearchBox,
@@ -44,6 +39,7 @@ import {
   deleteDoc,
   doc,
   setDoc,
+  type FirebaseFirestoreTypes,
 } from "@react-native-firebase/firestore";
 import { useTranslation } from "react-i18next";
 import { useFilters } from "@/context/HistoryContext";
@@ -53,7 +49,7 @@ import * as FileSystem from "expo-file-system";
 
 const PAGE_SIZE = 20;
 
-const norm = (s: any) =>
+const norm = (s: unknown) =>
   String(s || "")
     .toLowerCase()
     .normalize("NFD")
@@ -62,7 +58,7 @@ const norm = (s: any) =>
 const app = getApp();
 const db = getFirestore(app);
 
-const toNumber = (v: any) => {
+const toNumber = (v: unknown) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 };
@@ -70,7 +66,7 @@ const toNumber = (v: any) => {
 const mealTotals = (m: Meal) => {
   const ing = m.ingredients || [];
   const sum = <K extends "kcal" | "protein" | "carbs" | "fat">(k: K) =>
-    ing.reduce((a, b) => a + toNumber((b as any)?.[k]), 0);
+    ing.reduce((a, b) => a + toNumber(b?.[k]), 0);
   return {
     kcal: sum("kcal"),
     protein: sum("protein"),
@@ -86,19 +82,20 @@ const toDate = (val?: string | number | null): Date | null => {
 };
 
 const getMealDate = (m: Meal): Date | null => {
-  return (
-    toDate((m as any).timestamp) ||
-    toDate((m as any).updatedAt) ||
-    toDate((m as any).createdAt) ||
-    null
-  );
+  return toDate(m.timestamp) || toDate(m.updatedAt) || toDate(m.createdAt) || null;
 };
 
-export default function SavedMealsScreen({ navigation }: { navigation: any }) {
+type SavedMealsNavigation = StackNavigationProp<ParamListBase>;
+
+export default function SavedMealsScreen({
+  navigation,
+}: {
+  navigation: SavedMealsNavigation;
+}) {
   const theme = useTheme();
   const netInfo = useNetInfo();
   const { uid } = useAuthContext();
-  const { duplicateMeal, getMeals } = useMeals(uid || "");
+  const { getMeals } = useMeals(uid || "");
   const { t } = useTranslation(["meals", "common"]);
   const {
     meal: draftMeal,
@@ -119,7 +116,8 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [items, setItems] = useState<Meal[]>([]);
-  const [lastDoc, setLastDoc] = useState<any>(null);
+  const [lastDoc, setLastDoc] =
+    useState<FirebaseFirestoreTypes.QueryDocumentSnapshot | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [validating, setValidating] = useState(false);
 
@@ -137,10 +135,12 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       limit(PAGE_SIZE),
     );
     const unsub = onSnapshot(q, async (snap) => {
-      const data = snap.docs.map((d: any) => ({
+      const data = snap.docs.map(
+        (d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
         ...(d.data() as Meal),
         cloudId: d.id,
-      }));
+        }),
+      );
       setItems(data);
       setLastDoc(snap.docs[snap.docs.length - 1] || null);
       setHasMore(snap.docs.length === PAGE_SIZE);
@@ -150,7 +150,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
         const updated: Meal[] = [];
         for (const m of data) {
           const localUri =
-            (m as any).photoLocalPath ??
+            m.photoLocalPath ??
             (m.photoUrl?.startsWith("file://") ? m.photoUrl : null);
           if (localUri) {
             try {
@@ -162,7 +162,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
                     "users",
                     uid,
                     "myMeals",
-                    (m as any).cloudId || m.mealId,
+                    m.cloudId || m.mealId,
                   ),
                   { photoUrl: null, photoLocalPath: null },
                   { merge: true },
@@ -171,7 +171,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
                   ...m,
                   photoUrl: null,
                   photoLocalPath: null,
-                } as any);
+                });
               } else {
                 updated.push(m);
               }
@@ -182,7 +182,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
                   "users",
                   uid,
                   "myMeals",
-                  (m as any).cloudId || m.mealId,
+                  m.cloudId || m.mealId,
                 ),
                 { photoUrl: null, photoLocalPath: null },
                 { merge: true },
@@ -191,7 +191,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
                 ...m,
                 photoUrl: null,
                 photoLocalPath: null,
-              } as any);
+              });
             }
           } else {
             updated.push(m);
@@ -223,21 +223,23 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       limit(PAGE_SIZE),
     );
     const snap = await getDocs(q);
-    const data = snap.docs.map((d: any) => ({
+    const data = snap.docs.map(
+      (d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
       ...(d.data() as Meal),
       cloudId: d.id,
-    }));
+      }),
+    );
     const validated: Meal[] = [];
     for (const m of data) {
       const localUri =
-        (m as any).photoLocalPath ??
+        m.photoLocalPath ??
         (m.photoUrl?.startsWith("file://") ? m.photoUrl : null);
       if (localUri) {
         try {
           const info = await FileSystem.getInfoAsync(localUri);
           if (!info.exists) {
             await setDoc(
-              doc(db, "users", uid, "myMeals", (m as any).cloudId || m.mealId),
+              doc(db, "users", uid, "myMeals", m.cloudId || m.mealId),
               { photoUrl: null, photoLocalPath: null },
               { merge: true },
             );
@@ -245,17 +247,17 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
               ...m,
               photoUrl: null,
               photoLocalPath: null,
-            } as any);
+            });
           } else {
             validated.push(m);
           }
         } catch {
           await setDoc(
-            doc(db, "users", uid, "myMeals", (m as any).cloudId || m.mealId),
+            doc(db, "users", uid, "myMeals", m.cloudId || m.mealId),
             { photoUrl: null, photoLocalPath: null },
             { merge: true },
           );
-          validated.push({ ...m, photoUrl: null, photoLocalPath: null } as any);
+          validated.push({ ...m, photoUrl: null, photoLocalPath: null });
         }
       } else {
         validated.push(m);
@@ -290,7 +292,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       : base.filter((m) => {
           const title = norm(m.name) || "";
           const ing = norm(
-            (m.ingredients || []).map((x: any) => x?.name || "").join(" "),
+            (m.ingredients || []).map((x) => x?.name || "").join(" "),
           );
           return title.includes(q) || ing.includes(q);
         });
@@ -347,9 +349,9 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
       const now = new Date().toISOString();
       const base: Meal =
         draftMeal ??
-        ({
+        {
           mealId: uuidv4(),
-          userUid: uid!,
+          userUid: uid ?? "",
           name: "",
           photoUrl: null,
           ingredients: [],
@@ -362,8 +364,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
           type: "other",
           timestamp: "",
           source: null,
-          cloudId: undefined,
-        } as any);
+        };
       return {
         ...base,
         mealId: uuidv4(),
@@ -479,9 +480,7 @@ export default function SavedMealsScreen({ navigation }: { navigation: any }) {
           )}
           <FlatList
             data={visibleItems}
-            keyExtractor={(item) =>
-              (item as any).cloudId || (item as any).mealId
-            }
+            keyExtractor={(item) => item.cloudId || item.mealId}
             refreshControl={
               <RefreshControl refreshing={loading} onRefresh={refresh} />
             }

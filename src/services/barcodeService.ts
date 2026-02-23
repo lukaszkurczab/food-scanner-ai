@@ -4,7 +4,7 @@ import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 type OFFProduct = {
   product?: {
     product_name?: string;
-    nutriments?: Record<string, any>;
+    nutriments?: Record<string, unknown>;
     brands?: string;
     quantity?: string;
     serving_size?: string;

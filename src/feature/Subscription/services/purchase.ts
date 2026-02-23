@@ -13,16 +13,31 @@ type PurchaseResult =
   | { status: "unavailable"; message?: string }
   | { status: "error"; message?: string };
 
-function log(...args: any[]) {
+type PurchaseErrorMeta = {
+  message?: string;
+  code?: string;
+  userCancelled?: boolean;
+  readableErrorCode?: string;
+};
+
+function log(...args: unknown[]) {
   console.log("[IAP]", ...args);
 }
 
-function errToObj(e: any) {
+function errToObj(e: unknown): PurchaseErrorMeta {
+  if (!e || typeof e !== "object") return {};
+  const obj = e as {
+    message?: unknown;
+    code?: unknown;
+    userCancelled?: unknown;
+    readableErrorCode?: unknown;
+  };
   return {
-    message: e?.message,
-    code: e?.code,
-    userCancelled: e?.userCancelled,
-    readableErrorCode: e?.readableErrorCode,
+    message: typeof obj.message === "string" ? obj.message : undefined,
+    code: typeof obj.code === "string" ? obj.code : undefined,
+    userCancelled: typeof obj.userCancelled === "boolean" ? obj.userCancelled : undefined,
+    readableErrorCode:
+      typeof obj.readableErrorCode === "string" ? obj.readableErrorCode : undefined,
   };
 }
 
@@ -93,10 +108,11 @@ export async function startOrRenewSubscription(
     }
 
     return { status: "success" };
-  } catch (e: any) {
-    log("purchase FAILED", errToObj(e));
-    if (e?.userCancelled) return { status: "cancelled" };
-    return { status: "error", message: e?.message };
+  } catch (e: unknown) {
+    const meta = errToObj(e);
+    log("purchase FAILED", meta);
+    if (meta.userCancelled) return { status: "cancelled" };
+    return { status: "error", message: meta.message };
   }
 }
 
@@ -139,9 +155,10 @@ export async function restorePurchases(
       status: "error",
       message: "No active premium entitlement after restore.",
     };
-  } catch (e: any) {
-    if (e?.userCancelled) return { status: "cancelled" };
-    return { status: "error", message: e?.message };
+  } catch (e: unknown) {
+    const meta = errToObj(e);
+    if (meta.userCancelled) return { status: "cancelled" };
+    return { status: "error", message: meta.message };
   }
 }
 

@@ -7,6 +7,8 @@ import {
   ScrollView,
   Modal,
   Dimensions,
+  StyleProp,
+  ViewStyle,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -23,7 +25,7 @@ type Props<T extends string> = {
   onChange: (value: T | null) => void;
   error?: string;
   disabled?: boolean;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
   renderLabel?: (option: Option<T>) => React.ReactNode;
 };
 
