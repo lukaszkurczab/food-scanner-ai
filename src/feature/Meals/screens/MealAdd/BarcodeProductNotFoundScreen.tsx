@@ -1,24 +1,25 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { PrimaryButton, SecondaryButton, Layout } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { RootStackParamList } from "@/navigation/navigate";
+import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 
 const MAX_ATTEMPTS = 3;
 
-export default function BarcodeProductNotFoundScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+export default function BarcodeProductNotFoundScreen({
+  flow,
+  params,
+}: MealAddScreenProps<"BarcodeProductNotFound">) {
   const theme = useTheme();
   const { t } = useTranslation("meals");
 
-  const code = route.params?.code as string | undefined;
-  const attempt = (route.params?.attempt as number | undefined) || 1;
+  const code = params?.code as string | undefined;
+  const attempt = (params?.attempt as number | undefined) || 1;
   const returnTo =
-    (route.params?.returnTo as keyof RootStackParamList) || "ReviewIngredients";
+    (params?.returnTo as keyof RootStackParamList) || "ReviewIngredients";
 
   const isLastAttempt = attempt >= MAX_ATTEMPTS;
 
@@ -28,15 +29,15 @@ export default function BarcodeProductNotFoundScreen() {
       return;
     }
 
-    navigation.replace("MealCamera", {
+    flow.goTo("MealCamera", {
       barcodeOnly: true,
       attempt: attempt + 1,
-      returnTo,
+      returnTo: returnTo as any,
     });
   };
 
   const handleBack = () => {
-    navigation.replace(returnTo as any);
+    flow.goTo(returnTo as any, {} as any);
   };
 
   return (
@@ -61,7 +62,7 @@ export default function BarcodeProductNotFoundScreen() {
           {isLastAttempt
             ? t(
                 "barcode_not_found_last",
-                "We still couldn't find the product. Please add the meal manually or choose a different method."
+                "We still couldn't find the product. Please add the meal manually or choose a different method.",
               )
             : t("barcode_not_found_sub", {
                 defaultValue:
@@ -76,20 +77,13 @@ export default function BarcodeProductNotFoundScreen() {
         <View style={{ height: 24 }} />
         {!isLastAttempt && (
           <PrimaryButton
-            label={`${t(
-              "barcode_try_again",
-              "Scan again"
-            )} (${attempt}/${MAX_ATTEMPTS})`}
+            label={`${t("barcode_try_again", "Scan again")} (${attempt}/${MAX_ATTEMPTS})`}
             onPress={handleRetry}
             style={{ marginTop: 0 }}
           />
         )}
         <SecondaryButton
-          label={
-            returnTo === "ReviewIngredients"
-              ? t("barcode_back_to_review", "Back to ingredients")
-              : t("barcode_back_to_methods", "Back to method selection")
-          }
+          label={t("barcode_back_to_review", "Back to ingredients")}
           onPress={handleBack}
           style={{ marginTop: 12 }}
         />

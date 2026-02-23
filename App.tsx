@@ -14,7 +14,6 @@ import { AuthProvider } from "@/context/AuthContext";
 import { UserProvider } from "@/context/UserContext";
 import { MealDraftProvider } from "@/context/MealDraftContext";
 import { PremiumProvider } from "@/context/PremiumContext";
-import { InactivityProvider } from "@/context/InactivityContext";
 import { HistoryProvider } from "@/context/HistoryContext";
 import { View, ActivityIndicator } from "react-native";
 import { useAppFonts } from "@hooks/useAppFonts";
@@ -32,19 +31,17 @@ function Root() {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      <InactivityProvider>
-        <PremiumProvider>
-          <UserProvider>
-            <MealDraftProvider>
-              <HistoryProvider>
-                <ThemeController>
-                  <AppNavigator />
-                </ThemeController>
-              </HistoryProvider>
-            </MealDraftProvider>
-          </UserProvider>
-        </PremiumProvider>
-      </InactivityProvider>
+      <PremiumProvider>
+        <UserProvider>
+          <MealDraftProvider>
+            <HistoryProvider>
+              <ThemeController>
+                <AppNavigator />
+              </ThemeController>
+            </HistoryProvider>
+          </MealDraftProvider>
+        </UserProvider>
+      </PremiumProvider>
     </NavigationContainer>
   );
 }

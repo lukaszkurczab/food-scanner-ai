@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,11 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import * as FileSystem from "expo-file-system";
+import { MaterialIcons } from "@expo/vector-icons";
+import type { NavigationProp, ParamListBase } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
+import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import {
   Layout,
@@ -17,18 +21,58 @@ import {
   PhotoPreview,
 } from "@/components";
 import { IngredientBox } from "@/components/IngredientBox";
-import { MaterialIcons } from "@expo/vector-icons";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
-import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
-import { v4 as uuidv4 } from "uuid";
-import * as FileSystem from "expo-file-system";
 
 type FieldErrors = Partial<Record<keyof Ingredient, string>>;
+type NavigationAction = Parameters<NavigationProp<ParamListBase>["dispatch"]>[0];
 
-export default function ReviewIngredientsScreen() {
-  const navigation = useNavigation<any>();
+type TextOverrides = Partial<{
+  startOverButtonLabel: string;
+  startOverTitle: string;
+  startOverMessage: string;
+  startOverPrimaryLabel: string;
+  startOverSecondaryLabel: string;
+  exitTitle: string;
+  exitMessage: string;
+  exitPrimaryLabel: string;
+  exitSecondaryLabel: string;
+}>;
+
+type Props = {
+  screenTrackingName: string;
+  onContinue: () => void;
+  onOpenCamera: () => void;
+  onStartOver: () => void;
+  addIngredientButtonVariant?: "primary" | "secondary";
+  hideAddIngredientWhileEditing?: boolean;
+  disableAddIngredientWhileEditing?: boolean;
+  containerPadding?: boolean;
+  validateLocalImageFile?: boolean;
+  enableBeforeRemoveGuard?: boolean;
+  navigation?: Pick<NavigationProp<ParamListBase>, "addListener" | "dispatch">;
+  continueAllowLeaveResetMs?: number;
+  textOverrides?: TextOverrides;
+};
+
+const IMAGE_SIZE = 220;
+
+export default function ReviewIngredientsEditor({
+  screenTrackingName,
+  onContinue,
+  onOpenCamera,
+  onStartOver,
+  addIngredientButtonVariant = "primary",
+  hideAddIngredientWhileEditing = false,
+  disableAddIngredientWhileEditing = false,
+  containerPadding = false,
+  validateLocalImageFile = false,
+  enableBeforeRemoveGuard = false,
+  navigation,
+  continueAllowLeaveResetMs,
+  textOverrides,
+}: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const {
@@ -36,7 +80,6 @@ export default function ReviewIngredientsScreen() {
     removeIngredient,
     setLastScreen,
     updateIngredient,
-    clearMeal,
     saveDraft,
     addIngredient,
     setPhotoUrl,
@@ -48,24 +91,27 @@ export default function ReviewIngredientsScreen() {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [localDraft, setLocalDraft] = useState<Ingredient | null>(null);
   const [showExitModal, setShowExitModal] = useState(false);
-  const exitActionRef = useRef<any | null>(null);
-  const allowLeaveRef = useRef(false);
   const [imageMenuOpen, setImageMenuOpen] = useState(false);
   const [checkingImage, setCheckingImage] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const exitActionRef = useRef<NavigationAction | null>(null);
+  const allowLeaveRef = useRef(false);
 
   const ingredients: Ingredient[] = meal?.ingredients ?? [];
   const image = meal?.photoUrl ?? null;
-  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => setImageError(false), [image]);
 
   useEffect(() => {
-    setImageError(false);
-  }, [image]);
+    if (uid) {
+      void setLastScreen(uid, screenTrackingName);
+    }
+  }, [screenTrackingName, setLastScreen, uid]);
 
   useEffect(() => {
-    if (uid) setLastScreen(uid, "ReviewIngredients");
-  }, [setLastScreen, uid]);
+    if (!validateLocalImageFile) return;
 
-  useEffect(() => {
     const validateLocalImage = async () => {
       if (!meal?.photoUrl) return;
       setCheckingImage(true);
@@ -85,58 +131,77 @@ export default function ReviewIngredientsScreen() {
         setCheckingImage(false);
       }
     };
-    void validateLocalImage();
-  }, [meal?.photoUrl, saveDraft, setPhotoUrl, uid]);
 
-  const validate = (i: Ingredient): FieldErrors => {
-    const e: FieldErrors = {};
-    if (!i.name?.trim())
-      e.name = t("ingredient_name_required", { ns: "meals" });
-    if (!Number.isFinite(i.amount) || i.amount <= 0)
-      e.amount = t("ingredient_invalid_values", { ns: "meals" });
-    if ((i.protein ?? 0) < 0)
-      e.protein = t("ingredient_invalid_values", { ns: "meals" });
-    if ((i.carbs ?? 0) < 0)
-      e.carbs = t("ingredient_invalid_values", { ns: "meals" });
-    if ((i.fat ?? 0) < 0)
-      e.fat = t("ingredient_invalid_values", { ns: "meals" });
-    if ((i.kcal ?? 0) < 0)
-      e.kcal = t("ingredient_invalid_values", { ns: "meals" });
-    return e;
-  };
+    void validateLocalImage();
+  }, [meal?.photoUrl, saveDraft, setPhotoUrl, uid, validateLocalImageFile]);
+
+  const validate = useCallback(
+    (ingredient: Ingredient): FieldErrors => {
+      const errors: FieldErrors = {};
+      if (!ingredient.name?.trim()) {
+        errors.name = t("ingredient_name_required", { ns: "meals" });
+      }
+      if (!Number.isFinite(ingredient.amount) || ingredient.amount <= 0) {
+        errors.amount = t("ingredient_invalid_values", { ns: "meals" });
+      }
+      if ((ingredient.protein ?? 0) < 0) {
+        errors.protein = t("ingredient_invalid_values", { ns: "meals" });
+      }
+      if ((ingredient.carbs ?? 0) < 0) {
+        errors.carbs = t("ingredient_invalid_values", { ns: "meals" });
+      }
+      if ((ingredient.fat ?? 0) < 0) {
+        errors.fat = t("ingredient_invalid_values", { ns: "meals" });
+      }
+      if ((ingredient.kcal ?? 0) < 0) {
+        errors.kcal = t("ingredient_invalid_values", { ns: "meals" });
+      }
+      return errors;
+    },
+    [t]
+  );
 
   const errorsByIndex = useMemo(() => {
     const map = new Map<number, FieldErrors>();
-    ingredients.forEach((ing, idx) => map.set(idx, validate(ing)));
+    ingredients.forEach((ingredient, idx) => map.set(idx, validate(ingredient)));
     if (localDraft) map.set(-1, validate(localDraft));
     return map;
-  }, [ingredients, localDraft]);
+  }, [ingredients, localDraft, validate]);
 
   const hasAnyErrors = useMemo(
-    () =>
-      Array.from(errorsByIndex.values()).some((e) => Object.keys(e).length > 0),
-    [errorsByIndex],
+    () => Array.from(errorsByIndex.values()).some((e) => Object.keys(e).length > 0),
+    [errorsByIndex]
   );
 
-  const isEmpty = (i: Ingredient) =>
-    !i?.name?.trim() &&
-    (i?.amount ?? 0) <= 0 &&
-    (i?.protein ?? 0) <= 0 &&
-    (i?.carbs ?? 0) <= 0 &&
-    (i?.fat ?? 0) <= 0 &&
-    (i?.kcal ?? 0) <= 0;
+  const isEmpty = (ingredient: Ingredient) =>
+    !ingredient?.name?.trim() &&
+    (ingredient?.amount ?? 0) <= 0 &&
+    (ingredient?.protein ?? 0) <= 0 &&
+    (ingredient?.carbs ?? 0) <= 0 &&
+    (ingredient?.fat ?? 0) <= 0 &&
+    (ingredient?.kcal ?? 0) <= 0;
 
-  const persist = async () => {
+  const persist = useCallback(async () => {
     if (uid) await saveDraft(uid);
-  };
+  }, [saveDraft, uid]);
 
-  const handleAddPhoto = () => {
-    allowLeaveRef.current = true;
-    navigation.navigate("MealCamera", {
-      skipDetection: true,
-      returnTo: "ReviewIngredients",
-    });
-  };
+  const allowLeaving = useCallback(
+    (resetAfterMs?: number) => {
+      allowLeaveRef.current = true;
+      if (typeof resetAfterMs === "number" && resetAfterMs > 0) {
+        setTimeout(() => {
+          allowLeaveRef.current = false;
+        }, resetAfterMs);
+      }
+    },
+    []
+  );
+
+  const handleOpenCamera = useCallback(() => {
+    setImageMenuOpen(false);
+    allowLeaving();
+    onOpenCamera();
+  }, [allowLeaving, onOpenCamera]);
 
   const handleAddIngredient = () => {
     if (editingIdx !== null || localDraft) return;
@@ -165,8 +230,9 @@ export default function ReviewIngredientsScreen() {
 
   const handleSaveIngredient = async (idx: number, updated: Ingredient) => {
     if (idx === -1) {
-      if (!isEmpty(updated))
+      if (!isEmpty(updated)) {
         addIngredient({ ...updated, id: localDraft?.id || uuidv4() });
+      }
       setLocalDraft(null);
       setEditingIdx(null);
       await persist();
@@ -177,10 +243,7 @@ export default function ReviewIngredientsScreen() {
     await persist();
   };
 
-  const handlePartialChange = async (
-    idx: number,
-    patch: Partial<Ingredient>,
-  ) => {
+  const handlePartialChange = async (idx: number, patch: Partial<Ingredient>) => {
     if (idx === -1) {
       setLocalDraft((prev) => ({ ...(prev ?? ({} as Ingredient)), ...patch }));
       await persist();
@@ -201,17 +264,16 @@ export default function ReviewIngredientsScreen() {
   };
 
   const handleContinue = () => {
-    allowLeaveRef.current = true;
-    navigation.navigate("Result");
-    setTimeout(() => (allowLeaveRef.current = false), 500);
+    allowLeaving(continueAllowLeaveResetMs);
+    onContinue();
   };
 
-  const handleStartOver = () => {
-    allowLeaveRef.current = true;
+  const handleStartOverConfirmed = () => {
+    setShowConfirmModal(false);
+    allowLeaving();
     setLocalDraft(null);
     setEditingIdx(null);
-    if (uid) clearMeal(uid);
-    navigation.replace("MealAddMethod");
+    onStartOver();
   };
 
   const handleRemovePhoto = async () => {
@@ -221,31 +283,67 @@ export default function ReviewIngredientsScreen() {
   };
 
   useEffect(() => {
-    if (uid) saveDraft(uid);
+    if (uid) void saveDraft(uid);
   }, [ingredients, image, saveDraft, uid]);
 
   useEffect(() => {
-    const sub = navigation.addListener("beforeRemove", (e: any) => {
+    if (!enableBeforeRemoveGuard || !navigation) return;
+
+    const sub = navigation.addListener("beforeRemove", (e) => {
       if (allowLeaveRef.current) return;
-      const hasContent =
-        (ingredients?.length ?? 0) > 0 || !!localDraft || !!image;
+
+      const hasContent = (ingredients?.length ?? 0) > 0 || !!localDraft || !!image;
       const isEditing = editingIdx !== null;
       if (!hasContent && !isEditing) return;
+
       e.preventDefault();
-      exitActionRef.current = e.data.action;
+      exitActionRef.current = e.data.action as NavigationAction;
       setShowExitModal(true);
     });
     return sub;
-  }, [navigation, ingredients?.length, localDraft, image, editingIdx]);
+  }, [editingIdx, enableBeforeRemoveGuard, image, ingredients?.length, localDraft, navigation]);
 
-  const confirmExit = () => {
+  const handleConfirmExit = () => {
     const action = exitActionRef.current;
     setShowExitModal(false);
-    if (action) {
-      allowLeaveRef.current = true;
+    if (action && navigation) {
+      allowLeaving();
       navigation.dispatch(action);
     }
   };
+
+  const labels = useMemo(
+    () => ({
+      startOverButtonLabel:
+        textOverrides?.startOverButtonLabel ?? t("select_method", { ns: "meals" }),
+      startOverTitle:
+        textOverrides?.startOverTitle ?? t("confirm_exit_title", { ns: "meals" }),
+      startOverMessage:
+        textOverrides?.startOverMessage ?? t("confirm_exit_message", { ns: "meals" }),
+      startOverPrimaryLabel:
+        textOverrides?.startOverPrimaryLabel ?? t("yes", { ns: "common" }),
+      startOverSecondaryLabel:
+        textOverrides?.startOverSecondaryLabel ?? t("no", { ns: "common" }),
+      exitTitle:
+        textOverrides?.exitTitle ??
+        t("confirm_exit_title", {
+          ns: "meals",
+          defaultValue: "Leave meal creation?",
+        }),
+      exitMessage:
+        textOverrides?.exitMessage ??
+        t("confirm_exit_message", {
+          ns: "meals",
+          defaultValue: "You have unsaved edits. Do you really want to leave?",
+        }),
+      exitPrimaryLabel:
+        textOverrides?.exitPrimaryLabel ??
+        t("discard", { ns: "meals", defaultValue: "Discard" }),
+      exitSecondaryLabel:
+        textOverrides?.exitSecondaryLabel ?? t("continue", { ns: "common" }),
+    }),
+    [t, textOverrides]
+  );
 
   if (previewVisible && image) {
     return (
@@ -254,11 +352,7 @@ export default function ReviewIngredientsScreen() {
         onRetake={() => setPreviewVisible(false)}
         onAccept={() => {
           setPreviewVisible(false);
-          allowLeaveRef.current = true;
-          navigation.navigate("MealCamera", {
-            skipDetection: true,
-            returnTo: "ReviewIngredients",
-          });
+          handleOpenCamera();
         }}
         isLoading={false}
         secondaryText={t("back", { ns: "common" })}
@@ -267,9 +361,17 @@ export default function ReviewIngredientsScreen() {
     );
   }
 
+  const renderAddIngredientButton =
+    !hideAddIngredientWhileEditing || editingIdx === null;
+
   return (
     <Layout showNavigation={false}>
-      <View style={styles(theme).container}>
+      <View
+        style={[
+          styles(theme).container,
+          containerPadding ? { padding: theme.spacing.container } : null,
+        ]}
+      >
         <View style={styles(theme).imageWrapper}>
           {checkingImage ? (
             <ActivityIndicator size="large" color={theme.accent} />
@@ -278,7 +380,7 @@ export default function ReviewIngredientsScreen() {
               <Pressable
                 onPress={() => setPreviewVisible(true)}
                 style={{ width: "100%", height: "100%" }}
-                disabled={editingIdx != null}
+                disabled={editingIdx !== null}
               >
                 <Image
                   key={image}
@@ -288,7 +390,8 @@ export default function ReviewIngredientsScreen() {
                   onError={() => setImageError(true)}
                 />
               </Pressable>
-              {editingIdx == null && (
+
+              {editingIdx === null && (
                 <View style={styles(theme).menuButtonContainer}>
                   <Pressable
                     onPress={() => setImageMenuOpen((v) => !v)}
@@ -303,23 +406,15 @@ export default function ReviewIngredientsScreen() {
                     <View style={styles(theme).menuDot} />
                     <View style={styles(theme).menuDot} />
                   </Pressable>
+
                   {imageMenuOpen && (
                     <View style={styles(theme).menuDropdown}>
-                      <Pressable
-                        onPress={() => {
-                          setImageMenuOpen(false);
-                          handleAddPhoto();
-                        }}
-                        style={styles(theme).menuItem}
-                      >
+                      <Pressable onPress={handleOpenCamera} style={styles(theme).menuItem}>
                         <Text style={styles(theme).menuItemText}>
                           {t("change_photo", { ns: "meals" })}
                         </Text>
                       </Pressable>
-                      <Pressable
-                        onPress={handleRemovePhoto}
-                        style={styles(theme).menuItem}
-                      >
+                      <Pressable onPress={handleRemovePhoto} style={styles(theme).menuItem}>
                         <Text style={styles(theme).menuItemText}>
                           {t("remove_photo", {
                             ns: "meals",
@@ -334,23 +429,13 @@ export default function ReviewIngredientsScreen() {
             </>
           ) : (
             <Pressable
-              onPress={handleAddPhoto}
-              disabled={editingIdx != null}
-              style={[
-                styles(theme).placeholder,
-                { backgroundColor: theme.card },
-              ]}
+              onPress={handleOpenCamera}
+              disabled={editingIdx !== null}
+              style={[styles(theme).placeholder, { backgroundColor: theme.card }]}
             >
-              <MaterialIcons
-                name="add-a-photo"
-                size={44}
-                color={theme.textSecondary}
-              />
+              <MaterialIcons name="add-a-photo" size={44} color={theme.textSecondary} />
               <Text
-                style={[
-                  styles(theme).placeholderText,
-                  { color: theme.textSecondary },
-                ]}
+                style={[styles(theme).placeholderText, { color: theme.textSecondary }]}
               >
                 {t("add_photo", { ns: "meals" })}
               </Text>
@@ -365,99 +450,97 @@ export default function ReviewIngredientsScreen() {
             editable
             initialEdit={editingIdx === -1}
             onEditStart={() => setEditingIdx(-1)}
-            onSave={(updated) => handleSaveIngredient(-1, updated)}
-            onRemove={() => handleRemoveIngredient(-1)}
+            onSave={(updated) => void handleSaveIngredient(-1, updated)}
+            onRemove={() => void handleRemoveIngredient(-1)}
             onCancelEdit={() => handleCancelEdit(-1)}
-            onChangePartial={(patch) => handlePartialChange(-1, patch)}
+            onChangePartial={(patch) => void handlePartialChange(-1, patch)}
             errors={errorsByIndex.get(-1)}
             hasError={Boolean(
-              errorsByIndex.get(-1) &&
-              Object.keys(errorsByIndex.get(-1)!).length,
+              errorsByIndex.get(-1) && Object.keys(errorsByIndex.get(-1)!).length
             )}
           />
         )}
 
-        {ingredients.map((ing, idx) => {
-          const e = errorsByIndex.get(idx);
+        {ingredients.map((ingredient, idx) => {
+          const errors = errorsByIndex.get(idx);
           return (
             <IngredientBox
-              key={`ing-${(ing as any)?.id || idx}`}
-              ingredient={ing}
+              key={`ing-${ingredient.id || idx}`}
+              ingredient={ingredient}
               editable
               initialEdit={editingIdx === idx}
               onEditStart={() => setEditingIdx(idx)}
-              onSave={(updated) => handleSaveIngredient(idx, updated)}
-              onRemove={() => handleRemoveIngredient(idx)}
+              onSave={(updated) => void handleSaveIngredient(idx, updated)}
+              onRemove={() => void handleRemoveIngredient(idx)}
               onCancelEdit={() => handleCancelEdit(idx)}
-              onChangePartial={(patch) => handlePartialChange(idx, patch)}
-              errors={e}
-              hasError={Boolean(e && Object.keys(e).length)}
+              onChangePartial={(patch) => void handlePartialChange(idx, patch)}
+              errors={errors}
+              hasError={Boolean(errors && Object.keys(errors).length)}
             />
           );
         })}
 
-        {editingIdx === null && (
-          <PrimaryButton
-            label={t("add_ingredient", { ns: "meals" })}
-            onPress={handleAddIngredient}
-            style={styles(theme).addIngredientBtn}
-          />
-        )}
+        {renderAddIngredientButton &&
+          (addIngredientButtonVariant === "secondary" ? (
+            <SecondaryButton
+              label={t("add_ingredient", { ns: "meals" })}
+              onPress={handleAddIngredient}
+              disabled={disableAddIngredientWhileEditing && editingIdx !== null}
+              style={styles(theme).addIngredientBtn}
+            />
+          ) : (
+            <PrimaryButton
+              label={t("add_ingredient", { ns: "meals" })}
+              onPress={handleAddIngredient}
+              disabled={disableAddIngredientWhileEditing && editingIdx !== null}
+              style={styles(theme).addIngredientBtn}
+            />
+          ))}
+
         <PrimaryButton
           label={t("continue", { ns: "common" })}
           onPress={handleContinue}
-          disabled={
-            ingredients.length === 0 || hasAnyErrors || editingIdx !== null
-          }
+          disabled={ingredients.length === 0 || hasAnyErrors || editingIdx !== null}
           style={styles(theme).continueBtn}
         />
+
         <SecondaryButton
-          label={t("select_method", { ns: "meals" })}
+          label={labels.startOverButtonLabel}
           onPress={() => setShowConfirmModal(true)}
           style={styles(theme).startOverBtn}
         />
 
         <AppModal
           visible={showConfirmModal}
-          title={t("confirm_exit_title", { ns: "meals" })}
-          message={t("confirm_exit_message", { ns: "meals" })}
-          primaryActionLabel={t("yes", { ns: "common" })}
-          onPrimaryAction={handleStartOver}
-          secondaryActionLabel={t("no", { ns: "common" })}
+          title={labels.startOverTitle}
+          message={labels.startOverMessage}
+          primaryActionLabel={labels.startOverPrimaryLabel}
+          onPrimaryAction={handleStartOverConfirmed}
+          secondaryActionLabel={labels.startOverSecondaryLabel}
           onSecondaryAction={() => setShowConfirmModal(false)}
           onClose={() => setShowConfirmModal(false)}
         />
 
-        <AppModal
-          visible={showExitModal}
-          title={t("confirm_exit_title", {
-            ns: "meals",
-            defaultValue: "Leave meal creation?",
-          })}
-          message={t("confirm_exit_message", {
-            ns: "meals",
-            defaultValue:
-              "You have unsaved edits. Do you really want to leave?",
-          })}
-          primaryActionLabel={t("discard", {
-            ns: "meals",
-            defaultValue: "Discard",
-          })}
-          onPrimaryAction={confirmExit}
-          secondaryActionLabel={t("continue", { ns: "common" })}
-          onSecondaryAction={() => setShowExitModal(false)}
-          onClose={() => setShowExitModal(false)}
-        />
+        {enableBeforeRemoveGuard && (
+          <AppModal
+            visible={showExitModal}
+            title={labels.exitTitle}
+            message={labels.exitMessage}
+            primaryActionLabel={labels.exitPrimaryLabel}
+            onPrimaryAction={handleConfirmExit}
+            secondaryActionLabel={labels.exitSecondaryLabel}
+            onSecondaryAction={() => setShowExitModal(false)}
+            onClose={() => setShowExitModal(false)}
+          />
+        )}
       </View>
     </Layout>
   );
 }
 
-const IMAGE_SIZE = 220;
-
 const styles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: { flex: 1, padding: theme.spacing.container },
+    container: { flex: 1 },
     imageWrapper: {
       marginBottom: theme.spacing.lg,
       width: "100%",

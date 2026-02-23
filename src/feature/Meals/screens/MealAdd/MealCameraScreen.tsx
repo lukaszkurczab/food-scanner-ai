@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -19,7 +19,6 @@ import {
   fetchProductByBarcode,
   extractBarcodeFromPayload,
 } from "@/services/barcodeService";
-import { useRoute } from "@react-navigation/native";
 import { useAuthContext } from "@/context/AuthContext";
 import { Layout, PhotoPreview } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
@@ -28,12 +27,19 @@ import { Alert as AppAlert } from "@/components/Alert";
 import { getSampleMealUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
 import { useUserContext } from "@contexts/UserContext";
-import type { RootStackParamList } from "@/navigation/navigate";
 import type { Ingredient } from "@/types";
+import type {
+  MealAddScreenProps,
+  MealAddScreenName,
+} from "@/feature/Meals/feature/MapMealAddScreens";
 
 const log = debugScope("Screen:MealCamera");
 
-export default function MealCameraScreen({ navigation }: { navigation: any }) {
+export default function MealCameraScreen({
+  navigation,
+  flow,
+  params,
+}: MealAddScreenProps<"MealCamera">) {
   const theme = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -49,17 +55,15 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
   const { uid } = useAuthContext();
   const { language } = useUserContext();
   const { isPremium } = usePremiumContext();
-  const route = useRoute<any>();
 
-  const barcodeOnly = !!route.params?.barcodeOnly;
-  const routeId = route.params?.id as string | undefined;
-  const skipDetection = !!route.params?.skipDetection;
-  const returnTo =
-    (route.params?.returnTo as keyof RootStackParamList) || "ReviewIngredients";
-  const attempt = (route.params?.attempt as number | undefined) || 1;
+  const barcodeOnly = !!params?.barcodeOnly;
+  const routeId = params?.id as string | undefined;
+  const skipDetection = !!params?.skipDetection;
+  const returnTo: MealAddScreenName =
+    (params?.returnTo as MealAddScreenName) || "ReviewIngredients";
+  const attempt = (params?.attempt as number | undefined) || 1;
 
   const mealId = meal?.mealId || routeId || uuidv4();
-  const canLeaveRef = useRef(false);
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [mode, setMode] = useState<"ai" | "barcode">(
     barcodeOnly ? "barcode" : isPremium ? "ai" : "barcode",
@@ -91,96 +95,90 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
         setPhotoUri(null);
         return true;
       }
-      canLeaveRef.current = true;
-      navigation.replace(returnTo as any);
+      flow.goBack();
       return true;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
     return () => sub.remove();
-  }, [photoUri, navigation, returnTo]);
+  }, [photoUri, flow]);
 
-  useEffect(() => {
-    const unsub = navigation.addListener("beforeRemove", (e: any) => {
-      if (canLeaveRef.current) return;
-      e.preventDefault();
-      if (photoUri) {
-        setPhotoUri(null);
-        return;
-      }
-      canLeaveRef.current = true;
-      navigation.replace(returnTo as any);
-    });
-    return unsub;
-  }, [navigation, photoUri, returnTo]);
+  const handleBarcodeFlow = useCallback(
+    async (code: string) => {
+      setIsLoading(true);
+      try {
+        const off = await fetchProductByBarcode(code);
 
-  const handleBarcodeFlow = async (code: string) => {
-    setIsLoading(true);
-    try {
-      const off = await fetchProductByBarcode(code);
+        if (!off) {
+          flow.goTo("BarcodeProductNotFound", {
+            code,
+            attempt,
+            returnTo,
+          });
+          return;
+        }
 
-      if (!off || off === null) {
-        canLeaveRef.current = true;
-        navigation.replace("BarcodeProductNotFound" as any, {
+        const { ingredient, name } = off;
+
+        if (barcodeOnly) {
+          DeviceEventEmitter.emit("barcode.scanned.ingredient", {
+            ingredient,
+          } as { ingredient: Ingredient });
+          flow.goTo(returnTo, {} as any);
+          return;
+        }
+
+        const resolvedName = name || `Barcode ${code}`;
+
+        if (!meal) {
+          setMeal({
+            mealId,
+            userUid: uid || "",
+            name: resolvedName,
+            photoUrl: null,
+            ingredients: [ingredient],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            syncState: "pending",
+            tags: [],
+            deleted: false,
+            notes: `barcode:${code}`,
+            type: "other",
+            timestamp: "",
+            source: "manual",
+            cloudId: undefined,
+          } as any);
+        } else {
+          updateMeal({
+            mealId,
+            name: resolvedName,
+            notes: `barcode:${code}`,
+            ingredients: [ingredient],
+          } as any);
+        }
+
+        flow.goTo("ReviewIngredients", {});
+      } catch {
+        flow.goTo("BarcodeProductNotFound", {
           code,
           attempt,
           returnTo,
         });
-        return;
+      } finally {
+        setIsLoading(false);
       }
-
-      const { ingredient, name } = off;
-
-      if (barcodeOnly) {
-        DeviceEventEmitter.emit("barcode.scanned.ingredient", {
-          ingredient,
-        } as { ingredient: Ingredient });
-        canLeaveRef.current = true;
-        navigation.replace(returnTo as any);
-        return;
-      }
-
-      const resolvedName = name || `Barcode ${code}`;
-
-      if (!meal) {
-        setMeal({
-          mealId,
-          userUid: uid || "",
-          name: resolvedName,
-          photoUrl: null,
-          ingredients: [ingredient],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          syncState: "pending",
-          tags: [],
-          deleted: false,
-          notes: `barcode:${code}`,
-          type: "other",
-          timestamp: "",
-          source: "manual",
-          cloudId: undefined,
-        } as any);
-      } else {
-        updateMeal({
-          mealId,
-          name: resolvedName,
-          notes: `barcode:${code}`,
-          ingredients: [ingredient],
-        } as any);
-      }
-
-      canLeaveRef.current = true;
-      navigation.replace("ReviewIngredients" as any);
-    } catch {
-      canLeaveRef.current = true;
-      navigation.replace("BarcodeProductNotFound" as any, {
-        code,
-        attempt,
-        returnTo,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [
+      attempt,
+      barcodeOnly,
+      flow,
+      meal,
+      mealId,
+      returnTo,
+      setMeal,
+      uid,
+      updateMeal,
+    ],
+  );
 
   const handleTakePicture = async () => {
     log.log("takePicture start", {
@@ -259,27 +257,26 @@ export default function MealCameraScreen({ navigation }: { navigation: any }) {
           updateMeal({ ingredients, mealId, photoUrl: finalUri });
         } else {
           setIsLoading(false);
-          canLeaveRef.current = true;
-          navigation.replace("IngredientsNotRecognized", {
+          flow.goTo("IngredientsNotRecognized", {
             image: finalUri,
             id: mealId,
+            attempt,
           });
           return;
         }
       }
     } catch {
       setIsLoading(false);
-      canLeaveRef.current = true;
-      navigation.replace("IngredientsNotRecognized", {
+      flow.goTo("IngredientsNotRecognized", {
         image: finalUri,
         id: mealId,
+        attempt,
       });
       return;
     }
 
     setIsLoading(false);
-    canLeaveRef.current = true;
-    navigation.replace("ReviewIngredients");
+    flow.goTo("ReviewIngredients", {});
   };
 
   const handleRetake = () => setPhotoUri(null);

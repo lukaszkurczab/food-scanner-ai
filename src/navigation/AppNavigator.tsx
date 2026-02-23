@@ -1,16 +1,14 @@
 import React from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { RootStackParamList } from "./navigate";
+import type { RootStackParamList } from "./navigate";
 import { useAuthContext } from "@/context/AuthContext";
 import HomeScreen from "@/feature/Home/screens/HomeScreen";
-import ResultScreen from "@/feature/Meals/screens/ResultScreen";
 import HistoryListScreen from "@/feature/History/screens/HistoryListScreen";
 import StatisticsScreen from "@/feature/Statistics/screens/StatisticsScreen";
 import LoginScreen from "@/feature/Auth/screens/LoginScreen";
 import RegisterScreen from "@/feature/Auth/screens/RegisterScreen";
 import MealAddMethodScreen from "@/feature/Meals/screens/MealAddMethodScreen";
-import ReviewIngredientsScreen from "@/feature/Meals/screens/ReviewIngredientsScreen";
 import ProfileScreen from "@feature/UserProfile/screens/UserProfileScreen";
 import TermsScreen from "@/feature/Auth/screens/TermsScreen";
 import PrivacyScreen from "@/feature/Auth/screens/PrivacyScreen";
@@ -28,10 +26,8 @@ import ChangePasswordScreen from "@/feature/UserProfile/screens/ChangePasswordSc
 import LanguageScreen from "@/feature/UserProfile/screens/LanguageScreen";
 import SendFeedbackScreen from "@/feature/UserProfile/screens/SendFeedbackScreen";
 import ManageSubscriptionScreen from "@/feature/Subscription/screens/ManageSubscriptionScreen";
-import MealCameraScreen from "@/feature/Meals/screens/MealCameraScreen";
 import SavedMealsScreen from "@/feature/History/screens/SavedMealsScreen";
 import SelectSavedMealScreen from "@/feature/Meals/screens/SelectSavedMealsScreen";
-import IngredientsNotRecognizedScreen from "@/feature/Meals/screens/IngredientsNotRecognizedScreen";
 import NotificationsScreen from "@/feature/UserProfile/screens/NotificationsScreen";
 import NotificationFormScreen from "@/feature/UserProfile/screens/NotificationFormScreen";
 import MealTextAIScreen from "@/feature/Meals/screens/MealTextAIScreen";
@@ -40,10 +36,11 @@ import ChatScreen from "@/feature/AI/screens/ChatScreen";
 import EditReviewIngredientsScreen from "@/feature/History/screens/EditReviewIngredientsScreen";
 import EditResultScreen from "@/feature/History/screens/EditResultScreen";
 import SavedMealsCameraScreen from "@/feature/History/screens/SavedMealsCameraScreen";
+import AddMealScreen from "@feature/Meals/screens/AddMealScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-const AppNavigator = () => {
+export default function AppNavigator() {
   const { isAuthenticated, loading } = useAuthContext();
 
   if (loading) {
@@ -93,20 +90,11 @@ const AppNavigator = () => {
           />
           <Stack.Screen name="SendFeedback" component={SendFeedbackScreen} />
           <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
-          <Stack.Screen name="MealCamera" component={MealCameraScreen} />
+          <Stack.Screen name="AddMeal" component={AddMealScreen} />
           <Stack.Screen
             name="SavedMealsCamera"
             component={SavedMealsCameraScreen}
           />
-          <Stack.Screen
-            name="IngredientsNotRecognized"
-            component={IngredientsNotRecognizedScreen}
-          />
-          <Stack.Screen
-            name="ReviewIngredients"
-            component={ReviewIngredientsScreen}
-          />
-          <Stack.Screen name="Result" component={ResultScreen} />
           <Stack.Screen
             name="EditReviewIngredients"
             component={EditReviewIngredientsScreen}
@@ -132,9 +120,7 @@ const AppNavigator = () => {
       <Stack.Screen name="Privacy" component={PrivacyScreen} />
     </Stack.Navigator>
   );
-};
-
-export default AppNavigator;
+}
 
 const styles = StyleSheet.create({
   centerBoth: { flex: 1, justifyContent: "center", alignItems: "center" },

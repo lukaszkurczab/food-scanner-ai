@@ -20,22 +20,23 @@ import { useAuthContext } from "@/context/AuthContext";
 import type { MealType } from "@/types/meal";
 import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
-import { DateTimeSection } from "../../../components/DateTimeSection";
+import { DateTimeSection } from "@/components/DateTimeSection";
 import { updateStreakIfThresholdMet } from "@/services/streakService";
-import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
+import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 
-type ResultScreenProps = { navigation: any };
-
-export default function ResultScreen({ navigation }: ResultScreenProps) {
+export default function ResultScreen({
+  navigation,
+  flow,
+}: MealAddScreenProps<"Result">) {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const { uid } = useAuthContext();
-  const nav = useNavigation<any>();
   const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =
     useMealDraftContext();
   const { userData } = useUserContext();
   const { addMeal, meals } = useMeals(uid ?? null);
+
   const isFromSaved = (meal as any)?.source === "saved";
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [saveToMyMeals, setSaveToMyMeals] = useState(isFromSaved);
@@ -44,7 +45,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   const [showIngredients, setShowIngredients] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
   const [selectedAt, setSelectedAt] = useState<Date>(
-    meal?.timestamp ? new Date(meal.timestamp) : new Date()
+    meal?.timestamp ? new Date(meal.timestamp) : new Date(),
   );
   const [addedAt, setAddedAt] = useState<Date>(new Date());
 
@@ -55,7 +56,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
 
   useEffect(() => {
     if (uid) {
-      setLastScreen(uid, "Result");
+      setLastScreen(uid, "AddMeal");
     }
   }, [setLastScreen, uid]);
 
@@ -76,12 +77,13 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
       type: mealType,
       timestamp: selectedAt.toISOString(),
     } as any;
-    nav.navigate("MealShare", { meal: pass, returnTo: "Result" });
+    navigation.navigate("MealShare", { meal: pass, returnTo: "Result" });
   };
 
   const handleSave = async () => {
     if (!userData?.uid || saving) return;
     setSaving(true);
+
     const nowIso = new Date().toISOString();
     const newMeal = {
       ...meal,
@@ -124,6 +126,7 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
   };
 
   const handleCancel = () => setShowCancelModal(true);
+
   const handleCancelConfirm = () => {
     if (uid) clearMeal(uid);
     navigation.navigate("Home");
@@ -131,125 +134,121 @@ export default function ResultScreen({ navigation }: ResultScreenProps) {
 
   return (
     <Layout showNavigation={false}>
-      <View style={{ padding: theme.spacing.container }}>
-        {image && !imageError && (
-          <View style={styles.imageWrap}>
-            <Image
-              source={{ uri: image }}
-              style={styles.image}
-              resizeMode="cover"
-              onError={() => setImageError(true)}
-            />
-            <Pressable
-              onPress={goShare}
-              accessibilityRole="button"
-              accessibilityLabel={t("share", { ns: "common" })}
-              hitSlop={8}
-              style={[
-                styles.fab,
-                {
-                  backgroundColor: theme.background,
-                  borderColor: theme.border,
-                  shadowColor: theme.shadow,
-                },
-              ]}
-            >
-              <MaterialIcons name="ios-share" size={22} color={theme.text} />
-            </Pressable>
-          </View>
-        )}
-
-        <MealBox
-          name={mealName}
-          type={mealType}
-          nutrition={nutrition}
-          editable={!saving}
-          onNameChange={setMealName}
-          onTypeChange={setMealType}
-        />
-
-        <DateTimeSection
-          value={selectedAt}
-          onChange={setSelectedAt}
-          addedValue={addedAt}
-          onChangeAdded={setAddedAt}
-        />
-
-        <Card
-          variant="outlined"
-          onPress={() => !saving && setShowIngredients(!showIngredients)}
-        >
-          <Text
-            style={{
-              fontSize: theme.typography.size.md,
-              fontWeight: "500",
-              color: theme.text,
-              textAlign: "center",
-            }}
+      {image && !imageError && (
+        <View style={styles.imageWrap} ref={shotRef}>
+          <Image
+            source={{ uri: image }}
+            style={styles.image}
+            resizeMode="cover"
+            onError={() => setImageError(true)}
+          />
+          <Pressable
+            onPress={goShare}
+            accessibilityRole="button"
+            accessibilityLabel={t("share", { ns: "common" })}
+            hitSlop={8}
+            style={[
+              styles.fab,
+              {
+                backgroundColor: theme.background,
+                borderColor: theme.border,
+                shadowColor: theme.shadow,
+              },
+            ]}
           >
-            {showIngredients
-              ? t("hide_ingredients", { ns: "meals" })
-              : t("show_ingredients", { ns: "meals" })}
-          </Text>
-        </Card>
-
-        {showIngredients && (
-          <>
-            {meal.ingredients.map((ingredient, idx) => (
-              <IngredientBox
-                key={(ingredient as any)?.id || idx}
-                ingredient={ingredient}
-                editable={false}
-                onSave={(updated) => !saving && updateIngredient(idx, updated)}
-                onRemove={() => !saving && removeIngredient(idx)}
-              />
-            ))}
-            <SecondaryButton
-              label={t("edit_ingredients", { ns: "meals" })}
-              onPress={() =>
-                !saving && navigation.navigate("ReviewIngredients")
-              }
-              disabled={saving}
-            />
-          </>
-        )}
-
-        <View style={styles.rowCenter}>
-          <Checkbox
-            checked={saveToMyMeals}
-            onChange={!saving ? setSaveToMyMeals : () => {}}
-            style={{ marginVertical: theme.spacing.md }}
-            disabled={saving}
-          />
-          <Text style={{ color: theme.text }}>
-            {isFromSaved
-              ? t("update_in_my_meals", {
-                  ns: "meals",
-                  defaultValue: "Update in My Meals",
-                })
-              : t("add_to_my_meals", { ns: "meals" })}
-          </Text>
+            <MaterialIcons name="ios-share" size={22} color={theme.text} />
+          </Pressable>
         </View>
+      )}
 
-        <View
-          style={[
-            styles.actions,
-            { gap: theme.spacing.md, marginTop: theme.spacing.md },
-          ]}
+      <MealBox
+        name={mealName}
+        type={mealType}
+        nutrition={nutrition}
+        editable={!saving}
+        onNameChange={setMealName}
+        onTypeChange={setMealType}
+      />
+
+      <DateTimeSection
+        value={selectedAt}
+        onChange={setSelectedAt}
+        addedValue={addedAt}
+        onChangeAdded={setAddedAt}
+      />
+
+      <Card
+        variant="outlined"
+        onPress={() => !saving && setShowIngredients(!showIngredients)}
+      >
+        <Text
+          style={{
+            fontSize: theme.typography.size.md,
+            fontWeight: "500",
+            color: theme.text,
+            textAlign: "center",
+          }}
         >
-          <PrimaryButton
-            label={t("save", { ns: "common" })}
-            onPress={handleSave}
-            loading={saving}
+          {showIngredients
+            ? t("hide_ingredients", { ns: "meals" })
+            : t("show_ingredients", { ns: "meals" })}
+        </Text>
+      </Card>
+
+      {showIngredients && (
+        <>
+          {meal.ingredients.map((ingredient, idx) => (
+            <IngredientBox
+              key={(ingredient as any)?.id || idx}
+              ingredient={ingredient}
+              editable={false}
+              onSave={(updated) => !saving && updateIngredient(idx, updated)}
+              onRemove={() => !saving && removeIngredient(idx)}
+            />
+          ))}
+          <SecondaryButton
+            label={t("edit_ingredients", { ns: "meals" })}
+            onPress={() => !saving && flow.goTo("ReviewIngredients")}
             disabled={saving}
           />
-          <ErrorButton
-            label={t("cancel", { ns: "common" })}
-            onPress={handleCancel}
-            loading={saving}
-            disabled={saving}
-          />
-        </View>
+        </>
+      )}
+
+      <View style={styles.rowCenter}>
+        <Checkbox
+          checked={saveToMyMeals}
+          onChange={!saving ? setSaveToMyMeals : () => {}}
+          style={{ marginVertical: theme.spacing.md }}
+          disabled={saving}
+        />
+        <Text style={{ color: theme.text }}>
+          {isFromSaved
+            ? t("update_in_my_meals", {
+                ns: "meals",
+                defaultValue: "Update in My Meals",
+              })
+            : t("add_to_my_meals", { ns: "meals" })}
+        </Text>
+      </View>
+
+      <View
+        style={[
+          styles.actions,
+          { gap: theme.spacing.md, marginTop: theme.spacing.md },
+        ]}
+      >
+        <PrimaryButton
+          label={t("save", { ns: "common" })}
+          onPress={handleSave}
+          loading={saving}
+          disabled={saving}
+        />
+        <ErrorButton
+          label={t("cancel", { ns: "common" })}
+          onPress={handleCancel}
+          loading={saving}
+          disabled={saving}
+        />
       </View>
 
       <Modal

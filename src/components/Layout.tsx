@@ -9,10 +9,8 @@ import {
   Keyboard,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { useRoute } from "@react-navigation/native";
 import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/components/BottomTabBar";
-import { useInactivity } from "@contexts/InactivityContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type LayoutProps = {
@@ -31,15 +29,9 @@ export const Layout = ({
   style,
 }: LayoutProps) => {
   const theme = useTheme();
-  const route = useRoute();
-  const { setScreenName } = useInactivity();
   const insets = useSafeAreaInsets();
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-
-  useEffect(() => {
-    setScreenName(route.name);
-  }, [route.name]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", () =>

@@ -2,6 +2,29 @@ import { createNavigationContainerRef } from "@react-navigation/native";
 import type { Meal } from "@/types";
 
 export type RootStackParamList = {
+  AddMeal:
+    | {
+        start?:
+          | "MealCamera"
+          | "BarcodeProductNotFound"
+          | "IngredientsNotRecognized"
+          | "ReviewIngredients"
+          | "Result";
+        barcodeOnly?: boolean;
+        id?: string;
+        skipDetection?: boolean;
+        returnTo?:
+          | "MealCamera"
+          | "BarcodeProductNotFound"
+          | "IngredientsNotRecognized"
+          | "ReviewIngredients"
+          | "Result";
+        attempt?: number;
+        code?: string;
+        image?: string;
+      }
+    | undefined;
+
   Home: undefined;
   Login: undefined;
   CheckMailbox: { email: string };
@@ -10,22 +33,10 @@ export type RootStackParamList = {
   Profile: undefined;
   ResetPassword: undefined;
   Terms: undefined;
-  IngredientsNotRecognized: { image: string; id: string; attempt?: number };
   AddMealManual: { id?: string; image?: string } | undefined;
-  MealCamera:
-    | {
-        id?: string;
-        attempt?: number;
-        skipDetection?: boolean;
-        returnTo?: keyof RootStackParamList;
-        barcodeOnly?: boolean;
-      }
-    | undefined;
   AddMealFromList: undefined;
   MealAddMethod: undefined;
   Statistics: undefined;
-  Result: undefined;
-  ReviewIngredients: undefined;
   EditReviewIngredients: { savedCloudId?: string } | undefined;
   EditResult: { savedCloudId?: string } | undefined;
   Privacy: undefined;
@@ -57,6 +68,8 @@ export type RootStackParamList = {
         meal?: Meal;
       }
     | undefined;
+
+  Result: undefined;
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -65,7 +78,7 @@ type ScreenNames = keyof RootStackParamList;
 
 export function navigate<Name extends ScreenNames>(
   name: Name,
-  params?: RootStackParamList[Name]
+  params?: RootStackParamList[Name],
 ) {
   if (navigationRef.isReady()) {
     navigationRef.navigate(name as any, params as any);
@@ -74,7 +87,7 @@ export function navigate<Name extends ScreenNames>(
 
 export function resetNavigation<Name extends ScreenNames>(
   name: Name,
-  params?: RootStackParamList[Name]
+  params?: RootStackParamList[Name],
 ) {
   if (navigationRef.isReady()) {
     navigationRef.reset({ index: 0, routes: [{ name, params }] });

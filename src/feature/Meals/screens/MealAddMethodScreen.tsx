@@ -1,15 +1,9 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
-import { RootStackParamList } from "@/navigation/navigate";
-import { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { MaterialIcons } from "@expo/vector-icons";
 import { spacing, rounded } from "@/theme";
 import { useTranslation } from "react-i18next";
@@ -34,7 +28,12 @@ const options = [
     icon: "camera-alt",
     titleKey: "aiTitle",
     descKey: "aiDesc",
-    screen: "MealCamera",
+    screen: "AddMeal",
+    params: {
+      start: "MealCamera",
+      returnTo: "ReviewIngredients",
+      attempt: 1,
+    },
   },
   {
     key: "ai_text",
@@ -48,7 +47,10 @@ const options = [
     icon: "edit",
     titleKey: "manualTitle",
     descKey: "manualDesc",
-    screen: "ReviewIngredients",
+    screen: "AddMeal",
+    params: {
+      start: "ReviewIngredients",
+    },
   },
   {
     key: "saved",
@@ -57,14 +59,14 @@ const options = [
     descKey: "savedDesc",
     screen: "SelectSavedMeal",
   },
-];
+] as const;
 
 const MealAddMethodScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation<MealAddMethodNavigationProp>();
   const { t } = useTranslation("meals");
   const { uid } = useAuthContext();
-  const { meal, setMeal, saveDraft, setLastScreen, loadDraft } =
+  const { setMeal, saveDraft, setLastScreen, loadDraft } =
     useMealDraftContext();
   const { isPremium } = usePremiumContext();
 
@@ -93,7 +95,7 @@ const MealAddMethodScreen = () => {
   }, [uid]);
 
   useEffect(() => {
-    checkDraft();
+    void checkDraft();
   }, [checkDraft]);
 
   const primeEmptyMeal = useCallback(
@@ -120,11 +122,11 @@ const MealAddMethodScreen = () => {
       await saveDraft(uid);
       await setLastScreen(uid, nextScreen);
     },
-    [setMeal, saveDraft, setLastScreen, uid]
+    [setMeal, saveDraft, setLastScreen, uid],
   );
 
-  const handleOptionPress = async (screen: string) => {
-    if (screen === "MealTextAI") {
+  const handleOptionPress = async (option: (typeof options)[number]) => {
+    if (option.screen === "MealTextAI") {
       if (uid) {
         const allowed = await canUseAiTodayFor(uid, !!isPremium, "text", 1);
         if (!allowed) {
@@ -134,22 +136,14 @@ const MealAddMethodScreen = () => {
       }
     }
 
-    if (screen === "MealCamera") {
-      await primeEmptyMeal("ReviewIngredients");
-      navigation.navigate("MealCamera" as any, {
-        returnTo: "MealAddMethod",
-        attempt: 1,
-      });
+    if (option.screen === "AddMeal") {
+      const start = (option as any).params?.start as string | undefined;
+      await primeEmptyMeal(start || "ReviewIngredients");
+      navigation.navigate("AddMeal", (option as any).params);
       return;
     }
 
-    if (screen === "ReviewIngredients") {
-      await primeEmptyMeal("ReviewIngredients");
-      navigation.navigate("ReviewIngredients" as any);
-      return;
-    }
-
-    navigation.navigate(screen as any);
+    navigation.navigate(option.screen as any);
   };
 
   const handleContinue = async () => {
@@ -209,7 +203,7 @@ const MealAddMethodScreen = () => {
               shadowOffset: { width: 0, height: 2 },
               shadowRadius: 12,
             }}
-            onPress={() => handleOptionPress(option.screen)}
+            onPress={() => void handleOptionPress(option)}
           >
             <View
               style={{
@@ -269,9 +263,7 @@ const MealAddMethodScreen = () => {
           ns: "chat",
           defaultValue: "Daily limit reached",
         })}
-        message={t("limit.reachedShort", {
-          ns: "chat",
-        })}
+        message={t("limit.reachedShort", { ns: "chat" })}
         primaryActionLabel={t("limit.upgradeCta", {
           ns: "chat",
           defaultValue: "Upgrade",
