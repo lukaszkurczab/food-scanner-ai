@@ -111,6 +111,7 @@
   "retry": "Retry",
   "camera_loader_title": "Analyzing your meal...",
   "camera_loader_subtext": "This may take a few seconds.",
+  "unknownError": "Something went wrong.",
   "kcal": "kcal",
   "gram": "g",
   "loading": "Loading…",
@@ -125,5 +126,15 @@
     "avatar_accessibility": "User avatar",
     "premium_badge_accessibility": "Premium user",
     "profile_picture_accessibility": "Profile picture"
+  },
+  "sync": {
+    "syncing": "Synchronizing changes...",
+    "queued": "Saved locally. Sync pending.",
+    "offline": "Offline mode. Changes are local."
+  },
+  "toast": {
+    "mealAdded": "Meal added.",
+    "savedLocallySyncLater": "No internet. Saved locally, will sync when online.",
+    "savedMealDeleteQueued": "No internet. Deletion saved locally."
   }
 }

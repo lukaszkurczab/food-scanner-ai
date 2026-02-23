@@ -4,6 +4,28 @@
 - Backend/services: Firebase (auth, firestore, storage), RevenueCat (react-native-purchases), i18next.
 - Tooling: ESLint v8, tsc typecheck.
 
+### Architecture Principles
+
+- **Feature modules as the default:** new functionality goes into `feature/<FeatureName>/` which contains its own `screens/`, `components/`, `hooks/`, `services/`, `types/` (as needed). Code inside a feature is **private by default** and should not be imported by other features.
+- **Global code is opt-in:** only move code to global folders (`components/`, `hooks/`, `services/`, `utils/`, `theme/`, `navigation/`, `types/`) if it is reused by **2+ features** or is a true app-wide concern (e.g., design system, auth, analytics, core navigation).
+- **No feature-to-feature imports:** features must not import from other features directly. If shared logic/UI emerges, extract to the appropriate global layer and import from there.
+- **Clear ownership:** a file belongs either to exactly one feature module **or** to the global layer—avoid “half-shared” code living in a feature but used globally.
+- **Stable boundaries:** public surface of global modules should be small and typed; features can change internally without breaking the rest of the app.
+
+### Naming, Imports, and Boundaries
+
+- **Path aliases:** prefer `@/` alias imports over relative imports for cross-folder references (e.g., `@/components/...`, `@/services/...`, `@/feature/<FeatureName>/...`).
+- **Import direction:** `screens` → `feature/*` internals → global layers → SDKs. Never import `screens` from anywhere.
+- **Feature privacy:** only import from inside the same `feature/<FeatureName>/...` unless extracting to global.
+- **Cross-feature reuse rule:** if code is needed in another feature, extract it to a global folder; do not “reach into” another feature’s internals.
+- **Naming conventions:**
+  - React components: `PascalCase` (e.g., `MealCameraScreen.tsx`, `MacroChart.tsx`)
+  - Hooks: `useXxx` (e.g., `useMeals.ts`, `usePremiumStatus.ts`)
+  - Services: `xxxService.ts` (e.g., `streakService.ts`, `nutritionTableService.ts`)
+  - Types: `types/*.ts` or `feature/<Feature>/types/*.ts` with explicit exported types
+- **Export policy:** prefer named exports; use default export for screens and top-level components only when consistent with the codebase.
+- **Barrels:** avoid `index.ts` barrel exports unless already established in the repo; explicit imports reduce accidental coupling.
+
 ## Operating Mode
 
 - For any non-trivial task (>= 3 steps, architectural choice, or ambiguous requirements): start with a short plan (bullets).
@@ -68,3 +90,36 @@ For each change-set, include:
 
 - No destructive actions (delete/migrate/overwrite data, breaking schema changes) without explicit confirmation.
 - No output of personal data from logs/screenshots; redact identifiers.
+- No secrets in code or logs. Never ask for or output API keys.
+
+## Refactor Loop (required)
+
+Applies to any non-trivial task (>= 3 steps), architectural change, refactor, or boundary cleanup.
+
+### Preflight (default)
+
+Before editing code, run:
+
+1. `mcp__ollama_sidecar__propose_approaches`
+   - Input: the task description + constraints from this file.
+   - Output: 2–3 approaches + recommended approach.
+
+2. `mcp__ollama_sidecar__risk_check`
+   - Input: the chosen approach + any known hotspots.
+   - Output: risks + regression vectors + test checklist + rollback plan.
+
+Skip preflight only if the user explicitly says **"skip preflight"**.
+
+### Execution
+
+- Implement **PR1 only** (smallest correct change). Do not start PR2 unless the user says **"continue"**.
+- Keep diffs small and behavior unchanged unless explicitly requested.
+
+### Quality Gate (must pass)
+
+Always run and report results:
+
+- `npm run lint`
+- `npm run typecheck`
+
+If a gate fails: fix and re-run (max 3 attempts). If still failing: stop and report the top blockers with file/line and a minimal next step.

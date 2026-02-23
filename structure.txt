@@ -60,6 +60,7 @@
 ├── .gitignore
 ├── .vscode
 │   └── launch.json
+├── AGENTS.md
 ├── App.tsx
 ├── GoogleService-Info.plist
 ├── app.config.js
@@ -124,10 +125,12 @@
 │   │   ├── SecondaryButton.tsx
 │   │   ├── Slider.tsx
 │   │   ├── StreakBadge.tsx
+│   │   ├── SyncStatusBadge.tsx
 │   │   ├── TargetProgressBar.tsx
 │   │   ├── TextInput.tsx
 │   │   ├── TimePickerRow.tsx
 │   │   ├── Toast.tsx
+│   │   ├── ToastBridge.tsx
 │   │   ├── UserIcon.tsx
 │   │   ├── WeekStrip.tsx
 │   │   ├── WeekdaySelector.tsx
@@ -136,7 +139,6 @@
 │   ├── context
 │   │   ├── AuthContext.tsx
 │   │   ├── HistoryContext.tsx
-│   │   ├── InactivityContext.tsx
 │   │   ├── MealDraftContext.tsx
 │   │   ├── PremiumContext.tsx
 │   │   └── UserContext.tsx
@@ -175,13 +177,25 @@
 │   │   │   │   ├── LiveMacroPreview.tsx
 │   │   │   │   ├── LoadingSkeleton.tsx
 │   │   │   │   └── StickyFooterActions.tsx
-│   │   │   └── screens
-│   │   │       ├── EditResultScreen.tsx
-│   │   │       ├── EditReviewIngredientsScreen.tsx
-│   │   │       ├── HistoryListScreen.tsx
-│   │   │       ├── MealDetailsScreen.tsx
-│   │   │       ├── SavedMealsCameraScreen.tsx
-│   │   │       └── SavedMealsScreen.tsx
+│   │   │   ├── hooks
+│   │   │   │   ├── useEditResultState.ts
+│   │   │   │   ├── useHistoryListState.ts
+│   │   │   │   ├── useHistorySectionsData.ts
+│   │   │   │   ├── useMealDetailsScreenState.ts
+│   │   │   │   ├── useMealDetailsState.ts
+│   │   │   │   └── useSavedMealsData.ts
+│   │   │   ├── screens
+│   │   │   │   ├── EditResultScreen.tsx
+│   │   │   │   ├── EditReviewIngredientsScreen.tsx
+│   │   │   │   ├── HistoryListScreen.tsx
+│   │   │   │   ├── MealDetailsScreen.tsx
+│   │   │   │   ├── SavedMealsCameraScreen.tsx
+│   │   │   │   └── SavedMealsScreen.tsx
+│   │   │   ├── services
+│   │   │   │   ├── historySectionsService.ts
+│   │   │   │   └── savedMealsService.ts
+│   │   │   └── types
+│   │   │       └── daySection.ts
 │   │   ├── Home
 │   │   │   ├── components
 │   │   │   │   ├── AddMealPlaceholder.tsx
@@ -201,6 +215,7 @@
 │   │   │   │   ├── EmptyState.tsx
 │   │   │   │   ├── Loader.tsx
 │   │   │   │   ├── LoadingSkeleton.tsx
+│   │   │   │   ├── ReviewIngredientsEditor.tsx
 │   │   │   │   ├── cardLayouts
 │   │   │   │   │   ├── MacroBadgeCard.tsx
 │   │   │   │   │   ├── MacroSplitCard.tsx
@@ -214,15 +229,23 @@
 │   │   │   │       ├── MacroPieChart.tsx
 │   │   │   │       ├── MacroPolarAreaChart.tsx
 │   │   │   │       └── MacroRadarChart.tsx
+│   │   │   ├── feature
+│   │   │   │   └── MapMealAddScreens.tsx
+│   │   │   ├── hooks
+│   │   │   │   ├── useMealCameraState.ts
+│   │   │   │   ├── useMealTextAiState.ts
+│   │   │   │   └── useSelectSavedMealsState.ts
 │   │   │   ├── screens
-│   │   │   │   ├── BarcodeProductNotFoundScreen.tsx
-│   │   │   │   ├── IngredientsNotRecognizedScreen.tsx
+│   │   │   │   ├── AddMealScreen.tsx
+│   │   │   │   ├── MealAdd
+│   │   │   │   │   ├── BarcodeProductNotFoundScreen.tsx
+│   │   │   │   │   ├── IngredientsNotRecognizedScreen.tsx
+│   │   │   │   │   ├── MealCameraScreen.tsx
+│   │   │   │   │   ├── ResultScreen.tsx
+│   │   │   │   │   └── ReviewIngredientsScreen.tsx
 │   │   │   │   ├── MealAddMethodScreen.tsx
-│   │   │   │   ├── MealCameraScreen.tsx
 │   │   │   │   ├── MealShareScreen.tsx
 │   │   │   │   ├── MealTextAIScreen.tsx
-│   │   │   │   ├── ResultScreen.tsx
-│   │   │   │   ├── ReviewIngredientsScreen.tsx
 │   │   │   │   └── SelectSavedMealsScreen.tsx
 │   │   │   └── share
 │   │   │       ├── ColorPickerPanel.tsx
@@ -236,7 +259,6 @@
 │   │   │       │   ├── BackgroundEditorPanel.tsx
 │   │   │       │   ├── CardEditorPanel.tsx
 │   │   │       │   ├── ChartEditorPanel.tsx
-│   │   │       │   ├── OptionsEditorPanel.tsx
 │   │   │       │   └── TextEditorPanel.tsx
 │   │   │       ├── types
 │   │   │       │   ├── ShareEditorPanelTypes.ts
@@ -262,6 +284,8 @@
 │   │   │   │   ├── ProgressAveragesCard.tsx
 │   │   │   │   ├── RangeTabs.tsx
 │   │   │   │   └── StatCard.tsx
+│   │   │   ├── hooks
+│   │   │   │   └── useStatisticsState.ts
 │   │   │   ├── screens
 │   │   │   │   └── StatisticsScreen.tsx
 │   │   │   └── utils
@@ -270,6 +294,8 @@
 │   │   ├── Subscription
 │   │   │   ├── components
 │   │   │   │   └── PaywallModal.tsx
+│   │   │   ├── hooks
+│   │   │   │   └── useManageSubscriptionState.ts
 │   │   │   ├── index.ts
 │   │   │   ├── screens
 │   │   │   │   └── ManageSubscriptionScreen.tsx
@@ -280,6 +306,9 @@
 │   │       ├── components
 │   │       │   ├── ListItem.tsx
 │   │       │   └── SectionHeader.tsx
+│   │       ├── hooks
+│   │       │   ├── useNotificationFormState.ts
+│   │       │   └── useNotificationsScreenState.ts
 │   │       └── screens
 │   │           ├── AvatarCameraScreen.tsx
 │   │           ├── ChangeEmailCheckMailboxScreen.tsx
@@ -296,11 +325,13 @@
 │   │   ├── useAppFonts.ts
 │   │   ├── useBadges.ts
 │   │   ├── useChatHistory.ts
+│   │   ├── useDebouncedValue.ts
 │   │   ├── useMeals.ts
 │   │   ├── useNotifications.ts
 │   │   ├── usePremiumStatus.ts
 │   │   ├── useStats.ts
 │   │   ├── useSubscriptionData.ts
+│   │   ├── useSyncStatus.ts
 │   │   └── useUser.ts
 │   ├── i18n.ts
 │   ├── locales
@@ -345,11 +376,19 @@
 │   ├── screens
 │   │   └── LoadingScreen.tsx
 │   ├── services
+│   │   ├── ai
+│   │   │   ├── ingredientParser.ts
+│   │   │   └── openaiChat.dto.ts
 │   │   ├── askDietAI.ts
 │   │   ├── badgeService.ts
+│   │   ├── barcode
+│   │   │   └── off.dto.ts
 │   │   ├── barcodeService.ts
 │   │   ├── cache.ts
 │   │   ├── chatService.ts
+│   │   ├── contracts
+│   │   │   ├── guards.ts
+│   │   │   └── serviceError.ts
 │   │   ├── events.ts
 │   │   ├── feedbackService.ts
 │   │   ├── index.ts
@@ -358,6 +397,7 @@
 │   │   ├── myMealService.ts
 │   │   ├── notifications
 │   │   │   ├── conditions.ts
+│   │   │   ├── dayRange.ts
 │   │   │   ├── engine.ts
 │   │   │   ├── localScheduler.ts
 │   │   │   ├── system.ts
@@ -372,8 +412,14 @@
 │   │   │   ├── schema.sql
 │   │   │   ├── sync.engine.ts
 │   │   │   └── types.ts
+│   │   ├── streak.logic.ts
 │   │   ├── streakService.ts
 │   │   ├── textMealService.ts
+│   │   ├── user
+│   │   │   ├── aiUsage.ts
+│   │   │   ├── common.ts
+│   │   │   ├── profile.dto.ts
+│   │   │   └── profile.ts
 │   │   ├── userService.ts
 │   │   ├── usernameService.ts
 │   │   └── visionService.ts
@@ -392,6 +438,7 @@
 │   │   ├── chatMessage.ts
 │   │   ├── chatThread.ts
 │   │   ├── constants.ts
+│   │   ├── dataViewState.ts
 │   │   ├── index.ts
 │   │   ├── meal.ts
 │   │   ├── notification.ts
@@ -426,4 +473,4 @@
 ├── structure.txt
 └── tsconfig.json
 
-76 directories, 351 files
+89 directories, 385 files

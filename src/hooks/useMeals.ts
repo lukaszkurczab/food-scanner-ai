@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import NetInfo from "@react-native-community/netinfo";
 import type { Meal } from "@/types/meal";
 import {
   getMealsPageLocal,
@@ -19,6 +20,7 @@ import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/myMealService";
 
 const PAGE_LIMIT = 50;
+const SYNC_DEBOUNCE_MS = 1200;
 
 function computeTotals(meal: Pick<Meal, "ingredients">) {
   const ing = meal.ingredients || [];
@@ -51,6 +53,109 @@ export function useMeals(userUid: string | null) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const beforeRef = useRef<string | null>(null);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncInFlightRef = useRef(false);
+  const syncRequestedRef = useRef(false);
+  const lastOfflineToastAtRef = useRef(0);
+
+  const emitSyncStatus = useCallback(
+    (status: "idle" | "queued" | "syncing" | "offline") => {
+      if (!userUid) return;
+      emit("sync:status", { uid: userUid, status });
+    },
+    [userUid]
+  );
+
+  const emitOfflineQueuedToast = useCallback(() => {
+    const now = Date.now();
+    if (now - lastOfflineToastAtRef.current < 8000) return;
+    lastOfflineToastAtRef.current = now;
+    emit("ui:toast", {
+      key: "toast.savedLocallySyncLater",
+      ns: "common",
+    });
+  }, []);
+
+  const flushQueuedSync = useCallback(async () => {
+    if (!userUid) return;
+    if (syncInFlightRef.current) {
+      syncRequestedRef.current = true;
+      return;
+    }
+    if (!syncRequestedRef.current) return;
+
+    syncInFlightRef.current = true;
+    syncRequestedRef.current = false;
+    emitSyncStatus("syncing");
+    try {
+      log.log("sync flush start", { uid: userUid });
+      await pushQueue(userUid);
+      await pullChanges(userUid);
+      log.log("sync flush done", { uid: userUid });
+      const net = await NetInfo.fetch();
+      emitSyncStatus(net.isConnected ? "idle" : "offline");
+    } catch (error: unknown) {
+      log.warn("sync flush failed", error);
+      const net = await NetInfo.fetch();
+      emitSyncStatus(net.isConnected ? "queued" : "offline");
+    } finally {
+      syncInFlightRef.current = false;
+      if (syncRequestedRef.current && !syncTimerRef.current) {
+        emitSyncStatus("queued");
+        syncTimerRef.current = setTimeout(() => {
+          syncTimerRef.current = null;
+          void flushQueuedSync();
+        }, SYNC_DEBOUNCE_MS);
+      }
+    }
+  }, [emitSyncStatus, userUid]);
+
+  const scheduleQueuedSync = useCallback(
+    (reason: "add" | "update" | "delete" | "duplicate") => {
+      if (!userUid) return;
+      syncRequestedRef.current = true;
+      void (async () => {
+        const net = await NetInfo.fetch();
+        if (!net.isConnected) {
+          emitSyncStatus("offline");
+          emitOfflineQueuedToast();
+          return;
+        }
+        emitSyncStatus("queued");
+      })();
+      if (syncTimerRef.current) {
+        log.log("sync already scheduled", { uid: userUid, reason });
+        return;
+      }
+      log.log("sync scheduled", { uid: userUid, reason, delayMs: SYNC_DEBOUNCE_MS });
+      syncTimerRef.current = setTimeout(() => {
+        syncTimerRef.current = null;
+        void flushQueuedSync();
+      }, SYNC_DEBOUNCE_MS);
+    },
+    [emitOfflineQueuedToast, emitSyncStatus, flushQueuedSync, userUid]
+  );
+
+  useEffect(() => {
+    if (syncTimerRef.current) {
+      clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = null;
+    }
+    syncInFlightRef.current = false;
+    syncRequestedRef.current = false;
+    emitSyncStatus("idle");
+  }, [userUid]);
+
+  useEffect(
+    () => () => {
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = null;
+      }
+      emitSyncStatus("idle");
+    },
+    [emitSyncStatus]
+  );
 
   const loadFirstPage = useCallback(async () => {
     console.log("[useMeals] loadFirstPage start", { userUid });
@@ -166,19 +271,15 @@ export function useMeals(userUid: string | null) {
         console.log("[useMeals] enqueueMyMealUpsert ok", { id: base.mealId });
       }
 
-      console.log("[useMeals] pushQueue immediate");
-      await pushQueue(userUid);
-      console.log("[useMeals] pushQueue done -> pullChanges immediate");
-      await pullChanges(userUid);
-      console.log("[useMeals] pullChanges done");
+      scheduleQueuedSync("add");
 
       await loadFirstPage();
       console.log("[useMeals] reload after add");
       triggerReconcile(userUid);
-      emit("ui:toast", { kind: "success", text: "Posiłek dodany" });
+      emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
       console.log("[useMeals] addMeal done, toast fired");
     },
-    [userUid, loadFirstPage]
+    [userUid, loadFirstPage, scheduleQueuedSync]
   );
 
   const updateMeal = useCallback(
@@ -242,19 +343,13 @@ export function useMeals(userUid: string | null) {
       await enqueueUpsert(userUid, payload);
       console.log("[useMeals] enqueueUpsert ok (update)", { cloudId });
 
-      console.log("[useMeals] pushQueue immediate (update)");
-      await pushQueue(userUid);
-      console.log(
-        "[useMeals] pushQueue done -> pullChanges immediate (update)"
-      );
-      await pullChanges(userUid);
-      console.log("[useMeals] pullChanges done (update)");
+      scheduleQueuedSync("update");
 
       await loadFirstPage();
       console.log("[useMeals] reload after update");
       triggerReconcile(userUid);
     },
-    [userUid, loadFirstPage]
+    [userUid, loadFirstPage, scheduleQueuedSync]
   );
 
   const deleteMeal = useCallback(
@@ -269,19 +364,13 @@ export function useMeals(userUid: string | null) {
       await enqueueDelete(userUid, mealCloudId, now);
       console.log("[useMeals] enqueueDelete ok", { cloudId: mealCloudId });
 
-      console.log("[useMeals] pushQueue immediate (delete)");
-      await pushQueue(userUid);
-      console.log(
-        "[useMeals] pushQueue done -> pullChanges immediate (delete)"
-      );
-      await pullChanges(userUid);
-      console.log("[useMeals] pullChanges done (delete)");
+      scheduleQueuedSync("delete");
 
       setMeals((prev) => prev.filter((m) => (m.cloudId || "") !== mealCloudId));
       console.log("[useMeals] local list pruned");
       triggerReconcile(userUid);
     },
-    [userUid]
+    [userUid, scheduleQueuedSync]
   );
 
   const duplicateMeal = useCallback(
@@ -320,26 +409,22 @@ export function useMeals(userUid: string | null) {
         cloudId: newCloudId,
       });
 
-      console.log("[useMeals] pushQueue immediate (duplicate)");
-      await pushQueue(userUid);
-      console.log(
-        "[useMeals] pushQueue done -> pullChanges immediate (duplicate)"
-      );
-      await pullChanges(userUid);
-      console.log("[useMeals] pullChanges done (duplicate)");
+      scheduleQueuedSync("duplicate");
 
       await loadFirstPage();
       console.log("[useMeals] reload after duplicate");
       triggerReconcile(userUid);
-      emit("ui:toast", { kind: "success", text: "Posiłek dodany" });
+      emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
       console.log("[useMeals] duplicateMeal done, toast fired");
     },
-    [userUid, loadFirstPage]
+    [userUid, loadFirstPage, scheduleQueuedSync]
   );
 
   const syncMeals = useCallback(async () => {
-    console.log("[useMeals] syncMeals noop");
-  }, []);
+    if (!userUid) return;
+    syncRequestedRef.current = true;
+    await flushQueuedSync();
+  }, [flushQueuedSync, userUid]);
   const getUnsyncedMeals = useCallback(async () => {
     console.log("[useMeals] getUnsyncedMeals empty");
     return [] as Meal[];

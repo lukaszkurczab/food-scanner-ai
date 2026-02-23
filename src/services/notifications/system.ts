@@ -8,19 +8,13 @@ import {
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import {
+  asBoolean,
+  asNumber,
+  isRecord,
+} from "@/services/contracts/guards";
 
 type QuietHours = { startHour: number; endHour: number };
-type NotificationsPrefsDoc = {
-  notifications?: {
-    motivationEnabled?: boolean;
-    statsEnabled?: boolean;
-    weekdays0to6?: number[];
-    quietHours?: { startHour?: number; endHour?: number };
-    daysAhead?: number;
-  };
-};
-
-type SystemMetaDoc = Record<string, { plannedUntil?: number } | undefined>;
 
 const SYS_KEY_PREFIX = "notif:sys:ids:";
 
@@ -28,10 +22,21 @@ function sysKey(uid: string, key: string) {
   return `${SYS_KEY_PREFIX}${uid}:${key}`;
 }
 
+function parseStoredIds(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((id): id is string => typeof id === "string");
+  } catch {
+    return [];
+  }
+}
+
 async function getStoredIds(uid: string, key: string): Promise<string[]> {
   try {
     const raw = await AsyncStorage.getItem(sysKey(uid, key));
-    return raw ? JSON.parse(raw) : [];
+    return parseStoredIds(raw);
   } catch {
     return [];
   }
@@ -94,39 +99,72 @@ function upcomingDays(n: number) {
   return out;
 }
 
+function clampHour(value: number, fallback: number): number {
+  return Number.isFinite(value)
+    ? Math.max(0, Math.min(23, Math.trunc(value)))
+    : fallback;
+}
+
+function parseWeekdays0to6(value: unknown): number[] {
+  if (!Array.isArray(value)) return [];
+  const normalized = value
+    .map((day) => asNumber(day))
+    .filter(
+      (day): day is number =>
+        typeof day === "number" &&
+        Number.isInteger(day) &&
+        day >= 0 &&
+        day <= 6
+    );
+  return Array.from(new Set(normalized));
+}
+
 async function getPrefs(uid: string) {
   const db = getFirestore(getApp());
   const snap = await getDoc(doc(db, "users", uid, "prefs", "global"));
-  const data = (snap.exists() ? snap.data() : {}) as NotificationsPrefsDoc;
+  const raw = snap.exists() ? snap.data() : null;
+  const notifications =
+    isRecord(raw) && isRecord(raw.notifications) ? raw.notifications : null;
+  const quietHours =
+    notifications && isRecord(notifications.quietHours)
+      ? notifications.quietHours
+      : null;
 
-  const motivationOn = !!data?.notifications?.motivationEnabled;
-  const statsOn = !!data?.notifications?.statsEnabled;
-
-  const weekdays0to6: number[] =
-    Array.isArray(data?.notifications?.weekdays0to6) &&
-    data.notifications.weekdays0to6.length > 0
-      ? data.notifications.weekdays0to6
-      : [1, 2, 3, 4, 5, 6, 0];
-
-  const quiet: QuietHours = {
-    startHour: Number(data?.notifications?.quietHours?.startHour ?? 22),
-    endHour: Number(data?.notifications?.quietHours?.endHour ?? 7),
-  };
-
-  const daysAhead = Math.min(
-    Math.max(Number(data?.notifications?.daysAhead ?? 7), 1),
-    14
+  const motivationOn =
+    (notifications ? asBoolean(notifications.motivationEnabled) : undefined) ??
+    false;
+  const statsOn =
+    (notifications ? asBoolean(notifications.statsEnabled) : undefined) ?? false;
+  const weekdays0to6 = parseWeekdays0to6(
+    notifications ? notifications.weekdays0to6 : undefined
   );
 
-  return { motivationOn, statsOn, weekdays0to6, quiet, daysAhead };
+  const quiet: QuietHours = {
+    startHour: clampHour(asNumber(quietHours?.startHour) ?? Number.NaN, 22),
+    endHour: clampHour(asNumber(quietHours?.endHour) ?? Number.NaN, 7),
+  };
+
+  const rawDaysAhead = notifications
+    ? asNumber(notifications.daysAhead)
+    : undefined;
+  const daysAhead = Math.min(Math.max(rawDaysAhead ?? 7, 1), 14);
+
+  return {
+    motivationOn,
+    statsOn,
+    weekdays0to6: weekdays0to6.length ? weekdays0to6 : [1, 2, 3, 4, 5, 6, 0],
+    quiet,
+    daysAhead,
+  };
 }
 
 async function gatePlanned(uid: string, key: string) {
   const db = getFirestore(getApp());
   const ref = doc(db, "users", uid, "notif_meta", "system");
   const snap = await getDoc(ref);
-  const data = (snap.exists() ? snap.data() : {}) as SystemMetaDoc;
-  const plannedUntil = Number(data?.[key]?.plannedUntil ?? 0);
+  const raw = snap.exists() ? snap.data() : null;
+  const entry = isRecord(raw) && isRecord(raw[key]) ? raw[key] : null;
+  const plannedUntil = asNumber(entry?.plannedUntil) ?? 0;
 
   return {
     shouldReschedule: Date.now() > plannedUntil - 6 * 60 * 60 * 1000,

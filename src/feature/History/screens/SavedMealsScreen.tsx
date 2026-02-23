@@ -1,89 +1,36 @@
-// src/feature/History/screens/SavedMealsScreen.tsx
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback } from "react";
 import {
-  View,
+  ActivityIndicator,
   FlatList,
   RefreshControl,
-  ViewToken,
   StyleSheet,
-  ActivityIndicator,
+  View,
 } from "react-native";
 import type { ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { useTheme } from "@/theme/useTheme";
-import { useAuthContext } from "@/context/AuthContext";
-import { useMeals } from "@hooks/useMeals";
-import type { Meal } from "@/types/meal";
-import { EmptyState } from "../components/EmptyState";
-import { LoadingSkeleton } from "../components/LoadingSkeleton";
-import { OfflineBanner } from "@/components/OfflineBanner";
 import { useNetInfo } from "@react-native-community/netinfo";
+import { useTranslation } from "react-i18next";
+import { v4 as uuidv4 } from "uuid";
 import {
   FullScreenLoader,
   Layout,
   SearchBox,
+  SyncStatusBadge,
 } from "@/components";
-import { FilterBadgeButton } from "../components/FilterBadgeButton";
-import { FilterPanel } from "../components/FilterPanel";
 import { MealListItem } from "@/components/MealListItem";
-import { getApp } from "@react-native-firebase/app";
-import {
-  getFirestore,
-  collection,
-  query as fsQuery,
-  orderBy,
-  onSnapshot,
-  limit,
-  startAfter,
-  getDocs,
-  deleteDoc,
-  doc,
-  setDoc,
-  type FirebaseFirestoreTypes,
-} from "@react-native-firebase/firestore";
-import { useTranslation } from "react-i18next";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { useAuthContext } from "@/context/AuthContext";
 import { useFilters } from "@/context/HistoryContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
-import { v4 as uuidv4 } from "uuid";
-import * as FileSystem from "expo-file-system";
-
-const PAGE_SIZE = 20;
-
-const norm = (s: unknown) =>
-  String(s || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-
-const app = getApp();
-const db = getFirestore(app);
-
-const toNumber = (v: unknown) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-};
-
-const mealTotals = (m: Meal) => {
-  const ing = m.ingredients || [];
-  const sum = <K extends "kcal" | "protein" | "carbs" | "fat">(k: K) =>
-    ing.reduce((a, b) => a + toNumber(b?.[k]), 0);
-  return {
-    kcal: sum("kcal"),
-    protein: sum("protein"),
-    carbs: sum("carbs"),
-    fat: sum("fat"),
-  };
-};
-
-const toDate = (val?: string | number | null): Date | null => {
-  if (!val) return null;
-  const d = new Date(val);
-  return isNaN(d.getTime()) ? null : d;
-};
-
-const getMealDate = (m: Meal): Date | null => {
-  return toDate(m.timestamp) || toDate(m.updatedAt) || toDate(m.createdAt) || null;
-};
+import { useMeals } from "@hooks/useMeals";
+import { useSyncStatus } from "@/hooks/useSyncStatus";
+import { useTheme } from "@/theme/useTheme";
+import type { Meal } from "@/types/meal";
+import { EmptyState } from "../components/EmptyState";
+import { FilterBadgeButton } from "../components/FilterBadgeButton";
+import { FilterPanel } from "../components/FilterPanel";
+import { LoadingSkeleton } from "../components/LoadingSkeleton";
+import { useSavedMealsData } from "@/feature/History/hooks/useSavedMealsData";
 
 type SavedMealsNavigation = StackNavigationProp<ParamListBase>;
 
@@ -94,7 +41,9 @@ export default function SavedMealsScreen({
 }) {
   const theme = useTheme();
   const netInfo = useNetInfo();
+  const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
+  const syncStatus = useSyncStatus(uid);
   const { getMeals } = useMeals(uid || "");
   const { t } = useTranslation(["meals", "common"]);
   const {
@@ -113,258 +62,46 @@ export default function SavedMealsScreen({
     filterCount,
   } = useFilters("myMeals");
 
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [items, setItems] = useState<Meal[]>([]);
-  const [lastDoc, setLastDoc] =
-    useState<FirebaseFirestoreTypes.QueryDocumentSnapshot | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [validating, setValidating] = useState(false);
-
-  const loadingMoreRef = useRef(false);
-
-  const subscribeFirstPage = useCallback(() => {
-    if (!uid) {
-      setItems([]);
-      setLoading(false);
-      return () => {};
-    }
-    const q = fsQuery(
-      collection(db, "users", uid, "myMeals"),
-      orderBy("name", "asc"),
-      limit(PAGE_SIZE),
-    );
-    const unsub = onSnapshot(q, async (snap) => {
-      const data = snap.docs.map(
-        (d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
-        ...(d.data() as Meal),
-        cloudId: d.id,
-        }),
-      );
-      setItems(data);
-      setLastDoc(snap.docs[snap.docs.length - 1] || null);
-      setHasMore(snap.docs.length === PAGE_SIZE);
-      setLoading(false);
-      setValidating(true);
-      try {
-        const updated: Meal[] = [];
-        for (const m of data) {
-          const localUri =
-            m.photoLocalPath ??
-            (m.photoUrl?.startsWith("file://") ? m.photoUrl : null);
-          if (localUri) {
-            try {
-              const info = await FileSystem.getInfoAsync(localUri);
-              if (!info.exists) {
-                await setDoc(
-                  doc(
-                    db,
-                    "users",
-                    uid,
-                    "myMeals",
-                    m.cloudId || m.mealId,
-                  ),
-                  { photoUrl: null, photoLocalPath: null },
-                  { merge: true },
-                );
-                updated.push({
-                  ...m,
-                  photoUrl: null,
-                  photoLocalPath: null,
-                });
-              } else {
-                updated.push(m);
-              }
-            } catch {
-              await setDoc(
-                doc(
-                  db,
-                  "users",
-                  uid,
-                  "myMeals",
-                  m.cloudId || m.mealId,
-                ),
-                { photoUrl: null, photoLocalPath: null },
-                { merge: true },
-              );
-              updated.push({
-                ...m,
-                photoUrl: null,
-                photoLocalPath: null,
-              });
-            }
-          } else {
-            updated.push(m);
-          }
-        }
-        setItems(updated);
-      } finally {
-        setValidating(false);
-      }
-    });
-    return unsub;
-  }, [uid]);
-
-  useEffect(() => {
-    const unsub = subscribeFirstPage();
-    return () => {
-      if (typeof unsub === "function") unsub();
-    };
-  }, [subscribeFirstPage]);
-
-  const loadMore = useCallback(async () => {
-    if (!uid || !hasMore || loadingMoreRef.current || !lastDoc) return;
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
-    const q = fsQuery(
-      collection(db, "users", uid, "myMeals"),
-      orderBy("name", "asc"),
-      startAfter(lastDoc),
-      limit(PAGE_SIZE),
-    );
-    const snap = await getDocs(q);
-    const data = snap.docs.map(
-      (d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
-      ...(d.data() as Meal),
-      cloudId: d.id,
-      }),
-    );
-    const validated: Meal[] = [];
-    for (const m of data) {
-      const localUri =
-        m.photoLocalPath ??
-        (m.photoUrl?.startsWith("file://") ? m.photoUrl : null);
-      if (localUri) {
-        try {
-          const info = await FileSystem.getInfoAsync(localUri);
-          if (!info.exists) {
-            await setDoc(
-              doc(db, "users", uid, "myMeals", m.cloudId || m.mealId),
-              { photoUrl: null, photoLocalPath: null },
-              { merge: true },
-            );
-            validated.push({
-              ...m,
-              photoUrl: null,
-              photoLocalPath: null,
-            });
-          } else {
-            validated.push(m);
-          }
-        } catch {
-          await setDoc(
-            doc(db, "users", uid, "myMeals", m.cloudId || m.mealId),
-            { photoUrl: null, photoLocalPath: null },
-            { merge: true },
-          );
-          validated.push({ ...m, photoUrl: null, photoLocalPath: null });
-        }
-      } else {
-        validated.push(m);
-      }
-    }
-    setItems((prev) => [...prev, ...validated]);
-    setLastDoc(snap.docs[snap.docs.length - 1] || null);
-    setHasMore(snap.docs.length === PAGE_SIZE);
-    setLoadingMore(false);
-    setTimeout(() => {
-      loadingMoreRef.current = false;
-    }, 50);
-  }, [uid, hasMore, lastDoc]);
-
-  const refresh = useCallback(async () => {
-    await getMeals();
-  }, [getMeals]);
-
-  const visibleItems = useMemo(() => {
-    const q = norm(query);
-    const base = [...items].sort((a, b) => {
-      const an = norm(a.name || "");
-      const bn = norm(b.name || "");
-      if (an && bn) return an.localeCompare(bn);
-      if (an && !bn) return -1;
-      if (!an && bn) return 1;
-      return 0;
-    });
-
-    const byText = !q
-      ? base
-      : base.filter((m) => {
-          const title = norm(m.name) || "";
-          const ing = norm(
-            (m.ingredients || []).map((x) => x?.name || "").join(" "),
-          );
-          return title.includes(q) || ing.includes(q);
-        });
-
-    if (!filters) return byText;
-
-    return byText.filter((m) => {
-      const totals = mealTotals(m);
-
-      if (filters.calories) {
-        const [min, max] = filters.calories;
-        if (totals.kcal < min || totals.kcal > max) return false;
-      }
-      if (filters.protein) {
-        const [min, max] = filters.protein;
-        if (totals.protein < min || totals.protein > max) return false;
-      }
-      if (filters.carbs) {
-        const [min, max] = filters.carbs;
-        if (totals.carbs < min || totals.carbs > max) return false;
-      }
-      if (filters.fat) {
-        const [min, max] = filters.fat;
-        if (totals.fat < min || totals.fat > max) return false;
-      }
-      if (filters.dateRange) {
-        const d = getMealDate(m);
-        if (d) {
-          const s = new Date(filters.dateRange.start);
-          const e = new Date(filters.dateRange.end);
-          s.setHours(0, 0, 0, 0);
-          e.setHours(23, 59, 59, 999);
-          if (+d < +s || +d > +e) return false;
-        }
-      }
-      return true;
-    });
-  }, [items, query, filters]);
-
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
-      if (loadingMoreRef.current || !hasMore || !lastDoc) return;
-      const globalMax = viewableItems.reduce((max, v) => {
-        const idx = typeof v.index === "number" ? v.index : -1;
-        return idx > max ? idx : max;
-      }, -1);
-      const remaining = visibleItems.length - (globalMax + 1);
-      if (remaining <= 10) loadMore();
-    },
-  );
+  const {
+    pageSize,
+    loading,
+    loadingMore,
+    validating,
+    errorKind,
+    dataState,
+    visibleItems,
+    refresh,
+    onDelete,
+    onViewableItemsChanged,
+    viewabilityConfig,
+  } = useSavedMealsData({
+    uid,
+    query,
+    filters,
+    isOnline,
+    getMeals,
+  });
 
   const buildDraftFromSaved = useCallback(
     (picked: Meal): Meal => {
       const now = new Date().toISOString();
-      const base: Meal =
-        draftMeal ??
-        {
-          mealId: uuidv4(),
-          userUid: uid ?? "",
-          name: "",
-          photoUrl: null,
-          ingredients: [],
-          createdAt: now,
-          updatedAt: now,
-          syncState: "pending",
-          tags: [],
-          deleted: false,
-          notes: null,
-          type: "other",
-          timestamp: "",
-          source: null,
-        };
+      const base: Meal = draftMeal ?? {
+        mealId: uuidv4(),
+        userUid: uid ?? "",
+        name: "",
+        photoUrl: null,
+        ingredients: [],
+        createdAt: now,
+        updatedAt: now,
+        syncState: "pending",
+        tags: [],
+        deleted: false,
+        notes: null,
+        type: "other",
+        timestamp: "",
+        source: null,
+      };
+
       return {
         ...base,
         mealId: uuidv4(),
@@ -381,9 +118,9 @@ export default function SavedMealsScreen({
   );
 
   const onDuplicate = useCallback(
-    async (m: Meal) => {
+    async (meal: Meal) => {
       if (!uid) return;
-      const next = buildDraftFromSaved(m);
+      const next = buildDraftFromSaved(meal);
       setMeal(next);
       await saveDraft(uid);
       await setLastScreen(uid, "ReviewIngredients");
@@ -393,55 +130,88 @@ export default function SavedMealsScreen({
   );
 
   const onEdit = useCallback(
-    async (m: Meal) => {
+    async (meal: Meal) => {
       if (!uid) return;
-      const next = buildDraftFromSaved(m);
+      const next = buildDraftFromSaved(meal);
       setMeal(next);
       await saveDraft(uid);
       await setLastScreen(uid, "EditReviewIngredients");
       navigation.navigate("EditReviewIngredients", {
         mode: "edit-saved",
-        savedCloudId: m.cloudId,
+        savedCloudId: meal.cloudId,
       });
     },
     [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation],
   );
 
-  const onDelete = useCallback(
-    async (m: Meal) => {
-      if (!uid || !m.cloudId) return;
-      await deleteDoc(doc(db, "users", uid, "myMeals", m.cloudId));
-    },
-    [uid],
+  const keyExtractor = useCallback(
+    (item: Meal) => item.cloudId || item.mealId,
+    [],
   );
 
-  if (loading)
+  const renderItem = useCallback(
+    ({ item }: { item: Meal }) => (
+      <View
+        style={[
+          styles.listItemWrap,
+          {
+            marginBottom: theme.spacing.sm,
+          },
+        ]}
+      >
+        <MealListItem
+          meal={item}
+          onPress={() => navigation.navigate("MealDetails", { meal: item })}
+          onDuplicate={() => onDuplicate(item)}
+          onEdit={() => onEdit(item)}
+          onDelete={() => onDelete(item)}
+        />
+      </View>
+    ),
+    [navigation, onDelete, onDuplicate, onEdit, theme.spacing.sm],
+  );
+
+  if (dataState === "loading") {
     return (
       <Layout disableScroll>
         <FullScreenLoader />
       </Layout>
     );
+  }
 
-  if (!visibleItems.length) {
+  if (dataState !== "ready") {
+    const errorMessage =
+      errorKind === "load"
+        ? t("savedMeals.loadError", { ns: "meals" })
+        : errorKind === "loadMore"
+          ? t("savedMeals.loadMoreError", { ns: "meals" })
+          : errorKind === "refresh"
+            ? t("savedMeals.refreshError", { ns: "meals" })
+            : t("common:unknownError");
+
+    const emptyTitle =
+      dataState === "error"
+        ? t("savedMeals.errorTitle", { ns: "meals" })
+        : t("meals:noSavedMeals", "No saved meals");
+    const emptyDescription =
+      dataState === "error"
+        ? errorMessage
+        : dataState === "offline-empty"
+          ? t("savedMeals.offlineEmpty", { ns: "meals" })
+          : query
+            ? t("meals:tryDifferentSearch", "Try a different search.")
+            : t("meals:saveMealsToReuse", "Save meals to reuse them later.");
+
     return (
       <Layout disableScroll>
-        {!netInfo.isConnected && <OfflineBanner />}
+        {!isOnline && <OfflineBanner />}
+        <SyncStatusBadge status={syncStatus} />
         {showFilters ? (
           <FilterPanel scope="myMeals" />
         ) : (
           <>
             <SearchBox value={query} onChange={setQuery} />
-            <EmptyState
-              title={t("meals:noSavedMeals", "No saved meals")}
-              description={
-                query
-                  ? t("meals:tryDifferentSearch", "Try a different search.")
-                  : t(
-                      "meals:saveMealsToReuse",
-                      "Save meals to reuse them later.",
-                    )
-              }
-            />
+            <EmptyState title={emptyTitle} description={emptyDescription} />
           </>
         )}
       </Layout>
@@ -450,7 +220,8 @@ export default function SavedMealsScreen({
 
   return (
     <Layout disableScroll>
-      {!netInfo.isConnected && <OfflineBanner />}
+      {!isOnline && <OfflineBanner />}
+      <SyncStatusBadge status={syncStatus} />
       {showFilters ? (
         <View style={[styles.fill, { paddingBottom: theme.spacing.nav }]}>
           <FilterPanel scope="myMeals" />
@@ -480,39 +251,20 @@ export default function SavedMealsScreen({
           )}
           <FlatList
             data={visibleItems}
-            keyExtractor={(item) => item.cloudId || item.mealId}
+            keyExtractor={keyExtractor}
             refreshControl={
               <RefreshControl refreshing={loading} onRefresh={refresh} />
             }
-            renderItem={({ item }) => (
-              <View
-                style={[
-                  styles.listItemWrap,
-                  {
-                    marginBottom: theme.spacing.sm,
-                  },
-                ]}
-              >
-                <MealListItem
-                  meal={item}
-                  onPress={() =>
-                    navigation.navigate("MealDetails", { meal: item })
-                  }
-                  onDuplicate={() => onDuplicate(item)}
-                  onEdit={() => onEdit(item)}
-                  onDelete={() => onDelete(item)}
-                />
-              </View>
-            )}
+            renderItem={renderItem}
             contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
             onViewableItemsChanged={onViewableItemsChanged.current}
-            viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
+            viewabilityConfig={viewabilityConfig}
             ListFooterComponent={
               loadingMore ? <LoadingSkeleton height={56} /> : null
             }
             removeClippedSubviews
             windowSize={7}
-            initialNumToRender={PAGE_SIZE}
+            initialNumToRender={pageSize}
           />
         </>
       )}

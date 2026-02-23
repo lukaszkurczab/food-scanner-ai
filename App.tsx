@@ -17,6 +17,7 @@ import { PremiumProvider } from "@/context/PremiumContext";
 import { HistoryProvider } from "@/context/HistoryContext";
 import { View, ActivityIndicator } from "react-native";
 import { useAppFonts } from "@hooks/useAppFonts";
+import { ToastBridge } from "@/components";
 
 function Root() {
   const fontsLoaded = useAppFonts();
@@ -37,6 +38,7 @@ function Root() {
             <HistoryProvider>
               <ThemeController>
                 <AppNavigator />
+                <ToastBridge />
               </ThemeController>
             </HistoryProvider>
           </MealDraftProvider>

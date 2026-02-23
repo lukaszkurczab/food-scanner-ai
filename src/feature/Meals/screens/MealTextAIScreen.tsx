@@ -1,246 +1,49 @@
-import { useCallback, useMemo, useState } from "react";
-import { View, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
+import { View, KeyboardAvoidingView, Platform } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import {
   Layout,
   PrimaryButton,
   SecondaryButton,
   Modal,
-  Toast,
 } from "@/components";
 import { useTranslation } from "react-i18next";
-import { useAuthContext } from "@/context/AuthContext";
-import { usePremiumContext } from "@/context/PremiumContext";
 import { useNavigation, type ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { canUseAiTodayFor, consumeAiUseFor } from "@/services/userService";
-import { extractIngredientsFromText } from "@/services/textMealService";
-import { useMealDraftContext } from "@contexts/MealDraftContext";
-import { v4 as uuidv4 } from "uuid";
 import { LongTextInput } from "@/components/LongTextInput";
 import { TextInput as ShortInput } from "@/components/TextInput";
-import type { Ingredient, Meal } from "@/types";
+import { useMealTextAiState } from "@/feature/Meals/hooks/useMealTextAiState";
 
 export default function MealTextAIScreen() {
   const theme = useTheme();
   const { t, i18n } = useTranslation(["meals", "chat", "common"]);
-  const { uid } = useAuthContext();
-  const { isPremium } = usePremiumContext();
   const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
-  const { meal, setMeal, saveDraft, setLastScreen } = useMealDraftContext();
 
-  const [name, setName] = useState("");
-  const [ingPreview, setIngPreview] = useState("");
-  const [amount, setAmount] = useState("");
-  const [desc, setDesc] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [touched, setTouched] = useState<{ name: boolean; amount: boolean }>({
-    name: false,
-    amount: false,
-  });
-  const [showLimitModal, setShowLimitModal] = useState(false);
-  const [retries, setRetries] = useState(0);
-  const [ingredientsError, setIngredientsError] = useState<
-    string | undefined
-  >();
-
-  const FEATURE_LIMIT = 1;
-
-  const sanitizeAmount = (s: string) =>
-    String(s)
-      .replace(/[^0-9.,]/g, "")
-      .replace(",", ".");
-  const amountRaw = useMemo(() => sanitizeAmount(amount), [amount]);
-  const amountNum = useMemo(() => Number(amountRaw), [amountRaw]);
-
-  const nameError: string | undefined = useMemo(() => {
-    if (!touched.name) return undefined;
-    if (!name.trim()) return t("meal_name_required", { ns: "meals" });
-    return undefined;
-  }, [touched.name, name, t]);
-
-  const amountError: string | undefined = useMemo(() => {
-    if (!touched.amount) return undefined;
-    if (amountRaw.length === 0) return undefined;
-    if (!isFinite(amountNum) || amountNum <= 0)
-      return t("ingredient_invalid_values", { ns: "meals" });
-    return undefined;
-  }, [touched.amount, amountRaw, amountNum, t]);
-
-  const buildInitialMeal = useCallback(
-    (u: string): Meal =>
-      ({
-        mealId: uuidv4(),
-        userUid: u,
-        name: null,
-        photoUrl: null,
-        ingredients: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        syncState: "pending",
-        tags: [],
-        deleted: false,
-        notes: null,
-        type: "other",
-        timestamp: "",
-        source: "ai",
-        cloudId: undefined,
-      }),
-    [],
-  );
-
-  const ensureDraft = useCallback(async (): Promise<Meal | null> => {
-    if (!uid) return null;
-    if (meal) return meal;
-    const base = buildInitialMeal(uid);
-    setMeal(base);
-    await saveDraft(uid);
-    return base;
-  }, [uid, meal, buildInitialMeal, saveDraft, setMeal]);
-
-  const fillDraftAndGo = useCallback(
-    async (ings: Ingredient[]) => {
-      if (!uid) return;
-      const base = await ensureDraft();
-      if (!base) return;
-      const next: Meal = {
-        ...base,
-        name: name.trim() || base.name,
-        notes: desc.trim() || base.notes || null,
-        ingredients: ings,
-        updatedAt: new Date().toISOString(),
-      };
-      setMeal(next);
-      await saveDraft(uid);
-      await setLastScreen(uid, "ReviewIngredients");
-      navigation.replace("ReviewIngredients");
-    },
-    [
-      ensureDraft,
-      navigation,
-      saveDraft,
-      setLastScreen,
-      setMeal,
-      uid,
-      name,
-      desc,
-    ],
-  );
-
-  const buildDescription = () => {
-    const amt = Number(sanitizeAmount(amount));
-    const amount_g = isFinite(amt) && amt > 0 ? Math.round(amt) : null;
-    const ingredientsText = ingPreview.trim();
-    const nameText = name.trim();
-    const payload = {
-      name: nameText || null,
-      ingredients: ingredientsText || nameText || null,
-      amount_g,
-      notes: desc.trim() || null,
-      lang: i18n.language || "pl",
-    };
-    return JSON.stringify(payload);
-  };
-
-  const onAnalyze = useCallback(async () => {
-    if (!uid) return;
-
-    Keyboard.dismiss();
-    await new Promise((r) => requestAnimationFrame(r));
-
-    setIngredientsError(undefined);
-
-    const missingName = !name.trim();
-    const amountProvided = amountRaw.length > 0;
-    const invalidAmount =
-      amountProvided &&
-      (!isFinite(Number(amountRaw)) || Number(amountRaw) <= 0);
-    const missingIngredientsAndAmount = !ingPreview.trim() && !amountRaw.length;
-
-    // nazwa
-    if (missingName) {
-      setTouched((prev) => ({ ...prev, name: true }));
-      return;
-    }
-
-    // ilość
-    if (invalidAmount) {
-      setTouched((prev) => ({
-        ...prev,
-        amount: true,
-      }));
-      return;
-    }
-
-    // składniki LUB ilość
-    if (missingIngredientsAndAmount) {
-      setIngredientsError(
-        t("text_ai_require_ingredients_or_amount", {
-          ns: "meals",
-          defaultValue: "Enter ingredients or amount [g].",
-        }),
-      );
-      return;
-    }
-
-    if (retries >= 3) return;
-
-    const allowed = await canUseAiTodayFor(
-      uid,
-      !!isPremium,
-      "text",
-      FEATURE_LIMIT,
-    );
-    if (!allowed) {
-      setShowLimitModal(true);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const description = buildDescription();
-      const ings = await extractIngredientsFromText(uid, description, {
-        isPremium: !!isPremium,
-        limit: FEATURE_LIMIT,
-        lang: i18n.language || "en",
-      });
-      if (!ings || ings.length === 0) {
-        setRetries((r) => r + 1);
-        Toast.show(
-          t("not_recognized_title", {
-            ns: "meals",
-            defaultValue: "We couldn't recognize the ingredients",
-          }),
-        );
-        return;
-      }
-      await consumeAiUseFor(uid, !!isPremium, "text", FEATURE_LIMIT);
-      setRetries(0);
-      await fillDraftAndGo(ings);
-    } catch {
-      setRetries((r) => r + 1);
-      Toast.show("Wystąpił błąd. Spróbuj ponownie.");
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    uid,
-    isPremium,
-    t,
-    fillDraftAndGo,
+  const {
     name,
-    amountRaw,
-    i18n.language,
-    retries,
     ingPreview,
-  ]);
-
-  const analyzeDisabled =
-    loading ||
-    !name.trim() ||
-    (amountRaw.length > 0 && (!isFinite(amountNum) || amountNum <= 0)) ||
-    (!ingPreview.trim() && !amountRaw.length) ||
-    retries >= 3;
+    amount,
+    desc,
+    loading,
+    retries,
+    showLimitModal,
+    nameError,
+    amountError,
+    ingredientsError,
+    analyzeDisabled,
+    featureLimit,
+    onNameChange,
+    onIngredientsChange,
+    onAmountChange,
+    onDescChange,
+    onNameBlur,
+    onAmountBlur,
+    onAnalyze,
+    closeLimitModal,
+    openPaywall,
+  } = useMealTextAiState({
+    t,
+    language: i18n.language,
+  });
 
   return (
     <Layout>
@@ -256,70 +59,38 @@ export default function MealTextAIScreen() {
         >
           <View style={{ gap: theme.spacing.md, flexGrow: 1 }}>
             <ShortInput
-              label={t("meal_name", {
-                ns: "meals",
-                defaultValue: "Meal name",
-              })}
+              label={t("meal_name", { ns: "meals" })}
               value={name}
-              onChangeText={(text) => {
-                setName(text);
-              }}
-              placeholder={t("meal_name", {
-                ns: "meals",
-                defaultValue: "Meal name",
-              })}
-              onBlur={() => setTouched((p) => ({ ...p, name: true }))}
+              onChangeText={onNameChange}
+              placeholder={t("meal_name", { ns: "meals" })}
+              onBlur={onNameBlur}
               error={nameError}
               inputStyle={{ fontSize: theme.typography.size.md }}
             />
             <LongTextInput
-              label={t("ingredients_optional", {
-                ns: "meals",
-                defaultValue: "Ingredients (optional)",
-              })}
+              label={t("ingredients_optional", { ns: "meals" })}
               value={ingPreview}
-              onChangeText={(text) => {
-                setIngPreview(text);
-                if (ingredientsError) setIngredientsError(undefined);
-              }}
-              placeholder={t("ingredients_optional", {
-                ns: "meals",
-                defaultValue: "Ingredients (optional)",
-              })}
+              onChangeText={onIngredientsChange}
+              placeholder={t("ingredients_optional", { ns: "meals" })}
               inputStyle={{ fontSize: theme.typography.size.md }}
               numberOfLines={5}
               error={ingredientsError}
             />
             <ShortInput
-              label={t("amount", {
-                ns: "meals",
-                defaultValue: "Amount [g]",
-              })}
+              label={t("amount", { ns: "meals" })}
               value={amount}
-              onChangeText={(text) => {
-                setAmount(text);
-                if (ingredientsError) setIngredientsError(undefined);
-              }}
-              placeholder={t("amount", {
-                ns: "meals",
-                defaultValue: "Amount [g]",
-              })}
+              onChangeText={onAmountChange}
+              placeholder={t("amount", { ns: "meals" })}
               keyboardType="numeric"
-              onBlur={() => setTouched((p) => ({ ...p, amount: true }))}
+              onBlur={onAmountBlur}
               error={amountError}
               inputStyle={{ fontSize: theme.typography.size.md }}
             />
             <LongTextInput
-              label={t("description_optional", {
-                ns: "meals",
-                defaultValue: "Description (optional)",
-              })}
+              label={t("description_optional", { ns: "meals" })}
               value={desc}
-              onChangeText={setDesc}
-              placeholder={t("description_optional", {
-                ns: "meals",
-                defaultValue: "Description (optional)",
-              })}
+              onChangeText={onDescChange}
+              placeholder={t("description_optional", { ns: "meals" })}
               numberOfLines={6}
               inputStyle={{ fontSize: theme.typography.size.md }}
             />
@@ -328,11 +99,8 @@ export default function MealTextAIScreen() {
             <PrimaryButton
               label={
                 retries > 0
-                  ? `${t("analyze", {
-                      ns: "meals",
-                      defaultValue: "Analyze",
-                    })} (${retries}/3)`
-                  : t("analyze", { ns: "meals", defaultValue: "Analyze" })
+                  ? `${t("analyze", { ns: "meals" })} (${retries}/3)`
+                  : t("analyze", { ns: "meals" })
               }
               loading={loading}
               onPress={onAnalyze}
@@ -340,10 +108,7 @@ export default function MealTextAIScreen() {
               style={{ marginTop: theme.spacing.sm }}
             />
             <SecondaryButton
-              label={t("select_method", {
-                ns: "meals",
-                defaultValue: "Back to method selection",
-              })}
+              label={t("select_method", { ns: "meals" })}
               onPress={() => navigation.navigate("MealAddMethod")}
             />
           </View>
@@ -351,29 +116,17 @@ export default function MealTextAIScreen() {
       </KeyboardAvoidingView>
       <Modal
         visible={showLimitModal}
-        title={t("limit.reachedTitle", {
-          ns: "chat",
-          defaultValue: "Daily limit reached",
-        })}
+        title={t("limit.reachedTitle", { ns: "chat" })}
         message={t("limit.reachedShort", {
           ns: "chat",
           used: 1,
-          limit: FEATURE_LIMIT,
+          limit: featureLimit,
         })}
-        primaryActionLabel={t("limit.upgradeCta", {
-          ns: "chat",
-          defaultValue: "Upgrade",
-        })}
-        onPrimaryAction={() => {
-          setShowLimitModal(false);
-          navigation.navigate("ManageSubscription");
-        }}
-        secondaryActionLabel={t("cancel", {
-          ns: "common",
-          defaultValue: "Close",
-        })}
-        onSecondaryAction={() => setShowLimitModal(false)}
-        onClose={() => setShowLimitModal(false)}
+        primaryActionLabel={t("limit.upgradeCta", { ns: "chat" })}
+        onPrimaryAction={openPaywall}
+        secondaryActionLabel={t("cancel", { ns: "common" })}
+        onSecondaryAction={closeLimitModal}
+        onClose={closeLimitModal}
       />
     </Layout>
   );

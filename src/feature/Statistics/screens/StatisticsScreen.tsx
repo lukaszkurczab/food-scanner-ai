@@ -1,32 +1,25 @@
-import { useMemo, useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { useStats } from "@/hooks/useStats";
-import { lastNDaysRange } from "../utils/dateRange";
 import { RangeTabs } from "../components/RangeTabs";
-import { MetricsGrid, type MetricKey } from "../components/MetricsGrid";
+import { MetricsGrid } from "../components/MetricsGrid";
 import { LineSection } from "../components/LineSection";
 import { MacroPieCard } from "../components/MacroPieCard";
 import { ProgressAveragesCard } from "../components/ProgressAveragesCard";
 import { DateInput, Layout } from "@/components";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { useTranslation } from "react-i18next";
-import { useMeals } from "@hooks/useMeals";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FREE_WINDOW_DAYS } from "@/services/mealService";
 import type { ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import OfflineBanner from "@/components/OfflineBanner";
+import {
+  useStatisticsState,
+  type RangeKey,
+} from "@/feature/Statistics/hooks/useStatisticsState";
 
-type RangeKey = "7d" | "30d" | "custom";
 type StatisticsNavigation = StackNavigationProp<ParamListBase>;
 type Props = {
   navigation: StatisticsNavigation;
@@ -43,162 +36,11 @@ export default function StatisticsScreen({ navigation }: Props) {
   const isPremium = sub?.state === "premium_active";
   const accessWindowDays = isPremium ? undefined : FREE_WINDOW_DAYS;
 
-  const { meals, getMeals, loading: loadingMeals } = useMeals(uid);
-
-  const [active, setActive] = useState<RangeKey>("7d");
-  const [customRange, setCustomRange] = useState({
-    start: new Date(),
-    end: new Date(),
+  const state = useStatisticsState({
+    uid,
+    calorieTarget: userData?.calorieTarget ?? null,
+    accessWindowDays,
   });
-  const [metric, setMetric] = useState<MetricKey>("kcal");
-
-  useEffect(() => {
-    if (!uid) return;
-    if (typeof getMeals === "function") getMeals();
-  }, [uid, getMeals]);
-
-  const baseRange = useMemo(() => {
-    if (active === "7d") return lastNDaysRange(7);
-    if (active === "30d") return lastNDaysRange(30);
-    return customRange;
-  }, [active, customRange]);
-
-  const effectiveRange = useMemo(() => {
-    if (!accessWindowDays) return baseRange;
-    const now = new Date();
-    const cutoff = new Date(now);
-    cutoff.setDate(now.getDate() - accessWindowDays + 1);
-    cutoff.setHours(0, 0, 0, 0);
-    const start = baseRange.start < cutoff ? cutoff : baseRange.start;
-    const end = baseRange.end < cutoff ? cutoff : baseRange.end;
-    return { start, end } as const;
-  }, [baseRange, accessWindowDays]);
-
-  const effectiveRangeForStats = useMemo(() => {
-    const start = new Date(effectiveRange.start);
-    const end = new Date(effectiveRange.end);
-    end.setHours(23, 59, 59, 999);
-    return { start, end } as const;
-  }, [effectiveRange]);
-
-  const stats = useStats(
-    meals,
-    effectiveRangeForStats,
-    userData?.calorieTarget ?? null,
-  );
-
-  const days = Math.max(
-    1,
-    Math.round(
-      (+effectiveRange.end - +effectiveRange.start) / (24 * 60 * 60 * 1000),
-    ) + 1,
-  );
-
-  const showLineSection = active !== "custom" || days >= 2;
-
-  const { labels, nutrientsByDay } = useMemo(() => {
-    const DAY = 24 * 60 * 60 * 1000;
-    const start = new Date(effectiveRange.start);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(effectiveRange.end);
-    end.setHours(0, 0, 0, 0);
-    const bucketCount = Math.max(1, Math.round((+end - +start) / DAY) + 1);
-    const labels: string[] = [];
-    const buckets = Array.from({ length: bucketCount }, () => ({
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-    }));
-    const fmt = (d: Date) => {
-      const dd = String(d.getDate()).padStart(2, "0");
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      return `${dd}.${mm}`;
-    };
-    for (let i = 0; i < bucketCount; i++) {
-      const d = new Date(+start + i * DAY);
-      labels.push(fmt(d));
-    }
-    const endInclusive = new Date(+end + DAY - 1);
-    const inRangeMeals = meals.filter((m) => {
-      const ts = new Date(m.timestamp || m.updatedAt || m.createdAt);
-      return ts >= start && ts <= endInclusive;
-    });
-    for (const m of inRangeMeals) {
-      const ts = new Date(m.timestamp || m.updatedAt || m.createdAt);
-      ts.setHours(0, 0, 0, 0);
-      const idx = Math.floor((+ts - +start) / DAY);
-      if (idx >= 0 && idx < bucketCount) {
-        const ings = m.ingredients || [];
-        if (ings.length) {
-          for (const ing of ings) {
-            buckets[idx].protein += Number(ing?.protein) || 0;
-            buckets[idx].carbs += Number(ing?.carbs) || 0;
-            buckets[idx].fat += Number(ing?.fat) || 0;
-          }
-        } else if (m.totals) {
-          buckets[idx].protein += Number(m.totals.protein) || 0;
-          buckets[idx].carbs += Number(m.totals.carbs) || 0;
-          buckets[idx].fat += Number(m.totals.fat) || 0;
-        }
-      }
-    }
-    return { labels, nutrientsByDay: buckets } as const;
-  }, [meals, effectiveRange]);
-
-  const kcalSeries = stats.caloriesSeries ?? [];
-  const proteinSeries = (nutrientsByDay ?? []).map((n) => n.protein ?? 0);
-  const carbsSeries = (nutrientsByDay ?? []).map((n) => n.carbs ?? 0);
-  const fatSeries = (nutrientsByDay ?? []).map((n) => n.fat ?? 0);
-
-  const seriesByMetric: Record<MetricKey, number[]> = {
-    kcal: kcalSeries,
-    protein: proteinSeries,
-    carbs: carbsSeries,
-    fat: fatSeries,
-  };
-
-  const totals = stats.totals ?? { kcal: 0, protein: 0, carbs: 0, fat: 0 };
-  const averages = stats.averages ?? {
-    kcal: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-  };
-  const totalKcal =
-    typeof stats.totals?.kcal === "number"
-      ? stats.totals.kcal
-      : kcalSeries.reduce((s, v) => s + (v || 0), 0);
-  const avgKcal =
-    typeof averages.kcal === "number"
-      ? averages.kcal
-      : Math.round(totalKcal / Math.max(1, days));
-  const avgProtein =
-    typeof averages.protein === "number"
-      ? averages.protein
-      : Math.round((totals.protein ?? 0) / Math.max(1, days));
-  const avgCarbs =
-    typeof averages.carbs === "number"
-      ? averages.carbs
-      : Math.round((totals.carbs ?? 0) / Math.max(1, days));
-  const avgFat =
-    typeof averages.fat === "number"
-      ? averages.fat
-      : Math.round((totals.fat ?? 0) / Math.max(1, days));
-
-  const hasAnySeriesData =
-    kcalSeries.some((v) => v > 0) ||
-    proteinSeries.some((v) => v > 0) ||
-    carbsSeries.some((v) => v > 0) ||
-    fatSeries.some((v) => v > 0);
-
-  const hasTotals =
-    (totals.kcal ?? 0) > 0 ||
-    (totals.protein ?? 0) > 0 ||
-    (totals.carbs ?? 0) > 0 ||
-    (totals.fat ?? 0) > 0;
-
-  const empty =
-    !loadingMeals && meals.length === 0 && !hasAnySeriesData && !hasTotals;
 
   return (
     <Layout>
@@ -211,60 +53,58 @@ export default function StatisticsScreen({ navigation }: Props) {
             { key: "30d", label: t("statistics:ranges.30d") },
             { key: "custom", label: t("statistics:ranges.custom") },
           ]}
-          active={active}
-          onChange={(key) => setActive(key as RangeKey)}
+          active={state.active}
+          onChange={(key) => state.setActive(key as RangeKey)}
         />
-        {active === "custom" && (
+        {state.active === "custom" && (
           <View style={{ marginTop: 8 }}>
             <DateInput
-              range={customRange}
-              onChange={setCustomRange}
+              range={state.customRange}
+              onChange={state.setCustomRange}
               allowSingleDay
             />
           </View>
         )}
       </View>
 
-      {!isPremium &&
-        accessWindowDays &&
-        baseRange.start < effectiveRange.start && (
-          <View
-            style={[
-              styles.banner,
-              {
-                backgroundColor: theme.overlay,
-                borderColor: theme.accentSecondary,
-              },
-            ]}
-          >
-            <Text style={{ color: theme.text, fontWeight: "700" }}>
-              {t(
-                "statistics:limitedWindowTitle",
-                "Dostęp do starszych danych wymaga Premium",
-              )}
-            </Text>
-            <Text style={{ color: theme.textSecondary, marginTop: 4 }}>
-              {t("statistics:limitedWindowDesc", {
-                defaultValue: "Zakres został skrócony do ostatnich {{d}} dni.",
-                d: accessWindowDays,
-              })}
-            </Text>
-            <PrimaryButton
-              label={t("statistics:upgrade", "Odblokuj Premium")}
-              onPress={() => navigation.navigate("Paywall")}
-              style={{ marginTop: 8, alignSelf: "flex-start" }}
-            />
-          </View>
-        )}
+      {!isPremium && accessWindowDays && state.isWindowLimited && (
+        <View
+          style={[
+            styles.banner,
+            {
+              backgroundColor: theme.overlay,
+              borderColor: theme.accentSecondary,
+            },
+          ]}
+        >
+          <Text style={{ color: theme.text, fontWeight: "700" }}>
+            {t(
+              "statistics:limitedWindowTitle",
+              "Dostęp do starszych danych wymaga Premium",
+            )}
+          </Text>
+          <Text style={{ color: theme.textSecondary, marginTop: 4 }}>
+            {t("statistics:limitedWindowDesc", {
+              defaultValue: "Zakres został skrócony do ostatnich {{d}} dni.",
+              d: accessWindowDays,
+            })}
+          </Text>
+          <PrimaryButton
+            label={t("statistics:upgrade", "Odblokuj Premium")}
+            onPress={() => navigation.navigate("Paywall")}
+            style={{ marginTop: 8, alignSelf: "flex-start" }}
+          />
+        </View>
+      )}
 
-      {loadingMeals ? (
+      {state.loadingMeals ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator color={theme.accent} />
           <Text style={{ color: theme.textSecondary, marginTop: 8 }}>
             {t("common:loading")}
           </Text>
         </View>
-      ) : empty ? (
+      ) : state.empty ? (
         <View style={styles.emptyBox}>
           <Text style={[styles.emptyTitle, { color: theme.text }]}>
             {t("statistics:empty.title")}
@@ -290,37 +130,37 @@ export default function StatisticsScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
         >
           <ProgressAveragesCard
-            avgKcal={avgKcal}
-            caloriesSeries={kcalSeries}
+            avgKcal={state.avgKcal}
+            caloriesSeries={state.kcalSeries}
             dailyGoal={userData?.calorieTarget ?? null}
-            days={days}
-            totalKcal={totalKcal}
+            days={state.days}
+            totalKcal={state.totalKcal}
           />
 
           <MetricsGrid
             values={{
-              kcal: avgKcal,
-              protein: avgProtein,
-              carbs: avgCarbs,
-              fat: avgFat,
+              kcal: state.avgKcal,
+              protein: state.avgProtein,
+              carbs: state.avgCarbs,
+              fat: state.avgFat,
             }}
-            selected={metric}
-            onSelect={setMetric}
+            selected={state.metric}
+            onSelect={state.setMetric}
           />
 
-          {showLineSection && (
+          {state.showLineSection && (
             <LineSection
-              labels={labels}
-              data={seriesByMetric[metric]}
-              metric={metric}
+              labels={state.labels}
+              data={state.selectedSeries}
+              metric={state.metric}
             />
           )}
 
-          {hasTotals && (
+          {state.hasTotals && (
             <MacroPieCard
-              protein={totals.protein ?? 0}
-              carbs={totals.carbs ?? 0}
-              fat={totals.fat ?? 0}
+              protein={state.totals.protein ?? 0}
+              carbs={state.totals.carbs ?? 0}
+              fat={state.totals.fat ?? 0}
             />
           )}
         </ScrollView>

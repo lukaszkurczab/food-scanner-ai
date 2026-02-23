@@ -35,7 +35,9 @@ export async function authRegister(
   } catch (e) {
     try {
       await cred.user.delete();
-    } catch {}
+    } catch {
+      // Best-effort rollback if profile creation fails.
+    }
     throw e;
   }
 }

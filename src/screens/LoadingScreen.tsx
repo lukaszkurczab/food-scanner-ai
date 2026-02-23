@@ -1,9 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { Layout } from "@/components";
 import { useUserContext } from "@contexts/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
-import { useUser } from "@hooks/useUser";
 import { resetIfMissed, ensureStreakDoc } from "@/services/streakService";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -15,53 +14,46 @@ type Props = {
 
 const LoadingScreen = ({ navigation }: Props) => {
   const { firebaseUser, uid } = useAuthContext();
-  const { userData, getUserData } = useUserContext();
-  const { fetchUserFromCloud } = useUser(uid!);
+  const { userData, loadingUser, refreshUser } = useUserContext();
+  const routedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
 
     const run = async () => {
-      if (!firebaseUser) {
+      if (routedRef.current) return;
+      if (!firebaseUser || !uid) {
+        routedRef.current = true;
         navigation.replace("Login");
         return;
       }
+      if (loadingUser) return;
 
-      await ensureStreakDoc(uid!);
-      await resetIfMissed(uid!);
-
-      const local = await getUserData();
+      await ensureStreakDoc(uid);
+      await resetIfMissed(uid);
       if (cancelled) return;
 
-      if (local) {
-        if (local.surveyComplited) navigation.replace("Home");
-        else navigation.replace("Onboarding");
-        return;
-      }
-
-      if (fetchUserFromCloud) {
-        const cloud = await fetchUserFromCloud();
-        if (cancelled) return;
-
-        if (cloud) {
-          if (cloud.surveyComplited) navigation.replace("Home");
-          else navigation.replace("Onboarding");
-          return;
-        }
+      const profile = userData ?? (await refreshUser());
+      if (cancelled) return;
+      routedRef.current = true;
+      if (profile?.surveyComplited) {
+        navigation.replace("Home");
+      } else {
+        navigation.replace("Onboarding");
       }
     };
 
-    run();
+    void run();
     return () => {
       cancelled = true;
     };
   }, [
     firebaseUser,
-    userData,
-    getUserData,
-    fetchUserFromCloud,
-    navigation,
+    loadingUser,
+    refreshUser,
     uid,
+    userData,
+    navigation,
   ]);
 
   return (

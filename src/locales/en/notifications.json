@@ -19,6 +19,7 @@
     "days": "Days",
     "textOverride": "Custom message",
     "delete": "Delete",
+    "defaultName": "Reminder",
     "mealKind": "Meal",
     "kcalByHour": "Kcal target by this time ",
     "kcalPlaceholder": "e.g. 1000"

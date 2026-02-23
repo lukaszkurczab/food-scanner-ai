@@ -1,20 +1,14 @@
-import { useState, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import { useUserContext } from "@contexts/UserContext";
 import { ButtonToggle, InputModal, Layout, UserIcon } from "@/components";
-import { getAuth, signOut } from "@react-native-firebase/auth";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
-import { getStreak } from "@/services/streakService";
-import { useAuthContext } from "@/context/AuthContext";
-import { useBadges } from "@/hooks/useBadges";
-import { usePremiumContext } from "@/context/PremiumContext";
 import AvatarBadge from "@/components/AvatarBadge";
 import { Modal } from "@/components/Modal";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { useUserProfileState } from "@/feature/UserProfile/hooks/useUserProfileState";
 
 type ProfileNavigation = StackNavigationProp<RootStackParamList, "Profile">;
 
@@ -25,103 +19,20 @@ type UserProfileScreenProps = {
 export default function UserProfileScreen({ navigation }: UserProfileScreenProps) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
-  const { userData, updateUser, deleteUser, exportUserData } = useUserContext();
-  const { uid } = useAuthContext();
-  const { isPremium } = usePremiumContext();
-  const { badges, ensurePremiumBadges } = useBadges(uid);
-  const [streak, setStreak] = useState<number>(0);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [password, setPassword] = useState("");
-  const [exporting, setExporting] = useState(false);
-  const [exportModalVisible, setExportModalVisible] = useState(false);
-  const [exportModalMessage, setExportModalMessage] = useState("");
-  const [exportModalTitle, setExportModalTitle] = useState("");
 
-  useEffect(() => {
-    if (!uid) return;
-    getStreak(uid)
-      .then((s) => setStreak(Number(s?.current) || 0))
-      .catch(() => setStreak(0));
-  }, [uid]);
+  const state = useUserProfileState({ navigation });
 
-  useEffect(() => {
-    if (!uid) return;
-    if (isPremium === null || isPremium === undefined) return;
-    ensurePremiumBadges(isPremium).catch(() => {});
-  }, [uid, isPremium, ensurePremiumBadges]);
-
-  useEffect(() => {
-    if (!userData) {
-      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
-    }
-  }, [userData, navigation]);
-
-  if (!userData) return null;
-
-  const darkTheme = !!userData.darkTheme;
-  const avatarSrc = userData.avatarLocalPath || userData.avatarUrl || "";
-  const safeBadges = Array.isArray(badges) ? badges : [];
-  const hasPremiumBadge = safeBadges.some((b) => b.type === "premium");
-  const overrideColor = isPremium && !hasPremiumBadge ? "#C9A227" : undefined;
-  const overrideEmoji = isPremium && !hasPremiumBadge ? "⭐" : undefined;
-
-  const handleThemeToggle = async (newValue: boolean) => {
-    theme.setMode(newValue ? "dark" : "light");
-    await updateUser({ ...userData, darkTheme: newValue });
-  };
-
-  const handleLogout = async () => {
-    try {
-      const auth = getAuth();
-      await signOut(auth);
-    } catch {
-      // Ignore sign-out errors to avoid blocking local logout flow.
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    setShowDeleteModal(false);
-    try {
-      await deleteUser(password);
-    } catch {
-      setExportModalTitle(t("deleteAccountError"));
-      setExportModalMessage(t("wrongPasswordOrUnknownError"));
-      setExportModalVisible(true);
-    }
-    setPassword("");
-  };
-
-  const handleExportData = async () => {
-    setExporting(true);
-    try {
-      const fileUri = (await exportUserData()) as string | undefined;
-      const fileName = fileUri?.split("/").pop() ?? "caloriai_user_data.pdf";
-      setExportModalTitle(t("downloadYourData"));
-      setExportModalMessage(
-        `${t("exportSavedSuccess", { filename: fileName })}\n${t(
-          "exportSavedPathHint",
-          { path: fileUri || "-" },
-        )}`,
-      );
-      setExportModalVisible(true);
-    } catch {
-      setExportModalTitle(t("downloadYourData"));
-      setExportModalMessage(t("exportError"));
-      setExportModalVisible(true);
-    } finally {
-      setExporting(false);
-    }
-  };
+  if (!state.userData) return null;
 
   return (
     <Layout>
       <View style={styles.header}>
         <AvatarBadge
           size={96}
-          uri={avatarSrc || undefined}
-          badges={safeBadges}
-          overrideColor={overrideColor}
-          overrideEmoji={overrideEmoji}
+          uri={state.avatarSrc || undefined}
+          badges={state.safeBadges}
+          overrideColor={state.overrideColor}
+          overrideEmoji={state.overrideEmoji}
           fallbackIcon={<UserIcon size={84} />}
           accessibilityLabel={t("profilePicture")}
         />
@@ -130,16 +41,16 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           accessibilityRole="header"
           numberOfLines={1}
         >
-          {userData.username}
+          {state.userData.username}
         </Text>
         <Text
           style={[styles.email, { color: theme.textSecondary }]}
           numberOfLines={1}
         >
-          {userData.email}
+          {state.userData.email}
         </Text>
         <Text style={{ color: theme.textSecondary, marginTop: 4 }}>
-          🔥 {streak}
+          🔥 {state.streak}
         </Text>
       </View>
 
@@ -166,11 +77,11 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
       />
       <ListItem
         label={t("downloadYourData")}
-        onPress={handleExportData}
+        onPress={state.handleExportData}
         accessibilityLabel={t("downloadYourData")}
         style={{ marginBottom: 24 }}
-        disabled={exporting}
-        loading={exporting}
+        disabled={state.exporting}
+        loading={state.exporting}
       />
 
       <SectionHeader label={t("settingsSection")} />
@@ -196,10 +107,12 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           {t("toggleDarkMode")}
         </Text>
         <ButtonToggle
-          value={darkTheme}
-          onToggle={handleThemeToggle}
+          value={state.darkTheme}
+          onToggle={state.handleThemeToggle}
           accessibilityLabel={t("toggleDarkMode")}
-          trackColor={darkTheme ? theme.accentSecondary : theme.textSecondary}
+          trackColor={
+            state.darkTheme ? theme.accentSecondary : theme.textSecondary
+          }
           thumbColor={theme.card}
           borderColor={theme.border}
         />
@@ -226,13 +139,13 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
       />
       <ListItem
         label={t("logOut")}
-        onPress={handleLogout}
+        onPress={state.handleLogout}
         accessibilityLabel={t("logOut")}
       />
 
       <Pressable
         style={styles.deleteAccount}
-        onPress={() => setShowDeleteModal(true)}
+        onPress={state.openDeleteModal}
         accessibilityRole="button"
         accessibilityLabel={t("deleteAccount")}
       >
@@ -246,27 +159,27 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
       </Text>
 
       <InputModal
-        visible={showDeleteModal}
+        visible={state.showDeleteModal}
         title={t("deleteAccount")}
         message={t("deleteAccountWarning")}
         primaryActionLabel={t("confirm")}
-        onPrimaryAction={handleDeleteAccount}
+        onPrimaryAction={state.handleDeleteAccount}
         secondaryActionLabel={t("cancel")}
-        onSecondaryAction={() => setShowDeleteModal(false)}
-        onClose={() => setShowDeleteModal(false)}
+        onSecondaryAction={state.closeDeleteModal}
+        onClose={state.closeDeleteModal}
         placeholder={t("enterPassword")}
-        value={password}
-        onChange={setPassword}
+        value={state.password}
+        onChange={state.setPassword}
         secureTextEntry={true}
       />
 
       <Modal
-        visible={exportModalVisible}
-        title={exportModalTitle}
-        message={exportModalMessage}
+        visible={state.exportModalVisible}
+        title={state.exportModalTitle}
+        message={state.exportModalMessage}
         primaryActionLabel={t("confirm")}
-        onPrimaryAction={() => setExportModalVisible(false)}
-        onClose={() => setExportModalVisible(false)}
+        onPrimaryAction={state.closeExportModal}
+        onClose={state.closeExportModal}
       />
     </Layout>
   );

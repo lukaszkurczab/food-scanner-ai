@@ -1,0 +1,141 @@
+import type { Meal } from "@/types/meal";
+import type { DaySection } from "@/feature/History/types/daySection";
+
+const normalizeText = (value: unknown): string =>
+  String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const toDate = (value?: string | number | null): Date => {
+  if (!value) return new Date(0);
+  const parsed = new Date(value);
+  return isNaN(parsed.getTime()) ? new Date(0) : parsed;
+};
+
+const toDateKey = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+
+const toHeaderTitle = (date: Date, todayLabel: string): string => {
+  const today = new Date();
+  const isToday =
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear();
+  if (isToday) return todayLabel;
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${day}.${month}`;
+};
+
+const mealKcal = (meal: Meal): number =>
+  (meal.ingredients || []).reduce(
+    (sum, ingredient) => sum + (Number(ingredient?.kcal) || 0),
+    0,
+  ) ||
+  meal.totals?.kcal ||
+  0;
+
+const sectionTotalKcal = (data: Meal[]): number =>
+  Math.round(data.reduce((acc, meal) => acc + mealKcal(meal), 0));
+
+const mealKey = (meal: Meal): string => String(meal.cloudId || meal.mealId);
+
+const mealOrderValue = (meal: Meal): string =>
+  String(meal.timestamp || meal.updatedAt || "");
+
+export function addOrUpdateMealInSections(
+  sections: Map<string, DaySection>,
+  meal: Meal,
+  todayLabel: string,
+): void {
+  const date = toDate(meal.timestamp || meal.updatedAt || meal.createdAt);
+  const dateKey = toDateKey(date);
+  const title = toHeaderTitle(date, todayLabel);
+  const currentSection = sections.get(dateKey) ?? {
+    title,
+    dateKey,
+    totalKcal: 0,
+    data: [],
+  };
+
+  const id = mealKey(meal);
+  const withoutCurrentMeal = currentSection.data.filter((item) => mealKey(item) !== id);
+  const nextData = [...withoutCurrentMeal, meal].sort((a, b) =>
+    mealOrderValue(b).localeCompare(mealOrderValue(a)),
+  );
+
+  sections.set(dateKey, {
+    title,
+    dateKey,
+    totalKcal: sectionTotalKcal(nextData),
+    data: nextData,
+  });
+}
+
+export function removeMealFromSections(
+  sections: Map<string, DaySection>,
+  id: string,
+): void {
+  for (const [dateKey, section] of sections.entries()) {
+    const filtered = section.data.filter((meal) => mealKey(meal) !== id);
+    if (filtered.length === section.data.length) continue;
+
+    if (filtered.length === 0) {
+      sections.delete(dateKey);
+      return;
+    }
+
+    sections.set(dateKey, {
+      ...section,
+      data: filtered,
+      totalKcal: sectionTotalKcal(filtered),
+    });
+    return;
+  }
+}
+
+export function buildSectionsMap(
+  meals: Meal[],
+  todayLabel: string,
+): Map<string, DaySection> {
+  const sections = new Map<string, DaySection>();
+  for (const meal of meals) addOrUpdateMealInSections(sections, meal, todayLabel);
+  return sections;
+}
+
+export function filterSectionsByQuery(params: {
+  sectionsMap: Map<string, DaySection>;
+  query: string;
+}): DaySection[] {
+  const sortedSections = Array.from(params.sectionsMap.values()).sort((a, b) =>
+    b.dateKey.localeCompare(a.dateKey),
+  );
+
+  const normalizedQuery = normalizeText(params.query);
+  if (!normalizedQuery) return sortedSections;
+
+  const filtered: DaySection[] = [];
+
+  for (const section of sortedSections) {
+    const data = section.data.filter((meal) => {
+      const title = normalizeText(meal.name || "");
+      const ingredients = normalizeText(
+        (meal.ingredients || []).map((ingredient) => ingredient?.name || "").join(" "),
+      );
+      return `${title} ${ingredients}`.trim().includes(normalizedQuery);
+    });
+
+    if (!data.length) continue;
+
+    filtered.push({
+      ...section,
+      data,
+      totalKcal: sectionTotalKcal(data),
+    });
+  }
+
+  return filtered;
+}

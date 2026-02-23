@@ -1,16 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator,
-  BackHandler,
-} from "react-native";
+import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native";
-import type { StackNavigationProp } from "@react-navigation/stack";
 import {
   Layout,
   Card,
@@ -21,261 +11,35 @@ import {
   Modal,
 } from "@/components";
 import { FallbackImage } from "../components/FallbackImage";
-import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
-import type { Meal, MealType, Ingredient } from "@/types/meal";
-import type { RootStackParamList } from "@/navigation/navigate";
-import { useMeals } from "@hooks/useMeals";
-import { useAuthContext } from "@/context/AuthContext";
 import { MaterialIcons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system";
-
-const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
-type ScreenRoute = RouteProp<RootStackParamList, "MealDetails">;
-type MealDetailsNavigation = StackNavigationProp<RootStackParamList>;
-
-function normalizeForCompare(m: Meal) {
-  return {
-    ...m,
-    updatedAt: "",
-    localPhotoUrl: undefined,
-    photoLocalPath: undefined,
-  };
-}
+import { useMealDetailsScreenState } from "@/feature/History/hooks/useMealDetailsScreenState";
 
 export default function MealDetailsScreen() {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
-  const route = useRoute<ScreenRoute>();
-  const navigation = useNavigation<MealDetailsNavigation>();
-  const params = route.params;
-  const initialMeal: Meal | undefined = params.meal;
-  const forceEdit: boolean = !!params.edit;
-  const baselineFromRoute: Meal | undefined = params.baseline;
 
-  const routeMealId = initialMeal?.cloudId ?? initialMeal?.mealId ?? null;
+  const state = useMealDetailsScreenState();
 
-  const { uid } = useAuthContext();
-  const { updateMeal } = useMeals(uid || "");
-
-  const [draft, setDraft] = useState<Meal | null>(() => initialMeal ?? null);
-  const [saving, setSaving] = useState(false);
-  const [edit, setEdit] = useState<boolean>(() => forceEdit);
-  const [editBaseline, setEditBaseline] = useState<Meal | null>(() => {
-    if (baselineFromRoute) return clone(baselineFromRoute);
-    if (forceEdit && initialMeal) return clone(initialMeal);
-    return null;
-  });
-  const [showIngredients, setShowIngredients] = useState(false);
-  const [showDiscardModal, setShowDiscardModal] = useState(false);
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [checkingImage, setCheckingImage] = useState(false);
-
-  useEffect(() => {
-    if (!routeMealId) return;
-    const currentId = draft?.cloudId ?? draft?.mealId ?? null;
-    if (currentId !== routeMealId) {
-      setDraft(initialMeal ?? null);
-      if (forceEdit && initialMeal) {
-        setEdit(true);
-        setEditBaseline(clone(initialMeal));
-      }
-    }
-  }, [routeMealId]);
-
-  useEffect(() => {
-    const localFromParams = params.localPhotoUrl ?? undefined;
-    if (!localFromParams) return;
-    setDraft((d) =>
-      d
-        ? {
-            ...d,
-            localPhotoUrl: localFromParams,
-            photoLocalPath: localFromParams,
-            photoUrl: localFromParams,
-          }
-        : d,
-    );
-    navigation.setParams({ ...params, localPhotoUrl: undefined });
-  }, [params?.localPhotoUrl]);
-
-  const isDirty = useMemo(() => {
-    if (!edit || !editBaseline || !draft) return false;
-    const a = normalizeForCompare(draft);
-    const b = normalizeForCompare(editBaseline);
-    return JSON.stringify(a) !== JSON.stringify(b);
-  }, [edit, draft, editBaseline]);
-
-  useEffect(() => {
-    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (edit && isDirty) {
-        setShowLeaveModal(true);
-        return true;
-      }
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      } else {
-        navigation.navigate("SavedMeals");
-      }
-      return true;
-    });
-    return () => sub.remove();
-  }, [edit, isDirty, navigation]);
-
-  const goShare = () => {
-    if (!draft) return;
-    navigation.navigate("MealShare", { meal: draft, returnTo: "MealDetails" });
-  };
-
-  const handleAddPhoto = () => {
-    if (!draft) return;
-    navigation.navigate("SavedMealsCamera", { id: draft.mealId, meal: draft });
-  };
-
-  const effectivePhotoUri =
-    draft?.localPhotoUrl || draft?.photoLocalPath || draft?.photoUrl || "";
-
-  useEffect(() => {
-    const url = effectivePhotoUri;
-    if (!url) return;
-    const isLocal =
-      typeof url === "string" &&
-      (url.startsWith("file://") || url.startsWith("content://"));
-    if (!isLocal) return;
-    let cancelled = false;
-    setCheckingImage(true);
-    FileSystem.getInfoAsync(url)
-      .then((info) => {
-        if (cancelled) return;
-        if (!info.exists) {
-          setDraft((d) =>
-            d
-              ? {
-                  ...d,
-                  localPhotoUrl: null,
-                  photoLocalPath: null,
-                  photoUrl: "",
-                }
-              : d,
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setCheckingImage(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [effectivePhotoUri]);
-
-  if (!draft) return null;
-
-  const nutrition = useMemo(() => calculateTotalNutrients([draft]), [draft]);
-
-  const setName = (val: string) =>
-    setDraft((d) => (d ? { ...d, name: val } : d));
-  const setType = (val: MealType) =>
-    setDraft((d) => (d ? { ...d, type: val } : d));
-
-  const updateIngredientAt = (index: number, ing: Ingredient) =>
-    setDraft((d) =>
-      d
-        ? {
-            ...d,
-            ingredients: d.ingredients.map((it, i) => (i === index ? ing : it)),
-            updatedAt: new Date().toISOString(),
-          }
-        : d,
-    );
-
-  const removeIngredientAt = (index: number) =>
-    setDraft((d) =>
-      d
-        ? {
-            ...d,
-            ingredients: d.ingredients.filter((_, i) => i !== index),
-            updatedAt: new Date().toISOString(),
-          }
-        : d,
-    );
-
-  const startEdit = () => {
-    setEditBaseline(clone(draft));
-    setEdit(true);
-  };
-
-  const handleSave = async () => {
-    if (!draft || saving) return;
-    setSaving(true);
-    const next: Meal = { ...draft, updatedAt: new Date().toISOString() };
-    const toPersist: Meal = { ...next, localPhotoUrl: undefined };
-    try {
-      await updateMeal(toPersist);
-      setEdit(false);
-      setEditBaseline(null);
-      setDraft(next);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    if (edit && isDirty) {
-      setShowDiscardModal(true);
-      return;
-    }
-    if (editBaseline) setDraft(editBaseline);
-    setEdit(false);
-    setEditBaseline(null);
-  };
-
-  const confirmDiscard = () => {
-    if (editBaseline) setDraft(editBaseline);
-    setShowDiscardModal(false);
-    setEdit(false);
-    setEditBaseline(null);
-  };
-
-  const confirmLeave = () => {
-    setShowLeaveModal(false);
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate("SavedMeals");
-    }
-  };
-
-  const showImageBlock =
-    checkingImage || !!effectivePhotoUri || (edit && !effectivePhotoUri);
+  if (!state.draft || !state.nutrition) return null;
 
   return (
     <Layout showNavigation={false}>
       <>
-        {showImageBlock ? (
+        {state.showImageBlock ? (
           <View style={styles.imageWrap}>
-            {checkingImage ? (
+            {state.checkingImage ? (
               <ActivityIndicator size="large" color={theme.accent} />
-            ) : effectivePhotoUri ? (
+            ) : state.effectivePhotoUri ? (
               <>
                 <FallbackImage
-                  uri={effectivePhotoUri}
+                  uri={state.effectivePhotoUri}
                   width={"100%"}
                   height={220}
                   borderRadius={theme.rounded.lg}
-                  onError={() =>
-                    setDraft((d) =>
-                      d
-                        ? {
-                            ...d,
-                            localPhotoUrl: null,
-                            photoLocalPath: null,
-                            photoUrl: "",
-                          }
-                        : d,
-                    )
-                  }
+                  onError={state.onImageError}
                 />
                 <Pressable
-                  onPress={goShare}
+                  onPress={state.goShare}
                   accessibilityRole="button"
                   accessibilityLabel={t("share", { ns: "common" })}
                   hitSlop={8}
@@ -288,16 +52,12 @@ export default function MealDetailsScreen() {
                     },
                   ]}
                 >
-                  <MaterialIcons
-                    name="ios-share"
-                    size={22}
-                    color={theme.text}
-                  />
+                  <MaterialIcons name="ios-share" size={22} color={theme.text} />
                 </Pressable>
               </>
             ) : (
               <Pressable
-                onPress={handleAddPhoto}
+                onPress={state.handleAddPhoto}
                 style={[
                   {
                     width: "100%",
@@ -328,20 +88,17 @@ export default function MealDetailsScreen() {
         ) : null}
 
         <MealBox
-          name={draft.name || ""}
-          type={draft.type}
-          nutrition={nutrition}
-          addedAt={draft.timestamp || draft.createdAt}
-          editable={edit && !saving}
-          onNameChange={edit ? setName : undefined}
-          onTypeChange={edit ? setType : undefined}
+          name={state.draft.name || ""}
+          type={state.draft.type}
+          nutrition={state.nutrition}
+          addedAt={state.draft.timestamp || state.draft.createdAt}
+          editable={state.edit && !state.saving}
+          onNameChange={state.edit ? state.setName : undefined}
+          onTypeChange={state.edit ? state.setType : undefined}
         />
 
-        {!!draft.ingredients.length && (
-          <Card
-            variant="outlined"
-            onPress={() => !saving && setShowIngredients((v) => !v)}
-          >
+        {!!state.draft.ingredients.length && (
+          <Card variant="outlined" onPress={state.toggleIngredients}>
             <Text
               style={{
                 fontSize: theme.typography.size.md,
@@ -350,49 +107,49 @@ export default function MealDetailsScreen() {
                 textAlign: "center",
               }}
             >
-              {showIngredients
+              {state.showIngredients
                 ? t("hide_ingredients", { ns: "meals" })
                 : t("show_ingredients", { ns: "meals" })}
             </Text>
           </Card>
         )}
 
-        {showIngredients &&
-          draft.ingredients.map((ingredient, idx) => (
+        {state.showIngredients &&
+          state.draft.ingredients.map((ingredient, idx) => (
             <IngredientBox
               key={ingredient.id || String(idx)}
               ingredient={ingredient}
-              editable={edit && !saving}
-              onSave={(updated) => edit && updateIngredientAt(idx, updated)}
-              onRemove={() => edit && removeIngredientAt(idx)}
+              editable={state.edit && !state.saving}
+              onSave={(updated) => state.edit && state.updateIngredientAt(idx, updated)}
+              onRemove={() => state.edit && state.removeIngredientAt(idx)}
             />
           ))}
 
         <View style={{ marginTop: theme.spacing.lg }}>
-          {!edit ? (
+          {!state.edit ? (
             <PrimaryButton
               label={t("edit_meal", { ns: "meals", defaultValue: "Edit meal" })}
-              onPress={startEdit}
+              onPress={state.startEdit}
             />
           ) : (
             <View style={{ gap: theme.spacing.sm }}>
               <PrimaryButton
                 label={t("save_changes", { ns: "common" })}
-                onPress={handleSave}
-                loading={saving}
-                disabled={saving || !isDirty}
+                onPress={state.handleSave}
+                loading={state.saving}
+                disabled={state.saving || !state.isDirty}
               />
               <ErrorButton
                 label={t("cancel", { ns: "common" })}
-                onPress={handleCancel}
-                disabled={saving}
+                onPress={state.handleCancel}
+                disabled={state.saving}
               />
             </View>
           )}
         </View>
 
         <Modal
-          visible={showDiscardModal}
+          visible={state.showDiscardModal}
           title={t("discard_changes_title", {
             ns: "meals",
             defaultValue: "Discard changes?",
@@ -406,17 +163,17 @@ export default function MealDetailsScreen() {
             ns: "common",
             defaultValue: "Discard",
           })}
-          onPrimaryAction={confirmDiscard}
+          onPrimaryAction={state.confirmDiscard}
           secondaryActionLabel={t("continue", {
             ns: "common",
             defaultValue: "Continue editing",
           })}
-          onSecondaryAction={() => setShowDiscardModal(false)}
-          onClose={() => setShowDiscardModal(false)}
+          onSecondaryAction={state.closeDiscardModal}
+          onClose={state.closeDiscardModal}
         />
 
         <Modal
-          visible={showLeaveModal}
+          visible={state.showLeaveModal}
           title={t("leave_without_saving_title", {
             ns: "meals",
             defaultValue: "Leave without saving?",
@@ -430,13 +187,13 @@ export default function MealDetailsScreen() {
             ns: "common",
             defaultValue: "Leave",
           })}
-          onPrimaryAction={confirmLeave}
+          onPrimaryAction={state.confirmLeave}
           secondaryActionLabel={t("continue", {
             ns: "common",
             defaultValue: "Continue editing",
           })}
-          onSecondaryAction={() => setShowLeaveModal(false)}
-          onClose={() => setShowLeaveModal(false)}
+          onSecondaryAction={state.closeLeaveModal}
+          onClose={state.closeLeaveModal}
         />
       </>
     </Layout>

@@ -9,12 +9,14 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
 import { v4 as uuidv4 } from "uuid";
+import { createServiceError } from "@/services/contracts/serviceError";
 
 const st = getStorage(getApp());
 const CLOUD_MAX = 1280;
 const CLOUD_Q = 0.8;
 const AI_MAX = 480;
 const AI_Q = 0.75;
+const CLOUD_URL_CACHE = new Map<string, string>();
 
 export type UploadedImage = {
   imageId: string;
@@ -48,7 +50,13 @@ export async function processAndUpload(
   localUri: string
 ): Promise<UploadedImage> {
   const net = await NetInfo.fetch();
-  if (!net.isConnected) throw new Error("net/offline");
+  if (!net.isConnected) {
+    throw createServiceError({
+      code: "net/offline",
+      source: "MealImageService",
+      retryable: true,
+    });
+  }
 
   const cloudJpeg = await toJpegMaxSide(localUri, CLOUD_MAX, CLOUD_Q);
 
@@ -70,8 +78,23 @@ export async function getCloudImageUrl(
   uid: string,
   imageIdOrCloudId: string
 ): Promise<string> {
+  const key = `meals:${uid}:${imageIdOrCloudId}`;
+  const cached = CLOUD_URL_CACHE.get(key);
+  if (cached) return cached;
   const r = ref(st, `meals/${uid}/${imageIdOrCloudId}.jpg`);
-  return getDownloadURL(r);
+  const url = await getDownloadURL(r);
+  CLOUD_URL_CACHE.set(key, url);
+  return url;
+}
+
+async function getLegacyCloudImageUrl(imageId: string): Promise<string> {
+  const key = `images:${imageId}`;
+  const cached = CLOUD_URL_CACHE.get(key);
+  if (cached) return cached;
+  const r = ref(st, `images/${imageId}.jpg`);
+  const url = await getDownloadURL(r);
+  CLOUD_URL_CACHE.set(key, url);
+  return url;
 }
 
 export async function ensureLocalMealPhoto(args: {
@@ -98,7 +121,11 @@ export async function ensureLocalMealPhoto(args: {
     try {
       remoteUrl = await getCloudImageUrl(uid, imageId);
     } catch {
-      remoteUrl = null;
+      try {
+        remoteUrl = await getLegacyCloudImageUrl(imageId);
+      } catch {
+        remoteUrl = null;
+      }
     }
   }
 

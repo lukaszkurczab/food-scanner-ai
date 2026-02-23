@@ -7,87 +7,52 @@ import {
   setDoc,
   onSnapshot,
 } from "@react-native-firebase/firestore";
+import {
+  INIT_STREAK,
+  formatStreakDate,
+  hasReachedStreakThreshold,
+  isSameStreakDay,
+  missedSinceStreakDay,
+  sanitizeStreakDoc,
+} from "./streak.logic";
+import { debugScope } from "@/utils/debug";
+import type { StreakDoc } from "./streak.logic";
+export type { StreakDoc } from "./streak.logic";
 
 const app = getApp();
 const db = getFirestore(app);
-
-export type StreakDoc = {
-  current: number;
-  lastDate: string | null;
-};
-
-const INIT: StreakDoc = { current: 0, lastDate: null };
-
-const fmt = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-
-const isSameDay = (a: string | null, b: string) => !!a && a === b;
-
-const missedSince = (last: string | null, today: string) => {
-  if (!last) return true;
-  const [y1, m1, d1] = last.split("-").map((n) => parseInt(n, 10));
-  const [y2, m2, d2] = today.split("-").map((n) => parseInt(n, 10));
-  const t1 = new Date(y1, m1 - 1, d1).getTime();
-  const t2 = new Date(y2, m2 - 1, d2).getTime();
-  const diffDays = Math.floor((t2 - t1) / 86400000);
-  return diffDays >= 2;
-};
-
-type StreakDocCandidate = {
-  current?: unknown;
-  lastDate?: unknown;
-};
-
-const sanitize = (raw: unknown): StreakDoc | null => {
-  if (!raw || typeof raw !== "object") return null;
-  const candidate = raw as StreakDocCandidate;
-  const cur =
-    typeof candidate.current === "number" && candidate.current >= 0
-      ? candidate.current
-      : null;
-  const ld =
-    candidate.lastDate == null
-      ? null
-      : typeof candidate.lastDate === "string" &&
-        /^\d{4}-\d{2}-\d{2}$/.test(candidate.lastDate)
-      ? candidate.lastDate
-      : undefined;
-  if (cur === null || ld === undefined) return null;
-  return { current: cur, lastDate: ld };
-};
+const log = debugScope("StreakService");
 
 export async function ensureStreakDoc(uid: string) {
   const ref = doc(db, "users", uid, "streak", "main");
   const snap = await getDoc(ref);
   if (!snap.exists) {
-    await setDoc(ref, INIT);
-    return INIT;
+    await setDoc(ref, INIT_STREAK);
+    return INIT_STREAK;
   }
-  const normalized = sanitize(snap.data());
+  const normalized = sanitizeStreakDoc(snap.data());
   if (!normalized) {
-    await setDoc(ref, INIT, { merge: true });
-    return INIT;
+    await setDoc(ref, INIT_STREAK, { merge: true });
+    return INIT_STREAK;
   }
   return normalized;
 }
 
 export async function resetIfMissed(uid: string, now: Date = new Date()) {
-  const today = fmt(now);
+  const today = formatStreakDate(now);
   const ref = doc(db, "users", uid, "streak", "main");
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists) {
-      tx.set(ref, INIT);
+      tx.set(ref, INIT_STREAK);
       return;
     }
-    const data = sanitize(snap.data());
+    const data = sanitizeStreakDoc(snap.data());
     if (!data) {
-      tx.set(ref, INIT, { merge: true });
+      tx.set(ref, INIT_STREAK, { merge: true });
       return;
     }
-    const miss = missedSince(data.lastDate, today);
+    const miss = missedSinceStreakDay(data.lastDate, today);
 
     if (miss) {
       tx.update(ref, { current: 0 });
@@ -106,14 +71,14 @@ export async function updateStreakIfThresholdMet(params: {
   const now = params.now ?? new Date();
   const thresholdPct = params.thresholdPct ?? 0.8;
 
-  if (targetKcal <= 0) {
-    return;
-  }
-  const ratio = todaysKcal / targetKcal;
-  const reached = ratio >= thresholdPct;
+  const reached = hasReachedStreakThreshold({
+    consumedKcal: todaysKcal,
+    targetKcal,
+    thresholdPct,
+  });
   if (!reached) return;
 
-  const today = fmt(now);
+  const today = formatStreakDate(now);
   const ref = doc(db, "users", uid, "streak", "main");
 
   await runTransaction(db, async (tx) => {
@@ -122,15 +87,15 @@ export async function updateStreakIfThresholdMet(params: {
       tx.set(ref, { current: 1, lastDate: today });
       return;
     }
-    const data = sanitize(snap.data());
+    const data = sanitizeStreakDoc(snap.data());
     if (!data) {
       tx.set(ref, { current: 1, lastDate: today }, { merge: true });
       return;
     }
-    if (isSameDay(data.lastDate, today)) {
+    if (isSameStreakDay(data.lastDate, today)) {
       return;
     }
-    if (missedSince(data.lastDate, today)) {
+    if (missedSinceStreakDay(data.lastDate, today)) {
       tx.update(ref, { current: 1, lastDate: today });
     } else {
       const next = (data.current || 0) + 1;
@@ -143,25 +108,25 @@ export async function getStreak(uid: string) {
   const ref = doc(db, "users", uid, "streak", "main");
   const snap = await getDoc(ref);
   if (!snap.exists) {
-    return INIT;
+    return INIT_STREAK;
   }
-  const d = sanitize(snap.data()) || INIT;
+  const d = sanitizeStreakDoc(snap.data()) || INIT_STREAK;
   return d;
 }
 
 export function subscribeStreak(
   uid: string,
-  cb: (data: { current: number; lastDate: string | null }) => void
+  cb: (data: StreakDoc) => void
 ) {
   const ref = doc(db, "users", uid, "streak", "main");
   return onSnapshot(
     ref,
     (snap) => {
-      const d = sanitize(snap.data()) || INIT;
+      const d = sanitizeStreakDoc(snap.data()) || INIT_STREAK;
       cb(d);
     },
     (e) => {
-      console.log("[streakService] subscribeStreak error", e);
+      log.error("subscribeStreak error", { uid, error: e });
     }
   );
 }

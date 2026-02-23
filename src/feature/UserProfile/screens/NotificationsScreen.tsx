@@ -1,34 +1,16 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Linking,
-  Platform,
-} from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { Layout, PrimaryButton } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
-import { useNotifications } from "@/hooks/useNotifications";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { NotificationCard } from "@/components/NotificationCard";
 import { ButtonToggle } from "@/components/ButtonToggle";
 import SectionHeader from "../components/SectionHeader";
 import { MaterialIcons } from "@expo/vector-icons";
-import {
-  cancelAllForNotif,
-  ensureAndroidChannel,
-} from "@/services/notifications/localScheduler";
-import * as Notifications from "expo-notifications";
 import { Alert as AppAlert } from "@/components/Alert";
-import {
-  cancelSystemNotifications,
-  runSystemNotifications,
-} from "@/services/notifications/system";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { useNotificationsScreenState } from "@/feature/UserProfile/hooks/useNotificationsScreenState";
 
 type NotificationsNavigation = StackNavigationProp<
   RootStackParamList,
@@ -45,108 +27,23 @@ export default function NotificationsScreen({
   const { uid } = useAuthContext();
   const theme = useTheme();
   const { t } = useTranslation("notifications");
+
   const {
-    items,
-    toggle,
-    loadMotivationPrefs,
-    setMotivationPrefs,
-    setStatsPrefs,
-    loadStatsPrefs,
-    remove,
-  } = useNotifications(uid);
-
-  const [motivationEnabled, setMotivationEnabled] = useState(false);
-  const [statsEnabled, setStatsEnabled] = useState(false);
-  const [systemAllowed, setSystemAllowed] = useState<boolean | null>(null);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const autoDisabledRef = useRef(false);
-
-  const [settingsCtaVisible, setSettingsCtaVisible] = useState(false);
-
-  useEffect(() => {
-    if (!uid) return;
-    (async () => {
-      const p = await loadMotivationPrefs(uid);
-      const s = await loadStatsPrefs(uid);
-      setMotivationEnabled(!!p.enabled);
-      setStatsEnabled(!!s.enabled);
-      const perm = await Notifications.getPermissionsAsync();
-      setSystemAllowed(!!perm.granted);
-      if (perm.granted && Platform.OS === "android")
-        await ensureAndroidChannel();
-      if (perm.granted) await runSystemNotifications(uid);
-    })();
-  }, [uid, loadMotivationPrefs, loadStatsPrefs]);
-
-  useEffect(() => {
-    (async () => {
-      if (!uid) return;
-      if (systemAllowed === false && !autoDisabledRef.current) {
-        autoDisabledRef.current = true;
-        try {
-          if (motivationEnabled) {
-            setMotivationEnabled(false);
-            await setMotivationPrefs(uid, false);
-          }
-          if (statsEnabled) {
-            setStatsEnabled(false);
-            await setStatsPrefs(uid, false);
-          }
-          for (const it of items) {
-            if (it.enabled) await toggle(uid, it.id, false);
-          }
-          await cancelSystemNotifications(uid, "motivation_dont_give_up");
-          await cancelSystemNotifications(uid, "stats_weekly_summary");
-        } catch {
-          // Keep local toggles unchanged if sync fails.
-        }
-      }
-    })();
-  }, [
-    systemAllowed,
-    uid,
     items,
     motivationEnabled,
     statsEnabled,
-    setMotivationPrefs,
-    setStatsPrefs,
-    toggle,
-  ]);
-
-  const requestSystemPermission = async (): Promise<boolean> => {
-    try {
-      const res = await Notifications.requestPermissionsAsync();
-      const granted = !!res.granted;
-      setSystemAllowed(granted);
-      if (granted && Platform.OS === "android") await ensureAndroidChannel();
-      if (!granted) setSettingsCtaVisible(true);
-      return granted;
-    } catch {
-      return false;
-    }
-  };
-
-  const openSettings = async () => {
-    setSettingsCtaVisible(false);
-    try {
-      await Linking.openSettings();
-    } catch {
-      // Ignore settings deep-link failures.
-    }
-  };
-
-  const onConfirmDelete = async () => {
-    if (!uid || !confirmId) return;
-    setDeleting(true);
-    try {
-      await cancelAllForNotif(confirmId);
-      await remove(uid, confirmId);
-    } finally {
-      setDeleting(false);
-      setConfirmId(null);
-    }
-  };
+    confirmId,
+    deleting,
+    settingsCtaVisible,
+    setSettingsCtaVisible,
+    openSettings,
+    onToggleReminder,
+    onToggleMotivation,
+    onToggleStats,
+    askDelete,
+    cancelDelete,
+    onConfirmDelete,
+  } = useNotificationsScreenState(uid);
 
   return (
     <Layout>
@@ -170,15 +67,8 @@ export default function NotificationsScreen({
                 onPress={() =>
                   navigation.navigate("NotificationForm", { id: item.id })
                 }
-                onToggle={async (en) => {
-                  if (!uid) return;
-                  if (en && systemAllowed === false) {
-                    const ok = await requestSystemPermission();
-                    if (!ok) return;
-                  }
-                  await toggle(uid, item.id, en);
-                }}
-                onRemove={() => setConfirmId(item.id)}
+                onToggle={(enabled) => onToggleReminder(item.id, enabled)}
+                onRemove={() => askDelete(item.id)}
               />
             </View>
           ))}
@@ -217,26 +107,7 @@ export default function NotificationsScreen({
 
             <ButtonToggle
               value={motivationEnabled}
-              onToggle={async (v) => {
-                if (!uid) return;
-
-                if (v && systemAllowed === false) {
-                  const ok = await requestSystemPermission();
-                  if (!ok) return;
-                }
-
-                setMotivationEnabled(v);
-                await setMotivationPrefs(uid, v);
-
-                if (v) {
-                  await runSystemNotifications(uid);
-                } else {
-                  await cancelSystemNotifications(
-                    uid,
-                    "motivation_dont_give_up"
-                  );
-                }
-              }}
+              onToggle={onToggleMotivation}
               trackColor={
                 motivationEnabled ? theme.accentSecondary : theme.textSecondary
               }
@@ -267,23 +138,7 @@ export default function NotificationsScreen({
 
             <ButtonToggle
               value={statsEnabled}
-              onToggle={async (v) => {
-                if (!uid) return;
-
-                if (v && systemAllowed === false) {
-                  const ok = await requestSystemPermission();
-                  if (!ok) return;
-                }
-
-                setStatsEnabled(v);
-                await setStatsPrefs(uid, v);
-
-                if (v) {
-                  await runSystemNotifications(uid);
-                } else {
-                  await cancelSystemNotifications(uid, "stats_weekly_summary");
-                }
-              }}
+              onToggle={onToggleStats}
               trackColor={
                 statsEnabled ? theme.accentSecondary : theme.textSecondary
               }
@@ -316,7 +171,7 @@ export default function NotificationsScreen({
         visible={!!confirmId}
         title={t("screen.deleteTitle", "Delete reminder")}
         message={t("screen.deleteMsg", "Are you sure?")}
-        onClose={() => (!deleting ? setConfirmId(null) : null)}
+        onClose={cancelDelete}
         primaryAction={{
           label: t("form.delete", "Delete"),
           tone: "destructive",
@@ -326,7 +181,7 @@ export default function NotificationsScreen({
         }}
         secondaryAction={{
           label: t("form.cancel", "Cancel"),
-          onPress: () => setConfirmId(null),
+          onPress: cancelDelete,
           testID: "cancel-delete",
         }}
       />

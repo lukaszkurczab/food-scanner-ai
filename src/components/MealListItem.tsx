@@ -14,14 +14,9 @@ import { MacroChip } from "@/components/MacroChip";
 import type { Meal } from "@/types/meal";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import * as FileSystem from "expo-file-system";
-import { getApp } from "@react-native-firebase/app";
-import {
-  getStorage,
-  ref,
-  getDownloadURL,
-} from "@react-native-firebase/storage";
 import { useTranslation } from "react-i18next";
 import { MaterialIcons } from "@expo/vector-icons";
+import { ensureLocalMealPhoto } from "@/services/mealService.images";
 
 type Props = {
   meal: Meal;
@@ -33,8 +28,6 @@ type Props = {
   selected?: boolean;
 };
 
-const app = getApp();
-const st = getStorage(app);
 const ACTION_WIDTH = 168;
 
 const MealListItemBase: React.FC<Props> = ({
@@ -59,51 +52,37 @@ const MealListItemBase: React.FC<Props> = ({
   useEffect(() => {
     let cancelled = false;
     async function restore() {
-      if (!mealId) return;
-      let remoteUrl: string | null = null;
-      if (meal.imageId) {
+      if (!mealId || !meal.userUid) return;
+
+      const directLocal = meal.photoUrl || "";
+      if (
+        directLocal &&
+        (directLocal.startsWith("file://") || directLocal.startsWith("content://"))
+      ) {
         try {
-          remoteUrl = await getDownloadURL(
-            ref(st, `images/${meal.imageId}.jpg`),
-          );
+          const info = await FileSystem.getInfoAsync(directLocal);
+          if (info.exists) {
+            if (!cancelled) setLocalUri(directLocal);
+            return;
+          }
         } catch {
-          remoteUrl = null;
+          // Ignore local file probing failure and continue fallback.
         }
       }
-      if (!remoteUrl) {
-        const url = meal.photoUrl || "";
-        if (/^https?:\/\//i.test(url)) remoteUrl = url;
-      }
-      if (!remoteUrl) {
-        try {
-          const legacyRef = ref(st, `meals/${meal.userUid}/${mealId}.jpg`);
-          remoteUrl = await getDownloadURL(legacyRef);
-        } catch {
-          remoteUrl = null;
-        }
-      }
-      if (!remoteUrl) return;
-      const dir = `${FileSystem.documentDirectory}meals/${meal.userUid}`;
-      const target = `${dir}/${mealId}.jpg`;
-      const info = await FileSystem.getInfoAsync(target);
-      if (info.exists) {
-        if (!cancelled) setLocalUri(target);
-        return;
-      }
-      try {
-        const dirInfo = await FileSystem.getInfoAsync(dir);
-        if (!dirInfo.exists)
-          await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-        await FileSystem.downloadAsync(remoteUrl, target);
-        const ok = await FileSystem.getInfoAsync(target);
-        if (ok.exists && !cancelled) setLocalUri(target);
-      } catch {}
+
+      const resolvedLocal = await ensureLocalMealPhoto({
+        uid: meal.userUid,
+        cloudId: meal.cloudId ?? null,
+        imageId: meal.imageId ?? null,
+        photoUrl: meal.photoUrl ?? null,
+      });
+      if (!cancelled) setLocalUri(resolvedLocal);
     }
-    restore();
+    void restore();
     return () => {
       cancelled = true;
     };
-  }, [mealId, meal.userUid, meal.imageId, meal.photoUrl]);
+  }, [mealId, meal.userUid, meal.cloudId, meal.imageId, meal.photoUrl]);
 
   const reveal = useRef(new Animated.Value(0)).current;
   const isOpen = useRef(false);

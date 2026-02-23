@@ -1,18 +1,7 @@
-import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Pressable,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, Image, Pressable, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
-import { useUserContext } from "@contexts/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
-import type { MealType } from "@/types/meal";
-import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "@/components/DateTimeSection";
 import {
@@ -24,20 +13,15 @@ import {
 } from "@/components";
 import { useRoute, type RouteProp, type ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { getApp } from "@react-native-firebase/app";
-import { getFirestore, doc, setDoc } from "@react-native-firebase/firestore";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { MaterialIcons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system";
+import { useEditResultState } from "@/feature/History/hooks/useEditResultState";
 
 type ScreenRoute = RouteProp<RootStackParamList, "EditResult">;
 type EditResultNavigation = StackNavigationProp<ParamListBase>;
 type Props = {
   navigation: EditResultNavigation;
 };
-
-const app = getApp();
-const db = getFirestore(app);
 
 export default function EditResultScreen({ navigation }: Props) {
   const theme = useTheme();
@@ -46,110 +30,34 @@ export default function EditResultScreen({ navigation }: Props) {
   const route = useRoute<ScreenRoute>();
   const savedCloudId = route.params?.savedCloudId;
   const { meal, setLastScreen, setPhotoUrl } = useMealDraftContext();
-  const { userData } = useUserContext();
 
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const mealName = meal?.name || autoMealName();
-  const mealType: MealType = meal?.type || "breakfast";
-  const [showIngredients, setShowIngredients] = useState<boolean>(false);
-  const [saving, setSaving] = useState(false);
-  const [selectedAt, setSelectedAt] = useState<Date>(
-    meal?.timestamp ? new Date(meal.timestamp) : new Date()
-  );
-  const [addedAt, setAddedAt] = useState<Date>(new Date());
+  const state = useEditResultState({
+    uid,
+    meal,
+    savedCloudId,
+    setLastScreen,
+    setPhotoUrl,
+    navigation,
+  });
 
-  const image = meal?.photoUrl ?? null;
-  const [imageError, setImageError] = useState(false);
-  const [checkingImage, setCheckingImage] = useState(false);
-  useEffect(() => setImageError(false), [image]);
-
-  useEffect(() => {
-    if (uid) setLastScreen(uid, "EditResult");
-  }, [setLastScreen, uid]);
-
-  useEffect(() => {
-    const checkLocal = async () => {
-      if (!meal?.photoUrl) return;
-      setCheckingImage(true);
-      try {
-        const isLocal = meal.photoUrl.startsWith("file://");
-        if (!isLocal) {
-          setPhotoUrl(null);
-          return;
-        }
-        const info = await FileSystem.getInfoAsync(meal.photoUrl);
-        if (!info.exists) setPhotoUrl(null);
-      } finally {
-        setCheckingImage(false);
-      }
-    };
-    void checkLocal();
-  }, [meal?.photoUrl, setPhotoUrl]);
-
-  if (!meal || !uid) return null;
-
-  const goShare = () => {
-    if (!meal || !uid) return;
-    const pass = {
-      ...meal,
-      name: mealName,
-      type: mealType,
-      timestamp: selectedAt.toISOString(),
-    };
-    navigation.navigate("MealShare", { meal: pass, returnTo: "MealDetails" });
-  };
-
-  const handleAddPhoto = () => {
-    navigation.navigate("MealCamera", {
-      skipDetection: true,
-      returnTo: "EditResult",
-    });
-  };
-
-  const handleSave = async () => {
-    if (!userData?.uid || saving) return;
-    if (!savedCloudId) return;
-    setSaving(true);
-    const nowIso = new Date().toISOString();
-    const payload = {
-      ...meal,
-      name: mealName,
-      type: mealType,
-      timestamp: selectedAt.toISOString(),
-      createdAt: addedAt.toISOString(),
-      updatedAt: nowIso,
-      source: "saved",
-    };
-    try {
-      await setDoc(doc(db, "users", uid, "myMeals", savedCloudId), payload, {
-        merge: true,
-      });
-      navigation.navigate("SavedMeals");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = () => setShowCancelModal(true);
-  const handleCancelConfirm = () => navigation.navigate("SavedMeals");
+  if (!state.ready || !meal) return null;
 
   return (
     <Layout showNavigation={false}>
       <View style={{ padding: theme.spacing.container }}>
         <View style={styles.imageWrap}>
-          {checkingImage ? (
+          {state.checkingImage ? (
             <ActivityIndicator size="large" color={theme.accent} />
-          ) : image && !imageError ? (
+          ) : state.image && !state.imageError ? (
             <>
-              {console.log("Rendering image:", image)}
               <Image
-                source={{ uri: image }}
+                source={{ uri: state.image }}
                 style={styles.image}
                 resizeMode="cover"
-                onError={() => setImageError(true)}
+                onError={state.onImageError}
               />
               <Pressable
-                onPress={goShare}
+                onPress={state.goShare}
                 accessibilityRole="button"
                 accessibilityLabel={t("share", { ns: "common" })}
                 hitSlop={8}
@@ -166,33 +74,30 @@ export default function EditResultScreen({ navigation }: Props) {
               </Pressable>
             </>
           ) : (
-            <>
-              {console.log("Rendering image:", image)}
-              <Pressable
-                onPress={handleAddPhoto}
-                style={[
-                  styles.placeholder,
-                  { backgroundColor: theme.card, borderColor: theme.border },
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={t("add_photo", { ns: "meals" })}
+            <Pressable
+              onPress={state.handleAddPhoto}
+              style={[
+                styles.placeholder,
+                { backgroundColor: theme.card, borderColor: theme.border },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={t("add_photo", { ns: "meals" })}
+            >
+              <MaterialIcons
+                name="add-a-photo"
+                size={44}
+                color={theme.textSecondary}
+              />
+              <Text
+                style={{
+                  color: theme.textSecondary,
+                  fontWeight: "600",
+                  marginTop: 6,
+                }}
               >
-                <MaterialIcons
-                  name="add-a-photo"
-                  size={44}
-                  color={theme.textSecondary}
-                />
-                <Text
-                  style={{
-                    color: theme.textSecondary,
-                    fontWeight: "600",
-                    marginTop: 6,
-                  }}
-                >
-                  {t("add_photo", { ns: "meals" })}
-                </Text>
-              </Pressable>
-            </>
+                {t("add_photo", { ns: "meals" })}
+              </Text>
+            </Pressable>
           )}
         </View>
 
@@ -214,21 +119,18 @@ export default function EditResultScreen({ navigation }: Props) {
               marginBottom: theme.spacing.xs,
             }}
           >
-            {mealName}
+            {state.mealName}
           </Text>
         </Card>
 
         <DateTimeSection
-          value={selectedAt}
-          onChange={setSelectedAt}
-          addedValue={addedAt}
-          onChangeAdded={setAddedAt}
+          value={state.selectedAt}
+          onChange={state.setSelectedAt}
+          addedValue={state.addedAt}
+          onChangeAdded={state.setAddedAt}
         />
 
-        <Card
-          variant="outlined"
-          onPress={() => !saving && setShowIngredients(!showIngredients)}
-        >
+        <Card variant="outlined" onPress={state.toggleIngredients}>
           <Text
             style={{
               fontSize: theme.typography.size.md,
@@ -237,7 +139,7 @@ export default function EditResultScreen({ navigation }: Props) {
               textAlign: "center",
             }}
           >
-            {showIngredients
+            {state.showIngredients
               ? t("hide_ingredients", { ns: "meals" })
               : t("show_ingredients", { ns: "meals" })}
           </Text>
@@ -251,32 +153,32 @@ export default function EditResultScreen({ navigation }: Props) {
         >
           <PrimaryButton
             label={t("save", { ns: "common" })}
-            onPress={handleSave}
-            loading={saving}
-            disabled={saving || !savedCloudId}
+            onPress={state.handleSave}
+            loading={state.saving}
+            disabled={!state.canSave}
           />
           <SecondaryButton
             label={t("back_to_saved", {
               ns: "meals",
               defaultValue: "Wróć do zapisanych",
             })}
-            onPress={handleCancel}
-            disabled={saving}
+            onPress={state.handleCancel}
+            disabled={state.saving}
           />
         </View>
       </View>
 
       <Modal
-        visible={showCancelModal}
+        visible={state.showCancelModal}
         message={t("cancel_edit_message", {
           ns: "meals",
           defaultValue: "Porzucić zmiany i wrócić do zapisanych posiłków?",
         })}
         primaryActionLabel={t("confirm", { ns: "common" })}
-        onClose={() => setShowCancelModal(false)}
-        onPrimaryAction={handleCancelConfirm}
+        onClose={state.closeCancelModal}
+        onPrimaryAction={state.handleCancelConfirm}
         secondaryActionLabel={t("cancel", { ns: "common" })}
-        onSecondaryAction={() => setShowCancelModal(false)}
+        onSecondaryAction={state.closeCancelModal}
       />
     </Layout>
   );

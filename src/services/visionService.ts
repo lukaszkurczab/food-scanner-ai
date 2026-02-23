@@ -6,6 +6,9 @@ import type { Ingredient } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { consumeAiUseFor } from "./userService";
 import { debugScope } from "@/utils/debug";
+import { extractAndNormalizeIngredients } from "@/services/ai/ingredientParser";
+import { parseOpenAiChatResponse } from "@/services/ai/openaiChat.dto";
+import { createServiceError } from "@/services/contracts/serviceError";
 
 const log = debugScope("Vision");
 
@@ -36,62 +39,6 @@ const toNumber = (v: unknown): number => {
 
 const capFirst = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
-type VisionIngredientCandidate = {
-  name?: unknown;
-  amount?: unknown;
-  unit?: unknown;
-  protein?: unknown;
-  fat?: unknown;
-  carbs?: unknown;
-  kcal?: unknown;
-};
-
-type VisionResponse = {
-  error?: { code?: string } | null;
-  choices?: Array<{ message?: { content?: string } }>;
-};
-
-const normalize = (x: unknown): Ingredient | null => {
-  if (!x || typeof x !== "object") return null;
-  const candidate = x as VisionIngredientCandidate;
-  if (typeof candidate.name !== "string" || !candidate.name.trim()) return null;
-
-  const amount = toNumber(candidate.amount);
-  const protein = toNumber(candidate.protein);
-  const fat = toNumber(candidate.fat);
-  const carbs = toNumber(candidate.carbs);
-  const kcal = toNumber(candidate.kcal) || protein * 4 + carbs * 4 + fat * 9;
-  if (!isFinite(amount) || amount <= 0) return null;
-  const unit =
-    typeof candidate.unit === "string" &&
-    String(candidate.unit).toLowerCase() === "ml"
-      ? ("ml" as const)
-      : undefined;
-  return {
-    id: uuidv4(),
-    name: capFirst(candidate.name.trim()),
-    amount,
-    unit,
-    protein,
-    fat,
-    carbs,
-    kcal,
-  };
-};
-
-function extractJsonArray(raw: string): string | null {
-  const start = raw.indexOf("[");
-  const end = raw.lastIndexOf("]");
-  if (start !== -1 && end !== -1 && end > start)
-    return raw.substring(start, end + 1);
-  return null;
-}
-
-function fallbackJsonArray(raw: string): string | null {
-  const match = raw.match(/\[[\s\S]*\]/);
-  return match ? match[0] : null;
-}
-
 type VisionOpts = {
   isPremium?: boolean;
   limit?: number;
@@ -108,13 +55,26 @@ export async function detectIngredientsWithVision(
   const USER_LANG = (opts?.lang || "pl").toLowerCase();
 
   if (!isPremium) {
-    throw new Error("ai/premium-required");
+    throw createServiceError({
+      code: "ai/premium-required",
+      source: "VisionService",
+      retryable: false,
+    });
   }
 
   const net = await NetInfo.fetch();
   if (!net.isConnected) {
     log.warn("blocked Vision call: offline");
-    throw new Error("offline");
+    throw createServiceError({
+      code: "offline",
+      source: "VisionService",
+      retryable: true,
+    });
+  }
+
+  if (!OPENAI_API_KEY) {
+    log.warn("missing OPENAI_API_KEY, skipping vision detection");
+    return null;
   }
 
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -176,53 +136,51 @@ export async function detectIngredientsWithVision(
           await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
           continue;
         }
+        log.warn("Vision API temporary failure", { status: response.status });
         return null;
       }
 
-      const json = (await response.json()) as VisionResponse;
-      if (json?.error) {
+      const json = await response.json();
+      const { content, hasError, errorCode } = parseOpenAiChatResponse(json);
+      if (hasError) {
         if (
           attempt === 0 &&
-          (json.error.code === "rate_limit_exceeded" || response.status >= 500)
+          (errorCode === "rate_limit_exceeded" || response.status >= 500)
         ) {
           await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
           continue;
         }
+        log.warn("Vision API returned error payload", {
+          status: response.status,
+          errorCode,
+        });
         return null;
       }
 
-      const raw: string | undefined = json?.choices?.[0]?.message?.content;
-      if (!raw || typeof raw !== "string") return null;
+      if (!content) return null;
 
-      const arrayStr = extractJsonArray(raw) || fallbackJsonArray(raw);
-      if (!arrayStr) return null;
+      const normalized = extractAndNormalizeIngredients(
+        content,
+        {
+          idFactory: () => uuidv4(),
+          toNumber,
+          transformName: capFirst,
+          allowMlUnit: true,
+        },
+        { allowRegexFallback: true }
+      );
+      if (!normalized) return null;
 
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(arrayStr);
-      } catch {
-        const cleaned = arrayStr
-          .replace(/,\s*]/g, "]")
-          .replace(/,\s*}/g, "}")
-          .replace(/\bNaN\b/gi, "0");
-        parsed = JSON.parse(cleaned);
-      }
-
-      if (!Array.isArray(parsed)) return null;
-
-      const normalized: Ingredient[] = parsed
-        .map(normalize)
-        .filter((x): x is Ingredient => !!x);
-
-      if (!isPremium)
-        await consumeAiUseFor(userUid, isPremium, "camera", limit);
+      await consumeAiUseFor(userUid, isPremium, "camera", limit);
 
       return normalized;
-    } catch {
+    } catch (error: unknown) {
       if (attempt === 0) {
+        log.warn("Vision detection attempt failed, retrying", error);
         await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
         continue;
       }
+      log.error("Vision detection failed", error);
       return null;
     }
   }

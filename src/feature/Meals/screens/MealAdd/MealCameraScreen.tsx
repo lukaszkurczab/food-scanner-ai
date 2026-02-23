@@ -1,39 +1,13 @@
-import { useRef, useState, useEffect, useCallback } from "react";
-import {
-  View,
-  StyleSheet,
-  Pressable,
-  Text,
-  BackHandler,
-  DeviceEventEmitter,
-  Linking,
-} from "react-native";
-import { CameraView, useCameraPermissions, type BarcodeType } from "expo-camera";
-import { v4 as uuidv4 } from "uuid";
+import { View, StyleSheet, Pressable, Text, Linking } from "react-native";
+import { CameraView } from "expo-camera";
 import { useTheme } from "@/theme/useTheme";
-import { useMealDraftContext } from "@contexts/MealDraftContext";
 import Loader from "@feature/Meals/components/Loader";
 import { useTranslation } from "react-i18next";
-import { detectIngredientsWithVision } from "@/services/visionService";
-import {
-  fetchProductByBarcode,
-  extractBarcodeFromPayload,
-} from "@/services/barcodeService";
-import { useAuthContext } from "@/context/AuthContext";
 import { Layout, PhotoPreview } from "@/components";
-import { usePremiumContext } from "@/context/PremiumContext";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Alert as AppAlert } from "@/components/Alert";
-import { getSampleMealUri } from "@/utils/devSamples";
-import { debugScope } from "@/utils/debug";
-import { useUserContext } from "@contexts/UserContext";
-import type { Ingredient, Meal } from "@/types";
-import type {
-  MealAddScreenProps,
-  MealAddScreenName,
-} from "@/feature/Meals/feature/MapMealAddScreens";
-
-const log = debugScope("Screen:MealCamera");
+import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
+import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
 
 export default function MealCameraScreen({
   navigation,
@@ -41,260 +15,38 @@ export default function MealCameraScreen({
   params,
 }: MealAddScreenProps<"MealCamera">) {
   const theme = useTheme();
-  const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView>(null);
-  const [isCameraReady, setIsCameraReady] = useState(false);
-  const [isTakingPhoto, setIsTakingPhoto] = useState(false);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [premiumModal, setPremiumModal] = useState(false);
-  const [barcodeModal, setBarcodeModal] = useState(false);
-  const { meal, setMeal, updateMeal, setLastScreen } = useMealDraftContext();
   const { t: tCommon } = useTranslation("common");
   const { t: tMeals } = useTranslation("meals");
-  const { uid } = useAuthContext();
-  const { language } = useUserContext();
-  const { isPremium } = usePremiumContext();
 
-  const barcodeOnly = !!params?.barcodeOnly;
-  const routeId = params?.id as string | undefined;
-  const skipDetection = !!params?.skipDetection;
-  const returnTo: MealAddScreenName =
-    params?.returnTo || "ReviewIngredients";
-  const attempt = params?.attempt || 1;
-
-  const mealId = meal?.mealId || routeId || uuidv4();
-  const [scannedCode, setScannedCode] = useState<string | null>(null);
-  const [mode, setMode] = useState<"ai" | "barcode">(
-    barcodeOnly ? "barcode" : isPremium ? "ai" : "barcode",
-  );
-
-  useEffect(() => {
-    if (barcodeOnly) return;
-    setMode((prev) =>
-      isPremium ? (prev === "barcode" ? "ai" : prev) : "barcode",
-    );
-  }, [isPremium, barcodeOnly]);
-
-  useEffect(() => {
-    if (barcodeOnly) return;
-    if (skipDetection) setMode("ai");
-  }, [skipDetection, barcodeOnly]);
-
-  useEffect(() => {
-    if (mode !== "barcode" && scannedCode) setScannedCode(null);
-  }, [mode, scannedCode]);
-
-  useEffect(() => {
-    if (uid && setLastScreen) setLastScreen(uid, "MealCamera");
-  }, [setLastScreen, uid]);
-
-  useEffect(() => {
-    const onBackPress = () => {
-      if (photoUri) {
-        setPhotoUri(null);
-        return true;
-      }
-      flow.goBack();
-      return true;
-    };
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
-    return () => sub.remove();
-  }, [photoUri, flow]);
-
-  const handleBarcodeFlow = useCallback(
-    async (code: string) => {
-      setIsLoading(true);
-      try {
-        const off = await fetchProductByBarcode(code);
-
-        if (!off) {
-          flow.goTo("BarcodeProductNotFound", {
-            code,
-            attempt,
-            returnTo,
-          });
-          return;
-        }
-
-        const { ingredient, name } = off;
-
-        if (barcodeOnly) {
-          DeviceEventEmitter.emit("barcode.scanned.ingredient", {
-            ingredient,
-          } as { ingredient: Ingredient });
-          if (returnTo === "Result") {
-            flow.goTo("Result", {});
-          } else {
-            flow.goTo("ReviewIngredients", {});
-          }
-          return;
-        }
-
-        const resolvedName = name || `Barcode ${code}`;
-
-        if (!meal) {
-          const nextMeal: Meal = {
-            mealId,
-            userUid: uid || "",
-            name: resolvedName,
-            photoUrl: null,
-            ingredients: [ingredient],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            syncState: "pending",
-            tags: [],
-            deleted: false,
-            notes: `barcode:${code}`,
-            type: "other",
-            timestamp: "",
-            source: "manual",
-          };
-          setMeal(nextMeal);
-        } else {
-          updateMeal({
-            mealId,
-            name: resolvedName,
-            notes: `barcode:${code}`,
-            ingredients: [ingredient],
-          });
-        }
-
-        flow.goTo("ReviewIngredients", {});
-      } catch {
-        flow.goTo("BarcodeProductNotFound", {
-          code,
-          attempt,
-          returnTo,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [
-      attempt,
-      barcodeOnly,
-      flow,
-      meal,
-      mealId,
-      returnTo,
-      setMeal,
-      uid,
-      updateMeal,
-    ],
-  );
-
-  const handleTakePicture = async () => {
-    log.log("takePicture start", {
-      mode,
-      skipDetection,
-      isPremium,
-      isCameraReady,
-      barcodeOnly,
-    });
-
-    if (typeof __DEV__ !== "undefined" && __DEV__) {
-      try {
-        const uri = await getSampleMealUri();
-        setPhotoUri(uri);
-        return;
-      } catch {
-        // Ignore missing local sample image in development mode.
-      }
-    }
-
-    if (mode === "barcode" && !skipDetection) {
-      if (!scannedCode) {
-        setBarcodeModal(true);
-        return;
-      }
-      await handleBarcodeFlow(scannedCode);
-      return;
-    }
-
-    if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
-    setIsTakingPhoto(true);
-    try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
-      if (photo?.uri) {
-        setPhotoUri(photo.uri);
-      }
-    } finally {
-      setIsTakingPhoto(false);
-    }
-  };
-
-  const handleAccept = async (optimizedUri?: string) => {
-    const finalUri = optimizedUri || photoUri;
-    if (!finalUri) return;
-    setIsLoading(true);
-    try {
-      if (!meal) {
-        const nextMeal: Meal = {
-          mealId,
-          userUid: uid || "",
-          name: null,
-          photoUrl: finalUri,
-          ingredients: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          syncState: "pending",
-          tags: [],
-          deleted: false,
-          notes: null,
-          type: "other",
-          timestamp: "",
-          source: null,
-        };
-        setMeal(nextMeal);
-      } else {
-        updateMeal({ photoUrl: finalUri, mealId });
-      }
-
-      if (!skipDetection) {
-        const ingredients = uid
-          ? await detectIngredientsWithVision(uid, finalUri, {
-              isPremium: !!isPremium,
-              lang: language,
-            })
-          : null;
-
-        if (ingredients && ingredients.length > 0) {
-          updateMeal({ ingredients, mealId, photoUrl: finalUri });
-        } else {
-          setIsLoading(false);
-          flow.goTo("IngredientsNotRecognized", {
-            image: finalUri,
-            id: mealId,
-            attempt,
-          });
-          return;
-        }
-      }
-    } catch {
-      setIsLoading(false);
-      flow.goTo("IngredientsNotRecognized", {
-        image: finalUri,
-        id: mealId,
-        attempt,
-      });
-      return;
-    }
-
-    setIsLoading(false);
-    flow.goTo("ReviewIngredients", {});
-  };
-
-  const handleRetake = () => setPhotoUri(null);
-
-  const barcodeTypes: BarcodeType[] = [
-    "ean13",
-    "ean8",
-    "upc_a",
-    "upc_e",
-    "qr",
-    "code128",
-  ];
+  const {
+    permission,
+    requestPermission,
+    cameraRef,
+    isCameraReady,
+    isTakingPhoto,
+    photoUri,
+    isLoading,
+    premiumModal,
+    barcodeModal,
+    scannedCode,
+    mode,
+    isPremium,
+    skipDetection,
+    barcodeOnly,
+    showBarcodeOverlay,
+    barcodeTypes,
+    setIsCameraReady,
+    handleTakePicture,
+    handleAccept,
+    handleRetake,
+    onBarcodeScanned,
+    onUseSample,
+    openAiMode,
+    openBarcodeMode,
+    closePremiumModal,
+    closeBarcodeModal,
+    goManagePremium,
+  } = useMealCameraState({ navigation, flow, params });
 
   if (!permission) {
     return (
@@ -352,9 +104,7 @@ export default function MealCameraScreen({
               backgroundColor: theme.card,
             }}
           >
-            <Text
-              style={{ fontWeight: "bold", fontSize: 16, color: theme.text }}
-            >
+            <Text style={{ fontWeight: "bold", fontSize: 16, color: theme.text }}>
               {tCommon("continue")}
             </Text>
           </Pressable>
@@ -401,8 +151,6 @@ export default function MealCameraScreen({
     );
   }
 
-  const showBarcodeOverlay = !skipDetection && mode === "barcode";
-
   return (
     <Layout>
       <View style={{ flex: 1 }}>
@@ -411,27 +159,17 @@ export default function MealCameraScreen({
             ref={cameraRef}
             style={{ flex: 1 }}
             onCameraReady={() => setIsCameraReady(true)}
-            onBarcodeScanned={({ data }: { data: string }) => {
-              if (mode !== "barcode") return;
-              if (!data) return;
-              const code = extractBarcodeFromPayload(data);
-              if (!code) return;
-              setScannedCode((prev) => (prev === code ? prev : code));
+            onBarcodeScanned={onBarcodeScanned}
+            barcodeScannerSettings={{
+              barcodeTypes,
             }}
-            barcodeScannerSettings={
-              {
-                barcodeTypes,
-              }
-            }
           />
           <View style={StyleSheet.absoluteFill}>
             <View style={styles.overlay} pointerEvents="none" />
             {!skipDetection && !barcodeOnly && (
               <View style={styles.modeSwitch}>
                 <Pressable
-                  onPress={() =>
-                    isPremium ? setMode("ai") : setPremiumModal(true)
-                  }
+                  onPress={openAiMode}
                   style={[
                     styles.modeBtn,
                     {
@@ -449,7 +187,7 @@ export default function MealCameraScreen({
                   />
                 </Pressable>
                 <Pressable
-                  onPress={() => setMode("barcode")}
+                  onPress={openBarcodeMode}
                   style={[
                     styles.modeBtn,
                     {
@@ -504,17 +242,13 @@ export default function MealCameraScreen({
                   { opacity: pressed ? 0.7 : 1 },
                 ]}
                 onPress={handleTakePicture}
-                disabled={isTakingPhoto}
+                disabled={isTakingPhoto || !isCameraReady}
               />
             </View>
             {typeof __DEV__ !== "undefined" && __DEV__ && (
               <View style={styles.devRow}>
                 <Pressable
-                  onPress={async () => {
-                    const uri = await getSampleMealUri();
-                    setMode("ai");
-                    setPhotoUri(uri);
-                  }}
+                  onPress={() => void onUseSample()}
                   style={[
                     styles.devBtn,
                     { backgroundColor: theme.card, borderColor: theme.border },
@@ -537,17 +271,14 @@ export default function MealCameraScreen({
         message={tMeals("premium_required_body", {
           defaultValue: "AI mode requires a Premium subscription.",
         })}
-        onClose={() => setPremiumModal(false)}
+        onClose={closePremiumModal}
         primaryAction={{
           label: tMeals("go_premium", { defaultValue: "Go Premium" }),
-          onPress: () => {
-            setPremiumModal(false);
-            navigation.navigate("ManageSubscription");
-          },
+          onPress: goManagePremium,
         }}
         secondaryAction={{
           label: tCommon("cancel"),
-          onPress: () => setPremiumModal(false),
+          onPress: closePremiumModal,
         }}
       />
       <AppAlert
@@ -559,10 +290,10 @@ export default function MealCameraScreen({
           defaultValue:
             "Place the code in the frame and try again, then press the button.",
         })}
-        onClose={() => setBarcodeModal(false)}
+        onClose={closeBarcodeModal}
         primaryAction={{
           label: tCommon("confirm", { defaultValue: "OK" }),
-          onPress: () => setBarcodeModal(false),
+          onPress: closeBarcodeModal,
         }}
       />
     </Layout>
