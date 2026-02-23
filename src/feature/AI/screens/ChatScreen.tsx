@@ -3,7 +3,7 @@ import { View, FlatList, ActivityIndicator, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useAuthContext } from "@/context/AuthContext";
-import { useUser } from "@hooks/useUser";
+import { useUserContext } from "@contexts/UserContext";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { useTheme } from "@/theme/useTheme";
@@ -45,7 +45,7 @@ export default function ChatScreen() {
   const net = useNetInfo();
 
   const uid = user?.uid || "";
-  const { userData, loading: loadingUser } = useUser(uid);
+  const { userData, loadingUser } = useUserContext();
 
   const subscription = useSubscriptionData(uid);
   const isPremium = subscription?.state === "premium_active";

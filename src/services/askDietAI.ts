@@ -10,6 +10,7 @@ import type {
   Allergy,
 } from "@/types";
 import { canUseAiToday, consumeAiUse } from "./userService";
+import { createServiceError } from "@/services/contracts/serviceError";
 
 export type Message = { from: "user" | "ai"; text: string };
 
@@ -231,7 +232,13 @@ export async function askDietAI(
 
   if (!isPremium && uid) {
     const allowed = await canUseAiToday(uid, isPremium, limit);
-    if (!allowed) throw new Error("ai/daily-limit-reached");
+    if (!allowed) {
+      throw createServiceError({
+        code: "ai/daily-limit-reached",
+        source: "AskDietAI",
+        retryable: false,
+      });
+    }
   }
 
   if (looksMedical(question)) {

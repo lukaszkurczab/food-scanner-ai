@@ -1,18 +1,9 @@
 import type { Ingredient } from "@/types";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import { parseOffProductResponse } from "@/services/barcode/off.dto";
+import { debugScope } from "@/utils/debug";
 
-type OFFProduct = {
-  product?: {
-    product_name?: string;
-    nutriments?: Record<string, unknown>;
-    brands?: string;
-    quantity?: string;
-    serving_size?: string;
-    categories_tags?: string[];
-    nutrition_data_per?: string;
-  };
-  status?: number;
-};
+const log = debugScope("BarcodeService");
 
 const toNumber = (v: unknown): number => {
   if (typeof v === "number") return isFinite(v) ? v : 0;
@@ -31,12 +22,21 @@ export async function fetchProductByBarcode(
       barcode
     )}.json`;
     const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) return null;
-    const json = (await res.json()) as OFFProduct;
-    if (!json || json.status !== 1 || !json.product) return null;
+    if (!res.ok) {
+      log.warn("OpenFoodFacts lookup failed", { barcode, status: res.status });
+      return null;
+    }
+    const json = await res.json();
+    const decoded = parseOffProductResponse(json);
+    if (!decoded) {
+      log.warn("OpenFoodFacts response did not match expected schema", {
+        barcode,
+      });
+      return null;
+    }
 
-    const p = json.product;
-    const name = decodeHtmlEntities((p.product_name || "") as string).trim();
+    const p = decoded.product;
+    const name = decodeHtmlEntities(p.product_name || "").trim();
     const n = p.nutriments || {};
 
     const kcal = toNumber(
@@ -75,7 +75,8 @@ export async function fetchProductByBarcode(
     };
 
     return { name: ingredient.name, ingredient };
-  } catch {
+  } catch (error: unknown) {
+    log.error("Barcode lookup failed", { barcode, error });
     return null;
   }
 }
@@ -131,7 +132,8 @@ export function extractBarcodeFromPayload(payload: string): string | null {
     const d8 = s.match(/\d{8}/);
     if (d8) return d8[0];
     return null;
-  } catch {
+  } catch (error: unknown) {
+    log.warn("Failed to parse barcode payload", { error });
     return null;
   }
 }

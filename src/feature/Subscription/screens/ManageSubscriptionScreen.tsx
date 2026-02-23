@@ -1,14 +1,4 @@
-import { useState, useMemo } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Linking,
-  Pressable,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -17,13 +7,8 @@ import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FullScreenLoader, Layout } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useAuthContext } from "@/context/AuthContext";
-import Constants from "expo-constants";
-import {
-  openManageSubscriptions,
-  restorePurchases,
-  startOrRenewSubscription,
-} from "@/feature/Subscription/services/purchase";
 import { PaywallModal } from "@/feature/Subscription/components/PaywallModal";
+import { useManageSubscriptionState } from "@/feature/Subscription/hooks/useManageSubscriptionState";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -50,26 +35,39 @@ export default function ManageSubscriptionScreen({
   const theme = useTheme();
   const { t } = useTranslation("profile");
   const { uid } = useAuthContext();
-
   const subscription = useSubscriptionData(uid);
   const { isPremium, setDevPremium, refreshPremium } = usePremiumContext();
 
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [paywallVisible, setPaywallVisible] = useState(false);
-
-  const extra = (Constants.expoConfig?.extra ?? {}) as {
-    termsUrl?: unknown;
-    privacyUrl?: unknown;
-  };
-  const termsUrl = typeof extra.termsUrl === "string" ? extra.termsUrl : "";
-  const privacyUrl =
-    typeof extra.privacyUrl === "string" ? extra.privacyUrl : "";
-
-  const refundUrl = useMemo(() => {
-    const u = t("manageSubscription.refundLink", { defaultValue: "" });
-    return typeof u === "string" ? u.trim() : "";
-  }, [t]);
+  const {
+    expanded,
+    busy,
+    paywallVisible,
+    termsUrl,
+    privacyUrl,
+    priceText,
+    showCancel,
+    showRenew,
+    showStart,
+    headerStatus,
+    isPremiumComputed,
+    toggleExpanded,
+    tryOpenManage,
+    tryRestore,
+    trySubscribe,
+    tryOpenRefundPolicy,
+    openPaywall,
+    closePaywall,
+    toggleDevPremium,
+    openTerms,
+    openPrivacy,
+  } = useManageSubscriptionState({
+    uid,
+    subscriptionState: subscription?.state,
+    isPremium,
+    refreshPremium,
+    setDevPremium,
+    t,
+  });
 
   if (!subscription) {
     return (
@@ -78,158 +76,6 @@ export default function ManageSubscriptionScreen({
       </Layout>
     );
   }
-
-  const state = subscription.state;
-
-  const isPremiumByState = state.startsWith("premium");
-  const isPremiumComputed = (isPremium ?? isPremiumByState) as boolean;
-
-  const showCancel = state === "premium_active";
-  const showRenew = state === "premium_expired";
-  const showStart = state === "free_active" || state === "free_expired";
-
-  const headerStatus =
-    state === "premium_active"
-      ? t("manageSubscription.premium")
-      : state === "premium_expired"
-        ? `${t("manageSubscription.premium")} (${t("expired", { defaultValue: "expired" })})`
-        : t("manageSubscription.free");
-
-  const priceText = t("paywall.priceText", {
-    defaultValue: "29,99 zł / month",
-  });
-
-  const requireAuthOrAlert = (): boolean => {
-    if (uid) return true;
-    Alert.alert(
-      t("manageSubscription.title"),
-      t("manageSubscription.signInRequired", {
-        defaultValue: "Please sign in to manage subscriptions.",
-      }),
-    );
-    return false;
-  };
-
-  const tryOpenManage = async () => {
-    if (!requireAuthOrAlert()) return;
-
-    setBusy(true);
-    try {
-      const ok = await openManageSubscriptions();
-      if (!ok) {
-        Alert.alert(
-          t("manageSubscription.title"),
-          t("manageSubscription.billingUnavailable", {
-            defaultValue: "Billing is unavailable on this device.",
-          }),
-        );
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const tryRestore = async () => {
-    if (!requireAuthOrAlert()) return;
-
-    setBusy(true);
-    try {
-      const res = await restorePurchases(uid);
-      if (res.status === "success") {
-        await refreshPremium();
-        Alert.alert(
-          t("manageSubscription.title"),
-          t("manageSubscription.restoreSuccess", {
-            defaultValue: "Purchases restored.",
-          }),
-        );
-      } else if (res.status === "cancelled") {
-        return;
-      } else if (res.status === "unavailable") {
-        Alert.alert(
-          t("manageSubscription.title"),
-          t("manageSubscription.billingUnavailable", {
-            defaultValue: "Billing is unavailable on this device.",
-          }),
-        );
-      } else {
-        Alert.alert(
-          t("manageSubscription.title"),
-          res.message ||
-            t("manageSubscription.restoreFailed", {
-              defaultValue: "Restore failed. Try again later.",
-            }),
-        );
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const trySubscribe = async () => {
-    if (!requireAuthOrAlert()) return;
-
-    setBusy(true);
-    try {
-      const res = await startOrRenewSubscription(uid);
-      if (res.status === "success") {
-        await refreshPremium();
-        setPaywallVisible(false);
-        Alert.alert(
-          t("manageSubscription.title"),
-          t("manageSubscription.purchaseSuccess", {
-            defaultValue: "Subscription active.",
-          }),
-        );
-      } else if (res.status === "cancelled") {
-        return;
-      } else if (res.status === "unavailable") {
-        Alert.alert(
-          t("manageSubscription.title"),
-          t("manageSubscription.billingUnavailable", {
-            defaultValue: "Billing is unavailable on this device.",
-          }),
-        );
-      } else {
-        Alert.alert(
-          t("manageSubscription.title"),
-          res.message ||
-            t("manageSubscription.purchaseFailed", {
-              defaultValue: "Purchase failed.",
-            }),
-        );
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const tryOpenRefundPolicy = async () => {
-    const url = refundUrl;
-    if (!url || !(url.startsWith("http://") || url.startsWith("https://"))) {
-      Alert.alert(
-        t("manageSubscription.title"),
-        t("manageSubscription.refundLinkUnavailable", {
-          defaultValue: "Refund policy link is unavailable.",
-        }),
-      );
-      return;
-    }
-
-    try {
-      await Linking.openURL(url);
-    } catch {
-      Alert.alert(
-        t("manageSubscription.title"),
-        t("manageSubscription.refundLinkUnavailable", {
-          defaultValue: "Refund policy link is unavailable.",
-        }),
-      );
-    }
-  };
-
-  const openPaywall = () => setPaywallVisible(true);
-  const closePaywall = () => setPaywallVisible(false);
 
   return (
     <Layout>
@@ -263,14 +109,10 @@ export default function ManageSubscriptionScreen({
               { marginBottom: spacing.sm, opacity: busy ? 0.6 : 1 },
             ]}
           >
-            <Text
-              style={{ fontSize: 18, fontWeight: "400", color: theme.text }}
-            >
+            <Text style={{ fontSize: 18, fontWeight: "400", color: theme.text }}>
               {headerStatus}
             </Text>
-            {busy && (
-              <ActivityIndicator size="small" color={theme.textSecondary} />
-            )}
+            {busy && <ActivityIndicator size="small" color={theme.textSecondary} />}
           </View>
         </View>
 
@@ -299,7 +141,7 @@ export default function ManageSubscriptionScreen({
             >
               <TouchableOpacity
                 style={styles.rowBetween}
-                onPress={() => setExpanded(expanded === key ? null : key)}
+                onPress={() => toggleExpanded(key)}
                 activeOpacity={0.7}
                 disabled={busy}
               >
@@ -344,9 +186,7 @@ export default function ManageSubscriptionScreen({
             activeOpacity={0.7}
             disabled={busy}
           >
-            <Text
-              style={{ fontSize: 18, fontWeight: "500", color: theme.text }}
-            >
+            <Text style={{ fontSize: 18, fontWeight: "500", color: theme.text }}>
               {t("manageSubscription.restorePurchases", {
                 defaultValue: "Restore Purchases",
               })}
@@ -360,16 +200,10 @@ export default function ManageSubscriptionScreen({
             activeOpacity={0.7}
             disabled={busy}
           >
-            <Text
-              style={{ fontSize: 18, fontWeight: "500", color: theme.text }}
-            >
+            <Text style={{ fontSize: 18, fontWeight: "500", color: theme.text }}>
               {t("manageSubscription.refundPolicy")}
             </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.textSecondary}
-            />
+            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
 
           {!!termsUrl && !!privacyUrl && (
@@ -388,11 +222,7 @@ export default function ManageSubscriptionScreen({
               </Text>
 
               <View style={{ flexDirection: "row", gap: 14 }}>
-                <TouchableOpacity
-                  onPress={() => Linking.openURL(termsUrl)}
-                  activeOpacity={0.7}
-                  disabled={busy}
-                >
+                <TouchableOpacity onPress={() => void openTerms()} activeOpacity={0.7} disabled={busy}>
                   <Text
                     style={{
                       color: theme.accentSecondary,
@@ -404,11 +234,7 @@ export default function ManageSubscriptionScreen({
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() => Linking.openURL(privacyUrl)}
-                  activeOpacity={0.7}
-                  disabled={busy}
-                >
+                <TouchableOpacity onPress={() => void openPrivacy()} activeOpacity={0.7} disabled={busy}>
                   <Text
                     style={{
                       color: theme.accentSecondary,
@@ -512,13 +338,11 @@ export default function ManageSubscriptionScreen({
                 borderTopColor: theme.border,
               },
             ]}
-            onPress={() => setDevPremium(!isPremiumComputed)}
+            onPress={toggleDevPremium}
             activeOpacity={0.7}
             disabled={busy}
           >
-            <Text
-              style={{ fontWeight: "bold", fontSize: 18, color: theme.text }}
-            >
+            <Text style={{ fontWeight: "bold", fontSize: 18, color: theme.text }}>
               {`DEV: ${isPremiumComputed ? "Disable" : "Enable"} Premium`}
             </Text>
             <Ionicons name="build" size={20} color={theme.textSecondary} />

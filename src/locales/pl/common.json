@@ -110,6 +110,7 @@
   "retry": "Ponów",
   "camera_loader_title": "Analizowanie posiłku...",
   "camera_loader_subtext": "To może potrwać kilka sekund.",
+  "unknownError": "Wystąpił błąd.",
   "kcal": "kcal",
   "gram": "g",
   "loading": "Ładowanie…",
@@ -125,5 +126,15 @@
     "avatar_accessibility": "Awatar użytkownika",
     "premium_badge_accessibility": "Użytkownik Premium",
     "profile_picture_accessibility": "Zdjęcie profilowe"
+  },
+  "sync": {
+    "syncing": "Synchronizowanie zmian...",
+    "queued": "Zapisano lokalnie. Oczekuje na synchronizację.",
+    "offline": "Tryb offline. Zmiany są zapisane lokalnie."
+  },
+  "toast": {
+    "mealAdded": "Posiłek dodany.",
+    "savedLocallySyncLater": "Brak internetu. Zapisano lokalnie, zsynchronizujemy po połączeniu.",
+    "savedMealDeleteQueued": "Brak internetu. Usunięcie zapisano lokalnie."
   }
 }

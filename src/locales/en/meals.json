@@ -25,6 +25,7 @@
   "description_optional": "Description",
   "text_ai_require_name_or_ingredients": "Enter a name or ingredients.",
   "text_ai_require_ingredients_or_amount": "Enter ingredients or amount [g].",
+  "text_ai_analyze_failed": "Something went wrong. Please try again.",
   "analyze": "Analyze",
   "calories": "Calories",
   "protein": "Protein",
@@ -65,6 +66,19 @@
   "tryDifferentSearch": "Try different search",
   "tryChangeFilters": "Try changing filters",
   "saveMealsToReuse": "Create and save meals to reuse them later",
+  "history": {
+    "loadError": "Could not load history.",
+    "syncError": "Synchronization failed. Please try again.",
+    "offlineEmpty": "No local data. Connect to the internet to load history.",
+    "errorTitle": "Could not load history"
+  },
+  "savedMeals": {
+    "loadError": "Could not load saved meals.",
+    "loadMoreError": "Could not load more saved meals.",
+    "refreshError": "Refresh failed.",
+    "offlineEmpty": "No local data. Connect to the internet to load saved meals.",
+    "errorTitle": "Could not load saved meals"
+  },
   "barcode_detected": "Detected: ",
   "photo_preview": {
     "crop": "Crop",

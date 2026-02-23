@@ -24,6 +24,10 @@ import { getDB } from "./db";
 import { processAndUpload } from "@/services/mealService.images";
 import type { MealRow } from "./types";
 import { emit } from "@/services/events";
+import {
+  createServiceError,
+  normalizeServiceError,
+} from "@/services/contracts/serviceError";
 
 const log = Sync;
 
@@ -40,9 +44,25 @@ let running = false;
 
 type MealPayload = Partial<Meal> & { cloudId?: string | null; mealId?: string | null };
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
+function syncEngineError(
+  code: string,
+  options?: { message?: string; retryable?: boolean; cause?: unknown }
+) {
+  return createServiceError({
+    code,
+    source: "SyncEngine",
+    retryable: options?.retryable ?? true,
+    message: options?.message,
+    cause: options?.cause,
+  });
+}
+
+function toSyncError(error: unknown) {
+  return normalizeServiceError(error, {
+    code: "sync/unknown",
+    source: "SyncEngine",
+    retryable: true,
+  });
 }
 
 function toMealPayload(payload: unknown): MealPayload | null {
@@ -89,31 +109,31 @@ export function startSyncLoop(uid: string) {
   stopSyncLoop();
 
   const run = async () => {
-    console.log("[sync] run start", { uid });
+    const loopLog = log.child("loop");
+    loopLog.log("run:start", { uid });
     const net = await NetInfo.fetch();
-    console.log("[sync] net state", { isConnected: net.isConnected });
+    loopLog.log("net:state", { isConnected: net.isConnected });
     if (!net.isConnected) {
-      log.log("loop:offline");
-      console.log("[sync] abort run offline");
+      loopLog.log("skip:offline");
       return;
     }
     if (running) {
-      log.log("loop:busy");
-      console.log("[sync] abort run busy");
+      loopLog.log("skip:busy");
       return;
     }
     running = true;
     try {
-      console.log("[sync] processImageUploads");
       await processImageUploads(uid);
-      console.log("[sync] pushQueue");
       await pushQueue(uid);
-      console.log("[sync] pullChanges");
       await pullChanges(uid);
-      console.log("[sync] run done");
+      loopLog.log("run:done");
     } catch (e: unknown) {
-      log.error("loop:error", getErrorMessage(e));
-      console.log("[sync] run error", getErrorMessage(e));
+      const err = toSyncError(e);
+      loopLog.error("run:error", {
+        code: err.code,
+        message: err.message,
+        retryable: err.retryable,
+      });
     } finally {
       running = false;
     }
@@ -122,7 +142,7 @@ export function startSyncLoop(uid: string) {
   loopTimer = setInterval(run, LOOP_INTERVAL_MS);
 
   netUnsub = NetInfo.addEventListener((state) => {
-    console.log("[sync] net event", { isConnected: state.isConnected });
+    log.log("net:event", { isConnected: state.isConnected });
     if (state.isConnected) {
       log.log("net:online→run");
       void run();
@@ -130,7 +150,6 @@ export function startSyncLoop(uid: string) {
   });
 
   log.log("loop:started");
-  console.log("[sync] loop started");
   void run();
 }
 
@@ -138,22 +157,21 @@ export function stopSyncLoop() {
   if (loopTimer) {
     clearInterval(loopTimer);
     loopTimer = null;
-    console.log("[sync] loop timer cleared");
+    log.log("loop:timer_cleared");
   }
   if (netUnsub) {
     netUnsub();
     netUnsub = null;
-    console.log("[sync] net unsubscribed");
+    log.log("net:unsubscribed");
   }
 }
 
 export async function pushQueue(uid: string): Promise<void> {
   const pushLog = log.child("push");
   const net = await NetInfo.fetch();
-  console.log("[push] start", { uid, isConnected: net.isConnected });
+  pushLog.log("start", { uid, isConnected: net.isConnected });
   if (!net.isConnected) {
     pushLog.log("skip:offline");
-    console.log("[push] skip offline");
     return;
   }
   pushLog.time("exec");
@@ -161,16 +179,21 @@ export async function pushQueue(uid: string): Promise<void> {
 
   for (;;) {
     const batch = await nextBatch(PUSH_BATCH_SIZE);
-    console.log("[push] nextBatch", { size: batch.length });
+    pushLog.log("batch:next", { size: batch.length });
     if (batch.length === 0) break;
 
     for (const op of batch) {
-      console.log("[push] op", { id: op.id, kind: op.kind });
+      pushLog.log("op:start", { id: op.id, kind: op.kind });
       try {
         if (op.kind === "upsert") {
           const payload = toMealPayload(op.payload);
           const id = payload?.cloudId || payload?.mealId;
-          if (!payload || !id) throw new Error("upsert/missing-id");
+          if (!payload || !id) {
+            throw syncEngineError("sync/upsert-missing-id", {
+              message: "Missing payload or meal identifier for upsert op",
+              retryable: false,
+            });
+          }
           const ref = doc(db, "users", uid, "meals", id);
           const remoteSnap = await getDoc(ref);
           const remote = remoteSnap.exists()
@@ -182,7 +205,7 @@ export async function pushQueue(uid: string): Promise<void> {
           const remoteUpdated = new Date(
             remote?.updatedAt || "1970-01-01"
           ).getTime();
-          console.log("[push] upsert compare", {
+          pushLog.log("upsert:compare", {
             id,
             localUpdated,
             remoteUpdated,
@@ -192,11 +215,9 @@ export async function pushQueue(uid: string): Promise<void> {
           if (!remote || localUpdated >= remoteUpdated) {
             await setDoc(ref, payload, { merge: true });
             pushLog.log("upsert:ok", id);
-            console.log("[push] upsert ok", { id });
             emit("meal:pushed", { uid, cloudId: id });
           } else {
             pushLog.warn("upsert:skip:LWW_remote_newer", id);
-            console.log("[push] upsert skip newer remote", { id });
           }
         } else if (op.kind === "delete") {
           const ref = doc(db, "users", uid, "meals", op.cloud_id);
@@ -208,7 +229,7 @@ export async function pushQueue(uid: string): Promise<void> {
           const remoteUpdated = new Date(
             remote?.updatedAt || "1970-01-01"
           ).getTime();
-          console.log("[push] delete compare", {
+          pushLog.log("delete:compare", {
             id: op.cloud_id,
             localUpdated,
             remoteUpdated,
@@ -222,16 +243,19 @@ export async function pushQueue(uid: string): Promise<void> {
               { merge: true }
             );
             pushLog.log("delete:ok", op.cloud_id);
-            console.log("[push] delete ok", { id: op.cloud_id });
             emit("meal:pushed", { uid, cloudId: op.cloud_id });
           } else {
             pushLog.warn("delete:skip:LWW_remote_newer", op.cloud_id);
-            console.log("[push] delete skip newer remote", { id: op.cloud_id });
           }
         } else if (op.kind === "upsert_mymeal") {
           const payload = toMealPayload(op.payload);
           const docId = payload?.mealId || payload?.cloudId;
-          if (!docId) throw new Error("mymeal/missing-id");
+          if (!docId) {
+            throw syncEngineError("sync/mymeal-missing-id", {
+              message: "Missing meal identifier for myMeal upsert op",
+              retryable: false,
+            });
+          }
           const ref = doc(db, "users", uid, "myMeals", docId);
           await setDoc(
             ref,
@@ -245,7 +269,6 @@ export async function pushQueue(uid: string): Promise<void> {
             { merge: true }
           );
           pushLog.log("mymeal:upsert", docId);
-          console.log("[push] mymeal upsert", { docId });
         } else if (op.kind === "delete_mymeal") {
           const ref = doc(db, "users", uid, "myMeals", op.cloud_id);
           await setDoc(
@@ -254,23 +277,23 @@ export async function pushQueue(uid: string): Promise<void> {
             { merge: true }
           );
           pushLog.log("mymeal:delete", op.cloud_id);
-          console.log("[push] mymeal delete", { id: op.cloud_id });
         } else {
           pushLog.warn("unknown_op", op.kind);
-          console.log("[push] unknown op", { id: op.id, kind: op.kind });
         }
 
         await markDone(op.id);
         processed++;
-        console.log("[push] markDone", { id: op.id });
+        pushLog.log("op:done", { id: op.id });
       } catch (e: unknown) {
-        pushLog.error("op:fail", op.id, getErrorMessage(e));
-        console.log("[push] op fail", {
+        const err = toSyncError(e);
+        pushLog.error("op:fail", {
           id: op.id,
-          err: getErrorMessage(e),
+          code: err.code,
+          message: err.message,
+          retryable: err.retryable,
         });
         await bumpAttempts(op.id);
-        console.log("[push] bumpAttempts", { id: op.id });
+        pushLog.log("op:bump_attempts", { id: op.id });
         emit("meal:failed", { uid, opId: op.id });
       }
     }
@@ -280,16 +303,14 @@ export async function pushQueue(uid: string): Promise<void> {
 
   pushLog.timeEnd("exec");
   pushLog.log("done", { processed });
-  console.log("[push] done", { processed });
 }
 
 export async function pullChanges(uid: string): Promise<void> {
   const pullLog = log.child("pull");
   const net = await NetInfo.fetch();
-  console.log("[pull] start", { uid, isConnected: net.isConnected });
+  pullLog.log("start", { uid, isConnected: net.isConnected });
   if (!net.isConnected) {
     pullLog.log("skip:offline");
-    console.log("[pull] skip offline");
     return;
   }
 
@@ -299,7 +320,7 @@ export async function pullChanges(uid: string): Promise<void> {
   let cursor: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal> | null = null;
   let maxUpdated = last;
   let total = 0;
-  console.log("[pull] since", { last });
+  pullLog.log("since", { last });
 
   const base = query(
     mealsCol(uid),
@@ -314,7 +335,7 @@ export async function pullChanges(uid: string): Promise<void> {
         : query(base, fsLimit(PULL_PAGE_SIZE))
     ) as FirebaseFirestoreTypes.Query<Meal>;
     const snap = await getDocs(pullQuery);
-    console.log("[pull] page", { size: snap.size });
+    pullLog.log("page", { size: snap.size });
     if (snap.empty) break;
 
     for (const d of snap.docs) {
@@ -329,15 +350,17 @@ export async function pullChanges(uid: string): Promise<void> {
         total++;
         if (meal.updatedAt && meal.updatedAt > maxUpdated)
           maxUpdated = meal.updatedAt;
-        console.log("[pull] upsert local ok", {
+        pullLog.log("local_upsert:ok", {
           id: d.id,
           updatedAt: meal.updatedAt,
         });
       } catch (e: unknown) {
-        pullLog.error("local_upsert:fail", d.id, getErrorMessage(e));
-        console.log("[pull] upsert local fail", {
+        const err = toSyncError(e);
+        pullLog.error("local_upsert:fail", {
           id: d.id,
-          err: getErrorMessage(e),
+          code: err.code,
+          message: err.message,
+          retryable: err.retryable,
         });
       }
     }
@@ -348,30 +371,27 @@ export async function pullChanges(uid: string): Promise<void> {
 
   if (maxUpdated > last) {
     await setLastPullTs(uid, maxUpdated);
-    console.log("[pull] set last ts", { maxUpdated });
+    pullLog.log("set_last_ts", { maxUpdated });
   }
   pullLog.timeEnd("exec");
   pullLog.log("done", { items: total, last_ts: maxUpdated });
-  console.log("[pull] done", { items: total, last_ts: maxUpdated });
 }
 
 export async function processImageUploads(uid: string): Promise<void> {
   const upLog = log.child("upload");
   const net = await NetInfo.fetch();
-  console.log("[upload] start", { uid, isConnected: net.isConnected });
+  upLog.log("start", { uid, isConnected: net.isConnected });
   if (!net.isConnected) {
     upLog.log("skip:offline");
-    console.log("[upload] skip offline");
     return;
   }
 
   upLog.time("exec");
   const pending = await getPendingUploads(uid);
-  console.log("[upload] pending", { count: pending.length });
+  upLog.log("pending", { count: pending.length });
   if (!pending.length) {
     upLog.timeEnd("exec");
     upLog.log("none");
-    console.log("[upload] none");
     return;
   }
 
@@ -381,7 +401,7 @@ export async function processImageUploads(uid: string): Promise<void> {
 
   for (const row of pending) {
     try {
-      console.log("[upload] process", {
+      upLog.log("process", {
         image_id: row.image_id,
         local_path: row.local_path,
       });
@@ -430,22 +450,22 @@ export async function processImageUploads(uid: string): Promise<void> {
 
         await enqueueUpsert(uid, normalized);
         upLog.log("meal_enqueued", m.cloud_id);
-        console.log("[upload] meal enqueued", { cloud_id: m.cloud_id });
       }
       ok++;
     } catch (e: unknown) {
       fail++;
-      upLog.error("upload:fail", row.image_id, getErrorMessage(e));
-      console.log("[upload] fail", {
+      const err = toSyncError(e);
+      upLog.error("upload:fail", {
         image_id: row.image_id,
-        err: getErrorMessage(e),
+        code: err.code,
+        message: err.message,
+        retryable: err.retryable,
       });
     }
   }
 
   upLog.timeEnd("exec");
   upLog.log("done", { ok, fail, pending: pending.length });
-  console.log("[upload] done", { ok, fail, pending: pending.length });
 }
 
 function safeParseJSON(s: unknown) {

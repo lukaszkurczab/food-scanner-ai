@@ -2,67 +2,13 @@ import Constants from "expo-constants";
 import type { Ingredient } from "@/types";
 import { canUseAiTodayFor, consumeAiUseFor } from "@/services/userService";
 import { v4 as uuidv4 } from "uuid";
+import { extractAndNormalizeIngredients } from "@/services/ai/ingredientParser";
+import { parseOpenAiChatResponse } from "@/services/ai/openaiChat.dto";
+import { debugScope } from "@/utils/debug";
 
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
 const TIMEOUT_MS = 30000;
-
-const toNumber = (v: unknown): number => {
-  if (typeof v === "number") return isFinite(v) ? v : 0;
-  if (typeof v === "string") {
-    const n = Number(v.replace(/[^0-9.+-]/g, ""));
-    return isFinite(n) ? n : 0;
-  }
-  return 0;
-};
-
-type IngredientCandidate = {
-  name?: unknown;
-  amount?: unknown;
-  protein?: unknown;
-  fat?: unknown;
-  carbs?: unknown;
-  kcal?: unknown;
-};
-
-type OpenAiChatCompletionResponse = {
-  choices?: Array<{
-    message?: {
-      content?: string;
-    };
-  }>;
-};
-
-const normalize = (x: unknown): Ingredient | null => {
-  if (!x || typeof x !== "object") return null;
-  const candidate = x as IngredientCandidate;
-  if (typeof candidate.name !== "string" || !candidate.name.trim()) return null;
-
-  const amount = toNumber(candidate.amount);
-  const protein = toNumber(candidate.protein);
-  const fat = toNumber(candidate.fat);
-  const carbs = toNumber(candidate.carbs);
-  const kcal = toNumber(candidate.kcal) || protein * 4 + carbs * 4 + fat * 9;
-  if (!isFinite(amount) || amount <= 0) return null;
-
-  return {
-    id: uuidv4(),
-    name: candidate.name.trim(),
-    amount,
-    protein,
-    fat,
-    carbs,
-    kcal,
-  };
-};
-
-function extractJsonArray(raw: string): string | null {
-  const start = raw.indexOf("[");
-  const end = raw.lastIndexOf("]");
-  if (start !== -1 && end !== -1 && end > start)
-    return raw.substring(start, end + 1);
-  const match = raw.match(/\[[\s\S]*\]/);
-  return match ? match[0] : null;
-}
+const log = debugScope("TextMealService");
 
 function unwrapIfWrapped(s: string): string {
   try {
@@ -88,7 +34,12 @@ export async function extractIngredientsFromText(
     if (!allowed) return null;
   }
 
-  console.log("Extracting ingredients from text:", description);
+  if (!OPENAI_API_KEY) {
+    log.warn("missing OPENAI_API_KEY, skipping text extraction");
+    return null;
+  }
+
+  log.log("extracting ingredients from text");
 
   const userPayload = unwrapIfWrapped(description);
 
@@ -129,32 +80,23 @@ export async function extractIngredientsFromText(
       signal: controller.signal,
     });
     clearTimeout(timeout);
-    if (!resp.ok) return null;
-    const json = (await resp.json()) as OpenAiChatCompletionResponse;
-    const raw: string = json?.choices?.[0]?.message?.content || "";
-    const arr = extractJsonArray(raw);
-    if (!arr) return null;
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(arr);
-    } catch {
-      const cleaned = arr
-        .replace(/,\s*]/g, "]")
-        .replace(/,\s*}/g, "}")
-        .replace(/\bNaN\b/gi, "0");
-      parsed = JSON.parse(cleaned);
+    if (!resp.ok) {
+      log.warn("OpenAI chat completion failed", { status: resp.status });
+      return null;
     }
-    if (!Array.isArray(parsed)) return null;
-
-    const normalized = parsed
-      .map(normalize)
-      .filter((x): x is Ingredient => !!x);
+    const json = await resp.json();
+    const { content } = parseOpenAiChatResponse(json);
+    if (!content) return null;
+    const normalized = extractAndNormalizeIngredients(content, {
+      idFactory: () => uuidv4(),
+    });
+    if (!normalized) return null;
     if (!isPremium && _uid)
       await consumeAiUseFor(_uid, isPremium, "text", limit);
     return normalized;
-  } catch {
+  } catch (error: unknown) {
     clearTimeout(timeout);
+    log.warn("text extraction request failed", error);
     return null;
   }
 }

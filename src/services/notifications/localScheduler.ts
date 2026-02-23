@@ -8,23 +8,32 @@ function key(localKey: string) {
   return KEY_PREFIX + localKey;
 }
 
+function parseStoredIds(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((id): id is string => typeof id === "string");
+  } catch {
+    return [];
+  }
+}
+
 async function storeId(localKey: string, id: string) {
   const raw = await AsyncStorage.getItem(key(localKey));
-  const arr: string[] = raw ? JSON.parse(raw) : [];
+  const arr = parseStoredIds(raw);
   arr.push(id);
   await AsyncStorage.setItem(key(localKey), JSON.stringify(arr));
 }
 
 export async function cancelAllForNotif(localKey: string) {
   const raw = await AsyncStorage.getItem(key(localKey));
-  if (raw) {
-    const ids: string[] = JSON.parse(raw);
-    for (const id of ids) {
-      try {
-        await Notifications.cancelScheduledNotificationAsync(id);
-      } catch {
-        // Ignore missing/already-cancelled local IDs.
-      }
+  const ids = parseStoredIds(raw);
+  for (const id of ids) {
+    try {
+      await Notifications.cancelScheduledNotificationAsync(id);
+    } catch {
+      // Ignore missing/already-cancelled local IDs.
     }
   }
   await AsyncStorage.setItem(key(localKey), JSON.stringify([]));

@@ -17,7 +17,7 @@ export type UserContextType = {
   userData: UserData | null;
   loadingUser: boolean;
   syncState: "synced" | "pending" | "conflict";
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<UserData | null>;
   getUserData: () => Promise<UserData | null>;
   updateUser: (data: Partial<UserData>) => Promise<void>;
   syncUserProfile: () => Promise<void>;
@@ -39,7 +39,7 @@ const UserContext = createContext<UserContextType>({
   loadingUser: true,
   syncState: "pending",
   getUserData: async () => null,
-  refreshUser: async () => {},
+  refreshUser: async () => null,
   updateUser: async () => {},
   syncUserProfile: async () => {},
   deleteUser: async () => {},
@@ -61,6 +61,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     loading: loadingUser,
     syncState,
     getUserProfile,
+    fetchUserFromCloud,
     updateUserProfile,
     syncUserProfile,
     deleteUser,
@@ -74,13 +75,15 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   } = useUser(uid);
 
   const refreshUser = useCallback(async () => {
-    await getUserProfile();
-  }, [getUserProfile]);
+    return fetchUserFromCloud();
+  }, [fetchUserFromCloud]);
 
   useEffect(() => {
     try {
       runMigrations();
-    } catch {}
+    } catch {
+      // Migration bootstrap is best-effort.
+    }
   }, []);
 
   useEffect(() => {
@@ -88,14 +91,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     (async () => {
       try {
         await migrateInitialMeals(uid);
-      } catch {}
+      } catch {
+        // Initial migration should not block app startup.
+      }
       startSyncLoop(uid);
     })();
   }, [uid]);
-
-  useEffect(() => {
-    syncUserProfile();
-  }, [uid, syncUserProfile]);
 
   useEffect(() => {
     const userLang = userData?.language;

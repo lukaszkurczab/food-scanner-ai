@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UserData } from "@/types";
 import { getApp } from "@react-native-firebase/app";
 import {
@@ -27,27 +27,70 @@ import * as FileSystem from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
+import NetInfo from "@react-native-community/netinfo";
+
+const isLocalUri = (value: string | null | undefined): value is string =>
+  !!value &&
+  (value.startsWith("file://") || value.startsWith("content://"));
+
+async function resolveExistingAvatarPath(
+  ...paths: Array<string | null | undefined>
+): Promise<string> {
+  for (const path of paths) {
+    if (!isLocalUri(path)) continue;
+    try {
+      const info = await FileSystem.getInfoAsync(path);
+      if (info.exists) return path;
+    } catch {
+      continue;
+    }
+  }
+  return "";
+}
 
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState<string>("en");
+  const avatarLocalPathRef = useRef<string>("");
+  const userDataRef = useRef<UserData | null>(null);
 
   useEffect(() => {
+    avatarLocalPathRef.current = userData?.avatarLocalPath || "";
+    userDataRef.current = userData;
+  }, [userData]);
+
+  useEffect(() => {
+    let cancelled = false;
     if (!uid) {
       setUserData(null);
       setLanguage("en");
       setLoading(false);
+      avatarLocalPathRef.current = "";
       return;
     }
+
+    const cacheKey = `user:profile:${uid}`;
+
     (async () => {
       try {
-        const cached = await AsyncStorage.getItem(`user:profile:${uid}`);
+        const cached = await AsyncStorage.getItem(cacheKey);
         if (cached) {
           const parsed = JSON.parse(cached) as UserData;
-          setUserData(parsed);
-          if (parsed?.language) setLanguage(parsed.language);
+          const avatarLocalPath = await resolveExistingAvatarPath(
+            parsed.avatarLocalPath
+          );
+          const normalized = { ...parsed, avatarLocalPath };
+          if (cancelled) return;
+          setUserData(normalized);
+          avatarLocalPathRef.current = avatarLocalPath;
+          if (normalized.language) setLanguage(normalized.language);
           setLoading(false);
+          if ((parsed.avatarLocalPath || "") !== avatarLocalPath) {
+            AsyncStorage.setItem(cacheKey, JSON.stringify(normalized)).catch(
+              () => {}
+            );
+          }
         }
       } catch {
         // Ignore malformed local cache and continue with remote snapshot.
@@ -59,26 +102,87 @@ export function useUser(uid: string) {
 
     const unsub = onSnapshot(userRef, (snap) => {
       const data = (snap.data() as UserData | undefined) ?? null;
-      setUserData((prev) =>
-        data ? { ...data, avatarLocalPath: prev?.avatarLocalPath } : null
-      );
-      if (data?.language) setLanguage(data.language);
-      setLoading(false);
-      if (data)
-        AsyncStorage.setItem(`user:profile:${uid}`, JSON.stringify(data)).catch(
+      if (!data) {
+        if (!cancelled) {
+          setUserData(null);
+          setLoading(false);
+        }
+        return;
+      }
+      void (async () => {
+        const avatarLocalPath = await resolveExistingAvatarPath(
+          avatarLocalPathRef.current,
+          data.avatarLocalPath
+        );
+        const normalized = { ...data, avatarLocalPath };
+        if (cancelled) return;
+        setUserData(normalized);
+        avatarLocalPathRef.current = avatarLocalPath;
+        if (normalized.language) setLanguage(normalized.language);
+        setLoading(false);
+        AsyncStorage.setItem(cacheKey, JSON.stringify(normalized)).catch(
           () => {}
         );
+      })();
     });
-    return unsub;
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, [uid]);
 
   const getUserProfile = useCallback(async () => {
+    return userData;
+  }, [userData]);
+
+  const fetchUserFromCloud = useCallback(async () => {
     if (!uid) return null;
+    const cacheKey = `user:profile:${uid}`;
+    const readCached = async () => {
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (!cached) return null;
+        const parsed = JSON.parse(cached) as UserData;
+        const avatarLocalPath = await resolveExistingAvatarPath(
+          avatarLocalPathRef.current,
+          parsed.avatarLocalPath
+        );
+        const normalized = { ...parsed, avatarLocalPath };
+        setUserData(normalized);
+        avatarLocalPathRef.current = avatarLocalPath;
+        userDataRef.current = normalized;
+        if (normalized.language) setLanguage(normalized.language);
+        return normalized;
+      } catch {
+        return null;
+      }
+    };
+
+    const net = await NetInfo.fetch();
+    if (!net.isConnected) {
+      return (await readCached()) || userDataRef.current;
+    }
+
     const app = getApp();
     const db = getFirestore(app);
-    const d = await getDoc(doc(db, "users", uid));
-    const data = d.data() as UserData | undefined;
-    return data ?? null;
+    try {
+      const snap = await getDoc(doc(db, "users", uid));
+      const data = (snap.data() as UserData | undefined) ?? null;
+      if (!data) return (await readCached()) || null;
+      const avatarLocalPath = await resolveExistingAvatarPath(
+        avatarLocalPathRef.current,
+        data.avatarLocalPath
+      );
+      const normalized = { ...data, avatarLocalPath };
+      setUserData(normalized);
+      avatarLocalPathRef.current = avatarLocalPath;
+      userDataRef.current = normalized;
+      if (normalized.language) setLanguage(normalized.language);
+      AsyncStorage.setItem(cacheKey, JSON.stringify(normalized)).catch(() => {});
+      return normalized;
+    } catch {
+      return (await readCached()) || userDataRef.current;
+    }
   }, [uid]);
 
   const updateUserProfile = useCallback(
@@ -87,21 +191,16 @@ export function useUser(uid: string) {
       const app = getApp();
       const db = getFirestore(app);
       const now = new Date().toISOString();
-      const payload = {
+      const payload: Partial<UserData> & { updatedAt: string } = {
         ...patch,
-        avatarLocalPath: patch.avatarLocalPath ?? "",
         updatedAt: now,
       };
+      if ("avatarLocalPath" in patch) {
+        payload.avatarLocalPath = patch.avatarLocalPath ?? "";
+      }
       assertNoUndefined(payload, "updateUserProfile payload");
-      await setDoc(
-        doc(db, "users", uid),
-        {
-          ...patch,
-          avatarLocalPath: patch.avatarLocalPath ?? "",
-          updatedAt: now,
-        },
-        { merge: true }
-      );
+      await setDoc(doc(db, "users", uid), payload, { merge: true });
+      setUserData((prev) => (prev ? { ...prev, ...payload } : prev));
       if (patch.language) setLanguage(patch.language);
 
       try {
@@ -137,12 +236,17 @@ export function useUser(uid: string) {
       setUserData((prev) =>
         prev ? { ...prev, avatarLocalPath: localPath } : prev
       );
+      const net = await NetInfo.fetch();
+      if (!net.isConnected) {
+        await updateUserProfile({ avatarLocalPath: localPath });
+        return;
+      }
       const app = getApp();
       const st = getStorage(app);
       const r = ref(st, `avatars/${uid}/avatar.jpg`);
       await putFile(r, localPath, { contentType: "image/jpeg" });
       const url = await getDownloadURL(r);
-      await updateUserProfile({ avatarUrl: url });
+      await updateUserProfile({ avatarUrl: url, avatarLocalPath: localPath });
       setUserData((prev) =>
         prev ? { ...prev, avatarUrl: url, avatarLocalPath: localPath } : prev
       );
@@ -150,21 +254,17 @@ export function useUser(uid: string) {
     [uid, updateUserProfile]
   );
 
-  const fetchUserFromCloud = useCallback(async () => {
-    return await getUserProfile();
-  }, [getUserProfile]);
-
   const sendUserToCloud = useCallback(async () => {
-    await getUserProfile();
-  }, [getUserProfile]);
+    await fetchUserFromCloud();
+  }, [fetchUserFromCloud]);
 
   const syncUserProfile = useCallback(async () => {
-    await getUserProfile();
-  }, [getUserProfile]);
+    await fetchUserFromCloud();
+  }, [fetchUserFromCloud]);
 
   const markUserAsSynced = useCallback(async () => {
-    await getUserProfile();
-  }, [getUserProfile]);
+    await fetchUserFromCloud();
+  }, [fetchUserFromCloud]);
 
   const changeUsername = useCallback(
     async (newUsername: string, password: string) => {
