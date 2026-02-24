@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
@@ -26,6 +26,7 @@ function getErrorCode(err: unknown): string | null {
 export default function CheckMailboxScreen({ navigation }: Props) {
   const { t } = useTranslation("resetPassword");
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const route = useRoute<CheckMailboxRoute>();
 
   const email =
@@ -101,17 +102,8 @@ export default function CheckMailboxScreen({ navigation }: Props) {
 
   return (
     <Layout showNavigation={false}>
-      <View style={[styles.center, { marginBottom: theme.spacing.xl }]}>
-        <View
-          style={{
-            backgroundColor: theme.card,
-            width: 128,
-            height: 128,
-            borderRadius: theme.rounded.md,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+      <View style={styles.illustrationWrap}>
+        <View style={styles.iconCard}>
           <MaterialIcons
             name="email"
             size={128}
@@ -120,46 +112,30 @@ export default function CheckMailboxScreen({ navigation }: Props) {
         </View>
       </View>
       <Text
-        style={{
-          fontSize: theme.typography.size.xxl,
-          fontFamily: theme.typography.fontFamily.bold,
-          color: theme.text,
-          textAlign: "center",
-          marginBottom: theme.spacing.md,
-        }}
+        style={styles.title}
         accessibilityRole="header"
       >
         {t("checkMailboxTitle")}
       </Text>
       <Text
-        style={{
-          fontSize: theme.typography.size.base,
-          color: theme.textSecondary,
-          textAlign: "center",
-          marginBottom: theme.spacing.md,
-        }}
+        style={styles.subtitle}
       >
         {t("checkMailboxDesc", {
           email: email.replace(/</g, "&lt;").replace(/>/g, "&gt;"),
         })}
       </Text>
       <Text
-        style={{
-          fontSize: theme.typography.size.base,
-          color: theme.textSecondary,
-          textAlign: "center",
-          marginBottom: theme.spacing.lg,
-        }}
+        style={styles.subtitleWide}
       >
         {t("successGeneric")}
       </Text>
       {error && (
-        <ErrorBox message={error} style={{ marginBottom: theme.spacing.md }} />
+        <ErrorBox message={error} style={styles.errorSpacing} />
       )}
       <PrimaryButton
         label={t("backToLogin")}
         onPress={() => navigation.navigate("Login")}
-        style={{ marginBottom: theme.spacing.md }}
+        style={styles.actionSpacing}
       />
       <SecondaryButton
         label={
@@ -171,11 +147,45 @@ export default function CheckMailboxScreen({ navigation }: Props) {
         disabled={sending || sendAgainDisabled || noInternet}
         loading={sending}
       />
-      <View style={{ height: theme.spacing.md }} />
+      <View style={styles.bottomSpacer} />
     </Layout>
   );
 }
 
-const styles = StyleSheet.create({
-  center: { alignItems: "center" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    illustrationWrap: {
+      alignItems: "center",
+      marginBottom: theme.spacing.xl,
+    },
+    iconCard: {
+      backgroundColor: theme.card,
+      width: 128,
+      height: 128,
+      borderRadius: theme.rounded.md,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    title: {
+      fontSize: theme.typography.size.xxl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    subtitle: {
+      fontSize: theme.typography.size.base,
+      color: theme.textSecondary,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    subtitleWide: {
+      fontSize: theme.typography.size.base,
+      color: theme.textSecondary,
+      textAlign: "center",
+      marginBottom: theme.spacing.lg,
+    },
+    errorSpacing: { marginBottom: theme.spacing.md },
+    actionSpacing: { marginBottom: theme.spacing.md },
+    bottomSpacer: { height: theme.spacing.md },
+  });

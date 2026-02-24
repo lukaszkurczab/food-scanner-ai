@@ -65,6 +65,7 @@ type Props = {
 
 export default function HomeScreen({ navigation }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation(["home", "common"]);
   const { userData } = useUserContext();
   const { uid } = useAuthContext();
@@ -127,7 +128,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <Layout>
-      <View style={[styles.screen, { gap: theme.spacing.lg }]}>
+      <View style={[styles.screen, styles.screenGap]}>
         <WeekStrip
           days={last7Days}
           selectedDate={selectedDate}
@@ -137,58 +138,18 @@ export default function HomeScreen({ navigation }: Props) {
         />
 
         {userData?.calorieTarget && userData.calorieTarget > 0 ? (
-          <View style={[styles.headerRow, { gap: theme.spacing.sm }]}>
+          <View style={[styles.headerRow, styles.headerRowGap]}>
             <TargetProgressBar current={totalCalories} target={goalCalories} />
             <StreakBadge value={streak} />
           </View>
         ) : (
-          <View
-            style={{
-              backgroundColor: theme.card,
-              padding: theme.spacing.lg,
-              borderRadius: theme.rounded.md,
-              shadowColor: theme.shadow,
-              shadowOpacity: 0.08,
-              shadowRadius: 12,
-              elevation: 2,
-              gap: theme.spacing.md,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  width: "100%",
-                }}
-              >
-                <Text
-                  style={[
-                    styles.goalLabel,
-                    {
-                      color: theme.textSecondary,
-                      fontFamily: theme.typography.fontFamily.medium,
-                    },
-                  ]}
-                >
+          <View style={styles.goalCard}>
+            <View style={styles.goalRow}>
+              <View style={styles.goalRowContent}>
+                <Text style={[styles.goalLabel, styles.goalLabelText]}>
                   {t("home:totalToday", "Total today")}
                 </Text>
-                <Text
-                  style={[
-                    styles.goalValue,
-                    {
-                      color: theme.text,
-                      fontFamily: theme.typography.fontFamily.semiBold,
-                    },
-                  ]}
-                >
+                <Text style={[styles.goalValue, styles.goalValueText]}>
                   {totalCalories} {t("common:kcal", "kcal")}
                 </Text>
               </View>
@@ -242,23 +203,55 @@ export default function HomeScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  headerRow: { flexDirection: "row", alignItems: "center" },
-  goalLabel: {
-    fontSize: 18,
-    marginBottom: 2,
-  },
-  goalValue: {
-    fontSize: 22,
-  },
-  goalStatusPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  goalStatusText: {
-    fontSize: 12,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    screen: { flex: 1 },
+    screenGap: { gap: theme.spacing.lg },
+    headerRow: { flexDirection: "row", alignItems: "center" },
+    headerRowGap: { gap: theme.spacing.sm },
+    goalCard: {
+      backgroundColor: theme.card,
+      padding: theme.spacing.lg,
+      borderRadius: theme.rounded.md,
+      shadowColor: theme.shadow,
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 2,
+      gap: theme.spacing.md,
+    },
+    goalRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    goalRowContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      width: "100%",
+    },
+    goalLabel: {
+      fontSize: theme.typography.size.md,
+      marginBottom: 2,
+    },
+    goalLabelText: {
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    goalValue: {
+      fontSize: theme.typography.size.lg,
+    },
+    goalValueText: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    goalStatusPill: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.rounded.full,
+      borderWidth: 1,
+    },
+    goalStatusText: {
+      fontSize: theme.typography.size.xs,
+    },
+  });

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -15,6 +16,7 @@ export default function BarcodeProductNotFoundScreen({
   params,
 }: MealAddScreenProps<"BarcodeProductNotFound">) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("meals");
 
   const code = params?.code;
@@ -42,23 +44,18 @@ export default function BarcodeProductNotFoundScreen({
 
   return (
     <Layout>
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <View
-          style={[
-            styles.iconWrapper,
-            { backgroundColor: theme.card, borderColor: theme.border },
-          ]}
-        >
+      <View style={styles.container}>
+        <View style={styles.iconWrapper}>
           <MaterialIcons
             name="qr-code-scanner"
             size={64}
             color={theme.textSecondary}
           />
         </View>
-        <Text style={[styles.title, { color: theme.text }]}>
+        <Text style={styles.title}>
           {t("barcode_not_found_title", "We couldn't find this product")}
         </Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+        <Text style={styles.subtitle}>
           {isLastAttempt
             ? t(
                 "barcode_not_found_last",
@@ -70,45 +67,67 @@ export default function BarcodeProductNotFoundScreen({
               })}
         </Text>
         {code ? (
-          <Text style={[styles.code, { color: theme.textSecondary }]}>
+          <Text style={styles.code}>
             {t("barcode_code_label", "Scanned code")}: {code}
           </Text>
         ) : null}
-        <View style={{ height: 24 }} />
+        <View style={styles.spacer} />
         {!isLastAttempt && (
           <PrimaryButton
             label={`${t("barcode_try_again", "Scan again")} (${attempt}/${MAX_ATTEMPTS})`}
             onPress={handleRetry}
-            style={{ marginTop: 0 }}
+            style={styles.buttonSpacingNone}
           />
         )}
         <SecondaryButton
           label={t("barcode_back_to_review", "Back to ingredients")}
           onPress={handleBack}
-          style={{ marginTop: 12 }}
+          style={styles.buttonSpacing}
         />
       </View>
     </Layout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  iconWrapper: {
-    width: 140,
-    height: 140,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-    borderWidth: 1,
-  },
-  title: { fontSize: 22, fontWeight: "bold", textAlign: "center" },
-  subtitle: { fontSize: 16, textAlign: "center", marginTop: 10 },
-  code: { fontSize: 14, textAlign: "center", marginTop: 10 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: theme.spacing.lg,
+      backgroundColor: theme.background,
+    },
+    iconWrapper: {
+      width: 140,
+      height: 140,
+      borderRadius: theme.rounded.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: theme.spacing.lg,
+      borderWidth: 1,
+      backgroundColor: theme.card,
+      borderColor: theme.border,
+    },
+    title: {
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.bold,
+      textAlign: "center",
+      color: theme.text,
+    },
+    subtitle: {
+      fontSize: theme.typography.size.base,
+      textAlign: "center",
+      marginTop: theme.spacing.sm,
+      color: theme.textSecondary,
+    },
+    code: {
+      fontSize: theme.typography.size.sm,
+      textAlign: "center",
+      marginTop: theme.spacing.sm,
+      color: theme.textSecondary,
+    },
+    spacer: { height: theme.spacing.lg },
+    buttonSpacing: { marginTop: theme.spacing.sm },
+    buttonSpacingNone: { marginTop: 0 },
+  });

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, StyleSheet, Pressable, Text, Linking } from "react-native";
 import { CameraView } from "expo-camera";
 import { useTheme } from "@/theme/useTheme";
@@ -15,6 +16,7 @@ export default function MealCameraScreen({
   params,
 }: MealAddScreenProps<"MealCamera">) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t: tCommon } = useTranslation("common");
   const { t: tMeals } = useTranslation("meals");
 
@@ -51,7 +53,7 @@ export default function MealCameraScreen({
   if (!permission) {
     return (
       <Layout>
-        <View style={{ flex: 1, backgroundColor: theme.background }} />
+        <View style={styles.flexBackground} />
       </Layout>
     );
   }
@@ -60,36 +62,12 @@ export default function MealCameraScreen({
     const blocked = permission.canAskAgain === false;
     return (
       <Layout>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 20,
-            backgroundColor: theme.background,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 18,
-              textAlign: "center",
-              marginBottom: 12,
-              color: theme.text,
-              fontWeight: "700",
-            }}
-          >
+        <View style={styles.permissionWrap}>
+          <Text style={styles.permissionTitle}>
             {tCommon("camera_permission_title")}
           </Text>
 
-          <Text
-            style={{
-              fontSize: 16,
-              textAlign: "center",
-              marginBottom: 20,
-              color: theme.text,
-              opacity: 0.9,
-            }}
-          >
+          <Text style={styles.permissionSubtitle}>
             {blocked
               ? tMeals("camera_permission_blocked_message")
               : tCommon("camera_permission_message")}
@@ -97,14 +75,9 @@ export default function MealCameraScreen({
 
           <Pressable
             onPress={blocked ? () => Linking.openSettings() : requestPermission}
-            style={{
-              paddingVertical: 12,
-              paddingHorizontal: 32,
-              borderRadius: 32,
-              backgroundColor: theme.card,
-            }}
+            style={styles.permissionButton}
           >
-            <Text style={{ fontWeight: "bold", fontSize: 16, color: theme.text }}>
+            <Text style={styles.permissionButtonLabel}>
               {tCommon("continue")}
             </Text>
           </Pressable>
@@ -153,11 +126,11 @@ export default function MealCameraScreen({
 
   return (
     <Layout>
-      <View style={{ flex: 1 }}>
-        <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <View style={styles.fill}>
+        <View style={styles.cameraWrap}>
           <CameraView
             ref={cameraRef}
-            style={{ flex: 1 }}
+            style={styles.camera}
             onCameraReady={() => setIsCameraReady(true)}
             onBarcodeScanned={onBarcodeScanned}
             barcodeScannerSettings={{
@@ -207,21 +180,15 @@ export default function MealCameraScreen({
             )}
             {showBarcodeOverlay && (
               <View pointerEvents="none" style={styles.barcodeOverlay}>
-                <View
-                  style={[styles.barcodeFrame, { borderColor: theme.onAccent }]}
-                />
+                <View style={styles.barcodeFrame} />
                 <View
                   style={[
                     styles.barcodeHintCard,
-                    {
-                      borderColor: theme.border,
-                      top: "50%",
-                      transform: [{ translateY: -144 }],
-                    },
+                    styles.barcodeHintPosition,
                   ]}
                 >
                   <Text
-                    style={[styles.barcodeHintText, { color: theme.onAccent }]}
+                    style={styles.barcodeHintText}
                   >
                     {scannedCode
                       ? tMeals("barcode_detected", {
@@ -249,12 +216,9 @@ export default function MealCameraScreen({
               <View style={styles.devRow}>
                 <Pressable
                   onPress={() => void onUseSample()}
-                  style={[
-                    styles.devBtn,
-                    { backgroundColor: theme.card, borderColor: theme.border },
-                  ]}
+                  style={styles.devBtn}
                 >
-                  <Text style={{ color: theme.text }}>
+                  <Text style={styles.devBtnText}>
                     {tMeals("dev.sample_meal")}
                   </Text>
                 </Pressable>
@@ -300,94 +264,144 @@ export default function MealCameraScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-  },
-  modeSwitch: {
-    position: "absolute",
-    bottom: 120,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 16,
-  },
-  modeBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 6,
-  },
-  shutterWrapper: {
-    position: "absolute",
-    bottom: 48,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  shutterButton: {
-    borderColor: "white",
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 4,
-    backgroundColor: "transparent",
-  },
-  devRow: {
-    position: "absolute",
-    top: 24,
-    left: 16,
-    right: 16,
-    flexDirection: "row",
-    gap: 10,
-    justifyContent: "flex-start",
-  },
-  devBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  barcodeOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  barcodeHintCard: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-  },
-  barcodeHintText: {
-    fontSize: 14,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  barcodeFrame: {
-    width: "78%",
-    aspectRatio: 1.6,
-    borderRadius: 18,
-    borderWidth: 2,
-    backgroundColor: "rgba(0,0,0,0.18)",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    fill: { flex: 1 },
+    flexBackground: { flex: 1, backgroundColor: theme.background },
+    cameraWrap: { flex: 1, backgroundColor: theme.background },
+    camera: { flex: 1 },
+    permissionWrap: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: theme.spacing.lg,
+      backgroundColor: theme.background,
+    },
+    permissionTitle: {
+      fontSize: theme.typography.size.md,
+      textAlign: "center",
+      marginBottom: theme.spacing.sm,
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    permissionSubtitle: {
+      fontSize: theme.typography.size.base,
+      textAlign: "center",
+      marginBottom: theme.spacing.lg,
+      color: theme.text,
+      opacity: 0.9,
+    },
+    permissionButton: {
+      paddingVertical: theme.spacing.sm + theme.spacing.xs,
+      paddingHorizontal: theme.spacing.lg + theme.spacing.xs,
+      borderRadius: theme.rounded.lg,
+      backgroundColor: theme.card,
+    },
+    permissionButtonLabel: {
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.base,
+      color: theme.text,
+    },
+    overlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      position: "absolute",
+      width: "100%",
+      height: "100%",
+    },
+    modeSwitch: {
+      position: "absolute",
+      bottom: 120,
+      left: 0,
+      right: 0,
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: theme.spacing.md,
+    },
+    modeBtn: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      borderWidth: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      marginHorizontal: theme.spacing.xs,
+    },
+    shutterWrapper: {
+      position: "absolute",
+      bottom: 48,
+      left: 0,
+      right: 0,
+      alignItems: "center",
+      justifyContent: "flex-end",
+    },
+    shutterButton: {
+      borderColor: "white",
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+      borderWidth: 4,
+      backgroundColor: "transparent",
+    },
+    devRow: {
+      position: "absolute",
+      top: theme.spacing.md,
+      left: theme.spacing.md,
+      right: theme.spacing.md,
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+      justifyContent: "flex-start",
+    },
+    devBtn: {
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.rounded.sm,
+      borderWidth: 1,
+      backgroundColor: theme.card,
+      borderColor: theme.border,
+    },
+    devBtnText: {
+      color: theme.text,
+      fontSize: theme.typography.size.sm,
+    },
+    barcodeOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    barcodeHintCard: {
+      position: "absolute",
+      left: theme.spacing.md,
+      right: theme.spacing.md,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: theme.spacing.sm,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      borderColor: theme.border,
+    },
+    barcodeHintPosition: {
+      top: "50%",
+      transform: [{ translateY: -144 }],
+    },
+    barcodeHintText: {
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+      textAlign: "center",
+      color: theme.onAccent,
+    },
+    barcodeFrame: {
+      width: "78%",
+      aspectRatio: 1.6,
+      borderRadius: 18,
+      borderWidth: 2,
+      backgroundColor: "rgba(0,0,0,0.18)",
+      borderColor: theme.onAccent,
+    },
+  });

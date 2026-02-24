@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -53,6 +53,7 @@ export default function ShareEditorPanel({
 }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["share", "common"]);
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const [isTextColorEditing, setIsTextColorEditing] = useState(false);
   const [isCardColorEditing, setIsCardColorEditing] = useState(false);
 
@@ -120,15 +121,10 @@ export default function ShareEditorPanel({
     (mode !== "card" || !isCardColorEditing);
 
   const panelBody = (
-    <View
-      style={[
-        styles.panel,
-        { backgroundColor: theme.card, borderColor: theme.border },
-      ]}
-    >
+    <View style={styles.panel}>
       {mode === "options" && (
         <View style={styles.section}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>
+          <Text style={styles.label}>
             {t("editor.elements", "Elements")}
           </Text>
 
@@ -159,9 +155,7 @@ export default function ShareEditorPanel({
                           : theme.textSecondary
                       }
                     />
-                    <Text
-                      style={{ marginLeft: 8, color: theme.text, fontSize: 18 }}
-                    >
+                    <Text style={styles.dropdownLabel}>
                       {item.label}
                     </Text>
                   </Pressable>
@@ -180,9 +174,7 @@ export default function ShareEditorPanel({
                     size={20}
                     color={active ? theme.accentSecondary : theme.textSecondary}
                   />
-                  <Text
-                    style={{ marginLeft: 8, color: theme.text, fontSize: 18 }}
-                  >
+                  <Text style={styles.dropdownLabel}>
                     {item.label}
                   </Text>
                 </Pressable>
@@ -212,7 +204,7 @@ export default function ShareEditorPanel({
 
       {mode === "background" && (
         <View style={styles.section}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>
+          <Text style={styles.label}>
             {t("editor.background_color")}
           </Text>
           <ColorPickerPanel
@@ -226,11 +218,9 @@ export default function ShareEditorPanel({
         <View style={styles.actions}>
           <Pressable
             onPress={onClose}
-            style={[styles.button, { backgroundColor: theme.accentSecondary }]}
+            style={styles.button}
           >
-            <Text style={{ color: theme.onAccent, fontSize: 14 }}>
-              {t("editor.done")}
-            </Text>
+            <Text style={styles.buttonText}>{t("editor.done")}</Text>
           </Pressable>
         </View>
       )}
@@ -264,30 +254,45 @@ export default function ShareEditorPanel({
           editorPanelRotation: rot,
         })
       }
-      style={{ zIndex: 60 }}
+      style={styles.dragWrap}
     >
       {panelBody}
     </DraggableItem>
   );
 }
 
-const styles = StyleSheet.create({
-  panel: {
-    minWidth: 260,
-    maxWidth: 340,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 16,
-    gap: 12,
-  },
-  section: { marginBottom: 12 },
-  label: { fontSize: 16 },
-  actions: { alignItems: "center", marginTop: 8 },
-  button: { paddingHorizontal: 24, paddingVertical: 8, borderRadius: 8 },
-  checklistContainer: { marginTop: 6 },
-  dropdownRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    panel: {
+      minWidth: 260,
+      maxWidth: 340,
+      borderWidth: 1,
+      borderRadius: theme.rounded.sm,
+      padding: theme.spacing.md,
+      gap: theme.spacing.sm,
+      backgroundColor: theme.card,
+      borderColor: theme.border,
+    },
+    section: { marginBottom: theme.spacing.sm },
+    label: { fontSize: theme.typography.size.base, color: theme.textSecondary },
+    actions: { alignItems: "center", marginTop: theme.spacing.sm },
+    button: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.rounded.sm,
+      backgroundColor: theme.accentSecondary,
+    },
+    buttonText: { color: theme.onAccent, fontSize: theme.typography.size.sm },
+    checklistContainer: { marginTop: theme.spacing.xs },
+    dropdownRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: theme.spacing.xs,
+    },
+    dropdownLabel: {
+      marginLeft: theme.spacing.sm,
+      color: theme.text,
+      fontSize: theme.typography.size.md,
+    },
+    dragWrap: { zIndex: 60 },
+  });

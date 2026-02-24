@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text, BackHandler } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
@@ -28,6 +28,7 @@ export default function SavedMealsCameraScreen({
   navigation: SavedMealsCameraNavigation;
 }) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -112,7 +113,7 @@ export default function SavedMealsCameraScreen({
   if (!permission) {
     return (
       <Layout>
-        <View style={{ flex: 1, backgroundColor: theme.background }} />
+        <View style={styles.flexBackground} />
       </Layout>
     );
   }
@@ -120,37 +121,15 @@ export default function SavedMealsCameraScreen({
   if (!permission.granted) {
     return (
       <Layout>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 20,
-            backgroundColor: theme.background,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 18,
-              textAlign: "center",
-              marginBottom: 20,
-              color: theme.text,
-            }}
-          >
+        <View style={styles.permissionWrap}>
+          <Text style={styles.permissionText}>
             {t("camera_permission_message")}
           </Text>
           <Pressable
             onPress={requestPermission}
-            style={{
-              paddingVertical: 12,
-              paddingHorizontal: 32,
-              borderRadius: 32,
-              backgroundColor: theme.card,
-            }}
+            style={styles.permissionButton}
           >
-            <Text
-              style={{ fontWeight: "bold", fontSize: 16, color: theme.text }}
-            >
+            <Text style={styles.permissionButtonLabel}>
               {t("continue")}
             </Text>
           </Pressable>
@@ -176,11 +155,11 @@ export default function SavedMealsCameraScreen({
 
   return (
     <Layout>
-      <View style={{ flex: 1 }}>
-        <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <View style={styles.fill}>
+        <View style={styles.cameraWrap}>
           <CameraView
             ref={cameraRef}
-            style={{ flex: 1 }}
+            style={styles.camera}
             onCameraReady={() => setIsCameraReady(true)}
           />
           <View style={StyleSheet.absoluteFill}>
@@ -202,12 +181,9 @@ export default function SavedMealsCameraScreen({
                     const uri = await getSampleMealUri();
                     setPhotoUri(uri);
                   }}
-                  style={[
-                    styles.devBtn,
-                    { backgroundColor: theme.card, borderColor: theme.border },
-                  ]}
+                  style={styles.devBtn}
                 >
-                  <Text style={{ color: theme.text }}>
+                  <Text style={styles.devBtnText}>
                     {t("dev.sample_meal", { ns: "meals" })}
                   </Text>
                 </Pressable>
@@ -220,44 +196,79 @@ export default function SavedMealsCameraScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-  },
-  shutterWrapper: {
-    position: "absolute",
-    bottom: 48,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  shutterButton: {
-    borderColor: "white",
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 4,
-    backgroundColor: "transparent",
-  },
-  devRow: {
-    position: "absolute",
-    top: 24,
-    left: 16,
-    right: 16,
-    flexDirection: "row",
-    gap: 10,
-    justifyContent: "flex-start",
-  },
-  devBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    fill: { flex: 1 },
+    flexBackground: { flex: 1, backgroundColor: theme.background },
+    permissionWrap: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: theme.spacing.lg,
+      backgroundColor: theme.background,
+    },
+    permissionText: {
+      fontSize: theme.typography.size.md,
+      textAlign: "center",
+      marginBottom: theme.spacing.lg,
+      color: theme.text,
+    },
+    permissionButton: {
+      paddingVertical: theme.spacing.sm + theme.spacing.xs,
+      paddingHorizontal: theme.spacing.lg + theme.spacing.xs,
+      borderRadius: theme.rounded.lg,
+      backgroundColor: theme.card,
+    },
+    permissionButtonLabel: {
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.base,
+      color: theme.text,
+    },
+    cameraWrap: { flex: 1, backgroundColor: theme.background },
+    camera: { flex: 1 },
+    overlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      position: "absolute",
+      width: "100%",
+      height: "100%",
+    },
+    shutterWrapper: {
+      position: "absolute",
+      bottom: 48,
+      left: 0,
+      right: 0,
+      alignItems: "center",
+      justifyContent: "flex-end",
+    },
+    shutterButton: {
+      borderColor: "white",
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+      borderWidth: 4,
+      backgroundColor: "transparent",
+    },
+    devRow: {
+      position: "absolute",
+      top: theme.spacing.md,
+      left: theme.spacing.md,
+      right: theme.spacing.md,
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+      justifyContent: "flex-start",
+    },
+    devBtn: {
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.rounded.sm,
+      borderWidth: 1,
+      backgroundColor: theme.card,
+      borderColor: theme.border,
+    },
+    devBtnText: {
+      color: theme.text,
+      fontSize: theme.typography.size.sm,
+    },
+  });

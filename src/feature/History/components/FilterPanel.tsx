@@ -50,6 +50,7 @@ export const FilterPanel: React.FC<{
   const theme = useTheme();
   const { t } = useTranslation(["history", "common"]);
   const { filters: ctxFilters, applyFilters, clearFilters } = useFilters(scope);
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const ALL_FILTERS: { key: FilterKey; label: string }[] = useMemo(
     () => [
@@ -153,17 +154,10 @@ export const FilterPanel: React.FC<{
           <Pressable
             key={k}
             onPress={() => removeChip(k)}
-            style={[
-              styles.chip,
-              {
-                backgroundColor: theme.card,
-                borderColor: theme.accentSecondary,
-                borderRadius: theme.rounded.full,
-              },
-            ]}
+            style={styles.chip}
           >
-            <Text style={{ color: theme.text }}>{meta.label}</Text>
-            <Text style={{ color: theme.accentSecondary, marginLeft: 8 }}>
+            <Text style={styles.chipLabel}>{meta.label}</Text>
+            <Text style={styles.chipIcon}>
               {t("symbols.times", { ns: "history" })}
             </Text>
           </Pressable>
@@ -175,49 +169,31 @@ export const FilterPanel: React.FC<{
   const hasActive = active.length > 0;
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: theme.background,
-      }}
-    >
+    <View style={styles.container}>
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          gap: theme.spacing.lg,
-        }}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
       >
         <View>
           <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: theme.spacing.md,
-            }}
+            style={styles.headerRow}
           >
-            <Text
-              style={{
-                color: theme.text,
-                fontWeight: "700",
-                fontSize: theme.typography.size.md,
-              }}
-            >
+            <Text style={styles.headerTitle}>
               {t("title", { ns: "history" })}
             </Text>
             <SecondaryButton
               label={t("addFilter", { ns: "history" })}
               onPress={() => setOpenPicker(true)}
-              style={{ paddingVertical: 8, maxWidth: 200 }}
+              style={styles.addFilterButton}
             />
           </View>
 
           {hasActive ? (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            <View style={styles.chipRow}>
               {summaryChips}
             </View>
           ) : (
-            <Text style={{ color: theme.textSecondary }}>
+            <Text style={styles.emptyText}>
               {t("noneSelected", { ns: "history" })}
             </Text>
           )}
@@ -273,12 +249,7 @@ export const FilterPanel: React.FC<{
       </ScrollView>
 
       <View
-        style={{
-          borderTopWidth: 1,
-          borderTopColor: theme.border,
-          padding: theme.spacing.md,
-          gap: theme.spacing.sm,
-        }}
+        style={styles.footer}
       >
         {hasActive ? (
           <>
@@ -307,38 +278,17 @@ export const FilterPanel: React.FC<{
       >
         <Pressable
           onPress={() => setOpenPicker(false)}
-          style={{
-            flex: 1,
-            backgroundColor: theme.shadow,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: theme.spacing.md,
-          }}
+          style={styles.modalBackdrop}
         >
           <Pressable
             onPress={() => {}}
-            style={{
-              width: "100%",
-              maxWidth: 560,
-              borderRadius: theme.rounded.lg,
-              backgroundColor: theme.card,
-              padding: theme.spacing.md,
-              borderWidth: 1,
-              borderColor: theme.border,
-              gap: theme.spacing.md,
-            }}
+            style={styles.modalCard}
           >
-            <Text
-              style={{
-                color: theme.text,
-                fontWeight: "700",
-                fontSize: theme.typography.size.md,
-              }}
-            >
+            <Text style={styles.modalTitle}>
               {t("actions.choose", { ns: "history" })}
             </Text>
 
-            <View style={{ gap: 10 }}>
+            <View style={styles.modalList}>
               {ALL_FILTERS.map(({ key, label }) => {
                 const selected = active.includes(key);
                 return (
@@ -357,14 +307,12 @@ export const FilterPanel: React.FC<{
                       },
                     ]}
                   >
-                    <Text style={{ color: theme.text }}>{label}</Text>
+                    <Text style={styles.rowItemLabel}>{label}</Text>
                     <Text
-                      style={{
-                        color: selected
-                          ? theme.accentSecondary
-                          : theme.textSecondary,
-                        fontWeight: "700",
-                      }}
+                      style={[
+                        styles.rowItemIcon,
+                        selected && styles.rowItemIconActive,
+                      ]}
                     >
                       {selected
                         ? t("symbols.check", { ns: "history" })
@@ -375,7 +323,7 @@ export const FilterPanel: React.FC<{
               })}
             </View>
 
-            <View style={{ gap: theme.spacing.sm }}>
+            <View style={styles.modalActions}>
               <PrimaryButton
                 label={t("actions.done", { ns: "history" })}
                 onPress={() => setOpenPicker(false)}
@@ -398,34 +346,13 @@ export const FilterPanel: React.FC<{
       >
         <Pressable
           onPress={() => setOpenCalendar(false)}
-          style={{
-            flex: 1,
-            backgroundColor: theme.shadow,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: theme.spacing.md,
-          }}
+          style={styles.modalBackdrop}
         >
           <Pressable
             onPress={() => {}}
-            style={{
-              width: "100%",
-              maxWidth: 560,
-              borderRadius: theme.rounded.lg,
-              backgroundColor: theme.card,
-              padding: theme.spacing.md,
-              borderWidth: 1,
-              borderColor: theme.border,
-              gap: theme.spacing.md,
-            }}
+            style={styles.modalCard}
           >
-            <Text
-              style={{
-                color: theme.text,
-                fontWeight: "700",
-                fontSize: theme.typography.size.md,
-              }}
-            >
+            <Text style={styles.modalTitle}>
               {t("actions.selectDateRange", { ns: "history" })}
             </Text>
 
@@ -439,7 +366,7 @@ export const FilterPanel: React.FC<{
               }
             />
 
-            <View style={{ gap: theme.spacing.sm }}>
+            <View style={styles.modalActions}>
               <PrimaryButton
                 label={t("actions.save", { ns: "history" })}
                 onPress={applyCalendar}
@@ -456,20 +383,80 @@ export const FilterPanel: React.FC<{
   );
 };
 
-const styles = StyleSheet.create({
-  chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  rowItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1.5,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.background },
+    scroll: { flex: 1 },
+    scrollContent: { gap: theme.spacing.lg },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: theme.spacing.md,
+    },
+    headerTitle: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.md,
+    },
+    addFilterButton: { paddingVertical: theme.spacing.sm, maxWidth: 200 },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm },
+    emptyText: { color: theme.textSecondary },
+    chip: {
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+      borderWidth: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.card,
+      borderColor: theme.accentSecondary,
+      borderRadius: theme.rounded.full,
+    },
+    chipLabel: { color: theme.text },
+    chipIcon: { color: theme.accentSecondary, marginLeft: theme.spacing.sm },
+    footer: {
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+      padding: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: theme.shadow,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: theme.spacing.md,
+    },
+    modalCard: {
+      width: "100%",
+      maxWidth: 560,
+      borderRadius: theme.rounded.lg,
+      backgroundColor: theme.card,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      gap: theme.spacing.md,
+    },
+    modalTitle: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.md,
+    },
+    modalList: { gap: theme.spacing.sm },
+    rowItem: {
+      paddingVertical: theme.spacing.sm + theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+      borderWidth: 1.5,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderRadius: theme.rounded.sm,
+    },
+    rowItemLabel: { color: theme.text },
+    rowItemIcon: {
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    rowItemIconActive: { color: theme.accentSecondary },
+    modalActions: { gap: theme.spacing.sm },
+  });

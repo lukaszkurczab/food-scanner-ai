@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -26,6 +26,7 @@ type LoginScreenProps = {
 export default function LoginScreen({ navigation }: LoginScreenProps) {
   const { t } = useTranslation(["login", "common"]);
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,17 +92,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       {displayCriticalError && <ErrorBox message={displayCriticalError} />}
 
       <View style={styles.centerColumn}>
-        <Text
-          style={{
-            color: theme.text,
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: theme.typography.size.xxl,
-            textAlign: "center",
-            marginBottom: theme.spacing.xxl,
-          }}
-        >
-          {t("common:app_title")}
-        </Text>
+        <Text style={styles.title}>{t("common:app_title")}</Text>
 
         <TextInput
           label={t("email")}
@@ -116,7 +107,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           editable={!loading}
           placeholder={t("enter_email")}
           accessibilityLabel={t("email")}
-          style={{ marginBottom: theme.spacing.xl }}
+          style={styles.fieldSpacing}
         />
 
         <TextInput
@@ -132,7 +123,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           editable={!loading}
           placeholder={t("enter_password")}
           accessibilityLabel={t("password")}
-          style={{ marginBottom: theme.spacing.xl }}
+          style={styles.fieldSpacing}
           icon={
             <Pressable onPress={() => setShowPassword((v) => !v)}>
               <Feather
@@ -150,25 +141,19 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           onPress={handleLogin}
           disabled={isLoginDisabled}
           loading={loading}
-          style={{ marginBottom: theme.spacing.xl }}
+          style={styles.fieldSpacing}
         />
 
         <LinkText
           onPress={() => navigation.navigate("ResetPassword")}
           disabled={loading}
-          style={{ alignSelf: "center", marginBottom: theme.spacing.xl }}
+          style={styles.centerLink}
         >
           {t("forgot_password")}
         </LinkText>
       </View>
       <View style={styles.rowCenter}>
-        <Text
-          style={{
-            color: theme.textSecondary,
-            fontSize: theme.typography.size.sm,
-            fontFamily: theme.typography.fontFamily.regular,
-          }}
-        >
+        <Text style={styles.footerText}>
           {t("dont_have_account")}{" "}
         </Text>
         <LinkText
@@ -182,8 +167,25 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  centerColumn: { flex: 1, justifyContent: "center" },
-  rowCenter: { flexDirection: "row", justifyContent: "center" },
-  selfCenter: { alignSelf: "center" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    centerColumn: { flex: 1, justifyContent: "center" },
+    rowCenter: { flexDirection: "row", justifyContent: "center" },
+    title: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.xxl,
+      textAlign: "center",
+      marginBottom: theme.spacing.xxl,
+    },
+    fieldSpacing: { marginBottom: theme.spacing.xl },
+    centerLink: {
+      alignSelf: "center",
+      marginBottom: theme.spacing.xl,
+    },
+    footerText: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+  });

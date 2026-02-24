@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { PrimaryButton, SecondaryButton, IconButton } from "@/components";
@@ -35,6 +36,7 @@ export default function Step5Summary({
   onBack,
 }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("onboarding");
 
   const preferences: string[] = parseArray(form.preferences);
@@ -178,25 +180,11 @@ export default function Step5Summary({
 
   return (
     <View>
-      <View style={{ marginBottom: theme.spacing.xl }}>
-        <Text
-          style={{
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: theme.typography.size.xxl,
-            color: theme.text,
-            textAlign: "center",
-            marginBottom: theme.spacing.md,
-          }}
-        >
+      <View style={styles.header}>
+        <Text style={styles.title}>
           {t("summary.title")}
         </Text>
-        <Text
-          style={{
-            color: theme.textSecondary,
-            fontSize: theme.typography.size.base,
-            textAlign: "center",
-          }}
-        >
+        <Text style={styles.subtitle}>
           {t("summary.desc")}
         </Text>
       </View>
@@ -204,75 +192,32 @@ export default function Step5Summary({
       {summary.map((section) => (
         <View
           key={section.title}
-          style={{
-            backgroundColor: theme.card,
-            borderRadius: theme.rounded.lg,
-            padding: theme.spacing.lg,
-            marginBottom: theme.spacing.lg,
-            shadowColor: theme.shadow,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 12,
-            elevation: 3,
-            borderWidth: 1,
-            borderColor: theme.border,
-          }}
+          style={styles.card}
         >
           <View style={styles.rowCenter}>
-            <Text
-              style={{
-                fontFamily: theme.typography.fontFamily.bold,
-                fontSize: theme.typography.size.lg,
-                color: theme.text,
-                flex: 1,
-              }}
-            >
+            <Text style={styles.sectionTitle}>
               {section.title}
             </Text>
             <IconButton
               icon={<MaterialIcons name="edit" size={22} />}
               onPress={() => goToStep(section.step)}
               accessibilityLabel={t("summary.edit")}
-              style={{
-                marginLeft: theme.spacing.sm,
-                backgroundColor: "transparent",
-                padding: 0,
-                minHeight: 0,
-                minWidth: 0,
-              }}
+              style={styles.editButton}
             />
           </View>
-          <View style={{ marginTop: theme.spacing.md }}>
+          <View style={styles.sectionBody}>
             {section.data.map((item, i) => (
               <View
                 key={item.label + i}
                 style={[
                   styles.rowBetween,
-                  {
-                    borderBottomWidth:
-                      i < section.data.length - 1
-                        ? StyleSheet.hairlineWidth
-                        : 0,
-                    borderBottomColor: theme.border,
-                  },
+                  i < section.data.length - 1 && styles.rowDivider,
                 ]}
               >
-                <Text
-                  style={{
-                    fontFamily: theme.typography.fontFamily.bold,
-                    color: theme.text,
-                    fontSize: theme.typography.size.base,
-                  }}
-                >
+                <Text style={styles.itemLabel}>
                   {item.label}
                 </Text>
-                <Text
-                  style={{
-                    color: theme.text,
-                    fontSize: theme.typography.size.base,
-                    fontFamily: theme.typography.fontFamily.regular,
-                  }}
-                >
+                <Text style={styles.itemValue}>
                   {item.value}
                 </Text>
               </View>
@@ -284,18 +229,74 @@ export default function Step5Summary({
       <PrimaryButton
         label={t("summary.save")}
         onPress={onFinish}
-        style={{ marginBottom: theme.spacing.md }}
+        style={styles.saveSpacing}
       />
       <SecondaryButton label={t("back")} onPress={onBack} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  rowCenter: { flexDirection: "row", alignItems: "center" },
-  rowBetween: {
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingVertical: 12,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    header: { marginBottom: theme.spacing.xl },
+    title: {
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.xxl,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    subtitle: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.base,
+      textAlign: "center",
+    },
+    card: {
+      backgroundColor: theme.card,
+      borderRadius: theme.rounded.lg,
+      padding: theme.spacing.lg,
+      marginBottom: theme.spacing.lg,
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    rowCenter: { flexDirection: "row", alignItems: "center" },
+    sectionTitle: {
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.lg,
+      color: theme.text,
+      flex: 1,
+    },
+    editButton: {
+      marginLeft: theme.spacing.sm,
+      backgroundColor: "transparent",
+      padding: 0,
+      minHeight: 0,
+      minWidth: 0,
+    },
+    sectionBody: { marginTop: theme.spacing.md },
+    rowBetween: {
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      paddingVertical: theme.spacing.sm,
+    },
+    rowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    itemLabel: {
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      fontSize: theme.typography.size.base,
+    },
+    itemValue: {
+      color: theme.text,
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    saveSpacing: { marginBottom: theme.spacing.md },
+  });

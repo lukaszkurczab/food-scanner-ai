@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { View, Animated, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
 export const TypingDots: React.FC = () => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
@@ -32,12 +33,7 @@ export const TypingDots: React.FC = () => {
   }, [dot1, dot2, dot3]);
 
   return (
-    <View
-      style={[
-        styles.wrap,
-        { backgroundColor: theme.card, shadowColor: theme.shadow },
-      ]}
-    >
+    <View style={styles.wrap}>
       {[dot1, dot2, dot3].map((v, i) => (
         <Animated.View
           key={i}
@@ -65,15 +61,22 @@ export const TypingDots: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  wrap: {
-    alignSelf: "flex-start",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    flexDirection: "row",
-    gap: 6,
-    elevation: 2,
-  },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    wrap: {
+      alignSelf: "flex-start",
+      borderRadius: theme.rounded.md,
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      paddingVertical: theme.spacing.sm,
+      flexDirection: "row",
+      gap: theme.spacing.xs + 2,
+      elevation: 2,
+      backgroundColor: theme.card,
+      shadowColor: theme.shadow,
+    },
+    dot: {
+      width: theme.spacing.xs + 2,
+      height: theme.spacing.xs + 2,
+      borderRadius: (theme.spacing.xs + 2) / 2,
+    },
+  });

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, StyleSheet, Text, ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -18,6 +18,7 @@ export const TopToast: React.FC<Props> = ({
   durationMs = 2200,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const y = useRef(new Animated.Value(-80)).current;
   const op = useRef(new Animated.Value(0)).current;
 
@@ -60,32 +61,34 @@ export const TopToast: React.FC<Props> = ({
     <Animated.View
       style={[
         styles.toast,
-        {
-          transform: [{ translateY: y }],
-          opacity: op,
-          backgroundColor: theme.overlay,
-          borderColor: theme.accentSecondary,
-        },
+        { transform: [{ translateY: y }], opacity: op },
         style,
       ]}
       accessibilityLiveRegion="polite"
     >
-      <Text style={[styles.text, { color: theme.text }]}>{message}</Text>
+      <Text style={styles.text}>{message}</Text>
     </Animated.View>
   );
 };
 
-const styles = StyleSheet.create({
-  toast: {
-    position: "absolute",
-    top: 10,
-    left: 12,
-    right: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    zIndex: 10,
-  },
-  text: { fontSize: 14, fontWeight: "600" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    toast: {
+      position: "absolute",
+      top: theme.spacing.sm,
+      left: theme.spacing.sm,
+      right: theme.spacing.sm,
+      borderRadius: theme.rounded.sm,
+      borderWidth: 1,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      zIndex: 10,
+      backgroundColor: theme.overlay,
+      borderColor: theme.accentSecondary,
+    },
+    text: {
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      color: theme.text,
+    },
+  });

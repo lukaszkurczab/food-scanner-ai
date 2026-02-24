@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -17,6 +18,7 @@ import { useMealDetailsScreenState } from "@/feature/History/hooks/useMealDetail
 export default function MealDetailsScreen() {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const state = useMealDetailsScreenState();
 
@@ -45,11 +47,6 @@ export default function MealDetailsScreen() {
                   hitSlop={8}
                   style={[
                     styles.fab,
-                    {
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      shadowColor: theme.shadow,
-                    },
                   ]}
                 >
                   <MaterialIcons name="ios-share" size={22} color={theme.text} />
@@ -58,19 +55,7 @@ export default function MealDetailsScreen() {
             ) : (
               <Pressable
                 onPress={state.handleAddPhoto}
-                style={[
-                  {
-                    width: "100%",
-                    height: 220,
-                    borderRadius: theme.rounded.lg,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderWidth: 2,
-                    borderColor: theme.border,
-                    backgroundColor: theme.card,
-                    gap: 6,
-                  },
-                ]}
+                style={styles.addPhoto}
                 accessibilityRole="button"
                 accessibilityLabel={t("add_photo", { ns: "meals" })}
               >
@@ -79,7 +64,7 @@ export default function MealDetailsScreen() {
                   size={44}
                   color={theme.textSecondary}
                 />
-                <Text style={{ color: theme.textSecondary, fontWeight: "600" }}>
+                <Text style={styles.addPhotoLabel}>
                   {t("add_photo", { ns: "meals" })}
                 </Text>
               </Pressable>
@@ -99,14 +84,7 @@ export default function MealDetailsScreen() {
 
         {!!state.draft.ingredients.length && (
           <Card variant="outlined" onPress={state.toggleIngredients}>
-            <Text
-              style={{
-                fontSize: theme.typography.size.md,
-                fontWeight: "500",
-                color: theme.text,
-                textAlign: "center",
-              }}
-            >
+            <Text style={styles.toggleText}>
               {state.showIngredients
                 ? t("hide_ingredients", { ns: "meals" })
                 : t("show_ingredients", { ns: "meals" })}
@@ -125,14 +103,14 @@ export default function MealDetailsScreen() {
             />
           ))}
 
-        <View style={{ marginTop: theme.spacing.lg }}>
+        <View style={styles.actionsWrap}>
           {!state.edit ? (
             <PrimaryButton
               label={t("edit_meal", { ns: "meals", defaultValue: "Edit meal" })}
               onPress={state.startEdit}
             />
           ) : (
-            <View style={{ gap: theme.spacing.sm }}>
+            <View style={styles.actionsStack}>
               <PrimaryButton
                 label={t("save_changes", { ns: "common" })}
                 onPress={state.handleSave}
@@ -200,21 +178,48 @@ export default function MealDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  imageWrap: { position: "relative" },
-  fab: {
-    position: "absolute",
-    right: 12,
-    bottom: 12,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    imageWrap: { position: "relative" },
+    fab: {
+      position: "absolute",
+      right: theme.spacing.sm,
+      bottom: theme.spacing.sm,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
+      backgroundColor: theme.background,
+      borderColor: theme.border,
+      shadowColor: theme.shadow,
+    },
+    addPhoto: {
+      width: "100%",
+      height: 220,
+      borderRadius: theme.rounded.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      borderColor: theme.border,
+      backgroundColor: theme.card,
+      gap: theme.spacing.xs,
+    },
+    addPhotoLabel: {
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    toggleText: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.medium,
+      color: theme.text,
+      textAlign: "center",
+    },
+    actionsWrap: { marginTop: theme.spacing.lg },
+    actionsStack: { gap: theme.spacing.sm },
+  });

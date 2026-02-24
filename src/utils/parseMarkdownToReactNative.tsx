@@ -1,10 +1,60 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { Text, View, StyleSheet } from "react-native";
 import type { useTheme } from "@/theme/useTheme";
 
 type Theme = ReturnType<typeof useTheme>;
 
+let cachedTheme: Theme | null = null;
+let cachedStyles: ReturnType<typeof makeStyles> | null = null;
+
+const makeStyles = (theme: Theme) => {
+  const tightSpacing = theme.spacing.xs / 2;
+  return StyleSheet.create({
+    headingH2: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.xs,
+    },
+    headingH1: {
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+      textAlign: "center",
+    },
+    bulletRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginBottom: tightSpacing,
+    },
+    baseText: {
+      color: theme.text,
+      fontSize: theme.typography.size.base,
+    },
+    bold: {
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    paragraph: {
+      color: theme.text,
+      fontSize: theme.typography.size.base,
+      marginBottom: tightSpacing,
+    },
+    spacer: { height: theme.spacing.sm },
+  });
+};
+
+const getStyles = (theme: Theme) => {
+  if (cachedTheme === theme && cachedStyles) return cachedStyles;
+  cachedTheme = theme;
+  cachedStyles = makeStyles(theme);
+  return cachedStyles;
+};
+
 export const parseMarkdownToReactNative = (text: string, theme: Theme) => {
+  const styles = getStyles(theme);
   const lines = text.split("\n");
   const elements: React.ReactNode[] = [];
   let key = 0;
@@ -14,13 +64,7 @@ export const parseMarkdownToReactNative = (text: string, theme: Theme) => {
       elements.push(
         <Text
           key={key++}
-          style={{
-            fontSize: theme.typography.size.md,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            marginTop: theme.spacing.md,
-            marginBottom: theme.spacing.xs,
-          }}
+          style={styles.headingH2}
         >
           {line.replace(/^##\s/, "")}
         </Text>
@@ -31,14 +75,7 @@ export const parseMarkdownToReactNative = (text: string, theme: Theme) => {
       elements.push(
         <Text
           key={key++}
-          style={{
-            fontSize: theme.typography.size.xl,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            marginTop: theme.spacing.md,
-            marginBottom: theme.spacing.md,
-            textAlign: "center",
-          }}
+          style={styles.headingH1}
         >
           {line.replace(/^#\s/, "")}
         </Text>
@@ -54,30 +91,11 @@ export const parseMarkdownToReactNative = (text: string, theme: Theme) => {
         const boldText = bold[1];
         const after = l.split("**")[2] || "";
         elements.push(
-          <View
-            key={key++}
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              marginBottom: 2,
-            }}
-          >
-            <Text
-              style={{
-                color: theme.text,
-                fontSize: theme.typography.size.base,
-              }}
-            >
-              •{" "}
-            </Text>
-            <Text
-              style={{
-                color: theme.text,
-                fontSize: theme.typography.size.base,
-              }}
-            >
+          <View key={key++} style={styles.bulletRow}>
+            <Text style={styles.baseText}>• </Text>
+            <Text style={styles.baseText}>
               {before}
-              <Text style={{ fontFamily: theme.typography.fontFamily.bold }}>
+              <Text style={styles.bold}>
                 {boldText}
               </Text>
               {after}
@@ -86,28 +104,9 @@ export const parseMarkdownToReactNative = (text: string, theme: Theme) => {
         );
       } else {
         elements.push(
-          <View
-            key={key++}
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              marginBottom: 2,
-            }}
-          >
-            <Text
-              style={{
-                color: theme.text,
-                fontSize: theme.typography.size.base,
-              }}
-            >
-              •{" "}
-            </Text>
-            <Text
-              style={{
-                color: theme.text,
-                fontSize: theme.typography.size.base,
-              }}
-            >
+          <View key={key++} style={styles.bulletRow}>
+            <Text style={styles.baseText}>• </Text>
+            <Text style={styles.baseText}>
               {l}
             </Text>
           </View>
@@ -121,16 +120,9 @@ export const parseMarkdownToReactNative = (text: string, theme: Theme) => {
         .split(/\*\*(.+?)\*\*/)
         .filter(Boolean);
       elements.push(
-        <Text
-          key={key++}
-          style={{
-            color: theme.text,
-            fontSize: theme.typography.size.base,
-            marginBottom: 2,
-          }}
-        >
+        <Text key={key++} style={styles.paragraph}>
           {before}
-          <Text style={{ fontFamily: theme.typography.fontFamily.bold }}>
+          <Text style={styles.bold}>
             {boldText}
           </Text>
           {after}
@@ -141,19 +133,12 @@ export const parseMarkdownToReactNative = (text: string, theme: Theme) => {
 
     if (line.trim().length > 0) {
       elements.push(
-        <Text
-          key={key++}
-          style={{
-            color: theme.text,
-            fontSize: theme.typography.size.base,
-            marginBottom: 2,
-          }}
-        >
+        <Text key={key++} style={styles.paragraph}>
           {line}
         </Text>
       );
     } else {
-      elements.push(<View key={key++} style={{ height: theme.spacing.sm }} />);
+      elements.push(<View key={key++} style={styles.spacer} />);
     }
   });
   return elements;

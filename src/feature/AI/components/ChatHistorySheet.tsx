@@ -38,6 +38,7 @@ export function ChatHistorySheet({
   onSelectThread,
 }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const [threads, setThreads] = useState<ChatThread[]>([]);
 
   const { t } = useTranslation("chat");
@@ -83,26 +84,21 @@ export function ChatHistorySheet({
 
   return (
     <Drawer open={open} onClose={onClose}>
-      <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          {t("label")}
-        </Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{t("label")}</Text>
 
         <Pressable
           onPress={createNewChat}
           style={({ pressed }) => [
             styles.newBtn,
             {
-              backgroundColor: theme.accentSecondary,
               opacity: pressed ? 0.9 : 1,
             },
           ]}
           accessibilityRole="button"
           accessibilityLabel="New chat"
         >
-          <Text style={[styles.newBtnText, { color: theme.onAccent }]}>
-            {t("new")}
-          </Text>
+          <Text style={styles.newBtnText}>{t("new")}</Text>
         </Pressable>
       </View>
 
@@ -121,62 +117,79 @@ export function ChatHistorySheet({
                 styles.item,
                 {
                   backgroundColor:
-                    activeThreadId === item.id ? theme.overlay : "transparent",
-                  borderColor: theme.border,
+                    activeThreadId === item.id
+                      ? theme.overlay
+                      : "transparent",
                   opacity: pressed ? 0.85 : 1,
                 },
               ]}
               accessibilityRole="button"
               accessibilityLabel={item.title || "Chat"}
             >
-              <Text
-                style={[styles.itemTitle, { color: theme.text }]}
-                numberOfLines={1}
-              >
+              <Text style={styles.itemTitle} numberOfLines={1}>
                 {item.title ?? "New chat"}
               </Text>
               {!!item.lastMessage && (
-                <Text
-                  style={[styles.itemSub, { color: theme.textSecondary }]}
-                  numberOfLines={1}
-                >
+                <Text style={styles.itemSub} numberOfLines={1}>
                   {item.lastMessage}
                 </Text>
               )}
             </Pressable>
           )}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={styles.listContent}
         />
       </View>
     </Drawer>
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 14,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    gap: 10,
-  },
-  headerTitle: { fontSize: 18, fontWeight: "800" },
-  newBtn: {
-    height: 40,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  newBtnText: { fontSize: 14, fontWeight: "800" },
-  listWrap: { flex: 1, padding: 10 },
-  item: {
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    marginBottom: 10,
-  },
-  itemTitle: { fontSize: 14, fontWeight: "700" },
-  itemSub: { marginTop: 4, fontSize: 12 },
-  sep: { height: 1, marginVertical: 8 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    header: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingTop: theme.spacing.md,
+      paddingBottom: theme.spacing.sm + theme.spacing.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+      gap: theme.spacing.sm,
+    },
+    headerTitle: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.extraBold,
+      color: theme.text,
+    },
+    newBtn: {
+      height: 40,
+      borderRadius: theme.rounded.sm,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.accentSecondary,
+    },
+    newBtnText: {
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.extraBold,
+      color: theme.onAccent,
+    },
+    listWrap: { flex: 1, padding: theme.spacing.sm },
+    item: {
+      borderRadius: theme.rounded.sm,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
+      borderWidth: 1,
+      marginBottom: theme.spacing.sm,
+      borderColor: theme.border,
+    },
+    itemTitle: {
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+    },
+    itemSub: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.size.xs,
+      color: theme.textSecondary,
+    },
+    listContent: {
+      paddingBottom: theme.spacing.lg,
+    },
+  });

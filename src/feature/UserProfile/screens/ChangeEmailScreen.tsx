@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -44,6 +44,7 @@ function getErrorCode(err: unknown): string | null {
 export default function ChangeEmailScreen({ navigation }: Props) {
   const { t } = useTranslation(["profile", "login"]);
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { changeEmail } = useUserContext();
 
   const [email, setEmail] = useState("");
@@ -113,24 +114,18 @@ export default function ChangeEmailScreen({ navigation }: Props) {
   return (
     <Layout>
       {criticalError && (
-        <ErrorBox message={criticalError} style={{ marginBottom: 12 }} />
+        <ErrorBox message={criticalError} style={styles.error} />
       )}
 
-      <View style={{ marginBottom: theme.spacing.lg }}>
+      <View style={styles.header}>
         <Text
-          style={{
-            fontSize: theme.typography.size.xxl,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            textAlign: "center",
-            marginBottom: theme.spacing.md,
-          }}
+          style={styles.title}
           accessibilityRole="header"
         >
           {t("changeEmail", { ns: "profile" })}
         </Text>
       </View>
-      <Text style={{ fontWeight: "bold", color: theme.text, marginBottom: 8 }}>
+      <Text style={styles.label}>
         {t("newEmail", { ns: "profile" })}
       </Text>
       <TextInput
@@ -146,10 +141,10 @@ export default function ChangeEmailScreen({ navigation }: Props) {
         keyboardType="email-address"
         error={touched.email ? errors.email : undefined}
         disabled={loading}
-        style={{ marginBottom: 16 }}
+        style={styles.input}
       />
 
-      <Text style={{ fontWeight: "bold", color: theme.text, marginBottom: 8 }}>
+      <Text style={styles.label}>
         {t("password", { ns: "profile" })}
       </Text>
       <TextInput
@@ -163,17 +158,10 @@ export default function ChangeEmailScreen({ navigation }: Props) {
         secureTextEntry
         error={touched.password ? errors.password : undefined}
         disabled={loading}
-        style={{ marginBottom: 32 }}
+        style={styles.inputLarge}
       />
 
-      <Text
-        style={{
-          color: theme.textSecondary,
-          textAlign: "center",
-          fontSize: theme.typography.size.sm,
-          marginBottom: theme.spacing.xl,
-        }}
-      >
+      <Text style={styles.note}>
         {t("emailChangeSecurityNote", {
           ns: "profile",
           defaultValue:
@@ -181,7 +169,7 @@ export default function ChangeEmailScreen({ navigation }: Props) {
         })}
       </Text>
 
-      <View style={styles.gap16}>
+      <View style={styles.actions}>
         <PrimaryButton
           label={t("confirm", { ns: "profile" })}
           onPress={onSubmit}
@@ -204,6 +192,30 @@ export default function ChangeEmailScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  gap16: { gap: 16 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    error: { marginBottom: theme.spacing.sm },
+    header: { marginBottom: theme.spacing.lg },
+    title: {
+      fontSize: theme.typography.size.xxl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    label: {
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      marginBottom: theme.spacing.xs,
+      fontSize: theme.typography.size.base,
+    },
+    input: { marginBottom: theme.spacing.md },
+    inputLarge: { marginBottom: theme.spacing.xl },
+    note: {
+      color: theme.textSecondary,
+      textAlign: "center",
+      fontSize: theme.typography.size.sm,
+      marginBottom: theme.spacing.xl,
+    },
+    actions: { gap: theme.spacing.md },
+  });

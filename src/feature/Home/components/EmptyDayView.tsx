@@ -1,4 +1,5 @@
-import { View, Text } from "react-native";
+import { useMemo } from "react";
+import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { SecondaryButton } from "@/components/SecondaryButton";
@@ -16,39 +17,18 @@ export default function EmptyDayView({
   onOpenHistory,
 }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("home");
   return (
-    <View
-      style={{
-        backgroundColor: theme.card,
-        padding: theme.spacing.lg,
-        borderRadius: theme.rounded.md,
-        alignItems: "center",
-        gap: theme.spacing.md,
-        shadowColor: theme.shadow,
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 2,
-      }}
-    >
-      <Text
-        style={{
-          color: theme.text,
-          fontSize: theme.typography.size.lg,
-          fontFamily: theme.typography.fontFamily.bold,
-        }}
-      >
+    <View style={styles.container}>
+      <Text style={styles.title}>
         {t("emptyDay.title")}
       </Text>
 
       {isToday ? (
         <>
           <Text
-            style={{
-              color: theme.textSecondary,
-              fontSize: theme.typography.size.md,
-              textAlign: "center",
-            }}
+            style={styles.subtitle}
           >
             {t("emptyDay.subtitle_today")}
           </Text>
@@ -72,3 +52,28 @@ export default function EmptyDayView({
     </View>
   );
 }
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: theme.card,
+      padding: theme.spacing.lg,
+      borderRadius: theme.rounded.md,
+      alignItems: "center",
+      gap: theme.spacing.md,
+      shadowColor: theme.shadow,
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 2,
+    },
+    title: {
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    subtitle: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.md,
+      textAlign: "center",
+    },
+  });

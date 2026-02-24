@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -39,6 +39,7 @@ export default function CardEditorPanel({
   onColorPickingChange,
 }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation(["share", "common"]);
   const [colorTarget, setColorTarget] = useState<ColorTarget | null>(null);
   const [tempColor, setTempColor] = useState<string | null>(null);
@@ -185,24 +186,24 @@ export default function CardEditorPanel({
     const value = tempColor || "#ffffff";
     return (
       <View style={styles.section}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
+        <Text style={styles.label}>
           {t("editor.card_color_picker", "Pick color")}
         </Text>
         <ColorPickerPanel value={value} onChange={setTempColor} />
         <View style={styles.colorActions}>
           <Pressable
             onPress={cancelColor}
-            style={[styles.button, { backgroundColor: theme.background }]}
+            style={[styles.button, styles.buttonSecondary]}
           >
-            <Text style={{ color: theme.text, fontSize: 14 }}>
+            <Text style={styles.buttonText}>
               {t("common:back", "Back")}
             </Text>
           </Pressable>
           <Pressable
             onPress={confirmColor}
-            style={[styles.button, { backgroundColor: theme.accentSecondary }]}
+            style={[styles.button, styles.buttonPrimary]}
           >
-            <Text style={{ color: theme.onAccent, fontSize: 14 }}>
+            <Text style={styles.buttonTextOnAccent}>
               {t("common:confirm", "Confirm")}
             </Text>
           </Pressable>
@@ -217,7 +218,7 @@ export default function CardEditorPanel({
   const renderTypeTab = () => (
     <>
       <View style={styles.section}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
+        <Text style={styles.label}>
           {t("editor.card_type", "Card style")}
         </Text>
         <Dropdown
@@ -231,7 +232,7 @@ export default function CardEditorPanel({
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
+        <Text style={styles.label}>
           {t("editor.card_content", "Content")}
         </Text>
         <Pressable
@@ -243,7 +244,7 @@ export default function CardEditorPanel({
             size={20}
             color={cardShowKcal ? theme.accentSecondary : theme.textSecondary}
           />
-          <Text style={[styles.toggleText, { color: theme.text }]}>
+          <Text style={styles.toggleText}>
             {t("editor.show_card_kcal", "Show calories")}
           </Text>
         </Pressable>
@@ -256,7 +257,7 @@ export default function CardEditorPanel({
             size={20}
             color={cardShowMacros ? theme.accentSecondary : theme.textSecondary}
           />
-          <Text style={[styles.toggleText, { color: theme.text }]}>
+          <Text style={styles.toggleText}>
             {t("editor.show_card_macros", "Show macros")}
           </Text>
         </Pressable>
@@ -266,7 +267,7 @@ export default function CardEditorPanel({
 
   const renderTextTab = () => (
     <View style={styles.section}>
-      <Text style={[styles.label, { color: theme.textSecondary }]}>
+      <Text style={styles.label}>
         {t("editor.card_text", "Text")}
       </Text>
 
@@ -274,7 +275,7 @@ export default function CardEditorPanel({
         style={styles.colorRow}
         onPress={() => openColorPicker("cardTextColor")}
       >
-        <Text style={{ color: theme.text, fontSize: 14 }}>
+        <Text style={styles.rowText}>
           {t("editor.text_color", "Text color")}
         </Text>
         <View
@@ -287,9 +288,7 @@ export default function CardEditorPanel({
         />
       </Pressable>
 
-      <Text
-        style={[styles.subLabel, { color: theme.textSecondary, marginTop: 8 }]}
-      >
+      <Text style={[styles.subLabel, styles.subLabelSpacing]}>
         {t("editor.font_family", "Font family")}
       </Text>
       <Dropdown
@@ -299,12 +298,13 @@ export default function CardEditorPanel({
           const o = opt as FontFamilyOption;
           return (
             <Text
-              style={{
-                fontFamily:
-                  o.previewFamily || theme.typography.fontFamily.regular,
-                fontSize: 14,
-                color: theme.text,
-              }}
+              style={[
+                styles.dropdownLabel,
+                {
+                  fontFamily:
+                    o.previewFamily || theme.typography.fontFamily.regular,
+                },
+              ]}
               numberOfLines={1}
             >
               {o.label}
@@ -317,9 +317,7 @@ export default function CardEditorPanel({
         }}
       />
 
-      <Text
-        style={[styles.subLabel, { color: theme.textSecondary, marginTop: 8 }]}
-      >
+      <Text style={[styles.subLabel, styles.subLabelSpacing]}>
         {t("editor.weight", "Weight")}
       </Text>
       <Dropdown
@@ -329,14 +327,15 @@ export default function CardEditorPanel({
           const o = opt as FontWeightOption;
           return (
             <Text
-              style={{
-                fontFamily:
-                  currentFamilyKey && o.value
-                    ? `${currentFamilyKey}-${o.value}`
-                    : theme.typography.fontFamily.regular,
-                fontSize: 14,
-                color: theme.text,
-              }}
+              style={[
+                styles.dropdownLabel,
+                {
+                  fontFamily:
+                    currentFamilyKey && o.value
+                      ? `${currentFamilyKey}-${o.value}`
+                      : theme.typography.fontFamily.regular,
+                },
+              ]}
               numberOfLines={1}
             >
               {o.label}
@@ -354,7 +353,7 @@ export default function CardEditorPanel({
   const renderColorsTab = () => (
     <>
       <View style={styles.section}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
+        <Text style={styles.label}>
           {t("editor.card_macro_colors", "Macro colors")}
         </Text>
 
@@ -362,7 +361,7 @@ export default function CardEditorPanel({
           style={styles.colorRow}
           onPress={() => openColorPicker("cardMacroProteinColor")}
         >
-          <Text style={{ color: theme.text, fontSize: 14 }}>
+          <Text style={styles.rowText}>
             {t("meals:protein", "Protein")}
           </Text>
           <View
@@ -380,7 +379,7 @@ export default function CardEditorPanel({
           style={styles.colorRow}
           onPress={() => openColorPicker("cardMacroCarbsColor")}
         >
-          <Text style={{ color: theme.text, fontSize: 14 }}>
+          <Text style={styles.rowText}>
             {t("meals:carbs", "Carbs")}
           </Text>
           <View
@@ -398,7 +397,7 @@ export default function CardEditorPanel({
           style={styles.colorRow}
           onPress={() => openColorPicker("cardMacroFatColor")}
         >
-          <Text style={{ color: theme.text, fontSize: 14 }}>
+          <Text style={styles.rowText}>
             {t("meals:fat", "Fat")}
           </Text>
           <View
@@ -414,14 +413,14 @@ export default function CardEditorPanel({
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
+        <Text style={styles.label}>
           {t("editor.card_background", "Card background")}
         </Text>
         <Pressable
           style={styles.colorRow}
           onPress={() => openColorPicker("cardBackgroundColor")}
         >
-          <Text style={{ color: theme.text, fontSize: 14 }}>
+          <Text style={styles.rowText}>
             {t("editor.card_background", "Background color")}
           </Text>
           <View
@@ -444,47 +443,34 @@ export default function CardEditorPanel({
         <Pressable
           style={[
             styles.tab,
-            tab === "type" && { backgroundColor: theme.accentSecondary },
+            tab === "type" && styles.tabActive,
           ]}
           onPress={() => setTab("type")}
         >
-          <Text
-            style={{
-              color: tab === "type" ? theme.onAccent : theme.textSecondary,
-              fontSize: 14,
-            }}
-          >
+          <Text style={[styles.tabLabel, tab === "type" && styles.tabLabelActive]}>
             {t("editor.tab_type", "Type")}
           </Text>
         </Pressable>
         <Pressable
           style={[
             styles.tab,
-            tab === "text" && { backgroundColor: theme.accentSecondary },
+            tab === "text" && styles.tabActive,
           ]}
           onPress={() => setTab("text")}
         >
-          <Text
-            style={{
-              color: tab === "text" ? theme.onAccent : theme.textSecondary,
-              fontSize: 14,
-            }}
-          >
+          <Text style={[styles.tabLabel, tab === "text" && styles.tabLabelActive]}>
             {t("editor.tab_text", "Text")}
           </Text>
         </Pressable>
         <Pressable
           style={[
             styles.tab,
-            tab === "colors" && { backgroundColor: theme.accentSecondary },
+            tab === "colors" && styles.tabActive,
           ]}
           onPress={() => setTab("colors")}
         >
           <Text
-            style={{
-              color: tab === "colors" ? theme.onAccent : theme.textSecondary,
-              fontSize: 14,
-            }}
+            style={[styles.tabLabel, tab === "colors" && styles.tabLabelActive]}
           >
             {t("editor.tab_colors", "Colors")}
           </Text>
@@ -498,54 +484,76 @@ export default function CardEditorPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  section: { marginBottom: 12 },
-  label: { fontSize: 16, marginBottom: 4 },
-  subLabel: { fontSize: 13 },
-  tabsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-    gap: 8,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 6,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  colorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-  },
-  colorPreview: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.5)",
-  },
-  colorActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-    marginTop: 16,
-  },
-  button: {
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-  toggleText: {
-    marginLeft: 8,
-    fontSize: 14,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    section: { marginBottom: theme.spacing.sm },
+    label: {
+      fontSize: theme.typography.size.base,
+      marginBottom: theme.spacing.xs,
+      color: theme.textSecondary,
+    },
+    subLabel: { fontSize: theme.typography.size.sm, color: theme.textSecondary },
+    subLabelSpacing: { marginTop: theme.spacing.sm },
+    tabsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.xs,
+      gap: theme.spacing.sm,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.rounded.full,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    tabActive: { backgroundColor: theme.accentSecondary },
+    tabLabel: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+    },
+    tabLabelActive: { color: theme.onAccent },
+    colorRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: theme.spacing.xs,
+    },
+    rowText: { color: theme.text, fontSize: theme.typography.size.sm },
+    colorPreview: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    colorActions: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.md,
+    },
+    button: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.rounded.sm,
+    },
+    buttonPrimary: { backgroundColor: theme.accentSecondary },
+    buttonSecondary: { backgroundColor: theme.background },
+    buttonText: { color: theme.text, fontSize: theme.typography.size.sm },
+    buttonTextOnAccent: {
+      color: theme.onAccent,
+      fontSize: theme.typography.size.sm,
+    },
+    toggleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: theme.spacing.xs,
+    },
+    toggleText: {
+      marginLeft: theme.spacing.sm,
+      fontSize: theme.typography.size.sm,
+      color: theme.text,
+    },
+    dropdownLabel: { color: theme.text, fontSize: theme.typography.size.sm },
+  });

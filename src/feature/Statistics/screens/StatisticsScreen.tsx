@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
@@ -27,6 +28,7 @@ type Props = {
 
 export default function StatisticsScreen({ navigation }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const net = useNetInfo();
   const { t } = useTranslation(["statistics", "common"]);
   const { userData } = useUserContext();
@@ -57,7 +59,7 @@ export default function StatisticsScreen({ navigation }: Props) {
           onChange={(key) => state.setActive(key as RangeKey)}
         />
         {state.active === "custom" && (
-          <View style={{ marginTop: 8 }}>
+          <View style={styles.customRange}>
             <DateInput
               range={state.customRange}
               onChange={state.setCustomRange}
@@ -68,22 +70,14 @@ export default function StatisticsScreen({ navigation }: Props) {
       </View>
 
       {!isPremium && accessWindowDays && state.isWindowLimited && (
-        <View
-          style={[
-            styles.banner,
-            {
-              backgroundColor: theme.overlay,
-              borderColor: theme.accentSecondary,
-            },
-          ]}
-        >
-          <Text style={{ color: theme.text, fontWeight: "700" }}>
+        <View style={styles.banner}>
+          <Text style={styles.bannerTitle}>
             {t(
               "statistics:limitedWindowTitle",
               "Dostęp do starszych danych wymaga Premium",
             )}
           </Text>
-          <Text style={{ color: theme.textSecondary, marginTop: 4 }}>
+          <Text style={styles.bannerText}>
             {t("statistics:limitedWindowDesc", {
               defaultValue: "Zakres został skrócony do ostatnich {{d}} dni.",
               d: accessWindowDays,
@@ -92,7 +86,7 @@ export default function StatisticsScreen({ navigation }: Props) {
           <PrimaryButton
             label={t("statistics:upgrade", "Odblokuj Premium")}
             onPress={() => navigation.navigate("Paywall")}
-            style={{ marginTop: 8, alignSelf: "flex-start" }}
+            style={styles.bannerCta}
           />
         </View>
       )}
@@ -100,33 +94,27 @@ export default function StatisticsScreen({ navigation }: Props) {
       {state.loadingMeals ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator color={theme.accent} />
-          <Text style={{ color: theme.textSecondary, marginTop: 8 }}>
+          <Text style={styles.loadingText}>
             {t("common:loading")}
           </Text>
         </View>
       ) : state.empty ? (
         <View style={styles.emptyBox}>
-          <Text style={[styles.emptyTitle, { color: theme.text }]}>
+          <Text style={styles.emptyTitle}>
             {t("statistics:empty.title")}
           </Text>
-          <Text
-            style={{
-              color: theme.textSecondary,
-              marginTop: 6,
-              textAlign: "center",
-            }}
-          >
+          <Text style={styles.emptySubtitle}>
             {t("statistics:empty.desc")}
           </Text>
           <PrimaryButton
             label={t("statistics:empty.cta")}
             onPress={() => navigation.navigate("MealAddMethod")}
-            style={{ marginTop: 14, alignSelf: "stretch" }}
+            style={styles.emptyCta}
           />
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingBottom: 28 }]}
+          contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
           <ProgressAveragesCard
@@ -169,34 +157,57 @@ export default function StatisticsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    paddingBottom: 48,
-  },
-  header: {
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  banner: {
-    margin: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderRadius: 12,
-  },
-  loadingBox: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyBox: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  emptyTitle: { fontWeight: "700", fontSize: 18, textAlign: "center" },
-  scroll: {
-    gap: 16,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      paddingBottom: 48,
+    },
+    header: {
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.sm,
+    },
+    customRange: { marginTop: theme.spacing.sm },
+    banner: {
+      margin: theme.spacing.sm,
+      padding: theme.spacing.sm,
+      borderWidth: 1,
+      borderRadius: theme.rounded.sm,
+      backgroundColor: theme.overlay,
+      borderColor: theme.accentSecondary,
+    },
+    bannerTitle: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    bannerText: { color: theme.textSecondary, marginTop: theme.spacing.xs },
+    bannerCta: { marginTop: theme.spacing.sm, alignSelf: "flex-start" },
+    loadingBox: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    loadingText: { color: theme.textSecondary, marginTop: theme.spacing.sm },
+    emptyBox: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: theme.spacing.sm,
+    },
+    emptyTitle: {
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.md,
+      textAlign: "center",
+      color: theme.text,
+    },
+    emptySubtitle: {
+      color: theme.textSecondary,
+      marginTop: theme.spacing.xs,
+      textAlign: "center",
+    },
+    emptyCta: { marginTop: theme.spacing.md, alignSelf: "stretch" },
+    scroll: {
+      gap: theme.spacing.md,
+      paddingBottom: 28,
+    },
+  });

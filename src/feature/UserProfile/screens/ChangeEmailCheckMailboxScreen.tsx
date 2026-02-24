@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
@@ -23,6 +23,7 @@ function getErrorCode(err: unknown): string | null {
 export default function ChangeEmailCheckMailboxScreen() {
   const { t } = useTranslation(["change_password", "common"]);
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const route = useRoute<ChangeEmailCheckMailboxRoute>();
 
   const email =
@@ -105,59 +106,34 @@ export default function ChangeEmailCheckMailboxScreen() {
 
   return (
     <Layout showNavigation={false}>
-      <View style={[styles.center, { marginBottom: theme.spacing.xl }]}>
-        <View
-          style={{
-            backgroundColor: theme.card,
-            width: 128,
-            height: 128,
-            borderRadius: theme.rounded.md,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+      <View style={styles.iconWrapper}>
+        <View style={styles.iconCard}>
           <MaterialIcons name="email" size={96} color={theme.accentSecondary} />
         </View>
       </View>
       <Text
-        style={{
-          fontSize: theme.typography.size.xxl,
-          fontFamily: theme.typography.fontFamily.bold,
-          color: theme.text,
-          textAlign: "center",
-          marginBottom: theme.spacing.md,
-        }}
+        style={styles.title}
         accessibilityRole="header"
       >
         {t("check_mailbox_title")}
       </Text>
       <Text
-        style={{
-          fontSize: theme.typography.size.base,
-          color: theme.textSecondary,
-          textAlign: "center",
-          marginBottom: theme.spacing.md,
-        }}
+        style={styles.body}
       >
         {t("check_mailbox_desc", { email })}
       </Text>
       <Text
-        style={{
-          fontSize: theme.typography.size.base,
-          color: theme.textSecondary,
-          textAlign: "center",
-          marginBottom: theme.spacing.lg,
-        }}
+        style={[styles.body, styles.bodySpacing]}
       >
         {t("check_mailbox_desc2")}
       </Text>
       {error && (
-        <ErrorBox message={error} style={{ marginBottom: theme.spacing.md }} />
+        <ErrorBox message={error} style={styles.error} />
       )}
       <PrimaryButton
         label={t("back_to_login")}
         onPress={handleLogout}
-        style={{ marginBottom: theme.spacing.md }}
+        style={styles.primaryButton}
       />
       <SecondaryButton
         label={
@@ -169,11 +145,38 @@ export default function ChangeEmailCheckMailboxScreen() {
         disabled={sending || sendAgainDisabled || noInternet}
         loading={sending}
       />
-      <View style={{ height: theme.spacing.md }} />
+      <View style={styles.spacer} />
     </Layout>
   );
 }
 
-const styles = StyleSheet.create({
-  center: { alignItems: "center" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    center: { alignItems: "center" },
+    iconWrapper: { alignItems: "center", marginBottom: theme.spacing.xl },
+    iconCard: {
+      backgroundColor: theme.card,
+      width: 128,
+      height: 128,
+      borderRadius: theme.rounded.md,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    title: {
+      fontSize: theme.typography.size.xxl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    body: {
+      fontSize: theme.typography.size.base,
+      color: theme.textSecondary,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    bodySpacing: { marginBottom: theme.spacing.lg },
+    error: { marginBottom: theme.spacing.md },
+    primaryButton: { marginBottom: theme.spacing.md },
+    spacer: { height: theme.spacing.md },
+  });

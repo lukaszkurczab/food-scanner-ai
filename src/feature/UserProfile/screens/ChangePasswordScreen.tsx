@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { View, Text, Keyboard, TouchableOpacity, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
@@ -29,6 +29,7 @@ function getErrorCode(err: unknown): string | null {
 export default function ChangePasswordScreen({ navigation }: Props) {
   const { t } = useTranslation(["profile", "common"]);
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { changePassword } = useUserContext();
 
   const [oldPassword, setOldPassword] = useState("");
@@ -103,13 +104,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
     <Layout showNavigation={false}>
       <View style={styles.centerBoth}>
         <Text
-          style={{
-            fontSize: theme.typography.size.xl,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            marginBottom: theme.spacing.xl,
-            textAlign: "center",
-          }}
+          style={styles.title}
         >
           {t("profile:change_password")}
         </Text>
@@ -134,7 +129,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
           }
           icon={renderEyeIcon(showOld, () => setShowOld((v) => !v))}
           iconPosition="right"
-          style={{ marginBottom: theme.spacing.lg }}
+          style={styles.input}
         />
 
         <TextInput
@@ -154,7 +149,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
           }
           icon={renderEyeIcon(showNew, () => setShowNew((v) => !v))}
           iconPosition="right"
-          style={{ marginBottom: theme.spacing.lg }}
+          style={styles.input}
         />
 
         <TextInput
@@ -174,7 +169,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
           }
           icon={renderEyeIcon(showConfirm, () => setShowConfirm((v) => !v))}
           iconPosition="right"
-          style={{ marginBottom: theme.spacing.xl }}
+          style={styles.inputLarge}
         />
 
         <PrimaryButton
@@ -192,13 +187,24 @@ export default function ChangePasswordScreen({ navigation }: Props) {
         <SecondaryButton
           label={t("common:cancel")}
           onPress={() => navigation.goBack()}
-          style={{ marginTop: theme.spacing.md }}
+          style={styles.cancelButton}
         />
       </View>
     </Layout>
   );
 }
 
-const styles = StyleSheet.create({
-  centerBoth: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    centerBoth: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
+    title: {
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      marginBottom: theme.spacing.xl,
+      textAlign: "center",
+    },
+    input: { marginBottom: theme.spacing.lg },
+    inputLarge: { marginBottom: theme.spacing.xl },
+    cancelButton: { marginTop: theme.spacing.md },
+  });

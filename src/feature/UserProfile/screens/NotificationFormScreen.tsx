@@ -32,6 +32,7 @@ type NotificationFormRoute = RouteProp<RootStackParamList, "NotificationForm">;
 
 export default function NotificationFormScreen() {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t, i18n } = useTranslation("notifications");
   const locale = i18n.language || undefined;
   const { uid } = useAuthContext();
@@ -105,60 +106,28 @@ export default function NotificationFormScreen() {
 
   return (
     <Layout>
-      <ScrollView contentContainerStyle={{ gap: theme.spacing.lg }}>
-        <View style={{ gap: 8 }}>
-          <Text
-            style={{
-              color: theme.text,
-              fontFamily: theme.typography.fontFamily.medium,
-            }}
-          >
-            {t("form.name")}
-          </Text>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.label}>{t("form.name")}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
             placeholder={notifId ? t("form.edit") : t("form.create")}
             placeholderTextColor={theme.textSecondary}
-            style={{
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: theme.rounded.md,
-              padding: theme.spacing.md,
-              color: theme.text,
-            }}
+            style={styles.input}
           />
         </View>
 
-        <View style={{ gap: 8 }}>
-          <Text
-            style={{
-              color: theme.text,
-              fontFamily: theme.typography.fontFamily.medium,
-            }}
-          >
-            {t("form.type")}
-          </Text>
-          <View style={{ gap: 8 }}>
+        <View style={styles.section}>
+          <Text style={styles.label}>{t("form.type")}</Text>
+          <View style={styles.section}>
             {types.map((opt) => {
               const active = type === opt;
               return (
                 <Text
                   key={opt}
                   onPress={() => setType(opt)}
-                  style={{
-                    flex: 1,
-                    textAlign: "center",
-                    paddingVertical: theme.spacing.md,
-                    borderWidth: 1,
-                    borderColor: active ? theme.accentSecondary : theme.border,
-                    backgroundColor: active
-                      ? theme.accentSecondary
-                      : theme.card,
-                    color: active ? theme.onAccent : theme.text,
-                    borderRadius: theme.rounded.md,
-                    fontFamily: theme.typography.fontFamily.medium,
-                  }}
+                  style={[styles.option, active && styles.optionActive]}
                 >
                   {t(`type.${opt}`)}
                 </Text>
@@ -167,25 +136,12 @@ export default function NotificationFormScreen() {
           </View>
         </View>
 
-        <View style={{ gap: 8 }}>
-          <Text
-            style={{
-              color: theme.text,
-              fontFamily: theme.typography.fontFamily.medium,
-            }}
-          >
-            {t("form.time")}
-          </Text>
+        <View style={styles.section}>
+          <Text style={styles.label}>{t("form.time")}</Text>
           <Pressable onPress={openTimePicker}>
             <Card variant="outlined">
-              <View style={[styles.rowBetween, { gap: theme.spacing.sm }]}>
-                <Text
-                  style={{
-                    fontSize: theme.typography.size.lg,
-                    color: theme.text,
-                    fontWeight: "700",
-                  }}
-                >
+              <View style={styles.rowBetween}>
+                <Text style={styles.timeText}>
                   {fmtTime.format(
                     new Date(new Date().setHours(time.hour, time.minute, 0, 0)),
                   )}
@@ -204,7 +160,7 @@ export default function NotificationFormScreen() {
             onSecondaryAction={closeTimePicker}
             onPrimaryAction={confirmTime}
           >
-            <View style={{ paddingTop: theme.spacing.sm }}>
+            <View style={styles.modalContent}>
               {prefers12h ? (
                 <Clock12h value={tmp} onChange={setTmp} />
               ) : (
@@ -214,28 +170,14 @@ export default function NotificationFormScreen() {
           </Modal>
         </View>
 
-        <View style={{ gap: 8 }}>
-          <Text
-            style={{
-              color: theme.text,
-              fontFamily: theme.typography.fontFamily.medium,
-            }}
-          >
-            {t("form.days")}
-          </Text>
+        <View style={styles.section}>
+          <Text style={styles.label}>{t("form.days")}</Text>
           <WeekdaySelector value={days} onChange={setDays} />
         </View>
 
         {type === "meal_reminder" ? (
-          <View style={{ gap: 8 }}>
-            <Text
-              style={{
-                color: theme.text,
-                fontFamily: theme.typography.fontFamily.medium,
-              }}
-            >
-              {t("form.mealKind", "Meal kind")}
-            </Text>
+          <View style={styles.section}>
+            <Text style={styles.label}>{t("form.mealKind", "Meal kind")}</Text>
             <Dropdown
               value={mealKind}
               options={mealOptions}
@@ -244,31 +186,18 @@ export default function NotificationFormScreen() {
           </View>
         ) : null}
 
-        <View style={{ gap: 8 }}>
-          <Text
-            style={{
-              color: theme.text,
-              fontFamily: theme.typography.fontFamily.medium,
-            }}
-          >
-            {t("form.textOverride")}
-          </Text>
+        <View style={styles.section}>
+          <Text style={styles.label}>{t("form.textOverride")}</Text>
           <TextInput
             value={text}
             onChangeText={setText}
             placeholder=""
             placeholderTextColor={theme.textSecondary}
-            style={{
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: theme.rounded.md,
-              padding: theme.spacing.md,
-              color: theme.text,
-            }}
+            style={styles.input}
           />
         </View>
 
-        <View style={[styles.row, { gap: 12 }]}>
+        <View style={styles.actions}>
           <PrimaryButton label={t("form.save")} onPress={onSave} />
           {notifId ? (
             <SecondaryButton label={t("form.delete")} onPress={onDelete} />
@@ -279,11 +208,48 @@ export default function NotificationFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row" },
-  rowBetween: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    content: { gap: theme.spacing.lg },
+    section: { gap: theme.spacing.sm },
+    label: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: theme.rounded.md,
+      padding: theme.spacing.md,
+      color: theme.text,
+    },
+    option: {
+      flex: 1,
+      textAlign: "center",
+      paddingVertical: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.card,
+      color: theme.text,
+      borderRadius: theme.rounded.md,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    optionActive: {
+      borderColor: theme.accentSecondary,
+      backgroundColor: theme.accentSecondary,
+      color: theme.onAccent,
+    },
+    rowBetween: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    timeText: {
+      fontSize: theme.typography.size.lg,
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    modalContent: { paddingTop: theme.spacing.sm },
+    actions: { flexDirection: "row", gap: theme.spacing.md },
+  });

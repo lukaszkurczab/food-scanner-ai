@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import {
   MealBox,
@@ -30,6 +30,7 @@ export default function ResultScreen({
   flow,
 }: MealAddScreenProps<"Result">) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation(["meals", "common"]);
   const { uid } = useAuthContext();
   const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =
@@ -149,11 +150,6 @@ export default function ResultScreen({
             hitSlop={8}
             style={[
               styles.fab,
-              {
-                backgroundColor: theme.background,
-                borderColor: theme.border,
-                shadowColor: theme.shadow,
-              },
             ]}
           >
             <MaterialIcons name="ios-share" size={22} color={theme.text} />
@@ -181,14 +177,7 @@ export default function ResultScreen({
         variant="outlined"
         onPress={() => !saving && setShowIngredients(!showIngredients)}
       >
-        <Text
-          style={{
-            fontSize: theme.typography.size.md,
-            fontWeight: "500",
-            color: theme.text,
-            textAlign: "center",
-          }}
-        >
+        <Text style={styles.toggleText}>
           {showIngredients
             ? t("hide_ingredients", { ns: "meals" })
             : t("show_ingredients", { ns: "meals" })}
@@ -218,10 +207,10 @@ export default function ResultScreen({
         <Checkbox
           checked={saveToMyMeals}
           onChange={!saving ? setSaveToMyMeals : () => {}}
-          style={{ marginVertical: theme.spacing.md }}
+          style={styles.checkboxSpacing}
           disabled={saving}
         />
-        <Text style={{ color: theme.text }}>
+        <Text style={styles.checkboxLabel}>
           {isFromSaved
             ? t("update_in_my_meals", {
                 ns: "meals",
@@ -234,7 +223,7 @@ export default function ResultScreen({
       <View
         style={[
           styles.actions,
-          { gap: theme.spacing.md, marginTop: theme.spacing.md },
+          styles.actionsSpacing,
         ]}
       >
         <PrimaryButton
@@ -266,31 +255,44 @@ export default function ResultScreen({
 
 const IMAGE_SIZE = 220;
 
-const styles = StyleSheet.create({
-  imageWrap: {
-    position: "relative",
-  },
-  image: {
-    width: "100%",
-    height: IMAGE_SIZE,
-    borderRadius: 32,
-    backgroundColor: "#B2C0C9",
-  },
-  fab: {
-    position: "absolute",
-    right: 12,
-    bottom: 12,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  rowCenter: { flexDirection: "row", alignItems: "center" },
-  actions: { justifyContent: "space-between" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    imageWrap: {
+      position: "relative",
+    },
+    image: {
+      width: "100%",
+      height: IMAGE_SIZE,
+      borderRadius: theme.rounded.lg,
+      backgroundColor: theme.border,
+    },
+    fab: {
+      position: "absolute",
+      right: theme.spacing.sm,
+      bottom: theme.spacing.sm,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
+      backgroundColor: theme.background,
+      borderColor: theme.border,
+      shadowColor: theme.shadow,
+    },
+    toggleText: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.medium,
+      color: theme.text,
+      textAlign: "center",
+    },
+    rowCenter: { flexDirection: "row", alignItems: "center" },
+    checkboxSpacing: { marginVertical: theme.spacing.md },
+    checkboxLabel: { color: theme.text },
+    actions: { justifyContent: "space-between" },
+    actionsSpacing: { gap: theme.spacing.md, marginTop: theme.spacing.md },
+  });

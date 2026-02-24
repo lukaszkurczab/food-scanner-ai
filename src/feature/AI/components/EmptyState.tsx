@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import {
   View,
   Text,
@@ -41,19 +41,11 @@ export const EmptyState = memo(function EmptyState({
   style,
 }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   return (
     <View style={[styles.root, style]}>
-      <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: theme.overlay,
-            borderColor: theme.accentSecondary,
-            shadowColor: theme.shadow,
-          },
-        ]}
-      >
+      <View style={styles.card}>
         <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
 
         {!!subtitle && (
@@ -72,8 +64,6 @@ export const EmptyState = memo(function EmptyState({
                 style={({ pressed }) => [
                   styles.chip,
                   {
-                    backgroundColor: theme.background,
-                    borderColor: theme.border,
                     opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
                   },
                 ]}
@@ -95,7 +85,6 @@ export const EmptyState = memo(function EmptyState({
             style={({ pressed }) => [
               styles.cta,
               {
-                backgroundColor: theme.accentSecondary,
                 opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
               },
             ]}
@@ -118,62 +107,74 @@ export const EmptyState = memo(function EmptyState({
   );
 });
 
-const styles = StyleSheet.create({
-  root: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 12,
-    justifyContent: "center",
-  },
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 14,
-  },
-  chipsWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  cta: {
-    marginTop: 14,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ctaText: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  footer: {
-    marginTop: 12,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    root: {
+      flexGrow: 1,
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.sm,
+      justifyContent: "center",
+    },
+    card: {
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
+      padding: theme.spacing.md,
+      shadowOpacity: 0.12,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 2,
+      backgroundColor: theme.overlay,
+      borderColor: theme.accentSecondary,
+      shadowColor: theme.shadow,
+    },
+    title: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.bold,
+      marginBottom: theme.spacing.xs,
+      color: theme.text,
+    },
+    subtitle: {
+      fontSize: theme.typography.size.sm,
+      lineHeight: theme.typography.lineHeight.tight,
+      marginBottom: theme.spacing.sm + theme.spacing.xs,
+      color: theme.textSecondary,
+    },
+    chipsWrap: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+    },
+    chip: {
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.rounded.full,
+      borderWidth: 1,
+      backgroundColor: theme.background,
+      borderColor: theme.border,
+    },
+    chipText: {
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      color: theme.text,
+    },
+    cta: {
+      marginTop: theme.spacing.sm + theme.spacing.xs,
+      borderRadius: theme.rounded.sm,
+      paddingVertical: theme.spacing.sm + theme.spacing.xs,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.accentSecondary,
+    },
+    ctaText: {
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.onAccent,
+    },
+    footer: {
+      marginTop: theme.spacing.sm,
+      fontSize: theme.typography.size.xs,
+      lineHeight: theme.typography.size.sm,
+      color: theme.textSecondary,
+    },
+  });

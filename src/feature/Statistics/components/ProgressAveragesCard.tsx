@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { TargetProgressBar } from "@/components";
@@ -22,6 +22,7 @@ export const ProgressAveragesCard: React.FC<Props> = ({
   countEmptyAsZero = false,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation(["statistics", "common"]);
 
   let usedDays = days;
@@ -61,22 +62,12 @@ export const ProgressAveragesCard: React.FC<Props> = ({
       <Text
         style={[
           styles.title,
-          {
-            color: theme.text,
-            fontSize: theme.typography.size.lg,
-          },
         ]}
       >
         {t("statistics:progress.title")}
       </Text>
 
-      <Text
-        style={{
-          color: theme.textSecondary,
-          fontSize: theme.typography.size.base,
-          marginBottom: theme.spacing.md,
-        }}
-      >
+      <Text style={styles.subtitle}>
         {desc}
       </Text>
 
@@ -86,7 +77,7 @@ export const ProgressAveragesCard: React.FC<Props> = ({
           target={Math.round(dailyGoal!)}
         />
       ) : (
-        <Text style={{ color: theme.textSecondary }}>
+        <Text style={styles.fallbackText}>
           {t("statistics:progress.totalInRange", {
             kcal: Math.round(sumFromSeries || totalKcal),
           })}
@@ -96,7 +87,19 @@ export const ProgressAveragesCard: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  card: { borderWidth: 1, padding: 14 },
-  title: { fontWeight: "700", marginBottom: 8 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    card: { borderWidth: 1, padding: theme.spacing.sm },
+    title: {
+      fontFamily: theme.typography.fontFamily.bold,
+      marginBottom: theme.spacing.xs,
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+    },
+    subtitle: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.base,
+      marginBottom: theme.spacing.md,
+    },
+    fallbackText: { color: theme.textSecondary },
+  });

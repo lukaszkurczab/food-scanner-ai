@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -43,6 +43,7 @@ export default function TextEditorPanel({
 }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["share", "common"]);
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const [colorTarget, setColorTarget] = useState<ColorTarget | null>(null);
   const [tempColor, setTempColor] = useState<string | null>(null);
 
@@ -313,24 +314,24 @@ export default function TextEditorPanel({
 
     return (
       <View>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
+        <Text style={styles.label}>
           {label}
         </Text>
         <ColorPickerPanel value={value} onChange={setTempColor} />
         <View style={styles.colorActions}>
           <Pressable
             onPress={cancelColor}
-            style={[styles.button, { backgroundColor: theme.background }]}
+            style={[styles.button, styles.buttonSecondary]}
           >
-            <Text style={{ color: theme.text, fontSize: 14 }}>
+            <Text style={styles.buttonText}>
               {t("common:back", "Back")}
             </Text>
           </Pressable>
           <Pressable
             onPress={confirmColor}
-            style={[styles.button, { backgroundColor: theme.accentSecondary }]}
+            style={[styles.button, styles.buttonPrimary]}
           >
-            <Text style={{ color: theme.onAccent, fontSize: 14 }}>
+            <Text style={styles.buttonTextOnAccent}>
               {t("common:confirm", "Confirm")}
             </Text>
           </Pressable>
@@ -341,7 +342,7 @@ export default function TextEditorPanel({
 
   return (
     <View>
-      <Text style={[styles.label, { color: theme.textSecondary }]}>
+      <Text style={styles.label}>
         {t("editor.editing", "Editing")}{" "}
         {selectedId === "title"
           ? t("editor.title", "Title")
@@ -386,8 +387,8 @@ export default function TextEditorPanel({
         }}
       />
 
-      <View style={{ height: 16 }} />
-      <Text style={[styles.label, { color: theme.textSecondary }]}>
+      <View style={styles.spacer} />
+      <Text style={styles.label}>
         {t("editor.font_family", "Font family")}
       </Text>
       <Dropdown
@@ -397,12 +398,13 @@ export default function TextEditorPanel({
           const o = opt as FontFamilyOption;
           return (
             <Text
-              style={{
-                fontFamily:
-                  o.previewFamily || theme.typography.fontFamily.regular,
-                fontSize: 14,
-                color: theme.text,
-              }}
+              style={[
+                styles.dropdownLabel,
+                {
+                  fontFamily:
+                    o.previewFamily || theme.typography.fontFamily.regular,
+                },
+              ]}
               numberOfLines={1}
             >
               {o.label}
@@ -432,8 +434,8 @@ export default function TextEditorPanel({
         }}
       />
 
-      <View style={{ height: 16 }} />
-      <Text style={[styles.label, { color: theme.textSecondary }]}>
+      <View style={styles.spacer} />
+      <Text style={styles.label}>
         {t("editor.weight", "Weight")}
       </Text>
       <Dropdown
@@ -447,12 +449,13 @@ export default function TextEditorPanel({
               : undefined;
           return (
             <Text
-              style={{
-                fontFamily:
-                  previewFamily || theme.typography.fontFamily.regular,
-                fontSize: 14,
-                color: theme.text,
-              }}
+              style={[
+                styles.dropdownLabel,
+                {
+                  fontFamily:
+                    previewFamily || theme.typography.fontFamily.regular,
+                },
+              ]}
               numberOfLines={1}
             >
               {o.label}
@@ -482,9 +485,9 @@ export default function TextEditorPanel({
         }}
       />
 
-      <View style={{ height: 16 }} />
+      <View style={styles.spacer} />
       <Pressable style={styles.colorRow} onPress={openColorPickerText}>
-        <Text style={{ color: theme.text, fontSize: 14 }}>
+        <Text style={styles.rowText}>
           {t("editor.chart_text_color", "Text color")}
         </Text>
         <View
@@ -498,7 +501,7 @@ export default function TextEditorPanel({
       </Pressable>
 
       <Pressable style={styles.colorRow} onPress={openColorPickerBg}>
-        <Text style={{ color: theme.text, fontSize: 14 }}>
+        <Text style={styles.rowText}>
           {t("editor.text_bg_color", "Background color")}
         </Text>
         <View
@@ -514,30 +517,41 @@ export default function TextEditorPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  label: { fontSize: 16 },
-  colorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-  },
-  colorPreview: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.5)",
-  },
-  colorActions: {
-    marginTop: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  button: {
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    label: { fontSize: theme.typography.size.base, color: theme.textSecondary },
+    spacer: { height: theme.spacing.md },
+    colorRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: theme.spacing.xs,
+    },
+    rowText: { color: theme.text, fontSize: theme.typography.size.sm },
+    colorPreview: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    colorActions: {
+      marginTop: theme.spacing.md,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    button: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.rounded.sm,
+    },
+    buttonPrimary: { backgroundColor: theme.accentSecondary },
+    buttonSecondary: { backgroundColor: theme.background },
+    buttonText: { color: theme.text, fontSize: theme.typography.size.sm },
+    buttonTextOnAccent: {
+      color: theme.onAccent,
+      fontSize: theme.typography.size.sm,
+    },
+    dropdownLabel: { color: theme.text, fontSize: theme.typography.size.sm },
+  });
