@@ -5,7 +5,7 @@ import {
   isBillingDisabled,
   isRevenueCatConfigured,
   rcLogIn,
-} from "./revenuecat";
+} from "@/services/billing/revenuecat";
 
 type PurchaseResult =
   | { status: "success" }

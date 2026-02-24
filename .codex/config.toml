@@ -1,2 +1,13 @@
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
+
+[mcp_servers.ollama_sidecar]
+command = "bash"
+args = ["-lc", "cd /Users/lukaszkurczab/mcp/ollama_sidecar_wrapper && source .venv/bin/activate && python server.py"]
+startup_timeout_sec = 30
+tool_timeout_sec = 420
+
+[mcp_servers.ollama_sidecar.env]
+OLLAMA_HOST = "http://127.0.0.1:11434"
+OLLAMA_CODER_MODEL = "qwen2.5-coder:7b"
+OLLAMA_RISK_MODEL = "deepseek-r1:7b"

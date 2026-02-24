@@ -12,7 +12,7 @@ import {
   rcLogIn,
   rcLogOut,
   rcSetAttributes,
-} from "@/feature/Subscription/services/revenuecat";
+} from "@/services/billing/revenuecat";
 
 type PremiumContextType = {
   isPremium: boolean | null;
@@ -67,16 +67,12 @@ export const PremiumProvider = ({
 
   const setDevPremium = useCallback(
     async (enabled: boolean) => {
-      try {
-        await AsyncStorage.setItem(
-          "dev_force_premium",
-          enabled ? "true" : "false",
-        );
-        await AsyncStorage.setItem(
-          `premium_status:${uid ?? "anon"}`,
-          enabled ? "true" : "false",
-        );
-      } catch {}
+      await AsyncStorage
+        .multiSet([
+          ["dev_force_premium", enabled ? "true" : "false"],
+          [`premium_status:${uid ?? "anon"}`, enabled ? "true" : "false"],
+        ])
+        .catch(() => undefined);
       await checkPremiumStatus();
     },
     [uid, checkPremiumStatus],

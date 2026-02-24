@@ -5,7 +5,7 @@ import {
   openManageSubscriptions,
   restorePurchases,
   startOrRenewSubscription,
-} from "@/feature/Subscription/services/purchase";
+} from "@/services/billing/purchase";
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 

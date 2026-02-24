@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import {
   useNavigation,
   useRoute,
@@ -9,7 +9,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
-import ReviewIngredientsEditor from "@/feature/Meals/components/ReviewIngredientsEditor";
+import ReviewIngredientsEditor from "@/components/ReviewIngredientsEditor";
 import type { RootStackParamList } from "@/navigation/navigate";
 
 type ScreenRoute = RouteProp<RootStackParamList, "EditReviewIngredients">;

@@ -1,7 +1,7 @@
 import React from "react";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
-import ReviewIngredientsEditor from "@/feature/Meals/components/ReviewIngredientsEditor";
+import ReviewIngredientsEditor from "@/components/ReviewIngredientsEditor";
 import type { MealAddScreenProps } from "../../feature/MapMealAddScreens";
 
 export default function ReviewIngredientsScreen({
