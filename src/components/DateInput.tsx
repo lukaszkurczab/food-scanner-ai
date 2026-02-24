@@ -50,7 +50,7 @@ export const DateInput: React.FC<Props> = ({
   };
 
   const normalizeRange = (r: DateRange): DateRange => {
-    let s = new Date(r.start);
+    const s = new Date(r.start);
     let e = new Date(r.end);
     if (!allowSingleDay && +e < +s + DAY) e = new Date(+s + DAY);
     if (allowSingleDay && +e < +s) e = new Date(+s);

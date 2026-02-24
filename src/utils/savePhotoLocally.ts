@@ -28,7 +28,9 @@ export async function savePhotoLocally(args: SaveArgs) {
     if (exists.exists) {
       await FileSystem.deleteAsync(path, { idempotent: true });
     }
-  } catch {}
+  } catch {
+    // Ignore stale-file cleanup errors before copying.
+  }
   await FileSystem.copyAsync({ from: args.photoUri, to: path });
   return path;
 }
@@ -46,5 +48,7 @@ export async function deletePhotoLocally({
   try {
     const info = await FileSystem.getInfoAsync(path);
     if (info.exists) await FileSystem.deleteAsync(path, { idempotent: true });
-  } catch {}
+  } catch {
+    // Ignore delete errors for missing/inaccessible files.
+  }
 }

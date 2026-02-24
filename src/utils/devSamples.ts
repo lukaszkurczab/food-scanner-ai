@@ -1,7 +1,9 @@
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const SAMPLE_MEAL = require("../../assets/sampleMeal.jpg");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const SAMPLE_TABLE = require("../../assets/sampleTable.jpg");
 
 async function ensureFileUri(mod: number, cacheName: string): Promise<string> {

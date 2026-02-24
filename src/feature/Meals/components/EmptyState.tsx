@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 

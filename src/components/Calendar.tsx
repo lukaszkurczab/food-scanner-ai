@@ -19,7 +19,6 @@ type Props = {
 
 type Cell = { date: Date; inMonth: boolean };
 
-const DAY = 24 * 60 * 60 * 1000;
 const GAP = 6;
 
 const startOfDay = (d: Date) => {
@@ -51,8 +50,8 @@ export const Calendar: React.FC<Props> = ({
   const locale = i18n.language;
 
   const normalized = useMemo(() => {
-    let s = startOfDay(startDate);
-    let e = startOfDay(endDate);
+    const s = startOfDay(startDate);
+    const e = startOfDay(endDate);
     return { s, e };
   }, [startDate, endDate]);
 

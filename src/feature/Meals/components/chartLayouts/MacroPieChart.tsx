@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { PieChart } from "@/components/PieChart";
 
@@ -21,7 +20,6 @@ export default function MacroPieChart({
   showLegend = true,
   textColor,
   fontFamily,
-  backgroundColor,
 }: Props) {
   const safeData = data.map((d) => ({
     ...d,

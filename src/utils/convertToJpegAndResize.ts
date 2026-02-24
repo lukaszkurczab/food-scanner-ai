@@ -27,7 +27,9 @@ async function ensureDir(path: string) {
   const dir = parts.slice(0, parts.length - 1).join("/") + "/";
   try {
     await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-  } catch {}
+  } catch {
+    // Directory may already exist.
+  }
 }
 
 export async function convertToJpegAndResize(
@@ -35,15 +37,18 @@ export async function convertToJpegAndResize(
   maxWidth = 1600,
   maxHeight = 1600,
   opts?: TargetOpts,
-  _enhance?: EnhanceOpts
+  enhance?: EnhanceOpts
 ): Promise<string> {
+  void enhance;
   let srcUri = uri;
   if (!srcUri.startsWith("file://")) {
     const temp = `${FileSystem.cacheDirectory}res-${Date.now()}.jpg`;
     try {
       await FileSystem.copyAsync({ from: srcUri, to: temp });
       srcUri = temp;
-    } catch {}
+    } catch {
+      // Ignore copy failures and continue with original URI.
+    }
   }
 
   const { width, height } = await new Promise<{

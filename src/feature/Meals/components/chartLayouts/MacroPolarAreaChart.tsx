@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 
@@ -56,7 +55,6 @@ export default function MacroPolarAreaChart({
   showLegend = true,
   textColor,
   fontFamily,
-  backgroundColor,
 }: Props) {
   const cx = SIZE / 2;
   const cy = SIZE / 2;

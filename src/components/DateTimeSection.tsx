@@ -18,8 +18,6 @@ type Props = {
 export const DateTimeSection: React.FC<Props> = ({
   value,
   onChange,
-  addedValue,
-  onChangeAdded,
   minDate,
   maxDate,
 }) => {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Text, StyleSheet, LayoutChangeEvent } from "react-native";
 import {
   Svg,
@@ -219,12 +219,6 @@ export const LineGraph = ({
     : "";
 
   const clipId = "clipArea";
-  const areaD = hasEnoughPoints
-    ? linePath +
-      ` L${yAxisWidth + chartW},${topPad + chartH} L${yAxisWidth},${
-        topPad + chartH
-      } Z`
-    : "";
 
   const yTicks: number[] = [];
   for (let v = yMin; v <= yMax + 1e-9; v += yStep) {

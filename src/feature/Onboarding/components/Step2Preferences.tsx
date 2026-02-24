@@ -84,7 +84,7 @@ export default function Step2Preferences({
 
   function validate(): boolean {
     let valid = true;
-    let newErrors: Partial<Record<keyof FormData, string>> = {};
+    const newErrors: Partial<Record<keyof FormData, string>> = {};
     if (!form.activityLevel) {
       newErrors.activityLevel = t("validation.selectActivity");
       valid = false;

@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 type Datum = { value: number; color: string; label: string };
@@ -18,7 +17,6 @@ export default function GaugeMacroChart({
   showLabel = true,
   textColor,
   fontFamily,
-  backgroundColor,
 }: Props) {
   const safeData = data.map((d) => ({
     ...d,

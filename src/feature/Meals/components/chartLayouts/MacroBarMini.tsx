@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 type Props = {
@@ -36,7 +36,6 @@ export default function MacroBarMini({
   showKcalLabel = true,
   textColor,
   fontFamily,
-  backgroundColor,
 }: Props) {
   const items = useMemo(
     () => [

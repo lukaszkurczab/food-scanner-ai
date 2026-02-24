@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MacroTargetDonut } from "./MacroTargetDonut";

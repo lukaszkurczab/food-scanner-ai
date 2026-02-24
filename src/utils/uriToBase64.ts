@@ -7,7 +7,9 @@ export async function uriToBase64(uri: string): Promise<string> {
     try {
       await FileSystem.copyAsync({ from: src, to: target });
       src = target;
-    } catch {}
+    } catch {
+      // Ignore copy failures and try reading from original URI.
+    }
   }
   return FileSystem.readAsStringAsync(src, {
     encoding: FileSystem.EncodingType.Base64,

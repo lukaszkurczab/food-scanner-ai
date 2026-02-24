@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { IconButton } from "@/components";

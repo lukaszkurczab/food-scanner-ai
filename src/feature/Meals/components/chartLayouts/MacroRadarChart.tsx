@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Circle, Line, Polygon } from "react-native-svg";
 
@@ -31,7 +30,6 @@ export default function MacroRadarChart({
   showLegend = true,
   textColor,
   fontFamily,
-  backgroundColor,
 }: Props) {
   const cx = SIZE / 2;
   const cy = SIZE / 2;
