@@ -8,7 +8,6 @@ import { useUserContext } from "@/context/UserContext";
 import { useBadges } from "@/hooks/useBadges";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
-import { UserIcon } from "@/components/UserIcon";
 import { useTranslation } from "react-i18next";
 
 export const BottomTabBar: React.FC = () => {
@@ -88,7 +87,13 @@ export const BottomTabBar: React.FC = () => {
                   badges={[]}
                   overrideColor={borderColor}
                   overrideEmoji={undefined}
-                  fallbackIcon={<UserIcon size={32} />}
+                  fallbackIcon={
+                    <MaterialIcons
+                      name="person"
+                      size={24}
+                      color={theme.textSecondary}
+                    />
+                  }
                   accessibilityLabel={t("tabs.profile_accessibility")}
                 />
               ) : (

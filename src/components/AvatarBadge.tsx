@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Image, Text, StyleSheet } from "react-native";
 import type { Badge } from "@/types/badge";
 import { useTheme } from "@/theme/useTheme";
@@ -12,6 +12,9 @@ type Props = {
   overrideColor?: string;
   overrideEmoji?: string;
 };
+
+const isLocalUri = (value: string) =>
+  value.startsWith("file://") || value.startsWith("content://");
 
 function rank(b: Badge): number {
   const r: Record<string, number> = {
@@ -46,10 +49,52 @@ export default function AvatarBadge({
 }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const [isLoaded, setIsLoaded] = useState(() =>
+    uri ? isLocalUri(uri) : false
+  );
+  const [hasError, setHasError] = useState(false);
   const sel = pickBadge(badges);
   const borderColor = overrideColor ?? sel?.color ?? theme.border;
   const emoji = overrideEmoji ?? sel?.icon ?? null;
   const avatarSize = size - 6;
+  const hasUri = !!uri;
+  const showImage = hasUri && !hasError;
+  const showFallback = !showImage || !isLoaded;
+
+  useEffect(() => {
+    let cancelled = false;
+    setHasError(false);
+    if (!uri) {
+      setIsLoaded(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (isLocalUri(uri)) {
+      setIsLoaded(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setIsLoaded(false);
+    if (typeof Image.queryCache === "function") {
+      Image.queryCache([uri])
+        .then((cache) => {
+          if (cancelled) return;
+          if (cache?.[uri]) {
+            setIsLoaded(true);
+          }
+        })
+        .catch(() => {});
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uri]);
+
   const wrapStyle = useMemo(
     () => ({
       width: size,
@@ -89,16 +134,24 @@ export default function AvatarBadge({
       accessibilityRole="image"
       accessibilityLabel={accessibilityLabel}
     >
-      {uri ? (
-        <Image
-          source={{ uri }}
-          style={avatarStyle}
-        />
-      ) : (
-        <View style={[styles.fallback, avatarStyle]}>
-          {fallbackIcon ?? null}
-        </View>
-      )}
+      <View style={[styles.avatarFrame, avatarStyle]}>
+        {showFallback ? (
+          <View style={styles.fallback}>
+            {fallbackIcon ?? null}
+          </View>
+        ) : null}
+        {showImage ? (
+          <Image
+            source={{ uri }}
+            style={[styles.image, !isLoaded && styles.imageHidden]}
+            onLoad={() => setIsLoaded(true)}
+            onError={() => {
+              setHasError(true);
+              setIsLoaded(false);
+            }}
+          />
+        ) : null}
+      </View>
 
       {emoji ? (
         <View style={[styles.badgeDot, badgeDotStyle]}>
@@ -117,10 +170,21 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderWidth: 3,
       backgroundColor: theme.card,
     },
+    avatarFrame: {
+      overflow: "hidden",
+    },
+    image: {
+      width: "100%",
+      height: "100%",
+    },
+    imageHidden: {
+      opacity: 0,
+    },
     fallback: {
+      ...StyleSheet.absoluteFillObject,
       alignItems: "center",
       justifyContent: "center",
-      overflow: "hidden",
+      backgroundColor: theme.card,
     },
     badgeDot: {
       position: "absolute",
