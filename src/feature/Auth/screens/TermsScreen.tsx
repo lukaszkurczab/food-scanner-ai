@@ -1,4 +1,5 @@
-import { Dimensions, StyleSheet } from "react-native";
+import { useMemo } from "react";
+import { Dimensions, StyleSheet, ViewStyle } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { Layout, PrimaryButton } from "@/components";
@@ -19,6 +20,10 @@ export default function TermsScreen({ navigation }: TermsScreenProps) {
 
   const windowHeight = Dimensions.get("window").height;
   const calculatedHeight = Math.max(0, windowHeight - 190);
+  const scrollStyle = useMemo<ViewStyle>(
+    () => ({ height: calculatedHeight }),
+    [calculatedHeight]
+  );
 
   const termsText = t("text");
 
@@ -28,7 +33,7 @@ export default function TermsScreen({ navigation }: TermsScreenProps) {
 
   return (
     <Layout showNavigation={false} disableScroll>
-      <ScrollableBox style={{ height: calculatedHeight }}>
+      <ScrollableBox style={scrollStyle}>
         {parseMarkdownToReactNative(termsText, theme)}
       </ScrollableBox>
 

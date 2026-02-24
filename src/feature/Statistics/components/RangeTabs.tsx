@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -16,20 +16,25 @@ export const RangeTabs: React.FC<RangeTabsProps> = ({
   onChange,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const containerStyle = useMemo(
+    () => ({
+      backgroundColor: theme.card,
+      borderRadius: theme.rounded.full,
+      padding: theme.spacing.xs,
+      borderColor: theme.border,
+    }),
+    [theme.card, theme.rounded.full, theme.spacing.xs, theme.border]
+  );
+  const getTabStateStyle = (isActive: boolean) => ({
+    backgroundColor: isActive ? theme.accentSecondary : "transparent",
+  });
+  const getTabTextStyle = (isActive: boolean) => ({
+    color: isActive ? theme.onAccent : theme.textSecondary,
+  });
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.card,
-          borderRadius: theme.rounded.full,
-          padding: theme.spacing.xs,
-          borderWidth: 1,
-          borderColor: theme.border,
-        },
-      ]}
-    >
+    <View style={[styles.container, containerStyle]}>
       {options.map((opt) => {
         const isActive = active === opt.key;
 
@@ -39,23 +44,11 @@ export const RangeTabs: React.FC<RangeTabsProps> = ({
             onPress={() => onChange(opt.key)}
             style={({ pressed }) => [
               styles.tab,
-              {
-                backgroundColor: isActive
-                  ? theme.accentSecondary
-                  : "transparent",
-                borderRadius: theme.rounded.full,
-              },
-              pressed && { opacity: 0.9 },
+              getTabStateStyle(isActive),
+              pressed ? styles.tabPressed : null,
             ]}
           >
-            <Text
-              style={{
-                color: isActive ? theme.onAccent : theme.textSecondary,
-                fontSize: theme.typography.size.base,
-                fontFamily: theme.typography.fontFamily.medium,
-                textAlign: "center",
-              }}
-            >
+            <Text style={[styles.tabText, getTabTextStyle(isActive)]}>
               {opt.label}
             </Text>
           </Pressable>
@@ -65,17 +58,28 @@ export const RangeTabs: React.FC<RangeTabsProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignSelf: "stretch",
-    gap: 4,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      alignSelf: "stretch",
+      gap: theme.spacing.xs,
+      borderWidth: 1,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: theme.spacing.sm - theme.spacing.xs / 2,
+      paddingHorizontal: theme.spacing.sm,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.rounded.full,
+    },
+    tabPressed: {
+      opacity: 0.9,
+    },
+    tabText: {
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.medium,
+      textAlign: "center",
+    },
+  });

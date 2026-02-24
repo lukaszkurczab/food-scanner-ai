@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { SecondaryButton } from "@/components/SecondaryButton";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,7 @@ export const DateRangePicker: React.FC<{
   locale?: string;
 }> = ({ startDate, endDate, onOpen, locale }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("common");
 
   const fmt = useMemo(
@@ -25,29 +26,35 @@ export const DateRangePicker: React.FC<{
   const summary = `${fmt.format(startDate)} - ${fmt.format(endDate)}`;
 
   return (
-    <View style={{ gap: theme.spacing.md }}>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Text
-          style={{
-            color: theme.text,
-            fontWeight: "700",
-            fontSize: theme.typography.size.md,
-          }}
-        >
-          {t("dateRange.label")}
-        </Text>
-        <Text style={{ color: theme.text, fontSize: theme.typography.size.md }}>
-          {summary}
-        </Text>
+    <View style={styles.container}>
+      <View style={styles.headerRow}>
+        <Text style={styles.label}>{t("dateRange.label")}</Text>
+        <Text style={styles.summary}>{summary}</Text>
       </View>
 
       <SecondaryButton label={t("dateRange.set")} onPress={onOpen} />
     </View>
   );
 };
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      gap: theme.spacing.md,
+    },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    label: {
+      color: theme.text,
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    summary: {
+      color: theme.text,
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+  });

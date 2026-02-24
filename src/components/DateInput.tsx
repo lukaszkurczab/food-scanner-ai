@@ -28,6 +28,7 @@ export const DateInput: React.FC<Props> = ({
   allowSingleDay = false,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t, i18n } = useTranslation(["statistics", "common"]);
   const [visible, setVisible] = useState(false);
   const [focus, setFocus] = useState<"start" | "end">("start");
@@ -75,48 +76,18 @@ export const DateInput: React.FC<Props> = ({
   };
 
   return (
-    <View style={{ width: "100%", gap: 8 }}>
-      <Text style={{ color: theme.text, fontWeight: "600" }}>
-        {t("statistics:ranges.custom")}
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.label}>{t("statistics:ranges.custom")}</Text>
 
-      <View style={[styles.rowCenter, { gap: 8 }]}>
-        <Pressable
-          onPress={() => open("start")}
-          style={[
-            styles.input,
-            {
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              borderRadius: theme.rounded.sm,
-            },
-          ]}
-        >
-          <Text
-            style={{ color: theme.text, textAlign: "center", width: "100%" }}
-          >
-            {fmt.format(range.start)}
-          </Text>
+      <View style={styles.rowCenter}>
+        <Pressable onPress={() => open("start")} style={styles.input}>
+          <Text style={styles.inputText}>{fmt.format(range.start)}</Text>
         </Pressable>
 
-        <Text style={{ color: theme.textSecondary }}>—</Text>
+        <Text style={styles.separator}>—</Text>
 
-        <Pressable
-          onPress={() => open("end")}
-          style={[
-            styles.input,
-            {
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              borderRadius: theme.rounded.sm,
-            },
-          ]}
-        >
-          <Text
-            style={{ color: theme.text, textAlign: "center", width: "100%" }}
-          >
-            {fmt.format(range.end)}
-          </Text>
+        <Pressable onPress={() => open("end")} style={styles.input}>
+          <Text style={styles.inputText}>{fmt.format(range.end)}</Text>
         </Pressable>
       </View>
 
@@ -127,24 +98,8 @@ export const DateInput: React.FC<Props> = ({
         onRequestClose={cancel}
       >
         <View style={styles.backdrop}>
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: theme.background,
-                borderColor: theme.border,
-                borderRadius: theme.rounded.md,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.title,
-                { color: theme.text, fontSize: theme.typography.size.md },
-              ]}
-            >
-              {t("statistics:pickRange")}
-            </Text>
+          <View style={styles.card}>
+            <Text style={styles.title}>{t("statistics:pickRange")}</Text>
 
             <Calendar
               startDate={temp.start}
@@ -156,7 +111,7 @@ export const DateInput: React.FC<Props> = ({
               maxDate={maxDate}
             />
 
-            <View style={{ height: 16 }} />
+            <View style={styles.spacer} />
 
             <View style={styles.buttonsCol}>
               <PrimaryButton label={t("common:confirm")} onPress={confirm} />
@@ -169,24 +124,63 @@ export const DateInput: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  rowCenter: { flexDirection: "row", alignItems: "center" },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 16,
-  },
-  card: { width: "100%", borderWidth: 1, padding: 14 },
-  title: { fontWeight: "700", marginBottom: 8, fontSize: 16 },
-  buttonsCol: {
-    gap: 10,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      width: "100%",
+      gap: theme.spacing.sm,
+    },
+    label: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    rowCenter: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    input: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.card,
+      borderRadius: theme.rounded.sm,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+    },
+    inputText: {
+      color: theme.text,
+      textAlign: "center",
+      width: "100%",
+    },
+    separator: {
+      color: theme.textSecondary,
+    },
+    backdrop: {
+      flex: 1,
+      backgroundColor: theme.shadow,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: theme.spacing.md,
+    },
+    card: {
+      width: "100%",
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: theme.rounded.md,
+      backgroundColor: theme.background,
+      padding: theme.spacing.md,
+    },
+    title: {
+      color: theme.text,
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.bold,
+      marginBottom: theme.spacing.sm,
+    },
+    spacer: {
+      height: theme.spacing.md,
+    },
+    buttonsCol: {
+      gap: theme.spacing.sm,
+    },
+  });

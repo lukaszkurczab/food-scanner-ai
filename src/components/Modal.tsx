@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Modal as RNModal,
   View,
@@ -16,7 +16,8 @@ import { SecondaryButton } from "@/components/SecondaryButton";
 import { IconButton } from "@/components/IconButton";
 import { MaterialIcons } from "@expo/vector-icons";
 
-const windowHeight = Dimensions.get("window").height;
+const WINDOW_HEIGHT = Dimensions.get("window").height;
+const MODAL_MAX_WIDTH = 500;
 
 type Props = {
   visible: boolean;
@@ -52,11 +53,10 @@ export const Modal: React.FC<Props> = ({
   closeOnBackdropPress = true,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
-  const modalBg =
+  const modalBackground =
     theme.card || (theme.mode === "dark" ? theme.background : theme.card);
-
-  const maxWidth = 500;
 
   const handleBackdropPress = () => {
     if (!closeOnBackdropPress) return;
@@ -70,6 +70,8 @@ export const Modal: React.FC<Props> = ({
     !!onPrimaryAction &&
     !!secondaryActionLabel &&
     !!onSecondaryAction;
+
+  const contentBottomPadding = contentPaddingBottom ?? theme.spacing.lg;
 
   return (
     <RNModal
@@ -88,32 +90,20 @@ export const Modal: React.FC<Props> = ({
         style={styles.keyboardAvoiding}
       >
         <View
-          style={[
-            styles.centeredView,
-            fullScreen && {
-              minHeight: windowHeight,
-              justifyContent: "flex-start",
-            },
-          ]}
+          style={[styles.centeredView, fullScreen && styles.centeredViewFullscreen]}
           pointerEvents="box-none"
         >
           <View
             style={[
               styles.modalContainer,
               {
-                backgroundColor: modalBg,
-                borderWidth: 1,
+                backgroundColor: modalBackground,
                 borderColor: theme.border,
-                borderRadius: theme.rounded.md,
-                padding: theme.spacing.lg,
-                maxWidth: maxWidth,
                 width: fullScreen ? "95%" : "90%",
-                maxHeight: fullScreen
-                  ? windowHeight * 0.96
-                  : windowHeight * 0.8,
+                maxHeight: fullScreen ? WINDOW_HEIGHT * 0.96 : WINDOW_HEIGHT * 0.8,
                 marginTop: fullScreen ? theme.spacing.nav : 0,
               },
-              fullScreen && { flex: 1, width: "98%" },
+              fullScreen && styles.modalContainerFullScreen,
             ]}
           >
             {onClose && (
@@ -129,46 +119,26 @@ export const Modal: React.FC<Props> = ({
             )}
 
             {title && (
-              <Text
-                style={{
-                  color: theme.text,
-                  fontSize: theme.typography.size.xl,
-                  fontFamily: theme.typography.fontFamily.bold,
-                  fontWeight: "bold",
-                  textAlign: "center",
-                  marginBottom: theme.spacing.md,
-                }}
-              >
-                {title}
-              </Text>
+              <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
             )}
 
             <ScrollView
-              style={{ flexGrow: 0 }}
-              contentContainerStyle={{
-                paddingBottom: contentPaddingBottom ?? theme.spacing.lg,
-              }}
+              style={styles.scrollView}
+              contentContainerStyle={[
+                styles.scrollContent,
+                { paddingBottom: contentBottomPadding },
+              ]}
               showsVerticalScrollIndicator={false}
             >
               {children ? (
                 children
               ) : message ? (
-                <Text
-                  style={{
-                    color: theme.text,
-                    fontSize: theme.typography.size.md,
-                    fontFamily: theme.typography.fontFamily.regular,
-                    marginBottom: theme.spacing.lg,
-                    textAlign: "center",
-                  }}
-                >
-                  {message}
-                </Text>
+                <Text style={[styles.message, { color: theme.text }]}>{message}</Text>
               ) : null}
             </ScrollView>
 
             {footer ? (
-              <View style={{ marginTop: theme.spacing.md }}>{footer}</View>
+              <View style={styles.footer}>{footer}</View>
             ) : (primaryActionLabel && onPrimaryAction) ||
               (secondaryActionLabel && onSecondaryAction) ? (
               actionsSideBySide ? (
@@ -179,12 +149,7 @@ export const Modal: React.FC<Props> = ({
                       onPress={onSecondaryAction!}
                     />
                   </View>
-                  <View
-                    style={[
-                      styles.actionHalf,
-                      { marginLeft: theme.spacing.sm },
-                    ]}
-                  >
+                  <View style={[styles.actionHalf, styles.actionHalfSpaced]}>
                     <PrimaryButton
                       label={primaryActionLabel!}
                       onPress={onPrimaryAction!}
@@ -197,12 +162,11 @@ export const Modal: React.FC<Props> = ({
                     <PrimaryButton
                       label={primaryActionLabel}
                       onPress={onPrimaryAction}
-                      style={{
-                        marginBottom:
-                          secondaryActionLabel && onSecondaryAction
-                            ? theme.spacing.sm
-                            : 0,
-                      }}
+                      style={
+                        secondaryActionLabel && onSecondaryAction
+                          ? styles.primaryStackedSpacing
+                          : undefined
+                      }
                     />
                   )}
                   {secondaryActionLabel && onSecondaryAction && (
@@ -221,43 +185,84 @@ export const Modal: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
-  },
-  keyboardAvoiding: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  centeredView: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-  },
-  modalContainer: {
-    alignSelf: "center",
-    minWidth: 260,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    position: "relative",
-  },
-  closeButton: {
-    position: "absolute",
-    right: 8,
-    top: 8,
-    zIndex: 10,
-  },
-  actionsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  actionHalf: {
-    flex: 1,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 0,
+    },
+    keyboardAvoiding: {
+      flex: 1,
+      justifyContent: "center",
+    },
+    centeredView: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1,
+    },
+    centeredViewFullscreen: {
+      minHeight: WINDOW_HEIGHT,
+      justifyContent: "flex-start",
+    },
+    modalContainer: {
+      alignSelf: "center",
+      minWidth: 260,
+      elevation: 10,
+      shadowColor: theme.shadow,
+      shadowOpacity: 0.16,
+      shadowRadius: theme.rounded.md,
+      shadowOffset: { width: 0, height: theme.spacing.xs },
+      position: "relative",
+      borderWidth: 1,
+      borderRadius: theme.rounded.md,
+      padding: theme.spacing.lg,
+      maxWidth: MODAL_MAX_WIDTH,
+    },
+    modalContainerFullScreen: {
+      flex: 1,
+      width: "98%",
+    },
+    closeButton: {
+      position: "absolute",
+      right: theme.spacing.sm,
+      top: theme.spacing.sm,
+      zIndex: 10,
+    },
+    title: {
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontWeight: "bold",
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    scrollView: {
+      flexGrow: 0,
+    },
+    scrollContent: {
+      paddingBottom: theme.spacing.lg,
+    },
+    message: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.regular,
+      marginBottom: theme.spacing.lg,
+      textAlign: "center",
+    },
+    footer: {
+      marginTop: theme.spacing.md,
+    },
+    actionsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: theme.spacing.sm,
+    },
+    actionHalf: {
+      flex: 1,
+    },
+    actionHalfSpaced: {
+      marginLeft: theme.spacing.sm,
+    },
+    primaryStackedSpacing: {
+      marginBottom: theme.spacing.sm,
+    },
+  });

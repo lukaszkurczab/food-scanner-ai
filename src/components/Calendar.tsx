@@ -46,6 +46,8 @@ export const Calendar: React.FC<Props> = ({
   mode = "range",
   onPickSingle,
 }) => {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { i18n } = useTranslation();
   const locale = i18n.language;
 
@@ -152,57 +154,23 @@ export const Calendar: React.FC<Props> = ({
   const selEnd = normalized.e;
 
   return (
-    <View style={{ width: "100%" }}>
-      <View
-        style={[
-          styles.header,
-          {
-            marginBottom: useTheme().spacing.xs,
-            paddingHorizontal: useTheme().spacing.xs,
-          },
-        ]}
-      >
-        <Pressable
-          onPress={handlePrev}
-          style={[styles.navBtn, { padding: useTheme().spacing.sm }]}
-        >
-          <Text
-            style={{
-              color: useTheme().link,
-              fontSize: useTheme().typography.size.lg,
-            }}
-          >
-            ‹
-          </Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Pressable onPress={handlePrev} style={styles.navBtn}>
+          <Text style={styles.navText}>‹</Text>
         </Pressable>
 
-        <Text
-          style={{
-            color: useTheme().text,
-            fontWeight: "700",
-            fontSize: useTheme().typography.size.lg,
-          }}
-        >
+        <Text style={styles.monthText}>
           {fmtMonth.format(monthStart)}
         </Text>
 
-        <Pressable
-          onPress={handleNext}
-          style={[styles.navBtn, { padding: useTheme().spacing.sm }]}
-        >
-          <Text
-            style={{
-              color: useTheme().link,
-              fontSize: useTheme().typography.size.lg,
-            }}
-          >
-            ›
-          </Text>
+        <Pressable onPress={handleNext} style={styles.navBtn}>
+          <Text style={styles.navText}>›</Text>
         </Pressable>
       </View>
 
       <View onLayout={(e) => setWrapW(e.nativeEvent.layout.width)}>
-        <View style={[styles.weekRow, { marginBottom: useTheme().spacing.xs }]}>
+        <View style={[styles.weekRow, { marginBottom: theme.spacing.xs }]}>
           {fmtWeekday.map((wd, i) => (
             <Text
               key={i}
@@ -211,7 +179,7 @@ export const Calendar: React.FC<Props> = ({
                 {
                   width: cellSize,
                   marginRight: i % 7 !== 6 ? GAP : 0,
-                  color: useTheme().textSecondary,
+                  color: theme.textSecondary,
                   textAlign: "center",
                 },
               ]}
@@ -253,19 +221,18 @@ export const Calendar: React.FC<Props> = ({
                     style={[
                       styles.dotCircle,
                       {
-                        borderColor: useTheme().accentSecondary,
+                        borderColor: theme.accentSecondary,
                         borderWidth: 2,
-                        borderRadius: useTheme().rounded.full,
+                        borderRadius: theme.rounded.full,
                       },
                     ]}
                   />
                 )}
                 <Text
-                  style={{
-                    color: c.inMonth
-                      ? useTheme().text
-                      : useTheme().textSecondary,
-                  }}
+                  style={[
+                    styles.dayText,
+                    c.inMonth ? styles.dayTextInMonth : styles.dayTextOutsideMonth,
+                  ]}
                 >
                   {c.date.getDate()}
                 </Text>
@@ -273,7 +240,7 @@ export const Calendar: React.FC<Props> = ({
                   <View
                     style={[
                       styles.todayMark,
-                      { backgroundColor: useTheme().link, marginTop: 3 },
+                      { backgroundColor: theme.link, marginTop: 3 },
                     ]}
                   />
                 )}
@@ -295,17 +262,48 @@ function inBetween(d: Date, s: Date, e: Date) {
   return t >= lo && t <= hi;
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  navBtn: { borderRadius: 9999 },
-  weekRow: { flexDirection: "row" },
-  weekText: { fontSize: 12 },
-  grid: { flexDirection: "row", flexWrap: "wrap" },
-  cell: { alignItems: "center", justifyContent: "center" },
-  dotCircle: { position: "absolute", width: "82%", height: "82%" },
-  todayMark: { width: 4, height: 4, borderRadius: 2 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      width: "100%",
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.xs,
+    },
+    navBtn: {
+      borderRadius: theme.rounded.full,
+      padding: theme.spacing.sm,
+    },
+    navText: {
+      color: theme.link,
+      fontSize: theme.typography.size.lg,
+    },
+    monthText: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.lg,
+    },
+    weekRow: { flexDirection: "row" },
+    weekText: { fontSize: theme.typography.size.xs },
+    grid: { flexDirection: "row", flexWrap: "wrap" },
+    cell: { alignItems: "center", justifyContent: "center" },
+    dayText: {
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    dayTextInMonth: {
+      color: theme.text,
+    },
+    dayTextOutsideMonth: {
+      color: theme.textSecondary,
+    },
+    dotCircle: { position: "absolute", width: "82%", height: "82%" },
+    todayMark: {
+      width: theme.spacing.xs,
+      height: theme.spacing.xs,
+      borderRadius: theme.spacing.xs / 2,
+    },
+  });

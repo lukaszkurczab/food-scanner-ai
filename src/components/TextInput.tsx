@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   TextInput as RNTextInput,
@@ -76,6 +76,7 @@ export const TextInput: React.FC<Props> = ({
   maxLength = 128,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const [isFocused, setIsFocused] = useState(false);
 
   const inputBg =
@@ -106,6 +107,29 @@ export const TextInput: React.FC<Props> = ({
       : theme.spacing.md;
 
   const isEditable = editable !== undefined ? editable : !disabled;
+  const inputMinHeight = multiline ? Math.max(48, numberOfLines * 24) : 48;
+  const inputWrapperDynamicStyle = useMemo(
+    () => ({
+      backgroundColor: inputBg,
+      borderColor,
+      borderWidth,
+      alignItems: multiline ? "flex-start" : "center",
+      minHeight: inputMinHeight,
+      opacity: !isEditable ? 0.7 : 1,
+    }),
+    [inputBg, borderColor, borderWidth, multiline, inputMinHeight, isEditable]
+  );
+  const textInputDynamicStyle = useMemo<TextStyle>(
+    () => ({
+      paddingLeft: inputPaddingLeft,
+      paddingRight: inputPaddingRight,
+      textAlignVertical: multiline
+        ? ("top" as const)
+        : ("center" as const),
+      minHeight: inputMinHeight,
+    }),
+    [inputPaddingLeft, inputPaddingRight, multiline, inputMinHeight]
+  );
 
   const focusShadowStyle =
     isFocused && !hasError
@@ -123,33 +147,16 @@ export const TextInput: React.FC<Props> = ({
       : {};
 
   return (
-    <View style={[{ width: "100%" }, style]}>
+    <View style={[styles.container, style]}>
       {label && (
-        <Text
-          style={{
-            color: theme.textSecondary,
-            fontSize: theme.typography.size.sm,
-            marginBottom: theme.spacing.xs / 2,
-            fontFamily: theme.typography.fontFamily.medium,
-          }}
-        >
+        <Text style={styles.label}>
           {label}
         </Text>
       )}
       <View
         style={[
           styles.inputWrapper,
-          {
-            backgroundColor: inputBg,
-            borderColor,
-            borderWidth,
-            borderRadius: theme.rounded.sm,
-            flexDirection: "row",
-            alignItems: multiline ? "flex-start" : "center",
-            minHeight: multiline ? Math.max(48, numberOfLines * 24) : 48,
-            opacity: !isEditable ? 0.7 : 1,
-            shadowColor: theme.shadow,
-          },
+          inputWrapperDynamicStyle,
           focusShadowStyle,
         ]}
       >
@@ -191,17 +198,8 @@ export const TextInput: React.FC<Props> = ({
           onSubmitEditing={onSubmitEditing}
           maxLength={maxLength}
           style={[
-            {
-              flex: 1,
-              color: theme.text,
-              fontSize: theme.typography.size.base,
-              fontFamily: theme.typography.fontFamily.regular,
-              paddingVertical: theme.spacing.sm,
-              paddingLeft: inputPaddingLeft,
-              paddingRight: inputPaddingRight,
-              textAlignVertical: multiline ? "top" : "center",
-              minHeight: multiline ? Math.max(48, numberOfLines * 24) : 48,
-            },
+            styles.input,
+            textInputDynamicStyle,
             inputStyle,
           ]}
           selectionColor={theme.accent}
@@ -209,15 +207,7 @@ export const TextInput: React.FC<Props> = ({
         />
 
         {!!rightLabel && (
-          <Text
-            style={{
-              color: theme.textSecondary,
-              fontSize: theme.typography.size.base,
-              marginLeft: 8,
-              fontFamily: theme.typography.fontFamily.medium,
-              marginRight: theme.spacing.md,
-            }}
-          >
+          <Text style={styles.rightLabel}>
             {rightLabel}
           </Text>
         )}
@@ -232,15 +222,7 @@ export const TextInput: React.FC<Props> = ({
         )}
       </View>
       {!!errorMsg && (
-        <Text
-          style={{
-            color: theme.error.text,
-            fontSize: theme.typography.size.xs,
-            marginTop: theme.spacing.xs / 2,
-            fontFamily: theme.typography.fontFamily.medium,
-            letterSpacing: 0.1,
-          }}
-        >
+        <Text style={styles.errorText}>
           {errorMsg}
         </Text>
       )}
@@ -248,32 +230,66 @@ export const TextInput: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  inputWrapper: {
-    width: "100%",
-    position: "relative",
-    overflow: "hidden",
-    shadowOffset: { width: 1, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  iconLeft: {
-    position: "absolute",
-    left: 12,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 2,
-  },
-  iconRight: {
-    position: "absolute",
-    right: 12,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 2,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      width: "100%",
+    },
+    label: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      marginBottom: theme.spacing.xs / 2,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    inputWrapper: {
+      width: "100%",
+      position: "relative",
+      overflow: "hidden",
+      shadowOffset: { width: 1, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 2,
+      elevation: 3,
+      borderRadius: theme.rounded.sm,
+      flexDirection: "row",
+      shadowColor: theme.shadow,
+    },
+    input: {
+      flex: 1,
+      color: theme.text,
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.regular,
+      paddingVertical: theme.spacing.sm,
+    },
+    rightLabel: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.base,
+      marginLeft: theme.spacing.sm,
+      fontFamily: theme.typography.fontFamily.medium,
+      marginRight: theme.spacing.md,
+    },
+    errorText: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.xs,
+      marginTop: theme.spacing.xs / 2,
+      fontFamily: theme.typography.fontFamily.medium,
+      letterSpacing: 0.1,
+    },
+    iconLeft: {
+      position: "absolute",
+      left: theme.spacing.md - theme.spacing.xs,
+      top: 0,
+      bottom: 0,
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 2,
+    },
+    iconRight: {
+      position: "absolute",
+      right: theme.spacing.md - theme.spacing.xs,
+      top: 0,
+      bottom: 0,
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 2,
+    },
+  });

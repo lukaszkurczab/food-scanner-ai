@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -32,18 +32,21 @@ export const ListItem: React.FC<ListItemProps> = ({
   loading = false,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const isInactive = disabled || loading;
+  const labelStyle = useMemo(
+    () => ({ color: theme.text }),
+    [theme.text]
+  );
 
   return (
     <Pressable
       onPress={isInactive ? undefined : onPress}
       style={({ pressed }) => [
         styles.container,
-        {
-          backgroundColor: "transparent",
-          borderBottomColor: theme.border,
-          opacity: isInactive ? 0.5 : pressed ? 0.7 : 1,
-        },
+        styles.containerColors,
+        isInactive ? styles.inactive : null,
+        pressed && !isInactive ? styles.pressed : null,
         style,
       ]}
       accessibilityRole="button"
@@ -52,15 +55,7 @@ export const ListItem: React.FC<ListItemProps> = ({
       disabled={isInactive}
     >
       {icon && <View style={styles.leftIcon}>{icon}</View>}
-      <Text
-        style={{
-          flex: 1,
-          color: theme.text,
-          fontFamily: theme.typography.fontFamily.bold,
-          fontSize: theme.typography.size.md,
-        }}
-        numberOfLines={1}
-      >
+      <Text style={[styles.label, labelStyle]} numberOfLines={1}>
         {label}
       </Text>
       {loading ? (
@@ -81,24 +76,40 @@ export const ListItem: React.FC<ListItemProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    minHeight: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 0,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    width: "100%",
-  },
-  leftIcon: {
-    marginRight: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chevron: {
-    marginLeft: 12,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      minHeight: 48,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: 0,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      width: "100%",
+    },
+    containerColors: {
+      backgroundColor: "transparent",
+      borderBottomColor: theme.border,
+    },
+    inactive: {
+      opacity: 0.5,
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+    leftIcon: {
+      marginRight: theme.spacing.sm + theme.spacing.xs,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    label: {
+      flex: 1,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.md,
+    },
+    chevron: {
+      marginLeft: theme.spacing.sm + theme.spacing.xs,
+    },
+  });
 
 export default ListItem;

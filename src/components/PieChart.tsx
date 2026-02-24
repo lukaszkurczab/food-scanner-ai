@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, LayoutChangeEvent } from "react-native";
+import React, { useMemo, useState } from "react";
+import { View, Text, LayoutChangeEvent, StyleSheet } from "react-native";
 import { Svg, Path, Circle } from "react-native-svg";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -34,6 +34,7 @@ export const PieChart: React.FC<PieChartProps> = ({
   justify = null,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation(["meals"]);
   const [parentW, setParentW] = useState(0);
 
@@ -54,6 +55,21 @@ export const PieChart: React.FC<PieChartProps> = ({
     : maxSize;
 
   const radius = chartSize / 2;
+  const legendContainerStyle = useMemo(
+    () => ({ minWidth: canRow ? legendWidth : undefined }),
+    [canRow, legendWidth]
+  );
+  const legendTextStyle = useMemo(
+    () => ({ fontSize, color: theme.text }),
+    [fontSize, theme.text]
+  );
+  const chartRowStyle = useMemo(
+    () => ({
+      justifyContent: justify || "center",
+      gap,
+    }),
+    [justify, gap]
+  );
 
   const renderSlice = (slice: PieSlice, i: number, startAngle: number) => {
     const sweep = (slice.value / total) * 360;
@@ -94,26 +110,11 @@ export const PieChart: React.FC<PieChartProps> = ({
 
   const Legend = () =>
     total > 0 && nonZero.length > 0 ? (
-      <View style={{ minWidth: canRow ? legendWidth : undefined }}>
+      <View style={[styles.legendContainer, legendContainerStyle]}>
         {nonZero.map((slice, i) => (
-          <View
-            key={i}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: 10,
-            }}
-          >
-            <View
-              style={{
-                width: 14,
-                height: 14,
-                borderRadius: 7,
-                backgroundColor: slice.color,
-                marginRight: 10,
-              }}
-            />
-            <Text style={{ fontSize, color: theme.text }}>
+          <View key={i} style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: slice.color }]} />
+            <Text style={legendTextStyle}>
               {getLabel(slice.label) ?? slice.value}
             </Text>
           </View>
@@ -124,23 +125,8 @@ export const PieChart: React.FC<PieChartProps> = ({
   let angle = 0;
 
   return (
-    <View
-      onLayout={onLayout}
-      style={{
-        width: "100%",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <View
-        style={{
-          width: "100%",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: justify || "center",
-          gap,
-        }}
-      >
+    <View onLayout={onLayout} style={styles.root}>
+      <View style={[styles.chartRow, chartRowStyle]}>
         <Svg width={chartSize} height={chartSize}>
           {total > 0 ? (
             nonZero.map((slice, i) => {
@@ -165,3 +151,29 @@ export const PieChart: React.FC<PieChartProps> = ({
     </View>
   );
 };
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    root: {
+      width: "100%",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    chartRow: {
+      width: "100%",
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    legendContainer: {},
+    legendItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: theme.spacing.md - theme.spacing.xs / 2,
+    },
+    legendDot: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      marginRight: theme.spacing.md - theme.spacing.xs / 2,
+    },
+  });

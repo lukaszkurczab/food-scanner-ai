@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, Image, StyleProp, ViewStyle } from "react-native";
+import React, { useState, useEffect, useMemo } from "react";
+import { View, Image, StyleProp, ViewStyle, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useUserContext } from "@/context/UserContext";
@@ -21,6 +21,7 @@ export const UserIcon: React.FC<Props> = ({
   isPremium = false,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { userData } = useUserContext();
   const { t } = useTranslation("common");
 
@@ -30,6 +31,31 @@ export const UserIcon: React.FC<Props> = ({
     ? userData.avatarLocalPath || userData.avatarUrl || null
     : null;
   const [error, setError] = useState(false);
+  const containerStyle = useMemo(
+    () => ({
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      borderWidth,
+      borderColor,
+    }),
+    [size, borderWidth, borderColor]
+  );
+  const imageStyle = useMemo(
+    () => ({
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+    }),
+    [size]
+  );
+  const premiumBadgeStyle = useMemo(
+    () => ({
+      borderRadius: size * 0.18,
+      padding: size * 0.06,
+    }),
+    [size]
+  );
 
   const computedLabel =
     accessibilityLabel ?? t("user.avatar_accessibility");
@@ -41,27 +67,14 @@ export const UserIcon: React.FC<Props> = ({
 
   return (
     <View
-      style={[
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth,
-          borderColor,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: theme.card,
-          position: "relative",
-        },
-        style,
-      ]}
+      style={[styles.container, containerStyle, style]}
       accessible
       accessibilityLabel={computedLabel}
     >
       {sourceUri && !error ? (
         <Image
           source={{ uri: sourceUri }}
-          style={{ width: size, height: size, borderRadius: size / 2 }}
+          style={imageStyle}
           onError={() => setError(true)}
         />
       ) : (
@@ -74,15 +87,7 @@ export const UserIcon: React.FC<Props> = ({
 
       {isPremium && (
         <View
-          style={{
-            position: "absolute",
-            bottom: 8,
-            right: 8,
-            backgroundColor: theme.card,
-            borderRadius: size * 0.18,
-            padding: size * 0.06,
-            elevation: 3,
-          }}
+          style={[styles.premiumBadge, premiumBadgeStyle]}
           accessible
           accessibilityLabel={t("user.premium_badge_accessibility")}
         >
@@ -98,3 +103,20 @@ export const UserIcon: React.FC<Props> = ({
 };
 
 export default UserIcon;
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.card,
+      position: "relative",
+    },
+    premiumBadge: {
+      position: "absolute",
+      bottom: theme.spacing.sm,
+      right: theme.spacing.sm,
+      backgroundColor: theme.card,
+      elevation: 3,
+    },
+  });

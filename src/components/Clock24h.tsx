@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, TextInput } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -9,9 +9,11 @@ type Props = {
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const clamp = (n: number, a: number, b: number) => Math.min(Math.max(n, a), b);
+const INPUT_WIDTH = 64;
 
 export const Clock24h: React.FC<Props> = ({ value, onChange }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const [hourText, setHourText] = useState<string>(pad2(value.getHours()));
   const [minuteText, setMinuteText] = useState<string>(
@@ -50,26 +52,17 @@ export const Clock24h: React.FC<Props> = ({ value, onChange }) => {
   };
 
   return (
-    <View style={{ alignItems: "center", gap: 12 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View style={styles.container}>
+      <View style={styles.timeRow}>
         <TextInput
           value={hourText}
           onChangeText={(t) => setHourText(t.replace(/[^\d]/g, "").slice(0, 2))}
           onBlur={() => commitHour(hourText)}
           keyboardType="number-pad"
           maxLength={2}
-          style={[
-            styles.input,
-            {
-              color: theme.text,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-            },
-          ]}
+          style={styles.input}
         />
-        <Text style={{ fontSize: 32, fontWeight: "700", color: theme.text }}>
-          :
-        </Text>
+        <Text style={styles.separator}>:</Text>
         <TextInput
           value={minuteText}
           onChangeText={(t) =>
@@ -78,29 +71,40 @@ export const Clock24h: React.FC<Props> = ({ value, onChange }) => {
           onBlur={() => commitMinute(minuteText)}
           keyboardType="number-pad"
           maxLength={2}
-          style={[
-            styles.input,
-            {
-              color: theme.text,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-            },
-          ]}
+          style={styles.input}
         />
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  input: {
-    width: 64,
-    textAlign: "center",
-    fontSize: 32,
-    fontWeight: "700",
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    borderWidth: 1,
-    borderRadius: 16,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      alignItems: "center",
+      gap: theme.spacing.sm + theme.spacing.xs,
+    },
+    timeRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    input: {
+      width: INPUT_WIDTH,
+      textAlign: "center",
+      fontSize: theme.typography.size.xxl,
+      fontFamily: theme.typography.fontFamily.bold,
+      paddingVertical: theme.spacing.sm - 2,
+      paddingHorizontal: theme.spacing.xs,
+      borderWidth: 1,
+      borderRadius: theme.rounded.md,
+      color: theme.text,
+      borderColor: theme.border,
+      backgroundColor: theme.card,
+    },
+    separator: {
+      fontSize: theme.typography.size.xxl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+    },
+  });

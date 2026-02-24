@@ -107,9 +107,17 @@ export default function ChatScreen() {
   }, [isPremium, countToday, limit, t]);
 
   const emptyDisabled = sending || limitReached || !net.isConnected;
+  const listContentStyle = useMemo(
+    () => ({
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 16 + (limitReached ? 160 : 0),
+    }),
+    [limitReached]
+  );
 
   return (
-    <Layout disableScroll style={{ paddingLeft: 0, paddingRight: 0 }}>
+    <Layout disableScroll style={styles.layout}>
       <View style={styles.header}>
         <IconButton
           icon={<MaterialIcons name="menu" />}
@@ -176,11 +184,7 @@ export default function ChatScreen() {
                 onPick={handleSend}
               />
             }
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingTop: 8,
-              paddingBottom: 16 + (limitReached ? 160 : 0),
-            }}
+            contentContainerStyle={listContentStyle}
           />
           <InputBar
             placeholder={t("input.placeholder")}
@@ -202,6 +206,10 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
+  layout: {
+    paddingLeft: 0,
+    paddingRight: 0,
+  },
   flex: { flex: 1 },
   container: { flex: 1 },
   header: {

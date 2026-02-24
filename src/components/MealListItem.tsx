@@ -156,7 +156,7 @@ const MealListItemBase: React.FC<Props> = ({
   };
 
   return (
-    <View onLayout={onLayout} style={{ position: "relative" }}>
+    <View onLayout={onLayout} style={styles.root}>
       <View
         pointerEvents="box-none"
         style={[StyleSheet.absoluteFill, { justifyContent: "center" }]}
@@ -200,7 +200,10 @@ const MealListItemBase: React.FC<Props> = ({
 
       <Animated.View
         {...pan.panHandlers}
-        style={{ transform: [{ translateX }], width: rowWidth || undefined }}
+        style={[
+          styles.animatedRow,
+          { transform: [{ translateX }], width: rowWidth || undefined },
+        ]}
       >
         <Pressable
           onPress={handleCardPress}
@@ -234,11 +237,7 @@ const MealListItemBase: React.FC<Props> = ({
               >
                 {selected ? (
                   <Text
-                    style={{
-                      color: theme.onAccent,
-                      fontSize: 16,
-                      lineHeight: 16,
-                    }}
+                    style={[styles.checkMark, { color: theme.onAccent }]}
                   >
                     ✓
                   </Text>
@@ -256,31 +255,17 @@ const MealListItemBase: React.FC<Props> = ({
             />
           )}
 
-          <View style={{ flex: 1, marginLeft: theme.spacing.md }}>
+          <View style={[styles.contentWrap, { marginLeft: theme.spacing.md }]}>
             <View style={styles.headerRow}>
               <Text
                 numberOfLines={1}
-                style={{
-                  color: theme.text,
-                  fontFamily: theme.typography.fontFamily.bold,
-                  fontSize: theme.typography.size.md,
-                  flexGrow: 1,
-                  flexShrink: 1,
-                  minWidth: 0,
-                  marginRight: 8,
-                  maxWidth: "68%",
-                }}
+                style={[styles.mealName, { color: theme.text }]}
               >
                 {meal.name || t("meal", { ns: "home" })}
               </Text>
               <Text
                 numberOfLines={1}
-                style={{
-                  color: theme.text,
-                  fontFamily: theme.typography.fontFamily.bold,
-                  fontSize: theme.typography.size.lg,
-                  flexShrink: 0,
-                }}
+                style={[styles.kcalText, { color: theme.text }]}
               >
                 {nutrition.kcal} {t("kcal")}
               </Text>
@@ -329,6 +314,10 @@ function propsEqual(prev: Props, next: Props) {
 export const MealListItem = React.memo(MealListItemBase, propsEqual);
 
 const styles = StyleSheet.create({
+  root: {
+    position: "relative",
+  },
+  animatedRow: {},
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -350,6 +339,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  checkMark: {
+    fontSize: 16,
+    lineHeight: 16,
+  },
+  contentWrap: {
+    flex: 1,
+  },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -357,6 +353,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   chipsRow: { flexDirection: "row", justifyContent: "space-between", gap: 6 },
+  mealName: {
+    fontSize: 18,
+    fontWeight: "700",
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    marginRight: 8,
+    maxWidth: "68%",
+  },
+  kcalText: {
+    fontSize: 20,
+    fontWeight: "700",
+    flexShrink: 0,
+  },
   actions: {
     paddingBottom: 12,
     paddingLeft: 8,

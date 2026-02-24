@@ -1,27 +1,30 @@
-import { View, Text } from "react-native";
+import { useMemo } from "react";
+import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
 export function StreakBadge({ value }: { value: number }) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+
   return (
-    <View
-      style={{
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 999,
-        backgroundColor: theme.accentSecondary,
-        marginLeft: 8,
-      }}
-    >
-      <Text
-        style={{
-          color: theme.onAccent,
-          fontFamily: theme.typography.fontFamily.bold,
-          fontSize: theme.typography.size.md,
-        }}
-      >
-        {value}🔥
-      </Text>
+    <View style={styles.badge}>
+      <Text style={styles.label}>{value}🔥</Text>
     </View>
   );
 }
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    badge: {
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.rounded.full,
+      backgroundColor: theme.accentSecondary,
+      marginLeft: theme.spacing.sm,
+    },
+    label: {
+      color: theme.onAccent,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.md,
+    },
+  });

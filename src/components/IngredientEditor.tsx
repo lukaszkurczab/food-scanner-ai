@@ -211,7 +211,7 @@ export const IngredientEditor: React.FC<Props> = ({
         },
       ]}
     >
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <View style={styles.nameRow}>
         <TextInput
           style={[
             inputStyle(Boolean(errors.name), nameTouched),
@@ -487,6 +487,10 @@ export const IngredientEditor: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   box: { borderWidth: 1, marginBottom: 16 },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   input: {
     borderWidth: 1,
     borderRadius: 12,

@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, Pressable, TouchableOpacity } from "react-native";
+import React, { useMemo } from "react";
+import { View, Text, Pressable, TouchableOpacity, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import type { UserNotification } from "@/types/notification";
 import { ButtonToggle } from "@/components/ButtonToggle";
@@ -19,50 +19,20 @@ export const NotificationCard: React.FC<Props> = ({
   onRemove,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("notifications");
   const time = `${String(item.time.hour).padStart(2, "0")}:${String(
     item.time.minute
   ).padStart(2, "0")}`;
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        borderBottomWidth: 1,
-        borderColor: theme.border,
-        padding: theme.spacing.sm,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
-      <View style={{ gap: 4 }}>
-        <Text
-          style={{
-            color: theme.text,
-            fontFamily: theme.typography.fontFamily.bold,
-          }}
-        >
-          {item.name}
-        </Text>
-        <Text
-          style={{
-            color: theme.textSecondary,
-            fontFamily: theme.typography.fontFamily.regular,
-          }}
-        >
-          {t(`type.${item.type}`)}
-        </Text>
-        <Text
-          style={{
-            color: theme.textSecondary,
-            fontFamily: theme.typography.fontFamily.regular,
-          }}
-        >
-          {time}
-        </Text>
+    <Pressable onPress={onPress} style={styles.card}>
+      <View style={styles.detailsColumn}>
+        <Text style={styles.title}>{item.name}</Text>
+        <Text style={styles.secondaryText}>{t(`type.${item.type}`)}</Text>
+        <Text style={styles.secondaryText}>{time}</Text>
       </View>
-      <View style={{ gap: 16, alignItems: "center" }}>
+      <View style={styles.actionsColumn}>
         <ButtonToggle
           value={!!item.enabled}
           onToggle={onToggle}
@@ -71,7 +41,7 @@ export const NotificationCard: React.FC<Props> = ({
           }
         />
         <TouchableOpacity onPress={onRemove}>
-          <Text style={{ color: theme.error.text || "#d00" }}>
+          <Text style={styles.deleteText}>
             {t("form.delete", "Delete")}
           </Text>
         </TouchableOpacity>
@@ -79,3 +49,34 @@ export const NotificationCard: React.FC<Props> = ({
     </Pressable>
   );
 };
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    card: {
+      borderBottomWidth: 1,
+      borderColor: theme.border,
+      padding: theme.spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    detailsColumn: {
+      gap: theme.spacing.xs,
+    },
+    title: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    secondaryText: {
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    actionsColumn: {
+      gap: theme.spacing.md,
+      alignItems: "center",
+    },
+    deleteText: {
+      color: theme.error.text || "#d00",
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+  });

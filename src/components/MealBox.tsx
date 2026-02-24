@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { TextInput } from "@/components/TextInput";
@@ -60,6 +61,7 @@ export const MealBox = ({
   onTypeChange,
 }: MealBoxProps) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation(["meals", "common"]);
 
   const macroChartData = [
@@ -79,35 +81,14 @@ export const MealBox = ({
   const renderNutritionGraph = () => {
     if (nutrition.protein || nutrition.carbs || nutrition.fat)
       return (
-        <View
-          style={{
-            alignItems: "center",
-            marginTop: theme.spacing.md,
-            alignSelf: "center",
-          }}
-        >
+        <View style={styles.graphWrapper}>
           <PieChart data={macroChartData} maxSize={140} />
         </View>
       );
   };
 
   return (
-    <View
-      style={{
-        backgroundColor: theme.background,
-        borderRadius: theme.rounded.lg,
-        borderWidth: 1,
-        borderColor: theme.border,
-        padding: theme.spacing.lg,
-        marginBottom: theme.spacing.lg,
-        shadowColor: theme.shadow,
-        shadowOffset: { width: 1, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 2,
-        elevation: 3,
-        marginTop: theme.spacing.lg,
-      }}
-    >
+    <View style={styles.container}>
       {editable ? (
         <TextInput
           value={name}
@@ -117,22 +98,16 @@ export const MealBox = ({
           maxLength={48}
         />
       ) : (
-        <Text
-          style={{
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: theme.typography.size.xl,
-            color: theme.text,
-          }}
-        >
+        <Text style={styles.nameText}>
           {name}
         </Text>
       )}
 
-      <View style={{ marginVertical: theme.spacing.md }}>
+      <View style={styles.typeSection}>
         {editable ? (
           <Dropdown
             value={type ?? "breakfast"}
-            style={{ marginTop: theme.spacing.sm }}
+            style={styles.typeDropdown}
             options={mealTypeOptions.map((opt) => ({
               ...opt,
               label: t(opt.label),
@@ -143,23 +118,11 @@ export const MealBox = ({
           />
         ) : (
           <>
-            <Text
-              style={{
-                fontSize: theme.typography.size.md,
-                color: theme.text,
-              }}
-            >
+            <Text style={styles.typeText}>
               {type ? t(`meals:${type}`) : ""}
             </Text>
             {!!addedAt && (
-              <Text
-                style={{
-                  marginTop: 4,
-                  fontSize: theme.typography.size.sm,
-                  color: theme.text,
-                  opacity: 0.7,
-                }}
-              >
+              <Text style={styles.addedAtText}>
                 {t("meals:added_at")}: {fmt(addedAt)}
               </Text>
             )}
@@ -179,12 +142,55 @@ export const MealBox = ({
   );
 };
 
-const styles = StyleSheet.create({
-  macrosRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-    marginBottom: 2,
-    gap: 10,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: theme.background,
+      borderRadius: theme.rounded.lg,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: theme.spacing.lg,
+      marginBottom: theme.spacing.lg,
+      marginTop: theme.spacing.lg,
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 1, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 2,
+      elevation: 3,
+    },
+    nameText: {
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.xl,
+      color: theme.text,
+    },
+    typeSection: {
+      marginVertical: theme.spacing.md,
+    },
+    typeDropdown: {
+      marginTop: theme.spacing.sm,
+    },
+    typeText: {
+      fontSize: theme.typography.size.md,
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    addedAtText: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.size.sm,
+      color: theme.text,
+      opacity: 0.7,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    macrosRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: theme.spacing.sm + theme.spacing.xs / 2,
+      marginBottom: theme.spacing.xs / 2,
+      gap: theme.spacing.sm + theme.spacing.xs / 2,
+    },
+    graphWrapper: {
+      alignItems: "center",
+      marginTop: theme.spacing.md,
+      alignSelf: "center",
+    },
+  });

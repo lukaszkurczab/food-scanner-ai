@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Image, Text, StyleSheet } from "react-native";
 import type { Badge } from "@/types/badge";
 import { useTheme } from "@/theme/useTheme";
@@ -45,84 +45,90 @@ export default function AvatarBadge({
   overrideEmoji,
 }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const sel = pickBadge(badges);
   const borderColor = overrideColor ?? sel?.color ?? theme.border;
   const emoji = overrideEmoji ?? sel?.icon ?? null;
+  const avatarSize = size - 6;
+  const wrapStyle = useMemo(
+    () => ({
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      borderColor,
+    }),
+    [size, borderColor]
+  );
+  const avatarStyle = useMemo(
+    () => ({
+      width: avatarSize,
+      height: avatarSize,
+      borderRadius: avatarSize / 2,
+    }),
+    [avatarSize]
+  );
+  const badgeSize = Math.max(22, Math.floor(size * 0.24));
+  const badgeRadius = Math.max(11, Math.floor(size * 0.12));
+  const badgeDotStyle = useMemo(
+    () => ({
+      width: badgeSize,
+      height: badgeSize,
+      borderRadius: badgeRadius,
+      borderColor,
+    }),
+    [badgeSize, badgeRadius, borderColor]
+  );
+  const emojiStyle = useMemo(
+    () => ({ fontSize: Math.max(12, Math.floor(size * 0.14)) }),
+    [size]
+  );
 
   return (
     <View
-      style={[
-        styles.wrap,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderColor,
-          backgroundColor: theme.card,
-        },
-      ]}
+      style={[styles.wrap, wrapStyle]}
       accessibilityRole="image"
       accessibilityLabel={accessibilityLabel}
     >
       {uri ? (
         <Image
           source={{ uri }}
-          style={{
-            width: size - 6,
-            height: size - 6,
-            borderRadius: (size - 6) / 2,
-          }}
+          style={avatarStyle}
         />
       ) : (
-        <View
-          style={[
-            styles.fallback,
-            { width: size - 6, height: size - 6, borderRadius: (size - 6) / 2 },
-          ]}
-        >
+        <View style={[styles.fallback, avatarStyle]}>
           {fallbackIcon ?? null}
         </View>
       )}
 
       {emoji ? (
-        <View
-          style={[
-            styles.badgeDot,
-            {
-              width: Math.max(22, Math.floor(size * 0.24)),
-              height: Math.max(22, Math.floor(size * 0.24)),
-              borderRadius: Math.max(11, Math.floor(size * 0.12)),
-              backgroundColor: theme.card,
-              borderColor,
-            },
-          ]}
-        >
-          <Text style={{ fontSize: Math.max(12, Math.floor(size * 0.14)) }}>
-            {emoji}
-          </Text>
+        <View style={[styles.badgeDot, badgeDotStyle]}>
+          <Text style={emojiStyle}>{emoji}</Text>
         </View>
       ) : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-  },
-  fallback: {
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  badgeDot: {
-    position: "absolute",
-    right: -2,
-    bottom: -2,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    wrap: {
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 3,
+      backgroundColor: theme.card,
+    },
+    fallback: {
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+    },
+    badgeDot: {
+      position: "absolute",
+      right: -2,
+      bottom: -2,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: StyleSheet.hairlineWidth,
+      backgroundColor: theme.card,
+    },
+  });

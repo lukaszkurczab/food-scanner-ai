@@ -22,6 +22,7 @@ export const DateTimeSection: React.FC<Props> = ({
   maxDate,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { i18n, t } = useTranslation();
   const locale = i18n.language || "en";
 
@@ -84,28 +85,13 @@ export const DateTimeSection: React.FC<Props> = ({
   };
 
   return (
-    <View style={{ gap: theme.spacing.sm }}>
+    <View style={styles.container}>
       <Pressable onPress={handleOpen}>
         <Card variant="outlined">
-          <View style={[styles.rowBetween, { gap: theme.spacing.sm }]}>
+          <View style={styles.rowBetween}>
             <View style={styles.flex1}>
-              <Text
-                style={{
-                  fontSize: theme.typography.size.lg,
-                  color: theme.text,
-                  fontWeight: "700",
-                }}
-              >
-                {dateText}
-              </Text>
-              <Text
-                style={{
-                  fontSize: theme.typography.size.sm,
-                  color: theme.textSecondary,
-                }}
-              >
-                {timeText}
-              </Text>
+              <Text style={styles.dateText}>{dateText}</Text>
+              <Text style={styles.timeText}>{timeText}</Text>
             </View>
             <MaterialIcons name="calendar-month" size={24} color={theme.link} />
           </View>
@@ -125,7 +111,7 @@ export const DateTimeSection: React.FC<Props> = ({
         onSecondaryAction={handleCancel}
         onPrimaryAction={handleSave}
       >
-        <View style={{ paddingTop: theme.spacing.sm, gap: theme.spacing.md }}>
+        <View style={styles.modalContent}>
           {prefers12h ? (
             <Clock12h value={tmp} onChange={setTmp} />
           ) : (
@@ -148,11 +134,32 @@ export const DateTimeSection: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  rowBetween: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  flex1: { flex: 1 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      gap: theme.spacing.sm,
+    },
+    rowBetween: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    flex1: {
+      flex: 1,
+    },
+    dateText: {
+      fontSize: theme.typography.size.lg,
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    timeText: {
+      fontSize: theme.typography.size.sm,
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    modalContent: {
+      paddingTop: theme.spacing.sm,
+      gap: theme.spacing.md,
+    },
+  });

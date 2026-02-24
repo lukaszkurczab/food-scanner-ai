@@ -25,7 +25,7 @@ export default function ColorPickerPanel({ value, onChange }: Props) {
         boundedThumb
         adaptSpectrum
         thumbSize={20}
-        style={{ width: "100%" }}
+        style={styles.picker}
       >
         <Preview hideText={true} />
         <Panel1 />
@@ -37,4 +37,5 @@ export default function ColorPickerPanel({ value, onChange }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { width: "100%" },
+  picker: { width: "100%" },
 });

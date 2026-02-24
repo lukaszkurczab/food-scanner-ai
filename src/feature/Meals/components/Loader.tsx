@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -13,13 +14,14 @@ export default function Loader({
   size = "large",
 }: LoaderProps) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ActivityIndicator
         size={size}
         color={theme.accentSecondary || "#1696ff"}
-        style={{ marginBottom: 36 }}
+        style={styles.spinner}
       />
       <Text style={[styles.title, { color: theme.text }]}>{text}</Text>
       <Text style={[styles.subtext, { color: theme.textSecondary }]}>
@@ -29,13 +31,17 @@ export default function Loader({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center" },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  subtext: { fontSize: 16, opacity: 0.85, textAlign: "center" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: { flex: 1, justifyContent: "center", alignItems: "center" },
+    spinner: {
+      marginBottom: theme.spacing.xl + theme.spacing.xs,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: "bold",
+      textAlign: "center",
+      marginBottom: theme.spacing.md - theme.spacing.xs,
+    },
+    subtext: { fontSize: 16, opacity: 0.85, textAlign: "center" },
+  });

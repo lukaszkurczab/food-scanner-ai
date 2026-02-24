@@ -379,7 +379,7 @@ export default function ReviewIngredientsEditor({
             <>
               <Pressable
                 onPress={() => setPreviewVisible(true)}
-                style={{ width: "100%", height: "100%" }}
+                style={styles(theme).imagePressable}
                 disabled={editingIdx !== null}
               >
                 <Image
@@ -555,6 +555,10 @@ const styles = (theme: ReturnType<typeof useTheme>) =>
       height: IMAGE_SIZE,
       borderRadius: theme.rounded.lg,
       backgroundColor: "#B2C0C9",
+    },
+    imagePressable: {
+      width: "100%",
+      height: "100%",
     },
     menuButtonContainer: {
       position: "absolute",

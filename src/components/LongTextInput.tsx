@@ -1,5 +1,5 @@
-import { forwardRef } from "react";
-import { View, TextInput as RNTextInput, Text } from "react-native";
+import { forwardRef, useMemo } from "react";
+import { View, TextInput as RNTextInput, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import type { ViewStyle, TextStyle } from "react-native";
 
@@ -41,6 +41,7 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
     ref
   ) => {
     const theme = useTheme();
+    const styles = useMemo(() => makeStyles(theme), [theme.mode]);
     const isEditable = editable !== undefined ? editable : !disabled;
 
     const hasError = !!error;
@@ -48,18 +49,29 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
       ? theme.error.border || theme.error.background
       : theme.border || "transparent";
     const borderWidth = hasError ? 1.5 : 1;
+    const minHeight = Math.max(90, numberOfLines * 22);
+    const inputDynamicStyle = useMemo(
+      () => ({
+        minHeight,
+        borderWidth,
+        borderColor,
+      }),
+      [minHeight, borderWidth, borderColor]
+    );
+    const counterColorStyle = useMemo(
+      () => ({
+        color:
+          value.length >= maxLength
+            ? theme.error.text
+            : theme.textSecondary,
+      }),
+      [value.length, maxLength, theme.error.text, theme.textSecondary]
+    );
 
     return (
-      <View style={[{ width: "100%", position: "relative" }, style]}>
+      <View style={[styles.container, style]}>
         {label && (
-          <Text
-            style={{
-              color: theme.textSecondary,
-              fontSize: theme.typography.size.sm,
-              marginBottom: theme.spacing.xs / 2,
-              fontFamily: theme.typography.fontFamily.medium,
-            }}
-          >
+          <Text style={styles.label}>
             {label}
           </Text>
         )}
@@ -71,23 +83,8 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
           placeholderTextColor={theme.textSecondary}
           editable={isEditable}
           style={[
-            {
-              minHeight: Math.max(90, numberOfLines * 22),
-              borderRadius: theme.rounded.md,
-              borderWidth,
-              borderColor,
-              backgroundColor: theme.card,
-              color: theme.text,
-              fontSize: theme.typography.size.base,
-              fontFamily: theme.typography.fontFamily.regular,
-              padding: theme.spacing.md,
-              textAlignVertical: "top",
-              shadowColor: theme.shadow,
-              shadowOpacity: 0.12,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 3,
-            },
+            styles.input,
+            inputDynamicStyle,
             inputStyle,
           ]}
           multiline
@@ -99,29 +96,12 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
           maxLength={maxLength}
         />
         <Text
-          style={{
-            position: "absolute",
-            right: theme.spacing.md,
-            bottom: theme.spacing.sm,
-            color:
-              value.length >= maxLength
-                ? theme.error.text
-                : theme.textSecondary,
-            fontSize: theme.typography.size.xs,
-            fontFamily: theme.typography.fontFamily.medium,
-          }}
+          style={[styles.counter, counterColorStyle]}
         >
           {value.length}/{maxLength}
         </Text>
         {!!error && (
-          <Text
-            style={{
-              color: theme.error.text,
-              fontSize: theme.typography.size.xs,
-              marginTop: theme.spacing.xs / 2,
-              fontFamily: theme.typography.fontFamily.medium,
-            }}
-          >
+          <Text style={styles.errorText}>
             {error}
           </Text>
         )}
@@ -131,3 +111,44 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
 );
 
 LongTextInput.displayName = "LongTextInput";
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      width: "100%",
+      position: "relative",
+    },
+    label: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      marginBottom: theme.spacing.xs / 2,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    input: {
+      borderRadius: theme.rounded.md,
+      backgroundColor: theme.card,
+      color: theme.text,
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.regular,
+      padding: theme.spacing.md,
+      textAlignVertical: "top",
+      shadowColor: theme.shadow,
+      shadowOpacity: 0.12,
+      shadowRadius: theme.spacing.sm,
+      shadowOffset: { width: 0, height: theme.spacing.xs / 2 },
+      elevation: 3,
+    },
+    counter: {
+      position: "absolute",
+      right: theme.spacing.md,
+      bottom: theme.spacing.sm,
+      fontSize: theme.typography.size.xs,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    errorText: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.xs,
+      marginTop: theme.spacing.xs / 2,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+  });

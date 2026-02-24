@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Pressable,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleProp,
   ViewStyle,
   PressableProps,
+  StyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -26,28 +27,18 @@ export const ErrorButton: React.FC<ErrorButtonProps> = ({
   ...rest
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
-  const borderColor = theme.error.border;
   const textColor = theme.error.text;
-  const backgroundColor = theme.error.background;
   const isDisabled = disabled || loading;
 
   return (
     <Pressable
       style={({ pressed }) => [
-        {
-          backgroundColor,
-          borderColor,
-          borderWidth: 1.5,
-          borderRadius: theme.rounded.full,
-          paddingVertical: theme.spacing.md,
-          paddingHorizontal: theme.spacing.lg,
-          alignSelf: "stretch",
-          width: "100%",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: pressed && !isDisabled ? 0.8 : isDisabled ? 0.6 : 1,
-        },
+        styles.buttonBase,
+        styles.buttonColors,
+        pressed && !isDisabled ? styles.buttonPressed : null,
+        isDisabled ? styles.buttonDisabled : null,
         style,
       ]}
       onPress={onPress}
@@ -59,19 +50,41 @@ export const ErrorButton: React.FC<ErrorButtonProps> = ({
       {loading ? (
         <ActivityIndicator size="small" color={textColor} />
       ) : (
-        <Text
-          style={{
-            color: textColor,
-            fontSize: theme.typography.size.base,
-            fontWeight: "bold",
-            fontFamily: theme.typography.fontFamily.bold,
-            letterSpacing: 0.2,
-            textAlign: "center",
-          }}
-        >
+        <Text style={styles.label}>
           {label}
         </Text>
       )}
     </Pressable>
   );
 };
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    buttonBase: {
+      borderWidth: 1.5,
+      borderRadius: theme.rounded.full,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      alignSelf: "stretch",
+      width: "100%",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    buttonColors: {
+      backgroundColor: theme.error.background,
+      borderColor: theme.error.border,
+    },
+    buttonPressed: {
+      opacity: 0.8,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    label: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.bold,
+      letterSpacing: 0.2,
+      textAlign: "center",
+    },
+  });
