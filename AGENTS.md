@@ -32,6 +32,53 @@
 - If something goes sideways or assumptions change: stop, re-plan, and explain.
 - Prefer the smallest correct change. Avoid refactors unless requested.
 
+## Refactor Loop (required)
+
+Applies to any non-trivial task (>= 3 steps), architectural change, refactor, boundary cleanup, or import-graph change.
+
+### Refactor trigger keywords
+
+A task is considered a refactor if it includes any of:
+
+- "refactor", "boundary", "imports", "architecture", "extract", "move file", "decouple"
+
+### Preflight (default)
+
+Before editing code, run:
+
+1. `mcp__ollama_sidecar__propose_approaches`
+   - Input: task description + constraints from this file.
+   - Output: 2–3 approaches + recommended approach.
+
+2. `mcp__ollama_sidecar__risk_check`
+   - Input: chosen approach + known hotspots.
+   - Output: risks + regression vectors + test checklist + rollback plan.
+
+Skip preflight only if the user explicitly says **"skip preflight"**.
+
+### Hard requirement (tool-before-edit)
+
+For refactors/boundary work: **do not edit any files** until both MCP tools have been called:
+
+- `mcp__ollama_sidecar__propose_approaches`
+- `mcp__ollama_sidecar__risk_check`
+
+If MCP tools are unavailable or time out: **stop and report**; do not proceed with edits.
+
+### Execution
+
+- Implement **PR1 only** (smallest correct change). Do not start PR2 unless the user says **"continue"**.
+- Keep diffs small and behavior unchanged unless explicitly requested.
+
+### Quality Gate (must pass)
+
+Always run and report results:
+
+- `npm run lint`
+- `npm run typecheck`
+
+If a gate fails: fix and re-run (max 3 attempts). If still failing: stop and report the top blockers with file/line and a minimal next step.
+
 ## Codebase First
 
 - Search the repo for existing patterns (navigation, hooks, services, theme, i18n) and follow them.
@@ -68,7 +115,7 @@
 ## Verification Before Done
 
 - Never claim “done” without verification.
-- Always run: `npm run typecheck` (or `pnpm/yarn` equivalent in this repo).
+- Always run: `npm run lint` and `npm run typecheck` (or `pnpm/yarn` equivalent in this repo).
 - If tests exist for the touched area: run them; otherwise provide a short manual verification checklist.
 - For UI flows: list the exact screens/steps verified (iOS + Android if relevant).
 
@@ -91,35 +138,3 @@ For each change-set, include:
 - No destructive actions (delete/migrate/overwrite data, breaking schema changes) without explicit confirmation.
 - No output of personal data from logs/screenshots; redact identifiers.
 - No secrets in code or logs. Never ask for or output API keys.
-
-## Refactor Loop (required)
-
-Applies to any non-trivial task (>= 3 steps), architectural change, refactor, or boundary cleanup.
-
-### Preflight (default)
-
-Before editing code, run:
-
-1. `mcp__ollama_sidecar__propose_approaches`
-   - Input: the task description + constraints from this file.
-   - Output: 2–3 approaches + recommended approach.
-
-2. `mcp__ollama_sidecar__risk_check`
-   - Input: the chosen approach + any known hotspots.
-   - Output: risks + regression vectors + test checklist + rollback plan.
-
-Skip preflight only if the user explicitly says **"skip preflight"**.
-
-### Execution
-
-- Implement **PR1 only** (smallest correct change). Do not start PR2 unless the user says **"continue"**.
-- Keep diffs small and behavior unchanged unless explicitly requested.
-
-### Quality Gate (must pass)
-
-Always run and report results:
-
-- `npm run lint`
-- `npm run typecheck`
-
-If a gate fails: fix and re-run (max 3 attempts). If still failing: stop and report the top blockers with file/line and a minimal next step.

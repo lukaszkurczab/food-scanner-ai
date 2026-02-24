@@ -8,6 +8,7 @@
     "android": "npx expo run:android",
     "ios": "npx expo run:ios",
     "prod:test": "npx expo start --no-dev --minify",
+    "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
     "tsc": "tsc",
     "typecheck": "tsc --noEmit",
     "publish:android": "npx eas build -p android --profile production",

@@ -13,7 +13,7 @@ import Purchases from "react-native-purchases";
 import type { PurchasesPackage } from "react-native-purchases";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
-import { restorePurchases } from "@/feature/Subscription/services/purchase";
+import { restorePurchases } from "@/services/billing/purchase";
 
 type Props = {
   used: number;

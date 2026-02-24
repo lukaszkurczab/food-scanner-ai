@@ -1,1 +1,1 @@
-export * from "./services/revenuecat";
+export * from "@/services/billing/revenuecat";

@@ -5,7 +5,7 @@ import {
   initRevenueCat,
   isRevenueCatConfigured,
   isBillingDisabled,
-} from "@/feature/Subscription";
+} from "@/services/billing/revenuecat";
 
 export function usePremiumStatus(uid?: string | null) {
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
