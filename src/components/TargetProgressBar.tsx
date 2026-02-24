@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -28,7 +27,6 @@ export const TargetProgressBar = ({
   const inheritedHeight =
     typeof height === "number" && height > 0 ? height : minH;
   const dotSize = Math.max(10, (inheritedHeight ?? minH) - 6);
-  const dotTop = Math.max(0, ((inheritedHeight ?? minH) - dotSize) / 2);
 
   return (
     <View style={{ flexGrow: 1 }}>

@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, Text, View, StyleSheet, Dimensions } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, Text, StyleSheet, Dimensions } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
 let showToast: ((msg: string) => void) | null = null;

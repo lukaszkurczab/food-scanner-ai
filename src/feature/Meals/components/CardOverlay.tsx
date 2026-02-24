@@ -1,5 +1,4 @@
 // feature/Meals/share/components/CardOverlay.tsx
-import React from "react";
 import { useTheme } from "@/theme/useTheme";
 import type { CardVariant } from "@/types/share";
 

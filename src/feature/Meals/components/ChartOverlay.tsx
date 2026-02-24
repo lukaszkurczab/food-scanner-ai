@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { ChartVariant } from "@/types/share";
@@ -54,7 +54,6 @@ export default function ChartOverlay({
   palette,
   showKcalLabel = true,
   showLegend = true,
-  barColor,
   textColor,
   fontFamily,
   fontWeight,

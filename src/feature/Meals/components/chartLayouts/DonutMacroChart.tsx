@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
@@ -93,7 +92,6 @@ export default function DonutMacroChart({
   innerRadiusRatio,
   textColor,
   fontFamily,
-  backgroundColor,
 }: Props) {
   const safeData: PieDatum[] = (data || []).map((d) => ({
     ...d,

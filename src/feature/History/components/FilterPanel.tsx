@@ -46,7 +46,7 @@ export const FilterPanel: React.FC<{
   isPremium?: boolean;
   windowDays?: number;
   onUpgrade?: () => void;
-}> = ({ scope, isPremium = false, windowDays, onUpgrade }) => {
+}> = ({ scope, isPremium = false, windowDays }) => {
   const theme = useTheme();
   const { t } = useTranslation(["history", "common"]);
   const { filters: ctxFilters, applyFilters, clearFilters } = useFilters(scope);
@@ -103,20 +103,6 @@ export const FilterPanel: React.FC<{
     if (ctxFilters?.dateRange) nextActive.push("date");
     setActive(nextActive);
   }, [ctxFilters]);
-
-  const cutoff = useMemo(() => {
-    if (!windowDays || isPremium) return null;
-    const now = new Date();
-    const c = new Date(now);
-    c.setDate(now.getDate() - (windowDays - 1));
-    c.setHours(0, 0, 0, 0);
-    return c;
-  }, [windowDays, isPremium]);
-
-  const isDateBelowWindow = useMemo(() => {
-    if (!cutoff) return false;
-    return dateRange.start < cutoff || dateRange.end < cutoff;
-  }, [dateRange, cutoff]);
 
   const addOrRemove = (k: FilterKey) =>
     setActive((prev) =>

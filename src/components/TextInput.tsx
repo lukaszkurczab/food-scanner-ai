@@ -167,11 +167,11 @@ export const TextInput: React.FC<Props> = ({
           ref={ref}
           value={value}
           onChangeText={onChangeText}
-          onFocus={(e) => {
+          onFocus={() => {
             setIsFocused(true);
             onFocus?.();
           }}
-          onBlur={(e) => {
+          onBlur={() => {
             setIsFocused(false);
             onBlur?.();
           }}

@@ -11,7 +11,9 @@ export function useRecentColors(baseQuickColors: string[]) {
       try {
         const raw = await AsyncStorage.getItem(KEY);
         if (raw) setRecent(JSON.parse(raw));
-      } catch {}
+      } catch {
+        // Ignore storage read errors for non-critical recent colors.
+      }
     })();
   }, []);
 
@@ -40,7 +42,9 @@ export function useRecentColors(baseQuickColors: string[]) {
     setRecent(next);
     try {
       await AsyncStorage.setItem(KEY, JSON.stringify(next));
-    } catch {}
+    } catch {
+      // Ignore storage write errors for non-critical recent colors.
+    }
   };
 
   return { recent, uniqueQuickColors, addRecentColor, setRecent } as const;

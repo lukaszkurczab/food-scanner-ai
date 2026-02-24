@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -184,7 +184,9 @@ export const PhotoPreview = ({
       setPhotoUri(res.uri);
       setCropMode(false);
       setOriginalUri(null);
-    } catch {}
+    } catch {
+      // Ignore crop errors and keep current preview state.
+    }
   };
 
   const handleCropCancel = () => {

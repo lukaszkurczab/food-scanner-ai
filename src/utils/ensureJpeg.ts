@@ -17,7 +17,9 @@ async function ensureDir(path: string) {
   const dir = parts.slice(0, parts.length - 1).join("/") + "/";
   try {
     await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-  } catch {}
+  } catch {
+    // Directory may already exist.
+  }
 }
 
 export async function convertToJpeg(

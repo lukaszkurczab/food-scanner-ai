@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, Modal, Pressable, ActivityIndicator, GestureResponderEvent, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
