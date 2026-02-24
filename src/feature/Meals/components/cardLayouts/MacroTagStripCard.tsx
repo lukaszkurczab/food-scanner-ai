@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TextStyle } from "react-native";
 import type { MacroCardProps } from "../CardOverlay";
 
 export default function MacroTagStripCard({
@@ -35,6 +35,12 @@ export default function MacroTagStripCard({
     return null;
   }
 
+  const getTagTextStyle = (color: string, weight: TextStyle["fontWeight"]) => ({
+    color,
+    fontWeight: weight,
+    fontFamily: effectiveFontFamily,
+  });
+
   return (
     <View style={styles.row}>
       {items.map((it) => {
@@ -48,12 +54,7 @@ export default function MacroTagStripCard({
             ]}
           >
             <Text
-              style={{
-                color: it.color,
-                fontSize: 12,
-                fontWeight: effectiveWeight,
-                fontFamily: effectiveFontFamily,
-              }}
+              style={[styles.tagText, getTagTextStyle(it.color, effectiveWeight)]}
             >
               {it.label}
             </Text>
@@ -65,6 +66,9 @@ export default function MacroTagStripCard({
 }
 
 const styles = StyleSheet.create({
+  tagText: {
+    fontSize: 12,
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",

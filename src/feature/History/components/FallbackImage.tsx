@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Image } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { Image, StyleSheet } from "react-native";
 import type { DimensionValue } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -19,7 +19,16 @@ export const FallbackImage: React.FC<Props> = ({
   onError,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const [errored, setErrored] = useState(false);
+  const imageStyle = useMemo(
+    () => ({
+      width,
+      height,
+      borderRadius: borderRadius ?? 16,
+    }),
+    [width, height, borderRadius]
+  );
 
   useEffect(() => {
     setErrored(false);
@@ -32,12 +41,7 @@ export const FallbackImage: React.FC<Props> = ({
   return (
     <Image
       source={{ uri }}
-      style={{
-        width,
-        height,
-        borderRadius: borderRadius ?? 16,
-        backgroundColor: theme.card,
-      }}
+      style={[styles.image, imageStyle]}
       onError={() => {
         setErrored(true);
         onError?.();
@@ -46,3 +50,10 @@ export const FallbackImage: React.FC<Props> = ({
     />
   );
 };
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    image: {
+      backgroundColor: theme.card,
+    },
+  });

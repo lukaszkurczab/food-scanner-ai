@@ -34,7 +34,7 @@ export default function ChangeUserDataScreen({
 
   return (
     <Layout>
-      <View style={{ justifyContent: "flex-start", flex: 1 }}>
+      <View style={styles.content}>
         <Pressable style={styles.header} onPress={() => navigation.goBack()}>
           <MaterialIcons name="chevron-left" size={28} color={theme.text} />
 
@@ -131,6 +131,10 @@ export default function ChangeUserDataScreen({
 }
 
 const styles = StyleSheet.create({
+  content: {
+    justifyContent: "flex-start",
+    flex: 1,
+  },
   header: {
     alignItems: "center",
     flexDirection: "row",

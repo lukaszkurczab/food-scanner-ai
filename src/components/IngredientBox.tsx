@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -40,11 +40,26 @@ export const IngredientBox: React.FC<Props> = ({
   hasError,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation(["meals", "common"]);
   const [menuVisible, setMenuVisible] = useState(false);
   const [editMode, setEditMode] = useState(initialEdit);
   const menuAnchor = useRef<View>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
+  const boxCardStyle = useMemo(
+    () => ({
+      backgroundColor: hasError ? theme.error.background : theme.background,
+      borderColor: hasError ? theme.error.border : theme.border,
+    }),
+    [hasError, theme.error.background, theme.error.border, theme.background, theme.border]
+  );
+  const dropdownPositionStyle = useMemo(
+    () => ({
+      left: menuPos.x,
+      top: menuPos.y,
+    }),
+    [menuPos.x, menuPos.y]
+  );
 
   const openMenu = () => {
     menuAnchor.current?.measureInWindow((x, y) => {
@@ -79,36 +94,15 @@ export const IngredientBox: React.FC<Props> = ({
     <View
       style={[
         styles.box,
-        {
-          backgroundColor: hasError ? theme.error.background : theme.background,
-          borderRadius: theme.rounded.lg,
-          borderColor: hasError ? theme.error.border : theme.border,
-          borderWidth: 1,
-          shadowColor: theme.shadow,
-          gap: theme.spacing.sm,
-          padding: theme.spacing.lg,
-        },
+        boxCardStyle,
       ]}
     >
       <View style={styles.row}>
-        <Text
-          style={{
-            color: theme.text,
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: theme.typography.size.lg,
-            flex: 1,
-          }}
-        >
+        <Text style={styles.title}>
           {ingredient.name || t("ingredient_name", { ns: "meals" })}
         </Text>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text
-            style={{
-              color: theme.textSecondary,
-              fontFamily: theme.typography.fontFamily.medium,
-              fontSize: theme.typography.size.md,
-            }}
-          >
+        <View style={styles.amountRow}>
+          <Text style={styles.amountText}>
             {ingredient.amount}
             {ingredient.unit ? ingredient.unit : "g"}
           </Text>
@@ -141,18 +135,12 @@ export const IngredientBox: React.FC<Props> = ({
           style={[RNStyleSheet.absoluteFill]}
           onPress={() => setMenuVisible(false)}
         >
-          <View
-            style={[
-              styles.dropdown,
-              {
-                left: menuPos.x,
-                top: menuPos.y,
-                backgroundColor: theme.background,
-                borderWidth: 1,
-                borderColor: theme.border,
-              },
-            ]}
-          >
+            <View
+              style={[
+                styles.dropdown,
+                dropdownPositionStyle,
+              ]}
+            >
             <Pressable
               style={styles.dropdownItem}
               onPress={() => {
@@ -165,9 +153,9 @@ export const IngredientBox: React.FC<Props> = ({
                 name="edit"
                 color={theme.text}
                 size={18}
-                style={{ marginRight: 8 }}
+                style={styles.dropdownIcon}
               />
-              <Text style={[styles.dropdownLabel, { color: theme.text }]}>
+              <Text style={styles.dropdownLabel}>
                 {t("edit", { ns: "common" })}
               </Text>
             </Pressable>
@@ -182,12 +170,12 @@ export const IngredientBox: React.FC<Props> = ({
                 name="delete"
                 color={theme.error.text}
                 size={18}
-                style={{ marginRight: 8 }}
+                style={styles.dropdownIcon}
               />
               <Text
                 style={[
                   styles.dropdownLabel,
-                  { color: theme.error.text, fontWeight: "bold" },
+                  styles.dropdownLabelDanger,
                 ]}
               >
                 {t("remove", { ns: "common" })}
@@ -200,46 +188,84 @@ export const IngredientBox: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  box: {
-    width: "100%",
-    marginBottom: 16,
-    elevation: 2,
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  macrosRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-    marginBottom: 2,
-    gap: 10,
-  },
-  icon: { marginLeft: 6, padding: 2 },
-  dropdown: {
-    position: "absolute",
-    borderRadius: 16,
-    paddingVertical: 8,
-    width: 200,
-    elevation: 5,
-    alignItems: "flex-start",
-    shadowColor: "#000",
-    shadowRadius: 12,
-    right: 24,
-  },
-  dropdownItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    width: "100%",
-  },
-  dropdownLabel: { fontSize: 16 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    box: {
+      width: "100%",
+      marginBottom: theme.spacing.md,
+      elevation: 2,
+      shadowOpacity: 0.07,
+      shadowRadius: theme.spacing.lg - theme.spacing.xs / 2,
+      borderRadius: theme.rounded.lg,
+      borderWidth: 1,
+      shadowColor: theme.shadow,
+      gap: theme.spacing.sm,
+      padding: theme.spacing.lg,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: theme.spacing.sm + theme.spacing.xs / 2,
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    title: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.lg,
+      flex: 1,
+    },
+    amountRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    amountText: {
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.medium,
+      fontSize: theme.typography.size.md,
+    },
+    macrosRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: theme.spacing.sm + theme.spacing.xs / 2,
+      marginBottom: theme.spacing.xs / 2,
+      gap: theme.spacing.sm + theme.spacing.xs / 2,
+    },
+    icon: {
+      marginLeft: theme.spacing.sm - theme.spacing.xs / 2,
+      padding: theme.spacing.xs / 2,
+    },
+    dropdown: {
+      position: "absolute",
+      borderRadius: theme.rounded.md,
+      paddingVertical: theme.spacing.sm,
+      width: 200,
+      elevation: 5,
+      alignItems: "flex-start",
+      shadowColor: theme.shadow,
+      shadowRadius: theme.spacing.lg - theme.spacing.xs / 2,
+      right: theme.spacing.lg,
+      backgroundColor: theme.background,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    dropdownItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: theme.spacing.sm + 1,
+      paddingHorizontal: theme.spacing.md + theme.spacing.xs / 2,
+      width: "100%",
+    },
+    dropdownIcon: {
+      marginRight: theme.spacing.sm,
+    },
+    dropdownLabel: {
+      fontSize: theme.typography.size.base,
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    dropdownLabelDanger: {
+      color: theme.error.text,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+  });

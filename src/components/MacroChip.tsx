@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -21,6 +21,7 @@ export const MacroChip: React.FC<MacroChipProps> = ({
   style,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation(["meals"]);
 
   const colorMap: Record<MacroKind, string> = {
@@ -46,6 +47,11 @@ export const MacroChip: React.FC<MacroChipProps> = ({
 
   const c = colorMap[kind];
   const bg = String(kind === "kcal" ? theme.border : c) + "18";
+  const chipStyle = useMemo(
+    () => ({ backgroundColor: bg, borderColor: c }),
+    [bg, c]
+  );
+  const valueTextStyle = useMemo(() => ({ color: c }), [c]);
 
   return (
     <View style={[styles.macroWrapper, style]}>
@@ -53,47 +59,17 @@ export const MacroChip: React.FC<MacroChipProps> = ({
         <Text
           numberOfLines={1}
           ellipsizeMode="tail"
-          style={[
-            styles.macroLabel,
-            {
-              color: theme.text,
-              fontSize: theme.typography.size.sm,
-            },
-          ]}
+          style={styles.macroLabel}
         >
           {label ?? defaultLabelMap[kind]}
         </Text>
-        <Text
-          style={{
-            opacity: 0.7,
-            color: theme.text,
-            fontSize: theme.typography.size.sm,
-            marginLeft: 6,
-            flexShrink: 0,
-          }}
-        >
+        <Text style={styles.unitText}>
           {unit ?? defaultUnitMap[kind]}
         </Text>
       </View>
 
-      <View
-        style={[
-          styles.macro,
-          {
-            backgroundColor: bg,
-            borderWidth: 1,
-            borderRadius: theme.rounded.full,
-            borderColor: c,
-          },
-        ]}
-      >
-        <Text
-          style={{
-            color: c,
-            fontWeight: "bold",
-            fontSize: theme.typography.size.base,
-          }}
-        >
+      <View style={[styles.macro, chipStyle]}>
+        <Text style={[styles.valueText, valueTextStyle]}>
           {value.toFixed(0)}
         </Text>
       </View>
@@ -101,28 +77,46 @@ export const MacroChip: React.FC<MacroChipProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  macroWrapper: {
-    width: "50%",
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  labelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-    marginBottom: 4,
-    minWidth: 0,
-  },
-  macroLabel: {
-    opacity: 0.7,
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  macro: {
-    alignItems: "center",
-    flexDirection: "row",
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    macroWrapper: {
+      width: "50%",
+      flexShrink: 1,
+      minWidth: 0,
+    },
+    labelRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: theme.spacing.xs / 2,
+      marginBottom: theme.spacing.xs,
+      minWidth: 0,
+    },
+    macroLabel: {
+      opacity: 0.7,
+      flexShrink: 1,
+      minWidth: 0,
+      color: theme.text,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    unitText: {
+      opacity: 0.7,
+      color: theme.text,
+      fontSize: theme.typography.size.sm,
+      marginLeft: theme.spacing.sm - theme.spacing.xs / 2,
+      flexShrink: 0,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    macro: {
+      alignItems: "center",
+      flexDirection: "row",
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs / 2,
+      borderWidth: 1,
+      borderRadius: theme.rounded.full,
+    },
+    valueText: {
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+  });

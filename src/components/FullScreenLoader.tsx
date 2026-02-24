@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -8,37 +9,31 @@ type Props = {
 
 export function FullScreenLoader({ label, testID }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const indicatorColor = theme.accent ?? theme.accentSecondary ?? theme.text;
   const captionColor = theme.textSecondary ?? theme.text;
-  const fontSize = theme.typography?.size?.md ?? 16;
 
   return (
-    <View
-      testID={testID}
-      style={[styles.container, { backgroundColor: theme.background }]}
-    >
+    <View testID={testID} style={styles.container}>
       <ActivityIndicator size="large" color={indicatorColor} />
-      {label ? (
-        <Text
-          style={{
-            marginTop: 12,
-            color: captionColor,
-            fontSize,
-            textAlign: "center",
-          }}
-        >
-          {label}
-        </Text>
-      ) : null}
+      {label ? <Text style={[styles.label, { color: captionColor }]}>{label}</Text> : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: theme.spacing.lg,
+      backgroundColor: theme.background,
+    },
+    label: {
+      marginTop: theme.spacing.md - theme.spacing.xs,
+      fontSize: theme.typography.size.md,
+      textAlign: "center",
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+  });

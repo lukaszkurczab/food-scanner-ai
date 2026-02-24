@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Modal, View, Pressable, Platform } from "react-native";
+import { Modal, View, Pressable, Platform, StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -8,6 +8,7 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/theme/useTheme";
 
 type ZoomModalProps = {
   visible: boolean;
@@ -16,6 +17,8 @@ type ZoomModalProps = {
 };
 
 const ZoomModal: React.FC<ZoomModalProps> = ({ visible, uri, onClose }) => {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -113,6 +116,10 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ visible, uri, onClose }) => {
       { scale: scale.value },
     ],
   }));
+  const closeButtonTopStyle = useMemo(
+    () => ({ top: Platform.select({ ios: 54, android: 24 }) }),
+    []
+  );
 
   return (
     <Modal
@@ -121,35 +128,18 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ visible, uri, onClose }) => {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#000",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <View style={styles.container}>
         <GestureDetector gesture={composed}>
           <Animated.Image
             source={{ uri }}
             resizeMode="contain"
-            style={[{ width: "100%", height: "100%" }, aStyle]}
+            style={[styles.image, aStyle]}
           />
         </GestureDetector>
 
         <Pressable
           onPress={onClose}
-          style={{
-            position: "absolute",
-            top: Platform.select({ ios: 54, android: 24 }),
-            right: 16,
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: "rgba(0,0,0,0.55)",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          style={[styles.closeButton, closeButtonTopStyle]}
           hitSlop={12}
           accessibilityLabel="Zamknij podgląd"
         >
@@ -161,3 +151,27 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ visible, uri, onClose }) => {
 };
 
 export default ZoomModal;
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.shadow,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    image: {
+      width: "100%",
+      height: "100%",
+    },
+    closeButton: {
+      position: "absolute",
+      right: theme.spacing.md,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });

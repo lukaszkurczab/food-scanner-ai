@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -9,41 +9,36 @@ type ErrorBoxProps = {
 
 export const ErrorBox: React.FC<ErrorBoxProps> = ({ message, style }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+
   if (!message) return null;
 
   return (
     <View
-      style={[
-        styles.box,
-        {
-          backgroundColor: theme.error.background,
-          borderColor: theme.error.border,
-          borderRadius: theme.rounded.sm,
-          padding: theme.spacing.sm,
-          marginBottom: theme.spacing.md,
-        },
-        style,
-      ]}
+      style={[styles.box, style]}
       accessible
       accessibilityRole="alert"
     >
-      <Text
-        style={{
-          color: theme.error.text,
-          fontFamily: theme.typography.fontFamily.medium,
-          fontSize: theme.typography.size.sm,
-        }}
-      >
-        {message}
-      </Text>
+      <Text style={styles.message}>{message}</Text>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  box: {
-    borderWidth: 1,
-    width: "100%",
-    alignItems: "center",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    box: {
+      borderWidth: 1,
+      width: "100%",
+      alignItems: "center",
+      backgroundColor: theme.error.background,
+      borderColor: theme.error.border,
+      borderRadius: theme.rounded.sm,
+      padding: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+    },
+    message: {
+      color: theme.error.text,
+      fontFamily: theme.typography.fontFamily.medium,
+      fontSize: theme.typography.size.sm,
+    },
+  });

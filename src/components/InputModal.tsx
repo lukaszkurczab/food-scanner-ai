@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Modal as RNModal,
   View,
@@ -16,7 +16,9 @@ import { SecondaryButton } from "@/components/SecondaryButton";
 import { IconButton } from "@/components/IconButton";
 import { MaterialIcons } from "@expo/vector-icons";
 
-const windowHeight = Dimensions.get("window").height;
+const WINDOW_HEIGHT = Dimensions.get("window").height;
+const MODAL_MAX_WIDTH = 400;
+const INPUT_VERTICAL_PADDING = 10;
 
 type Props = {
   visible: boolean;
@@ -54,15 +56,14 @@ export const InputModal: React.FC<Props> = ({
   error,
 }) => {
   const theme = useTheme();
-
-  const modalBg =
-    theme.card || (theme.mode === "dark" ? theme.background : theme.card);
-
-  const maxWidth = 400;
-
-  const handleBackdropPress = () => {
-    if (onClose) onClose();
-  };
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const modalSizeStyle = useMemo(
+    () =>
+      fullScreen
+        ? styles.modalContainerFullScreenSize
+        : styles.modalContainerDefaultSize,
+    [fullScreen, styles]
+  );
 
   const actionsSideBySide =
     !fullScreen &&
@@ -70,6 +71,10 @@ export const InputModal: React.FC<Props> = ({
     !!onPrimaryAction &&
     !!secondaryActionLabel &&
     !!onSecondaryAction;
+
+  const handleBackdropPress = () => {
+    onClose?.();
+  };
 
   return (
     <RNModal
@@ -80,7 +85,7 @@ export const InputModal: React.FC<Props> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <View style={[styles.overlay, { backgroundColor: theme.overlay }]} />
+        <View style={styles.overlay} />
       </TouchableWithoutFeedback>
 
       <KeyboardAvoidingView
@@ -88,29 +93,13 @@ export const InputModal: React.FC<Props> = ({
         style={styles.keyboardAvoiding}
       >
         <View
-          style={[
-            styles.centeredView,
-            fullScreen && {
-              minHeight: windowHeight,
-              justifyContent: "flex-start",
-            },
-          ]}
+          style={[styles.centeredView, fullScreen && styles.centeredViewFullscreen]}
         >
           <View
             style={[
               styles.modalContainer,
-              {
-                backgroundColor: modalBg,
-                borderRadius: theme.rounded.md,
-                padding: theme.spacing.lg,
-                maxWidth: maxWidth,
-                width: fullScreen ? "95%" : "90%",
-                maxHeight: fullScreen
-                  ? windowHeight * 0.96
-                  : windowHeight * 0.8,
-                marginTop: fullScreen ? theme.spacing.xxl : 0,
-              },
-              fullScreen && { flex: 1, width: "98%" },
+              modalSizeStyle,
+              fullScreen && styles.modalContainerFullScreen,
             ]}
           >
             {onClose && (
@@ -124,34 +113,9 @@ export const InputModal: React.FC<Props> = ({
               </View>
             )}
 
-            {title && (
-              <Text
-                style={{
-                  color: theme.text,
-                  fontSize: theme.typography.size.lg,
-                  fontFamily: theme.typography.fontFamily.bold,
-                  fontWeight: "bold",
-                  textAlign: "center",
-                  marginBottom: theme.spacing.md,
-                }}
-              >
-                {title}
-              </Text>
-            )}
+            {title && <Text style={styles.title}>{title}</Text>}
 
-            {message && (
-              <Text
-                style={{
-                  color: theme.textSecondary,
-                  fontSize: theme.typography.size.base,
-                  fontFamily: theme.typography.fontFamily.regular,
-                  marginBottom: theme.spacing.sm,
-                  textAlign: "center",
-                }}
-              >
-                {message}
-              </Text>
-            )}
+            {message && <Text style={styles.message}>{message}</Text>}
 
             <TextInput
               value={value}
@@ -159,19 +123,7 @@ export const InputModal: React.FC<Props> = ({
               placeholder={placeholder}
               placeholderTextColor={theme.textSecondary}
               secureTextEntry={secureTextEntry}
-              style={{
-                width: "100%",
-                borderRadius: theme.rounded.sm,
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.background,
-                color: theme.text,
-                paddingVertical: 10,
-                paddingHorizontal: 16,
-                marginBottom: theme.spacing.md,
-                fontSize: theme.typography.size.base,
-                fontFamily: theme.typography.fontFamily.regular,
-              }}
+              style={styles.input}
               autoCapitalize="none"
               autoCorrect={false}
               textContentType={secureTextEntry ? "password" : "none"}
@@ -179,21 +131,10 @@ export const InputModal: React.FC<Props> = ({
               accessibilityLabel={placeholder}
             />
 
-            {!!error && (
-              <Text
-                style={{
-                  color: theme.error.text,
-                  fontSize: theme.typography.size.sm,
-                  marginBottom: theme.spacing.sm,
-                  textAlign: "center",
-                }}
-              >
-                {error}
-              </Text>
-            )}
+            {!!error && <Text style={styles.errorText}>{error}</Text>}
 
             {footer ? (
-              <View style={{ marginTop: theme.spacing.md }}>{footer}</View>
+              <View style={styles.footer}>{footer}</View>
             ) : (primaryActionLabel && onPrimaryAction) ||
               (secondaryActionLabel && onSecondaryAction) ? (
               actionsSideBySide ? (
@@ -204,12 +145,7 @@ export const InputModal: React.FC<Props> = ({
                       onPress={onSecondaryAction!}
                     />
                   </View>
-                  <View
-                    style={[
-                      styles.actionHalf,
-                      { marginLeft: theme.spacing.sm },
-                    ]}
-                  >
+                  <View style={[styles.actionHalf, styles.actionHalfSpaced]}>
                     <PrimaryButton
                       label={primaryActionLabel!}
                       onPress={onPrimaryAction!}
@@ -222,12 +158,11 @@ export const InputModal: React.FC<Props> = ({
                     <PrimaryButton
                       label={primaryActionLabel}
                       onPress={onPrimaryAction}
-                      style={{
-                        marginBottom:
-                          secondaryActionLabel && onSecondaryAction
-                            ? theme.spacing.sm
-                            : 0,
-                      }}
+                      style={
+                        secondaryActionLabel && onSecondaryAction
+                          ? styles.primaryStackedSpacing
+                          : undefined
+                      }
                     />
                   )}
                   {secondaryActionLabel && onSecondaryAction && (
@@ -246,45 +181,111 @@ export const InputModal: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
-  },
-  keyboardAvoiding: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  centeredView: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-  },
-  modalContainer: {
-    alignSelf: "center",
-    minWidth: 260,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    position: "relative",
-  },
-  closeButton: {
-    position: "absolute",
-    right: 8,
-    top: 8,
-    zIndex: 10,
-  },
-  actionsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  actionHalf: {
-    flex: 1,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 0,
+      backgroundColor: theme.overlay,
+    },
+    keyboardAvoiding: {
+      flex: 1,
+      justifyContent: "center",
+    },
+    centeredView: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1,
+    },
+    centeredViewFullscreen: {
+      minHeight: WINDOW_HEIGHT,
+      justifyContent: "flex-start",
+    },
+    modalContainer: {
+      alignSelf: "center",
+      minWidth: 260,
+      elevation: 10,
+      backgroundColor: theme.card,
+      shadowColor: theme.shadow,
+      shadowOpacity: 0.16,
+      shadowRadius: theme.rounded.md,
+      shadowOffset: { width: 0, height: theme.spacing.xs },
+      position: "relative",
+      borderRadius: theme.rounded.md,
+      padding: theme.spacing.lg,
+      maxWidth: MODAL_MAX_WIDTH,
+    },
+    modalContainerDefaultSize: {
+      width: "90%",
+      maxHeight: WINDOW_HEIGHT * 0.8,
+    },
+    modalContainerFullScreenSize: {
+      width: "95%",
+      maxHeight: WINDOW_HEIGHT * 0.96,
+      marginTop: theme.spacing.xxl,
+    },
+    modalContainerFullScreen: {
+      flex: 1,
+      width: "98%",
+    },
+    closeButton: {
+      position: "absolute",
+      right: theme.spacing.sm,
+      top: theme.spacing.sm,
+      zIndex: 10,
+    },
+    title: {
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontWeight: "bold",
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    message: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.regular,
+      marginBottom: theme.spacing.sm,
+      textAlign: "center",
+    },
+    input: {
+      width: "100%",
+      borderRadius: theme.rounded.sm,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.background,
+      color: theme.text,
+      paddingVertical: INPUT_VERTICAL_PADDING,
+      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    errorText: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.sm,
+      marginBottom: theme.spacing.sm,
+      textAlign: "center",
+    },
+    footer: {
+      marginTop: theme.spacing.md,
+    },
+    actionsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: theme.spacing.sm,
+    },
+    actionHalf: {
+      flex: 1,
+    },
+    actionHalfSpaced: {
+      marginLeft: theme.spacing.sm,
+    },
+    primaryStackedSpacing: {
+      marginBottom: theme.spacing.sm,
+    },
+  });
 
 export default InputModal;

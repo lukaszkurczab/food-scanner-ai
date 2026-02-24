@@ -43,6 +43,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
   disabled = false,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const [trackW, setTrackW] = useState(1);
   const trackWAnim = useSharedValue(1);
@@ -174,44 +175,54 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     () => (
       <View style={styles.headerRow}>
         {!!label && (
-          <Text
-            style={{
-              color: theme.text,
-              fontFamily: theme.typography.fontFamily.bold,
-              fontSize: theme.typography.size.md,
-            }}
-          >
+          <Text style={styles.headerLabel}>
             {label}
           </Text>
         )}
-        <Text style={{ color: theme.text, fontSize: theme.typography.size.md }}>
+        <Text style={styles.headerValue}>
           {value[0]}–{value[1]}
         </Text>
       </View>
     ),
-    [label, theme, value]
+    [label, styles, value]
+  );
+  const containerStyle = useMemo(
+    () => ({
+      paddingHorizontal: theme.spacing.md,
+      gap: theme.spacing.sm,
+    }),
+    [theme.spacing.md, theme.spacing.sm]
+  );
+  const trackColorStyle = useMemo(
+    () => ({ backgroundColor: theme.border }),
+    [theme.border]
+  );
+  const fillColorStyle = useMemo(
+    () => ({ backgroundColor: theme.accentSecondary }),
+    [theme.accentSecondary]
+  );
+  const thumbColorStyle = useMemo(
+    () => ({
+      backgroundColor: theme.accentSecondary,
+      shadowColor: theme.shadow,
+    }),
+    [theme.accentSecondary, theme.shadow]
   );
 
   return (
-    <View
-      style={{
-        width: "100%",
-        paddingHorizontal: theme.spacing.md,
-        gap: theme.spacing.sm,
-      }}
-    >
+    <View style={[styles.container, containerStyle]}>
       {header}
 
       <Pressable
         onLayout={onTrackLayout}
         onPress={onTrackPress}
         disabled={disabled}
-        style={[styles.track, { backgroundColor: theme.border }]}
+        style={[styles.track, trackColorStyle]}
       >
         <Animated.View
           style={[
             styles.fill,
-            { backgroundColor: theme.accentSecondary },
+            fillColorStyle,
             fillStyle,
           ]}
         />
@@ -222,10 +233,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
               style={[
                 styles.thumb,
                 leftThumbStyle,
-                {
-                  backgroundColor: theme.accentSecondary,
-                  shadowColor: theme.shadow,
-                },
+                thumbColorStyle,
               ]}
             />
           </PanGestureHandler>
@@ -238,10 +246,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
               style={[
                 styles.thumb,
                 rightThumbStyle,
-                {
-                  backgroundColor: theme.accentSecondary,
-                  shadowColor: theme.shadow,
-                },
+                thumbColorStyle,
               ]}
             />
           </PanGestureHandler>
@@ -249,53 +254,71 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
       </Pressable>
 
       <View style={styles.minMaxRow}>
-        <Text style={{ color: theme.textSecondary }}>{min}</Text>
-        <Text style={{ color: theme.textSecondary }}>{max}</Text>
+        <Text style={styles.minMaxText}>{min}</Text>
+        <Text style={styles.minMaxText}>{max}</Text>
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  headerRow: {
-    marginBottom: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  track: {
-    position: "relative",
-    height: 8,
-    borderRadius: 999,
-    width: "100%",
-    justifyContent: "center",
-    overflow: "visible",
-  },
-  fill: {
-    position: "absolute",
-    left: 0,
-    height: 8,
-    borderRadius: 999,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  thumb: {
-    position: "absolute",
-    width: THUMB_RADIUS * 2,
-    height: THUMB_RADIUS * 2,
-    borderRadius: THUMB_RADIUS,
-    top: -(THUMB_RADIUS - 4),
-    elevation: 2,
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-  },
-  minMaxRow: {
-    marginTop: 6,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      width: "100%",
+    },
+    headerRow: {
+      marginBottom: theme.spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    headerLabel: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.md,
+    },
+    headerValue: {
+      color: theme.text,
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    track: {
+      position: "relative",
+      height: theme.spacing.sm,
+      borderRadius: theme.rounded.full,
+      width: "100%",
+      justifyContent: "center",
+      overflow: "visible",
+    },
+    fill: {
+      position: "absolute",
+      left: 0,
+      height: theme.spacing.sm,
+      borderRadius: theme.rounded.full,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: "center",
+      alignItems: "flex-start",
+    },
+    thumb: {
+      position: "absolute",
+      width: THUMB_RADIUS * 2,
+      height: THUMB_RADIUS * 2,
+      borderRadius: THUMB_RADIUS,
+      top: -(THUMB_RADIUS - theme.spacing.xs),
+      elevation: 2,
+      shadowOpacity: 0.15,
+      shadowRadius: theme.spacing.xs / 2,
+      shadowOffset: { width: 0, height: 1 },
+    },
+    minMaxRow: {
+      marginTop: theme.spacing.sm - theme.spacing.xs / 2,
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    minMaxText: {
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+  });

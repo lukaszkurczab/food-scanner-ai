@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 
 export const BottomTabBar: React.FC = () => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { uid } = useAuthContext();
   const { userData } = useUserContext();
   const { isPremium } = usePremiumContext();
@@ -57,49 +58,21 @@ export const BottomTabBar: React.FC = () => {
   ];
 
   return (
-    <View
-      style={[
-        styles.wrapper,
-        {
-          borderTopEndRadius: theme.rounded.lg,
-          borderTopLeftRadius: theme.rounded.lg,
-        },
-      ]}
-    >
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.card,
-            borderTopEndRadius: theme.rounded.md,
-            borderTopLeftRadius: theme.rounded.md,
-          },
-        ]}
-      >
+    <View style={styles.wrapper}>
+      <View style={styles.container}>
         {tabs.map((tab) => {
           if (tab.isFab) {
             return (
               <Pressable
                 key={tab.key}
                 onPress={tab.onPress}
-                style={[
-                  styles.fab,
-                  {
-                    backgroundColor: theme.accentSecondary,
-                    borderRadius: theme.rounded.full,
-                    shadowColor: theme.shadow,
-                    shadowOpacity: 0.3,
-                    shadowRadius: 10,
-                    elevation: 6,
-                    borderWidth: 0,
-                  },
-                ]}
+                style={styles.fab}
               >
                 <MaterialIcons
                   name={tab.icon}
                   size={32}
                   color={theme.onAccent}
-                  style={{ alignSelf: "center" }}
+                  style={styles.iconCentered}
                 />
               </Pressable>
             );
@@ -107,7 +80,7 @@ export const BottomTabBar: React.FC = () => {
 
           const isProfile = tab.key.toLowerCase() === "profile";
           return (
-            <Pressable key={tab.key} onPress={tab.onPress} style={[styles.tab]}>
+            <Pressable key={tab.key} onPress={tab.onPress} style={styles.tab}>
               {isProfile ? (
                 <AvatarBadge
                   size={40}
@@ -123,7 +96,7 @@ export const BottomTabBar: React.FC = () => {
                   name={tab.icon}
                   size={26}
                   color={theme.text}
-                  style={{ alignSelf: "center" }}
+                  style={styles.iconCentered}
                 />
               )}
             </Pressable>
@@ -134,35 +107,56 @@ export const BottomTabBar: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  wrapper: { position: "absolute", left: 0, right: 0, bottom: 0 },
-  container: {
-    flexDirection: "row",
-    alignSelf: "center",
-    alignItems: "center",
-    padding: 8,
-    width: "100%",
-    justifyContent: "space-evenly",
-    shadowColor: "#000",
-    shadowOpacity: Platform.OS === "android" ? 0.22 : 0.12,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 20,
-    height: 56,
-  },
-  tab: {
-    width: 56,
-    height: 56,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  fab: {
-    width: 58,
-    height: 58,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: -20,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    wrapper: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderTopEndRadius: theme.rounded.lg,
+      borderTopLeftRadius: theme.rounded.lg,
+    },
+    container: {
+      flexDirection: "row",
+      alignSelf: "center",
+      alignItems: "center",
+      padding: theme.spacing.sm,
+      width: "100%",
+      justifyContent: "space-evenly",
+      shadowColor: theme.shadow,
+      shadowOpacity: Platform.OS === "android" ? 0.22 : 0.12,
+      shadowRadius: theme.spacing.xl - theme.spacing.xs,
+      shadowOffset: { width: 0, height: theme.spacing.xs },
+      elevation: 20,
+      height: 56,
+      backgroundColor: theme.card,
+      borderTopEndRadius: theme.rounded.md,
+      borderTopLeftRadius: theme.rounded.md,
+    },
+    tab: {
+      width: 56,
+      height: 56,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    fab: {
+      width: 58,
+      height: 58,
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: -20,
+      backgroundColor: theme.accentSecondary,
+      borderRadius: theme.rounded.full,
+      shadowColor: theme.shadow,
+      shadowOpacity: 0.3,
+      shadowRadius: theme.spacing.md + theme.spacing.xs / 2,
+      elevation: 6,
+      borderWidth: 0,
+    },
+    iconCentered: {
+      alignSelf: "center",
+    },
+  });
 
 export default BottomTabBar;

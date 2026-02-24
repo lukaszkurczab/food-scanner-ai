@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Pressable, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -11,8 +11,10 @@ const labels = ["S", "M", "T", "W", "T", "F", "S"];
 
 export const WeekdaySelector: React.FC<Props> = ({ value, onChange }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+
   return (
-    <View style={[styles.row, { gap: 8 }]}>
+    <View style={styles.row}>
       {labels.map((l, idx) => {
         const active = value.includes(idx);
         return (
@@ -24,20 +26,16 @@ export const WeekdaySelector: React.FC<Props> = ({ value, onChange }) => {
               else set.add(idx);
               onChange(Array.from(set).sort((a, b) => a - b));
             }}
-            style={{
-              paddingVertical: 8,
-              paddingHorizontal: 12,
-              borderRadius: theme.rounded.sm,
-              backgroundColor: active ? theme.accentSecondary : theme.card,
-              borderWidth: 1,
-              borderColor: active ? theme.accentSecondary : theme.border,
-            }}
+            style={[
+              styles.dayChipBase,
+              active ? styles.dayChipActive : styles.dayChipIdle,
+            ]}
           >
             <Text
-              style={{
-                color: active ? theme.onAccent : theme.text,
-                fontFamily: theme.typography.fontFamily.medium,
-              }}
+              style={[
+                styles.dayLabelBase,
+                active ? styles.dayLabelActive : styles.dayLabelIdle,
+              ]}
             >
               {l}
             </Text>
@@ -48,6 +46,33 @@ export const WeekdaySelector: React.FC<Props> = ({ value, onChange }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+    },
+    dayChipBase: {
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      borderRadius: theme.rounded.sm,
+      borderWidth: 1,
+    },
+    dayChipActive: {
+      backgroundColor: theme.accentSecondary,
+      borderColor: theme.accentSecondary,
+    },
+    dayChipIdle: {
+      backgroundColor: theme.card,
+      borderColor: theme.border,
+    },
+    dayLabelBase: {
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    dayLabelActive: {
+      color: theme.onAccent,
+    },
+    dayLabelIdle: {
+      color: theme.text,
+    },
+  });

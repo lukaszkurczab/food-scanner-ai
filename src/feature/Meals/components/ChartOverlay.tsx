@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { ChartVariant } from "@/types/share";
+import { useTheme } from "@/theme/useTheme";
 
 import MacroPieChart from "./chartLayouts/MacroPieChart";
 import DonutMacroChart from "./chartLayouts/DonutMacroChart";
@@ -60,6 +61,8 @@ export default function ChartOverlay({
   macroColors,
   backgroundColor,
 }: Props) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation(["meals"]);
 
   const proteinColor = macroColors?.protein ?? palette.macro.protein;
@@ -86,13 +89,13 @@ export default function ChartOverlay({
   const sharedTextColor = textColor || palette.text;
   const sharedFontFamily = fontFamily || undefined;
   const sharedFontWeight = fontWeight || "700";
-  const chartBg = backgroundColor || "transparent";
+  const chartBackground = backgroundColor ?? "transparent";
 
   const commonTextProps = {
     textColor: sharedTextColor,
     fontFamily: sharedFontFamily,
     fontWeight: sharedFontWeight,
-    backgroundColor: chartBg,
+    backgroundColor: chartBackground,
   };
 
   const content = (() => {
@@ -161,15 +164,18 @@ export default function ChartOverlay({
   })();
 
   return (
-    <View style={[styles.card, { backgroundColor: chartBg }]}>{content}</View>
+    <View style={[styles.card, { backgroundColor: chartBackground }]}>
+      {content}
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 18,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    overflow: "hidden",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    card: {
+      borderRadius: theme.rounded.md,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      overflow: "hidden",
+    },
+  });
