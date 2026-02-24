@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import { ButtonToggle, InputModal, Layout, UserIcon } from "@/components";
+import { ButtonToggle, InputModal, Layout } from "@/components";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
 import AvatarBadge from "@/components/AvatarBadge";
@@ -35,7 +36,13 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           badges={state.safeBadges}
           overrideColor={state.overrideColor}
           overrideEmoji={state.overrideEmoji}
-          fallbackIcon={<UserIcon size={84} />}
+          fallbackIcon={
+            <MaterialIcons
+              name="person"
+              size={52}
+              color={theme.textSecondary}
+            />
+          }
           accessibilityLabel={t("profilePicture")}
         />
         <Text style={styles.username} accessibilityRole="header" numberOfLines={1}>
