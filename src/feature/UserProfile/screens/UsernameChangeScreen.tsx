@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View, Text } from "react-native";
+import { useState, useMemo } from "react";
+import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
@@ -48,6 +48,7 @@ function getErrorCode(err: unknown): string | null {
 export default function UsernameChangeScreen({ navigation }: Props) {
   const { t } = useTranslation(["profile", "login"]);
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { changeUsername, userData } = useUserContext();
 
   const [username, setUsername] = useState("");
@@ -122,25 +123,19 @@ export default function UsernameChangeScreen({ navigation }: Props) {
   return (
     <Layout>
       {criticalError && (
-        <ErrorBox message={criticalError} style={{ marginBottom: 12 }} />
+        <ErrorBox message={criticalError} style={styles.error} />
       )}
 
-      <View style={{ marginBottom: theme.spacing.lg }}>
+      <View style={styles.header}>
         <Text
-          style={{
-            fontSize: theme.typography.size.xxl,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            textAlign: "center",
-            marginBottom: theme.spacing.md,
-          }}
+          style={styles.title}
           accessibilityRole="header"
         >
           {t("changeUsername", { ns: "profile" })}
         </Text>
       </View>
 
-      <Text style={{ fontWeight: "bold", color: theme.text, marginBottom: 8 }}>
+      <Text style={styles.label}>
         {t("newUsername", { ns: "profile" })}
       </Text>
       <TextInput
@@ -155,10 +150,10 @@ export default function UsernameChangeScreen({ navigation }: Props) {
         autoCorrect={false}
         error={touched.username ? errors.username : undefined}
         disabled={loading}
-        style={{ marginBottom: 16 }}
+        style={styles.input}
       />
 
-      <Text style={{ fontWeight: "bold", color: theme.text, marginBottom: 8 }}>
+      <Text style={styles.label}>
         {t("password", { ns: "profile" })}
       </Text>
       <TextInput
@@ -172,10 +167,10 @@ export default function UsernameChangeScreen({ navigation }: Props) {
         secureTextEntry
         error={touched.password ? errors.password : undefined}
         disabled={loading}
-        style={{ marginBottom: 32 }}
+        style={styles.inputLarge}
       />
 
-      <View style={{ gap: 16 }}>
+      <View style={styles.actions}>
         <PrimaryButton
           label={t("confirm", { ns: "profile" })}
           onPress={onSubmit}
@@ -191,3 +186,25 @@ export default function UsernameChangeScreen({ navigation }: Props) {
     </Layout>
   );
 }
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    error: { marginBottom: theme.spacing.sm },
+    header: { marginBottom: theme.spacing.lg },
+    title: {
+      fontSize: theme.typography.size.xxl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    label: {
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      marginBottom: theme.spacing.xs,
+      fontSize: theme.typography.size.base,
+    },
+    input: { marginBottom: theme.spacing.md },
+    inputLarge: { marginBottom: theme.spacing.xl },
+    actions: { gap: theme.spacing.md },
+  });

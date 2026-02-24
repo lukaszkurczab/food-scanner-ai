@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { View, StyleSheet, Text, Image } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -20,6 +20,7 @@ export default function IngredientsNotRecognizedScreen({
   params,
 }: MealAddScreenProps<"IngredientsNotRecognized">) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("meals");
   const { clearMeal } = useMealDraftContext();
   const { uid } = useAuthContext();
@@ -54,7 +55,7 @@ export default function IngredientsNotRecognizedScreen({
 
   return (
     <Layout>
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={styles.container}>
         {image && !imgError ? (
           <Image
             source={{ uri: image }}
@@ -63,12 +64,12 @@ export default function IngredientsNotRecognizedScreen({
             onError={() => setImgError(true)}
           />
         ) : (
-          <View style={[styles.image, { backgroundColor: "#B2C0C9" }]} />
+          <View style={styles.image} />
         )}
-        <Text style={[styles.title, { color: theme.text }]}>
+        <Text style={styles.title}>
           {t("not_recognized_title", "We couldn't recognize the ingredients")}
         </Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+        <Text style={styles.subtitle}>
           {attempt < MAX_ATTEMPTS
             ? t("not_recognized_sub", "Try again or select other method")
             : t(
@@ -76,45 +77,60 @@ export default function IngredientsNotRecognizedScreen({
                 "Please add the meal manually or try later.",
               )}
         </Text>
-        <View style={{ height: 24 }} />
+        <View style={styles.spacer} />
         {attempt < MAX_ATTEMPTS && (
           <PrimaryButton
             label={`${t("retake", "Retake photo")} (${attempt}/${MAX_ATTEMPTS})`}
             onPress={handleRetake}
-            style={{ marginTop: 0 }}
+            style={styles.buttonSpacingNone}
           />
         )}
         <SecondaryButton
           label={t("select_method", "Back to method selection")}
           onPress={handleOtherMethod}
-          style={{ marginTop: 12 }}
+          style={styles.buttonSpacing}
         />
         <ErrorButton
           label={t("cancel", "Cancel")}
           onPress={handleCancel}
-          style={{ marginTop: 12 }}
+          style={styles.buttonSpacing}
         />
       </View>
     </Layout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  image: {
-    width: "100%",
-    maxWidth: 520,
-    aspectRatio: 4 / 3,
-    height: undefined,
-    borderRadius: 28,
-    marginBottom: 28,
-    backgroundColor: "#B2C0C9",
-  },
-  title: { fontSize: 22, fontWeight: "bold", textAlign: "center" },
-  subtitle: { fontSize: 16, textAlign: "center", marginTop: 10 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: theme.spacing.lg,
+      backgroundColor: theme.background,
+    },
+    image: {
+      width: "100%",
+      maxWidth: 520,
+      aspectRatio: 4 / 3,
+      height: undefined,
+      borderRadius: theme.rounded.lg,
+      marginBottom: theme.spacing.lg,
+      backgroundColor: theme.border,
+    },
+    title: {
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.bold,
+      textAlign: "center",
+      color: theme.text,
+    },
+    subtitle: {
+      fontSize: theme.typography.size.base,
+      textAlign: "center",
+      marginTop: theme.spacing.sm,
+      color: theme.textSecondary,
+    },
+    spacer: { height: theme.spacing.lg },
+    buttonSpacing: { marginTop: theme.spacing.sm },
+    buttonSpacingNone: { marginTop: 0 },
+  });

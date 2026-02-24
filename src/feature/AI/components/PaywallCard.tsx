@@ -58,6 +58,7 @@ function packagePeriodLabel(p: PurchasesPackage): string | null {
 
 export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("chat");
   const extra = getExtraConfig();
   const termsUrl = extra.termsUrl ?? "";
@@ -122,32 +123,19 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
   };
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: theme.card,
-          borderColor: theme.border,
-          shadowColor: theme.shadow,
-        },
-      ]}
-    >
-      <Text style={[styles.title, { color: theme.text }]}>
-        {t("limit.title")}
-      </Text>
-      <Text style={[styles.body, { color: theme.textSecondary }]}>
-        {t("limit.body", { used, limit })}
-      </Text>
+    <View style={styles.card}>
+      <Text style={styles.title}>{t("limit.title")}</Text>
+      <Text style={styles.body}>{t("limit.body", { used, limit })}</Text>
 
       {(priceInfo.priceText || priceInfo.periodText) && (
-        <Text style={[styles.priceLine, { color: theme.text }]}>
+        <Text style={styles.priceLine}>
           {priceInfo.priceText ? priceInfo.priceText : ""}
           {priceInfo.priceText && priceInfo.periodText ? " " : ""}
           {priceInfo.periodText ? priceInfo.periodText : ""}
         </Text>
       )}
 
-      <Text style={[styles.disclaimer, { color: theme.textSecondary }]}>
+      <Text style={styles.disclaimer}>
         {t("paywall.autorenew", {
           defaultValue:
             "Payment will be charged to your account. Subscription auto-renews unless canceled at least 24 hours before the end of the current period.",
@@ -159,16 +147,12 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
         style={({ pressed }) => [
           styles.cta,
           {
-            backgroundColor: theme.accentSecondary,
-            borderRadius: theme.rounded.full,
             opacity: pressed ? 0.9 : 1,
           },
         ]}
         accessibilityRole="button"
       >
-        <Text style={[styles.ctaLabel, { color: theme.onAccent }]}>
-          {t("limit.button")}
-        </Text>
+        <Text style={styles.ctaLabel}>{t("limit.button")}</Text>
       </Pressable>
 
       <Pressable
@@ -185,7 +169,7 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
         {loading ? (
           <ActivityIndicator size="small" color={theme.textSecondary} />
         ) : (
-          <Text style={[styles.restoreLabel, { color: theme.textSecondary }]}>
+          <Text style={styles.restoreLabel}>
             {t("paywall.restore", { defaultValue: "Restore Purchases" })}
           </Text>
         )}
@@ -197,16 +181,16 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
             onPress={() => Linking.openURL(termsUrl)}
             accessibilityRole="link"
           >
-            <Text style={[styles.link, { color: theme.accentSecondary }]}>
+            <Text style={styles.link}>
               {t("paywall.terms", { defaultValue: "Terms" })}
             </Text>
           </Pressable>
-          <Text style={[styles.dot, { color: theme.textSecondary }]}>•</Text>
+          <Text style={styles.dot}>•</Text>
           <Pressable
             onPress={() => Linking.openURL(privacyUrl)}
             accessibilityRole="link"
           >
-            <Text style={[styles.link, { color: theme.accentSecondary }]}>
+            <Text style={styles.link}>
               {t("paywall.privacy", { defaultValue: "Privacy" })}
             </Text>
           </Pressable>
@@ -216,42 +200,81 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    padding: 16,
-    borderRadius: 16,
-    alignSelf: "stretch",
-    borderWidth: 1,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 6,
-    textAlign: "center",
-  },
-  body: { fontSize: 16, marginBottom: 12, textAlign: "center" },
-  priceLine: {
-    fontSize: 16,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  disclaimer: { fontSize: 12, lineHeight: 16, textAlign: "center" },
-  cta: {
-    alignSelf: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginTop: 16,
-  },
-  ctaLabel: { fontSize: 15, fontWeight: "700" },
-  restore: { alignSelf: "center", paddingVertical: 10, marginTop: 6 },
-  restoreLabel: { fontSize: 14, fontWeight: "700" },
-  linksRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  link: { fontSize: 14, fontWeight: "700" },
-  dot: { marginHorizontal: 8, fontSize: 14, fontWeight: "700" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    card: {
+      padding: theme.spacing.md,
+      borderRadius: theme.rounded.md,
+      alignSelf: "stretch",
+      borderWidth: 1,
+      backgroundColor: theme.card,
+      borderColor: theme.border,
+      shadowColor: theme.shadow,
+    },
+    title: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.bold,
+      marginBottom: theme.spacing.xs,
+      textAlign: "center",
+      color: theme.text,
+    },
+    body: {
+      fontSize: theme.typography.size.base,
+      marginBottom: theme.spacing.sm,
+      textAlign: "center",
+      color: theme.textSecondary,
+    },
+    priceLine: {
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.bold,
+      textAlign: "center",
+      marginBottom: theme.spacing.xs,
+      color: theme.text,
+    },
+    disclaimer: {
+      fontSize: theme.typography.size.xs,
+      lineHeight: theme.typography.size.sm,
+      textAlign: "center",
+      color: theme.textSecondary,
+    },
+    cta: {
+      alignSelf: "center",
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      marginTop: theme.spacing.md,
+      borderRadius: theme.rounded.full,
+      backgroundColor: theme.accentSecondary,
+    },
+    ctaLabel: {
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.onAccent,
+    },
+    restore: {
+      alignSelf: "center",
+      paddingVertical: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
+    },
+    restoreLabel: {
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.textSecondary,
+    },
+    linksRow: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: theme.spacing.xs,
+    },
+    link: {
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.accentSecondary,
+    },
+    dot: {
+      marginHorizontal: theme.spacing.sm,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.textSecondary,
+    },
+  });

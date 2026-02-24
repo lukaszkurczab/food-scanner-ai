@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { View, Keyboard, Platform, Text, TextInput as RNTextInput } from "react-native";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { View, Keyboard, Platform, Text, TextInput as RNTextInput, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -30,6 +30,7 @@ function getErrorCode(err: unknown): string | null {
 export default function ResetPasswordScreen({ navigation }: Props) {
   const { t } = useTranslation("resetPassword");
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const [email, setEmail] = useState("");
   const [touched, setTouched] = useState(false);
@@ -109,40 +110,18 @@ export default function ResetPasswordScreen({ navigation }: Props) {
     <Layout showNavigation={false}>
       {noInternet && (
         <View
-          style={{
-            backgroundColor: theme.error.background,
-            borderColor: theme.error.border,
-            borderWidth: 1,
-            padding: theme.spacing.md,
-            borderRadius: theme.rounded.sm,
-            marginBottom: theme.spacing.lg,
-          }}
+          style={styles.noInternet}
           accessible
           accessibilityRole="alert"
         >
           <ErrorBox message={t("errorNoInternet")} />
         </View>
       )}
-      <View style={{ marginBottom: theme.spacing.lg }}>
-        <Text
-          style={{
-            fontSize: theme.typography.size.xxl,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            textAlign: "center",
-            marginBottom: theme.spacing.md,
-          }}
-          accessibilityRole="header"
-        >
+      <View style={styles.headerBlock}>
+        <Text style={styles.title} accessibilityRole="header">
           {t("title")}
         </Text>
-        <Text
-          style={{
-            fontSize: theme.typography.size.base,
-            color: theme.textSecondary,
-            textAlign: "center",
-          }}
-        >
+        <Text style={styles.subtitle}>
           {t("description")}
         </Text>
       </View>
@@ -162,7 +141,7 @@ export default function ResetPasswordScreen({ navigation }: Props) {
         accessibilityLabel={t("email")}
         returnKeyType="done"
         onSubmitEditing={onSubmit}
-        style={{ marginBottom: theme.spacing.md }}
+        style={styles.fieldSpacing}
       />
       <PrimaryButton
         label={t("resetBtn")}
@@ -172,24 +151,61 @@ export default function ResetPasswordScreen({ navigation }: Props) {
           loading || noInternet || !email || !!error || !validateEmail(email)
         }
         accessibilityLabel={t("resetBtn")}
-        style={{ marginVertical: theme.spacing.md }}
+        style={styles.actionSpacing}
       />
       <View
-        style={{
-          alignItems: "center",
-          marginTop: theme.spacing.lg,
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
+        style={styles.footerRow}
       >
-        <Text>{t("rememberPassword")} </Text>
+        <Text style={styles.footerText}>{t("rememberPassword")} </Text>
         <LinkText
           onPress={() => navigation.navigate("Login")}
           accessibilityRole="link"
         >
-          <Text style={{ color: theme.link }}>{t("login")}</Text>
+          <Text style={styles.linkText}>{t("login")}</Text>
         </LinkText>
       </View>
     </Layout>
   );
 }
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    noInternet: {
+      backgroundColor: theme.error.background,
+      borderColor: theme.error.border,
+      borderWidth: 1,
+      padding: theme.spacing.md,
+      borderRadius: theme.rounded.sm,
+      marginBottom: theme.spacing.lg,
+    },
+    headerBlock: { marginBottom: theme.spacing.lg },
+    title: {
+      fontSize: theme.typography.size.xxl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    subtitle: {
+      fontSize: theme.typography.size.base,
+      color: theme.textSecondary,
+      textAlign: "center",
+    },
+    fieldSpacing: { marginBottom: theme.spacing.md },
+    actionSpacing: { marginVertical: theme.spacing.md },
+    footerRow: {
+      alignItems: "center",
+      marginTop: theme.spacing.lg,
+      flexDirection: "row",
+      justifyContent: "center",
+    },
+    footerText: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+    },
+    linkText: {
+      color: theme.link,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+  });

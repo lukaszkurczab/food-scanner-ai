@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -40,6 +40,7 @@ export default function SavedMealsScreen({
   navigation: SavedMealsNavigation;
 }) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
@@ -151,14 +152,7 @@ export default function SavedMealsScreen({
 
   const renderItem = useCallback(
     ({ item }: { item: Meal }) => (
-      <View
-        style={[
-          styles.listItemWrap,
-          {
-            marginBottom: theme.spacing.sm,
-          },
-        ]}
-      >
+      <View style={styles.listItemWrap}>
         <MealListItem
           meal={item}
           onPress={() => navigation.navigate("MealDetails", { meal: item })}
@@ -168,7 +162,7 @@ export default function SavedMealsScreen({
         />
       </View>
     ),
-    [navigation, onDelete, onDuplicate, onEdit, theme.spacing.sm],
+    [navigation, onDelete, onDuplicate, onEdit],
   );
 
   if (dataState === "loading") {
@@ -223,11 +217,11 @@ export default function SavedMealsScreen({
       {!isOnline && <OfflineBanner />}
       <SyncStatusBadge status={syncStatus} />
       {showFilters ? (
-        <View style={[styles.fill, { paddingBottom: theme.spacing.nav }]}>
+        <View style={styles.filtersWrap}>
           <FilterPanel scope="myMeals" />
         </View>
       ) : (
-        <View style={{ padding: theme.spacing.md, gap: theme.spacing.sm }}>
+        <View style={styles.topBarWrap}>
           <View style={styles.row}>
             <SearchBox value={query} onChange={setQuery} />
             <FilterBadgeButton
@@ -240,12 +234,7 @@ export default function SavedMealsScreen({
       {!showFilters && (
         <>
           {validating && (
-            <View
-              style={{
-                paddingHorizontal: theme.spacing.md,
-                marginBottom: theme.spacing.xs,
-              }}
-            >
+            <View style={styles.validatingWrap}>
               <ActivityIndicator size="large" color={theme.accent} />
             </View>
           )}
@@ -256,7 +245,7 @@ export default function SavedMealsScreen({
               <RefreshControl refreshing={loading} onRefresh={refresh} />
             }
             renderItem={renderItem}
-            contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
+            contentContainerStyle={styles.listContent}
             onViewableItemsChanged={onViewableItemsChanged.current}
             viewabilityConfig={viewabilityConfig}
             ListFooterComponent={
@@ -272,8 +261,15 @@ export default function SavedMealsScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  fill: { height: "100%" },
-  row: { flexDirection: "row", gap: 8 },
-  listItemWrap: {},
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    filtersWrap: { height: "100%", paddingBottom: theme.spacing.nav },
+    topBarWrap: { padding: theme.spacing.md, gap: theme.spacing.sm },
+    row: { flexDirection: "row", gap: theme.spacing.sm },
+    validatingWrap: {
+      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.xs,
+    },
+    listContent: { paddingBottom: theme.spacing.lg },
+    listItemWrap: { marginBottom: theme.spacing.sm },
+  });

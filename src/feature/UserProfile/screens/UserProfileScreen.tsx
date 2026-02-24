@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -19,6 +20,7 @@ type UserProfileScreenProps = {
 export default function UserProfileScreen({ navigation }: UserProfileScreenProps) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const state = useUserProfileState({ navigation });
 
@@ -36,22 +38,13 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           fallbackIcon={<UserIcon size={84} />}
           accessibilityLabel={t("profilePicture")}
         />
-        <Text
-          style={[styles.username, { color: theme.text }]}
-          accessibilityRole="header"
-          numberOfLines={1}
-        >
+        <Text style={styles.username} accessibilityRole="header" numberOfLines={1}>
           {state.userData.username}
         </Text>
-        <Text
-          style={[styles.email, { color: theme.textSecondary }]}
-          numberOfLines={1}
-        >
+        <Text style={styles.email} numberOfLines={1}>
           {state.userData.email}
         </Text>
-        <Text style={{ color: theme.textSecondary, marginTop: 4 }}>
-          🔥 {state.streak}
-        </Text>
+        <Text style={styles.streak}>🔥 {state.streak}</Text>
       </View>
 
       <SectionHeader label={t("userSection")} />
@@ -79,31 +72,16 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
         label={t("downloadYourData")}
         onPress={state.handleExportData}
         accessibilityLabel={t("downloadYourData")}
-        style={{ marginBottom: 24 }}
+        style={styles.listItemSpacing}
         disabled={state.exporting}
         loading={state.exporting}
       />
 
       <SectionHeader label={t("settingsSection")} />
       <View
-        style={[
-          styles.rowCenter,
-          {
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: theme.border,
-            paddingVertical: 16,
-          },
-        ]}
+        style={styles.toggleRow}
       >
-        <Text
-          style={{
-            flex: 1,
-            color: theme.text,
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: theme.typography.size.md,
-          }}
-          numberOfLines={1}
-        >
+        <Text style={styles.toggleLabel} numberOfLines={1}>
           {t("toggleDarkMode")}
         </Text>
         <ButtonToggle
@@ -149,12 +127,12 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
         accessibilityRole="button"
         accessibilityLabel={t("deleteAccount")}
       >
-        <Text style={[styles.deleteText, { color: theme.error.text }]}>
+        <Text style={styles.deleteText}>
           {t("deleteAccount")}
         </Text>
       </Pressable>
 
-      <Text style={[styles.version, { color: theme.textSecondary }]}>
+      <Text style={styles.version}>
         {t("appVersion")} 1.0.1
       </Text>
 
@@ -185,31 +163,53 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  username: {
-    fontSize: 24,
-    fontWeight: "bold",
-    fontFamily: "Inter-Bold",
-    marginBottom: 2,
-  },
-  email: {
-    fontSize: 16,
-  },
-  deleteAccount: {
-    alignItems: "center",
-    marginVertical: 24,
-  },
-  rowCenter: { flexDirection: "row", alignItems: "center" },
-  deleteText: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  version: {
-    textAlign: "center",
-    fontSize: 14,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    header: {
+      alignItems: "center",
+      marginBottom: theme.spacing.xl,
+    },
+    username: {
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      marginBottom: theme.spacing.xs,
+    },
+    email: {
+      fontSize: theme.typography.size.base,
+      color: theme.textSecondary,
+    },
+    streak: {
+      color: theme.textSecondary,
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.size.sm,
+    },
+    listItemSpacing: { marginBottom: theme.spacing.xl },
+    toggleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+      paddingVertical: theme.spacing.md,
+    },
+    toggleLabel: {
+      flex: 1,
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.md,
+    },
+    deleteAccount: {
+      alignItems: "center",
+      marginVertical: theme.spacing.xl,
+    },
+    deleteText: {
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.error.text,
+    },
+    version: {
+      textAlign: "center",
+      fontSize: theme.typography.size.sm,
+      color: theme.textSecondary,
+    },
+  });

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet, Image, Pressable, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -26,6 +27,7 @@ type Props = {
 export default function EditResultScreen({ navigation }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { uid } = useAuthContext();
   const route = useRoute<ScreenRoute>();
   const savedCloudId = route.params?.savedCloudId;
@@ -44,7 +46,7 @@ export default function EditResultScreen({ navigation }: Props) {
 
   return (
     <Layout showNavigation={false}>
-      <View style={{ padding: theme.spacing.container }}>
+      <View style={styles.container}>
         <View style={styles.imageWrap}>
           {state.checkingImage ? (
             <ActivityIndicator size="large" color={theme.accent} />
@@ -63,11 +65,6 @@ export default function EditResultScreen({ navigation }: Props) {
                 hitSlop={8}
                 style={[
                   styles.fab,
-                  {
-                    backgroundColor: theme.background,
-                    borderColor: theme.border,
-                    shadowColor: theme.shadow,
-                  },
                 ]}
               >
                 <MaterialIcons name="ios-share" size={22} color={theme.text} />
@@ -76,10 +73,7 @@ export default function EditResultScreen({ navigation }: Props) {
           ) : (
             <Pressable
               onPress={state.handleAddPhoto}
-              style={[
-                styles.placeholder,
-                { backgroundColor: theme.card, borderColor: theme.border },
-              ]}
+              style={styles.placeholder}
               accessibilityRole="button"
               accessibilityLabel={t("add_photo", { ns: "meals" })}
             >
@@ -88,13 +82,7 @@ export default function EditResultScreen({ navigation }: Props) {
                 size={44}
                 color={theme.textSecondary}
               />
-              <Text
-                style={{
-                  color: theme.textSecondary,
-                  fontWeight: "600",
-                  marginTop: 6,
-                }}
-              >
+              <Text style={styles.placeholderText}>
                 {t("add_photo", { ns: "meals" })}
               </Text>
             </Pressable>
@@ -102,23 +90,10 @@ export default function EditResultScreen({ navigation }: Props) {
         </View>
 
         <Card>
-          <Text
-            style={{
-              fontSize: theme.typography.size.md,
-              color: theme.text,
-              fontWeight: "600",
-              marginBottom: theme.spacing.sm,
-            }}
-          >
+          <Text style={styles.cardTitle}>
             {t("meal_name", { ns: "meals", defaultValue: "Nazwa posiłku" })}
           </Text>
-          <Text
-            style={{
-              color: theme.text,
-              opacity: 0.8,
-              marginBottom: theme.spacing.xs,
-            }}
-          >
+          <Text style={styles.cardValue}>
             {state.mealName}
           </Text>
         </Card>
@@ -131,14 +106,7 @@ export default function EditResultScreen({ navigation }: Props) {
         />
 
         <Card variant="outlined" onPress={state.toggleIngredients}>
-          <Text
-            style={{
-              fontSize: theme.typography.size.md,
-              fontWeight: "500",
-              color: theme.text,
-              textAlign: "center",
-            }}
-          >
+          <Text style={styles.toggleText}>
             {state.showIngredients
               ? t("hide_ingredients", { ns: "meals" })
               : t("show_ingredients", { ns: "meals" })}
@@ -148,7 +116,7 @@ export default function EditResultScreen({ navigation }: Props) {
         <View
           style={[
             styles.actions,
-            { gap: theme.spacing.md, marginTop: theme.spacing.md },
+            styles.actionsSpacing,
           ]}
         >
           <PrimaryButton
@@ -186,46 +154,76 @@ export default function EditResultScreen({ navigation }: Props) {
 
 const IMAGE_SIZE = 220;
 
-const styles = StyleSheet.create({
-  imageWrap: {
-    position: "relative",
-    width: "100%",
-    height: IMAGE_SIZE,
-    borderRadius: 32,
-    overflow: "hidden",
-    marginBottom: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  image: {
-    width: "100%",
-    height: IMAGE_SIZE,
-    borderRadius: 32,
-    backgroundColor: "#B2C0C9",
-  },
-  placeholder: {
-    width: "100%",
-    height: IMAGE_SIZE,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    gap: 6,
-  },
-  fab: {
-    position: "absolute",
-    right: 12,
-    bottom: 12,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  actions: { justifyContent: "space-between" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: { padding: theme.spacing.container },
+    imageWrap: {
+      position: "relative",
+      width: "100%",
+      height: IMAGE_SIZE,
+      borderRadius: theme.rounded.lg,
+      overflow: "hidden",
+      marginBottom: theme.spacing.md,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    image: {
+      width: "100%",
+      height: IMAGE_SIZE,
+      borderRadius: theme.rounded.lg,
+      backgroundColor: theme.border,
+    },
+    placeholder: {
+      width: "100%",
+      height: IMAGE_SIZE,
+      borderRadius: theme.rounded.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      gap: theme.spacing.xs,
+      backgroundColor: theme.card,
+      borderColor: theme.border,
+    },
+    placeholderText: {
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      marginTop: theme.spacing.xs,
+    },
+    fab: {
+      position: "absolute",
+      right: theme.spacing.sm,
+      bottom: theme.spacing.sm,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
+      backgroundColor: theme.background,
+      borderColor: theme.border,
+      shadowColor: theme.shadow,
+    },
+    cardTitle: {
+      fontSize: theme.typography.size.md,
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      marginBottom: theme.spacing.sm,
+    },
+    cardValue: {
+      color: theme.text,
+      opacity: 0.8,
+      marginBottom: theme.spacing.xs,
+    },
+    toggleText: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.medium,
+      color: theme.text,
+      textAlign: "center",
+    },
+    actions: { justifyContent: "space-between" },
+    actionsSpacing: { gap: theme.spacing.md, marginTop: theme.spacing.md },
+  });

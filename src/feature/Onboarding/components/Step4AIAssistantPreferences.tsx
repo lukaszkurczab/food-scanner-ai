@@ -50,6 +50,7 @@ export default function Step4AIAssistantPreferences({
   onBack,
 }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("onboarding");
 
   const isOtherFocus = form.aiFocus === "other";
@@ -64,27 +65,12 @@ export default function Step4AIAssistantPreferences({
 
   return (
     <View style={styles.container}>
-      <View style={{ gap: theme.spacing.lg }}>
+      <View style={styles.sectionGap}>
         <View>
-          <Text
-            style={{
-              fontSize: theme.typography.size.xl,
-              fontFamily: theme.typography.fontFamily.bold,
-              color: theme.text,
-              textAlign: "center",
-              marginBottom: theme.spacing.sm,
-            }}
-          >
+          <Text style={styles.title}>
             {t("step4_title")}
           </Text>
-          <Text
-            style={{
-              fontSize: theme.typography.size.base,
-              color: theme.textSecondary,
-              textAlign: "center",
-              marginBottom: theme.spacing.md,
-            }}
-          >
+          <Text style={styles.subtitle}>
             {t("step4_description")}
           </Text>
         </View>
@@ -131,7 +117,7 @@ export default function Step4AIAssistantPreferences({
           />
         )}
       </View>
-      <View style={{ gap: theme.spacing.lg }}>
+      <View style={styles.sectionGap}>
         <PrimaryButton
           label={editMode ? t("summary.confirm", "Confirm") : t("skip")}
           onPress={editMode ? onConfirmEdit : onNext}
@@ -143,10 +129,25 @@ export default function Step4AIAssistantPreferences({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: "column",
-    justifyContent: "space-between",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      flexDirection: "column",
+      justifyContent: "space-between",
+    },
+    sectionGap: { gap: theme.spacing.lg },
+    title: {
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.sm,
+    },
+    subtitle: {
+      fontSize: theme.typography.size.base,
+      color: theme.textSecondary,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+  });

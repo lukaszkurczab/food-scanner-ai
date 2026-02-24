@@ -1,8 +1,8 @@
+import { useMemo } from "react";
 import { View, Text, TouchableOpacity, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { spacing } from "@/theme";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FullScreenLoader, Layout } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
@@ -33,6 +33,7 @@ export default function ManageSubscriptionScreen({
   navigation,
 }: ManageSubscriptionScreenProps) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("profile");
   const { uid } = useAuthContext();
   const subscription = useSubscriptionData(uid);
@@ -79,37 +80,30 @@ export default function ManageSubscriptionScreen({
 
   return (
     <Layout>
-      <View style={{ flex: 1 }}>
+      <View style={styles.flex}>
         <Pressable style={styles.header} onPress={() => navigation.goBack()}>
           <MaterialIcons name="chevron-left" size={28} color={theme.text} />
           <Text
-            style={[styles.heading, { color: theme.text }]}
+            style={styles.heading}
             accessibilityRole="header"
           >
             {t("manageSubscription.title")}
           </Text>
         </Pressable>
 
-        <View style={{ marginBottom: spacing.xl }}>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "bold",
-              marginBottom: spacing.sm,
-              color: theme.textSecondary,
-              opacity: 0.75,
-            }}
-          >
+        <View style={styles.sectionSpacing}>
+          <Text style={styles.sectionLabel}>
             {t("manageSubscription.yourSubscription")}
           </Text>
 
           <View
             style={[
               styles.rowBetween,
-              { marginBottom: spacing.sm, opacity: busy ? 0.6 : 1 },
+              styles.rowBetweenSpacing,
+              busy && styles.busy,
             ]}
           >
-            <Text style={{ fontSize: 18, fontWeight: "400", color: theme.text }}>
+            <Text style={styles.statusText}>
               {headerStatus}
             </Text>
             {busy && <ActivityIndicator size="small" color={theme.textSecondary} />}
@@ -117,27 +111,14 @@ export default function ManageSubscriptionScreen({
         </View>
 
         <View>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "bold",
-              marginBottom: spacing.sm,
-              color: theme.textSecondary,
-              opacity: 0.75,
-            }}
-          >
+          <Text style={styles.sectionLabel}>
             {t("manageSubscription.premiumBenefits")}
           </Text>
 
           {BENEFITS.map((key) => (
             <View
               key={key}
-              style={{
-                marginBottom: spacing.sm,
-                borderBottomWidth: 1,
-                borderBottomColor: theme.border,
-                paddingBottom: spacing.sm,
-              }}
+              style={styles.benefitItem}
             >
               <TouchableOpacity
                 style={styles.rowBetween}
@@ -146,12 +127,7 @@ export default function ManageSubscriptionScreen({
                 disabled={busy}
               >
                 <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: "500",
-                    color: theme.text,
-                    flexShrink: 1,
-                  }}
+                  style={styles.benefitTitle}
                 >
                   {t(`manageSubscription.benefit_${key}`)}
                 </Text>
@@ -164,12 +140,7 @@ export default function ManageSubscriptionScreen({
 
               {expanded === key && (
                 <Text
-                  style={{
-                    marginTop: spacing.xs,
-                    fontSize: 16,
-                    opacity: 0.8,
-                    color: theme.textSecondary,
-                  }}
+                  style={styles.benefitDesc}
                 >
                   {t(`manageSubscription.benefitDesc_${key}`)}
                 </Text>
@@ -180,13 +151,14 @@ export default function ManageSubscriptionScreen({
           <TouchableOpacity
             style={[
               styles.rowBetween,
-              { paddingVertical: spacing.sm, marginTop: spacing.xl },
+              styles.actionRow,
+              styles.actionRowTop,
             ]}
             onPress={tryRestore}
             activeOpacity={0.7}
             disabled={busy}
           >
-            <Text style={{ fontSize: 18, fontWeight: "500", color: theme.text }}>
+            <Text style={styles.actionText}>
               {t("manageSubscription.restorePurchases", {
                 defaultValue: "Restore Purchases",
               })}
@@ -195,25 +167,21 @@ export default function ManageSubscriptionScreen({
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.rowBetween, { paddingVertical: spacing.sm }]}
+            style={[styles.rowBetween, styles.actionRow]}
             onPress={tryOpenRefundPolicy}
             activeOpacity={0.7}
             disabled={busy}
           >
-            <Text style={{ fontSize: 18, fontWeight: "500", color: theme.text }}>
+            <Text style={styles.actionText}>
               {t("manageSubscription.refundPolicy")}
             </Text>
             <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
 
           {!!termsUrl && !!privacyUrl && (
-            <View style={{ marginTop: spacing.lg, gap: 10 }}>
+            <View style={styles.legalSection}>
               <Text
-                style={{
-                  color: theme.textSecondary,
-                  fontSize: 13,
-                  lineHeight: 18,
-                }}
+                style={styles.legalText}
               >
                 {t("manageSubscription.autorenewInfo", {
                   defaultValue:
@@ -221,14 +189,10 @@ export default function ManageSubscriptionScreen({
                 })}
               </Text>
 
-              <View style={{ flexDirection: "row", gap: 14 }}>
+              <View style={styles.legalLinks}>
                 <TouchableOpacity onPress={() => void openTerms()} activeOpacity={0.7} disabled={busy}>
                   <Text
-                    style={{
-                      color: theme.accentSecondary,
-                      fontSize: 15,
-                      fontWeight: "700",
-                    }}
+                    style={styles.legalLink}
                   >
                     {t("termsOfService", { defaultValue: "Terms of Service" })}
                   </Text>
@@ -236,11 +200,7 @@ export default function ManageSubscriptionScreen({
 
                 <TouchableOpacity onPress={() => void openPrivacy()} activeOpacity={0.7} disabled={busy}>
                   <Text
-                    style={{
-                      color: theme.accentSecondary,
-                      fontSize: 15,
-                      fontWeight: "700",
-                    }}
+                    style={styles.legalLink}
                   >
                     {t("privacyPolicy", { defaultValue: "Privacy Policy" })}
                   </Text>
@@ -254,24 +214,14 @@ export default function ManageSubscriptionScreen({
           <TouchableOpacity
             style={[
               styles.rowBetween,
-              {
-                paddingVertical: spacing.sm,
-                borderTopWidth: 1,
-                borderTopColor: theme.border,
-                marginTop: spacing.xl,
-              },
+              styles.actionRow,
+              styles.dividerTop,
             ]}
             onPress={tryOpenManage}
             disabled={busy}
             activeOpacity={0.7}
           >
-            <Text
-              style={{
-                fontWeight: "bold",
-                fontSize: 18,
-                color: theme.accentSecondary,
-              }}
-            >
+            <Text style={styles.linkText}>
               {t("manageSubscription.cancelSubscription")}
             </Text>
             <Ionicons
@@ -286,24 +236,14 @@ export default function ManageSubscriptionScreen({
           <TouchableOpacity
             style={[
               styles.rowBetween,
-              {
-                paddingVertical: spacing.sm,
-                borderTopWidth: 1,
-                borderTopColor: theme.border,
-                marginTop: spacing.md,
-              },
+              styles.actionRow,
+              styles.dividerTopCompact,
             ]}
             onPress={openPaywall}
             disabled={busy}
             activeOpacity={0.7}
           >
-            <Text
-              style={{
-                fontWeight: "bold",
-                fontSize: 18,
-                color: theme.accentSecondary,
-              }}
-            >
+            <Text style={styles.linkText}>
               {showRenew
                 ? t("manageSubscription.renewSubscription")
                 : t("manageSubscription.startSubscription")}
@@ -331,18 +271,14 @@ export default function ManageSubscriptionScreen({
           <TouchableOpacity
             style={[
               styles.rowBetween,
-              {
-                marginTop: spacing.xl,
-                paddingVertical: spacing.sm,
-                borderTopWidth: 1,
-                borderTopColor: theme.border,
-              },
+              styles.actionRow,
+              styles.dividerTop,
             ]}
             onPress={toggleDevPremium}
             activeOpacity={0.7}
             disabled={busy}
           >
-            <Text style={{ fontWeight: "bold", fontSize: 18, color: theme.text }}>
+            <Text style={styles.devText}>
               {`DEV: ${isPremiumComputed ? "Disable" : "Enable"} Premium`}
             </Text>
             <Ionicons name="build" size={20} color={theme.textSecondary} />
@@ -353,17 +289,95 @@ export default function ManageSubscriptionScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 24,
-    gap: 16,
-  },
-  heading: { fontSize: 22, fontWeight: "bold" },
-  rowBetween: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    header: {
+      alignItems: "center",
+      flexDirection: "row",
+      marginBottom: theme.spacing.lg,
+      gap: theme.spacing.md,
+    },
+    heading: {
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+    },
+    sectionSpacing: { marginBottom: theme.spacing.xl },
+    sectionLabel: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.bold,
+      marginBottom: theme.spacing.sm,
+      color: theme.textSecondary,
+      opacity: 0.75,
+    },
+    rowBetween: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    rowBetweenSpacing: { marginBottom: theme.spacing.sm },
+    busy: { opacity: 0.6 },
+    statusText: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.regular,
+      color: theme.text,
+    },
+    benefitItem: {
+      marginBottom: theme.spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+      paddingBottom: theme.spacing.sm,
+    },
+    benefitTitle: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.medium,
+      color: theme.text,
+      flexShrink: 1,
+    },
+    benefitDesc: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.size.base,
+      opacity: 0.8,
+      color: theme.textSecondary,
+    },
+    actionRow: { paddingVertical: theme.spacing.sm },
+    actionRowTop: { marginTop: theme.spacing.xl },
+    actionText: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.medium,
+      color: theme.text,
+    },
+    legalSection: { marginTop: theme.spacing.lg, gap: theme.spacing.sm },
+    legalText: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      lineHeight: theme.typography.lineHeight.tight,
+    },
+    legalLinks: { flexDirection: "row", gap: theme.spacing.md },
+    legalLink: {
+      color: theme.accentSecondary,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    dividerTop: {
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+      marginTop: theme.spacing.xl,
+    },
+    dividerTopCompact: {
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+      marginTop: theme.spacing.md,
+    },
+    linkText: {
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.md,
+      color: theme.accentSecondary,
+    },
+    devText: {
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.md,
+      color: theme.text,
+    },
+  });

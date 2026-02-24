@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { Layout, PrimaryButton } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
@@ -26,6 +27,7 @@ export default function NotificationsScreen({
 }: NotificationsScreenProps) {
   const { uid } = useAuthContext();
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("notifications");
 
   const {
@@ -47,11 +49,11 @@ export default function NotificationsScreen({
 
   return (
     <Layout>
-      <ScrollView contentContainerStyle={{ gap: theme.spacing.lg }}>
+      <ScrollView contentContainerStyle={styles.content}>
         <Pressable style={styles.header} onPress={() => navigation.goBack()}>
           <MaterialIcons name="chevron-left" size={28} color={theme.text} />
           <Text
-            style={[styles.heading, { color: theme.text }]}
+            style={styles.heading}
             accessibilityRole="header"
           >
             {t("screen.title")}
@@ -77,29 +79,15 @@ export default function NotificationsScreen({
         <PrimaryButton
           label={t("screen.addReminder")}
           onPress={() => navigation.navigate("NotificationForm", { id: null })}
-          style={{ marginBottom: theme.spacing.md }}
+          style={styles.addButton}
         />
 
         <View>
           <SectionHeader label={t("screen.motivation")} />
 
-          <View
-            style={[
-              styles.rowCenter,
-              {
-                paddingVertical: 16,
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: theme.border,
-              },
-            ]}
-          >
+          <View style={styles.toggleRow}>
             <Text
-              style={{
-                flex: 1,
-                color: theme.text,
-                fontFamily: theme.typography.fontFamily.bold,
-                fontSize: theme.typography.size.md,
-              }}
+              style={styles.toggleLabel}
               numberOfLines={1}
             >
               {t("screen.motivation")}
@@ -114,23 +102,9 @@ export default function NotificationsScreen({
             />
           </View>
 
-          <View
-            style={[
-              styles.rowCenter,
-              {
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: theme.border,
-                paddingVertical: 16,
-              },
-            ]}
-          >
+          <View style={styles.toggleRow}>
             <Text
-              style={{
-                flex: 1,
-                color: theme.text,
-                fontFamily: theme.typography.fontFamily.bold,
-                fontSize: theme.typography.size.md,
-              }}
+              style={styles.toggleLabel}
               numberOfLines={1}
             >
               {t("screen.stats")}
@@ -189,17 +163,33 @@ export default function NotificationsScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 24,
-    gap: 16,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-  mb12: { marginBottom: 12 },
-  rowCenter: { flexDirection: "row", alignItems: "center" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    content: { gap: theme.spacing.lg },
+    header: {
+      alignItems: "center",
+      flexDirection: "row",
+      marginBottom: theme.spacing.xl,
+      gap: theme.spacing.md,
+    },
+    heading: {
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+    },
+    mb12: { marginBottom: theme.spacing.sm },
+    addButton: { marginBottom: theme.spacing.md },
+    toggleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: theme.spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    toggleLabel: {
+      flex: 1,
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.md,
+    },
+  });

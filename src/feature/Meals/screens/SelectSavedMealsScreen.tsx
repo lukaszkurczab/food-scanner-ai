@@ -1,5 +1,5 @@
-import { useCallback } from "react";
-import { View, FlatList, RefreshControl } from "react-native";
+import { useCallback, useMemo } from "react";
+import { View, FlatList, RefreshControl, StyleSheet } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { ParamListBase } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
@@ -29,6 +29,7 @@ export default function SelectSavedMealScreen({
   navigation: SelectSavedMealNavigation;
 }) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const netInfo = useNetInfo();
   const { uid } = useAuthContext();
   const { getMeals } = useMeals(uid ?? null);
@@ -67,10 +68,7 @@ export default function SelectSavedMealScreen({
       const selected = selectedId === id;
       return (
         <View
-          style={{
-            paddingHorizontal: theme.spacing.md,
-            marginBottom: theme.spacing.sm,
-          }}
+          style={styles.listItemWrap}
         >
           <MealListItem
             meal={item}
@@ -84,7 +82,7 @@ export default function SelectSavedMealScreen({
         </View>
       );
     },
-    [handleSelect, selectedId, theme.spacing.md, theme.spacing.sm],
+    [handleSelect, selectedId, styles],
   );
 
   if (loading) {
@@ -97,9 +95,9 @@ export default function SelectSavedMealScreen({
 
   if (!pageItems.length) {
     return (
-      <Layout>
+        <Layout>
         {!netInfo.isConnected && <OfflineBanner />}
-        <View style={{ padding: theme.spacing.md }}>
+        <View style={styles.searchWrap}>
           <SearchBox value={queryText} onChange={setQueryText} />
         </View>
         <EmptyState
@@ -110,7 +108,7 @@ export default function SelectSavedMealScreen({
               : t("meals:saveMealsToReuse", "Save meals to reuse them later.")
           }
         />
-        <View style={{ padding: theme.spacing.lg, gap: theme.spacing.md }}>
+        <View style={styles.bottomActions}>
           <PrimaryButton label={t("meals:select", "Select")} disabled />
           <SecondaryButton
             label={t("meals:select_method", "Start over")}
@@ -124,7 +122,7 @@ export default function SelectSavedMealScreen({
   return (
     <Layout disableScroll>
       {!netInfo.isConnected && <OfflineBanner />}
-      <View style={{ padding: theme.spacing.md }}>
+      <View style={styles.searchWrap}>
         <SearchBox value={queryText} onChange={setQueryText} />
       </View>
       <FlatList
@@ -132,7 +130,7 @@ export default function SelectSavedMealScreen({
         keyExtractor={keyExtractor}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
+        contentContainerStyle={styles.listContent}
         onViewableItemsChanged={onViewableItemsChanged.current}
         viewabilityConfig={viewabilityConfig}
         removeClippedSubviews
@@ -140,11 +138,7 @@ export default function SelectSavedMealScreen({
         windowSize={7}
       />
       <View
-        style={{
-          paddingHorizontal: theme.spacing.lg,
-          paddingBottom: theme.spacing.lg,
-          gap: theme.spacing.md,
-        }}
+        style={styles.bottomActions}
       >
         <PrimaryButton
           label={t("meals:select", "Select")}
@@ -159,3 +153,18 @@ export default function SelectSavedMealScreen({
     </Layout>
   );
 }
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    listItemWrap: {
+      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
+    },
+    searchWrap: { padding: theme.spacing.md },
+    bottomActions: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.lg,
+      gap: theme.spacing.md,
+    },
+    listContent: { paddingBottom: theme.spacing.lg },
+  });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { View, Text, StyleSheet, Image, Pressable, Alert } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Layout, LongTextInput } from "@/components";
@@ -26,6 +26,7 @@ export default function SendFeedbackScreen({
   navigation,
 }: SendFeedbackScreenProps) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("profile");
   const [message, setMessage] = useState("");
   const [attachment, setAttachment] = useState<string | null>(null);
@@ -85,32 +86,23 @@ export default function SendFeedbackScreen({
 
   return (
     <Layout>
-      <View style={{ flex: 1, justifyContent: "space-between" }}>
+      <View style={styles.container}>
         <Pressable
-          style={{
-            marginBottom: 24,
-            flexDirection: "row",
-            alignItems: "center",
-          }}
+          style={styles.header}
           onPress={() => navigation.goBack()}
         >
           <MaterialIcons name="chevron-left" size={28} color={theme.text} />
           <Text
-            style={{
-              color: theme.text,
-              fontSize: 24,
-              fontFamily: theme.typography.fontFamily.bold,
-              marginLeft: 6,
-            }}
+            style={styles.title}
           >
             {t("sendFeedback", { defaultValue: "Send us your feedback" })}
           </Text>
         </Pressable>
 
-        <View style={{ flexGrow: 1, justifyContent: "center" }}>
+        <View style={styles.content}>
           {!sent ? (
             <>
-              <Text style={[styles.info, { color: theme.textSecondary }]}>
+              <Text style={styles.info}>
                 {t("feedbackDescription", {
                   defaultValue:
                     "Share your thoughts, suggestions, or issues. We appreciate every message!",
@@ -124,58 +116,37 @@ export default function SendFeedbackScreen({
                 value={message}
                 onChangeText={setMessage}
                 style={styles.textarea}
-                inputStyle={{ minHeight: 200, textAlignVertical: "top" }}
+                inputStyle={styles.textareaInput}
                 maxLength={500}
               />
 
-              <Pressable
-                onPress={handlePickAttachment}
-                style={{ marginTop: 10, marginBottom: 2 }}
-              >
-                <Text
-                  style={{
-                    color: theme.accentSecondary,
-                    fontSize: 16,
-                    fontFamily: theme.typography.fontFamily.bold,
-                  }}
-                >
+              <Pressable onPress={handlePickAttachment} style={styles.addButton}>
+                <Text style={styles.addButtonText}>
                   {t("addAttachment", { defaultValue: "Add attachment" })}
                 </Text>
               </Pressable>
-              <Text
-                style={{
-                  color: theme.textSecondary,
-                  fontSize: 13,
-                  marginBottom: 8,
-                }}
-              >
+              <Text style={styles.addDescription}>
                 {t("addAttachmentDescription", {
                   defaultValue:
                     "Optional: attach a screenshot to help us understand the issue",
                 })}
               </Text>
               {attachment && (
-                <View style={{ alignItems: "flex-start", marginBottom: 8 }}>
+                <View style={styles.attachment}>
                   <Image
                     source={{ uri: attachment }}
-                    style={{
-                      width: 80,
-                      height: 80,
-                      borderRadius: 14,
-                      marginTop: 4,
-                      marginBottom: 2,
-                    }}
+                    style={styles.attachmentImage}
                     onError={() => setAttachment(null)}
                   />
                   <Pressable onPress={() => setAttachment(null)} hitSlop={10}>
-                    <Text style={{ color: theme.error.text, fontSize: 13 }}>
+                    <Text style={styles.removeText}>
                       {t("removeAttachment", { defaultValue: "Remove" })}
                     </Text>
                   </Pressable>
                 </View>
               )}
 
-              <Text style={{ color: theme.text, marginTop: 8, fontSize: 14 }}>
+              <Text style={styles.infoNote}>
                 {t("feedbackAppInfo", {
                   defaultValue:
                     "Your app version and device info will be sent automatically to help us improve CaloriAI.",
@@ -184,23 +155,16 @@ export default function SendFeedbackScreen({
 
               <PrimaryButton
                 label={t("send", { defaultValue: "Send" })}
-                style={{ marginTop: 36, minHeight: 58 }}
+                style={styles.sendButton}
                 loading={sending}
                 disabled={!message || sending}
                 onPress={handleSend}
-                textStyle={{ fontSize: 20 }}
+                textStyle={styles.sendButtonText}
               />
             </>
           ) : (
-            <View style={{ alignItems: "center", marginTop: 42 }}>
-              <Text
-                style={{
-                  color: theme.text,
-                  fontSize: 24,
-                  fontFamily: theme.typography.fontFamily.bold,
-                  textAlign: "center",
-                }}
-              >
+            <View style={styles.thankYou}>
+              <Text style={styles.thankYouText}>
                 {t("feedbackThankYou", {
                   defaultValue: "Thank you for your feedback!",
                 })}
@@ -213,14 +177,79 @@ export default function SendFeedbackScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  info: {
-    marginBottom: 36,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  textarea: {
-    marginBottom: 24,
-    backgroundColor: "transparent",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: { flex: 1, justifyContent: "space-between" },
+    header: {
+      marginBottom: theme.spacing.xl,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    title: {
+      color: theme.text,
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      marginLeft: theme.spacing.xs,
+    },
+    content: { flexGrow: 1, justifyContent: "center" },
+    info: {
+      marginBottom: theme.spacing.xxl,
+      fontSize: theme.typography.size.base,
+      lineHeight: 22,
+      color: theme.textSecondary,
+    },
+    textarea: {
+      marginBottom: theme.spacing.xl,
+      backgroundColor: "transparent",
+    },
+    textareaInput: {
+      minHeight: 200,
+      textAlignVertical: "top",
+    },
+    addButton: {
+      marginTop: theme.spacing.xs,
+      marginBottom: theme.spacing.xs,
+    },
+    addButtonText: {
+      color: theme.accentSecondary,
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    addDescription: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      marginBottom: theme.spacing.sm,
+    },
+    attachment: {
+      alignItems: "flex-start",
+      marginBottom: theme.spacing.sm,
+    },
+    attachmentImage: {
+      width: 80,
+      height: 80,
+      borderRadius: theme.rounded.md,
+      marginTop: theme.spacing.xs,
+      marginBottom: theme.spacing.xs,
+    },
+    removeText: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.sm,
+    },
+    infoNote: {
+      color: theme.text,
+      marginTop: theme.spacing.sm,
+      fontSize: theme.typography.size.sm,
+    },
+    sendButton: {
+      marginTop: theme.spacing.xxl,
+      minHeight: 58,
+    },
+    sendButtonText: { fontSize: theme.typography.size.lg },
+    thankYou: { alignItems: "center", marginTop: theme.spacing.xxl },
+    thankYouText: {
+      color: theme.text,
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      textAlign: "center",
+    },
+  });

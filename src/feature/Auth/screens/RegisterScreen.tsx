@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { View, Text, Keyboard, TouchableOpacity, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
@@ -27,6 +27,7 @@ type RegisterScreenProps = {
 export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const { t } = useTranslation(["login", "common"]);
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -94,15 +95,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   return (
     <Layout showNavigation={false}>
       <View style={styles.centerBoth}>
-        <Text
-          style={{
-            fontSize: theme.typography.size.xl,
-            fontFamily: theme.typography.fontFamily.bold,
-            color: theme.text,
-            marginBottom: theme.spacing.lg,
-            textAlign: "center",
-          }}
-        >
+        <Text style={styles.title}>
           {t("common:app_title")}
         </Text>
 
@@ -122,7 +115,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           }}
           error={errors.username ? t(errors.username) : undefined}
           accessibilityLabel={t("username")}
-          style={{ marginBottom: theme.spacing.md }}
+          style={styles.fieldSpacing}
         />
 
         <TextInput
@@ -142,7 +135,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
             (errors.email ? t(errors.email) : undefined)
           }
           accessibilityLabel={t("email", { ns: "login" })}
-          style={{ marginBottom: theme.spacing.md }}
+          style={styles.fieldSpacing}
         />
 
         <TextInput
@@ -158,7 +151,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           accessibilityLabel={t("password", { ns: "login" })}
           icon={renderEyeIcon(showPassword, () => setShowPassword((v) => !v))}
           iconPosition="right"
-          style={{ marginBottom: theme.spacing.md }}
+          style={styles.fieldSpacing}
         />
 
         <TextInput
@@ -174,34 +167,24 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           accessibilityLabel={t("confirm_password")}
           icon={renderEyeIcon(showConfirm, () => setShowConfirm((v) => !v))}
           iconPosition="right"
-          style={{ marginBottom: theme.spacing.md }}
+          style={styles.fieldSpacing}
         />
 
-        <View style={[styles.rowCenter, { marginTop: theme.spacing.md }]}>
+        <View style={styles.termsRow}>
           <Checkbox
             checked={termsAccepted}
             onChange={setTermsAccepted}
             accessibilityLabel={t("accept_terms")}
           />
           <View style={styles.rowJustifyCenter}>
-            <Text
-              style={{
-                color: theme.textSecondary,
-                fontSize: theme.typography.size.sm,
-              }}
-            >
+            <Text style={styles.helperText}>
               {t("accept_terms")}{" "}
             </Text>
             <LinkText
               text={t("terms")}
               onPress={() => navigation.navigate("Terms")}
             />
-            <Text
-              style={{
-                color: theme.textSecondary,
-                fontSize: theme.typography.size.sm,
-              }}
-            >
+            <Text style={styles.helperText}>
               {" & "}
             </Text>
             <LinkText
@@ -212,12 +195,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         </View>
 
         {errors.terms && (
-          <Text
-            style={{
-              color: theme.error.text,
-              fontSize: theme.typography.size.xs,
-            }}
-          >
+          <Text style={styles.termsError}>
             {t(errors.terms)}
           </Text>
         )}
@@ -227,17 +205,12 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           onPress={handleSubmit}
           disabled={isFormDisabled}
           loading={loading}
-          style={{ marginTop: theme.spacing.xl }}
+          style={styles.submitSpacing}
         />
       </View>
 
       <View style={styles.rowJustifyCenter}>
-        <Text
-          style={{
-            color: theme.textSecondary,
-            fontSize: theme.typography.size.sm,
-          }}
-        >
+        <Text style={styles.helperText}>
           {t("already_have_account")}{" "}
         </Text>
         <LinkText
@@ -249,8 +222,31 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  centerBoth: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
-  rowCenter: { flexDirection: "row", alignItems: "center" },
-  rowJustifyCenter: { flexDirection: "row", justifyContent: "center" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    centerBoth: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
+    rowJustifyCenter: { flexDirection: "row", justifyContent: "center" },
+    title: {
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      marginBottom: theme.spacing.lg,
+      textAlign: "center",
+    },
+    fieldSpacing: { marginBottom: theme.spacing.md },
+    termsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: theme.spacing.md,
+    },
+    helperText: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+    },
+    termsError: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.xs,
+      marginTop: theme.spacing.xs,
+    },
+    submitSpacing: { marginTop: theme.spacing.xl },
+  });

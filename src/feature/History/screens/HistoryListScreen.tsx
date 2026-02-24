@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import type { ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import {
@@ -35,35 +35,19 @@ const SectionHeaderComponent = ({
   total,
   theme,
   kcalLabel,
-}: SectionHeaderProps) => (
-  <View
-    style={[
-      styles.sectionHeader,
-      {
-        paddingBottom: theme.spacing.sm,
-      },
-    ]}
-  >
-    <Text
-      style={{
-        color: theme.text,
-        fontSize: theme.typography.size.lg,
-        fontWeight: "600",
-      }}
-    >
+}: SectionHeaderProps) => {
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>
       {title}
-    </Text>
-    <Text
-      style={{
-        color: theme.textSecondary,
-        fontSize: theme.typography.size.md,
-        fontWeight: "400",
-      }}
-    >
+      </Text>
+      <Text style={styles.sectionTotal}>
       {total} {kcalLabel}
-    </Text>
-  </View>
-);
+      </Text>
+    </View>
+  );
+};
 
 const SectionHeader = React.memo(SectionHeaderComponent);
 SectionHeader.displayName = "SectionHeader";
@@ -76,21 +60,20 @@ type HistoryRowProps = {
   theme: ReturnType<typeof useTheme>;
 };
 
-const HistoryRowComponent = ({ meal, onPress, theme }: HistoryRowProps) => (
-  <View
-    style={{
-      marginBottom: theme.spacing.sm,
-    }}
-  >
-    <MemoMealListItem
-      meal={meal}
-      onPress={() => onPress(meal)}
-      onEdit={() => {}}
-      onDuplicate={() => {}}
-      onDelete={() => {}}
-    />
-  </View>
-);
+const HistoryRowComponent = ({ meal, onPress, theme }: HistoryRowProps) => {
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  return (
+    <View style={styles.mealRow}>
+      <MemoMealListItem
+        meal={meal}
+        onPress={() => onPress(meal)}
+        onEdit={() => {}}
+        onDuplicate={() => {}}
+        onDelete={() => {}}
+      />
+    </View>
+  );
+};
 
 const HistoryRow = React.memo(
   HistoryRowComponent,
@@ -104,6 +87,7 @@ export default function HistoryListScreen({
   navigation: StackNavigationProp<ParamListBase>;
 }) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const state = useHistoryListState({ navigation });
 
@@ -128,7 +112,7 @@ export default function HistoryListScreen({
 
   if (state.dataState === "loading") {
     return (
-      <View style={[styles.centerBoth, { backgroundColor: theme.background }]}>
+      <View style={styles.loadingState}>
         <ActivityIndicator size="large" color={theme.accent} />
       </View>
     );
@@ -164,7 +148,7 @@ export default function HistoryListScreen({
       {!state.isOnline && <OfflineBanner />}
       <SyncStatusBadge status={state.syncStatus} />
       {state.showFilters ? (
-        <View style={{ height: "100%" }}>
+        <View style={styles.fullHeight}>
           <FilterPanel
             scope="history"
             isPremium={state.isPremium}
@@ -177,10 +161,7 @@ export default function HistoryListScreen({
           <View
             style={[
               styles.topBar,
-              {
-                marginBottom: theme.spacing.md,
-                gap: theme.spacing.sm,
-              },
+              styles.topBarSpacing,
             ]}
           >
             <SearchBox value={state.query} onChange={state.setQuery} />
@@ -197,7 +178,7 @@ export default function HistoryListScreen({
             }
             renderSectionHeader={renderSectionHeader}
             renderItem={renderItem}
-            contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
+            contentContainerStyle={styles.listContent}
             onEndReached={state.onEndReached}
             onEndReachedThreshold={0.2}
             ListFooterComponent={
@@ -221,14 +202,36 @@ export default function HistoryListScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  centerBoth: { flex: 1, justifyContent: "center", alignItems: "center" },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-  },
-  topBar: {
-    flexDirection: "row",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    loadingState: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.background,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+      paddingBottom: theme.spacing.sm,
+    },
+    sectionTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    sectionTotal: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    mealRow: { marginBottom: theme.spacing.sm },
+    topBar: { flexDirection: "row" },
+    topBarSpacing: {
+      marginBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    listContent: { paddingBottom: theme.spacing.lg },
+    fullHeight: { height: "100%" },
+  });

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/Modal";
-import { spacing } from "@/theme";
 
 type Props = {
   visible: boolean;
@@ -41,6 +40,7 @@ export const PaywallModal: React.FC<Props> = ({
   privacyUrl,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation("profile");
 
   return (
@@ -50,7 +50,7 @@ export const PaywallModal: React.FC<Props> = ({
       onClose={onClose}
       title={t("paywall.title", { defaultValue: "Premium Monthly" })}
       footer={
-        <View style={{ gap: 10 }}>
+        <View style={styles.footer}>
           <TouchableOpacity
             onPress={onSubscribe}
             disabled={busy}
@@ -58,12 +58,11 @@ export const PaywallModal: React.FC<Props> = ({
             style={[
               styles.cta,
               {
-                backgroundColor: theme.accentSecondary,
                 opacity: busy ? 0.7 : 1,
               },
             ]}
           >
-            <Text style={[styles.ctaText, { color: theme.onAccent }]}>
+            <Text style={styles.ctaText}>
               {t("paywall.subscribe", { defaultValue: "Subscribe" })}
             </Text>
           </TouchableOpacity>
@@ -72,29 +71,16 @@ export const PaywallModal: React.FC<Props> = ({
             onPress={onRestore}
             disabled={busy}
             activeOpacity={0.7}
-            style={{ paddingVertical: spacing.sm, alignItems: "center" }}
+            style={styles.restoreButton}
           >
-            <Text
-              style={{
-                color: theme.accentSecondary,
-                fontSize: 15,
-                fontWeight: "700",
-              }}
-            >
+            <Text style={styles.linkText}>
               {t("manageSubscription.restorePurchases", {
                 defaultValue: "Restore Purchases",
               })}
             </Text>
           </TouchableOpacity>
 
-          <Text
-            style={{
-              color: theme.textSecondary,
-              fontSize: 13,
-              lineHeight: 18,
-              textAlign: "center",
-            }}
-          >
+          <Text style={styles.disclaimer}>
             {t("paywall.disclaimer", {
               defaultValue:
                 "Auto-renewable subscription. Cancel anytime in your App Store settings.",
@@ -102,25 +88,13 @@ export const PaywallModal: React.FC<Props> = ({
           </Text>
 
           {!!termsUrl && !!privacyUrl && (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "center",
-                gap: 14,
-              }}
-            >
+            <View style={styles.linksRow}>
               <TouchableOpacity
                 onPress={() => Linking.openURL(termsUrl)}
                 activeOpacity={0.7}
                 disabled={busy}
               >
-                <Text
-                  style={{
-                    color: theme.accentSecondary,
-                    fontSize: 15,
-                    fontWeight: "700",
-                  }}
-                >
+                <Text style={styles.linkText}>
                   {t("termsOfService", { defaultValue: "Terms of Service" })}
                 </Text>
               </TouchableOpacity>
@@ -130,13 +104,7 @@ export const PaywallModal: React.FC<Props> = ({
                 activeOpacity={0.7}
                 disabled={busy}
               >
-                <Text
-                  style={{
-                    color: theme.accentSecondary,
-                    fontSize: 15,
-                    fontWeight: "700",
-                  }}
-                >
+                <Text style={styles.linkText}>
                   {t("privacyPolicy", { defaultValue: "Privacy Policy" })}
                 </Text>
               </TouchableOpacity>
@@ -146,45 +114,26 @@ export const PaywallModal: React.FC<Props> = ({
       }
       contentPaddingBottom={0}
     >
-      <View style={{ alignItems: "center", marginBottom: spacing.lg }}>
-        <Text
-          style={{ color: theme.textSecondary, fontSize: 16, marginBottom: 6 }}
-        >
+      <View style={styles.priceBlock}>
+        <Text style={styles.priceLabel}>
           {t("paywall.priceLabel", { defaultValue: "Price" })}
         </Text>
-        <Text style={{ color: theme.text, fontSize: 22, fontWeight: "800" }}>
+        <Text style={styles.priceValue}>
           {priceText}
         </Text>
       </View>
 
-      <View style={{ gap: spacing.sm }}>
-        <Text
-          style={{
-            color: theme.textSecondary,
-            fontSize: 16,
-            fontWeight: "700",
-            marginBottom: 6,
-          }}
-        >
+      <View style={styles.benefits}>
+        <Text style={styles.benefitsTitle}>
           {t("manageSubscription.premiumBenefits")}
         </Text>
 
         {BENEFITS.map((key) => (
           <View
             key={key}
-            style={[
-              styles.benefitRow,
-              { borderColor: theme.border, backgroundColor: theme.card },
-            ]}
+            style={styles.benefitRow}
           >
-            <Text
-              style={{
-                color: theme.text,
-                fontSize: 16,
-                fontWeight: "600",
-                flex: 1,
-              }}
-            >
+            <Text style={styles.benefitText}>
               {t(`manageSubscription.benefit_${key}`)}
             </Text>
           </View>
@@ -194,20 +143,70 @@ export const PaywallModal: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  cta: {
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  ctaText: {
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  benefitRow: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    footer: { gap: theme.spacing.sm },
+    cta: {
+      borderRadius: theme.rounded.sm,
+      paddingVertical: theme.spacing.md,
+      alignItems: "center",
+      backgroundColor: theme.accentSecondary,
+    },
+    ctaText: {
+      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.extraBold,
+      color: theme.onAccent,
+    },
+    restoreButton: {
+      paddingVertical: theme.spacing.sm,
+      alignItems: "center",
+    },
+    linkText: {
+      color: theme.accentSecondary,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    disclaimer: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.xs,
+      lineHeight: theme.typography.lineHeight.tight,
+      textAlign: "center",
+    },
+    linksRow: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: theme.spacing.md,
+    },
+    priceBlock: { alignItems: "center", marginBottom: theme.spacing.lg },
+    priceLabel: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.base,
+      marginBottom: theme.spacing.xs,
+    },
+    priceValue: {
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.extraBold,
+    },
+    benefits: { gap: theme.spacing.sm },
+    benefitsTitle: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.bold,
+      marginBottom: theme.spacing.xs,
+    },
+    benefitRow: {
+      borderWidth: 1,
+      borderRadius: theme.rounded.sm,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      borderColor: theme.border,
+      backgroundColor: theme.card,
+    },
+    benefitText: {
+      color: theme.text,
+      fontSize: theme.typography.size.base,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      flex: 1,
+    },
+  });

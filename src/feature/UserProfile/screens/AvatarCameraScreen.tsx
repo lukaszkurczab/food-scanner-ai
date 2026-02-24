@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { View, StyleSheet, Pressable, Text, Linking } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useTranslation } from "react-i18next";
@@ -23,6 +23,7 @@ export default function AvatarCameraScreen({
 }: AvatarCameraScreenProps) {
   const { t } = useTranslation(["common", "profile"]);
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const { setAvatar } = useUserContext();
@@ -51,7 +52,7 @@ export default function AvatarCameraScreen({
   if (!permission) {
     return (
       <Layout>
-        <View style={{ flex: 1, backgroundColor: theme.background }} />
+        <View style={styles.backgroundFill} />
       </Layout>
     );
   }
@@ -61,13 +62,13 @@ export default function AvatarCameraScreen({
     return (
       <Layout>
         <View style={styles.permissionContainer}>
-          <Text style={[styles.permissionTitle, { color: theme.text }]}>
+          <Text style={styles.permissionTitle}>
             {t("common:camera_permission_title", {
               defaultValue: "Camera requires permission",
             })}
           </Text>
 
-          <Text style={[styles.permissionText, { color: theme.text }]}>
+          <Text style={styles.permissionText}>
             {blocked
               ? t("profile:camera_permission_blocked_message", {
                   defaultValue:
@@ -81,9 +82,9 @@ export default function AvatarCameraScreen({
 
           <Pressable
             onPress={blocked ? () => Linking.openSettings() : requestPermission}
-            style={[styles.permissionButton, { backgroundColor: theme.card }]}
+            style={styles.permissionButton}
           >
-            <Text style={[styles.permissionButtonText, { color: theme.text }]}>
+            <Text style={styles.permissionButtonText}>
               {t("common:continue", { defaultValue: "Continue" })}
             </Text>
           </Pressable>
@@ -119,10 +120,10 @@ export default function AvatarCameraScreen({
 
   return (
     <Layout>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <View style={styles.backgroundFill}>
         <CameraView
           ref={cameraRef}
-          style={{ flex: 1 }}
+          style={styles.cameraFill}
           facing={facing}
           onCameraReady={() => setIsCameraReady(true)}
         />
@@ -131,11 +132,7 @@ export default function AvatarCameraScreen({
             <Pressable
               style={({ pressed }) => [
                 styles.shutterButton,
-                {
-                  opacity: pressed ? 0.7 : 1,
-                  left: "50%",
-                  transform: [{ translateX: -SHUTTER / 2 }],
-                },
+                pressed && styles.shutterButtonPressed,
               ]}
               onPress={handleTakePicture}
               disabled={isTakingPhoto}
@@ -143,18 +140,18 @@ export default function AvatarCameraScreen({
             <Pressable
               style={({ pressed }) => [
                 styles.switchButton,
-                {
-                  opacity: pressed ? 0.7 : 1,
-                  left: "50%",
-                  transform: [{ translateX: SHUTTER / 2 + GAP }],
-                },
+                pressed && styles.switchButtonPressed,
               ]}
               onPress={() =>
                 setFacing((f) => (f === "back" ? "front" : "back"))
               }
               accessibilityLabel={t("common:switch_camera") || "Switch camera"}
             >
-              <MaterialIcons name="flip-camera-ios" size={26} color="#fff" />
+              <MaterialIcons
+                name="flip-camera-ios"
+                size={26}
+                color={theme.onAccent}
+              />
             </Pressable>
           </View>
         </View>
@@ -163,60 +160,73 @@ export default function AvatarCameraScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  permissionContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  permissionTitle: {
-    fontSize: 18,
-    textAlign: "center",
-    marginBottom: 12,
-    fontWeight: "700",
-  },
-  permissionText: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 20,
-    opacity: 0.9,
-  },
-  permissionButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 32,
-  },
-  permissionButtonText: {
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  controlsWrapper: {
-    position: "absolute",
-    bottom: 48,
-    left: 0,
-    right: 0,
-    height: SHUTTER,
-    justifyContent: "center",
-  },
-  shutterButton: {
-    position: "absolute",
-    width: SHUTTER,
-    height: SHUTTER,
-    borderRadius: SHUTTER / 2,
-    borderWidth: 4,
-    borderColor: "white",
-    backgroundColor: "transparent",
-  },
-  switchButton: {
-    position: "absolute",
-    width: SWITCH,
-    height: SWITCH,
-    borderRadius: SWITCH / 2,
-    borderWidth: 2,
-    borderColor: "white",
-    backgroundColor: "rgba(0,0,0,0.4)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    backgroundFill: { flex: 1, backgroundColor: theme.background },
+    cameraFill: { flex: 1 },
+    permissionContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: theme.spacing.lg,
+    },
+    permissionTitle: {
+      fontSize: theme.typography.size.lg,
+      textAlign: "center",
+      marginBottom: theme.spacing.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+    },
+    permissionText: {
+      fontSize: theme.typography.size.base,
+      textAlign: "center",
+      marginBottom: theme.spacing.lg,
+      opacity: 0.9,
+      color: theme.text,
+    },
+    permissionButton: {
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.xl,
+      borderRadius: theme.rounded.full,
+      backgroundColor: theme.card,
+    },
+    permissionButtonText: {
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.base,
+      color: theme.text,
+    },
+    controlsWrapper: {
+      position: "absolute",
+      bottom: theme.spacing.xl,
+      left: 0,
+      right: 0,
+      height: SHUTTER,
+      justifyContent: "center",
+    },
+    shutterButton: {
+      position: "absolute",
+      width: SHUTTER,
+      height: SHUTTER,
+      borderRadius: SHUTTER / 2,
+      borderWidth: 4,
+      borderColor: theme.onAccent,
+      backgroundColor: "transparent",
+      left: "50%",
+      transform: [{ translateX: -SHUTTER / 2 }],
+    },
+    shutterButtonPressed: { opacity: 0.7 },
+    switchButton: {
+      position: "absolute",
+      width: SWITCH,
+      height: SWITCH,
+      borderRadius: SWITCH / 2,
+      borderWidth: 2,
+      borderColor: theme.onAccent,
+      backgroundColor: theme.overlay,
+      alignItems: "center",
+      justifyContent: "center",
+      left: "50%",
+      transform: [{ translateX: SHUTTER / 2 + GAP }],
+    },
+    switchButtonPressed: { opacity: 0.7 },
+  });

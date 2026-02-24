@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import type { TextStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
@@ -11,8 +11,9 @@ type Props = {
 
 export const Bubble: React.FC<Props> = ({ role, text, timestamp }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const isUser = role === "user";
-  const textColor = isUser ? theme.onAccent : theme.text;
+  const textColorStyle = isUser ? styles.textUser : styles.textAi;
 
   const INLINE_MARK = /\*\*[^*]+\*\*|\*[^*]+\*/g;
 
@@ -59,8 +60,7 @@ export const Bubble: React.FC<Props> = ({ role, text, timestamp }) => {
       const trimmed = line.trim();
       if (!trimmed) {
         return (
-          <Text key={`line-${idx}`} style={[styles.text, { color: textColor }]}> 
-          </Text>
+          <Text key={`line-${idx}`} style={[styles.text, textColorStyle]} />
         );
       }
 
@@ -68,8 +68,8 @@ export const Bubble: React.FC<Props> = ({ role, text, timestamp }) => {
         const item = line.replace(/^\s*-\s+/, "");
         return (
           <View key={`bullet-${idx}`} style={styles.bulletRow}>
-            <Text style={[styles.text, styles.bulletDot, { color: textColor }]}>•</Text>
-            <Text style={[styles.text, { color: textColor, flexShrink: 1 }]}>
+            <Text style={[styles.text, styles.bulletDot, textColorStyle]}>•</Text>
+            <Text style={[styles.text, textColorStyle, styles.bulletText]}>
               {renderInlineSegments(item, `bullet-${idx}`)}
             </Text>
           </View>
@@ -77,8 +77,7 @@ export const Bubble: React.FC<Props> = ({ role, text, timestamp }) => {
       }
 
       return (
-        <Text key={`line-${idx}`} style={[styles.text, { color: textColor }]}
-        >
+        <Text key={`line-${idx}`} style={[styles.text, textColorStyle]}>
           {renderInlineSegments(line, `line-${idx}`)}
         </Text>
       );
@@ -86,25 +85,11 @@ export const Bubble: React.FC<Props> = ({ role, text, timestamp }) => {
   };
 
   return (
-    <View
-      style={[
-        styles.row,
-        {
-          justifyContent: isUser ? "flex-end" : "flex-start",
-        },
-      ]}
-    >
+    <View style={[styles.row, isUser ? styles.rowUser : styles.rowAi]}>
       <View
         style={[
           styles.bubble,
-          {
-            backgroundColor: isUser ? theme.accentSecondary : theme.card,
-            borderTopLeftRadius: isUser ? theme.rounded.md : theme.rounded.sm,
-            borderTopRightRadius: isUser ? theme.rounded.sm : theme.rounded.md,
-            borderBottomLeftRadius: theme.rounded.md,
-            borderBottomRightRadius: theme.rounded.md,
-            shadowColor: theme.shadow,
-          },
+          isUser ? styles.bubbleUser : styles.bubbleAi,
         ]}
       >
         <View>{renderContent()}</View>
@@ -112,7 +97,7 @@ export const Bubble: React.FC<Props> = ({ role, text, timestamp }) => {
           <Text
             style={[
               styles.time,
-              { color: isUser ? theme.onAccent : theme.textSecondary },
+              isUser ? styles.timeUser : styles.timeAi,
             ]}
           >
             {timestamp.toLocaleTimeString([], {
@@ -126,32 +111,61 @@ export const Bubble: React.FC<Props> = ({ role, text, timestamp }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  row: { width: "100%", marginVertical: 8, flexDirection: "row" },
-  bubble: {
-    maxWidth: "82%",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    elevation: 2,
-  },
-  text: {
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  bold: { fontWeight: "700" },
-  italic: { fontStyle: "italic" },
-  bulletRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 6,
-  },
-  bulletDot: {
-    lineHeight: 22,
-  },
-  time: {
-    fontSize: 11,
-    marginTop: 6,
-    opacity: 0.8,
-    alignSelf: "flex-end",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    row: {
+      width: "100%",
+      marginVertical: theme.spacing.sm,
+      flexDirection: "row",
+    },
+    rowUser: { justifyContent: "flex-end" },
+    rowAi: { justifyContent: "flex-start" },
+    bubble: {
+      maxWidth: "82%",
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.sm,
+      elevation: 2,
+      shadowColor: theme.shadow,
+    },
+    bubbleUser: {
+      backgroundColor: theme.accentSecondary,
+      borderTopLeftRadius: theme.rounded.md,
+      borderTopRightRadius: theme.rounded.sm,
+      borderBottomLeftRadius: theme.rounded.md,
+      borderBottomRightRadius: theme.rounded.md,
+    },
+    bubbleAi: {
+      backgroundColor: theme.card,
+      borderTopLeftRadius: theme.rounded.sm,
+      borderTopRightRadius: theme.rounded.md,
+      borderBottomLeftRadius: theme.rounded.md,
+      borderBottomRightRadius: theme.rounded.md,
+    },
+    text: {
+      fontSize: theme.typography.size.base,
+      lineHeight: theme.typography.lineHeight.tight,
+    },
+    textUser: { color: theme.onAccent },
+    textAi: { color: theme.text },
+    bold: { fontFamily: theme.typography.fontFamily.bold },
+    italic: { fontStyle: "italic" },
+    bulletRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: theme.spacing.xs,
+    },
+    bulletText: {
+      flexShrink: 1,
+    },
+    bulletDot: {
+      lineHeight: theme.typography.lineHeight.tight,
+    },
+    time: {
+      fontSize: theme.typography.size.xs,
+      marginTop: theme.spacing.xs,
+      opacity: 0.8,
+      alignSelf: "flex-end",
+    },
+    timeUser: { color: theme.onAccent },
+    timeAi: { color: theme.textSecondary },
+  });

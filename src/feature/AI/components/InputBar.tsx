@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   View,
   TextInput,
@@ -26,6 +26,7 @@ export const InputBar: React.FC<Props> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation("chat");
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const [text, setText] = useState("");
 
   const send = useCallback(() => {
@@ -40,34 +41,14 @@ export const InputBar: React.FC<Props> = ({
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.select({ ios: 8, android: 0 })}
     >
-      <View
-        style={[
-          styles.wrapper,
-          {
-            backgroundColor: theme.background,
-            borderTopColor: theme.border,
-          },
-        ]}
-      >
-        <View
-          style={[
-            styles.row,
-            {
-              backgroundColor: theme.card,
-              borderColor: disabled ? theme.disabled.border : theme.border,
-              borderRadius: theme.rounded.lg,
-            },
-          ]}
-        >
+      <View style={styles.wrapper}>
+        <View style={[styles.row, disabled && styles.rowDisabled]}>
           <TextInput
             value={text}
             onChangeText={setText}
             placeholder={placeholder ?? t("input.placeholder")}
             placeholderTextColor={theme.textSecondary}
-            style={[
-              styles.input,
-              { color: theme.text, fontSize: 16, paddingVertical: 10 },
-            ]}
+            style={styles.input}
             multiline
             editable={!disabled}
             onSubmitEditing={send}
@@ -83,7 +64,6 @@ export const InputBar: React.FC<Props> = ({
                   ? theme.disabled.background
                   : theme.accentSecondary,
                 opacity: pressed ? 0.9 : 1,
-                borderRadius: theme.rounded.full,
               },
             ]}
           >
@@ -99,13 +79,7 @@ export const InputBar: React.FC<Props> = ({
         </View>
 
         {!!helperText && (
-          <Text
-            style={[
-              styles.helper,
-              { color: disabled ? theme.textSecondary : theme.textSecondary },
-            ]}
-            numberOfLines={2}
-          >
+          <Text style={styles.helper} numberOfLines={2}>
             {helperText}
           </Text>
         )}
@@ -114,37 +88,51 @@ export const InputBar: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  wrapper: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingLeft: 14,
-    borderWidth: 1,
-  },
-  input: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 132,
-    paddingRight: 8,
-    alignSelf: "center",
-  },
-  sendBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    margin: 6,
-  },
-  sendLabel: {
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  helper: {
-    marginTop: 6,
-    fontSize: 13,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    wrapper: {
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.sm + theme.spacing.xs,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      backgroundColor: theme.background,
+      borderTopColor: theme.border,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      paddingLeft: theme.spacing.sm,
+      borderWidth: 1,
+      backgroundColor: theme.card,
+      borderColor: theme.border,
+      borderRadius: theme.rounded.lg,
+    },
+    rowDisabled: {
+      borderColor: theme.disabled.border,
+    },
+    input: {
+      flex: 1,
+      minHeight: 44,
+      maxHeight: 132,
+      paddingRight: theme.spacing.sm,
+      paddingVertical: theme.spacing.sm,
+      alignSelf: "center",
+      color: theme.text,
+      fontSize: theme.typography.size.base,
+    },
+    sendBtn: {
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      margin: theme.spacing.xs,
+      borderRadius: theme.rounded.full,
+    },
+    sendLabel: {
+      fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.base,
+    },
+    helper: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.size.sm,
+      color: theme.textSecondary,
+    },
+  });

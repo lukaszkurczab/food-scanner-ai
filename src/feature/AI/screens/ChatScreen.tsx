@@ -43,6 +43,7 @@ export default function ChatScreen() {
   const theme = useTheme();
   const { t } = useTranslation("chat");
   const net = useNetInfo();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const uid = user?.uid || "";
   const { userData, loadingUser } = useUserContext();
@@ -108,12 +109,8 @@ export default function ChatScreen() {
 
   const emptyDisabled = sending || limitReached || !net.isConnected;
   const listContentStyle = useMemo(
-    () => ({
-      paddingHorizontal: 16,
-      paddingTop: 8,
-      paddingBottom: 16 + (limitReached ? 160 : 0),
-    }),
-    [limitReached]
+    () => [styles.listContent, limitReached && styles.listContentLimit],
+    [limitReached, styles]
   );
 
   return (
@@ -130,17 +127,7 @@ export default function ChatScreen() {
       </View>
 
       {limitReached && (
-        <View
-          style={[
-            styles.stickyBanner,
-            {
-              backgroundColor: theme.overlay,
-              borderColor: theme.accentSecondary,
-              shadowColor: theme.shadow,
-            },
-          ]}
-          pointerEvents="box-none"
-        >
+        <View style={styles.stickyBanner} pointerEvents="box-none">
           <PaywallCard
             used={countToday}
             limit={limit}
@@ -205,28 +192,38 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  layout: {
-    paddingLeft: 0,
-    paddingRight: 0,
-  },
-  flex: { flex: 1 },
-  container: { flex: 1 },
-  header: {
-    height: 44,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  stickyBanner: {
-    position: "absolute",
-    top: 8,
-    left: 12,
-    right: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    zIndex: 20,
-    elevation: 4,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    layout: {
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+    header: {
+      height: 44,
+      paddingHorizontal: theme.spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    stickyBanner: {
+      position: "absolute",
+      top: theme.spacing.sm,
+      left: theme.spacing.sm,
+      right: theme.spacing.sm,
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
+      zIndex: 20,
+      elevation: 4,
+      backgroundColor: theme.overlay,
+      borderColor: theme.accentSecondary,
+      shadowColor: theme.shadow,
+    },
+    listContent: {
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.md,
+    },
+    listContentLimit: {
+      paddingBottom: theme.spacing.md + theme.spacing.xl * 5,
+    },
+  });

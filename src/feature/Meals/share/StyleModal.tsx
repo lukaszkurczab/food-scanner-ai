@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { useMemo, useState } from "react";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Modal } from "@/components/Modal";
 import { TextInput as StyledInput } from "@/components/TextInput";
 import { parseColor } from "./types/colorUtils";
@@ -47,42 +47,38 @@ export function StyleModal({
 }: Props) {
   const [input, setInput] = useState("");
   const { t } = useTranslation("share");
+  const styles = useMemo(() => makeStyles(theme), [theme.mode, color, currentFont]);
+  const fontStyles = useMemo(
+    () => ({
+      regular: { fontFamily: theme.typography.fontFamily.regular },
+      medium: { fontFamily: theme.typography.fontFamily.medium },
+      bold: { fontFamily: theme.typography.fontFamily.bold },
+      light: { fontFamily: theme.typography.fontFamily.light },
+    }),
+    [theme]
+  );
 
   return (
     <Modal visible={visible} onClose={onClose} contentPaddingBottom={8}>
-      <View style={{ gap: 12 }}>
+      <View style={styles.container}>
         {target === "custom" && (
-          <View style={{ alignItems: "center", paddingVertical: 4 }}>
-            <Text style={{ color, fontSize: 20, textAlign: "center" }}>
+          <View style={styles.previewWrap}>
+            <Text style={styles.previewText}>
               {previewText}
             </Text>
           </View>
         )}
 
-        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+        <View style={styles.fontRow}>
           {(["regular", "medium", "bold", "light"] as const).map((f) => {
             const active = currentFont === f;
             return (
               <Pressable
                 key={f}
                 onPress={() => onChangeFont(f)}
-                style={{
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: active ? theme.accentSecondary : theme.border,
-                  backgroundColor: active ? theme.overlay : theme.card,
-                }}
+                style={[styles.fontChip, active && styles.fontChipActive]}
               >
-                <Text
-                  style={{
-                    color: theme.text,
-                    fontFamily:
-                      theme.typography.fontFamily[f] ||
-                      theme.typography.fontFamily.regular,
-                  }}
-                >
+                <Text style={[styles.fontChipText, fontStyles[f]]}>
                   {t(`editor.font.${f}`)}
                 </Text>
               </Pressable>
@@ -90,46 +86,30 @@ export function StyleModal({
           })}
         </View>
 
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={styles.toggleRow}>
           <Pressable
             onPress={onToggleItalic}
-            style={{
-              paddingVertical: 8,
-              paddingHorizontal: 12,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: theme.border,
-            }}
+            style={styles.toggleChip}
           >
-            <Text style={{ color: theme.text, fontStyle: "italic" }}>
+            <Text style={styles.italicText}>
               {t("editor.italic")}
             </Text>
           </Pressable>
           <Pressable
             onPress={onToggleUnderline}
-            style={{
-              paddingVertical: 8,
-              paddingHorizontal: 12,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: theme.border,
-            }}
+            style={styles.toggleChip}
           >
-            <Text
-              style={{ color: theme.text, textDecorationLine: "underline" }}
-            >
+            <Text style={styles.underlineText}>
               {t("editor.underline")}
             </Text>
           </Pressable>
         </View>
 
-        <View style={{ gap: 10 }}>
-          <Text
-            style={{ color: theme.text, fontSize: theme.typography.size.md }}
-          >
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
             {t("editor.color")}
           </Text>
-          <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+          <View style={styles.swatchRow}>
             {uniqueQuickColors.slice(0, 8).map((hex, idx) => {
               const active = (color || "#FFFFFF").toUpperCase() === hex;
               return (
@@ -141,24 +121,19 @@ export function StyleModal({
                   }}
                 >
                   <View
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      backgroundColor: hex,
-                      borderWidth: 2,
-                      borderColor: active
-                        ? theme.accentSecondary
-                        : theme.border,
-                    }}
+                    style={[
+                      styles.swatch,
+                      { backgroundColor: hex },
+                      active && styles.swatchActive,
+                    ]}
                   />
                 </Pressable>
               );
             })}
           </View>
 
-          <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-            <View style={{ flex: 1 }}>
+          <View style={styles.inputRow}>
+            <View style={styles.flex}>
               <StyledInput
                 placeholder={t("editor.color_placeholder_extended")}
                 value={input}
@@ -175,34 +150,17 @@ export function StyleModal({
                 onApplyColor(parsed);
                 await addRecentColor(parsed);
               }}
-              style={{
-                paddingVertical: 10,
-                paddingHorizontal: 14,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 8,
-                backgroundColor: theme.card,
-              }}
+              style={styles.applyButton}
             >
-              <Text
-                style={{
-                  color: theme.text,
-                  fontSize: theme.typography.size.md,
-                }}
-              >
+              <Text style={styles.applyLabel}>
                 {t("editor.apply")}
               </Text>
             </Pressable>
           </View>
 
           {typeof customText === "string" && onChangeCustomText && (
-            <View style={{ gap: 10 }}>
-              <Text
-                style={{
-                  color: theme.text,
-                  fontSize: theme.typography.size.md,
-                }}
-              >
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
                 {t("editor.text_label")}
               </Text>
               <StyledInput
@@ -214,8 +172,91 @@ export function StyleModal({
           )}
         </View>
 
-        <View style={{ height: 4 }} />
+        <View style={styles.bottomSpacer} />
       </View>
     </Modal>
   );
 }
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: { gap: theme.spacing.sm },
+    previewWrap: {
+      alignItems: "center",
+      paddingVertical: theme.spacing.xs,
+    },
+    previewText: {
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+      textAlign: "center",
+    },
+    fontRow: {
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+      flexWrap: "wrap",
+    },
+    fontChip: {
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      borderRadius: theme.rounded.sm,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.card,
+    },
+    fontChipActive: {
+      borderColor: theme.accentSecondary,
+      backgroundColor: theme.overlay,
+    },
+    fontChipText: {
+      color: theme.text,
+    },
+    toggleRow: { flexDirection: "row", gap: theme.spacing.sm },
+    toggleChip: {
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      borderRadius: theme.rounded.sm,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    italicText: { color: theme.text, fontStyle: "italic" },
+    underlineText: { color: theme.text, textDecorationLine: "underline" },
+    section: { gap: theme.spacing.sm },
+    sectionTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.md,
+    },
+    swatchRow: {
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+      flexWrap: "wrap",
+    },
+    swatch: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      borderWidth: 2,
+      borderColor: theme.border,
+    },
+    swatchActive: {
+      borderColor: theme.accentSecondary,
+    },
+    inputRow: {
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+      alignItems: "center",
+    },
+    flex: { flex: 1 },
+    applyButton: {
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: theme.rounded.sm,
+      backgroundColor: theme.card,
+    },
+    applyLabel: {
+      color: theme.text,
+      fontSize: theme.typography.size.md,
+    },
+    bottomSpacer: { height: theme.spacing.xs },
+  });

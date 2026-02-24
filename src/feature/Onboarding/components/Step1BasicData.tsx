@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -42,6 +42,7 @@ export default function Step1BasicData({
 }: Props) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const cm = Number(form.height || 0);
   const kg = Number(form.weight || 0);
@@ -161,28 +162,10 @@ export default function Step1BasicData({
 
   return (
     <View style={styles.container}>
-      <View style={{ gap: theme.spacing.lg }}>
+      <View style={styles.sectionGap}>
         <View>
-          <Text
-            style={{
-              fontSize: theme.typography.size.xl,
-              fontFamily: theme.typography.fontFamily.bold,
-              color: theme.text,
-              textAlign: "center",
-              marginBottom: theme.spacing.sm,
-            }}
-          >
-            {t("step1_title")}
-          </Text>
-          <Text
-            style={{
-              fontSize: theme.typography.size.base,
-              color: theme.textSecondary,
-              textAlign: "center",
-            }}
-          >
-            {t("step1_description")}
-          </Text>
+          <Text style={styles.title}>{t("step1_title")}</Text>
+          <Text style={styles.subtitle}>{t("step1_description")}</Text>
         </View>
 
         <Dropdown
@@ -210,21 +193,21 @@ export default function Step1BasicData({
           returnKeyType="next"
         />
 
-        <View style={[styles.row, { gap: theme.spacing.sm }]}>
+        <View style={[styles.row, styles.rowGap]}>
           {form.sex === "male" ? (
             <>
               <PrimaryButton
                 label={t("male")}
                 onPress={() => handleChange("sex", "male")}
-                style={{ flex: 1 }}
-                textStyle={{ fontSize: theme.typography.size.sm }}
+                style={styles.flex1}
+                textStyle={styles.buttonText}
                 accessibilityState={{ selected: true }}
               />
               <SecondaryButton
                 label={t("female")}
                 onPress={() => handleChange("sex", "female")}
-                style={{ flex: 1 }}
-                textStyle={{ fontSize: theme.typography.size.sm }}
+                style={styles.flex1}
+                textStyle={styles.buttonText}
                 accessibilityState={{ selected: false }}
               />
             </>
@@ -233,28 +216,22 @@ export default function Step1BasicData({
               <SecondaryButton
                 label={t("male")}
                 onPress={() => handleChange("sex", "male")}
-                style={{ flex: 1 }}
-                textStyle={{ fontSize: theme.typography.size.sm }}
+                style={styles.flex1}
+                textStyle={styles.buttonText}
                 accessibilityState={{ selected: false }}
               />
               <PrimaryButton
                 label={t("female")}
                 onPress={() => handleChange("sex", "female")}
-                style={{ flex: 1 }}
-                textStyle={{ fontSize: theme.typography.size.sm }}
+                style={styles.flex1}
+                textStyle={styles.buttonText}
                 accessibilityState={{ selected: true }}
               />
             </>
           )}
         </View>
         {errors.sex && (
-          <Text
-            style={{
-              color: theme.error.text,
-              fontSize: theme.typography.size.sm,
-              textAlign: "center",
-            }}
-          >
+          <Text style={styles.errorText}>
             {errors.sex}
           </Text>
         )}
@@ -274,7 +251,7 @@ export default function Step1BasicData({
             returnKeyType="next"
           />
         ) : (
-          <View style={[styles.row, { gap: theme.spacing.sm }]}>
+          <View style={[styles.row, styles.rowGap]}>
             <TextInput
               label={`${t("heightFt")}*`}
               value={dispFt ? String(dispFt) : ""}
@@ -325,7 +302,7 @@ export default function Step1BasicData({
           accessibilityLabel={t("weight")}
         />
       </View>
-      <View style={{ gap: theme.spacing.lg }}>
+      <View style={styles.sectionGap}>
         <PrimaryButton
           label={editMode ? t("summary.confirm", "Confirm") : t("next")}
           onPress={editMode ? onConfirmEdit : onNext}
@@ -337,13 +314,34 @@ export default function Step1BasicData({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: "column",
-    justifyContent: "space-between",
-  },
-  column: { flexDirection: "column" },
-  row: { flexDirection: "row" },
-  flex1: { flex: 1 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      flexDirection: "column",
+      justifyContent: "space-between",
+    },
+    column: { flexDirection: "column" },
+    row: { flexDirection: "row" },
+    rowGap: { gap: theme.spacing.sm },
+    flex1: { flex: 1 },
+    sectionGap: { gap: theme.spacing.lg },
+    title: {
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.sm,
+    },
+    subtitle: {
+      fontSize: theme.typography.size.base,
+      color: theme.textSecondary,
+      textAlign: "center",
+    },
+    buttonText: { fontSize: theme.typography.size.sm },
+    errorText: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.sm,
+      textAlign: "center",
+    },
+  });

@@ -1,11 +1,7 @@
-import { View, KeyboardAvoidingView, Platform } from "react-native";
+import { useMemo } from "react";
+import { View, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import {
-  Layout,
-  PrimaryButton,
-  SecondaryButton,
-  Modal,
-} from "@/components";
+import { Layout, PrimaryButton, SecondaryButton, Modal } from "@/components";
 import { useTranslation } from "react-i18next";
 import { useNavigation, type ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -15,6 +11,7 @@ import { useMealTextAiState } from "@/feature/Meals/hooks/useMealTextAiState";
 
 export default function MealTextAIScreen() {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t, i18n } = useTranslation(["meals", "chat", "common"]);
   const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
 
@@ -48,16 +45,11 @@ export default function MealTextAIScreen() {
   return (
     <Layout>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View
-          style={{
-            gap: theme.spacing.lg,
-            flex: 1,
-          }}
-        >
-          <View style={{ gap: theme.spacing.md, flexGrow: 1 }}>
+        <View style={styles.content}>
+          <View style={styles.form}>
             <ShortInput
               label={t("meal_name", { ns: "meals" })}
               value={name}
@@ -65,14 +57,14 @@ export default function MealTextAIScreen() {
               placeholder={t("meal_name", { ns: "meals" })}
               onBlur={onNameBlur}
               error={nameError}
-              inputStyle={{ fontSize: theme.typography.size.md }}
+              inputStyle={styles.input}
             />
             <LongTextInput
               label={t("ingredients_optional", { ns: "meals" })}
               value={ingPreview}
               onChangeText={onIngredientsChange}
               placeholder={t("ingredients_optional", { ns: "meals" })}
-              inputStyle={{ fontSize: theme.typography.size.md }}
+              inputStyle={styles.input}
               numberOfLines={5}
               error={ingredientsError}
             />
@@ -84,7 +76,7 @@ export default function MealTextAIScreen() {
               keyboardType="numeric"
               onBlur={onAmountBlur}
               error={amountError}
-              inputStyle={{ fontSize: theme.typography.size.md }}
+              inputStyle={styles.input}
             />
             <LongTextInput
               label={t("description_optional", { ns: "meals" })}
@@ -92,10 +84,10 @@ export default function MealTextAIScreen() {
               onChangeText={onDescChange}
               placeholder={t("description_optional", { ns: "meals" })}
               numberOfLines={6}
-              inputStyle={{ fontSize: theme.typography.size.md }}
+              inputStyle={styles.input}
             />
           </View>
-          <View style={{ gap: theme.spacing.sm, marginTop: "auto" }}>
+          <View style={styles.actions}>
             <PrimaryButton
               label={
                 retries > 0
@@ -105,7 +97,7 @@ export default function MealTextAIScreen() {
               loading={loading}
               onPress={onAnalyze}
               disabled={analyzeDisabled}
-              style={{ marginTop: theme.spacing.sm }}
+              style={styles.actionSpacing}
             />
             <SecondaryButton
               label={t("select_method", { ns: "meals" })}
@@ -131,3 +123,13 @@ export default function MealTextAIScreen() {
     </Layout>
   );
 }
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    content: { gap: theme.spacing.lg, flex: 1 },
+    form: { gap: theme.spacing.md, flexGrow: 1 },
+    input: { fontSize: theme.typography.size.md },
+    actions: { gap: theme.spacing.sm, marginTop: "auto" },
+    actionSpacing: { marginTop: theme.spacing.sm },
+  });

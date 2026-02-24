@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Dropdown } from "@/components/Dropdown";
@@ -44,6 +44,7 @@ export default function ChartEditorPanel({
   onClose,
 }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation(["share", "common"]);
   const [colorTarget, setColorTarget] = useState<ColorTarget | null>(null);
   const [tempColor, setTempColor] = useState<string | null>(null);
@@ -268,30 +269,25 @@ export default function ChartEditorPanel({
     const value = tempColor || base;
 
     return (
-      <View
-        style={[
-          styles.panel,
-          { backgroundColor: theme.card, borderColor: theme.border },
-        ]}
-      >
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
+      <View style={styles.panel}>
+        <Text style={styles.label}>
           {label}
         </Text>
         <ColorPickerPanel value={value} onChange={setTempColor} />
         <View style={styles.colorActions}>
           <Pressable
             onPress={cancelColor}
-            style={[styles.button, { backgroundColor: theme.background }]}
+            style={[styles.button, styles.buttonSecondary]}
           >
-            <Text style={{ color: theme.text, fontSize: 14 }}>
+            <Text style={styles.buttonText}>
               {t("common:back", "Back")}
             </Text>
           </Pressable>
           <Pressable
             onPress={confirmColor}
-            style={[styles.button, { backgroundColor: theme.accentSecondary }]}
+            style={[styles.button, styles.buttonPrimary]}
           >
-            <Text style={{ color: theme.onAccent, fontSize: 14 }}>
+            <Text style={styles.buttonTextOnAccent}>
               {t("common:confirm", "Confirm")}
             </Text>
           </Pressable>
@@ -311,7 +307,7 @@ export default function ChartEditorPanel({
   const renderTypeTab = () => (
     <>
       <View style={styles.section}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
+        <Text style={styles.label}>
           {t("editor.chart_type", "Chart type")}
         </Text>
         <Dropdown
@@ -329,7 +325,7 @@ export default function ChartEditorPanel({
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
+        <Text style={styles.label}>
           {t("editor.chart_options", "Chart options")}
         </Text>
 
@@ -350,7 +346,7 @@ export default function ChartEditorPanel({
                 : theme.accentSecondary
             }
           />
-          <Text style={[styles.checkboxText, { color: theme.text }]}>
+          <Text style={styles.checkboxText}>
             {t("editor.show_chart_kcal", "Show kcal in chart")}
           </Text>
         </Pressable>
@@ -372,7 +368,7 @@ export default function ChartEditorPanel({
                 : theme.accentSecondary
             }
           />
-          <Text style={[styles.checkboxText, { color: theme.text }]}>
+          <Text style={styles.checkboxText}>
             {t("editor.show_chart_legend", "Show legend")}
           </Text>
         </Pressable>
@@ -383,7 +379,7 @@ export default function ChartEditorPanel({
   const renderTextTab = () => (
     <>
       <View style={styles.section}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
+        <Text style={styles.label}>
           {t("editor.chart_text", "Text")}
         </Text>
 
@@ -391,7 +387,7 @@ export default function ChartEditorPanel({
           style={styles.colorRow}
           onPress={() => openColorPicker("chartTextColor")}
         >
-          <Text style={{ color: theme.text, fontSize: 14 }}>
+          <Text style={styles.rowText}>
             {t("editor.chart_text_color", "Text color")}
           </Text>
           <View
@@ -406,7 +402,7 @@ export default function ChartEditorPanel({
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.subLabel, { color: theme.textSecondary }]}>
+        <Text style={styles.subLabel}>
           {t("editor.font_family", "Font family")}
         </Text>
         <Dropdown
@@ -416,12 +412,13 @@ export default function ChartEditorPanel({
             const o = opt as FontFamilyOption;
             return (
               <Text
-                style={{
-                  fontFamily:
-                    o.previewFamily || theme.typography.fontFamily.regular,
-                  fontSize: 14,
-                  color: theme.text,
-                }}
+                style={[
+                  styles.dropdownLabel,
+                  {
+                    fontFamily:
+                      o.previewFamily || theme.typography.fontFamily.regular,
+                  },
+                ]}
                 numberOfLines={1}
               >
                 {o.label}
@@ -436,7 +433,7 @@ export default function ChartEditorPanel({
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.subLabel, { color: theme.textSecondary }]}>
+        <Text style={styles.subLabel}>
           {t("editor.weight", "Weight")}
         </Text>
         <Dropdown
@@ -450,12 +447,13 @@ export default function ChartEditorPanel({
                 : undefined;
             return (
               <Text
-                style={{
-                  fontFamily:
-                    previewFamily || theme.typography.fontFamily.regular,
-                  fontSize: 14,
-                  color: theme.text,
-                }}
+                style={[
+                  styles.dropdownLabel,
+                  {
+                    fontFamily:
+                      previewFamily || theme.typography.fontFamily.regular,
+                  },
+                ]}
                 numberOfLines={1}
               >
                 {o.label}
@@ -485,7 +483,7 @@ export default function ChartEditorPanel({
     return (
       <>
         <View style={styles.section}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>
+          <Text style={styles.label}>
             {t("editor.chart_colors", "Macro colors")}
           </Text>
 
@@ -493,7 +491,7 @@ export default function ChartEditorPanel({
             style={styles.colorRow}
             onPress={() => openColorPicker("chartProteinColor")}
           >
-            <Text style={{ color: theme.text, fontSize: 14 }}>
+            <Text style={styles.rowText}>
               {t("meals:protein", "Protein")}
             </Text>
             <View
@@ -505,7 +503,7 @@ export default function ChartEditorPanel({
             style={styles.colorRow}
             onPress={() => openColorPicker("chartCarbsColor")}
           >
-            <Text style={{ color: theme.text, fontSize: 14 }}>
+            <Text style={styles.rowText}>
               {t("meals:carbs", "Carbs")}
             </Text>
             <View
@@ -517,7 +515,7 @@ export default function ChartEditorPanel({
             style={styles.colorRow}
             onPress={() => openColorPicker("chartFatColor")}
           >
-            <Text style={{ color: theme.text, fontSize: 14 }}>
+            <Text style={styles.rowText}>
               {t("meals:fat", "Fat")}
             </Text>
             <View
@@ -527,14 +525,14 @@ export default function ChartEditorPanel({
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>
+          <Text style={styles.label}>
             {t("editor.chart_bg_color", "Chart background")}
           </Text>
           <Pressable
             style={styles.colorRow}
             onPress={() => openColorPicker("chartBackgroundColor")}
           >
-            <Text style={{ color: theme.text, fontSize: 14 }}>
+            <Text style={styles.rowText}>
               {t("editor.chart_bg_color", "Background color")}
             </Text>
             <View
@@ -551,64 +549,40 @@ export default function ChartEditorPanel({
     );
   };
 
-  return (
-    <View
-      style={[
-        styles.panel,
-        { backgroundColor: theme.card, borderColor: theme.border },
-      ]}
-    >
+    return (
+    <View style={styles.panel}>
       <View style={styles.tabsRow}>
         <Pressable
           style={[
             styles.tab,
-            tab === "type" && {
-              backgroundColor: theme.accentSecondary,
-            },
+            tab === "type" && styles.tabActive,
           ]}
           onPress={() => setTab("type")}
         >
-          <Text
-            style={{
-              color: tab === "type" ? theme.onAccent : theme.textSecondary,
-              fontSize: 14,
-            }}
-          >
+          <Text style={[styles.tabLabel, tab === "type" && styles.tabLabelActive]}>
             {t("editor.tab_type", "Type")}
           </Text>
         </Pressable>
         <Pressable
           style={[
             styles.tab,
-            tab === "text" && {
-              backgroundColor: theme.accentSecondary,
-            },
+            tab === "text" && styles.tabActive,
           ]}
           onPress={() => setTab("text")}
         >
-          <Text
-            style={{
-              color: tab === "text" ? theme.onAccent : theme.textSecondary,
-              fontSize: 14,
-            }}
-          >
+          <Text style={[styles.tabLabel, tab === "text" && styles.tabLabelActive]}>
             {t("editor.tab_text", "Text")}
           </Text>
         </Pressable>
         <Pressable
           style={[
             styles.tab,
-            tab === "colors" && {
-              backgroundColor: theme.accentSecondary,
-            },
+            tab === "colors" && styles.tabActive,
           ]}
           onPress={() => setTab("colors")}
         >
           <Text
-            style={{
-              color: tab === "colors" ? theme.onAccent : theme.textSecondary,
-              fontSize: 14,
-            }}
+            style={[styles.tabLabel, tab === "colors" && styles.tabLabelActive]}
           >
             {t("editor.tab_colors", "Colors")}
           </Text>
@@ -617,7 +591,7 @@ export default function ChartEditorPanel({
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: 8 }}
+        contentContainerStyle={styles.scrollContent}
       >
         {tab === "type" && renderTypeTab()}
         {tab === "text" && renderTextTab()}
@@ -627,9 +601,9 @@ export default function ChartEditorPanel({
       <View style={styles.actions}>
         <Pressable
           onPress={onClose}
-          style={[styles.button, { backgroundColor: theme.accentSecondary }]}
+          style={[styles.button, styles.buttonPrimary]}
         >
-          <Text style={{ color: theme.onAccent, fontSize: 14 }}>
+          <Text style={styles.buttonTextOnAccent}>
             {t("editor.done", "Done")}
           </Text>
         </Pressable>
@@ -638,98 +612,122 @@ export default function ChartEditorPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  panel: {
-    position: "absolute",
-    left: 16,
-    right: 64,
-    top: 16,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 16,
-    gap: 12,
-    zIndex: 30,
-    maxHeight: 520,
-  },
-  tabsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-    gap: 8,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 6,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scroll: {
-    flexGrow: 0,
-  },
-  section: {
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  subLabel: {
-    fontSize: 13,
-  },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 4,
-  },
-  checkboxText: {
-    marginLeft: 8,
-    fontSize: 14,
-  },
-  colorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-  },
-  colorPreview: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.5)",
-  },
-  actions: {
-    alignItems: "center",
-    marginTop: 4,
-  },
-  button: {
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  colorActions: {
-    marginTop: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  innerRadiusRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  innerRadiusControls: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 8,
-  },
-  stepButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    panel: {
+      position: "absolute",
+      left: theme.spacing.md,
+      right: 64,
+      top: theme.spacing.md,
+      borderWidth: 1,
+      borderRadius: theme.rounded.sm,
+      padding: theme.spacing.md,
+      gap: theme.spacing.sm,
+      zIndex: 30,
+      maxHeight: 520,
+      backgroundColor: theme.card,
+      borderColor: theme.border,
+    },
+    tabsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.xs,
+      gap: theme.spacing.sm,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.rounded.full,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    tabActive: {
+      backgroundColor: theme.accentSecondary,
+    },
+    tabLabel: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+    },
+    tabLabelActive: { color: theme.onAccent },
+    scroll: {
+      flexGrow: 0,
+    },
+    scrollContent: { paddingBottom: theme.spacing.xs },
+    section: {
+      marginBottom: theme.spacing.sm,
+    },
+    label: {
+      fontSize: theme.typography.size.base,
+      marginBottom: theme.spacing.xs,
+      color: theme.textSecondary,
+    },
+    subLabel: {
+      fontSize: theme.typography.size.sm,
+      color: theme.textSecondary,
+    },
+    checkboxRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: theme.spacing.xs,
+    },
+    checkboxText: {
+      marginLeft: theme.spacing.sm,
+      fontSize: theme.typography.size.sm,
+      color: theme.text,
+    },
+    colorRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: theme.spacing.xs,
+    },
+    rowText: { color: theme.text, fontSize: theme.typography.size.sm },
+    colorPreview: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    actions: {
+      alignItems: "center",
+      marginTop: theme.spacing.xs,
+    },
+    button: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.rounded.sm,
+    },
+    buttonPrimary: { backgroundColor: theme.accentSecondary },
+    buttonSecondary: { backgroundColor: theme.background },
+    buttonText: { color: theme.text, fontSize: theme.typography.size.sm },
+    buttonTextOnAccent: {
+      color: theme.onAccent,
+      fontSize: theme.typography.size.sm,
+    },
+    colorActions: {
+      marginTop: theme.spacing.md,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    dropdownLabel: { color: theme.text, fontSize: theme.typography.size.sm },
+    innerRadiusRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: theme.spacing.xs,
+    },
+    innerRadiusControls: {
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.sm,
+    },
+    stepButton: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.rounded.sm,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });

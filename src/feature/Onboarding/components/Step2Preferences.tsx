@@ -68,6 +68,7 @@ export default function Step2Preferences({
 }: Props) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const MIN_DEFICIT = 0.1,
     MAX_DEFICIT = 0.5;
@@ -165,29 +166,10 @@ export default function Step2Preferences({
 
   return (
     <View style={styles.container}>
-      <View style={{ gap: theme.spacing.lg }}>
+      <View style={styles.sectionGap}>
         <View>
-          <Text
-            style={{
-              fontSize: theme.typography.size.xl,
-              fontFamily: theme.typography.fontFamily.bold,
-              color: theme.text,
-              textAlign: "center",
-              marginBottom: theme.spacing.sm,
-            }}
-          >
-            {t("step2_title")}
-          </Text>
-          <Text
-            style={{
-              fontSize: theme.typography.size.base,
-              color: theme.textSecondary,
-              textAlign: "center",
-              marginBottom: theme.spacing.md,
-            }}
-          >
-            {t("step2_description")}
-          </Text>
+          <Text style={styles.title}>{t("step2_title")}</Text>
+          <Text style={styles.subtitle}>{t("step2_description")}</Text>
         </View>
 
         <CheckboxDropdown
@@ -240,14 +222,7 @@ export default function Step2Preferences({
 
         {form.goal === "lose" && (
           <View>
-            <Text
-              style={{
-                fontFamily: theme.typography.fontFamily.medium,
-                color: theme.textSecondary,
-                fontSize: theme.typography.size.base,
-                marginBottom: theme.spacing.xs,
-              }}
-            >
+            <Text style={styles.sliderLabel}>
               {t("calorieDeficit")}{" "}
               {Math.round((form.calorieDeficit ?? 0.2) * 100)}%
             </Text>
@@ -261,12 +236,7 @@ export default function Step2Preferences({
               }
             />
             {errors.calorieDeficit && (
-              <Text
-                style={{
-                  color: theme.error.text,
-                  fontSize: theme.typography.size.sm,
-                }}
-              >
+              <Text style={styles.errorText}>
                 {errors.calorieDeficit}
               </Text>
             )}
@@ -275,14 +245,7 @@ export default function Step2Preferences({
 
         {form.goal === "increase" && (
           <View>
-            <Text
-              style={{
-                fontFamily: theme.typography.fontFamily.medium,
-                color: theme.textSecondary,
-                fontSize: theme.typography.size.base,
-                marginBottom: theme.spacing.xs,
-              }}
-            >
+            <Text style={styles.sliderLabel}>
               {t("calorieSurplus")}{" "}
               {Math.round((form.calorieSurplus ?? 0.2) * 100)}%
             </Text>
@@ -296,19 +259,14 @@ export default function Step2Preferences({
               }
             />
             {errors.calorieSurplus && (
-              <Text
-                style={{
-                  color: theme.error.text,
-                  fontSize: theme.typography.size.sm,
-                }}
-              >
+              <Text style={styles.errorText}>
                 {errors.calorieSurplus}
               </Text>
             )}
           </View>
         )}
       </View>
-      <View style={{ gap: theme.spacing.lg }}>
+      <View style={styles.sectionGap}>
         <PrimaryButton
           label={editMode ? t("summary.confirm", "Confirm") : t("next")}
           onPress={editMode ? onConfirmEdit : handleNext}
@@ -320,10 +278,35 @@ export default function Step2Preferences({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: "column",
-    justifyContent: "space-between",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      flexDirection: "column",
+      justifyContent: "space-between",
+    },
+    sectionGap: { gap: theme.spacing.lg },
+    title: {
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.sm,
+    },
+    subtitle: {
+      fontSize: theme.typography.size.base,
+      color: theme.textSecondary,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    sliderLabel: {
+      fontFamily: theme.typography.fontFamily.medium,
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.base,
+      marginBottom: theme.spacing.xs,
+    },
+    errorText: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.sm,
+    },
+  });

@@ -27,6 +27,7 @@ type LanguageScreenProps = {
 
 export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t } = useTranslation();
   const { userData, updateUser } = useUserContext();
 
@@ -63,7 +64,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
 
   return (
     <Layout disableScroll>
-      <View style={{ flex: 1 }}>
+      <View style={styles.flex}>
         <Pressable
           onPress={() => navigation.goBack()}
           hitSlop={12}
@@ -73,13 +74,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
           <MaterialIcons name="chevron-left" size={28} color={theme.text} />
 
           <Text
-            style={[
-              styles.heading,
-              {
-                color: theme.text,
-                fontFamily: theme.typography.fontFamily.bold,
-              },
-            ]}
+            style={styles.heading}
             accessibilityRole="header"
           >
             {t("language", { ns: "profile", defaultValue: "Language" })}
@@ -99,7 +94,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
           }
           iconPosition="right"
           style={styles.searchInput}
-          inputStyle={{ fontSize: theme.typography.size.base }}
+          inputStyle={styles.searchInputText}
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
@@ -113,7 +108,6 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
               style={({ pressed }) => [
                 styles.languageRow,
                 {
-                  borderBottomColor: theme.border,
                   opacity: pressed || saving ? 0.7 : 1,
                 },
                 styles.rowCenter,
@@ -125,16 +119,10 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
               accessibilityLabel={item.label}
             >
               <Text
-                style={{
-                  fontSize: theme.typography.size.lg,
-                  color:
-                    selected === item.code ? theme.accentSecondary : theme.text,
-                  fontFamily:
-                    selected === item.code
-                      ? theme.typography.fontFamily.bold
-                      : theme.typography.fontFamily.regular,
-                  flex: 1,
-                }}
+                style={[
+                  styles.languageLabel,
+                  selected === item.code && styles.languageLabelActive,
+                ]}
               >
                 {item.label}
               </Text>
@@ -147,11 +135,8 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
               )}
             </Pressable>
           )}
-          style={{ marginTop: theme.spacing.lg }}
-          contentContainerStyle={{
-            paddingHorizontal: theme.spacing.lg,
-            paddingBottom: 24,
-          }}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
           keyboardShouldPersistTaps="handled"
         />
       </View>
@@ -159,25 +144,45 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 24,
-    gap: 16,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-  searchInput: {
-    marginBottom: 8,
-    marginHorizontal: 12,
-  },
-  languageRow: {
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  rowCenter: { flexDirection: "row", alignItems: "center" },
-  rowGap8: { gap: 8 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    header: {
+      alignItems: "center",
+      flexDirection: "row",
+      marginBottom: theme.spacing.lg,
+      gap: theme.spacing.md,
+    },
+    heading: {
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+    },
+    searchInput: {
+      marginBottom: theme.spacing.xs,
+      marginHorizontal: theme.spacing.sm,
+    },
+    searchInputText: { fontSize: theme.typography.size.base },
+    languageRow: {
+      paddingVertical: theme.spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    rowCenter: { flexDirection: "row", alignItems: "center" },
+    rowGap8: { gap: theme.spacing.sm },
+    languageLabel: {
+      fontSize: theme.typography.size.lg,
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.regular,
+      flex: 1,
+    },
+    languageLabelActive: {
+      color: theme.accentSecondary,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    list: { marginTop: theme.spacing.lg },
+    listContent: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.lg,
+    },
+  });

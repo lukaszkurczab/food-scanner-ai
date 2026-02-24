@@ -14,6 +14,7 @@ type Props = {
 export function MacroTargetsRow({ macroTargets, consumed }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["home", "common"]);
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const hasAnyTarget = useMemo(() => {
     return (
@@ -32,23 +33,15 @@ export function MacroTargetsRow({ macroTargets, consumed }: Props) {
   const carbsLabel = t("common:carbs", "Carbs");
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.card }]}>
-      <View style={[styles.row, { gap: theme.spacing.md }]}>
+    <View style={styles.container}>
+      <View style={styles.row}>
         <View style={styles.item}>
           <MacroTargetDonut
             macro="protein"
             targetGrams={macroTargets.proteinGrams}
             consumedGrams={consumed.protein}
           />
-          <Text
-            style={{
-              marginTop: theme.spacing.xs,
-              fontSize: theme.typography.size.sm,
-              fontFamily: theme.typography.fontFamily.medium,
-              color: theme.text,
-              textAlign: "center",
-            }}
-          >
+          <Text style={styles.label}>
             {proteinLabel}
           </Text>
         </View>
@@ -58,15 +51,7 @@ export function MacroTargetsRow({ macroTargets, consumed }: Props) {
             targetGrams={macroTargets.fatGrams}
             consumedGrams={consumed.fat}
           />
-          <Text
-            style={{
-              marginTop: theme.spacing.xs,
-              fontSize: theme.typography.size.sm,
-              fontFamily: theme.typography.fontFamily.medium,
-              color: theme.text,
-              textAlign: "center",
-            }}
-          >
+          <Text style={styles.label}>
             {fatLabel}
           </Text>
         </View>
@@ -76,15 +61,7 @@ export function MacroTargetsRow({ macroTargets, consumed }: Props) {
             targetGrams={macroTargets.carbsGrams}
             consumedGrams={consumed.carbs}
           />
-          <Text
-            style={{
-              marginTop: theme.spacing.xs,
-              fontSize: theme.typography.size.sm,
-              fontFamily: theme.typography.fontFamily.medium,
-              color: theme.text,
-              textAlign: "center",
-            }}
-          >
+          <Text style={styles.label}>
             {carbsLabel}
           </Text>
         </View>
@@ -93,17 +70,27 @@ export function MacroTargetsRow({ macroTargets, consumed }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 16,
-    padding: 16,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  item: {
-    flex: 1,
-    alignItems: "center",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      borderRadius: theme.rounded.md,
+      padding: theme.spacing.md,
+      backgroundColor: theme.card,
+    },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: theme.spacing.md,
+    },
+    item: {
+      flex: 1,
+      alignItems: "center",
+    },
+    label: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.medium,
+      color: theme.text,
+      textAlign: "center",
+    },
+  });

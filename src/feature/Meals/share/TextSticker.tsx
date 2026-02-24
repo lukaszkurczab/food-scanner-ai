@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import DraggableItem, { ElementId } from "./DraggableItem";
 import type { ShareOptions, ShareFont, CustomTextItem } from "@/types/share";
 
@@ -205,22 +205,23 @@ export default function TextSticker({
       onUpdate={handleUpdate}
     >
       <View
-        style={{
-          backgroundColor: cfg.bgColor,
-          borderRadius: 999,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-          alignSelf: "flex-start",
-        }}
+        style={[
+          styles.wrap,
+          {
+            backgroundColor: cfg.bgColor,
+          },
+        ]}
       >
         <Text
-          style={{
-            color: cfg.color,
-            fontSize: 26,
-            fontStyle: cfg.italic ? "italic" : "normal",
-            textDecorationLine: cfg.underline ? "underline" : "none",
-            fontFamily: cfg.family,
-          }}
+          style={[
+            styles.text,
+            {
+              color: cfg.color,
+              fontStyle: cfg.italic ? "italic" : "normal",
+              textDecorationLine: cfg.underline ? "underline" : "none",
+              fontFamily: cfg.family,
+            },
+          ]}
         >
           {cfg.text}
         </Text>
@@ -228,3 +229,15 @@ export default function TextSticker({
     </DraggableItem>
   );
 }
+
+const styles = StyleSheet.create({
+  wrap: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignSelf: "flex-start",
+  },
+  text: {
+    fontSize: 26,
+  },
+});

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -59,6 +59,7 @@ export default function Step3Health({
 }: Props) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
   const hasChronicOther = (form.chronicDiseases ?? []).includes("other");
   const hasAllergyOther = (form.allergies ?? []).includes("other");
@@ -87,27 +88,12 @@ export default function Step3Health({
 
   return (
     <View style={styles.container}>
-      <View style={{ gap: theme.spacing.lg }}>
+      <View style={styles.sectionGap}>
         <View>
-          <Text
-            style={{
-              fontSize: theme.typography.size.xl,
-              fontFamily: theme.typography.fontFamily.bold,
-              color: theme.text,
-              textAlign: "center",
-              marginBottom: theme.spacing.sm,
-            }}
-          >
+          <Text style={styles.title}>
             {t("healthProfile.title")}
           </Text>
-          <Text
-            style={{
-              fontSize: theme.typography.size.base,
-              color: theme.textSecondary,
-              textAlign: "center",
-              marginBottom: theme.spacing.md,
-            }}
-          >
+          <Text style={styles.subtitle}>
             {t("healthProfile.desc")}
           </Text>
         </View>
@@ -138,7 +124,7 @@ export default function Step3Health({
               }
               placeholder={t("healthProfile.disease.otherPlaceholder")}
               error={errors.chronicDiseasesOther}
-              style={{ marginTop: theme.spacing.md }}
+              style={styles.fieldSpacing}
             />
           )}
         </View>
@@ -169,7 +155,7 @@ export default function Step3Health({
               }
               placeholder={t("healthProfile.allergy.otherPlaceholder")}
               error={errors.allergiesOther}
-              style={{ marginTop: theme.spacing.md }}
+              style={styles.fieldSpacing}
             />
           )}
         </View>
@@ -183,7 +169,7 @@ export default function Step3Health({
           placeholder={t("healthProfile.lifestylePlaceholder")}
         />
       </View>
-      <View style={{ gap: theme.spacing.lg }}>
+      <View style={styles.sectionGap}>
         <PrimaryButton
           label={editMode ? t("summary.confirm", "Confirm") : t("skip")}
           onPress={editMode ? onConfirmEdit : handleNext}
@@ -194,10 +180,26 @@ export default function Step3Health({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: "column",
-    justifyContent: "space-between",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      flexDirection: "column",
+      justifyContent: "space-between",
+    },
+    sectionGap: { gap: theme.spacing.lg },
+    title: {
+      fontSize: theme.typography.size.xl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.sm,
+    },
+    subtitle: {
+      fontSize: theme.typography.size.base,
+      color: theme.textSecondary,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    fieldSpacing: { marginTop: theme.spacing.md },
+  });

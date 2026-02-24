@@ -1,10 +1,10 @@
+import { useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { MaterialIcons } from "@expo/vector-icons";
-import { spacing, rounded } from "@/theme";
 import { useTranslation } from "react-i18next";
 import { Layout } from "@/components";
 import { Modal } from "@/components/Modal";
@@ -17,6 +17,7 @@ type MealAddMethodNavigationProp = StackNavigationProp<
 
 const MealAddMethodScreen = () => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const navigation = useNavigation<MealAddMethodNavigationProp>();
   const { t } = useTranslation("meals");
 
@@ -25,82 +26,36 @@ const MealAddMethodScreen = () => {
   return (
     <Layout>
       <Text
-        style={{
-          fontSize: theme.typography.size.xxl,
-          fontWeight: "bold",
-          color: theme.text,
-          textAlign: "center",
-          marginBottom: spacing.md,
-        }}
+        style={styles.title}
       >
         {t("title")}
       </Text>
       <Text
-        style={{
-          fontSize: theme.typography.size.md,
-          color: theme.textSecondary,
-          textAlign: "center",
-          marginBottom: spacing.xl,
-        }}
+        style={styles.subtitle}
       >
         {t("subtitle")}
       </Text>
 
-      <View style={[styles.optionsWrap, { gap: spacing.xl }]}>
+      <View style={styles.optionsWrap}>
         {state.options.map((option) => (
           <TouchableOpacity
             key={option.key}
             activeOpacity={0.85}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: theme.card,
-              borderRadius: rounded.md,
-              paddingHorizontal: spacing.lg,
-              paddingVertical: spacing.md,
-              borderWidth: 1.5,
-              borderColor: theme.border,
-              shadowColor: theme.shadow,
-              shadowOpacity: 0.1,
-              shadowOffset: { width: 0, height: 2 },
-              shadowRadius: 12,
-            }}
+            style={styles.optionCard}
             onPress={() => void state.handleOptionPress(option)}
           >
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: rounded.sm,
-                marginRight: spacing.lg,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
+            <View style={styles.optionIconBox}>
               <MaterialIcons
                 name={option.icon}
                 size={48}
                 color={theme.accentSecondary}
               />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: theme.typography.size.lg,
-                  fontWeight: "bold",
-                  color: theme.text,
-                  marginBottom: 4,
-                }}
-              >
+            <View style={styles.optionContent}>
+              <Text style={styles.optionTitle}>
                 {t(option.titleKey)}
               </Text>
-              <Text
-                style={{
-                  fontSize: theme.typography.size.base,
-                  color: theme.textSecondary,
-                  opacity: 0.95,
-                }}
-              >
+              <Text style={styles.optionDescription}>
                 {t(option.descKey)}
               </Text>
             </View>
@@ -145,6 +100,58 @@ const MealAddMethodScreen = () => {
 
 export default MealAddMethodScreen;
 
-const styles = StyleSheet.create({
-  optionsWrap: { flexGrow: 1, justifyContent: "flex-start" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    title: {
+      fontSize: theme.typography.size.xxl,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: theme.spacing.md,
+    },
+    subtitle: {
+      fontSize: theme.typography.size.md,
+      color: theme.textSecondary,
+      textAlign: "center",
+      marginBottom: theme.spacing.xl,
+    },
+    optionsWrap: {
+      flexGrow: 1,
+      justifyContent: "flex-start",
+      gap: theme.spacing.xl,
+    },
+    optionCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.card,
+      borderRadius: theme.rounded.md,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      borderWidth: 1.5,
+      borderColor: theme.border,
+      shadowColor: theme.shadow,
+      shadowOpacity: 0.1,
+      shadowOffset: { width: 0, height: 2 },
+      shadowRadius: 12,
+    },
+    optionIconBox: {
+      width: 64,
+      height: 64,
+      borderRadius: theme.rounded.sm,
+      marginRight: theme.spacing.lg,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    optionContent: { flex: 1 },
+    optionTitle: {
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      marginBottom: theme.spacing.xs,
+    },
+    optionDescription: {
+      fontSize: theme.typography.size.base,
+      color: theme.textSecondary,
+      opacity: 0.95,
+    },
+  });

@@ -48,6 +48,7 @@ export default function ShareCanvas({
   onTapTextElement,
 }: Props) {
   const themeSys = useTheme();
+  const styles = useMemo(() => makeStyles(themeSys), [themeSys.mode]);
 
   const palette =
     options.themePreset === "light"
@@ -182,14 +183,7 @@ export default function ShareCanvas({
       ]}
     >
       <View
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width,
-          height,
-          overflow: "hidden",
-        }}
+        style={[styles.canvasLayer, { width, height }]}
       >
         {photoUri && !photoErr && (
           <DraggableItem
@@ -213,7 +207,7 @@ export default function ShareCanvas({
           >
             <Image
               source={{ uri: photoUri }}
-              style={{ width, height }}
+              style={[styles.photo, { width, height }]}
               resizeMode="cover"
               onError={() => setPhotoErr(true)}
             />
@@ -345,7 +339,7 @@ export default function ShareCanvas({
               })
             }
           >
-            <View style={{ padding: 4 }}>
+            <View style={styles.cardWrap}>
               <CardOverlay
                 protein={protein}
                 fat={fat}
@@ -371,20 +365,28 @@ export default function ShareCanvas({
 
       <View
         pointerEvents="none"
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width,
-          height,
-          borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.9)",
-        }}
+        style={[styles.frame, { width, height }]}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { position: "relative", overflow: "hidden" },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    root: { position: "relative", overflow: "hidden" },
+    canvasLayer: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      overflow: "hidden",
+    },
+    photo: {},
+    cardWrap: { padding: theme.spacing.xs },
+    frame: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.9)",
+    },
+  });
