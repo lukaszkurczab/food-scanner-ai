@@ -44,7 +44,7 @@ function getErrorCode(err: unknown): string | null {
 export default function ChangeEmailScreen({ navigation }: Props) {
   const { t } = useTranslation(["profile", "login"]);
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { changeEmail } = useUserContext();
 
   const [email, setEmail] = useState("");

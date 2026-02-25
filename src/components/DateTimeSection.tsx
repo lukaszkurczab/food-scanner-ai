@@ -22,7 +22,7 @@ export const DateTimeSection: React.FC<Props> = ({
   maxDate,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { i18n, t } = useTranslation();
   const locale = i18n.language || "en";
 

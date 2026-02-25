@@ -14,7 +14,7 @@ type Props = {
 export function MacroTargetsRow({ macroTargets, consumed }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["home", "common"]);
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const hasAnyTarget = useMemo(() => {
     return (

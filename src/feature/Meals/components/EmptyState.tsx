@@ -7,7 +7,7 @@ type Props = { title: string; description?: string };
 
 export const EmptyState: React.FC<Props> = ({ title, description }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
     <View style={styles.container}>
       <View style={styles.iconBox}>

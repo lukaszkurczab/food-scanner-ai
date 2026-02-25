@@ -20,7 +20,7 @@ export default function IngredientsNotRecognizedScreen({
   params,
 }: MealAddScreenProps<"IngredientsNotRecognized">) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("meals");
   const { clearMeal } = useMealDraftContext();
   const { uid } = useAuthContext();

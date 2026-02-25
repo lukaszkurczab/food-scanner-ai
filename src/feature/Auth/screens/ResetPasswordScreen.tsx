@@ -31,7 +31,7 @@ function getErrorCode(err: unknown): string | null {
 export default function ResetPasswordScreen({ navigation }: Props) {
   const { t } = useTranslation(["resetPassword", "common"]);
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [email, setEmail] = useState("");
   const [touched, setTouched] = useState(false);
@@ -105,7 +105,7 @@ export default function ResetPasswordScreen({ navigation }: Props) {
 
   useEffect(() => {
     if (error) setError(null);
-  }, [email]);
+  }, [email, error]);
 
   return (
     <Layout showNavigation={false}>

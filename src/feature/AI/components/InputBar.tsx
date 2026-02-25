@@ -26,7 +26,7 @@ export const InputBar: React.FC<Props> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation("chat");
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [text, setText] = useState("");
 
   const send = useCallback(() => {

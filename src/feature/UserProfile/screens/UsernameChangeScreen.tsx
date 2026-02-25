@@ -48,7 +48,7 @@ function getErrorCode(err: unknown): string | null {
 export default function UsernameChangeScreen({ navigation }: Props) {
   const { t } = useTranslation(["profile", "login"]);
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { changeUsername, userData } = useUserContext();
 
   const [username, setUsername] = useState("");

@@ -4,7 +4,7 @@ import { useTheme } from "@/theme/useTheme";
 
 export function StreakBadge({ value }: { value: number }) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
     <View style={styles.badge}>

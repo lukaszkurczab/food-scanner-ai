@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 
 export const BottomTabBar: React.FC = () => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { uid } = useAuthContext();
   const { userData } = useUserContext();
   const { isPremium } = usePremiumContext();

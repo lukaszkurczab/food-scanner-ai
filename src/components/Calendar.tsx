@@ -47,7 +47,7 @@ export const Calendar: React.FC<Props> = ({
   onPickSingle,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { i18n } = useTranslation();
   const locale = i18n.language;
 
@@ -103,7 +103,7 @@ export const Calendar: React.FC<Props> = ({
 
   const fmtMonth = useMemo(
     () => new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }),
-    [locale, year, month]
+    [locale]
   );
   const fmtWeekday = useMemo(
     () =>

@@ -9,7 +9,7 @@ type Props = {
 
 export function FullScreenLoader({ label, testID }: Props) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const indicatorColor = theme.accent ?? theme.accentSecondary ?? theme.text;
   const captionColor = theme.textSecondary ?? theme.text;
 

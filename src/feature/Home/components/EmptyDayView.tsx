@@ -17,7 +17,7 @@ export default function EmptyDayView({
   onOpenHistory,
 }: Props) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("home");
   return (
     <View style={styles.container}>

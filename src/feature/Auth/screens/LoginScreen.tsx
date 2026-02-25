@@ -26,7 +26,7 @@ type LoginScreenProps = {
 export default function LoginScreen({ navigation }: LoginScreenProps) {
   const { t } = useTranslation(["login", "common"]);
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,11 +40,11 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
   useEffect(() => {
     reset();
-  }, []);
+  }, [reset]);
 
   useEffect(() => {
     reset();
-  }, [email, password]);
+  }, [email, password, reset]);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {

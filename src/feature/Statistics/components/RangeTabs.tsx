@@ -16,7 +16,7 @@ export const RangeTabs: React.FC<RangeTabsProps> = ({
   onChange,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const containerStyle = useMemo(
     () => ({
       backgroundColor: theme.card,

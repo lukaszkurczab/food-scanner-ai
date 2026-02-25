@@ -11,7 +11,7 @@ const labels = ["S", "M", "T", "W", "T", "F", "S"];
 
 export const WeekdaySelector: React.FC<Props> = ({ value, onChange }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
     <View style={styles.row}>

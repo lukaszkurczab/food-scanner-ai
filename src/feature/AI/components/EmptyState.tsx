@@ -41,7 +41,7 @@ export const EmptyState = memo(function EmptyState({
   style,
 }: Props) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
     <View style={[styles.root, style]}>

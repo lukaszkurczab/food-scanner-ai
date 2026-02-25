@@ -8,7 +8,7 @@ type Props = { message: string; onRetry?: () => void };
 export const ErrorState: React.FC<Props> = ({ message, onRetry }) => {
   const theme = useTheme();
   const { t } = useTranslation("common");
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
     <View style={styles.container}>
       <Text style={styles.message}>{message}</Text>

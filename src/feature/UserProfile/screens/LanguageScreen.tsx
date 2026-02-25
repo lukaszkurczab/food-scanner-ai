@@ -27,7 +27,7 @@ type LanguageScreenProps = {
 
 export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation();
   const { userData, updateUser } = useUserContext();
 
@@ -40,7 +40,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
     if (userData?.language && userData.language !== selected) {
       setSelected(userData.language);
     }
-  }, [userData?.language]);
+  }, [selected, userData?.language]);
 
   const languages = useMemo(
     () =>

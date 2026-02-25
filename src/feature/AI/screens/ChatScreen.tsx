@@ -42,7 +42,7 @@ export default function ChatScreen() {
   const theme = useTheme();
   const { t } = useTranslation("chat");
   const net = useNetInfo();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const uid = user?.uid || "";
   const { userData, loadingUser } = useUserContext();

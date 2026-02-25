@@ -24,7 +24,7 @@ export default function AvatarCameraScreen({
 }: AvatarCameraScreenProps) {
   const { t } = useTranslation(["common", "profile"]);
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);

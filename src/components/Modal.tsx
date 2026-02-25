@@ -53,7 +53,7 @@ export const Modal: React.FC<Props> = ({
   closeOnBackdropPress = true,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const modalBackground =
     theme.card || (theme.mode === "dark" ? theme.background : theme.card);

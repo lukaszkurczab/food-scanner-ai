@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Animated, Text, StyleSheet, Dimensions } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -11,7 +11,7 @@ export function ToastContainer() {
   const messageRef = useRef("");
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const show = (msg: string) => {
+  const show = useCallback((msg: string) => {
     messageRef.current = msg;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     Animated.parallel([
@@ -41,7 +41,7 @@ export function ToastContainer() {
         }),
       ]).start();
     }, 2500);
-  };
+  }, [opacity, translateY]);
 
   useEffect(() => {
     showToast = show;
@@ -49,7 +49,7 @@ export function ToastContainer() {
       showToast = null;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [show]);
 
   return (
     <Animated.View

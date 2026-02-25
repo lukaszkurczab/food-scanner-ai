@@ -17,7 +17,7 @@ export const TimePickerRow: React.FC<Props> = ({
   label,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [open, setOpen] = useState(false);
   const value = new Date();
   value.setHours(hour, minute, 0, 0);

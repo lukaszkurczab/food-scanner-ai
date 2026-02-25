@@ -42,7 +42,7 @@ export function Slider({
     const ratio = (value - minimumValue) / (maximumValue - minimumValue);
     const px = Math.max(0, Math.min(trackWidth, ratio * trackWidth));
     thumbX.value = withTiming(px);
-  }, [value, trackWidth, minimumValue, maximumValue]);
+  }, [value, trackWidth, minimumValue, maximumValue, thumbX]);
 
   const thumbStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: thumbX.value - 12 }],

@@ -20,7 +20,7 @@ import { useMealDetailsScreenState } from "@/feature/History/hooks/useMealDetail
 export default function MealDetailsScreen() {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const topLeftActionStyle = useMemo(
     () => ({

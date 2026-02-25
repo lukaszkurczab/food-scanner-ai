@@ -58,7 +58,7 @@ function packagePeriodLabel(p: PurchasesPackage): string | null {
 
 export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("chat");
   const extra = getExtraConfig();
   const termsUrl = extra.termsUrl ?? "";

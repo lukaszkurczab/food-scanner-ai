@@ -12,11 +12,11 @@ import type {
 const MAX_ATTEMPTS = 3;
 
 export default function BarcodeProductNotFoundScreen({
-  flow,
+  navigation,
   params,
 }: MealAddScreenProps<"BarcodeProductNotFound">) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("meals");
 
   const code = params?.code;
@@ -31,7 +31,8 @@ export default function BarcodeProductNotFoundScreen({
       return;
     }
 
-    flow.goTo("MealCamera", {
+    navigation.replace("AddMeal", {
+      start: "MealCamera",
       barcodeOnly: true,
       attempt: attempt + 1,
       returnTo,
@@ -39,7 +40,9 @@ export default function BarcodeProductNotFoundScreen({
   };
 
   const handleBack = () => {
-    flow.goTo(returnTo, {});
+    navigation.replace("AddMeal", {
+      start: returnTo,
+    });
   };
 
   return (

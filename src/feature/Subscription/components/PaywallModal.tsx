@@ -40,7 +40,7 @@ export const PaywallModal: React.FC<Props> = ({
   privacyUrl,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("profile");
 
   return (

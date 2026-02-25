@@ -128,6 +128,7 @@ export function useSavedMealsData(params: {
   isOnline: boolean;
   getMeals: () => Promise<void>;
 }) {
+  const { getMeals } = params;
   const debouncedQuery = useDebouncedValue(params.query, 220);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -204,12 +205,12 @@ export function useSavedMealsData(params: {
 
   const refresh = useCallback(async () => {
     try {
-      await params.getMeals();
+      await getMeals();
       setErrorKind(null);
     } catch {
       setErrorKind("refresh");
     }
-  }, [params.getMeals]);
+  }, [getMeals]);
 
   const visibleItems = useMemo(
     () =>

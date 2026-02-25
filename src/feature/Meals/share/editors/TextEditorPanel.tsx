@@ -43,7 +43,7 @@ export default function TextEditorPanel({
 }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["share", "common"]);
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [colorTarget, setColorTarget] = useState<ColorTarget | null>(null);
   const [tempColor, setTempColor] = useState<string | null>(null);
 

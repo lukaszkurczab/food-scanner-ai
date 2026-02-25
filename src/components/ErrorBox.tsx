@@ -9,7 +9,7 @@ type ErrorBoxProps = {
 
 export const ErrorBox: React.FC<ErrorBoxProps> = ({ message, style }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   if (!message) return null;
 

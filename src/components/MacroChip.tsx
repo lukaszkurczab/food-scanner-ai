@@ -21,7 +21,7 @@ export const MacroChip: React.FC<MacroChipProps> = ({
   style,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals"]);
 
   const colorMap: Record<MacroKind, string> = {

@@ -30,7 +30,7 @@ export default function ResultScreen({
   flow,
 }: MealAddScreenProps<"Result">) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals", "common"]);
   const { uid } = useAuthContext();
   const { meal, setLastScreen, clearMeal, removeIngredient, updateIngredient } =

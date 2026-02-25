@@ -36,7 +36,7 @@ export default function Step5Summary({
   onBack,
 }: Props) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("onboarding");
 
   const preferences: string[] = parseArray(form.preferences);

@@ -47,7 +47,7 @@ export function StyleModal({
 }: Props) {
   const [input, setInput] = useState("");
   const { t } = useTranslation("share");
-  const styles = useMemo(() => makeStyles(theme), [theme.mode, color, currentFont]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const fontStyles = useMemo(
     () => ({
       regular: { fontFamily: theme.typography.fontFamily.regular },

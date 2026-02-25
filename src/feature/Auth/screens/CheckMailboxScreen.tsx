@@ -32,7 +32,7 @@ function getErrorCode(err: unknown): string | null {
 export default function CheckMailboxScreen({ navigation }: Props) {
   const { t } = useTranslation(["resetPassword", "common"]);
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const route = useRoute<CheckMailboxRoute>();
 
   const email =

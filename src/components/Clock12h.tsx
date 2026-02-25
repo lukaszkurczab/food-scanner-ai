@@ -13,7 +13,7 @@ const INPUT_WIDTH = 64;
 
 export const Clock12h: React.FC<Props> = ({ value, onChange }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const initHour24 = value.getHours();
   const initHour12 = initHour24 % 12 || 12;

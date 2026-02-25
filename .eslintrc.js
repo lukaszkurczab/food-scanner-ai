@@ -7,7 +7,7 @@ module.exports = {
     "plugin:react/jsx-runtime",
     "plugin:@typescript-eslint/recommended",
   ],
-  plugins: ["import"],
+  plugins: ["import", "react-hooks"],
   settings: {
     react: {
       version: "detect",
@@ -33,5 +33,32 @@ module.exports = {
   },
   rules: {
     "import/no-unresolved": "error",
+    "no-unused-vars": [
+      "error",
+      {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        ignoreRestSiblings: true,
+      },
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        ignoreRestSiblings: true,
+      },
+    ],
+    "prefer-const": "error",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
   },
+  overrides: [
+    {
+      files: ["*.ts", "*.tsx"],
+      rules: {
+        "no-unused-vars": "off",
+      },
+    },
+  ],
 };

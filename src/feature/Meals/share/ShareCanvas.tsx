@@ -48,7 +48,7 @@ export default function ShareCanvas({
   onTapTextElement,
 }: Props) {
   const themeSys = useTheme();
-  const styles = useMemo(() => makeStyles(themeSys), [themeSys.mode]);
+  const styles = useMemo(() => makeStyles(themeSys), [themeSys]);
 
   const palette =
     options.themePreset === "light"

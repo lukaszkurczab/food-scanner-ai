@@ -50,7 +50,7 @@ export const FilterPanel: React.FC<{
   const theme = useTheme();
   const { t } = useTranslation(["history", "common"]);
   const { filters: ctxFilters, applyFilters, clearFilters } = useFilters(scope);
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const ALL_FILTERS: { key: FilterKey; label: string }[] = useMemo(
     () => [
@@ -63,8 +63,8 @@ export const FilterPanel: React.FC<{
     [t],
   );
 
-  const today = new Date();
   const initialRange: Range = useMemo(() => {
+    const today = new Date();
     if (ctxFilters?.dateRange) {
       return {
         start: new Date(ctxFilters.dateRange.start),
@@ -163,7 +163,7 @@ export const FilterPanel: React.FC<{
           </Pressable>
         );
       }),
-    [active, ALL_FILTERS, theme, t],
+    [active, ALL_FILTERS, styles, t],
   );
 
   const hasActive = active.length > 0;

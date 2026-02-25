@@ -62,7 +62,7 @@ export function CheckboxDropdown<T extends string | number>({
   renderLabel,
 }: CheckboxDropdownProps<T>) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("common");
 
   const [open, setOpen] = useState(false);

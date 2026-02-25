@@ -32,7 +32,7 @@ type NotificationFormRoute = RouteProp<RootStackParamList, "NotificationForm">;
 
 export default function NotificationFormScreen() {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation("notifications");
   const locale = i18n.language || undefined;
   const { uid } = useAuthContext();

@@ -13,5 +13,5 @@ export function useStats(
 ) {
   return useMemo<StatsResult>(() => {
     return getStatsForRange(meals, range, userGoal);
-  }, [meals, range.start.getTime(), range.end.getTime(), userGoal]);
+  }, [meals, range, userGoal]);
 }

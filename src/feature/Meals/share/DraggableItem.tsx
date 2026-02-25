@@ -108,7 +108,20 @@ export default function DraggableItem({
     offsetY.value = yr;
     savedScale.value = sc;
     savedRotation.value = rot;
-  }, [initialXRatio, initialYRatio, initialScale, initialRotation]);
+  }, [
+    initialXRatio,
+    initialYRatio,
+    initialScale,
+    initialRotation,
+    offsetX,
+    offsetY,
+    rotation,
+    savedRotation,
+    savedScale,
+    scale,
+    xRatio,
+    yRatio,
+  ]);
 
   const pan = Gesture.Pan()
     .enabled(enablePan)

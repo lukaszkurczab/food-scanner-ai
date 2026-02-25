@@ -98,7 +98,10 @@ export default function ReviewIngredientsEditor({
   const exitActionRef = useRef<NavigationAction | null>(null);
   const allowLeaveRef = useRef(false);
 
-  const ingredients: Ingredient[] = meal?.ingredients ?? [];
+  const ingredients: Ingredient[] = useMemo(
+    () => meal?.ingredients ?? [],
+    [meal?.ingredients]
+  );
   const image = meal?.photoUrl ?? null;
 
   useEffect(() => setImageError(false), [image]);

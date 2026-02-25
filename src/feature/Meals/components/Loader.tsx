@@ -14,7 +14,7 @@ export default function Loader({
   size = "large",
 }: LoaderProps) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>

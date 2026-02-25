@@ -53,7 +53,7 @@ export default function ShareEditorPanel({
 }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["share", "common"]);
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [isTextColorEditing, setIsTextColorEditing] = useState(false);
   const [isCardColorEditing, setIsCardColorEditing] = useState(false);
 

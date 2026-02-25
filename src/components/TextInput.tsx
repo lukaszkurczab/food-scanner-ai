@@ -76,7 +76,7 @@ export const TextInput: React.FC<Props> = ({
   maxLength = 128,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [isFocused, setIsFocused] = useState(false);
 
   const inputBg =
