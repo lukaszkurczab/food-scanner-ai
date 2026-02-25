@@ -75,7 +75,8 @@
     "billingUnavailable": "Billing is unavailable on this device.",
     "purchaseFailed": "Purchase failed. Please try again.",
     "restorePurchases": "Restore purchases",
-    "inactiveSince": "Inactive since"
+    "inactiveSince": "Inactive since",
+    "autorenewInfo": "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. You can manage or cancel in your App Store / Google Play account settings."
   },
   "change_password": "Change password",
   "old_password": "Current password",
@@ -110,18 +111,12 @@
   "feedbackSendError": "Failed to send feedback. Try again later.",
   "exportSavedSuccess": "Your data has been saved as a PDF: {{filename}}. A sharing window has been opened.",
   "exportSavedPathHint": "Saved to: {{path}}",
-  "mealKind": {
-    "any": "Any meal",
-    "breakfast": "Breakfast",
-    "lunch": "Lunch",
-    "dinner": "Dinner",
-    "snack": "Snack"
-  },
   "paywall": {
     "title": "Premium monthly",
     "priceLabel": "Price",
     "priceText": "29.99 zł  / month",
     "subscribe": "Subscribe",
     "disclaimer": "Subscription renews automatically. Manage subscriptions in account settings."
-  }
+  },
+  "avatarPreview_title": "Use"
 }

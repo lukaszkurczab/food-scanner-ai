@@ -87,25 +87,25 @@ export default function Step2Preferences({
     let valid = true;
     const newErrors: Partial<Record<keyof FormData, string>> = {};
     if (!form.activityLevel) {
-      newErrors.activityLevel = t("validation.selectActivity");
+      newErrors.activityLevel = t("errors.selectActivity");
       valid = false;
     }
     if (!form.goal) {
-      newErrors.goal = t("validation.selectGoal");
+      newErrors.goal = t("errors.selectGoal");
       valid = false;
     }
     if (
       form.goal === "lose" &&
       (form.calorieDeficit === undefined || isNaN(form.calorieDeficit))
     ) {
-      newErrors.calorieDeficit = t("validation.selectDeficit");
+      newErrors.calorieDeficit = t("errors.selectDeficit");
       valid = false;
     }
     if (
       form.goal === "increase" &&
       (form.calorieSurplus === undefined || isNaN(form.calorieSurplus))
     ) {
-      newErrors.calorieSurplus = t("validation.selectSurplus");
+      newErrors.calorieSurplus = t("errors.selectSurplus");
       valid = false;
     }
     setErrors(newErrors);

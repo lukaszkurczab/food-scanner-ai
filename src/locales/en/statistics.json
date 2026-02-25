@@ -1,6 +1,10 @@
 {
   "pickRange": "Choose date",
-  "ranges": { "7d": "7 days", "30d": "30 days", "custom": "Custom" },
+  "ranges": {
+    "7d": "7 days",
+    "30d": "30 days",
+    "custom": "Custom"
+  },
   "offline": "You’re offline. Some stats may be unavailable or outdated.",
   "empty": {
     "title": "No data yet",
@@ -42,5 +46,8 @@
       "bar": "Bar",
       "line": "Line"
     }
-  }
+  },
+  "limitedWindowTitle": "Access to older data requires Premium",
+  "limitedWindowDesc": "Range was limited to the last {{d}} days.",
+  "upgrade": "Unlock Premium"
 }

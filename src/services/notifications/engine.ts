@@ -169,8 +169,8 @@ export async function reconcileAll(uid: string) {
 
       if (n.type === "meal_reminder") {
         const mealLabel = n.mealKind
-          ? i18n.t(`notifications.meals.${n.mealKind}`)
-          : i18n.t("notifications.meals.any");
+          ? i18n.t(`notifications:meals.${n.mealKind}`)
+          : i18n.t("notifications:meals.any");
         const tt = getNotificationText(
           "meal_reminder",
           aiStyle,

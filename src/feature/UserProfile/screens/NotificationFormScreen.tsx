@@ -43,23 +43,23 @@ export default function NotificationFormScreen() {
   const mealOptions: Array<{ label: string; value: MealKind | null }> = useMemo(
     () => [
       {
-        label: t("mealKind.any", "Any meal"),
+        label: t("meals.any", "Any meal"),
         value: null,
       },
       {
-        label: t("mealKind.breakfast", "Breakfast"),
+        label: t("meals.breakfast", "Breakfast"),
         value: "breakfast",
       },
       {
-        label: t("mealKind.lunch", "Lunch"),
+        label: t("meals.lunch", "Lunch"),
         value: "lunch",
       },
       {
-        label: t("mealKind.dinner", "Dinner"),
+        label: t("meals.dinner", "Dinner"),
         value: "dinner",
       },
       {
-        label: t("mealKind.snack", "Snack"),
+        label: t("meals.snack", "Snack"),
         value: "snack",
       },
     ],

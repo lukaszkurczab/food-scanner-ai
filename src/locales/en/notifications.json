@@ -58,5 +58,11 @@
       "body_concise": "No meals today",
       "body_detailed": "It looks like today is empty. Add meals to keep your history complete."
     }
+  },
+  "permissions": {
+    "title": "Enable notifications",
+    "message": "Turn on notifications in system settings to receive reminders on time.",
+    "openSettings": "Open Settings",
+    "notNow": "Not now"
   }
 }

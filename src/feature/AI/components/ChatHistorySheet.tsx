@@ -59,7 +59,7 @@ export function ChatHistorySheet({
           return {
             id: d.id,
             userUid,
-            title: data.title ?? "New chat",
+            title: data.title ?? t("new"),
             createdAt: typeof data.createdAt === "number" ? data.createdAt : 0,
             updatedAt: typeof data.updatedAt === "number" ? data.updatedAt : 0,
             lastMessage: data.lastMessage,
@@ -96,7 +96,7 @@ export function ChatHistorySheet({
             },
           ]}
           accessibilityRole="button"
-          accessibilityLabel="New chat"
+          accessibilityLabel={t("new")}
         >
           <Text style={styles.newBtnText}>{t("new")}</Text>
         </Pressable>
@@ -124,10 +124,10 @@ export function ChatHistorySheet({
                 },
               ]}
               accessibilityRole="button"
-              accessibilityLabel={item.title || "Chat"}
+              accessibilityLabel={item.title || t("label")}
             >
               <Text style={styles.itemTitle} numberOfLines={1}>
-                {item.title ?? "New chat"}
+                {item.title ?? t("new")}
               </Text>
               {!!item.lastMessage && (
                 <Text style={styles.itemSub} numberOfLines={1}>

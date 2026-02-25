@@ -82,7 +82,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
         </Pressable>
 
         <TextInput
-          placeholder={t("search", { defaultValue: "Search" })}
+          placeholder={t("input.search", { defaultValue: "Search" })}
           value={search}
           onChangeText={setSearch}
           icon={
