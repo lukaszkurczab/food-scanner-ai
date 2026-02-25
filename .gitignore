@@ -42,7 +42,6 @@ Thumbs.db
 .env
 .env.*
 !.env.example
-src/FirebaseConfig.ts
 
 # secrets and local credentials
 credentials.json
