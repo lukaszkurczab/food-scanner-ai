@@ -16,7 +16,12 @@
     "build:android": "node scripts/build.js android production",
     "build:ios": "node scripts/build.js ios production",
     "fonts:download": "node scripts/download-fonts.mjs",
-    "test": "jest --runInBand --coverage --watchman=false"
+    "test": "jest --runInBand --coverage --watchman=false",
+    "e2e": "maestro test e2e/maestro",
+    "e2e:login": "maestro test e2e/maestro/login.yaml",
+    "e2e:add-meal": "maestro test e2e/maestro/add-meal.yaml",
+    "e2e:chat-ai": "maestro test e2e/maestro/chat-ai.yaml",
+    "e2e:offline-error": "maestro test e2e/maestro/offline-error.yaml"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
