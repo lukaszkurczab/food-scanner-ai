@@ -46,6 +46,52 @@ const mealKey = (meal: Meal): string => String(meal.cloudId || meal.mealId);
 const mealOrderValue = (meal: Meal): string =>
   String(meal.timestamp || meal.updatedAt || "");
 
+function findInsertIndexDesc(data: Meal[], targetOrder: string): number {
+  let left = 0;
+  let right = data.length;
+
+  while (left < right) {
+    const mid = (left + right) >> 1;
+    const midOrder = mealOrderValue(data[mid]);
+    if (midOrder.localeCompare(targetOrder) >= 0) {
+      left = mid + 1;
+    } else {
+      right = mid;
+    }
+  }
+
+  return left;
+}
+
+function upsertMealByOrder(data: Meal[], meal: Meal): Meal[] {
+  const id = mealKey(meal);
+  const targetOrder = mealOrderValue(meal);
+  const existingIndex = data.findIndex((item) => mealKey(item) === id);
+
+  if (existingIndex >= 0) {
+    const existing = data[existingIndex];
+    if (mealOrderValue(existing) === targetOrder) {
+      const updated = [...data];
+      updated[existingIndex] = meal;
+      return updated;
+    }
+
+    const withoutExisting = [
+      ...data.slice(0, existingIndex),
+      ...data.slice(existingIndex + 1),
+    ];
+    const insertIndex = findInsertIndexDesc(withoutExisting, targetOrder);
+    return [
+      ...withoutExisting.slice(0, insertIndex),
+      meal,
+      ...withoutExisting.slice(insertIndex),
+    ];
+  }
+
+  const insertIndex = findInsertIndexDesc(data, targetOrder);
+  return [...data.slice(0, insertIndex), meal, ...data.slice(insertIndex)];
+}
+
 export function addOrUpdateMealInSections(
   sections: Map<string, DaySection>,
   meal: Meal,
@@ -61,11 +107,7 @@ export function addOrUpdateMealInSections(
     data: [],
   };
 
-  const id = mealKey(meal);
-  const withoutCurrentMeal = currentSection.data.filter((item) => mealKey(item) !== id);
-  const nextData = [...withoutCurrentMeal, meal].sort((a, b) =>
-    mealOrderValue(b).localeCompare(mealOrderValue(a)),
-  );
+  const nextData = upsertMealByOrder(currentSection.data, meal);
 
   sections.set(dateKey, {
     title,

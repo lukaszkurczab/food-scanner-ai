@@ -4,6 +4,7 @@
   "replacement": "substitute",
   "constraintsNote": "(I respected your restrictions and suggested substitutions.)",
   "errors": {
-    "empty": "No response."
+    "empty": "No response.",
+    "timeout": "The response took too long. Please try again."
   }
 }

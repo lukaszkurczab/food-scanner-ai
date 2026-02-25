@@ -99,6 +99,11 @@ function run(cmd, args, opts = {}) {
   }
 }
 
+function isCiMode() {
+  const raw = String(process.env.CI || '').trim().toLowerCase();
+  return raw === '1' || raw === 'true' || raw === 'yes';
+}
+
 function main() {
   const platform = process.argv[2];
   const profile = process.argv[3] || 'production';
@@ -138,12 +143,18 @@ function main() {
   // run via npx to ensure local/global resolution
   run('npx', easArgs);
 
+  const ciMode = isCiMode();
+
   // If no artifacts ended up in the outDir, try to move from CWD
   const artifacts = findArtifactsInDir(outDir, platform);
   if (artifacts.length === 0) {
     const moved = moveRecentArtifactsFromCwd(outDir, platform);
     if (moved.length === 0) {
-      console.warn('! No artifacts found. Check EAS logs above.');
+      if (ciMode) {
+        console.warn('! No artifacts found. CI mode detected, skipping artifact requirement.');
+      } else {
+        console.warn('! No artifacts found. Check EAS logs above.');
+      }
     } else {
       console.log('Moved artifacts:', moved.map((m) => path.relative(process.cwd(), m)).join(', '));
     }

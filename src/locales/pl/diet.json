@@ -4,6 +4,7 @@
   "replacement": "zamiennik",
   "constraintsNote": "(Uwzględniłem Twoje ograniczenia i zaproponowałem zamienniki.)",
   "errors": {
-    "empty": "Brak odpowiedzi."
+    "empty": "Brak odpowiedzi.",
+    "timeout": "Przekroczono czas oczekiwania na odpowiedź. Spróbuj ponownie."
   }
 }

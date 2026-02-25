@@ -10,7 +10,10 @@ import type {
   Allergy,
 } from "@/types";
 import { canUseAiToday, consumeAiUse } from "./userService";
-import { createServiceError } from "@/services/contracts/serviceError";
+import {
+  createServiceError,
+  isServiceError,
+} from "@/services/contracts/serviceError";
 
 export type Message = { from: "user" | "ai"; text: string };
 
@@ -107,14 +110,31 @@ function buildDietContext(p: FormData): DietContext {
 function compactProfile(p: FormData) {
   const toNum = (v: unknown): number | undefined =>
     v === null || v === undefined ? undefined : Number(v);
+  const toRange = (
+    value: number | undefined,
+    bucketSize: number,
+    unit?: string
+  ): string | undefined => {
+    if (!Number.isFinite(value)) return undefined;
+    const n = Math.floor(value as number);
+    if (n <= 0) return undefined;
+    const start = Math.floor(n / bucketSize) * bucketSize;
+    const end = start + bucketSize - 1;
+    return unit ? `${start}-${end} ${unit}` : `${start}-${end}`;
+  };
 
+  const age = toNum(p.age);
+  const heightCm = toNum(p.height);
+  const weightKg = toNum(p.weight);
+
+  // Anonymize biometric fields before sending PROFILE to OpenAI to reduce exposure of sensitive personal data.
   const obj = {
     g: p.goal || undefined,
     act: p.activityLevel || undefined,
     s: p.sex || undefined,
-    a: toNum(p.age),
-    h: p.unitsSystem === "metric" ? toNum(p.height) : undefined,
-    w: toNum(p.weight),
+    a: toRange(age, 10),
+    h: p.unitsSystem === "metric" ? toRange(heightCm, 10, "cm") : undefined,
+    w: toRange(weightKg, 10, "kg"),
     kcal:
       typeof p.calorieTarget === "number"
         ? p.calorieTarget
@@ -153,6 +173,7 @@ function ensureFullSentence(text: string): string {
 }
 
 const MAX_TOKENS = 260;
+const AI_RESPONSE_TIMEOUT_MS = 30_000;
 
 function enforceDietConstraints(output: string, banned: string[]): string {
   const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -177,17 +198,28 @@ function enforceDietConstraints(output: string, banned: string[]): string {
 }
 
 function looksMedical(q: string) {
-  const s = q.toLowerCase();
+  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const normalizePhrase = (phrase: string) =>
+    phrase
+      .trim()
+      .split(/\s+/)
+      .map((part) => escapeRegex(part))
+      .join("\\s+");
+
   const needles = [
-    "diagnos",
-    "treat",
+    "diagnosis",
+    "diagnose",
+    "diagnostic",
+    "treatment",
     "therapy",
     "medication",
     "dose",
+    "dosage",
     "prescription",
     "antibiotic",
     "insulin",
     "blood pressure",
+    "hypertension",
     "hypertension crisis",
     "chest pain",
     "shortness of breath",
@@ -197,16 +229,65 @@ function looksMedical(q: string) {
     "doctor",
     "hospital",
     "allergic reaction",
-    "anaphyl",
-    "pregnan",
+    "anaphylaxis",
+    "pregnancy",
     "cancer",
     "tumor",
     "stroke",
     "heart attack",
     "depression",
-    "suicid",
+    "suicide",
+    "suicidal",
+    "operation",
+    "surgery",
+    "diagnoza",
+    "zdiagnozuj",
+    "zdiagnozować",
+    "zdiagnozowac",
+    "diagnostyka",
+    "leczenie",
+    "terapia",
+    "lek",
+    "leki",
+    "dawkowanie",
+    "recepta",
+    "antybiotyk",
+    "insulina",
+    "ciśnienie krwi",
+    "cisnienie krwi",
+    "nadciśnienie",
+    "nadcisnienie",
+    "ból w klatce piersiowej",
+    "bol w klatce piersiowej",
+    "duszność",
+    "dusznosc",
+    "objaw",
+    "objawy",
+    "operacja",
+    "zabieg",
+    "szpital",
+    "lekarz",
+    "ciąża",
+    "ciaza",
+    "nowotwór",
+    "nowotwor",
+    "udar",
+    "zawał",
+    "zawal",
+    "depresja",
+    "samobójstwo",
+    "samobojstwo",
+    "samobójczy",
+    "samobojczy",
   ];
-  return needles.some((k) => s.includes(k));
+
+  // TODO: Replace keyword matching with an ML topic classifier for more precise medical-topic detection.
+  return needles.some((phrase) =>
+    new RegExp(
+      `(^|[^\\p{L}\\p{N}_])${normalizePhrase(phrase)}(?=$|[^\\p{L}\\p{N}_])`,
+      "iu"
+    ).test(q)
+  );
 }
 
 export async function askDietAI(
@@ -224,6 +305,10 @@ export async function askDietAI(
   const medicalRedirect = i18next.t(
     "diet:medicalRedirect",
     "I can’t help with diagnosis or treatment. If this is about symptoms, medication, or a health issue, please contact a qualified clinician. I can still help with general nutrition and meal ideas that fit your preferences."
+  );
+  const timeoutReply = i18next.t(
+    "diet:errors.timeout",
+    "The response took too long. Please try again."
   );
 
   const uid = opts?.uid || "";
@@ -280,25 +365,56 @@ export async function askDietAI(
     HIST: hist,
   });
 
-  const resp = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: payload } as ChatCompletionMessageParam,
-    ],
-    max_tokens: MAX_TOKENS,
-    temperature: 0.3,
-  });
+  const abortController = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  let text =
-    resp.choices[0]?.message?.content?.trim() ||
-    i18next.t("diet:errors.empty", "No response.");
-  text = enforceDietConstraints(text, dc.avoid);
-  text = ensureFullSentence(text);
+  try {
+    const completionPromise = openai.chat.completions.create(
+      {
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: payload } as ChatCompletionMessageParam,
+        ],
+        max_tokens: MAX_TOKENS,
+        temperature: 0.3,
+      },
+      { signal: abortController.signal }
+    );
 
-  if (!isPremium && uid) {
-    await consumeAiUse(uid, isPremium, limit);
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        abortController.abort();
+        reject(
+          createServiceError({
+            code: "ai/timeout",
+            source: "AskDietAI",
+            retryable: true,
+            message: timeoutReply,
+          })
+        );
+      }, AI_RESPONSE_TIMEOUT_MS);
+    });
+
+    const resp = await Promise.race([completionPromise, timeoutPromise]);
+
+    let text =
+      resp.choices[0]?.message?.content?.trim() ||
+      i18next.t("diet:errors.empty", "No response.");
+    text = enforceDietConstraints(text, dc.avoid);
+    text = ensureFullSentence(text);
+
+    if (!isPremium && uid) {
+      await consumeAiUse(uid, isPremium, limit);
+    }
+
+    return text;
+  } catch (error) {
+    if (isServiceError(error) && error.code === "ai/timeout") {
+      return timeoutReply;
+    }
+    throw error;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
-
-  return text;
 }

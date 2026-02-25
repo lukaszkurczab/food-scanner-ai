@@ -64,6 +64,7 @@ export default function AddMealScreen() {
           image: p.image,
           id: p.id,
           attempt: typeof p.attempt === "number" ? p.attempt : 1,
+          reason: p.reason,
         },
       };
     }

@@ -25,7 +25,9 @@ export default function PrivacyScreen({ navigation }: PrivacyScreenProps) {
     [calculatedHeight]
   );
 
-  const privacyText = t("text");
+  const privacyText = t("text", {
+    openaiDataDisclosure: t("openaiDataDisclosure"),
+  });
 
   const handleClose = () => {
     navigation.goBack();
