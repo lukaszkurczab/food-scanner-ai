@@ -16,7 +16,6 @@ import {
   SearchBox,
 } from "@/components";
 import { MealListItem } from "@/components/MealListItem";
-import { OfflineBanner } from "@/components/OfflineBanner";
 import { useAuthContext } from "@/context/AuthContext";
 import { useFilters } from "@/context/HistoryContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -194,7 +193,6 @@ export default function SavedMealsScreen({
 
     return (
       <Layout disableScroll>
-        {!isOnline && <OfflineBanner />}
         {showFilters ? (
           <FilterPanel scope="myMeals" />
         ) : (
@@ -209,7 +207,6 @@ export default function SavedMealsScreen({
 
   return (
     <Layout disableScroll>
-      {!isOnline && <OfflineBanner />}
       {showFilters ? (
         <View style={styles.filtersWrap}>
           <FilterPanel scope="myMeals" />

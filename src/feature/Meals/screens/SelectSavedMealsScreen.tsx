@@ -6,8 +6,6 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
 import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
-import { OfflineBanner } from "@/components/OfflineBanner";
-import { useNetInfo } from "@react-native-community/netinfo";
 import {
   FullScreenLoader,
   Layout,
@@ -33,7 +31,6 @@ export default function SelectSavedMealScreen({
 }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
-  const netInfo = useNetInfo();
   const { uid } = useAuthContext();
   const { getMeals } = useMeals(uid ?? null);
   const { meal: draftMeal, setMeal, saveDraft, setLastScreen } =
@@ -99,8 +96,7 @@ export default function SelectSavedMealScreen({
 
   if (!pageItems.length) {
     return (
-        <Layout>
-        {!netInfo.isConnected && <OfflineBanner />}
+      <Layout>
         <View style={styles.searchWrap}>
           <SearchBox value={queryText} onChange={setQueryText} />
         </View>
@@ -125,7 +121,6 @@ export default function SelectSavedMealScreen({
 
   return (
     <Layout disableScroll>
-      {!netInfo.isConnected && <OfflineBanner />}
       <View style={styles.searchWrap}>
         <SearchBox value={queryText} onChange={setQueryText} />
       </View>

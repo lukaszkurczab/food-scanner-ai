@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
-import { useNetInfo } from "@react-native-community/netinfo";
 import { RangeTabs } from "../components/RangeTabs";
 import { MetricsGrid } from "../components/MetricsGrid";
 import { LineSection } from "../components/LineSection";
@@ -14,7 +13,6 @@ import { useTranslation } from "react-i18next";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FREE_WINDOW_DAYS } from "@/services/mealService";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import OfflineBanner from "@/components/OfflineBanner";
 import type { RootStackParamList } from "@/navigation/navigate";
 import {
   useStatisticsState,
@@ -29,7 +27,6 @@ type Props = {
 export default function StatisticsScreen({ navigation }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
-  const net = useNetInfo();
   const { t } = useTranslation(["statistics", "common"]);
   const { userData } = useUserContext();
 
@@ -46,8 +43,6 @@ export default function StatisticsScreen({ navigation }: Props) {
 
   return (
     <Layout>
-      {!net.isConnected && <OfflineBanner />}
-
       <View style={styles.header}>
         <RangeTabs
           options={[

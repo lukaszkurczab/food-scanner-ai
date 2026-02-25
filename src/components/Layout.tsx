@@ -14,12 +14,15 @@ import { useTheme } from "@/theme/useTheme";
 import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNetInfo } from "@react-native-community/netinfo";
+import { OfflineBanner } from "@/components/OfflineBanner";
 
 type LayoutProps = {
   children: ReactNode;
   showNavigation?: boolean;
   disableScroll?: boolean;
   style?: StyleProp<ViewStyle>;
+  showOfflineBanner?: boolean;
 };
 
 const TAB_BAR_HEIGHT = 36;
@@ -29,11 +32,14 @@ export const Layout = ({
   showNavigation = true,
   disableScroll = false,
   style,
+  showOfflineBanner = showNavigation,
 }: LayoutProps) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const netInfo = useNetInfo();
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [offlineBannerHeight, setOfflineBannerHeight] = useState(0);
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", () =>
@@ -53,6 +59,17 @@ export const Layout = ({
   const bottomPadding = shouldShowTabBar
     ? TAB_BAR_HEIGHT + insets.bottom
     : insets.bottom;
+  const isOffline = netInfo.isConnected === false;
+  const shouldShowOffline = showOfflineBanner && isOffline;
+  const contentTopPadding = shouldShowOffline
+    ? offlineBannerHeight + theme.spacing.sm
+    : 0;
+
+  useEffect(() => {
+    if (!shouldShowOffline) {
+      setOfflineBannerHeight(0);
+    }
+  }, [shouldShowOffline]);
 
   return (
     <KeyboardAvoidingView
@@ -79,11 +96,38 @@ export const Layout = ({
             backgroundColor={theme.background}
           />
 
+          {shouldShowOffline && (
+            <View
+              pointerEvents="none"
+              onLayout={(event) => {
+                const nextHeight = event.nativeEvent.layout.height;
+                if (nextHeight !== offlineBannerHeight) {
+                  setOfflineBannerHeight(nextHeight);
+                }
+              }}
+              style={[
+                styles.offlineBannerWrap,
+                {
+                  top: insets.top + theme.spacing.sm,
+                  left: insets.left + theme.spacing.md,
+                  right: insets.right + theme.spacing.md,
+                },
+              ]}
+            >
+              <OfflineBanner compact style={styles.offlineBanner} />
+            </View>
+          )}
+
           {disableScroll ? (
-            <View style={styles.content}>{children}</View>
+            <View style={[styles.content, { paddingTop: contentTopPadding }]}>
+              {children}
+            </View>
           ) : (
             <ScrollView
-              contentContainerStyle={styles.scrollContent}
+              contentContainerStyle={[
+                styles.scrollContent,
+                { paddingTop: contentTopPadding },
+              ]}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
@@ -103,4 +147,10 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { flex: 1 },
   scrollContent: { flexGrow: 1 },
+  offlineBannerWrap: {
+    position: "absolute",
+    zIndex: 20,
+    elevation: 4,
+  },
+  offlineBanner: { margin: 0 },
 });

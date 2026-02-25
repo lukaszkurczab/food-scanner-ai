@@ -14,7 +14,6 @@ import { EmptyState } from "../components/EmptyState";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { FilterBadgeButton } from "../components/FilterBadgeButton";
 import { FilterPanel } from "../components/FilterPanel";
-import { OfflineBanner } from "@/components/OfflineBanner";
 import { MealListItem } from "@/components/MealListItem";
 import type { Meal } from "@/types/meal";
 import type { DaySection } from "@/feature/History/types/daySection";
@@ -121,7 +120,6 @@ export default function HistoryListScreen({
   if (state.dataState !== "ready") {
     return (
       <Layout>
-        {!state.isOnline && <OfflineBanner />}
         {state.showFilters ? (
           <FilterPanel
             scope="history"
@@ -144,7 +142,6 @@ export default function HistoryListScreen({
 
   return (
     <Layout disableScroll>
-      {!state.isOnline && <OfflineBanner />}
       {state.showFilters ? (
         <View style={styles.fullHeight}>
           <FilterPanel
