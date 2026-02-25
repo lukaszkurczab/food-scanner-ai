@@ -44,6 +44,7 @@ export const InputBar: React.FC<Props> = ({
       <View style={styles.wrapper}>
         <View style={[styles.row, disabled && styles.rowDisabled]}>
           <TextInput
+            testID="chat-input"
             value={text}
             onChangeText={setText}
             placeholder={placeholder ?? t("input.placeholder")}
@@ -54,6 +55,7 @@ export const InputBar: React.FC<Props> = ({
             onSubmitEditing={send}
           />
           <Pressable
+            testID="chat-send-button"
             accessibilityRole="button"
             onPress={send}
             disabled={disabled}

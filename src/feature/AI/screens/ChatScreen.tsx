@@ -116,6 +116,7 @@ export default function ChatScreen() {
     <Layout disableScroll style={styles.layout}>
       <View style={styles.header}>
         <IconButton
+          testID="chat-history-button"
           icon={<MaterialIcons name="menu" />}
           onPress={() => setHistoryOpen(true)}
           variant="ghost"
@@ -142,16 +143,25 @@ export default function ChatScreen() {
       ) : (
         <>
           <FlatList
+            testID="chat-message-list"
             inverted
             data={data}
             keyExtractor={(m) => m.id}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
-              <Bubble
-                role={item.role === "user" ? "user" : "ai"}
-                text={item.content}
-                timestamp={new Date(item.createdAt)}
-              />
+              <View
+                testID={
+                  item.role === "user"
+                    ? "chat-message-user"
+                    : "chat-message-ai"
+                }
+              >
+                <Bubble
+                  role={item.role === "user" ? "user" : "ai"}
+                  text={item.content}
+                  timestamp={new Date(item.createdAt)}
+                />
+              </View>
             )}
             onEndReachedThreshold={0.4}
             onEndReached={loadMore}

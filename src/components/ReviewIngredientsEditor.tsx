@@ -522,6 +522,7 @@ export default function ReviewIngredientsEditor({
         {renderAddIngredientButton &&
           (addIngredientButtonVariant === "secondary" ? (
             <SecondaryButton
+              testID="meal-add-add-ingredient-button"
               label={t("add_ingredient", { ns: "meals" })}
               onPress={handleAddIngredient}
               disabled={disableAddIngredientWhileEditing && editingIdx !== null}
@@ -529,6 +530,7 @@ export default function ReviewIngredientsEditor({
             />
           ) : (
             <PrimaryButton
+              testID="meal-add-add-ingredient-button"
               label={t("add_ingredient", { ns: "meals" })}
               onPress={handleAddIngredient}
               disabled={disableAddIngredientWhileEditing && editingIdx !== null}
@@ -537,6 +539,7 @@ export default function ReviewIngredientsEditor({
           ))}
 
         <PrimaryButton
+          testID="meal-add-continue-button"
           label={t("continue", { ns: "common" })}
           onPress={handleContinue}
           disabled={ingredients.length === 0 || hasAnyErrors || editingIdx !== null}

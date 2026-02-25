@@ -56,6 +56,13 @@ export const BottomTabBar: React.FC = () => {
     { key: "Profile", icon: "person", onPress: () => navigate("Profile") },
   ];
 
+  const testIdForTab = (key: string): string => {
+    if (key === "Add") return "tab-add-meal";
+    if (key === "History") return "tab-chat";
+    if (key === "Stats") return "tab-statistics";
+    return `tab-${key.toLowerCase()}`;
+  };
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.container}>
@@ -66,6 +73,7 @@ export const BottomTabBar: React.FC = () => {
                 key={tab.key}
                 onPress={tab.onPress}
                 style={styles.fab}
+                testID={testIdForTab(tab.key)}
               >
                 <MaterialIcons
                   name={tab.icon}
@@ -79,7 +87,12 @@ export const BottomTabBar: React.FC = () => {
 
           const isProfile = tab.key.toLowerCase() === "profile";
           return (
-            <Pressable key={tab.key} onPress={tab.onPress} style={styles.tab}>
+            <Pressable
+              key={tab.key}
+              onPress={tab.onPress}
+              style={styles.tab}
+              testID={testIdForTab(tab.key)}
+            >
               {isProfile ? (
                 <AvatarBadge
                   size={40}

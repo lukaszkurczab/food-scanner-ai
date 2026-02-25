@@ -36,6 +36,7 @@ import EditReviewIngredientsScreen from "@/feature/History/screens/EditReviewIng
 import EditResultScreen from "@/feature/History/screens/EditResultScreen";
 import SavedMealsCameraScreen from "@/feature/History/screens/SavedMealsCameraScreen";
 import AddMealScreen from "@feature/Meals/screens/AddMealScreen";
+import { isE2EModeEnabled } from "@/services/e2e/config";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -120,6 +121,7 @@ function renderSharedScreens() {
 
 export default function AppNavigator() {
   const { isAuthenticated, loading } = useAuthContext();
+  const disableAnimations = isE2EModeEnabled();
 
   if (loading) {
     return (
@@ -130,7 +132,12 @@ export default function AppNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: disableAnimations ? "none" : "default",
+      }}
+    >
       {isAuthenticated ? renderAppScreens() : renderAuthScreens()}
       {renderSharedScreens()}
     </Stack.Navigator>

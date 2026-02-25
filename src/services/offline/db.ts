@@ -144,3 +144,17 @@ export function runMigrations() {
     }
   }
 }
+
+export function resetOfflineStorage() {
+  const d = getDB();
+  d.execSync("BEGIN");
+  try {
+    d.execSync(`DELETE FROM op_queue;`);
+    d.execSync(`DELETE FROM images;`);
+    d.execSync(`DELETE FROM meals;`);
+    d.execSync("COMMIT");
+  } catch (error) {
+    d.execSync("ROLLBACK");
+    throw error;
+  }
+}

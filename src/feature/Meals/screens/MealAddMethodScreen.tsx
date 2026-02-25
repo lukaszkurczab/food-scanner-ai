@@ -40,6 +40,7 @@ const MealAddMethodScreen = () => {
         {state.options.map((option) => (
           <TouchableOpacity
             key={option.key}
+            testID={`meal-add-option-${option.key}`}
             activeOpacity={0.85}
             style={styles.optionCard}
             onPress={() => void state.handleOptionPress(option)}

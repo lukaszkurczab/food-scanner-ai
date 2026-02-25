@@ -370,7 +370,9 @@ export function useUser(uid: string) {
       }
       assertNoUndefined(payload, "updateUserProfile payload");
       await setDoc(doc(db, "users", uid), payload, { merge: true });
-      setUserData((prev) => (prev ? { ...prev, ...payload } : prev));
+      setUserData((prev) =>
+        prev ? { ...prev, ...payload } : ({ uid, ...payload } as UserData)
+      );
       if (patch.language) setLanguage(patch.language);
 
       try {

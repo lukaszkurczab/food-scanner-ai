@@ -95,6 +95,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         <Text style={styles.title}>{t("common:app_title")}</Text>
 
         <TextInput
+          testID="login-email-input"
           label={t("email")}
           value={email}
           onChangeText={setEmail}
@@ -111,6 +112,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         />
 
         <TextInput
+          testID="login-password-input"
           label={t("password")}
           value={password}
           onChangeText={setPassword}
@@ -137,6 +139,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         />
 
         <PrimaryButton
+          testID="login-submit-button"
           label={t("login")}
           onPress={handleLogin}
           disabled={isLoginDisabled}

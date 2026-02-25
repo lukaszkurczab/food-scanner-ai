@@ -12,6 +12,7 @@ type IconButtonProps = {
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
   accessibilityLabel?: string;
+  testID?: string;
 };
 
 export const IconButton: React.FC<IconButtonProps> = ({
@@ -24,6 +25,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
   style,
   disabled = false,
   accessibilityLabel,
+  testID,
 }) => {
   const theme = useTheme();
 
@@ -37,6 +39,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
 
   return (
     <Pressable
+      testID={testID}
       accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [
         styles.button,

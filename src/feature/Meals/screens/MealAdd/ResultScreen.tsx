@@ -227,6 +227,7 @@ export default function ResultScreen({
         ]}
       >
         <PrimaryButton
+          testID="meal-result-save-button"
           label={t("save", { ns: "common" })}
           onPress={handleSave}
           loading={saving}

@@ -1,0 +1,11 @@
+appId: com.lkurczab.foodscannerai
+---
+- runFlow: login.yaml
+- tapOn:
+    id: tab-chat
+- tapOn:
+    id: chat-input
+- inputText: "Plan a balanced dinner for today"
+- tapOn:
+    id: chat-send-button
+- assertVisible: "E2E_MOCK_CHAT_REPLY"

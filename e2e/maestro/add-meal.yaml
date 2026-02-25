@@ -1,0 +1,15 @@
+appId: com.lkurczab.foodscannerai
+---
+- runFlow: login.yaml
+- tapOn:
+    id: tab-add-meal
+- assertVisible:
+    id: meal-add-option-manual
+- tapOn:
+    id: meal-add-option-manual
+- tapOn:
+    id: meal-add-continue-button
+- tapOn:
+    id: meal-result-save-button
+- assertVisible:
+    id: tab-home
