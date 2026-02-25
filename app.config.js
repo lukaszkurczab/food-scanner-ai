@@ -1,5 +1,10 @@
 import "dotenv/config";
 
+const iosGoogleServicesFile =
+  process.env.GOOGLE_SERVICES_FILE_IOS || "./GoogleService-Info.plist";
+const androidGoogleServicesFile =
+  process.env.GOOGLE_SERVICES_FILE_ANDROID || "./google-services.json";
+
 export default {
   expo: {
     name: "CaloriAI",
@@ -20,7 +25,7 @@ export default {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.lkurczab.foodscannerai",
-      googleServicesFile: "./GoogleService-Info.plist",
+      googleServicesFile: iosGoogleServicesFile,
       icon: "./assets/appstore.png",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -37,7 +42,7 @@ export default {
         backgroundColor: "#ffffff",
       },
       package: "com.lkurczab.foodscannerai",
-      googleServicesFile: "./google-services.json",
+      googleServicesFile: androidGoogleServicesFile,
     },
     notification: {
       icon: "./assets/notification-icon.png",
