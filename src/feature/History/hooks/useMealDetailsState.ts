@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackHandler } from "react-native";
 import * as FileSystem from "expo-file-system";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
@@ -40,6 +40,7 @@ export function useMealDetailsState(params: {
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [checkingImage, setCheckingImage] = useState(false);
+  const allowNextBackRef = useRef(false);
 
   useEffect(() => {
     if (!routeMealId) return;
@@ -87,6 +88,7 @@ export function useMealDetailsState(params: {
         return true;
       }
       if (navigation.canGoBack()) {
+        allowNextBackRef.current = true;
         navigation.goBack();
       } else {
         navigation.navigate("SavedMeals");
@@ -94,6 +96,29 @@ export function useMealDetailsState(params: {
       return true;
     });
     return () => sub.remove();
+  }, [edit, isDirty, navigation]);
+
+  useEffect(() => {
+    const sub = navigation.addListener("beforeRemove", (e) => {
+      if (allowNextBackRef.current) {
+        allowNextBackRef.current = false;
+        return;
+      }
+
+      const actionType = e.data.action.type;
+      const isBackAction =
+        actionType === "GO_BACK" ||
+        actionType === "POP" ||
+        actionType === "POP_TO_TOP";
+
+      if (!isBackAction) return;
+      if (!edit || !isDirty) return;
+
+      e.preventDefault();
+      setShowLeaveModal(true);
+    });
+
+    return sub;
   }, [edit, isDirty, navigation]);
 
   const effectivePhotoUri =
@@ -214,6 +239,7 @@ export function useMealDetailsState(params: {
   const confirmLeave = useCallback(() => {
     setShowLeaveModal(false);
     if (navigation.canGoBack()) {
+      allowNextBackRef.current = true;
       navigation.goBack();
     } else {
       navigation.navigate("SavedMeals");
@@ -227,7 +253,7 @@ export function useMealDetailsState(params: {
 
   const handleAddPhoto = useCallback(() => {
     if (!draft) return;
-    navigation.navigate("SavedMealsCamera", { id: draft.mealId, meal: draft });
+    navigation.replace("SavedMealsCamera", { id: draft.mealId, meal: draft });
   }, [draft, navigation]);
 
   const onImageError = useCallback(() => {
@@ -255,6 +281,20 @@ export function useMealDetailsState(params: {
   const closeLeaveModal = useCallback(() => {
     setShowLeaveModal(false);
   }, []);
+
+  const handleBack = useCallback(() => {
+    if (edit && isDirty) {
+      setShowLeaveModal(true);
+      return;
+    }
+
+    if (navigation.canGoBack()) {
+      allowNextBackRef.current = true;
+      navigation.goBack();
+    } else {
+      navigation.navigate("SavedMeals");
+    }
+  }, [edit, isDirty, navigation]);
 
   const showImageBlock =
     checkingImage || !!effectivePhotoUri || (edit && !effectivePhotoUri);
@@ -286,5 +326,6 @@ export function useMealDetailsState(params: {
     toggleIngredients,
     closeDiscardModal,
     closeLeaveModal,
+    handleBack,
   };
 }

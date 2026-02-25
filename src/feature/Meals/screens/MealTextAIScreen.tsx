@@ -3,17 +3,20 @@ import { View, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Layout, PrimaryButton, SecondaryButton, Modal } from "@/components";
 import { useTranslation } from "react-i18next";
-import { useNavigation, type ParamListBase } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { LongTextInput } from "@/components/LongTextInput";
 import { TextInput as ShortInput } from "@/components/TextInput";
 import { useMealTextAiState } from "@/feature/Meals/hooks/useMealTextAiState";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 export default function MealTextAIScreen() {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t, i18n } = useTranslation(["meals", "chat", "common"]);
-  const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
+  const navigation = useNavigation<
+    StackNavigationProp<RootStackParamList, "MealTextAI">
+  >();
 
   const {
     name,

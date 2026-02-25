@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useAuthContext } from "@/context/AuthContext";
-import { Layout, PhotoPreview } from "@/components";
+import { Layout, PhotoPreview, ScreenCornerNavButton } from "@/components";
 import { getSampleMealUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
 import type { Meal } from "@/types/meal";
@@ -57,6 +57,14 @@ export default function SavedMealsCameraScreen({
   useEffect(() => {
     const unsub = navigation.addListener("beforeRemove", (e) => {
       if (canLeaveRef.current) return;
+
+      const actionType = e.data.action.type;
+      const isBackAction =
+        actionType === "GO_BACK" ||
+        actionType === "POP" ||
+        actionType === "POP_TO_TOP";
+      if (!isBackAction) return;
+
       if (photoUri) {
         e.preventDefault();
         setPhotoUri(null);
@@ -163,6 +171,12 @@ export default function SavedMealsCameraScreen({
             onCameraReady={() => setIsCameraReady(true)}
           />
           <View style={StyleSheet.absoluteFill}>
+            <ScreenCornerNavButton
+              icon="close"
+              onPress={() => navigation.goBack()}
+              accessibilityLabel={t("close", { defaultValue: "Close" })}
+              tone="camera"
+            />
             <View style={styles.overlay} pointerEvents="none" />
             <View style={styles.shutterWrapper}>
               <Pressable

@@ -282,6 +282,30 @@ export default function ReviewIngredientsEditor({
     setImageMenuOpen(false);
   };
 
+  const handleTransientBack = useCallback(() => {
+    if (showExitModal) {
+      setShowExitModal(false);
+      return true;
+    }
+    if (showConfirmModal) {
+      setShowConfirmModal(false);
+      return true;
+    }
+    if (imageMenuOpen) {
+      setImageMenuOpen(false);
+      return true;
+    }
+    if (previewVisible) {
+      setPreviewVisible(false);
+      return true;
+    }
+    if (editingIdx !== null) {
+      handleCancelEdit(editingIdx);
+      return true;
+    }
+    return false;
+  }, [editingIdx, imageMenuOpen, previewVisible, showConfirmModal, showExitModal]);
+
   useEffect(() => {
     if (uid) void saveDraft(uid);
   }, [ingredients, image, saveDraft, uid]);
@@ -291,6 +315,10 @@ export default function ReviewIngredientsEditor({
 
     const sub = navigation.addListener("beforeRemove", (e) => {
       if (allowLeaveRef.current) return;
+      if (handleTransientBack()) {
+        e.preventDefault();
+        return;
+      }
 
       const hasContent = (ingredients?.length ?? 0) > 0 || !!localDraft || !!image;
       const isEditing = editingIdx !== null;
@@ -301,7 +329,15 @@ export default function ReviewIngredientsEditor({
       setShowExitModal(true);
     });
     return sub;
-  }, [editingIdx, enableBeforeRemoveGuard, image, ingredients?.length, localDraft, navigation]);
+  }, [
+    editingIdx,
+    enableBeforeRemoveGuard,
+    handleTransientBack,
+    image,
+    ingredients?.length,
+    localDraft,
+    navigation,
+  ]);
 
   const handleConfirmExit = () => {
     const action = exitActionRef.current;

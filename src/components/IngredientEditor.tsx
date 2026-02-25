@@ -12,9 +12,11 @@ import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
 import { PrimaryButton } from "./PrimaryButton";
 import { ErrorButton } from "./ErrorButton";
-import { useNavigation, type NavigationProp, type ParamListBase } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { Modal } from "./Modal";
 import { MaterialIcons } from "@expo/vector-icons";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 type Props = {
   initial: Ingredient;
@@ -40,7 +42,7 @@ export const IngredientEditor: React.FC<Props> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const unitLabel = initial?.unit === "ml" ? "ml" : "g";
 
   const [name, setName] = useState(initial.name ?? "");
@@ -232,7 +234,8 @@ export const IngredientEditor: React.FC<Props> = ({
 
         <Pressable
           onPress={() =>
-            navigation.navigate("MealCamera", {
+            navigation.navigate("AddMeal", {
+              start: "MealCamera",
               barcodeOnly: true,
               returnTo: "ReviewIngredients",
               attempt: 1,

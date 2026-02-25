@@ -79,12 +79,40 @@ export function useMealCameraState({
         setPhotoUri(null);
         return true;
       }
-      flow.goBack();
-      return true;
+      if (flow.canGoBack()) {
+        flow.goBack();
+        return true;
+      }
+      return false;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
     return () => sub.remove();
   }, [photoUri, flow]);
+
+  useEffect(() => {
+    const sub = navigation.addListener("beforeRemove", (e) => {
+      const actionType = e.data.action.type;
+      const isBackAction =
+        actionType === "GO_BACK" ||
+        actionType === "POP" ||
+        actionType === "POP_TO_TOP";
+
+      if (!isBackAction) return;
+
+      if (photoUri) {
+        e.preventDefault();
+        setPhotoUri(null);
+        return;
+      }
+
+      if (flow.canGoBack()) {
+        e.preventDefault();
+        flow.goBack();
+      }
+    });
+
+    return sub;
+  }, [flow, navigation, photoUri]);
 
   const handleBarcodeFlow = useCallback(
     async (code: string) => {

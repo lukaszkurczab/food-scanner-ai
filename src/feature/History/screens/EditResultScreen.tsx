@@ -12,14 +12,14 @@ import {
   Card,
   Modal,
 } from "@/components";
-import { useRoute, type RouteProp, type ParamListBase } from "@react-navigation/native";
+import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useEditResultState } from "@/feature/History/hooks/useEditResultState";
 
 type ScreenRoute = RouteProp<RootStackParamList, "EditResult">;
-type EditResultNavigation = StackNavigationProp<ParamListBase>;
+type EditResultNavigation = StackNavigationProp<RootStackParamList, "EditResult">;
 type Props = {
   navigation: EditResultNavigation;
 };

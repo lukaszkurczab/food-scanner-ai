@@ -1,5 +1,6 @@
 export * from "./Card";
 export * from "./IconButton";
+export * from "./ScreenCornerNavButton";
 export * from "./ListItem";
 export * from "./PrimaryButton";
 export * from "./Modal";

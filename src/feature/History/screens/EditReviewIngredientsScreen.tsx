@@ -3,7 +3,6 @@ import {
   useNavigation,
   useRoute,
   RouteProp,
-  type ParamListBase,
 } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -15,11 +14,13 @@ import type { RootStackParamList } from "@/navigation/navigate";
 type ScreenRoute = RouteProp<RootStackParamList, "EditReviewIngredients">;
 
 export default function EditReviewIngredientsScreen() {
-  const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
+  const navigation = useNavigation<
+    StackNavigationProp<RootStackParamList, "EditReviewIngredients">
+  >();
   const route = useRoute<ScreenRoute>();
   const savedCloudId = route.params?.savedCloudId;
   const { t } = useTranslation(["meals", "common"]);
-  const { clearMeal } = useMealDraftContext();
+  const { clearMeal, meal } = useMealDraftContext();
   const { uid } = useAuthContext();
 
   const textOverrides = useMemo(
@@ -71,9 +72,9 @@ export default function EditReviewIngredientsScreen() {
         )
       }
       onOpenCamera={() =>
-        navigation.replace("MealCamera", {
-          returnTo: "IngredientsNotRecognized",
-          skipDetection: true,
+        navigation.replace("SavedMealsCamera", {
+          id: meal?.mealId,
+          meal: meal ?? undefined,
         })
       }
       onStartOver={() => {

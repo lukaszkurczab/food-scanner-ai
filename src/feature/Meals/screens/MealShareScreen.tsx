@@ -1,11 +1,12 @@
 import { useMemo, useRef, useState } from "react";
 import { View, StyleSheet, useWindowDimensions, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { RouteProp, useRoute } from "@react-navigation/native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { PrimaryButton } from "@/components/PrimaryButton";
+import { ScreenCornerNavButton } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import ShareCanvas from "@feature/Meals/share/ShareCanvas";
 import ShareEditorPanel, {
@@ -16,13 +17,16 @@ import { defaultShareOptions } from "../share/defaultShareOptions";
 import { useTranslation } from "react-i18next";
 import type { ElementId } from "@feature/Meals/share/DraggableItem";
 import { Layout } from "@components/Layout";
+import type { StackNavigationProp } from "@react-navigation/stack";
 
 type ScreenRoute = RouteProp<RootStackParamList, "MealShare">;
+type MealShareNavigation = StackNavigationProp<RootStackParamList, "MealShare">;
 
 export default function MealShareScreen() {
   const theme = useTheme();
+  const navigation = useNavigation<MealShareNavigation>();
   const route = useRoute<ScreenRoute>();
-  const { t } = useTranslation("share");
+  const { t } = useTranslation(["share", "common"]);
   const { meal } = route.params;
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const shotRef = useRef<View>(null);
@@ -105,8 +109,27 @@ export default function MealShareScreen() {
     setPanelMode("text");
   };
 
+  const handleClose = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    if (route.params.returnTo === "MealDetails") {
+      navigation.navigate("SavedMeals");
+      return;
+    }
+    navigation.navigate("MealAddMethod");
+  };
+
   return (
     <Layout showNavigation={false} style={styles.root}>
+      <ScreenCornerNavButton
+        icon="close"
+        onPress={handleClose}
+        accessibilityLabel={t("common:close", { defaultValue: "Close" })}
+        containerStyle={styles.topLeftAction}
+      />
+
       <ViewShot
         ref={shotRef}
         style={[
@@ -194,6 +217,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 12,
     gap: 8,
+    zIndex: 20,
+  },
+  topLeftAction: {
+    position: "absolute",
+    left: 12,
+    top: 24,
     zIndex: 20,
   },
   iconBtn: {

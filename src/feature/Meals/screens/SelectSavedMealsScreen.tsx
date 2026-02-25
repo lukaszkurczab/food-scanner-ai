@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { View, FlatList, RefreshControl, StyleSheet } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import type { ParamListBase } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@hooks/useMeals";
@@ -20,8 +19,12 @@ import { MealListItem } from "@/components/MealListItem";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useTranslation } from "react-i18next";
 import { useSelectSavedMealsState } from "@/feature/Meals/hooks/useSelectSavedMealsState";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-type SelectSavedMealNavigation = StackNavigationProp<ParamListBase>;
+type SelectSavedMealNavigation = StackNavigationProp<
+  RootStackParamList,
+  "SelectSavedMeal"
+>;
 
 export default function SelectSavedMealScreen({
   navigation,
@@ -58,7 +61,8 @@ export default function SelectSavedMealScreen({
     setMeal,
     saveDraft,
     setLastScreen,
-    onNavigateReviewIngredients: () => navigation.navigate("ReviewIngredients"),
+    onNavigateReviewIngredients: () =>
+      navigation.navigate("AddMeal", { start: "ReviewIngredients" }),
     onStartOver: () => navigation.replace("MealAddMethod"),
   });
 

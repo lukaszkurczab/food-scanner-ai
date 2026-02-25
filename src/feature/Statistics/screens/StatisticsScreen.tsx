@@ -13,15 +13,15 @@ import { PrimaryButton } from "@/components/PrimaryButton";
 import { useTranslation } from "react-i18next";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FREE_WINDOW_DAYS } from "@/services/mealService";
-import type { ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import OfflineBanner from "@/components/OfflineBanner";
+import type { RootStackParamList } from "@/navigation/navigate";
 import {
   useStatisticsState,
   type RangeKey,
 } from "@/feature/Statistics/hooks/useStatisticsState";
 
-type StatisticsNavigation = StackNavigationProp<ParamListBase>;
+type StatisticsNavigation = StackNavigationProp<RootStackParamList, "Statistics">;
 type Props = {
   navigation: StatisticsNavigation;
 };
@@ -85,7 +85,7 @@ export default function StatisticsScreen({ navigation }: Props) {
           </Text>
           <PrimaryButton
             label={t("statistics:upgrade", "Odblokuj Premium")}
-            onPress={() => navigation.navigate("Paywall")}
+            onPress={() => navigation.navigate("ManageSubscription")}
             style={styles.bannerCta}
           />
         </View>

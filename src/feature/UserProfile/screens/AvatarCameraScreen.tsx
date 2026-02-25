@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
-import { Layout, PhotoPreview } from "@/components";
+import { Layout, PhotoPreview, ScreenCornerNavButton } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -128,6 +128,14 @@ export default function AvatarCameraScreen({
           onCameraReady={() => setIsCameraReady(true)}
         />
         <View style={StyleSheet.absoluteFill}>
+          <ScreenCornerNavButton
+            icon="close"
+            onPress={() =>
+              navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Profile")
+            }
+            accessibilityLabel={t("common:close", { defaultValue: "Close" })}
+            tone="camera"
+          />
           <View style={styles.controlsWrapper}>
             <Pressable
               style={({ pressed }) => [

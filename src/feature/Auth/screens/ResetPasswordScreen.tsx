@@ -6,6 +6,7 @@ import { useTheme } from "@/theme/useTheme";
 import { getFirebaseAuth } from "@/FirebaseConfig";
 import {
   PrimaryButton,
+  ScreenCornerNavButton,
   TextInput,
   LinkText,
   ErrorBox,
@@ -28,7 +29,7 @@ function getErrorCode(err: unknown): string | null {
 }
 
 export default function ResetPasswordScreen({ navigation }: Props) {
-  const { t } = useTranslation("resetPassword");
+  const { t } = useTranslation(["resetPassword", "common"]);
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
 
@@ -108,6 +109,15 @@ export default function ResetPasswordScreen({ navigation }: Props) {
 
   return (
     <Layout showNavigation={false}>
+      <ScreenCornerNavButton
+        icon="back"
+        onPress={() =>
+          navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Login")
+        }
+        accessibilityLabel={t("common:back", { defaultValue: "Back" })}
+        containerStyle={styles.topLeftAction}
+      />
+
       {noInternet && (
         <View
           style={styles.noInternet}
@@ -170,6 +180,7 @@ export default function ResetPasswordScreen({ navigation }: Props) {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    topLeftAction: { top: 0, left: 0 },
     noInternet: {
       backgroundColor: theme.error.background,
       borderColor: theme.error.border,

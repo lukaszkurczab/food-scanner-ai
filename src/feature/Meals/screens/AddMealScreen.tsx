@@ -100,16 +100,23 @@ export default function AddMealScreen() {
     });
   }, []);
 
+  const canGoBack = useCallback(() => stack.length > 1, [stack.length]);
+
   const flow: MealAddFlowApi = useMemo(
     () => ({
       goTo,
       goBack,
       replace,
+      canGoBack,
     }),
-    [goTo, goBack, replace],
+    [goTo, goBack, replace, canGoBack],
   );
 
+  const current = stack[stack.length - 1];
+
   useEffect(() => {
+    if (current.name === "MealCamera") return;
+
     const onBackPress = () => {
       if (stack.length > 1) {
         goBack();
@@ -121,9 +128,28 @@ export default function AddMealScreen() {
 
     const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
     return () => sub.remove();
-  }, [goBack, navigation, stack.length]);
+  }, [current.name, goBack, navigation, stack.length]);
 
-  const current = stack[stack.length - 1];
+  useEffect(() => {
+    if (current.name === "MealCamera") return;
+
+    const sub = navigation.addListener("beforeRemove", (e) => {
+      if (stack.length <= 1) return;
+
+      const actionType = e.data.action.type;
+      const isBackAction =
+        actionType === "GO_BACK" ||
+        actionType === "POP" ||
+        actionType === "POP_TO_TOP";
+
+      if (!isBackAction) return;
+
+      e.preventDefault();
+      goBack();
+    });
+
+    return sub;
+  }, [current.name, goBack, navigation, stack.length]);
   const Screen = MapMealAddScreens(current.name);
 
   return <Screen navigation={navigation} flow={flow} params={current.params} />;
