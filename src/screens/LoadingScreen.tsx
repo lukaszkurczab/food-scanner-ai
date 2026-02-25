@@ -6,6 +6,10 @@ import { useAuthContext } from "@/context/AuthContext";
 import { resetIfMissed, ensureStreakDoc } from "@/services/streakService";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import {
+  buildE2EProfileSeed,
+  isE2EModeEnabled,
+} from "@/services/e2e/config";
 
 type LoadingScreenNavigation = StackNavigationProp<RootStackParamList, "Loading">;
 type Props = {
@@ -14,7 +18,7 @@ type Props = {
 
 const LoadingScreen = ({ navigation }: Props) => {
   const { firebaseUser, uid } = useAuthContext();
-  const { userData, loadingUser, refreshUser } = useUserContext();
+  const { userData, loadingUser, refreshUser, updateUser } = useUserContext();
   const routedRef = useRef(false);
 
   useEffect(() => {
@@ -33,8 +37,26 @@ const LoadingScreen = ({ navigation }: Props) => {
       await resetIfMissed(uid);
       if (cancelled) return;
 
-      const profile = userData ?? (await refreshUser());
+      let profile = userData ?? (await refreshUser());
       if (cancelled) return;
+
+      if (isE2EModeEnabled()) {
+        if (!profile && uid) {
+          try {
+            await updateUser(
+              buildE2EProfileSeed(uid, firebaseUser.email ?? "")
+            );
+            profile = await refreshUser();
+          } catch {
+            // In E2E mode, profile seeding is best-effort.
+          }
+        }
+        if (cancelled) return;
+        routedRef.current = true;
+        navigation.replace("Home");
+        return;
+      }
+
       routedRef.current = true;
       if (profile?.surveyComplited) {
         navigation.replace("Home");
@@ -51,6 +73,7 @@ const LoadingScreen = ({ navigation }: Props) => {
     firebaseUser,
     loadingUser,
     refreshUser,
+    updateUser,
     uid,
     userData,
     navigation,

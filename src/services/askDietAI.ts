@@ -14,6 +14,10 @@ import {
   createServiceError,
   isServiceError,
 } from "@/services/contracts/serviceError";
+import {
+  getE2EMockChatReply,
+  isE2EModeEnabled,
+} from "@/services/e2e/config";
 
 export type Message = { from: "user" | "ai"; text: string };
 
@@ -297,6 +301,10 @@ export async function askDietAI(
   profile: FormData,
   opts?: { uid?: string; isPremium?: boolean; limit?: number }
 ): Promise<string> {
+  if (isE2EModeEnabled()) {
+    return getE2EMockChatReply();
+  }
+
   const lang = i18next.language || "en";
   const outOfScopeReply = i18next.t(
     "diet:outOfScope",

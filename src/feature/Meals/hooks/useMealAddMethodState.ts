@@ -8,9 +8,13 @@ import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { canUseAiTodayFor } from "@/services/userService";
 import type { RootStackParamList } from "@/navigation/navigate";
-import type { Meal } from "@/types/meal";
+import type { Ingredient, Meal } from "@/types/meal";
 import { MaterialIcons } from "@expo/vector-icons";
 import { debugScope } from "@/utils/debug";
+import {
+  E2E_DETERMINISTIC_INGREDIENT,
+  isE2EModeEnabled,
+} from "@/services/e2e/config";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -86,6 +90,11 @@ const isDraftResumeScreen = (value: string): value is DraftResumeScreen =>
   value === "EditResult";
 
 const log = debugScope("Hook:useMealAddMethodState");
+const E2E_DRAFT_MEAL_ID = "e2e-draft-meal";
+
+function makeE2EDraftIngredient(): Ingredient {
+  return { ...E2E_DETERMINISTIC_INGREDIENT };
+}
 
 const hasNonEmptyText = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
@@ -194,12 +203,17 @@ export function useMealAddMethodState(params: {
       if (!uid) return;
 
       const now = new Date().toISOString();
+      const isE2E = isE2EModeEnabled();
+      const deterministicIngredients =
+        isE2E && nextScreen === "ReviewIngredients"
+          ? [makeE2EDraftIngredient()]
+          : [];
       const emptyMeal: Meal = {
-        mealId: uuidv4(),
+        mealId: isE2E ? E2E_DRAFT_MEAL_ID : uuidv4(),
         userUid: uid,
         name: null,
         photoUrl: null,
-        ingredients: [],
+        ingredients: deterministicIngredients,
         createdAt: now,
         updatedAt: now,
         syncState: "pending",

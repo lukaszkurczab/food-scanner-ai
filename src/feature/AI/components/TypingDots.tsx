@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { View, Animated, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
+import { isE2EModeEnabled } from "@/services/e2e/config";
 
 export const TypingDots: React.FC = () => {
+  const isE2E = isE2EModeEnabled();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const dot1 = useRef(new Animated.Value(0)).current;
@@ -10,6 +12,8 @@ export const TypingDots: React.FC = () => {
   const dot3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (isE2E) return;
+
     const make = (v: Animated.Value, delay: number) =>
       Animated.loop(
         Animated.sequence([
@@ -30,7 +34,9 @@ export const TypingDots: React.FC = () => {
     make(dot1, 0);
     make(dot2, 150);
     make(dot3, 300);
-  }, [dot1, dot2, dot3]);
+  }, [dot1, dot2, dot3, isE2E]);
+
+  if (isE2E) return null;
 
   return (
     <View style={styles.wrap}>

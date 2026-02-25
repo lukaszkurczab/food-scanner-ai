@@ -12,6 +12,20 @@
       "developmentClient": true,
       "distribution": "internal"
     },
+    "e2e-test": {
+      "distribution": "internal",
+      "withoutCredentials": true,
+      "env": {
+        "E2E": "true",
+        "E2E_MOCK_CHAT_REPLY": "E2E_MOCK_CHAT_REPLY: Keep hydration and protein consistent every day."
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
     "production": {
       "distribution": "store",
       "autoIncrement": true,

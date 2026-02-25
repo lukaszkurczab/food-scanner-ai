@@ -31,6 +31,7 @@ export const OfflineBanner: React.FC<Props> = ({
 
   return (
     <View
+      testID="offline-banner"
       style={[
         styles.banner,
         {

@@ -43,6 +43,7 @@ type Props = {
   onSubmitEditing?: () => void;
   rightLabel?: string;
   maxLength?: number;
+  testID?: string;
 };
 
 export const TextInput: React.FC<Props> = ({
@@ -74,6 +75,7 @@ export const TextInput: React.FC<Props> = ({
   onEndEditing,
   rightLabel,
   maxLength = 128,
+  testID,
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -170,6 +172,7 @@ export const TextInput: React.FC<Props> = ({
         )}
 
         <RNTextInput
+          testID={testID}
           autoCorrect={autoCorrect}
           ref={ref}
           value={value}

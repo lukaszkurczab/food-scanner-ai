@@ -14,8 +14,8 @@ import { useTheme } from "@/theme/useTheme";
 import { ScrollView } from "react-native-gesture-handler";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNetInfo } from "@react-native-community/netinfo";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { useE2ENetInfo } from "@/services/e2e/connectivity";
 
 type LayoutProps = {
   children: ReactNode;
@@ -36,7 +36,7 @@ export const Layout = ({
 }: LayoutProps) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const netInfo = useNetInfo();
+  const netInfo = useE2ENetInfo();
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [offlineBannerHeight, setOfflineBannerHeight] = useState(0);

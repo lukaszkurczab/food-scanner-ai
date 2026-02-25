@@ -1,0 +1,7 @@
+appId: com.lkurczab.foodscannerai
+---
+- runFlow: login.yaml
+- openLink: caloriai://e2e/reset?offline=1&logout=0
+- assertVisible:
+    id: offline-banner
+- openLink: caloriai://e2e/reset?offline=0&logout=0
