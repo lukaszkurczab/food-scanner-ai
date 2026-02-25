@@ -37,6 +37,9 @@
   "history": {
     "open": "Otwórz historię czatu"
   },
+  "errors": {
+    "fetchFailed": "Nie udało się pobrać odpowiedzi, spróbuj ponownie."
+  },
   "paywall": {
     "autorenew": "Płatność zostanie pobrana z Twojego konta. Subskrypcja odnawia się automatycznie, jeśli nie anulujesz jej co najmniej 24 godziny przed końcem bieżącego okresu.",
     "restore": "Przywróć zakupy",

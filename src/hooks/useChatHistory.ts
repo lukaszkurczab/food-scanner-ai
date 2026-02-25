@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
 import { getApp } from "@react-native-firebase/app";
 import {
@@ -266,6 +267,7 @@ export function useChatHistory(
       await bumpDailyUsed();
 
       let aiText = "";
+      let askFailed = false;
       try {
         const historyForAiBase: Message[] = messages.slice(0, 10).map((m) => ({
           from: m.role === "user" ? "user" : "ai",
@@ -278,8 +280,15 @@ export function useChatHistory(
         ];
 
         aiText = await askDietAI(trimmed, meals, historyForAi, profile);
-      } catch {
-        aiText = "";
+      } catch (error) {
+        console.error("[useChatHistory.send] askDietAI failed:", error);
+        aiText = i18next.t(
+          "chat:errors.fetchFailed",
+          "Could not fetch a response. Please try again.",
+        );
+        askFailed = true;
+        setTyping(false);
+        setSending(false);
       }
 
       const now2 = Date.now();
@@ -326,8 +335,10 @@ export function useChatHistory(
         { merge: true },
       );
 
-      setTyping(false);
-      setSending(false);
+      if (!askFailed) {
+        setTyping(false);
+        setSending(false);
+      }
 
       if (isLocalThread) return createdThreadId;
       return null;

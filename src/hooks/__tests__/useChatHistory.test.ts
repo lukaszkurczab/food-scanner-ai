@@ -18,6 +18,7 @@ const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
 const mockGetItem = jest.fn<(key: string) => Promise<string | null>>();
 const mockSetItem = jest.fn<(key: string, value: string) => Promise<void>>();
 const mockUuid = jest.fn<() => string>();
+const mockI18nT = jest.fn<(key: string, fallback?: string) => string>();
 const mockAskDietAI = jest.fn<
   (
     text: string,
@@ -85,6 +86,13 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 
 jest.mock("uuid", () => ({
   v4: () => mockUuid(),
+}));
+
+jest.mock("i18next", () => ({
+  __esModule: true,
+  default: {
+    t: (key: string, fallback?: string) => mockI18nT(key, fallback),
+  },
 }));
 
 jest.mock("@/services/askDietAI", () => ({
@@ -158,6 +166,9 @@ describe("useChatHistory", () => {
     mockNetInfoFetch.mockResolvedValue({ isConnected: true });
     mockGetItem.mockResolvedValue("0");
     mockSetItem.mockResolvedValue();
+    mockI18nT.mockImplementation(
+      (_key: string, fallback?: string) => fallback || "fallback",
+    );
     mockAskDietAI.mockResolvedValue("AI response");
     mockGetApp.mockReturnValue({ app: "test-app" });
     mockGetFirestore.mockReturnValue({ db: "test-db" });
@@ -423,6 +434,7 @@ describe("useChatHistory", () => {
   });
 
   it("updates existing thread and handles AI failures without throwing", async () => {
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     mockAskDietAI.mockRejectedValueOnce(new Error("AI failed"));
     mockUuid.mockReturnValueOnce("user-msg").mockReturnValueOnce("ai-msg");
 
@@ -457,10 +469,23 @@ describe("useChatHistory", () => {
     expect(sendResult).toBeNull();
     expect(mockSetDoc).toHaveBeenCalledTimes(2);
     const aiPayload = mockSetDoc.mock.calls[0][1] as Record<string, unknown>;
-    expect(aiPayload.content).toBe("");
+    expect(aiPayload.content).toBe(
+      "Could not fetch a response. Please try again.",
+    );
+    expect(mockI18nT).toHaveBeenCalledWith(
+      "chat:errors.fetchFailed",
+      "Could not fetch a response. Please try again.",
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "[useChatHistory.send] askDietAI failed:",
+      expect.any(Error),
+    );
+    expect(result.current.sending).toBe(false);
+    expect(result.current.typing).toBe(false);
 
     const batch = mockCreatedBatches[0];
     expect(batch.set.mock.calls[0][2]).toEqual({ merge: true });
+    consoleErrorSpy.mockRestore();
   });
 
   it("resets daily counter after user sign-out and handles short local title", async () => {

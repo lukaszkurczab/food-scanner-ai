@@ -37,6 +37,9 @@
   "history": {
     "open": "Open chat history"
   },
+  "errors": {
+    "fetchFailed": "Could not fetch a response. Please try again."
+  },
   "paywall": {
     "autorenew": "Payment will be charged to your account. Subscription auto-renews unless canceled at least 24 hours before the end of the current period.",
     "restore": "Restore Purchases",
