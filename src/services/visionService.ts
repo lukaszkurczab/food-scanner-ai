@@ -17,6 +17,7 @@ const VISION_MODEL = "gpt-4o";
 const MAX_TOKENS = 600;
 const TIMEOUT_MS = 30000;
 const RETRY_BACKOFF = 3000;
+const AI_UNAVAILABLE_CODE = "ai/unavailable";
 
 const toNumber = (v: unknown): number => {
   if (typeof v === "number") return isFinite(v) ? v : 0;
@@ -137,7 +138,11 @@ export async function detectIngredientsWithVision(
           continue;
         }
         log.warn("Vision API temporary failure", { status: response.status });
-        return null;
+        throw createServiceError({
+          code: AI_UNAVAILABLE_CODE,
+          source: "VisionService",
+          retryable: true,
+        });
       }
 
       const json = await response.json();
@@ -180,6 +185,20 @@ export async function detectIngredientsWithVision(
         await new Promise((res) => setTimeout(res, RETRY_BACKOFF));
         continue;
       }
+
+      if (
+        error instanceof Error &&
+        (error.name === "AbortError" ||
+          /network request failed|failed to fetch/i.test(error.message))
+      ) {
+        throw createServiceError({
+          code: AI_UNAVAILABLE_CODE,
+          source: "VisionService",
+          retryable: true,
+          cause: error,
+        });
+      }
+
       log.error("Vision detection failed", error);
       return null;
     }

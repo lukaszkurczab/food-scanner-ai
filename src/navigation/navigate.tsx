@@ -22,6 +22,7 @@ export type RootStackParamList = {
         attempt?: number;
         code?: string;
         image?: string;
+        reason?: "not_recognized" | "ai_unavailable";
       }
     | undefined;
 

@@ -13,10 +13,16 @@ import { debugScope } from "@/utils/debug";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useUserContext } from "@contexts/UserContext";
+import { isServiceError } from "@/services/contracts/serviceError";
 import type { Ingredient, Meal } from "@/types";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 
 const log = debugScope("Hook:useMealCameraState");
+const AI_UNAVAILABLE_CODE = "ai/unavailable";
+
+const isAiUnavailableError = (error: unknown) =>
+  isServiceError(error) &&
+  (error.code === "offline" || error.code === AI_UNAVAILABLE_CODE);
 
 export function useMealCameraState({
   navigation,
@@ -290,16 +296,20 @@ export function useMealCameraState({
               image: finalUri,
               id: mealId,
               attempt,
+              reason: "not_recognized",
             });
             return;
           }
         }
-      } catch {
+      } catch (error: unknown) {
         setIsLoading(false);
         flow.goTo("IngredientsNotRecognized", {
           image: finalUri,
           id: mealId,
           attempt,
+          reason: isAiUnavailableError(error)
+            ? "ai_unavailable"
+            : "not_recognized",
         });
         return;
       }

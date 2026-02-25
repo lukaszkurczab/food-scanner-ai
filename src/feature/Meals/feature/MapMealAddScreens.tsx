@@ -30,6 +30,7 @@ export type MealAddStepParams = {
     image?: string;
     id?: string;
     attempt?: number;
+    reason?: "not_recognized" | "ai_unavailable";
   };
   ReviewIngredients: Record<string, unknown>;
   Result: Record<string, unknown>;

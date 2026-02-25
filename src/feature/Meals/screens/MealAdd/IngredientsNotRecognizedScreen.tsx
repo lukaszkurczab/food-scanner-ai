@@ -28,6 +28,8 @@ export default function IngredientsNotRecognizedScreen({
   const image = params?.image;
   const id = params?.id;
   const attempt = params?.attempt ?? 1;
+  const reason = params?.reason ?? "not_recognized";
+  const isAiUnavailable = reason === "ai_unavailable";
 
   const [imgError, setImgError] = useState(false);
   useEffect(() => setImgError(false), [image]);
@@ -46,6 +48,14 @@ export default function IngredientsNotRecognizedScreen({
         image,
       });
     }
+  };
+
+  const handleManualEntry = () => {
+    flow.replace("ReviewIngredients", {});
+  };
+
+  const handleOpenProductDatabase = () => {
+    navigation.replace("SavedMeals");
   };
 
   const handleOtherMethod = () => {
@@ -71,23 +81,45 @@ export default function IngredientsNotRecognizedScreen({
           <View style={styles.image} />
         )}
         <Text style={styles.title}>
-          {t("not_recognized_title", "We couldn't recognize the ingredients")}
+          {isAiUnavailable
+            ? t("ai_unavailable_title", "AI analysis is currently unavailable")
+            : t("not_recognized_title", "We couldn't recognize the ingredients")}
         </Text>
         <Text style={styles.subtitle}>
-          {attempt < MAX_ATTEMPTS
-            ? t("not_recognized_sub", "Try again or select other method")
-            : t(
-                "not_recognized_last",
-                "Please add the meal manually or try later.",
-              )}
+          {isAiUnavailable
+            ? t(
+                "ai_unavailable_sub",
+                "We couldn't connect to the AI analysis server. You can enter ingredients manually or use the product database.",
+              )
+            : attempt < MAX_ATTEMPTS
+              ? t("not_recognized_sub", "Try again or select other method")
+              : t(
+                  "not_recognized_last",
+                  "Please add the meal manually or try later.",
+                )}
         </Text>
         <View style={styles.spacer} />
-        {attempt < MAX_ATTEMPTS && (
-          <PrimaryButton
-            label={`${t("retake", "Retake photo")} (${attempt}/${MAX_ATTEMPTS})`}
-            onPress={handleRetake}
-            style={styles.buttonSpacingNone}
-          />
+        {isAiUnavailable ? (
+          <>
+            <PrimaryButton
+              label={t("ai_unavailable_manual", "Enter ingredients manually")}
+              onPress={handleManualEntry}
+              style={styles.buttonSpacingNone}
+            />
+            <SecondaryButton
+              label={t("ai_unavailable_product_db", "Use product database")}
+              onPress={handleOpenProductDatabase}
+              style={styles.buttonSpacing}
+            />
+          </>
+        ) : (
+          attempt < MAX_ATTEMPTS && (
+            <PrimaryButton
+              label={`${t("retake", "Retake photo")} (${attempt}/${MAX_ATTEMPTS})`}
+              onPress={handleRetake}
+              style={styles.buttonSpacingNone}
+            />
+          )
         )}
         <SecondaryButton
           label={t("select_method", "Back to method selection")}

@@ -65,6 +65,67 @@ function dailyCountKey(uid: string, day: string) {
   return `chatDailyCount:${uid}:${day}`;
 }
 
+function findInsertIndexDesc(messages: ChatMessage[], createdAt: number): number {
+  let left = 0;
+  let right = messages.length;
+
+  while (left < right) {
+    const mid = (left + right) >> 1;
+    if (messages[mid].createdAt >= createdAt) {
+      left = mid + 1;
+    } else {
+      right = mid;
+    }
+  }
+
+  return left;
+}
+
+function upsertSortedMessage(
+  messages: ChatMessage[],
+  next: ChatMessage,
+): ChatMessage[] {
+  const existingIndex = messages.findIndex((m) => m.id === next.id);
+
+  if (existingIndex >= 0) {
+    const existing = messages[existingIndex];
+    if (existing.createdAt === next.createdAt) {
+      const updated = [...messages];
+      updated[existingIndex] = next;
+      return updated;
+    }
+
+    const withoutExisting = [
+      ...messages.slice(0, existingIndex),
+      ...messages.slice(existingIndex + 1),
+    ];
+    const insertIndex = findInsertIndexDesc(withoutExisting, next.createdAt);
+    return [
+      ...withoutExisting.slice(0, insertIndex),
+      next,
+      ...withoutExisting.slice(insertIndex),
+    ];
+  }
+
+  const insertIndex = findInsertIndexDesc(messages, next.createdAt);
+  return [
+    ...messages.slice(0, insertIndex),
+    next,
+    ...messages.slice(insertIndex),
+  ];
+}
+
+function upsertSortedMessages(
+  messages: ChatMessage[],
+  incoming: ChatMessage[],
+): ChatMessage[] {
+  return incoming.reduce(
+    (acc: ChatMessage[], message: ChatMessage) =>
+      upsertSortedMessage(acc, message),
+    messages,
+  );
+}
+
 export function useChatHistory(
   userUid: string,
   isPremium: boolean,
@@ -169,11 +230,7 @@ export function useChatHistory(
       toChatMessage(d, userUid),
     );
 
-    setMessages((prev) => {
-      const map = new Map(prev.map((m) => [m.id, m]));
-      for (const m of older) map.set(m.id, m);
-      return Array.from(map.values()).sort((a, b) => b.createdAt - a.createdAt);
-    });
+    setMessages((prev) => upsertSortedMessages(prev, older));
 
     lastDocRef.current = snap.docs[snap.docs.length - 1] ?? null;
     setHasMore(!!lastDocRef.current);
@@ -228,7 +285,7 @@ export function useChatHistory(
         cloudId: userMsgId,
       };
 
-      setMessages((prev) => [optimisticUser, ...prev]);
+      setMessages((prev) => upsertSortedMessage(prev, optimisticUser));
 
       const batch = writeBatch(db);
 
@@ -305,13 +362,7 @@ export function useChatHistory(
         cloudId: aiMsgId,
       };
 
-      setMessages((prev) => {
-        const map = new Map(prev.map((m) => [m.id, m]));
-        map.set(aiMsgId, optimisticAi);
-        return Array.from(map.values()).sort(
-          (a, b) => b.createdAt - a.createdAt,
-        );
-      });
+      setMessages((prev) => upsertSortedMessage(prev, optimisticAi));
 
       await setDoc(
         doc(messagesCol, aiMsgId),
