@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { authLogin } from "@/feature/Auth/services/authService";
 
@@ -17,7 +17,7 @@ export const useLogin = (setUser: (u: FirebaseAuthTypes.User) => void) => {
   const [errors, setErrors] = useState<LoginErrors>({});
   const [criticalError, setCriticalError] = useState<CriticalError>(null);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setErrors({});
     setCriticalError(null);
@@ -40,13 +40,13 @@ export const useLogin = (setUser: (u: FirebaseAuthTypes.User) => void) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setUser]);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setErrors({});
     setCriticalError(null);
     setLoading(false);
-  };
+  }, []);
 
   return { login, loading, errors, criticalError, reset };
 };
