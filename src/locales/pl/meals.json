@@ -88,5 +88,30 @@
   "dev": {
     "sample_meal": "Przykładowy posiłek",
     "sample_table": "Przykładowa tabela"
-  }
+  },
+  "back_to_saved": "Powrót do zapisanych posiłków",
+  "barcode_back_to_review": "Powrót do składników",
+  "barcode_code_label": "Zeskanowany kod",
+  "barcode_no_code_msg": "Umieść kod w ramce i spróbuj ponownie, a następnie naciśnij przycisk.",
+  "barcode_no_code_title": "Nie wykryto kodu kreskowego",
+  "barcode_not_found_last": "Nadal nie znaleźliśmy produktu. Dodaj posiłek ręcznie lub wybierz inną metodę.",
+  "barcode_not_found_sub": "Nie udało się pobrać danych odżywczych dla tego kodu. Spróbuj ponownie lub wybierz inną metodę.",
+  "barcode_not_found_title": "Nie znaleźliśmy tego produktu",
+  "barcode_try_again": "Skanuj ponownie",
+  "cancel": "Anuluj",
+  "cancel_edit_message": "Czy na pewno chcesz odrzucić wprowadzone zmiany?",
+  "continue_editing": "Kontynuuj edycję",
+  "discard_changes_message": "Masz niezapisane zmiany. Czy chcesz je odrzucić?",
+  "discard_changes_title": "Odrzucić zmiany?",
+  "go_premium": "Przejdź na Premium",
+  "leave_edit_message": "Masz niezapisane zmiany. Czy na pewno chcesz wyjść?",
+  "leave_edit_title": "Wyjść z edycji?",
+  "leave_without_saving_message": "Czy chcesz wyjść bez zapisywania zmian?",
+  "leave_without_saving_title": "Wyjść bez zapisywania?",
+  "meal_time": "Czas posiłku",
+  "pick_date_time": "Wybierz datę i godzinę",
+  "premium_required_body": "Tryb AI wymaga subskrypcji Premium.",
+  "premium_required_title": "Wymagane Premium",
+  "recalc_message": "Zmiana ilości może automatycznie przeliczyć makroskładniki i kalorie. Przeliczyć teraz?",
+  "recalc_title": "Przeliczyć wartości?"
 }

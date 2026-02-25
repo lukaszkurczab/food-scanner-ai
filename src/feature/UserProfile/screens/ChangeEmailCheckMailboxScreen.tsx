@@ -32,7 +32,7 @@ function getErrorCode(err: unknown): string | null {
 }
 
 export default function ChangeEmailCheckMailboxScreen() {
-  const { t } = useTranslation(["change_password", "common"]);
+  const { t } = useTranslation(["profile", "common"]);
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const route = useRoute<ChangeEmailCheckMailboxRoute>();

@@ -88,5 +88,30 @@
   "dev": {
     "sample_meal": "Sample meal",
     "sample_table": "Sample table"
-  }
+  },
+  "back_to_saved": "Back to saved meals",
+  "barcode_back_to_review": "Back to ingredients",
+  "barcode_code_label": "Scanned code",
+  "barcode_no_code_msg": "Place the code in the frame and try again, then press the button.",
+  "barcode_no_code_title": "No barcode detected",
+  "barcode_not_found_last": "We still couldn't find the product. Please add the meal manually or choose a different method.",
+  "barcode_not_found_sub": "We couldn't get nutrition data for this barcode. You can try again or choose a different method.",
+  "barcode_not_found_title": "We couldn't find this product",
+  "barcode_try_again": "Scan again",
+  "cancel": "Cancel",
+  "cancel_edit_message": "Are you sure you want to discard your changes?",
+  "continue_editing": "Continue editing",
+  "discard_changes_message": "You have unsaved changes. Do you want to discard them?",
+  "discard_changes_title": "Discard changes?",
+  "go_premium": "Go Premium",
+  "leave_edit_message": "You have unsaved changes. Do you really want to leave?",
+  "leave_edit_title": "Leave editing?",
+  "leave_without_saving_message": "Do you want to leave without saving changes?",
+  "leave_without_saving_title": "Leave without saving?",
+  "meal_time": "Meal time",
+  "pick_date_time": "Pick date and time",
+  "premium_required_body": "AI mode requires a Premium subscription.",
+  "premium_required_title": "Premium required",
+  "recalc_message": "Changing amount can automatically recalculate macros and calories. Recalculate now?",
+  "recalc_title": "Recalculate values?"
 }

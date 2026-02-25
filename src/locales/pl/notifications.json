@@ -58,5 +58,11 @@
       "body_concise": "Brak posiłków",
       "body_detailed": "Wygląda na to, że dziś jest pusto. Dodaj posiłki, aby zachować ciągłość."
     }
+  },
+  "permissions": {
+    "title": "Włącz powiadomienia",
+    "message": "Włącz powiadomienia w ustawieniach systemowych, aby otrzymywać przypomnienia na czas.",
+    "openSettings": "Otwórz ustawienia",
+    "notNow": "Nie teraz"
   }
 }

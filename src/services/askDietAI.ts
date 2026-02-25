@@ -163,14 +163,14 @@ function enforceDietConstraints(output: string, banned: string[]): string {
 
   const replaced = output.replace(
     new RegExp(`\\b${escapeRegex(hit)}\\b`, "ig"),
-    i18next.t("diet.replacement", "substitute")
+    i18next.t("diet:replacement", "substitute")
   );
 
   return (
     replaced +
     "\n\n" +
     i18next.t(
-      "diet.constraintsNote",
+      "diet:constraintsNote",
       "(I respected your restrictions and suggested substitutions.)"
     )
   );
@@ -218,11 +218,11 @@ export async function askDietAI(
 ): Promise<string> {
   const lang = i18next.language || "en";
   const outOfScopeReply = i18next.t(
-    "diet.outOfScope",
+    "diet:outOfScope",
     "Sorry — I can only help with questions about food, nutrition, meals, calories, and eating habits."
   );
   const medicalRedirect = i18next.t(
-    "diet.medicalRedirect",
+    "diet:medicalRedirect",
     "I can’t help with diagnosis or treatment. If this is about symptoms, medication, or a health issue, please contact a qualified clinician. I can still help with general nutrition and meal ideas that fit your preferences."
   );
 
@@ -292,7 +292,7 @@ export async function askDietAI(
 
   let text =
     resp.choices[0]?.message?.content?.trim() ||
-    i18next.t("diet.errors.empty", "No response.");
+    i18next.t("diet:errors.empty", "No response.");
   text = enforceDietConstraints(text, dc.avoid);
   text = ensureFullSentence(text);
 

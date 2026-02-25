@@ -46,5 +46,8 @@
       "bar": "Słupkowy",
       "line": "Liniowy"
     }
-  }
+  },
+  "limitedWindowTitle": "Dostęp do starszych danych wymaga Premium",
+  "limitedWindowDesc": "Zakres został skrócony do ostatnich {{d}} dni.",
+  "upgrade": "Odblokuj Premium"
 }

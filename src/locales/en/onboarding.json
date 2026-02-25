@@ -140,6 +140,7 @@
     "health": "Health",
     "ai": "Assistant Settings",
     "edit": "Edit",
-    "save": "Save"
+    "save": "Save",
+    "confirm": "Confirm"
   }
 }

@@ -75,7 +75,8 @@
     "billingUnavailable": "Rozliczenia niedostępne na tym urządzeniu.",
     "purchaseFailed": "Zakup nie powiódł się. Spróbuj ponownie.",
     "restorePurchases": "Przywróć zakupy",
-    "inactiveSince": "Nieaktywna od"
+    "inactiveSince": "Nieaktywna od",
+    "autorenewInfo": "Subskrypcja odnawia się automatycznie, jeśli nie anulujesz jej co najmniej 24 godziny przed końcem bieżącego okresu. Zarządzać lub anulować możesz w ustawieniach konta App Store / Google Play."
   },
   "change_password": "Zmień hasło",
   "old_password": "Obecne hasło",
@@ -111,13 +112,6 @@
   "feedbackSendError": "Nie udało się wysłać opinii. Spróbuj ponownie później.",
   "exportSavedSuccess": "Twoje dane zostały zapisane jako plik PDF: {{filename}}. Otworzono okno udostępniania.",
   "exportSavedPathHint": "Zapisano w: {{path}}",
-  "mealKind": {
-    "any": "Dowolny posiłek",
-    "breakfast": "Śniadanie",
-    "lunch": "Lunch",
-    "dinner": "Kolacja",
-    "snack": "Przekąska"
-  },
   "paywall": {
     "title": "Premium na miesiąc",
     "priceLabel": "Cena",
