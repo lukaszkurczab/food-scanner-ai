@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Modal, View, Pressable, Platform, StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -18,7 +18,7 @@ type ZoomModalProps = {
 
 const ZoomModal: React.FC<ZoomModalProps> = ({ visible, uri, onClose }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -26,13 +26,13 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ visible, uri, onClose }) => {
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     "worklet";
     scale.value = withTiming(1);
     savedScale.value = 1;
     translateX.value = withTiming(0);
     translateY.value = withTiming(0);
-  };
+  }, [scale, savedScale, translateX, translateY]);
 
   const pinch = useMemo(
     () =>
@@ -51,7 +51,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ visible, uri, onClose }) => {
             savedScale.value = scale.value;
           }
         }),
-    [scale, savedScale]
+    [reset, scale, savedScale]
   );
 
   const pan = useMemo(
@@ -70,7 +70,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ visible, uri, onClose }) => {
           translateX.value = withTiming(translateX.value);
           translateY.value = withTiming(translateY.value);
         }),
-    [scale, translateX, translateY]
+    [scale, startX, startY, translateX, translateY]
   );
 
   const doubleTap = useMemo(
@@ -85,7 +85,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ visible, uri, onClose }) => {
             savedScale.value = 2;
           }
         }),
-    [scale, savedScale]
+    [reset, scale, savedScale]
   );
 
   const singleTap = useMemo(

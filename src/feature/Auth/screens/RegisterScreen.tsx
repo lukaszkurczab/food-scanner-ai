@@ -27,7 +27,7 @@ type RegisterScreenProps = {
 export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const { t } = useTranslation(["login", "common"]);
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");

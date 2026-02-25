@@ -40,7 +40,7 @@ export const IngredientBox: React.FC<Props> = ({
   hasError,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals", "common"]);
   const [menuVisible, setMenuVisible] = useState(false);
   const [editMode, setEditMode] = useState(initialEdit);

@@ -26,7 +26,7 @@ type Props = {
 
 export default function StatisticsScreen({ navigation }: Props) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["statistics", "common"]);
   const { userData } = useUserContext();
 

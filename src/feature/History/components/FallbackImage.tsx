@@ -19,7 +19,7 @@ export const FallbackImage: React.FC<Props> = ({
   onError,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [errored, setErrored] = useState(false);
   const imageStyle = useMemo(
     () => ({

@@ -27,7 +27,7 @@ type Props = {
 export default function EditResultScreen({ navigation }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { uid } = useAuthContext();
   const route = useRoute<ScreenRoute>();
   const savedCloudId = route.params?.savedCloudId;

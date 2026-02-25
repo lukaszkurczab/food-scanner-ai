@@ -11,7 +11,7 @@ type Props = {
 
 export const Bubble: React.FC<Props> = ({ role, text, timestamp }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const isUser = role === "user";
   const textColorStyle = isUser ? styles.textUser : styles.textAi;
 

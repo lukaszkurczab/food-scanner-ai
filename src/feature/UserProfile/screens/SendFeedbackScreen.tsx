@@ -26,7 +26,7 @@ export default function SendFeedbackScreen({
   navigation,
 }: SendFeedbackScreenProps) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("profile");
   const [message, setMessage] = useState("");
   const [attachment, setAttachment] = useState<string | null>(null);

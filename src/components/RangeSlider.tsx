@@ -43,7 +43,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
   disabled = false,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [trackW, setTrackW] = useState(1);
   const trackWAnim = useSharedValue(1);
@@ -59,7 +59,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     const rx = toPx(value[1]);
     leftX.value = withTiming(Math.min(lx, rx));
     rightX.value = withTiming(Math.max(lx, rx));
-  }, [value, trackW, min, max]);
+  }, [value, trackW, min, max, leftX, rightX]);
 
   const fillStyle = useAnimatedStyle(() => {
     const l = Math.min(leftX.value, rightX.value);

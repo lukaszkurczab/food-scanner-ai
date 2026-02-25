@@ -10,7 +10,7 @@ export const TodaysMacrosChart = ({
   macros: { protein: number; fat: number; carbs: number };
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("home");
 
   const data = useMemo(

@@ -18,7 +18,7 @@ import type { RootStackParamList } from "@/navigation/navigate";
 
 export default function MealTextAIScreen() {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation(["meals", "chat", "common"]);
   const navigation = useNavigation<
     StackNavigationProp<RootStackParamList, "MealTextAI">

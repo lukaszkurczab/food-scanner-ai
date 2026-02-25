@@ -27,7 +27,7 @@ export const ErrorButton: React.FC<ErrorButtonProps> = ({
   ...rest
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const textColor = theme.error.text;
   const isDisabled = disabled || loading;

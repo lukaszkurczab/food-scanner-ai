@@ -35,6 +35,7 @@ export function useSelectSavedMealsState(params: {
   onNavigateReviewIngredients: () => void;
   onStartOver: () => void;
 }) {
+  const { getMeals } = params;
   const [queryText, setQueryText] = useState("");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Meal[]>([]);
@@ -89,8 +90,8 @@ export function useSelectSavedMealsState(params: {
   }, [params.uid]);
 
   const refresh = useCallback(async () => {
-    await params.getMeals();
-  }, [params.getMeals]);
+    await getMeals();
+  }, [getMeals]);
 
   const visibleAll = useMemo(() => {
     const queryTextNormalized = normalizeText(queryText);

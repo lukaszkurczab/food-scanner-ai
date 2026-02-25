@@ -30,7 +30,7 @@ export default function SelectSavedMealScreen({
   navigation: SelectSavedMealNavigation;
 }) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { uid } = useAuthContext();
   const { getMeals } = useMeals(uid ?? null);
   const { meal: draftMeal, setMeal, saveDraft, setLastScreen } =

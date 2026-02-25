@@ -28,7 +28,7 @@ export const DateInput: React.FC<Props> = ({
   allowSingleDay = false,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation(["statistics", "common"]);
   const [visible, setVisible] = useState(false);
   const [focus, setFocus] = useState<"start" | "end">("start");

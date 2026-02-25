@@ -13,7 +13,7 @@ const DOT_SPACING = 12;
 
 const ProgressDots: React.FC<Props> = ({ step, total, style }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const rowStyle = useMemo(
     () => ({ marginBottom: theme.spacing.lg }),
     [theme.spacing.lg]

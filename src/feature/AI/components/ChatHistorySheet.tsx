@@ -38,7 +38,7 @@ export function ChatHistorySheet({
   onSelectThread,
 }: Props) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [threads, setThreads] = useState<ChatThread[]>([]);
 
   const { t } = useTranslation("chat");
@@ -72,7 +72,7 @@ export function ChatHistorySheet({
     });
 
     return unsub;
-  }, [open, userUid]);
+  }, [open, t, userUid]);
 
   const createNewChat = useCallback(() => {
     const localId = `local-${uuidv4()}`;

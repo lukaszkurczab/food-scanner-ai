@@ -17,7 +17,7 @@ type MealAddMethodNavigationProp = StackNavigationProp<
 
 const MealAddMethodScreen = () => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const navigation = useNavigation<MealAddMethodNavigationProp>();
   const { t } = useTranslation("meals");
 

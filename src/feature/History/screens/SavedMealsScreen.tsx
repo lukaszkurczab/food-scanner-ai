@@ -37,7 +37,7 @@ export default function SavedMealsScreen({
   navigation: SavedMealsNavigation;
 }) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
@@ -157,7 +157,7 @@ export default function SavedMealsScreen({
         />
       </View>
     ),
-    [navigation, onDelete, onDuplicate, onEdit],
+    [navigation, onDelete, onDuplicate, onEdit, styles],
   );
 
   if (dataState === "loading") {

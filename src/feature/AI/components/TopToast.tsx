@@ -18,7 +18,7 @@ export const TopToast: React.FC<Props> = ({
   durationMs = 2200,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const y = useRef(new Animated.Value(-80)).current;
   const op = useRef(new Animated.Value(0)).current;
 

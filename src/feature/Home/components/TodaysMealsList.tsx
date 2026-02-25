@@ -18,7 +18,7 @@ export const TodaysMealsList = ({
 }: Props) => {
   const theme = useTheme();
   const { t } = useTranslation("home");
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
     <View style={styles.container}>

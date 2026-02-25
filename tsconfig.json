@@ -5,6 +5,8 @@
     "moduleResolution": "bundler",
     "jsx": "react-native",
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

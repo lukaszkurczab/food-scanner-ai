@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -74,13 +74,13 @@ export const PhotoPreview = ({
     });
   }, [photoUri]);
 
-  const recalcFrame = (width: number, iW: number, iH: number) => {
+  const recalcFrame = useCallback((width: number, iW: number, iH: number) => {
     if (!width || !iW || !iH) return;
     const naturalH = Math.round((width * iH) / iW);
     const h = Math.min(naturalH, maxImageAreaH);
     setFrameW(width);
     setFrameH(h);
-  };
+  }, [maxImageAreaH]);
 
   const onLayout = (e: LayoutChangeEvent) => {
     const w = e.nativeEvent.layout.width;
@@ -90,20 +90,20 @@ export const PhotoPreview = ({
 
   useEffect(() => {
     recalcFrame(containerW, imgW, imgH);
-  }, [containerW, imgW, imgH]);
+  }, [containerW, imgW, imgH, recalcFrame]);
 
-  const fitCover = () => {
+  const fitCover = useCallback(() => {
     if (!imgW || !imgH || !frameW || !frameH) return;
     const s = Math.max(frameW / imgW, frameH / imgH);
     minScale.value = s;
     scale.value = withTiming(s);
     translateX.value = withTiming(0);
     translateY.value = withTiming(0);
-  };
+  }, [frameH, frameW, imgH, imgW, minScale, scale, translateX, translateY]);
 
   useEffect(() => {
     fitCover();
-  }, [imgW, imgH, frameW, frameH]);
+  }, [fitCover]);
 
   const clamp = (v: number, min: number, max: number) => {
     "worklet";

@@ -22,7 +22,7 @@ export const ProgressAveragesCard: React.FC<Props> = ({
   countEmptyAsZero = false,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["statistics", "common"]);
 
   let usedDays = days;

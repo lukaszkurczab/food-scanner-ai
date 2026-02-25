@@ -59,7 +59,7 @@ export default function Step3Health({
 }: Props) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const hasChronicOther = (form.chronicDiseases ?? []).includes("other");
   const hasAllergyOther = (form.allergies ?? []).includes("other");

@@ -42,7 +42,7 @@ export default function Step1BasicData({
 }: Props) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const cm = Number(form.height || 0);
   const kg = Number(form.weight || 0);

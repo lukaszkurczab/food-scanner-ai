@@ -41,7 +41,7 @@ export const LongTextInput = forwardRef<RNTextInput, Props>(
     ref
   ) => {
     const theme = useTheme();
-    const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+    const styles = useMemo(() => makeStyles(theme), [theme]);
     const isEditable = editable !== undefined ? editable : !disabled;
 
     const hasError = !!error;

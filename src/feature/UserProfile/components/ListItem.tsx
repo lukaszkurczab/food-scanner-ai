@@ -32,7 +32,7 @@ export const ListItem: React.FC<ListItemProps> = ({
   loading = false,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const isInactive = disabled || loading;
   const labelStyle = useMemo(
     () => ({ color: theme.text }),

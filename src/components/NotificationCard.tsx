@@ -19,7 +19,7 @@ export const NotificationCard: React.FC<Props> = ({
   onRemove,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("notifications");
   const time = `${String(item.time.hour).padStart(2, "0")}:${String(
     item.time.minute

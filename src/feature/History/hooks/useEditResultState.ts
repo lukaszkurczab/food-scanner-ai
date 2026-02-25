@@ -16,45 +16,46 @@ export function useEditResultState(params: {
   setPhotoUrl: (url: string | null) => void;
   navigation: EditResultNavigation;
 }) {
+  const { uid, meal, savedCloudId, setLastScreen, setPhotoUrl, navigation } = params;
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showIngredients, setShowIngredients] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedAt, setSelectedAt] = useState<Date>(
-    params.meal?.timestamp ? new Date(params.meal.timestamp) : new Date(),
+    meal?.timestamp ? new Date(meal.timestamp) : new Date(),
   );
   const [addedAt, setAddedAt] = useState<Date>(new Date());
   const [imageError, setImageError] = useState(false);
   const [checkingImage, setCheckingImage] = useState(false);
 
-  const image = params.meal?.photoUrl ?? null;
-  const mealName = params.meal?.name || autoMealName();
-  const mealType: MealType = params.meal?.type || "breakfast";
+  const image = meal?.photoUrl ?? null;
+  const mealName = meal?.name || autoMealName();
+  const mealType: MealType = meal?.type || "breakfast";
 
   useEffect(() => {
     setImageError(false);
   }, [image]);
 
   useEffect(() => {
-    if (!params.uid) return;
-    void params.setLastScreen(params.uid, "EditResult");
-  }, [params.setLastScreen, params.uid]);
+    if (!uid) return;
+    void setLastScreen(uid, "EditResult");
+  }, [setLastScreen, uid]);
 
   useEffect(() => {
     const checkLocalImage = async () => {
-      const photoUrl = params.meal?.photoUrl;
+      const photoUrl = meal?.photoUrl;
       if (!photoUrl) return;
 
       setCheckingImage(true);
       try {
         const isLocal = photoUrl.startsWith("file://");
         if (!isLocal) {
-          params.setPhotoUrl(null);
+          setPhotoUrl(null);
           return;
         }
 
         const info = await FileSystem.getInfoAsync(photoUrl);
         if (!info.exists) {
-          params.setPhotoUrl(null);
+          setPhotoUrl(null);
         }
       } finally {
         setCheckingImage(false);
@@ -62,46 +63,46 @@ export function useEditResultState(params: {
     };
 
     void checkLocalImage();
-  }, [params.meal?.photoUrl, params.setPhotoUrl]);
+  }, [meal?.photoUrl, setPhotoUrl]);
 
   const goShare = useCallback(() => {
-    if (!params.meal) return;
+    if (!meal) return;
 
-    params.navigation.navigate("MealShare", {
+    navigation.navigate("MealShare", {
       meal: {
-        ...params.meal,
+        ...meal,
         name: mealName,
         type: mealType,
         timestamp: selectedAt.toISOString(),
       },
       returnTo: "MealDetails",
     });
-  }, [mealName, mealType, params.meal, params.navigation, selectedAt]);
+  }, [meal, mealName, mealType, navigation, selectedAt]);
 
   const handleAddPhoto = useCallback(() => {
-    if (!params.meal) return;
-    params.navigation.navigate("SavedMealsCamera", {
-      id: params.meal.mealId,
-      meal: params.meal,
+    if (!meal) return;
+    navigation.navigate("SavedMealsCamera", {
+      id: meal.mealId,
+      meal,
     });
-  }, [params.meal, params.navigation]);
+  }, [meal, navigation]);
 
   const handleSave = useCallback(async () => {
-    if (!params.uid || !params.meal || saving || !params.savedCloudId) return;
+    if (!uid || !meal || saving || !savedCloudId) return;
 
     setSaving(true);
     try {
       await updateSavedMeal({
-        uid: params.uid,
-        cloudId: params.savedCloudId,
-        meal: params.meal,
+        uid,
+        cloudId: savedCloudId,
+        meal,
         name: mealName,
         type: mealType,
         timestampISO: selectedAt.toISOString(),
         createdAtISO: addedAt.toISOString(),
       });
 
-      params.navigation.navigate("SavedMeals");
+      navigation.navigate("SavedMeals");
     } finally {
       setSaving(false);
     }
@@ -109,10 +110,10 @@ export function useEditResultState(params: {
     addedAt,
     mealName,
     mealType,
-    params.meal,
-    params.navigation,
-    params.savedCloudId,
-    params.uid,
+    meal,
+    navigation,
+    savedCloudId,
+    uid,
     saving,
     selectedAt,
   ]);
@@ -122,8 +123,8 @@ export function useEditResultState(params: {
   }, []);
 
   const handleCancelConfirm = useCallback(() => {
-    params.navigation.navigate("SavedMeals");
-  }, [params.navigation]);
+    navigation.navigate("SavedMeals");
+  }, [navigation]);
 
   const closeCancelModal = useCallback(() => {
     setShowCancelModal(false);
@@ -139,7 +140,7 @@ export function useEditResultState(params: {
   }, []);
 
   return {
-    ready: !!params.meal && !!params.uid,
+    ready: !!meal && !!uid,
     mealName,
     image,
     imageError,
@@ -149,7 +150,7 @@ export function useEditResultState(params: {
     selectedAt,
     addedAt,
     showCancelModal,
-    canSave: !saving && !!params.savedCloudId,
+    canSave: !saving && !!savedCloudId,
     setSelectedAt,
     setAddedAt,
     goShare,

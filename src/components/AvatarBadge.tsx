@@ -48,7 +48,7 @@ export default function AvatarBadge({
   overrideEmoji,
 }: Props) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [isLoaded, setIsLoaded] = useState(() =>
     uri ? isLocalUri(uri) : false
   );

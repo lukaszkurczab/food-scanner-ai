@@ -56,7 +56,7 @@ export const InputModal: React.FC<Props> = ({
   error,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const modalSizeStyle = useMemo(
     () =>
       fullScreen

@@ -68,7 +68,7 @@ export default function Step2Preferences({
 }: Props) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const MIN_DEFICIT = 0.1,
     MAX_DEFICIT = 0.5;
@@ -138,27 +138,36 @@ export default function Step2Preferences({
   }
 
   useEffect(() => {
-    if (errors.activityLevel && form.activityLevel) {
-      setErrors((prev) => ({ ...prev, activityLevel: undefined }));
-    }
-    if (errors.goal && form.goal) {
-      setErrors((prev) => ({ ...prev, goal: undefined }));
-    }
-    if (
-      errors.calorieDeficit &&
-      form.goal === "lose" &&
-      form.calorieDeficit !== undefined
-    ) {
-      setErrors((prev) => ({ ...prev, calorieDeficit: undefined }));
-    }
-    if (
-      errors.calorieSurplus &&
-      form.goal === "increase" &&
-      form.calorieSurplus !== undefined
-    ) {
-      setErrors((prev) => ({ ...prev, calorieSurplus: undefined }));
-    }
-  }, [form.activityLevel, form.goal, form.calorieDeficit, form.calorieSurplus]);
+    setErrors((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      if (prev.activityLevel && form.activityLevel) {
+        next.activityLevel = undefined;
+        changed = true;
+      }
+      if (prev.goal && form.goal) {
+        next.goal = undefined;
+        changed = true;
+      }
+      if (
+        prev.calorieDeficit &&
+        form.goal === "lose" &&
+        form.calorieDeficit !== undefined
+      ) {
+        next.calorieDeficit = undefined;
+        changed = true;
+      }
+      if (
+        prev.calorieSurplus &&
+        form.goal === "increase" &&
+        form.calorieSurplus !== undefined
+      ) {
+        next.calorieSurplus = undefined;
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [form.activityLevel, form.goal, form.calorieDeficit, form.calorieSurplus, setErrors]);
 
   const handleNext = () => {
     if (validate()) onNext();

@@ -12,7 +12,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   style,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
     <View style={[styles.container, style]}>

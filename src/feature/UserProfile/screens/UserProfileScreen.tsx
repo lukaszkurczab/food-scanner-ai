@@ -21,7 +21,7 @@ type UserProfileScreenProps = {
 export default function UserProfileScreen({ navigation }: UserProfileScreenProps) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const state = useUserProfileState({ navigation });
 

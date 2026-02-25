@@ -22,7 +22,7 @@ export default function WeekStrip({
   onOpenHistory,
 }: Props) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const ref = useRef<ScrollView>(null);
   const { t } = useTranslation("history");
 

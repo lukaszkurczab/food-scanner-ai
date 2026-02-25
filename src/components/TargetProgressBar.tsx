@@ -18,7 +18,7 @@ export const TargetProgressBar = ({
   height,
 }: Props) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
 
   if (onThreshold && target > 0 && current / target >= thresholdPct) {

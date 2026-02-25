@@ -7,7 +7,7 @@ import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 
 export const LiveMacroPreview: React.FC<{ meal: Meal }> = ({ meal }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const totals: Nutrients = useMemo(
     () => calculateTotalNutrients([meal]),
     [meal]

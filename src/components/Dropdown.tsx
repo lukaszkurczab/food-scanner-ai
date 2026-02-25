@@ -52,7 +52,7 @@ export function Dropdown<T extends string>({
   renderLabel,
 }: Props<T>) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [open, setOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<DropdownPosition | null>(null);

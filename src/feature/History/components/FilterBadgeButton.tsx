@@ -11,7 +11,7 @@ export const FilterBadgeButton: React.FC<Props> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const hasActive = activeCount > 0;
   return (
     <Pressable

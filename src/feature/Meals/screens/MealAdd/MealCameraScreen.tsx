@@ -17,7 +17,7 @@ export default function MealCameraScreen({
   params,
 }: MealAddScreenProps<"MealCamera">) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const { t: tCommon } = useTranslation("common");
   const { t: tMeals } = useTranslation("meals");

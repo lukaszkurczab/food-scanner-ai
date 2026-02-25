@@ -35,7 +35,7 @@ const SectionHeaderComponent = ({
   theme,
   kcalLabel,
 }: SectionHeaderProps) => {
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>
@@ -60,7 +60,7 @@ type HistoryRowProps = {
 };
 
 const HistoryRowComponent = ({ meal, onPress, theme }: HistoryRowProps) => {
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
     <View style={styles.mealRow}>
       <MemoMealListItem
@@ -86,7 +86,7 @@ export default function HistoryListScreen({
   navigation: StackNavigationProp<RootStackParamList, "HistoryList">;
 }) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const state = useHistoryListState({ navigation });
 

@@ -82,9 +82,8 @@ export const IngredientEditor: React.FC<Props> = ({
     };
   };
 
-  useEffect(() => {
-    syncBaselineFromState(false);
-  }, []);
+  // Intentionally initialize baseline only once on mount.
+  useEffect(() => { syncBaselineFromState(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commit = () => {
     if (Object.keys(errors).length) return;

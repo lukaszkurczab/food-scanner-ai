@@ -90,9 +90,9 @@ export function Alert({
   testID,
 }: Props) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
-  const tone = useMemo(() => getVariantColors(theme, variant), [theme.mode, variant]);
+  const tone = useMemo(() => getVariantColors(theme, variant), [theme, variant]);
   const primaryActionBackground = getPrimaryActionBackground(
     theme,
     primaryAction?.tone

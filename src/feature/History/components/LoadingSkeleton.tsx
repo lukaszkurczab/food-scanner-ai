@@ -6,7 +6,7 @@ export const LoadingSkeleton: React.FC<{ height?: number }> = ({
   height = 80,
 }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const dynamicStyle = useMemo(() => ({ height }), [height]);
 
   return <View style={[styles.skeleton, dynamicStyle]} />;
