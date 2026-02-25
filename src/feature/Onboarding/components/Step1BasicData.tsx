@@ -3,9 +3,9 @@ import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
+  NumberInput,
   PrimaryButton,
   SecondaryButton,
-  TextInput,
   Dropdown,
 } from "@/components";
 import { cmToFtIn, ftInToCm, kgToLbs, lbsToKg } from "@/utils/units";
@@ -180,12 +180,12 @@ export default function Step1BasicData({
           }
         />
 
-        <TextInput
+        <NumberInput
           label={`${t("age")}*`}
           value={getString(form.age)}
-          onChangeText={(val) =>
-            handleChange("age", val.replace(/[^0-9]/g, ""))
-          }
+          onChangeText={(val) => handleChange("age", val)}
+          maxDecimals={0}
+          allowEmptyOnBlur
           keyboardType="number-pad"
           onBlur={() => handleBlur("age")}
           error={errors.age}
@@ -237,12 +237,12 @@ export default function Step1BasicData({
         )}
 
         {form.unitsSystem === "metric" ? (
-          <TextInput
+          <NumberInput
             label={`${t("height")}*`}
             value={getString(form.height)}
-            onChangeText={(val) =>
-              setForm((p) => ({ ...p, height: val.replace(/[^0-9]/g, "") }))
-            }
+            onChangeText={(val) => setForm((p) => ({ ...p, height: val }))}
+            maxDecimals={0}
+            allowEmptyOnBlur
             keyboardType="number-pad"
             onBlur={() => handleBlur("height")}
             error={errors.height}
@@ -252,10 +252,12 @@ export default function Step1BasicData({
           />
         ) : (
           <View style={[styles.row, styles.rowGap]}>
-            <TextInput
+            <NumberInput
               label={`${t("heightFt")}*`}
               value={dispFt ? String(dispFt) : ""}
               onChangeText={handleHeightFtChange}
+              maxDecimals={0}
+              allowEmptyOnBlur
               keyboardType="number-pad"
               onBlur={() => handleBlur("height")}
               error={errors.height}
@@ -263,10 +265,12 @@ export default function Step1BasicData({
               accessibilityLabel={t("heightFt")}
               style={styles.flex1}
             />
-            <TextInput
+            <NumberInput
               label={`${t("heightIn")}*`}
               value={String(dispIn ?? 0)}
               onChangeText={handleHeightInChange}
+              maxDecimals={0}
+              allowEmptyOnBlur
               keyboardType="number-pad"
               onBlur={() => handleBlur("heightInch")}
               error={errors.heightInch}
@@ -277,7 +281,7 @@ export default function Step1BasicData({
           </View>
         )}
 
-        <TextInput
+        <NumberInput
           label={`${t("weight")}*`}
           value={
             form.unitsSystem === "metric"
@@ -289,12 +293,14 @@ export default function Step1BasicData({
               ? (val) => {
                   setForm((p) => ({
                     ...p,
-                    weight: val.replace(/[^0-9]/g, ""),
+                    weight: val,
                   }));
                   setErrors((e) => ({ ...e, weight: undefined }));
                 }
               : handleWeightLbsChange
           }
+          maxDecimals={0}
+          allowEmptyOnBlur
           keyboardType="number-pad"
           onBlur={() => handleBlur("weight")}
           error={errors.weight}

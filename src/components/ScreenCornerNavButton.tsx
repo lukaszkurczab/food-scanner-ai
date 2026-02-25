@@ -43,6 +43,7 @@ export function ScreenCornerNavButton({
       <IconButton
         icon={<MaterialIcons name={iconMap[icon]} />}
         onPress={onPress}
+        size={44}
         accessibilityLabel={accessibilityLabel}
         backgroundColor={isCameraTone ? "rgba(0,0,0,0.45)" : undefined}
         iconColor={isCameraTone ? "#fff" : undefined}

@@ -16,12 +16,10 @@ import {
 import type { Meal, MealType } from "@/types/meal";
 import { emit } from "@/services/events";
 import { enqueueMyMealDelete } from "@/services/offline/queue.repo";
-import type { SyncStatus } from "@/hooks/useSyncStatus";
 
 const app = getApp();
 const db = getFirestore(app);
 
-type SyncStatusEvent = { uid: string; status: SyncStatus };
 type ToastEvent = { key: string; ns?: string };
 
 export type SavedMealsCursor =
@@ -152,10 +150,6 @@ export async function deleteSavedMeal(params: {
 
   if (!params.isOnline) {
     await enqueueMyMealDelete(params.uid, params.cloudId, nowISO);
-    emit<SyncStatusEvent>("sync:status", {
-      uid: params.uid,
-      status: "offline",
-    });
     emit<ToastEvent>("ui:toast", {
       key: "toast.savedMealDeleteQueued",
       ns: "common",
@@ -163,28 +157,15 @@ export async function deleteSavedMeal(params: {
     return "queued";
   }
 
-  emit<SyncStatusEvent>("sync:status", {
-    uid: params.uid,
-    status: "syncing",
-  });
-
   try {
     await setDoc(
       doc(db, "users", params.uid, "myMeals", params.cloudId),
       { deleted: true, updatedAt: nowISO },
       { merge: true },
     );
-    emit<SyncStatusEvent>("sync:status", {
-      uid: params.uid,
-      status: "idle",
-    });
     return "deleted";
   } catch {
     await enqueueMyMealDelete(params.uid, params.cloudId, nowISO);
-    emit<SyncStatusEvent>("sync:status", {
-      uid: params.uid,
-      status: "queued",
-    });
     return "queued";
   }
 }

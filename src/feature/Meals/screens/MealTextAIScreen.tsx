@@ -1,7 +1,13 @@
 import { useMemo } from "react";
 import { View, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Layout, PrimaryButton, SecondaryButton, Modal } from "@/components";
+import {
+  Layout,
+  NumberInput,
+  PrimaryButton,
+  SecondaryButton,
+  Modal,
+} from "@/components";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -71,12 +77,13 @@ export default function MealTextAIScreen() {
               numberOfLines={5}
               error={ingredientsError}
             />
-            <ShortInput
+            <NumberInput
               label={t("amount", { ns: "meals" })}
               value={amount}
               onChangeText={onAmountChange}
               placeholder={t("amount", { ns: "meals" })}
-              keyboardType="numeric"
+              maxDecimals={1}
+              allowEmptyOnBlur
               onBlur={onAmountBlur}
               error={amountError}
               inputStyle={styles.input}

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Layout,
   Card,
@@ -20,117 +21,142 @@ export default function MealDetailsScreen() {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const insets = useSafeAreaInsets();
+  const topLeftActionStyle = useMemo(
+    () => ({
+      top: insets.top + theme.spacing.xs,
+      left: insets.left + theme.spacing.sm,
+    }),
+    [insets.left, insets.top, theme.spacing.sm, theme.spacing.xs],
+  );
+  const contentInsetsStyle = useMemo(
+    () => ({
+      paddingTop: insets.top + theme.spacing.xs + 44 + theme.spacing.sm,
+      paddingLeft: insets.left + 32,
+      paddingRight: insets.right + 32,
+    }),
+    [
+      insets.left,
+      insets.right,
+      insets.top,
+      theme.spacing.sm,
+      theme.spacing.xs,
+    ],
+  );
 
   const state = useMealDetailsScreenState();
 
   if (!state.draft || !state.nutrition) return null;
 
   return (
-    <Layout showNavigation={false}>
+    <Layout showNavigation={false} style={styles.layout}>
       <>
         <ScreenCornerNavButton
           icon="back"
           onPress={state.handleBack}
           accessibilityLabel={t("back", { ns: "common", defaultValue: "Back" })}
+          containerStyle={topLeftActionStyle}
         />
 
-        {state.showImageBlock ? (
-          <View style={styles.imageWrap}>
-            {state.checkingImage ? (
-              <ActivityIndicator size="large" color={theme.accent} />
-            ) : state.effectivePhotoUri ? (
-              <>
-                <FallbackImage
-                  uri={state.effectivePhotoUri}
-                  width={"100%"}
-                  height={220}
-                  borderRadius={theme.rounded.lg}
-                  onError={state.onImageError}
-                />
+        <View style={[styles.content, contentInsetsStyle]}>
+          {state.showImageBlock ? (
+            <View style={styles.imageWrap}>
+              {state.checkingImage ? (
+                <ActivityIndicator size="large" color={theme.accent} />
+              ) : state.effectivePhotoUri ? (
+                <>
+                  <FallbackImage
+                    uri={state.effectivePhotoUri}
+                    width={"100%"}
+                    height={220}
+                    borderRadius={theme.rounded.lg}
+                    onError={state.onImageError}
+                  />
+                  <Pressable
+                    onPress={state.goShare}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("share", { ns: "common" })}
+                    hitSlop={8}
+                    style={[
+                      styles.fab,
+                    ]}
+                  >
+                    <MaterialIcons name="ios-share" size={22} color={theme.text} />
+                  </Pressable>
+                </>
+              ) : (
                 <Pressable
-                  onPress={state.goShare}
+                  onPress={state.handleAddPhoto}
+                  style={styles.addPhoto}
                   accessibilityRole="button"
-                  accessibilityLabel={t("share", { ns: "common" })}
-                  hitSlop={8}
-                  style={[
-                    styles.fab,
-                  ]}
+                  accessibilityLabel={t("add_photo", { ns: "meals" })}
                 >
-                  <MaterialIcons name="ios-share" size={22} color={theme.text} />
+                  <MaterialIcons
+                    name="add-a-photo"
+                    size={44}
+                    color={theme.textSecondary}
+                  />
+                  <Text style={styles.addPhotoLabel}>
+                    {t("add_photo", { ns: "meals" })}
+                  </Text>
                 </Pressable>
-              </>
+              )}
+            </View>
+          ) : null}
+
+          <MealBox
+            name={state.draft.name || ""}
+            type={state.draft.type}
+            nutrition={state.nutrition}
+            addedAt={state.draft.timestamp || state.draft.createdAt}
+            editable={state.edit && !state.saving}
+            onNameChange={state.edit ? state.setName : undefined}
+            onTypeChange={state.edit ? state.setType : undefined}
+          />
+
+          {!!state.draft.ingredients.length && (
+            <Card variant="outlined" onPress={state.toggleIngredients}>
+              <Text style={styles.toggleText}>
+                {state.showIngredients
+                  ? t("hide_ingredients", { ns: "meals" })
+                  : t("show_ingredients", { ns: "meals" })}
+              </Text>
+            </Card>
+          )}
+
+          {state.showIngredients &&
+            state.draft.ingredients.map((ingredient, idx) => (
+              <IngredientBox
+                key={ingredient.id || String(idx)}
+                ingredient={ingredient}
+                editable={state.edit && !state.saving}
+                onSave={(updated) => state.edit && state.updateIngredientAt(idx, updated)}
+                onRemove={() => state.edit && state.removeIngredientAt(idx)}
+              />
+            ))}
+
+          <View style={styles.actionsWrap}>
+            {!state.edit ? (
+              <PrimaryButton
+                label={t("edit_meal", { ns: "meals", defaultValue: "Edit meal" })}
+                onPress={state.startEdit}
+              />
             ) : (
-              <Pressable
-                onPress={state.handleAddPhoto}
-                style={styles.addPhoto}
-                accessibilityRole="button"
-                accessibilityLabel={t("add_photo", { ns: "meals" })}
-              >
-                <MaterialIcons
-                  name="add-a-photo"
-                  size={44}
-                  color={theme.textSecondary}
+              <View style={styles.actionsStack}>
+                <PrimaryButton
+                  label={t("save_changes", { ns: "common" })}
+                  onPress={state.handleSave}
+                  loading={state.saving}
+                  disabled={state.saving || !state.isDirty}
                 />
-                <Text style={styles.addPhotoLabel}>
-                  {t("add_photo", { ns: "meals" })}
-                </Text>
-              </Pressable>
+                <ErrorButton
+                  label={t("cancel", { ns: "common" })}
+                  onPress={state.handleCancel}
+                  disabled={state.saving}
+                />
+              </View>
             )}
           </View>
-        ) : null}
-
-        <MealBox
-          name={state.draft.name || ""}
-          type={state.draft.type}
-          nutrition={state.nutrition}
-          addedAt={state.draft.timestamp || state.draft.createdAt}
-          editable={state.edit && !state.saving}
-          onNameChange={state.edit ? state.setName : undefined}
-          onTypeChange={state.edit ? state.setType : undefined}
-        />
-
-        {!!state.draft.ingredients.length && (
-          <Card variant="outlined" onPress={state.toggleIngredients}>
-            <Text style={styles.toggleText}>
-              {state.showIngredients
-                ? t("hide_ingredients", { ns: "meals" })
-                : t("show_ingredients", { ns: "meals" })}
-            </Text>
-          </Card>
-        )}
-
-        {state.showIngredients &&
-          state.draft.ingredients.map((ingredient, idx) => (
-            <IngredientBox
-              key={ingredient.id || String(idx)}
-              ingredient={ingredient}
-              editable={state.edit && !state.saving}
-              onSave={(updated) => state.edit && state.updateIngredientAt(idx, updated)}
-              onRemove={() => state.edit && state.removeIngredientAt(idx)}
-            />
-          ))}
-
-        <View style={styles.actionsWrap}>
-          {!state.edit ? (
-            <PrimaryButton
-              label={t("edit_meal", { ns: "meals", defaultValue: "Edit meal" })}
-              onPress={state.startEdit}
-            />
-          ) : (
-            <View style={styles.actionsStack}>
-              <PrimaryButton
-                label={t("save_changes", { ns: "common" })}
-                onPress={state.handleSave}
-                loading={state.saving}
-                disabled={state.saving || !state.isDirty}
-              />
-              <ErrorButton
-                label={t("cancel", { ns: "common" })}
-                onPress={state.handleCancel}
-                disabled={state.saving}
-              />
-            </View>
-          )}
         </View>
 
         <Modal
@@ -187,6 +213,12 @@ export default function MealDetailsScreen() {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    layout: {
+      paddingTop: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+    content: {},
     imageWrap: { position: "relative" },
     fab: {
       position: "absolute",

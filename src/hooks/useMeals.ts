@@ -58,14 +58,6 @@ export function useMeals(userUid: string | null) {
   const syncRequestedRef = useRef(false);
   const lastOfflineToastAtRef = useRef(0);
 
-  const emitSyncStatus = useCallback(
-    (status: "idle" | "queued" | "syncing" | "offline") => {
-      if (!userUid) return;
-      emit("sync:status", { uid: userUid, status });
-    },
-    [userUid]
-  );
-
   const emitOfflineQueuedToast = useCallback(() => {
     const now = Date.now();
     if (now - lastOfflineToastAtRef.current < 8000) return;
@@ -86,29 +78,23 @@ export function useMeals(userUid: string | null) {
 
     syncInFlightRef.current = true;
     syncRequestedRef.current = false;
-    emitSyncStatus("syncing");
     try {
       log.log("sync flush start", { uid: userUid });
       await pushQueue(userUid);
       await pullChanges(userUid);
       log.log("sync flush done", { uid: userUid });
-      const net = await NetInfo.fetch();
-      emitSyncStatus(net.isConnected ? "idle" : "offline");
     } catch (error: unknown) {
       log.warn("sync flush failed", error);
-      const net = await NetInfo.fetch();
-      emitSyncStatus(net.isConnected ? "queued" : "offline");
     } finally {
       syncInFlightRef.current = false;
       if (syncRequestedRef.current && !syncTimerRef.current) {
-        emitSyncStatus("queued");
         syncTimerRef.current = setTimeout(() => {
           syncTimerRef.current = null;
           void flushQueuedSync();
         }, SYNC_DEBOUNCE_MS);
       }
     }
-  }, [emitSyncStatus, userUid]);
+  }, [userUid]);
 
   const scheduleQueuedSync = useCallback(
     (reason: "add" | "update" | "delete" | "duplicate") => {
@@ -117,11 +103,9 @@ export function useMeals(userUid: string | null) {
       void (async () => {
         const net = await NetInfo.fetch();
         if (!net.isConnected) {
-          emitSyncStatus("offline");
           emitOfflineQueuedToast();
           return;
         }
-        emitSyncStatus("queued");
       })();
       if (syncTimerRef.current) {
         log.log("sync already scheduled", { uid: userUid, reason });
@@ -133,7 +117,7 @@ export function useMeals(userUid: string | null) {
         void flushQueuedSync();
       }, SYNC_DEBOUNCE_MS);
     },
-    [emitOfflineQueuedToast, emitSyncStatus, flushQueuedSync, userUid]
+    [emitOfflineQueuedToast, flushQueuedSync, userUid]
   );
 
   useEffect(() => {
@@ -143,7 +127,6 @@ export function useMeals(userUid: string | null) {
     }
     syncInFlightRef.current = false;
     syncRequestedRef.current = false;
-    emitSyncStatus("idle");
   }, [userUid]);
 
   useEffect(
@@ -152,9 +135,8 @@ export function useMeals(userUid: string | null) {
         clearTimeout(syncTimerRef.current);
         syncTimerRef.current = null;
       }
-      emitSyncStatus("idle");
     },
-    [emitSyncStatus]
+    []
   );
 
   const loadFirstPage = useCallback(async () => {

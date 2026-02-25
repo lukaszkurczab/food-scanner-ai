@@ -13,6 +13,7 @@ import { debugScope } from "@/utils/debug";
 import type { Meal } from "@/types/meal";
 import { useMeals } from "@hooks/useMeals";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const log = debugScope("Screen:SavedMealsCamera");
 
@@ -29,6 +30,7 @@ export default function SavedMealsCameraScreen({
 }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -41,6 +43,13 @@ export default function SavedMealsCameraScreen({
   const mealId = route.params?.id || mealFromRoute?.mealId || uuidv4();
   const canLeaveRef = useRef(false);
   const { updateMeal } = useMeals(uid || "");
+  const topLeftActionStyle = useMemo(
+    () => ({
+      top: insets.top + theme.spacing.xs,
+      left: insets.left + theme.spacing.sm,
+    }),
+    [insets.left, insets.top, theme.spacing.sm, theme.spacing.xs],
+  );
 
   useEffect(() => {
     const onBackPress = () => {
@@ -120,7 +129,7 @@ export default function SavedMealsCameraScreen({
 
   if (!permission) {
     return (
-      <Layout>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
         <View style={styles.flexBackground} />
       </Layout>
     );
@@ -128,7 +137,7 @@ export default function SavedMealsCameraScreen({
 
   if (!permission.granted) {
     return (
-      <Layout>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
         <View style={styles.permissionWrap}>
           <Text style={styles.permissionText}>
             {t("camera_permission_message")}
@@ -148,7 +157,7 @@ export default function SavedMealsCameraScreen({
 
   if (photoUri) {
     return (
-      <Layout>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
         <PhotoPreview
           photoUri={photoUri}
           onRetake={handleRetake}
@@ -162,7 +171,7 @@ export default function SavedMealsCameraScreen({
   }
 
   return (
-    <Layout>
+    <Layout showNavigation={false} disableScroll style={styles.layout}>
       <View style={styles.fill}>
         <View style={styles.cameraWrap}>
           <CameraView
@@ -176,8 +185,8 @@ export default function SavedMealsCameraScreen({
               onPress={() => navigation.goBack()}
               accessibilityLabel={t("close", { defaultValue: "Close" })}
               tone="camera"
+              containerStyle={topLeftActionStyle}
             />
-            <View style={styles.overlay} pointerEvents="none" />
             <View style={styles.shutterWrapper}>
               <Pressable
                 style={({ pressed }) => [
@@ -212,6 +221,12 @@ export default function SavedMealsCameraScreen({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    layout: {
+      paddingTop: 0,
+      paddingBottom: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
     fill: { flex: 1 },
     flexBackground: { flex: 1, backgroundColor: theme.background },
     permissionWrap: {
@@ -240,14 +255,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     cameraWrap: { flex: 1, backgroundColor: theme.background },
     camera: { flex: 1 },
-    overlay: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      position: "absolute",
-      width: "100%",
-      height: "100%",
-    },
     shutterWrapper: {
       position: "absolute",
       bottom: 48,

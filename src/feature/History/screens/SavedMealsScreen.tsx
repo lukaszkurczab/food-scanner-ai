@@ -14,7 +14,6 @@ import {
   FullScreenLoader,
   Layout,
   SearchBox,
-  SyncStatusBadge,
 } from "@/components";
 import { MealListItem } from "@/components/MealListItem";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -22,7 +21,6 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useFilters } from "@/context/HistoryContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useMeals } from "@hooks/useMeals";
-import { useSyncStatus } from "@/hooks/useSyncStatus";
 import { useTheme } from "@/theme/useTheme";
 import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
@@ -44,7 +42,6 @@ export default function SavedMealsScreen({
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
-  const syncStatus = useSyncStatus(uid);
   const { getMeals } = useMeals(uid || "");
   const { t } = useTranslation(["meals", "common"]);
   const {
@@ -198,7 +195,6 @@ export default function SavedMealsScreen({
     return (
       <Layout disableScroll>
         {!isOnline && <OfflineBanner />}
-        <SyncStatusBadge status={syncStatus} />
         {showFilters ? (
           <FilterPanel scope="myMeals" />
         ) : (
@@ -214,7 +210,6 @@ export default function SavedMealsScreen({
   return (
     <Layout disableScroll>
       {!isOnline && <OfflineBanner />}
-      <SyncStatusBadge status={syncStatus} />
       {showFilters ? (
         <View style={styles.filtersWrap}>
           <FilterPanel scope="myMeals" />

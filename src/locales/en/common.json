@@ -127,11 +127,6 @@
     "premium_badge_accessibility": "Premium user",
     "profile_picture_accessibility": "Profile picture"
   },
-  "sync": {
-    "syncing": "Synchronizing changes...",
-    "queued": "Saved locally. Sync pending.",
-    "offline": "Offline mode. Changes are local."
-  },
   "toast": {
     "mealAdded": "Meal added.",
     "savedLocallySyncLater": "No internet. Saved locally, will sync when online.",
