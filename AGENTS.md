@@ -118,6 +118,7 @@ If a gate fails: fix and re-run (max 3 attempts). If still failing: stop and rep
 - Always run: `npm run lint` and `npm run typecheck` (or `pnpm/yarn` equivalent in this repo).
 - Run tests proportionally:
   - For isolated changes, run only targeted tests for touched files/features (e.g., `npm run test -- src/hooks/__tests__/useMeals.test.ts`).
+  - When running only part of the test suite with coverage enabled, scope coverage to touched source files using `--collectCoverageFrom` (e.g., `npm run test -- src/hooks/__tests__/useMeals.test.ts --collectCoverageFrom=src/hooks/useMeals.ts`).
   - Run full test suite for cross-feature changes, refactors, release prep, or when unsure about blast radius.
 - If tests exist for the touched area: run them; otherwise provide a short manual verification checklist.
 - For UI flows: list the exact screens/steps verified (iOS + Android if relevant).
