@@ -15,7 +15,8 @@
     "publish:ios": "npx eas build -p ios --profile production",
     "build:android": "node scripts/build.js android production",
     "build:ios": "node scripts/build.js ios production",
-    "fonts:download": "node scripts/download-fonts.mjs"
+    "fonts:download": "node scripts/download-fonts.mjs",
+    "test": "jest --runInBand --coverage --watchman=false"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -79,7 +80,9 @@
   "devDependencies": {
     "@babel/core": "7.26.10",
     "@react-native-community/cli": "^18.0.0",
+    "@testing-library/react-native": "^13.3.3",
     "@types/date-fns": "^2.5.3",
+    "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.20",
     "@types/lodash.debounce": "^4.0.9",
     "@types/react": "~19.0.10",
@@ -95,6 +98,8 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react": "^7.37.5",
     "identity-obj-proxy": "^3.0.0",
+    "jest": "^30.2.0",
+    "react-test-renderer": "^19.0.0",
     "typescript": "5.8.3"
   },
   "expo": {
