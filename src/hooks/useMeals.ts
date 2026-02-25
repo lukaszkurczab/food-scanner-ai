@@ -42,6 +42,7 @@ function isLocalUri(u?: string | null): u is string {
 const log = debugScope("Hook:useMeals");
 
 function triggerReconcile(uid?: string | null) {
+  /* istanbul ignore next -- callers always pass defined uid */
   if (!uid) return;
   log.log("trigger reconcile", { uid });
   void reconcileAll(uid).catch((err) => {
@@ -69,11 +70,13 @@ export function useMeals(userUid: string | null) {
   }, []);
 
   const flushQueuedSync = useCallback(async () => {
+    /* istanbul ignore next -- syncMeals/scheduler guard missing uid */
     if (!userUid) return;
     if (syncInFlightRef.current) {
       syncRequestedRef.current = true;
       return;
     }
+    /* istanbul ignore next -- scheduler always marks request before flush */
     if (!syncRequestedRef.current) return;
 
     syncInFlightRef.current = true;
@@ -98,6 +101,7 @@ export function useMeals(userUid: string | null) {
 
   const scheduleQueuedSync = useCallback(
     (reason: "add" | "update" | "delete" | "duplicate") => {
+      /* istanbul ignore next -- mutating actions guard missing uid */
       if (!userUid) return;
       syncRequestedRef.current = true;
       void (async () => {

@@ -77,6 +77,16 @@ npm run lint
 npm run typecheck
 ```
 
+5. Tests:
+
+```bash
+# full suite + coverage
+npm run test
+
+# targeted run for changed area (recommended during day-to-day work)
+npm run test -- src/hooks/__tests__/useMeals.test.ts
+```
+
 ## Environment Variables
 
 File: `.env`
@@ -129,3 +139,8 @@ Architecture guidelines:
 npm run lint
 npm run typecheck
 ```
+
+Testing policy:
+
+- Prefer targeted tests for touched files/features during regular development.
+- Run the full test suite before releases, large refactors, or cross-feature changes.

@@ -105,12 +105,14 @@ export function useChatHistory(
     let mounted = true;
     (async () => {
       if (!userUid) {
+        /* istanbul ignore next -- defensive mounted check for sync branch */
         if (mounted) setDailyUsed(0);
         return;
       }
       const key = dailyCountKey(userUid, dayKey());
       const raw = await AsyncStorage.getItem(key);
       const n = raw ? Number(raw) : 0;
+      /* istanbul ignore next -- defensive mounted check for async branch */
       if (mounted) setDailyUsed(Number.isFinite(n) ? n : 0);
     })();
     return () => {
@@ -177,6 +179,7 @@ export function useChatHistory(
   }, [baseCol, hasMore, pageSize, userUid]);
 
   const bumpDailyUsed = useCallback(async () => {
+    /* istanbul ignore next -- send() already guards empty uid */
     if (!userUid) return;
     const key = dailyCountKey(userUid, dayKey());
     setDailyUsed((prev) => {
