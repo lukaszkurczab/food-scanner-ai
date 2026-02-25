@@ -77,12 +77,20 @@ export const MealDraftProvider = ({ children }: Props) => {
 
   const loadDraft = useCallback(async (userUid: string) => {
     const raw = await AsyncStorage.getItem(getDraftKey(userUid));
-    if (raw) {
-      setMealState(JSON.parse(raw));
-      setIsDraft(true);
-    } else {
+    if (!raw) {
       setMealState(null);
       setIsDraft(false);
+      return;
+    }
+
+    try {
+      setMealState(JSON.parse(raw));
+      setIsDraft(true);
+    } catch {
+      setMealState(null);
+      setIsDraft(false);
+      setLastScreenState(null);
+      await AsyncStorage.multiRemove([getDraftKey(userUid), getScreenKey(userUid)]);
     }
   }, []);
 
@@ -94,6 +102,7 @@ export const MealDraftProvider = ({ children }: Props) => {
   const removeDraft = useCallback(
     async (userUid: string) => {
       await AsyncStorage.removeItem(getDraftKey(userUid));
+      setMealState(null);
       setIsDraft(false);
       await clearLastScreen(userUid);
     },

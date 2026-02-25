@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
-  TextInput,
+  TextInput as RNTextInput,
   Text,
   StyleSheet,
   DeviceEventEmitter,
@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
 import { PrimaryButton } from "./PrimaryButton";
 import { ErrorButton } from "./ErrorButton";
+import { NumberInput } from "./NumberInput";
 import { useNavigation } from "@react-navigation/native";
 import { Modal } from "./Modal";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -32,6 +33,7 @@ const parseNum = (v: string) => {
   return Number.isFinite(n) ? n : NaN;
 };
 type NumericIngredientKey = "amount" | "protein" | "carbs" | "fat" | "kcal";
+const AMOUNT_MAX_DECIMALS = 1;
 
 export const IngredientEditor: React.FC<Props> = ({
   initial,
@@ -102,34 +104,44 @@ export const IngredientEditor: React.FC<Props> = ({
     if (val === "0" || val === "0.0" || val === "0,0") setter("");
   };
 
-  const normalizeOnBlurNumber = (
-    val: string,
-    setter: (s: string) => void,
+  const applyNumericPartial = (key: NumericIngredientKey, value: number) => {
+    switch (key) {
+      case "amount":
+        onChangePartial?.({ amount: value });
+        break;
+      case "protein":
+        onChangePartial?.({ protein: value });
+        break;
+      case "carbs":
+        onChangePartial?.({ carbs: value });
+        break;
+      case "fat":
+        onChangePartial?.({ fat: value });
+        break;
+      case "kcal":
+        onChangePartial?.({ kcal: value });
+        break;
+    }
+  };
+
+  const getNumericMaxDecimals = (key: NumericIngredientKey) =>
+    key === "amount" ? AMOUNT_MAX_DECIMALS : undefined;
+
+  const handleNumericChange = (
+    value: string,
+    setter: (value: string) => void,
     key: NumericIngredientKey
   ) => {
-    const v = val.trim();
-    const next = v === "" ? "0" : v;
-    setter(next);
-    const n = parseNum(next);
-    if (!Number.isNaN(n)) {
-      switch (key) {
-        case "amount":
-          onChangePartial?.({ amount: n });
-          break;
-        case "protein":
-          onChangePartial?.({ protein: n });
-          break;
-        case "carbs":
-          onChangePartial?.({ carbs: n });
-          break;
-        case "fat":
-          onChangePartial?.({ fat: n });
-          break;
-        case "kcal":
-          onChangePartial?.({ kcal: n });
-          break;
-      }
+    setter(value);
+    const numeric = parseNum(value);
+    if (!Number.isNaN(numeric)) {
+      applyNumericPartial(key, numeric);
     }
+  };
+
+  const handleNumericBlur = (key: NumericIngredientKey, normalizedValue: string) => {
+    const n = parseNum(normalizedValue);
+    if (!Number.isNaN(n)) applyNumericPartial(key, n);
 
     if (key === "amount") {
       syncBaselineFromState(true);
@@ -214,7 +226,7 @@ export const IngredientEditor: React.FC<Props> = ({
       ]}
     >
       <View style={styles.nameRow}>
-        <TextInput
+        <RNTextInput
           style={[
             inputStyle(Boolean(errors.name), nameTouched),
             styles.nameInput,
@@ -259,7 +271,8 @@ export const IngredientEditor: React.FC<Props> = ({
       <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
         {String(t("amount", { ns: "meals" })).replace("[g]", `[${unitLabel}]`)}
       </Text>
-      <TextInput
+      <NumberInput
+        variant="native"
         style={[
           styles.editInput,
           {
@@ -268,18 +281,15 @@ export const IngredientEditor: React.FC<Props> = ({
               errors.amount && amountTouched ? theme.error.text : theme.border,
           },
         ]}
-        keyboardType="numeric"
         value={amount}
-        onChangeText={(v) => {
-          setAmount(v);
-          const n = parseNum(v);
-          if (!Number.isNaN(n)) onChangePartial?.({ amount: n });
-        }}
+        onChangeText={(v) => handleNumericChange(v, setAmount, "amount")}
+        maxDecimals={getNumericMaxDecimals("amount")}
+        blurFallback="0"
         placeholderTextColor={theme.textSecondary}
         onFocus={() => clearZeroOnFocus(amount, setAmount)}
-        onBlur={() => {
+        onBlur={(normalizedValue) => {
           setAmountTouched(true);
-          normalizeOnBlurNumber(amount, setAmount, "amount");
+          handleNumericBlur("amount", normalizedValue);
         }}
       />
 
@@ -292,7 +302,8 @@ export const IngredientEditor: React.FC<Props> = ({
       <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
         {t("protein", { ns: "meals" })} [g]
       </Text>
-      <TextInput
+      <NumberInput
+        variant="native"
         style={[
           styles.editInput,
           {
@@ -304,16 +315,12 @@ export const IngredientEditor: React.FC<Props> = ({
               : theme.macro.protein,
           },
         ]}
-        keyboardType="numeric"
         value={protein}
-        onChangeText={(v) => {
-          setProtein(v);
-          const n = parseNum(v);
-          if (!Number.isNaN(n)) onChangePartial?.({ protein: n });
-        }}
+        onChangeText={(v) => handleNumericChange(v, setProtein, "protein")}
+        blurFallback="0"
         placeholderTextColor={theme.textSecondary}
         onFocus={() => clearZeroOnFocus(protein, setProtein)}
-        onBlur={() => normalizeOnBlurNumber(protein, setProtein, "protein")}
+        onBlur={(normalizedValue) => handleNumericBlur("protein", normalizedValue)}
       />
 
       {errors.protein ? (
@@ -325,7 +332,8 @@ export const IngredientEditor: React.FC<Props> = ({
       <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
         {t("carbs", { ns: "meals" })} [g]
       </Text>
-      <TextInput
+      <NumberInput
+        variant="native"
         style={[
           styles.editInput,
           {
@@ -335,16 +343,12 @@ export const IngredientEditor: React.FC<Props> = ({
             borderColor: errors.carbs ? theme.error.text : theme.macro.carbs,
           },
         ]}
-        keyboardType="numeric"
         value={carbs}
-        onChangeText={(v) => {
-          setCarbs(v);
-          const n = parseNum(v);
-          if (!Number.isNaN(n)) onChangePartial?.({ carbs: n });
-        }}
+        onChangeText={(v) => handleNumericChange(v, setCarbs, "carbs")}
+        blurFallback="0"
         placeholderTextColor={theme.textSecondary}
         onFocus={() => clearZeroOnFocus(carbs, setCarbs)}
-        onBlur={() => normalizeOnBlurNumber(carbs, setCarbs, "carbs")}
+        onBlur={(normalizedValue) => handleNumericBlur("carbs", normalizedValue)}
       />
 
       {errors.carbs ? (
@@ -356,7 +360,8 @@ export const IngredientEditor: React.FC<Props> = ({
       <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
         {t("fat", { ns: "meals" })} [g]
       </Text>
-      <TextInput
+      <NumberInput
+        variant="native"
         style={[
           styles.editInput,
           {
@@ -366,16 +371,12 @@ export const IngredientEditor: React.FC<Props> = ({
             borderColor: errors.fat ? theme.error.text : theme.macro.fat,
           },
         ]}
-        keyboardType="numeric"
         value={fat}
-        onChangeText={(v) => {
-          setFat(v);
-          const n = parseNum(v);
-          if (!Number.isNaN(n)) onChangePartial?.({ fat: n });
-        }}
+        onChangeText={(v) => handleNumericChange(v, setFat, "fat")}
+        blurFallback="0"
         placeholderTextColor={theme.textSecondary}
         onFocus={() => clearZeroOnFocus(fat, setFat)}
-        onBlur={() => normalizeOnBlurNumber(fat, setFat, "fat")}
+        onBlur={(normalizedValue) => handleNumericBlur("fat", normalizedValue)}
       />
 
       {errors.fat ? (
@@ -387,7 +388,8 @@ export const IngredientEditor: React.FC<Props> = ({
       <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
         {t("calories", { ns: "meals" })} [kcal]
       </Text>
-      <TextInput
+      <NumberInput
+        variant="native"
         style={[
           styles.editInput,
           {
@@ -395,16 +397,12 @@ export const IngredientEditor: React.FC<Props> = ({
             borderColor: errors.kcal ? theme.error.text : theme.border,
           },
         ]}
-        keyboardType="numeric"
         value={kcal}
-        onChangeText={(v) => {
-          setKcal(v);
-          const n = parseNum(v);
-          if (!Number.isNaN(n)) onChangePartial?.({ kcal: n });
-        }}
+        onChangeText={(v) => handleNumericChange(v, setKcal, "kcal")}
+        blurFallback="0"
         placeholderTextColor={theme.textSecondary}
         onFocus={() => clearZeroOnFocus(kcal, setKcal)}
-        onBlur={() => normalizeOnBlurNumber(kcal, setKcal, "kcal")}
+        onBlur={(normalizedValue) => handleNumericBlur("kcal", normalizedValue)}
       />
 
       {errors.kcal ? (

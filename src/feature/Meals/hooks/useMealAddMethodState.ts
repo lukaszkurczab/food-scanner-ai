@@ -10,6 +10,7 @@ import { canUseAiTodayFor } from "@/services/userService";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { Meal } from "@/types/meal";
 import { MaterialIcons } from "@expo/vector-icons";
+import { debugScope } from "@/utils/debug";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -84,15 +85,53 @@ const isDraftResumeScreen = (value: string): value is DraftResumeScreen =>
   value === "EditReviewIngredients" ||
   value === "EditResult";
 
-function hasMeaningfulDraft(payload: unknown): boolean {
+const log = debugScope("Hook:useMealAddMethodState");
+
+const hasNonEmptyText = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0;
+
+const isPositiveNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0;
+
+function ingredientHasMeaningfulContent(payload: unknown): boolean {
   if (!payload || typeof payload !== "object") return false;
-  const draft = payload as Partial<Meal>;
+  const ingredient = payload as Partial<Meal["ingredients"][number]>;
 
   return Boolean(
-    (typeof draft.name === "string" && draft.name.trim()) ||
-      (Array.isArray(draft.ingredients) && draft.ingredients.length > 0) ||
-      draft.photoUrl,
+    hasNonEmptyText(ingredient.name) ||
+      isPositiveNumber(ingredient.amount) ||
+      isPositiveNumber(ingredient.kcal) ||
+      isPositiveNumber(ingredient.protein) ||
+      isPositiveNumber(ingredient.carbs) ||
+      isPositiveNumber(ingredient.fat),
   );
+}
+
+function hasMeaningfulDraft(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const draft = payload as Partial<Meal> & { isDirty?: unknown };
+  const hasIdentity =
+    hasNonEmptyText(draft.mealId) || hasNonEmptyText(draft.createdAt);
+  if (!hasIdentity) return false;
+
+  const hasIngredients =
+    Array.isArray(draft.ingredients) &&
+    draft.ingredients.some((ingredient) =>
+      ingredientHasMeaningfulContent(ingredient),
+    );
+  const hasPhoto =
+    hasNonEmptyText(draft.photoUrl) ||
+    hasNonEmptyText(draft.localPhotoUrl) ||
+    hasNonEmptyText(draft.photoLocalPath);
+  const hasTotals =
+    !!draft.totals &&
+    (isPositiveNumber(draft.totals.kcal) ||
+      isPositiveNumber(draft.totals.protein) ||
+      isPositiveNumber(draft.totals.carbs) ||
+      isPositiveNumber(draft.totals.fat));
+  const hasDirtyFlag = draft.isDirty === true;
+
+  return hasIngredients || hasPhoto || hasTotals || hasDirtyFlag;
 }
 
 export function useMealAddMethodState(params: {
@@ -116,20 +155,35 @@ export function useMealAddMethodState(params: {
       AsyncStorage.getItem(getScreenKey(uid)),
     ]);
 
-    if (!draftRaw || !lastScreenStored || !isDraftResumeScreen(lastScreenStored)) {
+    if (!draftRaw) {
       return;
     }
 
     try {
       const parsed = JSON.parse(draftRaw) as unknown;
-      if (hasMeaningfulDraft(parsed)) {
-        setResumeScreen(lastScreenStored);
-        setShowResumeModal(true);
+      if (!hasMeaningfulDraft(parsed)) {
+        log.log("Removing inactive meal draft after startup sanity-check.");
+        await removeDraft(uid);
+        return;
       }
+
+      if (!lastScreenStored || !isDraftResumeScreen(lastScreenStored)) {
+        log.log("Active draft found but no resumable screen.", {
+          lastScreenStored: lastScreenStored ?? null,
+        });
+        return;
+      }
+
+      setResumeScreen(lastScreenStored);
+      setShowResumeModal(true);
+      log.log("Active draft found. Showing resume modal.", {
+        resumeScreen: lastScreenStored,
+      });
     } catch {
-      // Ignore malformed draft payload in storage.
+      log.log("Removing malformed meal draft payload.");
+      await removeDraft(uid);
     }
-  }, [uid]);
+  }, [removeDraft, uid]);
 
   useEffect(() => {
     void checkDraft();
@@ -194,6 +248,11 @@ export function useMealAddMethodState(params: {
     setShowResumeModal(false);
 
     if (resumeScreen) {
+      if (resumeScreen === "AddMeal") {
+        log.log("Resuming AddMeal draft at ReviewIngredients.");
+        params.navigation.navigate("AddMeal", { start: "ReviewIngredients" });
+        return;
+      }
       params.navigation.navigate(resumeScreen);
     }
   }, [loadDraft, params.navigation, resumeScreen, uid]);

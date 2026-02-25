@@ -40,15 +40,7 @@ export function useMealTextAiState(params: {
   const [retries, setRetries] = useState(0);
   const [ingredientsError, setIngredientsError] = useState<string | undefined>();
 
-  const sanitizeAmount = useCallback(
-    (value: string) =>
-      String(value)
-        .replace(/[^0-9.,]/g, "")
-        .replace(",", "."),
-    [],
-  );
-
-  const amountRaw = useMemo(() => sanitizeAmount(amount), [amount, sanitizeAmount]);
+  const amountRaw = amount;
   const amountNum = useMemo(() => Number(amountRaw), [amountRaw]);
 
   const nameError: string | undefined = useMemo(() => {
@@ -123,7 +115,7 @@ export function useMealTextAiState(params: {
   );
 
   const buildDescription = useCallback(() => {
-    const parsedAmount = Number(sanitizeAmount(amount));
+    const parsedAmount = Number(amountRaw);
     const amount_g =
       isFinite(parsedAmount) && parsedAmount > 0
         ? Math.round(parsedAmount)
@@ -138,7 +130,7 @@ export function useMealTextAiState(params: {
       lang: language || "pl",
     };
     return JSON.stringify(payload);
-  }, [amount, desc, ingPreview, language, name, sanitizeAmount]);
+  }, [amountRaw, desc, ingPreview, language, name]);
 
   const onAnalyze = useCallback(async () => {
     if (!uid) return;

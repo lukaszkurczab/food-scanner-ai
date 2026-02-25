@@ -4,7 +4,6 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "@/context/AuthContext";
 import { useFilters } from "@/context/HistoryContext";
-import { useSyncStatus } from "@/hooks/useSyncStatus";
 import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FREE_WINDOW_DAYS } from "@/services/mealService";
 import type { Meal } from "@/types/meal";
@@ -31,7 +30,6 @@ export function useHistoryListState(params: {
   const sub = useSubscriptionData(uid);
   const isPremium = sub?.state === "premium_active";
   const accessWindowDays = isPremium ? undefined : FREE_WINDOW_DAYS;
-  const syncStatus = useSyncStatus(uid);
 
   const {
     loading,
@@ -96,7 +94,6 @@ export function useHistoryListState(params: {
   return {
     isOnline,
     isPremium,
-    syncStatus,
     query,
     setQuery,
     showFilters,

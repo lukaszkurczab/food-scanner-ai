@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, TextInput, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
+import { TimePartInput } from "./TimePartInput";
 
 type Props = {
   value: Date;
@@ -8,7 +9,6 @@ type Props = {
 };
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
-const clamp = (n: number, a: number, b: number) => Math.min(Math.max(n, a), b);
 const INPUT_WIDTH = 64;
 
 export const Clock12h: React.FC<Props> = ({ value, onChange }) => {
@@ -40,33 +40,9 @@ export const Clock12h: React.FC<Props> = ({ value, onChange }) => {
     onChange(d);
   };
 
-  const commitHour = (txt: string) => {
-    const n = parseInt(txt, 10);
-    if (Number.isNaN(n)) {
-      const h24 = value.getHours();
-      const h12 = h24 % 12 || 12;
-      setHourText(pad2(h12));
-      return;
-    }
-    const raw = n === 0 ? 12 : n;
-    const h = clamp(raw, 1, 12);
-    const minute = value.getMinutes();
-    updateDate(h, minute, isAM);
-    setHourText(pad2(h));
-  };
-
-  const commitMinute = (txt: string) => {
-    const n = parseInt(txt, 10);
-    if (Number.isNaN(n)) {
-      setMinuteText(pad2(value.getMinutes()));
-      return;
-    }
-    const m = clamp(n, 0, 59);
-    const h24 = value.getHours();
-    const h12 = h24 % 12 || 12;
-    updateDate(h12, m, isAM);
-    setMinuteText(pad2(m));
-  };
+  const currentHour24 = value.getHours();
+  const currentHour12 = currentHour24 % 12 || 12;
+  const currentMinute = value.getMinutes();
 
   const toggleAm = () => {
     if (!isAM) {
@@ -89,23 +65,24 @@ export const Clock12h: React.FC<Props> = ({ value, onChange }) => {
   return (
     <View style={styles.container}>
       <View style={styles.timeRow}>
-        <TextInput
+        <TimePartInput
           value={hourText}
-          onChangeText={(t) => setHourText(t.replace(/[^\d]/g, "").slice(0, 2))}
-          onBlur={() => commitHour(hourText)}
-          keyboardType="number-pad"
-          maxLength={2}
+          onChangeText={setHourText}
+          onCommit={(hour) => updateDate(hour, currentMinute, isAM)}
+          min={1}
+          max={12}
+          fallbackValue={currentHour12}
+          mapZeroToMax
           style={styles.input}
         />
         <Text style={styles.separator}>:</Text>
-        <TextInput
+        <TimePartInput
           value={minuteText}
-          onChangeText={(t) =>
-            setMinuteText(t.replace(/[^\d]/g, "").slice(0, 2))
-          }
-          onBlur={() => commitMinute(minuteText)}
-          keyboardType="number-pad"
-          maxLength={2}
+          onChangeText={setMinuteText}
+          onCommit={(minute) => updateDate(currentHour12, minute, isAM)}
+          min={0}
+          max={59}
+          fallbackValue={currentMinute}
           style={styles.input}
         />
         <View style={styles.periodColumn}>

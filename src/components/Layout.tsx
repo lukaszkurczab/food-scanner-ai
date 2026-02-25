@@ -85,6 +85,7 @@ export const Layout = ({
             <ScrollView
               contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
               {children}
             </ScrollView>

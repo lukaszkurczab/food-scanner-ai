@@ -9,7 +9,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Layout, SearchBox, SyncStatusBadge } from "@/components";
+import { Layout, SearchBox } from "@/components";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { FilterBadgeButton } from "../components/FilterBadgeButton";
@@ -122,7 +122,6 @@ export default function HistoryListScreen({
     return (
       <Layout>
         {!state.isOnline && <OfflineBanner />}
-        <SyncStatusBadge status={state.syncStatus} />
         {state.showFilters ? (
           <FilterPanel
             scope="history"
@@ -146,7 +145,6 @@ export default function HistoryListScreen({
   return (
     <Layout disableScroll>
       {!state.isOnline && <OfflineBanner />}
-      <SyncStatusBadge status={state.syncStatus} />
       {state.showFilters ? (
         <View style={styles.fullHeight}>
           <FilterPanel

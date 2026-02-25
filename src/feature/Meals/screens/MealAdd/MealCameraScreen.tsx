@@ -9,6 +9,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Alert as AppAlert } from "@/components/Alert";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function MealCameraScreen({
   navigation,
@@ -17,9 +18,17 @@ export default function MealCameraScreen({
 }: MealAddScreenProps<"MealCamera">) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const insets = useSafeAreaInsets();
   const { t: tCommon } = useTranslation("common");
   const { t: tMeals } = useTranslation("meals");
   const canStepBack = flow.canGoBack();
+  const topLeftActionStyle = useMemo(
+    () => ({
+      top: insets.top + theme.spacing.xs,
+      left: insets.left + theme.spacing.sm,
+    }),
+    [insets.left, insets.top, theme.spacing.sm, theme.spacing.xs],
+  );
 
   const {
     permission,
@@ -61,7 +70,7 @@ export default function MealCameraScreen({
 
   if (!permission) {
     return (
-      <Layout>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
         <View style={styles.flexBackground} />
       </Layout>
     );
@@ -70,7 +79,7 @@ export default function MealCameraScreen({
   if (!permission.granted) {
     const blocked = permission.canAskAgain === false;
     return (
-      <Layout>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
         <View style={styles.permissionWrap}>
           <Text style={styles.permissionTitle}>
             {tCommon("camera_permission_title")}
@@ -98,7 +107,7 @@ export default function MealCameraScreen({
   if (isLoading) {
     const isBarcodeFlow = mode === "barcode" && !skipDetection;
     return (
-      <Layout>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
         <Loader
           text={
             isBarcodeFlow
@@ -120,7 +129,7 @@ export default function MealCameraScreen({
 
   if (photoUri) {
     return (
-      <Layout>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
         <PhotoPreview
           photoUri={photoUri}
           onRetake={handleRetake}
@@ -134,7 +143,7 @@ export default function MealCameraScreen({
   }
 
   return (
-    <Layout>
+    <Layout showNavigation={false} disableScroll style={styles.layout}>
       <View style={styles.fill}>
         <View style={styles.cameraWrap}>
           <CameraView
@@ -156,8 +165,8 @@ export default function MealCameraScreen({
                   : tCommon("close", { defaultValue: "Close" })
               }
               tone="camera"
+              containerStyle={topLeftActionStyle}
             />
-            <View style={styles.overlay} pointerEvents="none" />
             {!skipDetection && !barcodeOnly && (
               <View style={styles.modeSwitch}>
                 <Pressable
@@ -285,6 +294,12 @@ export default function MealCameraScreen({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    layout: {
+      paddingTop: 0,
+      paddingBottom: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
     fill: { flex: 1 },
     flexBackground: { flex: 1, backgroundColor: theme.background },
     cameraWrap: { flex: 1, backgroundColor: theme.background },
@@ -320,14 +335,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.bold,
       fontSize: theme.typography.size.base,
       color: theme.text,
-    },
-    overlay: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      position: "absolute",
-      width: "100%",
-      height: "100%",
     },
     modeSwitch: {
       position: "absolute",

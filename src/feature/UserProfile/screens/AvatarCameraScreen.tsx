@@ -8,6 +8,7 @@ import { Layout, PhotoPreview, ScreenCornerNavButton } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SHUTTER = 72;
 const SWITCH = 50;
@@ -24,6 +25,7 @@ export default function AvatarCameraScreen({
   const { t } = useTranslation(["common", "profile"]);
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const { setAvatar } = useUserContext();
@@ -32,6 +34,13 @@ export default function AvatarCameraScreen({
   const [isUploading, setIsUploading] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [facing, setFacing] = useState<"back" | "front">("back");
+  const topLeftActionStyle = useMemo(
+    () => ({
+      top: insets.top + theme.spacing.xs,
+      left: insets.left + theme.spacing.sm,
+    }),
+    [insets.left, insets.top, theme.spacing.sm, theme.spacing.xs],
+  );
 
   const handleTakePicture = async () => {
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
@@ -51,7 +60,7 @@ export default function AvatarCameraScreen({
 
   if (!permission) {
     return (
-      <Layout>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
         <View style={styles.backgroundFill} />
       </Layout>
     );
@@ -60,7 +69,7 @@ export default function AvatarCameraScreen({
   if (!permission.granted) {
     const blocked = permission.canAskAgain === false;
     return (
-      <Layout>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
         <View style={styles.permissionContainer}>
           <Text style={styles.permissionTitle}>
             {t("common:camera_permission_title", {
@@ -119,7 +128,7 @@ export default function AvatarCameraScreen({
   }
 
   return (
-    <Layout>
+    <Layout showNavigation={false} disableScroll style={styles.layout}>
       <View style={styles.backgroundFill}>
         <CameraView
           ref={cameraRef}
@@ -135,6 +144,7 @@ export default function AvatarCameraScreen({
             }
             accessibilityLabel={t("common:close", { defaultValue: "Close" })}
             tone="camera"
+            containerStyle={topLeftActionStyle}
           />
           <View style={styles.controlsWrapper}>
             <Pressable
@@ -170,6 +180,12 @@ export default function AvatarCameraScreen({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    layout: {
+      paddingTop: 0,
+      paddingBottom: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
     backgroundFill: { flex: 1, backgroundColor: theme.background },
     cameraFill: { flex: 1 },
     permissionContainer: {
