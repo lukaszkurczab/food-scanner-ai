@@ -72,6 +72,10 @@ export default {
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
       debugOcr: (process.env.DEBUG_OCR || "true").toLowerCase() === "true",
+      e2e: (process.env.E2E || "").toLowerCase() === "true",
+      e2eMockChatReply:
+        process.env.E2E_MOCK_CHAT_REPLY ||
+        "E2E_MOCK_CHAT_REPLY: Keep hydration and protein consistent every day.",
       revenuecatAndroidKey: process.env.RC_ANDROID_API_KEY || "",
       revenuecatIosKey: process.env.RC_IOS_API_KEY || "",
       disableBilling:
