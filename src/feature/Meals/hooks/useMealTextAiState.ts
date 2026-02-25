@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Keyboard } from "react-native";
-import { useNavigation, type ParamListBase } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { v4 as uuidv4 } from "uuid";
 import { Toast } from "@/components";
@@ -10,6 +10,7 @@ import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { canUseAiTodayFor, consumeAiUseFor } from "@/services/userService";
 import { extractIngredientsFromText } from "@/services/textMealService";
 import type { Ingredient, Meal } from "@/types";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 const FEATURE_LIMIT = 1;
 const MAX_RETRIES = 3;
@@ -23,7 +24,7 @@ export function useMealTextAiState(params: {
   const { t, language } = params;
   const { uid } = useAuthContext();
   const { isPremium } = usePremiumContext();
-  const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { meal, setMeal, saveDraft, setLastScreen } = useMealDraftContext();
 
   const [name, setName] = useState("");
@@ -116,7 +117,7 @@ export function useMealTextAiState(params: {
       setMeal(next);
       await saveDraft(uid);
       await setLastScreen(uid, "ReviewIngredients");
-      navigation.replace("ReviewIngredients");
+      navigation.replace("AddMeal", { start: "ReviewIngredients" });
     },
     [desc, ensureDraft, name, navigation, saveDraft, setLastScreen, setMeal, uid],
   );

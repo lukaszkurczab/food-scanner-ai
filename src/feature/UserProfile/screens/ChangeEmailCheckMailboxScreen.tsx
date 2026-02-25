@@ -3,13 +3,24 @@ import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import { PrimaryButton, ErrorBox, Layout, SecondaryButton } from "@/components";
-import { useRoute, type RouteProp } from "@react-navigation/native";
+import {
+  PrimaryButton,
+  ErrorBox,
+  Layout,
+  ScreenCornerNavButton,
+  SecondaryButton,
+} from "@/components";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getAuth, signOut } from "@react-native-firebase/auth";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
 type ChangeEmailCheckMailboxRoute = RouteProp<
+  RootStackParamList,
+  "ChangeEmailCheckMailbox"
+>;
+type ChangeEmailCheckMailboxNavigation = StackNavigationProp<
   RootStackParamList,
   "ChangeEmailCheckMailbox"
 >;
@@ -25,6 +36,7 @@ export default function ChangeEmailCheckMailboxScreen() {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const route = useRoute<ChangeEmailCheckMailboxRoute>();
+  const navigation = useNavigation<ChangeEmailCheckMailboxNavigation>();
 
   const email =
     route?.params?.email && typeof route.params.email === "string"
@@ -106,6 +118,19 @@ export default function ChangeEmailCheckMailboxScreen() {
 
   return (
     <Layout showNavigation={false}>
+      <ScreenCornerNavButton
+        icon="close"
+        onPress={() => {
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+            return;
+          }
+          void handleLogout();
+        }}
+        accessibilityLabel={t("common:close", { defaultValue: "Close" })}
+        containerStyle={styles.topLeftAction}
+      />
+
       <View style={styles.iconWrapper}>
         <View style={styles.iconCard}>
           <MaterialIcons name="email" size={96} color={theme.accentSecondary} />
@@ -152,6 +177,7 @@ export default function ChangeEmailCheckMailboxScreen() {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    topLeftAction: { top: 0, left: 0 },
     center: { alignItems: "center" },
     iconWrapper: { alignItems: "center", marginBottom: theme.spacing.xl },
     iconCard: {

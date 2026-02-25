@@ -4,7 +4,7 @@ import { CameraView } from "expo-camera";
 import { useTheme } from "@/theme/useTheme";
 import Loader from "@feature/Meals/components/Loader";
 import { useTranslation } from "react-i18next";
-import { Layout, PhotoPreview } from "@/components";
+import { Layout, PhotoPreview, ScreenCornerNavButton } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Alert as AppAlert } from "@/components/Alert";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
@@ -19,6 +19,7 @@ export default function MealCameraScreen({
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const { t: tCommon } = useTranslation("common");
   const { t: tMeals } = useTranslation("meals");
+  const canStepBack = flow.canGoBack();
 
   const {
     permission,
@@ -49,6 +50,14 @@ export default function MealCameraScreen({
     closeBarcodeModal,
     goManagePremium,
   } = useMealCameraState({ navigation, flow, params });
+
+  const handleTopLeftPress = () => {
+    if (canStepBack) {
+      flow.goBack();
+      return;
+    }
+    navigation.goBack();
+  };
 
   if (!permission) {
     return (
@@ -138,6 +147,16 @@ export default function MealCameraScreen({
             }}
           />
           <View style={StyleSheet.absoluteFill}>
+            <ScreenCornerNavButton
+              icon={canStepBack ? "back" : "close"}
+              onPress={handleTopLeftPress}
+              accessibilityLabel={
+                canStepBack
+                  ? tCommon("back", { defaultValue: "Back" })
+                  : tCommon("close", { defaultValue: "Close" })
+              }
+              tone="camera"
+            />
             <View style={styles.overlay} pointerEvents="none" />
             {!skipDetection && !barcodeOnly && (
               <View style={styles.modeSwitch}>

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import * as FileSystem from "expo-file-system";
-import type { ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { Meal, MealType } from "@/types/meal";
 import { autoMealName } from "@/utils/autoMealName";
 import { updateSavedMeal } from "@/feature/History/services/savedMealsService";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-type EditResultNavigation = StackNavigationProp<ParamListBase>;
+type EditResultNavigation = StackNavigationProp<RootStackParamList, "EditResult">;
 
 export function useEditResultState(params: {
   uid: string | null;
@@ -79,11 +79,12 @@ export function useEditResultState(params: {
   }, [mealName, mealType, params.meal, params.navigation, selectedAt]);
 
   const handleAddPhoto = useCallback(() => {
-    params.navigation.navigate("MealCamera", {
-      skipDetection: true,
-      returnTo: "EditResult",
+    if (!params.meal) return;
+    params.navigation.navigate("SavedMealsCamera", {
+      id: params.meal.mealId,
+      meal: params.meal,
     });
-  }, [params.navigation]);
+  }, [params.meal, params.navigation]);
 
   const handleSave = useCallback(async () => {
     if (!params.uid || !params.meal || saving || !params.savedCloudId) return;

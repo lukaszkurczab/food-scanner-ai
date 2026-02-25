@@ -45,6 +45,7 @@ export type MealAddFlowApi = {
     params?: MealAddStepParams[N],
   ) => void;
   goBack: () => void;
+  canGoBack: () => boolean;
 };
 
 export type MealAddScreenProps<N extends MealAddScreenName> = {

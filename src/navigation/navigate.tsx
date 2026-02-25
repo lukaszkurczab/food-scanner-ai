@@ -33,8 +33,6 @@ export type RootStackParamList = {
   Profile: undefined;
   ResetPassword: undefined;
   Terms: undefined;
-  AddMealManual: { id?: string; image?: string } | undefined;
-  AddMealFromList: undefined;
   MealAddMethod: undefined;
   Statistics: undefined;
   EditReviewIngredients: { savedCloudId?: string } | undefined;
@@ -46,16 +44,13 @@ export type RootStackParamList = {
   SelectSavedMeal: undefined;
   Language: undefined;
   UsernameChange: undefined;
-  UserSettings: undefined;
   Register: undefined;
   SavedMeals: undefined;
   EditUserData: undefined;
   ChangeEmail: undefined;
   AvatarCamera: undefined;
   HistoryList: undefined;
-  MealDetail: undefined;
   Chat: undefined;
-  Summary: undefined;
   Notifications: undefined;
   NotificationForm: { id?: string | null } | undefined;
   Loading: undefined;
@@ -73,18 +68,30 @@ export type RootStackParamList = {
         meal?: Meal;
       }
     | undefined;
-
-  Result: undefined;
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 type ScreenNames = keyof RootStackParamList;
+type ScreensWithOptionalParams = {
+  [Name in ScreenNames]: undefined extends RootStackParamList[Name]
+    ? Name
+    : never;
+}[ScreenNames];
+type ScreensWithRequiredParams = Exclude<ScreenNames, ScreensWithOptionalParams>;
 
+export function navigate<Name extends ScreensWithOptionalParams>(
+  name: Name,
+  params?: RootStackParamList[Name],
+): void;
+export function navigate<Name extends ScreensWithRequiredParams>(
+  name: Name,
+  params: RootStackParamList[Name],
+): void;
 export function navigate<Name extends ScreenNames>(
   name: Name,
   params?: RootStackParamList[Name],
-) {
+): void {
   if (navigationRef.isReady()) {
     navigationRef.dispatch(
       CommonActions.navigate({
@@ -95,10 +102,18 @@ export function navigate<Name extends ScreenNames>(
   }
 }
 
+export function resetNavigation<Name extends ScreensWithOptionalParams>(
+  name: Name,
+  params?: RootStackParamList[Name],
+): void;
+export function resetNavigation<Name extends ScreensWithRequiredParams>(
+  name: Name,
+  params: RootStackParamList[Name],
+): void;
 export function resetNavigation<Name extends ScreenNames>(
   name: Name,
   params?: RootStackParamList[Name],
-) {
+): void {
   if (navigationRef.isReady()) {
     navigationRef.reset({ index: 0, routes: [{ name, params }] });
   }

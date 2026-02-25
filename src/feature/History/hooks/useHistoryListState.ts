@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from "react";
-import type { ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
@@ -10,9 +9,10 @@ import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FREE_WINDOW_DAYS } from "@/services/mealService";
 import type { Meal } from "@/types/meal";
 import { useHistorySectionsData } from "@/feature/History/hooks/useHistorySectionsData";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 export function useHistoryListState(params: {
-  navigation: StackNavigationProp<ParamListBase>;
+  navigation: StackNavigationProp<RootStackParamList, "HistoryList">;
 }) {
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
@@ -63,7 +63,7 @@ export function useHistoryListState(params: {
   );
 
   const onUpgrade = useCallback(() => {
-    params.navigation.navigate("Paywall");
+    params.navigation.navigate("ManageSubscription");
   }, [params.navigation]);
 
   const emptyState = useMemo(() => {

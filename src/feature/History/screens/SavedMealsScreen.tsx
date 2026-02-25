@@ -6,7 +6,6 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import type { ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
@@ -31,8 +30,9 @@ import { FilterBadgeButton } from "../components/FilterBadgeButton";
 import { FilterPanel } from "../components/FilterPanel";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { useSavedMealsData } from "@/feature/History/hooks/useSavedMealsData";
+import type { RootStackParamList } from "@/navigation/navigate";
 
-type SavedMealsNavigation = StackNavigationProp<ParamListBase>;
+type SavedMealsNavigation = StackNavigationProp<RootStackParamList, "SavedMeals">;
 
 export default function SavedMealsScreen({
   navigation,
@@ -125,7 +125,7 @@ export default function SavedMealsScreen({
       setMeal(next);
       await saveDraft(uid);
       await setLastScreen(uid, "ReviewIngredients");
-      navigation.navigate("ReviewIngredients");
+      navigation.navigate("AddMeal", { start: "ReviewIngredients" });
     },
     [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation],
   );
@@ -138,7 +138,6 @@ export default function SavedMealsScreen({
       await saveDraft(uid);
       await setLastScreen(uid, "EditReviewIngredients");
       navigation.navigate("EditReviewIngredients", {
-        mode: "edit-saved",
         savedCloudId: meal.cloudId,
       });
     },

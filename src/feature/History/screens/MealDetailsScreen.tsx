@@ -10,6 +10,7 @@ import {
   MealBox,
   ErrorButton,
   Modal,
+  ScreenCornerNavButton,
 } from "@/components";
 import { FallbackImage } from "../components/FallbackImage";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -27,6 +28,12 @@ export default function MealDetailsScreen() {
   return (
     <Layout showNavigation={false}>
       <>
+        <ScreenCornerNavButton
+          icon="back"
+          onPress={state.handleBack}
+          accessibilityLabel={t("back", { ns: "common", defaultValue: "Back" })}
+        />
+
         {state.showImageBlock ? (
           <View style={styles.imageWrap}>
             {state.checkingImage ? (

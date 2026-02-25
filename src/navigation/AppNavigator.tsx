@@ -39,6 +39,85 @@ import AddMealScreen from "@feature/Meals/screens/AddMealScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
+function renderAuthScreens() {
+  return (
+    <>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+      <Stack.Screen name="CheckMailbox" component={CheckMailboxScreen} />
+    </>
+  );
+}
+
+function renderAppScreens() {
+  return (
+    <>
+      <Stack.Screen name="Loading" component={LoadingScreen} />
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      <Stack.Screen name="AvatarCamera" component={AvatarCameraScreen} />
+      <Stack.Screen name="HistoryList" component={HistoryListScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="Statistics" component={StatisticsScreen} />
+      <Stack.Screen name="Language" component={LanguageScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="EditUserData" component={EditUserDataScreen} />
+      <Stack.Screen name="MealDetails" component={MealDetailsScreen} />
+      <Stack.Screen
+        name="SelectSavedMeal"
+        component={SelectSavedMealScreen}
+      />
+      <Stack.Screen
+        name="UsernameChange"
+        component={UsernameChangeScreen}
+      />
+      <Stack.Screen name="ChangeEmail" component={ChangeEmailScreen} />
+      <Stack.Screen
+        name="ChangeEmailCheckMailbox"
+        component={ChangeEmailCheckMailboxScreen}
+      />
+      <Stack.Screen
+        name="ManageSubscription"
+        component={ManageSubscriptionScreen}
+      />
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+      />
+      <Stack.Screen name="SendFeedback" component={SendFeedbackScreen} />
+      <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
+      <Stack.Screen name="AddMeal" component={AddMealScreen} />
+      <Stack.Screen
+        name="SavedMealsCamera"
+        component={SavedMealsCameraScreen}
+      />
+      <Stack.Screen
+        name="EditReviewIngredients"
+        component={EditReviewIngredientsScreen}
+      />
+      <Stack.Screen name="EditResult" component={EditResultScreen} />
+      <Stack.Screen name="MealTextAI" component={MealTextAIScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen
+        name="NotificationForm"
+        component={NotificationFormScreen}
+      />
+      <Stack.Screen name="MealShare" component={MealShareScreen} />
+    </>
+  );
+}
+
+function renderSharedScreens() {
+  return (
+    <>
+      <Stack.Screen name="Terms" component={TermsScreen} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} />
+    </>
+  );
+}
+
 export default function AppNavigator() {
   const { isAuthenticated, loading } = useAuthContext();
 
@@ -52,71 +131,8 @@ export default function AppNavigator() {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
-        <>
-          <Stack.Screen name="Loading" component={LoadingScreen} />
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-          <Stack.Screen name="AvatarCamera" component={AvatarCameraScreen} />
-          <Stack.Screen name="HistoryList" component={HistoryListScreen} />
-          <Stack.Screen name="Profile" component={ProfileScreen} />
-          <Stack.Screen name="Statistics" component={StatisticsScreen} />
-          <Stack.Screen name="Language" component={LanguageScreen} />
-          <Stack.Screen name="Chat" component={ChatScreen} />
-          <Stack.Screen name="EditUserData" component={EditUserDataScreen} />
-          <Stack.Screen name="MealDetails" component={MealDetailsScreen} />
-          <Stack.Screen
-            name="SelectSavedMeal"
-            component={SelectSavedMealScreen}
-          />
-          <Stack.Screen
-            name="UsernameChange"
-            component={UsernameChangeScreen}
-          />
-          <Stack.Screen name="ChangeEmail" component={ChangeEmailScreen} />
-          <Stack.Screen
-            name="ChangeEmailCheckMailbox"
-            component={ChangeEmailCheckMailboxScreen}
-          />
-          <Stack.Screen
-            name="ManageSubscription"
-            component={ManageSubscriptionScreen}
-          />
-          <Stack.Screen
-            name="ChangePassword"
-            component={ChangePasswordScreen}
-          />
-          <Stack.Screen name="SendFeedback" component={SendFeedbackScreen} />
-          <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
-          <Stack.Screen name="AddMeal" component={AddMealScreen} />
-          <Stack.Screen
-            name="SavedMealsCamera"
-            component={SavedMealsCameraScreen}
-          />
-          <Stack.Screen
-            name="EditReviewIngredients"
-            component={EditReviewIngredientsScreen}
-          />
-          <Stack.Screen name="EditResult" component={EditResultScreen} />
-          <Stack.Screen name="MealTextAI" component={MealTextAIScreen} />
-          <Stack.Screen name="Notifications" component={NotificationsScreen} />
-          <Stack.Screen
-            name="NotificationForm"
-            component={NotificationFormScreen}
-          />
-          <Stack.Screen name="MealShare" component={MealShareScreen} />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-          <Stack.Screen name="CheckMailbox" component={CheckMailboxScreen} />
-        </>
-      )}
-      <Stack.Screen name="Terms" component={TermsScreen} />
-      <Stack.Screen name="Privacy" component={PrivacyScreen} />
+      {isAuthenticated ? renderAppScreens() : renderAuthScreens()}
+      {renderSharedScreens()}
     </Stack.Navigator>
   );
 }

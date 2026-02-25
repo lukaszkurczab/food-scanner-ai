@@ -40,7 +40,11 @@ export default function IngredientsNotRecognizedScreen({
         returnTo: "IngredientsNotRecognized",
       });
     } else {
-      navigation.replace("AddMealManual", { id, image });
+      navigation.replace("AddMeal", {
+        start: "ReviewIngredients",
+        id,
+        image,
+      });
     }
   };
 

@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo } from "react";
-import type { ParamListBase } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import {
   View,
@@ -21,6 +20,7 @@ import type { Meal } from "@/types/meal";
 import type { DaySection } from "@/feature/History/types/daySection";
 import { useHistoryListState } from "@/feature/History/hooks/useHistoryListState";
 import { FREE_WINDOW_DAYS } from "@/services/mealService";
+import type { RootStackParamList } from "@/navigation/navigate";
 
 
 type SectionHeaderProps = {
@@ -84,7 +84,7 @@ HistoryRow.displayName = "HistoryRow";
 export default function HistoryListScreen({
   navigation,
 }: {
-  navigation: StackNavigationProp<ParamListBase>;
+  navigation: StackNavigationProp<RootStackParamList, "HistoryList">;
 }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);

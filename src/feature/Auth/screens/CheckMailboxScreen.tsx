@@ -3,7 +3,13 @@ import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import { PrimaryButton, ErrorBox, Layout, SecondaryButton } from "@/components";
+import {
+  PrimaryButton,
+  ErrorBox,
+  Layout,
+  ScreenCornerNavButton,
+  SecondaryButton,
+} from "@/components";
 import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -24,7 +30,7 @@ function getErrorCode(err: unknown): string | null {
 }
 
 export default function CheckMailboxScreen({ navigation }: Props) {
-  const { t } = useTranslation("resetPassword");
+  const { t } = useTranslation(["resetPassword", "common"]);
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme.mode]);
   const route = useRoute<CheckMailboxRoute>();
@@ -102,6 +108,15 @@ export default function CheckMailboxScreen({ navigation }: Props) {
 
   return (
     <Layout showNavigation={false}>
+      <ScreenCornerNavButton
+        icon="close"
+        onPress={() =>
+          navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Login")
+        }
+        accessibilityLabel={t("common:close", { defaultValue: "Close" })}
+        containerStyle={styles.topLeftAction}
+      />
+
       <View style={styles.illustrationWrap}>
         <View style={styles.iconCard}>
           <MaterialIcons
@@ -154,6 +169,7 @@ export default function CheckMailboxScreen({ navigation }: Props) {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    topLeftAction: { top: 0, left: 0 },
     illustrationWrap: {
       alignItems: "center",
       marginBottom: theme.spacing.xl,
