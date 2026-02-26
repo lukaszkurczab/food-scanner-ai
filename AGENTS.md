@@ -15,7 +15,7 @@
 ### Naming, Imports, and Boundaries
 
 - **Path aliases:** prefer `@/` alias imports over relative imports for cross-folder references (e.g., `@/components/...`, `@/services/...`, `@/feature/<FeatureName>/...`).
-- **Import direction:** `screens` → `feature/*` internals → global layers → SDKs. Never import `screens` from anywhere.
+- **Import direction:** `screens` -> `feature/*` internals -> global layers -> SDKs. Never import `screens` from anywhere.
 - **Feature privacy:** only import from inside the same `feature/<FeatureName>/...` unless extracting to global.
 - **Cross-feature reuse rule:** if code is needed in another feature, extract it to a global folder; do not “reach into” another feature’s internals.
 - **Naming conventions:**
@@ -46,11 +46,11 @@ A task is considered a refactor if it includes any of:
 
 Before editing code, run:
 
-1. `mcp__ollama_sidecar__propose_approaches`
+1. `mcp__ollama_frontend_sidecar__propose_frontend_approaches`
    - Input: task description + constraints from this file.
    - Output: 2–3 approaches + recommended approach.
 
-2. `mcp__ollama_sidecar__risk_check`
+2. `mcp__ollama_frontend_sidecar__frontend_risk_check`
    - Input: chosen approach + known hotspots.
    - Output: risks + regression vectors + test checklist + rollback plan.
 
@@ -60,8 +60,8 @@ Skip preflight only if the user explicitly says **"skip preflight"**.
 
 For refactors/boundary work: **do not edit any files** until both MCP tools have been called:
 
-- `mcp__ollama_sidecar__propose_approaches`
-- `mcp__ollama_sidecar__risk_check`
+- `mcp__ollama_frontend_sidecar__propose_frontend_approaches`
+- `mcp__ollama_frontend_sidecar__frontend_risk_check`
 
 If MCP tools are unavailable or time out: **stop and report**; do not proceed with edits.
 
@@ -128,6 +128,17 @@ If a gate fails: fix and re-run (max 3 attempts). If still failing: stop and rep
 - Given a log/error: identify root cause and fix it (no band-aids).
 - If multiple plausible causes: state top 1–2 hypotheses and the quickest confirmation path.
 - Add a regression test when feasible; otherwise document reproducible steps.
+
+## Frontend Review Tools
+
+Use the dedicated frontend MCP tools when relevant:
+
+- For feature privacy / extraction / cross-feature reuse:
+  - `mcp__ollama_frontend_sidecar__feature_boundary_check`
+- For focused UI/manual verification planning:
+  - `mcp__ollama_frontend_sidecar__ui_test_plan`
+
+Use them when the task clearly benefits from a focused frontend review, not only for refactors.
 
 ## Communication (IDE)
 
