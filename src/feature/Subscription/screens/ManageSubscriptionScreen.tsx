@@ -45,9 +45,9 @@ export default function ManageSubscriptionScreen({
     termsUrl,
     privacyUrl,
     priceText,
-    showCancel,
     showRenew,
     showStart,
+    showManageInStore,
     headerStatus,
     isPremiumComputed,
     toggleExpanded,
@@ -209,7 +209,7 @@ export default function ManageSubscriptionScreen({
           )}
         </View>
 
-        {showCancel && (
+        {showManageInStore && (
           <TouchableOpacity
             style={[
               styles.rowBetween,
@@ -221,7 +221,9 @@ export default function ManageSubscriptionScreen({
             activeOpacity={0.7}
           >
             <Text style={styles.linkText}>
-              {t("manageSubscription.cancelSubscription")}
+              {t("manageSubscription.manageInStore", {
+                defaultValue: "Manage subscription in store",
+              })}
             </Text>
             <Ionicons
               name="chevron-forward"

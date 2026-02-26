@@ -45,7 +45,7 @@ export function useManageSubscriptionState(params: {
         ? "free_expired"
         : "free_active";
 
-  const showCancel = state === "premium_active";
+  const showManageInStore = state === "premium_active";
   const showRenew = state === "premium_expired";
   const showStart = state === "free_active" || state === "free_expired";
 
@@ -80,7 +80,6 @@ export function useManageSubscriptionState(params: {
   }, [alertTitle, params]);
 
   const tryOpenManage = useCallback(async () => {
-    if (!requireAuthOrAlert()) return;
     setBusy(true);
     try {
       const ok = await openManageSubscriptions();
@@ -90,7 +89,7 @@ export function useManageSubscriptionState(params: {
     } finally {
       setBusy(false);
     }
-  }, [alertBillingUnavailable, alertTitle, requireAuthOrAlert]);
+  }, [alertBillingUnavailable, alertTitle]);
 
   const tryRestore = useCallback(async () => {
     if (!requireAuthOrAlert()) return;
@@ -228,9 +227,9 @@ export function useManageSubscriptionState(params: {
     refundUrl,
     priceText,
     state,
-    showCancel,
     showRenew,
     showStart,
+    showManageInStore,
     headerStatus,
     isPremiumComputed,
     toggleExpanded,
