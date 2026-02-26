@@ -6,6 +6,7 @@ import {
   Pressable,
   Linking,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -14,6 +15,8 @@ import type { PurchasesPackage } from "react-native-purchases";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import { restorePurchases } from "@/services/billing/purchase";
+import { useAuthContext } from "@/context/AuthContext";
+import { usePremiumContext } from "@/context/PremiumContext";
 
 type Props = {
   used: number;
@@ -60,6 +63,8 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("chat");
+  const { uid } = useAuthContext();
+  const { refreshPremium } = usePremiumContext();
   const extra = getExtraConfig();
   const termsUrl = extra.termsUrl ?? "";
   const privacyUrl = extra.privacyUrl ?? "";
@@ -114,9 +119,57 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
 
   const onRestore = async () => {
     if (loading) return;
+    const title = t("paywall.restoreTitle", {
+      defaultValue: "Manage subscription",
+    });
+    if (billingDisabled()) {
+      Alert.alert(
+        title,
+        t("paywall.billingUnavailable", {
+          defaultValue: "Billing is unavailable on this device.",
+        })
+      );
+      return;
+    }
+    if (!uid) {
+      Alert.alert(
+        title,
+        t("paywall.signInRequired", {
+          defaultValue: "Please sign in to restore purchases.",
+        })
+      );
+      return;
+    }
+
     setLoading(true);
     try {
-      await restorePurchases();
+      const res = await restorePurchases(uid);
+      if (res.status === "success") {
+        await refreshPremium();
+        Alert.alert(
+          title,
+          t("paywall.restoreSuccess", {
+            defaultValue: "Purchases restored.",
+          })
+        );
+      } else if (res.status === "cancelled") {
+        return;
+      } else if (res.status === "unavailable") {
+        Alert.alert(
+          title,
+          t("paywall.billingUnavailable", {
+            defaultValue: "Billing is unavailable on this device.",
+          })
+        );
+      } else {
+        Alert.alert(
+          title,
+          res.message ||
+            t("paywall.restoreFailed", {
+              defaultValue: "Restore failed. Try again later.",
+            })
+        );
+      }
     } finally {
       setLoading(false);
     }
