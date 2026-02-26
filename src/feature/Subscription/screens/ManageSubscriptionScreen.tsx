@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, Pressable, StyleSheet, ActivityIndicator 
 import { useTheme } from "@/theme/useTheme";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useSubscriptionData } from "@/hooks/useSubscriptionData";
 import { FullScreenLoader, Layout } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -36,8 +35,8 @@ export default function ManageSubscriptionScreen({
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("profile");
   const { uid } = useAuthContext();
-  const subscription = useSubscriptionData(uid);
-  const { isPremium, setDevPremium, refreshPremium } = usePremiumContext();
+  const { isPremium, subscription, setDevPremium, refreshPremium } =
+    usePremiumContext();
 
   const {
     expanded,

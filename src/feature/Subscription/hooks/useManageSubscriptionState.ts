@@ -34,9 +34,16 @@ export function useManageSubscriptionState(params: {
     return typeof url === "string" ? url.trim() : "";
   }, [params]);
 
-  const state = params.subscriptionState || "free_active";
-  const isPremiumByState = state.startsWith("premium");
+  const baseState = params.subscriptionState || "free_active";
+  const isPremiumByState = baseState.startsWith("premium");
   const isPremiumComputed = !!(params.isPremium ?? isPremiumByState);
+  const state = isPremiumComputed
+    ? "premium_active"
+    : baseState === "premium_expired"
+      ? "premium_expired"
+      : baseState === "free_expired"
+        ? "free_expired"
+        : "free_active";
 
   const showCancel = state === "premium_active";
   const showRenew = state === "premium_expired";

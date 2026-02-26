@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUserContext } from "@contexts/UserContext";
-import { useSubscriptionData } from "@/hooks/useSubscriptionData";
+import { usePremiumContext } from "@/context/PremiumContext";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -46,9 +46,8 @@ export default function ChatScreen() {
 
   const uid = user?.uid || "";
   const { userData, loadingUser } = useUserContext();
-
-  const subscription = useSubscriptionData(uid);
-  const isPremium = subscription?.state === "premium_active";
+  const { isPremium } = usePremiumContext();
+  const premiumActive = isPremium === true;
 
   const { meals } = useMeals(uid);
 
@@ -68,7 +67,7 @@ export default function ChatScreen() {
     loadMore,
   } = useChatHistory(
     uid,
-    !!isPremium,
+    premiumActive,
     meals || [],
     userData ?? EMPTY_PROFILE,
     threadId,
@@ -79,7 +78,7 @@ export default function ChatScreen() {
     [messages],
   );
 
-  const limitReached = !isPremium && countToday >= limit;
+  const limitReached = !premiumActive && countToday >= limit;
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -102,9 +101,9 @@ export default function ChatScreen() {
   );
 
   const footerText = useMemo(() => {
-    if (!isPremium) return t("empty.footerFree", { used: countToday, limit });
+    if (!premiumActive) return t("empty.footerFree", { used: countToday, limit });
     return t("empty.footerPremium");
-  }, [isPremium, countToday, limit, t]);
+  }, [premiumActive, countToday, limit, t]);
 
   const emptyDisabled = sending || limitReached || !net.isConnected;
   const listContentStyle = useMemo(
@@ -166,7 +165,7 @@ export default function ChatScreen() {
             onEndReachedThreshold={0.4}
             onEndReached={loadMore}
             ListHeaderComponent={
-              !canSend && !isPremium ? <View /> : typing ? <TypingDots /> : null
+              !canSend && !premiumActive ? <View /> : typing ? <TypingDots /> : null
             }
             ListEmptyComponent={
               <EmptyState

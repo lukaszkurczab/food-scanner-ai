@@ -10,7 +10,7 @@ import { ProgressAveragesCard } from "../components/ProgressAveragesCard";
 import { DateInput, Layout } from "@/components";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { useTranslation } from "react-i18next";
-import { useSubscriptionData } from "@/hooks/useSubscriptionData";
+import { usePremiumContext } from "@/context/PremiumContext";
 import { FREE_WINDOW_DAYS } from "@/services/mealService";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -29,11 +29,11 @@ export default function StatisticsScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["statistics", "common"]);
   const { userData } = useUserContext();
+  const { isPremium } = usePremiumContext();
 
   const uid = userData?.uid || "";
-  const sub = useSubscriptionData(uid);
-  const isPremium = sub?.state === "premium_active";
-  const accessWindowDays = isPremium ? undefined : FREE_WINDOW_DAYS;
+  const premiumActive = isPremium === true;
+  const accessWindowDays = premiumActive ? undefined : FREE_WINDOW_DAYS;
 
   const state = useStatisticsState({
     uid,
@@ -64,7 +64,7 @@ export default function StatisticsScreen({ navigation }: Props) {
         )}
       </View>
 
-      {!isPremium && accessWindowDays && state.isWindowLimited && (
+      {!premiumActive && accessWindowDays && state.isWindowLimited && (
         <View style={styles.banner}>
           <Text style={styles.bannerTitle}>
             {t(
