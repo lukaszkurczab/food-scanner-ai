@@ -83,6 +83,17 @@
   "user_not_found": "Nie znaleziono użytkownika",
   "barcode_loader_title": "Wyszukiwanie produktu...",
   "barcode_loader_subtext": "Pobieranie danych produktu z bazy.",
+  "billingErrors": {
+    "billingUnavailable": "Rozliczenia są niedostępne na tym urządzeniu.",
+    "billingNotReady": "Płatności nie są jeszcze gotowe. Spróbuj ponownie za chwilę.",
+    "signInRequired": "Zaloguj się, aby zarządzać subskrypcją.",
+    "loginFailed": "Nie udało się połączyć konta z płatnościami. Spróbuj ponownie.",
+    "productsUnavailable": "Opcje subskrypcji są chwilowo niedostępne. Spróbuj ponownie później.",
+    "entitlementPending": "Zakup zakończony, ale aktywacja jeszcze trwa. Za chwilę użyj opcji przywrócenia zakupów.",
+    "network": "Problem z siecią podczas łączenia z App Store. Spróbuj ponownie.",
+    "purchaseNotAllowed": "Zakupy są niedozwolone na tym urządzeniu.",
+    "storeProblem": "App Store jest chwilowo niedostępny. Spróbuj ponownie później."
+  },
   "protein": "Białko",
   "carbs": "Węglowodany",
   "fat": "Tłuszcz"

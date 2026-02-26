@@ -8,15 +8,27 @@ import {
   rcLogIn,
 } from "@/services/billing/revenuecat";
 
+export type PurchaseErrorCode =
+  | "billing_not_initialized"
+  | "billing_unavailable"
+  | "sign_in_required"
+  | "login_failed"
+  | "no_offerings"
+  | "entitlement_inactive"
+  | "network"
+  | "purchase_not_allowed"
+  | "store_problem"
+  | "unknown";
+
 type PurchaseResult =
   | { status: "success" }
   | { status: "cancelled" }
-  | { status: "unavailable"; message?: string }
-  | { status: "error"; message?: string };
+  | { status: "unavailable"; errorCode: "billing_unavailable" }
+  | { status: "error"; errorCode: PurchaseErrorCode; message?: string };
 
 type PurchaseErrorMeta = {
   message?: string;
-  code?: string;
+  code?: string | number;
   userCancelled?: boolean;
   readableErrorCode?: string;
 };
@@ -35,11 +47,36 @@ function errToObj(e: unknown): PurchaseErrorMeta {
   };
   return {
     message: typeof obj.message === "string" ? obj.message : undefined,
-    code: typeof obj.code === "string" ? obj.code : undefined,
+    code:
+      typeof obj.code === "string" || typeof obj.code === "number"
+        ? obj.code
+        : undefined,
     userCancelled: typeof obj.userCancelled === "boolean" ? obj.userCancelled : undefined,
     readableErrorCode:
       typeof obj.readableErrorCode === "string" ? obj.readableErrorCode : undefined,
   };
+}
+
+function normalizeErrorTag(meta: PurchaseErrorMeta): string {
+  const codeText = meta.code != null ? String(meta.code).toUpperCase() : "";
+  const readable = (meta.readableErrorCode || "").toUpperCase();
+  return `${readable} ${codeText} ${(meta.message || "").toUpperCase()}`;
+}
+
+function mapPurchaseError(meta: PurchaseErrorMeta): PurchaseErrorCode {
+  const tag = normalizeErrorTag(meta);
+  if (tag.includes("NETWORK")) return "network";
+  if (tag.includes("PURCHASE_NOT_ALLOWED")) return "purchase_not_allowed";
+  if (
+    tag.includes("STORE_PROBLEM") ||
+    tag.includes("INVALID_RECEIPT") ||
+    tag.includes("PRODUCT_NOT_AVAILABLE") ||
+    tag.includes("PURCHASE_INVALID") ||
+    tag.includes("SANDBOX RECEIPT USED IN PRODUCTION")
+  ) {
+    return "store_problem";
+  }
+  return "unknown";
 }
 
 async function cachePremiumStatus(
@@ -60,15 +97,19 @@ export async function startOrRenewSubscription(
   if (!isRevenueCatConfigured()) {
     return {
       status: "error",
+      errorCode: "billing_not_initialized",
       message: "Billing not initialized (RevenueCat not configured).",
     };
   }
 
-  if (isBillingDisabled()) return { status: "unavailable" };
+  if (isBillingDisabled()) {
+    return { status: "unavailable", errorCode: "billing_unavailable" };
+  }
 
   if (!uid) {
     return {
       status: "error",
+      errorCode: "sign_in_required",
       message: "You must be signed in to start a subscription.",
     };
   }
@@ -77,6 +118,7 @@ export async function startOrRenewSubscription(
   if (!loggedIn) {
     return {
       status: "error",
+      errorCode: "login_failed",
       message: "Unable to sign in to billing. Please try again.",
     };
   }
@@ -96,7 +138,11 @@ export async function startOrRenewSubscription(
     });
 
     if (!current || current.availablePackages.length === 0) {
-      return { status: "error", message: "No offerings available." };
+      return {
+        status: "error",
+        errorCode: "no_offerings",
+        message: "No offerings available.",
+      };
     }
 
     const selected =
@@ -114,6 +160,7 @@ export async function startOrRenewSubscription(
     if (!premium) {
       return {
         status: "error",
+        errorCode: "entitlement_inactive",
         message: "Purchase completed but entitlement not active.",
       };
     }
@@ -124,7 +171,11 @@ export async function startOrRenewSubscription(
     const meta = errToObj(e);
     log("purchase FAILED", meta);
     if (meta.userCancelled) return { status: "cancelled" };
-    return { status: "error", message: meta.message };
+    return {
+      status: "error",
+      errorCode: mapPurchaseError(meta),
+      message: meta.message,
+    };
   }
 }
 
@@ -136,15 +187,19 @@ export async function restorePurchases(
   if (!isRevenueCatConfigured()) {
     return {
       status: "error",
+      errorCode: "billing_not_initialized",
       message: "Billing not initialized (RevenueCat not configured).",
     };
   }
 
-  if (isBillingDisabled()) return { status: "unavailable" };
+  if (isBillingDisabled()) {
+    return { status: "unavailable", errorCode: "billing_unavailable" };
+  }
 
   if (!uid) {
     return {
       status: "error",
+      errorCode: "sign_in_required",
       message: "You must be signed in to restore purchases.",
     };
   }
@@ -153,6 +208,7 @@ export async function restorePurchases(
   if (!loggedIn) {
     return {
       status: "error",
+      errorCode: "login_failed",
       message: "Unable to sign in to billing. Please try again.",
     };
   }
@@ -168,12 +224,17 @@ export async function restorePurchases(
 
     return {
       status: "error",
+      errorCode: "entitlement_inactive",
       message: "No active premium entitlement after restore.",
     };
   } catch (e: unknown) {
     const meta = errToObj(e);
     if (meta.userCancelled) return { status: "cancelled" };
-    return { status: "error", message: meta.message };
+    return {
+      status: "error",
+      errorCode: mapPurchaseError(meta),
+      message: meta.message,
+    };
   }
 }
 
