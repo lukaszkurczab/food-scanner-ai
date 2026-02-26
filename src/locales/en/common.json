@@ -83,6 +83,17 @@
   "user_not_found": "User not found",
   "barcode_loader_title": "Looking up product...",
   "barcode_loader_subtext": "Fetching product data from the database.",
+  "billingErrors": {
+    "billingUnavailable": "Billing is unavailable on this device.",
+    "billingNotReady": "Billing is not ready yet. Please try again in a moment.",
+    "signInRequired": "Please sign in to manage subscriptions.",
+    "loginFailed": "Unable to connect your account to billing. Please try again.",
+    "productsUnavailable": "Subscription options are temporarily unavailable. Please try again later.",
+    "entitlementPending": "Purchase completed, but activation is still pending. Please restore purchases in a moment.",
+    "network": "Network problem while contacting the App Store. Please try again.",
+    "purchaseNotAllowed": "Purchases are not allowed on this device.",
+    "storeProblem": "The App Store is temporarily unavailable. Please try again later."
+  },
   "protein": "Protein",
   "carbs": "Carbs",
   "fat": "Fat"

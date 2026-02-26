@@ -15,6 +15,7 @@ import type { PurchasesPackage } from "react-native-purchases";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import { restorePurchases } from "@/services/billing/purchase";
+import { resolvePurchaseErrorMessage } from "@/services/billing/purchaseErrorMessage";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 
@@ -154,20 +155,13 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
         );
       } else if (res.status === "cancelled") {
         return;
-      } else if (res.status === "unavailable") {
-        Alert.alert(
-          title,
-          t("paywall.billingUnavailable", {
-            defaultValue: "Billing is unavailable on this device.",
-          })
-        );
       } else {
+        const fallback = t("paywall.restoreFailed", {
+          defaultValue: "Restore failed. Try again later.",
+        });
         Alert.alert(
           title,
-          res.message ||
-            t("paywall.restoreFailed", {
-              defaultValue: "Restore failed. Try again later.",
-            })
+          resolvePurchaseErrorMessage(t, res.errorCode, fallback)
         );
       }
     } finally {

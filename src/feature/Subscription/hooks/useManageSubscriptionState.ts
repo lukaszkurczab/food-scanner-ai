@@ -6,6 +6,7 @@ import {
   restorePurchases,
   startOrRenewSubscription,
 } from "@/services/billing/purchase";
+import { resolvePurchaseErrorMessage } from "@/services/billing/purchaseErrorMessage";
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -108,22 +109,19 @@ export function useManageSubscriptionState(params: {
         );
       } else if (res.status === "cancelled") {
         return;
-      } else if (res.status === "unavailable") {
-        Alert.alert(alertTitle, alertBillingUnavailable);
       } else {
+        const fallback = params.t("manageSubscription.restoreFailed", {
+          defaultValue: "Restore failed. Try again later.",
+        });
         Alert.alert(
           alertTitle,
-          res.message ||
-            params.t("manageSubscription.restoreFailed", {
-              defaultValue: "Restore failed. Try again later.",
-            }),
+          resolvePurchaseErrorMessage(params.t, res.errorCode, fallback),
         );
       }
     } finally {
       setBusy(false);
     }
   }, [
-    alertBillingUnavailable,
     alertTitle,
     params,
     requireAuthOrAlert,
@@ -147,22 +145,19 @@ export function useManageSubscriptionState(params: {
         );
       } else if (res.status === "cancelled") {
         return;
-      } else if (res.status === "unavailable") {
-        Alert.alert(alertTitle, alertBillingUnavailable);
       } else {
+        const fallback = params.t("manageSubscription.purchaseFailed", {
+          defaultValue: "Purchase failed.",
+        });
         Alert.alert(
           alertTitle,
-          res.message ||
-            params.t("manageSubscription.purchaseFailed", {
-              defaultValue: "Purchase failed.",
-            }),
+          resolvePurchaseErrorMessage(params.t, res.errorCode, fallback),
         );
       }
     } finally {
       setBusy(false);
     }
   }, [
-    alertBillingUnavailable,
     alertTitle,
     params,
     requireAuthOrAlert,

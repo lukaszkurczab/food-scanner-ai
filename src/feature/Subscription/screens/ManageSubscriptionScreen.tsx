@@ -1,7 +1,7 @@
-import { useMemo } from "react";
-import { View, Text, TouchableOpacity, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { useLayoutEffect, useMemo } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { FullScreenLoader, Layout } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
@@ -37,6 +37,14 @@ export default function ManageSubscriptionScreen({
   const { uid } = useAuthContext();
   const { isPremium, subscription, setDevPremium, refreshPremium } =
     usePremiumContext();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: t("manageSubscription.title"),
+      headerBackTitle: "",
+      gestureEnabled: true,
+    });
+  }, [navigation, t]);
 
   const {
     expanded,
@@ -78,18 +86,8 @@ export default function ManageSubscriptionScreen({
   }
 
   return (
-    <Layout>
+    <Layout style={styles.nativeHeaderLayout}>
       <View style={styles.flex}>
-        <Pressable style={styles.header} onPress={() => navigation.goBack()}>
-          <MaterialIcons name="chevron-left" size={28} color={theme.text} />
-          <Text
-            style={styles.heading}
-            accessibilityRole="header"
-          >
-            {t("manageSubscription.title")}
-          </Text>
-        </Pressable>
-
         <View style={styles.sectionSpacing}>
           <Text style={styles.sectionLabel}>
             {t("manageSubscription.yourSubscription")}
@@ -293,17 +291,7 @@ export default function ManageSubscriptionScreen({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    header: {
-      alignItems: "center",
-      flexDirection: "row",
-      marginBottom: theme.spacing.lg,
-      gap: theme.spacing.md,
-    },
-    heading: {
-      fontSize: theme.typography.size.lg,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-    },
+    nativeHeaderLayout: { paddingTop: theme.spacing.md },
     sectionSpacing: { marginBottom: theme.spacing.xl },
     sectionLabel: {
       fontSize: theme.typography.size.md,
