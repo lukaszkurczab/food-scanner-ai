@@ -4,10 +4,16 @@ import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 type AggregationType = "kcal" | "nutrients";
 
 function parseMealTime(meal: Meal): number | null {
+  const timestampValue = (meal as { timestamp?: unknown }).timestamp;
   const raw =
-    meal.timestamp && meal.timestamp.trim() ? meal.timestamp : meal.createdAt;
+    typeof timestampValue === "string"
+      ? timestampValue.trim()
+        ? timestampValue
+        : meal.createdAt
+      : timestampValue ?? meal.createdAt;
   if (!raw) return null;
   if (typeof raw === "number") return raw;
+  if (typeof raw !== "string") return null;
   const t = Date.parse(raw);
   return Number.isNaN(t) ? null : t;
 }

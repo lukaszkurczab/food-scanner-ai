@@ -1,0 +1,640 @@
+import { act, renderHook, waitFor } from "@testing-library/react-native";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
+import type { UserData } from "@/types";
+import { useUser } from "@/hooks/useUser";
+import { Platform } from "react-native";
+
+const mockGetApp = jest.fn<() => string>(() => "APP");
+const mockGetFirestore = jest.fn<(...args: unknown[]) => string>(() => "DB");
+const mockDoc = jest.fn<(...args: unknown[]) => string>(() => "DOC_REF");
+const mockOnSnapshot = jest.fn<(...args: unknown[]) => unknown>();
+const mockGetDoc = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockSetDoc = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockDeleteDoc = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockGetStorage = jest.fn<(...args: unknown[]) => string>(() => "STORAGE");
+const mockRef = jest.fn<(...args: unknown[]) => string>(() => "STORAGE_REF");
+const mockPutFile = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockGetDownloadURL = jest.fn<(...args: unknown[]) => Promise<string>>();
+const mockSavePhotoLocally = jest.fn<(...args: unknown[]) => Promise<string>>();
+const mockChangeUsernameService = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockChangeEmailService = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockChangePasswordService = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockAssertNoUndefined = jest.fn<(...args: unknown[]) => void>();
+const mockAsyncStorageGetItem = jest.fn<
+  (...args: unknown[]) => Promise<string | null>
+>();
+const mockAsyncStorageSetItem = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockFsGetInfoAsync = jest.fn<
+  (...args: unknown[]) => Promise<{ exists: boolean }>
+>();
+const mockFsMakeDirectoryAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockFsDeleteAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockFsMoveAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockFsCopyAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockFsReadAsStringAsync = jest.fn<(...args: unknown[]) => Promise<string>>();
+const mockFsWriteAsStringAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockFsCreateDownloadResumable = jest.fn<
+  (...args: unknown[]) => { downloadAsync: () => Promise<{ status: number }> }
+>();
+const mockFsStorageRequestPermissions = jest.fn<
+  (...args: unknown[]) => Promise<{ granted: boolean; directoryUri: string | null }>
+>();
+const mockFsStorageCreateFile = jest.fn<(...args: unknown[]) => Promise<string>>();
+const mockPrintToFileAsync = jest.fn<
+  (...args: unknown[]) => Promise<{ uri: string }>
+>();
+const mockShareAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockNetInfoFetch = jest.fn<
+  (...args: unknown[]) => Promise<{ isConnected: boolean }>
+>();
+const mockUnsub = jest.fn<() => void>();
+
+let mockSnapshotCb: ((snap: { data: () => unknown }) => void) | null = null;
+
+jest.mock("@react-native-firebase/app", () => ({
+  getApp: () => mockGetApp(),
+}));
+
+jest.mock("@react-native-firebase/firestore", () => ({
+  getFirestore: (...args: unknown[]) => mockGetFirestore(...args),
+  doc: (...args: unknown[]) => mockDoc(...args),
+  onSnapshot: (...args: unknown[]) => mockOnSnapshot(...args),
+  getDoc: (...args: unknown[]) => mockGetDoc(...args),
+  setDoc: (...args: unknown[]) => mockSetDoc(...args),
+  deleteDoc: (...args: unknown[]) => mockDeleteDoc(...args),
+}));
+
+jest.mock("@react-native-firebase/storage", () => ({
+  getStorage: (...args: unknown[]) => mockGetStorage(...args),
+  ref: (...args: unknown[]) => mockRef(...args),
+  putFile: (...args: unknown[]) => mockPutFile(...args),
+  getDownloadURL: (...args: unknown[]) => mockGetDownloadURL(...args),
+}));
+
+jest.mock("@utils/savePhotoLocally", () => ({
+  savePhotoLocally: (...args: unknown[]) => mockSavePhotoLocally(...args),
+}));
+
+jest.mock("@/services/userService", () => ({
+  changeUsernameService: (...args: unknown[]) => mockChangeUsernameService(...args),
+  changeEmailService: (...args: unknown[]) => mockChangeEmailService(...args),
+  changePasswordService: (...args: unknown[]) => mockChangePasswordService(...args),
+}));
+
+jest.mock("@/utils/findUndefined", () => ({
+  assertNoUndefined: (...args: unknown[]) => mockAssertNoUndefined(...args),
+}));
+
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  __esModule: true,
+  default: {
+    getItem: (...args: unknown[]) => mockAsyncStorageGetItem(...args),
+    setItem: (...args: unknown[]) => mockAsyncStorageSetItem(...args),
+  },
+}));
+
+jest.mock("expo-file-system", () => ({
+  documentDirectory: "file:///docs/",
+  getInfoAsync: (...args: unknown[]) => mockFsGetInfoAsync(...args),
+  makeDirectoryAsync: (...args: unknown[]) => mockFsMakeDirectoryAsync(...args),
+  deleteAsync: (...args: unknown[]) => mockFsDeleteAsync(...args),
+  moveAsync: (...args: unknown[]) => mockFsMoveAsync(...args),
+  copyAsync: (...args: unknown[]) => mockFsCopyAsync(...args),
+  readAsStringAsync: (...args: unknown[]) => mockFsReadAsStringAsync(...args),
+  writeAsStringAsync: (...args: unknown[]) => mockFsWriteAsStringAsync(...args),
+  createDownloadResumable: (...args: unknown[]) =>
+    mockFsCreateDownloadResumable(...args),
+  StorageAccessFramework: {
+    requestDirectoryPermissionsAsync: (...args: unknown[]) =>
+      mockFsStorageRequestPermissions(...args),
+    createFileAsync: (...args: unknown[]) => mockFsStorageCreateFile(...args),
+  },
+  EncodingType: {
+    Base64: "base64",
+  },
+}));
+
+jest.mock("expo-print", () => ({
+  printToFileAsync: (...args: unknown[]) => mockPrintToFileAsync(...args),
+}));
+
+jest.mock("expo-sharing", () => ({
+  shareAsync: (...args: unknown[]) => mockShareAsync(...args),
+}));
+
+jest.mock("@react-native-community/netinfo", () => ({
+  __esModule: true,
+  default: {
+    fetch: (...args: unknown[]) => mockNetInfoFetch(...args),
+  },
+}));
+
+const setPlatformOs = (os: "ios" | "android") => {
+  Object.defineProperty(Platform, "OS", {
+    configurable: true,
+    get: () => os,
+  });
+};
+
+const createUser = (overrides: Partial<UserData> = {}): UserData => ({
+  uid: "u1",
+  email: "u1@example.com",
+  username: "neo",
+  plan: "free",
+  createdAt: 1,
+  lastLogin: "2026-03-10T10:00:00.000Z",
+  surveyComplited: true,
+  syncState: "synced",
+  darkTheme: false,
+  language: "en",
+  unitsSystem: "metric",
+  age: "30",
+  sex: "male",
+  height: "180",
+  weight: "80",
+  preferences: [],
+  activityLevel: "moderate",
+  goal: "maintain",
+  calorieTarget: 2200,
+  ...overrides,
+});
+
+const emitSnapshot = (data: UserData | null) => {
+  if (!mockSnapshotCb) throw new Error("snapshot callback missing");
+  mockSnapshotCb({
+    data: () => data,
+  });
+};
+
+describe("useUser", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useRealTimers();
+
+    setPlatformOs("ios");
+    mockSnapshotCb = null;
+    mockGetApp.mockReturnValue("APP");
+    mockGetFirestore.mockReturnValue("DB");
+    mockDoc.mockReturnValue("DOC_REF");
+    mockOnSnapshot.mockImplementation((...args: unknown[]) => {
+      const cb = args[1] as (snap: { data: () => unknown }) => void;
+      mockSnapshotCb = cb;
+      return mockUnsub;
+    });
+    mockGetDoc.mockResolvedValue({ data: () => null });
+    mockSetDoc.mockResolvedValue(undefined);
+    mockDeleteDoc.mockResolvedValue(undefined);
+    mockGetStorage.mockReturnValue("STORAGE");
+    mockRef.mockReturnValue("STORAGE_REF");
+    mockPutFile.mockResolvedValue(undefined);
+    mockGetDownloadURL.mockResolvedValue("https://cdn/avatar.jpg");
+    mockSavePhotoLocally.mockResolvedValue("file:///photos/avatar.jpg");
+    mockChangeUsernameService.mockResolvedValue(undefined);
+    mockChangeEmailService.mockResolvedValue(undefined);
+    mockChangePasswordService.mockResolvedValue(undefined);
+    mockAssertNoUndefined.mockReturnValue(undefined);
+    mockAsyncStorageGetItem.mockResolvedValue(null);
+    mockAsyncStorageSetItem.mockResolvedValue(undefined);
+    mockFsGetInfoAsync.mockResolvedValue({ exists: true });
+    mockFsMakeDirectoryAsync.mockResolvedValue(undefined);
+    mockFsDeleteAsync.mockResolvedValue(undefined);
+    mockFsMoveAsync.mockResolvedValue(undefined);
+    mockFsCopyAsync.mockResolvedValue(undefined);
+    mockFsReadAsStringAsync.mockResolvedValue("BASE64PDF");
+    mockFsWriteAsStringAsync.mockResolvedValue(undefined);
+    mockFsCreateDownloadResumable.mockReturnValue({
+      downloadAsync: async () => ({ status: 200 }),
+    });
+    mockFsStorageRequestPermissions.mockResolvedValue({
+      granted: true,
+      directoryUri: "content://tree",
+    });
+    mockFsStorageCreateFile.mockResolvedValue("content://tree/export.pdf");
+    mockPrintToFileAsync.mockResolvedValue({ uri: "file:///tmp/export.pdf" });
+    mockShareAsync.mockResolvedValue(undefined);
+    mockNetInfoFetch.mockResolvedValue({ isConnected: true });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  it("handles empty uid and local language change without network calls", async () => {
+    const { result } = renderHook(() => useUser(""));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(result.current.userData).toBeNull();
+    expect(result.current.language).toBe("en");
+    expect(mockOnSnapshot).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.changeLanguage("pl");
+    });
+    expect(result.current.language).toBe("pl");
+    expect(mockSetDoc).not.toHaveBeenCalled();
+  });
+
+  it("loads cached profile, reacts to snapshot updates and unsubscribes", async () => {
+    const cached = createUser({
+      language: "de",
+      avatarLocalPath: "file:///avatar-local.jpg",
+    });
+    mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
+
+    const { result, unmount } = renderHook(() => useUser("u1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(result.current.userData?.username).toBe("neo");
+    expect(result.current.language).toBe("de");
+
+    await act(async () => {
+      emitSnapshot(
+        createUser({
+          username: "trinity",
+          language: "fr",
+          avatarLocalPath: "file:///avatar-local.jpg",
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(result.current.userData?.username).toBe("trinity");
+    });
+    expect(result.current.language).toBe("fr");
+    expect(mockAsyncStorageSetItem).toHaveBeenCalled();
+
+    unmount();
+    expect(mockUnsub).toHaveBeenCalled();
+  });
+
+  it("hydrates avatar from remote when url exists and local path is missing", async () => {
+    const cacheKey = "user:profile:u1";
+    const avatarPath = "file:///docs/users/u1/images/avatar.jpg";
+    const cached = createUser({
+      avatarUrl: "https://cdn/avatar-remote.jpg",
+      avatarLocalPath: "",
+    });
+    mockAsyncStorageGetItem
+      .mockResolvedValueOnce(JSON.stringify(cached))
+      .mockResolvedValueOnce(JSON.stringify(cached));
+    let targetInfoReads = 0;
+    mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
+      const path = args[0] as string;
+      if (path === "file:///docs/users/u1/images/") return { exists: false };
+      if (path === "file:///docs/users/u1/images/avatar.jpg.tmp") return { exists: true };
+      if (path === avatarPath) {
+        targetInfoReads += 1;
+        return { exists: targetInfoReads >= 1 };
+      }
+      return { exists: true };
+    });
+
+    const { result } = renderHook(() => useUser("u1"));
+
+    await waitFor(() => {
+      expect(mockFsCreateDownloadResumable).toHaveBeenCalledWith(
+        "https://cdn/avatar-remote.jpg",
+        "file:///docs/users/u1/images/avatar.jpg.tmp",
+      );
+    });
+    await waitFor(() => {
+      expect(result.current.userData?.avatarLocalPath).toBe(avatarPath);
+    });
+    expect(mockFsDeleteAsync).toHaveBeenCalledWith(
+      "file:///docs/users/u1/images/avatar.jpg.tmp",
+      { idempotent: true },
+    );
+    expect(mockFsDeleteAsync).toHaveBeenCalledWith(avatarPath, {
+      idempotent: true,
+    });
+    expect(mockFsMakeDirectoryAsync).toHaveBeenCalledWith(
+      "file:///docs/users/u1/images/",
+      { intermediates: true },
+    );
+    expect(mockFsMoveAsync).toHaveBeenCalledWith({
+      from: "file:///docs/users/u1/images/avatar.jpg.tmp",
+      to: avatarPath,
+    });
+    expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
+      cacheKey,
+      expect.stringContaining("avatarLocalPath"),
+    );
+  });
+
+  it("keeps existing avatar when remote hydration download fails", async () => {
+    const cached = createUser({
+      avatarUrl: "https://cdn/avatar-broken.jpg",
+      avatarLocalPath: "",
+    });
+    mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
+    mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
+      const path = args[0] as string;
+      if (path === "file:///docs/users/u1/images/") return { exists: true };
+      if (path === "file:///docs/users/u1/images/avatar.jpg.tmp") return { exists: true };
+      return { exists: false };
+    });
+    mockFsCreateDownloadResumable.mockReturnValueOnce({
+      downloadAsync: async () => ({ status: 500 }),
+    });
+
+    const { result } = renderHook(() => useUser("u1"));
+
+    await waitFor(() => {
+      expect(mockFsCreateDownloadResumable).toHaveBeenCalled();
+    });
+    expect(result.current.userData?.avatarLocalPath).toBe("");
+    expect(mockFsDeleteAsync).toHaveBeenCalledWith(
+      "file:///docs/users/u1/images/avatar.jpg.tmp",
+      { idempotent: true },
+    );
+  });
+
+  it("normalizes invalid local avatar path and updates cache mirror", async () => {
+    const cached = createUser({
+      avatarLocalPath: "file:///missing-avatar.jpg",
+    });
+    mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
+    mockFsGetInfoAsync.mockRejectedValueOnce(new Error("missing file"));
+
+    const { result } = renderHook(() => useUser("u1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(result.current.userData?.avatarLocalPath).toBe("");
+    expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
+      "user:profile:u1",
+      expect.stringContaining("\"avatarLocalPath\":\"\""),
+    );
+  });
+
+  it("reads cached data when offline in fetchUserFromCloud", async () => {
+    const cached = createUser({
+      username: "cached-name",
+      avatarLocalPath: "file:///avatar-local.jpg",
+    });
+    mockAsyncStorageGetItem.mockResolvedValue(JSON.stringify(cached));
+    mockNetInfoFetch.mockResolvedValueOnce({ isConnected: false });
+
+    const { result } = renderHook(() => useUser("u1"));
+    let profile: unknown = null;
+    await act(async () => {
+      profile = await result.current.fetchUserFromCloud();
+    });
+
+    expect(profile).toEqual(expect.objectContaining({ username: "cached-name" }));
+    expect(mockGetDoc).not.toHaveBeenCalled();
+  });
+
+  it("fetches from cloud when online and mirrors cache", async () => {
+    const remote = createUser({
+      username: "remote-name",
+      avatarLocalPath: "file:///avatar-local.jpg",
+    });
+    mockGetDoc.mockResolvedValueOnce({ data: () => remote });
+
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(null);
+    });
+    let profile: unknown = null;
+    await act(async () => {
+      profile = await result.current.fetchUserFromCloud();
+    });
+
+    expect(profile).toEqual(expect.objectContaining({ username: "remote-name" }));
+    expect(mockGetDoc).toHaveBeenCalled();
+    expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
+      "user:profile:u1",
+      expect.stringContaining("remote-name"),
+    );
+  });
+
+  it("falls back when cloud fetch throws and handles malformed cached data", async () => {
+    mockNetInfoFetch.mockResolvedValueOnce({ isConnected: true });
+    mockGetDoc.mockRejectedValueOnce(new Error("network"));
+    mockAsyncStorageGetItem
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce("{bad-json")
+      .mockResolvedValueOnce(JSON.stringify(createUser({ username: "from-cache" })));
+
+    const { result } = renderHook(() => useUser("u1"));
+    let malformedProfile: UserData | null = null;
+    await act(async () => {
+      malformedProfile = await result.current.fetchUserFromCloud();
+    });
+    expect(malformedProfile).toBeNull();
+
+    mockNetInfoFetch.mockResolvedValueOnce({ isConnected: true });
+    mockGetDoc.mockRejectedValueOnce(new Error("network"));
+    let fallbackProfile: unknown = null;
+    await act(async () => {
+      fallbackProfile = await result.current.fetchUserFromCloud();
+    });
+    expect(fallbackProfile).toEqual(expect.objectContaining({ username: "from-cache" }));
+  });
+
+  it("updates profile payload and keeps language in sync", async () => {
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(createUser());
+    });
+
+    await act(async () => {
+      await result.current.updateUserProfile({
+        username: "oracle",
+        language: "pl",
+        avatarLocalPath: undefined,
+      });
+    });
+
+    expect(mockAssertNoUndefined).toHaveBeenCalled();
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      "DOC_REF",
+      expect.objectContaining({
+        username: "oracle",
+        language: "pl",
+        avatarLocalPath: "",
+      }),
+      { merge: true },
+    );
+    expect(result.current.language).toBe("pl");
+  });
+
+  it("sets avatar in offline and online modes", async () => {
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(createUser());
+    });
+
+    mockNetInfoFetch.mockResolvedValueOnce({ isConnected: false });
+    await act(async () => {
+      await result.current.setAvatar("file:///picked.jpg");
+    });
+    expect(mockSavePhotoLocally).toHaveBeenCalledWith({
+      userUid: "u1",
+      fileId: "avatar",
+      photoUri: "file:///picked.jpg",
+    });
+    expect(mockPutFile).toHaveBeenCalledTimes(0);
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      "DOC_REF",
+      expect.objectContaining({
+        avatarLocalPath: "file:///photos/avatar.jpg",
+      }),
+      { merge: true },
+    );
+
+    mockNetInfoFetch.mockResolvedValueOnce({ isConnected: true });
+    await act(async () => {
+      await result.current.setAvatar("file:///picked-2.jpg");
+    });
+    expect(mockPutFile).toHaveBeenCalledWith("STORAGE_REF", "file:///photos/avatar.jpg", {
+      contentType: "image/jpeg",
+    });
+    expect(mockGetDownloadURL).toHaveBeenCalledWith("STORAGE_REF");
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      "DOC_REF",
+      expect.objectContaining({
+        avatarUrl: "https://cdn/avatar.jpg",
+        avatarLocalPath: "file:///photos/avatar.jpg",
+      }),
+      { merge: true },
+    );
+  });
+
+  it("delegates account operations and deletes user doc", async () => {
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(createUser());
+    });
+
+    await act(async () => {
+      await result.current.changeUsername("morpheus", "pw");
+      await result.current.changeEmail("new@example.com", "pw");
+      await result.current.changePassword("old", "new");
+      await result.current.deleteUser();
+    });
+
+    expect(mockChangeUsernameService).toHaveBeenCalledWith({
+      uid: "u1",
+      newUsername: "morpheus",
+      password: "pw",
+    });
+    expect(mockChangeEmailService).toHaveBeenCalledWith({
+      uid: "u1",
+      newEmail: "new@example.com",
+      password: "pw",
+    });
+    expect(mockChangePasswordService).toHaveBeenCalledWith({
+      currentPassword: "old",
+      newPassword: "new",
+    });
+    expect(mockDeleteDoc).toHaveBeenCalledWith("DOC_REF");
+    expect(result.current.userData).toBeNull();
+  });
+
+  it("runs sync convenience helpers and language update for signed-in user", async () => {
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(createUser());
+    });
+
+    await act(async () => {
+      await result.current.sendUserToCloud();
+      await result.current.syncUserProfile();
+      await result.current.markUserAsSynced();
+      await result.current.changeLanguage("it");
+    });
+
+    expect(mockNetInfoFetch).toHaveBeenCalledTimes(3);
+    expect(result.current.language).toBe("it");
+  });
+
+  it("exports user data for iOS and android SAF branches", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-03-11T12:00:00.000Z"));
+
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(createUser());
+    });
+
+    const iosResult = await result.current.exportUserData();
+    expect(iosResult).toBe("file:///docs/caloriai_user_data_2026-03-11.pdf");
+    expect(mockFsCopyAsync).toHaveBeenCalledWith({
+      from: "file:///tmp/export.pdf",
+      to: "file:///docs/caloriai_user_data_2026-03-11.pdf",
+    });
+    expect(mockShareAsync).toHaveBeenCalledWith(
+      "file:///docs/caloriai_user_data_2026-03-11.pdf",
+      expect.objectContaining({
+        mimeType: "application/pdf",
+      }),
+    );
+
+    setPlatformOs("android");
+    const androidResult = await result.current.exportUserData();
+    expect(androidResult).toBe("content://tree/export.pdf");
+    expect(mockFsStorageRequestPermissions).toHaveBeenCalled();
+    expect(mockFsStorageCreateFile).toHaveBeenCalled();
+    expect(mockFsWriteAsStringAsync).toHaveBeenCalledWith(
+      "content://tree/export.pdf",
+      "BASE64PDF",
+      { encoding: "base64" },
+    );
+  });
+
+  it("exports user data to app documents when android directory permission is denied", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-03-12T12:00:00.000Z"));
+    mockFsStorageRequestPermissions.mockResolvedValueOnce({
+      granted: false,
+      directoryUri: null,
+    });
+    setPlatformOs("android");
+
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(createUser());
+    });
+
+    const exported = await result.current.exportUserData();
+    expect(exported).toBe("file:///docs/caloriai_user_data_2026-03-12.pdf");
+    expect(mockFsCopyAsync).toHaveBeenCalledWith({
+      from: "file:///tmp/export.pdf",
+      to: "file:///docs/caloriai_user_data_2026-03-12.pdf",
+    });
+  });
+
+  it("exports user data to app documents when SAF flow throws", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-03-13T12:00:00.000Z"));
+    mockFsStorageRequestPermissions.mockRejectedValueOnce(new Error("denied"));
+    setPlatformOs("android");
+
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(createUser());
+    });
+
+    const exported = await result.current.exportUserData();
+    expect(exported).toBe("file:///docs/caloriai_user_data_2026-03-13.pdf");
+    expect(mockFsCopyAsync).toHaveBeenCalledWith({
+      from: "file:///tmp/export.pdf",
+      to: "file:///docs/caloriai_user_data_2026-03-13.pdf",
+    });
+  });
+});
