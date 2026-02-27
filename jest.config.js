@@ -18,7 +18,12 @@ module.exports = {
     "^@types/(.*)$": "<rootDir>/src/types/$1",
     "^@utils/(.*)$": "<rootDir>/src/utils/$1",
   },
-  collectCoverageFrom: ["src/hooks/useChatHistory.ts", "src/hooks/useMeals.ts"],
+  collectCoverageFrom: [
+    "src/**/*.{ts,tsx}",
+    "!src/**/*.test.{ts,tsx}",
+    "!src/**/index.{ts,tsx}",
+    "!src/**/*.d.ts",
+  ],
   coverageThreshold: {
     global: {
       branches: 90,
