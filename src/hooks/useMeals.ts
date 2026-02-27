@@ -115,13 +115,17 @@ export function useMeals(userUid: string | null) {
         log.log("sync already scheduled", { uid: userUid, reason });
         return;
       }
-      log.log("sync scheduled", { uid: userUid, reason, delayMs: SYNC_DEBOUNCE_MS });
+      log.log("sync scheduled", {
+        uid: userUid,
+        reason,
+        delayMs: SYNC_DEBOUNCE_MS,
+      });
       syncTimerRef.current = setTimeout(() => {
         syncTimerRef.current = null;
         void flushQueuedSync();
       }, SYNC_DEBOUNCE_MS);
     },
-    [emitOfflineQueuedToast, flushQueuedSync, userUid]
+    [emitOfflineQueuedToast, flushQueuedSync, userUid],
   );
 
   useEffect(() => {
@@ -140,16 +144,14 @@ export function useMeals(userUid: string | null) {
         syncTimerRef.current = null;
       }
     },
-    []
+    [],
   );
 
   const loadFirstPage = useCallback(async () => {
-    console.log("[useMeals] loadFirstPage start", { userUid });
     if (!userUid) {
       setMeals([]);
       setLoading(false);
       beforeRef.current = null;
-      console.log("[useMeals] no user, cleared");
       return;
     }
     setLoading(true);
@@ -159,34 +161,21 @@ export function useMeals(userUid: string | null) {
       ? String(page[page.length - 1].timestamp)
       : null;
     setLoading(false);
-    console.log("[useMeals] loadFirstPage done", {
-      count: page.length,
-      nextBefore: beforeRef.current,
-    });
   }, [userUid]);
 
   const loadNextPage = useCallback(async () => {
     if (!userUid || !beforeRef.current) return;
-    console.log("[useMeals] loadNextPage start", {
-      userUid,
-      before: beforeRef.current,
-    });
     const page = await getMealsPageLocal(
       userUid,
       PAGE_LIMIT,
-      beforeRef.current
+      beforeRef.current,
     );
     if (!page.length) {
       beforeRef.current = null;
-      console.log("[useMeals] loadNextPage no more");
       return;
     }
     setMeals((prev) => [...prev, ...page]);
     beforeRef.current = String(page[page.length - 1].timestamp);
-    console.log("[useMeals] loadNextPage appended", {
-      added: page.length,
-      nextBefore: beforeRef.current,
-    });
   }, [userUid]);
 
   useEffect(() => {
@@ -194,19 +183,15 @@ export function useMeals(userUid: string | null) {
   }, [loadFirstPage]);
 
   const getMeals = useCallback(async () => {
-    console.log("[useMeals] getMeals");
     await loadFirstPage();
   }, [loadFirstPage]);
 
   const addMeal = useCallback(
     async (
       meal: Omit<Meal, "updatedAt" | "deleted">,
-      _opts?: { alsoSaveToMyMeals?: boolean }
+      _opts?: { alsoSaveToMyMeals?: boolean },
     ) => {
       if (!userUid) return;
-      console.log("[useMeals] addMeal start", {
-        hasPhoto: !!meal.photoUrl,
-      });
       const now = new Date().toISOString();
       const cloudId = meal.cloudId ?? uuidv4();
       const mealId = meal.mealId ?? uuidv4();
@@ -228,24 +213,17 @@ export function useMeals(userUid: string | null) {
       const maybeUri = meal.photoUrl;
       if (isLocalUri(maybeUri)) {
         base.photoLocalPath = maybeUri;
-        console.log("[useMeals] register image for upload", {
-          cloudId,
-          uri: maybeUri,
-        });
         await insertOrUpdateImage(
           userUid,
           cloudId,
           base.photoLocalPath,
-          "pending"
+          "pending",
         );
       }
 
       await upsertMealLocal(base);
-      console.log("[useMeals] upsertMealLocal ok", { cloudId });
       emit("meal:added", { uid: userUid, meal: base });
-      console.log("[useMeals] emit meal:added", { cloudId });
       await enqueueUpsert(userUid, base);
-      console.log("[useMeals] enqueueUpsert ok", { cloudId });
       if (_opts?.alsoSaveToMyMeals) {
         const saved: Meal = {
           ...base,
@@ -254,27 +232,20 @@ export function useMeals(userUid: string | null) {
           source: "saved",
         };
         await enqueueMyMealUpsert(userUid, saved);
-        console.log("[useMeals] enqueueMyMealUpsert ok", { id: base.mealId });
       }
 
       scheduleQueuedSync("add");
 
       await loadFirstPage();
-      console.log("[useMeals] reload after add");
       triggerReconcile(userUid);
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
-      console.log("[useMeals] addMeal done, toast fired");
     },
-    [userUid, loadFirstPage, scheduleQueuedSync]
+    [userUid, loadFirstPage, scheduleQueuedSync],
   );
 
   const updateMeal = useCallback(
     async (meal: Meal) => {
       if (!userUid) return;
-      console.log("[useMeals] updateMeal start", {
-        cloudId: meal.cloudId,
-        source: meal.source,
-      });
 
       if (meal.source === "saved") {
         const now = new Date().toISOString();
@@ -310,61 +281,45 @@ export function useMeals(userUid: string | null) {
       const maybeUri = meal.photoUrl;
       if (isLocalUri(maybeUri)) {
         payload.photoLocalPath = maybeUri;
-        console.log("[useMeals] register image for upload (update)", {
-          cloudId,
-          uri: maybeUri,
-        });
         await insertOrUpdateImage(
           userUid,
           cloudId,
           payload.photoLocalPath,
-          "pending"
+          "pending",
         );
       }
 
       await upsertMealLocal(payload);
-      console.log("[useMeals] upsertMealLocal ok (update)", { cloudId });
       emit("meal:updated", { uid: userUid, meal: payload });
-      console.log("[useMeals] emit meal:updated", { cloudId });
       await enqueueUpsert(userUid, payload);
-      console.log("[useMeals] enqueueUpsert ok (update)", { cloudId });
 
       scheduleQueuedSync("update");
 
       await loadFirstPage();
-      console.log("[useMeals] reload after update");
       triggerReconcile(userUid);
     },
-    [userUid, loadFirstPage, scheduleQueuedSync]
+    [userUid, loadFirstPage, scheduleQueuedSync],
   );
 
   const deleteMeal = useCallback(
     async (mealCloudId: string) => {
       if (!userUid || !mealCloudId) return;
-      console.log("[useMeals] deleteMeal start", { cloudId: mealCloudId });
       const now = new Date().toISOString();
       await markDeletedLocal(mealCloudId, now);
-      console.log("[useMeals] markDeletedLocal ok", { cloudId: mealCloudId });
       emit("meal:deleted", { uid: userUid, cloudId: mealCloudId });
-      console.log("[useMeals] emit meal:deleted", { cloudId: mealCloudId });
       await enqueueDelete(userUid, mealCloudId, now);
-      console.log("[useMeals] enqueueDelete ok", { cloudId: mealCloudId });
 
       scheduleQueuedSync("delete");
 
       setMeals((prev) => prev.filter((m) => (m.cloudId || "") !== mealCloudId));
-      console.log("[useMeals] local list pruned");
       triggerReconcile(userUid);
     },
-    [userUid, scheduleQueuedSync]
+    [userUid, scheduleQueuedSync],
   );
 
   const duplicateMeal = useCallback(
     async (original: Meal, dateOverride?: string) => {
       if (!userUid) return;
-      console.log("[useMeals] duplicateMeal start", {
-        original: original.cloudId,
-      });
       const now = new Date().toISOString();
       const newCloudId = uuidv4();
       const newMealId = uuidv4();
@@ -383,27 +338,16 @@ export function useMeals(userUid: string | null) {
       };
 
       await upsertMealLocal(copy);
-      console.log("[useMeals] upsertMealLocal ok (duplicate)", {
-        cloudId: newCloudId,
-      });
       emit("meal:added", { uid: userUid, meal: copy });
-      console.log("[useMeals] emit meal:added (duplicate)", {
-        cloudId: newCloudId,
-      });
       await enqueueUpsert(userUid, copy);
-      console.log("[useMeals] enqueueUpsert ok (duplicate)", {
-        cloudId: newCloudId,
-      });
 
       scheduleQueuedSync("duplicate");
 
       await loadFirstPage();
-      console.log("[useMeals] reload after duplicate");
       triggerReconcile(userUid);
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
-      console.log("[useMeals] duplicateMeal done, toast fired");
     },
-    [userUid, loadFirstPage, scheduleQueuedSync]
+    [userUid, loadFirstPage, scheduleQueuedSync],
   );
 
   const syncMeals = useCallback(async () => {
@@ -412,7 +356,6 @@ export function useMeals(userUid: string | null) {
     await flushQueuedSync();
   }, [flushQueuedSync, userUid]);
   const getUnsyncedMeals = useCallback(async () => {
-    console.log("[useMeals] getUnsyncedMeals empty");
     return [] as Meal[];
   }, []);
 
@@ -440,6 +383,6 @@ export function useMeals(userUid: string | null) {
       duplicateMeal,
       syncMeals,
       getUnsyncedMeals,
-    ]
+    ],
   );
 }
