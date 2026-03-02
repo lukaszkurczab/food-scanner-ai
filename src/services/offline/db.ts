@@ -1,46 +1,11 @@
-import { File } from "expo-file-system/next";
 import * as SQLite from "expo-sqlite";
-import { defaultDatabaseDirectory } from "expo-sqlite";
 
 const DB_NAME = "fitaly.db";
-const LEGACY_DB_NAME = "caloriai.db";
 
 let db: SQLite.SQLiteDatabase | null = null;
 
-function migrateLegacyDatabaseIfNeeded(): void {
-  const currentDbFile = new File(defaultDatabaseDirectory, DB_NAME);
-  if (currentDbFile.exists) {
-    return;
-  }
-
-  const legacyDbFile = new File(defaultDatabaseDirectory, LEGACY_DB_NAME);
-  if (!legacyDbFile.exists) {
-    return;
-  }
-
-  try {
-    const legacyDb = SQLite.openDatabaseSync(LEGACY_DB_NAME);
-    try {
-      legacyDb.execSync(`PRAGMA wal_checkpoint(TRUNCATE);`);
-    } finally {
-      legacyDb.closeSync();
-    }
-
-    legacyDbFile.copy(currentDbFile);
-  } catch {
-    if (currentDbFile.exists) {
-      try {
-        currentDbFile.delete();
-      } catch {
-        // Best-effort cleanup of a partially copied database file.
-      }
-    }
-  }
-}
-
 export function getDB(): SQLite.SQLiteDatabase {
   if (!db) {
-    migrateLegacyDatabaseIfNeeded();
     db = SQLite.openDatabaseSync(DB_NAME);
     db.execSync(`PRAGMA journal_mode = WAL;`);
     db.execSync(`PRAGMA foreign_keys = ON;`);
