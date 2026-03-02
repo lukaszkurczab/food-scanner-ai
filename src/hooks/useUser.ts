@@ -491,7 +491,7 @@ export function useUser(uid: string) {
           </style>
         </head>
         <body>
-          <h1>CaloriAI – User Data Export</h1>
+          <h1>Fitaly – User Data Export</h1>
           <pre>${json
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
@@ -504,7 +504,7 @@ export function useUser(uid: string) {
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, "0");
     const dd = String(now.getDate()).padStart(2, "0");
-    const filename = `caloriai_user_data_${yyyy}-${mm}-${dd}.pdf`;
+    const filename = `fitaly_user_data_${yyyy}-${mm}-${dd}.pdf`;
 
     if (Platform.OS === "android" && FileSystem.StorageAccessFramework) {
       try {
@@ -525,7 +525,7 @@ export function useUser(uid: string) {
           });
           await Sharing.shareAsync(fileUri, {
             mimeType: "application/pdf",
-            dialogTitle: "CaloriAI – PDF",
+            dialogTitle: "Fitaly – PDF",
           });
           return fileUri;
         } else {
@@ -533,7 +533,7 @@ export function useUser(uid: string) {
           await FileSystem.copyAsync({ from: tmpPdf, to: fallback });
           await Sharing.shareAsync(fallback, {
             mimeType: "application/pdf",
-            dialogTitle: "CaloriAI – PDF",
+            dialogTitle: "Fitaly – PDF",
           });
           return fallback;
         }
@@ -542,7 +542,7 @@ export function useUser(uid: string) {
         await FileSystem.copyAsync({ from: tmpPdf, to: fallback });
         await Sharing.shareAsync(fallback, {
           mimeType: "application/pdf",
-          dialogTitle: "CaloriAI – PDF",
+          dialogTitle: "Fitaly – PDF",
         });
         return fallback;
       }
@@ -551,7 +551,7 @@ export function useUser(uid: string) {
       await FileSystem.copyAsync({ from: tmpPdf, to: dest });
       await Sharing.shareAsync(dest, {
         mimeType: "application/pdf",
-        dialogTitle: "CaloriAI – PDF",
+        dialogTitle: "Fitaly – PDF",
       });
       return dest;
     }

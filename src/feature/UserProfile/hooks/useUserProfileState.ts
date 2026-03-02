@@ -108,7 +108,7 @@ export function useUserProfileState(params: {
     try {
       const fileUri = await exportUserData();
       const outputPath = typeof fileUri === "string" ? fileUri : "";
-      const fileName = outputPath.split("/").pop() ?? "caloriai_user_data.pdf";
+      const fileName = outputPath.split("/").pop() ?? "fitaly_user_data.pdf";
 
       setExportModalTitle(t("downloadYourData"));
       setExportModalMessage(

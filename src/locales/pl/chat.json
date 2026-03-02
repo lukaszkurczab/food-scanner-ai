@@ -13,7 +13,7 @@
   },
   "limit": {
     "upgradeCta": "Przejdź na Premium",
-    "title": "Dziękujemy za korzystanie z CaloriAI!",
+    "title": "Dziękujemy za korzystanie z Fitaly!",
     "body": "Wykorzystałeś {{used}} z {{limit}} darmowych pytań dziennie. Wróć jutro lub odblokuj nielimitowany dostęp.",
     "button": "Odblokuj Premium",
     "reached": "Osiągnięto limit dzienny ({{used}}/{{limit}})",

@@ -12,7 +12,7 @@ type ResetOptions = {
   logout: boolean;
 };
 
-const RESET_PATH = "caloriai://e2e/reset";
+const RESET_PATH = "fitaly://e2e/reset";
 
 function parseBoolFlag(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined) return fallback;

@@ -11,27 +11,27 @@
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		4D392DFBE4BA42479AE9C24C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 556B113AFF4F4C68A306E4FA /* GoogleService-Info.plist */; };
 		6400EFA6B51AF92961486B3C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 93924E401433D4DF0199C189 /* PrivacyInfo.xcprivacy */; };
-		A618FB93FFC2A51D6C8DB180 /* Pods_CaloriAI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A421C986ED1DB4158DA9E64 /* Pods_CaloriAI.framework */; };
+		A618FB93FFC2A51D6C8DB180 /* Pods_Fitaly.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A421C986ED1DB4158DA9E64 /* Pods_Fitaly.framework */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		FE9AD7BEAF68151B4328BFA6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBDE2857B653284821A11F73 /* ExpoModulesProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* CaloriAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaloriAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = CaloriAI/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = CaloriAI/Info.plist; sourceTree = "<group>"; };
-		3BE4E62DE9F1B8B4C8B0380F /* Pods-CaloriAI.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CaloriAI.debug.xcconfig"; path = "Target Support Files/Pods-CaloriAI/Pods-CaloriAI.debug.xcconfig"; sourceTree = "<group>"; };
-		556B113AFF4F4C68A306E4FA /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "CaloriAI/GoogleService-Info.plist"; sourceTree = "<group>"; };
-		8A421C986ED1DB4158DA9E64 /* Pods_CaloriAI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CaloriAI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		93924E401433D4DF0199C189 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = CaloriAI/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = CaloriAI/SplashScreen.storyboard; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* Fitaly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fitaly.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Fitaly/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Fitaly/Info.plist; sourceTree = "<group>"; };
+		3BE4E62DE9F1B8B4C8B0380F /* Pods-Fitaly.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Fitaly.debug.xcconfig"; path = "Target Support Files/Pods-Fitaly/Pods-Fitaly.debug.xcconfig"; sourceTree = "<group>"; };
+		556B113AFF4F4C68A306E4FA /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Fitaly/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		8A421C986ED1DB4158DA9E64 /* Pods_Fitaly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Fitaly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		93924E401433D4DF0199C189 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Fitaly/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Fitaly/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		BB645064EAABB4D580A6E422 /* Pods-CaloriAI.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CaloriAI.release.xcconfig"; path = "Target Support Files/Pods-CaloriAI/Pods-CaloriAI.release.xcconfig"; sourceTree = "<group>"; };
-		DBDE2857B653284821A11F73 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-CaloriAI/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		BB645064EAABB4D580A6E422 /* Pods-Fitaly.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Fitaly.release.xcconfig"; path = "Target Support Files/Pods-Fitaly/Pods-Fitaly.release.xcconfig"; sourceTree = "<group>"; };
+		DBDE2857B653284821A11F73 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Fitaly/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = CaloriAI/AppDelegate.swift; sourceTree = "<group>"; };
-		F11748442D0722820044C1D9 /* CaloriAI-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "CaloriAI-Bridging-Header.h"; path = "CaloriAI/CaloriAI-Bridging-Header.h"; sourceTree = "<group>"; };
+		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Fitaly/AppDelegate.swift; sourceTree = "<group>"; };
+		F11748442D0722820044C1D9 /* Fitaly-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Fitaly-Bridging-Header.h"; path = "Fitaly/Fitaly-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,18 +39,18 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A618FB93FFC2A51D6C8DB180 /* Pods_CaloriAI.framework in Frameworks */,
+				A618FB93FFC2A51D6C8DB180 /* Pods_Fitaly.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		13B07FAE1A68108700A75B9A /* CaloriAI */ = {
+		13B07FAE1A68108700A75B9A /* Fitaly */ = {
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
-				F11748442D0722820044C1D9 /* CaloriAI-Bridging-Header.h */,
+				F11748442D0722820044C1D9 /* Fitaly-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
@@ -58,14 +58,14 @@
 				556B113AFF4F4C68A306E4FA /* GoogleService-Info.plist */,
 				93924E401433D4DF0199C189 /* PrivacyInfo.xcprivacy */,
 			);
-			name = CaloriAI;
+			name = Fitaly;
 			sourceTree = "<group>";
 		};
 		271CA72FDA3605223DDD4CFB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				3BE4E62DE9F1B8B4C8B0380F /* Pods-CaloriAI.debug.xcconfig */,
-				BB645064EAABB4D580A6E422 /* Pods-CaloriAI.release.xcconfig */,
+				3BE4E62DE9F1B8B4C8B0380F /* Pods-Fitaly.debug.xcconfig */,
+				BB645064EAABB4D580A6E422 /* Pods-Fitaly.release.xcconfig */,
 			);
 			name = Pods;
 			path = Pods;
@@ -75,7 +75,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				8A421C986ED1DB4158DA9E64 /* Pods_CaloriAI.framework */,
+				8A421C986ED1DB4158DA9E64 /* Pods_Fitaly.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -83,7 +83,7 @@
 		68D4303B99097470754EE102 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				B5F5D6A3EDBE57360B1687C9 /* CaloriAI */,
+				B5F5D6A3EDBE57360B1687C9 /* Fitaly */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -98,7 +98,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* CaloriAI */,
+				13B07FAE1A68108700A75B9A /* Fitaly */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -113,17 +113,17 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* CaloriAI.app */,
+				13B07F961A680F5B00A75B9A /* Fitaly.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		B5F5D6A3EDBE57360B1687C9 /* CaloriAI */ = {
+		B5F5D6A3EDBE57360B1687C9 /* Fitaly */ = {
 			isa = PBXGroup;
 			children = (
 				DBDE2857B653284821A11F73 /* ExpoModulesProvider.swift */,
 			);
-			name = CaloriAI;
+			name = Fitaly;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -132,15 +132,15 @@
 				BB2F792C24A3F905000567C9 /* Expo.plist */,
 			);
 			name = Supporting;
-			path = CaloriAI/Supporting;
+			path = Fitaly/Supporting;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* CaloriAI */ = {
+		13B07F861A680F5B00A75B9A /* Fitaly */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "CaloriAI" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Fitaly" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
 				8AEF56ADA96159CFEDFD4277 /* [Expo] Configure project */,
@@ -156,9 +156,9 @@
 			);
 			dependencies = (
 			);
-			name = CaloriAI;
-			productName = CaloriAI;
-			productReference = 13B07F961A680F5B00A75B9A /* CaloriAI.app */;
+			name = Fitaly;
+			productName = Fitaly;
+			productReference = 13B07F961A680F5B00A75B9A /* Fitaly.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -174,7 +174,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "CaloriAI" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "Fitaly" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -187,7 +187,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* CaloriAI */,
+				13B07F861A680F5B00A75B9A /* Fitaly */,
 			);
 		};
 /* End PBXProject section */
@@ -238,7 +238,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-CaloriAI-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-Fitaly-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -264,7 +264,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CaloriAI/Pods-CaloriAI-resources.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-Fitaly/Pods-Fitaly-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/BoringSSL-GRPC/openssl_grpc.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
@@ -385,7 +385,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CaloriAI/Pods-CaloriAI-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Fitaly/Pods-Fitaly-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		8AEF56ADA96159CFEDFD4277 /* [Expo] Configure project */ = {
@@ -405,7 +405,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-CaloriAI/expo-configure-project.sh\"\n";
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Fitaly/expo-configure-project.sh\"\n";
 		};
 		A85DF6C51BF851DC000CC3A7 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -413,7 +413,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CaloriAI/Pods-CaloriAI-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-Fitaly/Pods-Fitaly-frameworks.sh",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
 			);
 			name = "[CP] Embed Pods Frameworks";
@@ -422,7 +422,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CaloriAI/Pods-CaloriAI-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Fitaly/Pods-Fitaly-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -442,18 +442,18 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3BE4E62DE9F1B8B4C8B0380F /* Pods-CaloriAI.debug.xcconfig */;
+			baseConfigurationReference = 3BE4E62DE9F1B8B4C8B0380F /* Pods-Fitaly.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = CaloriAI/CaloriAI.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Fitaly/Fitaly.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
 				);
-				INFOPLIST_FILE = CaloriAI/Info.plist;
+				INFOPLIST_FILE = Fitaly/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -467,8 +467,8 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.lkurczab.foodscannerai;
-				PRODUCT_NAME = CaloriAI;
-				SWIFT_OBJC_BRIDGING_HEADER = "CaloriAI/CaloriAI-Bridging-Header.h";
+				PRODUCT_NAME = Fitaly;
+				SWIFT_OBJC_BRIDGING_HEADER = "Fitaly/Fitaly-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -478,13 +478,13 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BB645064EAABB4D580A6E422 /* Pods-CaloriAI.release.xcconfig */;
+			baseConfigurationReference = BB645064EAABB4D580A6E422 /* Pods-Fitaly.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = CaloriAI/CaloriAI.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Fitaly/Fitaly.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				INFOPLIST_FILE = CaloriAI/Info.plist;
+				INFOPLIST_FILE = Fitaly/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -498,8 +498,8 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.lkurczab.foodscannerai;
-				PRODUCT_NAME = CaloriAI;
-				SWIFT_OBJC_BRIDGING_HEADER = "CaloriAI/CaloriAI-Bridging-Header.h";
+				PRODUCT_NAME = Fitaly;
+				SWIFT_OBJC_BRIDGING_HEADER = "Fitaly/Fitaly-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -655,7 +655,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "CaloriAI" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Fitaly" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -664,7 +664,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "CaloriAI" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "Fitaly" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,

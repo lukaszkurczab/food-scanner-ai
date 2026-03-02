@@ -4,7 +4,7 @@ let db: SQLite.SQLiteDatabase | null = null;
 
 export function getDB(): SQLite.SQLiteDatabase {
   if (!db) {
-    db = SQLite.openDatabaseSync("caloriai.db");
+    db = SQLite.openDatabaseSync("fitaly.db");
     db.execSync(`PRAGMA journal_mode = WAL;`);
     db.execSync(`PRAGMA foreign_keys = ON;`);
   }
