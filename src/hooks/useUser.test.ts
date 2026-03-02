@@ -573,13 +573,13 @@ describe("useUser", () => {
     });
 
     const iosResult = await result.current.exportUserData();
-    expect(iosResult).toBe("file:///docs/caloriai_user_data_2026-03-11.pdf");
+    expect(iosResult).toBe("file:///docs/fitaly_user_data_2026-03-11.pdf");
     expect(mockFsCopyAsync).toHaveBeenCalledWith({
       from: "file:///tmp/export.pdf",
-      to: "file:///docs/caloriai_user_data_2026-03-11.pdf",
+      to: "file:///docs/fitaly_user_data_2026-03-11.pdf",
     });
     expect(mockShareAsync).toHaveBeenCalledWith(
-      "file:///docs/caloriai_user_data_2026-03-11.pdf",
+      "file:///docs/fitaly_user_data_2026-03-11.pdf",
       expect.objectContaining({
         mimeType: "application/pdf",
       }),
@@ -612,10 +612,10 @@ describe("useUser", () => {
     });
 
     const exported = await result.current.exportUserData();
-    expect(exported).toBe("file:///docs/caloriai_user_data_2026-03-12.pdf");
+    expect(exported).toBe("file:///docs/fitaly_user_data_2026-03-12.pdf");
     expect(mockFsCopyAsync).toHaveBeenCalledWith({
       from: "file:///tmp/export.pdf",
-      to: "file:///docs/caloriai_user_data_2026-03-12.pdf",
+      to: "file:///docs/fitaly_user_data_2026-03-12.pdf",
     });
   });
 
@@ -631,10 +631,10 @@ describe("useUser", () => {
     });
 
     const exported = await result.current.exportUserData();
-    expect(exported).toBe("file:///docs/caloriai_user_data_2026-03-13.pdf");
+    expect(exported).toBe("file:///docs/fitaly_user_data_2026-03-13.pdf");
     expect(mockFsCopyAsync).toHaveBeenCalledWith({
       from: "file:///tmp/export.pdf",
-      to: "file:///docs/caloriai_user_data_2026-03-13.pdf",
+      to: "file:///docs/fitaly_user_data_2026-03-13.pdf",
     });
   });
 });

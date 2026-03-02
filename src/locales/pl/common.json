@@ -20,7 +20,7 @@
     "clear_search_accessibility": "Wyczyść wyszukiwanie"
   },
   "limit": {
-    "title": "Dziękujemy za korzystanie z CaloriAI!",
+    "title": "Dziękujemy za korzystanie z Fitaly!",
     "body": "Wykorzystano {{used}} z {{limit}} darmowych pytań dziennie. Wróć jutro lub odblokuj nielimitowany dostęp.",
     "button": "Odblokuj Premium",
     "reached": "Osiągnięto limit dzienny ({{used}}/{{limit}})",
@@ -28,7 +28,7 @@
     "description": "Wykorzystałeś {{used}} z {{limit}} wiadomości dziennie. Przejdź na Premium, aby mieć nielimitowany czat.",
     "upgradeCta": "Przejdź na Premium"
   },
-  "app_title": "CaloriAI",
+  "app_title": "Fitaly",
   "no_internet": "Brak połączenia z internetem",
   "none": "Brak",
   "camera_permission_title": "Kamera wymaga uprawnień",

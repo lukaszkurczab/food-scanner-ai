@@ -149,7 +149,7 @@ export default function SendFeedbackScreen({
               <Text style={styles.infoNote}>
                 {t("feedbackAppInfo", {
                   defaultValue:
-                    "Your app version and device info will be sent automatically to help us improve CaloriAI.",
+                    "Your app version and device info will be sent automatically to help us improve Fitaly.",
                 })}
               </Text>
 

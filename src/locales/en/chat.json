@@ -12,7 +12,7 @@
     "send": "Send"
   },
   "limit": {
-    "title": "Thanks for exploring CaloriAI!",
+    "title": "Thanks for exploring Fitaly!",
     "body": "You've used {{used}} out of {{limit}} free questions today. Come back tomorrow or unlock unlimited access.",
     "button": "Unlock Premium",
     "reached": "Daily limit reached ({{used}}/{{limit}})",

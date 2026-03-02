@@ -7,9 +7,9 @@ const androidGoogleServicesFile =
 
 export default {
   expo: {
-    name: "CaloriAI",
-    scheme: "caloriai",
-    slug: "caloriai",
+    name: "Fitaly",
+    scheme: "fitaly",
+    slug: "fitaly",
     owner: "lkurczab",
     version: "1.0.1",
     orientation: "portrait",
@@ -30,9 +30,9 @@ export default {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription:
-          "CaloriAI uses the camera to scan meals and barcodes and to take profile photos.",
+          "Fitaly uses the camera to scan meals and barcodes and to take profile photos.",
         NSPhotoLibraryUsageDescription:
-          "CaloriAI allows you to select photos from your library for profile pictures and feedback attachments.",
+          "Fitaly allows you to select photos from your library for profile pictures and feedback attachments.",
       },
     },
     android: {
@@ -47,14 +47,14 @@ export default {
     notification: {
       icon: "./assets/notification-icon.png",
       color: "#4CAF50",
-      androidCollapsedTitle: "caloriai",
+      androidCollapsedTitle: "fitaly",
     },
     plugins: [
       [
         "expo-camera",
         {
           cameraPermission:
-            "CaloriAI uses the camera to scan meals and barcodes and to take profile photos.",
+            "Fitaly uses the camera to scan meals and barcodes and to take profile photos.",
           recordAudioAndroid: false,
         },
       ],

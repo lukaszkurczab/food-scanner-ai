@@ -85,7 +85,7 @@ export default function AvatarCameraScreen({
                 })
               : t("common:camera_permission_message", {
                   defaultValue:
-                    "CaloriAI uses the camera to scan meals and barcodes and to take profile photos.",
+                    "Fitaly uses the camera to scan meals and barcodes and to take profile photos.",
                 })}
           </Text>
 

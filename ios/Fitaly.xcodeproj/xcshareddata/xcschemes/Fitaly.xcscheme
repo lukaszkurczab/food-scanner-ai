@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "CaloriAI.app"
-               BlueprintName = "CaloriAI"
-               ReferencedContainer = "container:CaloriAI.xcodeproj">
+               BuildableName = "Fitaly.app"
+               BlueprintName = "Fitaly"
+               ReferencedContainer = "container:Fitaly.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "CaloriAITests.xctest"
-               BlueprintName = "CaloriAITests"
-               ReferencedContainer = "container:CaloriAI.xcodeproj">
+               BuildableName = "FitalyTests.xctest"
+               BlueprintName = "FitalyTests"
+               ReferencedContainer = "container:Fitaly.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "CaloriAI.app"
-            BlueprintName = "CaloriAI"
-            ReferencedContainer = "container:CaloriAI.xcodeproj">
+            BuildableName = "Fitaly.app"
+            BlueprintName = "Fitaly"
+            ReferencedContainer = "container:Fitaly.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "CaloriAI.app"
-            BlueprintName = "CaloriAI"
-            ReferencedContainer = "container:CaloriAI.xcodeproj">
+            BuildableName = "Fitaly.app"
+            BlueprintName = "Fitaly"
+            ReferencedContainer = "container:Fitaly.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

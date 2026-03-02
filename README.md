@@ -1,4 +1,4 @@
-# CaloriAI (`food-scanner-ai`)
+# Fitaly (`food-scanner-ai`)
 
 An Expo/React Native mobile app for scanning meals (photo, text, barcode), analyzing nutrition values, tracking history and statistics, and supporting premium features.
 
