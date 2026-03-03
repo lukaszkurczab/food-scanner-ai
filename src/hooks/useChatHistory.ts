@@ -1,7 +1,6 @@
 // src/hooks/useChatHistory.ts
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
 import { getApp } from "@react-native-firebase/app";
@@ -20,9 +19,28 @@ import {
 } from "@react-native-firebase/firestore";
 import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import type { Meal, FormData, ChatMessage } from "@/types";
-import { askDietAI, type Message } from "@/services/askDietAI";
+import { get, post } from "@/services/apiClient";
+import { withVersion } from "@/services/apiVersioning";
+import { captureException } from "@/services/errorLogger";
 
 type Options = { pageSize?: number };
+type AiUsageResponse = {
+  userId: string;
+  dateKey: string;
+  usageCount: number;
+  dailyLimit: number;
+  remaining: number;
+};
+type AiAskResponse = {
+  reply: string;
+  usageCount: number;
+  remaining: number;
+  version?: string;
+};
+type AiHistoryItem = {
+  from: "user" | "ai";
+  text: string;
+};
 type ChatMessageDoc = {
   role?: ChatMessage["role"];
   content?: string;
@@ -30,6 +48,8 @@ type ChatMessageDoc = {
   lastSyncedAt?: number;
   deleted?: boolean;
 };
+
+const DEFAULT_CHAT_DAILY_LIMIT = 5;
 
 function toChatMessage(
   d: FirebaseFirestoreTypes.QueryDocumentSnapshot,
@@ -53,16 +73,29 @@ function toChatMessage(
   };
 }
 
-function dayKey(ts = Date.now()) {
-  const d = new Date(ts);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
+function getErrorStatus(error: unknown): number | undefined {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number"
+  ) {
+    return error.status;
+  }
+
+  return undefined;
 }
 
-function dailyCountKey(uid: string, day: string) {
-  return `chatDailyCount:${uid}:${day}`;
+function buildAiContext(
+  meals: Meal[],
+  profile: FormData,
+  history: AiHistoryItem[],
+) {
+  return {
+    meals: meals.slice(0, 5),
+    profile,
+    history,
+  };
 }
 
 function findInsertIndexDesc(messages: ChatMessage[], createdAt: number): number {
@@ -137,12 +170,15 @@ export function useChatHistory(
   const pageSize = opts.pageSize ?? 50;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(true);
+  const [usageLoading, setUsageLoading] = useState(!!userUid);
   const [sending, setSending] = useState(false);
   const [typing, setTyping] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
   const [dailyUsed, setDailyUsed] = useState(0);
+  const [dailyLimit, setDailyLimit] = useState(DEFAULT_CHAT_DAILY_LIMIT);
+  const [remainingToday, setRemainingToday] = useState(DEFAULT_CHAT_DAILY_LIMIT);
 
   const lastDocRef =
     useRef<FirebaseFirestoreTypes.QueryDocumentSnapshot | null>(null);
@@ -163,31 +199,79 @@ export function useChatHistory(
     );
   }, [db, userUid, threadId, isLocalThread]);
 
+  const applyBackendUsage = useCallback(
+    (usage: {
+      usageCount: number;
+      remaining: number;
+      dailyLimit?: number;
+    }) => {
+      setDailyUsed(usage.usageCount);
+      setRemainingToday(usage.remaining);
+      setDailyLimit(
+        usage.dailyLimit ?? Math.max(usage.usageCount + usage.remaining, 0),
+      );
+    },
+    [],
+  );
+
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (!userUid) {
         /* istanbul ignore next -- defensive mounted check for sync branch */
-        if (mounted) setDailyUsed(0);
+        if (mounted) {
+          setDailyUsed(0);
+          setDailyLimit(DEFAULT_CHAT_DAILY_LIMIT);
+          setRemainingToday(DEFAULT_CHAT_DAILY_LIMIT);
+          setUsageLoading(false);
+        }
         return;
       }
-      const key = dailyCountKey(userUid, dayKey());
-      const raw = await AsyncStorage.getItem(key);
-      const n = raw ? Number(raw) : 0;
-      /* istanbul ignore next -- defensive mounted check for async branch */
-      if (mounted) setDailyUsed(Number.isFinite(n) ? n : 0);
+
+      if (mounted) {
+        setUsageLoading(true);
+      }
+
+      try {
+        const usage = await get<AiUsageResponse>(
+          `${withVersion("/ai/usage")}?userId=${encodeURIComponent(userUid)}`,
+        );
+
+        /* istanbul ignore next -- defensive mounted check for async branch */
+        if (mounted) {
+          applyBackendUsage(usage);
+        }
+      } catch (error) {
+        captureException(
+          "[useChatHistory] failed to load AI usage",
+          { userUid },
+          error,
+        );
+        /* istanbul ignore next -- defensive mounted check for async branch */
+        if (mounted) {
+          setDailyUsed(0);
+          setDailyLimit(DEFAULT_CHAT_DAILY_LIMIT);
+          setRemainingToday(DEFAULT_CHAT_DAILY_LIMIT);
+        }
+      } finally {
+        /* istanbul ignore next -- defensive mounted check for async branch */
+        if (mounted) {
+          setUsageLoading(false);
+        }
+      }
     })();
     return () => {
       mounted = false;
     };
-  }, [userUid]);
+  }, [applyBackendUsage, userUid]);
 
-  const canSend = isPremium || dailyUsed < 5;
+  const canSend = isPremium || remainingToday > 0;
+  const loading = messagesLoading || usageLoading;
 
   useEffect(() => {
     if (!baseCol) {
       setMessages([]);
-      setLoading(false);
+      setMessagesLoading(false);
       return;
     }
 
@@ -205,10 +289,10 @@ export function useChatHistory(
         setMessages(items);
         lastDocRef.current = snap.docs[snap.docs.length - 1] ?? null;
         setHasMore(!!lastDocRef.current);
-        setLoading(false);
+        setMessagesLoading(false);
       },
       () => {
-        setLoading(false);
+        setMessagesLoading(false);
       },
     );
 
@@ -235,17 +319,6 @@ export function useChatHistory(
     lastDocRef.current = snap.docs[snap.docs.length - 1] ?? null;
     setHasMore(!!lastDocRef.current);
   }, [baseCol, hasMore, pageSize, userUid]);
-
-  const bumpDailyUsed = useCallback(async () => {
-    /* istanbul ignore next -- send() already guards empty uid */
-    if (!userUid) return;
-    const key = dailyCountKey(userUid, dayKey());
-    setDailyUsed((prev) => {
-      const next = prev + 1;
-      AsyncStorage.setItem(key, String(next));
-      return next;
-    });
-  }, [userUid]);
 
   const send = useCallback(
     async (text: string): Promise<string | null> => {
@@ -321,27 +394,50 @@ export function useChatHistory(
       });
 
       await batch.commit();
-      await bumpDailyUsed();
 
       let aiText = "";
       let askFailed = false;
       try {
-        const historyForAiBase: Message[] = messages.slice(0, 10).map((m) => ({
+        const historyForAi: AiHistoryItem[] = messages.slice(0, 10).map((m) => ({
           from: m.role === "user" ? "user" : "ai",
           text: m.content,
         }));
-
-        const historyForAi: Message[] = [
-          ...historyForAiBase,
-          { from: "user", text: trimmed },
-        ];
-
-        aiText = await askDietAI(trimmed, meals, historyForAi, profile);
+        const aiResponse = await post<AiAskResponse>(withVersion("/ai/ask"), {
+          userId: userUid,
+          message: trimmed,
+          context: buildAiContext(meals, profile, [
+            ...historyForAi,
+            { from: "user", text: trimmed },
+          ]),
+        });
+        aiText = aiResponse.reply;
+        applyBackendUsage({
+          usageCount: aiResponse.usageCount,
+          remaining: aiResponse.remaining,
+          dailyLimit: aiResponse.usageCount + aiResponse.remaining,
+        });
       } catch (error) {
-        console.error("[useChatHistory.send] askDietAI failed:", error);
-        aiText = i18next.t(
-          "chat:errors.fetchFailed",
-          "Could not fetch a response. Please try again.",
+        if (getErrorStatus(error) === 429) {
+          setRemainingToday(0);
+          setDailyUsed((prev) => Math.max(prev, dailyLimit));
+          aiText = i18next.t(
+            "limit.reachedShort",
+            {
+              ns: "chat",
+              used: dailyLimit,
+              limit: dailyLimit,
+            },
+          );
+        } else {
+          aiText = i18next.t(
+            "chat:errors.fetchFailed",
+            "Could not fetch a response. Please try again.",
+          );
+        }
+        captureException(
+          "[useChatHistory.send] failed to send AI chat message",
+          { userUid, threadId, message: trimmed },
+          error,
         );
         askFailed = true;
         setTyping(false);
@@ -404,7 +500,8 @@ export function useChatHistory(
       meals,
       profile,
       messages,
-      bumpDailyUsed,
+      dailyLimit,
+      applyBackendUsage,
     ],
   );
 
@@ -415,6 +512,9 @@ export function useChatHistory(
     typing,
     canSend,
     countToday: dailyUsed,
+    usageCount: dailyUsed,
+    dailyLimit,
+    remaining: remainingToday,
     loadMore,
     send,
   };

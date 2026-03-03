@@ -54,8 +54,6 @@ export default function ChatScreen() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [threadId, setThreadId] = useState<string>(() => `local-${uuidv4()}`);
 
-  const limit = 5;
-
   const {
     messages,
     loading,
@@ -63,6 +61,7 @@ export default function ChatScreen() {
     typing,
     canSend,
     countToday,
+    dailyLimit,
     send,
     loadMore,
   } = useChatHistory(
@@ -78,16 +77,16 @@ export default function ChatScreen() {
     [messages],
   );
 
-  const limitReached = !premiumActive && countToday >= limit;
+  const limitReached = !premiumActive && !canSend;
 
   const handleSend = useCallback(
     async (text: string) => {
       if (!net.isConnected) return;
-      if (limitReached) return;
+      if (!canSend) return;
       const createdThreadId = await send(text);
       if (createdThreadId) setThreadId(createdThreadId);
     },
-    [net.isConnected, limitReached, send],
+    [net.isConnected, canSend, send],
   );
 
   const suggestions = useMemo(
@@ -101,9 +100,11 @@ export default function ChatScreen() {
   );
 
   const footerText = useMemo(() => {
-    if (!premiumActive) return t("empty.footerFree", { used: countToday, limit });
+    if (!premiumActive) {
+      return t("empty.footerFree", { used: countToday, limit: dailyLimit });
+    }
     return t("empty.footerPremium");
-  }, [premiumActive, countToday, limit, t]);
+  }, [premiumActive, countToday, dailyLimit, t]);
 
   const emptyDisabled = sending || limitReached || !net.isConnected;
   const listContentStyle = useMemo(
@@ -129,7 +130,7 @@ export default function ChatScreen() {
         <View style={styles.stickyBanner} pointerEvents="box-none">
           <PaywallCard
             used={countToday}
-            limit={limit}
+            limit={dailyLimit}
             onUpgrade={() => navigation.navigate("ManageSubscription")}
           />
         </View>

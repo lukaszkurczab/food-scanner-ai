@@ -5,10 +5,22 @@ import { v4 as uuidv4 } from "uuid";
 import { extractAndNormalizeIngredients } from "@/services/ai/ingredientParser";
 import { parseOpenAiChatResponse } from "@/services/ai/openaiChat.dto";
 import { debugScope } from "@/utils/debug";
+import { post } from "@/services/apiClient";
+import { withVersion } from "@/services/apiVersioning";
+import { AiLimitExceededError } from "@/services/askDietAI";
+import { logError, logWarning } from "@/services/errorLogger";
+import { readPublicEnv } from "@/services/publicEnv";
 
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey;
 const TIMEOUT_MS = 30000;
 const log = debugScope("TextMealService");
+
+type AskResponse = {
+  reply: string;
+  usageCount?: number;
+  remaining?: number;
+  version?: string;
+};
 
 function unwrapIfWrapped(s: string): string {
   try {
@@ -21,6 +33,35 @@ function unwrapIfWrapped(s: string): string {
   }
 }
 
+function isNewAiBackendEnabled(): boolean {
+  return readPublicEnv("EXPO_PUBLIC_USE_NEW_AI_BACKEND") === "true";
+}
+
+function buildBackendTextMealPrompt(payload: string, lang: string): string {
+  return (
+    `You are a nutrition assistant. The user language is ${lang}. ` +
+    `Analyze the provided JSON payload describing a meal and return ONLY a raw JSON array. ` +
+    `Each item must use this exact schema: {"name":"string","amount":123,"protein":0,"fat":0,"carbs":0,"kcal":0}. ` +
+    `Amount must be in grams, numbers only, no prose, no markdown, no explanation. ` +
+    `Treat a prepared dish as ONE item unless clearly separate foods are described. ` +
+    `Convert household measures to grams/ml when possible. ` +
+    `Names must be in the user's language from the payload. Payload: ${payload}`
+  );
+}
+
+function getErrorStatus(error: unknown): number | undefined {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number"
+  ) {
+    return error.status;
+  }
+
+  return undefined;
+}
+
 export async function extractIngredientsFromText(
   _uid: string,
   description: string,
@@ -28,6 +69,45 @@ export async function extractIngredientsFromText(
 ): Promise<Ingredient[] | null> {
   const isPremium = !!opts?.isPremium;
   const limit = opts?.limit ?? 1;
+  const lang = opts?.lang || "en";
+  const userPayload = unwrapIfWrapped(description);
+
+  if (isNewAiBackendEnabled()) {
+    if (!_uid) return null;
+
+    try {
+      const response = await post<AskResponse>(withVersion("/ai/ask"), {
+        userId: _uid,
+        message: buildBackendTextMealPrompt(userPayload, lang),
+        context: {
+          actionType: "meal_text_analysis",
+          lang,
+        },
+      });
+
+      return (
+        extractAndNormalizeIngredients(response.reply, {
+          idFactory: () => uuidv4(),
+        }) || null
+      );
+    } catch (error) {
+      if (getErrorStatus(error) === 429) {
+        logWarning(
+          "[textMealService] backend text analysis limit reached",
+          { userUid: _uid, isPremium, limit, lang },
+          error,
+        );
+        throw new AiLimitExceededError();
+      }
+
+      logError(
+        "[textMealService] backend text analysis failed",
+        { userUid: _uid, isPremium, limit, lang },
+        error,
+      );
+      return null;
+    }
+  }
 
   if (!isPremium && _uid) {
     const allowed = await canUseAiTodayFor(_uid, isPremium, "text", limit);
@@ -40,8 +120,6 @@ export async function extractIngredientsFromText(
   }
 
   log.log("extracting ingredients from text");
-
-  const userPayload = unwrapIfWrapped(description);
 
   const systemPrompt =
     `You are a nutrition assistant. Analyze a JSON payload describing a meal.\n` +

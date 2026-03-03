@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import Constants from "expo-constants";
 import i18next from "i18next";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { post } from "./apiClient";
+import { withVersion } from "./apiVersioning";
 import type {
   Meal,
   FormData,
@@ -18,8 +20,19 @@ import {
   getE2EMockChatReply,
   isE2EModeEnabled,
 } from "@/services/e2e/config";
+import { logError, logWarning } from "@/services/errorLogger";
+import { readPublicEnv } from "@/services/publicEnv";
 
 export type Message = { from: "user" | "ai"; text: string };
+
+export type AskDietAIResponse = {
+  userId?: string;
+  reply: string;
+  usageCount?: number;
+  remaining?: number;
+  dateKey?: string;
+  version?: string;
+};
 
 type DietContext = {
   flags: string[];
@@ -179,6 +192,15 @@ function ensureFullSentence(text: string): string {
 const MAX_TOKENS = 260;
 const AI_RESPONSE_TIMEOUT_MS = 30_000;
 
+export class AiLimitExceededError extends Error {
+  readonly code = "ai/limit-exceeded";
+
+  constructor(message = "AI usage limit exceeded") {
+    super(message);
+    this.name = "AiLimitExceededError";
+  }
+}
+
 function enforceDietConstraints(output: string, banned: string[]): string {
   const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const hit = banned.find((k) =>
@@ -294,7 +316,58 @@ function looksMedical(q: string) {
   );
 }
 
-export async function askDietAI(
+function buildAskDietAIContext(
+  meals: Meal[],
+  chatHistory: Message[],
+  profile: FormData
+) {
+  const dc = buildDietContext(profile);
+  const lang = i18next.language || "en";
+
+  return {
+    profile: compactProfile(profile),
+    mealsSummary: mealsSummary(meals),
+    flags: dc.flags,
+    tone: dc.tone,
+    focus: dc.focus,
+    avoid: dc.avoid,
+    history: chatHistory.slice(-2).map((message) => message.text),
+    language: lang,
+  };
+}
+
+function getErrorStatus(error: unknown): number | undefined {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number"
+  ) {
+    return error.status;
+  }
+
+  return undefined;
+}
+
+function buildAskDietAILogContext(params: {
+  userId?: string;
+  question: string;
+  meals: Meal[];
+  chatHistory: Message[];
+  isPremium?: boolean;
+  mode: "legacy" | "backend";
+}) {
+  return {
+    userId: params.userId,
+    isPremium: !!params.isPremium,
+    mode: params.mode,
+    questionLength: params.question.trim().length,
+    mealsCount: params.meals.length,
+    historyCount: params.chatHistory.length,
+  };
+}
+
+async function legacyAskDietAI(
   question: string,
   meals: Meal[],
   chatHistory: Message[],
@@ -419,10 +492,120 @@ export async function askDietAI(
     return text;
   } catch (error) {
     if (isServiceError(error) && error.code === "ai/timeout") {
+      logWarning(
+        "[askDietAI] legacy AI request timed out",
+        buildAskDietAILogContext({
+          userId: uid,
+          question,
+          meals,
+          chatHistory,
+          isPremium,
+          mode: "legacy",
+        }),
+        error,
+      );
       return timeoutReply;
     }
+
+    logError(
+      "[askDietAI] legacy AI request failed",
+      buildAskDietAILogContext({
+        userId: uid,
+        question,
+        meals,
+        chatHistory,
+        isPremium,
+        mode: "legacy",
+      }),
+      error,
+    );
     throw error;
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+export async function askDietAI(
+  question: string,
+  meals: Meal[],
+  chatHistory: Message[],
+  profile: FormData,
+  opts?: { uid?: string; isPremium?: boolean; limit?: number }
+): Promise<AskDietAIResponse> {
+  if (isE2EModeEnabled()) {
+    return {
+      userId: opts?.uid,
+      reply: getE2EMockChatReply(),
+      version: "e2e",
+    };
+  }
+
+  if (readPublicEnv("EXPO_PUBLIC_USE_NEW_AI_BACKEND") !== "true") {
+    const reply = await legacyAskDietAI(question, meals, chatHistory, profile);
+
+    return {
+      userId: opts?.uid,
+      reply,
+      version: "legacy",
+    };
+  }
+
+  const userId = opts?.uid?.trim();
+
+  if (!userId) {
+    logError(
+      "[askDietAI] missing user ID for backend AI request",
+      buildAskDietAILogContext({
+        question,
+        meals,
+        chatHistory,
+        isPremium: opts?.isPremium,
+        mode: "backend",
+      }),
+    );
+    throw createServiceError({
+      code: "ai/missing-user-id",
+      source: "AskDietAI",
+      retryable: false,
+      message: "Missing user ID for backend AI request",
+    });
+  }
+
+  try {
+    return await post<AskDietAIResponse>(withVersion("/ai/ask"), {
+      userId,
+      message: question,
+      context: buildAskDietAIContext(meals, chatHistory, profile),
+    });
+  } catch (error) {
+    if (getErrorStatus(error) === 429) {
+      logWarning(
+        "[askDietAI] backend AI usage limit reached",
+        buildAskDietAILogContext({
+          userId,
+          question,
+          meals,
+          chatHistory,
+          isPremium: opts?.isPremium,
+          mode: "backend",
+        }),
+        error,
+      );
+      throw new AiLimitExceededError();
+    }
+
+    logError(
+      "[askDietAI] backend AI request failed",
+      buildAskDietAILogContext({
+        userId,
+        question,
+        meals,
+        chatHistory,
+        isPremium: opts?.isPremium,
+        mode: "backend",
+      }),
+      error,
+    );
+    throw error;
   }
 }
