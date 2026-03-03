@@ -4,6 +4,12 @@ const iosGoogleServicesFile =
   process.env.GOOGLE_SERVICES_FILE_IOS || "./GoogleService-Info.plist";
 const androidGoogleServicesFile =
   process.env.GOOGLE_SERVICES_FILE_ANDROID || "./google-services.json";
+const railwayApiBaseUrl =
+  "https://food-scanner-ai-backend-production.up.railway.app";
+const isEasBuild = process.env.EAS_BUILD === "true";
+const localApiBaseUrl =
+  process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const resolvedApiBaseUrl = isEasBuild ? railwayApiBaseUrl : localApiBaseUrl;
 
 export default {
   expo: {
@@ -71,6 +77,15 @@ export default {
     ],
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
+      apiBaseUrl: resolvedApiBaseUrl,
+      apiVersion: process.env.EXPO_PUBLIC_API_VERSION || "v1",
+      useNewAiBackend:
+        (process.env.EXPO_PUBLIC_USE_NEW_AI_BACKEND || "").toLowerCase() ===
+        "true",
+      enableBackendLogging:
+        (
+          process.env.EXPO_PUBLIC_ENABLE_BACKEND_LOGGING || ""
+        ).toLowerCase() === "true",
       debugOcr: (process.env.DEBUG_OCR || "true").toLowerCase() === "true",
       e2e: (process.env.E2E || "").toLowerCase() === "true",
       e2eMockChatReply:

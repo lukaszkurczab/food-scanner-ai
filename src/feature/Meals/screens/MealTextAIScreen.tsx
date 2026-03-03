@@ -32,6 +32,7 @@ export default function MealTextAIScreen() {
     loading,
     retries,
     showLimitModal,
+    limitUsed,
     nameError,
     amountError,
     ingredientsError,
@@ -121,7 +122,7 @@ export default function MealTextAIScreen() {
         title={t("limit.reachedTitle", { ns: "chat" })}
         message={t("limit.reachedShort", {
           ns: "chat",
-          used: 1,
+          used: limitUsed,
           limit: featureLimit,
         })}
         primaryActionLabel={t("limit.upgradeCta", { ns: "chat" })}

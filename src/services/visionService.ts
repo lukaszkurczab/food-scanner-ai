@@ -8,7 +8,14 @@ import { consumeAiUseFor } from "./userService";
 import { debugScope } from "@/utils/debug";
 import { extractAndNormalizeIngredients } from "@/services/ai/ingredientParser";
 import { parseOpenAiChatResponse } from "@/services/ai/openaiChat.dto";
-import { createServiceError } from "@/services/contracts/serviceError";
+import {
+  createServiceError,
+  isServiceError,
+} from "@/services/contracts/serviceError";
+import { post } from "@/services/apiClient";
+import { withVersion } from "@/services/apiVersioning";
+import { logError, logWarning } from "@/services/errorLogger";
+import { readPublicEnv } from "@/services/publicEnv";
 
 const log = debugScope("Vision");
 
@@ -46,6 +53,81 @@ type VisionOpts = {
   lang?: string;
 };
 
+type VisionBackendResponse = {
+  ingredients?: unknown;
+  reply?: string;
+  usageCount?: number;
+  remaining?: number;
+  version?: string;
+};
+
+function isNewAiBackendEnabled(): boolean {
+  return readPublicEnv("EXPO_PUBLIC_USE_NEW_AI_BACKEND") === "true";
+}
+
+function getErrorStatus(error: unknown): number | undefined {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number"
+  ) {
+    return error.status;
+  }
+
+  return undefined;
+}
+
+function shouldFallbackToLegacyVision(error: unknown): boolean {
+  const status = getErrorStatus(error);
+  if (status !== undefined && [400, 404, 405, 422, 500, 501, 503].includes(status)) {
+    return true;
+  }
+
+  return (
+    isServiceError(error) &&
+    (error.code === "api/misconfigured" || error.code === "api/http-error")
+  );
+}
+
+function normalizeBackendVisionPayload(
+  payload: VisionBackendResponse
+): Ingredient[] | null {
+  const raw =
+    typeof payload.reply === "string"
+      ? payload.reply
+      : Array.isArray(payload.ingredients)
+      ? JSON.stringify(payload.ingredients)
+      : null;
+
+  if (!raw) return null;
+
+  return extractAndNormalizeIngredients(
+    raw,
+    {
+      idFactory: () => uuidv4(),
+      toNumber,
+      transformName: capFirst,
+      allowMlUnit: true,
+    },
+    { allowRegexFallback: true }
+  );
+}
+
+async function detectIngredientsWithBackend(
+  userUid: string,
+  imageBase64: string,
+  userLang: string
+): Promise<Ingredient[] | null> {
+  const response = await post<VisionBackendResponse>(withVersion("/ai/photo/analyze"), {
+    userId: userUid,
+    imageBase64,
+    lang: userLang,
+  });
+
+  return normalizeBackendVisionPayload(response);
+}
+
 export async function detectIngredientsWithVision(
   userUid: string,
   imageUri: string,
@@ -71,6 +153,55 @@ export async function detectIngredientsWithVision(
       source: "VisionService",
       retryable: true,
     });
+  }
+
+  if (isNewAiBackendEnabled()) {
+    try {
+      const jpegUri = await convertToJpegAndResize(imageUri, 512, 512, {
+        userUid,
+        fileId: `vision-${Date.now()}`,
+        dir: "tmp",
+      });
+      const imageBase64 = await uriToBase64(jpegUri);
+      const backendIngredients = await detectIngredientsWithBackend(
+        userUid,
+        imageBase64,
+        USER_LANG
+      );
+
+      if (backendIngredients) {
+        return backendIngredients;
+      }
+
+      logWarning(
+        "[visionService] backend photo analysis returned no ingredients, falling back to legacy vision",
+        { userUid, lang: USER_LANG },
+      );
+    } catch (error) {
+      if (!shouldFallbackToLegacyVision(error)) {
+        if (getErrorStatus(error) === 429) {
+          throw createServiceError({
+            code: AI_UNAVAILABLE_CODE,
+            source: "VisionService",
+            retryable: true,
+            cause: error,
+          });
+        }
+
+        logError(
+          "[visionService] backend photo analysis failed",
+          { userUid, lang: USER_LANG },
+          error,
+        );
+        throw error;
+      }
+
+      logWarning(
+        "[visionService] backend photo analysis unavailable, falling back to legacy vision",
+        { userUid, lang: USER_LANG },
+        error,
+      );
+    }
   }
 
   if (!OPENAI_API_KEY) {
