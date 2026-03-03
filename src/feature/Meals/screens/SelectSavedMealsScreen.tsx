@@ -58,8 +58,8 @@ export default function SelectSavedMealScreen({
     setMeal,
     saveDraft,
     setLastScreen,
-    onNavigateReviewIngredients: () =>
-      navigation.navigate("AddMeal", { start: "ReviewIngredients" }),
+    onNavigateResult: () =>
+      navigation.navigate("AddMeal", { start: "Result" }),
     onStartOver: () => navigation.replace("MealAddMethod"),
   });
 

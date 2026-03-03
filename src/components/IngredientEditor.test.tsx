@@ -120,7 +120,7 @@ describe("IngredientEditor", () => {
     expect(mockNavigate).toHaveBeenCalledWith("AddMeal", {
       start: "MealCamera",
       barcodeOnly: true,
-      returnTo: "ReviewIngredients",
+      returnTo: "Result",
       attempt: 1,
     });
   });

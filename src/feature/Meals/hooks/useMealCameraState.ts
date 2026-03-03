@@ -47,7 +47,7 @@ export function useMealCameraState({
   const barcodeOnly = !!params?.barcodeOnly;
   const routeId = params?.id as string | undefined;
   const skipDetection = !!params?.skipDetection;
-  const returnTo = params?.returnTo || "ReviewIngredients";
+  const returnTo = params?.returnTo || "Result";
   const attempt = params?.attempt || 1;
 
   const fallbackMealIdRef = useRef<string>(uuidv4());
@@ -141,11 +141,7 @@ export function useMealCameraState({
           DeviceEventEmitter.emit("barcode.scanned.ingredient", {
             ingredient,
           } as { ingredient: Ingredient });
-          if (returnTo === "Result") {
-            flow.goTo("Result", {});
-          } else {
-            flow.goTo("ReviewIngredients", {});
-          }
+          flow.goTo(returnTo, {});
           return;
         }
 
@@ -178,7 +174,7 @@ export function useMealCameraState({
           });
         }
 
-        flow.goTo("ReviewIngredients", {});
+        flow.goTo("Result", {});
       } catch {
         flow.goTo("BarcodeProductNotFound", {
           code,
@@ -315,7 +311,7 @@ export function useMealCameraState({
       }
 
       setIsLoading(false);
-      flow.goTo("ReviewIngredients", {});
+      flow.goTo("Result", {});
     },
     [
       attempt,

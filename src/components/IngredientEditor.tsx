@@ -248,7 +248,7 @@ export const IngredientEditor: React.FC<Props> = ({
             navigation.navigate("AddMeal", {
               start: "MealCamera",
               barcodeOnly: true,
-              returnTo: "ReviewIngredients",
+              returnTo: "Result",
               attempt: 1,
             })
           }

@@ -20,7 +20,7 @@ export default function EditReviewIngredientsScreen() {
   const route = useRoute<ScreenRoute>();
   const savedCloudId = route.params?.savedCloudId;
   const { t } = useTranslation(["meals", "common"]);
-  const { clearMeal, meal } = useMealDraftContext();
+  const { clearMeal } = useMealDraftContext();
   const { uid } = useAuthContext();
 
   const textOverrides = useMemo(
@@ -70,12 +70,6 @@ export default function EditReviewIngredientsScreen() {
           "EditResult",
           savedCloudId ? { savedCloudId } : undefined
         )
-      }
-      onOpenCamera={() =>
-        navigation.replace("SavedMealsCamera", {
-          id: meal?.mealId,
-          meal: meal ?? undefined,
-        })
       }
       onStartOver={() => {
         if (uid) clearMeal(uid);

@@ -120,8 +120,8 @@ export default function SavedMealsScreen({
       const next = buildDraftFromSaved(meal);
       setMeal(next);
       await saveDraft(uid);
-      await setLastScreen(uid, "ReviewIngredients");
-      navigation.navigate("AddMeal", { start: "ReviewIngredients" });
+      await setLastScreen(uid, "Result");
+      navigation.navigate("AddMeal", { start: "Result" });
     },
     [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation],
   );

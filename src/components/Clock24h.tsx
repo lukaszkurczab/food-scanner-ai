@@ -17,7 +17,7 @@ export const Clock24h: React.FC<Props> = ({ value, onChange }) => {
 
   const [hourText, setHourText] = useState<string>(pad2(value.getHours()));
   const [minuteText, setMinuteText] = useState<string>(
-    pad2(value.getMinutes())
+    pad2(value.getMinutes()),
   );
 
   useEffect(() => {
@@ -81,8 +81,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.bold,
       paddingVertical: theme.spacing.sm - 2,
       paddingHorizontal: theme.spacing.xs,
-      borderWidth: 1,
-      borderRadius: theme.rounded.md,
       color: theme.text,
       borderColor: theme.border,
       backgroundColor: theme.card,

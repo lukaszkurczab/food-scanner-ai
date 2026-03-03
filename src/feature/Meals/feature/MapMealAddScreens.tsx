@@ -1,7 +1,6 @@
 import MealCameraScreen from "../screens/MealAdd/MealCameraScreen";
 import BarcodeProductNotFoundScreen from "../screens/MealAdd/BarcodeProductNotFoundScreen";
 import IngredientsNotRecognizedScreen from "../screens/MealAdd/IngredientsNotRecognizedScreen";
-import ReviewIngredientsScreen from "../screens/MealAdd/ReviewIngredientsScreen";
 import ResultScreen from "../screens/MealAdd/ResultScreen";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -10,7 +9,6 @@ export type MealAddScreenName =
   | "MealCamera"
   | "BarcodeProductNotFound"
   | "IngredientsNotRecognized"
-  | "ReviewIngredients"
   | "Result";
 
 export type MealAddStepParams = {
@@ -32,7 +30,6 @@ export type MealAddStepParams = {
     attempt?: number;
     reason?: "not_recognized" | "ai_unavailable";
   };
-  ReviewIngredients: Record<string, unknown>;
   Result: Record<string, unknown>;
 };
 
@@ -63,8 +60,6 @@ const MapMealAddScreens = (screenName: MealAddScreenName) => {
       return BarcodeProductNotFoundScreen;
     case "IngredientsNotRecognized":
       return IngredientsNotRecognizedScreen;
-    case "ReviewIngredients":
-      return ReviewIngredientsScreen;
     case "Result":
       return ResultScreen;
     default:

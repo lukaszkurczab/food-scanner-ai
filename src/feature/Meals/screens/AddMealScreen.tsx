@@ -69,10 +69,6 @@ export default function AddMealScreen() {
       };
     }
 
-    if (start === "ReviewIngredients") {
-      return { name: "ReviewIngredients", params: {} };
-    }
-
     return { name: "Result", params: {} };
   }, [route.params]);
 
