@@ -43,7 +43,7 @@ export default function IngredientsNotRecognizedScreen({
       });
     } else {
       navigation.replace("AddMeal", {
-        start: "ReviewIngredients",
+        start: "Result",
         id,
         image,
       });
@@ -51,7 +51,7 @@ export default function IngredientsNotRecognizedScreen({
   };
 
   const handleManualEntry = () => {
-    flow.replace("ReviewIngredients", {});
+    flow.replace("Result", {});
   };
 
   const handleOpenProductDatabase = () => {

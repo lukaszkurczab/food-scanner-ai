@@ -74,13 +74,16 @@ export const PhotoPreview = ({
     });
   }, [photoUri]);
 
-  const recalcFrame = useCallback((width: number, iW: number, iH: number) => {
-    if (!width || !iW || !iH) return;
-    const naturalH = Math.round((width * iH) / iW);
-    const h = Math.min(naturalH, maxImageAreaH);
-    setFrameW(width);
-    setFrameH(h);
-  }, [maxImageAreaH]);
+  const recalcFrame = useCallback(
+    (width: number, iW: number, iH: number) => {
+      if (!width || !iW || !iH) return;
+      const naturalH = Math.round((width * iH) / iW);
+      const h = Math.min(naturalH, maxImageAreaH);
+      setFrameW(width);
+      setFrameH(h);
+    },
+    [maxImageAreaH],
+  );
 
   const onLayout = (e: LayoutChangeEvent) => {
     const w = e.nativeEvent.layout.width;
@@ -340,7 +343,6 @@ const styles = StyleSheet.create({
   frame: {
     overflow: "hidden",
     backgroundColor: "#000",
-    marginBottom: 14,
     width: "100%",
   },
   fill: {

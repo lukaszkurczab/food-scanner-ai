@@ -132,8 +132,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.bold,
       paddingVertical: theme.spacing.sm - 2,
       paddingHorizontal: theme.spacing.xs,
-      borderWidth: 1,
-      borderRadius: theme.rounded.md,
       color: theme.text,
       borderColor: theme.border,
       backgroundColor: theme.card,

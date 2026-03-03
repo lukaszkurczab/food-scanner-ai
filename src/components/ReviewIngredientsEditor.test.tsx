@@ -51,10 +51,6 @@ jest.mock("@expo/vector-icons", () => ({
   MaterialIcons: () => null,
 }));
 
-jest.mock("expo-file-system", () => ({
-  getInfoAsync: jest.fn(),
-}));
-
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, options?: { ns?: string }) =>
@@ -152,7 +148,6 @@ const buildDraftContext = (mealOverrides?: Partial<Meal>) => ({
   updateIngredient: jest.fn(),
   saveDraft: jest.fn(async (_uid: string) => undefined),
   addIngredient: jest.fn(),
-  setPhotoUrl: jest.fn(),
 });
 
 describe("ReviewIngredientsEditor", () => {
@@ -169,7 +164,6 @@ describe("ReviewIngredientsEditor", () => {
       <ReviewIngredientsEditor
         screenTrackingName="MealAdd"
         onContinue={jest.fn()}
-        onOpenCamera={jest.fn()}
         onStartOver={jest.fn()}
       />,
     );
@@ -187,7 +181,6 @@ describe("ReviewIngredientsEditor", () => {
       <ReviewIngredientsEditor
         screenTrackingName="MealAdd"
         onContinue={onContinue}
-        onOpenCamera={jest.fn()}
         onStartOver={jest.fn()}
       />,
     );
@@ -205,7 +198,6 @@ describe("ReviewIngredientsEditor", () => {
       <ReviewIngredientsEditor
         screenTrackingName="MealAdd"
         onContinue={jest.fn()}
-        onOpenCamera={jest.fn()}
         onStartOver={onStartOver}
       />,
     );

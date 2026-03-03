@@ -21,7 +21,7 @@ export default function BarcodeProductNotFoundScreen({
 
   const code = params?.code;
   const attempt = params?.attempt || 1;
-  const returnTo: MealAddScreenName = params?.returnTo || "ReviewIngredients";
+  const returnTo: MealAddScreenName = params?.returnTo || "Result";
 
   const isLastAttempt = attempt >= MAX_ATTEMPTS;
 

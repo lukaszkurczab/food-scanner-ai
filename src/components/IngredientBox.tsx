@@ -48,17 +48,16 @@ export const IngredientBox: React.FC<Props> = ({
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const boxCardStyle = useMemo(
     () => ({
-      backgroundColor: hasError ? theme.error.background : theme.background,
-      borderColor: hasError ? theme.error.border : theme.border,
+      backgroundColor: hasError ? theme.error.background : "transparent",
     }),
-    [hasError, theme.error.background, theme.error.border, theme.background, theme.border]
+    [hasError, theme.error.background],
   );
   const dropdownPositionStyle = useMemo(
     () => ({
       left: menuPos.x,
       top: menuPos.y,
     }),
-    [menuPos.x, menuPos.y]
+    [menuPos.x, menuPos.y],
   );
 
   const openMenu = () => {
@@ -91,38 +90,38 @@ export const IngredientBox: React.FC<Props> = ({
   }
 
   return (
-    <View
-      style={[
-        styles.box,
-        boxCardStyle,
-      ]}
-    >
+    <View style={[styles.box, boxCardStyle]}>
       <View style={styles.row}>
-        <Text style={styles.title}>
-          {ingredient.name || t("ingredient_name", { ns: "meals" })}
-        </Text>
-        <View style={styles.amountRow}>
+        <View style={styles.summaryPressable}>
+          <Text style={styles.title}>
+            {ingredient.name || t("ingredient_name", { ns: "meals" })}
+          </Text>
           <Text style={styles.amountText}>
             {ingredient.amount}
             {ingredient.unit ? ingredient.unit : "g"}
           </Text>
-          {editable && (
-            <Pressable ref={menuAnchor} onPress={openMenu} style={styles.icon}>
-              <MaterialIcons
-                name="more-vert"
-                size={24}
-                color={theme.textSecondary}
-              />
-            </Pressable>
-          )}
         </View>
+
+        {editable && (
+          <Pressable ref={menuAnchor} onPress={openMenu} style={styles.icon}>
+            <MaterialIcons
+              name="more-vert"
+              size={24}
+              color={theme.textSecondary}
+            />
+          </Pressable>
+        )}
       </View>
 
-      <MacroChip kind="kcal" value={ingredient.kcal} />
-      <View style={styles.macrosRow}>
-        <MacroChip kind="protein" value={ingredient.protein} />
-        <MacroChip kind="carbs" value={ingredient.carbs} />
-        <MacroChip kind="fat" value={ingredient.fat} />
+      <View style={styles.macrosWrap}>
+        <View style={styles.macrosMeasure}>
+          <MacroChip kind="kcal" value={ingredient.kcal} />
+          <View style={styles.macrosRow}>
+            <MacroChip kind="protein" value={ingredient.protein} />
+            <MacroChip kind="carbs" value={ingredient.carbs} />
+            <MacroChip kind="fat" value={ingredient.fat} />
+          </View>
+        </View>
       </View>
 
       <Modal
@@ -135,12 +134,7 @@ export const IngredientBox: React.FC<Props> = ({
           style={[RNStyleSheet.absoluteFill]}
           onPress={() => setMenuVisible(false)}
         >
-            <View
-              style={[
-                styles.dropdown,
-                dropdownPositionStyle,
-              ]}
-            >
+          <View style={[styles.dropdown, dropdownPositionStyle]}>
             <Pressable
               style={styles.dropdownItem}
               onPress={() => {
@@ -172,12 +166,7 @@ export const IngredientBox: React.FC<Props> = ({
                 size={18}
                 style={styles.dropdownIcon}
               />
-              <Text
-                style={[
-                  styles.dropdownLabel,
-                  styles.dropdownLabelDanger,
-                ]}
-              >
+              <Text style={[styles.dropdownLabel, styles.dropdownLabelDanger]}>
                 {t("remove", { ns: "common" })}
               </Text>
             </Pressable>
@@ -192,27 +181,28 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     box: {
       width: "100%",
-      marginBottom: theme.spacing.md,
-      elevation: 2,
-      shadowOpacity: 0.07,
-      shadowRadius: theme.spacing.lg - theme.spacing.xs / 2,
-      borderRadius: theme.rounded.lg,
-      borderWidth: 1,
-      shadowColor: theme.shadow,
-      gap: theme.spacing.sm,
-      padding: theme.spacing.lg,
+      marginBottom: theme.spacing.xs,
+      gap: theme.spacing.xs,
+      paddingVertical: theme.spacing.xs,
     },
     row: {
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: theme.spacing.sm + theme.spacing.xs / 2,
+      justifyContent: "space-between",
+      gap: theme.spacing.xs,
+    },
+    summaryPressable: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: "row",
+      alignItems: "center",
       justifyContent: "space-between",
       gap: theme.spacing.sm,
     },
     title: {
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.md,
       flex: 1,
     },
     amountRow: {
@@ -222,17 +212,22 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     amountText: {
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.medium,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.sm,
     },
     macrosRow: {
       flexDirection: "row",
       justifyContent: "space-between",
-      marginTop: theme.spacing.sm + theme.spacing.xs / 2,
-      marginBottom: theme.spacing.xs / 2,
-      gap: theme.spacing.sm + theme.spacing.xs / 2,
+      gap: theme.spacing.sm,
+    },
+    macrosWrap: {
+      overflow: "hidden",
+    },
+    macrosMeasure: {
+      gap: theme.spacing.xs,
+      paddingTop: theme.spacing.xs / 2,
     },
     icon: {
-      marginLeft: theme.spacing.sm - theme.spacing.xs / 2,
+      marginLeft: theme.spacing.xs,
       padding: theme.spacing.xs / 2,
     },
     dropdown: {

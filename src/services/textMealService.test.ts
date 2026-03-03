@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const mockPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
 class MockAiLimitExceededError extends Error {
@@ -10,24 +10,8 @@ class MockAiLimitExceededError extends Error {
   }
 }
 
-jest.mock("expo-constants", () => ({
-  __esModule: true,
-  default: {
-    expoConfig: {
-      extra: {
-        openaiApiKey: "test-key",
-      },
-    },
-  },
-}));
-
 jest.mock("@/services/apiClient", () => ({
   post: (url: string, data?: unknown) => mockPost(url, data),
-}));
-
-jest.mock("@/services/userService", () => ({
-  canUseAiTodayFor: jest.fn(),
-  consumeAiUseFor: jest.fn(),
 }));
 
 jest.mock("@/services/askDietAI", () => ({
@@ -39,23 +23,11 @@ jest.mock("@/services/errorLogger", () => ({
   logWarning: jest.fn(),
 }));
 
-describe("textMealService backend mode", () => {
-  const originalBackendFlag = process.env["EXPO_PUBLIC_USE_NEW_AI_BACKEND"];
-
+describe("textMealService", () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
-    process.env["EXPO_PUBLIC_USE_NEW_AI_BACKEND"] = "true";
   });
-
-  afterEach(() => {
-    if (originalBackendFlag === undefined) {
-      delete process.env["EXPO_PUBLIC_USE_NEW_AI_BACKEND"];
-    } else {
-      process.env["EXPO_PUBLIC_USE_NEW_AI_BACKEND"] = originalBackendFlag;
-    }
-  });
-
   it("uses backend ai/ask and normalizes returned ingredients", async () => {
     mockPost.mockResolvedValueOnce({
       reply:
@@ -77,7 +49,7 @@ describe("textMealService backend mode", () => {
         notes: null,
         lang: "pl",
       }),
-      { isPremium: false, limit: 1, lang: "pl" },
+      { lang: "pl" },
     );
 
     expect(mockPost).toHaveBeenCalledWith("/api/v1/ai/ask", {
@@ -106,11 +78,7 @@ describe("textMealService backend mode", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { extractIngredientsFromText } = require("@/services/textMealService");
     await expect(
-      extractIngredientsFromText("user-1", '{"name":"burger"}', {
-        isPremium: false,
-        limit: 1,
-        lang: "en",
-      }),
+      extractIngredientsFromText("user-1", '{"name":"burger"}', { lang: "en" }),
     ).rejects.toBeInstanceOf(MockAiLimitExceededError);
   });
 });

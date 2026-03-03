@@ -5,12 +5,9 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { v4 as uuidv4 } from "uuid";
 import { Toast } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
-import { usePremiumContext } from "@/context/PremiumContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
-import { canUseAiTodayFor, consumeAiUseFor } from "@/services/userService";
 import { extractIngredientsFromText } from "@/services/textMealService";
 import { AiLimitExceededError } from "@/services/askDietAI";
-import { readPublicEnv } from "@/services/publicEnv";
 import { get } from "@/services/apiClient";
 import { withVersion } from "@/services/apiVersioning";
 import { captureException } from "@/services/errorLogger";
@@ -33,11 +30,8 @@ export function useMealTextAiState(params: {
 }) {
   const { t, language } = params;
   const { uid } = useAuthContext();
-  const { isPremium } = usePremiumContext();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { meal, setMeal, saveDraft, setLastScreen } = useMealDraftContext();
-  const useNewAiBackend =
-    readPublicEnv("EXPO_PUBLIC_USE_NEW_AI_BACKEND") === "true";
 
   const [name, setName] = useState("");
   const [ingPreview, setIngPreview] = useState("");
@@ -69,7 +63,7 @@ export function useMealTextAiState(params: {
 
   const loadBackendUsage = useCallback(
     async (source: string) => {
-      if (!uid || !useNewAiBackend) {
+      if (!uid) {
         applyUsage({
           usageCount: 0,
           dailyLimit: FEATURE_LIMIT,
@@ -94,20 +88,11 @@ export function useMealTextAiState(params: {
         return null;
       }
     },
-    [applyUsage, uid, useNewAiBackend],
+    [applyUsage, uid],
   );
 
   useEffect(() => {
     let active = true;
-
-    if (!useNewAiBackend) {
-      applyUsage({
-        usageCount: 0,
-        dailyLimit: FEATURE_LIMIT,
-        remaining: FEATURE_LIMIT,
-      });
-      return;
-    }
 
     (async () => {
       if (!uid) {
@@ -147,7 +132,7 @@ export function useMealTextAiState(params: {
     return () => {
       active = false;
     };
-  }, [applyUsage, uid, useNewAiBackend]);
+  }, [applyUsage, uid]);
 
   const nameError: string | undefined = useMemo(() => {
     if (!touched.name) return undefined;
@@ -214,8 +199,8 @@ export function useMealTextAiState(params: {
 
       setMeal(next);
       await saveDraft(uid);
-      await setLastScreen(uid, "ReviewIngredients");
-      navigation.replace("AddMeal", { start: "ReviewIngredients" });
+      await setLastScreen(uid, "Result");
+      navigation.replace("AddMeal", { start: "Result" });
     },
     [desc, ensureDraft, name, navigation, saveDraft, setLastScreen, setMeal, uid],
   );
@@ -271,30 +256,15 @@ export function useMealTextAiState(params: {
 
     if (retries >= MAX_RETRIES) return;
 
-    if (useNewAiBackend && remainingUsage <= 0) {
+    if (remainingUsage <= 0) {
       setShowLimitModal(true);
       return;
-    }
-
-    if (!useNewAiBackend) {
-      const allowed = await canUseAiTodayFor(
-        uid,
-        !!isPremium,
-        "text",
-        FEATURE_LIMIT,
-      );
-      if (!allowed) {
-        setShowLimitModal(true);
-        return;
-      }
     }
 
     try {
       setLoading(true);
       const description = buildDescription();
       const ingredients = await extractIngredientsFromText(uid, description, {
-        isPremium: !!isPremium,
-        limit: FEATURE_LIMIT,
         lang: language || "en",
       });
 
@@ -304,20 +274,14 @@ export function useMealTextAiState(params: {
         return;
       }
 
-      if (useNewAiBackend) {
-        await loadBackendUsage("[useMealTextAiState] failed to refresh AI usage");
-      } else {
-        await consumeAiUseFor(uid, !!isPremium, "text", FEATURE_LIMIT);
-      }
+      await loadBackendUsage("[useMealTextAiState] failed to refresh AI usage");
       setRetries(0);
       await fillDraftAndGo(ingredients);
     } catch (error) {
       if (error instanceof AiLimitExceededError) {
-        if (useNewAiBackend) {
-          await loadBackendUsage(
-            "[useMealTextAiState] failed to refresh AI usage after limit",
-          );
-        }
+        await loadBackendUsage(
+          "[useMealTextAiState] failed to refresh AI usage after limit",
+        );
         setShowLimitModal(true);
         return;
       }
@@ -331,7 +295,6 @@ export function useMealTextAiState(params: {
     buildDescription,
     fillDraftAndGo,
     ingPreview,
-    isPremium,
     language,
     loadBackendUsage,
     name,
@@ -339,7 +302,6 @@ export function useMealTextAiState(params: {
     retries,
     t,
     uid,
-    useNewAiBackend,
   ]);
 
   const analyzeDisabled =
@@ -349,8 +311,8 @@ export function useMealTextAiState(params: {
     (!ingPreview.trim() && !amountRaw.length) ||
     retries >= MAX_RETRIES;
 
-  const limitUsed = useNewAiBackend ? usageCount : FEATURE_LIMIT;
-  const featureLimit = useNewAiBackend ? usageLimit : FEATURE_LIMIT;
+  const limitUsed = usageCount;
+  const featureLimit = usageLimit;
 
   const onNameChange = useCallback((text: string) => {
     setName(text);

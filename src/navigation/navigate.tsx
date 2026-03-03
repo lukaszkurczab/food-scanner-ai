@@ -8,7 +8,6 @@ export type RootStackParamList = {
           | "MealCamera"
           | "BarcodeProductNotFound"
           | "IngredientsNotRecognized"
-          | "ReviewIngredients"
           | "Result";
         barcodeOnly?: boolean;
         id?: string;
@@ -17,7 +16,6 @@ export type RootStackParamList = {
           | "MealCamera"
           | "BarcodeProductNotFound"
           | "IngredientsNotRecognized"
-          | "ReviewIngredients"
           | "Result";
         attempt?: number;
         code?: string;

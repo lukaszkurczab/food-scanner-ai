@@ -1,3 +1,5 @@
+const path = require("path");
+
 module.exports = {
   root: true,
   parser: "@typescript-eslint/parser",
@@ -15,16 +17,17 @@ module.exports = {
     "import/resolver": {
       alias: {
         map: [
-          ["@assets", "./assets"],
-          ["@components", "./src/components"],
-          ["@contexts", "./src/context"],
-          ["@feature", "./src/feature"],
-          ["@hooks", "./src/hooks"],
-          ["@navigation", "./src/navigation"],
-          ["@services", "./src/services"],
-          ["@theme", "./src/theme"],
-          ["@types", "./src/types"],
-          ["@utils", "./src/utils"],
+          ["@", path.resolve(__dirname, "src")],
+          ["@assets", path.resolve(__dirname, "assets")],
+          ["@components", path.resolve(__dirname, "src/components")],
+          ["@contexts", path.resolve(__dirname, "src/context")],
+          ["@feature", path.resolve(__dirname, "src/feature")],
+          ["@hooks", path.resolve(__dirname, "src/hooks")],
+          ["@navigation", path.resolve(__dirname, "src/navigation")],
+          ["@services", path.resolve(__dirname, "src/services")],
+          ["@theme", path.resolve(__dirname, "src/theme")],
+          ["@types", path.resolve(__dirname, "src/types")],
+          ["@utils", path.resolve(__dirname, "src/utils")],
         ],
         extensions: [".ts", ".tsx", ".js", ".jsx"],
       },

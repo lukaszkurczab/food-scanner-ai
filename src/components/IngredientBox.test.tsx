@@ -77,6 +77,7 @@ describe("IngredientBox", () => {
 
     expect(getByText("Chicken")).toBeTruthy();
     expect(getByText("150g")).toBeTruthy();
+    expect(getByText("meals:calories")).toBeTruthy();
   });
 
   it("falls back to translated ingredient name when missing", () => {

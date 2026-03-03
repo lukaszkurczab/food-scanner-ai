@@ -54,7 +54,7 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
     screen: "AddMeal",
     params: {
       start: "MealCamera",
-      returnTo: "ReviewIngredients",
+      returnTo: "Result",
       attempt: 1,
     },
   },
@@ -72,7 +72,7 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
     descKey: "manualDesc",
     screen: "AddMeal",
     params: {
-      start: "ReviewIngredients",
+      start: "Result",
     },
   },
   {
@@ -205,7 +205,7 @@ export function useMealAddMethodState(params: {
       const now = new Date().toISOString();
       const isE2E = isE2EModeEnabled();
       const deterministicIngredients =
-        isE2E && nextScreen === "ReviewIngredients"
+        isE2E && nextScreen === "Result"
           ? [makeE2EDraftIngredient()]
           : [];
       const emptyMeal: Meal = {
@@ -244,7 +244,7 @@ export function useMealAddMethodState(params: {
 
       if (option.screen === "AddMeal") {
         const start = option.params.start;
-        await primeEmptyMeal(start || "ReviewIngredients");
+        await primeEmptyMeal(start || "Result");
         params.navigation.navigate("AddMeal", option.params);
         return;
       }
@@ -263,8 +263,8 @@ export function useMealAddMethodState(params: {
 
     if (resumeScreen) {
       if (resumeScreen === "AddMeal") {
-        log.log("Resuming AddMeal draft at ReviewIngredients.");
-        params.navigation.navigate("AddMeal", { start: "ReviewIngredients" });
+        log.log("Resuming AddMeal draft at Result.");
+        params.navigation.navigate("AddMeal", { start: "Result" });
         return;
       }
       params.navigation.navigate(resumeScreen);
