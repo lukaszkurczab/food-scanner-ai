@@ -2,7 +2,6 @@ import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { useBadges } from "@/hooks/useBadges";
 import {
-  autoWireStreakBadges,
   listBadges,
   subscribeBadges,
   unlockPremiumBadgesIfEligible,
@@ -12,15 +11,11 @@ import type { Badge } from "@/types/badge";
 jest.mock("@/services/badgeService", () => ({
   listBadges: jest.fn(),
   subscribeBadges: jest.fn(),
-  autoWireStreakBadges: jest.fn(),
   unlockPremiumBadgesIfEligible: jest.fn(),
 }));
 
 const subscribeBadgesMock = subscribeBadges as jest.MockedFunction<
   typeof subscribeBadges
->;
-const autoWireStreakBadgesMock = autoWireStreakBadges as jest.MockedFunction<
-  typeof autoWireStreakBadges
 >;
 const listBadgesMock = listBadges as jest.MockedFunction<typeof listBadges>;
 const unlockPremiumBadgesIfEligibleMock =
@@ -44,19 +39,16 @@ describe("useBadges", () => {
   afterEach(() => {
     jest.restoreAllMocks();
     subscribeBadgesMock.mockReset();
-    autoWireStreakBadgesMock.mockReset();
     listBadgesMock.mockReset();
     unlockPremiumBadgesIfEligibleMock.mockReset();
   });
 
   it("subscribes for uid, updates badges and cleans subscriptions on unmount", async () => {
     const off = jest.fn();
-    const offStreak = jest.fn();
     subscribeBadgesMock.mockImplementation((_uid, cb) => {
       cb(sampleBadges);
       return off;
     });
-    autoWireStreakBadgesMock.mockReturnValue(offStreak);
 
     const { result, unmount } = renderHook(() => useBadges("user-1"));
 
@@ -65,16 +57,13 @@ describe("useBadges", () => {
     });
 
     expect(subscribeBadgesMock).toHaveBeenCalledWith("user-1", expect.any(Function));
-    expect(autoWireStreakBadgesMock).toHaveBeenCalledWith("user-1");
 
     unmount();
     expect(off).toHaveBeenCalledTimes(1);
-    expect(offStreak).toHaveBeenCalledTimes(1);
   });
 
   it("refreshes badge list and handles premium badge unlocking guard", async () => {
     subscribeBadgesMock.mockReturnValue(() => undefined);
-    autoWireStreakBadgesMock.mockReturnValue(() => undefined);
     listBadgesMock.mockResolvedValue(sampleBadges);
     unlockPremiumBadgesIfEligibleMock.mockResolvedValue(undefined);
 
@@ -103,7 +92,6 @@ describe("useBadges", () => {
     });
 
     expect(subscribeBadgesMock).not.toHaveBeenCalled();
-    expect(autoWireStreakBadgesMock).not.toHaveBeenCalled();
     expect(listBadgesMock).not.toHaveBeenCalled();
     expect(unlockPremiumBadgesIfEligibleMock).not.toHaveBeenCalled();
   });

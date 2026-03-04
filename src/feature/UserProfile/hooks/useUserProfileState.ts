@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getAuth, signOut } from "@react-native-firebase/auth";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useBadges } from "@/hooks/useBadges";
 import { usePremiumContext } from "@/context/PremiumContext";
+import { authLogout } from "@/feature/Auth/services/authService";
 import { getStreak } from "@/services/streakService";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -74,7 +74,7 @@ export function useUserProfileState(params: {
 
   const handleLogout = useCallback(async () => {
     try {
-      await signOut(getAuth());
+      await authLogout();
     } catch {
       // Ignore sign-out errors to avoid blocking local logout flow.
     }

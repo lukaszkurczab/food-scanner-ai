@@ -28,13 +28,23 @@ describe("textMealService", () => {
     jest.resetModules();
     jest.clearAllMocks();
   });
-  it("uses backend ai/ask and normalizes returned ingredients", async () => {
+  it("uses backend text meal endpoint and maps returned ingredients", async () => {
     mockPost.mockResolvedValueOnce({
-      reply:
-        '[{"name":"Płatki owsiane","amount":40,"protein":5,"fat":3,"carbs":27,"kcal":150}]',
+      ingredients: [
+        {
+          name: "Płatki owsiane",
+          amount: 40,
+          protein: 5,
+          fat: 3,
+          carbs: 27,
+          kcal: 150,
+        },
+      ],
       usageCount: 1,
       remaining: 19,
+      dateKey: "2026-03-03",
       version: "test",
+      persistence: "backend_owned",
     });
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -42,32 +52,39 @@ describe("textMealService", () => {
 
     const result = await extractIngredientsFromText(
       "user-1",
-      JSON.stringify({
+      {
         name: "owsianka",
         ingredients: "płatki owsiane",
         amount_g: 40,
         notes: null,
-        lang: "pl",
-      }),
+      },
       { lang: "pl" },
     );
 
-    expect(mockPost).toHaveBeenCalledWith("/api/v1/ai/ask", {
-      userId: "user-1",
-      message: expect.stringContaining("return ONLY a raw JSON array"),
-      context: {
-        actionType: "meal_text_analysis",
-        lang: "pl",
+    expect(mockPost).toHaveBeenCalledWith("/api/v1/ai/text-meal/analyze", {
+      payload: {
+        name: "owsianka",
+        ingredients: "płatki owsiane",
+        amount_g: 40,
+        notes: null,
       },
+      lang: "pl",
     });
-    expect(result).toHaveLength(1);
-    expect(result?.[0]).toMatchObject({
+    expect(result?.ingredients).toHaveLength(1);
+    expect(result?.ingredients[0]).toMatchObject({
+      id: expect.any(String),
       name: "Płatki owsiane",
       amount: 40,
+      unit: "g",
       protein: 5,
       fat: 3,
       carbs: 27,
       kcal: 150,
+    });
+    expect(result?.usage).toEqual({
+      usageCount: 1,
+      dailyLimit: 20,
+      remaining: 19,
     });
   });
 
@@ -78,7 +95,7 @@ describe("textMealService", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { extractIngredientsFromText } = require("@/services/textMealService");
     await expect(
-      extractIngredientsFromText("user-1", '{"name":"burger"}', { lang: "en" }),
+      extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
     ).rejects.toBeInstanceOf(MockAiLimitExceededError);
   });
 });

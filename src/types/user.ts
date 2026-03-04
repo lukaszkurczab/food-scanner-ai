@@ -26,5 +26,9 @@ export interface UserData extends FormData {
 export type ExportedUserData = {
   profile: UserData;
   meals: Meal[];
+  myMeals?: Meal[];
   chatMessages: ChatMessage[];
+  notifications?: Record<string, unknown>[];
+  notificationPrefs?: Record<string, unknown>;
+  feedback?: Record<string, unknown>[];
 };

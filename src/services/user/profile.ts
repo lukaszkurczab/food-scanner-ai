@@ -1,22 +1,6 @@
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import type { UserData } from "@/types";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  getDocs,
-  writeBatch,
-  deleteDoc,
-  collection,
-} from "@react-native-firebase/firestore";
-import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
-import {
-  getStorage,
-  ref as storageRef,
-  putFile,
-  getDownloadURL,
-} from "@react-native-firebase/storage";
+import type { ExportedUserData } from "@/types/user";
 import {
   getAuth,
   EmailAuthProvider,
@@ -25,14 +9,17 @@ import {
   updatePassword,
 } from "@react-native-firebase/auth";
 import { getApp } from "@react-native-firebase/app";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
-import { zip } from "react-native-zip-archive";
 import { Appearance } from "react-native";
-import { db, USERS, usersCollection } from "./common";
+import { get, post } from "@/services/apiClient";
+import { withVersion } from "@/services/apiVersioning";
 import { parseUserData } from "./profile.dto";
-import { asString, isRecord } from "@/services/contracts/guards";
 import { createServiceError } from "@/services/contracts/serviceError";
+import { claimUsername } from "@/services/usernameService";
+import {
+  fetchUserProfileRemote,
+  mergeUserProfileRemote,
+  uploadUserAvatarRemote,
+} from "@/services/user/userProfileRepository";
 
 function requireCurrentUser(
   user: FirebaseAuthTypes.User | null
@@ -48,19 +35,17 @@ function requireCurrentUser(
 }
 
 export async function getUserLocal(uid: string): Promise<UserData | null> {
-  const snap = await getDoc(doc(usersCollection(), uid));
-  if (!snap.exists()) return null;
-  return parseUserData(snap.data());
+  const data = await fetchUserProfileRemote(uid);
+  return data ? parseUserData(data) : null;
 }
 
 export async function upsertUserLocal(data: UserData): Promise<void> {
-  await setDoc(doc(usersCollection(), data.uid), data, { merge: true });
+  await mergeUserProfileRemote(data.uid, data);
 }
 
 export async function fetchUserFromCloud(uid: string): Promise<UserData | null> {
-  const snap = await getDoc(doc(usersCollection(), uid));
-  if (!snap.exists()) return null;
-  return parseUserData(snap.data());
+  const data = await fetchUserProfileRemote(uid);
+  return data ? parseUserData(data) : null;
 }
 
 export async function syncUserProfile(): Promise<void> {
@@ -68,7 +53,7 @@ export async function syncUserProfile(): Promise<void> {
 }
 
 export async function updateUserLanguageInFirestore(uid: string, language: string) {
-  await updateDoc(doc(usersCollection(), uid), { language });
+  await mergeUserProfileRemote(uid, { language });
 }
 
 export async function uploadAndSaveAvatar({
@@ -78,17 +63,12 @@ export async function uploadAndSaveAvatar({
   userUid: string;
   localUri: string;
 }) {
-  const storage = getStorage(getApp());
-  const avatar = storageRef(storage, `avatars/${userUid}/avatar.jpg`);
-  await putFile(avatar, localUri);
-  const avatarUrl = await getDownloadURL(avatar);
-  const now = new Date().toISOString();
-  await updateDoc(doc(usersCollection(), userUid), {
-    avatarUrl,
+  const response = await uploadUserAvatarRemote(userUid, localUri);
+  return {
+    avatarUrl: response.avatarUrl,
     avatarLocalPath: localUri,
-    avatarlastSyncedAt: now,
-  });
-  return { avatarUrl, avatarLocalPath: localUri, avatarlastSyncedAt: now };
+    avatarlastSyncedAt: response.avatarlastSyncedAt,
+  };
 }
 
 export async function changeUsernameService({
@@ -104,23 +84,7 @@ export async function changeUsernameService({
   const current = requireCurrentUser(auth.currentUser);
   const cred = EmailAuthProvider.credential(current.email!, password);
   await reauthenticateWithCredential(current, cred);
-
-  const dbi = db();
-  const nextKey = newUsername.trim().toLowerCase();
-  const userRef = doc(collection(dbi, USERS), uid);
-  const usernamesRef = doc(dbi, "usernames", nextKey);
-
-  const prevSnap = await getDoc(userRef);
-  const prevData = prevSnap.data() as { username?: string } | undefined;
-  const prev = typeof prevData?.username === "string" ? prevData.username : null;
-
-  const batch = writeBatch(dbi);
-  batch.set(usernamesRef, { uid }, { merge: true });
-  batch.set(userRef, { username: newUsername.trim() }, { merge: true });
-  if (prev && prev !== newUsername.trim()) {
-    batch.delete(doc(dbi, "usernames", String(prev).trim().toLowerCase()));
-  }
-  await batch.commit();
+  await claimUsername(newUsername, uid);
 }
 
 export async function changeEmailService({
@@ -132,13 +96,14 @@ export async function changeEmailService({
   newEmail: string;
   password: string;
 }) {
+  void uid;
   const auth = getAuth(getApp());
   const current = requireCurrentUser(auth.currentUser);
   const cred = EmailAuthProvider.credential(current.email!, password);
   await reauthenticateWithCredential(current, cred);
   await verifyBeforeUpdateEmail(current, newEmail.trim());
-  await updateDoc(doc(usersCollection(), uid), {
-    emailPending: newEmail.trim(),
+  await post(withVersion("/users/me/email-pending"), {
+    email: newEmail.trim(),
   });
 }
 
@@ -157,80 +122,24 @@ export async function changePasswordService({
 }
 
 export async function exportUserData(uid: string) {
-  const dbi = db();
-  const userDocRef = doc(collection(dbi, USERS), uid);
-  const userDocSnap = await getDoc(userDocRef);
-  const profile = userDocSnap.exists() ? parseUserData(userDocSnap.data()) : null;
-
-  async function fetchSub(name: string) {
-    const snap = await getDocs(collection(dbi, USERS, uid, name));
-    return snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
-      d.data(),
-    );
-  }
-
-  const meals = await fetchSub("meals");
-  const chatMessages = await fetchSub("chat_messages");
-
-  let avatarUri: string | null = null;
-  try {
-    const url = await getDownloadURL(
-      storageRef(getStorage(getApp()), `avatars/${uid}/avatar.jpg`),
-    );
-    const localPath = FileSystem.documentDirectory + "avatar.jpg";
-    const dl = FileSystem.createDownloadResumable(url, localPath);
-    await dl.downloadAsync();
-    avatarUri = localPath;
-  } catch {
-    avatarUri = null;
-  }
-
-  const exportData = { profile, meals, chatMessages };
-  const dataJsonPath = FileSystem.documentDirectory + "user_data.json";
-  await FileSystem.writeAsStringAsync(
-    dataJsonPath,
-    JSON.stringify(exportData, null, 2),
-  );
-
-  const files = [dataJsonPath];
-  if (avatarUri) files.push(avatarUri);
-
-  const zipPath = FileSystem.documentDirectory + "exported_user_data.zip";
-  await zip(files, zipPath);
-
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(zipPath);
-  }
-  return zipPath;
+  void uid;
+  return get<ExportedUserData>(withVersion("/users/me/export"));
 }
 
-export async function deleteUserInFirestoreWithUsername(uid: string) {
-  const dbi = db();
-  const userRef = doc(collection(dbi, USERS), uid);
-  const userSnap = await getDoc(userRef);
-  const userData = userSnap.data();
-  const username = isRecord(userData) ? asString(userData.username) ?? null : null;
-
-  const subcollections = ["meals", "chat_messages"];
-  for (const sub of subcollections) {
-    const subRef = collection(dbi, USERS, uid, sub);
-    const snap = await getDocs(subRef);
-    const batchSize = 500;
-    for (let i = 0; i < snap.docs.length; i += batchSize) {
-      const batch = writeBatch(dbi);
-      snap.docs
-        .slice(i, i + batchSize)
-        .forEach((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
-          batch.delete(d.ref),
-        );
-      await batch.commit();
-    }
-  }
-
-  await deleteDoc(userRef);
-  if (username) {
-    await deleteDoc(doc(dbi, "usernames", username.trim().toLowerCase()));
-  }
+export async function deleteAccountService({
+  uid,
+  password,
+}: {
+  uid: string;
+  password: string;
+}) {
+  void uid;
+  const auth = getAuth(getApp());
+  const current = requireCurrentUser(auth.currentUser);
+  const cred = EmailAuthProvider.credential(current.email!, password);
+  await reauthenticateWithCredential(current, cred);
+  await post(withVersion("/users/me/delete"));
+  await current.delete();
 }
 
 export async function createInitialUserProfile(
@@ -275,5 +184,5 @@ export async function createInitialUserProfile(
     language: "en",
   };
 
-  await setDoc(doc(usersCollection(), uid), profile, { merge: true });
+  await mergeUserProfileRemote(uid, profile);
 }

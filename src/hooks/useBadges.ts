@@ -3,7 +3,6 @@ import type { Badge } from "@/types/badge";
 import {
   listBadges,
   subscribeBadges,
-  autoWireStreakBadges,
   unlockPremiumBadgesIfEligible,
 } from "@/services/badgeService";
 
@@ -12,12 +11,9 @@ export function useBadges(uid: string | null | undefined) {
 
   useEffect(() => {
     if (!uid) return;
-    let offStreak: (() => void) | null = null;
     const off = subscribeBadges(uid, setBadges);
-    offStreak = autoWireStreakBadges(uid);
     return () => {
       off();
-      offStreak?.();
     };
   }, [uid]);
 

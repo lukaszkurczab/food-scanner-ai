@@ -27,7 +27,7 @@ export function useEditResultState(params: {
   const [imageError, setImageError] = useState(false);
   const [checkingImage, setCheckingImage] = useState(false);
 
-  const image = meal?.photoUrl ?? null;
+  const image = meal?.photoLocalPath ?? meal?.photoUrl ?? null;
   const mealName = meal?.name || autoMealName();
   const mealType: MealType = meal?.type || "breakfast";
 
@@ -42,7 +42,7 @@ export function useEditResultState(params: {
 
   useEffect(() => {
     const checkLocalImage = async () => {
-      const photoUrl = meal?.photoUrl;
+      const photoUrl = meal?.photoLocalPath ?? meal?.photoUrl;
       if (!photoUrl) return;
 
       setCheckingImage(true);
@@ -63,7 +63,7 @@ export function useEditResultState(params: {
     };
 
     void checkLocalImage();
-  }, [meal?.photoUrl, setPhotoUrl]);
+  }, [meal?.photoLocalPath, meal?.photoUrl, setPhotoUrl]);
 
   const goShare = useCallback(() => {
     if (!meal) return;

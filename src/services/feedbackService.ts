@@ -1,12 +1,5 @@
-import { getApp } from "@react-native-firebase/app";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  updateDoc,
-  doc,
-} from "@react-native-firebase/firestore";
-import storage from "@react-native-firebase/storage";
+import { upload } from "@/services/apiClient";
+import { withVersion } from "@/services/apiVersioning";
 
 type DeviceInfo = {
   modelName?: string | null;
@@ -22,12 +15,6 @@ export type SendFeedbackInput = {
   deviceInfo?: DeviceInfo | null;
 };
 
-function fs() {
-  return getFirestore(getApp());
-}
-
-const FEEDBACKS_COL = "feedbacks";
-
 export async function sendFeedback({
   message,
   attachmentUri,
@@ -35,32 +22,28 @@ export async function sendFeedback({
   email = null,
   deviceInfo = null,
 }: SendFeedbackInput): Promise<void> {
-  const createdAt = Date.now();
-
-  const ref = await addDoc(collection(fs(), FEEDBACKS_COL), {
-    message,
-    userUid,
-    email,
-    deviceInfo,
-    createdAt,
-    status: "new",
-    attachmentUrl: null,
-    attachmentPath: null,
-  });
-
+  void userUid;
+  void email;
+  const data = new FormData();
+  data.append("message", message);
+  if (deviceInfo?.modelName) {
+    data.append("deviceModelName", deviceInfo.modelName);
+  }
+  if (deviceInfo?.osName) {
+    data.append("deviceOsName", deviceInfo.osName);
+  }
+  if (deviceInfo?.osVersion) {
+    data.append("deviceOsVersion", deviceInfo.osVersion);
+  }
   if (attachmentUri) {
     const filename =
-      attachmentUri.split("/").pop() || `attachment-${createdAt}`;
-    const path = `feedbacks/${ref.id}/${filename}`;
-    const fileRef = storage().ref(path);
-
-    await fileRef.putFile(attachmentUri);
-    const url = await fileRef.getDownloadURL();
-
-    await updateDoc(doc(fs(), FEEDBACKS_COL, ref.id), {
-      attachmentUrl: url,
-      attachmentPath: path,
-      updatedAt: Date.now(),
-    });
+      attachmentUri.split("/").pop() || `attachment-${Date.now()}.jpg`;
+    data.append("file", {
+      uri: attachmentUri,
+      name: filename,
+      type: "image/jpeg",
+    } as unknown as Blob);
   }
+
+  await upload(withVersion("/users/me/feedback"), data);
 }

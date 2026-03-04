@@ -1,77 +1,32 @@
 // src/hooks/useChatHistory.ts
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
-import { getApp } from "@react-native-firebase/app";
-import {
-  getFirestore,
-  collection,
-  doc,
-  query,
-  orderBy,
-  limit,
-  onSnapshot,
-  startAfter,
-  getDocs,
-  setDoc,
-  writeBatch,
-} from "@react-native-firebase/firestore";
-import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import type { Meal, FormData, ChatMessage } from "@/types";
 import { get, post } from "@/services/apiClient";
 import { withVersion } from "@/services/apiVersioning";
+import type {
+  AiAskBackendResponse,
+  AiUsageResponse,
+} from "@/services/ai/contracts";
+import { getAiDailyLimit } from "@/services/ai/contracts";
 import { captureException } from "@/services/errorLogger";
+import {
+  type ChatMessageCursor,
+  fetchChatThreadMessagesPage,
+  persistAssistantChatMessage,
+  persistUserChatMessage,
+  subscribeToChatThreadMessages,
+} from "@/services/ai/chatThreadRepository";
 
 type Options = { pageSize?: number };
-type AiUsageResponse = {
-  userId: string;
-  dateKey: string;
-  usageCount: number;
-  dailyLimit: number;
-  remaining: number;
-};
-type AiAskResponse = {
-  reply: string;
-  usageCount: number;
-  remaining: number;
-  version?: string;
-};
 type AiHistoryItem = {
   from: "user" | "ai";
   text: string;
 };
-type ChatMessageDoc = {
-  role?: ChatMessage["role"];
-  content?: string;
-  createdAt?: number;
-  lastSyncedAt?: number;
-  deleted?: boolean;
-};
 
 const DEFAULT_CHAT_DAILY_LIMIT = 5;
-
-function toChatMessage(
-  d: FirebaseFirestoreTypes.QueryDocumentSnapshot,
-  userUid: string,
-): ChatMessage {
-  const data = d.data() as ChatMessageDoc;
-  const role = data.role;
-  return {
-    id: d.id,
-    userUid,
-    role:
-      role === "user" || role === "assistant" || role === "system"
-        ? role
-        : "assistant",
-    content: typeof data.content === "string" ? data.content : "",
-    createdAt: typeof data.createdAt === "number" ? data.createdAt : 0,
-    lastSyncedAt: typeof data.lastSyncedAt === "number" ? data.lastSyncedAt : 0,
-    syncState: "synced",
-    deleted: !!data.deleted,
-    cloudId: d.id,
-  };
-}
 
 function getErrorStatus(error: unknown): number | undefined {
   if (
@@ -95,6 +50,8 @@ function buildAiContext(
     meals: meals.slice(0, 5),
     profile,
     history,
+    language: i18next.language || "en",
+    actionType: "chat",
   };
 }
 
@@ -180,24 +137,10 @@ export function useChatHistory(
   const [dailyLimit, setDailyLimit] = useState(DEFAULT_CHAT_DAILY_LIMIT);
   const [remainingToday, setRemainingToday] = useState(DEFAULT_CHAT_DAILY_LIMIT);
 
-  const lastDocRef =
-    useRef<FirebaseFirestoreTypes.QueryDocumentSnapshot | null>(null);
+  const lastDocRef = useRef<ChatMessageCursor>(null);
 
   const isLocalThread = threadId.startsWith("local-");
-  const db = getFirestore(getApp());
-
-  const baseCol = useMemo(() => {
-    if (!userUid || !threadId) return null;
-    if (isLocalThread) return null;
-    return collection(
-      db,
-      "users",
-      userUid,
-      "chat_threads",
-      threadId,
-      "messages",
-    );
-  }, [db, userUid, threadId, isLocalThread]);
+  const canReadThread = !!userUid && !!threadId && !isLocalThread;
 
   const applyBackendUsage = useCallback(
     (usage: {
@@ -208,7 +151,7 @@ export function useChatHistory(
       setDailyUsed(usage.usageCount);
       setRemainingToday(usage.remaining);
       setDailyLimit(
-        usage.dailyLimit ?? Math.max(usage.usageCount + usage.remaining, 0),
+        usage.dailyLimit ?? getAiDailyLimit(usage),
       );
     },
     [],
@@ -233,9 +176,7 @@ export function useChatHistory(
       }
 
       try {
-        const usage = await get<AiUsageResponse>(
-          `${withVersion("/ai/usage")}?userId=${encodeURIComponent(userUid)}`,
-        );
+        const usage = await get<AiUsageResponse>(withVersion("/ai/usage"));
 
         /* istanbul ignore next -- defensive mounted check for async branch */
         if (mounted) {
@@ -269,56 +210,47 @@ export function useChatHistory(
   const loading = messagesLoading || usageLoading;
 
   useEffect(() => {
-    if (!baseCol) {
+    if (!canReadThread) {
       setMessages([]);
       setMessagesLoading(false);
+      lastDocRef.current = null;
+      setHasMore(false);
       return;
     }
 
-    const q = query(baseCol, orderBy("createdAt", "desc"), limit(pageSize));
-
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        if (!snap) return;
-
-        const items = snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
-          toChatMessage(d, userUid),
-        );
-
+    const unsub = subscribeToChatThreadMessages({
+      userUid,
+      threadId,
+      pageSize,
+      onMessages: (items, nextCursor) => {
         setMessages(items);
-        lastDocRef.current = snap.docs[snap.docs.length - 1] ?? null;
-        setHasMore(!!lastDocRef.current);
+        lastDocRef.current = nextCursor;
+        setHasMore(!!nextCursor);
         setMessagesLoading(false);
       },
-      () => {
+      onError: () => {
         setMessagesLoading(false);
       },
-    );
+    });
 
     return unsub;
-  }, [baseCol, pageSize, userUid]);
+  }, [canReadThread, pageSize, threadId, userUid]);
 
   const loadMore = useCallback(async () => {
-    if (!baseCol || !hasMore || !lastDocRef.current) return;
+    if (!canReadThread || !hasMore || !lastDocRef.current) return;
 
-    const q = query(
-      baseCol,
-      orderBy("createdAt", "desc"),
-      startAfter(lastDocRef.current),
-      limit(pageSize),
-    );
+    const page = await fetchChatThreadMessagesPage({
+      userUid,
+      threadId,
+      pageSize,
+      cursor: lastDocRef.current,
+    });
 
-    const snap = await getDocs(q);
-    const older = snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
-      toChatMessage(d, userUid),
-    );
+    setMessages((prev) => upsertSortedMessages(prev, page.items));
 
-    setMessages((prev) => upsertSortedMessages(prev, older));
-
-    lastDocRef.current = snap.docs[snap.docs.length - 1] ?? null;
-    setHasMore(!!lastDocRef.current);
-  }, [baseCol, hasMore, pageSize, userUid]);
+    lastDocRef.current = page.nextCursor;
+    setHasMore(!!page.nextCursor);
+  }, [canReadThread, hasMore, pageSize, threadId, userUid]);
 
   const send = useCallback(
     async (text: string): Promise<string | null> => {
@@ -334,15 +266,6 @@ export function useChatHistory(
 
       const now = Date.now();
       const createdThreadId = isLocalThread ? uuidv4() : threadId;
-      const threadRef = doc(
-        db,
-        "users",
-        userUid,
-        "chat_threads",
-        createdThreadId,
-      );
-      const messagesCol = collection(threadRef, "messages");
-
       const userMsgId = uuidv4();
       const aiMsgId = uuidv4();
 
@@ -360,40 +283,18 @@ export function useChatHistory(
 
       setMessages((prev) => upsertSortedMessage(prev, optimisticUser));
 
-      const batch = writeBatch(db);
-
-      if (isLocalThread) {
-        batch.set(threadRef, {
-          userUid,
-          title:
-            trimmed.length > 42 ? trimmed.slice(0, 42).trim() + "…" : trimmed,
-          createdAt: now,
-          updatedAt: now,
-          lastMessage: trimmed,
-          lastMessageAt: now,
-        });
-      } else {
-        batch.set(
-          threadRef,
-          {
-            userUid,
-            updatedAt: now,
-            lastMessage: trimmed,
-            lastMessageAt: now,
-          },
-          { merge: true },
-        );
-      }
-
-      batch.set(doc(messagesCol, userMsgId), {
-        role: "user",
+      await persistUserChatMessage({
+        userUid,
+        threadId: createdThreadId,
+        messageId: userMsgId,
         content: trimmed,
         createdAt: now,
-        lastSyncedAt: now,
-        deleted: false,
+        title: isLocalThread
+          ? trimmed.length > 42
+            ? trimmed.slice(0, 42).trim() + "…"
+            : trimmed
+          : undefined,
       });
-
-      await batch.commit();
 
       let aiText = "";
       let askFailed = false;
@@ -402,8 +303,7 @@ export function useChatHistory(
           from: m.role === "user" ? "user" : "ai",
           text: m.content,
         }));
-        const aiResponse = await post<AiAskResponse>(withVersion("/ai/ask"), {
-          userId: userUid,
+        const aiResponse = await post<AiAskBackendResponse>(withVersion("/ai/ask"), {
           message: trimmed,
           context: buildAiContext(meals, profile, [
             ...historyForAi,
@@ -414,7 +314,7 @@ export function useChatHistory(
         applyBackendUsage({
           usageCount: aiResponse.usageCount,
           remaining: aiResponse.remaining,
-          dailyLimit: aiResponse.usageCount + aiResponse.remaining,
+          dailyLimit: getAiDailyLimit(aiResponse),
         });
       } catch (error) {
         if (getErrorStatus(error) === 429) {
@@ -460,27 +360,13 @@ export function useChatHistory(
 
       setMessages((prev) => upsertSortedMessage(prev, optimisticAi));
 
-      await setDoc(
-        doc(messagesCol, aiMsgId),
-        {
-          role: "assistant",
-          content: aiText,
-          createdAt: now2,
-          lastSyncedAt: now2,
-          deleted: false,
-        },
-        { merge: true },
-      );
-
-      await setDoc(
-        threadRef,
-        {
-          updatedAt: now2,
-          lastMessage: aiText,
-          lastMessageAt: now2,
-        },
-        { merge: true },
-      );
+      await persistAssistantChatMessage({
+        userUid,
+        threadId: createdThreadId,
+        messageId: aiMsgId,
+        content: aiText,
+        createdAt: now2,
+      });
 
       if (!askFailed) {
         setTyping(false);
@@ -495,7 +381,6 @@ export function useChatHistory(
       sending,
       isLocalThread,
       threadId,
-      db,
       userUid,
       meals,
       profile,

@@ -54,7 +54,8 @@ const MealListItemBase: React.FC<Props> = ({
     async function restore() {
       if (!mealId || !meal.userUid) return;
 
-      const directLocal = meal.photoUrl || "";
+      const directLocal =
+        meal.photoLocalPath || meal.localPhotoUrl || meal.photoUrl || "";
       if (
         directLocal &&
         (directLocal.startsWith("file://") || directLocal.startsWith("content://"))
@@ -82,7 +83,15 @@ const MealListItemBase: React.FC<Props> = ({
     return () => {
       cancelled = true;
     };
-  }, [mealId, meal.userUid, meal.cloudId, meal.imageId, meal.photoUrl]);
+  }, [
+    mealId,
+    meal.userUid,
+    meal.cloudId,
+    meal.imageId,
+    meal.photoLocalPath,
+    meal.localPhotoUrl,
+    meal.photoUrl,
+  ]);
 
   const reveal = useRef(new Animated.Value(0)).current;
   const isOpen = useRef(false);
@@ -132,7 +141,8 @@ const MealListItemBase: React.FC<Props> = ({
     setRowWidth(e.nativeEvent.layout.width);
 
   const nutrition = calculateTotalNutrients([meal]);
-  const imageUri = localUri || meal.photoUrl || null;
+  const imageUri =
+    localUri || meal.photoLocalPath || meal.localPhotoUrl || meal.photoUrl || null;
 
   const translateX = reveal.interpolate({
     inputRange: [0, ACTION_WIDTH],

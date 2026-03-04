@@ -11,21 +11,20 @@ import type { UserData } from "@/types";
 import { useUser } from "@/hooks/useUser";
 import { Platform } from "react-native";
 
-const mockGetApp = jest.fn<() => string>(() => "APP");
-const mockGetFirestore = jest.fn<(...args: unknown[]) => string>(() => "DB");
-const mockDoc = jest.fn<(...args: unknown[]) => string>(() => "DOC_REF");
-const mockOnSnapshot = jest.fn<(...args: unknown[]) => unknown>();
-const mockGetDoc = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockSetDoc = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockDeleteDoc = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockGetStorage = jest.fn<(...args: unknown[]) => string>(() => "STORAGE");
-const mockRef = jest.fn<(...args: unknown[]) => string>(() => "STORAGE_REF");
-const mockPutFile = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockGetDownloadURL = jest.fn<(...args: unknown[]) => Promise<string>>();
+const mockSubscribeToUserProfile = jest.fn<(...args: unknown[]) => unknown>();
+const mockFetchUserProfileRemote = jest.fn<
+  (...args: unknown[]) => Promise<UserData | null>
+>();
+const mockUpdateUserProfileRemote = jest.fn<
+  (...args: unknown[]) => Promise<void>
+>();
 const mockSavePhotoLocally = jest.fn<(...args: unknown[]) => Promise<string>>();
 const mockChangeUsernameService = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockChangeEmailService = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockChangePasswordService = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockDeleteAccountService = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockExportUserDataService = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockUploadAndSaveAvatar = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockAssertNoUndefined = jest.fn<(...args: unknown[]) => void>();
 const mockAsyncStorageGetItem = jest.fn<
   (...args: unknown[]) => Promise<string | null>
@@ -56,26 +55,18 @@ const mockNetInfoFetch = jest.fn<
 >();
 const mockUnsub = jest.fn<() => void>();
 
+const createExportPayload = () => ({
+  profile: createUser(),
+  meals: [{ id: "meal-1" }],
+  chatMessages: [{ id: "chat-1" }],
+});
+
 let mockSnapshotCb: ((snap: { data: () => unknown }) => void) | null = null;
 
-jest.mock("@react-native-firebase/app", () => ({
-  getApp: () => mockGetApp(),
-}));
-
-jest.mock("@react-native-firebase/firestore", () => ({
-  getFirestore: (...args: unknown[]) => mockGetFirestore(...args),
-  doc: (...args: unknown[]) => mockDoc(...args),
-  onSnapshot: (...args: unknown[]) => mockOnSnapshot(...args),
-  getDoc: (...args: unknown[]) => mockGetDoc(...args),
-  setDoc: (...args: unknown[]) => mockSetDoc(...args),
-  deleteDoc: (...args: unknown[]) => mockDeleteDoc(...args),
-}));
-
-jest.mock("@react-native-firebase/storage", () => ({
-  getStorage: (...args: unknown[]) => mockGetStorage(...args),
-  ref: (...args: unknown[]) => mockRef(...args),
-  putFile: (...args: unknown[]) => mockPutFile(...args),
-  getDownloadURL: (...args: unknown[]) => mockGetDownloadURL(...args),
+jest.mock("@/services/user/userProfileRepository", () => ({
+  subscribeToUserProfile: (...args: unknown[]) => mockSubscribeToUserProfile(...args),
+  fetchUserProfileRemote: (...args: unknown[]) => mockFetchUserProfileRemote(...args),
+  updateUserProfileRemote: (...args: unknown[]) => mockUpdateUserProfileRemote(...args),
 }));
 
 jest.mock("@utils/savePhotoLocally", () => ({
@@ -86,6 +77,9 @@ jest.mock("@/services/userService", () => ({
   changeUsernameService: (...args: unknown[]) => mockChangeUsernameService(...args),
   changeEmailService: (...args: unknown[]) => mockChangeEmailService(...args),
   changePasswordService: (...args: unknown[]) => mockChangePasswordService(...args),
+  deleteAccountService: (...args: unknown[]) => mockDeleteAccountService(...args),
+  exportUserData: (...args: unknown[]) => mockExportUserDataService(...args),
+  uploadAndSaveAvatar: (...args: unknown[]) => mockUploadAndSaveAvatar(...args),
 }));
 
 jest.mock("@/utils/findUndefined", () => ({
@@ -180,25 +174,26 @@ describe("useUser", () => {
 
     setPlatformOs("ios");
     mockSnapshotCb = null;
-    mockGetApp.mockReturnValue("APP");
-    mockGetFirestore.mockReturnValue("DB");
-    mockDoc.mockReturnValue("DOC_REF");
-    mockOnSnapshot.mockImplementation((...args: unknown[]) => {
-      const cb = args[1] as (snap: { data: () => unknown }) => void;
-      mockSnapshotCb = cb;
+    mockSubscribeToUserProfile.mockImplementation((...args: unknown[]) => {
+      const params = args[0] as { onData: (data: UserData | null) => void };
+      mockSnapshotCb = (snap) => {
+        params.onData((snap.data() as UserData | null | undefined) ?? null);
+      };
       return mockUnsub;
     });
-    mockGetDoc.mockResolvedValue({ data: () => null });
-    mockSetDoc.mockResolvedValue(undefined);
-    mockDeleteDoc.mockResolvedValue(undefined);
-    mockGetStorage.mockReturnValue("STORAGE");
-    mockRef.mockReturnValue("STORAGE_REF");
-    mockPutFile.mockResolvedValue(undefined);
-    mockGetDownloadURL.mockResolvedValue("https://cdn/avatar.jpg");
+    mockFetchUserProfileRemote.mockResolvedValue(null);
+    mockUpdateUserProfileRemote.mockResolvedValue(undefined);
     mockSavePhotoLocally.mockResolvedValue("file:///photos/avatar.jpg");
     mockChangeUsernameService.mockResolvedValue(undefined);
     mockChangeEmailService.mockResolvedValue(undefined);
     mockChangePasswordService.mockResolvedValue(undefined);
+    mockDeleteAccountService.mockResolvedValue(undefined);
+    mockExportUserDataService.mockResolvedValue(createExportPayload());
+    mockUploadAndSaveAvatar.mockResolvedValue({
+      avatarUrl: "https://cdn/avatar.jpg",
+      avatarLocalPath: "file:///photos/avatar.jpg",
+      avatarlastSyncedAt: "2026-03-10T10:00:00.000Z",
+    });
     mockAssertNoUndefined.mockReturnValue(undefined);
     mockAsyncStorageGetItem.mockResolvedValue(null);
     mockAsyncStorageSetItem.mockResolvedValue(undefined);
@@ -235,13 +230,13 @@ describe("useUser", () => {
     });
     expect(result.current.userData).toBeNull();
     expect(result.current.language).toBe("en");
-    expect(mockOnSnapshot).not.toHaveBeenCalled();
+    expect(mockSubscribeToUserProfile).not.toHaveBeenCalled();
 
     await act(async () => {
       await result.current.changeLanguage("pl");
     });
     expect(result.current.language).toBe("pl");
-    expect(mockSetDoc).not.toHaveBeenCalled();
+    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
   });
 
   it("loads cached profile, reacts to snapshot updates and unsubscribes", async () => {
@@ -395,7 +390,7 @@ describe("useUser", () => {
     });
 
     expect(profile).toEqual(expect.objectContaining({ username: "cached-name" }));
-    expect(mockGetDoc).not.toHaveBeenCalled();
+    expect(mockFetchUserProfileRemote).not.toHaveBeenCalled();
   });
 
   it("fetches from cloud when online and mirrors cache", async () => {
@@ -403,7 +398,7 @@ describe("useUser", () => {
       username: "remote-name",
       avatarLocalPath: "file:///avatar-local.jpg",
     });
-    mockGetDoc.mockResolvedValueOnce({ data: () => remote });
+    mockFetchUserProfileRemote.mockResolvedValueOnce(remote);
 
     const { result } = renderHook(() => useUser("u1"));
     await act(async () => {
@@ -415,7 +410,7 @@ describe("useUser", () => {
     });
 
     expect(profile).toEqual(expect.objectContaining({ username: "remote-name" }));
-    expect(mockGetDoc).toHaveBeenCalled();
+    expect(mockFetchUserProfileRemote).toHaveBeenCalledWith("u1");
     expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
       "user:profile:u1",
       expect.stringContaining("remote-name"),
@@ -424,7 +419,7 @@ describe("useUser", () => {
 
   it("falls back when cloud fetch throws and handles malformed cached data", async () => {
     mockNetInfoFetch.mockResolvedValueOnce({ isConnected: true });
-    mockGetDoc.mockRejectedValueOnce(new Error("network"));
+    mockFetchUserProfileRemote.mockRejectedValueOnce(new Error("network"));
     mockAsyncStorageGetItem
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce("{bad-json")
@@ -438,7 +433,7 @@ describe("useUser", () => {
     expect(malformedProfile).toBeNull();
 
     mockNetInfoFetch.mockResolvedValueOnce({ isConnected: true });
-    mockGetDoc.mockRejectedValueOnce(new Error("network"));
+    mockFetchUserProfileRemote.mockRejectedValueOnce(new Error("network"));
     let fallbackProfile: unknown = null;
     await act(async () => {
       fallbackProfile = await result.current.fetchUserFromCloud();
@@ -460,15 +455,13 @@ describe("useUser", () => {
       });
     });
 
-    expect(mockAssertNoUndefined).toHaveBeenCalled();
-    expect(mockSetDoc).toHaveBeenCalledWith(
-      "DOC_REF",
-      expect.objectContaining({
-        username: "oracle",
-        language: "pl",
-        avatarLocalPath: "",
-      }),
-      { merge: true },
+    expect(mockAssertNoUndefined).toHaveBeenCalledWith(
+      { language: "pl" },
+      "updateUserProfile payload",
+    );
+    expect(mockUpdateUserProfileRemote).toHaveBeenCalledWith(
+      "u1",
+      { language: "pl" },
     );
     expect(result.current.language).toBe("pl");
   });
@@ -488,30 +481,31 @@ describe("useUser", () => {
       fileId: "avatar",
       photoUri: "file:///picked.jpg",
     });
-    expect(mockPutFile).toHaveBeenCalledTimes(0);
-    expect(mockSetDoc).toHaveBeenCalledWith(
-      "DOC_REF",
+    expect(mockUploadAndSaveAvatar).not.toHaveBeenCalled();
+    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalledWith(
+      "u1",
       expect.objectContaining({
         avatarLocalPath: "file:///photos/avatar.jpg",
       }),
-      { merge: true },
+    );
+    expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
+      "user:profile:u1",
+      expect.stringContaining("\"avatarLocalPath\":\"file:///photos/avatar.jpg\""),
     );
 
     mockNetInfoFetch.mockResolvedValueOnce({ isConnected: true });
     await act(async () => {
       await result.current.setAvatar("file:///picked-2.jpg");
     });
-    expect(mockPutFile).toHaveBeenCalledWith("STORAGE_REF", "file:///photos/avatar.jpg", {
-      contentType: "image/jpeg",
+    expect(mockUploadAndSaveAvatar).toHaveBeenCalledWith({
+      userUid: "u1",
+      localUri: "file:///photos/avatar.jpg",
     });
-    expect(mockGetDownloadURL).toHaveBeenCalledWith("STORAGE_REF");
-    expect(mockSetDoc).toHaveBeenCalledWith(
-      "DOC_REF",
+    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalledWith(
+      "u1",
       expect.objectContaining({
         avatarUrl: "https://cdn/avatar.jpg",
-        avatarLocalPath: "file:///photos/avatar.jpg",
       }),
-      { merge: true },
     );
   });
 
@@ -525,7 +519,7 @@ describe("useUser", () => {
       await result.current.changeUsername("morpheus", "pw");
       await result.current.changeEmail("new@example.com", "pw");
       await result.current.changePassword("old", "new");
-      await result.current.deleteUser();
+      await result.current.deleteUser("pw");
     });
 
     expect(mockChangeUsernameService).toHaveBeenCalledWith({
@@ -542,7 +536,10 @@ describe("useUser", () => {
       currentPassword: "old",
       newPassword: "new",
     });
-    expect(mockDeleteDoc).toHaveBeenCalledWith("DOC_REF");
+    expect(mockDeleteAccountService).toHaveBeenCalledWith({
+      uid: "u1",
+      password: "pw",
+    });
     expect(result.current.userData).toBeNull();
   });
 
@@ -574,6 +571,7 @@ describe("useUser", () => {
 
     const iosResult = await result.current.exportUserData();
     expect(iosResult).toBe("file:///docs/fitaly_user_data_2026-03-11.pdf");
+    expect(mockExportUserDataService).toHaveBeenCalledWith("u1");
     expect(mockFsCopyAsync).toHaveBeenCalledWith({
       from: "file:///tmp/export.pdf",
       to: "file:///docs/fitaly_user_data_2026-03-11.pdf",

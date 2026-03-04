@@ -16,6 +16,7 @@ const mockGetMealsPageLocal = jest.fn<
   (uid: string, limit: number, before?: string) => Promise<Meal[]>
 >();
 const mockUpsertMealLocal = jest.fn<(meal: Meal) => Promise<void>>();
+const mockUpsertMyMealLocal = jest.fn<(meal: Meal) => Promise<void>>();
 const mockMarkDeletedLocal = jest.fn<(cloudId: string, now: string) => Promise<void>>();
 const mockEnqueueUpsert = jest.fn<(uid: string, meal: Meal) => Promise<void>>();
 const mockEnqueueDelete = jest.fn<
@@ -50,6 +51,10 @@ jest.mock("@/services/offline/meals.repo", () => ({
   upsertMealLocal: (meal: Meal) => mockUpsertMealLocal(meal),
   markDeletedLocal: (cloudId: string, now: string) =>
     mockMarkDeletedLocal(cloudId, now),
+}));
+
+jest.mock("@/services/offline/myMeals.repo", () => ({
+  upsertMyMealLocal: (meal: Meal) => mockUpsertMyMealLocal(meal),
 }));
 
 jest.mock("@/services/offline/queue.repo", () => ({
@@ -161,6 +166,7 @@ describe("useMeals", () => {
     mockNetInfoFetch.mockResolvedValue({ isConnected: true });
     mockGetMealsPageLocal.mockResolvedValue([]);
     mockUpsertMealLocal.mockResolvedValue();
+    mockUpsertMyMealLocal.mockResolvedValue();
     mockMarkDeletedLocal.mockResolvedValue();
     mockEnqueueUpsert.mockResolvedValue();
     mockEnqueueDelete.mockResolvedValue();
@@ -289,6 +295,12 @@ describe("useMeals", () => {
     expect(savedPayload.source).toBe("manual");
     expect(savedPayload.totals).toEqual({ kcal: 50, protein: 6, fat: 3, carbs: 8 });
     expect(mockEnqueueUpsert).toHaveBeenCalledWith("user-1", savedPayload);
+    expect(mockUpsertMyMealLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudId: "meal-new",
+        source: "saved",
+      }),
+    );
     expect(mockEnqueueMyMealUpsert).toHaveBeenCalledWith(
       "user-1",
       expect.objectContaining({

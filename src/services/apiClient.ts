@@ -1,3 +1,5 @@
+import { getApp } from "@react-native-firebase/app";
+import { getAuth } from "@react-native-firebase/auth";
 import { createServiceError } from "@/services/contracts/serviceError";
 import { asString, isRecord } from "@/services/contracts/guards";
 import { withVersion } from "@/services/apiVersioning";
@@ -43,7 +45,14 @@ function buildRequestUrl(path: string): string {
 }
 
 async function getAuthToken(): Promise<string | null> {
-  return null;
+  const auth = getAuth(getApp());
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+    return null;
+  }
+
+  return currentUser.getIdToken();
 }
 
 async function parseJsonResponse(response: Response): Promise<unknown> {
@@ -178,6 +187,83 @@ export async function request<T = unknown>(
         retryable: true,
         url: fullUrl,
         method,
+        cause: error,
+      });
+    }
+
+    throw error;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+export async function upload<T = unknown>(
+  url: string,
+  data: FormData,
+  options?: RequestOptions,
+): Promise<T> {
+  const fullUrl = buildRequestUrl(url);
+  const controller = new AbortController();
+  const timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT_MS;
+  const token = await getAuthToken();
+
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    const responsePromise = fetch(fullUrl, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: data,
+      signal: controller.signal,
+    });
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+        reject(
+          createApiClientError({
+            code: "api/timeout",
+            message: `Request timed out after ${timeoutMs}ms`,
+            retryable: true,
+            url: fullUrl,
+            method: "POST",
+          }),
+        );
+      }, timeoutMs);
+    });
+
+    const response = await Promise.race([responsePromise, timeoutPromise]);
+    const payload = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw createApiClientError({
+        code: response.status === 429 ? "api/rate-limited" : "api/http-error",
+        message: readErrorMessage(
+          payload,
+          `API request failed with status ${response.status}`,
+        ),
+        retryable: response.status >= 500 || response.status === 429,
+        status: response.status,
+        details: payload,
+        url: fullUrl,
+        method: "POST",
+      });
+    }
+
+    return payload as T;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw createApiClientError({
+        code: "api/timeout",
+        message: `Request timed out after ${timeoutMs}ms`,
+        retryable: true,
+        url: fullUrl,
+        method: "POST",
         cause: error,
       });
     }

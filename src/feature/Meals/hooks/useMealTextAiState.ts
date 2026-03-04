@@ -7,6 +7,7 @@ import { Toast } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { extractIngredientsFromText } from "@/services/textMealService";
+import type { AiTextMealPayload, AiUsageResponse } from "@/services/ai/contracts";
 import { AiLimitExceededError } from "@/services/askDietAI";
 import { get } from "@/services/apiClient";
 import { withVersion } from "@/services/apiVersioning";
@@ -16,12 +17,6 @@ import type { RootStackParamList } from "@/navigation/navigate";
 
 const FEATURE_LIMIT = 1;
 const MAX_RETRIES = 3;
-type AiUsageResponse = {
-  usageCount: number;
-  dailyLimit: number;
-  remaining: number;
-};
-
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 export function useMealTextAiState(params: {
@@ -74,7 +69,7 @@ export function useMealTextAiState(params: {
 
       try {
         const usage = await get<AiUsageResponse>(
-          `${withVersion("/ai/usage")}?userId=${encodeURIComponent(uid)}`,
+          withVersion("/ai/usage"),
         );
         applyUsage(usage);
         return usage;
@@ -108,7 +103,7 @@ export function useMealTextAiState(params: {
 
       try {
         const usage = await get<AiUsageResponse>(
-          `${withVersion("/ai/usage")}?userId=${encodeURIComponent(uid)}`,
+          withVersion("/ai/usage"),
         );
         if (active) {
           applyUsage(usage);
@@ -152,9 +147,9 @@ export function useMealTextAiState(params: {
   }, [amountNum, amountRaw, t, touched.amount]);
 
   const buildInitialMeal = useCallback(
-    (userId: string): Meal => ({
+    (uid: string): Meal => ({
       mealId: uuidv4(),
-      userUid: userId,
+      userUid: uid,
       name: null,
       photoUrl: null,
       ingredients: [],
@@ -205,7 +200,7 @@ export function useMealTextAiState(params: {
     [desc, ensureDraft, name, navigation, saveDraft, setLastScreen, setMeal, uid],
   );
 
-  const buildDescription = useCallback(() => {
+  const buildPayload = useCallback((): AiTextMealPayload => {
     const parsedAmount = Number(amountRaw);
     const amount_g =
       isFinite(parsedAmount) && parsedAmount > 0
@@ -213,15 +208,13 @@ export function useMealTextAiState(params: {
         : null;
     const ingredientsText = ingPreview.trim();
     const nameText = name.trim();
-    const payload = {
+    return {
       name: nameText || null,
       ingredients: ingredientsText || nameText || null,
       amount_g,
       notes: desc.trim() || null,
-      lang: language || "pl",
     };
-    return JSON.stringify(payload);
-  }, [amountRaw, desc, ingPreview, language, name]);
+  }, [amountRaw, desc, ingPreview, name]);
 
   const onAnalyze = useCallback(async () => {
     if (!uid) return;
@@ -263,20 +256,24 @@ export function useMealTextAiState(params: {
 
     try {
       setLoading(true);
-      const description = buildDescription();
-      const ingredients = await extractIngredientsFromText(uid, description, {
+      const payload = buildPayload();
+      const result = await extractIngredientsFromText(uid, payload, {
         lang: language || "en",
       });
 
-      if (!ingredients || ingredients.length === 0) {
+      if (!result || result.ingredients.length === 0) {
         setRetries((prev) => prev + 1);
         Toast.show(t("not_recognized_title", { ns: "meals" }));
         return;
       }
 
-      await loadBackendUsage("[useMealTextAiState] failed to refresh AI usage");
+      applyUsage({
+        usageCount: result.usage.usageCount,
+        dailyLimit: result.usage.dailyLimit,
+        remaining: result.usage.remaining,
+      });
       setRetries(0);
-      await fillDraftAndGo(ingredients);
+      await fillDraftAndGo(result.ingredients);
     } catch (error) {
       if (error instanceof AiLimitExceededError) {
         await loadBackendUsage(
@@ -292,7 +289,8 @@ export function useMealTextAiState(params: {
     }
   }, [
     amountRaw,
-    buildDescription,
+    applyUsage,
+    buildPayload,
     fillDraftAndGo,
     ingPreview,
     language,

@@ -1,19 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
-import { getApp } from "@react-native-firebase/app";
-import {
-  collection,
-  getFirestore,
-  onSnapshot,
-  orderBy,
-  query,
-} from "@react-native-firebase/firestore";
-import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import type { ChatThread } from "@/types";
 import { Drawer } from "@/components/Drawer";
 import { useTranslation } from "react-i18next";
+import { subscribeToChatThreads } from "@/services/ai/chatThreadRepository";
 
 type Props = {
   open: boolean;
@@ -22,13 +14,6 @@ type Props = {
   activeThreadId: string;
   onSelectThread: (threadId: string) => void;
 };
-
-type ChatThreadDoc = Partial<
-  Pick<
-    ChatThread,
-    "title" | "createdAt" | "updatedAt" | "lastMessage" | "lastMessageAt"
-  >
->;
 
 export function ChatHistorySheet({
   open,
@@ -46,33 +31,15 @@ export function ChatHistorySheet({
   useEffect(() => {
     if (!open || !userUid) return;
 
-    const db = getFirestore(getApp());
-    const col = collection(db, "users", userUid, "chat_threads");
-    const q = query(col, orderBy("updatedAt", "desc"));
-
-    const unsub = onSnapshot(q, (snap) => {
-      if (!snap) return;
-
-      const items: ChatThread[] = snap.docs.map(
-        (d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => {
-          const data = d.data() as ChatThreadDoc;
-          return {
-            id: d.id,
-            userUid,
-            title: data.title ?? t("new"),
-            createdAt: typeof data.createdAt === "number" ? data.createdAt : 0,
-            updatedAt: typeof data.updatedAt === "number" ? data.updatedAt : 0,
-            lastMessage: data.lastMessage,
-            lastMessageAt: data.lastMessageAt,
-          };
-        },
-      );
-
-      setThreads(items);
+    const unsub = subscribeToChatThreads({
+      userUid,
+      onThreads: (items: ChatThread[]) => {
+        setThreads(items);
+      },
     });
 
     return unsub;
-  }, [open, t, userUid]);
+  }, [open, userUid]);
 
   const createNewChat = useCallback(() => {
     const localId = `local-${uuidv4()}`;
@@ -127,7 +94,7 @@ export function ChatHistorySheet({
               accessibilityLabel={item.title || t("label")}
             >
               <Text style={styles.itemTitle} numberOfLines={1}>
-                {item.title ?? t("new")}
+                {item.title || t("new")}
               </Text>
               {!!item.lastMessage && (
                 <Text style={styles.itemSub} numberOfLines={1}>

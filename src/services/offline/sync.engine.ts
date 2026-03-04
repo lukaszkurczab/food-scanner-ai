@@ -1,38 +1,37 @@
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getApp } from "@react-native-firebase/app";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  query,
-  where,
-  orderBy,
-  limit as fsLimit,
-  getDocs,
-  startAfter,
-  type FirebaseFirestoreTypes,
-} from "@react-native-firebase/firestore";
 import type { Meal } from "@/types/meal";
 import { Sync } from "@/utils/debug";
 import { nextBatch, markDone, bumpAttempts, enqueueUpsert } from "./queue.repo";
+import { setChatMessageSyncState } from "./chat.repo";
 import { getPendingUploads, markUploaded } from "./images.repo";
 import { upsertMealLocal } from "./meals.repo";
+import { upsertMyMealLocal } from "./myMeals.repo";
 import { getDB } from "./db";
 import { processAndUpload } from "@/services/mealService.images";
 import type { MealRow } from "./types";
 import { emit } from "@/services/events";
+import { post } from "@/services/apiClient";
+import { withVersion } from "@/services/apiVersioning";
+import {
+  buildMealUpdatedCursor,
+  fetchMealChangesRemote,
+  markMealDeletedRemote,
+  saveMealRemote,
+} from "@/services/mealsRepository";
+import {
+  buildMyMealUpdatedCursor,
+  fetchMyMealChangesRemote,
+  markMyMealDeletedRemote,
+  updateMyMealRemote,
+  uploadMyMealPhotoRemote,
+} from "@/services/myMealsRepository";
 import {
   createServiceError,
   normalizeServiceError,
 } from "@/services/contracts/serviceError";
 
 const log = Sync;
-
-const app = getApp();
-const db = getFirestore(app);
 
 const PULL_PAGE_SIZE = 100;
 const PUSH_BATCH_SIZE = 25;
@@ -84,10 +83,6 @@ function toMealType(value: string): Meal["type"] {
     : "other";
 }
 
-function mealsCol(uid: string) {
-  return collection(db, "users", uid, "meals");
-}
-
 function nowISO() {
   return new Date().toISOString();
 }
@@ -96,12 +91,27 @@ function keyLastPull(uid: string) {
   return `sync:last_pull_ts:${uid}`;
 }
 
+function keyLastMyMealsPull(uid: string) {
+  return `sync:last_pull_my_meals:${uid}`;
+}
+
 export async function setLastPullTs(uid: string, iso: string): Promise<void> {
   await AsyncStorage.setItem(keyLastPull(uid), iso);
 }
 
 export async function getLastPullTs(uid: string): Promise<string | null> {
   return AsyncStorage.getItem(keyLastPull(uid));
+}
+
+export async function setLastMyMealsPullTs(
+  uid: string,
+  iso: string,
+): Promise<void> {
+  await AsyncStorage.setItem(keyLastMyMealsPull(uid), iso);
+}
+
+export async function getLastMyMealsPullTs(uid: string): Promise<string | null> {
+  return AsyncStorage.getItem(keyLastMyMealsPull(uid));
 }
 
 export function startSyncLoop(uid: string) {
@@ -126,6 +136,7 @@ export function startSyncLoop(uid: string) {
       await processImageUploads(uid);
       await pushQueue(uid);
       await pullChanges(uid);
+      await pullMyMealChanges(uid);
       loopLog.log("run:done");
     } catch (e: unknown) {
       const err = toSyncError(e);
@@ -194,59 +205,42 @@ export async function pushQueue(uid: string): Promise<void> {
               retryable: false,
             });
           }
-          const ref = doc(db, "users", uid, "meals", id);
-          const remoteSnap = await getDoc(ref);
-          const remote = remoteSnap.exists()
-            ? (remoteSnap.data() as Partial<Meal>)
-            : null;
-          const localUpdated = new Date(
-            payload.updatedAt || "1970-01-01"
-          ).getTime();
-          const remoteUpdated = new Date(
-            remote?.updatedAt || "1970-01-01"
-          ).getTime();
-          pushLog.log("upsert:compare", {
-            id,
-            localUpdated,
-            remoteUpdated,
-            hasRemote: !!remote,
+          await saveMealRemote({
+            uid,
+            meal: {
+              ...(payload as Meal),
+              cloudId: id,
+              mealId: String(payload.mealId || id),
+              userUid: String(payload.userUid || uid),
+              timestamp: String(payload.timestamp || payload.updatedAt || nowISO()),
+              type: toMealType(String(payload.type || "other")),
+              name: payload.name ?? null,
+              ingredients: Array.isArray(payload.ingredients) ? payload.ingredients : [],
+              createdAt: String(
+                payload.createdAt || payload.timestamp || payload.updatedAt || nowISO()
+              ),
+              updatedAt: String(payload.updatedAt || nowISO()),
+              syncState: "pending",
+              source: toMealSource(
+                typeof payload.source === "string" ? payload.source : null
+              ),
+              imageId: payload.imageId ?? null,
+              photoUrl: payload.photoUrl ?? null,
+              notes: payload.notes ?? null,
+              tags: Array.isArray(payload.tags) ? payload.tags : [],
+              deleted: Boolean(payload.deleted),
+              totals:
+                payload.totals && typeof payload.totals === "object"
+                  ? payload.totals
+                  : { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+            },
           });
-
-          if (!remote || localUpdated >= remoteUpdated) {
-            await setDoc(ref, payload, { merge: true });
-            pushLog.log("upsert:ok", id);
-            emit("meal:pushed", { uid, cloudId: id });
-          } else {
-            pushLog.warn("upsert:skip:LWW_remote_newer", id);
-          }
+          pushLog.log("upsert:ok", id);
+          emit("meal:pushed", { uid, cloudId: id });
         } else if (op.kind === "delete") {
-          const ref = doc(db, "users", uid, "meals", op.cloud_id);
-          const remoteSnap = await getDoc(ref);
-          const remote = remoteSnap.exists()
-            ? (remoteSnap.data() as Partial<Meal>)
-            : null;
-          const localUpdated = new Date(op.updated_at).getTime();
-          const remoteUpdated = new Date(
-            remote?.updatedAt || "1970-01-01"
-          ).getTime();
-          pushLog.log("delete:compare", {
-            id: op.cloud_id,
-            localUpdated,
-            remoteUpdated,
-            hasRemote: !!remote,
-          });
-
-          if (!remote || localUpdated >= remoteUpdated) {
-            await setDoc(
-              ref,
-              { deleted: true, updatedAt: op.updated_at },
-              { merge: true }
-            );
-            pushLog.log("delete:ok", op.cloud_id);
-            emit("meal:pushed", { uid, cloudId: op.cloud_id });
-          } else {
-            pushLog.warn("delete:skip:LWW_remote_newer", op.cloud_id);
-          }
+          await markMealDeletedRemote(uid, op.cloud_id, op.updated_at);
+          pushLog.log("delete:ok", op.cloud_id);
+          emit("meal:pushed", { uid, cloudId: op.cloud_id });
         } else if (op.kind === "upsert_mymeal") {
           const payload = toMealPayload(op.payload);
           const docId = payload?.mealId || payload?.cloudId;
@@ -256,27 +250,112 @@ export async function pushQueue(uid: string): Promise<void> {
               retryable: false,
             });
           }
-          const ref = doc(db, "users", uid, "myMeals", docId);
-          await setDoc(
-            ref,
-            {
-              ...payload,
-              mealId: docId,
-              cloudId: docId,
-              source: payload.source ?? "saved",
-              updatedAt: payload.updatedAt || nowISO(),
-            },
-            { merge: true }
-          );
+          const localPhotoPath =
+            (typeof payload?.photoLocalPath === "string" && payload.photoLocalPath) ||
+            (typeof payload?.photoUrl === "string" && isLocalUri(payload.photoUrl)
+              ? payload.photoUrl
+              : null);
+          let imageId: string | null =
+            typeof payload?.imageId === "string" ? payload.imageId : null;
+          let photoUrl: string | null =
+            typeof payload?.photoUrl === "string" && !isLocalUri(payload.photoUrl)
+              ? payload.photoUrl
+              : null;
+
+          if (localPhotoPath) {
+            const uploaded = await uploadMyMealPhotoRemote(uid, docId, localPhotoPath);
+            imageId = uploaded.imageId;
+            photoUrl = uploaded.photoUrl;
+          }
+
+          await updateMyMealRemote(uid, docId, {
+            ...payload,
+            mealId: docId,
+            cloudId: docId,
+            source: "saved",
+            updatedAt: payload.updatedAt || nowISO(),
+            imageId,
+            photoUrl,
+          });
+          await upsertMyMealLocal({
+            userUid: String(payload?.userUid || uid),
+            mealId: docId,
+            cloudId: docId,
+            timestamp: String(payload?.timestamp || payload?.updatedAt || nowISO()),
+            type: toMealType(String(payload?.type || "other")),
+            name: typeof payload?.name === "string" ? payload.name : null,
+            ingredients: Array.isArray(payload?.ingredients) ? payload.ingredients : [],
+            createdAt: String(
+              payload?.createdAt || payload?.timestamp || payload?.updatedAt || nowISO()
+            ),
+            updatedAt: String(payload?.updatedAt || nowISO()),
+            syncState: "synced",
+            source: "saved",
+            imageId,
+            photoUrl: localPhotoPath || photoUrl,
+            photoLocalPath: localPhotoPath,
+            notes: typeof payload?.notes === "string" ? payload.notes : null,
+            tags: Array.isArray(payload?.tags) ? payload.tags : [],
+            deleted: Boolean(payload?.deleted),
+            totals:
+              payload?.totals && typeof payload.totals === "object"
+                ? payload.totals
+                : { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+          });
           pushLog.log("mymeal:upsert", docId);
+          emit("mymeal:synced", { uid, cloudId: docId });
         } else if (op.kind === "delete_mymeal") {
-          const ref = doc(db, "users", uid, "myMeals", op.cloud_id);
-          await setDoc(
-            ref,
-            { deleted: true, updatedAt: op.updated_at },
-            { merge: true }
-          );
+          await markMyMealDeletedRemote(uid, op.cloud_id, op.updated_at);
           pushLog.log("mymeal:delete", op.cloud_id);
+          emit("mymeal:synced", { uid, cloudId: op.cloud_id });
+        } else if (op.kind === "persist_chat_message") {
+          const payload = op.payload as {
+            threadId?: string;
+            messageId?: string;
+            role?: "user" | "assistant" | "system";
+            content?: string;
+            createdAt?: number;
+            title?: string;
+          } | null;
+          if (
+            !payload?.threadId ||
+            !payload.messageId ||
+            !payload.role ||
+            typeof payload.content !== "string" ||
+            typeof payload.createdAt !== "number"
+          ) {
+            throw syncEngineError("sync/chat-message-invalid-payload", {
+              message: "Missing fields for chat message persist op",
+              retryable: false,
+            });
+          }
+
+          await post(
+            withVersion(`/users/me/chat/threads/${payload.threadId}/messages`),
+            {
+              messageId: payload.messageId,
+              role: payload.role,
+              content: payload.content,
+              createdAt: payload.createdAt,
+              title: payload.title,
+            }
+          );
+          await setChatMessageSyncState({
+            userUid: uid,
+            threadId: payload.threadId,
+            messageId: payload.messageId,
+            syncState: "synced",
+            lastSyncedAt: payload.createdAt,
+          });
+          emit("chat:pushed", {
+            uid,
+            threadId: payload.threadId,
+            messageId: payload.messageId,
+          });
+          pushLog.log("chat:persist", {
+            threadId: payload.threadId,
+            messageId: payload.messageId,
+          });
         } else {
           pushLog.warn("unknown_op", op.kind);
         }
@@ -294,7 +373,11 @@ export async function pushQueue(uid: string): Promise<void> {
         });
         await bumpAttempts(op.id);
         pushLog.log("op:bump_attempts", { id: op.id });
-        emit("meal:failed", { uid, opId: op.id });
+        if (op.kind === "persist_chat_message") {
+          emit("chat:failed", { uid, opId: op.id });
+        } else {
+          emit("meal:failed", { uid, opId: op.id });
+        }
       }
     }
 
@@ -317,29 +400,21 @@ export async function pullChanges(uid: string): Promise<void> {
   pullLog.time("exec");
 
   const last = (await getLastPullTs(uid)) || "1970-01-01T00:00:00.000Z";
-  let cursor: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal> | null = null;
-  let maxUpdated = last;
+  let cursor: string | null = last;
+  let latestCursor = last;
   let total = 0;
   pullLog.log("since", { last });
 
-  const base = query(
-    mealsCol(uid),
-    where("updatedAt", ">", last),
-    orderBy("updatedAt", "asc")
-  );
-
   for (;;) {
-    const pullQuery = (
-      cursor
-        ? query(base, startAfter(cursor), fsLimit(PULL_PAGE_SIZE))
-        : query(base, fsLimit(PULL_PAGE_SIZE))
-    ) as FirebaseFirestoreTypes.Query<Meal>;
-    const snap = await getDocs(pullQuery);
-    pullLog.log("page", { size: snap.size });
-    if (snap.empty) break;
+    const page = await fetchMealChangesRemote({
+      uid,
+      pageSize: PULL_PAGE_SIZE,
+      cursor,
+    });
+    pullLog.log("page", { size: page.items.length });
+    if (!page.items.length) break;
 
-    for (const d of snap.docs) {
-      const meal: Meal = { ...(d.data() as Meal), cloudId: d.id };
+    for (const meal of page.items) {
       try {
         await upsertMealLocal(meal);
         emit("meal:synced", {
@@ -348,16 +423,15 @@ export async function pullChanges(uid: string): Promise<void> {
           updatedAt: meal.updatedAt,
         });
         total++;
-        if (meal.updatedAt && meal.updatedAt > maxUpdated)
-          maxUpdated = meal.updatedAt;
+        latestCursor = buildMealUpdatedCursor(meal);
         pullLog.log("local_upsert:ok", {
-          id: d.id,
+          id: meal.cloudId,
           updatedAt: meal.updatedAt,
         });
       } catch (e: unknown) {
         const err = toSyncError(e);
         pullLog.error("local_upsert:fail", {
-          id: d.id,
+          id: meal.cloudId,
           code: err.code,
           message: err.message,
           retryable: err.retryable,
@@ -365,16 +439,75 @@ export async function pullChanges(uid: string): Promise<void> {
       }
     }
 
-    cursor = snap.docs[snap.docs.length - 1];
-    if (snap.size < PULL_PAGE_SIZE) break;
+    cursor = page.nextCursor || latestCursor;
+    if (!page.nextCursor) break;
   }
 
-  if (maxUpdated > last) {
-    await setLastPullTs(uid, maxUpdated);
-    pullLog.log("set_last_ts", { maxUpdated });
+  if (latestCursor !== last) {
+    await setLastPullTs(uid, latestCursor);
+    pullLog.log("set_last_ts", { latestCursor });
   }
   pullLog.timeEnd("exec");
-  pullLog.log("done", { items: total, last_ts: maxUpdated });
+  pullLog.log("done", { items: total, last_ts: latestCursor });
+}
+
+export async function pullMyMealChanges(uid: string): Promise<void> {
+  const pullLog = log.child("pull:mymeals");
+  const net = await NetInfo.fetch();
+  pullLog.log("start", { uid, isConnected: net.isConnected });
+  if (!net.isConnected) {
+    pullLog.log("skip:offline");
+    return;
+  }
+
+  const last = (await getLastMyMealsPullTs(uid)) || "1970-01-01T00:00:00.000Z";
+  let cursor: string | null = last;
+  let latestCursor = last;
+  let total = 0;
+
+  for (;;) {
+    const page = await fetchMyMealChangesRemote({
+      uid,
+      pageSize: PULL_PAGE_SIZE,
+      cursor,
+    });
+    pullLog.log("page", { size: page.items.length });
+    if (!page.items.length) break;
+
+    for (const meal of page.items) {
+      try {
+        await upsertMyMealLocal({
+          ...meal,
+          source: "saved",
+          photoLocalPath: meal.photoLocalPath ?? null,
+        });
+        emit("mymeal:synced", {
+          uid,
+          cloudId: meal.cloudId,
+          updatedAt: meal.updatedAt,
+        });
+        total++;
+        latestCursor = buildMyMealUpdatedCursor(meal);
+      } catch (e: unknown) {
+        const err = toSyncError(e);
+        pullLog.error("local_upsert:fail", {
+          id: meal.cloudId,
+          code: err.code,
+          message: err.message,
+          retryable: err.retryable,
+        });
+      }
+    }
+
+    cursor = page.nextCursor || latestCursor;
+    if (!page.nextCursor) break;
+  }
+
+  if (latestCursor !== last) {
+    await setLastMyMealsPullTs(uid, latestCursor);
+    pullLog.log("set_last_ts", { latestCursor });
+  }
+  pullLog.log("done", { items: total, last_ts: latestCursor });
 }
 
 export async function processImageUploads(uid: string): Promise<void> {
@@ -475,4 +608,9 @@ function safeParseJSON(s: unknown) {
   } catch {
     return null;
   }
+}
+
+function isLocalUri(value?: string | null): value is string {
+  if (!value || typeof value !== "string") return false;
+  return value.startsWith("file:") || value.startsWith("content:");
 }

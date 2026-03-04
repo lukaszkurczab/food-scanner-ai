@@ -1,16 +1,3 @@
-import { getApp } from "@react-native-firebase/app";
-import { getFirestore, collection } from "@react-native-firebase/firestore";
-
-export const USERS = "users";
-
-export function db() {
-  return getFirestore(getApp());
-}
-
-export function usersCollection() {
-  return collection(db(), USERS);
-}
-
 export const orUndef = <T>(v: T | null | undefined): T | undefined =>
   v == null ? undefined : v;
 
@@ -45,4 +32,3 @@ export function todayLocal() {
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
-

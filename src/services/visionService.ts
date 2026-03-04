@@ -4,7 +4,6 @@ import { convertToJpegAndResize } from "@/utils/convertToJpegAndResize";
 import type { Ingredient } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { debugScope } from "@/utils/debug";
-import { extractAndNormalizeIngredients } from "@/services/ai/ingredientParser";
 import {
   createServiceError,
   isServiceError,
@@ -12,30 +11,10 @@ import {
 import { post } from "@/services/apiClient";
 import { withVersion } from "@/services/apiVersioning";
 import { logError } from "@/services/errorLogger";
+import type { AiPhotoAnalyzeResponse } from "@/services/ai/contracts";
 
 const log = debugScope("Vision");
 const AI_UNAVAILABLE_CODE = "ai/unavailable";
-
-const toNumber = (v: unknown): number => {
-  if (typeof v === "number") return isFinite(v) ? v : 0;
-  if (typeof v === "string") {
-    let s = String(v);
-    s = s.replace(
-      /(?<=\d)[\u00A0\u2000-\u200B\u202F\u205F\u3000\s](?=\d)/g,
-      ".",
-    );
-    s = s.replace(/,(?=\d)/g, ".");
-    s = s.replace(
-      /(?<=\d)[.\u00A0\u2000-\u200B\u202F\u205F\u3000](?=\d{3}\b)/g,
-      "",
-    );
-    const n = Number(s.replace(/[^0-9.+-]/g, ""));
-    return isFinite(n) ? n : 0;
-  }
-  return 0;
-};
-
-const capFirst = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 type VisionOpts = {
   isPremium?: boolean;
@@ -43,36 +22,23 @@ type VisionOpts = {
   lang?: string;
 };
 
-type VisionBackendResponse = {
-  ingredients?: unknown;
-  reply?: string;
-  usageCount?: number;
-  remaining?: number;
-  version?: string;
-};
-
 function normalizeBackendVisionPayload(
-  payload: VisionBackendResponse,
+  payload: AiPhotoAnalyzeResponse,
 ): Ingredient[] | null {
-  const raw =
-    typeof payload.reply === "string"
-      ? payload.reply
-      : Array.isArray(payload.ingredients)
-        ? JSON.stringify(payload.ingredients)
-        : null;
+  if (!Array.isArray(payload.ingredients) || payload.ingredients.length === 0) {
+    return null;
+  }
 
-  if (!raw) return null;
-
-  return extractAndNormalizeIngredients(
-    raw,
-    {
-      idFactory: () => uuidv4(),
-      toNumber,
-      transformName: capFirst,
-      allowMlUnit: true,
-    },
-    { allowRegexFallback: true },
-  );
+  return payload.ingredients.map((ingredient) => ({
+    id: uuidv4(),
+    name: ingredient.name,
+    amount: ingredient.amount,
+    unit: ingredient.unit ?? "g",
+    protein: ingredient.protein,
+    fat: ingredient.fat,
+    carbs: ingredient.carbs,
+    kcal: ingredient.kcal,
+  }));
 }
 
 async function detectIngredientsWithBackend(
@@ -80,8 +46,9 @@ async function detectIngredientsWithBackend(
   imageBase64: string,
   userLang: string,
 ): Promise<Ingredient[] | null> {
-  const response = await post<VisionBackendResponse>(withVersion("/ai/photo/analyze"), {
-    userId: userUid,
+  if (!userUid) return null;
+
+  const response = await post<AiPhotoAnalyzeResponse>(withVersion("/ai/photo/analyze"), {
     imageBase64,
     lang: userLang,
   });

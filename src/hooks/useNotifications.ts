@@ -1,26 +1,15 @@
 // src/hooks/useNotifications.ts
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { getApp } from "@react-native-firebase/app";
-import {
-  getFirestore,
-  collection,
-  doc,
-  onSnapshot,
-  setDoc,
-  deleteDoc,
-  getDoc,
-} from "@react-native-firebase/firestore";
-import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import type { UserNotification } from "@/types/notification";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-type GlobalPrefsDoc = {
-  notifications?: {
-    motivationEnabled?: boolean;
-    statsEnabled?: boolean;
-  };
-};
+import {
+  deleteUserNotification,
+  fetchNotificationPrefs,
+  subscribeToUserNotifications,
+  updateNotificationPrefs,
+  upsertUserNotification,
+} from "@/services/notifications/notificationsRepository";
 
 type BoolPrefs = { enabled: boolean };
 
@@ -44,8 +33,6 @@ export function useNotifications(uid: string | null) {
       setLoading(false);
       return;
     }
-    const app = getApp();
-    const db = getFirestore(app);
     (async () => {
       try {
         const cached = await AsyncStorage.getItem(`notif:list:${uid}`);
@@ -59,22 +46,16 @@ export function useNotifications(uid: string | null) {
       setLoading(false);
     })();
 
-    const unsub = onSnapshot(
-      collection(db, "users", uid, "notifications"),
-      (snap) => {
-        const arr: UserNotification[] = snap.docs.map(
-          (d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
-          id: d.id,
-          ...(d.data() as Omit<UserNotification, "id">),
-          })
-        );
+    const unsub = subscribeToUserNotifications({
+      uid,
+      onData: (arr) => {
         setItems(arr);
         AsyncStorage.setItem(`notif:list:${uid}`, JSON.stringify(arr)).catch(
           () => {}
         );
         setLoading(false);
-      }
-    );
+      },
+    });
     return unsub;
   }, [uid]);
 
@@ -83,8 +64,6 @@ export function useNotifications(uid: string | null) {
       uidLocal: string,
       data: Omit<UserNotification, "id" | "createdAt" | "updatedAt">
     ) => {
-      const app = getApp();
-      const db = getFirestore(app);
       const id = uuidv4();
       const now = Date.now();
       const payload: UserNotification = {
@@ -93,11 +72,7 @@ export function useNotifications(uid: string | null) {
         createdAt: now,
         updatedAt: now,
       };
-      await setDoc(
-        doc(db, "users", uidLocal, "notifications", id),
-        payload,
-        { merge: true }
-      );
+      await upsertUserNotification(uidLocal, id, payload);
       return id;
     },
     []
@@ -105,26 +80,22 @@ export function useNotifications(uid: string | null) {
 
   const update = useCallback(
     async (uidLocal: string, id: string, patch: Partial<UserNotification>) => {
-      const app = getApp();
-      const db = getFirestore(app);
+      const existing = items.find((item) => item.id === id);
+      if (!existing) return;
       const now = Date.now();
-      const payload: Partial<UserNotification> & Pick<UserNotification, "updatedAt"> = {
+      const payload: UserNotification = {
+        ...existing,
         ...patch,
+        id,
         updatedAt: now,
       };
-      await setDoc(
-        doc(db, "users", uidLocal, "notifications", id),
-        payload,
-        { merge: true }
-      );
+      await upsertUserNotification(uidLocal, id, payload);
     },
-    []
+    [items]
   );
 
   const remove = useCallback(async (uidLocal: string, id: string) => {
-    const app = getApp();
-    const db = getFirestore(app);
-    await deleteDoc(doc(db, "users", uidLocal, "notifications", id));
+    await deleteUserNotification(uidLocal, id);
   }, []);
 
   const toggle = useCallback(
@@ -136,11 +107,7 @@ export function useNotifications(uid: string | null) {
 
   const loadMotivationPrefs = useCallback(async (uidLocal: string) => {
     try {
-      const db = getFirestore(getApp());
-      const ref = doc(db, "users", uidLocal, "prefs", "global");
-      const snap = await getDoc(ref);
-
-      const data = (snap.exists() ? snap.data() : {}) as GlobalPrefsDoc;
+      const data = await fetchNotificationPrefs(uidLocal);
       const enabled = !!data?.notifications?.motivationEnabled;
       await AsyncStorage.setItem(
         `notif:prefs:${uidLocal}:motivation`,
@@ -163,11 +130,7 @@ export function useNotifications(uid: string | null) {
 
   const loadStatsPrefs = useCallback(async (uidLocal: string) => {
     try {
-      const db = getFirestore(getApp());
-      const ref = doc(db, "users", uidLocal, "prefs", "global");
-      const snap = await getDoc(ref);
-
-      const data = (snap.exists() ? snap.data() : {}) as GlobalPrefsDoc;
+      const data = await fetchNotificationPrefs(uidLocal);
       const enabled = !!data?.notifications?.statsEnabled;
       await AsyncStorage.setItem(
         `notif:prefs:${uidLocal}:stats`,
@@ -191,13 +154,9 @@ export function useNotifications(uid: string | null) {
   const setMotivationPrefs = useCallback(
     async (uidLocal: string, enabled: boolean) => {
       try {
-        const db = getFirestore(getApp());
-        const ref = doc(db, "users", uidLocal, "prefs", "global");
-        await setDoc(
-          ref,
-          { notifications: { motivationEnabled: enabled } },
-          { merge: true }
-        );
+        await updateNotificationPrefs(uidLocal, {
+          motivationEnabled: enabled,
+        });
         await AsyncStorage.setItem(
           `notif:prefs:${uidLocal}:motivation`,
           JSON.stringify({ enabled })
@@ -215,13 +174,9 @@ export function useNotifications(uid: string | null) {
   const setStatsPrefs = useCallback(
     async (uidLocal: string, enabled: boolean) => {
       try {
-        const db = getFirestore(getApp());
-        const ref = doc(db, "users", uidLocal, "prefs", "global");
-        await setDoc(
-          ref,
-          { notifications: { statsEnabled: enabled } },
-          { merge: true }
-        );
+        await updateNotificationPrefs(uidLocal, {
+          statsEnabled: enabled,
+        });
         await AsyncStorage.setItem(
           `notif:prefs:${uidLocal}:stats`,
           JSON.stringify({ enabled })

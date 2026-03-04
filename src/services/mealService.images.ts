@@ -1,17 +1,10 @@
-import { getApp } from "@react-native-firebase/app";
-import {
-  getStorage,
-  ref,
-  putFile,
-  getDownloadURL,
-} from "@react-native-firebase/storage";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
 import { v4 as uuidv4 } from "uuid";
+import { get, upload } from "@/services/apiClient";
 import { createServiceError } from "@/services/contracts/serviceError";
 
-const st = getStorage(getApp());
 const CLOUD_MAX = 1280;
 const CLOUD_Q = 0.8;
 const AI_MAX = 480;
@@ -22,6 +15,11 @@ export type UploadedImage = {
   imageId: string;
   cloudUrl: string;
   aiLocalUri: string;
+};
+
+type MealPhotoResponse = {
+  imageId?: string;
+  photoUrl?: string;
 };
 
 async function ensureDirFor(filePath: string) {
@@ -65,34 +63,39 @@ export async function processAndUpload(
   const aiJpeg = await toJpegMaxSide(localUri, AI_MAX, AI_Q);
   await FileSystem.copyAsync({ from: aiJpeg, to: aiTmp });
 
-  const imageId = uuidv4();
-  const storagePath = `meals/${userUid}/${imageId}.jpg`;
-  const r = ref(st, storagePath);
-  await putFile(r, cloudJpeg, { contentType: "image/jpeg" });
-  const cloudUrl = await getDownloadURL(r);
+  void userUid;
+  const data = new FormData();
+  data.append("file", {
+    uri: cloudJpeg,
+    name: "meal.jpg",
+    type: "image/jpeg",
+  } as unknown as Blob);
+
+  const response = await upload<MealPhotoResponse>("/users/me/meals/photo", data);
+  const imageId = String(response.imageId || "").trim();
+  const cloudUrl = String(response.photoUrl || "").trim();
 
   return { imageId, cloudUrl, aiLocalUri: aiTmp };
 }
 
-export async function getCloudImageUrl(
-  uid: string,
-  imageIdOrCloudId: string
-): Promise<string> {
-  const key = `meals:${uid}:${imageIdOrCloudId}`;
+async function getMealPhotoUrl(args: {
+  mealId?: string | null;
+  imageId?: string | null;
+}): Promise<string> {
+  const params = new URLSearchParams();
+  if (args.mealId) {
+    params.set("mealId", args.mealId);
+  }
+  if (args.imageId) {
+    params.set("imageId", args.imageId);
+  }
+  const key = `meals:${args.mealId || ""}:${args.imageId || ""}`;
   const cached = CLOUD_URL_CACHE.get(key);
   if (cached) return cached;
-  const r = ref(st, `meals/${uid}/${imageIdOrCloudId}.jpg`);
-  const url = await getDownloadURL(r);
-  CLOUD_URL_CACHE.set(key, url);
-  return url;
-}
-
-async function getLegacyCloudImageUrl(imageId: string): Promise<string> {
-  const key = `images:${imageId}`;
-  const cached = CLOUD_URL_CACHE.get(key);
-  if (cached) return cached;
-  const r = ref(st, `images/${imageId}.jpg`);
-  const url = await getDownloadURL(r);
+  const response = await get<MealPhotoResponse>(
+    `/users/me/meals/photo-url?${params.toString()}`,
+  );
+  const url = String(response.photoUrl || "").trim();
   CLOUD_URL_CACHE.set(key, url);
   return url;
 }
@@ -117,21 +120,12 @@ export async function ensureLocalMealPhoto(args: {
 
   if (photoUrl && /^https?:\/\//i.test(photoUrl)) {
     remoteUrl = photoUrl;
-  } else if (imageId) {
+  } else if (cloudId || imageId) {
     try {
-      remoteUrl = await getCloudImageUrl(uid, imageId);
-    } catch {
-      try {
-        remoteUrl = await getLegacyCloudImageUrl(imageId);
-      } catch {
-        remoteUrl = null;
-      }
-    }
-  }
-
-  if (!remoteUrl && cloudId) {
-    try {
-      remoteUrl = await getCloudImageUrl(uid, cloudId);
+      remoteUrl = await getMealPhotoUrl({
+        mealId: cloudId,
+        imageId,
+      });
     } catch {
       remoteUrl = null;
     }

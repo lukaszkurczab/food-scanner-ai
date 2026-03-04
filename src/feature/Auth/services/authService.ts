@@ -1,12 +1,13 @@
 import { getApp } from "@react-native-firebase/app";
 import {
   getAuth,
+  signOut,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   createUserWithEmailAndPassword,
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
-import { reserveUsername } from "@/services/usernameService";
+import { claimUsername } from "@/services/usernameService";
 import { createInitialUserProfile } from "@/services/userService";
 
 export async function authLogin(email: string, password: string) {
@@ -20,6 +21,10 @@ export async function authSendPasswordReset(email: string) {
   await sendPasswordResetEmail(auth, email);
 }
 
+export async function authLogout(): Promise<void> {
+  await signOut(getAuth(getApp()));
+}
+
 export async function authRegister(
   email: string,
   password: string,
@@ -29,7 +34,7 @@ export async function authRegister(
   const cred = await createUserWithEmailAndPassword(auth, email, password);
 
   try {
-    await reserveUsername(username, cred.user.uid);
+    await claimUsername(username, cred.user.uid);
     await createInitialUserProfile(cred.user, username);
     return cred.user;
   } catch (e) {

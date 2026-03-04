@@ -10,10 +10,6 @@ import {
 import type { FormData, Meal } from "@/types";
 import { useChatHistory } from "@/hooks/useChatHistory";
 
-type DocData = Record<string, unknown>;
-type SnapshotDoc = { id: string; data: () => DocData };
-type Snapshot = { docs: SnapshotDoc[] };
-
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
 const mockUuid = jest.fn<() => string>();
 const mockI18nT = jest.fn<(key: string, fallback?: string) => string>();
@@ -22,55 +18,34 @@ const mockApiPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>()
 const mockCaptureException = jest.fn<
   (message: string, context?: unknown, error?: unknown) => void
 >();
-const mockGetApp = jest.fn<() => { app: string }>();
-const mockGetFirestore = jest.fn<(app?: unknown) => { db: string }>();
-const mockCollection = jest.fn<
-  (...args: unknown[]) => { type: "collection"; args: unknown[] }
+const mockSubscribeToChatThreadMessages = jest.fn();
+const mockFetchChatThreadMessagesPage = jest.fn<
+  (params: unknown) => Promise<unknown>
 >();
-const mockDoc = jest.fn<(...args: unknown[]) => { type: "doc"; args: unknown[] }>();
-const mockQuery = jest.fn<(...args: unknown[]) => { type: "query"; args: unknown[] }>();
-const mockOrderBy = jest.fn<
-  (field: string, direction: string) => { field: string; direction: string }
+const mockPersistUserChatMessage = jest.fn<
+  (params: unknown) => Promise<void>
 >();
-const mockLimit = jest.fn<(value: number) => { limit: number }>();
-const mockStartAfter = jest.fn<(value: unknown) => { after: unknown }>();
-const mockGetDocs = jest.fn<(q: unknown) => Promise<Snapshot>>();
-const mockSetDoc = jest.fn<
-  (
-    ref: unknown,
-    data: Record<string, unknown>,
-    options?: { merge: boolean },
-  ) => Promise<void>
+const mockPersistAssistantChatMessage = jest.fn<
+  (params: unknown) => Promise<void>
 >();
 
-type Batch = {
-  set: ReturnType<typeof jest.fn>;
-  commit: ReturnType<typeof jest.fn>;
+type RepoMessage = {
+  id: string;
+  userUid: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  createdAt: number;
+  lastSyncedAt: number;
+  syncState: "synced" | "pending" | "conflict";
+  deleted?: boolean;
+  cloudId?: string;
 };
-const mockCreatedBatches: Batch[] = [];
-const mockWriteBatch = jest.fn(() => {
-  const batch = {
-    set: jest.fn(),
-    commit: jest.fn<() => Promise<void>>().mockResolvedValue(),
-  };
-  mockCreatedBatches.push(batch);
-  return batch;
-});
 
-let snapshotNext: ((snap: Snapshot) => void) | null = null;
+let snapshotNext:
+  | ((items: RepoMessage[], nextCursor: unknown) => void)
+  | null = null;
 let snapshotError: ((error: unknown) => void) | null = null;
 const mockUnsubscribe = jest.fn();
-const mockOnSnapshot = jest.fn(
-  (
-    _query: unknown,
-    onNext: (snap: Snapshot) => void,
-    onError: (error: unknown) => void,
-  ) => {
-    snapshotNext = onNext;
-    snapshotError = onError;
-    return mockUnsubscribe;
-  },
-);
 
 jest.mock("@react-native-community/netinfo", () => ({
   __esModule: true,
@@ -98,36 +73,23 @@ jest.mock("@/services/errorLogger", () => ({
     mockCaptureException(message, context, error),
 }));
 
-jest.mock("@react-native-firebase/app", () => ({
-  getApp: () => mockGetApp(),
+jest.mock("@/services/ai/chatThreadRepository", () => ({
+  subscribeToChatThreadMessages: (params: {
+    onMessages: (items: RepoMessage[], nextCursor: unknown) => void;
+    onError?: (error: unknown) => void;
+  }) => {
+    mockSubscribeToChatThreadMessages(params);
+    snapshotNext = params.onMessages;
+    snapshotError = params.onError ?? null;
+    return mockUnsubscribe;
+  },
+  fetchChatThreadMessagesPage: (params: unknown) =>
+    mockFetchChatThreadMessagesPage(params),
+  persistUserChatMessage: (params: unknown) =>
+    mockPersistUserChatMessage(params),
+  persistAssistantChatMessage: (params: unknown) =>
+    mockPersistAssistantChatMessage(params),
 }));
-
-jest.mock("@react-native-firebase/firestore", () => ({
-  getFirestore: (app: unknown) => mockGetFirestore(app),
-  collection: (...args: unknown[]) => mockCollection(...args),
-  doc: (...args: unknown[]) => mockDoc(...args),
-  query: (...args: unknown[]) => mockQuery(...args),
-  orderBy: (field: string, direction: string) => mockOrderBy(field, direction),
-  limit: (value: number) => mockLimit(value),
-  onSnapshot: (
-    queryValue: unknown,
-    onNext: (snap: Snapshot) => void,
-    onError: (error: unknown) => void,
-  ) => mockOnSnapshot(queryValue, onNext, onError),
-  startAfter: (value: unknown) => mockStartAfter(value),
-  getDocs: (queryValue: unknown) => mockGetDocs(queryValue),
-  setDoc: (
-    ref: unknown,
-    data: Record<string, unknown>,
-    options?: { merge: boolean },
-  ) => mockSetDoc(ref, data, options),
-  writeBatch: () => mockWriteBatch(),
-}));
-
-const makeDoc = (id: string, data: DocData): SnapshotDoc => ({
-  id,
-  data: () => data,
-});
 
 const profileFixture: FormData = {
   unitsSystem: "metric",
@@ -152,7 +114,6 @@ const settle = async () => {
 
 describe("useChatHistory", () => {
   beforeEach(() => {
-    mockCreatedBatches.length = 0;
     snapshotNext = null;
     snapshotError = null;
     jest.clearAllMocks();
@@ -162,7 +123,6 @@ describe("useChatHistory", () => {
       (_key: string, fallback?: string) => fallback || "fallback",
     );
     mockApiGet.mockResolvedValue({
-      userId: "user-1",
       dateKey: "2026-03-02",
       usageCount: 3,
       dailyLimit: 20,
@@ -173,25 +133,12 @@ describe("useChatHistory", () => {
       usageCount: 4,
       remaining: 16,
     });
-    mockGetApp.mockReturnValue({ app: "test-app" });
-    mockGetFirestore.mockReturnValue({ db: "test-db" });
-    mockCollection.mockImplementation((...args: unknown[]) => ({
-      type: "collection",
-      args,
-    }));
-    mockDoc.mockImplementation((...args: unknown[]) => ({ type: "doc", args }));
-    mockQuery.mockImplementation((...args: unknown[]) => ({
-      type: "query",
-      args,
-    }));
-    mockOrderBy.mockImplementation((field: string, direction: string) => ({
-      field,
-      direction,
-    }));
-    mockLimit.mockImplementation((value: number) => ({ limit: value }));
-    mockStartAfter.mockImplementation((value: unknown) => ({ after: value }));
-    mockGetDocs.mockResolvedValue({ docs: [] });
-    mockSetDoc.mockResolvedValue();
+    mockFetchChatThreadMessagesPage.mockResolvedValue({
+      items: [],
+      nextCursor: null,
+    });
+    mockPersistUserChatMessage.mockResolvedValue();
+    mockPersistAssistantChatMessage.mockResolvedValue();
     mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
   });
 
@@ -212,6 +159,7 @@ describe("useChatHistory", () => {
     expect(result.current.messages).toEqual([]);
     expect(result.current.canSend).toBe(true);
     expect(mockApiGet).not.toHaveBeenCalled();
+    expect(mockSubscribeToChatThreadMessages).not.toHaveBeenCalled();
     expect(result.current.dailyLimit).toBe(5);
     expect(result.current.remaining).toBe(5);
 
@@ -225,7 +173,6 @@ describe("useChatHistory", () => {
 
   it("loads usage from backend and enforces free-tier message limit", async () => {
     mockApiGet.mockResolvedValueOnce({
-      userId: "user-1",
       dateKey: "2026-03-02",
       usageCount: 0,
       dailyLimit: 20,
@@ -246,7 +193,6 @@ describe("useChatHistory", () => {
     unmount();
 
     mockApiGet.mockResolvedValueOnce({
-      userId: "user-1",
       dateKey: "2026-03-02",
       usageCount: 20,
       dailyLimit: 20,
@@ -289,7 +235,7 @@ describe("useChatHistory", () => {
 
     expect(result.current.dailyLimit).toBe(20);
     expect(result.current.canSend).toBe(true);
-    expect(mockApiGet).toHaveBeenCalledWith("/api/v1/ai/usage?userId=user-1");
+    expect(mockApiGet).toHaveBeenCalledWith("/api/v1/ai/usage");
 
     await act(async () => {
       await result.current.send("hello");
@@ -304,12 +250,13 @@ describe("useChatHistory", () => {
     expect(result.current.remaining).toBe(16);
     expect(result.current.canSend).toBe(true);
     expect(mockApiPost).toHaveBeenCalledWith("/api/v1/ai/ask", {
-      userId: "user-1",
       message: "hello",
       context: {
+        actionType: "chat",
         meals: mealsFixture,
         profile: profileFixture,
         history: [{ from: "user", text: "hello" }],
+        language: "en",
       },
     });
   });
@@ -323,28 +270,34 @@ describe("useChatHistory", () => {
     await settle();
 
     await waitFor(() => {
-      expect(mockOnSnapshot).toHaveBeenCalledTimes(1);
+      expect(mockSubscribeToChatThreadMessages).toHaveBeenCalledTimes(1);
     });
 
     act(() => {
-      snapshotNext?.(null as unknown as Snapshot);
-      snapshotNext?.({ docs: [] });
-      snapshotNext?.({
-        docs: [
-          makeDoc("m1", {
+      snapshotNext?.([], null);
+      snapshotNext?.(
+        [
+          {
+            id: "m1",
+            userUid: "user-1",
             role: "user",
             content: "first",
             createdAt: 200,
             lastSyncedAt: 200,
-          }),
-          makeDoc("m2", {
-            role: "unknown",
-            content: 123,
-            createdAt: "bad",
-            lastSyncedAt: null,
-          }),
+            syncState: "synced",
+          },
+          {
+            id: "m2",
+            userUid: "user-1",
+            role: "assistant",
+            content: "",
+            createdAt: 0,
+            lastSyncedAt: 0,
+            syncState: "synced",
+          },
         ],
-      });
+        { cursor: "c1" },
+      );
     });
 
     await waitFor(() => {
@@ -354,28 +307,35 @@ describe("useChatHistory", () => {
     expect(result.current.messages[1].role).toBe("assistant");
     expect(result.current.messages[1].content).toBe("");
 
-    mockGetDocs.mockResolvedValueOnce({
-      docs: [
-        makeDoc("m1", {
+    mockFetchChatThreadMessagesPage.mockResolvedValueOnce({
+      items: [
+        {
+          id: "m1",
+          userUid: "user-1",
           role: "user",
           content: "first",
           createdAt: 200,
           lastSyncedAt: 200,
-        }),
-        makeDoc("m3", {
+          syncState: "synced",
+        },
+        {
+          id: "m3",
+          userUid: "user-1",
           role: "assistant",
           content: "older",
           createdAt: 100,
           lastSyncedAt: 100,
-        }),
+          syncState: "synced",
+        },
       ],
+      nextCursor: { cursor: "c2" },
     });
 
     await act(async () => {
       await result.current.loadMore();
     });
 
-    expect(mockGetDocs).toHaveBeenCalledTimes(1);
+    expect(mockFetchChatThreadMessagesPage).toHaveBeenCalledTimes(1);
     expect(result.current.messages.map((m) => m.id)).toEqual(["m1", "m3", "m2"]);
   });
 
@@ -386,7 +346,7 @@ describe("useChatHistory", () => {
     await settle();
 
     await waitFor(() => {
-      expect(mockOnSnapshot).toHaveBeenCalledTimes(1);
+      expect(mockSubscribeToChatThreadMessages).toHaveBeenCalledTimes(1);
     });
 
     act(() => {
@@ -400,7 +360,6 @@ describe("useChatHistory", () => {
 
   it("returns null in send for blank text, exhausted quota and offline mode", async () => {
     mockApiGet.mockResolvedValue({
-      userId: "user-1",
       dateKey: "2026-03-02",
       usageCount: 20,
       dailyLimit: 20,
@@ -440,7 +399,7 @@ describe("useChatHistory", () => {
     });
     expect(offlineBlocked).toBeNull();
 
-    expect(mockWriteBatch).not.toHaveBeenCalled();
+    expect(mockPersistUserChatMessage).not.toHaveBeenCalled();
   });
 
   it("creates a new thread for local IDs and persists user + ai messages", async () => {
@@ -469,18 +428,16 @@ describe("useChatHistory", () => {
     });
 
     expect(newThreadId).toBe("thread-created");
-    expect(mockWriteBatch).toHaveBeenCalledTimes(1);
-
-    const batch = mockCreatedBatches[0];
-    expect(batch.commit).toHaveBeenCalledTimes(1);
-    expect(batch.set).toHaveBeenCalledTimes(2);
-    const threadPayload = batch.set.mock.calls[0][1] as Record<string, unknown>;
-    expect(typeof threadPayload.title).toBe("string");
-    expect(String(threadPayload.title).endsWith("…")).toBe(true);
+    expect(mockPersistUserChatMessage).toHaveBeenCalledTimes(1);
+    const userPersistCall = mockPersistUserChatMessage.mock.calls[0][0] as {
+      title?: string;
+    };
+    expect(typeof userPersistCall.title).toBe("string");
+    expect(String(userPersistCall.title).endsWith("…")).toBe(true);
 
     expect(mockApiPost).toHaveBeenCalledTimes(1);
     expect(mockApiPost.mock.calls[0][0]).toBe("/api/v1/ai/ask");
-    expect(mockSetDoc).toHaveBeenCalledTimes(2);
+    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
     expect(result.current.sending).toBe(false);
     expect(result.current.typing).toBe(false);
 
@@ -497,22 +454,29 @@ describe("useChatHistory", () => {
     await settle();
 
     act(() => {
-      snapshotNext?.({
-        docs: [
-          makeDoc("old-ai", {
+      snapshotNext?.(
+        [
+          {
+            id: "old-ai",
+            userUid: "user-1",
             role: "assistant",
             content: "assistant message",
             createdAt: 70,
             lastSyncedAt: 70,
-          }),
-          makeDoc("old-user", {
+            syncState: "synced",
+          },
+          {
+            id: "old-user",
+            userUid: "user-1",
             role: "user",
             content: "previous",
             createdAt: 50,
             lastSyncedAt: 50,
-          }),
+            syncState: "synced",
+          },
         ],
-      });
+        { cursor: "existing" },
+      );
     });
 
     let sendResult: string | null = null;
@@ -521,8 +485,10 @@ describe("useChatHistory", () => {
     });
 
     expect(sendResult).toBeNull();
-    expect(mockSetDoc).toHaveBeenCalledTimes(2);
-    const aiPayload = mockSetDoc.mock.calls[0][1] as Record<string, unknown>;
+    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
+    const aiPayload = mockPersistAssistantChatMessage.mock.calls[0][0] as {
+      content: string;
+    };
     expect(aiPayload.content).toBe(
       "Could not fetch a response. Please try again.",
     );
@@ -587,11 +553,9 @@ describe("useChatHistory", () => {
     await act(async () => {
       await result.current.send("short title");
     });
-    const localBatch = mockCreatedBatches[mockCreatedBatches.length - 1];
-    const localThreadPayload = localBatch.set.mock.calls[0][1] as Record<
-      string,
-      unknown
-    >;
+    const localThreadPayload = mockPersistUserChatMessage.mock.calls[
+      mockPersistUserChatMessage.mock.calls.length - 1
+    ][0] as { title?: string };
     expect(localThreadPayload.title).toBe("short title");
 
     rerender({ uid: "" });
