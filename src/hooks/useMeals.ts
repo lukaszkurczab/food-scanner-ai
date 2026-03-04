@@ -7,6 +7,7 @@ import {
   upsertMealLocal,
   markDeletedLocal,
 } from "@/services/offline/meals.repo";
+import { upsertMyMealLocal } from "@/services/offline/myMeals.repo";
 import {
   enqueueUpsert,
   enqueueDelete,
@@ -18,6 +19,7 @@ import { debugScope } from "@/utils/debug";
 import { emit } from "@/services/events";
 import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/myMealService";
+import { formatStreakDate } from "@/services/streak.logic";
 
 const PAGE_LIMIT = 50;
 const SYNC_DEBOUNCE_MS = 1200;
@@ -207,6 +209,7 @@ export function useMeals(userUid: string | null) {
         deleted: false,
         source: meal.source ?? "manual",
         timestamp: meal.timestamp ?? now,
+        dayKey: meal.dayKey ?? formatStreakDate(new Date(meal.timestamp ?? now)),
         totals,
       };
 
@@ -231,6 +234,7 @@ export function useMeals(userUid: string | null) {
           cloudId: base.mealId,
           source: "saved",
         };
+        await upsertMyMealLocal(saved);
         await enqueueMyMealUpsert(userUid, saved);
       }
 
@@ -259,6 +263,7 @@ export function useMeals(userUid: string | null) {
           mealId: docId,
           cloudId: docId,
           updatedAt: now,
+          photoLocalPath: localPhoto,
         };
         await upsertMyMealWithPhoto(userUid, toSave, localPhoto);
         emit("meal:updated", { uid: userUid, meal: toSave });
@@ -276,6 +281,7 @@ export function useMeals(userUid: string | null) {
         updatedAt: now,
         totals,
         timestamp: meal.timestamp ?? now,
+        dayKey: meal.dayKey ?? formatStreakDate(new Date(meal.timestamp ?? now)),
       };
 
       const maybeUri = meal.photoUrl;

@@ -2,8 +2,7 @@ import { useState } from "react";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { authRegister } from "@/feature/Auth/services/authService";
 import { isUsernameAvailable } from "@/services/usernameService";
-import { getApp } from "@react-native-firebase/app";
-import { getFirestore, doc, setDoc } from "@react-native-firebase/firestore";
+import { createDefaultKeepLoggingNotification } from "@/services/notifications/notificationsRepository";
 
 type RegisterErrors = {
   email?: string;
@@ -19,27 +18,6 @@ const getErrorCode = (error: unknown): string | null => {
   const maybeCode = (error as { code?: unknown }).code;
   return typeof maybeCode === "string" ? maybeCode : null;
 };
-
-async function createDefaultKeepLogging(uid: string) {
-  const db = getFirestore(getApp());
-  const id = "motivation_keep_logging";
-  const now = Date.now();
-  await setDoc(
-    doc(db, "users", uid, "notifications", id),
-    {
-      id,
-      type: "day_fill",
-      name: "Keep logging",
-      text: null,
-      time: { hour: 12, minute: 0 },
-      days: [0, 1, 2, 3, 4, 5, 6],
-      enabled: true,
-      createdAt: now,
-      updatedAt: now,
-    },
-    { merge: true }
-  );
-}
 
 export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
   const [loading, setLoading] = useState(false);
@@ -90,13 +68,14 @@ export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
         return;
       }
       const user = await authRegister(email.trim(), password, username.trim());
-      await createDefaultKeepLogging(user.uid);
+      await createDefaultKeepLoggingNotification(user.uid);
       setUser(user);
     } catch (error: unknown) {
       const code = getErrorCode(error);
       const e: RegisterErrors = {};
       if (code === "auth/email-already-in-use") e.email = "email_in_use";
       else if (code === "auth/invalid-email") e.email = "invalid_email";
+      else if (code === "username/unavailable") e.username = "username_taken";
       else if (code === "auth/weak-password")
         e.password = "password_too_weak";
       else e.general = "registration_failed";

@@ -19,6 +19,5 @@ export async function getJSON<T = unknown>(key: string): Promise<T | null> {
 }
 
 export const cacheKeys = {
-  myMealsList: (uid: string) => `myMeals:list:${uid}`,
   lastWeekMeals: (uid: string) => `meals:last7d:${uid}`,
 };

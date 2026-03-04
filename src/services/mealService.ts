@@ -1,20 +1,4 @@
-import { getApp } from "@react-native-firebase/app";
 import NetInfo from "@react-native-community/netinfo";
-import {
-  getFirestore,
-  collection,
-  doc,
-  query,
-  orderBy,
-  where,
-  getDocs,
-  onSnapshot,
-  writeBatch,
-  setDoc,
-  limit as fsLimit,
-  startAfter,
-  type FirebaseFirestoreTypes,
-} from "@react-native-firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import * as FileSystem from "expo-file-system";
 import type { Meal } from "@/types/meal";
@@ -23,39 +7,27 @@ import {
   ensureLocalMealPhoto,
   localPhotoPath,
 } from "./mealService.images";
-import { emit } from "@/services/events";
 import {
+  getMealsPageLocal,
   getMealsPageLocalFiltered,
   type LocalHistoryFilters,
 } from "@/services/offline/meals.repo";
-
-const app = getApp();
-const db = getFirestore(app);
-
+import { on, emit } from "@/services/events";
+import {
+  extractMealTimestampCursor,
+  fetchMealsPageRemote,
+  markMealDeletedRemote,
+  saveMealRemote,
+  type MealHistoryFilters,
+} from "@/services/mealsRepository";
+import { formatStreakDate } from "@/services/streak.logic";
 export const FREE_WINDOW_DAYS = 30;
-
-function mealsCol(uid: string) {
-  return collection(db, "users", uid, "meals");
-}
-function mealDoc(uid: string, cloudId: string) {
-  return doc(db, "users", uid, "meals", cloudId);
-}
-function myMealDoc(uid: string, mealId: string) {
-  return doc(db, "users", uid, "myMeals", mealId);
-}
-
-export type HistoryFilters = {
-  calories?: [number, number];
-  protein?: [number, number];
-  carbs?: [number, number];
-  fat?: [number, number];
-  dateRange?: { start: Date; end: Date };
-};
+export type HistoryFilters = MealHistoryFilters;
 
 export type MealsPage = { items: Meal[]; nextBefore: string | null };
 export type MealsPageV2 = {
   items: Meal[];
-  nextCursor: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal> | string | null;
+  nextCursor: string | null;
 };
 
 function clampDateRange(
@@ -78,57 +50,11 @@ function clampDateRange(
   return { start, end };
 }
 
-function buildFilteredQuery(uid: string, filters?: HistoryFilters) {
-  let qBuilt = query(mealsCol(uid), orderBy("timestamp", "desc"));
-
-  if (filters?.calories) {
-    qBuilt = query(
-      qBuilt,
-      where("totals.kcal", ">=", filters.calories[0]),
-      where("totals.kcal", "<=", filters.calories[1])
-    );
-  }
-  if (filters?.protein) {
-    qBuilt = query(
-      qBuilt,
-      where("totals.protein", ">=", filters.protein[0]),
-      where("totals.protein", "<=", filters.protein[1])
-    );
-  }
-  if (filters?.carbs) {
-    qBuilt = query(
-      qBuilt,
-      where("totals.carbs", ">=", filters.carbs[0]),
-      where("totals.carbs", "<=", filters.carbs[1])
-    );
-  }
-  if (filters?.fat) {
-    qBuilt = query(
-      qBuilt,
-      where("totals.fat", ">=", filters.fat[0]),
-      where("totals.fat", "<=", filters.fat[1])
-    );
-  }
-  if (filters?.dateRange) {
-    const s = new Date(filters.dateRange.start);
-    const e = new Date(filters.dateRange.end);
-    s.setHours(0, 0, 0, 0);
-    e.setHours(23, 59, 59, 999);
-    qBuilt = query(
-      qBuilt,
-      where("timestamp", ">=", s.toISOString()),
-      where("timestamp", "<=", e.toISOString())
-    );
-  }
-
-  return qBuilt;
-}
-
 export async function getMealsPageFiltered(
   uid: string,
   opts: {
     limit: number;
-    cursor: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal> | string | null;
+    cursor: string | null;
     filters?: HistoryFilters;
     accessWindowDays?: number;
   }
@@ -157,7 +83,9 @@ export async function getMealsPageFiltered(
       : undefined;
 
     const beforeISO =
-      typeof opts.cursor === "string" && opts.cursor ? opts.cursor : null;
+      typeof opts.cursor === "string" && opts.cursor
+        ? extractMealTimestampCursor(opts.cursor)
+        : null;
 
     const page = await getMealsPageLocalFiltered(uid, {
       limit: opts.limit,
@@ -168,41 +96,42 @@ export async function getMealsPageFiltered(
     return { items: page.items, nextCursor: page.nextBefore };
   }
 
-  const base = buildFilteredQuery(uid, effectiveFilters);
-  const q =
-    opts.cursor && typeof opts.cursor !== "string"
-    ? query(base, startAfter(opts.cursor), fsLimit(opts.limit))
-    : query(base, fsLimit(opts.limit));
-  const snap = await getDocs(q);
-  const items = snap.docs
-    .map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal>) => ({
-      ...(d.data() as Meal),
-      cloudId: d.id,
-    }))
-    .filter((m: Meal) => !m.deleted);
-  if (!items.length) return { items: [], nextCursor: null };
-  const lastDoc = snap.docs[snap.docs.length - 1] ?? null;
-  return { items, nextCursor: lastDoc };
+  const remotePage = await fetchMealsPageRemote({
+    uid,
+    pageSize: opts.limit,
+    cursor: opts.cursor,
+    filters: effectiveFilters,
+  });
+  if (!remotePage.items.length) return { items: [], nextCursor: null };
+  return remotePage;
 }
 
 export function subscribeMeals(
   uid: string,
   cb: (items: Meal[]) => void
 ): () => void {
-  const q = query(mealsCol(uid), orderBy("timestamp", "desc"));
-  return onSnapshot(
-    q,
-    (snap) => {
-      const items = snap.docs
-        .map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot<Meal>) => ({
-          ...(d.data() as Meal),
-          cloudId: d.id,
-        }))
-        .filter((m: Meal) => !m.deleted);
+  let active = true;
+
+  const publish = async () => {
+    if (!active) return;
+    const items = await getMealsPageLocal(uid, 50, undefined);
+    if (active) {
       cb(items);
-    },
-    () => {}
-  );
+    }
+  };
+
+  void publish();
+
+  const unsubs = [
+    on("meal:local:upserted", () => void publish()),
+    on("meal:local:deleted", () => void publish()),
+    on("meal:synced", () => void publish()),
+  ];
+
+  return () => {
+    active = false;
+    unsubs.forEach((unsubscribe) => unsubscribe());
+  };
 }
 
 function computeTotals(meal: Meal) {
@@ -215,6 +144,11 @@ function computeTotals(meal: Meal) {
     carbs: sum("carbs"),
     fat: sum("fat"),
   };
+}
+
+function resolveMealDayKey(meal: Pick<Meal, "dayKey" | "timestamp">): string {
+  if (meal.dayKey) return meal.dayKey;
+  return formatStreakDate(new Date(meal.timestamp));
 }
 
 export async function addOrUpdateMeal(
@@ -248,6 +182,10 @@ export async function addOrUpdateMeal(
     userUid: uid,
     mealId: meal.mealId || uuidv4(),
     timestamp: meal.timestamp ?? now,
+    dayKey: resolveMealDayKey({
+      dayKey: meal.dayKey ?? null,
+      timestamp: meal.timestamp ?? now,
+    }),
     type: meal.type,
     name: meal.name ?? null,
     ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
@@ -263,26 +201,17 @@ export async function addOrUpdateMeal(
     cloudId,
     totals,
   };
-  const batch = writeBatch(db);
-  batch.set(mealDoc(uid, cloudId), normalized, { merge: true });
-  if (opts?.alsoSaveToMyMeals) {
-    batch.set(
-      myMealDoc(uid, normalized.mealId),
-      { ...normalized, cloudId: normalized.mealId, source: "saved" },
-      { merge: true }
-    );
-  }
-  await batch.commit();
+  await saveMealRemote({
+    uid,
+    meal: normalized,
+    alsoSaveToMyMeals: opts?.alsoSaveToMyMeals,
+  });
   emit("meal:added", { uid, meal: { ...normalized, syncState: "synced" } });
   return { ...normalized, syncState: "synced" };
 }
 
 export async function deleteMealInFirestore(uid: string, cloudId: string) {
-  await setDoc(
-    mealDoc(uid, cloudId),
-    { deleted: true, updatedAt: new Date().toISOString() },
-    { merge: true }
-  );
+  await markMealDeletedRemote(uid, cloudId, new Date().toISOString());
 }
 
 async function ensureDir(dir: string) {

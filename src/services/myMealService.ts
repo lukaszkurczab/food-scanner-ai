@@ -1,131 +1,95 @@
 import NetInfo from "@react-native-community/netinfo";
-import { getApp } from "@react-native-firebase/app";
-import {
-  getFirestore,
-  writeBatch,
-  collection,
-  doc,
-  getDocs,
-  setDoc,
-} from "@react-native-firebase/firestore";
-import type { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
-import {
-  getStorage,
-  ref,
-  putFile,
-  getDownloadURL,
-} from "@react-native-firebase/storage";
 import type { Meal } from "@/types/meal";
-
-const USERS = "users";
-const MY_MEALS = "myMeals";
-
-const app = getApp();
-const db = getFirestore(app);
-const st = getStorage(app);
+import { emit } from "@/services/events";
+import {
+  enqueueMyMealDelete,
+  enqueueMyMealUpsert,
+} from "@/services/offline/queue.repo";
+import {
+  markDeletedMyMealLocal,
+  upsertMyMealLocal as upsertMyMealLocalRepo,
+} from "@/services/offline/myMeals.repo";
+import { pullMyMealChanges, pushQueue } from "@/services/offline/sync.engine";
 
 type MyMealDoc = Meal & {
   uploadState?: "pending" | "done";
   localPhotoUri?: string | null;
 };
 
-const isLocalPhoto = (uri?: string | null) => !!uri && uri.startsWith("file:");
-
-async function uploadPhotoIfNeeded(
-  userUid: string,
-  docId: string,
-  photoUri: string | null
-): Promise<string | null> {
-  if (!isLocalPhoto(photoUri)) return photoUri ?? null;
-  const net = await NetInfo.fetch();
-  if (!net.isConnected) return null;
-  const path = `myMeals/${userUid}/${docId}.jpg`;
-  const r = ref(st, path);
-  await putFile(r, photoUri!);
-  return await getDownloadURL(r);
-}
+const isLocalPhoto = (uri?: string | null) =>
+  !!uri && (uri.startsWith("file:") || uri.startsWith("content:"));
 
 export async function upsertMyMealLocal(
   userUid: string,
-  meal: Meal
+  meal: Meal,
 ): Promise<void> {
   const now = new Date().toISOString();
   const docId = meal.mealId ?? meal.cloudId!;
-  const next: MyMealDoc = {
+  const localPath = meal.photoLocalPath ?? (isLocalPhoto(meal.photoUrl) ? meal.photoUrl : null);
+  const next: Meal = {
     ...meal,
+    userUid,
     mealId: docId,
     cloudId: docId,
     updatedAt: now,
     createdAt: meal.createdAt ?? now,
+    source: "saved",
+    photoLocalPath: localPath,
+    photoUrl: localPath ?? meal.photoUrl ?? null,
   };
-  if (isLocalPhoto(meal.photoUrl)) {
-    next.uploadState = "pending";
-    next.localPhotoUri = meal.photoUrl;
-    next.photoUrl = null;
-  } else {
-    next.uploadState = "done";
-    next.localPhotoUri = null;
-  }
-  const b = writeBatch(db);
-  b.set(doc(db, USERS, userUid, MY_MEALS, docId), next, { merge: true });
-  await b.commit();
-}
-
-export async function fetchMyMealsFromCloud(userUid: string): Promise<Meal[]> {
-  const snap = await getDocs(collection(db, USERS, userUid, MY_MEALS));
-  return snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => {
-    const data = d.data() as MyMealDoc;
-    return { ...data, cloudId: d.id, mealId: data.mealId ?? d.id };
-  });
+  await upsertMyMealLocalRepo(next);
 }
 
 export async function upsertMyMealWithPhoto(
   userUid: string,
   meal: Meal,
-  photoUri: string | null
+  photoUri: string | null,
 ): Promise<void> {
   const now = new Date().toISOString();
   const docId = meal.mealId ?? meal.cloudId!;
-  let photoUrl: string | null = meal.photoUrl ?? null;
-  const effectivePhoto = photoUri ?? meal.photoUrl ?? null;
-  const uploaded = await uploadPhotoIfNeeded(userUid, docId, effectivePhoto);
-  if (uploaded) photoUrl = uploaded;
-
+  const effectivePhoto = photoUri ?? meal.photoLocalPath ?? meal.photoUrl ?? null;
   const next: MyMealDoc = {
     ...meal,
+    userUid,
     mealId: docId,
     cloudId: docId,
     updatedAt: now,
     createdAt: meal.createdAt ?? now,
-    photoUrl: photoUrl,
-    uploadState: uploaded
-      ? "done"
-      : isLocalPhoto(effectivePhoto)
-      ? "pending"
-      : "done",
-    localPhotoUri: uploaded
-      ? null
-      : isLocalPhoto(effectivePhoto)
-      ? effectivePhoto
-      : null,
+    source: "saved",
+    photoLocalPath: isLocalPhoto(effectivePhoto) ? effectivePhoto : meal.photoLocalPath ?? null,
+    photoUrl: effectivePhoto,
+    uploadState: isLocalPhoto(effectivePhoto) ? "pending" : "done",
+    localPhotoUri: isLocalPhoto(effectivePhoto) ? effectivePhoto : null,
   };
 
-  const b = writeBatch(db);
-  b.set(doc(db, USERS, userUid, MY_MEALS, docId), next, { merge: true });
-  await b.commit();
+  await upsertMyMealLocalRepo(next);
+  await enqueueMyMealUpsert(userUid, next);
+  emit("mymeal:updated", { uid: userUid, cloudId: docId });
+
+  const net = await NetInfo.fetch();
+  if (net.isConnected) {
+    await pushQueue(userUid);
+    await pullMyMealChanges(userUid);
+  }
 }
 
-export async function deleteMyMealInFirestore(
+export async function deleteMyMeal(
   userUid: string,
-  cloudId: string
+  cloudId: string,
 ): Promise<void> {
-  await setDoc(
-    doc(db, USERS, userUid, MY_MEALS, cloudId),
-    { deleted: true, updatedAt: new Date().toISOString(), syncState: "synced" },
-    { merge: true }
-  );
+  const now = new Date().toISOString();
+  await markDeletedMyMealLocal(cloudId, now);
+  await enqueueMyMealDelete(userUid, cloudId, now);
+
+  const net = await NetInfo.fetch();
+  if (net.isConnected) {
+    await pushQueue(userUid);
+    await pullMyMealChanges(userUid);
+  }
 }
 
-export async function syncMyMeals(): Promise<void> {
-  return;
+export async function syncMyMeals(userUid?: string | null): Promise<void> {
+  if (!userUid) return;
+  await pushQueue(userUid);
+  await pullMyMealChanges(userUid);
 }

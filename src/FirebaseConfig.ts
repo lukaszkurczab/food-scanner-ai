@@ -1,6 +1,5 @@
 import { initializeApp, getApp, getApps } from "@react-native-firebase/app";
 import { getAuth } from "@react-native-firebase/auth";
-import { getFirestore } from "@react-native-firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAMx2jGfr3mslwuu7PXwRry8M72794NMek",
@@ -27,9 +26,4 @@ export const getFirebaseApp = () => appPromise;
 export const getFirebaseAuth = async () => {
   const app = await appPromise;
   return getAuth(app);
-};
-
-export const getFirebaseFirestore = async () => {
-  const app = await appPromise;
-  return getFirestore(app);
 };

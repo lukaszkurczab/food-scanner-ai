@@ -15,7 +15,7 @@ export default {
   expo: {
     name: "Fitaly",
     scheme: "fitaly",
-    slug: "fitaly",
+    slug: "caloriai",
     owner: "lkurczab",
     version: "1.0.1",
     orientation: "portrait",
@@ -76,16 +76,11 @@ export default {
       "expo-background-task",
     ],
     extra: {
-      openaiApiKey: process.env.OPENAI_API_KEY,
       apiBaseUrl: resolvedApiBaseUrl,
       apiVersion: process.env.EXPO_PUBLIC_API_VERSION || "v1",
-      useNewAiBackend:
-        (process.env.EXPO_PUBLIC_USE_NEW_AI_BACKEND || "").toLowerCase() ===
-        "true",
       enableBackendLogging:
-        (
-          process.env.EXPO_PUBLIC_ENABLE_BACKEND_LOGGING || ""
-        ).toLowerCase() === "true",
+        (process.env.EXPO_PUBLIC_ENABLE_BACKEND_LOGGING || "").toLowerCase() ===
+        "true",
       debugOcr: (process.env.DEBUG_OCR || "true").toLowerCase() === "true",
       e2e: (process.env.E2E || "").toLowerCase() === "true",
       e2eMockChatReply:

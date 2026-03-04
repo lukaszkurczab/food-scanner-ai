@@ -56,7 +56,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
     setSaving(true);
     try {
       await i18n.changeLanguage(code);
-      await updateUser({ ...userData, language: code });
+      await updateUser({ language: code });
     } finally {
       setSaving(false);
     }

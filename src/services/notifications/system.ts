@@ -1,10 +1,3 @@
-import { getApp } from "@react-native-firebase/app";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-} from "@react-native-firebase/firestore";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
@@ -13,13 +6,24 @@ import {
   asNumber,
   isRecord,
 } from "@/services/contracts/guards";
+import { fetchNotificationPrefs } from "@/services/notifications/notificationsRepository";
 
 type QuietHours = { startHour: number; endHour: number };
 
 const SYS_KEY_PREFIX = "notif:sys:ids:";
+const SYS_PLANNED_KEY_PREFIX = "notif:sys:planned:";
+const SYS_PREFS_CACHE_KEY_PREFIX = "notif:sys:prefs:";
 
 function sysKey(uid: string, key: string) {
   return `${SYS_KEY_PREFIX}${uid}:${key}`;
+}
+
+function plannedKey(uid: string, key: string) {
+  return `${SYS_PLANNED_KEY_PREFIX}${uid}:${key}`;
+}
+
+function prefsCacheKey(uid: string) {
+  return `${SYS_PREFS_CACHE_KEY_PREFIX}${uid}`;
 }
 
 function parseStoredIds(raw: string | null): string[] {
@@ -119,21 +123,46 @@ function parseWeekdays0to6(value: unknown): number[] {
   return Array.from(new Set(normalized));
 }
 
+async function readCachedEnabled(key: string): Promise<boolean | null> {
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.enabled === "boolean" ? parsed.enabled : null;
+  } catch {
+    return null;
+  }
+}
+
 async function getPrefs(uid: string) {
-  const db = getFirestore(getApp());
-  const snap = await getDoc(doc(db, "users", uid, "prefs", "global"));
-  const raw = snap.exists() ? snap.data() : null;
+  let raw: unknown = null;
+  try {
+    const response = await fetchNotificationPrefs(uid);
+    raw = response;
+    await AsyncStorage.setItem(prefsCacheKey(uid), JSON.stringify(response));
+  } catch {
+    try {
+      const cached = await AsyncStorage.getItem(prefsCacheKey(uid));
+      raw = cached ? JSON.parse(cached) : null;
+    } catch {
+      raw = null;
+    }
+  }
   const notifications =
     isRecord(raw) && isRecord(raw.notifications) ? raw.notifications : null;
   const quietHours =
     notifications && isRecord(notifications.quietHours)
       ? notifications.quietHours
       : null;
+  const cachedMotivation = await readCachedEnabled(`notif:prefs:${uid}:motivation`);
+  const cachedStats = await readCachedEnabled(`notif:prefs:${uid}:stats`);
 
   const motivationOn =
+    cachedMotivation ??
     (notifications ? asBoolean(notifications.motivationEnabled) : undefined) ??
     false;
   const statsOn =
+    cachedStats ??
     (notifications ? asBoolean(notifications.statsEnabled) : undefined) ?? false;
   const weekdays0to6 = parseWeekdays0to6(
     notifications ? notifications.weekdays0to6 : undefined
@@ -159,19 +188,20 @@ async function getPrefs(uid: string) {
 }
 
 async function gatePlanned(uid: string, key: string) {
-  const db = getFirestore(getApp());
-  const ref = doc(db, "users", uid, "notif_meta", "system");
-  const snap = await getDoc(ref);
-  const raw = snap.exists() ? snap.data() : null;
-  const entry = isRecord(raw) && isRecord(raw[key]) ? raw[key] : null;
-  const plannedUntil = asNumber(entry?.plannedUntil) ?? 0;
+  let plannedUntil = 0;
+  try {
+    const raw = await AsyncStorage.getItem(plannedKey(uid, key));
+    plannedUntil = asNumber(raw ? JSON.parse(raw) : null) ?? 0;
+  } catch {
+    plannedUntil = 0;
+  }
 
   return {
     shouldReschedule: Date.now() > plannedUntil - 6 * 60 * 60 * 1000,
     markPlannedUntil: async (until: number) =>
-      setDoc(ref, { [key]: { plannedUntil: until } }, { merge: true }),
+      AsyncStorage.setItem(plannedKey(uid, key), JSON.stringify(until)),
     clearPlannedUntil: async () =>
-      setDoc(ref, { [key]: { plannedUntil: 0 } }, { merge: true }),
+      AsyncStorage.setItem(plannedKey(uid, key), JSON.stringify(0)),
   };
 }
 

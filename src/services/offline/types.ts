@@ -1,4 +1,9 @@
-export type QueueKind = "upsert" | "delete" | "upsert_mymeal" | "delete_mymeal";
+export type QueueKind =
+  | "upsert"
+  | "delete"
+  | "upsert_mymeal"
+  | "delete_mymeal"
+  | "persist_chat_message";
 
 export type MealRow = {
   cloud_id: string | null;
@@ -42,4 +47,26 @@ export type QueueRow = {
   payload: string;
   updated_at: string;
   attempts: number;
+};
+
+export type ChatThreadRow = {
+  id: string;
+  user_uid: string;
+  title: string | null;
+  created_at: number;
+  updated_at: number;
+  last_message: string | null;
+  last_message_at: number | null;
+};
+
+export type ChatMessageRow = {
+  id: string;
+  thread_id: string;
+  user_uid: string;
+  role: string;
+  content: string;
+  created_at: number;
+  last_synced_at: number;
+  sync_state: string;
+  deleted: number;
 };

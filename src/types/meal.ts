@@ -24,6 +24,7 @@ export interface Meal {
   userUid: string;
   mealId: string;
   timestamp: string;
+  dayKey?: string | null;
   type: MealType;
   name: string | null;
   ingredients: Ingredient[];

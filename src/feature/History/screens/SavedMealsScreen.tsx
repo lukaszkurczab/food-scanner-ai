@@ -19,7 +19,6 @@ import { MealListItem } from "@/components/MealListItem";
 import { useAuthContext } from "@/context/AuthContext";
 import { useFilters } from "@/context/HistoryContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
-import { useMeals } from "@hooks/useMeals";
 import { useTheme } from "@/theme/useTheme";
 import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
@@ -27,6 +26,7 @@ import { FilterBadgeButton } from "../components/FilterBadgeButton";
 import { FilterPanel } from "../components/FilterPanel";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { useSavedMealsData } from "@/feature/History/hooks/useSavedMealsData";
+import { syncMyMeals } from "@/services/myMealService";
 import type { RootStackParamList } from "@/navigation/navigate";
 
 type SavedMealsNavigation = StackNavigationProp<RootStackParamList, "SavedMeals">;
@@ -41,7 +41,6 @@ export default function SavedMealsScreen({
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
-  const { getMeals } = useMeals(uid || "");
   const { t } = useTranslation(["meals", "common"]);
   const {
     meal: draftMeal,
@@ -76,7 +75,7 @@ export default function SavedMealsScreen({
     query,
     filters,
     isOnline,
-    getMeals,
+    syncSavedMeals: () => syncMyMeals(uid),
   });
 
   const buildDraftFromSaved = useCallback(
@@ -106,7 +105,8 @@ export default function SavedMealsScreen({
         ingredients: Array.isArray(picked.ingredients)
           ? picked.ingredients
           : [],
-        photoUrl: picked.photoUrl ?? null,
+        photoLocalPath: picked.photoLocalPath ?? null,
+        photoUrl: picked.photoLocalPath ?? picked.photoUrl ?? null,
         updatedAt: now,
         name: picked.name ?? "",
       };

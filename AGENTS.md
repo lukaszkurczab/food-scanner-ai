@@ -153,3 +153,15 @@ For each change-set, include:
 - No destructive actions (delete/migrate/overwrite data, breaking schema changes) without explicit confirmation.
 - No output of personal data from logs/screenshots; redact identifiers.
 - No secrets in code or logs. Never ask for or output API keys.
+
+# Firebase
+
+Durign work with firebase check firebaseRules.md and if it is necessery suggerst changes
+
+## Backend sync
+
+During tasks check if changes require otrher changes on backend part (food-scanner-ai-backend)
+
+# After
+
+After finishig task suggest if there is still something to do or this part is done

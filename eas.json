@@ -10,7 +10,6 @@
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://food-scanner-ai-backend-production.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
-        "EXPO_PUBLIC_USE_NEW_AI_BACKEND": "true",
         "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true"
       }
     },
@@ -20,7 +19,6 @@
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://food-scanner-ai-backend-production.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
-        "EXPO_PUBLIC_USE_NEW_AI_BACKEND": "true",
         "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true"
       }
     },
@@ -30,7 +28,6 @@
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://food-scanner-ai-backend-production.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
-        "EXPO_PUBLIC_USE_NEW_AI_BACKEND": "true",
         "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true",
         "E2E": "true",
         "E2E_MOCK_CHAT_REPLY": "E2E_MOCK_CHAT_REPLY: Keep hydration and protein consistent every day."
@@ -48,7 +45,6 @@
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://food-scanner-ai-backend-production.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
-        "EXPO_PUBLIC_USE_NEW_AI_BACKEND": "true",
         "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true"
       },
       "android": {

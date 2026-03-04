@@ -1,23 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ViewToken } from "react-native";
 import { v4 as uuidv4 } from "uuid";
-import { getApp } from "@react-native-firebase/app";
-import {
-  collection,
-  getFirestore,
-  onSnapshot,
-  orderBy,
-  query,
-  type FirebaseFirestoreTypes,
-} from "@react-native-firebase/firestore";
 import type { Meal } from "@/types/meal";
-import { cacheKeys, getJSON, setJSON } from "@/services/cache";
+import { subscribeToMyMealsOrderedByName } from "@/services/myMealsRepository";
 
 const STEP = 20;
 const TAIL_THRESHOLD = 10;
-
-const app = getApp();
-const db = getFirestore(app);
 
 const normalizeText = (value: unknown): string =>
   String(value || "")
@@ -27,7 +15,7 @@ const normalizeText = (value: unknown): string =>
 
 export function useSelectSavedMealsState(params: {
   uid: string | null;
-  getMeals: () => Promise<void>;
+  syncSavedMeals: () => Promise<void>;
   draftMeal: Meal | null;
   setMeal: (meal: Meal) => void;
   saveDraft: (uid: string) => Promise<void>;
@@ -35,7 +23,6 @@ export function useSelectSavedMealsState(params: {
   onNavigateResult: () => void;
   onStartOver: () => void;
 }) {
-  const { getMeals } = params;
   const [queryText, setQueryText] = useState("");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Meal[]>([]);
@@ -59,39 +46,23 @@ export function useSelectSavedMealsState(params: {
       return;
     }
 
-    let cancelled = false;
-
-    (async () => {
-      const cached = await getJSON<Meal[]>(cacheKeys.myMealsList(params.uid!));
-      if (cancelled || !cached) return;
-      setItems(cached);
-      setLoading(false);
-    })();
-
-    const mealsQuery = query(
-      collection(db, "users", params.uid, "myMeals"),
-      orderBy("name", "asc"),
-    );
-    const unsub = onSnapshot(mealsQuery, (snap) => {
-      const data = snap.docs.map((docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
-        ...(docSnap.data() as Meal),
-        cloudId: docSnap.id,
-      }));
-      setItems(data);
-      setLoading(false);
-      setLimit(STEP);
-      void setJSON(cacheKeys.myMealsList(params.uid!), data);
+    const unsub = subscribeToMyMealsOrderedByName({
+      uid: params.uid,
+      onData: (data) => {
+        setItems(data);
+        setLoading(false);
+        setLimit(STEP);
+      },
     });
 
     return () => {
-      cancelled = true;
       if (typeof unsub === "function") unsub();
     };
   }, [params.uid]);
 
   const refresh = useCallback(async () => {
-    await getMeals();
-  }, [getMeals]);
+    await params.syncSavedMeals();
+  }, [params]);
 
   const visibleAll = useMemo(() => {
     const queryTextNormalized = normalizeText(queryText);
@@ -187,7 +158,8 @@ export function useSelectSavedMealsState(params: {
       mealId: picked.mealId || base.mealId,
       source: "saved",
       ingredients: Array.isArray(picked.ingredients) ? picked.ingredients : [],
-      photoUrl: picked.photoUrl ?? null,
+      photoLocalPath: picked.photoLocalPath ?? null,
+      photoUrl: picked.photoLocalPath ?? picked.photoUrl ?? null,
       updatedAt: now,
       name: picked.name ?? "",
     };

@@ -10,7 +10,6 @@ import type { UserData } from "@/types";
 import i18n from "@/i18n";
 
 import { runMigrations } from "@/services/offline/db";
-import { migrateInitialMeals } from "@/services/offline/migrate";
 import { startSyncLoop } from "@/services/offline/sync.engine";
 
 export type UserContextType = {
@@ -88,14 +87,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!uid) return;
-    (async () => {
-      try {
-        await migrateInitialMeals(uid);
-      } catch {
-        // Initial migration should not block app startup.
-      }
-      startSyncLoop(uid);
-    })();
+    startSyncLoop(uid);
   }, [uid]);
 
   useEffect(() => {

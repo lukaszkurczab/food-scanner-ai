@@ -1,13 +1,6 @@
-import { getApp } from "@react-native-firebase/app";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-} from "@react-native-firebase/firestore";
-
-const col = () => collection(getFirestore(getApp()), "usernames");
+import { get, post } from "@/services/apiClient";
+import { withVersion } from "@/services/apiVersioning";
+import { createServiceError } from "@/services/contracts/serviceError";
 
 export function normalizeUsername(raw: string): string {
   return String(raw || "")
@@ -17,28 +10,76 @@ export function normalizeUsername(raw: string): string {
 
 export async function isUsernameAvailable(
   candidate: string,
-  currentUid?: string | null
+  _currentUid?: string | null
 ): Promise<boolean> {
   const username = normalizeUsername(candidate);
 
   if (!username) return false;
 
-  const db = getFirestore(getApp());
-  const ref = doc(db, "usernames", username);
-  const snap = await getDoc(ref);
+  const params = new URLSearchParams({ username });
 
-  if (!snap.exists()) return true;
-  const data = snap.data() as { uid?: string } | undefined;
+  const response = await get<{ username: string; available: boolean }>(
+    withVersion(`/usernames/availability?${params.toString()}`),
+  );
 
-  if (data?.uid && currentUid && data.uid === currentUid) return true;
-
-  return false;
+  return response.available;
 }
 
-export async function reserveUsername(
+function getErrorStatus(error: unknown): number | undefined {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number"
+  ) {
+    return error.status;
+  }
+
+  return undefined;
+}
+
+export async function claimUsername(
   username: string,
-  uid: string | null = null
-) {
-  const key = username.trim().toLowerCase();
-  await setDoc(doc(col(), key), { uid }, { merge: true });
+  _uid?: string
+): Promise<string> {
+  const normalizedUsername = normalizeUsername(username);
+  if (!normalizedUsername) {
+    throw createServiceError({
+      code: "username/invalid",
+      source: "UsernameService",
+      retryable: false,
+      message: "Username is required",
+    });
+  }
+
+  try {
+    const response = await post<{ username: string }>(
+      withVersion("/users/me/username"),
+      { username: normalizedUsername },
+    );
+
+    return response.username;
+  } catch (error) {
+    if (getErrorStatus(error) === 409) {
+      throw createServiceError({
+        code: "username/unavailable",
+        source: "UsernameService",
+        retryable: false,
+        message: "Username unavailable",
+        cause: error,
+      });
+    }
+
+    if (getErrorStatus(error) === 400) {
+      throw createServiceError({
+        code: "username/invalid",
+        source: "UsernameService",
+        retryable: false,
+        message: "Username invalid",
+        cause: error,
+      });
+    }
+
+    throw error;
+  }
 }

@@ -3,7 +3,6 @@ import { View, FlatList, RefreshControl, StyleSheet } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
-import { useMeals } from "@hooks/useMeals";
 import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
 import {
@@ -17,6 +16,7 @@ import { MealListItem } from "@/components/MealListItem";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useTranslation } from "react-i18next";
 import { useSelectSavedMealsState } from "@/feature/Meals/hooks/useSelectSavedMealsState";
+import { syncMyMeals } from "@/services/myMealService";
 import type { RootStackParamList } from "@/navigation/navigate";
 
 type SelectSavedMealNavigation = StackNavigationProp<
@@ -32,7 +32,6 @@ export default function SelectSavedMealScreen({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { uid } = useAuthContext();
-  const { getMeals } = useMeals(uid ?? null);
   const { meal: draftMeal, setMeal, saveDraft, setLastScreen } =
     useMealDraftContext();
   const { t } = useTranslation(["meals"]);
@@ -53,7 +52,7 @@ export default function SelectSavedMealScreen({
     viewabilityConfig,
   } = useSelectSavedMealsState({
     uid,
-    getMeals,
+    syncSavedMeals: () => syncMyMeals(uid),
     draftMeal,
     setMeal,
     saveDraft,

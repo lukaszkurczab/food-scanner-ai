@@ -12,8 +12,8 @@ import {
 } from "@/components";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { getAuth, signOut } from "@react-native-firebase/auth";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { authLogout } from "@/feature/Auth/services/authService";
 import type { RootStackParamList } from "@/navigation/navigate";
 
 type ChangeEmailCheckMailboxRoute = RouteProp<
@@ -89,8 +89,7 @@ export default function ChangeEmailCheckMailboxScreen() {
 
   const handleLogout = async () => {
     try {
-      const auth = getAuth();
-      await signOut(auth);
+      await authLogout();
     } catch {
       // Ignore sign-out errors here.
     }

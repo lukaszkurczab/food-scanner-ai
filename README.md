@@ -2,6 +2,8 @@
 
 An Expo/React Native mobile app for scanning meals (photo, text, barcode), analyzing nutrition values, tracking history and statistics, and supporting premium features.
 
+AI execution is backend-managed: the app calls backend AI endpoints and does not execute OpenAI requests directly on the client.
+
 ## Stack
 
 - Expo SDK 53
@@ -92,7 +94,9 @@ npm run test -- src/hooks/__tests__/useMeals.test.ts
 File: `.env`
 
 ```bash
-OPENAI_API_KEY=
+EXPO_PUBLIC_API_BASE_URL=
+EXPO_PUBLIC_API_VERSION=v1
+EXPO_PUBLIC_ENABLE_BACKEND_LOGGING=true
 RC_IOS_API_KEY=
 RC_ANDROID_API_KEY=
 TERMS_URL=
@@ -107,7 +111,9 @@ GOOGLE_FONTS_KEY=
 
 Description:
 
-- `OPENAI_API_KEY` - OpenAI API key (required for AI scan/analysis features).
+- `EXPO_PUBLIC_API_BASE_URL` - base URL of the backend API used for AI, logging, and other server-managed features.
+- `EXPO_PUBLIC_API_VERSION` - backend API version prefix used by the app.
+- `EXPO_PUBLIC_ENABLE_BACKEND_LOGGING` - enables forwarding selected client errors to the backend logging endpoint.
 - `RC_IOS_API_KEY` - RevenueCat iOS API key (required for iOS subscriptions).
 - `RC_ANDROID_API_KEY` - RevenueCat Android API key (required for Android subscriptions).
 - `TERMS_URL` - terms and conditions URL (used in paywall/subscription screens).
@@ -116,6 +122,8 @@ Description:
 - `DISABLE_BILLING` - disables billing in dev (`true`/`false`).
 - `FORCE_PREMIUM` - premium testing flag (`true`/`false`).
 - `GOOGLE_FONTS_KEY` - used only by `npm run fonts:download`.
+
+If AI features are enabled locally, the mobile app still needs a reachable backend configured through `EXPO_PUBLIC_API_BASE_URL`; the OpenAI API key now lives only on the backend.
 
 Additionally, native Firebase config files are required:
 

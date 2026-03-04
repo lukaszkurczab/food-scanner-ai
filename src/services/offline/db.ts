@@ -145,16 +145,106 @@ export function runMigrations() {
       throw e;
     }
   }
+
+  if (v < 3) {
+    d.execSync("BEGIN");
+    try {
+      d.execSync(`
+        CREATE TABLE IF NOT EXISTS chat_threads (
+          id TEXT PRIMARY KEY,
+          user_uid TEXT NOT NULL,
+          title TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          last_message TEXT,
+          last_message_at INTEGER
+        );
+      `);
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_chat_threads_user_updated
+          ON chat_threads(user_uid, updated_at DESC);
+      `);
+      d.execSync(`
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id TEXT PRIMARY KEY,
+          thread_id TEXT NOT NULL,
+          user_uid TEXT NOT NULL,
+          role TEXT NOT NULL,
+          content TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          last_synced_at INTEGER NOT NULL,
+          sync_state TEXT NOT NULL DEFAULT 'synced',
+          deleted INTEGER NOT NULL DEFAULT 0
+        );
+      `);
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_thread_created
+          ON chat_messages(user_uid, thread_id, created_at DESC);
+      `);
+      setUserVersion(d, 3);
+      d.execSync("COMMIT");
+      v = 3;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
+
+  if (v < 4) {
+    d.execSync("BEGIN");
+    try {
+      d.execSync(`
+        CREATE TABLE IF NOT EXISTS my_meals (
+          cloud_id TEXT PRIMARY KEY,
+          meal_id TEXT NOT NULL,
+          user_uid TEXT NOT NULL,
+          timestamp TEXT NOT NULL,
+          type TEXT NOT NULL,
+          name TEXT,
+          photo_url TEXT,
+          image_local TEXT,
+          image_id TEXT,
+          totals_kcal REAL DEFAULT 0,
+          totals_protein REAL DEFAULT 0,
+          totals_carbs REAL DEFAULT 0,
+          totals_fat REAL DEFAULT 0,
+          deleted INTEGER DEFAULT 0,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          source TEXT,
+          notes TEXT,
+          tags TEXT
+        );
+      `);
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_my_meals_user_name
+          ON my_meals(user_uid, name COLLATE NOCASE ASC, cloud_id ASC);
+      `);
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_my_meals_user_updated
+          ON my_meals(user_uid, updated_at ASC, cloud_id ASC);
+      `);
+      setUserVersion(d, 4);
+      d.execSync("COMMIT");
+      v = 4;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
 }
 
 export function resetOfflineStorage() {
   const d = getDB();
   d.execSync("BEGIN");
   try {
-    d.execSync(`DELETE FROM op_queue;`);
-    d.execSync(`DELETE FROM images;`);
-    d.execSync(`DELETE FROM meals;`);
-    d.execSync("COMMIT");
+      d.execSync(`DELETE FROM op_queue;`);
+      d.execSync(`DELETE FROM images;`);
+      d.execSync(`DELETE FROM meals;`);
+      d.execSync(`DELETE FROM my_meals;`);
+      d.execSync(`DELETE FROM chat_messages;`);
+      d.execSync(`DELETE FROM chat_threads;`);
+      d.execSync("COMMIT");
   } catch (error) {
     d.execSync("ROLLBACK");
     throw error;
