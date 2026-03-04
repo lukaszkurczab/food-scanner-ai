@@ -13,7 +13,7 @@ describe("feedbackService", () => {
   });
 
   it("uploads feedback through backend endpoint with optional attachment", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { sendFeedback } = require("@/services/feedbackService");
 
     await sendFeedback({
@@ -29,7 +29,7 @@ describe("feedbackService", () => {
     });
 
     expect(mockUpload).toHaveBeenCalledTimes(1);
-    expect(mockUpload.mock.calls[0]?.[0]).toBe("/api/v1/users/me/feedback");
+    expect(mockUpload.mock.calls[0]?.[0]).toBe("/users/me/feedback");
     expect(mockUpload.mock.calls[0]?.[1]).toBeInstanceOf(FormData);
   });
 });

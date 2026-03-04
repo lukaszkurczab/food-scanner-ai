@@ -68,7 +68,7 @@ describe("services/ai/chatThreadRepository", () => {
   });
 
   it("persists user message locally first and mirrors it to backend", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { persistUserChatMessage } = require("@/services/ai/chatThreadRepository");
 
     await persistUserChatMessage({
@@ -97,7 +97,7 @@ describe("services/ai/chatThreadRepository", () => {
       }),
     });
     expect(mockPost).toHaveBeenCalledWith(
-      "/api/v1/users/me/chat/threads/thread-1/messages",
+      "/users/me/chat/threads/thread-1/messages",
       {
         messageId: "msg-1",
         role: "user",
@@ -119,7 +119,7 @@ describe("services/ai/chatThreadRepository", () => {
   it("enqueues retry when backend persist fails", async () => {
     mockPost.mockRejectedValueOnce(new Error("boom"));
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { persistAssistantChatMessage } = require("@/services/ai/chatThreadRepository");
 
     await persistAssistantChatMessage({
@@ -175,7 +175,7 @@ describe("services/ai/chatThreadRepository", () => {
       nextBeforeCreatedAt: 200,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { fetchChatThreadMessagesPage } = require("@/services/ai/chatThreadRepository");
 
     const page = await fetchChatThreadMessagesPage({
@@ -186,7 +186,7 @@ describe("services/ai/chatThreadRepository", () => {
     });
 
     expect(mockGet).toHaveBeenCalledWith(
-      "/api/v1/users/me/chat/threads/thread-1/messages?limit=2&beforeCreatedAt=300",
+      "/users/me/chat/threads/thread-1/messages?limit=2&beforeCreatedAt=300",
     );
     expect(mockUpsertChatMessageLocal).toHaveBeenCalledWith({
       threadId: "thread-1",

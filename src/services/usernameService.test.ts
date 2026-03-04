@@ -34,9 +34,9 @@ describe("usernameService", () => {
 
     expect(normalizeUsername(" Neo ")).toBe("neo");
     expect(mockGet).toHaveBeenCalledWith(
-      "/api/v1/usernames/availability?username=neo",
+      "/usernames/availability?username=neo",
     );
-    expect(mockPost).toHaveBeenCalledWith("/api/v1/users/me/username", {
+    expect(mockPost).toHaveBeenCalledWith("/users/me/username", {
       username: "morpheus",
     });
   });

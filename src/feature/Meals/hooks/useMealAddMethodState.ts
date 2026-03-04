@@ -8,7 +8,6 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 import type { AiUsageResponse } from "@/services/ai/contracts";
-import { withVersion } from "@/services/apiVersioning";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { Ingredient, Meal } from "@/types/meal";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -97,7 +96,7 @@ const E2E_DRAFT_MEAL_ID = "e2e-draft-meal";
 async function canAccessTextMealAi(): Promise<boolean> {
   try {
     const usage = await get<AiUsageResponse>(
-      withVersion("/ai/usage"),
+      "/ai/usage",
     );
     return usage.remaining > 0;
   } catch {

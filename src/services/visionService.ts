@@ -9,7 +9,6 @@ import {
   isServiceError,
 } from "@/services/contracts/serviceError";
 import { post } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import { logError } from "@/services/errorLogger";
 import type { AiPhotoAnalyzeResponse } from "@/services/ai/contracts";
 
@@ -48,7 +47,7 @@ async function detectIngredientsWithBackend(
 ): Promise<Ingredient[] | null> {
   if (!userUid) return null;
 
-  const response = await post<AiPhotoAnalyzeResponse>(withVersion("/ai/photo/analyze"), {
+  const response = await post<AiPhotoAnalyzeResponse>("/ai/photo/analyze", {
     imageBase64,
     lang: userLang,
   });

@@ -10,7 +10,6 @@ import { extractIngredientsFromText } from "@/services/textMealService";
 import type { AiTextMealPayload, AiUsageResponse } from "@/services/ai/contracts";
 import { AiLimitExceededError } from "@/services/askDietAI";
 import { get } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import { captureException } from "@/services/errorLogger";
 import type { Ingredient, Meal } from "@/types";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -69,7 +68,7 @@ export function useMealTextAiState(params: {
 
       try {
         const usage = await get<AiUsageResponse>(
-          withVersion("/ai/usage"),
+          "/ai/usage",
         );
         applyUsage(usage);
         return usage;
@@ -103,7 +102,7 @@ export function useMealTextAiState(params: {
 
       try {
         const usage = await get<AiUsageResponse>(
-          withVersion("/ai/usage"),
+          "/ai/usage",
         );
         if (active) {
           applyUsage(usage);

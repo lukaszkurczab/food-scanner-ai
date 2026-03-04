@@ -1,6 +1,5 @@
 import type { UserData } from "@/types";
 import { get, post, upload } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import { emit, on } from "@/services/events";
 import { sanitizeUserProfilePatch } from "./profilePatch";
 
@@ -44,7 +43,7 @@ export function subscribeToUserProfile(params: {
 
 export async function fetchUserProfileRemote(uid: string): Promise<UserData | null> {
   void uid;
-  const response = await get<{ profile: UserData | null }>(withVersion("/users/me/profile"));
+  const response = await get<{ profile: UserData | null }>("/users/me/profile");
   const profile = response.profile ?? null;
   emitUserProfile(uid, profile);
   return profile;
@@ -56,7 +55,7 @@ export async function mergeUserProfileRemote(
 ): Promise<void> {
   void uid;
   const patch = sanitizeUserProfilePatch(payload);
-  await post(withVersion("/users/me/profile"), patch);
+  await post("/users/me/profile", patch);
   await fetchUserProfileRemote(uid);
 }
 
@@ -77,10 +76,7 @@ export async function uploadUserAvatarRemote(
     name: "avatar.jpg",
     type: "image/jpeg",
   } as unknown as Blob);
-  const response = await upload<AvatarUploadResponse>(
-    withVersion("/users/me/avatar"),
-    data,
-  );
+  const response = await upload<AvatarUploadResponse>("/users/me/avatar", data);
   const current = profileCache.get(uid);
   if (current) {
     emitUserProfile(uid, {

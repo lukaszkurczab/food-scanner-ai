@@ -12,7 +12,6 @@ import { processAndUpload } from "@/services/mealService.images";
 import type { MealRow } from "./types";
 import { emit } from "@/services/events";
 import { post } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import {
   buildMealUpdatedCursor,
   fetchMealChangesRemote,
@@ -331,7 +330,7 @@ export async function pushQueue(uid: string): Promise<void> {
           }
 
           await post(
-            withVersion(`/users/me/chat/threads/${payload.threadId}/messages`),
+            `/users/me/chat/threads/${payload.threadId}/messages`,
             {
               messageId: payload.messageId,
               role: payload.role,

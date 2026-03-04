@@ -5,12 +5,12 @@ import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
 import type { Meal, FormData, ChatMessage } from "@/types";
 import { get, post } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import type {
   AiAskBackendResponse,
   AiUsageResponse,
 } from "@/services/ai/contracts";
 import { getAiDailyLimit } from "@/services/ai/contracts";
+import { getErrorStatus } from "@/services/contracts/serviceError";
 import { captureException } from "@/services/errorLogger";
 import {
   type ChatMessageCursor,
@@ -27,19 +27,6 @@ type AiHistoryItem = {
 };
 
 const DEFAULT_CHAT_DAILY_LIMIT = 5;
-
-function getErrorStatus(error: unknown): number | undefined {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    typeof error.status === "number"
-  ) {
-    return error.status;
-  }
-
-  return undefined;
-}
 
 function buildAiContext(
   meals: Meal[],
@@ -176,7 +163,7 @@ export function useChatHistory(
       }
 
       try {
-        const usage = await get<AiUsageResponse>(withVersion("/ai/usage"));
+        const usage = await get<AiUsageResponse>("/ai/usage");
 
         /* istanbul ignore next -- defensive mounted check for async branch */
         if (mounted) {
@@ -303,7 +290,7 @@ export function useChatHistory(
           from: m.role === "user" ? "user" : "ai",
           text: m.content,
         }));
-        const aiResponse = await post<AiAskBackendResponse>(withVersion("/ai/ask"), {
+        const aiResponse = await post<AiAskBackendResponse>("/ai/ask", {
           message: trimmed,
           context: buildAiContext(meals, profile, [
             ...historyForAi,

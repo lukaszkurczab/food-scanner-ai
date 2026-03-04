@@ -6,7 +6,6 @@ import {
 } from "./streak.logic";
 import { debugScope } from "@/utils/debug";
 import { get, post } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import { emit, on } from "@/services/events";
 import type { StreakDoc } from "./streak.logic";
 export type { StreakDoc } from "./streak.logic";
@@ -65,7 +64,7 @@ function emitStreakChange(
 
 export async function ensureStreakDoc(uid: string) {
   const response = await post<StreakBackendResponse>(
-    withVersion("/users/me/streak/ensure"),
+    "/users/me/streak/ensure",
     { dayKey: formatStreakDate(new Date()) }
   );
   const streak = normalizeBackendStreak(response);
@@ -76,7 +75,7 @@ export async function ensureStreakDoc(uid: string) {
 
 export async function resetIfMissed(uid: string, now: Date = new Date()) {
   const response = await post<StreakBackendResponse>(
-    withVersion("/users/me/streak/reset-if-missed"),
+    "/users/me/streak/reset-if-missed",
     { dayKey: formatStreakDate(now) }
   );
   const streak = normalizeBackendStreak(response);
@@ -97,7 +96,7 @@ export async function updateStreakIfThresholdMet(params: {
   const thresholdPct = params.thresholdPct ?? 0.8;
 
   const response = await post<StreakBackendResponse>(
-    withVersion("/users/me/streak/recalculate"),
+    "/users/me/streak/recalculate",
     {
       dayKey: formatStreakDate(now),
       todaysKcal,
@@ -115,9 +114,7 @@ export async function updateStreakIfThresholdMet(params: {
 export async function getStreak(uid: string) {
   try {
     void uid;
-    const response = await get<StreakBackendResponse>(
-      withVersion("/users/me/streak")
-    );
+    const response = await get<StreakBackendResponse>("/users/me/streak");
     const streak = normalizeBackendStreak(response);
     await writeStreakCache(uid, streak);
     return streak;

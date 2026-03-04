@@ -1,4 +1,4 @@
-import { asString, isRecord } from "./guards";
+import { asNumber, asString, isRecord } from "./guards";
 
 export type ServiceErrorInit = {
   code: string;
@@ -75,4 +75,9 @@ export function normalizeServiceError(
   }
 
   return createServiceError({ ...fallback, cause: error });
+}
+
+export function getErrorStatus(error: unknown): number | undefined {
+  if (!isRecord(error)) return undefined;
+  return asNumber(error.status);
 }

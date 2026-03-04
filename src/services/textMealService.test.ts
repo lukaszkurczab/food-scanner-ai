@@ -61,7 +61,7 @@ describe("textMealService", () => {
       { lang: "pl" },
     );
 
-    expect(mockPost).toHaveBeenCalledWith("/api/v1/ai/text-meal/analyze", {
+    expect(mockPost).toHaveBeenCalledWith("/ai/text-meal/analyze", {
       payload: {
         name: "owsianka",
         ingredients: "płatki owsiane",

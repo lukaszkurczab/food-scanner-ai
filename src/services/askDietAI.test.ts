@@ -80,7 +80,7 @@ describe("askDietAI", () => {
       { uid: "user-1", isPremium: false },
     );
 
-    expect(mockPost).toHaveBeenCalledWith("/api/v1/ai/ask", {
+    expect(mockPost).toHaveBeenCalledWith("/ai/ask", {
       message: "What should I eat tonight?",
       context: expect.objectContaining({
         actionType: "chat",

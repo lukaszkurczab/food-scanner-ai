@@ -5,6 +5,8 @@ import {
 } from "@/services/badgeService";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
+type BadgeListCallback = (badges: Array<{ id: string }>) => void;
+
 const mockGet = jest.fn<(url: string) => Promise<unknown>>();
 const mockPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
 const mockEmit = jest.fn<(event: string, payload?: unknown) => void>();
@@ -66,7 +68,7 @@ describe("badgeService", () => {
       expect.objectContaining({ id: "streak_7", unlockedAt: 1 }),
       expect.objectContaining({ id: "premium_start", unlockedAt: 2 }),
     ]);
-    expect(mockGet).toHaveBeenCalledWith("/api/v1/users/me/badges");
+    expect(mockGet).toHaveBeenCalledWith("/users/me/badges");
     expect(mockSetItem).toHaveBeenCalledWith(
       "badge:list:user-1",
       expect.any(String),
@@ -137,7 +139,7 @@ describe("badgeService", () => {
         ],
       });
 
-    const cb = jest.fn();
+    const cb = jest.fn<BadgeListCallback>();
     const unsubscribe = subscribeBadges("user-1", cb);
     await Promise.resolve();
     await Promise.resolve();
@@ -164,7 +166,7 @@ describe("badgeService", () => {
     await unlockPremiumBadgesIfEligible("user-1", true);
 
     expect(mockPost).toHaveBeenCalledWith(
-      "/api/v1/users/me/badges/premium/reconcile",
+      "/users/me/badges/premium/reconcile",
       { isPremium: true },
     );
     expect(mockEmit).toHaveBeenCalledWith("badge:changed", { uid: "user-1" });

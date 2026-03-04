@@ -1,6 +1,8 @@
 import { get, post } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
-import { createServiceError } from "@/services/contracts/serviceError";
+import {
+  createServiceError,
+  getErrorStatus,
+} from "@/services/contracts/serviceError";
 
 export function normalizeUsername(raw: string): string {
   return String(raw || "")
@@ -19,23 +21,10 @@ export async function isUsernameAvailable(
   const params = new URLSearchParams({ username });
 
   const response = await get<{ username: string; available: boolean }>(
-    withVersion(`/usernames/availability?${params.toString()}`),
+    `/usernames/availability?${params.toString()}`,
   );
 
   return response.available;
-}
-
-function getErrorStatus(error: unknown): number | undefined {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    typeof error.status === "number"
-  ) {
-    return error.status;
-  }
-
-  return undefined;
 }
 
 export async function claimUsername(
@@ -54,7 +43,7 @@ export async function claimUsername(
 
   try {
     const response = await post<{ username: string }>(
-      withVersion("/users/me/username"),
+      "/users/me/username",
       { username: normalizedUsername },
     );
 

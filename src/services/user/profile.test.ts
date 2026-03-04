@@ -212,7 +212,7 @@ describe("services/user/profile", () => {
       chatMessages: [{ id: "chat-1" }],
     });
 
-    expect(mockGet).toHaveBeenCalledWith("/api/v1/users/me/export");
+    expect(mockGet).toHaveBeenCalledWith("/users/me/export");
   });
 
   it("reauthenticates and delegates username claim to backend service", async () => {
@@ -246,7 +246,7 @@ describe("services/user/profile", () => {
     );
     expect(mockReauthenticateWithCredential).toHaveBeenCalled();
     expect(mockPost).toHaveBeenCalledWith(
-      "/api/v1/users/me/email-pending",
+      "/users/me/email-pending",
       { email: "new@example.com" },
     );
   });
@@ -258,7 +258,7 @@ describe("services/user/profile", () => {
     });
 
     expect(mockReauthenticateWithCredential).toHaveBeenCalled();
-    expect(mockPost).toHaveBeenCalledWith("/api/v1/users/me/delete");
+    expect(mockPost).toHaveBeenCalledWith("/users/me/delete");
     expect(mockCurrentUserDelete).toHaveBeenCalledWith();
   });
 
