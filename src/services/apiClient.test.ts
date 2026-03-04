@@ -46,7 +46,7 @@ describe("apiClient", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     // Use require after resetting modules so API_VERSION is recomputed from mocks.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { get } = require("@/services/apiClient");
 
     await get("/ai/usage");
@@ -73,7 +73,7 @@ describe("apiClient", () => {
     });
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { get } = require("@/services/apiClient");
 
     await get("/health");
@@ -86,5 +86,38 @@ describe("apiClient", () => {
         }),
       }),
     );
+  });
+
+  it("keeps multipart uploads authenticated without forcing JSON content type", async () => {
+    const getIdToken = jest.fn().mockResolvedValue("token-456");
+    mockGetAuth.mockReturnValue({
+      currentUser: { getIdToken },
+    });
+
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ ok: true }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const formData = new FormData();
+    formData.append("file", "payload");
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { upload } = require("@/services/apiClient");
+
+    await upload("/users/me/avatar", formData);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.com/api/v1/users/me/avatar",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: "application/json",
+          Authorization: "Bearer token-456",
+        }),
+        body: formData,
+      }),
+    );
+    expect(fetchMock.mock.calls[0][1].headers).not.toHaveProperty("Content-Type");
   });
 });

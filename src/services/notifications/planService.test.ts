@@ -26,7 +26,7 @@ describe("notification plan service", () => {
     await getNotificationPlan("user-1");
 
     expect(mockPost).toHaveBeenCalledWith(
-      "/api/v1/users/me/notifications/reconcile-plan",
+      "/users/me/notifications/reconcile-plan",
       {
         startIso: expectedRange.startIso,
         endIso: expectedRange.endIso,

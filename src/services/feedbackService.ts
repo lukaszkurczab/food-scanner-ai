@@ -1,5 +1,4 @@
 import { upload } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 
 type DeviceInfo = {
   modelName?: string | null;
@@ -45,5 +44,5 @@ export async function sendFeedback({
     } as unknown as Blob);
   }
 
-  await upload(withVersion("/users/me/feedback"), data);
+  await upload("/users/me/feedback", data);
 }

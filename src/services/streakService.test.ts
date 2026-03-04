@@ -64,12 +64,12 @@ describe("streakService", () => {
 
     expect(mockPost).toHaveBeenNthCalledWith(
       1,
-      "/api/v1/users/me/streak/ensure",
+      "/users/me/streak/ensure",
       { dayKey: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) }
     );
     expect(mockPost).toHaveBeenNthCalledWith(
       2,
-      "/api/v1/users/me/streak/reset-if-missed",
+      "/users/me/streak/reset-if-missed",
       { dayKey: "2026-03-03" }
     );
     expect(mockSetItem).toHaveBeenCalledWith(
@@ -104,7 +104,7 @@ describe("streakService", () => {
     });
 
     expect(mockPost).toHaveBeenCalledWith(
-      "/api/v1/users/me/streak/recalculate",
+      "/users/me/streak/recalculate",
       {
         dayKey: "2026-03-03",
         todaysKcal: 1600,
@@ -139,8 +139,8 @@ describe("streakService", () => {
       lastDate: "2026-03-02",
     });
 
-    expect(mockGet).toHaveBeenNthCalledWith(1, "/api/v1/users/me/streak");
-    expect(mockGet).toHaveBeenNthCalledWith(2, "/api/v1/users/me/streak");
+    expect(mockGet).toHaveBeenNthCalledWith(1, "/users/me/streak");
+    expect(mockGet).toHaveBeenNthCalledWith(2, "/users/me/streak");
   });
 
   it("subscribes through event bus and refreshes streak state", async () => {

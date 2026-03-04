@@ -1,7 +1,6 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { ChatMessage, ChatThread } from "@/types";
 import { get, post } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import { captureException } from "@/services/errorLogger";
 import { on } from "@/services/events";
 import {
@@ -80,9 +79,7 @@ function toChatMessage(userUid: string, item: ChatMessageApiItem): ChatMessage {
 }
 
 async function syncThreadsFromBackend(userUid: string): Promise<void> {
-  const response = await get<ChatThreadsPageApiResponse>(
-    withVersion("/users/me/chat/threads"),
-  );
+  const response = await get<ChatThreadsPageApiResponse>("/users/me/chat/threads");
 
   for (const item of response.items) {
     await upsertChatThreadLocal(toChatThread(userUid, item));
@@ -103,9 +100,7 @@ async function syncMessagesFromBackend(params: {
   }
 
   const response = await get<ChatMessagesPageApiResponse>(
-    withVersion(
-      `/users/me/chat/threads/${params.threadId}/messages?${search.toString()}`,
-    ),
+    `/users/me/chat/threads/${params.threadId}/messages?${search.toString()}`,
   );
 
   for (const item of response.items) {
@@ -263,7 +258,7 @@ export async function persistUserChatMessage(params: {
       return;
     }
     await post(
-      withVersion(`/users/me/chat/threads/${params.threadId}/messages`),
+      `/users/me/chat/threads/${params.threadId}/messages`,
       {
         messageId: params.messageId,
         role: "user",
@@ -345,7 +340,7 @@ export async function persistAssistantChatMessage(params: {
       return;
     }
     await post(
-      withVersion(`/users/me/chat/threads/${params.threadId}/messages`),
+      `/users/me/chat/threads/${params.threadId}/messages`,
       {
         messageId: params.messageId,
         role: "assistant",

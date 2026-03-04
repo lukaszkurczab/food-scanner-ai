@@ -6,8 +6,8 @@ import {
   type AiTextMealPayload,
 } from "@/services/ai/contracts";
 import { post } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import { AiLimitExceededError } from "@/services/askDietAI";
+import { getErrorStatus } from "@/services/contracts/serviceError";
 import { logError, logWarning } from "@/services/errorLogger";
 
 export type TextMealAnalyzeResult = {
@@ -19,19 +19,6 @@ export type TextMealAnalyzeResult = {
   };
 };
 
-function getErrorStatus(error: unknown): number | undefined {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    typeof error.status === "number"
-  ) {
-    return error.status;
-  }
-
-  return undefined;
-}
-
 export async function extractIngredientsFromText(
   uid: string,
   payload: AiTextMealPayload,
@@ -42,13 +29,10 @@ export async function extractIngredientsFromText(
   const lang = opts?.lang || "en";
 
   try {
-    const response = await post<AiTextMealAnalyzeResponse>(
-      withVersion("/ai/text-meal/analyze"),
-      {
-        payload,
-        lang,
-      },
-    );
+    const response = await post<AiTextMealAnalyzeResponse>("/ai/text-meal/analyze", {
+      payload,
+      lang,
+    });
 
     return {
       ingredients: response.ingredients.map(

@@ -32,7 +32,7 @@ describe("services/user/userProfileRepository", () => {
       profile: { uid: "u1", username: "neo", language: "pl" },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { fetchUserProfileRemote } = require("@/services/user/userProfileRepository");
 
     await expect(fetchUserProfileRemote("u1")).resolves.toEqual({
@@ -40,7 +40,7 @@ describe("services/user/userProfileRepository", () => {
       username: "neo",
       language: "pl",
     });
-    expect(mockGet).toHaveBeenCalledWith("/api/v1/users/me/profile");
+    expect(mockGet).toHaveBeenCalledWith("/users/me/profile");
   });
 
   it("posts only editable profile fields to backend-owned endpoint", async () => {
@@ -49,7 +49,7 @@ describe("services/user/userProfileRepository", () => {
       profile: { uid: "u1", language: "pl", darkTheme: true },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { mergeUserProfileRemote } = require("@/services/user/userProfileRepository");
 
     await mergeUserProfileRemote("u1", {
@@ -59,7 +59,7 @@ describe("services/user/userProfileRepository", () => {
       avatarLocalPath: "file:///avatar.jpg",
     });
 
-    expect(mockPost).toHaveBeenCalledWith("/api/v1/users/me/profile", {
+    expect(mockPost).toHaveBeenCalledWith("/users/me/profile", {
       language: "pl",
       darkTheme: true,
     });
@@ -71,7 +71,7 @@ describe("services/user/userProfileRepository", () => {
       avatarlastSyncedAt: "2026-03-03T12:00:00.000Z",
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { uploadUserAvatarRemote } = require("@/services/user/userProfileRepository");
 
     await expect(
@@ -80,9 +80,6 @@ describe("services/user/userProfileRepository", () => {
       avatarUrl: "https://cdn/avatar.jpg",
       avatarlastSyncedAt: "2026-03-03T12:00:00.000Z",
     });
-    expect(mockUpload).toHaveBeenCalledWith(
-      "/api/v1/users/me/avatar",
-      expect.any(FormData),
-    );
+    expect(mockUpload).toHaveBeenCalledWith("/users/me/avatar", expect.any(FormData));
   });
 });

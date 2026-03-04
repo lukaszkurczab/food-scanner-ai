@@ -1,6 +1,5 @@
 import type { AIStyle, MealKind, NotificationType } from "@/types/notification";
 import { post } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import { getDayISOInclusiveRange } from "./dayRange";
 
 export type NotificationPlanItem = {
@@ -27,7 +26,7 @@ export async function getNotificationPlan(
   void uid;
   const { startIso, endIso } = getDayISOInclusiveRange(day);
   return post<NotificationPlanResponse>(
-    withVersion("/users/me/notifications/reconcile-plan"),
+    "/users/me/notifications/reconcile-plan",
     {
       startIso,
       endIso,

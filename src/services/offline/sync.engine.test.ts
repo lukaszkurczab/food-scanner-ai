@@ -141,13 +141,13 @@ describe("offline sync.engine", () => {
   });
 
   it("replays queued chat messages through backend and marks them synced", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { pushQueue } = require("@/services/offline/sync.engine");
 
     await pushQueue("user-1");
 
     expect(mockPost).toHaveBeenCalledWith(
-      "/api/v1/users/me/chat/threads/thread-1/messages",
+      "/users/me/chat/threads/thread-1/messages",
       {
         messageId: "msg-1",
         role: "assistant",
@@ -193,7 +193,7 @@ describe("offline sync.engine", () => {
       ])
       .mockResolvedValueOnce([]);
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { pushQueue } = require("@/services/offline/sync.engine");
 
     await pushQueue("user-1");
@@ -238,7 +238,7 @@ describe("offline sync.engine", () => {
       })
       .mockResolvedValueOnce({ items: [], nextCursor: null });
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { pullChanges } = require("@/services/offline/sync.engine");
 
     await pullChanges("user-1");
@@ -287,7 +287,7 @@ describe("offline sync.engine", () => {
       ])
       .mockResolvedValueOnce([]);
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { pushQueue } = require("@/services/offline/sync.engine");
 
     await pushQueue("user-1");
@@ -343,7 +343,7 @@ describe("offline sync.engine", () => {
       nextCursor: null,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { pullMyMealChanges } = require("@/services/offline/sync.engine");
 
     await pullMyMealChanges("user-1");

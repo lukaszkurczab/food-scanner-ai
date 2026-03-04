@@ -1,12 +1,11 @@
 import * as apiClient from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import { readPublicEnv } from "@/services/publicEnv";
 
 type LogContext = unknown;
 type LogError = unknown;
 
 const LOG_SOURCE = "mobile";
-const LOGS_ENDPOINT = withVersion("/logs/error");
+const LOGS_ENDPOINT = "/logs/error";
 
 function isBackendLoggingEnabled(): boolean {
   return readPublicEnv("EXPO_PUBLIC_ENABLE_BACKEND_LOGGING") === "true";

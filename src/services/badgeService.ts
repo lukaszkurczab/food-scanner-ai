@@ -2,7 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Badge } from "@/types/badge";
 import { get, post } from "@/services/apiClient";
 import { emit, on } from "@/services/events";
-import { withVersion } from "@/services/apiVersioning";
 
 type BadgeListResponse = {
   items?: unknown[];
@@ -74,7 +73,7 @@ async function writeBadgeCache(uid: string, items: Badge[]): Promise<void> {
 export async function listBadges(uid: string): Promise<Badge[]> {
   try {
     void uid;
-    const response = await get<BadgeListResponse>(withVersion("/users/me/badges"));
+    const response = await get<BadgeListResponse>("/users/me/badges");
     const items = normalizeBadgeList(response);
     await writeBadgeCache(uid, items);
     return items;
@@ -113,7 +112,7 @@ export async function unlockPremiumBadgesIfEligible(
 ) {
   if (!uid) return;
   await post(
-    withVersion("/users/me/badges/premium/reconcile"),
+    "/users/me/badges/premium/reconcile",
     {
       isPremium,
     }

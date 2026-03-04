@@ -55,6 +55,12 @@ async function getAuthToken(): Promise<string | null> {
   return currentUser.getIdToken();
 }
 
+async function getAuthorizationHeader(): Promise<Record<string, string>> {
+  const token = await getAuthToken();
+
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function parseJsonResponse(response: Response): Promise<unknown> {
   const rawBody = await response.text();
 
@@ -117,47 +123,69 @@ function createApiClientError(params: {
   return error;
 }
 
-export async function request<T = unknown>(
-  method: RequestMethod,
-  url: string,
-  data?: unknown,
-  options?: RequestOptions
-): Promise<T> {
-  const fullUrl = buildRequestUrl(url);
-  const controller = new AbortController();
-  const timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT_MS;
-  const token = await getAuthToken();
+type PerformRequestParams = {
+  url: string;
+  method: RequestMethod;
+  timeoutMs: number;
+  headers: Record<string, string>;
+  body?: BodyInit;
+};
 
+function createTimeoutPromise(params: {
+  controller: AbortController;
+  timeoutMs: number;
+  url: string;
+  method: RequestMethod;
+  onTimeoutId: (timeoutId: ReturnType<typeof setTimeout>) => void;
+}): Promise<never> {
+  return new Promise((_, reject) => {
+    const timeoutId = setTimeout(() => {
+      params.controller.abort();
+      reject(
+        createApiClientError({
+          code: "api/timeout",
+          message: `Request timed out after ${params.timeoutMs}ms`,
+          retryable: true,
+          url: params.url,
+          method: params.method,
+        })
+      );
+    }, params.timeoutMs);
+
+    params.onTimeoutId(timeoutId);
+  });
+}
+
+async function performRequest<T = unknown>({
+  url,
+  method,
+  timeoutMs,
+  headers,
+  body,
+}: PerformRequestParams): Promise<T> {
+  const controller = new AbortController();
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   try {
-    const responsePromise = fetch(fullUrl, {
+    const responsePromise = fetch(url, {
       method,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      ...(method === "POST" ? { body: JSON.stringify(data) } : {}),
+      headers,
+      ...(body !== undefined ? { body } : {}),
       signal: controller.signal,
     });
 
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(() => {
-        controller.abort();
-        reject(
-          createApiClientError({
-            code: "api/timeout",
-            message: `Request timed out after ${timeoutMs}ms`,
-            retryable: true,
-            url: fullUrl,
-            method,
-          })
-        );
-      }, timeoutMs);
-    });
-
-    const response = await Promise.race([responsePromise, timeoutPromise]);
+    const response = await Promise.race([
+      responsePromise,
+      createTimeoutPromise({
+        controller,
+        timeoutMs,
+        url,
+        method,
+        onTimeoutId: (nextTimeoutId) => {
+          timeoutId = nextTimeoutId;
+        },
+      }),
+    ]);
     const payload = await parseJsonResponse(response);
 
     if (!response.ok) {
@@ -170,22 +198,19 @@ export async function request<T = unknown>(
         retryable: response.status >= 500 || response.status === 429,
         status: response.status,
         details: payload,
-        url: fullUrl,
+        url,
         method,
       });
     }
 
     return payload as T;
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.name === "AbortError"
-    ) {
+    if (error instanceof Error && error.name === "AbortError") {
       throw createApiClientError({
         code: "api/timeout",
         message: `Request timed out after ${timeoutMs}ms`,
         retryable: true,
-        url: fullUrl,
+        url,
         method,
         cause: error,
       });
@@ -199,81 +224,48 @@ export async function request<T = unknown>(
   }
 }
 
+export async function request<T = unknown>(
+  method: RequestMethod,
+  url: string,
+  data?: unknown,
+  options?: RequestOptions
+): Promise<T> {
+  const fullUrl = buildRequestUrl(url);
+  const timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT_MS;
+  const authHeader = await getAuthorizationHeader();
+
+  return performRequest<T>({
+    url: fullUrl,
+    method,
+    timeoutMs,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...authHeader,
+    },
+    body: method === "POST" ? JSON.stringify(data) : undefined,
+  });
+}
+
 export async function upload<T = unknown>(
   url: string,
   data: FormData,
   options?: RequestOptions,
 ): Promise<T> {
   const fullUrl = buildRequestUrl(url);
-  const controller = new AbortController();
   const timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT_MS;
-  const token = await getAuthToken();
+  const authHeader = await getAuthorizationHeader();
 
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-  try {
-    const responsePromise = fetch(fullUrl, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: data,
-      signal: controller.signal,
-    });
-
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(() => {
-        controller.abort();
-        reject(
-          createApiClientError({
-            code: "api/timeout",
-            message: `Request timed out after ${timeoutMs}ms`,
-            retryable: true,
-            url: fullUrl,
-            method: "POST",
-          }),
-        );
-      }, timeoutMs);
-    });
-
-    const response = await Promise.race([responsePromise, timeoutPromise]);
-    const payload = await parseJsonResponse(response);
-
-    if (!response.ok) {
-      throw createApiClientError({
-        code: response.status === 429 ? "api/rate-limited" : "api/http-error",
-        message: readErrorMessage(
-          payload,
-          `API request failed with status ${response.status}`,
-        ),
-        retryable: response.status >= 500 || response.status === 429,
-        status: response.status,
-        details: payload,
-        url: fullUrl,
-        method: "POST",
-      });
-    }
-
-    return payload as T;
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      throw createApiClientError({
-        code: "api/timeout",
-        message: `Request timed out after ${timeoutMs}ms`,
-        retryable: true,
-        url: fullUrl,
-        method: "POST",
-        cause: error,
-      });
-    }
-
-    throw error;
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
+  return performRequest<T>({
+    url: fullUrl,
+    method: "POST",
+    timeoutMs,
+    headers: {
+      Accept: "application/json",
+      ...authHeader,
+    },
+    body: data,
+  });
 }
 
 export function get<T = unknown>(

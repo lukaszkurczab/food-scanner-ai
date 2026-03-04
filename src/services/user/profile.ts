@@ -11,7 +11,6 @@ import {
 import { getApp } from "@react-native-firebase/app";
 import { Appearance } from "react-native";
 import { get, post } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import { parseUserData } from "./profile.dto";
 import { createServiceError } from "@/services/contracts/serviceError";
 import { claimUsername } from "@/services/usernameService";
@@ -102,7 +101,7 @@ export async function changeEmailService({
   const cred = EmailAuthProvider.credential(current.email!, password);
   await reauthenticateWithCredential(current, cred);
   await verifyBeforeUpdateEmail(current, newEmail.trim());
-  await post(withVersion("/users/me/email-pending"), {
+  await post("/users/me/email-pending", {
     email: newEmail.trim(),
   });
 }
@@ -123,7 +122,7 @@ export async function changePasswordService({
 
 export async function exportUserData(uid: string) {
   void uid;
-  return get<ExportedUserData>(withVersion("/users/me/export"));
+  return get<ExportedUserData>("/users/me/export");
 }
 
 export async function deleteAccountService({
@@ -138,7 +137,7 @@ export async function deleteAccountService({
   const current = requireCurrentUser(auth.currentUser);
   const cred = EmailAuthProvider.credential(current.email!, password);
   await reauthenticateWithCredential(current, cred);
-  await post(withVersion("/users/me/delete"));
+  await post("/users/me/delete");
   await current.delete();
 }
 

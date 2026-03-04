@@ -1,11 +1,11 @@
 import i18next from "i18next";
 import { post } from "./apiClient";
-import { withVersion } from "./apiVersioning";
 import type { Meal, FormData } from "@/types";
 import {
   getE2EMockChatReply,
   isE2EModeEnabled,
 } from "@/services/e2e/config";
+import { getErrorStatus } from "@/services/contracts/serviceError";
 import { logError, logWarning } from "@/services/errorLogger";
 import type {
   AiAskBackendResponse,
@@ -45,19 +45,6 @@ function buildAskDietAIContext(
   };
 }
 
-function getErrorStatus(error: unknown): number | undefined {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    typeof error.status === "number"
-  ) {
-    return error.status;
-  }
-
-  return undefined;
-}
-
 function buildAskDietAILogContext(params: {
   uid?: string;
   question: string;
@@ -93,7 +80,7 @@ export async function askDietAI(
   const uid = opts?.uid?.trim();
 
   try {
-    return await post<AiAskBackendResponse>(withVersion("/ai/ask"), {
+    return await post<AiAskBackendResponse>("/ai/ask", {
       message: question,
       context: buildAskDietAIContext(meals, chatHistory, profile),
     });

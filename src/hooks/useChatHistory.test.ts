@@ -235,7 +235,7 @@ describe("useChatHistory", () => {
 
     expect(result.current.dailyLimit).toBe(20);
     expect(result.current.canSend).toBe(true);
-    expect(mockApiGet).toHaveBeenCalledWith("/api/v1/ai/usage");
+    expect(mockApiGet).toHaveBeenCalledWith("/ai/usage");
 
     await act(async () => {
       await result.current.send("hello");
@@ -249,7 +249,7 @@ describe("useChatHistory", () => {
     expect(result.current.dailyLimit).toBe(20);
     expect(result.current.remaining).toBe(16);
     expect(result.current.canSend).toBe(true);
-    expect(mockApiPost).toHaveBeenCalledWith("/api/v1/ai/ask", {
+    expect(mockApiPost).toHaveBeenCalledWith("/ai/ask", {
       message: "hello",
       context: {
         actionType: "chat",
@@ -436,7 +436,7 @@ describe("useChatHistory", () => {
     expect(String(userPersistCall.title).endsWith("…")).toBe(true);
 
     expect(mockApiPost).toHaveBeenCalledTimes(1);
-    expect(mockApiPost.mock.calls[0][0]).toBe("/api/v1/ai/ask");
+    expect(mockApiPost.mock.calls[0][0]).toBe("/ai/ask");
     expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
     expect(result.current.sending).toBe(false);
     expect(result.current.typing).toBe(false);

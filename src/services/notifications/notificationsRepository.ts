@@ -1,5 +1,4 @@
 import { get, post } from "@/services/apiClient";
-import { withVersion } from "@/services/apiVersioning";
 import { emit, on } from "@/services/events";
 import type { UserNotification } from "@/types/notification";
 
@@ -56,7 +55,7 @@ function normalizePrefs(
 async function fetchUserNotifications(uid: string): Promise<UserNotification[]> {
   void uid;
   const response = await get<NotificationListResponse>(
-    withVersion("/users/me/notifications"),
+    "/users/me/notifications",
   );
   const items = normalizeNotificationList(response);
   emitNotificationList(uid, items);
@@ -97,7 +96,7 @@ export async function upsertUserNotification(
 ): Promise<void> {
   void uid;
   const response = await post<NotificationUpsertResponse>(
-    withVersion("/users/me/notifications"),
+    "/users/me/notifications",
     { ...payload, id },
   );
   const item = response.item ?? { ...payload, id };
@@ -119,7 +118,7 @@ export async function deleteUserNotification(
   id: string,
 ): Promise<void> {
   void uid;
-  await post(withVersion(`/users/me/notifications/${id}/delete`));
+  await post(`/users/me/notifications/${id}/delete`);
   const current = listCache.get(uid) ?? [];
   emitNotificationList(
     uid,
@@ -130,7 +129,7 @@ export async function deleteUserNotification(
 export async function fetchNotificationPrefs(uid: string): Promise<GlobalPrefsDoc> {
   void uid;
   const response = await get<NotificationPrefsResponse>(
-    withVersion("/users/me/notifications/preferences"),
+    "/users/me/notifications/preferences",
   );
   return normalizePrefs(response);
 }
@@ -140,7 +139,7 @@ export async function updateNotificationPrefs(
   notifications: NonNullable<GlobalPrefsDoc["notifications"]>,
 ): Promise<void> {
   void uid;
-  await post(withVersion("/users/me/notifications/preferences"), {
+  await post("/users/me/notifications/preferences", {
     notifications,
   });
   emit("notification:prefs:changed", { uid, notifications });

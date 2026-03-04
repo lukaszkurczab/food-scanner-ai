@@ -104,7 +104,7 @@ describe("visionService", () => {
       }),
     );
     expect(mockUriToBase64).toHaveBeenCalledWith("file:///tmp/resized.jpg");
-    expect(mockPost).toHaveBeenCalledWith("/api/v1/ai/photo/analyze", {
+    expect(mockPost).toHaveBeenCalledWith("/ai/photo/analyze", {
       imageBase64: "base64-image",
       lang: "en",
     });
