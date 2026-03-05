@@ -1,5 +1,6 @@
 import { getApp } from "@react-native-firebase/app";
 import { getAuth } from "@react-native-firebase/auth";
+import Constants from "expo-constants";
 import { createServiceError } from "@/services/contracts/serviceError";
 import { asString, isRecord } from "@/services/contracts/guards";
 import { withVersion } from "@/services/apiVersioning";
@@ -25,14 +26,19 @@ export type ApiClientError = Error & {
 };
 
 function getApiBaseUrl(): string {
-  const baseUrl = readPublicEnv("EXPO_PUBLIC_API_BASE_URL")?.trim();
+  const extra = Constants.expoConfig?.extra as Record<string, unknown> | undefined;
+  const extraBaseUrl =
+    typeof extra?.apiBaseUrl === "string" ? extra.apiBaseUrl.trim() : undefined;
+  const publicBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+  const dynamicPublicBaseUrl = readPublicEnv("EXPO_PUBLIC_API_BASE_URL")?.trim();
+  const baseUrl = extraBaseUrl || publicBaseUrl || dynamicPublicBaseUrl;
 
   if (!baseUrl) {
     throw createServiceError({
       code: "api/misconfigured",
       source: API_CLIENT_SOURCE,
       retryable: false,
-      message: "Missing EXPO_PUBLIC_API_BASE_URL",
+      message: "Missing API base URL (expo extra / EXPO_PUBLIC_API_BASE_URL)",
     });
   }
 
