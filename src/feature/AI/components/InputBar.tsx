@@ -50,6 +50,7 @@ export const InputBar: React.FC<Props> = ({
             placeholder={placeholder ?? t("input.placeholder")}
             placeholderTextColor={theme.textSecondary}
             style={styles.input}
+            textAlignVertical="center"
             multiline
             editable={!disabled}
             onSubmitEditing={send}
@@ -102,7 +103,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     row: {
       flexDirection: "row",
-      alignItems: "flex-end",
+      alignItems: "center",
       paddingLeft: theme.spacing.sm,
       borderWidth: 1,
       backgroundColor: theme.card,
@@ -118,7 +119,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       maxHeight: 132,
       paddingRight: theme.spacing.sm,
       paddingVertical: theme.spacing.sm,
-      alignSelf: "center",
+      lineHeight: theme.typography.size.base * 1.25,
       color: theme.text,
       fontSize: theme.typography.size.base,
     },

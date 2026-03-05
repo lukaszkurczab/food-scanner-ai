@@ -45,7 +45,7 @@ export default function ChatScreen() {
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const uid = user?.uid || "";
-  const { userData, loadingUser } = useUserContext();
+  const { userData } = useUserContext();
   const { isPremium } = usePremiumContext();
   const premiumActive = isPremium === true;
 
@@ -136,7 +136,7 @@ export default function ChatScreen() {
         </View>
       )}
 
-      {loading || loadingUser ? (
+      {loading ? (
         <View style={styles.center}>
           <ActivityIndicator />
         </View>

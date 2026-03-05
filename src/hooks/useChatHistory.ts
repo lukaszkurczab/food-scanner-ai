@@ -5,6 +5,7 @@ import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
 import type { Meal, FormData, ChatMessage } from "@/types";
 import { get, post } from "@/services/apiClient";
+import { asString, isRecord } from "@/services/contracts/guards";
 import type {
   AiAskBackendResponse,
   AiUsageResponse,
@@ -27,6 +28,7 @@ type AiHistoryItem = {
 };
 
 const DEFAULT_CHAT_DAILY_LIMIT = 5;
+const GATEWAY_REJECT_REASONS = new Set(["OFF_TOPIC", "ML_OFF_TOPIC", "TOO_SHORT"]);
 
 function buildAiContext(
   meals: Meal[],
@@ -101,6 +103,13 @@ function upsertSortedMessages(
       upsertSortedMessage(acc, message),
     messages,
   );
+}
+
+function getGatewayRejectReason(error: unknown): string | null {
+  if (getErrorStatus(error) !== 400 || !isRecord(error)) return null;
+  const details = isRecord(error.details) ? error.details : null;
+  const reason = details ? asString(details.reason) : undefined;
+  return reason ?? null;
 }
 
 export function useChatHistory(
@@ -194,7 +203,7 @@ export function useChatHistory(
   }, [applyBackendUsage, userUid]);
 
   const canSend = isPremium || remainingToday > 0;
-  const loading = messagesLoading || usageLoading;
+  const loading = messagesLoading;
 
   useEffect(() => {
     if (!canReadThread) {
@@ -304,7 +313,9 @@ export function useChatHistory(
           dailyLimit: getAiDailyLimit(aiResponse),
         });
       } catch (error) {
-        if (getErrorStatus(error) === 429) {
+        const status = getErrorStatus(error);
+        const gatewayReason = getGatewayRejectReason(error);
+        if (status === 429) {
           setRemainingToday(0);
           setDailyUsed((prev) => Math.max(prev, dailyLimit));
           aiText = i18next.t(
@@ -314,6 +325,14 @@ export function useChatHistory(
               used: dailyLimit,
               limit: dailyLimit,
             },
+          );
+        } else if (
+          gatewayReason !== null &&
+          GATEWAY_REJECT_REASONS.has(gatewayReason)
+        ) {
+          aiText = i18next.t(
+            "chat:errors.offTopic",
+            "Moge odpowiadac tylko na pytania o zywienie i diete.",
           );
         } else {
           aiText = i18next.t(
@@ -380,6 +399,7 @@ export function useChatHistory(
   return {
     messages,
     loading,
+    usageLoading,
     sending,
     typing,
     canSend,
