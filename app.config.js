@@ -20,8 +20,7 @@ export default {
     version: "1.0.1",
     orientation: "portrait",
     userInterfaceStyle: "light",
-    // Keep classic architecture for release stability on TestFlight.
-    newArchEnabled: false,
+    newArchEnabled: true,
     assetBundlePatterns: ["**/*"],
     icon: "./assets/icon.png",
     splash: {
