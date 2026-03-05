@@ -38,7 +38,8 @@
     "open": "Open chat history"
   },
   "errors": {
-    "fetchFailed": "Could not fetch a response. Please try again."
+    "fetchFailed": "Could not fetch a response. Please try again.",
+    "offTopic": "I can only answer questions related to nutrition and diet."
   },
   "paywall": {
     "autorenew": "Payment will be charged to your account. Subscription auto-renews unless canceled at least 24 hours before the end of the current period.",

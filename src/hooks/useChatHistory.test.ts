@@ -339,6 +339,73 @@ describe("useChatHistory", () => {
     expect(result.current.messages.map((m) => m.id)).toEqual(["m1", "m3", "m2"]);
   });
 
+  it("reorders an existing message when same id arrives with different createdAt", async () => {
+    const { result } = renderHook(() =>
+      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1", {
+        pageSize: 2,
+      }),
+    );
+    await settle();
+
+    await waitFor(() => {
+      expect(mockSubscribeToChatThreadMessages).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      snapshotNext?.(
+        [
+          {
+            id: "m1",
+            userUid: "user-1",
+            role: "user",
+            content: "first-version",
+            createdAt: 200,
+            lastSyncedAt: 200,
+            syncState: "synced",
+          },
+          {
+            id: "m2",
+            userUid: "user-1",
+            role: "assistant",
+            content: "second",
+            createdAt: 150,
+            lastSyncedAt: 150,
+            syncState: "synced",
+          },
+        ],
+        { cursor: "c1" },
+      );
+    });
+
+    await waitFor(() => {
+      expect(result.current.messages.map((m) => m.id)).toEqual(["m1", "m2"]);
+    });
+
+    mockFetchChatThreadMessagesPage.mockResolvedValueOnce({
+      items: [
+        {
+          id: "m1",
+          userUid: "user-1",
+          role: "user",
+          content: "updated-version",
+          createdAt: 90,
+          lastSyncedAt: 210,
+          syncState: "synced",
+        },
+      ],
+      nextCursor: null,
+    });
+
+    await act(async () => {
+      await result.current.loadMore();
+    });
+
+    expect(result.current.messages.map((m) => m.id)).toEqual(["m2", "m1"]);
+    expect(result.current.messages.find((m) => m.id === "m1")?.content).toBe(
+      "updated-version",
+    );
+  });
+
   it("sets loading=false when snapshot listener fails", async () => {
     const { result } = renderHook(() =>
       useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1"),
@@ -500,6 +567,33 @@ describe("useChatHistory", () => {
         message: "hello",
       },
       expect.any(Error),
+    );
+    expect(result.current.sending).toBe(false);
+    expect(result.current.typing).toBe(false);
+  });
+
+  it("shows off-topic fallback message when gateway rejects request", async () => {
+    mockApiPost.mockRejectedValueOnce({
+      status: 400,
+      details: { reason: "OFF_TOPIC", credit_cost: 0.2 },
+    });
+    mockUuid.mockReturnValueOnce("user-msg").mockReturnValueOnce("ai-msg");
+
+    const { result } = renderHook(() =>
+      useChatHistory("user-1", true, mealsFixture, profileFixture, "thread-1"),
+    );
+    await settle();
+
+    await act(async () => {
+      await result.current.send("Flaga Boliwii");
+    });
+
+    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
+    const aiPayload = mockPersistAssistantChatMessage.mock.calls[0][0] as {
+      content: string;
+    };
+    expect(aiPayload.content).toBe(
+      "Moge odpowiadac tylko na pytania o zywienie i diete.",
     );
     expect(result.current.sending).toBe(false);
     expect(result.current.typing).toBe(false);
