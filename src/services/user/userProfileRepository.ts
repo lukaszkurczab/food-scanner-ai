@@ -55,6 +55,7 @@ export async function mergeUserProfileRemote(
 ): Promise<void> {
   void uid;
   const patch = sanitizeUserProfilePatch(payload);
+  if (Object.keys(patch).length === 0) return;
   await post("/users/me/profile", patch);
   await fetchUserProfileRemote(uid);
 }

@@ -24,8 +24,6 @@ const EDITABLE_PROFILE_FIELDS = new Set<keyof UserData>([
   "surveyComplited",
   "surveyCompletedAt",
   "calorieTarget",
-  "darkTheme",
-  "language",
 ]);
 
 export function sanitizeUserProfilePatch(
