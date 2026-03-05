@@ -1,11 +1,13 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
 import { Appearance } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { lightTheme, darkTheme } from "./themes";
 import { spacing } from "./spacing";
 import { rounded } from "./rounded";
@@ -31,6 +33,11 @@ type ThemeContextType = {
   setMode: (m: ThemeMode) => void;
 };
 
+export const THEME_MODE_STORAGE_KEY = "APP_THEME_MODE";
+
+const isThemeMode = (value: unknown): value is ThemeMode =>
+  value === "light" || value === "dark";
+
 const ThemeContext = createContext<ThemeContextType>({
   theme: { ...lightTheme, spacing, rounded, typography },
   mode: "light",
@@ -48,30 +55,68 @@ export const ThemeProvider: React.FC<Props> = ({
     const sys = Appearance.getColorScheme();
     return sys === "dark" ? "dark" : "light";
   });
+  const [shouldFollowSystem, setShouldFollowSystem] = useState<boolean>(
+    !mode && followSystem,
+  );
 
   useEffect(() => {
-    if (mode) setInternalMode(mode);
+    if (!mode) return;
+    setInternalMode(mode);
+    setShouldFollowSystem(false);
   }, [mode]);
 
   useEffect(() => {
-    if (!followSystem || mode) return;
+    if (mode) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const storedMode = await AsyncStorage.getItem(THEME_MODE_STORAGE_KEY);
+        if (cancelled) return;
+        if (isThemeMode(storedMode)) {
+          setInternalMode(storedMode);
+          setShouldFollowSystem(false);
+          return;
+        }
+      } catch {
+        // Ignore storage read failures and fallback to current runtime mode.
+      }
+      if (!cancelled) {
+        setShouldFollowSystem(followSystem);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [followSystem, mode]);
+
+  useEffect(() => {
+    if (!shouldFollowSystem || mode) return;
     const sub = Appearance.addChangeListener(({ colorScheme }) => {
       const m = colorScheme === "dark" ? "dark" : "light";
       setInternalMode(m);
       onModeChange?.(m);
     });
     return () => sub.remove();
-  }, [followSystem, mode, onModeChange]);
+  }, [mode, onModeChange, shouldFollowSystem]);
 
   const theme = useMemo<ThemeType>(() => {
     const base = internalMode === "dark" ? darkTheme : lightTheme;
     return { ...base, spacing, rounded, typography };
   }, [internalMode]);
 
-  const setMode = (m: ThemeMode) => {
-    setInternalMode(m);
-    onModeChange?.(m);
-  };
+  const setMode = useCallback(
+    (m: ThemeMode) => {
+      setInternalMode(m);
+      setShouldFollowSystem(false);
+      onModeChange?.(m);
+      AsyncStorage.setItem(THEME_MODE_STORAGE_KEY, m).catch(() => {
+        // Ignore persistence errors; mode still updates for current session.
+      });
+    },
+    [onModeChange],
+  );
 
   return (
     <ThemeContext.Provider value={{ theme, mode: internalMode, setMode }}>

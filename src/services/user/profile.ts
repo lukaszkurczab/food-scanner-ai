@@ -33,6 +33,15 @@ function requireCurrentUser(
   return user;
 }
 
+function normalizeInitialLanguage(language: string | null | undefined): "en" | "pl" {
+  const normalized = String(language || "")
+    .trim()
+    .toLowerCase();
+  if (normalized === "pl" || normalized.startsWith("pl-")) return "pl";
+  if (normalized === "en" || normalized.startsWith("en-")) return "en";
+  return "en";
+}
+
 export async function getUserLocal(uid: string): Promise<UserData | null> {
   const data = await fetchUserProfileRemote(uid);
   return data ? parseUserData(data) : null;
@@ -144,6 +153,7 @@ export async function deleteAccountService({
 export async function createInitialUserProfile(
   user: FirebaseAuthTypes.User,
   username: string,
+  initialLanguage?: string | null,
 ) {
   const uid = user.uid;
   const now = Date.now();
@@ -180,7 +190,7 @@ export async function createInitialUserProfile(
     avatarUrl: "",
     avatarLocalPath: "",
     avatarlastSyncedAt: "",
-    language: "en",
+    language: normalizeInitialLanguage(initialLanguage),
   };
 
   await mergeUserProfileRemote(uid, profile);

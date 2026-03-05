@@ -22,10 +22,17 @@ import {
   updateUserProfileRemote,
 } from "@/services/user/userProfileRepository";
 import { sanitizeUserProfilePatch } from "@/services/user/profilePatch";
+import i18n from "@/i18n";
 
 const isLocalUri = (value: string | null | undefined): value is string =>
   !!value &&
   (value.startsWith("file://") || value.startsWith("content://"));
+
+function normalizeLanguageCode(language: string | null | undefined): "en" | "pl" {
+  const normalized = (language || "").trim().toLowerCase();
+  if (normalized === "pl" || normalized.startsWith("pl-")) return "pl";
+  return "en";
+}
 
 function avatarCachePath(uid: string): string {
   return `${FileSystem.documentDirectory}users/${uid}/images/avatar.jpg`;
@@ -103,7 +110,9 @@ async function resolveExistingAvatarPath(
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [language, setLanguage] = useState<string>("en");
+  const [language, setLanguage] = useState<string>(() =>
+    normalizeLanguageCode(i18n.resolvedLanguage ?? i18n.language)
+  );
   const avatarLocalPathRef = useRef<string>("");
   const userDataRef = useRef<UserData | null>(null);
   const avatarHydrationUrlRef = useRef<string>("");
@@ -208,7 +217,7 @@ export function useUser(uid: string) {
     let cancelled = false;
     if (!uid) {
       setUserData(null);
-      setLanguage("en");
+      setLanguage(normalizeLanguageCode(i18n.resolvedLanguage ?? i18n.language));
       setLoading(false);
       avatarLocalPathRef.current = "";
       return;
@@ -228,7 +237,6 @@ export function useUser(uid: string) {
           if (cancelled) return;
           setUserData(normalized);
           avatarLocalPathRef.current = avatarLocalPath;
-          if (normalized.language) setLanguage(normalized.language);
           setLoading(false);
           maybeHydrateAvatar({
             avatarUrl: normalized.avatarUrl,
@@ -264,7 +272,6 @@ export function useUser(uid: string) {
         if (cancelled) return;
         setUserData(normalized);
         avatarLocalPathRef.current = avatarLocalPath;
-        if (normalized.language) setLanguage(normalized.language);
         setLoading(false);
         maybeHydrateAvatar({
           avatarUrl: normalized.avatarUrl,
@@ -303,7 +310,6 @@ export function useUser(uid: string) {
         setUserData(normalized);
         avatarLocalPathRef.current = avatarLocalPath;
         userDataRef.current = normalized;
-        if (normalized.language) setLanguage(normalized.language);
         maybeHydrateAvatar({
           avatarUrl: normalized.avatarUrl,
           avatarLocalPath,
@@ -330,7 +336,6 @@ export function useUser(uid: string) {
       setUserData(normalized);
       avatarLocalPathRef.current = avatarLocalPath;
       userDataRef.current = normalized;
-      if (normalized.language) setLanguage(normalized.language);
       maybeHydrateAvatar({
         avatarUrl: normalized.avatarUrl,
         avatarLocalPath,
@@ -348,11 +353,19 @@ export function useUser(uid: string) {
       if (!uid) return;
       const payload = sanitizeUserProfilePatch(patch);
       assertNoUndefined(payload, "updateUserProfile payload");
-      await updateUserProfileRemote(uid, payload);
+      if (Object.keys(payload).length > 0) {
+        await updateUserProfileRemote(uid, payload);
+      }
       setUserData((prev) =>
         prev ? { ...prev, ...patch } : ({ uid, ...patch } as UserData)
       );
-      if (patch.language) setLanguage(patch.language);
+      if (patch.language) {
+        const nextLanguage = normalizeLanguageCode(patch.language);
+        setLanguage(nextLanguage);
+        i18n.changeLanguage(nextLanguage).catch(() => {
+          // Ignore language persistence errors from i18n detector.
+        });
+      }
 
       try {
         const current = await AsyncStorage.getItem(`user:profile:${uid}`);
@@ -442,8 +455,9 @@ export function useUser(uid: string) {
     async (newUsername: string, password: string) => {
       if (!uid) return;
       await changeUsernameService({ uid, newUsername, password });
+      await mirrorProfileLocally({ username: newUsername });
     },
-    [uid]
+    [uid, mirrorProfileLocally]
   );
 
   const changeEmail = useCallback(
@@ -463,14 +477,13 @@ export function useUser(uid: string) {
 
   const changeLanguage = useCallback(
     async (newLang: string) => {
-      if (!uid) {
-        setLanguage(newLang);
-        return;
-      }
-      await updateUserProfile({ language: newLang });
-      setLanguage(newLang);
+      const nextLanguage = normalizeLanguageCode(newLang);
+      setLanguage(nextLanguage);
+      await i18n.changeLanguage(nextLanguage);
+      if (!uid) return;
+      await mirrorProfileLocally({ language: nextLanguage });
     },
-    [uid, updateUserProfile]
+    [mirrorProfileLocally, uid]
   );
 
   const exportUserData = useCallback(async (): Promise<string | void> => {

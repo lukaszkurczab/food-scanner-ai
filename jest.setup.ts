@@ -53,6 +53,14 @@ jest.mock("@react-native-firebase/auth", () => ({
   getAuth: jest.fn(() => ({ currentUser: null })),
 }));
 
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: {
+    expoConfig: { extra: {} },
+    manifest: { extra: {} },
+  },
+}));
+
 jest.mock("@react-native-async-storage/async-storage", () =>
   jest.requireActual(
     "@react-native-async-storage/async-storage/jest/async-storage-mock",

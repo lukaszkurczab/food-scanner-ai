@@ -7,7 +7,6 @@ import React, {
 import { useAuthContext } from "./AuthContext";
 import { useUser } from "@hooks/useUser";
 import type { UserData } from "@/types";
-import i18n from "@/i18n";
 
 import { runMigrations } from "@/services/offline/db";
 import { startSyncLoop } from "@/services/offline/sync.engine";
@@ -89,14 +88,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     if (!uid) return;
     startSyncLoop(uid);
   }, [uid]);
-
-  useEffect(() => {
-    const userLang = userData?.language;
-    if (!userLang) return;
-    if (i18n.language !== userLang) {
-      i18n.changeLanguage(userLang).catch(() => {});
-    }
-  }, [userData?.language]);
 
   return (
     <UserContext.Provider

@@ -12,6 +12,9 @@ const mockUseFilters = jest.fn();
 const mockUseMealDraftContext = jest.fn();
 const mockUseSavedMealsData = jest.fn();
 const mockUuid = jest.fn();
+const mockSyncMyMeals = jest.fn<
+  (uid: string | null | undefined) => Promise<void>
+>();
 
 jest.mock("@react-native-community/netinfo", () => ({
   useNetInfo: () => mockUseNetInfo(),
@@ -35,6 +38,10 @@ jest.mock("@contexts/MealDraftContext", () => ({
 
 jest.mock("@/feature/History/hooks/useSavedMealsData", () => ({
   useSavedMealsData: (params: unknown) => mockUseSavedMealsData(params),
+}));
+
+jest.mock("@/services/myMealService", () => ({
+  syncMyMeals: (uid: string | null | undefined) => mockSyncMyMeals(uid),
 }));
 
 jest.mock("uuid", () => ({
@@ -214,6 +221,8 @@ const buildMeal = (overrides?: Partial<Meal>): Meal => ({
 
 describe("SavedMealsScreen", () => {
   beforeEach(() => {
+    mockSyncMyMeals.mockReset();
+    mockSyncMyMeals.mockResolvedValue(undefined);
     mockUuid.mockReset();
     mockUuid
       .mockReturnValueOnce("base-draft-id")
@@ -254,6 +263,24 @@ describe("SavedMealsScreen", () => {
       onViewableItemsChanged: { current: jest.fn() },
       viewabilityConfig: {},
     });
+  });
+
+  it("passes a sync callback that calls syncMyMeals with current uid", async () => {
+    renderWithTheme(<SavedMealsScreen navigation={{ navigate: jest.fn() } as never} />);
+
+    expect(mockUseSavedMealsData).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: "user-1",
+        syncSavedMeals: expect.any(Function),
+      }),
+    );
+
+    const params = mockUseSavedMealsData.mock.calls[0]?.[0] as {
+      syncSavedMeals: () => Promise<void>;
+    };
+
+    await params.syncSavedMeals();
+    expect(mockSyncMyMeals).toHaveBeenCalledWith("user-1");
   });
 
   it("renders loading and non-ready states", () => {

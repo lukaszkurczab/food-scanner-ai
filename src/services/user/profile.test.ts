@@ -262,10 +262,11 @@ describe("services/user/profile", () => {
     expect(mockCurrentUserDelete).toHaveBeenCalledWith();
   });
 
-  it("creates initial user profile through repository merge helper", async () => {
+  it("creates initial user profile using provided supported language", async () => {
     await createInitialUserProfile(
       { uid: "u1", email: "u1@example.com" } as never,
       "neo",
+      "pl-PL",
     );
 
     expect(mockMergeUserProfileRemote).toHaveBeenCalledWith(
@@ -276,8 +277,34 @@ describe("services/user/profile", () => {
         username: "neo",
         plan: "free",
         darkTheme: true,
-        language: "en",
+        language: "pl",
         syncState: "pending",
+      }),
+    );
+  });
+
+  it("falls back to en when initial language is missing or unsupported", async () => {
+    await createInitialUserProfile(
+      { uid: "u1", email: "u1@example.com" } as never,
+      "neo",
+      "de-DE",
+    );
+
+    expect(mockMergeUserProfileRemote).toHaveBeenLastCalledWith(
+      "u1",
+      expect.objectContaining({
+        language: "en",
+      }),
+    );
+
+    await createInitialUserProfile(
+      { uid: "u1", email: "u1@example.com" } as never,
+      "neo",
+    );
+    expect(mockMergeUserProfileRemote).toHaveBeenLastCalledWith(
+      "u1",
+      expect.objectContaining({
+        language: "en",
       }),
     );
   });

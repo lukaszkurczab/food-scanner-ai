@@ -54,6 +54,9 @@ const mockNetInfoFetch = jest.fn<
   (...args: unknown[]) => Promise<{ isConnected: boolean }>
 >();
 const mockUnsub = jest.fn<() => void>();
+const mockI18nChangeLanguage = jest.fn<
+  (...args: unknown[]) => Promise<unknown>
+>();
 
 const createExportPayload = () => ({
   profile: createUser(),
@@ -129,6 +132,21 @@ jest.mock("@react-native-community/netinfo", () => ({
     fetch: (...args: unknown[]) => mockNetInfoFetch(...args),
   },
 }));
+
+jest.mock("@/i18n", () => ({
+  __esModule: true,
+  default: {
+    resolvedLanguage: "en",
+    language: "en",
+    changeLanguage: (...args: unknown[]) => mockI18nChangeLanguage(...args),
+  },
+}));
+
+const mockI18n = (
+  jest.requireMock("@/i18n") as {
+    default: { resolvedLanguage: string; language: string };
+  }
+).default;
 
 const setPlatformOs = (os: "ios" | "android") => {
   Object.defineProperty(Platform, "OS", {
@@ -215,6 +233,9 @@ describe("useUser", () => {
     mockPrintToFileAsync.mockResolvedValue({ uri: "file:///tmp/export.pdf" });
     mockShareAsync.mockResolvedValue(undefined);
     mockNetInfoFetch.mockResolvedValue({ isConnected: true });
+    mockI18n.resolvedLanguage = "en";
+    mockI18n.language = "en";
+    mockI18nChangeLanguage.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -236,6 +257,7 @@ describe("useUser", () => {
       await result.current.changeLanguage("pl");
     });
     expect(result.current.language).toBe("pl");
+    expect(mockI18nChangeLanguage).toHaveBeenCalledWith("pl");
     expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
   });
 
@@ -252,7 +274,7 @@ describe("useUser", () => {
       expect(result.current.loading).toBe(false);
     });
     expect(result.current.userData?.username).toBe("neo");
-    expect(result.current.language).toBe("de");
+    expect(result.current.language).toBe("en");
 
     await act(async () => {
       emitSnapshot(
@@ -267,7 +289,7 @@ describe("useUser", () => {
     await waitFor(() => {
       expect(result.current.userData?.username).toBe("trinity");
     });
-    expect(result.current.language).toBe("fr");
+    expect(result.current.language).toBe("en");
     expect(mockAsyncStorageSetItem).toHaveBeenCalled();
 
     unmount();
@@ -441,7 +463,7 @@ describe("useUser", () => {
     expect(fallbackProfile).toEqual(expect.objectContaining({ username: "from-cache" }));
   });
 
-  it("updates profile payload and keeps language in sync", async () => {
+  it("treats language and darkTheme as local-only profile fields", async () => {
     const { result } = renderHook(() => useUser("u1"));
     await act(async () => {
       emitSnapshot(createUser());
@@ -449,21 +471,43 @@ describe("useUser", () => {
 
     await act(async () => {
       await result.current.updateUserProfile({
-        username: "oracle",
         language: "pl",
+        darkTheme: true,
         avatarLocalPath: undefined,
       });
     });
 
     expect(mockAssertNoUndefined).toHaveBeenCalledWith(
-      { language: "pl" },
+      {},
       "updateUserProfile payload",
     );
-    expect(mockUpdateUserProfileRemote).toHaveBeenCalledWith(
-      "u1",
-      { language: "pl" },
-    );
+    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
     expect(result.current.language).toBe("pl");
+    expect(result.current.userData?.darkTheme).toBe(true);
+    expect(mockI18nChangeLanguage).toHaveBeenCalledWith("pl");
+  });
+
+  it("keeps mixed profile patch remote sync without local-only fields", async () => {
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(createUser());
+    });
+
+    await act(async () => {
+      await result.current.updateUserProfile({
+        language: "pl",
+        darkTheme: true,
+        age: "31",
+      });
+    });
+
+    expect(mockAssertNoUndefined).toHaveBeenCalledWith(
+      { age: "31" },
+      "updateUserProfile payload",
+    );
+    expect(mockUpdateUserProfileRemote).toHaveBeenCalledWith("u1", {
+      age: "31",
+    });
   });
 
   it("sets avatar in offline and online modes", async () => {
@@ -517,6 +561,14 @@ describe("useUser", () => {
 
     await act(async () => {
       await result.current.changeUsername("morpheus", "pw");
+    });
+    expect(result.current.userData?.username).toBe("morpheus");
+    expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
+      "user:profile:u1",
+      expect.stringContaining("\"username\":\"morpheus\""),
+    );
+
+    await act(async () => {
       await result.current.changeEmail("new@example.com", "pw");
       await result.current.changePassword("old", "new");
       await result.current.deleteUser("pw");
@@ -557,7 +609,9 @@ describe("useUser", () => {
     });
 
     expect(mockNetInfoFetch).toHaveBeenCalledTimes(3);
-    expect(result.current.language).toBe("it");
+    expect(result.current.language).toBe("en");
+    expect(mockI18nChangeLanguage).toHaveBeenCalledWith("en");
+    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
   });
 
   it("exports user data for iOS and android SAF branches", async () => {

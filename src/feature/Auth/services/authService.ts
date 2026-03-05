@@ -9,6 +9,14 @@ import {
 } from "@react-native-firebase/auth";
 import { claimUsername } from "@/services/usernameService";
 import { createInitialUserProfile } from "@/services/userService";
+import i18n from "@/i18n";
+
+function resolveInitialLanguage(language: string | undefined): "en" | "pl" {
+  const normalized = (language || "").trim().toLowerCase();
+  if (normalized === "pl" || normalized.startsWith("pl-")) return "pl";
+  if (normalized === "en" || normalized.startsWith("en-")) return "en";
+  return "en";
+}
 
 export async function authLogin(email: string, password: string) {
   const auth = getAuth(getApp());
@@ -35,7 +43,10 @@ export async function authRegister(
 
   try {
     await claimUsername(username, cred.user.uid);
-    await createInitialUserProfile(cred.user, username);
+    const initialLanguage = resolveInitialLanguage(
+      i18n.resolvedLanguage ?? i18n.language,
+    );
+    await createInitialUserProfile(cred.user, username, initialLanguage);
     return cred.user;
   } catch (e) {
     try {

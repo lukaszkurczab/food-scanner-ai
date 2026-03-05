@@ -43,7 +43,7 @@ describe("services/user/userProfileRepository", () => {
     expect(mockGet).toHaveBeenCalledWith("/users/me/profile");
   });
 
-  it("posts only editable profile fields to backend-owned endpoint", async () => {
+  it("skips backend patch when payload has only local-only/non-editable fields", async () => {
     mockPost.mockResolvedValue({ updated: true });
     mockGet.mockResolvedValue({
       profile: { uid: "u1", language: "pl", darkTheme: true },
@@ -59,9 +59,27 @@ describe("services/user/userProfileRepository", () => {
       avatarLocalPath: "file:///avatar.jpg",
     });
 
-    expect(mockPost).toHaveBeenCalledWith("/users/me/profile", {
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it("posts mixed payload without local-only fields", async () => {
+    mockPost.mockResolvedValue({ updated: true });
+    mockGet.mockResolvedValue({
+      profile: { uid: "u1", age: "31" },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { mergeUserProfileRemote } = require("@/services/user/userProfileRepository");
+
+    await mergeUserProfileRemote("u1", {
       language: "pl",
       darkTheme: true,
+      age: "31",
+    });
+
+    expect(mockPost).toHaveBeenCalledWith("/users/me/profile", {
+      age: "31",
     });
   });
 

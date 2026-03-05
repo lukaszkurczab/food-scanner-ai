@@ -4,7 +4,6 @@ import { useTheme } from "@/theme/useTheme";
 import { Layout, TextInput } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
 import { useUserContext } from "@contexts/UserContext";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -29,18 +28,17 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation();
-  const { userData, updateUser } = useUserContext();
+  const { language, changeLanguage } = useUserContext();
 
-  const initialLang = userData?.language || i18n.language || "en";
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(initialLang);
+  const [selected, setSelected] = useState(language || "en");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (userData?.language && userData.language !== selected) {
-      setSelected(userData.language);
+    if (language && language !== selected) {
+      setSelected(language);
     }
-  }, [selected, userData?.language]);
+  }, [language, selected]);
 
   const languages = useMemo(
     () =>
@@ -55,8 +53,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
     setSelected(code);
     setSaving(true);
     try {
-      await i18n.changeLanguage(code);
-      await updateUser({ language: code });
+      await changeLanguage(code);
     } finally {
       setSaving(false);
     }

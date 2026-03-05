@@ -17,7 +17,7 @@ export function useUserProfileState(params: {
 }) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
-  const { userData, updateUser, deleteUser, exportUserData } = useUserContext();
+  const { userData, deleteUser, exportUserData } = useUserContext();
   const { uid } = useAuthContext();
   const { isPremium } = usePremiumContext();
   const { badges, ensurePremiumBadges } = useBadges(uid);
@@ -61,15 +61,13 @@ export function useUserProfileState(params: {
   const overrideEmoji = isPremium && !hasPremiumBadge ? "⭐" : undefined;
 
   const avatarSrc = userData?.avatarLocalPath || userData?.avatarUrl || "";
-  const darkTheme = !!userData?.darkTheme;
+  const darkTheme = theme.mode === "dark";
 
   const handleThemeToggle = useCallback(
-    async (newValue: boolean) => {
-      if (!userData) return;
+    (newValue: boolean) => {
       theme.setMode(newValue ? "dark" : "light");
-      await updateUser({ darkTheme: newValue });
     },
-    [theme, updateUser, userData],
+    [theme],
   );
 
   const handleLogout = useCallback(async () => {
