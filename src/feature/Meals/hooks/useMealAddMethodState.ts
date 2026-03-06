@@ -3,11 +3,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { v4 as uuidv4 } from "uuid";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { getDraftKey, getScreenKey } from "@contexts/MealDraftContext";
-import { get } from "@/services/apiClient";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
-import { usePremiumContext } from "@/context/PremiumContext";
-import type { AiUsageResponse } from "@/services/ai/contracts";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { Ingredient, Meal } from "@/types/meal";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -93,17 +90,6 @@ const isDraftResumeScreen = (value: string): value is DraftResumeScreen =>
 const log = debugScope("Hook:useMealAddMethodState");
 const E2E_DRAFT_MEAL_ID = "e2e-draft-meal";
 
-async function canAccessTextMealAi(): Promise<boolean> {
-  try {
-    const usage = await get<AiUsageResponse>(
-      "/ai/usage",
-    );
-    return usage.remaining > 0;
-  } catch {
-    return true;
-  }
-}
-
 function makeE2EDraftIngredient(): Ingredient {
   return { ...E2E_DETERMINISTIC_INGREDIENT };
 }
@@ -161,7 +147,6 @@ export function useMealAddMethodState(params: {
   const { uid } = useAuthContext();
   const { setMeal, saveDraft, setLastScreen, loadDraft, removeDraft } =
     useMealDraftContext();
-  const { isPremium } = usePremiumContext();
 
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [resumeScreen, setResumeScreen] =
@@ -246,14 +231,6 @@ export function useMealAddMethodState(params: {
 
   const handleOptionPress = useCallback(
     async (option: MethodOption) => {
-      if (option.screen === "MealTextAI" && uid) {
-        const allowed = isPremium ? true : await canAccessTextMealAi();
-        if (!allowed) {
-          setShowAiLimitModal(true);
-          return;
-        }
-      }
-
       if (option.screen === "AddMeal") {
         const start = option.params.start;
         await primeEmptyMeal(start || "Result");
@@ -263,7 +240,7 @@ export function useMealAddMethodState(params: {
 
       params.navigation.navigate(option.screen);
     },
-    [isPremium, params.navigation, primeEmptyMeal, uid],
+    [params.navigation, primeEmptyMeal],
   );
 
   const handleContinueDraft = useCallback(async () => {

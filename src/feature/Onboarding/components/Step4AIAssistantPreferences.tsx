@@ -1,13 +1,12 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import {
-  PrimaryButton,
-  SecondaryButton,
   Dropdown,
   TextInput,
 } from "@/components";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { AiStyle, AiFocus, FormData } from "@/types";
 
 const ASSISTANT_STYLE_OPTIONS: { label: string; value: AiStyle }[] = [
@@ -54,6 +53,13 @@ export default function Step4AIAssistantPreferences({
   const { t } = useTranslation("onboarding");
 
   const isOtherFocus = form.aiFocus === "other";
+  const hasAnyAiDetails = useMemo(() => {
+    const hasNonDefaultStyle = (form.aiStyle ?? "none") !== "none";
+    const hasNonDefaultFocus = (form.aiFocus ?? "none") !== "none";
+    const hasFocusOther = Boolean(form.aiFocusOther?.trim());
+    const hasNote = Boolean(form.aiNote?.trim());
+    return hasNonDefaultStyle || hasNonDefaultFocus || hasFocusOther || hasNote;
+  }, [form.aiFocus, form.aiFocusOther, form.aiNote, form.aiStyle]);
 
   const canNext = useMemo(() => {
     if (form.aiFocus === "other" && !form.aiFocusOther?.trim()) return false;
@@ -65,65 +71,79 @@ export default function Step4AIAssistantPreferences({
 
   return (
     <View style={styles.container}>
-      <View style={styles.sectionGap}>
-        <View>
-          <Text style={styles.title}>
-            {t("step4_title")}
-          </Text>
-          <Text style={styles.subtitle}>
-            {t("step4_description")}
-          </Text>
-        </View>
+      <ScrollView
+        style={styles.formScroll}
+        contentContainerStyle={styles.formContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.sectionGap}>
+          <View>
+            <Text style={styles.title}>
+              {t("step4_title")}
+            </Text>
+            <Text style={styles.subtitle}>
+              {t("step4_description")}
+            </Text>
+          </View>
 
-        <Dropdown
-          label={t("ai.assistantStyle")}
-          value={assistantStyleValue}
-          options={ASSISTANT_STYLE_OPTIONS.map((o) => ({
-            label: t(o.label),
-            value: o.value,
-          }))}
-          onChange={(v) =>
-            setForm((prev) => ({ ...prev, aiStyle: v ?? "none" }))
-          }
-          error={undefined}
-        />
-
-        <Dropdown
-          label={t("ai.areaOfFocus")}
-          value={areaOfFocusValue}
-          options={AREA_OF_FOCUS_OPTIONS.map((o) => ({
-            label: t(o.label),
-            value: o.value,
-          }))}
-          onChange={(v) =>
-            setForm((prev) => ({
-              ...prev,
-              aiFocus: v ?? "none",
-              aiFocusOther: v === "other" ? (prev.aiFocusOther ?? "") : "",
-            }))
-          }
-          error={undefined}
-        />
-
-        {isOtherFocus && (
-          <TextInput
-            placeholder={t("ai.focus_placeholder")}
-            value={form.aiFocusOther ?? ""}
-            onChangeText={(val) =>
-              setForm((prev) => ({ ...prev, aiFocusOther: val }))
+          <Dropdown
+            label={t("ai.assistantStyle")}
+            value={assistantStyleValue}
+            options={ASSISTANT_STYLE_OPTIONS.map((o) => ({
+              label: t(o.label),
+              value: o.value,
+            }))}
+            onChange={(v) =>
+              setForm((prev) => ({ ...prev, aiStyle: v ?? "none" }))
             }
-            error={errors.aiFocusOther}
-            maxLength={100}
+            error={undefined}
           />
-        )}
-      </View>
-      <View style={styles.sectionGap}>
-        <PrimaryButton
-          label={editMode ? t("summary.confirm", "Confirm") : t("skip")}
+
+          <Dropdown
+            label={t("ai.areaOfFocus")}
+            value={areaOfFocusValue}
+            options={AREA_OF_FOCUS_OPTIONS.map((o) => ({
+              label: t(o.label),
+              value: o.value,
+            }))}
+            onChange={(v) =>
+              setForm((prev) => ({
+                ...prev,
+                aiFocus: v ?? "none",
+                aiFocusOther: v === "other" ? (prev.aiFocusOther ?? "") : "",
+              }))
+            }
+            error={undefined}
+          />
+
+          {isOtherFocus && (
+            <TextInput
+              placeholder={t("ai.focus_placeholder")}
+              value={form.aiFocusOther ?? ""}
+              onChangeText={(val) =>
+                setForm((prev) => ({ ...prev, aiFocusOther: val }))
+              }
+              error={errors.aiFocusOther}
+              maxLength={100}
+            />
+          )}
+        </View>
+      </ScrollView>
+      <View style={styles.actionsWrap}>
+        <GlobalActionButtons
+          label={
+            editMode
+              ? t("summary.confirm", "Confirm")
+              : hasAnyAiDetails
+                ? t("next")
+                : t("skip")
+          }
           onPress={editMode ? onConfirmEdit : onNext}
-          disabled={!canNext}
+          primaryDisabled={!canNext}
+          secondaryLabel={t("back")}
+          secondaryOnPress={onBack}
         />
-        <SecondaryButton label={t("back")} onPress={onBack} />
       </View>
     </View>
   );
@@ -133,10 +153,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      flexDirection: "column",
-      justifyContent: "space-between",
     },
+    formScroll: { flex: 1 },
+    formContent: { paddingBottom: theme.spacing.sm },
     sectionGap: { gap: theme.spacing.lg },
+    actionsWrap: { paddingTop: theme.spacing.sm },
     title: {
       fontSize: theme.typography.size.xl,
       fontFamily: theme.typography.fontFamily.bold,

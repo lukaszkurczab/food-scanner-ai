@@ -1,14 +1,13 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
-  PrimaryButton,
-  SecondaryButton,
   CheckboxDropdown,
   LongTextInput,
   TextInput,
 } from "@/components";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { FormData, ChronicDisease, Allergy } from "@/types";
 
 const CHRONIC_DISEASE_OPTIONS: { label: string; value: ChronicDisease }[] = [
@@ -63,6 +62,26 @@ export default function Step3Health({
 
   const hasChronicOther = (form.chronicDiseases ?? []).includes("other");
   const hasAllergyOther = (form.allergies ?? []).includes("other");
+  const hasAnyHealthDetails = useMemo(() => {
+    const hasDiseases = (form.chronicDiseases ?? []).length > 0;
+    const hasAllergies = (form.allergies ?? []).length > 0;
+    const hasLifestyle = Boolean(form.lifestyle?.trim());
+    const hasDiseaseOther = Boolean(form.chronicDiseasesOther?.trim());
+    const hasAllergyOther = Boolean(form.allergiesOther?.trim());
+    return (
+      hasDiseases ||
+      hasAllergies ||
+      hasLifestyle ||
+      hasDiseaseOther ||
+      hasAllergyOther
+    );
+  }, [
+    form.allergies,
+    form.allergiesOther,
+    form.chronicDiseases,
+    form.chronicDiseasesOther,
+    form.lifestyle,
+  ]);
 
   const validate = () => {
     let valid = true;
@@ -88,93 +107,107 @@ export default function Step3Health({
 
   return (
     <View style={styles.container}>
-      <View style={styles.sectionGap}>
-        <View>
-          <Text style={styles.title}>
-            {t("healthProfile.title")}
-          </Text>
-          <Text style={styles.subtitle}>
-            {t("healthProfile.desc")}
-          </Text>
-        </View>
+      <ScrollView
+        style={styles.formScroll}
+        contentContainerStyle={styles.formContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.sectionGap}>
+          <View>
+            <Text style={styles.title}>
+              {t("healthProfile.title")}
+            </Text>
+            <Text style={styles.subtitle}>
+              {t("healthProfile.desc")}
+            </Text>
+          </View>
 
-        <View>
-          <CheckboxDropdown<ChronicDisease>
-            label={t("healthProfile.chronicDisease")}
-            options={CHRONIC_DISEASE_OPTIONS.map((o) => ({
-              ...o,
-              label: t(`healthProfile.disease.${o.value}`),
-            }))}
-            values={form.chronicDiseases ?? []}
-            onChange={(val) =>
-              setForm((prev) => ({
-                ...prev,
-                chronicDiseases: val as ChronicDisease[],
-                chronicDiseasesOther: val.includes("other")
-                  ? (prev.chronicDiseasesOther ?? "")
-                  : undefined,
-              }))
-            }
-          />
-          {hasChronicOther && (
-            <TextInput
-              value={form.chronicDiseasesOther ?? ""}
-              onChangeText={(v) =>
-                setForm((prev) => ({ ...prev, chronicDiseasesOther: v }))
+          <View>
+            <CheckboxDropdown<ChronicDisease>
+              label={t("healthProfile.chronicDisease")}
+              options={CHRONIC_DISEASE_OPTIONS.map((o) => ({
+                ...o,
+                label: t(`healthProfile.disease.${o.value}`),
+              }))}
+              values={form.chronicDiseases ?? []}
+              onChange={(val) =>
+                setForm((prev) => ({
+                  ...prev,
+                  chronicDiseases: val as ChronicDisease[],
+                  chronicDiseasesOther: val.includes("other")
+                    ? (prev.chronicDiseasesOther ?? "")
+                    : undefined,
+                }))
               }
-              placeholder={t("healthProfile.disease.otherPlaceholder")}
-              error={errors.chronicDiseasesOther}
-              style={styles.fieldSpacing}
             />
-          )}
-        </View>
+            {hasChronicOther && (
+              <TextInput
+                value={form.chronicDiseasesOther ?? ""}
+                onChangeText={(v) =>
+                  setForm((prev) => ({ ...prev, chronicDiseasesOther: v }))
+                }
+                placeholder={t("healthProfile.disease.otherPlaceholder")}
+                error={errors.chronicDiseasesOther}
+                style={styles.fieldSpacing}
+              />
+            )}
+          </View>
 
-        <View>
-          <CheckboxDropdown<Allergy>
-            label={t("healthProfile.allergies")}
-            options={ALLERGIES_OPTIONS.map((o) => ({
-              ...o,
-              label: t(`healthProfile.allergy.${o.value}`),
-            }))}
-            values={form.allergies ?? []}
-            onChange={(val) =>
-              setForm((prev) => ({
-                ...prev,
-                allergies: val as Allergy[],
-                allergiesOther: val.includes("other")
-                  ? (prev.allergiesOther ?? "")
-                  : undefined,
-              }))
-            }
-          />
-          {hasAllergyOther && (
-            <TextInput
-              value={form.allergiesOther ?? ""}
-              onChangeText={(v) =>
-                setForm((prev) => ({ ...prev, allergiesOther: v }))
+          <View>
+            <CheckboxDropdown<Allergy>
+              label={t("healthProfile.allergies")}
+              options={ALLERGIES_OPTIONS.map((o) => ({
+                ...o,
+                label: t(`healthProfile.allergy.${o.value}`),
+              }))}
+              values={form.allergies ?? []}
+              onChange={(val) =>
+                setForm((prev) => ({
+                  ...prev,
+                  allergies: val as Allergy[],
+                  allergiesOther: val.includes("other")
+                    ? (prev.allergiesOther ?? "")
+                    : undefined,
+                }))
               }
-              placeholder={t("healthProfile.allergy.otherPlaceholder")}
-              error={errors.allergiesOther}
-              style={styles.fieldSpacing}
             />
-          )}
-        </View>
+            {hasAllergyOther && (
+              <TextInput
+                value={form.allergiesOther ?? ""}
+                onChangeText={(v) =>
+                  setForm((prev) => ({ ...prev, allergiesOther: v }))
+                }
+                placeholder={t("healthProfile.allergy.otherPlaceholder")}
+                error={errors.allergiesOther}
+                style={styles.fieldSpacing}
+              />
+            )}
+          </View>
 
-        <LongTextInput
-          label={t("healthProfile.lifestyle")}
-          value={form.lifestyle ?? ""}
-          onChangeText={(val) =>
-            setForm((prev) => ({ ...prev, lifestyle: val }))
+          <LongTextInput
+            label={t("healthProfile.lifestyle")}
+            value={form.lifestyle ?? ""}
+            onChangeText={(val) =>
+              setForm((prev) => ({ ...prev, lifestyle: val }))
+            }
+            placeholder={t("healthProfile.lifestylePlaceholder")}
+          />
+        </View>
+      </ScrollView>
+      <View style={styles.actionsWrap}>
+        <GlobalActionButtons
+          label={
+            editMode
+              ? t("summary.confirm", "Confirm")
+              : hasAnyHealthDetails
+                ? t("next")
+                : t("skip")
           }
-          placeholder={t("healthProfile.lifestylePlaceholder")}
-        />
-      </View>
-      <View style={styles.sectionGap}>
-        <PrimaryButton
-          label={editMode ? t("summary.confirm", "Confirm") : t("skip")}
           onPress={editMode ? onConfirmEdit : handleNext}
+          secondaryLabel={t("back")}
+          secondaryOnPress={onBack}
         />
-        <SecondaryButton label={t("back")} onPress={onBack} />
       </View>
     </View>
   );
@@ -184,10 +217,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      flexDirection: "column",
-      justifyContent: "space-between",
     },
+    formScroll: { flex: 1 },
+    formContent: { paddingBottom: theme.spacing.sm },
     sectionGap: { gap: theme.spacing.lg },
+    actionsWrap: { paddingTop: theme.spacing.sm },
     title: {
       fontSize: theme.typography.size.xl,
       fontFamily: theme.typography.fontFamily.bold,

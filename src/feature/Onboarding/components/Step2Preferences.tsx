@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
-  PrimaryButton,
-  SecondaryButton,
   Dropdown,
   Slider,
   CheckboxDropdown,
 } from "@/components";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { ActivityLevel, FormData, Preference } from "@/types";
 
 const PREFERENCE_OPTIONS: { label: string; value: Preference }[] = [
@@ -175,113 +174,121 @@ export default function Step2Preferences({
 
   return (
     <View style={styles.container}>
-      <View style={styles.sectionGap}>
-        <View>
-          <Text style={styles.title}>{t("step2_title")}</Text>
-          <Text style={styles.subtitle}>{t("step2_description")}</Text>
+      <ScrollView
+        style={styles.formScroll}
+        contentContainerStyle={styles.formContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.sectionGap}>
+          <View>
+            <Text style={styles.title}>{t("step2_title")}</Text>
+            <Text style={styles.subtitle}>{t("step2_description")}</Text>
+          </View>
+
+          <CheckboxDropdown
+            label={t("preferences.label")}
+            options={PREFERENCE_OPTIONS.map((o) => ({
+              ...o,
+              label: t(o.label),
+            }))}
+            values={form.preferences}
+            onChange={(newPrefs) =>
+              setForm((prev) => ({ ...prev, preferences: newPrefs }))
+            }
+            error={undefined}
+            disabled={false}
+            disabledValues={disabledPreferences}
+          />
+
+          <Dropdown
+            label={`${t("activityLevel")}*`}
+            value={form.activityLevel}
+            options={[
+              { label: t("activity.sedentary"), value: "sedentary" },
+              { label: t("activity.light"), value: "light" },
+              { label: t("activity.moderate"), value: "moderate" },
+              { label: t("activity.active"), value: "active" },
+              { label: t("activity.very_active"), value: "very_active" },
+            ]}
+            onChange={(val) =>
+              setForm((prev) => ({
+                ...prev,
+                activityLevel: val as ActivityLevel,
+              }))
+            }
+            error={errors.activityLevel}
+          />
+
+          <Dropdown
+            label={`${t("goalTitle")}*`}
+            value={form.goal}
+            options={[
+              { label: t("goal.lose"), value: "lose" },
+              { label: t("goal.maintain"), value: "maintain" },
+              { label: t("goal.increase"), value: "increase" },
+            ]}
+            onChange={(val) =>
+              handleGoalChange(val as "lose" | "maintain" | "increase")
+            }
+            error={errors.goal}
+          />
+
+          {form.goal === "lose" && (
+            <View>
+              <Text style={styles.sliderLabel}>
+                {t("calorieDeficit")}{" "}
+                {Math.round((form.calorieDeficit ?? 0.2) * 100)}%
+              </Text>
+              <Slider
+                value={form.calorieDeficit ?? 0.2}
+                minimumValue={MIN_DEFICIT}
+                maximumValue={MAX_DEFICIT}
+                step={0.01}
+                onValueChange={(v) =>
+                  setForm((prev) => ({ ...prev, calorieDeficit: v }))
+                }
+              />
+              {errors.calorieDeficit && (
+                <Text style={styles.errorText}>
+                  {errors.calorieDeficit}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {form.goal === "increase" && (
+            <View>
+              <Text style={styles.sliderLabel}>
+                {t("calorieSurplus")}{" "}
+                {Math.round((form.calorieSurplus ?? 0.2) * 100)}%
+              </Text>
+              <Slider
+                value={form.calorieSurplus ?? 0.2}
+                minimumValue={MIN_SURPLUS}
+                maximumValue={MAX_SURPLUS}
+                step={0.01}
+                onValueChange={(v) =>
+                  setForm((prev) => ({ ...prev, calorieSurplus: v }))
+                }
+              />
+              {errors.calorieSurplus && (
+                <Text style={styles.errorText}>
+                  {errors.calorieSurplus}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
-
-        <CheckboxDropdown
-          label={t("preferences.label")}
-          options={PREFERENCE_OPTIONS.map((o) => ({
-            ...o,
-            label: t(o.label),
-          }))}
-          values={form.preferences}
-          onChange={(newPrefs) =>
-            setForm((prev) => ({ ...prev, preferences: newPrefs }))
-          }
-          error={undefined}
-          disabled={false}
-          disabledValues={disabledPreferences}
-        />
-
-        <Dropdown
-          label={`${t("activityLevel")}*`}
-          value={form.activityLevel}
-          options={[
-            { label: t("activity.sedentary"), value: "sedentary" },
-            { label: t("activity.light"), value: "light" },
-            { label: t("activity.moderate"), value: "moderate" },
-            { label: t("activity.active"), value: "active" },
-            { label: t("activity.very_active"), value: "very_active" },
-          ]}
-          onChange={(val) =>
-            setForm((prev) => ({
-              ...prev,
-              activityLevel: val as ActivityLevel,
-            }))
-          }
-          error={errors.activityLevel}
-        />
-
-        <Dropdown
-          label={`${t("goalTitle")}*`}
-          value={form.goal}
-          options={[
-            { label: t("goal.lose"), value: "lose" },
-            { label: t("goal.maintain"), value: "maintain" },
-            { label: t("goal.increase"), value: "increase" },
-          ]}
-          onChange={(val) =>
-            handleGoalChange(val as "lose" | "maintain" | "increase")
-          }
-          error={errors.goal}
-        />
-
-        {form.goal === "lose" && (
-          <View>
-            <Text style={styles.sliderLabel}>
-              {t("calorieDeficit")}{" "}
-              {Math.round((form.calorieDeficit ?? 0.2) * 100)}%
-            </Text>
-            <Slider
-              value={form.calorieDeficit ?? 0.2}
-              minimumValue={MIN_DEFICIT}
-              maximumValue={MAX_DEFICIT}
-              step={0.01}
-              onValueChange={(v) =>
-                setForm((prev) => ({ ...prev, calorieDeficit: v }))
-              }
-            />
-            {errors.calorieDeficit && (
-              <Text style={styles.errorText}>
-                {errors.calorieDeficit}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {form.goal === "increase" && (
-          <View>
-            <Text style={styles.sliderLabel}>
-              {t("calorieSurplus")}{" "}
-              {Math.round((form.calorieSurplus ?? 0.2) * 100)}%
-            </Text>
-            <Slider
-              value={form.calorieSurplus ?? 0.2}
-              minimumValue={MIN_SURPLUS}
-              maximumValue={MAX_SURPLUS}
-              step={0.01}
-              onValueChange={(v) =>
-                setForm((prev) => ({ ...prev, calorieSurplus: v }))
-              }
-            />
-            {errors.calorieSurplus && (
-              <Text style={styles.errorText}>
-                {errors.calorieSurplus}
-              </Text>
-            )}
-          </View>
-        )}
-      </View>
-      <View style={styles.sectionGap}>
-        <PrimaryButton
+      </ScrollView>
+      <View style={styles.actionsWrap}>
+        <GlobalActionButtons
           label={editMode ? t("summary.confirm", "Confirm") : t("next")}
           onPress={editMode ? onConfirmEdit : handleNext}
-          disabled={!canNext}
+          primaryDisabled={!canNext}
+          secondaryLabel={t("back")}
+          secondaryOnPress={onBack}
         />
-        <SecondaryButton label={t("back")} onPress={onBack} />
       </View>
     </View>
   );
@@ -291,10 +298,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      flexDirection: "column",
-      justifyContent: "space-between",
     },
+    formScroll: { flex: 1 },
+    formContent: { paddingBottom: theme.spacing.sm },
     sectionGap: { gap: theme.spacing.lg },
+    actionsWrap: { paddingTop: theme.spacing.sm },
     title: {
       fontSize: theme.typography.size.xl,
       fontFamily: theme.typography.fontFamily.bold,

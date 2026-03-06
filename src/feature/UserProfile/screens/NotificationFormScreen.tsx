@@ -3,7 +3,6 @@ import { View, Text, TextInput, ScrollView, Pressable, StyleSheet } from "react-
 import {
   Layout,
   PrimaryButton,
-  SecondaryButton,
   Card,
   Modal,
 } from "@/components";
@@ -23,6 +22,7 @@ import { Clock24h, Clock12h } from "@/components";
 import { Dropdown } from "@/components/Dropdown";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useNotificationFormState } from "@/feature/UserProfile/hooks/useNotificationFormState";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 type NotificationFormNavigation = StackNavigationProp<
   RootStackParamList,
@@ -197,12 +197,20 @@ export default function NotificationFormScreen() {
           />
         </View>
 
-        <View style={styles.actions}>
-          <PrimaryButton label={t("form.save")} onPress={onSave} />
-          {notifId ? (
-            <SecondaryButton label={t("form.delete")} onPress={onDelete} />
-          ) : null}
-        </View>
+        {notifId ? (
+          <GlobalActionButtons
+            label={t("form.save")}
+            onPress={onSave}
+            secondaryLabel={t("form.delete")}
+            secondaryOnPress={onDelete}
+            secondaryVariant="error"
+            layout="row"
+          />
+        ) : (
+          <View style={styles.actions}>
+            <PrimaryButton label={t("form.save")} onPress={onSave} />
+          </View>
+        )}
       </ScrollView>
     </Layout>
   );
@@ -251,5 +259,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.bold,
     },
     modalContent: { paddingTop: theme.spacing.sm },
-    actions: { flexDirection: "row", gap: theme.spacing.md },
+    actions: { gap: theme.spacing.md },
   });

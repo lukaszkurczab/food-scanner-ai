@@ -108,7 +108,7 @@ describe("Step3Health", () => {
       />,
     );
 
-    fireEvent.press(getByText("skip"));
+    fireEvent.press(getByText("next"));
 
     expect(onNext).not.toHaveBeenCalled();
     expect(setErrors).toHaveBeenCalledWith({

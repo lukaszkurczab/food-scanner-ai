@@ -39,6 +39,7 @@ type Props = {
   right?: React.ReactNode;
   ref?: React.Ref<RNTextInput>;
   autoCorrect?: boolean;
+  spellCheck?: boolean;
   returnKeyType?: TextInputProps["returnKeyType"];
   onSubmitEditing?: () => void;
   rightLabel?: string;
@@ -69,7 +70,8 @@ export const TextInput: React.FC<Props> = ({
   textContentType,
   accessibilityLabel,
   ref,
-  autoCorrect = true,
+  autoCorrect = false,
+  spellCheck,
   returnKeyType,
   onSubmitEditing,
   onEndEditing,
@@ -109,6 +111,7 @@ export const TextInput: React.FC<Props> = ({
       : theme.spacing.md;
 
   const isEditable = editable !== undefined ? editable : !disabled;
+  const resolvedSpellCheck = spellCheck ?? autoCorrect;
   const inputMinHeight = multiline ? Math.max(48, numberOfLines * 24) : 48;
   const inputWrapperDynamicStyle = useMemo(
     () => ({
@@ -174,6 +177,7 @@ export const TextInput: React.FC<Props> = ({
         <RNTextInput
           testID={testID}
           autoCorrect={autoCorrect}
+          spellCheck={resolvedSpellCheck}
           ref={ref}
           value={value}
           onChangeText={onChangeText}

@@ -1,15 +1,22 @@
 import { useState, useEffect, useMemo } from "react";
-import { View, Text, Keyboard, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Keyboard,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import {
   TextInput,
-  PrimaryButton,
-  SecondaryButton,
   ErrorBox,
   Layout,
 } from "@/components";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { Feather } from "@expo/vector-icons";
 import { useUserContext } from "@contexts/UserContext";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -101,93 +108,100 @@ export default function ChangePasswordScreen({ navigation }: Props) {
   );
 
   return (
-    <Layout showNavigation={false}>
-      <View style={styles.centerBoth}>
-        <Text
-          style={styles.title}
+    <Layout
+      showNavigation={false}
+      disableScroll
+      keyboardAvoiding={Platform.OS !== "ios"}
+    >
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.formScroll}
+          contentContainerStyle={styles.formContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {t("profile:change_password")}
-        </Text>
+          <Text style={styles.title}>
+            {t("profile:change_password")}
+          </Text>
 
-        {noInternet && <ErrorBox message={t("common:no_internet")} />}
-        {error && <ErrorBox message={error} />}
+          {noInternet && <ErrorBox message={t("common:no_internet")} />}
+          {error && <ErrorBox message={error} />}
 
-        <TextInput
-          label={t("profile:old_password")}
-          value={oldPassword}
-          autoCapitalize="none"
-          autoComplete="current-password"
-          textContentType="password"
-          placeholder={t("profile:enter_current_password")}
-          secureTextEntry={!showOld}
-          onChangeText={setOldPassword}
-          onBlur={() => setTouched((t) => ({ ...t, old: true }))}
-          error={
-            touched.old && !oldPassword
-              ? t("profile:enter_current_password")
-              : undefined
-          }
-          icon={renderEyeIcon(showOld, () => setShowOld((v) => !v))}
-          iconPosition="right"
-          style={styles.input}
-        />
+          <TextInput
+            label={t("profile:old_password")}
+            value={oldPassword}
+            autoCapitalize="none"
+            autoComplete="current-password"
+            textContentType="password"
+            placeholder={t("profile:enter_current_password")}
+            secureTextEntry={!showOld}
+            onChangeText={setOldPassword}
+            onBlur={() => setTouched((t) => ({ ...t, old: true }))}
+            error={
+              touched.old && !oldPassword
+                ? t("profile:enter_current_password")
+                : undefined
+            }
+            icon={renderEyeIcon(showOld, () => setShowOld((v) => !v))}
+            iconPosition="right"
+            style={styles.input}
+          />
 
-        <TextInput
-          label={t("profile:new_password")}
-          value={newPassword}
-          autoCapitalize="none"
-          autoComplete="new-password"
-          textContentType="newPassword"
-          placeholder={t("profile:enter_new_password")}
-          secureTextEntry={!showNew}
-          onChangeText={setNewPassword}
-          onBlur={() => setTouched((t) => ({ ...t, new: true }))}
-          error={
-            touched.new && !newPassword
-              ? t("profile:enter_new_password")
-              : undefined
-          }
-          icon={renderEyeIcon(showNew, () => setShowNew((v) => !v))}
-          iconPosition="right"
-          style={styles.input}
-        />
+          <TextInput
+            label={t("profile:new_password")}
+            value={newPassword}
+            autoCapitalize="none"
+            autoComplete="new-password"
+            textContentType="newPassword"
+            placeholder={t("profile:enter_new_password")}
+            secureTextEntry={!showNew}
+            onChangeText={setNewPassword}
+            onBlur={() => setTouched((t) => ({ ...t, new: true }))}
+            error={
+              touched.new && !newPassword
+                ? t("profile:enter_new_password")
+                : undefined
+            }
+            icon={renderEyeIcon(showNew, () => setShowNew((v) => !v))}
+            iconPosition="right"
+            style={styles.input}
+          />
 
-        <TextInput
-          label={t("profile:confirm_new_password")}
-          value={confirmPassword}
-          autoCapitalize="none"
-          autoComplete="new-password"
-          textContentType="newPassword"
-          placeholder={t("profile:repeat_new_password")}
-          secureTextEntry={!showConfirm}
-          onChangeText={setConfirmPassword}
-          onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
-          error={
-            touched.confirm && confirmPassword !== newPassword
-              ? t("profile:passwords_do_not_match")
-              : undefined
-          }
-          icon={renderEyeIcon(showConfirm, () => setShowConfirm((v) => !v))}
-          iconPosition="right"
-          style={styles.inputLarge}
-        />
+          <TextInput
+            label={t("profile:confirm_new_password")}
+            value={confirmPassword}
+            autoCapitalize="none"
+            autoComplete="new-password"
+            textContentType="newPassword"
+            placeholder={t("profile:repeat_new_password")}
+            secureTextEntry={!showConfirm}
+            onChangeText={setConfirmPassword}
+            onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
+            error={
+              touched.confirm && confirmPassword !== newPassword
+                ? t("profile:passwords_do_not_match")
+                : undefined
+            }
+            icon={renderEyeIcon(showConfirm, () => setShowConfirm((v) => !v))}
+            iconPosition="right"
+            style={styles.inputLarge}
+          />
+        </ScrollView>
 
-        <PrimaryButton
+        <GlobalActionButtons
           label={t("common:confirm")}
           onPress={handleSubmit}
-          disabled={
+          primaryDisabled={
             loading ||
             !oldPassword ||
             !newPassword ||
             !confirmPassword ||
             noInternet
           }
-          loading={loading}
-        />
-        <SecondaryButton
-          label={t("common:cancel")}
-          onPress={() => navigation.goBack()}
-          style={styles.cancelButton}
+          primaryLoading={loading}
+          secondaryLabel={t("common:cancel")}
+          secondaryOnPress={() => navigation.goBack()}
+          containerStyle={styles.actions}
         />
       </View>
     </Layout>
@@ -196,7 +210,9 @@ export default function ChangePasswordScreen({ navigation }: Props) {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    centerBoth: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
+    container: { flex: 1 },
+    formScroll: { flex: 1 },
+    formContent: { paddingBottom: theme.spacing.sm },
     title: {
       fontSize: theme.typography.size.xl,
       fontFamily: theme.typography.fontFamily.bold,
@@ -206,5 +222,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     input: { marginBottom: theme.spacing.lg },
     inputLarge: { marginBottom: theme.spacing.xl },
-    cancelButton: { marginTop: theme.spacing.md },
+    actions: { marginTop: theme.spacing.sm },
   });

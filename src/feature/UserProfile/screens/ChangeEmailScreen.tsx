@@ -1,15 +1,14 @@
 import { useState, useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
 import {
   Layout,
-  PrimaryButton,
-  SecondaryButton,
   TextInput,
   ErrorBox,
 } from "@/components";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -112,81 +111,88 @@ export default function ChangeEmailScreen({ navigation }: Props) {
   };
 
   return (
-    <Layout>
-      {criticalError && (
-        <ErrorBox message={criticalError} style={styles.error} />
-      )}
-
-      <View style={styles.header}>
-        <Text
-          style={styles.title}
-          accessibilityRole="header"
+    <Layout disableScroll keyboardAvoiding={Platform.OS !== "ios"}>
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.formScroll}
+          contentContainerStyle={styles.formContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {t("changeEmail", { ns: "profile" })}
-        </Text>
-      </View>
-      <Text style={styles.label}>
-        {t("newEmail", { ns: "profile" })}
-      </Text>
-      <TextInput
-        value={email}
-        onChangeText={(val) => {
-          setEmail(val);
-          setErrors((e) => ({ ...e, email: undefined }));
-        }}
-        onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-        placeholder={t("email", { ns: "login" })}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        error={touched.email ? errors.email : undefined}
-        disabled={loading}
-        style={styles.input}
-      />
+          {criticalError && (
+            <ErrorBox message={criticalError} style={styles.error} />
+          )}
 
-      <Text style={styles.label}>
-        {t("password", { ns: "profile" })}
-      </Text>
-      <TextInput
-        value={password}
-        onChangeText={(val) => {
-          setPassword(val);
-          setErrors((e) => ({ ...e, password: undefined }));
-        }}
-        onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-        placeholder={t("passwordPlaceholder", { ns: "profile" })}
-        secureTextEntry
-        error={touched.password ? errors.password : undefined}
-        disabled={loading}
-        style={styles.inputLarge}
-      />
+          <View style={styles.header}>
+            <Text
+              style={styles.title}
+              accessibilityRole="header"
+            >
+              {t("changeEmail", { ns: "profile" })}
+            </Text>
+          </View>
+          <Text style={styles.label}>
+            {t("newEmail", { ns: "profile" })}
+          </Text>
+          <TextInput
+            value={email}
+            onChangeText={(val) => {
+              setEmail(val);
+              setErrors((e) => ({ ...e, email: undefined }));
+            }}
+            onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+            placeholder={t("email", { ns: "login" })}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            error={touched.email ? errors.email : undefined}
+            disabled={loading}
+            style={styles.input}
+          />
 
-      <Text style={styles.note}>
-        {t("emailChangeSecurityNote", {
-          ns: "profile",
-          defaultValue:
-            "Możesz zostać poproszony o ponowne zalogowanie ze względów bezpieczeństwa.",
-        })}
-      </Text>
+          <Text style={styles.label}>
+            {t("password", { ns: "profile" })}
+          </Text>
+          <TextInput
+            value={password}
+            onChangeText={(val) => {
+              setPassword(val);
+              setErrors((e) => ({ ...e, password: undefined }));
+            }}
+            onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+            placeholder={t("passwordPlaceholder", { ns: "profile" })}
+            secureTextEntry
+            error={touched.password ? errors.password : undefined}
+            disabled={loading}
+            style={styles.inputLarge}
+          />
 
-      <View style={styles.actions}>
-        <PrimaryButton
-          label={t("confirm", { ns: "profile" })}
-          onPress={onSubmit}
-          loading={loading}
-          disabled={
-            loading ||
-            !email ||
-            !password ||
-            (touched.email && !!errors.email) ||
-            (touched.password && !!errors.password)
-          }
-        />
-        <SecondaryButton
-          label={t("cancel", { ns: "profile" })}
-          onPress={() => navigation.goBack()}
-          disabled={loading}
-        />
+          <Text style={styles.note}>
+            {t("emailChangeSecurityNote", {
+              ns: "profile",
+              defaultValue:
+                "Możesz zostać poproszony o ponowne zalogowanie ze względów bezpieczeństwa.",
+            })}
+          </Text>
+        </ScrollView>
+
+        <View style={styles.actions}>
+          <GlobalActionButtons
+            label={t("confirm", { ns: "profile" })}
+            onPress={onSubmit}
+            primaryLoading={loading}
+            primaryDisabled={
+              loading ||
+              !email ||
+              !password ||
+              (touched.email && !!errors.email) ||
+              (touched.password && !!errors.password)
+            }
+            secondaryLabel={t("cancel", { ns: "profile" })}
+            secondaryOnPress={() => navigation.goBack()}
+            secondaryDisabled={loading}
+          />
+        </View>
       </View>
     </Layout>
   );
@@ -194,6 +200,9 @@ export default function ChangeEmailScreen({ navigation }: Props) {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    container: { flex: 1 },
+    formScroll: { flex: 1 },
+    formContent: { paddingBottom: theme.spacing.sm },
     error: { marginBottom: theme.spacing.sm },
     header: { marginBottom: theme.spacing.lg },
     title: {
@@ -217,5 +226,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontSize: theme.typography.size.sm,
       marginBottom: theme.spacing.xl,
     },
-    actions: { gap: theme.spacing.md },
+    actions: { gap: theme.spacing.md, paddingTop: theme.spacing.sm },
   });

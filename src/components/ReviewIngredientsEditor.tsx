@@ -10,6 +10,7 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from "@/components";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { IngredientBox } from "@/components/IngredientBox";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -382,7 +383,20 @@ export default function ReviewIngredientsEditor({
           />
         ))}
 
-      {showContinueButton && (
+      {showContinueButton && showStartOverButton ? (
+        <GlobalActionButtons
+          label={t("continue", { ns: "common" })}
+          onPress={handleContinue}
+          primaryDisabled={ingredients.length === 0 || hasAnyErrors || editingIdx !== null}
+          primaryTestID="meal-add-continue-button"
+          primaryStyle={styles(theme).continueBtn}
+          secondaryLabel={labels.startOverButtonLabel}
+          secondaryOnPress={() => setShowConfirmModal(true)}
+          secondaryStyle={styles(theme).startOverBtn}
+        />
+      ) : null}
+
+      {showContinueButton && !showStartOverButton ? (
         <PrimaryButton
           testID="meal-add-continue-button"
           label={t("continue", { ns: "common" })}
@@ -390,15 +404,15 @@ export default function ReviewIngredientsEditor({
           disabled={ingredients.length === 0 || hasAnyErrors || editingIdx !== null}
           style={styles(theme).continueBtn}
         />
-      )}
+      ) : null}
 
-      {showStartOverButton && (
+      {!showContinueButton && showStartOverButton ? (
         <SecondaryButton
           label={labels.startOverButtonLabel}
           onPress={() => setShowConfirmModal(true)}
           style={styles(theme).startOverBtn}
         />
-      )}
+      ) : null}
 
       <AppModal
         visible={showConfirmModal}

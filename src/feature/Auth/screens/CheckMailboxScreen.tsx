@@ -4,12 +4,11 @@ import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
-  PrimaryButton,
   ErrorBox,
   Layout,
   ScreenCornerNavButton,
-  SecondaryButton,
 } from "@/components";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -147,20 +146,18 @@ export default function CheckMailboxScreen({ navigation }: Props) {
       {error && (
         <ErrorBox message={error} style={styles.errorSpacing} />
       )}
-      <PrimaryButton
+      <GlobalActionButtons
         label={t("backToLogin")}
         onPress={() => navigation.navigate("Login")}
-        style={styles.actionSpacing}
-      />
-      <SecondaryButton
-        label={
+        secondaryLabel={
           sendAgainDisabled
             ? t("sendAgainInfo", { seconds: timer })
             : t("sendAgain")
         }
-        onPress={handleSendAgain}
-        disabled={sending || sendAgainDisabled || noInternet}
-        loading={sending}
+        secondaryOnPress={handleSendAgain}
+        secondaryDisabled={sending || sendAgainDisabled || noInternet}
+        secondaryLoading={sending}
+        containerStyle={styles.actionSpacing}
       />
       <View style={styles.bottomSpacer} />
     </Layout>

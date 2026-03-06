@@ -3,6 +3,7 @@ export * from "./IconButton";
 export * from "./ScreenCornerNavButton";
 export * from "./ListItem";
 export * from "./PrimaryButton";
+export * from "./GlobalActionButtons";
 export * from "./Modal";
 export * from "./SecondaryButton";
 export * from "./Slider";
