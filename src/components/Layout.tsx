@@ -64,8 +64,10 @@ export const Layout = ({
 
   const shouldShowTabBar = showNavigation && !isKeyboardVisible;
   const bottomPadding = shouldShowTabBar
-    ? TAB_BAR_HEIGHT + insets.bottom
-    : insets.bottom;
+    ? TAB_BAR_HEIGHT + insets.bottom + 8
+    : isKeyboardVisible
+      ? 0
+      : insets.bottom + 8;
   const isOffline = netInfo.isConnected === false;
   const shouldShowOffline = showOfflineBanner && isOffline;
   const contentTopPadding = shouldShowOffline
@@ -86,7 +88,7 @@ export const Layout = ({
           {
             backgroundColor: theme.background,
             paddingTop: insets.top + 16,
-            paddingBottom: bottomPadding + 8,
+            paddingBottom: bottomPadding,
             paddingLeft: insets.left + 32,
             paddingRight: insets.right + 32,
           },
@@ -149,8 +151,8 @@ export const Layout = ({
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? insets.top : 0}
+      behavior={Platform.OS === "ios" ? "height" : undefined}
+      keyboardVerticalOffset={0}
     >
       {content}
     </KeyboardAvoidingView>

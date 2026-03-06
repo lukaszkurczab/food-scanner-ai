@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { View, StyleSheet, Platform } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import ProgressDots from "@/feature/Onboarding/components/ProgressDots";
 import { Modal, Layout, IconButton } from "@/components";
@@ -182,7 +182,6 @@ export default function OnboardingScreen({
     <Layout
       showNavigation={false}
       disableScroll
-      keyboardAvoiding={Platform.OS !== "ios"}
     >
       {mode === "refill" && (
         <View style={styles.closeButtonWrap}>

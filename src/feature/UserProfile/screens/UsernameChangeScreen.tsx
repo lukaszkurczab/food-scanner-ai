@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
@@ -121,7 +121,7 @@ export default function UsernameChangeScreen({ navigation }: Props) {
   };
 
   return (
-    <Layout disableScroll keyboardAvoiding={Platform.OS !== "ios"}>
+    <Layout disableScroll>
       <View style={styles.container}>
         <ScrollView
           style={styles.formScroll}

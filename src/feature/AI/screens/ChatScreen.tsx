@@ -4,7 +4,6 @@ import {
   FlatList,
   ActivityIndicator,
   StyleSheet,
-  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -115,15 +114,11 @@ export default function ChatScreen() {
   const emptyDisabled = sending || limitReached || !net.isConnected;
   const listContentStyle = useMemo(
     () => [styles.listContent, limitReached && styles.listContentLimit],
-    [limitReached, styles]
+    [limitReached, styles],
   );
 
   return (
-    <Layout
-      disableScroll
-      style={styles.layout}
-      keyboardAvoiding={Platform.OS !== "ios"}
-    >
+    <Layout disableScroll style={styles.layout}>
       <View style={styles.header}>
         <IconButton
           testID="chat-history-button"
@@ -154,6 +149,7 @@ export default function ChatScreen() {
         <>
           <FlatList
             testID="chat-message-list"
+            style={styles.list}
             inverted
             data={data}
             keyExtractor={(m) => m.id}
@@ -220,6 +216,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingHorizontal: theme.spacing.sm,
       flexDirection: "row",
       alignItems: "center",
+    },
+    list: {
+      flex: 1,
+      minHeight: 0,
     },
     center: { flex: 1, alignItems: "center", justifyContent: "center" },
     stickyBanner: {

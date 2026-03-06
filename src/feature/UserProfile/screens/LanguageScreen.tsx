@@ -5,7 +5,6 @@ import {
   Pressable,
   StyleSheet,
   FlatList,
-  Platform,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { BackTitleHeader, Layout, TextInput } from "@/components";
@@ -67,7 +66,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   };
 
   return (
-    <Layout disableScroll keyboardAvoiding={Platform.OS !== "ios"}>
+    <Layout disableScroll>
       <View style={styles.flex}>
         <BackTitleHeader
           title={t("language", { ns: "profile", defaultValue: "Language" })}

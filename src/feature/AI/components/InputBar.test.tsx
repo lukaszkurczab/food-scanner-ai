@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import { Pressable } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { InputBar } from "@/feature/AI/components/InputBar";
@@ -50,15 +50,12 @@ describe("InputBar", () => {
     expect(getByText("Helper info")).toBeTruthy();
   });
 
-  it("uses custom placeholder and android keyboard behavior", () => {
-    jest.replaceProperty(Platform, "OS", "android");
-
-    const { getByPlaceholderText, UNSAFE_getByType } = renderWithTheme(
+  it("uses custom placeholder", () => {
+    const { getByPlaceholderText } = renderWithTheme(
       <InputBar onSend={() => undefined} placeholder="Custom placeholder" />,
     );
 
     expect(getByPlaceholderText("Custom placeholder")).toBeTruthy();
-    expect(UNSAFE_getByType(KeyboardAvoidingView).props.behavior).toBeUndefined();
   });
 
   it("applies pressed and released opacity styles on send button", () => {

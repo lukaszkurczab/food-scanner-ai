@@ -6,7 +6,6 @@ import {
   Image,
   Pressable,
   Alert,
-  Platform,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { BackTitleHeader, Layout, LongTextInput } from "@/components";
@@ -92,7 +91,7 @@ export default function SendFeedbackScreen({
   };
 
   return (
-    <Layout keyboardAvoiding={Platform.OS !== "ios"}>
+    <Layout>
       <View style={styles.container}>
         <BackTitleHeader
           title={t("sendFeedback", { defaultValue: "Send us your feedback" })}

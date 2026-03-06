@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   StyleSheet,
-  Platform,
 } from "react-native";
 import {
   BackTitleHeader,
@@ -115,7 +114,7 @@ export default function NotificationFormScreen() {
   });
 
   return (
-    <Layout keyboardAvoiding={Platform.OS !== "ios"}>
+    <Layout>
       <ScrollView contentContainerStyle={styles.content}>
         <BackTitleHeader title={screenTitle} onBack={() => nav.goBack()} />
 
