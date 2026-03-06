@@ -9,9 +9,8 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import { Layout } from "@/components";
+import { BackTitleHeader, Layout } from "@/components";
 import ListItem from "../components/ListItem";
-import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useUserContext } from "@contexts/UserContext";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -35,16 +34,10 @@ export default function ChangeUserDataScreen({
   return (
     <Layout>
       <View style={styles.content}>
-        <Pressable style={styles.header} onPress={() => navigation.goBack()}>
-          <MaterialIcons name="chevron-left" size={28} color={theme.text} />
-
-          <Text
-            style={[styles.heading, { color: theme.text }]}
-            accessibilityRole="header"
-          >
-            {t("changeUserData")}
-          </Text>
-        </Pressable>
+        <BackTitleHeader
+          title={t("changeUserData")}
+          onBack={() => navigation.goBack()}
+        />
 
         <View style={styles.list}>
           <ListItem
@@ -134,16 +127,6 @@ const styles = StyleSheet.create({
   content: {
     justifyContent: "flex-start",
     flex: 1,
-  },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 24,
-    gap: 16,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: "bold",
   },
   list: {
     borderRadius: 24,

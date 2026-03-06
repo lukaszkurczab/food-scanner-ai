@@ -51,6 +51,11 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: ReactNode }) =>
       createElement(View, null, children),
+    BackTitleHeader: ({
+      title,
+    }: {
+      title: string;
+    }) => createElement(Text, null, `header:${title}`),
     FullScreenLoader: () => createElement(Text, null, "full-screen-loader"),
   };
 });
@@ -149,7 +154,7 @@ describe("ManageSubscriptionScreen", () => {
   });
 
   it("renders subscription actions, legal links and paywall controls", () => {
-    const navigation = { setOptions: jest.fn() };
+    const navigation = { canGoBack: jest.fn(() => true), goBack: jest.fn() };
     const toggleExpanded = jest.fn();
     const tryOpenManage = jest.fn();
     const tryRestore = jest.fn();
@@ -201,11 +206,7 @@ describe("ManageSubscriptionScreen", () => {
     fireEvent.press(getByText("close-paywall"));
     fireEvent.press(getByText("DEV: Enable Premium"));
 
-    expect(navigation.setOptions).toHaveBeenCalledWith({
-      title: "profile:manageSubscription.title",
-      headerBackTitle: "",
-      gestureEnabled: true,
-    });
+    expect(getByText("header:profile:manageSubscription.title")).toBeTruthy();
     expect(getByText("Inactive")).toBeTruthy();
     expect(getByText("profile:manageSubscription.benefitDesc_unlimitedAiChat")).toBeTruthy();
     expect(getByText("paywall:$9.99")).toBeTruthy();

@@ -77,7 +77,11 @@
     "purchaseFailed": "Purchase failed. Please try again.",
     "restorePurchases": "Restore purchases",
     "inactiveSince": "Inactive since",
-    "autorenewInfo": "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. You can manage or cancel in your App Store / Google Play account settings."
+    "store": {
+      "appStore": "App Store",
+      "googlePlay": "Google Play"
+    },
+    "autorenewInfo": "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. You can manage or cancel in your {{storeName}} account settings."
   },
   "change_password": "Change password",
   "old_password": "Current password",

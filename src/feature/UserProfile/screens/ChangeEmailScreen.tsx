@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
 import {
+  BackTitleHeader,
   Layout,
   TextInput,
   ErrorBox,
@@ -123,14 +124,10 @@ export default function ChangeEmailScreen({ navigation }: Props) {
             <ErrorBox message={criticalError} style={styles.error} />
           )}
 
-          <View style={styles.header}>
-            <Text
-              style={styles.title}
-              accessibilityRole="header"
-            >
-              {t("changeEmail", { ns: "profile" })}
-            </Text>
-          </View>
+          <BackTitleHeader
+            title={t("changeEmail", { ns: "profile" })}
+            onBack={() => navigation.goBack()}
+          />
           <Text style={styles.label}>
             {t("newEmail", { ns: "profile" })}
           </Text>
@@ -204,14 +201,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     formScroll: { flex: 1 },
     formContent: { paddingBottom: theme.spacing.sm },
     error: { marginBottom: theme.spacing.sm },
-    header: { marginBottom: theme.spacing.lg },
-    title: {
-      fontSize: theme.typography.size.xxl,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-      textAlign: "center",
-      marginBottom: theme.spacing.md,
-    },
     label: {
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,

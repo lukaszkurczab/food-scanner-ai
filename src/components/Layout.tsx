@@ -44,10 +44,15 @@ export const Layout = ({
   const [offlineBannerHeight, setOfflineBannerHeight] = useState(0);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", () =>
+    const showEventName =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEventName =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEventName, () =>
       setIsKeyboardVisible(true),
     );
-    const hideSub = Keyboard.addListener("keyboardDidHide", () =>
+    const hideSub = Keyboard.addListener(hideEventName, () =>
       setIsKeyboardVisible(false),
     );
 

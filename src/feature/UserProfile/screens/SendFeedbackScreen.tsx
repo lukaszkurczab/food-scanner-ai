@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { View, Text, StyleSheet, Image, Pressable, Alert } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Layout, LongTextInput } from "@/components";
-import { MaterialIcons } from "@expo/vector-icons";
+import { BackTitleHeader, Layout, LongTextInput } from "@/components";
 import * as ImagePicker from "expo-image-picker";
 import { useTranslation } from "react-i18next";
 import { PrimaryButton } from "@/components/PrimaryButton";
@@ -87,17 +86,10 @@ export default function SendFeedbackScreen({
   return (
     <Layout>
       <View style={styles.container}>
-        <Pressable
-          style={styles.header}
-          onPress={() => navigation.goBack()}
-        >
-          <MaterialIcons name="chevron-left" size={28} color={theme.text} />
-          <Text
-            style={styles.title}
-          >
-            {t("sendFeedback", { defaultValue: "Send us your feedback" })}
-          </Text>
-        </Pressable>
+        <BackTitleHeader
+          title={t("sendFeedback", { defaultValue: "Send us your feedback" })}
+          onBack={() => navigation.goBack()}
+        />
 
         <View style={styles.content}>
           {!sent ? (
@@ -180,17 +172,6 @@ export default function SendFeedbackScreen({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: { flex: 1, justifyContent: "space-between" },
-    header: {
-      marginBottom: theme.spacing.xl,
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    title: {
-      color: theme.text,
-      fontSize: theme.typography.size.xl,
-      fontFamily: theme.typography.fontFamily.bold,
-      marginLeft: theme.spacing.xs,
-    },
     content: { flexGrow: 1, justifyContent: "center" },
     info: {
       marginBottom: theme.spacing.xxl,

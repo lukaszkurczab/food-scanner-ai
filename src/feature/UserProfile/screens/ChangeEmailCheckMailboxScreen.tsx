@@ -4,9 +4,9 @@ import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
+  BackTitleHeader,
   ErrorBox,
   Layout,
-  ScreenCornerNavButton,
 } from "@/components";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
@@ -116,17 +116,15 @@ export default function ChangeEmailCheckMailboxScreen() {
 
   return (
     <Layout showNavigation={false}>
-      <ScreenCornerNavButton
-        icon="close"
-        onPress={() => {
+      <BackTitleHeader
+        title={t("check_mailbox_title")}
+        onBack={() => {
           if (navigation.canGoBack()) {
             navigation.goBack();
             return;
           }
           void handleLogout();
         }}
-        accessibilityLabel={t("common:close", { defaultValue: "Close" })}
-        containerStyle={styles.topLeftAction}
       />
 
       <View style={styles.iconWrapper}>
@@ -134,12 +132,6 @@ export default function ChangeEmailCheckMailboxScreen() {
           <MaterialIcons name="email" size={96} color={theme.accentSecondary} />
         </View>
       </View>
-      <Text
-        style={styles.title}
-        accessibilityRole="header"
-      >
-        {t("check_mailbox_title")}
-      </Text>
       <Text
         style={styles.body}
       >
@@ -173,8 +165,6 @@ export default function ChangeEmailCheckMailboxScreen() {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    topLeftAction: { top: 0, left: 0 },
-    center: { alignItems: "center" },
     iconWrapper: { alignItems: "center", marginBottom: theme.spacing.xl },
     iconCard: {
       backgroundColor: theme.card,
@@ -183,13 +173,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: theme.rounded.md,
       justifyContent: "center",
       alignItems: "center",
-    },
-    title: {
-      fontSize: theme.typography.size.xxl,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-      textAlign: "center",
-      marginBottom: theme.spacing.md,
     },
     body: {
       fontSize: theme.typography.size.base,

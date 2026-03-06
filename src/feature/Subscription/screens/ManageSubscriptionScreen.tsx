@@ -1,9 +1,16 @@
-import { useLayoutEffect, useMemo } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { useMemo } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { FullScreenLoader, Layout } from "@/components";
+import { BackTitleHeader, FullScreenLoader, Layout } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { PaywallModal } from "@/feature/Subscription/components/PaywallModal";
@@ -37,14 +44,14 @@ export default function ManageSubscriptionScreen({
   const { uid } = useAuthContext();
   const { isPremium, subscription, setDevPremium, refreshPremium } =
     usePremiumContext();
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: t("manageSubscription.title"),
-      headerBackTitle: "",
-      gestureEnabled: true,
-    });
-  }, [navigation, t]);
+  const subscriptionStoreName =
+    Platform.OS === "ios"
+      ? t("manageSubscription.store.appStore", {
+          defaultValue: "App Store",
+        })
+      : t("manageSubscription.store.googlePlay", {
+          defaultValue: "Google Play",
+        });
 
   const {
     expanded,
@@ -86,8 +93,19 @@ export default function ManageSubscriptionScreen({
   }
 
   return (
-    <Layout style={styles.nativeHeaderLayout}>
+    <Layout>
       <View style={styles.flex}>
+        <BackTitleHeader
+          title={t("manageSubscription.title")}
+          onBack={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+              return;
+            }
+            navigation.navigate("Profile");
+          }}
+        />
+
         <View style={styles.sectionSpacing}>
           <Text style={styles.sectionLabel}>
             {t("manageSubscription.yourSubscription")}
@@ -181,8 +199,9 @@ export default function ManageSubscriptionScreen({
                 style={styles.legalText}
               >
                 {t("manageSubscription.autorenewInfo", {
+                  storeName: subscriptionStoreName,
                   defaultValue:
-                    "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. You can manage or cancel in your App Store / Google Play account settings.",
+                    "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. You can manage or cancel in your {{storeName}} account settings.",
                 })}
               </Text>
 
@@ -291,7 +310,6 @@ export default function ManageSubscriptionScreen({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    nativeHeaderLayout: { paddingTop: theme.spacing.md },
     sectionSpacing: { marginBottom: theme.spacing.xl },
     sectionLabel: {
       fontSize: theme.typography.size.md,
