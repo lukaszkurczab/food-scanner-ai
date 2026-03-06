@@ -8,8 +8,6 @@ import { EmptyState } from "../components/EmptyState";
 import {
   FullScreenLoader,
   Layout,
-  PrimaryButton,
-  SecondaryButton,
 } from "@/components";
 import { SearchBox } from "@/components/SearchBox";
 import { MealListItem } from "@/components/MealListItem";
@@ -18,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useSelectSavedMealsState } from "@/feature/Meals/hooks/useSelectSavedMealsState";
 import { syncMyMeals } from "@/services/myMealService";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 type SelectSavedMealNavigation = StackNavigationProp<
   RootStackParamList,
@@ -108,10 +107,12 @@ export default function SelectSavedMealScreen({
           }
         />
         <View style={styles.bottomActions}>
-          <PrimaryButton label={t("meals:select", "Select")} disabled />
-          <SecondaryButton
-            label={t("meals:select_method", "Start over")}
-            onPress={handleStartOver}
+          <GlobalActionButtons
+            label={t("meals:select", "Select")}
+            onPress={() => {}}
+            primaryDisabled
+            secondaryLabel={t("meals:select_method", "Start over")}
+            secondaryOnPress={handleStartOver}
           />
         </View>
       </Layout>
@@ -138,14 +139,12 @@ export default function SelectSavedMealScreen({
       <View
         style={styles.bottomActions}
       >
-        <PrimaryButton
+        <GlobalActionButtons
           label={t("meals:select", "Select")}
           onPress={handleConfirm}
-          disabled={!selectedId}
-        />
-        <SecondaryButton
-          label={t("meals:select_method", "Start over")}
-          onPress={handleStartOver}
+          primaryDisabled={!selectedId}
+          secondaryLabel={t("meals:select_method", "Start over")}
+          secondaryOnPress={handleStartOver}
         />
       </View>
     </Layout>

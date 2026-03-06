@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
+import { View, StyleSheet, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import ProgressDots from "@/feature/Onboarding/components/ProgressDots";
-import { Modal, Layout } from "@/components";
+import { Modal, Layout, IconButton } from "@/components";
 import type { FormData, OnboardingMode, UserData } from "@/types";
 import Step1BasicData from "@/feature/Onboarding/components/Step1BasicData";
 import Step2Preferences from "@/feature/Onboarding/components/Step2Preferences";
@@ -19,6 +20,8 @@ import {
 } from "@/services/notifications/conditions";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/theme/useTheme";
 
 const STEPS = 5;
 
@@ -54,6 +57,8 @@ export default function OnboardingScreen({
   route,
 }: OnboardingScreenProps) {
   const { t } = useTranslation("onboarding");
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { userData, updateUser, syncUserProfile } = useUserContext();
   const { uid } = useAuthContext();
   const [step, setStep] = useState(1);
@@ -174,7 +179,21 @@ export default function OnboardingScreen({
   if (!isLoaded) return null;
 
   return (
-    <Layout showNavigation={false}>
+    <Layout
+      showNavigation={false}
+      disableScroll
+      keyboardAvoiding={Platform.OS !== "ios"}
+    >
+      {mode === "refill" && (
+        <View style={styles.closeButtonWrap}>
+          <IconButton
+            icon={<MaterialIcons name="close" size={22} />}
+            onPress={handleExitPress}
+            accessibilityLabel={t("exit_refill_a11y")}
+            iconColor={theme.text}
+          />
+        </View>
+      )}
       <ProgressDots step={step} total={STEPS} />
 
       {step === 1 && (
@@ -247,3 +266,16 @@ export default function OnboardingScreen({
     </Layout>
   );
 }
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    closeButtonWrap: {
+      position: "absolute",
+      right: 0,
+      top: 0,
+      transform: [{ translateX: 16 }, { translateY: -16 }],
+      zIndex: 30,
+      backgroundColor: "transparent",
+      padding: theme.spacing.xs,
+    },
+  });

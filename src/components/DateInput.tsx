@@ -3,8 +3,7 @@ import { View, Text, Pressable, Modal, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { Calendar } from "./Calendar";
-import { PrimaryButton } from "./PrimaryButton";
-import { SecondaryButton } from "./SecondaryButton";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 export type DateRange = { start: Date; end: Date };
 
@@ -113,10 +112,13 @@ export const DateInput: React.FC<Props> = ({
 
             <View style={styles.spacer} />
 
-            <View style={styles.buttonsCol}>
-              <PrimaryButton label={t("common:confirm")} onPress={confirm} />
-              <SecondaryButton label={t("common:cancel")} onPress={cancel} />
-            </View>
+            <GlobalActionButtons
+              label={t("common:confirm")}
+              onPress={confirm}
+              secondaryLabel={t("common:cancel")}
+              secondaryOnPress={cancel}
+              containerStyle={styles.buttonsCol}
+            />
           </View>
         </View>
       </Modal>

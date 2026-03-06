@@ -3,7 +3,6 @@ import { View, StyleSheet, Text, Image } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import {
-  PrimaryButton,
   SecondaryButton,
   ErrorButton,
   Layout,
@@ -11,6 +10,7 @@ import {
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 const MAX_ATTEMPTS = 3;
 
@@ -101,31 +101,32 @@ export default function IngredientsNotRecognizedScreen({
         <View style={styles.spacer} />
         {isAiUnavailable ? (
           <>
-            <PrimaryButton
+            <GlobalActionButtons
               label={t("ai_unavailable_manual", "Enter ingredients manually")}
               onPress={handleManualEntry}
-              style={styles.buttonSpacingNone}
-            />
-            <SecondaryButton
-              label={t("ai_unavailable_product_db", "Use product database")}
-              onPress={handleOpenProductDatabase}
-              style={styles.buttonSpacing}
+              secondaryLabel={t("ai_unavailable_product_db", "Use product database")}
+              secondaryOnPress={handleOpenProductDatabase}
+              containerStyle={styles.buttonSpacingNone}
             />
           </>
         ) : (
           attempt < MAX_ATTEMPTS && (
-            <PrimaryButton
+            <GlobalActionButtons
               label={`${t("retake", "Retake photo")} (${attempt}/${MAX_ATTEMPTS})`}
               onPress={handleRetake}
-              style={styles.buttonSpacingNone}
+              secondaryLabel={t("select_method", "Back to method selection")}
+              secondaryOnPress={handleOtherMethod}
+              containerStyle={styles.buttonSpacingNone}
             />
           )
         )}
-        <SecondaryButton
-          label={t("select_method", "Back to method selection")}
-          onPress={handleOtherMethod}
-          style={styles.buttonSpacing}
-        />
+        {!isAiUnavailable && attempt >= MAX_ATTEMPTS ? (
+          <SecondaryButton
+            label={t("select_method", "Back to method selection")}
+            onPress={handleOtherMethod}
+            style={styles.buttonSpacing}
+          />
+        ) : null}
         <ErrorButton
           label={t("cancel", "Cancel")}
           onPress={handleCancel}

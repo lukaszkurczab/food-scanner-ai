@@ -1,11 +1,12 @@
 import { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { PrimaryButton, SecondaryButton, IconButton } from "@/components";
+import { IconButton } from "@/components";
 import { FormData } from "@/types";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { cmToFtIn, kgToLbs } from "@utils/units";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 type Props = {
   form: FormData;
@@ -179,65 +180,75 @@ export default function Step5Summary({
   ];
 
   return (
-    <View>
-      <View style={styles.header}>
-        <Text style={styles.title}>
-          {t("summary.title")}
-        </Text>
-        <Text style={styles.subtitle}>
-          {t("summary.desc")}
-        </Text>
-      </View>
-
-      {summary.map((section) => (
-        <View
-          key={section.title}
-          style={styles.card}
-        >
-          <View style={styles.rowCenter}>
-            <Text style={styles.sectionTitle}>
-              {section.title}
-            </Text>
-            <IconButton
-              icon={<MaterialIcons name="edit" size={22} />}
-              onPress={() => goToStep(section.step)}
-              accessibilityLabel={t("summary.edit")}
-              style={styles.editButton}
-            />
-          </View>
-          <View style={styles.sectionBody}>
-            {section.data.map((item, i) => (
-              <View
-                key={item.label + i}
-                style={[
-                  styles.rowBetween,
-                  i < section.data.length - 1 && styles.rowDivider,
-                ]}
-              >
-                <Text style={styles.itemLabel}>
-                  {item.label}
-                </Text>
-                <Text style={styles.itemValue}>
-                  {item.value}
-                </Text>
-              </View>
-            ))}
-          </View>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>
+            {t("summary.title")}
+          </Text>
+          <Text style={styles.subtitle}>
+            {t("summary.desc")}
+          </Text>
         </View>
-      ))}
 
-      <PrimaryButton
+        {summary.map((section) => (
+          <View
+            key={section.title}
+            style={styles.card}
+          >
+            <View style={styles.rowCenter}>
+              <Text style={styles.sectionTitle}>
+                {section.title}
+              </Text>
+              <IconButton
+                icon={<MaterialIcons name="edit" size={22} />}
+                onPress={() => goToStep(section.step)}
+                accessibilityLabel={t("summary.edit")}
+                style={styles.editButton}
+              />
+            </View>
+            <View style={styles.sectionBody}>
+              {section.data.map((item, i) => (
+                <View
+                  key={item.label + i}
+                  style={[
+                    styles.rowBetween,
+                    i < section.data.length - 1 && styles.rowDivider,
+                  ]}
+                >
+                  <Text style={styles.itemLabel}>
+                    {item.label}
+                  </Text>
+                  <Text style={styles.itemValue}>
+                    {item.value}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+
+      <GlobalActionButtons
         label={t("summary.save")}
         onPress={onFinish}
-        style={styles.saveSpacing}
+        secondaryLabel={t("back")}
+        secondaryOnPress={onBack}
+        containerStyle={styles.saveSpacing}
       />
-      <SecondaryButton label={t("back")} onPress={onBack} />
     </View>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    container: { flex: 1 },
+    scroll: { flex: 1 },
+    scrollContent: { paddingBottom: theme.spacing.md },
     header: { marginBottom: theme.spacing.xl },
     title: {
       fontFamily: theme.typography.fontFamily.bold,
@@ -298,5 +309,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontSize: theme.typography.size.base,
       fontFamily: theme.typography.fontFamily.regular,
     },
-    saveSpacing: { marginBottom: theme.spacing.md },
+    saveSpacing: { marginTop: theme.spacing.md },
   });

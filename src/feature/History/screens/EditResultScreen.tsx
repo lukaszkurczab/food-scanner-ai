@@ -7,8 +7,6 @@ import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "@/components/DateTimeSection";
 import {
   Layout,
-  PrimaryButton,
-  SecondaryButton,
   Card,
   Modal,
 } from "@/components";
@@ -17,6 +15,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useEditResultState } from "@/feature/History/hooks/useEditResultState";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 type ScreenRoute = RouteProp<RootStackParamList, "EditResult">;
 type EditResultNavigation = StackNavigationProp<RootStackParamList, "EditResult">;
@@ -119,19 +118,17 @@ export default function EditResultScreen({ navigation }: Props) {
             styles.actionsSpacing,
           ]}
         >
-          <PrimaryButton
+          <GlobalActionButtons
             label={t("save", { ns: "common" })}
             onPress={state.handleSave}
-            loading={state.saving}
-            disabled={!state.canSave}
-          />
-          <SecondaryButton
-            label={t("back_to_saved", {
+            primaryLoading={state.saving}
+            primaryDisabled={!state.canSave}
+            secondaryLabel={t("back_to_saved", {
               ns: "meals",
               defaultValue: "Wróć do zapisanych",
             })}
-            onPress={state.handleCancel}
-            disabled={state.saving}
+            secondaryOnPress={state.handleCancel}
+            secondaryDisabled={state.saving}
           />
         </View>
       </View>

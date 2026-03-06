@@ -11,10 +11,9 @@ import {
   Dimensions,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { PrimaryButton } from "@/components/PrimaryButton";
-import { SecondaryButton } from "@/components/SecondaryButton";
 import { IconButton } from "@/components/IconButton";
 import { MaterialIcons } from "@expo/vector-icons";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 const WINDOW_HEIGHT = Dimensions.get("window").height;
 const MODAL_MAX_WIDTH = 500;
@@ -142,40 +141,22 @@ export const Modal: React.FC<Props> = ({
             ) : (primaryActionLabel && onPrimaryAction) ||
               (secondaryActionLabel && onSecondaryAction) ? (
               actionsSideBySide ? (
-                <View style={styles.actionsRow}>
-                  <View style={styles.actionHalf}>
-                    <SecondaryButton
-                      label={secondaryActionLabel!}
-                      onPress={onSecondaryAction!}
-                    />
-                  </View>
-                  <View style={[styles.actionHalf, styles.actionHalfSpaced]}>
-                    <PrimaryButton
-                      label={primaryActionLabel!}
-                      onPress={onPrimaryAction!}
-                    />
-                  </View>
-                </View>
+                <GlobalActionButtons
+                  label={primaryActionLabel!}
+                  onPress={onPrimaryAction!}
+                  secondaryLabel={secondaryActionLabel!}
+                  secondaryOnPress={onSecondaryAction!}
+                  layout="row"
+                  rowOrder="secondary-primary"
+                  containerStyle={styles.actionsRow}
+                />
               ) : (
-                <View>
-                  {primaryActionLabel && onPrimaryAction && (
-                    <PrimaryButton
-                      label={primaryActionLabel}
-                      onPress={onPrimaryAction}
-                      style={
-                        secondaryActionLabel && onSecondaryAction
-                          ? styles.primaryStackedSpacing
-                          : undefined
-                      }
-                    />
-                  )}
-                  {secondaryActionLabel && onSecondaryAction && (
-                    <SecondaryButton
-                      label={secondaryActionLabel}
-                      onPress={onSecondaryAction}
-                    />
-                  )}
-                </View>
+                <GlobalActionButtons
+                  label={primaryActionLabel!}
+                  onPress={onPrimaryAction!}
+                  secondaryLabel={secondaryActionLabel!}
+                  secondaryOnPress={onSecondaryAction!}
+                />
               )
             ) : null}
           </View>
@@ -252,17 +233,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginTop: theme.spacing.md,
     },
     actionsRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
       marginTop: theme.spacing.sm,
-    },
-    actionHalf: {
-      flex: 1,
-    },
-    actionHalfSpaced: {
-      marginLeft: theme.spacing.sm,
-    },
-    primaryStackedSpacing: {
-      marginBottom: theme.spacing.sm,
     },
   });

@@ -10,7 +10,8 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import { RangeSlider } from "@/components";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { PrimaryButton, SecondaryButton } from "@/components";
+import { SecondaryButton } from "@/components";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { Calendar } from "@/components/Calendar";
 import { useTranslation } from "react-i18next";
 import { Filters, FilterScope, useFilters } from "@/context/HistoryContext";
@@ -252,16 +253,12 @@ export const FilterPanel: React.FC<{
         style={styles.footer}
       >
         {hasActive ? (
-          <>
-            <PrimaryButton
-              label={t("actions.apply", { ns: "history" })}
-              onPress={apply}
-            />
-            <SecondaryButton
-              label={t("actions.clear", { ns: "history" })}
-              onPress={clear}
-            />
-          </>
+          <GlobalActionButtons
+            label={t("actions.apply", { ns: "history" })}
+            onPress={apply}
+            secondaryLabel={t("actions.clear", { ns: "history" })}
+            secondaryOnPress={clear}
+          />
         ) : (
           <SecondaryButton
             label={t("actions.cancel", { ns: "history" })}
@@ -323,16 +320,13 @@ export const FilterPanel: React.FC<{
               })}
             </View>
 
-            <View style={styles.modalActions}>
-              <PrimaryButton
-                label={t("actions.done", { ns: "history" })}
-                onPress={() => setOpenPicker(false)}
-              />
-              <SecondaryButton
-                label={t("actions.reset", { ns: "history" })}
-                onPress={() => setActive([])}
-              />
-            </View>
+            <GlobalActionButtons
+              label={t("actions.done", { ns: "history" })}
+              onPress={() => setOpenPicker(false)}
+              secondaryLabel={t("actions.reset", { ns: "history" })}
+              secondaryOnPress={() => setActive([])}
+              containerStyle={styles.modalActions}
+            />
           </Pressable>
         </Pressable>
       </Modal>
@@ -366,16 +360,13 @@ export const FilterPanel: React.FC<{
               }
             />
 
-            <View style={styles.modalActions}>
-              <PrimaryButton
-                label={t("actions.save", { ns: "history" })}
-                onPress={applyCalendar}
-              />
-              <SecondaryButton
-                label={t("actions.cancel", { ns: "history" })}
-                onPress={() => setOpenCalendar(false)}
-              />
-            </View>
+            <GlobalActionButtons
+              label={t("actions.save", { ns: "history" })}
+              onPress={applyCalendar}
+              secondaryLabel={t("actions.cancel", { ns: "history" })}
+              secondaryOnPress={() => setOpenCalendar(false)}
+              containerStyle={styles.modalActions}
+            />
           </Pressable>
         </Pressable>
       </Modal>

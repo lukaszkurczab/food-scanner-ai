@@ -1,15 +1,14 @@
 import { useState, useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
 import {
-  PrimaryButton,
   TextInput,
   Layout,
   ErrorBox,
-  SecondaryButton,
 } from "@/components";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import {
   isUsernameAvailable,
   normalizeUsername,
@@ -121,67 +120,74 @@ export default function UsernameChangeScreen({ navigation }: Props) {
   };
 
   return (
-    <Layout>
-      {criticalError && (
-        <ErrorBox message={criticalError} style={styles.error} />
-      )}
-
-      <View style={styles.header}>
-        <Text
-          style={styles.title}
-          accessibilityRole="header"
+    <Layout disableScroll keyboardAvoiding={Platform.OS !== "ios"}>
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.formScroll}
+          contentContainerStyle={styles.formContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {t("changeUsername", { ns: "profile" })}
-        </Text>
-      </View>
+          {criticalError && (
+            <ErrorBox message={criticalError} style={styles.error} />
+          )}
 
-      <Text style={styles.label}>
-        {t("newUsername", { ns: "profile" })}
-      </Text>
-      <TextInput
-        value={username}
-        onChangeText={(val) => {
-          setUsername(val);
-          setErrors((e) => ({ ...e, username: undefined }));
-        }}
-        onBlur={() => setTouched((t) => ({ ...t, username: true }))}
-        placeholder={t("newUsernamePlaceholder", { ns: "profile" })}
-        autoCapitalize="none"
-        autoCorrect={false}
-        error={touched.username ? errors.username : undefined}
-        disabled={loading}
-        style={styles.input}
-      />
+          <View style={styles.header}>
+            <Text
+              style={styles.title}
+              accessibilityRole="header"
+            >
+              {t("changeUsername", { ns: "profile" })}
+            </Text>
+          </View>
 
-      <Text style={styles.label}>
-        {t("password", { ns: "profile" })}
-      </Text>
-      <TextInput
-        value={password}
-        onChangeText={(val) => {
-          setPassword(val);
-          setErrors((e) => ({ ...e, password: undefined }));
-        }}
-        onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-        placeholder={t("passwordPlaceholder", { ns: "profile" })}
-        secureTextEntry
-        error={touched.password ? errors.password : undefined}
-        disabled={loading}
-        style={styles.inputLarge}
-      />
+          <Text style={styles.label}>
+            {t("newUsername", { ns: "profile" })}
+          </Text>
+          <TextInput
+            value={username}
+            onChangeText={(val) => {
+              setUsername(val);
+              setErrors((e) => ({ ...e, username: undefined }));
+            }}
+            onBlur={() => setTouched((t) => ({ ...t, username: true }))}
+            placeholder={t("newUsernamePlaceholder", { ns: "profile" })}
+            autoCapitalize="none"
+            autoCorrect={false}
+            error={touched.username ? errors.username : undefined}
+            disabled={loading}
+            style={styles.input}
+          />
 
-      <View style={styles.actions}>
-        <PrimaryButton
-          label={t("confirm", { ns: "profile" })}
-          onPress={onSubmit}
-          loading={loading}
-          disabled={loading || !username || username.length < 3 || !password}
-        />
-        <SecondaryButton
-          label={t("cancel", { ns: "profile" })}
-          onPress={() => navigation.goBack()}
-          disabled={loading}
-        />
+          <Text style={styles.label}>
+            {t("password", { ns: "profile" })}
+          </Text>
+          <TextInput
+            value={password}
+            onChangeText={(val) => {
+              setPassword(val);
+              setErrors((e) => ({ ...e, password: undefined }));
+            }}
+            onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+            placeholder={t("passwordPlaceholder", { ns: "profile" })}
+            secureTextEntry
+            error={touched.password ? errors.password : undefined}
+            disabled={loading}
+            style={styles.inputLarge}
+          />
+        </ScrollView>
+
+        <View style={styles.actions}>
+          <GlobalActionButtons
+            label={t("confirm", { ns: "profile" })}
+            onPress={onSubmit}
+            primaryLoading={loading}
+            primaryDisabled={loading || !username || username.length < 3 || !password}
+            secondaryLabel={t("cancel", { ns: "profile" })}
+            secondaryOnPress={() => navigation.goBack()}
+            secondaryDisabled={loading}
+          />
+        </View>
       </View>
     </Layout>
   );
@@ -189,6 +195,9 @@ export default function UsernameChangeScreen({ navigation }: Props) {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    container: { flex: 1 },
+    formScroll: { flex: 1 },
+    formContent: { paddingBottom: theme.spacing.sm },
     error: { marginBottom: theme.spacing.sm },
     header: { marginBottom: theme.spacing.lg },
     title: {
@@ -206,5 +215,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     input: { marginBottom: theme.spacing.md },
     inputLarge: { marginBottom: theme.spacing.xl },
-    actions: { gap: theme.spacing.md },
+    actions: { gap: theme.spacing.md, paddingTop: theme.spacing.sm },
   });

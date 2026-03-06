@@ -2,12 +2,13 @@ import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import { PrimaryButton, SecondaryButton, Layout } from "@/components";
+import { SecondaryButton, Layout } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import type {
   MealAddScreenName,
   MealAddScreenProps,
 } from "@/feature/Meals/feature/MapMealAddScreens";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 const MAX_ATTEMPTS = 3;
 
@@ -76,17 +77,21 @@ export default function BarcodeProductNotFoundScreen({
         ) : null}
         <View style={styles.spacer} />
         {!isLastAttempt && (
-          <PrimaryButton
+          <GlobalActionButtons
             label={`${t("barcode_try_again", "Scan again")} (${attempt}/${MAX_ATTEMPTS})`}
             onPress={handleRetry}
-            style={styles.buttonSpacingNone}
+            secondaryLabel={t("barcode_back_to_review", "Back to ingredients")}
+            secondaryOnPress={handleBack}
+            containerStyle={styles.buttonSpacingNone}
           />
         )}
-        <SecondaryButton
-          label={t("barcode_back_to_review", "Back to ingredients")}
-          onPress={handleBack}
-          style={styles.buttonSpacing}
-        />
+        {isLastAttempt ? (
+          <SecondaryButton
+            label={t("barcode_back_to_review", "Back to ingredients")}
+            onPress={handleBack}
+            style={styles.buttonSpacing}
+          />
+        ) : null}
       </View>
     </Layout>
   );

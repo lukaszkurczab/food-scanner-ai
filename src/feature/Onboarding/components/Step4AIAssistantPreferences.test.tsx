@@ -116,7 +116,7 @@ describe("Step4AIAssistantPreferences", () => {
     );
 
     expect(getByText("ai.focus_placeholder")).toBeTruthy();
-    fireEvent.press(getByText("skip"));
+    fireEvent.press(getByText("next"));
     expect(onNext).not.toHaveBeenCalled();
   });
 

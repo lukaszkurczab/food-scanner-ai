@@ -16,10 +16,9 @@ import Animated, {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useTranslation } from "react-i18next";
-import { PrimaryButton } from "./PrimaryButton";
-import { SecondaryButton } from "./SecondaryButton";
 import { MaterialIcons } from "@expo/vector-icons";
 import ZoomModal from "./ZoomModal";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 type PhotoPreviewProps = {
   photoUri: string;
@@ -309,21 +308,16 @@ export const PhotoPreview = ({
         )}
       </View>
 
-      <View style={styles.actionsBar}>
-        <SecondaryButton
-          label={secondaryText}
-          onPress={onRetake}
-          disabled={isLoading}
-          style={styles.action}
-        />
-        <PrimaryButton
-          label={primaryText}
-          onPress={() => onAccept(photoUri)}
-          loading={false}
-          disabled={false}
-          style={styles.action}
-        />
-      </View>
+      <GlobalActionButtons
+        label={primaryText}
+        onPress={() => onAccept(photoUri)}
+        secondaryLabel={secondaryText}
+        secondaryOnPress={onRetake}
+        secondaryDisabled={isLoading}
+        layout="row"
+        rowOrder="secondary-primary"
+        containerStyle={styles.actionsBar}
+      />
 
       <ZoomModal visible={zoomVisible} uri={photoUri} onClose={closeZoom} />
     </View>
@@ -372,12 +366,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF4",
   },
   actionsBar: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "center",
     width: "100%",
   },
-  action: { flex: 1 },
   fab: {
     position: "absolute",
     width: 44,
