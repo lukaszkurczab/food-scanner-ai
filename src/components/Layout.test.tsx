@@ -1,4 +1,4 @@
-import { Text } from "react-native";
+import { Text, Keyboard, Platform } from "react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import { Layout } from "@/components/Layout";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
@@ -73,5 +73,40 @@ describe("Layout", () => {
     );
 
     expect(getByText("offline-banner")).toBeTruthy();
+  });
+
+  it("registers keyboard listeners matching the current platform", () => {
+    mockUseE2ENetInfo.mockReturnValue({ isConnected: true });
+    const removeShow = jest.fn();
+    const removeHide = jest.fn();
+    const addListenerSpy = jest
+      .spyOn(Keyboard, "addListener")
+      .mockImplementation(((eventName: string) => {
+        if (eventName.includes("Show")) {
+          return { remove: removeShow } as never;
+        }
+        return { remove: removeHide } as never;
+      }) as typeof Keyboard.addListener);
+
+    const { unmount } = renderWithTheme(
+      <Layout>
+        <Text>screen-content</Text>
+      </Layout>,
+    );
+
+    const expectedEvents =
+      Platform.OS === "ios"
+        ? ["keyboardWillShow", "keyboardWillHide"]
+        : ["keyboardDidShow", "keyboardDidHide"];
+    const observedEvents = addListenerSpy.mock.calls.map(([eventName]) =>
+      String(eventName),
+    );
+
+    expectedEvents.forEach((eventName) => {
+      expect(observedEvents).toContain(eventName);
+    });
+    unmount();
+    expect(removeShow).toHaveBeenCalled();
+    expect(removeHide).toHaveBeenCalled();
   });
 });

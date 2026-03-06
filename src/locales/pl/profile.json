@@ -77,7 +77,11 @@
     "purchaseFailed": "Zakup nie powiódł się. Spróbuj ponownie.",
     "restorePurchases": "Przywróć zakupy",
     "inactiveSince": "Nieaktywna od",
-    "autorenewInfo": "Subskrypcja odnawia się automatycznie, jeśli nie anulujesz jej co najmniej 24 godziny przed końcem bieżącego okresu. Zarządzać lub anulować możesz w ustawieniach konta App Store / Google Play."
+    "store": {
+      "appStore": "App Store",
+      "googlePlay": "Google Play"
+    },
+    "autorenewInfo": "Subskrypcja odnawia się automatycznie, jeśli nie anulujesz jej co najmniej 24 godziny przed końcem bieżącego okresu. Zarządzać lub anulować możesz w ustawieniach konta {{storeName}}."
   },
   "change_password": "Zmień hasło",
   "old_password": "Obecne hasło",

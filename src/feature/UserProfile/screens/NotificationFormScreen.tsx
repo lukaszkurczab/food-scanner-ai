@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { View, Text, TextInput, ScrollView, Pressable, StyleSheet } from "react-native";
 import {
+  BackTitleHeader,
   Layout,
   PrimaryButton,
   Card,
@@ -39,6 +40,7 @@ export default function NotificationFormScreen() {
   const nav = useNavigation<NotificationFormNavigation>();
   const route = useRoute<NotificationFormRoute>();
   const notifId: string | null = route.params?.id ?? null;
+  const screenTitle = notifId ? t("form.edit") : t("form.create");
 
   const mealOptions: Array<{ label: string; value: MealKind | null }> = useMemo(
     () => [
@@ -107,6 +109,8 @@ export default function NotificationFormScreen() {
   return (
     <Layout>
       <ScrollView contentContainerStyle={styles.content}>
+        <BackTitleHeader title={screenTitle} onBack={() => nav.goBack()} />
+
         <View style={styles.section}>
           <Text style={styles.label}>{t("form.name")}</Text>
           <TextInput

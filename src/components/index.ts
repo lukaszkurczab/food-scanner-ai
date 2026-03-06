@@ -33,6 +33,7 @@ export * from "./DateRangePicker";
 export * from "./RangeSlider";
 export * from "./PhotoPreview";
 export * from "./SearchBox";
+export * from "./BackTitleHeader";
 export * from "./Clock24h";
 export * from "./Clock12h";
 export * from "./FullScreenLoader";

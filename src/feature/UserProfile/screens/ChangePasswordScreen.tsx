@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   View,
-  Text,
   Keyboard,
   TouchableOpacity,
   StyleSheet,
@@ -12,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import {
+  BackTitleHeader,
   TextInput,
   ErrorBox,
   Layout,
@@ -120,9 +120,10 @@ export default function ChangePasswordScreen({ navigation }: Props) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>
-            {t("profile:change_password")}
-          </Text>
+          <BackTitleHeader
+            title={t("profile:change_password")}
+            onBack={() => navigation.goBack()}
+          />
 
           {noInternet && <ErrorBox message={t("common:no_internet")} />}
           {error && <ErrorBox message={error} />}
@@ -213,13 +214,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     container: { flex: 1 },
     formScroll: { flex: 1 },
     formContent: { paddingBottom: theme.spacing.sm },
-    title: {
-      fontSize: theme.typography.size.xl,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-      marginBottom: theme.spacing.xl,
-      textAlign: "center",
-    },
     input: { marginBottom: theme.spacing.lg },
     inputLarge: { marginBottom: theme.spacing.xl },
     actions: { marginTop: theme.spacing.sm },

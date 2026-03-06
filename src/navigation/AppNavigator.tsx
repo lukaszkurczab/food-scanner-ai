@@ -51,7 +51,7 @@ function renderAuthScreens() {
   );
 }
 
-function renderAppScreens(disableAnimations: boolean) {
+function renderAppScreens() {
   return (
     <>
       <Stack.Screen name="Loading" component={LoadingScreen} />
@@ -82,12 +82,6 @@ function renderAppScreens(disableAnimations: boolean) {
       <Stack.Screen
         name="ManageSubscription"
         component={ManageSubscriptionScreen}
-        options={{
-          headerShown: true,
-          headerBackTitle: "",
-          gestureEnabled: true,
-          animation: disableAnimations ? "none" : "default",
-        }}
       />
       <Stack.Screen
         name="ChangePassword"
@@ -145,7 +139,7 @@ export default function AppNavigator() {
         animation: disableAnimations ? "none" : "default",
       }}
     >
-      {isAuthenticated ? renderAppScreens(disableAnimations) : renderAuthScreens()}
+      {isAuthenticated ? renderAppScreens() : renderAuthScreens()}
       {renderSharedScreens()}
     </Stack.Navigator>
   );

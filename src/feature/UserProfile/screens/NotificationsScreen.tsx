@@ -1,13 +1,12 @@
 import { useMemo } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
-import { Layout, PrimaryButton } from "@/components";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { BackTitleHeader, Layout, PrimaryButton } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { NotificationCard } from "@/components/NotificationCard";
 import { ButtonToggle } from "@/components/ButtonToggle";
 import SectionHeader from "../components/SectionHeader";
-import { MaterialIcons } from "@expo/vector-icons";
 import { Alert as AppAlert } from "@/components/Alert";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -50,15 +49,10 @@ export default function NotificationsScreen({
   return (
     <Layout>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable style={styles.header} onPress={() => navigation.goBack()}>
-          <MaterialIcons name="chevron-left" size={28} color={theme.text} />
-          <Text
-            style={styles.heading}
-            accessibilityRole="header"
-          >
-            {t("screen.title")}
-          </Text>
-        </Pressable>
+        <BackTitleHeader
+          title={t("screen.title")}
+          onBack={() => navigation.goBack()}
+        />
 
         <View>
           <SectionHeader label={t("screen.myReminders")} />
@@ -166,17 +160,6 @@ export default function NotificationsScreen({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     content: { gap: theme.spacing.lg },
-    header: {
-      alignItems: "center",
-      flexDirection: "row",
-      marginBottom: theme.spacing.xl,
-      gap: theme.spacing.md,
-    },
-    heading: {
-      fontSize: theme.typography.size.lg,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-    },
     mb12: { marginBottom: theme.spacing.sm },
     addButton: { marginBottom: theme.spacing.md },
     toggleRow: {

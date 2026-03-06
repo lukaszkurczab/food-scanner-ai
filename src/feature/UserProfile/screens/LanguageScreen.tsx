@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet, FlatList } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Layout, TextInput } from "@/components";
+import { BackTitleHeader, Layout, TextInput } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useUserContext } from "@contexts/UserContext";
@@ -62,21 +62,10 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   return (
     <Layout disableScroll>
       <View style={styles.flex}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={12}
-          accessibilityRole="button"
-          style={styles.header}
-        >
-          <MaterialIcons name="chevron-left" size={28} color={theme.text} />
-
-          <Text
-            style={styles.heading}
-            accessibilityRole="header"
-          >
-            {t("language", { ns: "profile", defaultValue: "Language" })}
-          </Text>
-        </Pressable>
+        <BackTitleHeader
+          title={t("language", { ns: "profile", defaultValue: "Language" })}
+          onBack={() => navigation.goBack()}
+        />
 
         <TextInput
           placeholder={t("input.search", { defaultValue: "Search" })}
@@ -144,17 +133,6 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    header: {
-      alignItems: "center",
-      flexDirection: "row",
-      marginBottom: theme.spacing.lg,
-      gap: theme.spacing.md,
-    },
-    heading: {
-      fontSize: theme.typography.size.lg,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-    },
     searchInput: {
       marginBottom: theme.spacing.xs,
       marginHorizontal: theme.spacing.sm,
