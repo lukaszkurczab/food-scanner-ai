@@ -81,4 +81,25 @@ describe("PaywallModal", () => {
     expect(openURLSpy).toHaveBeenCalledWith("https://example.com/privacy");
     openURLSpy.mockRestore();
   });
+
+  it("shows spinner state and blocks actions when busy", () => {
+    const onSubscribe = jest.fn();
+    const onRestore = jest.fn();
+    const { getByTestId, getByText, queryByText } = renderWithTheme(
+      <PaywallModal
+        visible
+        busy
+        priceText="$9.99 / month"
+        onClose={() => undefined}
+        onSubscribe={onSubscribe}
+        onRestore={onRestore}
+      />,
+    );
+
+    expect(getByTestId("paywall-subscribe-spinner")).toBeTruthy();
+    expect(queryByText("Subscribe")).toBeNull();
+    fireEvent.press(getByText("Restore Purchases"));
+    expect(onSubscribe).not.toHaveBeenCalled();
+    expect(onRestore).not.toHaveBeenCalled();
+  });
 });

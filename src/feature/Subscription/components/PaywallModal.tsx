@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Linking,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -47,7 +48,8 @@ export const PaywallModal: React.FC<Props> = ({
     <Modal
       visible={visible}
       fullScreen
-      onClose={onClose}
+      onClose={busy ? undefined : onClose}
+      closeOnBackdropPress={!busy}
       title={t("paywall.title", { defaultValue: "Premium Monthly" })}
       footer={
         <View style={styles.footer}>
@@ -55,6 +57,7 @@ export const PaywallModal: React.FC<Props> = ({
             onPress={onSubscribe}
             disabled={busy}
             activeOpacity={0.8}
+            accessibilityState={{ disabled: !!busy, busy: !!busy }}
             style={[
               styles.cta,
               {
@@ -62,9 +65,19 @@ export const PaywallModal: React.FC<Props> = ({
               },
             ]}
           >
-            <Text style={styles.ctaText}>
-              {t("paywall.subscribe", { defaultValue: "Subscribe" })}
-            </Text>
+            <View style={styles.ctaInner}>
+              {busy ? (
+                <ActivityIndicator
+                  testID="paywall-subscribe-spinner"
+                  size="small"
+                  color={theme.onAccent}
+                />
+              ) : (
+                <Text style={styles.ctaText}>
+                  {t("paywall.subscribe", { defaultValue: "Subscribe" })}
+                </Text>
+              )}
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -151,6 +164,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.md,
       alignItems: "center",
       backgroundColor: theme.accentSecondary,
+    },
+    ctaInner: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 22,
     },
     ctaText: {
       fontSize: theme.typography.size.md,

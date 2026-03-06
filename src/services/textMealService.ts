@@ -19,6 +19,15 @@ export type TextMealAnalyzeResult = {
   };
 };
 
+function hasNonZeroNutrition(ingredient: Ingredient): boolean {
+  return (
+    Number(ingredient.kcal) > 0 ||
+    Number(ingredient.protein) > 0 ||
+    Number(ingredient.fat) > 0 ||
+    Number(ingredient.carbs) > 0
+  );
+}
+
 export async function extractIngredientsFromText(
   uid: string,
   payload: AiTextMealPayload,
@@ -34,19 +43,29 @@ export async function extractIngredientsFromText(
       lang,
     });
 
+    const mappedIngredients = response.ingredients.map(
+      (ingredient): Ingredient => ({
+        id: uuidv4(),
+        name: ingredient.name,
+        amount: ingredient.amount,
+        unit: ingredient.unit ?? "g",
+        protein: ingredient.protein,
+        fat: ingredient.fat,
+        carbs: ingredient.carbs,
+        kcal: ingredient.kcal,
+      }),
+    );
+
+    if (!mappedIngredients.some(hasNonZeroNutrition)) {
+      logWarning(
+        "[textMealService] backend returned ingredients without nutrition values",
+        { userUid: uid, lang },
+      );
+      return null;
+    }
+
     return {
-      ingredients: response.ingredients.map(
-        (ingredient): Ingredient => ({
-          id: uuidv4(),
-          name: ingredient.name,
-          amount: ingredient.amount,
-          unit: ingredient.unit ?? "g",
-          protein: ingredient.protein,
-          fat: ingredient.fat,
-          carbs: ingredient.carbs,
-          kcal: ingredient.kcal,
-        }),
-      ),
+      ingredients: mappedIngredients,
       usage: {
         usageCount: response.usageCount,
         dailyLimit: getAiDailyLimit(response),
