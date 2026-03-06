@@ -1,5 +1,13 @@
 import { useMemo } from "react";
-import { View, Text, TextInput, ScrollView, Pressable, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import {
   BackTitleHeader,
   Layout,
@@ -107,7 +115,7 @@ export default function NotificationFormScreen() {
   });
 
   return (
-    <Layout>
+    <Layout keyboardAvoiding={Platform.OS !== "ios"}>
       <ScrollView contentContainerStyle={styles.content}>
         <BackTitleHeader title={screenTitle} onBack={() => nav.goBack()} />
 

@@ -1,5 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  FlatList,
+  Platform,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { BackTitleHeader, Layout, TextInput } from "@/components";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -60,7 +67,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   };
 
   return (
-    <Layout disableScroll>
+    <Layout disableScroll keyboardAvoiding={Platform.OS !== "ios"}>
       <View style={styles.flex}>
         <BackTitleHeader
           title={t("language", { ns: "profile", defaultValue: "Language" })}

@@ -1,5 +1,13 @@
 import { useState, useMemo } from "react";
-import { View, Text, StyleSheet, Image, Pressable, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+  Alert,
+  Platform,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { BackTitleHeader, Layout, LongTextInput } from "@/components";
 import * as ImagePicker from "expo-image-picker";
@@ -84,7 +92,7 @@ export default function SendFeedbackScreen({
   };
 
   return (
-    <Layout>
+    <Layout keyboardAvoiding={Platform.OS !== "ios"}>
       <View style={styles.container}>
         <BackTitleHeader
           title={t("sendFeedback", { defaultValue: "Send us your feedback" })}

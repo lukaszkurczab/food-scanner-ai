@@ -1,5 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, Keyboard, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Keyboard,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
@@ -93,7 +100,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   );
 
   return (
-    <Layout showNavigation={false}>
+    <Layout showNavigation={false} keyboardAvoiding={Platform.OS !== "ios"}>
       <View style={styles.centerBoth}>
         <Text style={styles.title}>
           {t("common:app_title")}

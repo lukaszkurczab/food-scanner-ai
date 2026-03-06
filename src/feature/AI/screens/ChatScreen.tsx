@@ -1,5 +1,11 @@
 import { useMemo, useState, useCallback } from "react";
-import { View, FlatList, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  View,
+  FlatList,
+  ActivityIndicator,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useAuthContext } from "@/context/AuthContext";
@@ -113,7 +119,11 @@ export default function ChatScreen() {
   );
 
   return (
-    <Layout disableScroll style={styles.layout}>
+    <Layout
+      disableScroll
+      style={styles.layout}
+      keyboardAvoiding={Platform.OS !== "ios"}
+    >
       <View style={styles.header}>
         <IconButton
           testID="chat-history-button"
