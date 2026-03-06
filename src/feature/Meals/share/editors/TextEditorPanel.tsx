@@ -33,6 +33,7 @@ type Props = {
   onChange: (next: ShareOptions) => void;
   onTapTextElement?: (id: ElementId) => void;
   onColorPickingChange?: (isPicking: boolean) => void;
+  onRemoveSelectedCustom?: (id: ElementId) => void;
 };
 
 export default function TextEditorPanel({
@@ -40,6 +41,7 @@ export default function TextEditorPanel({
   selectedId,
   onChange,
   onColorPickingChange,
+  onRemoveSelectedCustom,
 }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["share", "common"]);
@@ -108,6 +110,9 @@ export default function TextEditorPanel({
 
   const isTitle = selectedId === "title";
   const isKcal = selectedId === "kcal";
+  const isSelectedCustom =
+    typeof selectedId === "string" && selectedId.startsWith("custom:");
+  const canRemoveSelectedCustom = isSelectedCustom && !!customItem;
 
   const textColorPreview = isTitle
     ? options.titleColor || String(theme.text)
@@ -513,6 +518,23 @@ export default function TextEditorPanel({
           ]}
         />
       </Pressable>
+
+      {canRemoveSelectedCustom && (
+        <>
+          <View style={styles.spacer} />
+          <Pressable
+            style={styles.removeButton}
+            onPress={() => {
+              if (!selectedId) return;
+              onRemoveSelectedCustom?.(selectedId);
+            }}
+          >
+            <Text style={styles.removeButtonText}>
+              {t("common:remove", "Remove")}
+            </Text>
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }
@@ -554,4 +576,18 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontSize: theme.typography.size.sm,
     },
     dropdownLabel: { color: theme.text, fontSize: theme.typography.size.sm },
+    removeButton: {
+      alignSelf: "flex-start",
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.rounded.sm,
+      borderWidth: 1,
+      borderColor: theme.error.border,
+      backgroundColor: theme.error.background,
+    },
+    removeButtonText: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
   });

@@ -159,7 +159,11 @@ export default function HistoryListScreen({
               styles.topBarSpacing,
             ]}
           >
-            <SearchBox value={state.query} onChange={state.setQuery} />
+            <SearchBox
+              value={state.query}
+              onChange={state.setQuery}
+              style={styles.searchBox}
+            />
             <FilterBadgeButton
               activeCount={state.filterCount}
               onPress={state.toggleShowFilters}
@@ -223,6 +227,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     mealRow: { marginBottom: theme.spacing.sm },
     topBar: { flexDirection: "row" },
+    searchBox: { flex: 1 },
     topBarSpacing: {
       marginBottom: theme.spacing.md,
       gap: theme.spacing.sm,

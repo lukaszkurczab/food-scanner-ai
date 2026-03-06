@@ -214,7 +214,7 @@ export default function SavedMealsScreen({
       ) : (
         <View style={styles.topBarWrap}>
           <View style={styles.row}>
-            <SearchBox value={query} onChange={setQuery} />
+            <SearchBox value={query} onChange={setQuery} style={styles.searchBox} />
             <FilterBadgeButton
               activeCount={filterCount}
               onPress={toggleShowFilters}
@@ -257,6 +257,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     filtersWrap: { height: "100%", paddingBottom: theme.spacing.nav },
     topBarWrap: { padding: theme.spacing.md, gap: theme.spacing.sm },
     row: { flexDirection: "row", gap: theme.spacing.sm },
+    searchBox: { flex: 1 },
     validatingWrap: {
       paddingHorizontal: theme.spacing.md,
       marginBottom: theme.spacing.xs,
