@@ -78,16 +78,13 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
     );
 
   if (layout === "row") {
-    const first = rowOrder === "secondary-primary" ? secondaryElement : primaryElement;
-    const second = rowOrder === "secondary-primary" ? primaryElement : secondaryElement;
+    const first =
+      rowOrder === "secondary-primary" ? secondaryElement : primaryElement;
+    const second =
+      rowOrder === "secondary-primary" ? primaryElement : secondaryElement;
 
     return (
-      <View
-        style={[
-          styles.rowContainer,
-          containerStyle,
-        ]}
-      >
+      <View style={[styles.rowContainer, containerStyle]}>
         <View style={styles.rowItem}>{first}</View>
         <View style={styles.rowItem}>{second}</View>
       </View>
@@ -95,12 +92,7 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
   }
 
   return (
-    <View
-      style={[
-        styles.stackedContainer,
-        containerStyle,
-      ]}
-    >
+    <View style={[styles.stackedContainer, containerStyle]}>
       {primaryElement}
       {secondaryElement}
     </View>
@@ -110,11 +102,13 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     stackedContainer: {
+      paddingTop: theme.spacing.sm,
       gap: theme.spacing.md,
     },
     rowContainer: {
       flexDirection: "row",
       gap: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
       alignItems: "center",
     },
     rowItem: {

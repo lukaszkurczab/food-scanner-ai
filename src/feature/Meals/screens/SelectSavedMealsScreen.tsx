@@ -5,10 +5,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
-import {
-  FullScreenLoader,
-  Layout,
-} from "@/components";
+import { FullScreenLoader, Layout } from "@/components";
 import { SearchBox } from "@/components/SearchBox";
 import { MealListItem } from "@/components/MealListItem";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -31,8 +28,12 @@ export default function SelectSavedMealScreen({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { uid } = useAuthContext();
-  const { meal: draftMeal, setMeal, saveDraft, setLastScreen } =
-    useMealDraftContext();
+  const {
+    meal: draftMeal,
+    setMeal,
+    saveDraft,
+    setLastScreen,
+  } = useMealDraftContext();
   const { t } = useTranslation(["meals"]);
 
   const {
@@ -56,8 +57,7 @@ export default function SelectSavedMealScreen({
     setMeal,
     saveDraft,
     setLastScreen,
-    onNavigateResult: () =>
-      navigation.navigate("AddMeal", { start: "Result" }),
+    onNavigateResult: () => navigation.navigate("AddMeal", { start: "Result" }),
     onStartOver: () => navigation.replace("MealAddMethod"),
   });
 
@@ -66,9 +66,7 @@ export default function SelectSavedMealScreen({
       const id = item.cloudId || item.mealId;
       const selected = selectedId === id;
       return (
-        <View
-          style={styles.listItemWrap}
-        >
+        <View style={styles.listItemWrap}>
           <MealListItem
             meal={item}
             onPress={() => handleSelect(item)}
@@ -106,15 +104,13 @@ export default function SelectSavedMealScreen({
               : t("meals:saveMealsToReuse", "Save meals to reuse them later.")
           }
         />
-        <View style={styles.bottomActions}>
-          <GlobalActionButtons
-            label={t("meals:select", "Select")}
-            onPress={() => {}}
-            primaryDisabled
-            secondaryLabel={t("meals:select_method", "Start over")}
-            secondaryOnPress={handleStartOver}
-          />
-        </View>
+        <GlobalActionButtons
+          label={t("meals:select", "Select")}
+          onPress={() => {}}
+          primaryDisabled
+          secondaryLabel={t("meals:select_method", "Start over")}
+          secondaryOnPress={handleStartOver}
+        />
       </Layout>
     );
   }
@@ -127,7 +123,9 @@ export default function SelectSavedMealScreen({
       <FlatList
         data={pageItems}
         keyExtractor={keyExtractor}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={refresh} />
+        }
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         onViewableItemsChanged={onViewableItemsChanged.current}
@@ -136,17 +134,13 @@ export default function SelectSavedMealScreen({
         initialNumToRender={step}
         windowSize={7}
       />
-      <View
-        style={styles.bottomActions}
-      >
-        <GlobalActionButtons
-          label={t("meals:select", "Select")}
-          onPress={handleConfirm}
-          primaryDisabled={!selectedId}
-          secondaryLabel={t("meals:select_method", "Start over")}
-          secondaryOnPress={handleStartOver}
-        />
-      </View>
+      <GlobalActionButtons
+        label={t("meals:select", "Select")}
+        onPress={handleConfirm}
+        primaryDisabled={!selectedId}
+        secondaryLabel={t("meals:select_method", "Start over")}
+        secondaryOnPress={handleStartOver}
+      />
     </Layout>
   );
 }
@@ -154,14 +148,8 @@ export default function SelectSavedMealScreen({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     listItemWrap: {
-      paddingHorizontal: theme.spacing.md,
       marginBottom: theme.spacing.sm,
     },
-    searchWrap: { padding: theme.spacing.md },
-    bottomActions: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingBottom: theme.spacing.lg,
-      gap: theme.spacing.md,
-    },
+    searchWrap: { paddingVertical: theme.spacing.md },
     listContent: { paddingBottom: theme.spacing.lg },
   });

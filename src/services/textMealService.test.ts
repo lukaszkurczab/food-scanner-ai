@@ -88,6 +88,48 @@ describe("textMealService", () => {
     });
   });
 
+  it("returns null when backend responds with zero nutrition values", async () => {
+    mockPost.mockResolvedValueOnce({
+      ingredients: [
+        {
+          name: "Kebab",
+          amount: 350,
+          protein: 0,
+          fat: 0,
+          carbs: 0,
+          kcal: 0,
+        },
+      ],
+      usageCount: 1,
+      remaining: 19,
+      dateKey: "2026-03-03",
+      version: "test",
+      persistence: "backend_owned",
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { extractIngredientsFromText } = require("@/services/textMealService");
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { logWarning } = require("@/services/errorLogger");
+
+    const result = await extractIngredientsFromText(
+      "user-1",
+      {
+        name: "kebab",
+        ingredients: "kebab",
+        amount_g: 350,
+        notes: null,
+      },
+      { lang: "pl" },
+    );
+
+    expect(result).toBeNull();
+    expect(logWarning).toHaveBeenCalledWith(
+      "[textMealService] backend returned ingredients without nutrition values",
+      { userUid: "user-1", lang: "pl" },
+    );
+  });
+
   it("throws AiLimitExceededError when backend responds with 429", async () => {
     const limitError = Object.assign(new Error("limit"), { status: 429 });
     mockPost.mockRejectedValueOnce(limitError);
