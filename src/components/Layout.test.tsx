@@ -1,5 +1,6 @@
-import { Text, Keyboard, Platform } from "react-native";
-import { describe, expect, it, jest } from "@jest/globals";
+import { Text, Keyboard, Platform, View, StyleSheet } from "react-native";
+import { act } from "@testing-library/react-native";
+import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { Layout } from "@/components/Layout";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
@@ -40,6 +41,11 @@ jest.mock("@/components/OfflineBanner", () => {
 });
 
 describe("Layout", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+    mockUseE2ENetInfo.mockReset();
+  });
+
   it("renders content and bottom tab when navigation is enabled", () => {
     mockUseE2ENetInfo.mockReturnValue({ isConnected: true });
     const { getByText, queryByText } = renderWithTheme(
@@ -108,5 +114,49 @@ describe("Layout", () => {
     unmount();
     expect(removeShow).toHaveBeenCalled();
     expect(removeHide).toHaveBeenCalled();
+  });
+
+  it("removes bottom padding when keyboard is visible", () => {
+    mockUseE2ENetInfo.mockReturnValue({ isConnected: true });
+    const listeners = new Map<string, () => void>();
+    jest
+      .spyOn(Keyboard, "addListener")
+      .mockImplementation(((eventName: string, callback: unknown) => {
+        listeners.set(eventName, callback as () => void);
+        return { remove: jest.fn() } as never;
+      }) as typeof Keyboard.addListener);
+
+    const { UNSAFE_getAllByType } = renderWithTheme(
+      <Layout>
+        <Text>screen-content</Text>
+      </Layout>,
+    );
+
+    const getRootPaddingBottom = () => {
+      const rootView = UNSAFE_getAllByType(View).find((node) => {
+        const flattened = StyleSheet.flatten(node.props.style);
+        return flattened?.paddingLeft === 32 && flattened?.paddingRight === 32;
+      });
+
+      expect(rootView).toBeTruthy();
+      return StyleSheet.flatten(rootView?.props.style).paddingBottom;
+    };
+
+    const showEventName =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEventName =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    expect(getRootPaddingBottom()).toBe(44);
+
+    act(() => {
+      listeners.get(showEventName)?.();
+    });
+    expect(getRootPaddingBottom()).toBe(0);
+
+    act(() => {
+      listeners.get(hideEventName)?.();
+    });
+    expect(getRootPaddingBottom()).toBe(44);
   });
 });

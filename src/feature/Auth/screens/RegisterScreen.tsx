@@ -5,7 +5,6 @@ import {
   Keyboard,
   TouchableOpacity,
   StyleSheet,
-  Platform,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
@@ -100,7 +99,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   );
 
   return (
-    <Layout showNavigation={false} keyboardAvoiding={Platform.OS !== "ios"}>
+    <Layout showNavigation={false}>
       <View style={styles.centerBoth}>
         <Text style={styles.title}>
           {t("common:app_title")}

@@ -4,8 +4,6 @@ import {
   TextInput,
   Pressable,
   Text,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
@@ -37,57 +35,52 @@ export const InputBar: React.FC<Props> = ({
   }, [text, disabled, onSend]);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.select({ ios: 8, android: 0 })}
-    >
-      <View style={styles.wrapper}>
-        <View style={[styles.row, disabled && styles.rowDisabled]}>
-          <TextInput
-            testID="chat-input"
-            value={text}
-            onChangeText={setText}
-            placeholder={placeholder ?? t("input.placeholder")}
-            placeholderTextColor={theme.textSecondary}
-            style={styles.input}
-            textAlignVertical="center"
-            multiline
-            editable={!disabled}
-            onSubmitEditing={send}
-          />
-          <Pressable
-            testID="chat-send-button"
-            accessibilityRole="button"
-            onPress={send}
-            disabled={disabled}
-            style={({ pressed }) => [
-              styles.sendBtn,
-              {
-                backgroundColor: disabled
-                  ? theme.disabled.background
-                  : theme.accentSecondary,
-                opacity: pressed ? 0.9 : 1,
-              },
+    <View style={styles.wrapper}>
+      <View style={[styles.row, disabled && styles.rowDisabled]}>
+        <TextInput
+          testID="chat-input"
+          value={text}
+          onChangeText={setText}
+          placeholder={placeholder ?? t("input.placeholder")}
+          placeholderTextColor={theme.textSecondary}
+          style={styles.input}
+          textAlignVertical="center"
+          multiline
+          editable={!disabled}
+          onSubmitEditing={send}
+        />
+        <Pressable
+          testID="chat-send-button"
+          accessibilityRole="button"
+          onPress={send}
+          disabled={disabled}
+          style={({ pressed }) => [
+            styles.sendBtn,
+            {
+              backgroundColor: disabled
+                ? theme.disabled.background
+                : theme.accentSecondary,
+              opacity: pressed ? 0.9 : 1,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.sendLabel,
+              { color: disabled ? theme.disabled.text : theme.onAccent },
             ]}
           >
-            <Text
-              style={[
-                styles.sendLabel,
-                { color: disabled ? theme.disabled.text : theme.onAccent },
-              ]}
-            >
-              {t("input.send")}
-            </Text>
-          </Pressable>
-        </View>
-
-        {!!helperText && (
-          <Text style={styles.helper} numberOfLines={2}>
-            {helperText}
+            {t("input.send")}
           </Text>
-        )}
+        </Pressable>
       </View>
-    </KeyboardAvoidingView>
+
+      {!!helperText && (
+        <Text style={styles.helper} numberOfLines={2}>
+          {helperText}
+        </Text>
+      )}
+    </View>
   );
 };
 

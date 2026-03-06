@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Platform,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
@@ -111,7 +110,6 @@ export default function ChangePasswordScreen({ navigation }: Props) {
     <Layout
       showNavigation={false}
       disableScroll
-      keyboardAvoiding={Platform.OS !== "ios"}
     >
       <View style={styles.container}>
         <ScrollView

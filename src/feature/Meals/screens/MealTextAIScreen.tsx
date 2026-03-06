@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { View, StyleSheet, ScrollView, Platform } from "react-native";
+import { View, StyleSheet, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import {
   Layout,
@@ -52,7 +52,7 @@ export default function MealTextAIScreen() {
   });
 
   return (
-    <Layout disableScroll keyboardAvoiding={Platform.OS !== "ios"}>
+    <Layout disableScroll>
       <View style={styles.content}>
         <ScrollView
           style={styles.formScroll}
