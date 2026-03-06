@@ -115,11 +115,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     input: {
       flex: 1,
-      minHeight: 44,
       maxHeight: 132,
-      paddingRight: theme.spacing.sm,
-      paddingVertical: theme.spacing.sm,
-      lineHeight: theme.typography.size.base * 1.25,
+      padding: theme.spacing.sm,
       color: theme.text,
       fontSize: theme.typography.size.base,
     },
