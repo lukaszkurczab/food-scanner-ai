@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
@@ -88,7 +88,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const isLoginDisabled = !isFormValid || loading || internetError;
 
   return (
-    <Layout showNavigation={false}>
+    <Layout showNavigation={false} keyboardAvoiding={Platform.OS !== "ios"}>
       {displayCriticalError && <ErrorBox message={displayCriticalError} />}
 
       <View style={styles.centerColumn}>

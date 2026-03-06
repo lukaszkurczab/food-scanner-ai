@@ -108,7 +108,10 @@ export default function ResetPasswordScreen({ navigation }: Props) {
   }, [email, error]);
 
   return (
-    <Layout showNavigation={false}>
+    <Layout
+      showNavigation={false}
+      keyboardAvoiding={Platform.OS !== "ios"}
+    >
       <ScreenCornerNavButton
         icon="back"
         onPress={() =>
