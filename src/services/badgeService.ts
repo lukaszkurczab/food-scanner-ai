@@ -7,6 +7,28 @@ type BadgeListResponse = {
   items?: unknown[];
 };
 
+type BadgeChangedPayload = {
+  uid?: string;
+};
+
+type BadgeSubscriber = (badges: Badge[]) => void;
+
+type BadgeStream = {
+  subscribers: Set<BadgeSubscriber>;
+  latest: Badge[];
+  initialized: boolean;
+  dirty: boolean;
+  eventUnsubscribe: (() => void) | null;
+  inFlight: Promise<Badge[]> | null;
+};
+
+const badgeListInFlightByUid = new Map<string, Promise<Badge[]>>();
+const premiumReconcileInFlightByUid = new Map<
+  string,
+  { isPremium: boolean; promise: Promise<void> }
+>();
+const badgeStreamsByUid = new Map<string, BadgeStream>();
+
 function badgeCacheKey(uid: string) {
   return `badge:list:${uid}`;
 }
@@ -71,39 +93,121 @@ async function writeBadgeCache(uid: string, items: Badge[]): Promise<void> {
 }
 
 export async function listBadges(uid: string): Promise<Badge[]> {
+  const existing = badgeListInFlightByUid.get(uid);
+  if (existing) {
+    return existing;
+  }
+
+  const request = (async () => {
+    try {
+      void uid;
+      const response = await get<BadgeListResponse>("/users/me/badges");
+      const items = normalizeBadgeList(response);
+      await writeBadgeCache(uid, items);
+      return items;
+    } catch {
+      return readBadgeCache(uid);
+    }
+  })();
+
+  badgeListInFlightByUid.set(uid, request);
+
   try {
-    void uid;
-    const response = await get<BadgeListResponse>("/users/me/badges");
-    const items = normalizeBadgeList(response);
-    await writeBadgeCache(uid, items);
-    return items;
-  } catch {
-    return readBadgeCache(uid);
+    return await request;
+  } finally {
+    const current = badgeListInFlightByUid.get(uid);
+    if (current === request) {
+      badgeListInFlightByUid.delete(uid);
+    }
   }
 }
 
-export function subscribeBadges(uid: string, cb: (badges: Badge[]) => void) {
-  let active = true;
+function getOrCreateBadgeStream(uid: string): BadgeStream {
+  const existing = badgeStreamsByUid.get(uid);
+  if (existing) {
+    return existing;
+  }
 
-  const publish = async () => {
-    const items = await listBadges(uid);
-    if (active) {
-      cb(items);
-    }
+  const created: BadgeStream = {
+    subscribers: new Set<BadgeSubscriber>(),
+    latest: [],
+    initialized: false,
+    dirty: false,
+    eventUnsubscribe: null,
+    inFlight: null,
   };
+  badgeStreamsByUid.set(uid, created);
+  return created;
+}
 
-  void publish();
-
-  const unsubscribe = on<{ uid?: string }>("badge:changed", (payload) => {
-    if (!active) return;
-    if (payload?.uid && payload.uid !== uid) return;
-    void publish();
+function notifyBadgeStream(stream: BadgeStream) {
+  const snapshot = stream.latest;
+  stream.subscribers.forEach((subscriber) => {
+    subscriber(snapshot);
   });
+}
+
+async function refreshBadgeStream(
+  uid: string,
+  stream: BadgeStream
+): Promise<Badge[]> {
+  if (stream.inFlight) {
+    return stream.inFlight;
+  }
+
+  const request = listBadges(uid)
+    .then((items) => {
+      if (badgeStreamsByUid.get(uid) !== stream) {
+        return items;
+      }
+      stream.latest = items;
+      stream.initialized = true;
+      stream.dirty = false;
+      notifyBadgeStream(stream);
+      return items;
+    })
+    .finally(() => {
+      if (badgeStreamsByUid.get(uid) === stream && stream.inFlight === request) {
+        stream.inFlight = null;
+      }
+    });
+
+  stream.inFlight = request;
+  return request;
+}
+
+export function subscribeBadges(uid: string, cb: (badges: Badge[]) => void) {
+  const stream = getOrCreateBadgeStream(uid);
+  stream.subscribers.add(cb);
+
+  if (stream.initialized) {
+    cb(stream.latest);
+  }
+
+  if (!stream.eventUnsubscribe) {
+    stream.eventUnsubscribe = on<BadgeChangedPayload>("badge:changed", (payload) => {
+      if (payload?.uid && payload.uid !== uid) return;
+      if (stream.subscribers.size === 0) {
+        stream.dirty = true;
+        return;
+      }
+      void refreshBadgeStream(uid, stream);
+    });
+  }
+
+  if (!stream.initialized || stream.dirty) {
+    void refreshBadgeStream(uid, stream);
+  }
 
   return () => {
-    active = false;
-    unsubscribe();
+    stream.subscribers.delete(cb);
   };
+}
+
+export async function primeBadges(uid: string): Promise<Badge[]> {
+  if (!uid) return [];
+  const stream = getOrCreateBadgeStream(uid);
+  return refreshBadgeStream(uid, stream);
 }
 
 export async function unlockPremiumBadgesIfEligible(
@@ -111,11 +215,28 @@ export async function unlockPremiumBadgesIfEligible(
   isPremium: boolean
 ) {
   if (!uid) return;
-  await post(
-    "/users/me/badges/premium/reconcile",
-    {
+
+  const existing = premiumReconcileInFlightByUid.get(uid);
+  if (existing && existing.isPremium === isPremium) {
+    await existing.promise;
+    return;
+  }
+
+  const request = (async () => {
+    await post("/users/me/badges/premium/reconcile", {
       isPremium,
+    });
+    emit("badge:changed", { uid });
+  })();
+
+  premiumReconcileInFlightByUid.set(uid, { isPremium, promise: request });
+
+  try {
+    await request;
+  } finally {
+    const current = premiumReconcileInFlightByUid.get(uid);
+    if (current?.promise === request) {
+      premiumReconcileInFlightByUid.delete(uid);
     }
-  );
-  emit("badge:changed", { uid });
+  }
 }

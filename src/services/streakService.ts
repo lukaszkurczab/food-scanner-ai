@@ -11,6 +11,8 @@ import type { StreakDoc } from "./streak.logic";
 export type { StreakDoc } from "./streak.logic";
 
 const log = debugScope("StreakService");
+const streakGetInFlightByUid = new Map<string, Promise<StreakDoc>>();
+const streakLatestByUid = new Map<string, StreakDoc>();
 
 type StreakBackendResponse = {
   current: number;
@@ -56,6 +58,7 @@ function emitStreakChange(
   streak: StreakDoc,
   awardedBadgeIds: string[] = [],
 ) {
+  streakLatestByUid.set(uid, streak);
   emit("streak:changed", { uid, streak });
   if (awardedBadgeIds.length > 0) {
     emit("badge:changed", { uid, awardedBadgeIds });
@@ -112,15 +115,36 @@ export async function updateStreakIfThresholdMet(params: {
 }
 
 export async function getStreak(uid: string) {
+  const existing = streakGetInFlightByUid.get(uid);
+  if (existing) {
+    return existing;
+  }
+
+  const request = (async () => {
+    try {
+      void uid;
+      const response = await get<StreakBackendResponse>("/users/me/streak");
+      const streak = normalizeBackendStreak(response);
+      await writeStreakCache(uid, streak);
+      streakLatestByUid.set(uid, streak);
+      return streak;
+    } catch (error) {
+      log.warn("getStreak backend error", { uid, error });
+      const cached = await readStreakCache(uid);
+      streakLatestByUid.set(uid, cached);
+      return cached;
+    }
+  })();
+
+  streakGetInFlightByUid.set(uid, request);
+
   try {
-    void uid;
-    const response = await get<StreakBackendResponse>("/users/me/streak");
-    const streak = normalizeBackendStreak(response);
-    await writeStreakCache(uid, streak);
-    return streak;
-  } catch (error) {
-    log.warn("getStreak backend error", { uid, error });
-    return readStreakCache(uid);
+    return await request;
+  } finally {
+    const current = streakGetInFlightByUid.get(uid);
+    if (current === request) {
+      streakGetInFlightByUid.delete(uid);
+    }
   }
 }
 
@@ -133,10 +157,21 @@ export function subscribeStreak(
   const publish = async (next?: StreakDoc) => {
     if (!active) return;
     if (next) {
+      streakLatestByUid.set(uid, next);
       cb(next);
       return;
     }
-    cb(await getStreak(uid));
+
+    const latest = streakLatestByUid.get(uid);
+    if (latest) {
+      cb(latest);
+      return;
+    }
+
+    const cached = await readStreakCache(uid);
+    if (!active) return;
+    streakLatestByUid.set(uid, cached);
+    cb(cached);
   };
 
   void publish();

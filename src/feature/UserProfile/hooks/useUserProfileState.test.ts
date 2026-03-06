@@ -7,7 +7,7 @@ const mockUpdateUser = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockDeleteUser = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockExportUserData = jest.fn<(...args: unknown[]) => Promise<string>>();
 const mockEnsurePremiumBadges = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockGetStreak = jest.fn<(...args: unknown[]) => Promise<{ current: number }>>();
+const mockSubscribeStreak = jest.fn<(...args: unknown[]) => () => void>();
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -57,7 +57,7 @@ jest.mock("@/feature/Auth/services/authService", () => ({
 }));
 
 jest.mock("@/services/streakService", () => ({
-  getStreak: (...args: unknown[]) => mockGetStreak(...args),
+  subscribeStreak: (...args: unknown[]) => mockSubscribeStreak(...args),
 }));
 
 describe("feature/UserProfile/useUserProfileState", () => {
@@ -67,14 +67,17 @@ describe("feature/UserProfile/useUserProfileState", () => {
     mockDeleteUser.mockResolvedValue(undefined);
     mockExportUserData.mockResolvedValue("file:///tmp/export.pdf");
     mockEnsurePremiumBadges.mockResolvedValue(undefined);
-    mockGetStreak.mockResolvedValue({ current: 2 });
+    mockSubscribeStreak.mockImplementation((_uid, cb) => {
+      (cb as (state: { current: number }) => void)({ current: 2 });
+      return () => undefined;
+    });
   });
 
   it("toggles theme locally without backend profile update", async () => {
     const navigation = { reset: jest.fn() } as never;
     const { result } = renderHook(() => useUserProfileState({ navigation }));
     await waitFor(() => {
-      expect(mockGetStreak).toHaveBeenCalledWith("u1");
+      expect(mockSubscribeStreak).toHaveBeenCalledWith("u1", expect.any(Function));
     });
 
     act(() => {

@@ -143,6 +143,23 @@ describe("streakService", () => {
     expect(mockGet).toHaveBeenNthCalledWith(2, "/users/me/streak");
   });
 
+  it("deduplicates concurrent getStreak requests for the same uid", async () => {
+    mockGet.mockResolvedValue({
+      current: 5,
+      lastDate: "2026-03-04",
+      awardedBadgeIds: [],
+    });
+
+    const one = getStreak("user-1");
+    const two = getStreak("user-1");
+
+    await expect(Promise.all([one, two])).resolves.toEqual([
+      { current: 5, lastDate: "2026-03-04" },
+      { current: 5, lastDate: "2026-03-04" },
+    ]);
+    expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+
   it("subscribes through event bus and refreshes streak state", async () => {
     const off = jest.fn();
     let handler:

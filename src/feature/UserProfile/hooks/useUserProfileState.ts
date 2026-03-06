@@ -7,7 +7,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useBadges } from "@/hooks/useBadges";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { authLogout } from "@/feature/Auth/services/authService";
-import { getStreak } from "@/services/streakService";
+import { subscribeStreak } from "@/services/streakService";
 import type { RootStackParamList } from "@/navigation/navigate";
 
 type ProfileNavigation = StackNavigationProp<RootStackParamList, "Profile">;
@@ -32,10 +32,10 @@ export function useUserProfileState(params: {
 
   useEffect(() => {
     if (!uid) return;
-
-    getStreak(uid)
-      .then((state) => setStreak(Number(state?.current) || 0))
-      .catch(() => setStreak(0));
+    const unsubscribe = subscribeStreak(uid, (state) =>
+      setStreak(Number(state?.current) || 0)
+    );
+    return unsubscribe;
   }, [uid]);
 
   useEffect(() => {

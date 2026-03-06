@@ -1,5 +1,6 @@
 import {
   listBadges,
+  primeBadges,
   subscribeBadges,
   unlockPremiumBadgesIfEligible,
 } from "@/services/badgeService";
@@ -13,6 +14,12 @@ const mockEmit = jest.fn<(event: string, payload?: unknown) => void>();
 const mockOn = jest.fn<(...args: unknown[]) => () => void>();
 const mockGetItem = jest.fn<(key: string) => Promise<string | null>>();
 const mockSetItem = jest.fn<(key: string, value: string) => Promise<void>>();
+
+async function flushAsync() {
+  await Promise.resolve();
+  await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 jest.mock("@/services/apiClient", () => ({
   get: (url: string) => mockGet(url),
@@ -140,20 +147,77 @@ describe("badgeService", () => {
       });
 
     const cb = jest.fn<BadgeListCallback>();
-    const unsubscribe = subscribeBadges("user-1", cb);
-    await Promise.resolve();
-    await Promise.resolve();
+    const unsubscribe = subscribeBadges("user-events", cb);
+    await flushAsync();
 
-    handler?.({ uid: "user-1" });
-    await Promise.resolve();
-    await Promise.resolve();
+    handler?.({ uid: "user-events" });
+    await flushAsync();
 
     expect(cb).toHaveBeenCalled();
     expect(cb.mock.calls.some((call) => call[0]?.[0]?.id === "streak_7")).toBe(true);
     expect(mockGet).toHaveBeenCalledTimes(2);
 
     unsubscribe();
-    expect(off).toHaveBeenCalled();
+    expect(off).not.toHaveBeenCalled();
+  });
+
+  it("deduplicates concurrent badge fetches for the same uid", async () => {
+    mockGet.mockResolvedValue({
+      items: [
+        {
+          id: "streak_7",
+          type: "streak",
+          label: "7",
+          milestone: 7,
+          icon: "🔥",
+          color: "#0f0",
+          unlockedAt: 1,
+        },
+      ],
+    });
+
+    const cb1 = jest.fn<BadgeListCallback>();
+    const cb2 = jest.fn<BadgeListCallback>();
+    const unsubscribe1 = subscribeBadges("user-dedupe", cb1);
+    const unsubscribe2 = subscribeBadges("user-dedupe", cb2);
+
+    await flushAsync();
+    expect(mockGet).toHaveBeenCalledTimes(1);
+
+    expect(cb1).toHaveBeenCalled();
+    expect(cb2).toHaveBeenCalled();
+
+    unsubscribe1();
+    unsubscribe2();
+  });
+
+  it("loads badges at startup and does not refetch on later subscribe", async () => {
+    mockGet.mockResolvedValue({
+      items: [
+        {
+          id: "streak_7",
+          type: "streak",
+          label: "7",
+          milestone: 7,
+          icon: "🔥",
+          color: "#0f0",
+          unlockedAt: 1,
+        },
+      ],
+    });
+
+    await primeBadges("user-startup");
+    const cb = jest.fn<BadgeListCallback>();
+    const unsubscribe = subscribeBadges("user-startup", cb);
+
+    await flushAsync();
+
+    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(cb).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: "streak_7" })]),
+    );
+
+    unsubscribe();
   });
 
   it("delegates premium badge reconcile to backend", async () => {
@@ -169,6 +233,23 @@ describe("badgeService", () => {
       "/users/me/badges/premium/reconcile",
       { isPremium: true },
     );
+    expect(mockEmit).toHaveBeenCalledWith("badge:changed", { uid: "user-1" });
+  });
+
+  it("deduplicates concurrent premium reconcile calls with same state", async () => {
+    mockPost.mockResolvedValue({
+      awardedBadgeIds: ["premium_start"],
+      hasPremiumBadge: true,
+      updated: true,
+    });
+
+    const one = unlockPremiumBadgesIfEligible("user-1", true);
+    const two = unlockPremiumBadgesIfEligible("user-1", true);
+
+    await Promise.all([one, two]);
+
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(mockEmit).toHaveBeenCalledTimes(1);
     expect(mockEmit).toHaveBeenCalledWith("badge:changed", { uid: "user-1" });
   });
 
