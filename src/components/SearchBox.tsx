@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { View, TextInput, Pressable } from "react-native";
+import { View, TextInput, Pressable, ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -9,6 +9,7 @@ type Props = {
   onChange: (text: string) => void;
   placeholder?: string;
   debounceMs?: number;
+  style?: ViewStyle;
 };
 
 export const SearchBox: React.FC<Props> = ({
@@ -16,6 +17,7 @@ export const SearchBox: React.FC<Props> = ({
   onChange,
   placeholder,
   debounceMs = 200,
+  style,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -47,7 +49,9 @@ export const SearchBox: React.FC<Props> = ({
         backgroundColor: theme.background,
         borderRadius: theme.rounded.md,
         paddingHorizontal: 12,
-        flexGrow: 1,
+        minHeight: 52,
+        alignSelf: "stretch" as const,
+        flexShrink: 1,
       },
       input: {
         flex: 1,
@@ -65,7 +69,7 @@ export const SearchBox: React.FC<Props> = ({
   );
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, style]}>
       <MaterialIcons name="search" size={24} color={theme.textSecondary} />
 
       <TextInput

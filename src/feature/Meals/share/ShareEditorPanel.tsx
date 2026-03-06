@@ -102,6 +102,41 @@ export default function ShareEditorPanel({
     onTapTextElement?.(id as ElementId);
   };
 
+  const handleRemoveSelectedCustom = (id: ElementId) => {
+    if (typeof id !== "string" || !id.startsWith("custom:")) return;
+    if (!customTexts.some((ct) => ct.id === id)) return;
+
+    const nextList = customTexts.filter((ct) => ct.id !== id);
+    const nextOptions: ShareEditorPanelOptions =
+      nextList.length > 0
+        ? { ...options, customTexts: nextList }
+        : {
+            ...options,
+            customTexts: [],
+            showCustom: false,
+            customText: "",
+          };
+
+    onChange(nextOptions);
+
+    if (nextList.length > 0) {
+      onTapTextElement?.(nextList[0].id as ElementId);
+      return;
+    }
+
+    if (options.showTitle !== false) {
+      onTapTextElement?.("title");
+      return;
+    }
+
+    if (options.showKcal !== false) {
+      onTapTextElement?.("kcal");
+      return;
+    }
+
+    onClose();
+  };
+
   const elementItems: {
     key: "showTitle" | "showKcal" | "showChart" | "showMacroOverlay" | "showCustom";
     label: string;
@@ -191,6 +226,7 @@ export default function ShareEditorPanel({
           onChange={onChange}
           onTapTextElement={onTapTextElement}
           onColorPickingChange={setIsTextColorEditing}
+          onRemoveSelectedCustom={handleRemoveSelectedCustom}
         />
       )}
 
