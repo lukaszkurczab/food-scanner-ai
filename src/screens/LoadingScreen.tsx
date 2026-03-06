@@ -4,6 +4,7 @@ import { Layout } from "@/components";
 import { useUserContext } from "@contexts/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { resetIfMissed, ensureStreakDoc } from "@/services/streakService";
+import { primeBadges } from "@/services/badgeService";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import {
@@ -35,6 +36,7 @@ const LoadingScreen = ({ navigation }: Props) => {
 
       await ensureStreakDoc(uid);
       await resetIfMissed(uid);
+      await primeBadges(uid);
       if (cancelled) return;
 
       let profile = userData ?? (await refreshUser());
