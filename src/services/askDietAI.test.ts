@@ -39,6 +39,7 @@ describe("askDietAI", () => {
     mockPost.mockResolvedValueOnce({
       reply: "Backend reply",
       usageCount: 3,
+      dailyLimit: 20,
       remaining: 17,
       dateKey: "2026-03-03",
       version: "test",
@@ -125,6 +126,49 @@ describe("askDietAI", () => {
     ).rejects.toBeInstanceOf(AiLimitExceededError);
 
     expect(mockLogWarning).toHaveBeenCalled();
+  });
+
+  it("attaches backend usage snapshot to AiLimitExceededError", async () => {
+    mockPost.mockRejectedValueOnce(
+      Object.assign(new Error("limit"), {
+        status: 429,
+        details: {
+          detail: {
+            usage: {
+              dateKey: "2026-03-03",
+              usageCount: 20,
+              dailyLimit: 20,
+              remaining: 0,
+            },
+          },
+        },
+      }),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { askDietAI, AiLimitExceededError } = require("@/services/askDietAI");
+
+    await expect(
+      askDietAI("Question", [], [], {
+        unitsSystem: "metric",
+        age: "",
+        sex: null,
+        height: "",
+        weight: "",
+        preferences: [],
+        activityLevel: "moderate",
+        goal: "maintain",
+        surveyComplited: false,
+      }, { uid: "user-1" }),
+    ).rejects.toMatchObject({
+      name: AiLimitExceededError.name,
+      usage: {
+        dateKey: "2026-03-03",
+        usageCount: 20,
+        dailyLimit: 20,
+        remaining: 0,
+      },
+    });
   });
 
   it("maps 401 into auth/required service error", async () => {

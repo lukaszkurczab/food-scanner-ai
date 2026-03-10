@@ -289,9 +289,13 @@ export function useMealTextAiState(params: {
       await fillDraftAndGo(result.ingredients);
     } catch (error) {
       if (error instanceof AiLimitExceededError) {
-        await loadBackendUsage(
-          "[useMealTextAiState] failed to refresh AI usage after limit",
-        );
+        if (error.usage) {
+          applyUsage(error.usage);
+        } else {
+          await loadBackendUsage(
+            "[useMealTextAiState] failed to refresh AI usage after limit",
+          );
+        }
         setShowLimitModal(true);
         return;
       }

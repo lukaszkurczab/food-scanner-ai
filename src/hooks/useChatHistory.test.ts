@@ -627,6 +627,31 @@ describe("useChatHistory", () => {
     expect(result.current.typing).toBe(false);
   });
 
+  it("supports nested gateway reject reason payloads", async () => {
+    mockApiPost.mockRejectedValueOnce({
+      status: 400,
+      details: { detail: { reason: "OFF_TOPIC" } },
+    });
+    mockUuid.mockReturnValueOnce("user-msg").mockReturnValueOnce("ai-msg");
+
+    const { result } = renderHook(() =>
+      useChatHistory("user-1", true, mealsFixture, profileFixture, "thread-1"),
+    );
+    await settle();
+
+    await act(async () => {
+      await result.current.send("Flaga Boliwii");
+    });
+
+    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
+    const aiPayload = mockPersistAssistantChatMessage.mock.calls[0][0] as {
+      content: string;
+    };
+    expect(aiPayload.content).toBe(
+      "Moge odpowiadac tylko na pytania o zywienie i diete.",
+    );
+  });
+
   it("blocks further sends after backend 429 limit errors", async () => {
     mockApiPost.mockRejectedValueOnce(
       Object.assign(new Error("limit"), { status: 429 }),
@@ -653,6 +678,40 @@ describe("useChatHistory", () => {
     expect(result.current.dailyLimit).toBe(20);
     expect(result.current.remaining).toBe(0);
     expect(mockCaptureException).toHaveBeenCalled();
+  });
+
+  it("applies structured usage payload from backend 429 errors", async () => {
+    mockApiPost.mockRejectedValueOnce(
+      Object.assign(new Error("limit"), {
+        status: 429,
+        details: {
+          detail: {
+            usage: {
+              dateKey: "2026-03-02",
+              usageCount: 30,
+              dailyLimit: 30,
+              remaining: 0,
+            },
+          },
+        },
+      }),
+    );
+
+    const { result } = renderHook(() =>
+      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1"),
+    );
+    await settle();
+
+    await act(async () => {
+      await result.current.send("hello");
+    });
+
+    await waitFor(() => {
+      expect(result.current.dailyLimit).toBe(30);
+    });
+    expect(result.current.countToday).toBe(30);
+    expect(result.current.remaining).toBe(0);
+    expect(result.current.canSend).toBe(false);
   });
 
   it("resets usage after user sign-out and handles short local title", async () => {
