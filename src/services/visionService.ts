@@ -11,6 +11,7 @@ import {
 import { post } from "@/services/apiClient";
 import { logError } from "@/services/errorLogger";
 import type { AiPhotoAnalyzeResponse } from "@/services/ai/contracts";
+import { toAiContractError } from "@/services/ai/errorMapping";
 
 const log = debugScope("Vision");
 const AI_UNAVAILABLE_CODE = "ai/unavailable";
@@ -103,6 +104,11 @@ export async function detectIngredientsWithVision(
       { userUid, lang: userLang },
       error,
     );
+
+    const contractError = toAiContractError(error, "VisionService");
+    if (contractError) {
+      throw contractError;
+    }
 
     throw createServiceError({
       code: AI_UNAVAILABLE_CODE,

@@ -140,4 +140,34 @@ describe("textMealService", () => {
       extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
     ).rejects.toBeInstanceOf(MockAiLimitExceededError);
   });
+
+  it("maps 401 into auth/required service error", async () => {
+    mockPost.mockRejectedValueOnce(Object.assign(new Error("unauthorized"), { status: 401 }));
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { extractIngredientsFromText } = require("@/services/textMealService");
+
+    await expect(
+      extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
+    ).rejects.toMatchObject({
+      code: "auth/required",
+      source: "TextMealService",
+      retryable: false,
+    });
+  });
+
+  it("maps 503 into ai/unavailable service error", async () => {
+    mockPost.mockRejectedValueOnce(Object.assign(new Error("unavailable"), { status: 503 }));
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { extractIngredientsFromText } = require("@/services/textMealService");
+
+    await expect(
+      extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
+    ).rejects.toMatchObject({
+      code: "ai/unavailable",
+      source: "TextMealService",
+      retryable: true,
+    });
+  });
 });

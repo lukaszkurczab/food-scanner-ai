@@ -127,6 +127,68 @@ describe("askDietAI", () => {
     expect(mockLogWarning).toHaveBeenCalled();
   });
 
+  it("maps 401 into auth/required service error", async () => {
+    mockPost.mockRejectedValueOnce(Object.assign(new Error("unauthorized"), { status: 401 }));
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { askDietAI } = require("@/services/askDietAI");
+
+    await expect(
+      askDietAI(
+        "Question",
+        [],
+        [],
+        {
+          unitsSystem: "metric",
+          age: "",
+          sex: null,
+          height: "",
+          weight: "",
+          preferences: [],
+          activityLevel: "moderate",
+          goal: "maintain",
+          surveyComplited: false,
+        },
+        { uid: "user-1" },
+      ),
+    ).rejects.toMatchObject({
+      code: "auth/required",
+      source: "AskDietAI",
+      retryable: false,
+    });
+  });
+
+  it("maps 503 into ai/unavailable service error", async () => {
+    mockPost.mockRejectedValueOnce(Object.assign(new Error("unavailable"), { status: 503 }));
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { askDietAI } = require("@/services/askDietAI");
+
+    await expect(
+      askDietAI(
+        "Question",
+        [],
+        [],
+        {
+          unitsSystem: "metric",
+          age: "",
+          sex: null,
+          height: "",
+          weight: "",
+          preferences: [],
+          activityLevel: "moderate",
+          goal: "maintain",
+          surveyComplited: false,
+        },
+        { uid: "user-1" },
+      ),
+    ).rejects.toMatchObject({
+      code: "ai/unavailable",
+      source: "AskDietAI",
+      retryable: true,
+    });
+  });
+
   it("returns deterministic e2e reply without calling backend", async () => {
     mockIsE2EModeEnabled.mockReturnValue(true);
 

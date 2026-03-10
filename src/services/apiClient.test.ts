@@ -1,3 +1,4 @@
+import { afterEach } from "@jest/globals";
 const mockGetApp = jest.fn();
 const mockGetAuth = jest.fn();
 const mockReadPublicEnv = jest.fn();
@@ -31,6 +32,10 @@ describe("apiClient", () => {
 
       return undefined;
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("adds Firebase bearer token when current user exists", async () => {
@@ -119,5 +124,28 @@ describe("apiClient", () => {
       }),
     );
     expect(fetchMock.mock.calls[0][1].headers).not.toHaveProperty("Content-Type");
+  });
+
+  it("returns api/timeout when request exceeds timeout", async () => {
+    jest.useFakeTimers();
+    mockGetAuth.mockReturnValue({
+      currentUser: null,
+    });
+
+    const fetchMock = jest.fn().mockReturnValue(new Promise(() => {}));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { get } = require("@/services/apiClient");
+
+    const pending = get("/health", { timeout: 5 });
+    const captured = pending.catch((error: unknown) => error);
+    await jest.advanceTimersByTimeAsync(10);
+
+    await expect(captured).resolves.toMatchObject({
+      code: "api/timeout",
+      source: "ApiClient",
+      retryable: true,
+    });
   });
 });

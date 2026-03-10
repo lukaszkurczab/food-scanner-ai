@@ -178,4 +178,19 @@ describe("visionService", () => {
       expect.any(Error),
     );
   });
+
+  it("maps 401 into auth/required service error", async () => {
+    mockPost.mockRejectedValueOnce(Object.assign(new Error("unauthorized"), { status: 401 }));
+
+    await expect(
+      detectIngredientsWithVision("user-1", "file:///meal.jpg", {
+        isPremium: true,
+        lang: "pl",
+      }),
+    ).rejects.toMatchObject({
+      code: "auth/required",
+      source: "VisionService",
+      retryable: false,
+    });
+  });
 });

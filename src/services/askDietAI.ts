@@ -12,6 +12,7 @@ import type {
   AiAskE2EResponse,
   AiAskResponse,
 } from "@/services/ai/contracts";
+import { toAiContractError } from "@/services/ai/errorMapping";
 
 export type Message = { from: "user" | "ai"; text: string };
 
@@ -111,6 +112,12 @@ export async function askDietAI(
       }),
       error,
     );
+
+    const contractError = toAiContractError(error, "AskDietAI");
+    if (contractError) {
+      throw contractError;
+    }
+
     throw error;
   }
 }
