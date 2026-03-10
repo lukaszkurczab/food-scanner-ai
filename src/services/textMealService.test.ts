@@ -3,10 +3,12 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 const mockPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
 class MockAiLimitExceededError extends Error {
   readonly code = "ai/limit-exceeded";
+  readonly usage?: unknown;
 
-  constructor(message = "AI usage limit exceeded") {
+  constructor(message = "AI usage limit exceeded", usage?: unknown) {
     super(message);
     this.name = "AiLimitExceededError";
+    this.usage = usage;
   }
 }
 
@@ -41,6 +43,7 @@ describe("textMealService", () => {
         },
       ],
       usageCount: 1,
+      dailyLimit: 20,
       remaining: 19,
       dateKey: "2026-03-03",
       version: "test",
@@ -101,6 +104,7 @@ describe("textMealService", () => {
         },
       ],
       usageCount: 1,
+      dailyLimit: 20,
       remaining: 19,
       dateKey: "2026-03-03",
       version: "test",
@@ -139,6 +143,37 @@ describe("textMealService", () => {
     await expect(
       extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
     ).rejects.toBeInstanceOf(MockAiLimitExceededError);
+  });
+
+  it("passes backend usage snapshot into AiLimitExceededError", async () => {
+    mockPost.mockRejectedValueOnce(
+      Object.assign(new Error("limit"), {
+        status: 429,
+        details: {
+          detail: {
+            usage: {
+              dateKey: "2026-03-03",
+              usageCount: 20,
+              dailyLimit: 20,
+              remaining: 0,
+            },
+          },
+        },
+      }),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { extractIngredientsFromText } = require("@/services/textMealService");
+    await expect(
+      extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
+    ).rejects.toMatchObject({
+      usage: {
+        dateKey: "2026-03-03",
+        usageCount: 20,
+        dailyLimit: 20,
+        remaining: 0,
+      },
+    });
   });
 
   it("maps 401 into auth/required service error", async () => {

@@ -1,3 +1,5 @@
+import { asNumber, asString, isRecord } from "@/services/contracts/guards";
+
 export type AiPersistence = "backend_owned";
 
 export type AiUsageWindow = {
@@ -5,11 +7,63 @@ export type AiUsageWindow = {
   remaining: number;
 };
 
+export type AiUsageStatus = {
+  dateKey: string;
+  usageCount: number;
+  dailyLimit: number;
+  remaining: number;
+};
+
 export function getAiDailyLimit(usage: AiUsageWindow): number {
   return Math.max(usage.usageCount + usage.remaining, 0);
 }
 
+function parseAiUsageStatus(value: unknown): AiUsageStatus | null {
+  if (!isRecord(value)) return null;
+
+  const dateKey = asString(value.dateKey);
+  const usageCount = asNumber(value.usageCount);
+  const dailyLimit = asNumber(value.dailyLimit);
+  const remaining = asNumber(value.remaining);
+  if (
+    !dateKey ||
+    usageCount === undefined ||
+    dailyLimit === undefined ||
+    remaining === undefined
+  ) {
+    return null;
+  }
+
+  return {
+    dateKey,
+    usageCount,
+    dailyLimit,
+    remaining,
+  };
+}
+
+export function readAiUsageStatusFromApiErrorDetails(
+  details: unknown,
+): AiUsageStatus | null {
+  const direct = parseAiUsageStatus(details);
+  if (direct) return direct;
+
+  if (!isRecord(details)) return null;
+
+  const usage = parseAiUsageStatus(details.usage);
+  if (usage) return usage;
+
+  if (isRecord(details.detail)) {
+    const detailUsage = parseAiUsageStatus(details.detail.usage);
+    if (detailUsage) return detailUsage;
+    return parseAiUsageStatus(details.detail);
+  }
+
+  return null;
+}
+
 export type AiBackendResponseMeta = AiUsageWindow & {
+  dailyLimit?: number;
   dateKey: string;
   version: string;
   persistence: AiPersistence;
@@ -27,12 +81,7 @@ export type AiAskE2EResponse = {
 
 export type AiAskResponse = AiAskBackendResponse | AiAskE2EResponse;
 
-export type AiUsageResponse = {
-  dateKey: string;
-  usageCount: number;
-  dailyLimit: number;
-  remaining: number;
-};
+export type AiUsageResponse = AiUsageStatus;
 
 export type AiMealIngredient = {
   name: string;

@@ -5,10 +5,12 @@ import {
   type AiTextMealAnalyzeResponse,
   type AiTextMealPayload,
 } from "@/services/ai/contracts";
+import { readAiUsageStatusFromApiErrorDetails } from "@/services/ai/contracts";
 import { post } from "@/services/apiClient";
 import { AiLimitExceededError } from "@/services/askDietAI";
 import { toAiContractError } from "@/services/ai/errorMapping";
 import { getErrorStatus } from "@/services/contracts/serviceError";
+import { isRecord } from "@/services/contracts/guards";
 import { logError, logWarning } from "@/services/errorLogger";
 
 export type TextMealAnalyzeResult = {
@@ -69,18 +71,21 @@ export async function extractIngredientsFromText(
       ingredients: mappedIngredients,
       usage: {
         usageCount: response.usageCount,
-        dailyLimit: getAiDailyLimit(response),
+        dailyLimit: response.dailyLimit ?? getAiDailyLimit(response),
         remaining: response.remaining,
       },
     };
   } catch (error) {
     if (getErrorStatus(error) === 429) {
+      const usage = isRecord(error)
+        ? readAiUsageStatusFromApiErrorDetails(error.details)
+        : null;
       logWarning(
         "[textMealService] backend text analysis limit reached",
         { userUid: uid, lang },
         error,
       );
-      throw new AiLimitExceededError();
+      throw new AiLimitExceededError(undefined, usage ?? undefined);
     }
 
     logError(

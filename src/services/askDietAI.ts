@@ -11,8 +11,11 @@ import type {
   AiAskBackendResponse,
   AiAskE2EResponse,
   AiAskResponse,
+  AiUsageStatus,
 } from "@/services/ai/contracts";
+import { readAiUsageStatusFromApiErrorDetails } from "@/services/ai/contracts";
 import { toAiContractError } from "@/services/ai/errorMapping";
+import { isRecord } from "@/services/contracts/guards";
 
 export type Message = { from: "user" | "ai"; text: string };
 
@@ -20,10 +23,12 @@ export type AskDietAIResponse = AiAskResponse;
 
 export class AiLimitExceededError extends Error {
   readonly code = "ai/limit-exceeded";
+  readonly usage?: AiUsageStatus;
 
-  constructor(message = "AI usage limit exceeded") {
+  constructor(message = "AI usage limit exceeded", usage?: AiUsageStatus) {
     super(message);
     this.name = "AiLimitExceededError";
+    this.usage = usage;
   }
 }
 
@@ -87,6 +92,9 @@ export async function askDietAI(
     });
   } catch (error) {
     if (getErrorStatus(error) === 429) {
+      const usage = isRecord(error)
+        ? readAiUsageStatusFromApiErrorDetails(error.details)
+        : null;
       logWarning(
         "[askDietAI] backend AI usage limit reached",
         buildAskDietAILogContext({
@@ -98,7 +106,7 @@ export async function askDietAI(
         }),
         error,
       );
-      throw new AiLimitExceededError();
+      throw new AiLimitExceededError(undefined, usage ?? undefined);
     }
 
     logError(

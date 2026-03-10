@@ -10,7 +10,10 @@ import type {
   AiAskBackendResponse,
   AiUsageResponse,
 } from "@/services/ai/contracts";
-import { getAiDailyLimit } from "@/services/ai/contracts";
+import {
+  getAiDailyLimit,
+  readAiUsageStatusFromApiErrorDetails,
+} from "@/services/ai/contracts";
 import { getErrorStatus } from "@/services/contracts/serviceError";
 import { captureException } from "@/services/errorLogger";
 import { getAiUxErrorType, type AiUxErrorType } from "@/services/ai/uxError";
@@ -109,8 +112,12 @@ function upsertSortedMessages(
 function getGatewayRejectReason(error: unknown): string | null {
   if (getErrorStatus(error) !== 400 || !isRecord(error)) return null;
   const details = isRecord(error.details) ? error.details : null;
-  const reason = details ? asString(details.reason) : undefined;
-  return reason ?? null;
+  if (!details) return null;
+  return (
+    asString(details.reason) ||
+    (isRecord(details.detail) ? asString(details.detail.reason) : undefined) ||
+    null
+  );
 }
 
 export function useChatHistory(
@@ -321,21 +328,29 @@ export function useChatHistory(
         applyBackendUsage({
           usageCount: aiResponse.usageCount,
           remaining: aiResponse.remaining,
-          dailyLimit: getAiDailyLimit(aiResponse),
+          dailyLimit: aiResponse.dailyLimit ?? getAiDailyLimit(aiResponse),
         });
       } catch (error) {
         const status = getErrorStatus(error);
         const gatewayReason = getGatewayRejectReason(error);
         const errorType = getAiUxErrorType(error);
         if (status === 429) {
-          setRemainingToday(0);
-          setDailyUsed((prev) => Math.max(prev, dailyLimit));
+          const usageFromError = isRecord(error)
+            ? readAiUsageStatusFromApiErrorDetails(error.details)
+            : null;
+          const limitForMessage = usageFromError?.dailyLimit ?? dailyLimit;
+          if (usageFromError) {
+            applyBackendUsage(usageFromError);
+          } else {
+            setRemainingToday(0);
+            setDailyUsed((prev) => Math.max(prev, dailyLimit));
+          }
           aiText = i18next.t(
             "limit.reachedShort",
             {
               ns: "chat",
-              used: dailyLimit,
-              limit: dailyLimit,
+              used: limitForMessage,
+              limit: limitForMessage,
             },
           );
           setSendErrorType(null);
