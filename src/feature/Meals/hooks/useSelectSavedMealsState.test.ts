@@ -52,7 +52,9 @@ describe("useSelectSavedMealsState", () => {
         syncSavedMeals: jest.fn(async () => undefined),
         draftMeal: null,
         setMeal: jest.fn(),
-        saveDraft: jest.fn(async () => undefined),
+        saveDraft: jest.fn<
+          (uid: string, draftOverride?: Meal | null) => Promise<void>
+        >(async () => undefined),
         setLastScreen: jest.fn(async () => undefined),
         onNavigateResult: jest.fn(),
         onStartOver: jest.fn(),
@@ -74,7 +76,9 @@ describe("useSelectSavedMealsState", () => {
         syncSavedMeals: jest.fn(async () => undefined),
         draftMeal: null,
         setMeal: jest.fn(),
-        saveDraft: jest.fn(async () => undefined),
+        saveDraft: jest.fn<
+          (uid: string, draftOverride?: Meal | null) => Promise<void>
+        >(async () => undefined),
         setLastScreen: jest.fn(async () => undefined),
         onNavigateResult: jest.fn(),
         onStartOver: jest.fn(),
@@ -107,7 +111,9 @@ describe("useSelectSavedMealsState", () => {
 
   it("selects a meal and confirms draft navigation flow", async () => {
     const setMeal = jest.fn();
-    const saveDraft = jest.fn<(uid: string) => Promise<void>>(async () => undefined);
+    const saveDraft = jest.fn<
+      (uid: string, draftOverride?: Meal | null) => Promise<void>
+    >(async () => undefined);
     const setLastScreen = jest.fn<
       (uid: string, screen: string) => Promise<void>
     >(async () => undefined);
@@ -151,7 +157,13 @@ describe("useSelectSavedMealsState", () => {
         name: "Chicken pasta",
       }),
     );
-    expect(saveDraft).toHaveBeenCalledWith("user-1");
+    expect(saveDraft).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({
+        mealId: "meal-1",
+        source: "saved",
+      }),
+    );
     expect(setLastScreen).toHaveBeenCalledWith("user-1", "Result");
     expect(onNavigateResult).toHaveBeenCalledTimes(1);
 

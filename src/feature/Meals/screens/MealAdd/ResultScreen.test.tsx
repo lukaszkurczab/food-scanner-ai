@@ -322,7 +322,7 @@ describe("ResultScreen", () => {
     expect(ctx.setLastScreen).toHaveBeenCalledWith("user-1", "AddMeal");
   });
 
-  it("drops remote draft images without checking the file system", async () => {
+  it("keeps remote draft images without checking the file system", async () => {
     const ctx = buildDraftContext({ photoUrl: "https://example.com/meal.jpg" });
     mockUseMealDraftContext.mockReturnValue(ctx);
 
@@ -330,9 +330,10 @@ describe("ResultScreen", () => {
     renderWithTheme(<ResultScreen {...props} />);
 
     await waitFor(() => {
-      expect(ctx.setPhotoUrl).toHaveBeenCalledWith(null);
-      expect(ctx.saveDraft).toHaveBeenCalledWith("user-1");
+      expect(ctx.setLastScreen).toHaveBeenCalledWith("user-1", "AddMeal");
     });
+    expect(ctx.setPhotoUrl).not.toHaveBeenCalled();
+    expect(ctx.saveDraft).not.toHaveBeenCalled();
     expect(mockGetInfoAsync).not.toHaveBeenCalled();
   });
 

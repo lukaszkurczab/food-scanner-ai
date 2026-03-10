@@ -44,7 +44,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+fitaly</string>
+          <string>exp+caloriai</string>
         </array>
       </dict>
     </array>
@@ -67,8 +67,6 @@
     <string>Fitaly uses the camera to scan meals and barcodes and to take profile photos.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to save photos</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Fitaly allows you to select photos from your library for profile pictures and feedback attachments.</string>
     <key>UIBackgroundModes</key>

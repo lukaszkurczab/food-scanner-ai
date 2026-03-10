@@ -172,7 +172,7 @@ export function useMealTextAiState(params: {
 
     const base = buildInitialMeal(uid);
     setMeal(base);
-    await saveDraft(uid);
+    await saveDraft(uid, base);
     return base;
   }, [buildInitialMeal, meal, saveDraft, setMeal, uid]);
 
@@ -192,7 +192,7 @@ export function useMealTextAiState(params: {
       };
 
       setMeal(next);
-      await saveDraft(uid);
+      await saveDraft(uid, next);
       await setLastScreen(uid, "Result");
       navigation.replace("AddMeal", { start: "Result" });
     },

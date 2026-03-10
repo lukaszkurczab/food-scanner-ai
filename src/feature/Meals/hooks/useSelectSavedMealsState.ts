@@ -18,7 +18,7 @@ export function useSelectSavedMealsState(params: {
   syncSavedMeals: () => Promise<void>;
   draftMeal: Meal | null;
   setMeal: (meal: Meal) => void;
-  saveDraft: (uid: string) => Promise<void>;
+  saveDraft: (uid: string, draftOverride?: Meal | null) => Promise<void>;
   setLastScreen: (uid: string, screen: string) => Promise<void>;
   onNavigateResult: () => void;
   onStartOver: () => void;
@@ -165,7 +165,7 @@ export function useSelectSavedMealsState(params: {
     };
 
     params.setMeal(next);
-    await params.saveDraft(params.uid);
+    await params.saveDraft(params.uid, next);
     await params.setLastScreen(params.uid, "Result");
     params.onNavigateResult();
   }, [
