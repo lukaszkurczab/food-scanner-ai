@@ -13,6 +13,7 @@ import type {
 import { getAiDailyLimit } from "@/services/ai/contracts";
 import { getErrorStatus } from "@/services/contracts/serviceError";
 import { captureException } from "@/services/errorLogger";
+import { getAiUxErrorType, type AiUxErrorType } from "@/services/ai/uxError";
 import {
   type ChatMessageCursor,
   fetchChatThreadMessagesPage,
@@ -128,6 +129,7 @@ export function useChatHistory(
   const [sending, setSending] = useState(false);
   const [typing, setTyping] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [sendErrorType, setSendErrorType] = useState<AiUxErrorType | null>(null);
 
   const [dailyUsed, setDailyUsed] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(DEFAULT_CHAT_DAILY_LIMIT);
@@ -259,6 +261,7 @@ export function useChatHistory(
 
       setSending(true);
       setTyping(true);
+      setSendErrorType(null);
 
       const now = Date.now();
       const createdThreadId = isLocalThread ? uuidv4() : threadId;
@@ -306,7 +309,15 @@ export function useChatHistory(
             { from: "user", text: trimmed },
           ]),
         });
-        aiText = aiResponse.reply;
+        aiText = aiResponse.reply?.trim()
+          ? aiResponse.reply
+          : i18next.t(
+              "chat:errors.emptyResponse",
+              "I couldn't generate a useful response. Please try again.",
+            );
+        if (!aiResponse.reply?.trim()) {
+          setSendErrorType("unknown");
+        }
         applyBackendUsage({
           usageCount: aiResponse.usageCount,
           remaining: aiResponse.remaining,
@@ -315,6 +326,7 @@ export function useChatHistory(
       } catch (error) {
         const status = getErrorStatus(error);
         const gatewayReason = getGatewayRejectReason(error);
+        const errorType = getAiUxErrorType(error);
         if (status === 429) {
           setRemainingToday(0);
           setDailyUsed((prev) => Math.max(prev, dailyLimit));
@@ -326,6 +338,7 @@ export function useChatHistory(
               limit: dailyLimit,
             },
           );
+          setSendErrorType(null);
         } else if (
           gatewayReason !== null &&
           GATEWAY_REJECT_REASONS.has(gatewayReason)
@@ -334,11 +347,37 @@ export function useChatHistory(
             "chat:errors.offTopic",
             "Moge odpowiadac tylko na pytania o zywienie i diete.",
           );
+          setSendErrorType(null);
+        } else if (errorType === "offline") {
+          aiText = i18next.t(
+            "chat:errors.offline",
+            "You're offline. Reconnect and try again.",
+          );
+          setSendErrorType("offline");
+        } else if (errorType === "timeout") {
+          aiText = i18next.t(
+            "chat:errors.timeout",
+            "The request timed out. Please retry.",
+          );
+          setSendErrorType("timeout");
+        } else if (errorType === "unavailable") {
+          aiText = i18next.t(
+            "chat:errors.serviceUnavailable",
+            "AI is temporarily unavailable. Please try again shortly.",
+          );
+          setSendErrorType("unavailable");
+        } else if (errorType === "auth") {
+          aiText = i18next.t(
+            "chat:errors.authRequired",
+            "Please sign in again to continue.",
+          );
+          setSendErrorType("auth");
         } else {
           aiText = i18next.t(
             "chat:errors.fetchFailed",
             "Could not fetch a response. Please try again.",
           );
+          setSendErrorType("unknown");
         }
         captureException(
           "[useChatHistory.send] failed to send AI chat message",
@@ -407,6 +446,7 @@ export function useChatHistory(
     usageCount: dailyUsed,
     dailyLimit,
     remaining: remainingToday,
+    sendErrorType,
     loadMore,
     send,
   };

@@ -127,6 +127,8 @@ jest.mock("@/components", () => {
               : null,
           )
         : null,
+    ErrorBox: ({ message }: { message: string }) =>
+      message ? createElement(Text, null, message) : null,
   };
 });
 
@@ -203,6 +205,7 @@ describe("MealTextAIScreen", () => {
       nameError: "name-error",
       amountError: "amount-error",
       ingredientsError: "ingredients-error",
+      submitError: "submit-error",
       analyzeDisabled: false,
       featureLimit: 5,
       onNameChange,
@@ -243,6 +246,7 @@ describe("MealTextAIScreen", () => {
     expect(onAnalyze).toHaveBeenCalledTimes(1);
     expect(navigation.navigate).toHaveBeenCalledWith("MealAddMethod");
     expect(getByText("name-error")).toBeTruthy();
+    expect(getByText("submit-error")).toBeTruthy();
   });
 
   it("shows the AI limit modal and wires its actions", () => {
@@ -261,6 +265,7 @@ describe("MealTextAIScreen", () => {
       nameError: null,
       amountError: null,
       ingredientsError: null,
+      submitError: null,
       analyzeDisabled: true,
       featureLimit: 5,
       onNameChange: jest.fn(),

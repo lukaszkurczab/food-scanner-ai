@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Keyboard } from "react-native";
+import NetInfo from "@react-native-community/netinfo";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { v4 as uuidv4 } from "uuid";
@@ -11,6 +12,7 @@ import type { AiTextMealPayload, AiUsageResponse } from "@/services/ai/contracts
 import { AiLimitExceededError } from "@/services/askDietAI";
 import { get } from "@/services/apiClient";
 import { captureException } from "@/services/errorLogger";
+import { getAiUxErrorType } from "@/services/ai/uxError";
 import type { Ingredient, Meal } from "@/types";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -39,6 +41,7 @@ export function useMealTextAiState(params: {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [retries, setRetries] = useState(0);
   const [ingredientsError, setIngredientsError] = useState<string | undefined>();
+  const [submitError, setSubmitError] = useState<string | undefined>();
   const [usageCount, setUsageCount] = useState(0);
   const [usageLimit, setUsageLimit] = useState(FEATURE_LIMIT);
   const [remainingUsage, setRemainingUsage] = useState(FEATURE_LIMIT);
@@ -215,12 +218,18 @@ export function useMealTextAiState(params: {
     };
   }, [amountRaw, desc, ingPreview, name]);
 
+  const nextRetryCount = useCallback(
+    (current: number) => Math.min(current + 1, MAX_RETRIES),
+    [],
+  );
+
   const onAnalyze = useCallback(async () => {
     if (!uid) return;
 
     Keyboard.dismiss();
     await new Promise((resolve) => requestAnimationFrame(resolve));
     setIngredientsError(undefined);
+    setSubmitError(undefined);
 
     const missingName = !name.trim();
     const amountProvided = amountRaw.length > 0;
@@ -246,14 +255,18 @@ export function useMealTextAiState(params: {
       return;
     }
 
-    if (retries >= MAX_RETRIES) return;
-
     if (remainingUsage <= 0) {
       setShowLimitModal(true);
       return;
     }
 
     try {
+      const net = await NetInfo.fetch();
+      if (!net.isConnected) {
+        setSubmitError(t("text_ai_error_offline", { ns: "meals" }));
+        return;
+      }
+
       setLoading(true);
       const payload = buildPayload();
       const result = await extractIngredientsFromText(uid, payload, {
@@ -261,7 +274,8 @@ export function useMealTextAiState(params: {
       });
 
       if (!result || result.ingredients.length === 0) {
-        setRetries((prev) => prev + 1);
+        setRetries((prev) => nextRetryCount(prev));
+        setSubmitError(t("text_ai_not_recognized_retry", { ns: "meals" }));
         Toast.show(t("not_recognized_title", { ns: "meals" }));
         return;
       }
@@ -281,7 +295,25 @@ export function useMealTextAiState(params: {
         setShowLimitModal(true);
         return;
       }
-      setRetries((prev) => prev + 1);
+      const errorType = getAiUxErrorType(error);
+      if (errorType === "offline") {
+        setSubmitError(t("text_ai_error_offline", { ns: "meals" }));
+        return;
+      }
+      if (errorType === "timeout") {
+        setSubmitError(t("text_ai_error_timeout", { ns: "meals" }));
+        return;
+      }
+      if (errorType === "unavailable") {
+        setSubmitError(t("text_ai_error_unavailable", { ns: "meals" }));
+        return;
+      }
+      if (errorType === "auth") {
+        setSubmitError(t("text_ai_error_auth", { ns: "meals" }));
+        return;
+      }
+      setRetries((prev) => nextRetryCount(prev));
+      setSubmitError(t("text_ai_analyze_failed", { ns: "meals" }));
       Toast.show(t("text_ai_analyze_failed", { ns: "meals" }));
     } finally {
       setLoading(false);
@@ -295,8 +327,9 @@ export function useMealTextAiState(params: {
     language,
     loadBackendUsage,
     name,
+    nextRetryCount,
     remainingUsage,
-    retries,
+    setSubmitError,
     t,
     uid,
   ]);
@@ -305,35 +338,42 @@ export function useMealTextAiState(params: {
     loading ||
     !name.trim() ||
     (amountRaw.length > 0 && (!isFinite(amountNum) || amountNum <= 0)) ||
-    (!ingPreview.trim() && !amountRaw.length) ||
-    retries >= MAX_RETRIES;
+    (!ingPreview.trim() && !amountRaw.length);
 
   const limitUsed = usageCount;
   const featureLimit = usageLimit;
 
   const onNameChange = useCallback((text: string) => {
     setName(text);
-  }, []);
+    if (submitError) setSubmitError(undefined);
+    if (retries > 0) setRetries(0);
+  }, [retries, submitError]);
 
   const onIngredientsChange = useCallback(
     (text: string) => {
       setIngPreview(text);
       if (ingredientsError) setIngredientsError(undefined);
+      if (submitError) setSubmitError(undefined);
+      if (retries > 0) setRetries(0);
     },
-    [ingredientsError],
+    [ingredientsError, retries, submitError],
   );
 
   const onAmountChange = useCallback(
     (text: string) => {
       setAmount(text);
       if (ingredientsError) setIngredientsError(undefined);
+      if (submitError) setSubmitError(undefined);
+      if (retries > 0) setRetries(0);
     },
-    [ingredientsError],
+    [ingredientsError, retries, submitError],
   );
 
   const onDescChange = useCallback((text: string) => {
     setDesc(text);
-  }, []);
+    if (submitError) setSubmitError(undefined);
+    if (retries > 0) setRetries(0);
+  }, [retries, submitError]);
 
   const onNameBlur = useCallback(() => {
     setTouched((prev) => ({ ...prev, name: true }));
@@ -364,6 +404,7 @@ export function useMealTextAiState(params: {
     nameError,
     amountError,
     ingredientsError,
+    submitError,
     analyzeDisabled,
     featureLimit,
     onNameChange,

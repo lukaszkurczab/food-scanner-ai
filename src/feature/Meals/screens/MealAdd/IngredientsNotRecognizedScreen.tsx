@@ -30,6 +30,8 @@ export default function IngredientsNotRecognizedScreen({
   const attempt = params?.attempt ?? 1;
   const reason = params?.reason ?? "not_recognized";
   const isAiUnavailable = reason === "ai_unavailable";
+  const isOffline = reason === "offline";
+  const isTimeout = reason === "timeout";
 
   const [imgError, setImgError] = useState(false);
   useEffect(() => setImgError(false), [image]);
@@ -81,12 +83,26 @@ export default function IngredientsNotRecognizedScreen({
           <View style={styles.image} />
         )}
         <Text style={styles.title}>
-          {isAiUnavailable
+          {isOffline
+            ? t("ai_offline_title", "You're offline")
+            : isTimeout
+              ? t("ai_timeout_title", "AI analysis timed out")
+            : isAiUnavailable
             ? t("ai_unavailable_title", "AI analysis is currently unavailable")
             : t("not_recognized_title", "We couldn't recognize the ingredients")}
         </Text>
         <Text style={styles.subtitle}>
-          {isAiUnavailable
+          {isOffline
+            ? t(
+                "ai_offline_sub",
+                "Reconnect to the internet and try again, or add ingredients manually.",
+              )
+            : isTimeout
+              ? t(
+                  "ai_timeout_sub",
+                  "The analysis took too long. Please try again in a moment.",
+                )
+            : isAiUnavailable
             ? t(
                 "ai_unavailable_sub",
                 "We couldn't connect to the AI analysis server. You can enter ingredients manually or use the product database.",

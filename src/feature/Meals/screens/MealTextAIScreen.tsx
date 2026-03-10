@@ -5,6 +5,7 @@ import {
   Layout,
   NumberInput,
   Modal,
+  ErrorBox,
 } from "@/components";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
@@ -35,6 +36,7 @@ export default function MealTextAIScreen() {
     nameError,
     amountError,
     ingredientsError,
+    submitError,
     analyzeDisabled,
     featureLimit,
     onNameChange,
@@ -68,6 +70,7 @@ export default function MealTextAIScreen() {
             onBlur={onNameBlur}
             error={nameError}
             inputStyle={styles.input}
+            disabled={loading}
           />
           <LongTextInput
             label={t("ingredients_optional", { ns: "meals" })}
@@ -77,6 +80,7 @@ export default function MealTextAIScreen() {
             inputStyle={styles.input}
             numberOfLines={5}
             error={ingredientsError}
+            disabled={loading}
           />
           <NumberInput
             label={t("amount", { ns: "meals" })}
@@ -88,6 +92,7 @@ export default function MealTextAIScreen() {
             onBlur={onAmountBlur}
             error={amountError}
             inputStyle={styles.input}
+            disabled={loading}
           />
           <LongTextInput
             label={t("description_optional", { ns: "meals" })}
@@ -96,8 +101,10 @@ export default function MealTextAIScreen() {
             placeholder={t("description_optional", { ns: "meals" })}
             numberOfLines={6}
             inputStyle={styles.input}
+            disabled={loading}
           />
         </ScrollView>
+        <ErrorBox message={submitError ?? ""} />
         <View style={styles.actions}>
           <GlobalActionButtons
             label={
@@ -110,6 +117,7 @@ export default function MealTextAIScreen() {
             primaryDisabled={analyzeDisabled}
             secondaryLabel={t("select_method", { ns: "meals" })}
             secondaryOnPress={() => navigation.navigate("MealAddMethod")}
+            secondaryDisabled={loading}
           />
         </View>
       </View>

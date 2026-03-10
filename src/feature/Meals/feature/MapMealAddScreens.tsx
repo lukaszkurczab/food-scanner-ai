@@ -28,7 +28,7 @@ export type MealAddStepParams = {
     image?: string;
     id?: string;
     attempt?: number;
-    reason?: "not_recognized" | "ai_unavailable";
+    reason?: "not_recognized" | "ai_unavailable" | "offline" | "timeout";
   };
   Result: Record<string, unknown>;
 };

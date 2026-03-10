@@ -37,9 +37,16 @@
   "history": {
     "open": "Otwórz historię czatu"
   },
+  "retryLast": "Ponów ostatnią wiadomość",
+  "sending": "AI przygotowuje odpowiedź...",
   "errors": {
     "fetchFailed": "Nie udało się pobrać odpowiedzi, spróbuj ponownie.",
-    "offTopic": "Mogę odpowiadać tylko na pytania związane z żywieniem i dietą."
+    "offTopic": "Mogę odpowiadać tylko na pytania związane z żywieniem i dietą.",
+    "offline": "Brak internetu. Połącz się ponownie i spróbuj jeszcze raz.",
+    "timeout": "Przekroczono limit czasu żądania. Spróbuj ponownie.",
+    "serviceUnavailable": "Usługa AI jest chwilowo niedostępna. Spróbuj za moment.",
+    "authRequired": "Zaloguj się ponownie, aby kontynuować.",
+    "emptyResponse": "Nie udało się wygenerować odpowiedzi. Spróbuj ponownie."
   },
   "paywall": {
     "autorenew": "Płatność zostanie pobrana z Twojego konta. Subskrypcja odnawia się automatycznie, jeśli nie anulujesz jej co najmniej 24 godziny przed końcem bieżącego okresu.",
