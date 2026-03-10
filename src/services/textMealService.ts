@@ -7,6 +7,7 @@ import {
 } from "@/services/ai/contracts";
 import { post } from "@/services/apiClient";
 import { AiLimitExceededError } from "@/services/askDietAI";
+import { toAiContractError } from "@/services/ai/errorMapping";
 import { getErrorStatus } from "@/services/contracts/serviceError";
 import { logError, logWarning } from "@/services/errorLogger";
 
@@ -87,6 +88,12 @@ export async function extractIngredientsFromText(
       { userUid: uid, lang },
       error,
     );
+
+    const contractError = toAiContractError(error, "TextMealService");
+    if (contractError) {
+      throw contractError;
+    }
+
     return null;
   }
 }
