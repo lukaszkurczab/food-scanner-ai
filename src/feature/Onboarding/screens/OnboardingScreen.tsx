@@ -12,12 +12,6 @@ import Step5Summary from "@/feature/Onboarding/components/Step5Summary";
 import { useUserContext } from "@contexts/UserContext";
 import { calculateCalorieTarget } from "../utils/calculateCalorieTarget";
 import { assertNoUndefined } from "@/utils/findUndefined";
-import { useAuthContext } from "@/context/AuthContext";
-import { updateStreakIfThresholdMet } from "@/services/streakService";
-import {
-  fetchTodayMeals,
-  sumConsumedKcal,
-} from "@/services/notifications/conditions";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -60,7 +54,6 @@ export default function OnboardingScreen({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { userData, updateUser, syncUserProfile } = useUserContext();
-  const { uid } = useAuthContext();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
@@ -129,16 +122,6 @@ export default function OnboardingScreen({
       assertNoUndefined(payload, "handleFinish payload");
       await updateUser(payload);
       await syncUserProfile();
-      try {
-        if (uid) {
-          const meals = await fetchTodayMeals(uid);
-          const todaysKcal = sumConsumedKcal(meals);
-          const targetKcal = Number(payload.calorieTarget || 0);
-          await updateStreakIfThresholdMet({ uid, todaysKcal, targetKcal });
-        }
-      } catch {
-        // Streak refresh is best-effort and should not block onboarding completion.
-      }
       if (mode === "first") {
         navigation.replace("Home");
       } else {

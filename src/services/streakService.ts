@@ -57,11 +57,16 @@ function emitStreakChange(
   uid: string,
   streak: StreakDoc,
   awardedBadgeIds: string[] = [],
+  options?: { forceBadgeRefresh?: boolean },
 ) {
   streakLatestByUid.set(uid, streak);
   emit("streak:changed", { uid, streak });
   if (awardedBadgeIds.length > 0) {
     emit("badge:changed", { uid, awardedBadgeIds });
+    return;
+  }
+  if (options?.forceBadgeRefresh) {
+    emit("badge:changed", { uid });
   }
 }
 
@@ -146,6 +151,15 @@ export async function getStreak(uid: string) {
       streakGetInFlightByUid.delete(uid);
     }
   }
+}
+
+export async function refreshStreakFromBackend(
+  uid: string,
+  options?: { refreshBadges?: boolean },
+) {
+  const streak = await getStreak(uid);
+  emitStreakChange(uid, streak, [], { forceBadgeRefresh: options?.refreshBadges });
+  return streak;
 }
 
 export function subscribeStreak(

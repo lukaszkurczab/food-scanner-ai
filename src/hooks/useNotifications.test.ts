@@ -24,6 +24,9 @@ const mockFetchNotificationPrefs = jest.fn<
 const mockUpdateNotificationPrefs = jest.fn<
   (uid: string, notifications: unknown) => Promise<void>
 >();
+const mockReconcileAll = jest.fn<(uid: string) => Promise<void>>();
+const mockCancelAllForNotif = jest.fn<(key: string) => Promise<void>>();
+const mockNotificationScheduleKey = jest.fn<(uid: string, id: string) => string>();
 const mockStorageGetItem = jest.fn<(...args: unknown[]) => Promise<string | null>>();
 const mockStorageSetItem = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockUnsub = jest.fn<() => void>();
@@ -49,6 +52,16 @@ jest.mock("@/services/notifications/notificationsRepository", () => ({
   fetchNotificationPrefs: (uid: string) => mockFetchNotificationPrefs(uid),
   updateNotificationPrefs: (uid: string, notifications: unknown) =>
     mockUpdateNotificationPrefs(uid, notifications),
+}));
+
+jest.mock("@/services/notifications/engine", () => ({
+  reconcileAll: (uid: string) => mockReconcileAll(uid),
+}));
+
+jest.mock("@/services/notifications/localScheduler", () => ({
+  cancelAllForNotif: (key: string) => mockCancelAllForNotif(key),
+  notificationScheduleKey: (uid: string, id: string) =>
+    mockNotificationScheduleKey(uid, id),
 }));
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
@@ -88,6 +101,9 @@ describe("useNotifications", () => {
     mockDeleteUserNotification.mockResolvedValue(undefined);
     mockFetchNotificationPrefs.mockResolvedValue({});
     mockUpdateNotificationPrefs.mockResolvedValue(undefined);
+    mockReconcileAll.mockResolvedValue(undefined);
+    mockCancelAllForNotif.mockResolvedValue(undefined);
+    mockNotificationScheduleKey.mockImplementation((uid, id) => `${uid}:${id}`);
     mockStorageGetItem.mockResolvedValue(null);
     mockStorageSetItem.mockResolvedValue(undefined);
     mockNotificationsCb = null;
@@ -182,6 +198,7 @@ describe("useNotifications", () => {
         updatedAt: 1000,
       }),
     );
+    expect(mockReconcileAll).toHaveBeenNthCalledWith(1, "u1");
 
     await result.current.update("u1", "n-upd", { enabled: false });
     expect(mockUpsertUserNotification).toHaveBeenNthCalledWith(
@@ -193,6 +210,7 @@ describe("useNotifications", () => {
         updatedAt: 1000,
       }),
     );
+    expect(mockReconcileAll).toHaveBeenNthCalledWith(2, "u1");
 
     await result.current.toggle("u1", "n-tgl", true);
     expect(mockUpsertUserNotification).toHaveBeenNthCalledWith(
@@ -204,9 +222,13 @@ describe("useNotifications", () => {
         updatedAt: 1000,
       }),
     );
+    expect(mockReconcileAll).toHaveBeenNthCalledWith(3, "u1");
 
     await result.current.remove("u1", "n-del");
+    expect(mockNotificationScheduleKey).toHaveBeenCalledWith("u1", "n-del");
+    expect(mockCancelAllForNotif).toHaveBeenCalledWith("u1:n-del");
     expect(mockDeleteUserNotification).toHaveBeenCalledWith("u1", "n-del");
+    expect(mockReconcileAll).toHaveBeenNthCalledWith(4, "u1");
     nowSpy.mockRestore();
   });
 

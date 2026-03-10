@@ -2,10 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { useNotifications } from "@/hooks/useNotifications";
-import {
-  cancelAllForNotif,
-  ensureAndroidChannel,
-} from "@/services/notifications/localScheduler";
+import { ensureAndroidChannel } from "@/services/notifications/localScheduler";
 import {
   cancelSystemNotifications,
   runSystemNotifications,
@@ -181,7 +178,6 @@ export function useNotificationsScreenState(uid: string | null) {
     if (!uid || !confirmId) return;
     setDeleting(true);
     try {
-      await cancelAllForNotif(confirmId);
       await remove(uid, confirmId);
     } finally {
       setDeleting(false);

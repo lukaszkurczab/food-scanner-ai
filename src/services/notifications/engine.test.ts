@@ -22,6 +22,7 @@ const mockEnsureAndroidChannel = jest.fn<() => Promise<void>>();
 const mockScheduleDailyAt = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockScheduleOneShotAt = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockCancelAllForNotif = jest.fn<(id: string) => Promise<void>>();
+const mockNotificationScheduleKey = jest.fn<(uid: string, id: string) => string>();
 const mockNextOccurrenceForDays = jest.fn<(...args: unknown[]) => Date | null>();
 const mockGetNotificationText = jest.fn();
 const mockDebugLog = jest.fn();
@@ -35,6 +36,8 @@ jest.mock("@/services/notifications/localScheduler", () => ({
   scheduleDailyAt: (...args: unknown[]) => mockScheduleDailyAt(...args),
   scheduleOneShotAt: (...args: unknown[]) => mockScheduleOneShotAt(...args),
   cancelAllForNotif: (id: string) => mockCancelAllForNotif(id),
+  notificationScheduleKey: (uid: string, id: string) =>
+    mockNotificationScheduleKey(uid, id),
   nextOccurrenceForDays: (...args: unknown[]) => mockNextOccurrenceForDays(...args),
 }));
 
@@ -77,6 +80,7 @@ describe("notifications engine", () => {
     mockScheduleDailyAt.mockResolvedValue(undefined);
     mockScheduleOneShotAt.mockResolvedValue(undefined);
     mockCancelAllForNotif.mockResolvedValue(undefined);
+    mockNotificationScheduleKey.mockImplementation((uid, id) => `${uid}:${id}`);
     mockGetNotificationText.mockReturnValue({
       title: "Title",
       body: "Body",
@@ -128,6 +132,7 @@ describe("notifications engine", () => {
 
     expect(mockGetNotificationPlan).toHaveBeenCalledWith("user-1");
     expect(mockCancelAllForNotif).toHaveBeenCalledTimes(3);
+    expect(mockNotificationScheduleKey).toHaveBeenCalledWith("user-1", "meal-any");
     expect(mockScheduleDailyAt).toHaveBeenCalledWith(
       9,
       30,
@@ -136,7 +141,7 @@ describe("notifications engine", () => {
         body: "Body",
         data: { notifId: "meal-any", type: "meal_reminder" },
       },
-      "meal-any"
+      "user-1:meal-any"
     );
     expect(mockGetNotificationText).toHaveBeenCalledWith(
       "calorie_goal",
@@ -151,7 +156,7 @@ describe("notifications engine", () => {
         body: "Custom goal",
         data: { notifId: "goal", type: "calorie_goal" },
       },
-      "goal"
+      "user-1:goal"
     );
   });
 });

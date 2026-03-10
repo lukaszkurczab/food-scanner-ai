@@ -51,14 +51,6 @@ const mockUseMeals = jest.fn<
   }
 >();
 const mockGetInfoAsync = jest.fn<(uri: string) => Promise<{ exists: boolean }>>();
-const mockUpdateStreakIfThresholdMet = jest.fn<
-  (args: {
-    uid: string;
-    todaysKcal: number;
-    targetKcal: number;
-    thresholdPct: number;
-  }) => Promise<void>
->();
 
 jest.mock("expo-file-system", () => ({
   getInfoAsync: (uri: string) => mockGetInfoAsync(uri),
@@ -78,15 +70,6 @@ jest.mock("@contexts/UserContext", () => ({
 
 jest.mock("@hooks/useMeals", () => ({
   useMeals: (uid: string | null) => mockUseMeals(uid),
-}));
-
-jest.mock("@/services/streakService", () => ({
-  updateStreakIfThresholdMet: (args: {
-    uid: string;
-    todaysKcal: number;
-    targetKcal: number;
-    thresholdPct: number;
-  }) => mockUpdateStreakIfThresholdMet(args),
 }));
 
 jest.mock("@expo/vector-icons", () => ({
@@ -285,8 +268,6 @@ describe("ResultScreen", () => {
   beforeEach(() => {
     mockGetInfoAsync.mockReset();
     mockGetInfoAsync.mockResolvedValue({ exists: true });
-    mockUpdateStreakIfThresholdMet.mockReset();
-    mockUpdateStreakIfThresholdMet.mockResolvedValue(undefined);
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUseUserContext.mockReturnValue({
       userData: { uid: "user-1", calorieTarget: 1000 },
@@ -379,7 +360,7 @@ describe("ResultScreen", () => {
     });
   });
 
-  it("saves the edited meal, updates streak progress, and navigates home", async () => {
+  it("saves the edited meal and navigates home", async () => {
     const addMeal = jest.fn<
       (meal: Meal, options: { alsoSaveToMyMeals: boolean }) => Promise<void>
     >();
@@ -429,12 +410,6 @@ describe("ResultScreen", () => {
       }),
       { alsoSaveToMyMeals: true },
     );
-    expect(mockUpdateStreakIfThresholdMet).toHaveBeenCalledWith({
-      uid: "user-1",
-      todaysKcal: 550,
-      targetKcal: 1000,
-      thresholdPct: 0.8,
-    });
   });
 
   it("opens the cancel modal and confirms leaving the flow", () => {

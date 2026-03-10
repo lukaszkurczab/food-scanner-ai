@@ -20,6 +20,7 @@ import { emit } from "@/services/events";
 import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/myMealService";
 import { formatStreakDate } from "@/services/streak.logic";
+import { refreshStreakFromBackend } from "@/services/streakService";
 
 const PAGE_LIMIT = 50;
 const SYNC_DEBOUNCE_MS = 1200;
@@ -87,6 +88,12 @@ export function useMeals(userUid: string | null) {
       log.log("sync flush start", { uid: userUid });
       await pushQueue(userUid);
       await pullChanges(userUid);
+      try {
+        await refreshStreakFromBackend(userUid, { refreshBadges: true });
+      } catch (error: unknown) {
+        log.warn("streak refresh failed after sync", error);
+      }
+      triggerReconcile(userUid);
       log.log("sync flush done", { uid: userUid });
     } catch (error: unknown) {
       log.warn("sync flush failed", error);
@@ -241,7 +248,6 @@ export function useMeals(userUid: string | null) {
       scheduleQueuedSync("add");
 
       await loadFirstPage();
-      triggerReconcile(userUid);
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
     },
     [userUid, loadFirstPage, scheduleQueuedSync],
@@ -267,7 +273,6 @@ export function useMeals(userUid: string | null) {
         };
         await upsertMyMealWithPhoto(userUid, toSave, localPhoto);
         emit("meal:updated", { uid: userUid, meal: toSave });
-        triggerReconcile(userUid);
         return;
       }
 
@@ -302,7 +307,6 @@ export function useMeals(userUid: string | null) {
       scheduleQueuedSync("update");
 
       await loadFirstPage();
-      triggerReconcile(userUid);
     },
     [userUid, loadFirstPage, scheduleQueuedSync],
   );
@@ -318,7 +322,6 @@ export function useMeals(userUid: string | null) {
       scheduleQueuedSync("delete");
 
       setMeals((prev) => prev.filter((m) => (m.cloudId || "") !== mealCloudId));
-      triggerReconcile(userUid);
     },
     [userUid, scheduleQueuedSync],
   );
@@ -350,7 +353,6 @@ export function useMeals(userUid: string | null) {
       scheduleQueuedSync("duplicate");
 
       await loadFirstPage();
-      triggerReconcile(userUid);
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
     },
     [userUid, loadFirstPage, scheduleQueuedSync],

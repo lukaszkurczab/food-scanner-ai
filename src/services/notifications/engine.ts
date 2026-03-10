@@ -4,6 +4,7 @@ import {
   scheduleDailyAt,
   scheduleOneShotAt,
   cancelAllForNotif,
+  notificationScheduleKey,
   nextOccurrenceForDays,
 } from "./localScheduler";
 import { getNotificationPlan } from "./planService";
@@ -23,7 +24,7 @@ export async function reconcileAll(uid: string) {
     const locale = i18n.language;
 
     for (const n of plans) {
-      await cancelAllForNotif(n.id);
+      await cancelAllForNotif(notificationScheduleKey(uid, n.id));
     }
 
     for (const n of plans) {
@@ -57,7 +58,7 @@ export async function reconcileAll(uid: string) {
               body: n.text ?? tt.body,
               data: { notifId: n.id, type: n.type },
             },
-            n.id
+            notificationScheduleKey(uid, n.id)
           );
         } else {
           const next = nextOccurrenceForDays(n.time, n.days);
@@ -73,7 +74,7 @@ export async function reconcileAll(uid: string) {
                 body: n.text ?? tt.body,
                 data: { notifId: n.id, type: n.type },
               },
-              n.id
+              notificationScheduleKey(uid, n.id)
             );
           }
         }
@@ -101,7 +102,7 @@ export async function reconcileAll(uid: string) {
               body: n.text ?? tt.body,
               data: { notifId: n.id, type: n.type },
             },
-            n.id
+            notificationScheduleKey(uid, n.id)
           );
         }
         continue;
@@ -124,7 +125,7 @@ export async function reconcileAll(uid: string) {
               body: n.text ?? tt.body,
               data: { notifId: n.id, type: n.type },
             },
-            n.id
+            notificationScheduleKey(uid, n.id)
           );
         }
         continue;
