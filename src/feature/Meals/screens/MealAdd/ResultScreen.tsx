@@ -80,10 +80,9 @@ export default function ResultScreen({
     const validateLocalImage = async () => {
       setCheckingImage(true);
       try {
-        const isLocal = photoUrl.startsWith("file://");
+        const isLocal =
+          photoUrl.startsWith("file://") || photoUrl.startsWith("content://");
         if (!isLocal) {
-          setPhotoUrl(null);
-          if (uid) await saveDraft(uid);
           return;
         }
 

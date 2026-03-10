@@ -223,7 +223,7 @@ export function useMealAddMethodState(params: {
       };
 
       setMeal(emptyMeal);
-      await saveDraft(uid);
+      await saveDraft(uid, emptyMeal);
       await setLastScreen(uid, nextScreen);
     },
     [saveDraft, setLastScreen, setMeal, uid],

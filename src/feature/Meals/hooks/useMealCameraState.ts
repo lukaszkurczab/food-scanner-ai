@@ -39,7 +39,8 @@ export function useMealCameraState({
   const [barcodeModal, setBarcodeModal] = useState(false);
   const [scannedCode, setScannedCode] = useState<string | null>(null);
 
-  const { meal, setMeal, updateMeal, setLastScreen } = useMealDraftContext();
+  const { meal, setMeal, updateMeal, setLastScreen, saveDraft } =
+    useMealDraftContext();
   const { uid } = useAuthContext();
   const { language } = useUserContext();
   const { isPremium } = usePremiumContext();
@@ -165,13 +166,27 @@ export function useMealCameraState({
             source: "manual",
           };
           setMeal(nextMeal);
+          if (uid) {
+            await saveDraft(uid, nextMeal);
+          }
         } else {
+          const nextMeal: Meal = {
+            ...meal,
+            mealId,
+            name: resolvedName,
+            notes: `barcode:${code}`,
+            ingredients: [ingredient],
+            updatedAt: new Date().toISOString(),
+          };
           updateMeal({
             mealId,
             name: resolvedName,
             notes: `barcode:${code}`,
             ingredients: [ingredient],
           });
+          if (uid) {
+            await saveDraft(uid, nextMeal);
+          }
         }
 
         flow.goTo("Result", {});
@@ -192,6 +207,7 @@ export function useMealCameraState({
       meal,
       mealId,
       returnTo,
+      saveDraft,
       setMeal,
       uid,
       updateMeal,
@@ -254,8 +270,9 @@ export function useMealCameraState({
 
       setIsLoading(true);
       try {
+        let draftAfterPhoto: Meal;
         if (!meal) {
-          const nextMeal: Meal = {
+          draftAfterPhoto = {
             mealId,
             userUid: uid || "",
             name: null,
@@ -271,9 +288,18 @@ export function useMealCameraState({
             timestamp: "",
             source: null,
           };
-          setMeal(nextMeal);
+          setMeal(draftAfterPhoto);
         } else {
+          draftAfterPhoto = {
+            ...meal,
+            mealId,
+            photoUrl: finalUri,
+            updatedAt: new Date().toISOString(),
+          };
           updateMeal({ photoUrl: finalUri, mealId });
+        }
+        if (uid) {
+          await saveDraft(uid, draftAfterPhoto);
         }
 
         if (!skipDetection) {
@@ -285,7 +311,22 @@ export function useMealCameraState({
             : null;
 
           if (ingredients && ingredients.length > 0) {
-            updateMeal({ ingredients, mealId, photoUrl: finalUri });
+            const analyzedMeal: Meal = {
+              ...draftAfterPhoto,
+              ingredients,
+              photoUrl: finalUri,
+              source: "ai",
+              updatedAt: new Date().toISOString(),
+            };
+            updateMeal({
+              ingredients,
+              mealId,
+              photoUrl: finalUri,
+              source: "ai",
+            });
+            if (uid) {
+              await saveDraft(uid, analyzedMeal);
+            }
           } else {
             setIsLoading(false);
             flow.goTo("IngredientsNotRecognized", {
@@ -322,6 +363,7 @@ export function useMealCameraState({
       mealId,
       photoUri,
       setMeal,
+      saveDraft,
       skipDetection,
       uid,
       updateMeal,

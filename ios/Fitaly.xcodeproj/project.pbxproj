@@ -7,28 +7,28 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0B515702FFB4DC9DE17DA840 /* Pods_Fitaly.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 949FCED5A42D8DA677F16E23 /* Pods_Fitaly.framework */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		1BD52BDF1078F1D2DABB1FFE /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D49ADBE4C462D21A2E224130 /* ExpoModulesProvider.swift */; };
+		3248C30BDCEF4C3796F257F6 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B5F38B859D8B4CD6B3F4AC45 /* GoogleService-Info.plist */; };
+		34E0C6BFBFF31937BAEFA215 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 714AC4F3C8C12DBCC547D667 /* PrivacyInfo.xcprivacy */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		4D392DFBE4BA42479AE9C24C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 556B113AFF4F4C68A306E4FA /* GoogleService-Info.plist */; };
-		6400EFA6B51AF92961486B3C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 93924E401433D4DF0199C189 /* PrivacyInfo.xcprivacy */; };
-		A618FB93FFC2A51D6C8DB180 /* Pods_Fitaly.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A421C986ED1DB4158DA9E64 /* Pods_Fitaly.framework */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		FE9AD7BEAF68151B4328BFA6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBDE2857B653284821A11F73 /* ExpoModulesProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* Fitaly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fitaly.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Fitaly/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Fitaly/Info.plist; sourceTree = "<group>"; };
-		3BE4E62DE9F1B8B4C8B0380F /* Pods-Fitaly.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Fitaly.debug.xcconfig"; path = "Target Support Files/Pods-Fitaly/Pods-Fitaly.debug.xcconfig"; sourceTree = "<group>"; };
-		556B113AFF4F4C68A306E4FA /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Fitaly/GoogleService-Info.plist"; sourceTree = "<group>"; };
-		8A421C986ED1DB4158DA9E64 /* Pods_Fitaly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Fitaly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		93924E401433D4DF0199C189 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Fitaly/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		49652816CCACB434AA9A3A66 /* Pods-Fitaly.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Fitaly.release.xcconfig"; path = "Target Support Files/Pods-Fitaly/Pods-Fitaly.release.xcconfig"; sourceTree = "<group>"; };
+		714AC4F3C8C12DBCC547D667 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Fitaly/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		949FCED5A42D8DA677F16E23 /* Pods_Fitaly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Fitaly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Fitaly/SplashScreen.storyboard; sourceTree = "<group>"; };
+		B3133490ECB796C8BD0FA098 /* Pods-Fitaly.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Fitaly.debug.xcconfig"; path = "Target Support Files/Pods-Fitaly/Pods-Fitaly.debug.xcconfig"; sourceTree = "<group>"; };
+		B5F38B859D8B4CD6B3F4AC45 /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Fitaly/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		BB645064EAABB4D580A6E422 /* Pods-Fitaly.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Fitaly.release.xcconfig"; path = "Target Support Files/Pods-Fitaly/Pods-Fitaly.release.xcconfig"; sourceTree = "<group>"; };
-		DBDE2857B653284821A11F73 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Fitaly/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		D49ADBE4C462D21A2E224130 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Fitaly/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Fitaly/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Fitaly-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Fitaly-Bridging-Header.h"; path = "Fitaly/Fitaly-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -39,7 +39,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A618FB93FFC2A51D6C8DB180 /* Pods_Fitaly.framework in Frameworks */,
+				0B515702FFB4DC9DE17DA840 /* Pods_Fitaly.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -55,37 +55,19 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				556B113AFF4F4C68A306E4FA /* GoogleService-Info.plist */,
-				93924E401433D4DF0199C189 /* PrivacyInfo.xcprivacy */,
+				B5F38B859D8B4CD6B3F4AC45 /* GoogleService-Info.plist */,
+				714AC4F3C8C12DBCC547D667 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Fitaly;
-			sourceTree = "<group>";
-		};
-		271CA72FDA3605223DDD4CFB /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				3BE4E62DE9F1B8B4C8B0380F /* Pods-Fitaly.debug.xcconfig */,
-				BB645064EAABB4D580A6E422 /* Pods-Fitaly.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				8A421C986ED1DB4158DA9E64 /* Pods_Fitaly.framework */,
+				949FCED5A42D8DA677F16E23 /* Pods_Fitaly.framework */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		68D4303B99097470754EE102 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				B5F5D6A3EDBE57360B1687C9 /* Fitaly */,
-			);
-			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -102,8 +84,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				271CA72FDA3605223DDD4CFB /* Pods */,
-				68D4303B99097470754EE102 /* ExpoModulesProviders */,
+				88356AC586E9E6C526FAFB4C /* Pods */,
+				8EAD6453E57A4FA339183A12 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -118,12 +100,22 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		B5F5D6A3EDBE57360B1687C9 /* Fitaly */ = {
+		88356AC586E9E6C526FAFB4C /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				DBDE2857B653284821A11F73 /* ExpoModulesProvider.swift */,
+				B3133490ECB796C8BD0FA098 /* Pods-Fitaly.debug.xcconfig */,
+				49652816CCACB434AA9A3A66 /* Pods-Fitaly.release.xcconfig */,
 			);
-			name = Fitaly;
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		8EAD6453E57A4FA339183A12 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				F5B98C4F15A460B98EB63166 /* Fitaly */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -135,6 +127,14 @@
 			path = Fitaly/Supporting;
 			sourceTree = "<group>";
 		};
+		F5B98C4F15A460B98EB63166 /* Fitaly */ = {
+			isa = PBXGroup;
+			children = (
+				D49ADBE4C462D21A2E224130 /* ExpoModulesProvider.swift */,
+			);
+			name = Fitaly;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -143,14 +143,14 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Fitaly" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				8AEF56ADA96159CFEDFD4277 /* [Expo] Configure project */,
+				A3420A5911D2A98CC5E04617 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				A85DF6C51BF851DC000CC3A7 /* [CP] Embed Pods Frameworks */,
-				7FE844F8058885544CFCF1F7 /* [CP-User] [RNFB] Core Configuration */,
+				FD01C2FEF8172D371050CD3E /* [CP] Embed Pods Frameworks */,
+				7116A6D31D18B5451CAFFFFB /* [CP-User] [RNFB] Core Configuration */,
 			);
 			buildRules = (
 			);
@@ -200,8 +200,8 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				4D392DFBE4BA42479AE9C24C /* GoogleService-Info.plist in Resources */,
-				6400EFA6B51AF92961486B3C /* PrivacyInfo.xcprivacy in Resources */,
+				3248C30BDCEF4C3796F257F6 /* GoogleService-Info.plist in Resources */,
+				34E0C6BFBFF31937BAEFA215 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,7 +245,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		7FE844F8058885544CFCF1F7 /* [CP-User] [RNFB] Core Configuration */ = {
+		7116A6D31D18B5451CAFFFFB /* [CP-User] [RNFB] Core Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -370,7 +370,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Fitaly/Pods-Fitaly-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		8AEF56ADA96159CFEDFD4277 /* [Expo] Configure project */ = {
+		A3420A5911D2A98CC5E04617 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -389,7 +389,7 @@
 			shellPath = /bin/sh;
 			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Fitaly/expo-configure-project.sh\"\n";
 		};
-		A85DF6C51BF851DC000CC3A7 /* [CP] Embed Pods Frameworks */ = {
+		FD01C2FEF8172D371050CD3E /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -415,7 +415,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				FE9AD7BEAF68151B4328BFA6 /* ExpoModulesProvider.swift in Sources */,
+				1BD52BDF1078F1D2DABB1FFE /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -424,7 +424,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3BE4E62DE9F1B8B4C8B0380F /* Pods-Fitaly.debug.xcconfig */;
+			baseConfigurationReference = B3133490ECB796C8BD0FA098 /* Pods-Fitaly.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -460,7 +460,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BB645064EAABB4D580A6E422 /* Pods-Fitaly.release.xcconfig */;
+			baseConfigurationReference = 49652816CCACB434AA9A3A66 /* Pods-Fitaly.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

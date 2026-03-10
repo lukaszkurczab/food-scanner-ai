@@ -25,7 +25,7 @@ export type MealDraftContextType = {
   addTag: (tag: string) => void;
   removeTag: (tag: string) => void;
   isDraft: boolean;
-  saveDraft: (userUid: string) => Promise<void>;
+  saveDraft: (userUid: string, draftOverride?: Meal | null) => Promise<void>;
   loadDraft: (userUid: string) => Promise<void>;
   removeDraft: (userUid: string) => Promise<void>;
   loadLastScreen: (userUid: string) => Promise<void>;
@@ -66,9 +66,13 @@ export const MealDraftProvider = ({ children }: Props) => {
   const [lastScreen, setLastScreenState] = useState<string | null>(null);
 
   const saveDraft = useCallback(
-    async (userUid: string) => {
-      if (meal) {
-        await AsyncStorage.setItem(getDraftKey(userUid), JSON.stringify(meal));
+    async (userUid: string, draftOverride?: Meal | null) => {
+      const draftToSave = draftOverride ?? meal;
+      if (draftToSave) {
+        await AsyncStorage.setItem(
+          getDraftKey(userUid),
+          JSON.stringify(draftToSave),
+        );
         setIsDraft(true);
       }
     },
