@@ -27,7 +27,6 @@ import type { Meal, MealType } from "@/types/meal";
 import { autoMealName } from "@/utils/autoMealName";
 import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "@/components/DateTimeSection";
-import { updateStreakIfThresholdMet } from "@/services/streakService";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import ReviewIngredientsEditor from "@/components/ReviewIngredientsEditor";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -45,7 +44,7 @@ export default function ResultScreen({
   const { meal, setLastScreen, clearMeal, saveDraft, setPhotoUrl } =
     useMealDraftContext();
   const { userData } = useUserContext();
-  const { addMeal, meals } = useMeals(uid ?? null);
+  const { addMeal } = useMeals(uid ?? null);
 
   const isFromSaved = meal?.source === "saved";
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -109,11 +108,6 @@ export default function ResultScreen({
 
   const nutrition = calculateTotalNutrients([meal]);
 
-  const isSameLocalDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-
   const goShare = () => {
     const passMeal: Meal = {
       ...meal,
@@ -144,23 +138,6 @@ export default function ResultScreen({
 
     try {
       await addMeal(newMeal, { alsoSaveToMyMeals: saveToMyMeals });
-
-      const today = new Date(selectedAt);
-      const existingTodayKcal =
-        meals
-          .filter((m) => isSameLocalDay(new Date(m.timestamp), today))
-          .reduce((s, m) => s + Number(m?.totals?.kcal || 0), 0) || 0;
-
-      const mealKcal = Number(calculateTotalNutrients([newMeal]).kcal) || 0;
-      const todaysKcal = existingTodayKcal + mealKcal;
-      const targetKcal = Number(userData?.calorieTarget || 0);
-
-      await updateStreakIfThresholdMet({
-        uid,
-        todaysKcal,
-        targetKcal,
-        thresholdPct: 0.8,
-      });
 
       clearMeal(uid);
       navigation.navigate("Home");

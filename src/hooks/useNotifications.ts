@@ -10,6 +10,11 @@ import {
   updateNotificationPrefs,
   upsertUserNotification,
 } from "@/services/notifications/notificationsRepository";
+import { reconcileAll } from "@/services/notifications/engine";
+import {
+  cancelAllForNotif,
+  notificationScheduleKey,
+} from "@/services/notifications/localScheduler";
 
 type BoolPrefs = { enabled: boolean };
 
@@ -26,6 +31,14 @@ function parseCachedBoolPrefs(cached: string | null): BoolPrefs | null {
 export function useNotifications(uid: string | null) {
   const [items, setItems] = useState<UserNotification[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const reconcileNotifications = useCallback(async (uidLocal: string) => {
+    try {
+      await reconcileAll(uidLocal);
+    } catch {
+      // Keep reminder CRUD independent from local scheduling failures.
+    }
+  }, []);
 
   useEffect(() => {
     if (!uid) {
@@ -73,9 +86,10 @@ export function useNotifications(uid: string | null) {
         updatedAt: now,
       };
       await upsertUserNotification(uidLocal, id, payload);
+      await reconcileNotifications(uidLocal);
       return id;
     },
-    []
+    [reconcileNotifications]
   );
 
   const update = useCallback(
@@ -90,13 +104,16 @@ export function useNotifications(uid: string | null) {
         updatedAt: now,
       };
       await upsertUserNotification(uidLocal, id, payload);
+      await reconcileNotifications(uidLocal);
     },
-    [items]
+    [items, reconcileNotifications]
   );
 
   const remove = useCallback(async (uidLocal: string, id: string) => {
+    await cancelAllForNotif(notificationScheduleKey(uidLocal, id));
     await deleteUserNotification(uidLocal, id);
-  }, []);
+    await reconcileNotifications(uidLocal);
+  }, [reconcileNotifications]);
 
   const toggle = useCallback(
     async (uidLocal: string, id: string, enabled: boolean) => {

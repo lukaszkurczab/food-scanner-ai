@@ -8,6 +8,10 @@ function key(localKey: string) {
   return KEY_PREFIX + localKey;
 }
 
+export function notificationScheduleKey(uid: string, notificationId: string): string {
+  return `${uid}:${notificationId}`;
+}
+
 function parseStoredIds(raw: string | null): string[] {
   if (!raw) return [];
   try {

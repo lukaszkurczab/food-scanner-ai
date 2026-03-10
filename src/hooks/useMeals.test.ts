@@ -27,6 +27,9 @@ const mockInsertOrUpdateImage = jest.fn<
   (uid: string, cloudId: string, path: string, status: "pending") => Promise<void>
 >();
 const mockReconcileAll = jest.fn<(uid: string) => Promise<void>>();
+const mockRefreshStreakFromBackend = jest.fn<
+  (uid: string, options?: { refreshBadges?: boolean }) => Promise<void>
+>();
 const mockEmit = jest.fn<(event: string, payload: Record<string, unknown>) => void>();
 const mockPushQueue = jest.fn<(uid: string) => Promise<void>>();
 const mockPullChanges = jest.fn<(uid: string) => Promise<void>>();
@@ -76,6 +79,13 @@ jest.mock("@/services/offline/images.repo", () => ({
 
 jest.mock("@/services/notifications/engine", () => ({
   reconcileAll: (uid: string) => mockReconcileAll(uid),
+}));
+
+jest.mock("@/services/streakService", () => ({
+  refreshStreakFromBackend: (
+    uid: string,
+    options?: { refreshBadges?: boolean },
+  ) => mockRefreshStreakFromBackend(uid, options),
 }));
 
 jest.mock("@/services/events", () => ({
@@ -173,6 +183,7 @@ describe("useMeals", () => {
     mockEnqueueMyMealUpsert.mockResolvedValue();
     mockInsertOrUpdateImage.mockResolvedValue();
     mockReconcileAll.mockResolvedValue();
+    mockRefreshStreakFromBackend.mockResolvedValue();
     mockPushQueue.mockResolvedValue();
     mockPullChanges.mockResolvedValue();
     mockUpsertMyMealWithPhoto.mockResolvedValue();
@@ -308,7 +319,6 @@ describe("useMeals", () => {
         source: "saved",
       }),
     );
-    expect(mockReconcileAll).toHaveBeenCalledWith("user-1");
     expect(mockEmit).toHaveBeenCalledWith("meal:added", expect.any(Object));
     expect(mockEmit).toHaveBeenCalledWith("ui:toast", {
       key: "toast.mealAdded",
@@ -322,6 +332,10 @@ describe("useMeals", () => {
 
     expect(mockPushQueue).toHaveBeenCalledWith("user-1");
     expect(mockPullChanges).toHaveBeenCalledWith("user-1");
+    expect(mockRefreshStreakFromBackend).toHaveBeenCalledWith("user-1", {
+      refreshBadges: true,
+    });
+    expect(mockReconcileAll).toHaveBeenCalledWith("user-1");
   });
 
   it("does nothing on add when user is missing", async () => {
@@ -414,7 +428,7 @@ describe("useMeals", () => {
     );
     expect(mockUpsertMealLocal).not.toHaveBeenCalled();
     expect(mockEnqueueUpsert).not.toHaveBeenCalled();
-    expect(mockReconcileAll).toHaveBeenCalledWith("user-1");
+    expect(mockReconcileAll).not.toHaveBeenCalled();
   });
 
   it("updates regular meals and handles local image upload metadata", async () => {
@@ -463,6 +477,10 @@ describe("useMeals", () => {
 
     expect(mockPushQueue).toHaveBeenCalledWith("user-1");
     expect(mockPullChanges).toHaveBeenCalledWith("user-1");
+    expect(mockRefreshStreakFromBackend).toHaveBeenCalledWith("user-1", {
+      refreshBadges: true,
+    });
+    expect(mockReconcileAll).toHaveBeenCalledWith("user-1");
   });
 
   it("deletes meals, prunes local list and queues delete sync", async () => {
@@ -505,6 +523,11 @@ describe("useMeals", () => {
     });
     await flush();
     expect(mockPushQueue).toHaveBeenCalledWith("user-1");
+    expect(mockPullChanges).toHaveBeenCalledWith("user-1");
+    expect(mockRefreshStreakFromBackend).toHaveBeenCalledWith("user-1", {
+      refreshBadges: true,
+    });
+    expect(mockReconcileAll).toHaveBeenCalledWith("user-1");
   });
 
   it("duplicates meals and allows overriding target date", async () => {
@@ -585,7 +608,7 @@ describe("useMeals", () => {
     expect(unsynced).toEqual([]);
   });
 
-  it("logs reconcile failures from triggerReconcile", async () => {
+  it("logs reconcile failures from sync-triggered reconcile", async () => {
     mockReconcileAll.mockRejectedValueOnce(new Error("reconcile failed"));
     const { result } = renderHook(() => useMeals("user-1"));
 
@@ -594,12 +617,7 @@ describe("useMeals", () => {
     });
 
     await act(async () => {
-      await result.current.updateMeal(
-        baseMeal({
-          source: "saved",
-          photoUrl: null,
-        }),
-      );
+      await result.current.syncMeals();
     });
     await flush();
 
