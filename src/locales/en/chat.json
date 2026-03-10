@@ -37,9 +37,16 @@
   "history": {
     "open": "Open chat history"
   },
+  "retryLast": "Retry last message",
+  "sending": "AI is thinking...",
   "errors": {
     "fetchFailed": "Could not fetch a response. Please try again.",
-    "offTopic": "I can only answer questions related to nutrition and diet."
+    "offTopic": "I can only answer questions related to nutrition and diet.",
+    "offline": "You're offline. Reconnect and try again.",
+    "timeout": "The request timed out. Please retry.",
+    "serviceUnavailable": "AI is temporarily unavailable. Please try again shortly.",
+    "authRequired": "Please sign in again to continue.",
+    "emptyResponse": "I couldn't generate a useful response. Please try again."
   },
   "paywall": {
     "autorenew": "Payment will be charged to your account. Subscription auto-renews unless canceled at least 24 hours before the end of the current period.",

@@ -13,16 +13,21 @@ import { debugScope } from "@/utils/debug";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useUserContext } from "@contexts/UserContext";
-import { isServiceError } from "@/services/contracts/serviceError";
+import { getAiUxErrorType } from "@/services/ai/uxError";
 import type { Ingredient, Meal } from "@/types";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 
 const log = debugScope("Hook:useMealCameraState");
-const AI_UNAVAILABLE_CODE = "ai/unavailable";
 
-const isAiUnavailableError = (error: unknown) =>
-  isServiceError(error) &&
-  (error.code === "offline" || error.code === AI_UNAVAILABLE_CODE);
+const getRecognitionFailureReason = (
+  error: unknown,
+): "offline" | "timeout" | "ai_unavailable" | "not_recognized" => {
+  const errorType = getAiUxErrorType(error);
+  if (errorType === "offline") return "offline";
+  if (errorType === "timeout") return "timeout";
+  if (errorType === "unavailable") return "ai_unavailable";
+  return "not_recognized";
+};
 
 export function useMealCameraState({
   navigation,
@@ -344,9 +349,7 @@ export function useMealCameraState({
           image: finalUri,
           id: mealId,
           attempt,
-          reason: isAiUnavailableError(error)
-            ? "ai_unavailable"
-            : "not_recognized",
+          reason: getRecognitionFailureReason(error),
         });
         return;
       }

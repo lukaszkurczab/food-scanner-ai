@@ -570,6 +570,34 @@ describe("useChatHistory", () => {
     );
     expect(result.current.sending).toBe(false);
     expect(result.current.typing).toBe(false);
+    expect(result.current.sendErrorType).toBe("unknown");
+  });
+
+  it("maps timeout failures to a retryable timeout response message", async () => {
+    mockApiPost.mockRejectedValueOnce(
+      Object.assign(new Error("timeout"), {
+        code: "api/timeout",
+        source: "ApiClient",
+        retryable: true,
+      }),
+    );
+    mockUuid.mockReturnValueOnce("user-msg").mockReturnValueOnce("ai-msg");
+
+    const { result } = renderHook(() =>
+      useChatHistory("user-1", true, mealsFixture, profileFixture, "thread-1"),
+    );
+    await settle();
+
+    await act(async () => {
+      await result.current.send("hello");
+    });
+
+    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
+    const aiPayload = mockPersistAssistantChatMessage.mock.calls[0][0] as {
+      content: string;
+    };
+    expect(aiPayload.content).toBe("The request timed out. Please retry.");
+    expect(result.current.sendErrorType).toBe("timeout");
   });
 
   it("shows off-topic fallback message when gateway rejects request", async () => {

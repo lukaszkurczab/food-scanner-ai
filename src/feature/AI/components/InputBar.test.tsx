@@ -58,6 +58,23 @@ describe("InputBar", () => {
     expect(getByPlaceholderText("Custom placeholder")).toBeTruthy();
   });
 
+  it("renders and triggers helper action", () => {
+    const onHelperActionPress = jest.fn();
+    const { getByText, getByTestId } = renderWithTheme(
+      <InputBar
+        onSend={() => undefined}
+        helperText="Retry failed request"
+        helperActionLabel="Retry"
+        onHelperActionPress={onHelperActionPress}
+      />,
+    );
+
+    expect(getByText("Retry failed request")).toBeTruthy();
+    fireEvent.press(getByTestId("chat-helper-action"));
+
+    expect(onHelperActionPress).toHaveBeenCalledTimes(1);
+  });
+
   it("applies pressed and released opacity styles on send button", () => {
     const { UNSAFE_getAllByType } = renderWithTheme(
       <InputBar onSend={() => undefined} />,

@@ -311,6 +311,8 @@ export const PhotoPreview = ({
       <GlobalActionButtons
         label={primaryText}
         onPress={() => onAccept(photoUri)}
+        primaryDisabled={isLoading}
+        primaryLoading={isLoading}
         secondaryLabel={secondaryText}
         secondaryOnPress={onRetake}
         secondaryDisabled={isLoading}

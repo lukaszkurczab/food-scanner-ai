@@ -14,6 +14,9 @@ type Props = {
   disabled?: boolean;
   onSend: (text: string) => void;
   helperText?: string;
+  helperActionLabel?: string;
+  onHelperActionPress?: () => void;
+  helperActionDisabled?: boolean;
 };
 
 export const InputBar: React.FC<Props> = ({
@@ -21,6 +24,9 @@ export const InputBar: React.FC<Props> = ({
   disabled,
   onSend,
   helperText,
+  helperActionLabel,
+  onHelperActionPress,
+  helperActionDisabled = false,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation("chat");
@@ -76,9 +82,23 @@ export const InputBar: React.FC<Props> = ({
       </View>
 
       {!!helperText && (
-        <Text style={styles.helper} numberOfLines={2}>
-          {helperText}
-        </Text>
+        <View style={styles.helperRow}>
+          <Text style={styles.helper} numberOfLines={2}>
+            {helperText}
+          </Text>
+          {!!helperActionLabel && onHelperActionPress && (
+            <Pressable
+              onPress={onHelperActionPress}
+              disabled={helperActionDisabled}
+              testID="chat-helper-action"
+              style={({ pressed }) => ({
+                opacity: helperActionDisabled ? 0.5 : pressed ? 0.7 : 1,
+              })}
+            >
+              <Text style={styles.helperAction}>{helperActionLabel}</Text>
+            </Pressable>
+          )}
+        </View>
       )}
     </View>
   );
@@ -127,5 +147,17 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginTop: theme.spacing.xs,
       fontSize: theme.typography.size.sm,
       color: theme.textSecondary,
+      flex: 1,
+    },
+    helperRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    helperAction: {
+      marginTop: theme.spacing.xs,
+      color: theme.accentSecondary,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.semiBold,
     },
   });

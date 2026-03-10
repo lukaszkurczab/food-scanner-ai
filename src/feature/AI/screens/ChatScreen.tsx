@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import {
   View,
   FlatList,
@@ -58,12 +58,14 @@ export default function ChatScreen() {
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [threadId, setThreadId] = useState<string>(() => `local-${uuidv4()}`);
+  const lastUserMessageRef = useRef<string | null>(null);
 
   const {
     messages,
     loading,
     sending,
     typing,
+    sendErrorType,
     canSend,
     countToday,
     dailyLimit,
@@ -88,6 +90,7 @@ export default function ChatScreen() {
     async (text: string) => {
       if (!net.isConnected) return;
       if (!canSend) return;
+      lastUserMessageRef.current = text;
       const createdThreadId = await send(text);
       if (createdThreadId) setThreadId(createdThreadId);
     },
@@ -112,6 +115,44 @@ export default function ChatScreen() {
   }, [premiumActive, countToday, dailyLimit, t]);
 
   const emptyDisabled = sending || limitReached || !net.isConnected;
+  const retryEnabled =
+    !!lastUserMessageRef.current &&
+    !!net.isConnected &&
+    !sending &&
+    canSend &&
+    (sendErrorType === "offline" ||
+      sendErrorType === "timeout" ||
+      sendErrorType === "unavailable" ||
+      sendErrorType === "unknown");
+
+  const helperText = useMemo(() => {
+    if (!net.isConnected) return t("offline.short");
+    if (limitReached) {
+      return t("limit.reachedShort", { used: countToday, limit: dailyLimit });
+    }
+    if (sending) return t("sending", { defaultValue: "AI is thinking..." });
+    if (sendErrorType === "offline") return t("errors.offline");
+    if (sendErrorType === "timeout") return t("errors.timeout");
+    if (sendErrorType === "unavailable") return t("errors.serviceUnavailable");
+    if (sendErrorType === "auth") return t("errors.authRequired");
+    if (sendErrorType === "unknown") return t("errors.fetchFailed");
+    return undefined;
+  }, [
+    countToday,
+    dailyLimit,
+    limitReached,
+    net.isConnected,
+    sendErrorType,
+    sending,
+    t,
+  ]);
+
+  const handleRetry = useCallback(() => {
+    const last = lastUserMessageRef.current;
+    if (!last) return;
+    void handleSend(last);
+  }, [handleSend]);
+
   const listContentStyle = useMemo(
     () => [styles.listContent, limitReached && styles.listContentLimit],
     [limitReached, styles],
@@ -154,6 +195,7 @@ export default function ChatScreen() {
             data={data}
             keyExtractor={(m) => m.id}
             keyboardShouldPersistTaps="handled"
+            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
             renderItem={({ item }) => (
               <View
                 testID={
@@ -190,6 +232,10 @@ export default function ChatScreen() {
             placeholder={t("input.placeholder")}
             disabled={sending || limitReached || !net.isConnected}
             onSend={handleSend}
+            helperText={helperText}
+            helperActionLabel={retryEnabled ? t("retryLast") : undefined}
+            onHelperActionPress={retryEnabled ? handleRetry : undefined}
+            helperActionDisabled={!retryEnabled}
           />
         </>
       )}
