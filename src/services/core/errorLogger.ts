@@ -1,5 +1,5 @@
-import * as apiClient from "@/services/apiClient";
-import { readPublicEnv } from "@/services/publicEnv";
+import * as apiClient from "@/services/core/apiClient";
+import { readPublicEnv } from "@/services/core/publicEnv";
 
 type LogContext = unknown;
 type LogError = unknown;

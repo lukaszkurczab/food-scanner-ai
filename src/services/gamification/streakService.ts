@@ -5,8 +5,8 @@ import {
   sanitizeStreakDoc,
 } from "./streak.logic";
 import { debugScope } from "@/utils/debug";
-import { get, post } from "@/services/apiClient";
-import { emit, on } from "@/services/events";
+import { get, post } from "@/services/core/apiClient";
+import { emit, on } from "@/services/core/events";
 import type { StreakDoc } from "./streak.logic";
 export type { StreakDoc } from "./streak.logic";
 

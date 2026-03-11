@@ -6,7 +6,7 @@ import {
   it,
   jest,
 } from "@jest/globals";
-import { detectIngredientsWithVision } from "@/services/visionService";
+import { detectIngredientsWithVision } from "@/services/ai/visionService";
 import { isServiceError } from "@/services/contracts/serviceError";
 
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
@@ -43,11 +43,11 @@ jest.mock("@/utils/convertToJpegAndResize", () => ({
   ) => mockConvertToJpegAndResize(uri, width, height, options),
 }));
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   post: (url: string, data?: unknown) => mockPost(url, data),
 }));
 
-jest.mock("@/services/errorLogger", () => ({
+jest.mock("@/services/core/errorLogger", () => ({
   logError: (...args: unknown[]) => mockLogError(...args),
 }));
 

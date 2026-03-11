@@ -1,8 +1,8 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { ChatMessage, ChatThread } from "@/types";
-import { get, post } from "@/services/apiClient";
-import { captureException } from "@/services/errorLogger";
-import { on } from "@/services/events";
+import { get, post } from "@/services/core/apiClient";
+import { captureException } from "@/services/core/errorLogger";
+import { on } from "@/services/core/events";
 import {
   getChatMessagesPageLocal,
   getChatThreadsLocal,

@@ -8,7 +8,7 @@ import {
   deleteAccountService,
   exportUserData as fetchUserExportData,
   uploadAndSaveAvatar,
-} from "@/services/userService";
+} from "@/services/user/userService";
 import { assertNoUndefined } from "@/utils/findUndefined";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system";

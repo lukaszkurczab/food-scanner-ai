@@ -1,6 +1,6 @@
 import type { UserData } from "@/types";
-import { get, post, upload } from "@/services/apiClient";
-import { emit, on } from "@/services/events";
+import { get, post, upload } from "@/services/core/apiClient";
+import { emit, on } from "@/services/core/events";
 import { sanitizeUserProfilePatch } from "./profilePatch";
 
 type AvatarUploadResponse = {

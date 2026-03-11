@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const mockUpload = jest.fn<(path: string, data: FormData) => Promise<unknown>>();
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   upload: (...args: [string, FormData]) => mockUpload(...args),
 }));
 
@@ -14,7 +14,7 @@ describe("feedbackService", () => {
 
   it("uploads feedback through backend endpoint with optional attachment", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { sendFeedback } = require("@/services/feedbackService");
+    const { sendFeedback } = require("@/services/feedback/feedbackService");
 
     await sendFeedback({
       message: "Bug report",

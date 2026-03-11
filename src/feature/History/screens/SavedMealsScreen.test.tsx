@@ -40,7 +40,7 @@ jest.mock("@/feature/History/hooks/useSavedMealsData", () => ({
   useSavedMealsData: (params: unknown) => mockUseSavedMealsData(params),
 }));
 
-jest.mock("@/services/myMealService", () => ({
+jest.mock("@/services/meals/myMealService", () => ({
   syncMyMeals: (uid: string | null | undefined) => mockSyncMyMeals(uid),
 }));
 

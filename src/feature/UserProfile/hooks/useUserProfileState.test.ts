@@ -56,7 +56,7 @@ jest.mock("@/feature/Auth/services/authService", () => ({
   authLogout: jest.fn(async () => undefined),
 }));
 
-jest.mock("@/services/streakService", () => ({
+jest.mock("@/services/gamification/streakService", () => ({
   subscribeStreak: (...args: unknown[]) => mockSubscribeStreak(...args),
 }));
 

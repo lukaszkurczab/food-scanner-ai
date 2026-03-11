@@ -13,7 +13,7 @@ import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import {
   isUsernameAvailable,
   normalizeUsername,
-} from "@/services/usernameService";
+} from "@/services/user/usernameService";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 

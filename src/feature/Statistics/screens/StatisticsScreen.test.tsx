@@ -25,7 +25,7 @@ jest.mock("@/feature/Statistics/hooks/useStatisticsState", () => ({
   useStatisticsState: (params: unknown) => mockUseStatisticsState(params),
 }));
 
-jest.mock("@/services/mealService", () => ({
+jest.mock("@/services/meals/mealService", () => ({
   FREE_WINDOW_DAYS: 30,
 }));
 

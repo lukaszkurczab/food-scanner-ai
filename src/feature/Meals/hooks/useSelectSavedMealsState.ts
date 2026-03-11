@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ViewToken } from "react-native";
 import { v4 as uuidv4 } from "uuid";
 import type { Meal } from "@/types/meal";
-import { subscribeToMyMealsOrderedByName } from "@/services/myMealsRepository";
+import { subscribeToMyMealsOrderedByName } from "@/services/meals/myMealsRepository";
 
 const STEP = 20;
 const TAIL_THRESHOLD = 10;

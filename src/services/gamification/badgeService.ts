@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Badge } from "@/types/badge";
-import { get, post } from "@/services/apiClient";
-import { emit, on } from "@/services/events";
+import { get, post } from "@/services/core/apiClient";
+import { createRequestDeduplicator } from "@/services/core/deduplicateRequest";
+import { emit, on } from "@/services/core/events";
 
 type BadgeListResponse = {
   items?: unknown[];
@@ -22,12 +23,12 @@ type BadgeStream = {
   inFlight: Promise<Badge[]> | null;
 };
 
-const badgeListInFlightByUid = new Map<string, Promise<Badge[]>>();
 const premiumReconcileInFlightByUid = new Map<
   string,
   { isPremium: boolean; promise: Promise<void> }
 >();
 const badgeStreamsByUid = new Map<string, BadgeStream>();
+const dedupeBadgeListRequest = createRequestDeduplicator<string, Badge[]>();
 
 function badgeCacheKey(uid: string) {
   return `badge:list:${uid}`;
@@ -93,14 +94,8 @@ async function writeBadgeCache(uid: string, items: Badge[]): Promise<void> {
 }
 
 export async function listBadges(uid: string): Promise<Badge[]> {
-  const existing = badgeListInFlightByUid.get(uid);
-  if (existing) {
-    return existing;
-  }
-
-  const request = (async () => {
+  return dedupeBadgeListRequest(uid, async () => {
     try {
-      void uid;
       const response = await get<BadgeListResponse>("/users/me/badges");
       const items = normalizeBadgeList(response);
       await writeBadgeCache(uid, items);
@@ -108,18 +103,7 @@ export async function listBadges(uid: string): Promise<Badge[]> {
     } catch {
       return readBadgeCache(uid);
     }
-  })();
-
-  badgeListInFlightByUid.set(uid, request);
-
-  try {
-    return await request;
-  } finally {
-    const current = badgeListInFlightByUid.get(uid);
-    if (current === request) {
-      badgeListInFlightByUid.delete(uid);
-    }
-  }
+  });
 }
 
 function getOrCreateBadgeStream(uid: string): BadgeStream {

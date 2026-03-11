@@ -1,6 +1,6 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { Meal } from "@/types/meal";
-import { emit } from "@/services/events";
+import { emit } from "@/services/core/events";
 import {
   enqueueMyMealDelete,
   enqueueMyMealUpsert,

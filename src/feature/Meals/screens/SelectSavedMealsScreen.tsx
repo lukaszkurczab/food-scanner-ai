@@ -11,7 +11,7 @@ import { MealListItem } from "@/components/MealListItem";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useTranslation } from "react-i18next";
 import { useSelectSavedMealsState } from "@/feature/Meals/hooks/useSelectSavedMealsState";
-import { syncMyMeals } from "@/services/myMealService";
+import { syncMyMeals } from "@/services/meals/myMealService";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 

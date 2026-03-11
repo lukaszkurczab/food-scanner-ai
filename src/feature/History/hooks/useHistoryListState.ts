@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useFilters } from "@/context/HistoryContext";
-import { FREE_WINDOW_DAYS } from "@/services/mealService";
+import { FREE_WINDOW_DAYS } from "@/services/meals/mealService";
 import type { Meal } from "@/types/meal";
 import { useHistorySectionsData } from "@/feature/History/hooks/useHistorySectionsData";
 import type { RootStackParamList } from "@/navigation/navigate";

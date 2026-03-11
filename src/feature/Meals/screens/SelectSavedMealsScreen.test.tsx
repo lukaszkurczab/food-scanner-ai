@@ -34,7 +34,7 @@ jest.mock("@/feature/Meals/hooks/useSelectSavedMealsState", () => ({
     mockUseSelectSavedMealsState(params),
 }));
 
-jest.mock("@/services/myMealService", () => ({
+jest.mock("@/services/meals/myMealService", () => ({
   syncMyMeals: (uid: string | null) => mockSyncMyMeals(uid),
 }));
 

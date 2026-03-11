@@ -29,11 +29,11 @@ jest.mock("@react-native-firebase/auth", () => ({
     mockCreateUserWithEmailAndPassword(...args),
 }));
 
-jest.mock("@/services/usernameService", () => ({
+jest.mock("@/services/user/usernameService", () => ({
   claimUsername: (...args: unknown[]) => mockClaimUsername(...args),
 }));
 
-jest.mock("@/services/userService", () => ({
+jest.mock("@/services/user/userService", () => ({
   createInitialUserProfile: (...args: unknown[]) =>
     mockCreateInitialUserProfile(...args),
 }));

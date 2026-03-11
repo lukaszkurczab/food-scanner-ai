@@ -1,7 +1,7 @@
 import { getDB } from "./db";
 import type { Meal } from "@/types/meal";
 import type { MealRow } from "./types";
-import { emit } from "@/services/events";
+import { emit } from "@/services/core/events";
 
 const MEAL_TYPES: Meal["type"][] = [
   "breakfast",

@@ -12,15 +12,15 @@ import {
   getMealsPageLocalFiltered,
   type LocalHistoryFilters,
 } from "@/services/offline/meals.repo";
-import { on, emit } from "@/services/events";
+import { on, emit } from "@/services/core/events";
 import {
   extractMealTimestampCursor,
   fetchMealsPageRemote,
   markMealDeletedRemote,
   saveMealRemote,
   type MealHistoryFilters,
-} from "@/services/mealsRepository";
-import { formatStreakDate } from "@/services/streak.logic";
+} from "@/services/meals/mealsRepository";
+import { formatStreakDate } from "@/services/gamification/streak.logic";
 export const FREE_WINDOW_DAYS = 30;
 export type HistoryFilters = MealHistoryFilters;
 

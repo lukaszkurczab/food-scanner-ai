@@ -7,8 +7,8 @@ import {
   createUserWithEmailAndPassword,
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
-import { claimUsername } from "@/services/usernameService";
-import { createInitialUserProfile } from "@/services/userService";
+import { claimUsername } from "@/services/user/usernameService";
+import { createInitialUserProfile } from "@/services/user/userService";
 import i18n from "@/i18n";
 
 function resolveInitialLanguage(language: string | undefined): "en" | "pl" {

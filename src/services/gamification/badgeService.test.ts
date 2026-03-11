@@ -3,7 +3,7 @@ import {
   primeBadges,
   subscribeBadges,
   unlockPremiumBadgesIfEligible,
-} from "@/services/badgeService";
+} from "@/services/gamification/badgeService";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 type BadgeListCallback = (badges: Array<{ id: string }>) => void;
@@ -21,12 +21,12 @@ async function flushAsync() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   get: (url: string) => mockGet(url),
   post: (url: string, data?: unknown) => mockPost(url, data),
 }));
 
-jest.mock("@/services/events", () => ({
+jest.mock("@/services/core/events", () => ({
   emit: (event: string, payload?: unknown) => mockEmit(event, payload),
   on: (...args: unknown[]) => mockOn(...args),
 }));

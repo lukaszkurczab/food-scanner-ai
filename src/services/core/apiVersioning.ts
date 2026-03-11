@@ -1,4 +1,4 @@
-import { readPublicEnv } from "@/services/publicEnv";
+import { readPublicEnv } from "@/services/core/publicEnv";
 
 const DEFAULT_API_VERSION = "v1";
 

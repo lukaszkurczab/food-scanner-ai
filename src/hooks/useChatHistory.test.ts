@@ -63,12 +63,12 @@ jest.mock("i18next", () => ({
   },
 }));
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   get: (url: string) => mockApiGet(url),
   post: (url: string, data?: unknown) => mockApiPost(url, data),
 }));
 
-jest.mock("@/services/errorLogger", () => ({
+jest.mock("@/services/core/errorLogger", () => ({
   captureException: (message: string, context?: unknown, error?: unknown) =>
     mockCaptureException(message, context, error),
 }));

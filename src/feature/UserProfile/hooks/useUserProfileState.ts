@@ -7,7 +7,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useBadges } from "@/hooks/useBadges";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { authLogout } from "@/feature/Auth/services/authService";
-import { subscribeStreak } from "@/services/streakService";
+import { subscribeStreak } from "@/services/gamification/streakService";
 import type { RootStackParamList } from "@/navigation/navigate";
 
 type ProfileNavigation = StackNavigationProp<RootStackParamList, "Profile">;

@@ -13,7 +13,7 @@ jest.mock("i18next", () => ({
   },
 }));
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   post: (url: string, data?: unknown) => mockPost(url, data),
 }));
 
@@ -22,7 +22,7 @@ jest.mock("@/services/e2e/config", () => ({
   getE2EMockChatReply: () => mockGetE2EMockChatReply(),
 }));
 
-jest.mock("@/services/errorLogger", () => ({
+jest.mock("@/services/core/errorLogger", () => ({
   logError: (...args: unknown[]) => mockLogError(...args),
   logWarning: (...args: unknown[]) => mockLogWarning(...args),
 }));
@@ -47,7 +47,7 @@ describe("askDietAI", () => {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { askDietAI } = require("@/services/askDietAI");
+    const { askDietAI } = require("@/services/ai/askDietAI");
 
     const result = await askDietAI(
       "What should I eat tonight?",
@@ -109,7 +109,7 @@ describe("askDietAI", () => {
     mockPost.mockRejectedValueOnce(Object.assign(new Error("limit"), { status: 429 }));
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { askDietAI, AiLimitExceededError } = require("@/services/askDietAI");
+    const { askDietAI, AiLimitExceededError } = require("@/services/ai/askDietAI");
 
     await expect(
       askDietAI("Question", [], [], {
@@ -146,7 +146,7 @@ describe("askDietAI", () => {
     );
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { askDietAI, AiLimitExceededError } = require("@/services/askDietAI");
+    const { askDietAI, AiLimitExceededError } = require("@/services/ai/askDietAI");
 
     await expect(
       askDietAI("Question", [], [], {
@@ -175,7 +175,7 @@ describe("askDietAI", () => {
     mockPost.mockRejectedValueOnce(Object.assign(new Error("unauthorized"), { status: 401 }));
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { askDietAI } = require("@/services/askDietAI");
+    const { askDietAI } = require("@/services/ai/askDietAI");
 
     await expect(
       askDietAI(
@@ -206,7 +206,7 @@ describe("askDietAI", () => {
     mockPost.mockRejectedValueOnce(Object.assign(new Error("unavailable"), { status: 503 }));
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { askDietAI } = require("@/services/askDietAI");
+    const { askDietAI } = require("@/services/ai/askDietAI");
 
     await expect(
       askDietAI(
@@ -237,7 +237,7 @@ describe("askDietAI", () => {
     mockIsE2EModeEnabled.mockReturnValue(true);
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { askDietAI } = require("@/services/askDietAI");
+    const { askDietAI } = require("@/services/ai/askDietAI");
 
     const result = await askDietAI(
       "Question",

@@ -38,7 +38,7 @@ jest.mock("expo-file-system", () => ({
   getInfoAsync: (path: string) => mockGetInfoAsync(path),
 }));
 
-jest.mock("@/services/myMealsRepository", () => ({
+jest.mock("@/services/meals/myMealsRepository", () => ({
   subscribeToMyMealsFirstPage: (params: {
     onData: (page: { items: Meal[]; lastDoc: string | null; hasMore: boolean }) => void;
   }) => {
@@ -62,11 +62,11 @@ jest.mock("@/services/offline/queue.repo", () => ({
     mockEnqueueMyMealUpsert(uid, meal),
 }));
 
-jest.mock("@/services/myMealService", () => ({
+jest.mock("@/services/meals/myMealService", () => ({
   syncMyMeals: (uid?: string | null) => mockSyncMyMeals(uid),
 }));
 
-jest.mock("@/services/events", () => ({
+jest.mock("@/services/core/events", () => ({
   emit: (event: string, payload: unknown) => mockEmit(event, payload),
 }));
 

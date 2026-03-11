@@ -1,5 +1,5 @@
-import { get, post } from "@/services/apiClient";
-import { emit, on } from "@/services/events";
+import { get, post } from "@/services/core/apiClient";
+import { emit, on } from "@/services/core/events";
 import type { UserNotification } from "@/types/notification";
 
 type GlobalPrefsDoc = {

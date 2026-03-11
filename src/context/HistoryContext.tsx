@@ -1,6 +1,5 @@
 import React, {
   createContext,
-  useCallback,
   useContext,
   useMemo,
   useState,
@@ -21,6 +20,21 @@ type Slice = {
   filters: Filters | null;
   showFilters: boolean;
 };
+
+function createSliceActions(
+  setter: React.Dispatch<React.SetStateAction<Slice>>,
+) {
+  return {
+    setQuery: (v: string) => setter((s) => ({ ...s, query: v })),
+    applyFilters: (f: Filters) =>
+      setter((s) => ({ ...s, filters: f, showFilters: false })),
+    clearFilters: () =>
+      setter((s) => ({ ...s, filters: null, showFilters: false })),
+    setShowFilters: (v: boolean) => setter((s) => ({ ...s, showFilters: v })),
+    toggleShowFilters: () =>
+      setter((s) => ({ ...s, showFilters: !s.showFilters })),
+  };
+}
 
 type HistoryContextValue = {
   history: Slice;
@@ -66,66 +80,22 @@ export const HistoryProvider: React.FC<{ children: React.ReactNode }> = ({
     [myMeals.filters]
   );
 
-  const setHistoryQuery = useCallback(
-    (v: string) => setHistory((s) => ({ ...s, query: v })),
-    []
-  );
-  const setMyMealsQuery = useCallback(
-    (v: string) => setMyMeals((s) => ({ ...s, query: v })),
-    []
-  );
-
-  const applyHistoryFilters = useCallback(
-    (f: Filters) =>
-      setHistory((s) => ({ ...s, filters: f, showFilters: false })),
-    []
-  );
-  const applyMyMealsFilters = useCallback(
-    (f: Filters) =>
-      setMyMeals((s) => ({ ...s, filters: f, showFilters: false })),
-    []
-  );
-
-  const clearHistoryFilters = useCallback(
-    () => setHistory((s) => ({ ...s, filters: null, showFilters: false })),
-    []
-  );
-  const clearMyMealsFilters = useCallback(
-    () => setMyMeals((s) => ({ ...s, filters: null, showFilters: false })),
-    []
-  );
-
-  const setHistoryShowFilters = useCallback(
-    (v: boolean) => setHistory((s) => ({ ...s, showFilters: v })),
-    []
-  );
-  const setMyMealsShowFilters = useCallback(
-    (v: boolean) => setMyMeals((s) => ({ ...s, showFilters: v })),
-    []
-  );
-
-  const toggleHistoryShowFilters = useCallback(
-    () => setHistory((s) => ({ ...s, showFilters: !s.showFilters })),
-    []
-  );
-  const toggleMyMealsShowFilters = useCallback(
-    () => setMyMeals((s) => ({ ...s, showFilters: !s.showFilters })),
-    []
-  );
+  const historyActions = useMemo(() => createSliceActions(setHistory), []);
+  const myMealsActions = useMemo(() => createSliceActions(setMyMeals), []);
 
   const value: HistoryContextValue = {
     history,
     myMeals,
-    setHistoryQuery,
-    setMyMealsQuery,
-    applyHistoryFilters,
-    applyMyMealsFilters,
-    clearHistoryFilters,
-    clearMyMealsFilters,
-    setHistoryShowFilters,
-    setMyMealsShowFilters,
-    toggleHistoryShowFilters,
-    toggleMyMealsShowFilters,
+    setHistoryQuery: historyActions.setQuery,
+    setMyMealsQuery: myMealsActions.setQuery,
+    applyHistoryFilters: historyActions.applyFilters,
+    applyMyMealsFilters: myMealsActions.applyFilters,
+    clearHistoryFilters: historyActions.clearFilters,
+    clearMyMealsFilters: myMealsActions.clearFilters,
+    setHistoryShowFilters: historyActions.setShowFilters,
+    setMyMealsShowFilters: myMealsActions.setShowFilters,
+    toggleHistoryShowFilters: historyActions.toggleShowFilters,
+    toggleMyMealsShowFilters: myMealsActions.toggleShowFilters,
     historyFilterCount,
     myMealsFilterCount,
   };

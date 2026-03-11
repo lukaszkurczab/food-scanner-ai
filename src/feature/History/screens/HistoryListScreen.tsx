@@ -18,7 +18,7 @@ import { MealListItem } from "@/components/MealListItem";
 import type { Meal } from "@/types/meal";
 import type { DaySection } from "@/feature/History/types/daySection";
 import { useHistoryListState } from "@/feature/History/hooks/useHistoryListState";
-import { FREE_WINDOW_DAYS } from "@/services/mealService";
+import { FREE_WINDOW_DAYS } from "@/services/meals/mealService";
 import type { RootStackParamList } from "@/navigation/navigate";
 
 

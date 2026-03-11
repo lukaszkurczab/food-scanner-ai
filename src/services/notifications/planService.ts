@@ -1,5 +1,5 @@
 import type { AIStyle, MealKind, NotificationType } from "@/types/notification";
-import { post } from "@/services/apiClient";
+import { post } from "@/services/core/apiClient";
 import { getDayISOInclusiveRange } from "./dayRange";
 
 export type NotificationPlanItem = {

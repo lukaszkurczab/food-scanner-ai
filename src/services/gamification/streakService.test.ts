@@ -7,12 +7,12 @@ const mockOn = jest.fn<(...args: unknown[]) => () => void>();
 const mockGetItem = jest.fn<(key: string) => Promise<string | null>>();
 const mockSetItem = jest.fn<(key: string, value: string) => Promise<void>>();
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   get: (url: string) => mockGet(url),
   post: (url: string, data?: unknown) => mockPost(url, data),
 }));
 
-jest.mock("@/services/events", () => ({
+jest.mock("@/services/core/events", () => ({
   emit: (event: string, payload?: unknown) => mockEmit(event, payload),
   on: (...args: unknown[]) => mockOn(...args),
 }));
@@ -26,7 +26,7 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const streakService = require("@/services/streakService") as typeof import("@/services/streakService");
+const streakService = require("@/services/gamification/streakService") as typeof import("@/services/gamification/streakService");
 const {
   ensureStreakDoc,
   getStreak,

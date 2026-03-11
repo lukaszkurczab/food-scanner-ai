@@ -11,7 +11,7 @@ import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@hooks/useMeals";
 import type { Meal } from "@/types/meal";
 import { useTranslation } from "react-i18next";
-import { subscribeStreak } from "@/services/streakService";
+import { subscribeStreak } from "@/services/gamification/streakService";
 import { useAuthContext } from "@/context/AuthContext";
 import WeekStrip, { WeekDayItem } from "@/components/WeekStrip";
 import EmptyDayView from "../components/EmptyDayView";

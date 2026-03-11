@@ -1,4 +1,4 @@
-import { upload } from "@/services/apiClient";
+import { upload } from "@/services/core/apiClient";
 
 type DeviceInfo = {
   modelName?: string | null;

@@ -3,8 +3,8 @@ import { getAuth } from "@react-native-firebase/auth";
 import Constants from "expo-constants";
 import { createServiceError } from "@/services/contracts/serviceError";
 import { asString, isRecord } from "@/services/contracts/guards";
-import { withVersion } from "@/services/apiVersioning";
-import { readPublicEnv } from "@/services/publicEnv";
+import { withVersion } from "@/services/core/apiVersioning";
+import { readPublicEnv } from "@/services/core/publicEnv";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const API_CLIENT_SOURCE = "ApiClient";

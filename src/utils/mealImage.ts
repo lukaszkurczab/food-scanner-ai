@@ -1,5 +1,5 @@
 import * as FileSystem from "expo-file-system";
-import { ensureLocalMealPhoto } from "@/services/mealService.images";
+import { ensureLocalMealPhoto } from "@/services/meals/mealService.images";
 import type { Meal } from "@/types/meal";
 
 const isLocalUri = (value?: string | null) =>

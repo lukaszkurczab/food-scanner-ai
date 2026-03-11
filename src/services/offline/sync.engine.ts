@@ -8,23 +8,23 @@ import { getPendingUploads, markUploaded } from "./images.repo";
 import { upsertMealLocal } from "./meals.repo";
 import { upsertMyMealLocal } from "./myMeals.repo";
 import { getDB } from "./db";
-import { processAndUpload } from "@/services/mealService.images";
+import { processAndUpload } from "@/services/meals/mealService.images";
 import type { MealRow } from "./types";
-import { emit } from "@/services/events";
-import { post } from "@/services/apiClient";
+import { emit } from "@/services/core/events";
+import { post } from "@/services/core/apiClient";
 import {
   buildMealUpdatedCursor,
   fetchMealChangesRemote,
   markMealDeletedRemote,
   saveMealRemote,
-} from "@/services/mealsRepository";
+} from "@/services/meals/mealsRepository";
 import {
   buildMyMealUpdatedCursor,
   fetchMyMealChangesRemote,
   markMyMealDeletedRemote,
   updateMyMealRemote,
   uploadMyMealPhotoRemote,
-} from "@/services/myMealsRepository";
+} from "@/services/meals/myMealsRepository";
 import {
   createServiceError,
   normalizeServiceError,

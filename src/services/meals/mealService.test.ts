@@ -12,7 +12,7 @@ import {
   deleteMealInFirestore,
   getMealsPageFiltered,
   subscribeMeals,
-} from "@/services/mealService";
+} from "@/services/meals/mealService";
 
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
 const mockGetMealsPageLocal = jest.fn<(...args: unknown[]) => Promise<Meal[]>>();
@@ -46,7 +46,7 @@ jest.mock("@/services/offline/meals.repo", () => ({
     mockGetMealsPageLocalFiltered(...args),
 }));
 
-jest.mock("@/services/mealsRepository", () => ({
+jest.mock("@/services/meals/mealsRepository", () => ({
   extractMealTimestampCursor: (cursor: string | null) =>
     typeof cursor === "string" ? cursor.split("|")[0] : null,
   fetchMealsPageRemote: (...args: unknown[]) => mockFetchMealsPageRemote(...args),
@@ -54,13 +54,13 @@ jest.mock("@/services/mealsRepository", () => ({
   markMealDeletedRemote: (...args: unknown[]) => mockMarkMealDeletedRemote(...args),
 }));
 
-jest.mock("@/services/mealService.images", () => ({
+jest.mock("@/services/meals/mealService.images", () => ({
   processAndUpload: (...args: unknown[]) => mockProcessAndUpload(...args),
   ensureLocalMealPhoto: jest.fn(),
   localPhotoPath: jest.fn(),
 }));
 
-jest.mock("@/services/events", () => ({
+jest.mock("@/services/core/events", () => ({
   on: (...args: unknown[]) => mockOn(...args),
   emit: (event: string, payload: Record<string, unknown>) =>
     mockEmit(event, payload),

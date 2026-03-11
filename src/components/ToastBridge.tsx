@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { on } from "@/services/events";
+import { on } from "@/services/core/events";
 import { Toast, ToastContainer } from "./Toast";
 import i18n from "@/i18n";
 

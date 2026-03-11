@@ -1,6 +1,6 @@
 import type { Meal } from "@/types/meal";
-import { get, post } from "@/services/apiClient";
-import { updateMyMealRemote } from "@/services/myMealsRepository";
+import { get, post } from "@/services/core/apiClient";
+import { updateMyMealRemote } from "@/services/meals/myMealsRepository";
 
 export type MealHistoryFilters = {
   calories?: [number, number];
