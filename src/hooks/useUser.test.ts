@@ -76,7 +76,7 @@ jest.mock("@utils/savePhotoLocally", () => ({
   savePhotoLocally: (...args: unknown[]) => mockSavePhotoLocally(...args),
 }));
 
-jest.mock("@/services/userService", () => ({
+jest.mock("@/services/user/userService", () => ({
   changeUsernameService: (...args: unknown[]) => mockChangeUsernameService(...args),
   changeEmailService: (...args: unknown[]) => mockChangeEmailService(...args),
   changePasswordService: (...args: unknown[]) => mockChangePasswordService(...args),

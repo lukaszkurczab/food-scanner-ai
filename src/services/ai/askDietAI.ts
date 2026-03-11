@@ -1,36 +1,21 @@
 import i18next from "i18next";
-import { post } from "./apiClient";
+import { post } from "@/services/core/apiClient";
 import type { Meal, FormData } from "@/types";
 import {
   getE2EMockChatReply,
   isE2EModeEnabled,
 } from "@/services/e2e/config";
-import { getErrorStatus } from "@/services/contracts/serviceError";
-import { logError, logWarning } from "@/services/errorLogger";
+import { handleAiError } from "@/services/ai/handleAiError";
 import type {
   AiAskBackendResponse,
   AiAskE2EResponse,
   AiAskResponse,
-  AiUsageStatus,
 } from "@/services/ai/contracts";
-import { readAiUsageStatusFromApiErrorDetails } from "@/services/ai/contracts";
-import { toAiContractError } from "@/services/ai/errorMapping";
-import { isRecord } from "@/services/contracts/guards";
+export { AiLimitExceededError } from "@/services/ai/AiLimitExceededError";
 
 export type Message = { from: "user" | "ai"; text: string };
 
 export type AskDietAIResponse = AiAskResponse;
-
-export class AiLimitExceededError extends Error {
-  readonly code = "ai/limit-exceeded";
-  readonly usage?: AiUsageStatus;
-
-  constructor(message = "AI usage limit exceeded", usage?: AiUsageStatus) {
-    super(message);
-    this.name = "AiLimitExceededError";
-    this.usage = usage;
-  }
-}
 
 function buildAskDietAIContext(
   meals: Meal[],
@@ -84,6 +69,13 @@ export async function askDietAI(
   }
 
   const uid = opts?.uid?.trim();
+  const logContext = buildAskDietAILogContext({
+    uid,
+    question,
+    meals,
+    chatHistory,
+    isPremium: opts?.isPremium,
+  });
 
   try {
     return await post<AiAskBackendResponse>("/ai/ask", {
@@ -91,41 +83,7 @@ export async function askDietAI(
       context: buildAskDietAIContext(meals, chatHistory, profile),
     });
   } catch (error) {
-    if (getErrorStatus(error) === 429) {
-      const usage = isRecord(error)
-        ? readAiUsageStatusFromApiErrorDetails(error.details)
-        : null;
-      logWarning(
-        "[askDietAI] backend AI usage limit reached",
-        buildAskDietAILogContext({
-          uid,
-          question,
-          meals,
-          chatHistory,
-          isPremium: opts?.isPremium,
-        }),
-        error,
-      );
-      throw new AiLimitExceededError(undefined, usage ?? undefined);
-    }
-
-    logError(
-      "[askDietAI] backend AI request failed",
-      buildAskDietAILogContext({
-        uid,
-        question,
-        meals,
-        chatHistory,
-        isPremium: opts?.isPremium,
-      }),
-      error,
-    );
-
-    const contractError = toAiContractError(error, "AskDietAI");
-    if (contractError) {
-      throw contractError;
-    }
-
+    handleAiError(error, "askDietAI", logContext, { action: "throw" });
     throw error;
   }
 }

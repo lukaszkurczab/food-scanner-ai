@@ -19,7 +19,7 @@ jest.mock("@/feature/Auth/services/authService", () => ({
   authRegister: (...args: unknown[]) => mockAuthRegister(...args),
 }));
 
-jest.mock("@/services/usernameService", () => ({
+jest.mock("@/services/user/usernameService", () => ({
   isUsernameAvailable: (...args: unknown[]) => mockIsUsernameAvailable(...args),
 }));
 

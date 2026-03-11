@@ -1,6 +1,6 @@
 import * as FileSystem from "expo-file-system";
 import type { Meal, MealType } from "@/types/meal";
-import { emit } from "@/services/events";
+import { emit } from "@/services/core/events";
 import {
   enqueueMyMealDelete,
   enqueueMyMealUpsert,
@@ -9,12 +9,12 @@ import {
   fetchMyMealsPage,
   subscribeToMyMealsFirstPage,
   type MyMealsCursor,
-} from "@/services/myMealsRepository";
+} from "@/services/meals/myMealsRepository";
 import {
   markDeletedMyMealLocal,
   upsertMyMealLocal,
 } from "@/services/offline/myMeals.repo";
-import { syncMyMeals } from "@/services/myMealService";
+import { syncMyMeals } from "@/services/meals/myMealService";
 
 type ToastEvent = { key: string; ns?: string };
 export type SavedMealsCursor = MyMealsCursor;

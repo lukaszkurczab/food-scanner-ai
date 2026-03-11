@@ -3,11 +3,11 @@ import { BackHandler, DeviceEventEmitter } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeType } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
-import { detectIngredientsWithVision } from "@/services/visionService";
+import { detectIngredientsWithVision } from "@/services/ai/visionService";
 import {
   fetchProductByBarcode,
   extractBarcodeFromPayload,
-} from "@/services/barcodeService";
+} from "@/services/barcode/barcodeService";
 import { getSampleMealUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
 import { useAuthContext } from "@/context/AuthContext";

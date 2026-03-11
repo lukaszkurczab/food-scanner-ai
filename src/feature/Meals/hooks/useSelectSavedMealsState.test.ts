@@ -13,7 +13,7 @@ jest.mock("uuid", () => ({
   v4: () => mockUuid(),
 }));
 
-jest.mock("@/services/myMealsRepository", () => ({
+jest.mock("@/services/meals/myMealsRepository", () => ({
   subscribeToMyMealsOrderedByName: (params: {
     uid: string;
     onData: (items: Meal[]) => void;

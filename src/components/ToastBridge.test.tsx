@@ -20,7 +20,7 @@ const mockOn = jest.fn<
 
 let mockHandler: ((payload?: ToastPayload) => void) | undefined;
 
-jest.mock("@/services/events", () => ({
+jest.mock("@/services/core/events", () => ({
   on: (event: string, handler: (payload?: ToastPayload) => void) => {
     mockOn(event, handler);
     mockHandler = handler;

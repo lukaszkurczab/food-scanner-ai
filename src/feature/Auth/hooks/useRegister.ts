@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { authRegister } from "@/feature/Auth/services/authService";
-import { isUsernameAvailable } from "@/services/usernameService";
+import { isUsernameAvailable } from "@/services/user/usernameService";
 import { createDefaultKeepLoggingNotification } from "@/services/notifications/notificationsRepository";
 
 type RegisterErrors = {

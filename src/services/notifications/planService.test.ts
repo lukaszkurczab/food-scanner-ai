@@ -5,7 +5,7 @@ import { getDayISOInclusiveRange } from "@/services/notifications/dayRange";
 
 const mockPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   post: (url: string, data?: unknown) => mockPost(url, data),
 }));
 

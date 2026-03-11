@@ -5,10 +5,10 @@ import {
   listBadges,
   subscribeBadges,
   unlockPremiumBadgesIfEligible,
-} from "@/services/badgeService";
+} from "@/services/gamification/badgeService";
 import type { Badge } from "@/types/badge";
 
-jest.mock("@/services/badgeService", () => ({
+jest.mock("@/services/gamification/badgeService", () => ({
   listBadges: jest.fn(),
   subscribeBadges: jest.fn(),
   unlockPremiumBadgesIfEligible: jest.fn(),

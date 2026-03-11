@@ -1,6 +1,6 @@
 import type { Meal } from "@/types/meal";
-import { get, post, upload } from "@/services/apiClient";
-import { on } from "@/services/events";
+import { get, post, upload } from "@/services/core/apiClient";
+import { on } from "@/services/core/events";
 import {
   getAllMyMealsLocal,
   getMyMealsPageLocal,

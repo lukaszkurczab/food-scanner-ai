@@ -10,7 +10,7 @@ jest.mock("@/feature/History/hooks/useHistoryListState", () => ({
   useHistoryListState: (params: unknown) => mockUseHistoryListState(params),
 }));
 
-jest.mock("@/services/mealService", () => ({
+jest.mock("@/services/meals/mealService", () => ({
   FREE_WINDOW_DAYS: 30,
 }));
 

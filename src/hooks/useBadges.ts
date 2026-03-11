@@ -4,7 +4,7 @@ import {
   listBadges,
   subscribeBadges,
   unlockPremiumBadgesIfEligible,
-} from "@/services/badgeService";
+} from "@/services/gamification/badgeService";
 
 export function useBadges(uid: string | null | undefined) {
   const [badges, setBadges] = useState<Badge[]>([]);

@@ -16,7 +16,7 @@ import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import * as FileSystem from "expo-file-system";
 import { useTranslation } from "react-i18next";
 import { MaterialIcons } from "@expo/vector-icons";
-import { ensureLocalMealPhoto } from "@/services/mealService.images";
+import { ensureLocalMealPhoto } from "@/services/meals/mealService.images";
 
 type Props = {
   meal: Meal;

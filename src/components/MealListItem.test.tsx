@@ -50,7 +50,7 @@ jest.mock("expo-file-system", () => ({
   getInfoAsync: (uri: string) => mockGetInfoAsync(uri),
 }));
 
-jest.mock("@/services/mealService.images", () => ({
+jest.mock("@/services/meals/mealService.images", () => ({
   ensureLocalMealPhoto: (input: {
     uid: string;
     cloudId: string | null;

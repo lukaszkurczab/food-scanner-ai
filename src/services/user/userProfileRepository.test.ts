@@ -11,7 +11,7 @@ const mockGet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockPost = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockUpload = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   get: (...args: unknown[]) => mockGet(...args),
   post: (...args: unknown[]) => mockPost(...args),
   upload: (...args: unknown[]) => mockUpload(...args),

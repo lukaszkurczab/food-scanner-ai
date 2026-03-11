@@ -43,7 +43,7 @@ jest.mock("@contexts/UserContext", () => ({
   useUserContext: () => mockUseUserContext(),
 }));
 
-jest.mock("@/services/visionService", () => ({
+jest.mock("@/services/ai/visionService", () => ({
   detectIngredientsWithVision: (
     uid: string,
     imageUri: string,
@@ -51,7 +51,7 @@ jest.mock("@/services/visionService", () => ({
   ) => mockDetectIngredientsWithVision(uid, imageUri, opts),
 }));
 
-jest.mock("@/services/barcodeService", () => ({
+jest.mock("@/services/barcode/barcodeService", () => ({
   fetchProductByBarcode: jest.fn(),
   extractBarcodeFromPayload: (value: string) => value,
 }));

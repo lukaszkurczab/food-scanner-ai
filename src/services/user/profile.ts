@@ -10,10 +10,10 @@ import {
 } from "@react-native-firebase/auth";
 import { getApp } from "@react-native-firebase/app";
 import { Appearance } from "react-native";
-import { get, post } from "@/services/apiClient";
+import { get, post } from "@/services/core/apiClient";
 import { parseUserData } from "./profile.dto";
 import { createServiceError } from "@/services/contracts/serviceError";
-import { claimUsername } from "@/services/usernameService";
+import { claimUsername } from "@/services/user/usernameService";
 import {
   fetchUserProfileRemote,
   mergeUserProfileRemote,

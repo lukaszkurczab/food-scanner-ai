@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import {
   ensureLocalMealPhoto,
   processAndUpload,
-} from "@/services/mealService.images";
+} from "@/services/meals/mealService.images";
 
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
 const mockManipulateAsync = jest.fn<(...args: unknown[]) => Promise<{ uri: string }>>();
@@ -35,7 +35,7 @@ jest.mock("expo-file-system", () => ({
   downloadAsync: (...args: unknown[]) => mockDownloadAsync(...args),
 }));
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   upload: (...args: unknown[]) => mockUpload(...args),
   get: (...args: unknown[]) => mockGet(...args),
 }));

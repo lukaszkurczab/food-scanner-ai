@@ -12,15 +12,15 @@ class MockAiLimitExceededError extends Error {
   }
 }
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   post: (url: string, data?: unknown) => mockPost(url, data),
 }));
 
-jest.mock("@/services/askDietAI", () => ({
+jest.mock("@/services/ai/AiLimitExceededError", () => ({
   AiLimitExceededError: MockAiLimitExceededError,
 }));
 
-jest.mock("@/services/errorLogger", () => ({
+jest.mock("@/services/core/errorLogger", () => ({
   logError: jest.fn(),
   logWarning: jest.fn(),
 }));
@@ -51,7 +51,7 @@ describe("textMealService", () => {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { extractIngredientsFromText } = require("@/services/textMealService");
+    const { extractIngredientsFromText } = require("@/services/ai/textMealService");
 
     const result = await extractIngredientsFromText(
       "user-1",
@@ -112,9 +112,9 @@ describe("textMealService", () => {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { extractIngredientsFromText } = require("@/services/textMealService");
+    const { extractIngredientsFromText } = require("@/services/ai/textMealService");
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { logWarning } = require("@/services/errorLogger");
+    const { logWarning } = require("@/services/core/errorLogger");
 
     const result = await extractIngredientsFromText(
       "user-1",
@@ -139,7 +139,7 @@ describe("textMealService", () => {
     mockPost.mockRejectedValueOnce(limitError);
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { extractIngredientsFromText } = require("@/services/textMealService");
+    const { extractIngredientsFromText } = require("@/services/ai/textMealService");
     await expect(
       extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
     ).rejects.toBeInstanceOf(MockAiLimitExceededError);
@@ -163,7 +163,7 @@ describe("textMealService", () => {
     );
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { extractIngredientsFromText } = require("@/services/textMealService");
+    const { extractIngredientsFromText } = require("@/services/ai/textMealService");
     await expect(
       extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
     ).rejects.toMatchObject({
@@ -180,7 +180,7 @@ describe("textMealService", () => {
     mockPost.mockRejectedValueOnce(Object.assign(new Error("unauthorized"), { status: 401 }));
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { extractIngredientsFromText } = require("@/services/textMealService");
+    const { extractIngredientsFromText } = require("@/services/ai/textMealService");
 
     await expect(
       extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
@@ -195,7 +195,7 @@ describe("textMealService", () => {
     mockPost.mockRejectedValueOnce(Object.assign(new Error("unavailable"), { status: 503 }));
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { extractIngredientsFromText } = require("@/services/textMealService");
+    const { extractIngredientsFromText } = require("@/services/ai/textMealService");
 
     await expect(
       extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),

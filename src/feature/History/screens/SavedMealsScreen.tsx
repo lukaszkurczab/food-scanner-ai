@@ -26,7 +26,7 @@ import { FilterBadgeButton } from "../components/FilterBadgeButton";
 import { FilterPanel } from "../components/FilterPanel";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { useSavedMealsData } from "@/feature/History/hooks/useSavedMealsData";
-import { syncMyMeals } from "@/services/myMealService";
+import { syncMyMeals } from "@/services/meals/myMealService";
 import type { RootStackParamList } from "@/navigation/navigate";
 
 type SavedMealsNavigation = StackNavigationProp<RootStackParamList, "SavedMeals">;

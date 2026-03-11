@@ -11,7 +11,7 @@ jest.mock("@react-native-firebase/auth", () => ({
   getAuth: (...args: unknown[]) => mockGetAuth(...args),
 }));
 
-jest.mock("@/services/publicEnv", () => ({
+jest.mock("@/services/core/publicEnv", () => ({
   readPublicEnv: (...args: unknown[]) => mockReadPublicEnv(...args),
 }));
 
@@ -52,7 +52,7 @@ describe("apiClient", () => {
 
     // Use require after resetting modules so API_VERSION is recomputed from mocks.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { get } = require("@/services/apiClient");
+    const { get } = require("@/services/core/apiClient");
 
     await get("/ai/usage");
 
@@ -79,7 +79,7 @@ describe("apiClient", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { get } = require("@/services/apiClient");
+    const { get } = require("@/services/core/apiClient");
 
     await get("/health");
 
@@ -109,7 +109,7 @@ describe("apiClient", () => {
     formData.append("file", "payload");
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { upload } = require("@/services/apiClient");
+    const { upload } = require("@/services/core/apiClient");
 
     await upload("/users/me/avatar", formData);
 
@@ -136,7 +136,7 @@ describe("apiClient", () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { get } = require("@/services/apiClient");
+    const { get } = require("@/services/core/apiClient");
 
     const pending = get("/health", { timeout: 5 });
     const captured = pending.catch((error: unknown) => error);

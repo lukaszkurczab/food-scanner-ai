@@ -81,14 +81,14 @@ jest.mock("@/services/notifications/engine", () => ({
   reconcileAll: (uid: string) => mockReconcileAll(uid),
 }));
 
-jest.mock("@/services/streakService", () => ({
+jest.mock("@/services/gamification/streakService", () => ({
   refreshStreakFromBackend: (
     uid: string,
     options?: { refreshBadges?: boolean },
   ) => mockRefreshStreakFromBackend(uid, options),
 }));
 
-jest.mock("@/services/events", () => ({
+jest.mock("@/services/core/events", () => ({
   emit: (event: string, payload: Record<string, unknown>) =>
     mockEmit(event, payload),
 }));
@@ -98,7 +98,7 @@ jest.mock("@/services/offline/sync.engine", () => ({
   pullChanges: (uid: string) => mockPullChanges(uid),
 }));
 
-jest.mock("@/services/myMealService", () => ({
+jest.mock("@/services/meals/myMealService", () => ({
   upsertMyMealWithPhoto: (uid: string, meal: Meal, localPhoto: string | null) =>
     mockUpsertMyMealWithPhoto(uid, meal, localPhoto),
 }));

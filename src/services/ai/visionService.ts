@@ -8,10 +8,9 @@ import {
   createServiceError,
   isServiceError,
 } from "@/services/contracts/serviceError";
-import { post } from "@/services/apiClient";
-import { logError } from "@/services/errorLogger";
+import { post } from "@/services/core/apiClient";
+import { handleAiError } from "@/services/ai/handleAiError";
 import type { AiPhotoAnalyzeResponse } from "@/services/ai/contracts";
-import { toAiContractError } from "@/services/ai/errorMapping";
 
 const log = debugScope("Vision");
 const AI_UNAVAILABLE_CODE = "ai/unavailable";
@@ -94,27 +93,20 @@ export async function detectIngredientsWithVision(
   } catch (error) {
     if (
       isServiceError(error) &&
-      (error.code === "offline" || error.code === "ai/premium-required")
+      (
+        error.code === "offline" ||
+        error.code === "ai/premium-required" ||
+        error.code === AI_UNAVAILABLE_CODE
+      )
     ) {
       throw error;
     }
 
-    logError(
-      "[visionService] backend photo analysis failed",
-      { userUid, lang: userLang },
+    return handleAiError(
       error,
+      "VisionService",
+      { userUid, lang: userLang },
+      { action: "wrap-unavailable" },
     );
-
-    const contractError = toAiContractError(error, "VisionService");
-    if (contractError) {
-      throw contractError;
-    }
-
-    throw createServiceError({
-      code: AI_UNAVAILABLE_CODE,
-      source: "VisionService",
-      retryable: true,
-      cause: error,
-    });
   }
 }

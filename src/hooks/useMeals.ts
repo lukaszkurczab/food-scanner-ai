@@ -16,11 +16,11 @@ import {
 import { insertOrUpdateImage } from "@/services/offline/images.repo";
 import { reconcileAll } from "@/services/notifications/engine";
 import { debugScope } from "@/utils/debug";
-import { emit } from "@/services/events";
+import { emit } from "@/services/core/events";
 import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
-import { upsertMyMealWithPhoto } from "@/services/myMealService";
-import { formatStreakDate } from "@/services/streak.logic";
-import { refreshStreakFromBackend } from "@/services/streakService";
+import { upsertMyMealWithPhoto } from "@/services/meals/myMealService";
+import { formatStreakDate } from "@/services/gamification/streak.logic";
+import { refreshStreakFromBackend } from "@/services/gamification/streakService";
 
 const PAGE_LIMIT = 50;
 const SYNC_DEBOUNCE_MS = 1200;

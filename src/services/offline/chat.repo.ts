@@ -1,5 +1,5 @@
 import type { ChatMessage, ChatThread } from "@/types";
-import { emit } from "@/services/events";
+import { emit } from "@/services/core/events";
 import { getDB } from "./db";
 import type { ChatMessageRow, ChatThreadRow } from "./types";
 

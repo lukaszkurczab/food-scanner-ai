@@ -5,13 +5,9 @@ import {
   type AiTextMealAnalyzeResponse,
   type AiTextMealPayload,
 } from "@/services/ai/contracts";
-import { readAiUsageStatusFromApiErrorDetails } from "@/services/ai/contracts";
-import { post } from "@/services/apiClient";
-import { AiLimitExceededError } from "@/services/askDietAI";
-import { toAiContractError } from "@/services/ai/errorMapping";
-import { getErrorStatus } from "@/services/contracts/serviceError";
-import { isRecord } from "@/services/contracts/guards";
-import { logError, logWarning } from "@/services/errorLogger";
+import { post } from "@/services/core/apiClient";
+import { handleAiError } from "@/services/ai/handleAiError";
+import { logWarning } from "@/services/core/errorLogger";
 
 export type TextMealAnalyzeResult = {
   ingredients: Ingredient[];
@@ -76,29 +72,11 @@ export async function extractIngredientsFromText(
       },
     };
   } catch (error) {
-    if (getErrorStatus(error) === 429) {
-      const usage = isRecord(error)
-        ? readAiUsageStatusFromApiErrorDetails(error.details)
-        : null;
-      logWarning(
-        "[textMealService] backend text analysis limit reached",
-        { userUid: uid, lang },
-        error,
-      );
-      throw new AiLimitExceededError(undefined, usage ?? undefined);
-    }
-
-    logError(
-      "[textMealService] backend text analysis failed",
-      { userUid: uid, lang },
+    return handleAiError(
       error,
+      "textMealService",
+      { userUid: uid, lang },
+      { action: "return-null" },
     );
-
-    const contractError = toAiContractError(error, "TextMealService");
-    if (contractError) {
-      throw contractError;
-    }
-
-    return null;
   }
 }

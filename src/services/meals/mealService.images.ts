@@ -2,7 +2,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
 import { v4 as uuidv4 } from "uuid";
-import { get, upload } from "@/services/apiClient";
+import { get, upload } from "@/services/core/apiClient";
 import { createServiceError } from "@/services/contracts/serviceError";
 
 const CLOUD_MAX = 1280;

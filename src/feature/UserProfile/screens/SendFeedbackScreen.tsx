@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import NetInfo from "@react-native-community/netinfo";
 import * as Device from "expo-device";
-import { sendFeedback } from "@/services/feedbackService";
+import { sendFeedback } from "@/services/feedback/feedbackService";
 import { useAuthContext } from "@/context/AuthContext";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";

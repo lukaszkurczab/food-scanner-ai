@@ -24,7 +24,7 @@ jest.mock("@react-native-community/netinfo", () => ({
   default: { fetch: (...args: []) => mockNetInfoFetch(...args) },
 }));
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   get: (...args: unknown[]) => mockGet(...args),
   post: (...args: unknown[]) => mockPost(...args),
 }));
@@ -44,7 +44,7 @@ jest.mock("@/services/offline/queue.repo", () => ({
     mockEnqueueChatMessagePersist(...args),
 }));
 
-jest.mock("@/services/errorLogger", () => ({
+jest.mock("@/services/core/errorLogger", () => ({
   captureException: (message: string, context?: unknown, error?: unknown) =>
     mockCaptureException(message, context, error),
 }));

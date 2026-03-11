@@ -4,7 +4,7 @@ import NetInfo from "@react-native-community/netinfo";
 import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
 import type { Meal, FormData, ChatMessage } from "@/types";
-import { get, post } from "@/services/apiClient";
+import { get, post } from "@/services/core/apiClient";
 import { asString, isRecord } from "@/services/contracts/guards";
 import type {
   AiAskBackendResponse,
@@ -15,7 +15,7 @@ import {
   readAiUsageStatusFromApiErrorDetails,
 } from "@/services/ai/contracts";
 import { getErrorStatus } from "@/services/contracts/serviceError";
-import { captureException } from "@/services/errorLogger";
+import { captureException } from "@/services/core/errorLogger";
 import { getAiUxErrorType, type AiUxErrorType } from "@/services/ai/uxError";
 import {
   type ChatMessageCursor,

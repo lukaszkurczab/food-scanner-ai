@@ -39,11 +39,11 @@ jest.mock("@/services/user/userProfileRepository", () => ({
   uploadUserAvatarRemote: (...args: unknown[]) => mockUploadUserAvatarRemote(...args),
 }));
 
-jest.mock("@/services/usernameService", () => ({
+jest.mock("@/services/user/usernameService", () => ({
   claimUsername: (...args: unknown[]) => mockClaimUsername(...args),
 }));
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   get: (...args: unknown[]) => mockGet(...args),
   post: (...args: unknown[]) => mockPost(...args),
 }));
@@ -82,7 +82,7 @@ jest.mock("react-native", () => ({
   },
 }));
 
-describe("services/user/profile", () => {
+describe("user/profile", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();

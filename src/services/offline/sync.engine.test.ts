@@ -52,11 +52,11 @@ jest.mock("@/services/offline/chat.repo", () => ({
     mockSetChatMessageSyncState(...args),
 }));
 
-jest.mock("@/services/apiClient", () => ({
+jest.mock("@/services/core/apiClient", () => ({
   post: (...args: unknown[]) => mockPost(...args),
 }));
 
-jest.mock("@/services/mealsRepository", () => ({
+jest.mock("@/services/meals/mealsRepository", () => ({
   buildMealUpdatedCursor: (meal: { updatedAt: string; cloudId?: string }) =>
     `${meal.updatedAt}|${meal.cloudId || meal.updatedAt}`,
   fetchMealChangesRemote: (...args: unknown[]) => mockFetchMealChangesRemote(...args),
@@ -64,7 +64,7 @@ jest.mock("@/services/mealsRepository", () => ({
   saveMealRemote: (...args: unknown[]) => mockSaveMealRemote(...args),
 }));
 
-jest.mock("@/services/myMealsRepository", () => ({
+jest.mock("@/services/meals/myMealsRepository", () => ({
   buildMyMealUpdatedCursor: (meal: { updatedAt: string; cloudId?: string }) =>
     `${meal.updatedAt}|${meal.cloudId || meal.updatedAt}`,
   fetchMyMealChangesRemote: (...args: unknown[]) =>
@@ -91,7 +91,7 @@ jest.mock("@/services/offline/db", () => ({
   })),
 }));
 
-jest.mock("@/services/mealService.images", () => ({
+jest.mock("@/services/meals/mealService.images", () => ({
   processAndUpload: jest.fn(),
 }));
 

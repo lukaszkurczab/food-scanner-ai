@@ -9,7 +9,7 @@ import {
   type LocalHistoryFilters,
 } from "@/services/offline/meals.repo";
 import { pullChanges } from "@/services/offline/sync.engine";
-import { on } from "@/services/events";
+import { on } from "@/services/core/events";
 import type { DaySection } from "@/feature/History/types/daySection";
 import {
   addOrUpdateMealInSections,

@@ -1,4 +1,4 @@
-import { get, post } from "@/services/apiClient";
+import { get, post } from "@/services/core/apiClient";
 import {
   createServiceError,
   getErrorStatus,

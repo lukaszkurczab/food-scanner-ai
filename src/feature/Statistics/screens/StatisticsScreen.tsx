@@ -11,7 +11,7 @@ import { DateInput, Layout } from "@/components";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { useTranslation } from "react-i18next";
 import { usePremiumContext } from "@/context/PremiumContext";
-import { FREE_WINDOW_DAYS } from "@/services/mealService";
+import { FREE_WINDOW_DAYS } from "@/services/meals/mealService";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import {
