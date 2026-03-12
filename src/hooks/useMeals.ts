@@ -213,6 +213,7 @@ export function useMeals(userUid: string | null) {
         mealId,
         createdAt: meal.createdAt ?? now,
         updatedAt: now,
+        syncState: "pending",
         deleted: false,
         source: meal.source ?? "manual",
         timestamp: meal.timestamp ?? now,
@@ -284,6 +285,7 @@ export function useMeals(userUid: string | null) {
         ...meal,
         cloudId,
         updatedAt: now,
+        syncState: "pending",
         totals,
         timestamp: meal.timestamp ?? now,
         dayKey: meal.dayKey ?? formatStreakDate(new Date(meal.timestamp ?? now)),
@@ -342,6 +344,7 @@ export function useMeals(userUid: string | null) {
         timestamp: dateOverride || now,
         createdAt: now,
         updatedAt: now,
+        syncState: "pending",
         deleted: false,
         totals,
       };

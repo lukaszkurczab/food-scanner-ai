@@ -29,6 +29,7 @@ type MealBoxProps = {
 };
 
 const mockUseMealDetailsScreenState = jest.fn();
+const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -46,6 +47,10 @@ jest.mock("react-native-safe-area-context", () => ({
     bottom: 0,
     left: 6,
   }),
+}));
+
+jest.mock("@react-native-community/netinfo", () => ({
+  useNetInfo: () => mockUseNetInfo(),
 }));
 
 jest.mock("@expo/vector-icons", () => ({
@@ -289,23 +294,47 @@ const buildState = (overrides?: Record<string, unknown>) => ({
   showLeaveModal: false,
   confirmLeave: jest.fn(),
   closeLeaveModal: jest.fn(),
+  reloadFromLocal: jest.fn(),
   ...overrides,
 });
 
 describe("MealDetailsScreen", () => {
   beforeEach(() => {
     mockUseMealDetailsScreenState.mockReset();
+    mockUseNetInfo.mockReturnValue({ isConnected: true });
   });
 
-  it("returns null when the draft or nutrition is missing", () => {
-    mockUseMealDetailsScreenState.mockReturnValue({
+  it("renders fallback state when the draft or nutrition is missing", () => {
+    const state = {
       draft: null,
       nutrition: null,
+      reloadFromLocal: jest.fn(),
+      handleBack: jest.fn(),
+    };
+    mockUseMealDetailsScreenState.mockReturnValue({
+      ...state,
     });
 
     const screen = renderWithTheme(<MealDetailsScreen />);
 
-    expect(screen.toJSON()).toBeNull();
+    expect(screen.getByText("meals:detailsUnavailable.title")).toBeTruthy();
+    expect(screen.getByText("meals:detailsUnavailable.desc")).toBeTruthy();
+    fireEvent.press(screen.getByText("common:retry"));
+    expect(state.reloadFromLocal).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders offline fallback copy when meal details are missing", () => {
+    mockUseNetInfo.mockReturnValue({ isConnected: false });
+    mockUseMealDetailsScreenState.mockReturnValue({
+      draft: null,
+      nutrition: null,
+      reloadFromLocal: jest.fn(),
+      handleBack: jest.fn(),
+    });
+
+    const screen = renderWithTheme(<MealDetailsScreen />);
+
+    expect(screen.getByText("meals:detailsUnavailable.offlineDesc")).toBeTruthy();
   });
 
   it("renders without the image block when it is hidden", () => {

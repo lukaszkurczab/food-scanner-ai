@@ -1,4 +1,5 @@
 import { getApp } from "@react-native-firebase/app";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   getAuth,
   signOut,
@@ -9,6 +10,9 @@ import {
 } from "@react-native-firebase/auth";
 import { claimUsername } from "@/services/user/usernameService";
 import { createInitialUserProfile } from "@/services/user/userService";
+import { stopSyncLoop } from "@/services/offline/sync.engine";
+import { resetOfflineStorage } from "@/services/offline/db";
+import { cleanupUserOfflineAssets } from "@/services/offline/fileCleanup";
 import i18n from "@/i18n";
 
 function resolveInitialLanguage(language: string | undefined): "en" | "pl" {
@@ -16,6 +20,31 @@ function resolveInitialLanguage(language: string | undefined): "en" | "pl" {
   if (normalized === "pl" || normalized.startsWith("pl-")) return "pl";
   if (normalized === "en" || normalized.startsWith("en-")) return "en";
   return "en";
+}
+
+function shouldClearUserScopedKey(key: string, uid: string): boolean {
+  return (
+    key === `user:profile:${uid}` ||
+    key === `premium_status:${uid}` ||
+    key === `ai_credits:${uid}` ||
+    key.includes(`:${uid}:`) ||
+    key.endsWith(`:${uid}`) ||
+    key.endsWith(`_${uid}`)
+  );
+}
+
+async function clearScopedAsyncStorage(uid: string | null): Promise<void> {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const keysToRemove = uid
+      ? keys.filter((key) => shouldClearUserScopedKey(key, uid))
+      : [];
+    keysToRemove.push("premium_status:anon");
+    if (!keysToRemove.length) return;
+    await AsyncStorage.multiRemove(Array.from(new Set(keysToRemove)));
+  } catch {
+    // Best-effort cleanup for per-user local cache.
+  }
 }
 
 export async function authLogin(email: string, password: string) {
@@ -30,7 +59,18 @@ export async function authSendPasswordReset(email: string) {
 }
 
 export async function authLogout(): Promise<void> {
-  await signOut(getAuth(getApp()));
+  const auth = getAuth(getApp());
+  const uid = auth.currentUser?.uid ?? null;
+
+  await signOut(auth);
+  stopSyncLoop();
+  try {
+    resetOfflineStorage();
+  } catch {
+    // Offline reset is best-effort.
+  }
+  await cleanupUserOfflineAssets(uid);
+  await clearScopedAsyncStorage(uid);
 }
 
 export async function authRegister(

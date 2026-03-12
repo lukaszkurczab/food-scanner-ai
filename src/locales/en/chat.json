@@ -36,9 +36,18 @@
     "footerPremium": "AI Credits: {{balance}}/{{allocation}}"
   },
   "history": {
-    "open": "Open chat history"
+    "open": "Open chat history",
+    "emptyTitle": "No chats yet",
+    "emptyDescription": "Start a new chat to see your conversation history here.",
+    "offlineEmpty": "No local chat history. Connect to the internet to load chats.",
+    "errorTitle": "Could not load chats",
+    "refreshError": "Pull to refresh when your connection is stable."
   },
   "retryLast": "Retry last message",
+  "deadLetterTitle": "{{count}} chat messages failed to sync",
+  "deadLetterSubtitle": "Your messages are saved locally. Retry to sync them now.",
+  "deadLetterRetry": "Retry",
+  "deadLetterRetryQueued": "{{count}} messages queued for retry.",
   "sending": "AI is thinking...",
   "errors": {
     "fetchFailed": "Could not fetch a response. Please try again.",

@@ -5,6 +5,9 @@ import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import type { Meal, MealType, Ingredient } from "@/types/meal";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { on } from "@/services/core/events";
+import { getMealByCloudIdLocal } from "@/services/offline/meals.repo";
+import { getMyMealByCloudIdLocal } from "@/services/offline/myMeals.repo";
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -15,6 +18,26 @@ function normalizeForCompare(meal: Meal) {
     localPhotoUrl: undefined,
     photoLocalPath: undefined,
   };
+}
+
+function toEpochMs(value?: string | null): number {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function pickLatestMeal(candidates: Array<Meal | null>): Meal | null {
+  let latest: Meal | null = null;
+  let latestTs = 0;
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const ts = toEpochMs(candidate.updatedAt);
+    if (!latest || ts >= latestTs) {
+      latest = candidate;
+      latestTs = ts;
+    }
+  }
+  return latest;
 }
 
 export function useMealDetailsState(params: {
@@ -53,6 +76,80 @@ export function useMealDetailsState(params: {
       }
     }
   }, [draft?.cloudId, draft?.mealId, forceEdit, initialMeal, routeMealId]);
+
+  const reloadFromLocal = useCallback(async () => {
+    if (!routeMealId) return false;
+    const userUid =
+      (typeof draft?.userUid === "string" && draft.userUid) ||
+      (typeof initialMeal?.userUid === "string" && initialMeal.userUid) ||
+      "";
+    if (!userUid) return false;
+
+    const [historyMeal, savedMeal] = await Promise.all([
+      getMealByCloudIdLocal(userUid, routeMealId),
+      getMyMealByCloudIdLocal(userUid, routeMealId),
+    ]);
+    const latest = pickLatestMeal([historyMeal, savedMeal]);
+    if (!latest) return false;
+
+    setDraft((current) => {
+      if (!current) return latest;
+      if (edit) {
+        if (
+          current.syncState === latest.syncState &&
+          (current.lastSyncedAt ?? 0) === (latest.lastSyncedAt ?? 0)
+        ) {
+          return current;
+        }
+        return {
+          ...current,
+          syncState: latest.syncState,
+          lastSyncedAt: latest.lastSyncedAt ?? current.lastSyncedAt ?? null,
+        };
+      }
+      return {
+        ...latest,
+        localPhotoUrl:
+          current.localPhotoUrl ??
+          latest.localPhotoUrl ??
+          latest.photoLocalPath ??
+          latest.photoUrl ??
+          null,
+      };
+    });
+    return true;
+  }, [draft?.userUid, edit, initialMeal?.userUid, routeMealId]);
+
+  useEffect(() => {
+    if (!routeMealId) return;
+    const userUid =
+      (typeof draft?.userUid === "string" && draft.userUid) ||
+      (typeof initialMeal?.userUid === "string" && initialMeal.userUid) ||
+      "";
+    if (!userUid) return;
+
+    let cancelled = false;
+    void reloadFromLocal();
+
+    const handleSyncEvent = (event?: { cloudId?: string }) => {
+      const cloudId = typeof event?.cloudId === "string" ? event.cloudId : "";
+      if (!cloudId || cloudId !== routeMealId) return;
+      if (cancelled) return;
+      void reloadFromLocal();
+    };
+
+    const unsubs = [
+      on<{ cloudId?: string }>("meal:local:upserted", handleSyncEvent),
+      on<{ cloudId?: string }>("mymeal:local:upserted", handleSyncEvent),
+    ];
+
+    return () => {
+      cancelled = true;
+      for (const unsub of unsubs) {
+        unsub();
+      }
+    };
+  }, [draft?.userUid, initialMeal?.userUid, reloadFromLocal, routeMealId]);
 
   useEffect(() => {
     const localFromParams = routeParams.localPhotoUrl ?? undefined;
@@ -327,5 +424,6 @@ export function useMealDetailsState(params: {
     closeDiscardModal,
     closeLeaveModal,
     handleBack,
+    reloadFromLocal,
   };
 }

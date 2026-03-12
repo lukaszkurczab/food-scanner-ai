@@ -17,6 +17,7 @@ import * as FileSystem from "expo-file-system";
 import { useTranslation } from "react-i18next";
 import { MaterialIcons } from "@expo/vector-icons";
 import { ensureLocalMealPhoto } from "@/services/meals/mealService.images";
+import { MealSyncBadge } from "@/components/MealSyncBadge";
 
 type Props = {
   meal: Meal;
@@ -273,12 +274,18 @@ const MealListItemBase: React.FC<Props> = ({
               >
                 {meal.name || t("meal", { ns: "home" })}
               </Text>
-              <Text
-                numberOfLines={1}
-                style={[styles.kcalText, { color: theme.text }]}
-              >
-                {nutrition.kcal} {t("kcal")}
-              </Text>
+              <View style={styles.metaWrap}>
+                <MealSyncBadge
+                  syncState={meal.syncState}
+                  lastSyncedAt={meal.lastSyncedAt}
+                />
+                <Text
+                  numberOfLines={1}
+                  style={[styles.kcalText, { color: theme.text }]}
+                >
+                  {nutrition.kcal} {t("kcal")}
+                </Text>
+              </View>
             </View>
 
             <View style={styles.chipsRow}>
@@ -304,6 +311,7 @@ function areMealsEqual(a?: Meal, b?: Meal) {
     (a.totals?.protein ?? 0) === (b.totals?.protein ?? 0) &&
     (a.totals?.carbs ?? 0) === (b.totals?.carbs ?? 0) &&
     (a.totals?.fat ?? 0) === (b.totals?.fat ?? 0) &&
+    a.syncState === b.syncState &&
     (a.imageId ?? null) === (b.imageId ?? null) &&
     (a.photoUrl ?? null) === (b.photoUrl ?? null)
   );
@@ -361,6 +369,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 8,
+  },
+  metaWrap: {
+    alignItems: "flex-end",
+    gap: 4,
   },
   chipsRow: { flexDirection: "row", justifyContent: "space-between", gap: 6 },
   mealName: {

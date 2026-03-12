@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
 import { RangeTabs } from "../components/RangeTabs";
@@ -28,6 +29,8 @@ export default function StatisticsScreen({ navigation }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["statistics", "common"]);
+  const netInfo = useNetInfo();
+  const isOnline = netInfo.isConnected !== false;
   const { userData } = useUserContext();
   const { isPremium } = usePremiumContext();
 
@@ -96,16 +99,25 @@ export default function StatisticsScreen({ navigation }: Props) {
       ) : state.empty ? (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyTitle}>
-            {t("statistics:empty.title")}
+            {isOnline
+              ? t("statistics:empty.title")
+              : t("statistics:offlineEmpty.title", "You're offline")}
           </Text>
           <Text style={styles.emptySubtitle}>
-            {t("statistics:empty.desc")}
+            {isOnline
+              ? t("statistics:empty.desc")
+              : t(
+                  "statistics:offlineEmpty.desc",
+                  "No local stats data available. Reconnect to load your history.",
+                )}
           </Text>
-          <PrimaryButton
-            label={t("statistics:empty.cta")}
-            onPress={() => navigation.navigate("MealAddMethod")}
-            style={styles.emptyCta}
-          />
+          {isOnline ? (
+            <PrimaryButton
+              label={t("statistics:empty.cta")}
+              onPress={() => navigation.navigate("MealAddMethod")}
+              style={styles.emptyCta}
+            />
+          ) : null}
         </View>
       ) : (
         <ScrollView

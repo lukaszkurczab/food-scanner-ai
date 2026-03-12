@@ -3,7 +3,9 @@ export type QueueKind =
   | "delete"
   | "upsert_mymeal"
   | "delete_mymeal"
-  | "persist_chat_message";
+  | "persist_chat_message"
+  | "update_user_profile"
+  | "upload_user_avatar";
 
 export type MealRow = {
   cloud_id: string | null;
@@ -12,6 +14,7 @@ export type MealRow = {
   timestamp: string;
   type: string;
   name: string | null;
+  ingredients: string | null;
   photo_local_path: string | null;
   photo_url: string | null;
   image_local: string | null;
@@ -23,6 +26,8 @@ export type MealRow = {
   deleted: number;
   created_at: string | null;
   updated_at: string;
+  last_synced_at?: number | null;
+  sync_state?: string | null;
   source: string | null;
   notes: string | null;
   tags: string | null;
@@ -47,6 +52,20 @@ export type QueueRow = {
   payload: string;
   updated_at: string;
   attempts: number;
+};
+
+export type DeadLetterRow = {
+  id: number;
+  op_id: number;
+  cloud_id: string;
+  user_uid: string;
+  kind: QueueKind;
+  payload: string;
+  updated_at: string;
+  attempts: number;
+  failed_at: string;
+  last_error_code: string | null;
+  last_error_message: string | null;
 };
 
 export type ChatThreadRow = {

@@ -1,17 +1,34 @@
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { ChatMessage, ChatThread, UserData } from "@/types";
 import type { Meal } from "@/types/meal";
 import { Sync } from "@/utils/debug";
-import { nextBatch, markDone, bumpAttempts, enqueueUpsert } from "./queue.repo";
-import { setChatMessageSyncState } from "./chat.repo";
+import {
+  nextBatch,
+  markDone,
+  bumpAttempts,
+  enqueueUpsert,
+  moveToDeadLetter,
+  MAX_QUEUE_ATTEMPTS,
+} from "./queue.repo";
+import {
+  getChatThreadByIdLocal,
+  setChatMessageSyncState,
+  upsertChatMessageLocal,
+  upsertChatThreadLocal,
+} from "./chat.repo";
 import { getPendingUploads, markUploaded } from "./images.repo";
-import { upsertMealLocal } from "./meals.repo";
-import { upsertMyMealLocal } from "./myMeals.repo";
+import {
+  getMealByCloudIdLocal,
+  setMealSyncStateLocal,
+  upsertMealLocal,
+} from "./meals.repo";
+import { setMyMealSyncStateLocal, upsertMyMealLocal } from "./myMeals.repo";
 import { getDB } from "./db";
 import { processAndUpload } from "@/services/meals/mealService.images";
 import type { MealRow } from "./types";
 import { emit } from "@/services/core/events";
-import { post } from "@/services/core/apiClient";
+import { get, post } from "@/services/core/apiClient";
 import {
   buildMealUpdatedCursor,
   fetchMealChangesRemote,
@@ -26,9 +43,14 @@ import {
   uploadMyMealPhotoRemote,
 } from "@/services/meals/myMealsRepository";
 import {
+  updateUserProfileRemote,
+  uploadUserAvatarRemote,
+} from "@/services/user/userProfileRepository";
+import {
   createServiceError,
   normalizeServiceError,
 } from "@/services/contracts/serviceError";
+import { resolveMealConflict } from "./conflict";
 
 const log = Sync;
 
@@ -41,6 +63,28 @@ let netUnsub: null | (() => void) = null;
 let running = false;
 
 type MealPayload = Partial<Meal> & { cloudId?: string | null; mealId?: string | null };
+type ChatThreadApiItem = {
+  id: string;
+  title?: string | null;
+  createdAt: number;
+  updatedAt: number;
+  lastMessage?: string | null;
+  lastMessageAt?: number | null;
+};
+type ChatThreadsPageApiResponse = {
+  items?: ChatThreadApiItem[];
+};
+type ChatMessageApiItem = {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  createdAt: number;
+  lastSyncedAt: number;
+  deleted?: boolean;
+};
+type ChatMessagesPageApiResponse = {
+  items?: ChatMessageApiItem[];
+};
 
 function syncEngineError(
   code: string,
@@ -82,6 +126,34 @@ function toMealType(value: string): Meal["type"] {
     : "other";
 }
 
+function toChatThread(userUid: string, item: ChatThreadApiItem): ChatThread {
+  return {
+    id: String(item.id || ""),
+    userUid,
+    title: String(item.title || ""),
+    createdAt: Number(item.createdAt || 0),
+    updatedAt: Number(item.updatedAt || 0),
+    lastMessage: item.lastMessage ? String(item.lastMessage) : undefined,
+    lastMessageAt:
+      item.lastMessageAt == null ? undefined : Number(item.lastMessageAt),
+  };
+}
+
+function toChatMessage(userUid: string, item: ChatMessageApiItem): ChatMessage {
+  const createdAt = Number(item.createdAt || 0);
+  return {
+    id: String(item.id || ""),
+    userUid,
+    role: toChatThreadRole(item.role),
+    content: String(item.content || ""),
+    createdAt,
+    lastSyncedAt: Number(item.lastSyncedAt || createdAt),
+    syncState: "synced",
+    deleted: Boolean(item.deleted),
+    cloudId: String(item.id || ""),
+  };
+}
+
 function nowISO() {
   return new Date().toISOString();
 }
@@ -92,6 +164,10 @@ function keyLastPull(uid: string) {
 
 function keyLastMyMealsPull(uid: string) {
   return `sync:last_pull_my_meals:${uid}`;
+}
+
+function keyLastChatPull(uid: string) {
+  return `sync:last_pull_chat:${uid}`;
 }
 
 export async function setLastPullTs(uid: string, iso: string): Promise<void> {
@@ -111,6 +187,23 @@ export async function setLastMyMealsPullTs(
 
 export async function getLastMyMealsPullTs(uid: string): Promise<string | null> {
   return AsyncStorage.getItem(keyLastMyMealsPull(uid));
+}
+
+export async function setLastChatPullTs(uid: string, ts: number): Promise<void> {
+  await AsyncStorage.setItem(keyLastChatPull(uid), String(Math.max(0, ts)));
+}
+
+export async function getLastChatPullTs(uid: string): Promise<number> {
+  const raw = await AsyncStorage.getItem(keyLastChatPull(uid));
+  const parsed = Number(raw ?? 0);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+function toChatThreadRole(
+  value: string | null | undefined,
+): "user" | "assistant" | "system" {
+  if (value === "user" || value === "assistant" || value === "system") return value;
+  return "assistant";
 }
 
 export function startSyncLoop(uid: string) {
@@ -136,6 +229,7 @@ export function startSyncLoop(uid: string) {
       await pushQueue(uid);
       await pullChanges(uid);
       await pullMyMealChanges(uid);
+      await pullChatChanges(uid);
       loopLog.log("run:done");
     } catch (e: unknown) {
       const err = toSyncError(e);
@@ -188,7 +282,7 @@ export async function pushQueue(uid: string): Promise<void> {
   let processed = 0;
 
   for (;;) {
-    const batch = await nextBatch(PUSH_BATCH_SIZE);
+    const batch = await nextBatch(PUSH_BATCH_SIZE, uid);
     pushLog.log("batch:next", { size: batch.length });
     if (batch.length === 0) break;
 
@@ -233,6 +327,12 @@ export async function pushQueue(uid: string): Promise<void> {
                   ? payload.totals
                   : { kcal: 0, protein: 0, carbs: 0, fat: 0 },
             },
+          });
+          await setMealSyncStateLocal({
+            uid,
+            cloudId: id,
+            syncState: "synced",
+            updatedAt: String(payload?.updatedAt || op.updated_at || nowISO()),
           });
           pushLog.log("upsert:ok", id);
           emit("meal:pushed", { uid, cloudId: id });
@@ -301,12 +401,59 @@ export async function pushQueue(uid: string): Promise<void> {
                 ? payload.totals
                 : { kcal: 0, protein: 0, carbs: 0, fat: 0 },
           });
+          await setMyMealSyncStateLocal({
+            uid,
+            cloudId: docId,
+            syncState: "synced",
+            updatedAt: String(payload?.updatedAt || op.updated_at || nowISO()),
+          });
           pushLog.log("mymeal:upsert", docId);
           emit("mymeal:synced", { uid, cloudId: docId });
         } else if (op.kind === "delete_mymeal") {
           await markMyMealDeletedRemote(uid, op.cloud_id, op.updated_at);
           pushLog.log("mymeal:delete", op.cloud_id);
           emit("mymeal:synced", { uid, cloudId: op.cloud_id });
+        } else if (op.kind === "update_user_profile") {
+          const payload = op.payload as Record<string, unknown> | null;
+          if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+            throw syncEngineError("sync/profile-invalid-payload", {
+              message: "Missing or invalid user profile payload",
+              retryable: false,
+            });
+          }
+          if (Object.keys(payload).length === 0) {
+            pushLog.log("profile:update:empty", { uid, opId: op.id });
+          } else {
+            await updateUserProfileRemote(uid, payload as Partial<UserData>);
+            pushLog.log("profile:update", {
+              uid,
+              keys: Object.keys(payload),
+            });
+            emit("user:profile:synced", { uid, updatedAt: op.updated_at });
+          }
+        } else if (op.kind === "upload_user_avatar") {
+          const payload = op.payload as { localPath?: string; updatedAt?: string } | null;
+          const localPath = typeof payload?.localPath === "string"
+            ? payload.localPath
+            : "";
+          if (!localPath) {
+            throw syncEngineError("sync/avatar-missing-local-path", {
+              message: "Missing local avatar path for upload operation",
+              retryable: false,
+            });
+          }
+          const uploaded = await uploadUserAvatarRemote(uid, localPath);
+          emit("user:avatar:synced", {
+            uid,
+            avatarUrl: uploaded.avatarUrl,
+            avatarLocalPath: localPath,
+            avatarlastSyncedAt: uploaded.avatarlastSyncedAt,
+            updatedAt: String(payload?.updatedAt || op.updated_at || nowISO()),
+          });
+          pushLog.log("avatar:upload", {
+            uid,
+            localPath,
+          });
         } else if (op.kind === "persist_chat_message") {
           const payload = op.payload as {
             threadId?: string;
@@ -364,18 +511,72 @@ export async function pushQueue(uid: string): Promise<void> {
         pushLog.log("op:done", { id: op.id });
       } catch (e: unknown) {
         const err = toSyncError(e);
+        const nextAttempts = op.attempts + 1;
         pushLog.error("op:fail", {
           id: op.id,
           code: err.code,
           message: err.message,
           retryable: err.retryable,
         });
-        await bumpAttempts(op.id);
-        pushLog.log("op:bump_attempts", { id: op.id });
+        if (nextAttempts >= MAX_QUEUE_ATTEMPTS) {
+          await moveToDeadLetter(op, nextAttempts, {
+            code: err.code,
+            message: err.message,
+          });
+          pushLog.warn("op:dead_letter", {
+            id: op.id,
+            kind: op.kind,
+            attempts: nextAttempts,
+          });
+          emit("sync:op:dead", {
+            uid,
+            opId: op.id,
+            cloudId: op.cloud_id,
+            kind: op.kind,
+            attempts: nextAttempts,
+            code: err.code,
+          });
+        } else {
+          await bumpAttempts(op.id);
+          pushLog.log("op:bump_attempts", { id: op.id, attempts: nextAttempts });
+        }
+        if (op.kind === "upsert") {
+          await setMealSyncStateLocal({
+            uid,
+            cloudId: op.cloud_id,
+            syncState: nextAttempts >= MAX_QUEUE_ATTEMPTS ? "failed" : "pending",
+            updatedAt: op.updated_at,
+          });
+        }
+        if (op.kind === "upsert_mymeal") {
+          await setMyMealSyncStateLocal({
+            uid,
+            cloudId: op.cloud_id,
+            syncState: nextAttempts >= MAX_QUEUE_ATTEMPTS ? "failed" : "pending",
+            updatedAt: op.updated_at,
+          });
+        }
         if (op.kind === "persist_chat_message") {
           emit("chat:failed", { uid, opId: op.id });
+        } else if (op.kind === "update_user_profile") {
+          emit("user:profile:failed", {
+            uid,
+            opId: op.id,
+            dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
+          });
+        } else if (op.kind === "upload_user_avatar") {
+          emit("user:avatar:failed", {
+            uid,
+            opId: op.id,
+            dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
+          });
         } else {
-          emit("meal:failed", { uid, opId: op.id });
+          emit("meal:failed", {
+            uid,
+            opId: op.id,
+            cloudId: op.cloud_id,
+            dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
+          });
         }
       }
     }
@@ -415,11 +616,15 @@ export async function pullChanges(uid: string): Promise<void> {
 
     for (const meal of page.items) {
       try {
-        await upsertMealLocal(meal);
+        const localMeal = meal.cloudId
+          ? await getMealByCloudIdLocal(uid, meal.cloudId)
+          : null;
+        const resolved = localMeal ? resolveMealConflict(localMeal, meal) : meal;
+        await upsertMealLocal(resolved);
         emit("meal:synced", {
           uid,
-          cloudId: meal.cloudId,
-          updatedAt: meal.updatedAt,
+          cloudId: resolved.cloudId ?? meal.cloudId,
+          updatedAt: resolved.updatedAt,
         });
         total++;
         latestCursor = buildMealUpdatedCursor(meal);
@@ -509,6 +714,109 @@ export async function pullMyMealChanges(uid: string): Promise<void> {
   pullLog.log("done", { items: total, last_ts: latestCursor });
 }
 
+async function pullChatThreadMessages(params: {
+  uid: string;
+  threadId: string;
+  limitCount?: number;
+}): Promise<number> {
+  const limit = Math.max(1, Math.min(params.limitCount ?? 50, 200));
+  const response = await get<ChatMessagesPageApiResponse>(
+    `/users/me/chat/threads/${encodeURIComponent(params.threadId)}/messages?limit=${limit}`
+  );
+  const items = Array.isArray(response?.items) ? response.items : [];
+  for (const item of items) {
+    const normalized = toChatMessage(params.uid, item);
+    if (!normalized.id) continue;
+    await upsertChatMessageLocal({
+      threadId: params.threadId,
+      message: normalized,
+    });
+  }
+  return items.length;
+}
+
+export async function pullChatChanges(uid: string): Promise<void> {
+  const pullLog = log.child("pull:chat");
+  const net = await NetInfo.fetch();
+  pullLog.log("start", { uid, isConnected: net.isConnected });
+  if (!net.isConnected) {
+    pullLog.log("skip:offline");
+    return;
+  }
+
+  const lastPullTs = await getLastChatPullTs(uid);
+  let newestPullTs = lastPullTs;
+  let syncedThreads = 0;
+  let syncedMessages = 0;
+
+  try {
+    const response = await get<ChatThreadsPageApiResponse>(
+      "/users/me/chat/threads?limit=20"
+    );
+    const items = Array.isArray(response?.items) ? response.items : [];
+    pullLog.log("threads:page", { size: items.length, lastPullTs });
+
+    for (const item of items) {
+      const normalizedThread = toChatThread(uid, item);
+      if (!normalizedThread.id) continue;
+      newestPullTs = Math.max(newestPullTs, normalizedThread.updatedAt);
+
+      const localThread = await getChatThreadByIdLocal(uid, normalizedThread.id);
+      const localIsNewer =
+        !!localThread && localThread.updatedAt > normalizedThread.updatedAt;
+      if (!localIsNewer) {
+        await upsertChatThreadLocal(normalizedThread);
+        syncedThreads++;
+      }
+
+      const remoteLastMessageAt = normalizedThread.lastMessageAt ?? 0;
+      const localLastMessageAt = localThread?.lastMessageAt ?? 0;
+      const shouldSyncMessages =
+        !localIsNewer &&
+        (!localThread ||
+          normalizedThread.updatedAt >= localThread.updatedAt ||
+          remoteLastMessageAt > localLastMessageAt ||
+          normalizedThread.updatedAt >= lastPullTs);
+
+      if (!shouldSyncMessages) continue;
+
+      try {
+        syncedMessages += await pullChatThreadMessages({
+          uid,
+          threadId: normalizedThread.id,
+          limitCount: 50,
+        });
+      } catch (error: unknown) {
+        const err = toSyncError(error);
+        pullLog.error("thread_messages:fail", {
+          threadId: normalizedThread.id,
+          code: err.code,
+          message: err.message,
+          retryable: err.retryable,
+        });
+      }
+    }
+
+    if (newestPullTs > lastPullTs) {
+      await setLastChatPullTs(uid, newestPullTs);
+      pullLog.log("set_last_ts", { newestPullTs });
+    }
+    pullLog.log("done", {
+      threads: syncedThreads,
+      messages: syncedMessages,
+      lastPullTs: newestPullTs,
+    });
+  } catch (error: unknown) {
+    const err = toSyncError(error);
+    pullLog.error("threads:fail", {
+      code: err.code,
+      message: err.message,
+      retryable: err.retryable,
+    });
+    throw err;
+  }
+}
+
 export async function processImageUploads(uid: string): Promise<void> {
   const upLog = log.child("upload");
   const net = await NetInfo.fetch();
@@ -555,6 +863,7 @@ export async function processImageUploads(uid: string): Promise<void> {
 
       for (const m of meals) {
         const tags = safeParseJSON(m.tags) ?? [];
+        const ingredients = safeParseJSON(m.ingredients);
         const normalized: Meal = {
           userUid: m.user_uid,
           mealId: m.meal_id,
@@ -562,7 +871,9 @@ export async function processImageUploads(uid: string): Promise<void> {
           timestamp: m.timestamp,
           type: toMealType(m.type),
           name: m.name,
-          ingredients: [],
+          ingredients: Array.isArray(ingredients)
+            ? (ingredients as Meal["ingredients"])
+            : [],
           createdAt: m.created_at ?? m.timestamp ?? now,
           updatedAt: now,
           syncState: "pending",

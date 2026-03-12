@@ -3,9 +3,11 @@ import {
   View,
   FlatList,
   ActivityIndicator,
+  Pressable,
+  Text,
   StyleSheet,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUserContext } from "@contexts/UserContext";
@@ -28,6 +30,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Layout } from "@components/Layout";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { FormData } from "@/types";
+import { pullChatChanges } from "@/services/offline/sync.engine";
 
 const EMPTY_PROFILE: FormData = {
   unitsSystem: "metric",
@@ -59,6 +62,7 @@ export default function ChatScreen() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [threadId, setThreadId] = useState<string>(() => `local-${uuidv4()}`);
   const lastUserMessageRef = useRef<string | null>(null);
+  const lastChatPullRef = useRef<number>(0);
 
   const {
     messages,
@@ -66,10 +70,13 @@ export default function ChatScreen() {
     sending,
     typing,
     sendErrorType,
+    failedSyncCount,
+    retryingFailedSync,
     canSend,
     creditAllocation,
     send,
     loadMore,
+    retryFailedSyncOps,
   } = useChatHistory(
     uid,
     meals || [],
@@ -111,6 +118,13 @@ export default function ChatScreen() {
       allocation: credits?.allocation ?? 0,
     });
   }, [credits?.allocation, credits?.balance, t]);
+  const offlineEmpty = net.isConnected === false;
+  const emptyTitle = offlineEmpty ? t("offline.title") : t("empty.title");
+  const emptySubtitle = offlineEmpty
+    ? t("offline.subtitle")
+    : t("empty.subtitle");
+  const emptySuggestions = offlineEmpty ? [] : suggestions;
+  const emptyFooterText = offlineEmpty ? undefined : footerText;
 
   const emptyDisabled = sending || limitReached || !net.isConnected;
   const retryEnabled =
@@ -154,6 +168,18 @@ export default function ChatScreen() {
     [limitReached, styles],
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!uid) return;
+      const now = Date.now();
+      if (now - lastChatPullRef.current < 30_000) return;
+      lastChatPullRef.current = now;
+      void pullChatChanges(uid).catch(() => {
+        // Best-effort background refresh for chat history/messages.
+      });
+    }, [uid]),
+  );
+
   return (
     <Layout disableScroll style={styles.layout}>
       <View style={styles.header}>
@@ -182,6 +208,30 @@ export default function ChatScreen() {
             renewalAt={credits?.periodEndAt ?? null}
             onUpgrade={() => navigation.navigate("ManageSubscription")}
           />
+        </View>
+      )}
+
+      {failedSyncCount > 0 && (
+        <View style={styles.deadLetterBanner}>
+          <View style={styles.deadLetterTextWrap}>
+            <Text style={styles.deadLetterTitle}>
+              {t("deadLetterTitle", { count: failedSyncCount })}
+            </Text>
+            <Text style={styles.deadLetterDescription}>
+              {t("deadLetterSubtitle")}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => {
+              void retryFailedSyncOps();
+            }}
+            disabled={retryingFailedSync}
+            style={retryingFailedSync ? styles.deadLetterRetryDisabled : undefined}
+          >
+            <Text style={styles.deadLetterRetryLabel}>
+              {retryingFailedSync ? "…" : t("deadLetterRetry")}
+            </Text>
+          </Pressable>
         </View>
       )}
 
@@ -221,11 +271,11 @@ export default function ChatScreen() {
             }
             ListEmptyComponent={
               <EmptyState
-                title={t("empty.title")}
-                subtitle={t("empty.subtitle")}
-                suggestions={suggestions}
+                title={emptyTitle}
+                subtitle={emptySubtitle}
+                suggestions={emptySuggestions}
                 disabled={emptyDisabled}
-                footerText={footerText}
+                footerText={emptyFooterText}
                 onPick={handleSend}
               />
             }
@@ -285,6 +335,43 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       backgroundColor: theme.overlay,
       borderColor: theme.accentSecondary,
       shadowColor: theme.shadow,
+    },
+    deadLetterBanner: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: theme.rounded.md,
+      backgroundColor: theme.warning.background,
+      marginHorizontal: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
+      marginTop: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs + 2,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    deadLetterTextWrap: {
+      flex: 1,
+      gap: 2,
+    },
+    deadLetterTitle: {
+      color: theme.warning.text,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    deadLetterDescription: {
+      color: theme.warning.text,
+      fontSize: theme.typography.size.xs,
+    },
+    deadLetterRetryLabel: {
+      color: theme.warning.text,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      textDecorationLine: "underline",
+    },
+    deadLetterRetryDisabled: {
+      opacity: 0.65,
     },
     listContent: {
       paddingHorizontal: theme.spacing.md,

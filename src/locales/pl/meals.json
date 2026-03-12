@@ -81,6 +81,13 @@
   "history": {
     "loadError": "Nie udało się wczytać historii.",
     "syncError": "Synchronizacja nie powiodła się. Spróbuj ponownie.",
+    "syncSynced": "Zsynchronizowano",
+    "syncSyncedAt": "Zsynchronizowano {{time}}",
+    "syncPending": "W kolejce",
+    "syncFailed": "Błąd",
+    "deadLetterTitle": "{{count}} zmian nie zostało zsynchronizowanych.",
+    "deadLetterSubtitle": "Ponów, aby przywrócić je do kolejki synchronizacji.",
+    "deadLetterRetryQueued": "Dodano {{count}} nieudanych zmian do ponownej synchronizacji.",
     "offlineEmpty": "Brak danych lokalnych. Połącz się z internetem, aby pobrać historię.",
     "errorTitle": "Nie udało się wczytać historii"
   },
@@ -126,5 +133,21 @@
   "premium_required_body": "Tryb AI wymaga subskrypcji Premium.",
   "premium_required_title": "Wymagane Premium",
   "recalc_message": "Zmiana ilości może automatycznie przeliczyć makroskładniki i kalorie. Przeliczyć teraz?",
-  "recalc_title": "Przeliczyć wartości?"
+  "recalc_title": "Przeliczyć wartości?",
+  "detailsUnavailable": {
+    "title": "Szczegóły posiłku są niedostępne",
+    "desc": "Nie udało się teraz wczytać tego posiłku. Spróbuj ponownie.",
+    "offlineDesc": "Jesteś offline, a ten posiłek nie jest dostępny lokalnie."
+  },
+  "editUnavailable": {
+    "title": "Edycja posiłku jest niedostępna",
+    "desc": "Nie udało się teraz wczytać zapisanego posiłku do edycji. Spróbuj ponownie.",
+    "offlineDesc": "Jesteś offline, a ten zapisany posiłek nie jest dostępny lokalnie."
+  },
+  "resultUnavailable": {
+    "title": "Podsumowanie posiłku jest niedostępne",
+    "desc": "Nie udało się teraz wczytać wersji roboczej posiłku. Spróbuj ponownie.",
+    "offlineDesc": "Jesteś offline, a ta wersja robocza posiłku nie jest dostępna lokalnie.",
+    "authDesc": "Sesja wygasła. Zaloguj się ponownie, aby kontynuować."
+  }
 }

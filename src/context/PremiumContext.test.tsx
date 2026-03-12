@@ -94,6 +94,7 @@ describe("PremiumContext", () => {
     });
 
     expect(mockPost).not.toHaveBeenCalled();
+    expect(mockGetCustomerInfo).not.toHaveBeenCalled();
     expect(mockRefreshCredits).toHaveBeenCalled();
   });
 });

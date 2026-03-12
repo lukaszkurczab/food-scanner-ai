@@ -11,6 +11,7 @@ import {
   upsertChatThreadLocal,
 } from "@/services/offline/chat.repo";
 import { enqueueChatMessagePersist } from "@/services/offline/queue.repo";
+import { pullChatChanges } from "@/services/offline/sync.engine";
 
 type ChatThreadApiItem = {
   id: string;
@@ -50,6 +51,17 @@ export type ChatMessagesPage = {
 };
 
 const LOCAL_THREADS_LIMIT = 20;
+const chatPullInFlight = new Map<string, Promise<void>>();
+
+function requestChatPull(userUid: string): Promise<void> {
+  const existing = chatPullInFlight.get(userUid);
+  if (existing) return existing;
+  const task = pullChatChanges(userUid).finally(() => {
+    chatPullInFlight.delete(userUid);
+  });
+  chatPullInFlight.set(userUid, task);
+  return task;
+}
 
 function toChatThread(userUid: string, item: ChatThreadApiItem): ChatThread {
   return {
@@ -143,11 +155,7 @@ export function subscribeToChatThreadMessages(params: {
     try {
       const net = await NetInfo.fetch();
       if (!net.isConnected) return;
-      await syncMessagesFromBackend({
-        userUid: params.userUid,
-        threadId: params.threadId,
-        limitCount: params.pageSize,
-      });
+      await requestChatPull(params.userUid);
       await publish();
     } catch (error) {
       params.onError?.(error);
@@ -399,7 +407,7 @@ export function subscribeToChatThreads(params: {
     try {
       const net = await NetInfo.fetch();
       if (!net.isConnected) return;
-      await syncThreadsFromBackend(params.userUid);
+      await requestChatPull(params.userUid);
       await publish();
     } catch (error) {
       params.onError?.(error);

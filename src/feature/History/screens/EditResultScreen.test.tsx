@@ -24,6 +24,7 @@ const mockUseAuthContext = jest.fn();
 const mockUseRoute = jest.fn();
 const mockUseMealDraftContext = jest.fn();
 const mockUseEditResultState = jest.fn();
+const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -36,6 +37,10 @@ jest.mock("react-i18next", () => ({
 
 jest.mock("@expo/vector-icons", () => ({
   MaterialIcons: () => null,
+}));
+
+jest.mock("@react-native-community/netinfo", () => ({
+  useNetInfo: () => mockUseNetInfo(),
 }));
 
 jest.mock("@/context/AuthContext", () => ({
@@ -189,6 +194,7 @@ const buildMeal = (overrides?: Partial<Meal>): Meal => ({
 
 const buildState = (overrides?: Record<string, unknown>) => ({
   ready: true,
+  meal: buildMeal(),
   checkingImage: false,
   image: "file:///omelette.jpg",
   imageError: false,
@@ -209,11 +215,13 @@ const buildState = (overrides?: Record<string, unknown>) => ({
   showCancelModal: false,
   closeCancelModal: jest.fn(),
   handleCancelConfirm: jest.fn(),
+  reloadFromLocal: jest.fn(async () => true),
   ...overrides,
 });
 
 describe("EditResultScreen", () => {
   beforeEach(() => {
+    mockUseNetInfo.mockReturnValue({ isConnected: true });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUseRoute.mockReturnValue({ params: { savedCloudId: "cloud-1" } });
     mockUseMealDraftContext.mockReturnValue({
@@ -226,7 +234,7 @@ describe("EditResultScreen", () => {
     mockUseEditResultState.mockReset();
   });
 
-  it("returns null when the screen is not ready", () => {
+  it("renders unavailable fallback when meal is missing", () => {
     mockUseMealDraftContext.mockReturnValue({
       meal: null,
       setLastScreen: jest.fn<(uid: string, screen: string) => Promise<void>>(
@@ -234,15 +242,41 @@ describe("EditResultScreen", () => {
       ),
       setPhotoUrl: jest.fn<(url: string | null) => void>(),
     });
-    mockUseEditResultState.mockReturnValue({
-      ready: false,
-    });
+    const state = buildState({ ready: false, meal: null });
+    mockUseEditResultState.mockReturnValue(state);
 
     const screen = renderWithTheme(
       <EditResultScreen navigation={{ navigate: jest.fn() } as never} />,
     );
 
-    expect(screen.toJSON()).toBeNull();
+    expect(screen.getByText("meals:editUnavailable.title")).toBeTruthy();
+    expect(screen.getByText("meals:editUnavailable.desc")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("common:retry"));
+    fireEvent.press(screen.getByText("meals:back_to_saved"));
+
+    expect(state.reloadFromLocal).toHaveBeenCalledTimes(1);
+    expect(state.handleCancelConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders offline unavailable fallback copy when disconnected", () => {
+    mockUseNetInfo.mockReturnValue({ isConnected: false });
+    mockUseMealDraftContext.mockReturnValue({
+      meal: null,
+      setLastScreen: jest.fn<(uid: string, screen: string) => Promise<void>>(
+        async (_uid: string, _screen: string) => undefined,
+      ),
+      setPhotoUrl: jest.fn<(url: string | null) => void>(),
+    });
+    mockUseEditResultState.mockReturnValue(
+      buildState({ ready: false, meal: null }),
+    );
+
+    const screen = renderWithTheme(
+      <EditResultScreen navigation={{ navigate: jest.fn() } as never} />,
+    );
+
+    expect(screen.getByText("meals:editUnavailable.offlineDesc")).toBeTruthy();
   });
 
   it("renders the image branch and forwards result actions", () => {

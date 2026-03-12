@@ -16,6 +16,8 @@
   "emptyDay": {
     "title": "No meals on this day",
     "subtitle_today": "Add your first meal to start tracking.",
+    "subtitle_offline_today": "You are offline. Local data may be incomplete for today.",
+    "subtitle_offline_past": "You are offline. Connect to load meals for this day.",
     "addMeal": "Add meal",
     "openHistory": "Go to history"
   }

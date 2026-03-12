@@ -36,9 +36,18 @@
     "footerPremium": "AI Credits: {{balance}}/{{allocation}}"
   },
   "history": {
-    "open": "Otwórz historię czatu"
+    "open": "Otwórz historię czatu",
+    "emptyTitle": "Brak czatów",
+    "emptyDescription": "Rozpocznij nową rozmowę, aby zobaczyć historię konwersacji.",
+    "offlineEmpty": "Brak lokalnej historii czatu. Połącz się z internetem, aby pobrać czaty.",
+    "errorTitle": "Nie udało się wczytać czatów",
+    "refreshError": "Spróbuj ponownie, gdy połączenie będzie stabilne."
   },
   "retryLast": "Ponów ostatnią wiadomość",
+  "deadLetterTitle": "{{count}} wiadomości czatu nie zsynchronizowano",
+  "deadLetterSubtitle": "Wiadomości są zapisane lokalnie. Możesz ponowić synchronizację teraz.",
+  "deadLetterRetry": "Ponów",
+  "deadLetterRetryQueued": "{{count}} wiadomości dodano do ponownej synchronizacji.",
   "sending": "AI przygotowuje odpowiedź...",
   "errors": {
     "fetchFailed": "Nie udało się pobrać odpowiedzi, spróbuj ponownie.",

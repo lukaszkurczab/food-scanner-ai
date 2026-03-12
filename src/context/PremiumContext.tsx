@@ -33,8 +33,9 @@ function mapToSubscription(premium: boolean): Subscription {
 }
 
 async function readCachedPremiumStatus(
-  premiumKey: string,
+  premiumKey: string | null,
 ): Promise<boolean | null> {
+  if (!premiumKey) return null;
   const cached = await AsyncStorage.getItem(premiumKey);
   if (cached === "true") return true;
   if (cached === "false") return false;
@@ -57,7 +58,7 @@ export const PremiumProvider = ({
   const { refreshCredits } = useAiCreditsContext();
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const premiumKey = `premium_status:${uid ?? "anon"}`;
+  const premiumKey = uid ? `premium_status:${uid}` : null;
 
   const setSubscriptionFromPremium = useCallback((premium: boolean) => {
     setIsPremium(premium);
@@ -65,6 +66,11 @@ export const PremiumProvider = ({
   }, []);
 
   const checkPremiumStatus = useCallback(async (): Promise<boolean> => {
+    if (!uid) {
+      setSubscriptionFromPremium(false);
+      return false;
+    }
+
     if (isBillingDisabled()) {
       const cached = await readCachedPremiumStatus(premiumKey);
       const val = cached ?? false;
@@ -82,7 +88,9 @@ export const PremiumProvider = ({
     try {
       const info = await Purchases.getCustomerInfo();
       const premium = !!info.entitlements.active["premium"];
-      await AsyncStorage.setItem(premiumKey, premium ? "true" : "false");
+      if (premiumKey) {
+        await AsyncStorage.setItem(premiumKey, premium ? "true" : "false");
+      }
       setSubscriptionFromPremium(premium);
       return premium;
     } catch {
@@ -94,7 +102,7 @@ export const PremiumProvider = ({
       setSubscriptionFromPremium(false);
       return false;
     }
-  }, [premiumKey, setSubscriptionFromPremium]);
+  }, [premiumKey, setSubscriptionFromPremium, uid]);
 
   const syncTierAndRefreshCredits = useCallback(async (): Promise<void> => {
     if (uid) {
@@ -150,11 +158,14 @@ export const PremiumProvider = ({
 
   const setDevPremium = useCallback(
     async (enabled: boolean) => {
+      const entries: [string, string][] = [
+        ["dev_force_premium", enabled ? "true" : "false"],
+      ];
+      if (premiumKey) {
+        entries.push([premiumKey, enabled ? "true" : "false"]);
+      }
       await AsyncStorage
-        .multiSet([
-          ["dev_force_premium", enabled ? "true" : "false"],
-          [premiumKey, enabled ? "true" : "false"],
-        ])
+        .multiSet(entries)
         .catch(() => undefined);
       setSubscriptionFromPremium(enabled);
       await refreshPremium();

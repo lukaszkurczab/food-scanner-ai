@@ -57,6 +57,7 @@ export function runMigrations() {
           timestamp TEXT NOT NULL,
           type TEXT NOT NULL,
           name TEXT,
+          ingredients TEXT,
           photo_url TEXT,
           image_local TEXT,
           image_id TEXT,
@@ -67,6 +68,8 @@ export function runMigrations() {
           deleted INTEGER DEFAULT 0,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL,
+          last_synced_at INTEGER NOT NULL DEFAULT 0,
+          sync_state TEXT NOT NULL DEFAULT 'pending',
           source TEXT,
           notes TEXT,
           tags TEXT
@@ -90,6 +93,25 @@ export function runMigrations() {
           updated_at TEXT NOT NULL,
           attempts INTEGER DEFAULT 0
         );
+      `);
+      d.execSync(`
+        CREATE TABLE IF NOT EXISTS op_queue_dead (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          op_id INTEGER NOT NULL,
+          cloud_id TEXT NOT NULL,
+          user_uid TEXT NOT NULL,
+          kind TEXT NOT NULL,
+          payload TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          attempts INTEGER NOT NULL,
+          failed_at TEXT NOT NULL,
+          last_error_code TEXT,
+          last_error_message TEXT
+        );
+      `);
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_op_queue_dead_user_failed
+          ON op_queue_dead(user_uid, failed_at DESC);
       `);
       d.execSync(`
         CREATE TABLE IF NOT EXISTS images (
@@ -201,6 +223,7 @@ export function runMigrations() {
           timestamp TEXT NOT NULL,
           type TEXT NOT NULL,
           name TEXT,
+          ingredients TEXT,
           photo_url TEXT,
           image_local TEXT,
           image_id TEXT,
@@ -211,6 +234,8 @@ export function runMigrations() {
           deleted INTEGER DEFAULT 0,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL,
+          last_synced_at INTEGER NOT NULL DEFAULT 0,
+          sync_state TEXT NOT NULL DEFAULT 'pending',
           source TEXT,
           notes TEXT,
           tags TEXT
@@ -232,19 +257,188 @@ export function runMigrations() {
       throw e;
     }
   }
+
+  if (v < 5) {
+    d.execSync("BEGIN");
+    try {
+      if (!columnExists(d, "meals", "ingredients")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN ingredients TEXT;`);
+      }
+      d.execSync(`
+        UPDATE meals
+        SET ingredients = COALESCE(ingredients, '[]')
+        WHERE ingredients IS NULL;
+      `);
+      if (!columnExists(d, "my_meals", "ingredients")) {
+        d.execSync(`ALTER TABLE my_meals ADD COLUMN ingredients TEXT;`);
+      }
+      d.execSync(`
+        UPDATE my_meals
+        SET ingredients = COALESCE(ingredients, '[]')
+        WHERE ingredients IS NULL;
+      `);
+      setUserVersion(d, 5);
+      d.execSync("COMMIT");
+      v = 5;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
+
+  if (v < 6) {
+    d.execSync("BEGIN");
+    try {
+      d.execSync(`
+        CREATE TABLE IF NOT EXISTS op_queue_dead (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          op_id INTEGER NOT NULL,
+          cloud_id TEXT NOT NULL,
+          user_uid TEXT NOT NULL,
+          kind TEXT NOT NULL,
+          payload TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          attempts INTEGER NOT NULL,
+          failed_at TEXT NOT NULL,
+          last_error_code TEXT,
+          last_error_message TEXT
+        );
+      `);
+      d.execSync(`
+        CREATE INDEX IF NOT EXISTS idx_op_queue_dead_user_failed
+          ON op_queue_dead(user_uid, failed_at DESC);
+      `);
+      setUserVersion(d, 6);
+      d.execSync("COMMIT");
+      v = 6;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
+
+  if (v < 7) {
+    d.execSync("BEGIN");
+    try {
+      if (!columnExists(d, "meals", "last_synced_at")) {
+        d.execSync(
+          `ALTER TABLE meals ADD COLUMN last_synced_at INTEGER NOT NULL DEFAULT 0;`
+        );
+      }
+      if (!columnExists(d, "meals", "sync_state")) {
+        d.execSync(
+          `ALTER TABLE meals ADD COLUMN sync_state TEXT NOT NULL DEFAULT 'pending';`
+        );
+      }
+      if (!columnExists(d, "my_meals", "last_synced_at")) {
+        d.execSync(
+          `ALTER TABLE my_meals ADD COLUMN last_synced_at INTEGER NOT NULL DEFAULT 0;`
+        );
+      }
+      if (!columnExists(d, "my_meals", "sync_state")) {
+        d.execSync(
+          `ALTER TABLE my_meals ADD COLUMN sync_state TEXT NOT NULL DEFAULT 'pending';`
+        );
+      }
+
+      d.execSync(`
+        UPDATE meals
+        SET sync_state = 'failed'
+        WHERE EXISTS (
+          SELECT 1
+          FROM op_queue_dead qd
+          WHERE qd.user_uid = meals.user_uid
+            AND qd.cloud_id = meals.cloud_id
+            AND qd.kind IN ('upsert', 'delete')
+        );
+      `);
+      d.execSync(`
+        UPDATE meals
+        SET sync_state = 'pending'
+        WHERE sync_state != 'failed'
+          AND EXISTS (
+            SELECT 1
+            FROM op_queue q
+            WHERE q.user_uid = meals.user_uid
+              AND q.cloud_id = meals.cloud_id
+              AND q.kind IN ('upsert', 'delete')
+          );
+      `);
+      d.execSync(`
+        UPDATE meals
+        SET sync_state = 'synced'
+        WHERE sync_state NOT IN ('pending', 'failed', 'conflict', 'synced');
+      `);
+      d.execSync(`
+        UPDATE meals
+        SET last_synced_at = CASE
+          WHEN sync_state = 'synced'
+               AND (last_synced_at IS NULL OR last_synced_at = 0)
+            THEN COALESCE(CAST(strftime('%s', updated_at) AS INTEGER) * 1000, 0)
+          ELSE COALESCE(last_synced_at, 0)
+        END;
+      `);
+
+      d.execSync(`
+        UPDATE my_meals
+        SET sync_state = 'failed'
+        WHERE EXISTS (
+          SELECT 1
+          FROM op_queue_dead qd
+          WHERE qd.user_uid = my_meals.user_uid
+            AND qd.cloud_id = my_meals.cloud_id
+            AND qd.kind IN ('upsert_mymeal', 'delete_mymeal')
+        );
+      `);
+      d.execSync(`
+        UPDATE my_meals
+        SET sync_state = 'pending'
+        WHERE sync_state != 'failed'
+          AND EXISTS (
+            SELECT 1
+            FROM op_queue q
+            WHERE q.user_uid = my_meals.user_uid
+              AND q.cloud_id = my_meals.cloud_id
+              AND q.kind IN ('upsert_mymeal', 'delete_mymeal')
+          );
+      `);
+      d.execSync(`
+        UPDATE my_meals
+        SET sync_state = 'synced'
+        WHERE sync_state NOT IN ('pending', 'failed', 'conflict', 'synced');
+      `);
+      d.execSync(`
+        UPDATE my_meals
+        SET last_synced_at = CASE
+          WHEN sync_state = 'synced'
+               AND (last_synced_at IS NULL OR last_synced_at = 0)
+            THEN COALESCE(CAST(strftime('%s', updated_at) AS INTEGER) * 1000, 0)
+          ELSE COALESCE(last_synced_at, 0)
+        END;
+      `);
+
+      setUserVersion(d, 7);
+      d.execSync("COMMIT");
+      v = 7;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
 }
 
 export function resetOfflineStorage() {
   const d = getDB();
   d.execSync("BEGIN");
   try {
-      d.execSync(`DELETE FROM op_queue;`);
-      d.execSync(`DELETE FROM images;`);
-      d.execSync(`DELETE FROM meals;`);
-      d.execSync(`DELETE FROM my_meals;`);
-      d.execSync(`DELETE FROM chat_messages;`);
-      d.execSync(`DELETE FROM chat_threads;`);
-      d.execSync("COMMIT");
+    d.execSync(`DELETE FROM op_queue;`);
+    d.execSync(`DELETE FROM op_queue_dead;`);
+    d.execSync(`DELETE FROM images;`);
+    d.execSync(`DELETE FROM meals;`);
+    d.execSync(`DELETE FROM my_meals;`);
+    d.execSync(`DELETE FROM chat_messages;`);
+    d.execSync(`DELETE FROM chat_threads;`);
+    d.execSync("COMMIT");
   } catch (error) {
     d.execSync("ROLLBACK");
     throw error;

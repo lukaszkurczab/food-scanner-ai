@@ -11,12 +11,14 @@ import * as FileSystem from "expo-file-system";
 import {
   MealBox,
   PrimaryButton,
+  SecondaryButton,
   Checkbox,
   Layout,
   ErrorButton,
   Modal,
   PhotoPreview,
 } from "@/components";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useUserContext } from "@contexts/UserContext";
@@ -40,9 +42,17 @@ export default function ResultScreen({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals", "common"]);
+  const netInfo = useNetInfo();
+  const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
-  const { meal, setLastScreen, clearMeal, saveDraft, setPhotoUrl } =
-    useMealDraftContext();
+  const {
+    meal,
+    setLastScreen,
+    clearMeal,
+    saveDraft,
+    loadDraft,
+    setPhotoUrl,
+  } = useMealDraftContext();
   const { userData } = useUserContext();
   const { addMeal } = useMeals(uid ?? null);
 
@@ -104,7 +114,42 @@ export default function ResultScreen({
     });
   }, [flow]);
 
-  if (!meal || !uid) return null;
+  const retryLoadDraft = useCallback(async () => {
+    if (!uid) return;
+    await loadDraft(uid);
+  }, [loadDraft, uid]);
+
+  if (!meal || !uid) {
+    return (
+      <Layout showNavigation={false}>
+        <View style={styles.emptyWrap}>
+          <Text style={styles.emptyTitle}>
+            {t("resultUnavailable.title", { ns: "meals" })}
+          </Text>
+          <Text style={styles.emptyDescription}>
+            {!uid
+              ? t("resultUnavailable.authDesc", { ns: "meals" })
+              : isOnline
+                ? t("resultUnavailable.desc", { ns: "meals" })
+                : t("resultUnavailable.offlineDesc", { ns: "meals" })}
+          </Text>
+          <PrimaryButton
+            label={t("retry", { ns: "common" })}
+            onPress={() => {
+              void retryLoadDraft();
+            }}
+            disabled={!uid}
+            style={styles.emptyAction}
+          />
+          <SecondaryButton
+            label={t("select_method", { ns: "meals" })}
+            onPress={() => navigation.replace("MealAddMethod")}
+            style={styles.emptyAction}
+          />
+        </View>
+      </Layout>
+    );
+  }
 
   const nutrition = calculateTotalNutrients([meal]);
 
@@ -354,4 +399,27 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     checkboxLabel: { color: theme.text },
     actions: { justifyContent: "space-between" },
     actionsSpacing: { gap: theme.spacing.md, marginTop: theme.spacing.md },
+    emptyWrap: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      padding: theme.spacing.container,
+      paddingBottom: theme.spacing.xl,
+    },
+    emptyTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      textAlign: "center",
+    },
+    emptyDescription: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      textAlign: "center",
+      lineHeight: Math.round(theme.typography.size.sm * 1.5),
+    },
+    emptyAction: {
+      alignSelf: "stretch",
+    },
   });

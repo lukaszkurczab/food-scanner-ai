@@ -206,6 +206,22 @@ export async function getChatThreadsLocal(
   return rows.map(rowToThread);
 }
 
+export async function getChatThreadByIdLocal(
+  userUid: string,
+  threadId: string,
+): Promise<ChatThread | null> {
+  const db = getDB();
+  const row = db.getFirstSync(
+    `
+      SELECT * FROM chat_threads
+      WHERE user_uid = ? AND id = ?
+      LIMIT 1
+    `,
+    [userUid, threadId],
+  ) as ChatThreadRow | undefined;
+  return row ? rowToThread(row) : null;
+}
+
 export async function getChatMessagesPageLocal(params: {
   userUid: string;
   threadId: string;

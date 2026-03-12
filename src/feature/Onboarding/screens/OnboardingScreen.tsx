@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import ProgressDots from "@/feature/Onboarding/components/ProgressDots";
 import { Modal, Layout, IconButton } from "@/components";
@@ -159,7 +159,16 @@ export default function OnboardingScreen({
   const exitSecondaryLabel =
     mode === "first" ? t("exit_first_secondary") : t("exit_refill_discard");
 
-  if (!isLoaded) return null;
+  if (!isLoaded) {
+    return (
+      <Layout showNavigation={false} disableScroll>
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={theme.accent} />
+          <Text style={styles.loadingText}>{t("common:loading")}</Text>
+        </View>
+      </Layout>
+    );
+  }
 
   return (
     <Layout
@@ -259,5 +268,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       zIndex: 30,
       backgroundColor: "transparent",
       padding: theme.spacing.xs,
+    },
+    loadingWrap: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: theme.spacing.sm,
+    },
+    loadingText: {
+      color: theme.textSecondary,
     },
   });

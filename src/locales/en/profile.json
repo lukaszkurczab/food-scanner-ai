@@ -1,6 +1,9 @@
 {
   "profilePicture": "Profile picture",
   "profilePictureDefault": "Default profile icon",
+  "profileUnavailableTitle": "Profile unavailable",
+  "profileUnavailableDesc": "We couldn't load your profile right now. Please try again.",
+  "profileUnavailableOfflineDesc": "You're offline and no local profile data is available yet.",
   "userSection": "User",
   "changeUserData": "Edit profile data",
   "updateHealthSurvey": "Update nutrition survey",
@@ -20,6 +23,13 @@
   "cancel": "Cancel",
   "enterPassword": "Enter your password",
   "appVersion": "App version",
+  "sync": {
+    "pendingTitle": "Sync in progress",
+    "conflictTitle": "Sync issue",
+    "pending": "Profile changes are waiting to sync.",
+    "conflict": "Profile sync failed. We will retry automatically.",
+    "retry": "Retry now"
+  },
   "changeUserPhoto": "Change user photo",
   "changeUsername": "Change username",
   "changeEmail": "Change email",
@@ -85,6 +95,8 @@
     "startSubscription": "Start subscription",
     "billingUnavailable": "Billing is unavailable on this device.",
     "purchaseFailed": "Purchase failed. Please try again.",
+    "unavailableTitle": "Subscription details unavailable",
+    "unavailableOfflineDesc": "You're offline and subscription details are not available locally yet.",
     "restorePurchases": "Restore purchases",
     "inactiveSince": "Inactive since",
     "store": {

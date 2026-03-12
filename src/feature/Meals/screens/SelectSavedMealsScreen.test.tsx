@@ -16,6 +16,7 @@ const mockUseMeals = jest.fn();
 const mockUseMealDraftContext = jest.fn();
 const mockUseSelectSavedMealsState = jest.fn();
 const mockSyncMyMeals = jest.fn();
+const mockUseNetInfo = jest.fn();
 
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
@@ -38,9 +39,14 @@ jest.mock("@/services/meals/myMealService", () => ({
   syncMyMeals: (uid: string | null) => mockSyncMyMeals(uid),
 }));
 
+jest.mock("@react-native-community/netinfo", () => ({
+  useNetInfo: () => mockUseNetInfo(),
+}));
+
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => fallback ?? key,
+    t: (key: string, fallbackOrOptions?: string | Record<string, unknown>) =>
+      typeof fallbackOrOptions === "string" ? fallbackOrOptions : key,
   }),
 }));
 
@@ -164,6 +170,7 @@ const buildMeal = (overrides?: Partial<Meal>): Meal => ({
 describe("SelectSavedMealScreen", () => {
   beforeEach(() => {
     mockSyncMyMeals.mockReset();
+    mockUseNetInfo.mockReturnValue({ isConnected: true });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUseMeals.mockReturnValue({ getMeals: jest.fn(async () => undefined) });
     mockUseMealDraftContext.mockReturnValue({
@@ -226,6 +233,35 @@ describe("SelectSavedMealScreen", () => {
 
     expect(getByText("No saved meals")).toBeTruthy();
     expect(setQueryText).toHaveBeenCalledWith("pasta");
+    expect(handleStartOver).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows offline-empty state copy when there are no local saved meals", () => {
+    const handleStartOver = jest.fn();
+    mockUseNetInfo.mockReturnValue({ isConnected: false });
+    mockUseSelectSavedMealsState.mockReturnValue({
+      step: 20,
+      queryText: "",
+      setQueryText: jest.fn(),
+      loading: false,
+      pageItems: [],
+      selectedId: null,
+      refresh: jest.fn(),
+      handleSelect: jest.fn(),
+      handleConfirm: jest.fn(),
+      handleStartOver,
+      keyExtractor: jest.fn(),
+      onViewableItemsChanged: { current: jest.fn() },
+      viewabilityConfig: {},
+    });
+
+    const { getByText } = renderWithTheme(
+      <SelectSavedMealScreen navigation={{} as never} />,
+    );
+
+    expect(getByText("common:offline.title")).toBeTruthy();
+    expect(getByText("savedMeals.offlineEmpty")).toBeTruthy();
+    fireEvent.press(getByText("Start over"));
     expect(handleStartOver).toHaveBeenCalledTimes(1);
   });
 

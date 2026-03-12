@@ -24,7 +24,12 @@ const mockChangeEmailService = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockChangePasswordService = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockDeleteAccountService = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockExportUserDataService = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockUploadAndSaveAvatar = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockEnqueueUserAvatarUpload = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockEnqueueUserProfileUpdate = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockGetQueuedOpsCount = jest.fn<(...args: unknown[]) => Promise<number>>();
+const mockGetDeadLetterCount = jest.fn<(...args: unknown[]) => Promise<number>>();
+const mockRetryDeadLetterOps = jest.fn<(...args: unknown[]) => Promise<number>>();
+const mockPushQueue = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockAssertNoUndefined = jest.fn<(...args: unknown[]) => void>();
 const mockAsyncStorageGetItem = jest.fn<
   (...args: unknown[]) => Promise<string | null>
@@ -82,7 +87,20 @@ jest.mock("@/services/user/userService", () => ({
   changePasswordService: (...args: unknown[]) => mockChangePasswordService(...args),
   deleteAccountService: (...args: unknown[]) => mockDeleteAccountService(...args),
   exportUserData: (...args: unknown[]) => mockExportUserDataService(...args),
-  uploadAndSaveAvatar: (...args: unknown[]) => mockUploadAndSaveAvatar(...args),
+}));
+
+jest.mock("@/services/offline/queue.repo", () => ({
+  enqueueUserProfileUpdate: (...args: unknown[]) =>
+    mockEnqueueUserProfileUpdate(...args),
+  enqueueUserAvatarUpload: (...args: unknown[]) =>
+    mockEnqueueUserAvatarUpload(...args),
+  getQueuedOpsCount: (...args: unknown[]) => mockGetQueuedOpsCount(...args),
+  getDeadLetterCount: (...args: unknown[]) => mockGetDeadLetterCount(...args),
+  retryDeadLetterOps: (...args: unknown[]) => mockRetryDeadLetterOps(...args),
+}));
+
+jest.mock("@/services/offline/sync.engine", () => ({
+  pushQueue: (...args: unknown[]) => mockPushQueue(...args),
 }));
 
 jest.mock("@/utils/findUndefined", () => ({
@@ -207,11 +225,12 @@ describe("useUser", () => {
     mockChangePasswordService.mockResolvedValue(undefined);
     mockDeleteAccountService.mockResolvedValue(undefined);
     mockExportUserDataService.mockResolvedValue(createExportPayload());
-    mockUploadAndSaveAvatar.mockResolvedValue({
-      avatarUrl: "https://cdn/avatar.jpg",
-      avatarLocalPath: "file:///photos/avatar.jpg",
-      avatarlastSyncedAt: "2026-03-10T10:00:00.000Z",
-    });
+    mockEnqueueUserAvatarUpload.mockResolvedValue(undefined);
+    mockEnqueueUserProfileUpdate.mockResolvedValue(undefined);
+    mockGetQueuedOpsCount.mockResolvedValue(0);
+    mockGetDeadLetterCount.mockResolvedValue(0);
+    mockRetryDeadLetterOps.mockResolvedValue(0);
+    mockPushQueue.mockResolvedValue(undefined);
     mockAssertNoUndefined.mockReturnValue(undefined);
     mockAsyncStorageGetItem.mockResolvedValue(null);
     mockAsyncStorageSetItem.mockResolvedValue(undefined);
@@ -481,6 +500,7 @@ describe("useUser", () => {
       {},
       "updateUserProfile payload",
     );
+    expect(mockEnqueueUserProfileUpdate).not.toHaveBeenCalled();
     expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
     expect(result.current.language).toBe("pl");
     expect(result.current.userData?.darkTheme).toBe(true);
@@ -505,9 +525,75 @@ describe("useUser", () => {
       { age: "31" },
       "updateUserProfile payload",
     );
-    expect(mockUpdateUserProfileRemote).toHaveBeenCalledWith("u1", {
-      age: "31",
+    expect(mockEnqueueUserProfileUpdate).toHaveBeenCalledWith(
+      "u1",
+      { age: "31" },
+      expect.objectContaining({
+        updatedAt: expect.any(String),
+      }),
+    );
+    expect(mockPushQueue).toHaveBeenCalledWith("u1");
+    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
+  });
+
+  it("queues profile update while offline without immediate push", async () => {
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(createUser());
     });
+    mockNetInfoFetch.mockResolvedValueOnce({ isConnected: false });
+
+    await act(async () => {
+      await result.current.updateUserProfile({
+        age: "32",
+      });
+    });
+
+    expect(mockEnqueueUserProfileUpdate).toHaveBeenCalledWith(
+      "u1",
+      { age: "32" },
+      expect.objectContaining({
+        updatedAt: expect.any(String),
+      }),
+    );
+    expect(mockPushQueue).not.toHaveBeenCalledWith("u1");
+    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
+    expect(result.current.syncState).toBe("pending");
+  });
+
+  it("marks profile sync as conflict when dead-letter ops exist", async () => {
+    mockGetDeadLetterCount.mockResolvedValue(1);
+    mockGetQueuedOpsCount.mockResolvedValue(0);
+
+    const { result } = renderHook(() => useUser("u1"));
+    await act(async () => {
+      emitSnapshot(createUser());
+    });
+
+    await waitFor(() => {
+      expect(result.current.syncState).toBe("conflict");
+    });
+  });
+
+  it("retries dead-letter profile operations and pushes when online", async () => {
+    mockGetDeadLetterCount.mockResolvedValue(1);
+    mockRetryDeadLetterOps.mockResolvedValue(1);
+    mockNetInfoFetch.mockResolvedValue({ isConnected: true });
+    const { result } = renderHook(() => useUser("u1"));
+
+    await waitFor(() => {
+      expect(result.current.syncState).toBe("conflict");
+    });
+
+    await act(async () => {
+      await result.current.retryProfileSync();
+    });
+
+    expect(mockRetryDeadLetterOps).toHaveBeenCalledWith({
+      uid: "u1",
+      kinds: ["update_user_profile", "upload_user_avatar"],
+    });
+    expect(mockPushQueue).toHaveBeenCalledWith("u1");
   });
 
   it("sets avatar in offline and online modes", async () => {
@@ -525,7 +611,13 @@ describe("useUser", () => {
       fileId: "avatar",
       photoUri: "file:///picked.jpg",
     });
-    expect(mockUploadAndSaveAvatar).not.toHaveBeenCalled();
+    expect(mockEnqueueUserAvatarUpload).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({
+        localPath: "file:///photos/avatar.jpg",
+      }),
+    );
+    expect(mockPushQueue).not.toHaveBeenCalled();
     expect(mockUpdateUserProfileRemote).not.toHaveBeenCalledWith(
       "u1",
       expect.objectContaining({
@@ -541,16 +633,9 @@ describe("useUser", () => {
     await act(async () => {
       await result.current.setAvatar("file:///picked-2.jpg");
     });
-    expect(mockUploadAndSaveAvatar).toHaveBeenCalledWith({
-      userUid: "u1",
-      localUri: "file:///photos/avatar.jpg",
-    });
-    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalledWith(
-      "u1",
-      expect.objectContaining({
-        avatarUrl: "https://cdn/avatar.jpg",
-      }),
-    );
+    expect(mockEnqueueUserAvatarUpload).toHaveBeenCalledTimes(2);
+    expect(mockPushQueue).toHaveBeenCalledWith("u1");
+    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
   });
 
   it("delegates account operations and deletes user doc", async () => {

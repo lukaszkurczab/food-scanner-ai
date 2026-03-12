@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import type { ChatThread } from "@/types";
@@ -24,17 +32,28 @@ export function ChatHistorySheet({
 }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const netInfo = useNetInfo();
+  const isOnline = netInfo.isConnected !== false;
   const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshFailed, setRefreshFailed] = useState(false);
 
   const { t } = useTranslation("chat");
 
   useEffect(() => {
     if (!open || !userUid) return;
+    setLoading(true);
+    setRefreshFailed(false);
 
     const unsub = subscribeToChatThreads({
       userUid,
       onThreads: (items: ChatThread[]) => {
         setThreads(items);
+        setLoading(false);
+      },
+      onError: () => {
+        setLoading(false);
+        setRefreshFailed(true);
       },
     });
 
@@ -48,6 +67,16 @@ export function ChatHistorySheet({
   }, [onSelectThread, onClose]);
 
   const rows = useMemo(() => threads, [threads]);
+  const emptyStateTitle = refreshFailed
+    ? t("history.errorTitle")
+    : isOnline
+      ? t("history.emptyTitle")
+      : t("offline.title");
+  const emptyStateDescription = refreshFailed
+    ? t("history.refreshError")
+    : isOnline
+      ? t("history.emptyDescription")
+      : t("history.offlineEmpty");
 
   return (
     <Drawer open={open} onClose={onClose}>
@@ -103,6 +132,20 @@ export function ChatHistorySheet({
               )}
             </Pressable>
           )}
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              {loading ? (
+                <ActivityIndicator />
+              ) : (
+                <>
+                  <Text style={styles.emptyTitle}>{emptyStateTitle}</Text>
+                  <Text style={styles.emptyDescription}>
+                    {emptyStateDescription}
+                  </Text>
+                </>
+              )}
+            </View>
+          }
           contentContainerStyle={styles.listContent}
         />
       </View>
@@ -157,6 +200,26 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.textSecondary,
     },
     listContent: {
+      flexGrow: 1,
       paddingBottom: theme.spacing.lg,
+    },
+    emptyWrap: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: theme.spacing.lg,
+      gap: theme.spacing.sm,
+    },
+    emptyTitle: {
+      textAlign: "center",
+      color: theme.text,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.extraBold,
+    },
+    emptyDescription: {
+      textAlign: "center",
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.xs,
+      lineHeight: Math.round(theme.typography.size.xs * 1.5),
     },
   });

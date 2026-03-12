@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { AppState } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuthContext } from "@/context/AuthContext";
 import { get } from "@/services/core/apiClient";
 import {
@@ -32,6 +33,7 @@ const AiCreditsContext = createContext<AiCreditsContextValue>({
   applyCreditsFromResponse: () => null,
   canAfford: () => false,
 });
+const APP_ACTIVE_REFRESH_THROTTLE_MS = 30_000;
 
 function getActionCost(credits: AiCreditsStatus, action: AiCreditsAction): number {
   return credits.costs[action];
@@ -44,11 +46,16 @@ function creditsChanged(a: AiCreditsStatus | null, b: AiCreditsStatus | null): b
     || a.periodStartAt !== b.periodStartAt || a.periodEndAt !== b.periodEndAt;
 }
 
+function creditsStorageKey(uid: string): string {
+  return `ai_credits:${uid}`;
+}
+
 export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) => {
   const { uid } = useAuthContext();
   const [credits, setCredits] = useState<AiCreditsStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const creditsRef = useRef(credits);
+  const lastActiveRefreshAtRef = useRef(0);
 
   const updateCredits = useCallback((next: AiCreditsStatus | null) => {
     if (!creditsChanged(creditsRef.current, next)) return;
@@ -60,8 +67,13 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
     const parsed = parseCreditsFromResponse(value);
     if (!parsed) return null;
     updateCredits(parsed);
+    if (uid) {
+      AsyncStorage
+        .setItem(creditsStorageKey(uid), JSON.stringify(parsed))
+        .catch(() => undefined);
+    }
     return parsed;
-  }, [updateCredits]);
+  }, [uid, updateCredits]);
 
   const refreshCredits = useCallback(async (): Promise<AiCreditsStatus | null> => {
     if (!uid) {
@@ -75,12 +87,49 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
       const parsed = parseCreditsFromResponse(response);
       if (!parsed) return null;
       updateCredits(parsed);
+      await AsyncStorage
+        .setItem(creditsStorageKey(uid), JSON.stringify(parsed))
+        .catch(() => undefined);
       return parsed;
     } catch {
       return null;
     } finally {
       setLoading(false);
     }
+  }, [uid, updateCredits]);
+
+  const refreshCreditsIfStale = useCallback(async (): Promise<AiCreditsStatus | null> => {
+    const now = Date.now();
+    if (now - lastActiveRefreshAtRef.current < APP_ACTIVE_REFRESH_THROTTLE_MS) {
+      return creditsRef.current;
+    }
+    lastActiveRefreshAtRef.current = now;
+    return refreshCredits();
+  }, [refreshCredits]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!uid) {
+      updateCredits(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void (async () => {
+      try {
+        const cached = await AsyncStorage.getItem(creditsStorageKey(uid));
+        if (!cached || cancelled) return;
+        const parsed = parseCreditsFromResponse(JSON.parse(cached));
+        if (parsed) updateCredits(parsed);
+      } catch {
+        // Ignore malformed local cache for credits snapshot.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [uid, updateCredits]);
 
   useEffect(() => {
@@ -90,14 +139,14 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "active") {
-        void refreshCredits();
+        void refreshCreditsIfStale();
       }
     });
 
     return () => {
       sub.remove();
     };
-  }, [refreshCredits]);
+  }, [refreshCreditsIfStale]);
 
   const canAfford = useCallback(
     (action: AiCreditsAction) => {

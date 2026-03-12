@@ -201,6 +201,7 @@ describe("HistoryListScreen", () => {
     const onMealPress = jest.fn();
     const refresh = jest.fn();
     const onEndReached = jest.fn();
+    const retryFailedSyncOps = jest.fn();
 
     mockUseHistoryListState.mockReturnValue({
       dataState: "ready",
@@ -227,6 +228,13 @@ describe("HistoryListScreen", () => {
       onMealPress,
       kcalLabel: "kcal",
       isPremium: true,
+      deadLetterBanner: {
+        title: "2 failed changes",
+        description: "Retry to requeue failed operations.",
+        actionLabel: "Retry now",
+      },
+      retryingFailedSync: false,
+      retryFailedSyncOps,
     });
 
     const screen = renderWithTheme(
@@ -234,6 +242,8 @@ describe("HistoryListScreen", () => {
     );
 
     expect(screen.getByText("search:")).toBeTruthy();
+    expect(screen.getByText("2 failed changes")).toBeTruthy();
+    expect(screen.getByText("Retry now")).toBeTruthy();
     expect(screen.getByText("filter-badge:2")).toBeTruthy();
     expect(screen.getByText("Today")).toBeTruthy();
     expect(screen.getByText("720 kcal")).toBeTruthy();
@@ -243,12 +253,14 @@ describe("HistoryListScreen", () => {
 
     fireEvent.press(screen.getByText("filter-badge:2"));
     fireEvent.press(screen.getByText("meal:Chicken bowl"));
+    fireEvent.press(screen.getByText("Retry now"));
 
     expect(toggleShowFilters).toHaveBeenCalledTimes(1);
     expect(onMealPress).toHaveBeenCalledWith({
       mealId: "meal-1",
       name: "Chicken bowl",
     });
+    expect(retryFailedSyncOps).toHaveBeenCalledTimes(1);
     expect(onEndReached).not.toHaveBeenCalled();
     expect(refresh).not.toHaveBeenCalled();
   });

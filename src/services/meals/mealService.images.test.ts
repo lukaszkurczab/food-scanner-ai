@@ -9,6 +9,7 @@ const mockManipulateAsync = jest.fn<(...args: unknown[]) => Promise<{ uri: strin
 const mockGetInfoAsync = jest.fn<(...args: unknown[]) => Promise<{ exists: boolean }>>();
 const mockMakeDirectoryAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockCopyAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockDeleteAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockDownloadAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockUpload = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -32,6 +33,7 @@ jest.mock("expo-file-system", () => ({
   getInfoAsync: (...args: unknown[]) => mockGetInfoAsync(...args),
   makeDirectoryAsync: (...args: unknown[]) => mockMakeDirectoryAsync(...args),
   copyAsync: (...args: unknown[]) => mockCopyAsync(...args),
+  deleteAsync: (...args: unknown[]) => mockDeleteAsync(...args),
   downloadAsync: (...args: unknown[]) => mockDownloadAsync(...args),
 }));
 
@@ -54,6 +56,7 @@ describe("services/mealService.images", () => {
     mockGetInfoAsync.mockResolvedValue({ exists: true });
     mockMakeDirectoryAsync.mockResolvedValue();
     mockCopyAsync.mockResolvedValue();
+    mockDeleteAsync.mockResolvedValue();
     mockDownloadAsync.mockResolvedValue();
     mockUpload.mockResolvedValue({
       imageId: "image-1",
@@ -77,10 +80,28 @@ describe("services/mealService.images", () => {
       from: "file:///ai.jpg",
       to: "file:///cache/ai/uuid-1.jpg",
     });
+    expect(mockDeleteAsync).toHaveBeenNthCalledWith(1, "file:///cloud.jpg", {
+      idempotent: true,
+    });
+    expect(mockDeleteAsync).toHaveBeenNthCalledWith(2, "file:///ai.jpg", {
+      idempotent: true,
+    });
     expect(result).toEqual({
       imageId: "image-1",
       cloudUrl: "https://cdn/meal.jpg",
       aiLocalUri: "file:///cache/ai/uuid-1.jpg",
+    });
+  });
+
+  it("does not delete the source image when manipulator returns original URI", async () => {
+    mockManipulateAsync
+      .mockResolvedValueOnce({ uri: "file:///raw.jpg" })
+      .mockResolvedValueOnce({ uri: "file:///raw.jpg" });
+
+    await processAndUpload("user-1", "file:///raw.jpg");
+
+    expect(mockDeleteAsync).not.toHaveBeenCalledWith("file:///raw.jpg", {
+      idempotent: true,
     });
   });
 

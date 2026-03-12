@@ -31,6 +31,9 @@ const mockPersistUserChatMessage = jest.fn<
 const mockPersistAssistantChatMessage = jest.fn<
   (params: unknown) => Promise<void>
 >();
+const mockGetDeadLetterCount = jest.fn<(uid: string, options?: unknown) => Promise<number>>();
+const mockRetryDeadLetterOps = jest.fn<(params: unknown) => Promise<number>>();
+const mockPushQueue = jest.fn<(uid: string) => Promise<void>>();
 
 type RepoMessage = {
   id: string;
@@ -95,6 +98,16 @@ jest.mock("@/services/ai/chatThreadRepository", () => ({
     mockPersistAssistantChatMessage(params),
 }));
 
+jest.mock("@/services/offline/queue.repo", () => ({
+  getDeadLetterCount: (uid: string, options?: unknown) =>
+    mockGetDeadLetterCount(uid, options),
+  retryDeadLetterOps: (params: unknown) => mockRetryDeadLetterOps(params),
+}));
+
+jest.mock("@/services/offline/sync.engine", () => ({
+  pushQueue: (uid: string) => mockPushQueue(uid),
+}));
+
 const profileFixture: FormData = {
   unitsSystem: "metric",
   age: "30",
@@ -126,6 +139,23 @@ function buildCredits(overrides?: Partial<{
   };
 }
 
+async function renderChatHistoryHook(params?: {
+  uid?: string;
+  threadId?: string;
+  pageSize?: number;
+}) {
+  const uid = params?.uid ?? "user-1";
+  const threadId = params?.threadId ?? "local-thread";
+  const pageSize = params?.pageSize;
+  const rendered = renderHook(() =>
+    useChatHistory(uid, mealsFixture, profileFixture, threadId, pageSize ? { pageSize } : {}),
+  );
+  await waitFor(() => {
+    expect(mockGetDeadLetterCount).toHaveBeenCalled();
+  });
+  return rendered;
+}
+
 describe("useChatHistory", () => {
   beforeEach(() => {
     snapshotNext = null;
@@ -152,6 +182,9 @@ describe("useChatHistory", () => {
     });
     mockPersistUserChatMessage.mockResolvedValue();
     mockPersistAssistantChatMessage.mockResolvedValue();
+    mockGetDeadLetterCount.mockResolvedValue(0);
+    mockRetryDeadLetterOps.mockResolvedValue(0);
+    mockPushQueue.mockResolvedValue();
     mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
     mockRefreshCredits.mockResolvedValue(buildCredits({ balance: 0 }));
     mockCanAfford.mockReturnValue(true);
@@ -178,9 +211,7 @@ describe("useChatHistory", () => {
       refreshCredits: mockRefreshCredits,
     });
 
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", mealsFixture, profileFixture, "local-thread"),
-    );
+    const { result } = await renderChatHistoryHook();
 
     expect(result.current.canSend).toBe(false);
     expect(result.current.creditAllocation).toBe(100);
@@ -194,9 +225,7 @@ describe("useChatHistory", () => {
       .mockReturnValueOnce("user-msg")
       .mockReturnValueOnce("ai-msg");
 
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", mealsFixture, profileFixture, "local-thread"),
-    );
+    const { result } = await renderChatHistoryHook();
 
     let createdThreadId: string | null = null;
     await act(async () => {
@@ -228,9 +257,7 @@ describe("useChatHistory", () => {
       Object.assign(new Error("payment required"), { status: 402 }),
     );
 
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", mealsFixture, profileFixture, "local-thread"),
-    );
+    const { result } = await renderChatHistoryHook();
 
     await act(async () => {
       await result.current.send("hello");
@@ -250,9 +277,7 @@ describe("useChatHistory", () => {
       details: { reason: "OFF_TOPIC" },
     });
 
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", mealsFixture, profileFixture, "local-thread"),
-    );
+    const { result } = await renderChatHistoryHook();
 
     await act(async () => {
       await result.current.send("Flaga Boliwii");
@@ -267,11 +292,10 @@ describe("useChatHistory", () => {
   });
 
   it("maps incoming snapshots and loads next pages", async () => {
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", mealsFixture, profileFixture, "thread-1", {
-        pageSize: 2,
-      }),
-    );
+    const { result } = await renderChatHistoryHook({
+      threadId: "thread-1",
+      pageSize: 2,
+    });
 
     await waitFor(() => {
       expect(mockSubscribeToChatThreadMessages).toHaveBeenCalledTimes(1);
@@ -314,5 +338,45 @@ describe("useChatHistory", () => {
     });
 
     expect(result.current.messages.map((message) => message.id)).toEqual(["m1", "m2"]);
+  });
+
+  it("reads failed chat sync count and retries dead-letter ops", async () => {
+    mockGetDeadLetterCount.mockResolvedValueOnce(2).mockResolvedValueOnce(0);
+    mockRetryDeadLetterOps.mockResolvedValueOnce(2);
+
+    const { result } = await renderChatHistoryHook();
+
+    await waitFor(() => {
+      expect(result.current.failedSyncCount).toBe(2);
+    });
+
+    await act(async () => {
+      await result.current.retryFailedSyncOps();
+    });
+
+    expect(mockRetryDeadLetterOps).toHaveBeenCalledWith({
+      uid: "user-1",
+      kinds: ["persist_chat_message"],
+    });
+    expect(mockPushQueue).toHaveBeenCalledWith("user-1");
+  });
+
+  it("retries failed chat sync locally without push when offline", async () => {
+    mockGetDeadLetterCount.mockResolvedValueOnce(1).mockResolvedValueOnce(1);
+    mockRetryDeadLetterOps.mockResolvedValueOnce(1);
+    mockNetInfoFetch.mockResolvedValue({ isConnected: false });
+
+    const { result } = await renderChatHistoryHook();
+
+    await waitFor(() => {
+      expect(result.current.failedSyncCount).toBe(1);
+    });
+
+    await act(async () => {
+      await result.current.retryFailedSyncOps();
+    });
+
+    expect(mockRetryDeadLetterOps).toHaveBeenCalled();
+    expect(mockPushQueue).not.toHaveBeenCalled();
   });
 });

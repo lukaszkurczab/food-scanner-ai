@@ -6,6 +6,10 @@
     "custom": "Własny"
   },
   "offline": "Brak połączenia z internetem. Niektóre statystyki mogą być niedostępne lub nieaktualne.",
+  "offlineEmpty": {
+    "title": "Jesteś offline",
+    "desc": "Brak lokalnych danych statystyk. Połącz się z internetem, aby wczytać historię."
+  },
   "empty": {
     "title": "Brak danych",
     "desc": "Dodaj swój pierwszy posiłek, aby zobaczyć statystyki i postępy.",

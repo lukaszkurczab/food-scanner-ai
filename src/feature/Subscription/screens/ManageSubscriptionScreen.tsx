@@ -3,14 +3,16 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Platform,
 } from "react-native";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { BackTitleHeader, FullScreenLoader, Layout } from "@/components";
+import { BackTitleHeader, FullScreenLoader, Layout, PrimaryButton } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -44,6 +46,8 @@ export default function ManageSubscriptionScreen({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("profile");
+  const netInfo = useNetInfo();
+  const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
   const { credits, loading: creditsLoading } = useAiCreditsContext();
   const { isPremium, subscription, setDevPremium, refreshPremium } =
@@ -89,6 +93,40 @@ export default function ManageSubscriptionScreen({
   });
 
   if (!subscription) {
+    if (!isOnline) {
+      return (
+        <Layout>
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyTitle}>
+              {t("manageSubscription.unavailableTitle", {
+                defaultValue: "Subscription details unavailable",
+              })}
+            </Text>
+            <Text style={styles.emptyDescription}>
+              {t("manageSubscription.unavailableOfflineDesc", {
+                defaultValue:
+                  "You're offline and subscription details are not available locally yet.",
+              })}
+            </Text>
+            <PrimaryButton
+              label={t("common:retry")}
+              onPress={() => {
+                void refreshPremium();
+              }}
+              style={styles.emptyAction}
+            />
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => navigation.navigate("Profile")}
+            >
+              <Text style={styles.emptyBack}>
+                {t("common:back", { defaultValue: "Back" })}
+              </Text>
+            </Pressable>
+          </View>
+        </Layout>
+      );
+    }
     return (
       <Layout disableScroll>
         <FullScreenLoader />
@@ -398,5 +436,33 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.bold,
       fontSize: theme.typography.size.md,
       color: theme.text,
+    },
+    emptyWrap: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    emptyTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      textAlign: "center",
+    },
+    emptyDescription: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      textAlign: "center",
+      lineHeight: Math.round(theme.typography.size.sm * 1.5),
+    },
+    emptyAction: {
+      marginTop: theme.spacing.sm,
+      alignSelf: "stretch",
+    },
+    emptyBack: {
+      color: theme.accentSecondary,
+      fontFamily: theme.typography.fontFamily.medium,
+      textDecorationLine: "underline",
     },
   });
