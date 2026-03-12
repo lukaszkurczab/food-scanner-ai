@@ -5,6 +5,8 @@ import type { Meal, MealType } from "@/types/meal";
 import { autoMealName } from "@/utils/autoMealName";
 import { updateSavedMeal } from "@/feature/History/services/savedMealsService";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { getMyMealByCloudIdLocal } from "@/services/offline/myMeals.repo";
+import { getMealByCloudIdLocal } from "@/services/offline/meals.repo";
 
 type EditResultNavigation = StackNavigationProp<RootStackParamList, "EditResult">;
 
@@ -17,6 +19,7 @@ export function useEditResultState(params: {
   navigation: EditResultNavigation;
 }) {
   const { uid, meal, savedCloudId, setLastScreen, setPhotoUrl, navigation } = params;
+  const [localMeal, setLocalMeal] = useState<Meal | null>(meal);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showIngredients, setShowIngredients] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -26,10 +29,11 @@ export function useEditResultState(params: {
   const [addedAt, setAddedAt] = useState<Date>(new Date());
   const [imageError, setImageError] = useState(false);
   const [checkingImage, setCheckingImage] = useState(false);
+  const currentMeal = meal ?? localMeal;
 
-  const image = meal?.photoLocalPath ?? meal?.photoUrl ?? null;
-  const mealName = meal?.name || autoMealName();
-  const mealType: MealType = meal?.type || "breakfast";
+  const image = currentMeal?.photoLocalPath ?? currentMeal?.photoUrl ?? null;
+  const mealName = currentMeal?.name || autoMealName();
+  const mealType: MealType = currentMeal?.type || "breakfast";
 
   useEffect(() => {
     setImageError(false);
@@ -40,9 +44,29 @@ export function useEditResultState(params: {
     void setLastScreen(uid, "EditResult");
   }, [setLastScreen, uid]);
 
+  const reloadFromLocal = useCallback(async () => {
+    if (!uid || !savedCloudId) return false;
+    const [saved, history] = await Promise.all([
+      getMyMealByCloudIdLocal(uid, savedCloudId),
+      getMealByCloudIdLocal(uid, savedCloudId),
+    ]);
+    const resolved = saved ?? history;
+    if (!resolved) return false;
+    setLocalMeal(resolved);
+    return true;
+  }, [savedCloudId, uid]);
+
+  useEffect(() => {
+    if (meal) {
+      setLocalMeal(meal);
+      return;
+    }
+    void reloadFromLocal();
+  }, [meal, reloadFromLocal]);
+
   useEffect(() => {
     const checkLocalImage = async () => {
-      const photoUrl = meal?.photoLocalPath ?? meal?.photoUrl;
+      const photoUrl = currentMeal?.photoLocalPath ?? currentMeal?.photoUrl;
       if (!photoUrl) return;
 
       setCheckingImage(true);
@@ -63,39 +87,39 @@ export function useEditResultState(params: {
     };
 
     void checkLocalImage();
-  }, [meal?.photoLocalPath, meal?.photoUrl, setPhotoUrl]);
+  }, [currentMeal?.photoLocalPath, currentMeal?.photoUrl, setPhotoUrl]);
 
   const goShare = useCallback(() => {
-    if (!meal) return;
+    if (!currentMeal) return;
 
     navigation.navigate("MealShare", {
       meal: {
-        ...meal,
+        ...currentMeal,
         name: mealName,
         type: mealType,
         timestamp: selectedAt.toISOString(),
       },
       returnTo: "MealDetails",
     });
-  }, [meal, mealName, mealType, navigation, selectedAt]);
+  }, [currentMeal, mealName, mealType, navigation, selectedAt]);
 
   const handleAddPhoto = useCallback(() => {
-    if (!meal) return;
+    if (!currentMeal) return;
     navigation.navigate("SavedMealsCamera", {
-      id: meal.mealId,
-      meal,
+      id: currentMeal.mealId,
+      meal: currentMeal,
     });
-  }, [meal, navigation]);
+  }, [currentMeal, navigation]);
 
   const handleSave = useCallback(async () => {
-    if (!uid || !meal || saving || !savedCloudId) return;
+    if (!uid || !currentMeal || saving || !savedCloudId) return;
 
     setSaving(true);
     try {
       await updateSavedMeal({
         uid,
         cloudId: savedCloudId,
-        meal,
+        meal: currentMeal,
         name: mealName,
         type: mealType,
         timestampISO: selectedAt.toISOString(),
@@ -110,7 +134,7 @@ export function useEditResultState(params: {
     addedAt,
     mealName,
     mealType,
-    meal,
+    currentMeal,
     navigation,
     savedCloudId,
     uid,
@@ -140,7 +164,8 @@ export function useEditResultState(params: {
   }, []);
 
   return {
-    ready: !!meal && !!uid,
+    ready: !!currentMeal && !!uid,
+    meal: currentMeal,
     mealName,
     image,
     imageError,
@@ -161,5 +186,6 @@ export function useEditResultState(params: {
     closeCancelModal,
     toggleIngredients,
     onImageError,
+    reloadFromLocal,
   };
 }

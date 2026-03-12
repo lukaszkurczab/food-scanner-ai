@@ -1,6 +1,9 @@
 {
   "profilePicture": "Zdjęcie profilowe",
   "profilePictureDefault": "Domyślna ikona profilu",
+  "profileUnavailableTitle": "Profil jest niedostępny",
+  "profileUnavailableDesc": "Nie udało się teraz wczytać profilu. Spróbuj ponownie.",
+  "profileUnavailableOfflineDesc": "Jesteś offline i nie ma jeszcze lokalnych danych profilu.",
   "userSection": "Użytkownik",
   "changeUserData": "Edytuj dane użytkownika",
   "updateHealthSurvey": "Zaktualizuj ankietę żywieniową",
@@ -20,6 +23,13 @@
   "cancel": "Anuluj",
   "enterPassword": "Wpisz swoje hasło",
   "appVersion": "Wersja aplikacji",
+  "sync": {
+    "pendingTitle": "Synchronizacja w toku",
+    "conflictTitle": "Problem z synchronizacją",
+    "pending": "Zmiany profilu oczekują na synchronizację.",
+    "conflict": "Synchronizacja profilu nie powiodła się. Spróbujemy ponownie automatycznie.",
+    "retry": "Ponów teraz"
+  },
   "changeUserPhoto": "Zmień zdjęcie",
   "changeUsername": "Zmień nazwę użytkownika",
   "changeEmail": "Zmień e-mail",
@@ -85,6 +95,8 @@
     "startSubscription": "Rozpocznij subskrypcję",
     "billingUnavailable": "Rozliczenia niedostępne na tym urządzeniu.",
     "purchaseFailed": "Zakup nie powiódł się. Spróbuj ponownie.",
+    "unavailableTitle": "Szczegóły subskrypcji są niedostępne",
+    "unavailableOfflineDesc": "Jesteś offline, a szczegóły subskrypcji nie są jeszcze dostępne lokalnie.",
     "restorePurchases": "Przywróć zakupy",
     "inactiveSince": "Nieaktywna od",
     "store": {

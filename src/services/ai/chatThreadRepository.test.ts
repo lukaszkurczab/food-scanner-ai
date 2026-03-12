@@ -15,6 +15,7 @@ const mockUpsertChatThreadLocal = jest.fn<(...args: unknown[]) => Promise<void>>
 const mockUpsertChatMessageLocal = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockSetChatMessageSyncState = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockEnqueueChatMessagePersist = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockPullChatChanges = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockCaptureException = jest.fn<
   (message: string, context?: unknown, error?: unknown) => void
 >();
@@ -44,6 +45,10 @@ jest.mock("@/services/offline/queue.repo", () => ({
     mockEnqueueChatMessagePersist(...args),
 }));
 
+jest.mock("@/services/offline/sync.engine", () => ({
+  pullChatChanges: (...args: unknown[]) => mockPullChatChanges(...args),
+}));
+
 jest.mock("@/services/core/errorLogger", () => ({
   captureException: (message: string, context?: unknown, error?: unknown) =>
     mockCaptureException(message, context, error),
@@ -63,6 +68,7 @@ describe("services/ai/chatThreadRepository", () => {
     mockUpsertChatMessageLocal.mockResolvedValue();
     mockSetChatMessageSyncState.mockResolvedValue();
     mockEnqueueChatMessagePersist.mockResolvedValue();
+    mockPullChatChanges.mockResolvedValue();
     mockGet.mockResolvedValue({ items: [], nextBeforeUpdatedAt: null });
     mockPost.mockResolvedValue({ updated: true });
   });
@@ -196,5 +202,40 @@ describe("services/ai/chatThreadRepository", () => {
       }),
     });
     expect(page.nextCursor).toEqual({ beforeCreatedAt: 200 });
+  });
+
+  it("triggers chat pull on thread subscription when online", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { subscribeToChatThreads } = require("@/services/ai/chatThreadRepository");
+
+    const unsubscribe = subscribeToChatThreads({
+      userUid: "user-1",
+      onThreads: jest.fn(),
+      onError: jest.fn(),
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockPullChatChanges).toHaveBeenCalledWith("user-1");
+    unsubscribe();
+  });
+
+  it("does not trigger chat pull on thread subscription when offline", async () => {
+    mockNetInfoFetch.mockResolvedValue({ isConnected: false });
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { subscribeToChatThreads } = require("@/services/ai/chatThreadRepository");
+
+    const unsubscribe = subscribeToChatThreads({
+      userUid: "user-1",
+      onThreads: jest.fn(),
+      onError: jest.fn(),
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockPullChatChanges).not.toHaveBeenCalled();
+    unsubscribe();
   });
 });

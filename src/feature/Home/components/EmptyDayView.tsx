@@ -7,12 +7,14 @@ import { useTranslation } from "react-i18next";
 
 type Props = {
   isToday: boolean;
+  isOffline?: boolean;
   onAddMeal?: () => void;
   onOpenHistory?: () => void;
 };
 
 export default function EmptyDayView({
   isToday,
+  isOffline = false,
   onAddMeal,
   onOpenHistory,
 }: Props) {
@@ -25,13 +27,18 @@ export default function EmptyDayView({
         {t("emptyDay.title")}
       </Text>
 
+      {(isToday || isOffline) && (
+        <Text style={styles.subtitle}>
+          {isOffline
+            ? isToday
+              ? t("emptyDay.subtitle_offline_today")
+              : t("emptyDay.subtitle_offline_past")
+            : t("emptyDay.subtitle_today")}
+        </Text>
+      )}
+
       {isToday ? (
         <>
-          <Text
-            style={styles.subtitle}
-          >
-            {t("emptyDay.subtitle_today")}
-          </Text>
           {onAddMeal ? (
             <PrimaryButton
               label={t("emptyDay.addMeal")}

@@ -5,6 +5,7 @@ import {
   SectionList,
   RefreshControl,
   Text,
+  Pressable,
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
@@ -80,6 +81,46 @@ const HistoryRow = React.memo(
 );
 HistoryRow.displayName = "HistoryRow";
 
+type DeadLetterBannerProps = {
+  title: string;
+  description: string;
+  actionLabel: string;
+  retrying: boolean;
+  onRetry: () => void;
+  theme: ReturnType<typeof useTheme>;
+};
+
+const DeadLetterBannerComponent = ({
+  title,
+  description,
+  actionLabel,
+  retrying,
+  onRetry,
+  theme,
+}: DeadLetterBannerProps) => {
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  return (
+    <View style={styles.deadLetterBanner}>
+      <View style={styles.deadLetterTextWrap}>
+        <Text style={styles.deadLetterTitle}>{title}</Text>
+        <Text style={styles.deadLetterDescription}>{description}</Text>
+      </View>
+      <View style={styles.deadLetterActionWrap}>
+        <Pressable
+          onPress={onRetry}
+          disabled={retrying}
+          style={retrying ? styles.deadLetterActionDisabled : undefined}
+        >
+          <Text style={styles.deadLetterAction}>{retrying ? "…" : actionLabel}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+const DeadLetterBanner = React.memo(DeadLetterBannerComponent);
+DeadLetterBanner.displayName = "DeadLetterBanner";
+
 export default function HistoryListScreen({
   navigation,
 }: {
@@ -109,6 +150,17 @@ export default function HistoryListScreen({
     [state.onMealPress, theme],
   );
 
+  const deadLetterBanner = state.deadLetterBanner ? (
+    <DeadLetterBanner
+      title={state.deadLetterBanner.title}
+      description={state.deadLetterBanner.description}
+      actionLabel={state.deadLetterBanner.actionLabel}
+      retrying={state.retryingFailedSync}
+      onRetry={state.retryFailedSyncOps}
+      theme={theme}
+    />
+  ) : null;
+
   if (state.dataState === "loading") {
     return (
       <View style={styles.loadingState}>
@@ -120,6 +172,7 @@ export default function HistoryListScreen({
   if (state.dataState !== "ready") {
     return (
       <Layout>
+        {deadLetterBanner}
         {state.showFilters ? (
           <FilterPanel
             scope="history"
@@ -142,6 +195,7 @@ export default function HistoryListScreen({
 
   return (
     <Layout disableScroll>
+      {deadLetterBanner}
       {state.showFilters ? (
         <View style={styles.fullHeight}>
           <FilterPanel
@@ -224,6 +278,46 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.textSecondary,
       fontSize: theme.typography.size.md,
       fontFamily: theme.typography.fontFamily.regular,
+    },
+    deadLetterBanner: {
+      borderWidth: 1,
+      borderRadius: theme.rounded.md,
+      borderColor: theme.border,
+      backgroundColor: theme.warning.background,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      marginBottom: theme.spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    deadLetterTextWrap: {
+      flex: 1,
+      gap: theme.spacing.xs,
+    },
+    deadLetterTitle: {
+      color: theme.warning.text,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.sm,
+    },
+    deadLetterDescription: {
+      color: theme.warning.text,
+      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.sm,
+    },
+    deadLetterActionWrap: {
+      minWidth: 72,
+      alignItems: "flex-end",
+    },
+    deadLetterAction: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.sm,
+      textDecorationLine: "underline",
+    },
+    deadLetterActionDisabled: {
+      opacity: 0.65,
     },
     mealRow: { marginBottom: theme.spacing.sm },
     topBar: { flexDirection: "row" },

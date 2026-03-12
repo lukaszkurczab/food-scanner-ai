@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { View, FlatList, RefreshControl, StyleSheet } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import type { Meal } from "@/types/meal";
@@ -34,7 +35,9 @@ export default function SelectSavedMealScreen({
     saveDraft,
     setLastScreen,
   } = useMealDraftContext();
-  const { t } = useTranslation(["meals"]);
+  const { t } = useTranslation(["meals", "common"]);
+  const netInfo = useNetInfo();
+  const isOnline = netInfo.isConnected !== false;
 
   const {
     step,
@@ -91,15 +94,22 @@ export default function SelectSavedMealScreen({
   }
 
   if (!pageItems.length) {
+    const isOfflineEmpty = !isOnline && !queryText.trim();
     return (
       <Layout>
         <View style={styles.searchWrap}>
           <SearchBox value={queryText} onChange={setQueryText} />
         </View>
         <EmptyState
-          title={t("meals:noSavedMeals", "No saved meals")}
+          title={
+            isOfflineEmpty
+              ? t("common:offline.title")
+              : t("meals:noSavedMeals", "No saved meals")
+          }
           description={
-            queryText
+            isOfflineEmpty
+              ? t("savedMeals.offlineEmpty", { ns: "meals" })
+              : queryText
               ? t("meals:tryDifferentSearch", "Try a different search.")
               : t("meals:saveMealsToReuse", "Save meals to reuse them later.")
           }

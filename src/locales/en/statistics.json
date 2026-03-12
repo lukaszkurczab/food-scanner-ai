@@ -6,6 +6,10 @@
     "custom": "Custom"
   },
   "offline": "You’re offline. Some stats may be unavailable or outdated.",
+  "offlineEmpty": {
+    "title": "You're offline",
+    "desc": "No local stats data available. Reconnect to load your history."
+  },
   "empty": {
     "title": "No data yet",
     "desc": "Log your first meal to see your stats and progress.",

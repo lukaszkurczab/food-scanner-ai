@@ -9,15 +9,18 @@ import { useUser } from "@hooks/useUser";
 import type { UserData } from "@/types";
 
 import { runMigrations } from "@/services/offline/db";
-import { startSyncLoop } from "@/services/offline/sync.engine";
+import { startSyncLoop, stopSyncLoop } from "@/services/offline/sync.engine";
+import { cleanupTransientOfflineAssets } from "@/services/offline/fileCleanup";
 
 export type UserContextType = {
   userData: UserData | null;
   loadingUser: boolean;
   syncState: "synced" | "pending" | "conflict";
+  retryingProfileSync: boolean;
   refreshUser: () => Promise<UserData | null>;
   getUserData: () => Promise<UserData | null>;
   updateUser: (data: Partial<UserData>) => Promise<void>;
+  retryProfileSync: () => Promise<void>;
   syncUserProfile: () => Promise<void>;
   deleteUser: (password?: string) => Promise<void>;
   setAvatar: (photoUri: string) => Promise<void>;
@@ -36,9 +39,11 @@ const UserContext = createContext<UserContextType>({
   userData: null,
   loadingUser: true,
   syncState: "pending",
+  retryingProfileSync: false,
   getUserData: async () => null,
   refreshUser: async () => null,
   updateUser: async () => {},
+  retryProfileSync: async () => {},
   syncUserProfile: async () => {},
   deleteUser: async () => {},
   setAvatar: async () => {},
@@ -58,9 +63,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     userData,
     loading: loadingUser,
     syncState,
+    retryingProfileSync,
     getUserProfile,
     fetchUserFromCloud,
     updateUserProfile,
+    retryProfileSync,
     syncUserProfile,
     deleteUser,
     setAvatar,
@@ -82,11 +89,18 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     } catch {
       // Migration bootstrap is best-effort.
     }
+    void cleanupTransientOfflineAssets();
   }, []);
 
   useEffect(() => {
-    if (!uid) return;
+    if (!uid) {
+      stopSyncLoop();
+      return;
+    }
     startSyncLoop(uid);
+    return () => {
+      stopSyncLoop();
+    };
   }, [uid]);
 
   return (
@@ -95,9 +109,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         userData,
         loadingUser,
         syncState,
+        retryingProfileSync,
         refreshUser,
         getUserData: getUserProfile,
         updateUser: updateUserProfile,
+        retryProfileSync,
         syncUserProfile,
         deleteUser,
         setAvatar,

@@ -4,23 +4,43 @@ import type { MealRow } from "./types";
 import { emit } from "@/services/core/events";
 import type { SQLiteBindValue } from "expo-sqlite";
 
+function toEpochMs(value?: string | null): number {
+  if (!value) return Date.now();
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : Date.now();
+}
+
+function normalizeMealSyncState(value: Meal["syncState"]): Meal["syncState"] {
+  if (value === "synced") return "synced";
+  if (value === "failed") return "failed";
+  if (value === "conflict") return "conflict";
+  return "pending";
+}
+
 export async function upsertMealLocal(meal: Meal): Promise<void> {
   const db = getDB();
   const tags = JSON.stringify(meal.tags || []);
+  const ingredients = JSON.stringify(
+    Array.isArray(meal.ingredients) ? meal.ingredients : []
+  );
   const createdAt = meal.createdAt ?? meal.timestamp ?? meal.updatedAt;
+  const syncState = normalizeMealSyncState(meal.syncState);
+  const lastSyncedAt = syncState === "synced" ? toEpochMs(meal.updatedAt) : 0;
 
   db.runSync(
     `INSERT INTO meals (
       cloud_id, meal_id, user_uid, timestamp, type, name,
+      ingredients,
       photo_url, image_local, image_id,
       totals_kcal, totals_protein, totals_carbs, totals_fat,
-      deleted, created_at, updated_at, source, notes, tags
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      deleted, created_at, updated_at, last_synced_at, sync_state, source, notes, tags
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(cloud_id) DO UPDATE SET
       meal_id=excluded.meal_id,
       timestamp=excluded.timestamp,
       type=excluded.type,
       name=excluded.name,
+      ingredients=excluded.ingredients,
       photo_url=excluded.photo_url,
       image_local=excluded.image_local,
       image_id=COALESCE(excluded.image_id, image_id),
@@ -31,6 +51,11 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       deleted=excluded.deleted,
       created_at=COALESCE(excluded.created_at, created_at),
       updated_at=excluded.updated_at,
+      last_synced_at=CASE
+        WHEN excluded.sync_state='synced' THEN excluded.last_synced_at
+        ELSE meals.last_synced_at
+      END,
+      sync_state=excluded.sync_state,
       source=excluded.source,
       notes=excluded.notes,
       tags=excluded.tags`,
@@ -41,6 +66,7 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       meal.timestamp,
       meal.type,
       meal.name,
+      ingredients,
       meal.photoUrl ?? null,
       meal.photoLocalPath || null,
       meal.imageId ?? null,
@@ -51,6 +77,8 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       meal.deleted ? 1 : 0,
       createdAt,
       meal.updatedAt,
+      lastSyncedAt,
+      syncState,
       meal.source ?? null,
       meal.notes ?? null,
       tags,
@@ -91,6 +119,28 @@ function parseTags(raw: string | null): string[] {
   }
 }
 
+function parseIngredients(raw: string | null): Meal["ingredients"] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as Meal["ingredients"]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseMealSyncState(raw: string | null | undefined): Meal["syncState"] {
+  if (
+    raw === "synced" ||
+    raw === "pending" ||
+    raw === "conflict" ||
+    raw === "failed"
+  ) {
+    return raw;
+  }
+  return "pending";
+}
+
 function rowToMeal(r: MealRow): Meal {
   return {
     userUid: r.user_uid,
@@ -98,10 +148,11 @@ function rowToMeal(r: MealRow): Meal {
     timestamp: r.timestamp,
     type: parseMealType(r.type),
     name: r.name,
-    ingredients: [],
+    ingredients: parseIngredients(r.ingredients),
     createdAt: r.created_at ?? r.timestamp ?? r.updated_at,
     updatedAt: r.updated_at,
-    syncState: "pending",
+    lastSyncedAt: Number(r.last_synced_at ?? 0),
+    syncState: parseMealSyncState(r.sync_state),
     source: parseMealSource(r.source),
     imageId: r.image_id ?? null,
     photoUrl: r.photo_url ?? null,
@@ -212,11 +263,48 @@ export async function markDeletedLocal(
   updatedAt: string
 ): Promise<void> {
   const db = getDB();
-  db.runSync(`UPDATE meals SET deleted=1, updated_at=? WHERE cloud_id=?`, [
-    updatedAt,
-    cloudId,
-  ]);
+  db.runSync(
+    `UPDATE meals
+     SET deleted=1, updated_at=?, sync_state='pending'
+     WHERE cloud_id=?`,
+    [updatedAt, cloudId]
+  );
   emit("meal:local:deleted", { cloudId, ts: updatedAt });
+}
+
+export async function setMealSyncStateLocal(params: {
+  uid: string;
+  cloudId: string;
+  syncState: Meal["syncState"];
+  updatedAt?: string;
+}): Promise<void> {
+  if (!params.uid || !params.cloudId) return;
+  const db = getDB();
+  const syncState = normalizeMealSyncState(params.syncState);
+  if (syncState === "synced") {
+    db.runSync(
+      `UPDATE meals
+       SET sync_state=?, last_synced_at=?
+       WHERE user_uid=? AND cloud_id=?`,
+      [
+        syncState,
+        toEpochMs(params.updatedAt ?? new Date().toISOString()),
+        params.uid,
+        params.cloudId,
+      ]
+    );
+  } else {
+    db.runSync(
+      `UPDATE meals
+       SET sync_state=?
+       WHERE user_uid=? AND cloud_id=?`,
+      [syncState, params.uid, params.cloudId]
+    );
+  }
+  emit("meal:local:upserted", {
+    cloudId: params.cloudId,
+    ts: params.updatedAt ?? new Date().toISOString(),
+  });
 }
 
 export async function getMealByCloudIdLocal(

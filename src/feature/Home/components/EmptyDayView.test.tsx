@@ -38,4 +38,28 @@ describe("EmptyDayView", () => {
     fireEvent.press(getByText("translated:emptyDay.openHistory"));
     expect(onOpenHistory).toHaveBeenCalledTimes(1);
   });
+
+  it("renders today offline copy", () => {
+    const onAddMeal = jest.fn();
+    const { getByText } = renderWithTheme(
+      <EmptyDayView isToday isOffline onAddMeal={onAddMeal} />,
+    );
+
+    expect(getByText("translated:emptyDay.title")).toBeTruthy();
+    expect(getByText("translated:emptyDay.subtitle_offline_today")).toBeTruthy();
+    fireEvent.press(getByText("translated:emptyDay.addMeal"));
+    expect(onAddMeal).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders past day offline copy", () => {
+    const onOpenHistory = jest.fn();
+    const { getByText } = renderWithTheme(
+      <EmptyDayView isToday={false} isOffline onOpenHistory={onOpenHistory} />,
+    );
+
+    expect(getByText("translated:emptyDay.title")).toBeTruthy();
+    expect(getByText("translated:emptyDay.subtitle_offline_past")).toBeTruthy();
+    fireEvent.press(getByText("translated:emptyDay.openHistory"));
+    expect(onOpenHistory).toHaveBeenCalledTimes(1);
+  });
 });

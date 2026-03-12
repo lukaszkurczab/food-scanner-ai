@@ -8,37 +8,19 @@ import {
 } from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import {
-  addOrUpdateMeal,
   deleteMealInFirestore,
   getMealsPageFiltered,
   subscribeMeals,
 } from "@/services/meals/mealService";
 
-const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
 const mockGetMealsPageLocal = jest.fn<(...args: unknown[]) => Promise<Meal[]>>();
 const mockGetMealsPageLocalFiltered = jest.fn<
   (...args: unknown[]) => Promise<{ items: Meal[]; nextBefore: string | null }>
 >();
 const mockFetchMealsPageRemote = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockSaveMealRemote = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockMarkMealDeletedRemote = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockProcessAndUpload = jest.fn<
-  (...args: unknown[]) => Promise<{ imageId: string; cloudUrl: string }>
->();
 const mockEmit = jest.fn<(event: string, payload: Record<string, unknown>) => void>();
 const mockOn = jest.fn<(...args: unknown[]) => () => void>();
-const mockUuid = jest.fn<() => string>();
-
-jest.mock("@react-native-community/netinfo", () => ({
-  __esModule: true,
-  default: {
-    fetch: (...args: []) => mockNetInfoFetch(...args),
-  },
-}));
-
-jest.mock("uuid", () => ({
-  v4: () => mockUuid(),
-}));
 
 jest.mock("@/services/offline/meals.repo", () => ({
   getMealsPageLocal: (...args: unknown[]) => mockGetMealsPageLocal(...args),
@@ -50,12 +32,10 @@ jest.mock("@/services/meals/mealsRepository", () => ({
   extractMealTimestampCursor: (cursor: string | null) =>
     typeof cursor === "string" ? cursor.split("|")[0] : null,
   fetchMealsPageRemote: (...args: unknown[]) => mockFetchMealsPageRemote(...args),
-  saveMealRemote: (...args: unknown[]) => mockSaveMealRemote(...args),
   markMealDeletedRemote: (...args: unknown[]) => mockMarkMealDeletedRemote(...args),
 }));
 
 jest.mock("@/services/meals/mealService.images", () => ({
-  processAndUpload: (...args: unknown[]) => mockProcessAndUpload(...args),
   ensureLocalMealPhoto: jest.fn(),
   localPhotoPath: jest.fn(),
 }));
@@ -113,25 +93,17 @@ describe("services/mealService", () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-03-03T12:00:00.000Z"));
-    mockNetInfoFetch.mockResolvedValue({ isConnected: true });
     mockGetMealsPageLocal.mockResolvedValue([]);
     mockFetchMealsPageRemote.mockResolvedValue({ items: [], nextCursor: null });
-    mockSaveMealRemote.mockResolvedValue(undefined);
     mockMarkMealDeletedRemote.mockResolvedValue(undefined);
     mockOn.mockReturnValue(jest.fn());
-    mockProcessAndUpload.mockResolvedValue({
-      imageId: "image-1",
-      cloudUrl: "https://cdn/meal.jpg",
-    });
-    mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
   });
 
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  it("uses local history repo when offline and clamps access window", async () => {
-    mockNetInfoFetch.mockResolvedValueOnce({ isConnected: false });
+  it("uses local history repo and clamps access window", async () => {
     mockGetMealsPageLocalFiltered.mockResolvedValueOnce({
       items: [baseMeal()],
       nextBefore: "2026-03-02T12:00:00.000Z",
@@ -171,11 +143,10 @@ describe("services/mealService", () => {
     });
   });
 
-  it("delegates online history fetch to meals repository with normalized filters", async () => {
-    const cursor = { id: "cursor-1" };
-    mockFetchMealsPageRemote.mockResolvedValueOnce({
+  it("uses local history repo for filtered pagination even when online", async () => {
+    mockGetMealsPageLocalFiltered.mockResolvedValueOnce({
       items: [baseMeal({ cloudId: "cloud-2" })],
-      nextCursor: cursor,
+      nextBefore: "2026-03-01T12:00:00.000Z",
     });
 
     const result = await getMealsPageFiltered("u1", {
@@ -189,21 +160,21 @@ describe("services/mealService", () => {
 
     const expectedWindow = buildClampedWindow(30);
 
-    expect(mockFetchMealsPageRemote).toHaveBeenCalledWith({
-      uid: "u1",
-      pageSize: 10,
-      cursor: null,
+    expect(mockGetMealsPageLocalFiltered).toHaveBeenCalledWith("u1", {
+      limit: 10,
+      beforeISO: null,
       filters: {
         calories: [100, 500],
-        dateRange: {
-          start: expectedWindow.start,
-          end: expectedWindow.end,
-        },
+        protein: undefined,
+        carbs: undefined,
+        fat: undefined,
+        dateRange: { start: expectedWindow.start, end: expectedWindow.end },
       },
     });
+    expect(mockFetchMealsPageRemote).not.toHaveBeenCalled();
     expect(result).toEqual({
       items: [baseMeal({ cloudId: "cloud-2" })],
-      nextCursor: cursor,
+      nextCursor: "2026-03-01T12:00:00.000Z",
     });
   });
 
@@ -230,74 +201,6 @@ describe("services/mealService", () => {
     expect(unsubscribe1).toHaveBeenCalled();
     expect(unsubscribe2).toHaveBeenCalled();
     expect(unsubscribe3).toHaveBeenCalled();
-  });
-
-  it("uploads local meal photos and saves normalized meal remotely", async () => {
-    const saved = await addOrUpdateMeal(
-      "u1",
-      baseMeal({
-        userUid: "ignored",
-        mealId: undefined,
-        cloudId: undefined,
-        photoUrl: "file:///meal.jpg",
-        ingredients: [
-          {
-            id: "i1",
-            name: "A",
-            amount: 100,
-            kcal: 100,
-            protein: 10,
-            fat: 3,
-            carbs: 4,
-          },
-          {
-            id: "i2",
-            name: "B",
-            amount: 100,
-            kcal: 50,
-            protein: 2,
-            fat: 1,
-            carbs: 6,
-          },
-        ],
-      }),
-      { alsoSaveToMyMeals: true },
-    );
-
-    expect(mockProcessAndUpload).toHaveBeenCalledWith("u1", "file:///meal.jpg");
-    expect(mockSaveMealRemote).toHaveBeenCalledWith({
-      uid: "u1",
-      meal: expect.objectContaining({
-        userUid: "u1",
-        cloudId: "uuid-1",
-        mealId: "uuid-2",
-        imageId: "image-1",
-        photoUrl: "https://cdn/meal.jpg",
-        syncState: "pending",
-        totals: {
-          kcal: 150,
-          protein: 12,
-          fat: 4,
-          carbs: 10,
-        },
-      }),
-      alsoSaveToMyMeals: true,
-    });
-    expect(mockEmit).toHaveBeenCalledWith(
-      "meal:added",
-      expect.objectContaining({
-        uid: "u1",
-      }),
-    );
-    expect(saved).toEqual(
-      expect.objectContaining({
-        cloudId: "uuid-1",
-        mealId: "uuid-2",
-        imageId: "image-1",
-        photoUrl: "https://cdn/meal.jpg",
-        syncState: "synced",
-      }),
-    );
   });
 
   it("marks meals as deleted through repository helper", async () => {

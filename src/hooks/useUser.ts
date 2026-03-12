@@ -7,7 +7,6 @@ import {
   changePasswordService,
   deleteAccountService,
   exportUserData as fetchUserExportData,
-  uploadAndSaveAvatar,
 } from "@/services/user/userService";
 import { assertNoUndefined } from "@/utils/findUndefined";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,13 +15,26 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
+import { emit, on } from "@/services/core/events";
 import {
   fetchUserProfileRemote,
   subscribeToUserProfile,
-  updateUserProfileRemote,
 } from "@/services/user/userProfileRepository";
+import {
+  getSyncCounts,
+  enqueueUserAvatarUpload,
+  enqueueUserProfileUpdate,
+  retryDeadLetterOps,
+} from "@/services/offline/queue.repo";
+import { pushQueue } from "@/services/offline/sync.engine";
 import { sanitizeUserProfilePatch } from "@/services/user/profilePatch";
 import i18n from "@/i18n";
+import type { QueueKind } from "@/services/offline/queue.repo";
+
+const PROFILE_SYNC_KINDS: QueueKind[] = [
+  "update_user_profile",
+  "upload_user_avatar",
+];
 
 const isLocalUri = (value: string | null | undefined): value is string =>
   !!value &&
@@ -110,6 +122,10 @@ async function resolveExistingAvatarPath(
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncState, setSyncState] = useState<"synced" | "pending" | "conflict">(
+    "synced",
+  );
+  const [retryingProfileSync, setRetryingProfileSync] = useState(false);
   const [language, setLanguage] = useState<string>(() =>
     normalizeLanguageCode(i18n.resolvedLanguage ?? i18n.language)
   );
@@ -126,6 +142,20 @@ export function useUser(uid: string) {
       avatarHydrationUrlRef.current = "";
       latestAvatarRequestUrlRef.current = "";
       lastSeenAvatarUrlRef.current = "";
+      setSyncState("synced");
+    }
+  }, [uid]);
+
+  const refreshProfileSyncState = useCallback(async () => {
+    if (!uid) {
+      setSyncState("synced");
+      return;
+    }
+    try {
+      const { dead, pending } = await getSyncCounts(uid, { kinds: PROFILE_SYNC_KINDS });
+      setSyncState(dead > 0 ? "conflict" : pending > 0 ? "pending" : "synced");
+    } catch {
+      // Keep previous sync state if local queue inspection fails.
     }
   }, [uid]);
 
@@ -290,6 +320,10 @@ export function useUser(uid: string) {
     };
   }, [uid, maybeHydrateAvatar]);
 
+  useEffect(() => {
+    void refreshProfileSyncState();
+  }, [refreshProfileSyncState]);
+
   const getUserProfile = useCallback(async () => {
     return userData;
   }, [userData]);
@@ -348,14 +382,20 @@ export function useUser(uid: string) {
     }
   }, [uid, maybeHydrateAvatar]);
 
+  const pushPendingChanges = useCallback(async () => {
+    setSyncState("pending");
+    const net = await NetInfo.fetch();
+    if (!net.isConnected) return;
+    await pushQueue(uid);
+    await refreshProfileSyncState();
+  }, [uid, refreshProfileSyncState]);
+
   const updateUserProfile = useCallback(
     async (patch: Partial<UserData>) => {
       if (!uid) return;
       const payload = sanitizeUserProfilePatch(patch);
       assertNoUndefined(payload, "updateUserProfile payload");
-      if (Object.keys(payload).length > 0) {
-        await updateUserProfileRemote(uid, payload);
-      }
+
       setUserData((prev) =>
         prev ? { ...prev, ...patch } : ({ uid, ...patch } as UserData)
       );
@@ -383,8 +423,14 @@ export function useUser(uid: string) {
       } catch {
         // Ignore cache write failures for profile mirror.
       }
+
+      if (Object.keys(payload).length === 0) return;
+      await enqueueUserProfileUpdate(uid, payload, {
+        updatedAt: new Date().toISOString(),
+      });
+      await pushPendingChanges();
     },
-    [uid]
+    [uid, pushPendingChanges]
   );
 
   const mirrorProfileLocally = useCallback(
@@ -410,6 +456,45 @@ export function useUser(uid: string) {
     [uid]
   );
 
+  useEffect(() => {
+    if (!uid) return;
+    const unsub = on<{
+      uid?: string;
+      avatarUrl?: string;
+      avatarLocalPath?: string;
+      avatarlastSyncedAt?: string;
+    }>("user:avatar:synced", (payload) => {
+      if (!payload || payload.uid !== uid) return;
+      if (payload.avatarUrl) {
+        lastSeenAvatarUrlRef.current = payload.avatarUrl;
+      }
+      void mirrorProfileLocally({
+        avatarUrl: payload.avatarUrl || "",
+        avatarLocalPath: payload.avatarLocalPath || "",
+        avatarlastSyncedAt: payload.avatarlastSyncedAt || "",
+      });
+      void refreshProfileSyncState();
+    });
+    return () => {
+      unsub();
+    };
+  }, [uid, mirrorProfileLocally, refreshProfileSyncState]);
+
+  useEffect(() => {
+    if (!uid) return;
+    const handler = (payload: { uid?: string } | undefined) => {
+      if (!payload || payload.uid !== uid) return;
+      void refreshProfileSyncState();
+    };
+    const unsubs = ([
+      "user:profile:synced",
+      "user:profile:failed",
+      "user:avatar:failed",
+      "sync:op:retried",
+    ] as const).map((event) => on<{ uid?: string }>(event, handler));
+    return () => { unsubs.forEach((u) => u()); };
+  }, [uid, refreshProfileSyncState]);
+
   const setAvatar = useCallback(
     async (photoUri: string) => {
       if (!uid) return;
@@ -423,21 +508,44 @@ export function useUser(uid: string) {
         prev ? { ...prev, avatarLocalPath: localPath } : prev
       );
       avatarLocalPathRef.current = localPath;
-      const net = await NetInfo.fetch();
-      if (!net.isConnected) {
-        await mirrorProfileLocally({ avatarLocalPath: localPath });
-        return;
-      }
-      const avatar = await uploadAndSaveAvatar({ userUid: uid, localUri: localPath });
-      lastSeenAvatarUrlRef.current = avatar.avatarUrl;
-      await mirrorProfileLocally({
-        avatarUrl: avatar.avatarUrl,
-        avatarLocalPath: localPath,
-        avatarlastSyncedAt: avatar.avatarlastSyncedAt,
+      await mirrorProfileLocally({ avatarLocalPath: localPath });
+      await enqueueUserAvatarUpload(uid, {
+        localPath,
+        updatedAt: new Date().toISOString(),
       });
+      try {
+        await pushPendingChanges();
+      } catch {
+        // Keep optimistic local avatar while upload retries in queue.
+      }
     },
-    [uid, mirrorProfileLocally]
+    [uid, mirrorProfileLocally, pushPendingChanges]
   );
+
+  const retryProfileSync = useCallback(async () => {
+    if (!uid || retryingProfileSync) return;
+    setRetryingProfileSync(true);
+    try {
+      const retried = await retryDeadLetterOps({
+        uid,
+        kinds: PROFILE_SYNC_KINDS,
+      });
+      if (retried > 0) {
+        setSyncState("pending");
+      }
+      const net = await NetInfo.fetch();
+      if (retried > 0 && net.isConnected) {
+        await pushQueue(uid);
+      }
+      await refreshProfileSyncState();
+    } catch {
+      emit("ui:toast", {
+        text: i18n.t("common:unknownError"),
+      });
+    } finally {
+      setRetryingProfileSync(false);
+    }
+  }, [retryingProfileSync, uid, refreshProfileSyncState]);
 
   const sendUserToCloud = useCallback(async () => {
     await fetchUserFromCloud();
@@ -482,8 +590,12 @@ export function useUser(uid: string) {
       await i18n.changeLanguage(nextLanguage);
       if (!uid) return;
       await mirrorProfileLocally({ language: nextLanguage });
+      await enqueueUserProfileUpdate(uid, { language: nextLanguage }, {
+        updatedAt: new Date().toISOString(),
+      });
+      await pushPendingChanges();
     },
-    [mirrorProfileLocally, uid]
+    [mirrorProfileLocally, uid, pushPendingChanges]
   );
 
   const exportUserData = useCallback(async (): Promise<string | void> => {
@@ -578,13 +690,15 @@ export function useUser(uid: string) {
     () => ({
       userData,
       loading,
-      syncState: "synced" as const,
+      syncState,
+      retryingProfileSync,
       getUserProfile,
       fetchUserFromCloud,
       updateUserProfile,
       sendUserToCloud,
       syncUserProfile,
       markUserAsSynced,
+      retryProfileSync,
       deleteUser,
       setAvatar,
       changeUsername,
@@ -597,12 +711,15 @@ export function useUser(uid: string) {
     [
       userData,
       loading,
+      syncState,
+      retryingProfileSync,
       getUserProfile,
       fetchUserFromCloud,
       updateUserProfile,
       sendUserToCloud,
       syncUserProfile,
       markUserAsSynced,
+      retryProfileSync,
       deleteUser,
       setAvatar,
       changeUsername,

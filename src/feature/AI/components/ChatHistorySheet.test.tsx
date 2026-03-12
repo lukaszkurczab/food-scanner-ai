@@ -14,23 +14,31 @@ import type { ChatThread } from "@/types";
 
 const mockSubscribeToChatThreads = jest.fn();
 const mockUuid = jest.fn<() => string>();
+const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
 const mockDrawerContainer = View;
 const mockCreateElement = React.createElement;
 
 let onThreads: ((items: ChatThread[]) => void) | null = null;
+let onError: (() => void) | null = null;
 
 jest.mock("@/services/ai/chatThreadRepository", () => ({
   subscribeToChatThreads: (params: {
     onThreads: (items: ChatThread[]) => void;
+    onError?: () => void;
   }) => {
     mockSubscribeToChatThreads(params);
     onThreads = params.onThreads;
+    onError = params.onError || null;
     return jest.fn();
   },
 }));
 
 jest.mock("uuid", () => ({
   v4: () => mockUuid(),
+}));
+
+jest.mock("@react-native-community/netinfo", () => ({
+  useNetInfo: () => mockUseNetInfo(),
 }));
 
 jest.mock("@/components/Drawer", () => ({
@@ -54,6 +62,8 @@ describe("ChatHistorySheet", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     onThreads = null;
+    onError = null;
+    mockUseNetInfo.mockReturnValue({ isConnected: true });
     mockUuid.mockReturnValue("thread-uuid");
   });
 
@@ -111,5 +121,44 @@ describe("ChatHistorySheet", () => {
     fireEvent.press(threadTitle);
     expect(onSelectThread).toHaveBeenCalledWith("thread-2");
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("shows offline-empty copy when there are no local threads and device is offline", () => {
+    mockUseNetInfo.mockReturnValue({ isConnected: false });
+    const { getByText } = renderWithTheme(
+      <ChatHistorySheet
+        open
+        onClose={jest.fn()}
+        userUid="user-1"
+        activeThreadId=""
+        onSelectThread={jest.fn()}
+      />,
+    );
+
+    act(() => {
+      onThreads?.([]);
+    });
+
+    expect(getByText("translated:offline.title")).toBeTruthy();
+    expect(getByText("translated:history.offlineEmpty")).toBeTruthy();
+  });
+
+  it("shows refresh error copy when threads subscription fails", () => {
+    const { getByText } = renderWithTheme(
+      <ChatHistorySheet
+        open
+        onClose={jest.fn()}
+        userUid="user-1"
+        activeThreadId=""
+        onSelectThread={jest.fn()}
+      />,
+    );
+
+    act(() => {
+      onError?.();
+    });
+
+    expect(getByText("translated:history.errorTitle")).toBeTruthy();
+    expect(getByText("translated:history.refreshError")).toBeTruthy();
   });
 });

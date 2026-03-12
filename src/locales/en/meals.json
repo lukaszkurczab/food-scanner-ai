@@ -82,6 +82,13 @@
   "history": {
     "loadError": "Could not load history.",
     "syncError": "Synchronization failed. Please try again.",
+    "syncSynced": "Synced",
+    "syncSyncedAt": "Synced {{time}}",
+    "syncPending": "Pending",
+    "syncFailed": "Failed",
+    "deadLetterTitle": "{{count}} changes failed to sync.",
+    "deadLetterSubtitle": "Retry to move them back to the sync queue.",
+    "deadLetterRetryQueued": "{{count}} failed changes queued for retry.",
     "offlineEmpty": "No local data. Connect to the internet to load history.",
     "errorTitle": "Could not load history"
   },
@@ -126,5 +133,21 @@
   "premium_required_body": "AI mode requires a Premium subscription.",
   "premium_required_title": "Premium required",
   "recalc_message": "Changing amount can automatically recalculate macros and calories. Recalculate now?",
-  "recalc_title": "Recalculate values?"
+  "recalc_title": "Recalculate values?",
+  "detailsUnavailable": {
+    "title": "Meal details unavailable",
+    "desc": "We couldn't load this meal right now. Try again.",
+    "offlineDesc": "You're offline and this meal is not available in local storage."
+  },
+  "editUnavailable": {
+    "title": "Meal editor unavailable",
+    "desc": "We couldn't load this saved meal for editing right now. Try again.",
+    "offlineDesc": "You're offline and this saved meal is not available in local storage."
+  },
+  "resultUnavailable": {
+    "title": "Meal review unavailable",
+    "desc": "We couldn't load this meal draft right now. Try again.",
+    "offlineDesc": "You're offline and this meal draft is not available locally.",
+    "authDesc": "Your session expired. Sign in again to continue."
+  }
 }

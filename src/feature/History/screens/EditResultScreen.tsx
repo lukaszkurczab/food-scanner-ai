@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { View, Text, StyleSheet, Image, Pressable, ActivityIndicator } from "react-native";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -9,6 +10,8 @@ import {
   Layout,
   Card,
   Modal,
+  PrimaryButton,
+  SecondaryButton,
 } from "@/components";
 import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -27,6 +30,8 @@ export default function EditResultScreen({ navigation }: Props) {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const netInfo = useNetInfo();
+  const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
   const route = useRoute<ScreenRoute>();
   const savedCloudId = route.params?.savedCloudId;
@@ -41,7 +46,34 @@ export default function EditResultScreen({ navigation }: Props) {
     navigation,
   });
 
-  if (!state.ready || !meal) return null;
+  if (!state.meal) {
+    return (
+      <Layout showNavigation={false}>
+        <View style={styles.emptyWrap}>
+          <Text style={styles.emptyTitle}>
+            {t("editUnavailable.title", { ns: "meals" })}
+          </Text>
+          <Text style={styles.emptyDescription}>
+            {isOnline
+              ? t("editUnavailable.desc", { ns: "meals" })
+              : t("editUnavailable.offlineDesc", { ns: "meals" })}
+          </Text>
+          <PrimaryButton
+            label={t("retry", { ns: "common" })}
+            onPress={() => {
+              void state.reloadFromLocal();
+            }}
+            style={styles.emptyAction}
+          />
+          <SecondaryButton
+            label={t("back_to_saved", { ns: "meals" })}
+            onPress={state.handleCancelConfirm}
+            style={styles.emptyAction}
+          />
+        </View>
+      </Layout>
+    );
+  }
 
   return (
     <Layout showNavigation={false}>
@@ -223,4 +255,27 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     actions: { justifyContent: "space-between" },
     actionsSpacing: { gap: theme.spacing.md, marginTop: theme.spacing.md },
+    emptyWrap: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      padding: theme.spacing.container,
+      paddingBottom: theme.spacing.xl,
+    },
+    emptyTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      textAlign: "center",
+    },
+    emptyDescription: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      textAlign: "center",
+      lineHeight: Math.round(theme.typography.size.sm * 1.5),
+    },
+    emptyAction: {
+      alignSelf: "stretch",
+    },
   });

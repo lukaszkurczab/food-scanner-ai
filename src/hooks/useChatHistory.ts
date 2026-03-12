@@ -5,12 +5,19 @@ import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
 import type { Meal, FormData, ChatMessage } from "@/types";
 import { post } from "@/services/core/apiClient";
+import { emit, on } from "@/services/core/events";
 import { asString, isRecord } from "@/services/contracts/guards";
 import type { AiAskBackendResponse } from "@/services/ai/contracts";
 import { getErrorStatus } from "@/services/contracts/serviceError";
 import { captureException } from "@/services/core/errorLogger";
 import { getAiUxErrorType, type AiUxErrorType } from "@/services/ai/uxError";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import {
+  getDeadLetterCount,
+  retryDeadLetterOps,
+  type QueueKind,
+} from "@/services/offline/queue.repo";
+import { pushQueue } from "@/services/offline/sync.engine";
 import {
   type ChatMessageCursor,
   fetchChatThreadMessagesPage,
@@ -26,6 +33,7 @@ type AiHistoryItem = {
 };
 
 const GATEWAY_REJECT_REASONS = new Set(["OFF_TOPIC", "ML_OFF_TOPIC", "TOO_SHORT"]);
+const CHAT_DEAD_LETTER_KINDS: QueueKind[] = ["persist_chat_message"];
 
 function buildAiContext(
   meals: Meal[],
@@ -135,6 +143,8 @@ export function useChatHistory(
   const [typing, setTyping] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [sendErrorType, setSendErrorType] = useState<AiUxErrorType | null>(null);
+  const [failedSyncCount, setFailedSyncCount] = useState(0);
+  const [retryingFailedSync, setRetryingFailedSync] = useState(false);
 
   const lastDocRef = useRef<ChatMessageCursor>(null);
 
@@ -146,6 +156,43 @@ export function useChatHistory(
   const creditsUsed = Math.max(creditAllocation - creditBalance, 0);
   const canSend = canAfford("chat");
   const loading = messagesLoading;
+
+  const refreshFailedSyncCount = useCallback(async () => {
+    if (!userUid) {
+      setFailedSyncCount(0);
+      return;
+    }
+    try {
+      const count = await getDeadLetterCount(userUid, {
+        kinds: CHAT_DEAD_LETTER_KINDS,
+      });
+      setFailedSyncCount(count);
+    } catch {
+      // Ignore dead-letter lookup failures; chat can still function.
+    }
+  }, [userUid]);
+
+  useEffect(() => {
+    void refreshFailedSyncCount();
+  }, [refreshFailedSyncCount]);
+
+  useEffect(() => {
+    if (!userUid) return;
+    const refreshForUid = (event?: { uid?: string }) => {
+      const eventUid = typeof event?.uid === "string" ? event.uid : userUid;
+      if (eventUid !== userUid) return;
+      void refreshFailedSyncCount();
+    };
+    const unsubs = [
+      on<{ uid?: string }>("sync:op:dead", refreshForUid),
+      on<{ uid?: string }>("sync:op:retried", refreshForUid),
+      on<{ uid?: string }>("chat:failed", refreshForUid),
+      on<{ uid?: string }>("chat:pushed", refreshForUid),
+    ];
+    return () => {
+      for (const unsub of unsubs) unsub();
+    };
+  }, [userUid, refreshFailedSyncCount]);
 
   useEffect(() => {
     if (!canReadThread) {
@@ -376,6 +423,36 @@ export function useChatHistory(
     ],
   );
 
+  const retryFailedSyncOps = useCallback(async () => {
+    if (!userUid || retryingFailedSync) return;
+    setRetryingFailedSync(true);
+    try {
+      const retried = await retryDeadLetterOps({
+        uid: userUid,
+        kinds: CHAT_DEAD_LETTER_KINDS,
+      });
+      await refreshFailedSyncCount();
+      if (retried > 0) {
+        emit("ui:toast", {
+          key: "deadLetterRetryQueued",
+          ns: "chat",
+          options: { count: retried },
+        });
+      }
+      const net = await NetInfo.fetch();
+      if (retried > 0 && net.isConnected) {
+        await pushQueue(userUid);
+        await refreshFailedSyncCount();
+      }
+    } catch {
+      emit("ui:toast", {
+        text: i18next.t("common:unknownError"),
+      });
+    } finally {
+      setRetryingFailedSync(false);
+    }
+  }, [refreshFailedSyncCount, retryingFailedSync, userUid]);
+
   return {
     messages,
     loading,
@@ -387,7 +464,10 @@ export function useChatHistory(
     creditAllocation,
     creditBalance,
     sendErrorType,
+    failedSyncCount,
+    retryingFailedSync,
     loadMore,
     send,
+    retryFailedSyncOps,
   };
 }

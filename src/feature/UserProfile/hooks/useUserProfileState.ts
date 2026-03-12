@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -17,8 +18,19 @@ export function useUserProfileState(params: {
 }) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
-  const { userData, deleteUser, exportUserData } = useUserContext();
+  const netInfo = useNetInfo();
+  const {
+    userData,
+    loadingUser,
+    refreshUser,
+    deleteUser,
+    exportUserData,
+    syncState,
+    retryProfileSync,
+    retryingProfileSync,
+  } = useUserContext();
   const { uid } = useAuthContext();
+  const isOnline = netInfo.isConnected !== false;
   const { isPremium } = usePremiumContext();
   const { badges, ensurePremiumBadges } = useBadges(uid);
 
@@ -46,10 +58,10 @@ export function useUserProfileState(params: {
   }, [ensurePremiumBadges, isPremium, uid]);
 
   useEffect(() => {
-    if (!userData) {
+    if (!uid) {
       params.navigation.reset({ index: 0, routes: [{ name: "Login" }] });
     }
-  }, [params.navigation, userData]);
+  }, [params.navigation, uid]);
 
   const safeBadges = useMemo(
     () => (Array.isArray(badges) ? badges : []),
@@ -129,9 +141,18 @@ export function useUserProfileState(params: {
     setExportModalVisible(false);
   }, []);
 
+  const handleRetryProfileLoad = useCallback(async () => {
+    await refreshUser();
+  }, [refreshUser]);
+
   return {
     userData,
+    loadingUser,
+    isOnline,
     streak,
+    syncState,
+    retryProfileSync,
+    retryingProfileSync,
     avatarSrc,
     safeBadges,
     overrideColor,
@@ -151,5 +172,6 @@ export function useUserProfileState(params: {
     handleDeleteAccount,
     handleExportData,
     closeExportModal,
+    handleRetryProfileLoad,
   };
 }

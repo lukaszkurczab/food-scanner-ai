@@ -136,6 +136,20 @@ describe("MealListItem", () => {
     expect(getByText("home:meal")).toBeTruthy();
   });
 
+  it("renders sync status badge for failed meals", () => {
+    const { getByText } = renderWithTheme(
+      <MealListItem
+        meal={buildMeal({ syncState: "failed", photoUrl: null })}
+        onPress={() => undefined}
+        onDelete={() => undefined}
+        onEdit={() => undefined}
+        onDuplicate={() => undefined}
+      />,
+    );
+
+    expect(getByText("history.syncFailed")).toBeTruthy();
+  });
+
   it("triggers selection callback when checkbox is pressed", () => {
     const onSelect = jest.fn();
     const { getByRole, getByText } = renderWithTheme(

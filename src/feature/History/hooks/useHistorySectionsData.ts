@@ -19,6 +19,7 @@ import {
 } from "@/feature/History/services/historySectionsService";
 
 const PAGE = 20;
+const PULL_THROTTLE_MS = 30_000;
 
 export type HistoryErrorKind = "load" | "sync" | null;
 
@@ -44,6 +45,7 @@ export function useHistorySectionsData(params: {
   const firstFocus = useRef(true);
   const pullInFlightRef = useRef(false);
   const pullPendingRef = useRef(false);
+  const lastPullRequestedAtRef = useRef(0);
 
   const localFilters: LocalHistoryFilters | undefined = useMemo(() => {
     if (!params.filters) return undefined;
@@ -89,11 +91,16 @@ export function useHistorySectionsData(params: {
     }
   }, [localFilters, params.todayLabel, params.uid]);
 
-  const requestPullChanges = useCallback(async () => {
+  const requestPullChanges = useCallback(async (options?: { force?: boolean }) => {
     if (!params.uid) return;
     if (pullInFlightRef.current) {
       pullPendingRef.current = true;
       return;
+    }
+    if (!options?.force) {
+      const now = Date.now();
+      if (now - lastPullRequestedAtRef.current < PULL_THROTTLE_MS) return;
+      lastPullRequestedAtRef.current = now;
     }
 
     pullInFlightRef.current = true;
@@ -106,7 +113,7 @@ export function useHistorySectionsData(params: {
       pullInFlightRef.current = false;
       if (pullPendingRef.current) {
         pullPendingRef.current = false;
-        void requestPullChanges();
+        void requestPullChanges({ force: true });
       }
     }
   }, [params.uid]);
@@ -114,6 +121,7 @@ export function useHistorySectionsData(params: {
   useEffect(() => {
     pullInFlightRef.current = false;
     pullPendingRef.current = false;
+    lastPullRequestedAtRef.current = 0;
   }, [params.uid]);
 
   useEffect(() => {
@@ -129,7 +137,7 @@ export function useHistorySectionsData(params: {
     });
     if (!params.uid || key === prevKey.current) return;
     prevKey.current = key;
-    void requestPullChanges();
+    void requestPullChanges({ force: true });
   }, [params.accessWindowDays, params.uid, localFilters, requestPullChanges]);
 
   useFocusEffect(
@@ -210,7 +218,7 @@ export function useHistorySectionsData(params: {
   }, [hasMore, loadMore]);
 
   const refresh = useCallback(async () => {
-    await requestPullChanges();
+    await requestPullChanges({ force: true });
   }, [requestPullChanges]);
 
   const sections = useMemo(

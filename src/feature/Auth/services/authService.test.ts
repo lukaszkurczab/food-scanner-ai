@@ -6,7 +6,7 @@ import {
   jest,
 } from "@jest/globals";
 
-import { authRegister } from "@/feature/Auth/services/authService";
+import { authLogout, authRegister } from "@/feature/Auth/services/authService";
 
 const mockGetAuth = jest.fn<(...args: unknown[]) => unknown>();
 const mockCreateUserWithEmailAndPassword = jest.fn<
@@ -15,6 +15,14 @@ const mockCreateUserWithEmailAndPassword = jest.fn<
 const mockClaimUsername = jest.fn<(...args: unknown[]) => Promise<string>>();
 const mockCreateInitialUserProfile = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockDelete = jest.fn<() => Promise<void>>();
+const mockSignOut = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockGetAllKeys = jest.fn<() => Promise<string[]>>();
+const mockMultiRemove = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockStopSyncLoop = jest.fn<() => void>();
+const mockResetOfflineStorage = jest.fn<() => void>();
+const mockCleanupUserOfflineAssets = jest.fn<
+  (uid: string | null) => Promise<void>
+>();
 
 jest.mock("@react-native-firebase/app", () => ({
   getApp: jest.fn(),
@@ -22,11 +30,34 @@ jest.mock("@react-native-firebase/app", () => ({
 
 jest.mock("@react-native-firebase/auth", () => ({
   getAuth: (...args: unknown[]) => mockGetAuth(...args),
-  signOut: jest.fn(),
+  signOut: (...args: unknown[]) => mockSignOut(...args),
   signInWithEmailAndPassword: jest.fn(),
   sendPasswordResetEmail: jest.fn(),
   createUserWithEmailAndPassword: (...args: unknown[]) =>
     mockCreateUserWithEmailAndPassword(...args),
+}));
+
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  __esModule: true,
+  default: {
+    getAllKeys: () => mockGetAllKeys(),
+    multiRemove: (...args: unknown[]) => mockMultiRemove(...args),
+  },
+  getAllKeys: () => mockGetAllKeys(),
+  multiRemove: (...args: unknown[]) => mockMultiRemove(...args),
+}));
+
+jest.mock("@/services/offline/sync.engine", () => ({
+  stopSyncLoop: () => mockStopSyncLoop(),
+}));
+
+jest.mock("@/services/offline/db", () => ({
+  resetOfflineStorage: () => mockResetOfflineStorage(),
+}));
+
+jest.mock("@/services/offline/fileCleanup", () => ({
+  cleanupUserOfflineAssets: (uid: string | null) =>
+    mockCleanupUserOfflineAssets(uid),
 }));
 
 jest.mock("@/services/user/usernameService", () => ({
@@ -54,8 +85,15 @@ describe("authService", () => {
     jest.clearAllMocks();
     mockI18n.resolvedLanguage = "en";
     mockI18n.language = "en";
-    mockGetAuth.mockReturnValue({ app: "auth" });
+    mockGetAuth.mockReturnValue({ app: "auth", currentUser: { uid: "user-1" } });
     mockDelete.mockResolvedValue(undefined);
+    mockSignOut.mockResolvedValue(undefined);
+    mockGetAllKeys.mockResolvedValue([]);
+    mockMultiRemove.mockResolvedValue(undefined);
+    mockStopSyncLoop.mockReset();
+    mockResetOfflineStorage.mockReset();
+    mockCleanupUserOfflineAssets.mockReset();
+    mockCleanupUserOfflineAssets.mockResolvedValue(undefined);
     mockCreateUserWithEmailAndPassword.mockResolvedValue({
       user: {
         uid: "user-1",
@@ -107,5 +145,27 @@ describe("authService", () => {
 
     expect(mockDelete).toHaveBeenCalled();
     expect(mockCreateInitialUserProfile).not.toHaveBeenCalled();
+  });
+
+  it("cleans local offline state and scoped storage on logout", async () => {
+    mockGetAllKeys.mockResolvedValue([
+      "user:profile:user-1",
+      "sync:last_pull_ts:user-1",
+      "notif:sys:ids:user-1:stats",
+      "theme:mode",
+    ]);
+
+    await authLogout();
+
+    expect(mockSignOut).toHaveBeenCalled();
+    expect(mockStopSyncLoop).toHaveBeenCalled();
+    expect(mockResetOfflineStorage).toHaveBeenCalled();
+    expect(mockCleanupUserOfflineAssets).toHaveBeenCalledWith("user-1");
+    expect(mockMultiRemove).toHaveBeenCalledWith([
+      "user:profile:user-1",
+      "sync:last_pull_ts:user-1",
+      "notif:sys:ids:user-1:stats",
+      "premium_status:anon",
+    ]);
   });
 });

@@ -17,6 +17,7 @@ const mockUsePremiumContext = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockUseAiCreditsContext = jest.fn();
 const mockUseManageSubscriptionState = jest.fn();
+const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
 
 jest.mock("@/context/PremiumContext", () => ({
   usePremiumContext: () => mockUsePremiumContext(),
@@ -35,6 +36,10 @@ jest.mock("@/feature/Subscription/hooks/useManageSubscriptionState", () => ({
     mockUseManageSubscriptionState(params),
 }));
 
+jest.mock("@react-native-community/netinfo", () => ({
+  useNetInfo: () => mockUseNetInfo(),
+}));
+
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, options?: { defaultValue?: string }) =>
@@ -49,7 +54,7 @@ jest.mock("@expo/vector-icons", () => ({
 jest.mock("@/components", () => {
   const { createElement } =
     jest.requireActual<typeof import("react")>("react");
-  const { Text, View } =
+  const { Pressable, Text, View } =
     jest.requireActual<typeof import("react-native")>("react-native");
 
   return {
@@ -62,6 +67,20 @@ jest.mock("@/components", () => {
       title: string;
     }) => createElement(Text, null, `header:${title}`),
     FullScreenLoader: () => createElement(Text, null, "full-screen-loader"),
+    PrimaryButton: ({
+      label,
+      onPress,
+      disabled,
+    }: {
+      label: string;
+      onPress: () => void;
+      disabled?: boolean;
+    }) =>
+      createElement(
+        Pressable,
+        { onPress, disabled, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
   };
 });
 
@@ -123,6 +142,7 @@ describe("ManageSubscriptionScreen", () => {
 
   beforeEach(() => {
     (globalThis as { __DEV__?: boolean }).__DEV__ = true;
+    mockUseNetInfo.mockReturnValue({ isConnected: true });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUseAiCreditsContext.mockReturnValue({
       credits: {
@@ -181,6 +201,61 @@ describe("ManageSubscriptionScreen", () => {
     );
 
     expect(getByText("full-screen-loader")).toBeTruthy();
+  });
+
+  it("shows offline fallback when subscription data is missing and device is offline", () => {
+    const refreshPremium = jest.fn(async () => false);
+    const navigation = {
+      navigate: jest.fn<(screen: string) => void>(),
+      setOptions: jest.fn(),
+    };
+    mockUseNetInfo.mockReturnValue({ isConnected: false });
+    mockUsePremiumContext.mockReturnValue({
+      isPremium: false,
+      subscription: null,
+      setDevPremium: jest.fn(),
+      refreshPremium,
+    });
+    mockUseManageSubscriptionState.mockReturnValue({
+      expanded: null,
+      busy: false,
+      paywallVisible: false,
+      termsUrl: null,
+      privacyUrl: null,
+      priceText: null,
+      showRenew: false,
+      showStart: false,
+      showManageInStore: false,
+      headerStatus: "",
+      isPremiumComputed: false,
+      toggleExpanded: jest.fn(),
+      tryOpenManage: jest.fn(),
+      tryRestore: jest.fn(),
+      trySubscribe: jest.fn(),
+      tryOpenRefundPolicy: jest.fn(),
+      openPaywall: jest.fn(),
+      closePaywall: jest.fn(),
+      toggleDevPremium: jest.fn(),
+      openTerms: jest.fn(),
+      openPrivacy: jest.fn(),
+    });
+
+    const { getByText } = renderWithTheme(
+      <ManageSubscriptionScreen navigation={navigation as never} />,
+    );
+
+    expect(getByText("Subscription details unavailable")).toBeTruthy();
+    expect(
+      getByText(
+        "You're offline and subscription details are not available locally yet.",
+      ),
+    ).toBeTruthy();
+
+    fireEvent.press(getByText("profile:common:retry"));
+    fireEvent.press(getByText("Back"));
+
+    expect(refreshPremium).toHaveBeenCalledTimes(1);
+    expect(navigation.navigate).toHaveBeenCalledWith("Profile");
   });
 
   it("renders subscription actions, legal links and paywall controls", () => {

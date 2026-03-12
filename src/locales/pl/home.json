@@ -16,6 +16,8 @@
   "emptyDay": {
     "title": "Brak posiłków tego dnia",
     "subtitle_today": "Dodaj pierwszy posiłek, aby rozpocząć zapis dnia.",
+    "subtitle_offline_today": "Jesteś offline. Lokalne dane dla dzisiaj mogą być niepełne.",
+    "subtitle_offline_past": "Jesteś offline. Połącz się z internetem, aby pobrać posiłki z tego dnia.",
     "addMeal": "Dodaj posiłek",
     "openHistory": "Przejdź do historii"
   }

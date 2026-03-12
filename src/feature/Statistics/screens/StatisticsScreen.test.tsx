@@ -12,6 +12,7 @@ type DateInputProps = {
 const mockUseUserContext = jest.fn();
 const mockUsePremiumContext = jest.fn();
 const mockUseStatisticsState = jest.fn();
+const mockUseNetInfo = jest.fn();
 
 jest.mock("@contexts/UserContext", () => ({
   useUserContext: () => mockUseUserContext(),
@@ -19,6 +20,10 @@ jest.mock("@contexts/UserContext", () => ({
 
 jest.mock("@/context/PremiumContext", () => ({
   usePremiumContext: () => mockUsePremiumContext(),
+}));
+
+jest.mock("@react-native-community/netinfo", () => ({
+  useNetInfo: () => mockUseNetInfo(),
 }));
 
 jest.mock("@/feature/Statistics/hooks/useStatisticsState", () => ({
@@ -177,6 +182,7 @@ jest.mock("../components/ProgressAveragesCard", () => ({
 
 describe("StatisticsScreen", () => {
   beforeEach(() => {
+    mockUseNetInfo.mockReturnValue({ isConnected: true });
     mockUseUserContext.mockReturnValue({
       userData: { uid: "user-1", calorieTarget: 2200 },
     });
@@ -278,5 +284,33 @@ describe("StatisticsScreen", () => {
     });
     expect(setMetric).toHaveBeenCalledWith("protein");
     expect(navigation.navigate).toHaveBeenCalledWith("ManageSubscription");
+  });
+
+  it("renders offline-empty copy when there is no local data and device is offline", () => {
+    const navigation = { navigate: jest.fn() };
+    mockUseNetInfo.mockReturnValue({ isConnected: false });
+    mockUseStatisticsState.mockReturnValue({
+      active: "7d",
+      setActive: jest.fn(),
+      customRange: {
+        start: new Date("2026-01-01T00:00:00.000Z"),
+        end: new Date("2026-01-07T00:00:00.000Z"),
+      },
+      setCustomRange: jest.fn(),
+      isWindowLimited: false,
+      loadingMeals: false,
+      empty: true,
+    });
+
+    const { getByText, queryByText } = renderWithTheme(
+      <StatisticsScreen navigation={navigation as never} />,
+    );
+
+    expect(getByText("You're offline")).toBeTruthy();
+    expect(
+      getByText("No local stats data available. Reconnect to load your history."),
+    ).toBeTruthy();
+    expect(queryByText("statistics:empty.cta")).toBeNull();
+    expect(navigation.navigate).not.toHaveBeenCalled();
   });
 });

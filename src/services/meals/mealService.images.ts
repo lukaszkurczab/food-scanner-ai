@@ -9,6 +9,7 @@ const CLOUD_MAX = 1280;
 const CLOUD_Q = 0.8;
 const AI_MAX = 480;
 const AI_Q = 0.75;
+const CLOUD_URL_CACHE_MAX_ENTRIES = 200;
 const CLOUD_URL_CACHE = new Map<string, string>();
 
 export type UploadedImage = {
@@ -39,8 +40,29 @@ async function toJpegMaxSide(uri: string, maxSide: number, q: number) {
   return result.uri;
 }
 
+async function cleanupTemporaryFile(path: string, preserve: Set<string>) {
+  if (!path || preserve.has(path)) return;
+  try {
+    await FileSystem.deleteAsync(path, { idempotent: true });
+  } catch {
+    // Ignore cleanup failures for temporary files.
+  }
+}
+
 export function localPhotoPath(uid: string, id: string) {
   return `${FileSystem.documentDirectory}meals/${uid}/${id}.jpg`;
+}
+
+function setCachedCloudUrl(key: string, url: string) {
+  if (CLOUD_URL_CACHE.has(key)) {
+    CLOUD_URL_CACHE.delete(key);
+  }
+  CLOUD_URL_CACHE.set(key, url);
+  if (CLOUD_URL_CACHE.size <= CLOUD_URL_CACHE_MAX_ENTRIES) return;
+  const oldestKey = CLOUD_URL_CACHE.keys().next().value;
+  if (typeof oldestKey === "string") {
+    CLOUD_URL_CACHE.delete(oldestKey);
+  }
 }
 
 export async function processAndUpload(
@@ -56,26 +78,34 @@ export async function processAndUpload(
     });
   }
 
-  const cloudJpeg = await toJpegMaxSide(localUri, CLOUD_MAX, CLOUD_Q);
-
   const aiTmp = `${FileSystem.cacheDirectory}ai/${uuidv4()}.jpg`;
-  await ensureDirFor(aiTmp);
-  const aiJpeg = await toJpegMaxSide(localUri, AI_MAX, AI_Q);
-  await FileSystem.copyAsync({ from: aiJpeg, to: aiTmp });
+  let cloudJpeg = "";
+  let aiJpeg = "";
+  const preserve = new Set([localUri, aiTmp]);
+  try {
+    cloudJpeg = await toJpegMaxSide(localUri, CLOUD_MAX, CLOUD_Q);
 
-  void userUid;
-  const data = new FormData();
-  data.append("file", {
-    uri: cloudJpeg,
-    name: "meal.jpg",
-    type: "image/jpeg",
-  } as unknown as Blob);
+    await ensureDirFor(aiTmp);
+    aiJpeg = await toJpegMaxSide(localUri, AI_MAX, AI_Q);
+    await FileSystem.copyAsync({ from: aiJpeg, to: aiTmp });
 
-  const response = await upload<MealPhotoResponse>("/users/me/meals/photo", data);
-  const imageId = String(response.imageId || "").trim();
-  const cloudUrl = String(response.photoUrl || "").trim();
+    void userUid;
+    const data = new FormData();
+    data.append("file", {
+      uri: cloudJpeg,
+      name: "meal.jpg",
+      type: "image/jpeg",
+    } as unknown as Blob);
 
-  return { imageId, cloudUrl, aiLocalUri: aiTmp };
+    const response = await upload<MealPhotoResponse>("/users/me/meals/photo", data);
+    const imageId = String(response.imageId || "").trim();
+    const cloudUrl = String(response.photoUrl || "").trim();
+
+    return { imageId, cloudUrl, aiLocalUri: aiTmp };
+  } finally {
+    await cleanupTemporaryFile(cloudJpeg, preserve);
+    await cleanupTemporaryFile(aiJpeg, preserve);
+  }
 }
 
 async function getMealPhotoUrl(args: {
@@ -96,7 +126,7 @@ async function getMealPhotoUrl(args: {
     `/users/me/meals/photo-url?${params.toString()}`,
   );
   const url = String(response.photoUrl || "").trim();
-  CLOUD_URL_CACHE.set(key, url);
+  setCachedCloudUrl(key, url);
   return url;
 }
 

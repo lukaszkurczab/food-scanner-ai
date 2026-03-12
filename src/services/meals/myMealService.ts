@@ -34,6 +34,7 @@ export async function upsertMyMealLocal(
     updatedAt: now,
     createdAt: meal.createdAt ?? now,
     source: "saved",
+    syncState: "pending",
     photoLocalPath: localPath,
     photoUrl: localPath ?? meal.photoUrl ?? null,
   };
@@ -56,6 +57,7 @@ export async function upsertMyMealWithPhoto(
     updatedAt: now,
     createdAt: meal.createdAt ?? now,
     source: "saved",
+    syncState: "pending",
     photoLocalPath: isLocalPhoto(effectivePhoto) ? effectivePhoto : meal.photoLocalPath ?? null,
     photoUrl: effectivePhoto,
     uploadState: isLocalPhoto(effectivePhoto) ? "pending" : "done",

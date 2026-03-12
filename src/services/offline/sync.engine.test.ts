@@ -6,16 +6,26 @@ const mockSetItem = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockNextBatch = jest.fn<(...args: unknown[]) => Promise<unknown[]>>();
 const mockMarkDone = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockBumpAttempts = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockMoveToDeadLetter = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockGetPendingUploads = jest.fn<(...args: unknown[]) => Promise<unknown[]>>();
+const mockGet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockPost = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetChatThreadByIdLocal = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockUpsertChatThreadLocal = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockUpsertChatMessageLocal = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockSetChatMessageSyncState = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockUpsertMealLocal = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockGetMealByCloudIdLocal = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockSetMealSyncStateLocal = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockUpsertMyMealLocal = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockSetMyMealSyncStateLocal = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockSaveMealRemote = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockMarkMealDeletedRemote = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockFetchMealChangesRemote = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockUpdateMyMealRemote = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockUploadMyMealPhotoRemote = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockUploadUserAvatarRemote = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockUpdateUserProfileRemote = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockMarkMyMealDeletedRemote = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockFetchMyMealChangesRemote = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
@@ -39,6 +49,8 @@ jest.mock("@/services/offline/queue.repo", () => ({
   nextBatch: (...args: unknown[]) => mockNextBatch(...args),
   markDone: (...args: unknown[]) => mockMarkDone(...args),
   bumpAttempts: (...args: unknown[]) => mockBumpAttempts(...args),
+  moveToDeadLetter: (...args: unknown[]) => mockMoveToDeadLetter(...args),
+  MAX_QUEUE_ATTEMPTS: 10,
   enqueueUpsert: jest.fn(),
 }));
 
@@ -48,11 +60,18 @@ jest.mock("@/services/offline/images.repo", () => ({
 }));
 
 jest.mock("@/services/offline/chat.repo", () => ({
+  getChatThreadByIdLocal: (...args: unknown[]) =>
+    mockGetChatThreadByIdLocal(...args),
+  upsertChatThreadLocal: (...args: unknown[]) =>
+    mockUpsertChatThreadLocal(...args),
+  upsertChatMessageLocal: (...args: unknown[]) =>
+    mockUpsertChatMessageLocal(...args),
   setChatMessageSyncState: (...args: unknown[]) =>
     mockSetChatMessageSyncState(...args),
 }));
 
 jest.mock("@/services/core/apiClient", () => ({
+  get: (...args: unknown[]) => mockGet(...args),
   post: (...args: unknown[]) => mockPost(...args),
 }));
 
@@ -76,12 +95,22 @@ jest.mock("@/services/meals/myMealsRepository", () => ({
     mockUploadMyMealPhotoRemote(...args),
 }));
 
+jest.mock("@/services/user/userProfileRepository", () => ({
+  updateUserProfileRemote: (...args: unknown[]) =>
+    mockUpdateUserProfileRemote(...args),
+  uploadUserAvatarRemote: (...args: unknown[]) =>
+    mockUploadUserAvatarRemote(...args),
+}));
+
 jest.mock("@/services/offline/meals.repo", () => ({
   upsertMealLocal: (...args: unknown[]) => mockUpsertMealLocal(...args),
+  getMealByCloudIdLocal: (...args: unknown[]) => mockGetMealByCloudIdLocal(...args),
+  setMealSyncStateLocal: (...args: unknown[]) => mockSetMealSyncStateLocal(...args),
 }));
 
 jest.mock("@/services/offline/myMeals.repo", () => ({
   upsertMyMealLocal: (...args: unknown[]) => mockUpsertMyMealLocal(...args),
+  setMyMealSyncStateLocal: (...args: unknown[]) => mockSetMyMealSyncStateLocal(...args),
 }));
 
 jest.mock("@/services/offline/db", () => ({
@@ -103,18 +132,35 @@ describe("offline sync.engine", () => {
     mockGetItem.mockResolvedValue(null);
     mockSetItem.mockResolvedValue();
     mockGetPendingUploads.mockResolvedValue([]);
+    mockGet.mockResolvedValue({ items: [] });
+    mockGetChatThreadByIdLocal.mockResolvedValue(null);
+    mockUpsertChatThreadLocal.mockResolvedValue();
+    mockUpsertChatMessageLocal.mockResolvedValue();
     mockUpsertMealLocal.mockResolvedValue();
+    mockGetMealByCloudIdLocal.mockResolvedValue(null);
+    mockSetMealSyncStateLocal.mockResolvedValue();
     mockUpsertMyMealLocal.mockResolvedValue();
+    mockSetMyMealSyncStateLocal.mockResolvedValue();
+    mockMoveToDeadLetter.mockResolvedValue();
     mockSaveMealRemote.mockResolvedValue();
     mockMarkMealDeletedRemote.mockResolvedValue();
-    mockFetchMealChangesRemote.mockResolvedValue({ items: [], nextCursor: null });
+    mockFetchMealChangesRemote
+      .mockReset()
+      .mockResolvedValue({ items: [], nextCursor: null });
     mockUpdateMyMealRemote.mockResolvedValue();
     mockUploadMyMealPhotoRemote.mockResolvedValue({
       imageId: "image-1",
       photoUrl: "https://cdn/mymeal.jpg",
     });
+    mockUploadUserAvatarRemote.mockResolvedValue({
+      avatarUrl: "https://cdn/avatar.jpg",
+      avatarlastSyncedAt: "2026-03-03T12:11:00.000Z",
+    });
+    mockUpdateUserProfileRemote.mockResolvedValue();
     mockMarkMyMealDeletedRemote.mockResolvedValue();
-    mockFetchMyMealChangesRemote.mockResolvedValue({ items: [], nextCursor: null });
+    mockFetchMyMealChangesRemote
+      .mockReset()
+      .mockResolvedValue({ items: [], nextCursor: null });
     mockNextBatch
       .mockResolvedValueOnce([
         {
@@ -207,7 +253,61 @@ describe("offline sync.engine", () => {
         type: "lunch",
       }),
     });
+    expect(mockSetMealSyncStateLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: "user-1",
+        cloudId: "meal-1",
+        syncState: "synced",
+      }),
+    );
     expect(mockMarkDone).toHaveBeenCalledWith(2);
+  });
+
+  it("moves poisoned ops to dead letter after max retries", async () => {
+    mockNextBatch
+      .mockReset()
+      .mockResolvedValueOnce([
+        {
+          id: 99,
+          cloud_id: "meal-99",
+          user_uid: "user-1",
+          kind: "upsert",
+          payload: {
+            // missing cloudId/mealId makes op non-retryable and invalid
+            userUid: "user-1",
+            type: "lunch",
+          },
+          updated_at: "2026-03-03T12:00:00.000Z",
+          attempts: 9,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { pushQueue } = require("@/services/offline/sync.engine");
+
+    await pushQueue("user-1");
+
+    expect(mockMoveToDeadLetter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 99,
+        kind: "upsert",
+        attempts: 9,
+      }),
+      10,
+      expect.objectContaining({
+        code: "sync/upsert-missing-id",
+      }),
+    );
+    expect(mockSetMealSyncStateLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: "user-1",
+        cloudId: "meal-99",
+        syncState: "failed",
+      }),
+    );
+    expect(mockBumpAttempts).not.toHaveBeenCalledWith(99);
+    expect(mockMarkDone).not.toHaveBeenCalledWith(99);
   });
 
   it("pulls meal changes from backend and advances the stored cursor", async () => {
@@ -257,6 +357,66 @@ describe("offline sync.engine", () => {
     expect(mockSetItem).toHaveBeenCalledWith(
       "sync:last_pull_ts:user-1",
       "2026-03-03T12:30:00.000Z|meal-1",
+    );
+  });
+
+  it("keeps newer local meal version during pull conflicts", async () => {
+    mockFetchMealChangesRemote
+      .mockResolvedValueOnce({
+        items: [
+          {
+            userUid: "user-1",
+            mealId: "meal-1",
+            cloudId: "meal-1",
+            timestamp: "2026-03-03T12:00:00.000Z",
+            type: "lunch",
+            name: "Remote",
+            ingredients: [],
+            createdAt: "2026-03-03T12:00:00.000Z",
+            updatedAt: "2026-03-03T12:10:00.000Z",
+            syncState: "synced",
+            source: "manual",
+            imageId: null,
+            photoUrl: null,
+            notes: null,
+            tags: [],
+            deleted: false,
+            totals: { kcal: 200, protein: 30, carbs: 0, fat: 5 },
+          },
+        ],
+        nextCursor: null,
+      })
+      .mockResolvedValueOnce({ items: [], nextCursor: null });
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce({
+      userUid: "user-1",
+      mealId: "meal-1",
+      cloudId: "meal-1",
+      timestamp: "2026-03-03T12:00:00.000Z",
+      type: "lunch",
+      name: "Local",
+      ingredients: [],
+      createdAt: "2026-03-03T12:00:00.000Z",
+      updatedAt: "2026-03-03T12:40:00.000Z",
+      syncState: "pending",
+      source: "manual",
+      imageId: null,
+      photoUrl: null,
+      notes: null,
+      tags: [],
+      deleted: false,
+      totals: { kcal: 180, protein: 25, carbs: 5, fat: 4 },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { pullChanges } = require("@/services/offline/sync.engine");
+    await pullChanges("user-1");
+
+    expect(mockUpsertMealLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudId: "meal-1",
+        name: "Local",
+        updatedAt: "2026-03-03T12:40:00.000Z",
+      }),
     );
   });
 
@@ -314,7 +474,78 @@ describe("offline sync.engine", () => {
         photoLocalPath: "file://saved.jpg",
       }),
     );
+    expect(mockSetMyMealSyncStateLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: "user-1",
+        cloudId: "saved-1",
+        syncState: "synced",
+      }),
+    );
     expect(mockMarkDone).toHaveBeenCalledWith(3);
+  });
+
+  it("replays queued avatar uploads through backend API", async () => {
+    mockNextBatch
+      .mockReset()
+      .mockResolvedValueOnce([
+        {
+          id: 4,
+          cloud_id: "profile_avatar",
+          user_uid: "user-1",
+          kind: "upload_user_avatar",
+          payload: {
+            localPath: "file://avatar.jpg",
+            updatedAt: "2026-03-03T12:10:00.000Z",
+          },
+          updated_at: "2026-03-03T12:10:00.000Z",
+          attempts: 0,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { pushQueue } = require("@/services/offline/sync.engine");
+
+    await pushQueue("user-1");
+
+    expect(mockUploadUserAvatarRemote).toHaveBeenCalledWith(
+      "user-1",
+      "file://avatar.jpg",
+    );
+    expect(mockMarkDone).toHaveBeenCalledWith(4);
+    expect(mockBumpAttempts).not.toHaveBeenCalledWith(4);
+  });
+
+  it("replays queued profile updates through backend API", async () => {
+    mockNextBatch
+      .mockReset()
+      .mockResolvedValueOnce([
+        {
+          id: 40,
+          cloud_id: "user_profile",
+          user_uid: "user-1",
+          kind: "update_user_profile",
+          payload: {
+            age: "31",
+            calorieTarget: 2300,
+          },
+          updated_at: "2026-03-03T12:50:00.000Z",
+          attempts: 0,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { pushQueue } = require("@/services/offline/sync.engine");
+
+    await pushQueue("user-1");
+
+    expect(mockUpdateUserProfileRemote).toHaveBeenCalledWith("user-1", {
+      age: "31",
+      calorieTarget: 2300,
+    });
+    expect(mockMarkDone).toHaveBeenCalledWith(40);
+    expect(mockBumpAttempts).not.toHaveBeenCalledWith(40);
   });
 
   it("pulls saved meal changes from backend and advances the saved meals cursor", async () => {
@@ -363,5 +594,110 @@ describe("offline sync.engine", () => {
       "sync:last_pull_my_meals:user-1",
       "2026-03-03T12:40:00.000Z|saved-1",
     );
+  });
+
+  it("pulls chat thread changes and syncs messages for updated threads", async () => {
+    mockGetItem.mockImplementation((key: unknown) =>
+      Promise.resolve(
+        key === "sync:last_pull_chat:user-1" ? "1700" : null,
+      ),
+    );
+    mockGetChatThreadByIdLocal.mockResolvedValueOnce({
+      id: "thread-1",
+      userUid: "user-1",
+      title: "Old thread",
+      createdAt: 1000,
+      updatedAt: 1600,
+      lastMessage: "old",
+      lastMessageAt: 1600,
+    });
+    mockGet
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "thread-1",
+            title: "Updated thread",
+            createdAt: 1000,
+            updatedAt: 2000,
+            lastMessage: "hello",
+            lastMessageAt: 2000,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "msg-1",
+            role: "assistant",
+            content: "hello",
+            createdAt: 2000,
+            lastSyncedAt: 2000,
+            deleted: false,
+          },
+        ],
+      });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { pullChatChanges } = require("@/services/offline/sync.engine");
+
+    await pullChatChanges("user-1");
+
+    expect(mockGet).toHaveBeenNthCalledWith(1, "/users/me/chat/threads?limit=20");
+    expect(mockGet).toHaveBeenNthCalledWith(
+      2,
+      "/users/me/chat/threads/thread-1/messages?limit=50",
+    );
+    expect(mockUpsertChatThreadLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "thread-1",
+        userUid: "user-1",
+        updatedAt: 2000,
+      }),
+    );
+    expect(mockUpsertChatMessageLocal).toHaveBeenCalledWith({
+      threadId: "thread-1",
+      message: expect.objectContaining({
+        id: "msg-1",
+        userUid: "user-1",
+        syncState: "synced",
+      }),
+    });
+    expect(mockSetItem).toHaveBeenCalledWith("sync:last_pull_chat:user-1", "2000");
+  });
+
+  it("does not overwrite newer local chat thread state with stale remote thread", async () => {
+    mockGetItem.mockImplementation((key: unknown) =>
+      Promise.resolve(key === "sync:last_pull_chat:user-1" ? "1800" : null),
+    );
+    mockGetChatThreadByIdLocal.mockResolvedValueOnce({
+      id: "thread-1",
+      userUid: "user-1",
+      title: "Local newer",
+      createdAt: 1000,
+      updatedAt: 2500,
+      lastMessage: "local",
+      lastMessageAt: 2500,
+    });
+    mockGet.mockResolvedValueOnce({
+      items: [
+        {
+          id: "thread-1",
+          title: "Remote older",
+          createdAt: 1000,
+          updatedAt: 2000,
+          lastMessage: "remote",
+          lastMessageAt: 2000,
+        },
+      ],
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { pullChatChanges } = require("@/services/offline/sync.engine");
+
+    await pullChatChanges("user-1");
+
+    expect(mockUpsertChatThreadLocal).not.toHaveBeenCalled();
+    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(mockSetItem).toHaveBeenCalledWith("sync:last_pull_chat:user-1", "2000");
   });
 });

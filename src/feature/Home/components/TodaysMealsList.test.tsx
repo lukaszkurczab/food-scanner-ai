@@ -10,6 +10,21 @@ jest.mock("react-i18next", () => ({
   }),
 }));
 
+jest.mock("@/components/MealSyncBadge", () => ({
+  MealSyncBadge: ({
+    syncState,
+  }: {
+    syncState: string;
+    lastSyncedAt?: number | null;
+  }) => {
+    const { createElement } =
+      jest.requireActual<typeof import("react")>("react");
+    const { Text } =
+      jest.requireActual<typeof import("react-native")>("react-native");
+    return createElement(Text, null, `sync:${syncState}`);
+  },
+}));
+
 const buildMeal = (overrides: Partial<Meal> = {}): Meal => ({
   userUid: "u1",
   mealId: "m1",
@@ -44,7 +59,7 @@ describe("TodaysMealsList", () => {
       ingredients: [],
       totals: { kcal: 320, protein: 0, fat: 0, carbs: 0 },
     });
-    const { getByText } = renderWithTheme(
+    const screen = renderWithTheme(
       <TodaysMealsList
         meals={[mealWithIngredients, mealWithTotals]}
         onOpenMeal={onOpenMeal}
@@ -52,16 +67,17 @@ describe("TodaysMealsList", () => {
       />,
     );
 
-    expect(getByText("translated:todaysMeals")).toBeTruthy();
-    expect(getByText("Chicken")).toBeTruthy();
-    expect(getByText("150 kcal")).toBeTruthy();
-    expect(getByText("Omelette")).toBeTruthy();
-    expect(getByText("320 kcal")).toBeTruthy();
+    expect(screen.getByText("translated:todaysMeals")).toBeTruthy();
+    expect(screen.getByText("Chicken")).toBeTruthy();
+    expect(screen.getByText("150 kcal")).toBeTruthy();
+    expect(screen.getAllByText("sync:synced")).toHaveLength(2);
+    expect(screen.getByText("Omelette")).toBeTruthy();
+    expect(screen.getByText("320 kcal")).toBeTruthy();
 
-    fireEvent.press(getByText("Chicken"));
+    fireEvent.press(screen.getByText("Chicken"));
     expect(onOpenMeal).toHaveBeenCalledWith(mealWithIngredients);
 
-    fireEvent.press(getByText("translated:addMeal"));
+    fireEvent.press(screen.getByText("translated:addMeal"));
     expect(onAddMeal).toHaveBeenCalledTimes(1);
   });
 

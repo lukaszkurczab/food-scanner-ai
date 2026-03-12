@@ -4,6 +4,7 @@ import { useTheme } from "@/theme/useTheme";
 import type { Meal } from "@/types/meal";
 import { useTranslation } from "react-i18next";
 import { PrimaryButton } from "@components/PrimaryButton";
+import { MealSyncBadge } from "@/components/MealSyncBadge";
 
 type Props = {
   meals: Meal[];
@@ -44,11 +45,17 @@ export const TodaysMealsList = ({
             >
               {meal.name || t("meal")}
             </Text>
-            <Text
-              style={styles.mealKcal}
-            >
-              {kcal} kcal
-            </Text>
+            <View style={styles.metaWrap}>
+              <MealSyncBadge
+                syncState={meal.syncState}
+                lastSyncedAt={meal.lastSyncedAt}
+              />
+              <Text
+                style={styles.mealKcal}
+              >
+                {kcal} kcal
+              </Text>
+            </View>
           </View>
         );
       })}
@@ -80,11 +87,18 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     mealRow: {
       flexDirection: "row",
       justifyContent: "space-between",
+      alignItems: "center",
       paddingVertical: theme.spacing.xs,
+      gap: theme.spacing.sm,
     },
     mealName: {
       color: theme.text,
       fontSize: theme.typography.size.md,
+      flex: 1,
+    },
+    metaWrap: {
+      alignItems: "flex-end",
+      gap: theme.spacing.xs,
     },
     mealKcal: {
       color: theme.textSecondary,

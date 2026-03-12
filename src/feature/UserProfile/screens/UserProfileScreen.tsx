@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import { ButtonToggle, InputModal, Layout } from "@/components";
+import { ButtonToggle, InputModal, Layout, PrimaryButton } from "@/components";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
 import AvatarBadge from "@/components/AvatarBadge";
@@ -25,7 +25,38 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
 
   const state = useUserProfileState({ navigation });
 
-  if (!state.userData) return null;
+  if (state.loadingUser) {
+    return (
+      <Layout>
+        <View style={styles.emptyStateWrap}>
+          <ActivityIndicator size="large" color={theme.accent} />
+          <Text style={styles.emptyStateDescription}>{t("common:loading")}</Text>
+        </View>
+      </Layout>
+    );
+  }
+
+  if (!state.userData) {
+    return (
+      <Layout>
+        <View style={styles.emptyStateWrap}>
+          <Text style={styles.emptyStateTitle}>{t("profileUnavailableTitle")}</Text>
+          <Text style={styles.emptyStateDescription}>
+            {state.isOnline
+              ? t("profileUnavailableDesc")
+              : t("profileUnavailableOfflineDesc")}
+          </Text>
+          <PrimaryButton
+            label={t("common:retry")}
+            onPress={() => {
+              void state.handleRetryProfileLoad();
+            }}
+            style={styles.emptyStateAction}
+          />
+        </View>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -52,6 +83,37 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           {state.userData.email}
         </Text>
         <Text style={styles.streak}>🔥 {state.streak}</Text>
+        {state.syncState !== "synced" && (
+          <View style={styles.syncBanner}>
+            <View style={styles.syncBannerTextWrap}>
+              <Text style={styles.syncBannerTitle}>
+                {state.syncState === "pending"
+                  ? t("sync.pendingTitle")
+                  : t("sync.conflictTitle")}
+              </Text>
+              <Text style={styles.syncState}>
+                {state.syncState === "pending"
+                  ? t("sync.pending")
+                  : t("sync.conflict")}
+              </Text>
+            </View>
+            {state.syncState === "conflict" && (
+              <Pressable
+                onPress={() => {
+                  void state.retryProfileSync();
+                }}
+                disabled={state.retryingProfileSync}
+                style={state.retryingProfileSync ? styles.syncRetryDisabled : undefined}
+              >
+                {state.retryingProfileSync ? (
+                  <ActivityIndicator size="small" color={theme.warning.text} />
+                ) : (
+                  <Text style={styles.syncRetryLabel}>{t("sync.retry")}</Text>
+                )}
+              </Pressable>
+            )}
+          </View>
+        )}
       </View>
 
       <SectionHeader label={t("userSection")} />
@@ -191,6 +253,42 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginTop: theme.spacing.xs,
       fontSize: theme.typography.size.sm,
     },
+    syncState: {
+      fontSize: theme.typography.size.xs,
+      color: theme.textSecondary,
+    },
+    syncBanner: {
+      marginTop: theme.spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: theme.rounded.md,
+      backgroundColor: theme.warning.background,
+      paddingVertical: theme.spacing.xs + 2,
+      paddingHorizontal: theme.spacing.sm,
+      width: "100%",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    syncBannerTextWrap: {
+      flex: 1,
+      gap: 2,
+    },
+    syncBannerTitle: {
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      color: theme.warning.text,
+    },
+    syncRetryLabel: {
+      color: theme.warning.text,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.sm,
+      textDecorationLine: "underline",
+    },
+    syncRetryDisabled: {
+      opacity: 0.65,
+    },
     listItemSpacing: { marginBottom: theme.spacing.xl },
     toggleRow: {
       flexDirection: "row",
@@ -218,5 +316,28 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       textAlign: "center",
       fontSize: theme.typography.size.sm,
       color: theme.textSecondary,
+    },
+    emptyStateWrap: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: theme.spacing.lg,
+      gap: theme.spacing.sm,
+    },
+    emptyStateTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      textAlign: "center",
+    },
+    emptyStateDescription: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      textAlign: "center",
+      lineHeight: Math.round(theme.typography.size.sm * 1.5),
+    },
+    emptyStateAction: {
+      marginTop: theme.spacing.sm,
+      alignSelf: "stretch",
     },
   });

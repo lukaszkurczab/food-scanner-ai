@@ -1,9 +1,6 @@
-import NetInfo from "@react-native-community/netinfo";
-import { v4 as uuidv4 } from "uuid";
 import * as FileSystem from "expo-file-system";
 import type { Meal } from "@/types/meal";
 import {
-  processAndUpload,
   ensureLocalMealPhoto,
   localPhotoPath,
 } from "./mealService.images";
@@ -12,15 +9,12 @@ import {
   getMealsPageLocalFiltered,
   type LocalHistoryFilters,
 } from "@/services/offline/meals.repo";
-import { on, emit } from "@/services/core/events";
+import { on } from "@/services/core/events";
 import {
   extractMealTimestampCursor,
-  fetchMealsPageRemote,
   markMealDeletedRemote,
-  saveMealRemote,
   type MealHistoryFilters,
 } from "@/services/meals/mealsRepository";
-import { formatStreakDate } from "@/services/gamification/streak.logic";
 export const FREE_WINDOW_DAYS = 30;
 export type HistoryFilters = MealHistoryFilters;
 
@@ -65,45 +59,33 @@ export async function getMealsPageFiltered(
     return f;
   })();
 
-  const net = await NetInfo.fetch();
-  if (!net.isConnected) {
-    const localFilters: LocalHistoryFilters | undefined = effectiveFilters
-      ? {
-          calories: effectiveFilters.calories,
-          protein: effectiveFilters.protein,
-          carbs: effectiveFilters.carbs,
-          fat: effectiveFilters.fat,
-          dateRange: effectiveFilters.dateRange
-            ? {
-                start: new Date(effectiveFilters.dateRange.start),
-                end: new Date(effectiveFilters.dateRange.end),
-              }
-            : undefined,
-        }
-      : undefined;
+  const localFilters: LocalHistoryFilters | undefined = effectiveFilters
+    ? {
+        calories: effectiveFilters.calories,
+        protein: effectiveFilters.protein,
+        carbs: effectiveFilters.carbs,
+        fat: effectiveFilters.fat,
+        dateRange: effectiveFilters.dateRange
+          ? {
+              start: new Date(effectiveFilters.dateRange.start),
+              end: new Date(effectiveFilters.dateRange.end),
+            }
+          : undefined,
+      }
+    : undefined;
 
-    const beforeISO =
-      typeof opts.cursor === "string" && opts.cursor
-        ? extractMealTimestampCursor(opts.cursor)
-        : null;
+  const beforeISO =
+    typeof opts.cursor === "string" && opts.cursor
+      ? extractMealTimestampCursor(opts.cursor)
+      : null;
 
-    const page = await getMealsPageLocalFiltered(uid, {
-      limit: opts.limit,
-      beforeISO,
-      filters: localFilters,
-    });
-
-    return { items: page.items, nextCursor: page.nextBefore };
-  }
-
-  const remotePage = await fetchMealsPageRemote({
-    uid,
-    pageSize: opts.limit,
-    cursor: opts.cursor,
-    filters: effectiveFilters,
+  const page = await getMealsPageLocalFiltered(uid, {
+    limit: opts.limit,
+    beforeISO,
+    filters: localFilters,
   });
-  if (!remotePage.items.length) return { items: [], nextCursor: null };
-  return remotePage;
+
+  return { items: page.items, nextCursor: page.nextBefore };
 }
 
 export function subscribeMeals(
@@ -132,82 +114,6 @@ export function subscribeMeals(
     active = false;
     unsubs.forEach((unsubscribe) => unsubscribe());
   };
-}
-
-function computeTotals(meal: Meal) {
-  const ing = meal.ingredients || [];
-  const sum = (k: "kcal" | "protein" | "carbs" | "fat") =>
-    ing.reduce((a, b) => a + (Number(b?.[k]) || 0), 0);
-  return {
-    kcal: sum("kcal"),
-    protein: sum("protein"),
-    carbs: sum("carbs"),
-    fat: sum("fat"),
-  };
-}
-
-function resolveMealDayKey(meal: Pick<Meal, "dayKey" | "timestamp">): string {
-  if (meal.dayKey) return meal.dayKey;
-  return formatStreakDate(new Date(meal.timestamp));
-}
-
-export async function addOrUpdateMeal(
-  uid: string,
-  meal: Meal,
-  opts?: { alsoSaveToMyMeals?: boolean }
-): Promise<Meal> {
-  const cloudId = meal.cloudId ?? uuidv4();
-  const now = new Date().toISOString();
-  let imageId: string | null | undefined = meal.imageId ?? null;
-  let photoUrl: string | null | undefined = meal.photoUrl ?? null;
-  const mealWithLegacyLocal = meal as Meal & { localPhotoUri?: string | null };
-  const legacyLocalUri = mealWithLegacyLocal.localPhotoUri ?? null;
-
-  if (
-    (photoUrl &&
-      (photoUrl.startsWith("file:") || photoUrl.startsWith("content:"))) ||
-    legacyLocalUri
-  ) {
-    const localUri = legacyLocalUri || photoUrl!;
-    const net = await NetInfo.fetch();
-    if (net.isConnected) {
-      const up = await processAndUpload(uid, localUri);
-      imageId = up.imageId;
-      photoUrl = up.cloudUrl;
-    }
-  }
-
-  const totals = computeTotals(meal);
-  const normalized: Meal = {
-    userUid: uid,
-    mealId: meal.mealId || uuidv4(),
-    timestamp: meal.timestamp ?? now,
-    dayKey: resolveMealDayKey({
-      dayKey: meal.dayKey ?? null,
-      timestamp: meal.timestamp ?? now,
-    }),
-    type: meal.type,
-    name: meal.name ?? null,
-    ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
-    createdAt: meal.createdAt ?? now,
-    updatedAt: now,
-    syncState: "pending",
-    source: meal.source ?? null,
-    imageId: imageId ?? meal.imageId ?? null,
-    photoUrl: photoUrl ?? meal.photoUrl ?? null,
-    notes: meal.notes ?? null,
-    tags: meal.tags ?? [],
-    deleted: meal.deleted ?? false,
-    cloudId,
-    totals,
-  };
-  await saveMealRemote({
-    uid,
-    meal: normalized,
-    alsoSaveToMyMeals: opts?.alsoSaveToMyMeals,
-  });
-  emit("meal:added", { uid, meal: { ...normalized, syncState: "synced" } });
-  return { ...normalized, syncState: "synced" };
 }
 
 export async function deleteMealInFirestore(uid: string, cloudId: string) {

@@ -44,6 +44,7 @@ type PhotoPreviewProps = {
 const mockUseAuthContext = jest.fn();
 const mockUseMealDraftContext = jest.fn();
 const mockUseUserContext = jest.fn();
+const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
 const mockUseMeals = jest.fn<
   (uid: string | null) => {
     addMeal: (meal: Meal, options: { alsoSaveToMyMeals: boolean }) => Promise<void>;
@@ -74,6 +75,10 @@ jest.mock("@hooks/useMeals", () => ({
 
 jest.mock("@expo/vector-icons", () => ({
   MaterialIcons: () => null,
+}));
+
+jest.mock("@react-native-community/netinfo", () => ({
+  useNetInfo: () => mockUseNetInfo(),
 }));
 
 jest.mock("react-i18next", () => ({
@@ -117,6 +122,12 @@ jest.mock("@/components", () => {
       createElement(
         Pressable,
         { onPress, disabled, testID, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
+    SecondaryButton: ({ label, onPress, disabled }: ButtonProps) =>
+      createElement(
+        Pressable,
+        { onPress, disabled, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
     Checkbox: ({ checked, onChange }: CheckboxProps) =>
@@ -234,6 +245,7 @@ const buildDraftContext = (mealOverrides?: Partial<Meal>) => ({
   setLastScreen: jest.fn(async (_uid: string, _screen: string) => undefined),
   clearMeal: jest.fn(),
   saveDraft: jest.fn(async (_uid: string) => undefined),
+  loadDraft: jest.fn(async (_uid: string) => undefined),
   setPhotoUrl: jest.fn(),
 });
 
@@ -268,6 +280,7 @@ describe("ResultScreen", () => {
   beforeEach(() => {
     mockGetInfoAsync.mockReset();
     mockGetInfoAsync.mockResolvedValue({ exists: true });
+    mockUseNetInfo.mockReturnValue({ isConnected: true });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUseUserContext.mockReturnValue({
       userData: { uid: "user-1", calorieTarget: 1000 },
@@ -278,14 +291,46 @@ describe("ResultScreen", () => {
     });
   });
 
-  it("returns null when the authenticated user is missing", () => {
+  it("renders fallback when the authenticated user is missing", () => {
     mockUseAuthContext.mockReturnValue({ uid: null });
     mockUseMealDraftContext.mockReturnValue(buildDraftContext());
 
     const { props } = buildProps();
-    const { toJSON } = renderWithTheme(<ResultScreen {...props} />);
+    const { getByText } = renderWithTheme(<ResultScreen {...props} />);
 
-    expect(toJSON()).toBeNull();
+    expect(getByText("meals:resultUnavailable.title")).toBeTruthy();
+    expect(getByText("meals:resultUnavailable.authDesc")).toBeTruthy();
+    fireEvent.press(getByText("meals:select_method"));
+    expect(props.navigation.replace).toHaveBeenCalledWith("MealAddMethod");
+  });
+
+  it("retries loading draft when meal data is missing", () => {
+    const ctx = buildDraftContext();
+    mockUseMealDraftContext.mockReturnValue({
+      ...ctx,
+      meal: null,
+    });
+
+    const { props } = buildProps();
+    const { getByText } = renderWithTheme(<ResultScreen {...props} />);
+
+    expect(getByText("meals:resultUnavailable.desc")).toBeTruthy();
+    fireEvent.press(getByText("common:retry"));
+    expect(ctx.loadDraft).toHaveBeenCalledWith("user-1");
+  });
+
+  it("renders offline fallback copy when disconnected and draft is missing", () => {
+    mockUseNetInfo.mockReturnValue({ isConnected: false });
+    const ctx = buildDraftContext();
+    mockUseMealDraftContext.mockReturnValue({
+      ...ctx,
+      meal: null,
+    });
+
+    const { props } = buildProps();
+    const { getByText } = renderWithTheme(<ResultScreen {...props} />);
+
+    expect(getByText("meals:resultUnavailable.offlineDesc")).toBeTruthy();
   });
 
   it("clears missing local images from the draft and persists the change", async () => {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { TodaysMealsList } from "../components/TodaysMealsList";
 import { ButtonSection } from "../components/ButtonSection";
@@ -67,6 +68,7 @@ export default function HomeScreen({ navigation }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["home", "common"]);
+  const netInfo = useNetInfo();
   const { userData } = useUserContext();
   const { uid } = useAuthContext();
   const [streak, setStreak] = useState(0);
@@ -179,6 +181,7 @@ export default function HomeScreen({ navigation }: Props) {
             onAddMeal={
               isToday ? () => navigation.navigate("MealAddMethod") : undefined
             }
+            isOffline={netInfo.isConnected === false}
             onOpenHistory={
               isToday ? undefined : () => navigation.navigate("HistoryList")
             }

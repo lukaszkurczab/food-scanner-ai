@@ -9,6 +9,8 @@ const mockUseAuthContext = jest.fn<() => { uid: string | null }>(() => ({
   uid: "user-1",
 }));
 const mockGet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockStorageGetItem = jest.fn<(...args: unknown[]) => Promise<string | null>>();
+const mockStorageSetItem = jest.fn<(...args: unknown[]) => Promise<void>>();
 
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
@@ -16,6 +18,16 @@ jest.mock("@/context/AuthContext", () => ({
 
 jest.mock("@/services/core/apiClient", () => ({
   get: (...args: unknown[]) => mockGet(...args),
+}));
+
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  __esModule: true,
+  default: {
+    getItem: (...args: unknown[]) => mockStorageGetItem(...args),
+    setItem: (...args: unknown[]) => mockStorageSetItem(...args),
+  },
+  getItem: (...args: unknown[]) => mockStorageGetItem(...args),
+  setItem: (...args: unknown[]) => mockStorageSetItem(...args),
 }));
 
 function buildCredits(overrides: Partial<AiCreditsStatus> = {}): AiCreditsStatus {
@@ -42,12 +54,18 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 describe("AiCreditsContext", () => {
   let appStateListener: ((state: AppStateStatus) => void) | null = null;
   const appStateRemove = jest.fn();
+  let nowMs = 1_000;
 
   beforeEach(() => {
     mockUseAuthContext.mockReset().mockReturnValue({ uid: "user-1" });
     mockGet.mockReset().mockResolvedValue(buildCredits());
+    mockStorageGetItem.mockReset().mockResolvedValue(null);
+    mockStorageSetItem.mockReset().mockResolvedValue(undefined);
     appStateRemove.mockClear();
     appStateListener = null;
+    nowMs = 1_000;
+
+    jest.spyOn(Date, "now").mockImplementation(() => nowMs);
 
     jest.spyOn(AppState, "addEventListener").mockImplementation(
       (_eventType, listener) => {
@@ -68,6 +86,10 @@ describe("AiCreditsContext", () => {
       expect(mockGet).toHaveBeenCalledWith("/ai/credits");
       expect(result.current.credits?.balance).toBe(100);
     });
+    expect(mockStorageSetItem).toHaveBeenCalledWith(
+      "ai_credits:user-1",
+      expect.stringContaining("\"balance\":100"),
+    );
   });
 
   it("returns safe defaults without provider", async () => {
@@ -91,6 +113,7 @@ describe("AiCreditsContext", () => {
     });
 
     act(() => {
+      nowMs += 31_000;
       if (!appStateListener) {
         throw new Error("Missing AppState listener");
       }
@@ -100,6 +123,31 @@ describe("AiCreditsContext", () => {
     await waitFor(() => {
       expect(mockGet).toHaveBeenCalledTimes(2);
       expect(result.current.credits?.balance).toBe(77);
+    });
+  });
+
+  it("throttles app foreground refresh when app resumes too quickly", async () => {
+    mockGet
+      .mockResolvedValueOnce(buildCredits({ balance: 100 }))
+      .mockResolvedValueOnce(buildCredits({ balance: 77 }));
+
+    const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.credits?.balance).toBe(100);
+    });
+
+    act(() => {
+      nowMs += 5_000;
+      if (!appStateListener) {
+        throw new Error("Missing AppState listener");
+      }
+      appStateListener("active");
+    });
+
+    await waitFor(() => {
+      expect(mockGet).toHaveBeenCalledTimes(1);
+      expect(result.current.credits?.balance).toBe(100);
     });
   });
 
@@ -191,6 +239,20 @@ describe("AiCreditsContext", () => {
     });
 
     expect(result.current.credits).toBeNull();
+  });
+
+  it("hydrates credits from local cache before remote refresh", async () => {
+    mockStorageGetItem.mockResolvedValueOnce(
+      JSON.stringify(buildCredits({ balance: 42 })),
+    );
+    mockGet.mockRejectedValue(new Error("network"));
+
+    const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.credits?.balance).toBe(42);
+    });
+    expect(mockGet).toHaveBeenCalledWith("/ai/credits");
   });
 
   it("ignores invalid inline credits payload", async () => {

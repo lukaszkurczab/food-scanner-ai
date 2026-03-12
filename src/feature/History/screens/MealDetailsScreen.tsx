@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,11 +17,14 @@ import {
 import { FallbackImage } from "../components/FallbackImage";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useMealDetailsScreenState } from "@/feature/History/hooks/useMealDetailsScreenState";
+import { MealSyncBadge } from "@/components/MealSyncBadge";
 
 export default function MealDetailsScreen() {
   const theme = useTheme();
   const { t } = useTranslation(["meals", "common"]);
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const netInfo = useNetInfo();
+  const isOnline = netInfo.isConnected !== false;
   const insets = useSafeAreaInsets();
   const topLeftActionStyle = useMemo(
     () => ({
@@ -46,7 +50,33 @@ export default function MealDetailsScreen() {
 
   const state = useMealDetailsScreenState();
 
-  if (!state.draft || !state.nutrition) return null;
+  if (!state.draft || !state.nutrition) {
+    return (
+      <Layout showNavigation={false} style={styles.layout}>
+        <ScreenCornerNavButton
+          icon="back"
+          onPress={state.handleBack}
+          accessibilityLabel={t("back", { ns: "common", defaultValue: "Back" })}
+          containerStyle={topLeftActionStyle}
+        />
+        <View style={[styles.emptyWrap, contentInsetsStyle]}>
+          <Text style={styles.emptyTitle}>{t("detailsUnavailable.title", { ns: "meals" })}</Text>
+          <Text style={styles.emptyDescription}>
+            {isOnline
+              ? t("detailsUnavailable.desc", { ns: "meals" })
+              : t("detailsUnavailable.offlineDesc", { ns: "meals" })}
+          </Text>
+          <PrimaryButton
+            label={t("retry", { ns: "common" })}
+            onPress={() => {
+              void state.reloadFromLocal();
+            }}
+            style={styles.emptyAction}
+          />
+        </View>
+      </Layout>
+    );
+  }
 
   return (
     <Layout showNavigation={false} style={styles.layout}>
@@ -113,6 +143,12 @@ export default function MealDetailsScreen() {
             onNameChange={state.edit ? state.setName : undefined}
             onTypeChange={state.edit ? state.setType : undefined}
           />
+          <View style={styles.syncBadgeWrap}>
+            <MealSyncBadge
+              syncState={state.draft.syncState}
+              lastSyncedAt={state.draft.lastSyncedAt}
+            />
+          </View>
 
           {!!state.draft.ingredients.length && (
             <Card variant="outlined" onPress={state.toggleIngredients}>
@@ -253,6 +289,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.semiBold,
     },
+    syncBadgeWrap: {
+      marginTop: theme.spacing.sm,
+      alignItems: "flex-start",
+    },
     toggleText: {
       fontSize: theme.typography.size.md,
       fontFamily: theme.typography.fontFamily.medium,
@@ -261,4 +301,27 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     actionsWrap: { marginTop: theme.spacing.lg },
     actionsStack: { gap: theme.spacing.sm },
+    emptyWrap: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      paddingBottom: theme.spacing.xl,
+    },
+    emptyTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.lg,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      textAlign: "center",
+    },
+    emptyDescription: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      textAlign: "center",
+      lineHeight: Math.round(theme.typography.size.sm * 1.5),
+    },
+    emptyAction: {
+      alignSelf: "stretch",
+      marginTop: theme.spacing.sm,
+    },
   });

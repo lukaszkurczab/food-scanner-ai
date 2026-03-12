@@ -1,6 +1,6 @@
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "other";
 export type MealSource = "ai" | "manual" | "saved" | null;
-export type MealSyncState = "synced" | "pending" | "conflict";
+export type MealSyncState = "synced" | "pending" | "conflict" | "failed";
 
 export type Ingredient = {
   id: string;
@@ -30,6 +30,7 @@ export interface Meal {
   ingredients: Ingredient[];
   createdAt: string;
   updatedAt: string;
+  lastSyncedAt?: number | null;
   syncState: MealSyncState;
   source: MealSource;
   imageId?: string | null;
