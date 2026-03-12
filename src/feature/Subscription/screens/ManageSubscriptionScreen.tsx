@@ -12,15 +12,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { BackTitleHeader, FullScreenLoader, Layout } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
+import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { PaywallModal } from "@/feature/Subscription/components/PaywallModal";
 import { useManageSubscriptionState } from "@/feature/Subscription/hooks/useManageSubscriptionState";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { AiCreditsSummaryCard } from "@/components/AiCreditsSummaryCard";
 
 const BENEFITS = [
-  "unlimitedAiChat",
-  "unlimitedAiMealRecognition",
+  "aiCredits800",
+  "flexibleAiUsage",
+  "photoAnalysisIncluded",
   "fullCloudBackup",
   "fullHistoryAccess",
   "earlyAccess",
@@ -42,6 +45,7 @@ export default function ManageSubscriptionScreen({
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("profile");
   const { uid } = useAuthContext();
+  const { credits, loading: creditsLoading } = useAiCreditsContext();
   const { isPremium, subscription, setDevPremium, refreshPremium } =
     usePremiumContext();
   const subscriptionStoreName =
@@ -124,6 +128,14 @@ export default function ManageSubscriptionScreen({
             {busy && <ActivityIndicator size="small" color={theme.textSecondary} />}
           </View>
         </View>
+
+        <AiCreditsSummaryCard
+          balance={credits?.balance ?? null}
+          allocation={credits?.allocation ?? null}
+          tier={credits?.tier ?? null}
+          renewalAt={credits?.periodEndAt ?? null}
+          loading={creditsLoading}
+        />
 
         <View>
           <Text style={styles.sectionLabel}>

@@ -225,6 +225,7 @@ function baseHookState() {
     scannedCode: null as string | null,
     mode: "ai" as "ai" | "barcode",
     isPremium: true,
+    canUsePhotoAi: true,
     skipDetection: false,
     barcodeOnly: false,
     showBarcodeOverlay: false,
@@ -361,10 +362,11 @@ describe("MealCameraScreen", () => {
     const { getByText } = renderWithTheme(<MealCameraScreen {...props} />);
 
     fireEvent.press(getByText("back:Back"));
+    expect(getByText("chat:credits.costMultiple")).toBeTruthy();
     fireEvent.press(getByText("psychology"));
     fireEvent.press(getByText("qr-code-scanner"));
     fireEvent.press(getByText("meals:dev.sample_meal"));
-    fireEvent.press(getByText("Go Premium"));
+    fireEvent.press(getByText("chat:limit.upgradeCta"));
     fireEvent.press(getByText("OK"));
 
     expect(getByText("Detected: 5901234123457")).toBeTruthy();

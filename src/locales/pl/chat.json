@@ -12,13 +12,14 @@
     "send": "Wyślij"
   },
   "limit": {
-    "upgradeCta": "Przejdź na Premium",
-    "title": "Dziękujemy za korzystanie z Fitaly!",
-    "body": "Wykorzystałeś {{used}} z {{limit}} darmowych pytań dziennie. Wróć jutro lub odblokuj nielimitowany dostęp.",
-    "button": "Odblokuj Premium",
-    "reached": "Osiągnięto limit dzienny ({{used}}/{{limit}})",
-    "reachedShort": "Limit dzienny osiągnięty ({{used}}/{{limit}})",
-    "reachedTitle": "Limit dzienny osiągnięty"
+    "upgradeCta": "Zobacz plany",
+    "title": "Za mało AI Credits",
+    "body": "Masz {{balance}} z {{allocation}} AI Credits. Następne odnowienie: {{renewalDate}}.",
+    "button": "Odblokuj 800 AI Credits",
+    "reached": "Za mało AI Credits",
+    "reachedShort": "Za mało AI Credits",
+    "reachedTitle": "Za mało AI Credits",
+    "photoRequired": "Potrzebujesz co najmniej {{cost}} AI Credits, aby analizować zdjęcie."
   },
   "empty": {
     "title": "Zacznij rozmowę",
@@ -31,8 +32,8 @@
     "v3": "Zaproponuj wysokobiałkową kolację dopasowaną do mnie.",
     "s4": "Białko dziś",
     "v4": "Ile białka zjadłem dziś na podstawie zapisanych posiłków?",
-    "footerFree": "Plan darmowy: {{used}}/{{limit}} wiadomości dzisiaj",
-    "footerPremium": "Premium aktywne"
+    "footerFree": "AI Credits: {{balance}}/{{allocation}}",
+    "footerPremium": "AI Credits: {{balance}}/{{allocation}}"
   },
   "history": {
     "open": "Otwórz historię czatu"
@@ -53,5 +54,14 @@
     "restore": "Przywróć zakupy",
     "terms": "Regulamin",
     "privacy": "Prywatność"
+  },
+  "credits": {
+    "name": "AI Credits",
+    "balanceShort": "AI Credits: {{balance}}",
+    "balanceOutOf": "AI Credits: {{balance}}/{{allocation}}",
+    "costZero": "0 AI Credits",
+    "costSingle": "1 AI Credit",
+    "costMultiple": "{{count}} AI Credits",
+    "renewalUnknown": "Brak danych"
   }
 }

@@ -11,7 +11,6 @@ import type {
   AiAskE2EResponse,
   AiAskResponse,
 } from "@/services/ai/contracts";
-export { AiLimitExceededError } from "@/services/ai/AiLimitExceededError";
 
 export type Message = { from: "user" | "ai"; text: string };
 

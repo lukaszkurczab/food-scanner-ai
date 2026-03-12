@@ -39,7 +39,7 @@ export function getAiUxErrorType(error: unknown): AiUxErrorType {
     if (error.code === "offline") return "offline";
     if (error.code === "api/timeout") return "timeout";
     if (error.code === "auth/required") return "auth";
-    if (error.code === "api/rate-limited" || error.code === "ai/limit-exceeded") {
+    if (error.code === "api/rate-limited") {
       return "limit";
     }
     if (error.code === "ai/unavailable") {
@@ -57,4 +57,3 @@ export function getAiUxErrorType(error: unknown): AiUxErrorType {
 
   return "unknown";
 }
-

@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { debugScope } from "@/utils/debug";
 import {
   createServiceError,
+  getErrorStatus,
   isServiceError,
 } from "@/services/contracts/serviceError";
 import { post } from "@/services/core/apiClient";
@@ -16,9 +17,12 @@ const log = debugScope("Vision");
 const AI_UNAVAILABLE_CODE = "ai/unavailable";
 
 type VisionOpts = {
-  isPremium?: boolean;
-  limit?: number;
   lang?: string;
+};
+
+export type VisionAnalyzeResult = {
+  ingredients: Ingredient[] | null;
+  credits: AiPhotoAnalyzeResponse;
 };
 
 function normalizeBackendVisionPayload(
@@ -44,7 +48,7 @@ async function detectIngredientsWithBackend(
   userUid: string,
   imageBase64: string,
   userLang: string,
-): Promise<Ingredient[] | null> {
+): Promise<VisionAnalyzeResult | null> {
   if (!userUid) return null;
 
   const response = await post<AiPhotoAnalyzeResponse>("/ai/photo/analyze", {
@@ -52,24 +56,18 @@ async function detectIngredientsWithBackend(
     lang: userLang,
   });
 
-  return normalizeBackendVisionPayload(response);
+  return {
+    ingredients: normalizeBackendVisionPayload(response),
+    credits: response,
+  };
 }
 
 export async function detectIngredientsWithVision(
   userUid: string,
   imageUri: string,
   opts?: VisionOpts,
-): Promise<Ingredient[] | null> {
-  const isPremium = !!opts?.isPremium;
+): Promise<VisionAnalyzeResult | null> {
   const userLang = (opts?.lang || "pl").toLowerCase();
-
-  if (!isPremium) {
-    throw createServiceError({
-      code: "ai/premium-required",
-      source: "VisionService",
-      retryable: false,
-    });
-  }
 
   const net = await NetInfo.fetch();
   if (!net.isConnected) {
@@ -91,11 +89,14 @@ export async function detectIngredientsWithVision(
 
     return await detectIngredientsWithBackend(userUid, imageBase64, userLang);
   } catch (error) {
+    if (getErrorStatus(error) === 402) {
+      throw error;
+    }
+
     if (
       isServiceError(error) &&
       (
         error.code === "offline" ||
-        error.code === "ai/premium-required" ||
         error.code === AI_UNAVAILABLE_CODE
       )
     ) {

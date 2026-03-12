@@ -12,13 +12,14 @@
     "send": "Send"
   },
   "limit": {
-    "title": "Thanks for exploring Fitaly!",
-    "body": "You've used {{used}} out of {{limit}} free questions today. Come back tomorrow or unlock unlimited access.",
-    "button": "Unlock Premium",
-    "reached": "Daily limit reached ({{used}}/{{limit}})",
-    "reachedShort": "Daily limit reached ({{used}}/{{limit}})",
-    "reachedTitle": "Daily limit reached",
-    "upgradeCta": "Upgrade"
+    "title": "Not enough AI Credits",
+    "body": "You have {{balance}} of {{allocation}} AI Credits available. Next refresh: {{renewalDate}}.",
+    "button": "Get 800 AI Credits",
+    "reached": "Not enough AI Credits",
+    "reachedShort": "Not enough AI Credits",
+    "reachedTitle": "Not enough AI Credits",
+    "upgradeCta": "See plans",
+    "photoRequired": "You need at least {{cost}} AI Credits to analyze a photo."
   },
   "empty": {
     "title": "Start a conversation",
@@ -31,8 +32,8 @@
     "v3": "Suggest a high-protein dinner idea tailored to me.",
     "s4": "Protein today",
     "v4": "How much protein did I eat today based on my logged meals?",
-    "footerFree": "Free plan: {{used}}/{{limit}} messages today",
-    "footerPremium": "Premium active"
+    "footerFree": "AI Credits: {{balance}}/{{allocation}}",
+    "footerPremium": "AI Credits: {{balance}}/{{allocation}}"
   },
   "history": {
     "open": "Open chat history"
@@ -53,5 +54,14 @@
     "restore": "Restore Purchases",
     "terms": "Terms",
     "privacy": "Privacy"
+  },
+  "credits": {
+    "name": "AI Credits",
+    "balanceShort": "AI Credits: {{balance}}",
+    "balanceOutOf": "AI Credits: {{balance}}/{{allocation}}",
+    "costZero": "0 AI Credits",
+    "costSingle": "1 AI Credit",
+    "costMultiple": "{{count}} AI Credits",
+    "renewalUnknown": "Unavailable"
   }
 }

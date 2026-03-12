@@ -82,15 +82,18 @@ describe("visionService", () => {
           unit: "ml",
         },
       ],
-      usageCount: 1,
-      remaining: 19,
-      dateKey: "2026-03-03",
+      userId: "user-1",
+      tier: "free",
+      balance: 95,
+      allocation: 100,
+      periodStartAt: "2026-03-03T00:00:00.000Z",
+      periodEndAt: "2026-04-03T00:00:00.000Z",
+      costs: { chat: 1, textMeal: 1, photo: 5 },
       version: "test",
       persistence: "backend_owned",
     });
 
     const result = await detectIngredientsWithVision("user-1", "file:///meal.jpg", {
-      isPremium: true,
       lang: "EN",
     });
 
@@ -108,33 +111,25 @@ describe("visionService", () => {
       imageBase64: "base64-image",
       lang: "en",
     });
-    expect(result).toEqual([
-      {
-        id: expect.any(String),
-        name: "Owsianka",
-        amount: 250,
-        unit: "ml",
-        protein: 10,
-        fat: 6,
-        carbs: 30,
-        kcal: 210,
-      },
-    ]);
-  });
-
-  it("blocks non-premium users before any network call", async () => {
-    await expect(
-      detectIngredientsWithVision("user-1", "file:///meal.jpg", {
-        isPremium: false,
-      }),
-    ).rejects.toMatchObject({
-      code: "ai/premium-required",
-      source: "VisionService",
-      retryable: false,
+    expect(result).toMatchObject({
+      ingredients: [
+        {
+          id: expect.any(String),
+          name: "Owsianka",
+          amount: 250,
+          unit: "ml",
+          protein: 10,
+          fat: 6,
+          carbs: 30,
+          kcal: 210,
+        },
+      ],
     });
-
-    expect(mockNetInfoFetch).not.toHaveBeenCalled();
-    expect(mockPost).not.toHaveBeenCalled();
+    expect(result?.credits).toMatchObject({
+      balance: 95,
+      allocation: 100,
+      tier: "free",
+    });
   });
 
   it("returns offline service error when network is unavailable", async () => {
@@ -142,7 +137,6 @@ describe("visionService", () => {
 
     await expect(
       detectIngredientsWithVision("user-1", "file:///meal.jpg", {
-        isPremium: true,
       }),
     ).rejects.toMatchObject({
       code: "offline",
@@ -159,7 +153,6 @@ describe("visionService", () => {
 
     try {
       await detectIngredientsWithVision("user-1", "file:///meal.jpg", {
-        isPremium: true,
         lang: "pl",
       });
       throw new Error("Expected detectIngredientsWithVision to reject");
@@ -184,13 +177,24 @@ describe("visionService", () => {
 
     await expect(
       detectIngredientsWithVision("user-1", "file:///meal.jpg", {
-        isPremium: true,
         lang: "pl",
       }),
     ).rejects.toMatchObject({
       code: "auth/required",
       source: "VisionService",
       retryable: false,
+    });
+  });
+
+  it("passes 402 through for credits refresh flow", async () => {
+    mockPost.mockRejectedValueOnce(Object.assign(new Error("payment required"), { status: 402 }));
+
+    await expect(
+      detectIngredientsWithVision("user-1", "file:///meal.jpg", {
+        lang: "pl",
+      }),
+    ).rejects.toMatchObject({
+      status: 402,
     });
   });
 });

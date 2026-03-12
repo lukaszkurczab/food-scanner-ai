@@ -119,7 +119,12 @@ describe("PaywallCard", () => {
     });
     const onUpgrade = jest.fn();
     const { getByText } = renderWithTheme(
-      <PaywallCard used={2} limit={5} onUpgrade={onUpgrade} />,
+      <PaywallCard
+        balance={2}
+        allocation={5}
+        renewalAt="2026-04-23T00:00:00.000Z"
+        onUpgrade={onUpgrade}
+      />,
     );
 
     await waitFor(() => {
@@ -134,7 +139,7 @@ describe("PaywallCard", () => {
     mockUseAuthContext.mockReturnValue({ uid: null });
     const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined);
     const { getByText } = renderWithTheme(
-      <PaywallCard used={2} limit={5} />,
+      <PaywallCard balance={2} allocation={5} renewalAt={null} />,
     );
 
     fireEvent.press(getByText("Restore Purchases"));
@@ -152,7 +157,7 @@ describe("PaywallCard", () => {
   it("restores purchases and refreshes premium state", async () => {
     const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined);
     const { getByText } = renderWithTheme(
-      <PaywallCard used={2} limit={5} />,
+      <PaywallCard balance={2} allocation={5} renewalAt={null} />,
     );
 
     fireEvent.press(getByText("Restore Purchases"));
@@ -175,7 +180,7 @@ describe("PaywallCard", () => {
     });
     const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined);
     const { getByText } = renderWithTheme(
-      <PaywallCard used={2} limit={5} />,
+      <PaywallCard balance={2} allocation={5} renewalAt={null} />,
     );
 
     fireEvent.press(getByText("Restore Purchases"));
@@ -204,7 +209,7 @@ describe("PaywallCard", () => {
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(true);
     const { getByText } = renderWithTheme(
-      <PaywallCard used={2} limit={5} />,
+      <PaywallCard balance={2} allocation={5} renewalAt={null} />,
     );
 
     fireEvent.press(getByText("Terms"));

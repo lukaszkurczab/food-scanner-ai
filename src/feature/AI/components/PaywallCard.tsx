@@ -20,8 +20,9 @@ import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 
 type Props = {
-  used: number;
-  limit: number;
+  balance: number;
+  allocation: number;
+  renewalAt?: string | null;
   onUpgrade?: () => void;
 };
 
@@ -60,7 +61,19 @@ function packagePeriodLabel(p: PurchasesPackage): string | null {
   return null;
 }
 
-export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
+function formatRenewalDate(value?: string | null): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+}
+
+export const PaywallCard: React.FC<Props> = ({
+  balance,
+  allocation,
+  renewalAt,
+  onUpgrade,
+}) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("chat");
@@ -80,6 +93,7 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
     () => !!termsUrl && !!privacyUrl,
     [termsUrl, privacyUrl]
   );
+  const renewalDate = formatRenewalDate(renewalAt);
 
   useEffect(() => {
     let mounted = true;
@@ -172,7 +186,13 @@ export const PaywallCard: React.FC<Props> = ({ used, limit, onUpgrade }) => {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{t("limit.title")}</Text>
-      <Text style={styles.body}>{t("limit.body", { used, limit })}</Text>
+      <Text style={styles.body}>
+        {t("limit.body", {
+          balance,
+          allocation,
+          renewalDate: renewalDate ?? t("credits.renewalUnknown"),
+        })}
+      </Text>
 
       {(priceInfo.priceText || priceInfo.periodText) && (
         <Text style={styles.priceLine}>

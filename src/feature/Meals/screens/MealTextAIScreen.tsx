@@ -15,6 +15,7 @@ import { TextInput as ShortInput } from "@/components/TextInput";
 import { useMealTextAiState } from "@/feature/Meals/hooks/useMealTextAiState";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
+import { AiCreditsBadge } from "@/components/AiCreditsBadge";
 
 export default function MealTextAIScreen() {
   const theme = useTheme();
@@ -32,13 +33,13 @@ export default function MealTextAIScreen() {
     loading,
     retries,
     showLimitModal,
-    limitUsed,
+    creditsUsed,
     nameError,
     amountError,
     ingredientsError,
     submitError,
     analyzeDisabled,
-    featureLimit,
+    creditAllocation,
     onNameChange,
     onIngredientsChange,
     onAmountChange,
@@ -56,6 +57,9 @@ export default function MealTextAIScreen() {
   return (
     <Layout disableScroll>
       <View style={styles.content}>
+        <View style={styles.badgeRow}>
+          <AiCreditsBadge text={t("credits.costSingle", { ns: "chat" })} />
+        </View>
         <ScrollView
           style={styles.formScroll}
           contentContainerStyle={styles.form}
@@ -126,8 +130,8 @@ export default function MealTextAIScreen() {
         title={t("limit.reachedTitle", { ns: "chat" })}
         message={t("limit.reachedShort", {
           ns: "chat",
-          used: limitUsed,
-          limit: featureLimit,
+          used: creditsUsed,
+          limit: creditAllocation,
         })}
         primaryActionLabel={t("limit.upgradeCta", { ns: "chat" })}
         onPrimaryAction={openPaywall}
@@ -142,6 +146,9 @@ export default function MealTextAIScreen() {
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     content: { gap: theme.spacing.lg, flex: 1 },
+    badgeRow: {
+      alignItems: "flex-end",
+    },
     formScroll: { flex: 1 },
     form: { gap: theme.spacing.md, paddingBottom: theme.spacing.sm },
     input: { fontSize: theme.typography.size.md },

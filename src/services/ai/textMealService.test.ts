@@ -1,23 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const mockPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
-class MockAiLimitExceededError extends Error {
-  readonly code = "ai/limit-exceeded";
-  readonly usage?: unknown;
-
-  constructor(message = "AI usage limit exceeded", usage?: unknown) {
-    super(message);
-    this.name = "AiLimitExceededError";
-    this.usage = usage;
-  }
-}
 
 jest.mock("@/services/core/apiClient", () => ({
   post: (url: string, data?: unknown) => mockPost(url, data),
-}));
-
-jest.mock("@/services/ai/AiLimitExceededError", () => ({
-  AiLimitExceededError: MockAiLimitExceededError,
 }));
 
 jest.mock("@/services/core/errorLogger", () => ({
@@ -42,10 +28,13 @@ describe("textMealService", () => {
           kcal: 150,
         },
       ],
-      usageCount: 1,
-      dailyLimit: 20,
-      remaining: 19,
-      dateKey: "2026-03-03",
+      userId: "user-1",
+      tier: "free",
+      balance: 99,
+      allocation: 100,
+      periodStartAt: "2026-03-03T00:00:00.000Z",
+      periodEndAt: "2026-04-03T00:00:00.000Z",
+      costs: { chat: 1, textMeal: 1, photo: 5 },
       version: "test",
       persistence: "backend_owned",
     });
@@ -84,10 +73,10 @@ describe("textMealService", () => {
       carbs: 27,
       kcal: 150,
     });
-    expect(result?.usage).toEqual({
-      usageCount: 1,
-      dailyLimit: 20,
-      remaining: 19,
+    expect(result?.credits).toMatchObject({
+      balance: 99,
+      allocation: 100,
+      costs: { chat: 1, textMeal: 1, photo: 5 },
     });
   });
 
@@ -103,10 +92,13 @@ describe("textMealService", () => {
           kcal: 0,
         },
       ],
-      usageCount: 1,
-      dailyLimit: 20,
-      remaining: 19,
-      dateKey: "2026-03-03",
+      userId: "user-1",
+      tier: "free",
+      balance: 99,
+      allocation: 100,
+      periodStartAt: "2026-03-03T00:00:00.000Z",
+      periodEndAt: "2026-04-03T00:00:00.000Z",
+      costs: { chat: 1, textMeal: 1, photo: 5 },
       version: "test",
       persistence: "backend_owned",
     });
@@ -132,48 +124,6 @@ describe("textMealService", () => {
       "[textMealService] backend returned ingredients without nutrition values",
       { userUid: "user-1", lang: "pl" },
     );
-  });
-
-  it("throws AiLimitExceededError when backend responds with 429", async () => {
-    const limitError = Object.assign(new Error("limit"), { status: 429 });
-    mockPost.mockRejectedValueOnce(limitError);
-
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { extractIngredientsFromText } = require("@/services/ai/textMealService");
-    await expect(
-      extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
-    ).rejects.toBeInstanceOf(MockAiLimitExceededError);
-  });
-
-  it("passes backend usage snapshot into AiLimitExceededError", async () => {
-    mockPost.mockRejectedValueOnce(
-      Object.assign(new Error("limit"), {
-        status: 429,
-        details: {
-          detail: {
-            usage: {
-              dateKey: "2026-03-03",
-              usageCount: 20,
-              dailyLimit: 20,
-              remaining: 0,
-            },
-          },
-        },
-      }),
-    );
-
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { extractIngredientsFromText } = require("@/services/ai/textMealService");
-    await expect(
-      extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
-    ).rejects.toMatchObject({
-      usage: {
-        dateKey: "2026-03-03",
-        usageCount: 20,
-        dailyLimit: 20,
-        remaining: 0,
-      },
-    });
   });
 
   it("maps 401 into auth/required service error", async () => {
@@ -203,6 +153,19 @@ describe("textMealService", () => {
       code: "ai/unavailable",
       source: "TextMealService",
       retryable: true,
+    });
+  });
+
+  it("passes 402 through for credits refresh flow", async () => {
+    mockPost.mockRejectedValueOnce(Object.assign(new Error("payment required"), { status: 402 }));
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { extractIngredientsFromText } = require("@/services/ai/textMealService");
+
+    await expect(
+      extractIngredientsFromText("user-1", { name: "burger" }, { lang: "en" }),
+    ).rejects.toMatchObject({
+      status: 402,
     });
   });
 });

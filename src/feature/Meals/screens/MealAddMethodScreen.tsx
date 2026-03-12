@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Layout } from "@/components";
 import { Modal } from "@/components/Modal";
 import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
+import { AiCreditsBadge } from "@/components/AiCreditsBadge";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -19,9 +20,21 @@ const MealAddMethodScreen = () => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const navigation = useNavigation<MealAddMethodNavigationProp>();
-  const { t } = useTranslation("meals");
+  const { t } = useTranslation(["meals", "chat"]);
 
   const state = useMealAddMethodState({ navigation });
+
+  const optionCost = (key: string): number => {
+    if (key === "ai_photo") return 5;
+    if (key === "ai_text") return 1;
+    return 0;
+  };
+
+  const buildCostLabel = (cost: number): string => {
+    if (cost === 0) return t("credits.costZero", { ns: "chat" });
+    if (cost === 1) return t("credits.costSingle", { ns: "chat" });
+    return t("credits.costMultiple", { ns: "chat", count: cost });
+  };
 
   return (
     <Layout>
@@ -37,31 +50,40 @@ const MealAddMethodScreen = () => {
       </Text>
 
       <View style={styles.optionsWrap}>
-        {state.options.map((option) => (
-          <TouchableOpacity
-            key={option.key}
-            testID={`meal-add-option-${option.key}`}
-            activeOpacity={0.85}
-            style={styles.optionCard}
-            onPress={() => void state.handleOptionPress(option)}
-          >
-            <View style={styles.optionIconBox}>
-              <MaterialIcons
-                name={option.icon}
-                size={48}
-                color={theme.accentSecondary}
-              />
-            </View>
-            <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>
-                {t(option.titleKey)}
-              </Text>
-              <Text style={styles.optionDescription}>
-                {t(option.descKey)}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+        {state.options.map((option) => {
+          const cost = optionCost(option.key);
+          return (
+            <TouchableOpacity
+              key={option.key}
+              testID={`meal-add-option-${option.key}`}
+              activeOpacity={0.85}
+              style={styles.optionCard}
+              onPress={() => void state.handleOptionPress(option)}
+            >
+              <View style={styles.optionIconBox}>
+                <MaterialIcons
+                  name={option.icon}
+                  size={48}
+                  color={theme.accentSecondary}
+                />
+              </View>
+              <View style={styles.optionContent}>
+                <View style={styles.optionHeader}>
+                  <Text style={styles.optionTitle}>
+                    {t(option.titleKey)}
+                  </Text>
+                  <AiCreditsBadge
+                    text={buildCostLabel(cost)}
+                    tone={cost > 0 ? "accent" : "neutral"}
+                  />
+                </View>
+                <Text style={styles.optionDescription}>
+                  {t(option.descKey)}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <Modal
@@ -144,11 +166,18 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
     },
     optionContent: { flex: 1 },
+    optionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
+    },
     optionTitle: {
       fontSize: theme.typography.size.lg,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
-      marginBottom: theme.spacing.xs,
+      flexShrink: 1,
     },
     optionDescription: {
       fontSize: theme.typography.size.base,

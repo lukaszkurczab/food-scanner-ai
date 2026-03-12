@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Keyboard } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useNavigation } from "@react-navigation/native";
@@ -6,17 +6,15 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { v4 as uuidv4 } from "uuid";
 import { Toast } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
+import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { extractIngredientsFromText } from "@/services/ai/textMealService";
-import type { AiTextMealPayload, AiUsageResponse } from "@/services/ai/contracts";
-import { AiLimitExceededError } from "@/services/ai/askDietAI";
-import { get } from "@/services/core/apiClient";
-import { captureException } from "@/services/core/errorLogger";
+import type { AiTextMealPayload } from "@/services/ai/contracts";
+import { getErrorStatus } from "@/services/contracts/serviceError";
 import { getAiUxErrorType } from "@/services/ai/uxError";
 import type { Ingredient, Meal } from "@/types";
 import type { RootStackParamList } from "@/navigation/navigate";
 
-const FEATURE_LIMIT = 1;
 const MAX_RETRIES = 3;
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -27,6 +25,7 @@ export function useMealTextAiState(params: {
   const { t, language } = params;
   const { uid } = useAuthContext();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { credits, canAfford, applyCreditsFromResponse, refreshCredits } = useAiCreditsContext();
   const { meal, setMeal, saveDraft, setLastScreen } = useMealDraftContext();
 
   const [name, setName] = useState("");
@@ -42,94 +41,9 @@ export function useMealTextAiState(params: {
   const [retries, setRetries] = useState(0);
   const [ingredientsError, setIngredientsError] = useState<string | undefined>();
   const [submitError, setSubmitError] = useState<string | undefined>();
-  const [usageCount, setUsageCount] = useState(0);
-  const [usageLimit, setUsageLimit] = useState(FEATURE_LIMIT);
-  const [remainingUsage, setRemainingUsage] = useState(FEATURE_LIMIT);
 
   const amountRaw = amount;
   const amountNum = useMemo(() => Number(amountRaw), [amountRaw]);
-
-  const applyUsage = useCallback(
-    (next: { usageCount: number; dailyLimit: number; remaining: number }) => {
-      setUsageCount(next.usageCount);
-      setUsageLimit(next.dailyLimit);
-      setRemainingUsage(next.remaining);
-    },
-    [],
-  );
-
-  const loadBackendUsage = useCallback(
-    async (source: string) => {
-      if (!uid) {
-        applyUsage({
-          usageCount: 0,
-          dailyLimit: FEATURE_LIMIT,
-          remaining: FEATURE_LIMIT,
-        });
-        return null;
-      }
-
-      try {
-        const usage = await get<AiUsageResponse>(
-          "/ai/usage",
-        );
-        applyUsage(usage);
-        return usage;
-      } catch (error) {
-        captureException(source, { userUid: uid }, error);
-        applyUsage({
-          usageCount: 0,
-          dailyLimit: FEATURE_LIMIT,
-          remaining: FEATURE_LIMIT,
-        });
-        return null;
-      }
-    },
-    [applyUsage, uid],
-  );
-
-  useEffect(() => {
-    let active = true;
-
-    (async () => {
-      if (!uid) {
-        if (active) {
-          applyUsage({
-            usageCount: 0,
-            dailyLimit: FEATURE_LIMIT,
-            remaining: FEATURE_LIMIT,
-          });
-        }
-        return;
-      }
-
-      try {
-        const usage = await get<AiUsageResponse>(
-          "/ai/usage",
-        );
-        if (active) {
-          applyUsage(usage);
-        }
-      } catch (error) {
-        if (active) {
-          captureException(
-            "[useMealTextAiState] failed to load AI usage",
-            { userUid: uid },
-            error,
-          );
-          applyUsage({
-            usageCount: 0,
-            dailyLimit: FEATURE_LIMIT,
-            remaining: FEATURE_LIMIT,
-          });
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [applyUsage, uid]);
 
   const nameError: string | undefined = useMemo(() => {
     if (!touched.name) return undefined;
@@ -255,7 +169,7 @@ export function useMealTextAiState(params: {
       return;
     }
 
-    if (remainingUsage <= 0) {
+    if (!canAfford("textMeal")) {
       setShowLimitModal(true);
       return;
     }
@@ -280,22 +194,12 @@ export function useMealTextAiState(params: {
         return;
       }
 
-      applyUsage({
-        usageCount: result.usage.usageCount,
-        dailyLimit: result.usage.dailyLimit,
-        remaining: result.usage.remaining,
-      });
+      applyCreditsFromResponse(result.credits);
       setRetries(0);
       await fillDraftAndGo(result.ingredients);
     } catch (error) {
-      if (error instanceof AiLimitExceededError) {
-        if (error.usage) {
-          applyUsage(error.usage);
-        } else {
-          await loadBackendUsage(
-            "[useMealTextAiState] failed to refresh AI usage after limit",
-          );
-        }
+      if (getErrorStatus(error) === 402) {
+        await refreshCredits();
         setShowLimitModal(true);
         return;
       }
@@ -324,15 +228,15 @@ export function useMealTextAiState(params: {
     }
   }, [
     amountRaw,
-    applyUsage,
+    applyCreditsFromResponse,
     buildPayload,
+    canAfford,
     fillDraftAndGo,
     ingPreview,
     language,
-    loadBackendUsage,
     name,
     nextRetryCount,
-    remainingUsage,
+    refreshCredits,
     setSubmitError,
     t,
     uid,
@@ -344,8 +248,8 @@ export function useMealTextAiState(params: {
     (amountRaw.length > 0 && (!isFinite(amountNum) || amountNum <= 0)) ||
     (!ingPreview.trim() && !amountRaw.length);
 
-  const limitUsed = usageCount;
-  const featureLimit = usageLimit;
+  const creditAllocation = credits?.allocation ?? 0;
+  const creditsUsed = Math.max(creditAllocation - (credits?.balance ?? 0), 0);
 
   const onNameChange = useCallback((text: string) => {
     setName(text);
@@ -404,13 +308,13 @@ export function useMealTextAiState(params: {
     loading,
     retries,
     showLimitModal,
-    limitUsed,
+    creditsUsed,
     nameError,
     amountError,
     ingredientsError,
     submitError,
     analyzeDisabled,
-    featureLimit,
+    creditAllocation,
     onNameChange,
     onIngredientsChange,
     onAmountChange,

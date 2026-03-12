@@ -6,11 +6,12 @@ import React, {
   useCallback,
   useState,
 } from "react";
-import { AppState } from "react-native";
 import { useAuthContext } from "@/context/AuthContext";
+import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import Purchases from "react-native-purchases";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Subscription } from "@/types/subscription";
+import { post } from "@/services/core/apiClient";
 import {
   initRevenueCat,
   isBillingDisabled,
@@ -53,6 +54,7 @@ export const PremiumProvider = ({
   children: React.ReactNode;
 }) => {
   const { uid, email } = useAuthContext();
+  const { refreshCredits } = useAiCreditsContext();
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const premiumKey = `premium_status:${uid ?? "anon"}`;
@@ -94,6 +96,18 @@ export const PremiumProvider = ({
     }
   }, [premiumKey, setSubscriptionFromPremium]);
 
+  const syncTierAndRefreshCredits = useCallback(async (): Promise<void> => {
+    if (uid) {
+      try {
+        await post("/ai/credits/sync-tier");
+      } catch {
+        // Keep local premium status and fallback to normal credits refresh.
+      }
+    }
+
+    await refreshCredits();
+  }, [refreshCredits, uid]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -101,16 +115,13 @@ export const PremiumProvider = ({
       try {
         if (uid) {
           await rcLogIn(uid);
-          await rcSetAttributes({
-            email: email ?? null,
-            locale: Intl.DateTimeFormat().resolvedOptions().locale || "en",
-          });
         } else {
           await rcLogOut();
         }
       } finally {
         if (!cancelled) {
           await checkPremiumStatus();
+          await syncTierAndRefreshCredits();
         }
       }
     })();
@@ -118,23 +129,23 @@ export const PremiumProvider = ({
     return () => {
       cancelled = true;
     };
-  }, [uid, email, checkPremiumStatus]);
+  }, [uid, checkPremiumStatus, syncTierAndRefreshCredits]);
 
   useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") {
-        void checkPremiumStatus();
-      }
+    if (!uid || !email) return;
+    void rcSetAttributes({
+      email,
+      locale: Intl.DateTimeFormat().resolvedOptions().locale || "en",
     });
-
-    return () => {
-      sub.remove();
-    };
-  }, [checkPremiumStatus]);
+  }, [uid, email]);
 
   const refreshPremium = useCallback(
-    () => checkPremiumStatus(),
-    [checkPremiumStatus],
+    async () => {
+      const premium = await checkPremiumStatus();
+      await syncTierAndRefreshCredits();
+      return premium;
+    },
+    [checkPremiumStatus, syncTierAndRefreshCredits],
   );
 
   const setDevPremium = useCallback(
@@ -146,9 +157,9 @@ export const PremiumProvider = ({
         ])
         .catch(() => undefined);
       setSubscriptionFromPremium(enabled);
-      await checkPremiumStatus();
+      await refreshPremium();
     },
-    [premiumKey, checkPremiumStatus, setSubscriptionFromPremium],
+    [premiumKey, refreshPremium, setSubscriptionFromPremium],
   );
 
   const value = useMemo(

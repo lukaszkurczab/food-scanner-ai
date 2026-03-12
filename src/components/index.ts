@@ -21,6 +21,8 @@ export * from "./ButtonToggle";
 export * from "./InputModal";
 export * from "./UserIcon";
 export * from "./ErrorButton";
+export * from "./AiCreditsBadge";
+export * from "./AiCreditsSummaryCard";
 export * from "./IngredientBox";
 export * from "./PieChart";
 export * from "./MealBox";
