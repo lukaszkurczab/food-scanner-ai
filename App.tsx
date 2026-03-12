@@ -15,6 +15,7 @@ import { UserProvider } from "@/context/UserContext";
 import { MealDraftProvider } from "@/context/MealDraftContext";
 import { PremiumProvider } from "@/context/PremiumContext";
 import { HistoryProvider } from "@/context/HistoryContext";
+import { AiCreditsProvider } from "@/context/AiCreditsContext";
 import { View, ActivityIndicator } from "react-native";
 import { Linking } from "react-native";
 import { useEffect } from "react";
@@ -60,18 +61,20 @@ function Root() {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      <PremiumProvider>
-        <UserProvider>
-          <MealDraftProvider>
-            <HistoryProvider>
-              <ThemeController>
-                <AppNavigator />
-                <ToastBridge />
-              </ThemeController>
-            </HistoryProvider>
-          </MealDraftProvider>
-        </UserProvider>
-      </PremiumProvider>
+      <AiCreditsProvider>
+        <PremiumProvider>
+          <UserProvider>
+            <MealDraftProvider>
+              <HistoryProvider>
+                <ThemeController>
+                  <AppNavigator />
+                  <ToastBridge />
+                </ThemeController>
+              </HistoryProvider>
+            </MealDraftProvider>
+          </UserProvider>
+        </PremiumProvider>
+      </AiCreditsProvider>
     </NavigationContainer>
   );
 }

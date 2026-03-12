@@ -3,24 +3,30 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
 
+type VisionAnalyzeMockResult = {
+  ingredients: Array<{
+    id: string;
+    name: string;
+    amount: number;
+    unit: "g" | "ml";
+    protein: number;
+    carbs: number;
+    fat: number;
+    kcal: number;
+  }> | null;
+  credits: unknown;
+};
+
 const mockDetectIngredientsWithVision = jest.fn<
-  (uid: string, imageUri: string, opts?: { isPremium?: boolean; lang?: string }) => Promise<
-    Array<{
-      id: string;
-      name: string;
-      amount: number;
-      unit: "g" | "ml";
-      protein: number;
-      carbs: number;
-      fat: number;
-      kcal: number;
-    }> | null
-  >
+  (uid: string, imageUri: string, opts?: { lang?: string }) => Promise<VisionAnalyzeMockResult | null>
 >();
 const mockUseMealDraftContext = jest.fn();
 const mockUseAuthContext = jest.fn();
-const mockUsePremiumContext = jest.fn();
+const mockUseAiCreditsContext = jest.fn();
 const mockUseUserContext = jest.fn();
+const mockApplyCreditsFromResponse = jest.fn();
+const mockRefreshCredits = jest.fn();
+const mockCanAfford = jest.fn(() => true);
 
 jest.mock("expo-camera", () => ({
   CameraView: () => null,
@@ -35,8 +41,8 @@ jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
 }));
 
-jest.mock("@/context/PremiumContext", () => ({
-  usePremiumContext: () => mockUsePremiumContext(),
+jest.mock("@/context/AiCreditsContext", () => ({
+  useAiCreditsContext: () => mockUseAiCreditsContext(),
 }));
 
 jest.mock("@contexts/UserContext", () => ({
@@ -47,7 +53,7 @@ jest.mock("@/services/ai/visionService", () => ({
   detectIngredientsWithVision: (
     uid: string,
     imageUri: string,
-    opts?: { isPremium?: boolean; lang?: string },
+    opts?: { lang?: string },
   ) => mockDetectIngredientsWithVision(uid, imageUri, opts),
 }));
 
@@ -79,7 +85,20 @@ describe("useMealCameraState", () => {
     jest.clearAllMocks();
 
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
-    mockUsePremiumContext.mockReturnValue({ isPremium: true });
+    mockUseAiCreditsContext.mockReturnValue({
+      credits: {
+        userId: "user-1",
+        tier: "free",
+        balance: 10,
+        allocation: 100,
+        periodStartAt: "2026-03-01T00:00:00.000Z",
+        periodEndAt: "2026-04-01T00:00:00.000Z",
+        costs: { chat: 1, textMeal: 1, photo: 5 },
+      },
+      canAfford: mockCanAfford,
+      refreshCredits: mockRefreshCredits,
+      applyCreditsFromResponse: mockApplyCreditsFromResponse,
+    });
     mockUseUserContext.mockReturnValue({ language: "en" });
   });
 
@@ -121,7 +140,18 @@ describe("useMealCameraState", () => {
         kcal: 130,
       },
     ];
-    mockDetectIngredientsWithVision.mockResolvedValue(ingredients);
+    mockDetectIngredientsWithVision.mockResolvedValue({
+      ingredients,
+      credits: {
+        userId: "user-1",
+        tier: "free",
+        balance: 5,
+        allocation: 100,
+        periodStartAt: "2026-03-01T00:00:00.000Z",
+        periodEndAt: "2026-04-01T00:00:00.000Z",
+        costs: { chat: 1, textMeal: 1, photo: 5 },
+      },
+    });
 
     const { result } = renderHook(() =>
       useMealCameraState({
@@ -138,7 +168,12 @@ describe("useMealCameraState", () => {
     expect(mockDetectIngredientsWithVision).toHaveBeenCalledWith(
       "user-1",
       "file:///meal.jpg",
-      expect.objectContaining({ isPremium: true, lang: "en" }),
+      expect.objectContaining({ lang: "en" }),
+    );
+    expect(mockApplyCreditsFromResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        balance: 5,
+      }),
     );
     expect(updateMeal).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -156,5 +191,42 @@ describe("useMealCameraState", () => {
       }),
     );
     expect(flow.goTo).toHaveBeenCalledWith("Result", {});
+  });
+
+  it("opens insufficient-credits modal when photo AI is not affordable", () => {
+    mockCanAfford.mockReturnValue(false);
+
+    const flow = {
+      goTo: jest.fn(),
+      replace: jest.fn(),
+      goBack: jest.fn(),
+      canGoBack: jest.fn(() => false),
+    };
+    const navigation = {
+      addListener: jest.fn(() => () => undefined),
+      navigate: jest.fn(),
+    };
+
+    mockUseMealDraftContext.mockReturnValue({
+      meal: baseMeal(),
+      setMeal: jest.fn(),
+      updateMeal: jest.fn(),
+      setLastScreen: jest.fn(async () => undefined),
+      saveDraft: jest.fn(async () => undefined),
+    });
+
+    const { result } = renderHook(() =>
+      useMealCameraState({
+        navigation: navigation as never,
+        flow: flow as never,
+        params: {},
+      }),
+    );
+
+    act(() => {
+      result.current.openAiMode();
+    });
+
+    expect(result.current.premiumModal).toBe(true);
   });
 });

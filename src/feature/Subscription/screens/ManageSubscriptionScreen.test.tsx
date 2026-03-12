@@ -15,6 +15,7 @@ type PaywallModalProps = {
 
 const mockUsePremiumContext = jest.fn();
 const mockUseAuthContext = jest.fn();
+const mockUseAiCreditsContext = jest.fn();
 const mockUseManageSubscriptionState = jest.fn();
 
 jest.mock("@/context/PremiumContext", () => ({
@@ -23,6 +24,10 @@ jest.mock("@/context/PremiumContext", () => ({
 
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
+}));
+
+jest.mock("@/context/AiCreditsContext", () => ({
+  useAiCreditsContext: () => mockUseAiCreditsContext(),
 }));
 
 jest.mock("@/feature/Subscription/hooks/useManageSubscriptionState", () => ({
@@ -97,12 +102,37 @@ jest.mock("@/feature/Subscription/components/PaywallModal", () => ({
   },
 }));
 
+jest.mock("@/components/AiCreditsSummaryCard", () => ({
+  AiCreditsSummaryCard: ({
+    balance,
+    allocation,
+  }: {
+    balance: number | null;
+    allocation: number | null;
+  }) => {
+    const { createElement } =
+      jest.requireActual<typeof import("react")>("react");
+    const { Text } =
+      jest.requireActual<typeof import("react-native")>("react-native");
+    return createElement(Text, null, `credits:${balance ?? "-"}:${allocation ?? "-"}`);
+  },
+}));
+
 describe("ManageSubscriptionScreen", () => {
   const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
 
   beforeEach(() => {
     (globalThis as { __DEV__?: boolean }).__DEV__ = true;
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
+    mockUseAiCreditsContext.mockReturnValue({
+      credits: {
+        balance: 76,
+        allocation: 800,
+        tier: "premium",
+        periodEndAt: "2026-05-14T10:00:00.000Z",
+      },
+      loading: false,
+    });
     mockUsePremiumContext.mockReturnValue({
       isPremium: false,
       subscription: { state: "inactive" },
@@ -167,7 +197,7 @@ describe("ManageSubscriptionScreen", () => {
     const openPrivacy = jest.fn();
 
     mockUseManageSubscriptionState.mockReturnValue({
-      expanded: "unlimitedAiChat",
+      expanded: "aiCredits800",
       busy: false,
       paywallVisible: true,
       termsUrl: "https://example.com/terms",
@@ -194,7 +224,7 @@ describe("ManageSubscriptionScreen", () => {
       <ManageSubscriptionScreen navigation={navigation as never} />,
     );
 
-    fireEvent.press(getByText("profile:manageSubscription.benefit_unlimitedAiChat"));
+    fireEvent.press(getByText("profile:manageSubscription.benefit_aiCredits800"));
     fireEvent.press(getByText("Restore Purchases"));
     fireEvent.press(getByText("profile:manageSubscription.refundPolicy"));
     fireEvent.press(getByText("Terms of Service"));
@@ -208,9 +238,10 @@ describe("ManageSubscriptionScreen", () => {
 
     expect(getByText("header:profile:manageSubscription.title")).toBeTruthy();
     expect(getByText("Inactive")).toBeTruthy();
-    expect(getByText("profile:manageSubscription.benefitDesc_unlimitedAiChat")).toBeTruthy();
+    expect(getByText("credits:76:800")).toBeTruthy();
+    expect(getByText("profile:manageSubscription.benefitDesc_aiCredits800")).toBeTruthy();
     expect(getByText("paywall:$9.99")).toBeTruthy();
-    expect(toggleExpanded).toHaveBeenCalledWith("unlimitedAiChat");
+    expect(toggleExpanded).toHaveBeenCalledWith("aiCredits800");
     expect(tryRestore).toHaveBeenCalledTimes(2);
     expect(tryOpenRefundPolicy).toHaveBeenCalledTimes(1);
     expect(openTerms).toHaveBeenCalledTimes(1);

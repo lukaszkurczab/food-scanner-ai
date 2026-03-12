@@ -201,13 +201,13 @@ describe("MealTextAIScreen", () => {
       loading: false,
       retries: 2,
       showLimitModal: false,
-      limitUsed: 0,
+      creditsUsed: 0,
       nameError: "name-error",
       amountError: "amount-error",
       ingredientsError: "ingredients-error",
       submitError: "submit-error",
       analyzeDisabled: false,
-      featureLimit: 5,
+      creditAllocation: 5,
       onNameChange,
       onIngredientsChange,
       onAmountChange,
@@ -224,6 +224,7 @@ describe("MealTextAIScreen", () => {
     };
     const { getByText } = renderWithTheme(<MealTextAIScreen />);
 
+    expect(getByText("chat:credits.costSingle")).toBeTruthy();
     fireEvent.press(getByText("meals:meal_name-change"));
     fireEvent.press(getByText("meals:meal_name-blur"));
     fireEvent.press(getByText("meals:ingredients_optional-change"));
@@ -261,13 +262,13 @@ describe("MealTextAIScreen", () => {
       loading: false,
       retries: 0,
       showLimitModal: true,
-      limitUsed: 5,
+      creditsUsed: 5,
       nameError: null,
       amountError: null,
       ingredientsError: null,
       submitError: null,
       analyzeDisabled: true,
-      featureLimit: 5,
+      creditAllocation: 5,
       onNameChange: jest.fn(),
       onIngredientsChange: jest.fn(),
       onAmountChange: jest.fn(),

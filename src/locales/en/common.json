@@ -22,13 +22,13 @@
     "clear_search_accessibility": "Clear search"
   },
   "limit": {
-    "title": "Thanks for exploring Fitaly!",
-    "body": "You've used {{used}} out of {{limit}} free questions today. Come back tomorrow or unlock unlimited access.",
-    "button": "Unlock Premium",
-    "reached": "Daily limit reached ({{used}}/{{limit}})",
-    "reachedShort": "Daily limit reached ({{used}}/{{limit}})",
-    "description": "You used {{used}} of {{limit}} daily messages. Go Premium to unlock unlimited chat.",
-    "upgradeCta": "Go Premium"
+    "title": "Not enough AI Credits",
+    "body": "You have {{used}} of {{limit}} AI Credits remaining. Upgrade to get 800 AI Credits per period.",
+    "button": "Get 800 AI Credits",
+    "reached": "Not enough AI Credits ({{used}}/{{limit}})",
+    "reachedShort": "Not enough AI Credits ({{used}}/{{limit}})",
+    "description": "You have {{used}} of {{limit}} AI Credits. Go Premium to get 800 AI Credits per period.",
+    "upgradeCta": "See plans"
   },
   "app_title": "Fitaly",
   "no_internet": "No internet connection",

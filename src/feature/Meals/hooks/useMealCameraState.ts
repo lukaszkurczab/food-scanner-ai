@@ -11,7 +11,8 @@ import {
 import { getSampleMealUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
 import { useAuthContext } from "@/context/AuthContext";
-import { usePremiumContext } from "@/context/PremiumContext";
+import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import { getErrorStatus } from "@/services/contracts/serviceError";
 import { useUserContext } from "@contexts/UserContext";
 import { getAiUxErrorType } from "@/services/ai/uxError";
 import type { Ingredient, Meal } from "@/types";
@@ -48,7 +49,8 @@ export function useMealCameraState({
     useMealDraftContext();
   const { uid } = useAuthContext();
   const { language } = useUserContext();
-  const { isPremium } = usePremiumContext();
+  const { credits, canAfford, refreshCredits, applyCreditsFromResponse } = useAiCreditsContext();
+  const isPremium = credits?.tier === "premium";
 
   const barcodeOnly = !!params?.barcodeOnly;
   const routeId = params?.id as string | undefined;
@@ -60,15 +62,8 @@ export function useMealCameraState({
   const mealId = meal?.mealId || routeId || fallbackMealIdRef.current;
 
   const [mode, setMode] = useState<"ai" | "barcode">(
-    barcodeOnly ? "barcode" : isPremium ? "ai" : "barcode",
+    barcodeOnly ? "barcode" : "ai",
   );
-
-  useEffect(() => {
-    if (barcodeOnly) return;
-    setMode((prev) =>
-      isPremium ? (prev === "barcode" ? "ai" : prev) : "barcode",
-    );
-  }, [isPremium, barcodeOnly]);
 
   useEffect(() => {
     if (barcodeOnly) return;
@@ -220,10 +215,11 @@ export function useMealCameraState({
   );
 
   const handleTakePicture = useCallback(async () => {
+    const canUsePhotoAi = canAfford("photo");
     log.log("takePicture start", {
       mode,
       skipDetection,
-      isPremium,
+      canUsePhotoAi,
       isCameraReady,
       barcodeOnly,
     });
@@ -247,6 +243,11 @@ export function useMealCameraState({
       return;
     }
 
+    if (mode === "ai" && !skipDetection && !canUsePhotoAi) {
+      setPremiumModal(true);
+      return;
+    }
+
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
     setIsTakingPhoto(true);
     try {
@@ -259,9 +260,9 @@ export function useMealCameraState({
     }
   }, [
     barcodeOnly,
+    canAfford,
     handleBarcodeFlow,
     isCameraReady,
-    isPremium,
     isTakingPhoto,
     mode,
     scannedCode,
@@ -308,12 +309,16 @@ export function useMealCameraState({
         }
 
         if (!skipDetection) {
-          const ingredients = uid
+          const analyzeResult = uid
             ? await detectIngredientsWithVision(uid, finalUri, {
-                isPremium: !!isPremium,
                 lang: language,
               })
             : null;
+          const ingredients = analyzeResult?.ingredients ?? null;
+
+          if (analyzeResult?.credits) {
+            applyCreditsFromResponse(analyzeResult.credits);
+          }
 
           if (ingredients && ingredients.length > 0) {
             const analyzedMeal: Meal = {
@@ -344,6 +349,13 @@ export function useMealCameraState({
           }
         }
       } catch (error: unknown) {
+        if (getErrorStatus(error) === 402) {
+          await refreshCredits();
+          setIsLoading(false);
+          setPremiumModal(true);
+          return;
+        }
+
         setIsLoading(false);
         flow.goTo("IngredientsNotRecognized", {
           image: finalUri,
@@ -359,12 +371,13 @@ export function useMealCameraState({
     },
     [
       attempt,
+      applyCreditsFromResponse,
       flow,
-      isPremium,
       language,
       meal,
       mealId,
       photoUri,
+      refreshCredits,
       setMeal,
       saveDraft,
       skipDetection,
@@ -395,12 +408,12 @@ export function useMealCameraState({
   }, []);
 
   const openAiMode = useCallback(() => {
-    if (isPremium) {
+    if (canAfford("photo")) {
       setMode("ai");
       return;
     }
     setPremiumModal(true);
-  }, [isPremium]);
+  }, [canAfford]);
 
   const openBarcodeMode = useCallback(() => {
     setMode("barcode");
@@ -439,6 +452,7 @@ export function useMealCameraState({
     scannedCode,
     mode,
     isPremium,
+    canUsePhotoAi: canAfford("photo"),
     skipDetection,
     barcodeOnly,
     showBarcodeOverlay,

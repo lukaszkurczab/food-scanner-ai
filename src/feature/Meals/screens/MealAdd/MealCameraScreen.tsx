@@ -10,6 +10,7 @@ import { Alert as AppAlert } from "@/components/Alert";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AiCreditsBadge } from "@/components/AiCreditsBadge";
 
 export default function MealCameraScreen({
   navigation,
@@ -21,6 +22,7 @@ export default function MealCameraScreen({
   const insets = useSafeAreaInsets();
   const { t: tCommon } = useTranslation("common");
   const { t: tMeals } = useTranslation("meals");
+  const { t: tChat } = useTranslation("chat");
   const canStepBack = flow.canGoBack();
   const topLeftActionStyle = useMemo(
     () => ({
@@ -28,6 +30,13 @@ export default function MealCameraScreen({
       left: insets.left + theme.spacing.sm,
     }),
     [insets.left, insets.top, theme.spacing.sm, theme.spacing.xs],
+  );
+  const topRightActionStyle = useMemo(
+    () => ({
+      top: insets.top + theme.spacing.xs,
+      right: insets.right + theme.spacing.sm,
+    }),
+    [insets.right, insets.top, theme.spacing.sm, theme.spacing.xs],
   );
 
   const {
@@ -42,7 +51,7 @@ export default function MealCameraScreen({
     barcodeModal,
     scannedCode,
     mode,
-    isPremium,
+    canUsePhotoAi,
     skipDetection,
     barcodeOnly,
     showBarcodeOverlay,
@@ -167,6 +176,13 @@ export default function MealCameraScreen({
               tone="camera"
               containerStyle={topLeftActionStyle}
             />
+            {!skipDetection && (
+              <View style={[styles.creditsBadgePosition, topRightActionStyle]}>
+                <AiCreditsBadge
+                  text={tChat("credits.costMultiple", { count: 5 })}
+                />
+              </View>
+            )}
             {!skipDetection && !barcodeOnly && (
               <View style={styles.modeSwitch}>
                 <Pressable
@@ -177,7 +193,7 @@ export default function MealCameraScreen({
                       backgroundColor:
                         mode === "ai" ? theme.accentSecondary : theme.card,
                       borderColor: theme.border,
-                      opacity: isPremium ? 1 : 0.6,
+                      opacity: canUsePhotoAi ? 1 : 0.6,
                     },
                   ]}
                 >
@@ -257,15 +273,13 @@ export default function MealCameraScreen({
       </View>
       <AppAlert
         visible={premiumModal}
-        title={tMeals("premium_required_title", {
-          defaultValue: "Premium required",
-        })}
-        message={tMeals("premium_required_body", {
-          defaultValue: "AI mode requires a Premium subscription.",
+        title={tChat("limit.reachedTitle")}
+        message={tChat("limit.photoRequired", {
+          cost: 5,
         })}
         onClose={closePremiumModal}
         primaryAction={{
-          label: tMeals("go_premium", { defaultValue: "Go Premium" }),
+          label: tChat("limit.upgradeCta"),
           onPress: goManagePremium,
         }}
         secondaryAction={{
@@ -354,6 +368,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
       justifyContent: "center",
       marginHorizontal: theme.spacing.xs,
+    },
+    creditsBadgePosition: {
+      position: "absolute",
     },
     shutterWrapper: {
       position: "absolute",

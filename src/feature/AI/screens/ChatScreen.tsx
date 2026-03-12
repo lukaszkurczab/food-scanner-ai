@@ -9,7 +9,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUserContext } from "@contexts/UserContext";
-import { usePremiumContext } from "@/context/PremiumContext";
+import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -22,6 +22,7 @@ import { useMeals } from "@hooks/useMeals";
 import { EmptyState } from "../components/EmptyState";
 import { ChatHistorySheet } from "../components/ChatHistorySheet";
 import { IconButton } from "@/components/IconButton";
+import { AiCreditsBadge } from "@/components/AiCreditsBadge";
 import { MaterialIcons } from "@expo/vector-icons";
 import { v4 as uuidv4 } from "uuid";
 import { Layout } from "@components/Layout";
@@ -51,8 +52,7 @@ export default function ChatScreen() {
 
   const uid = user?.uid || "";
   const { userData } = useUserContext();
-  const { isPremium } = usePremiumContext();
-  const premiumActive = isPremium === true;
+  const { credits } = useAiCreditsContext();
 
   const { meals } = useMeals(uid);
 
@@ -67,13 +67,11 @@ export default function ChatScreen() {
     typing,
     sendErrorType,
     canSend,
-    countToday,
-    dailyLimit,
+    creditAllocation,
     send,
     loadMore,
   } = useChatHistory(
     uid,
-    premiumActive,
     meals || [],
     userData ?? EMPTY_PROFILE,
     threadId,
@@ -84,7 +82,7 @@ export default function ChatScreen() {
     [messages],
   );
 
-  const limitReached = !premiumActive && !canSend;
+  const limitReached = !canSend;
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -108,11 +106,11 @@ export default function ChatScreen() {
   );
 
   const footerText = useMemo(() => {
-    if (!premiumActive) {
-      return t("empty.footerFree", { used: countToday, limit: dailyLimit });
-    }
-    return t("empty.footerPremium");
-  }, [premiumActive, countToday, dailyLimit, t]);
+    return t("credits.balanceOutOf", {
+      balance: credits?.balance ?? 0,
+      allocation: credits?.allocation ?? 0,
+    });
+  }, [credits?.allocation, credits?.balance, t]);
 
   const emptyDisabled = sending || limitReached || !net.isConnected;
   const retryEnabled =
@@ -128,7 +126,7 @@ export default function ChatScreen() {
   const helperText = useMemo(() => {
     if (!net.isConnected) return t("offline.short");
     if (limitReached) {
-      return t("limit.reachedShort", { used: countToday, limit: dailyLimit });
+      return t("limit.reachedShort");
     }
     if (sending) return t("sending", { defaultValue: "AI is thinking..." });
     if (sendErrorType === "offline") return t("errors.offline");
@@ -138,8 +136,6 @@ export default function ChatScreen() {
     if (sendErrorType === "unknown") return t("errors.fetchFailed");
     return undefined;
   }, [
-    countToday,
-    dailyLimit,
     limitReached,
     net.isConnected,
     sendErrorType,
@@ -170,13 +166,20 @@ export default function ChatScreen() {
           iconColor={theme.textSecondary}
           accessibilityLabel={t("history.open")}
         />
+        <AiCreditsBadge
+          text={t("credits.balanceShort", {
+            balance: credits?.balance ?? 0,
+          })}
+          tone={limitReached ? "neutral" : "accent"}
+        />
       </View>
 
       {limitReached && (
         <View style={styles.stickyBanner} pointerEvents="box-none">
           <PaywallCard
-            used={countToday}
-            limit={dailyLimit}
+            balance={credits?.balance ?? 0}
+            allocation={credits?.allocation ?? creditAllocation}
+            renewalAt={credits?.periodEndAt ?? null}
             onUpgrade={() => navigation.navigate("ManageSubscription")}
           />
         </View>
@@ -214,7 +217,7 @@ export default function ChatScreen() {
             onEndReachedThreshold={0.4}
             onEndReached={loadMore}
             ListHeaderComponent={
-              !canSend && !premiumActive ? <View /> : typing ? <TypingDots /> : null
+              !canSend ? <View /> : typing ? <TypingDots /> : null
             }
             ListEmptyComponent={
               <EmptyState
@@ -262,6 +265,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingHorizontal: theme.spacing.sm,
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
     },
     list: {
       flex: 1,

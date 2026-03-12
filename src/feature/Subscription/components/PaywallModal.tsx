@@ -23,8 +23,9 @@ type Props = {
 };
 
 const BENEFITS = [
-  "unlimitedAiChat",
-  "unlimitedAiMealRecognition",
+  "aiCredits800",
+  "flexibleAiUsage",
+  "photoAnalysisIncluded",
   "fullCloudBackup",
   "fullHistoryAccess",
   "earlyAccess",

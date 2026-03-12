@@ -20,13 +20,13 @@
     "clear_search_accessibility": "Wyczyść wyszukiwanie"
   },
   "limit": {
-    "title": "Dziękujemy za korzystanie z Fitaly!",
-    "body": "Wykorzystano {{used}} z {{limit}} darmowych pytań dziennie. Wróć jutro lub odblokuj nielimitowany dostęp.",
-    "button": "Odblokuj Premium",
-    "reached": "Osiągnięto limit dzienny ({{used}}/{{limit}})",
-    "reachedShort": "Limit dzienny osiągnięty ({{used}}/{{limit}})",
-    "description": "Wykorzystałeś {{used}} z {{limit}} wiadomości dziennie. Przejdź na Premium, aby mieć nielimitowany czat.",
-    "upgradeCta": "Przejdź na Premium"
+    "title": "Za mało AI Credits",
+    "body": "Masz {{used}} z {{limit}} AI Credits. Przejdź na Premium, aby otrzymać 800 AI Credits na okres.",
+    "button": "Odblokuj 800 AI Credits",
+    "reached": "Za mało AI Credits ({{used}}/{{limit}})",
+    "reachedShort": "Za mało AI Credits ({{used}}/{{limit}})",
+    "description": "Masz {{used}} z {{limit}} AI Credits. Przejdź na Premium, aby otrzymać 800 AI Credits na okres.",
+    "upgradeCta": "Zobacz plany"
   },
   "app_title": "Fitaly",
   "no_internet": "Brak połączenia z internetem",

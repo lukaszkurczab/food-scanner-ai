@@ -27,10 +27,13 @@ jest.mock("@/feature/Meals/hooks/useMealAddMethodState", () => ({
 }));
 
 jest.mock("react-i18next", () => ({
-  useTranslation: (ns: string) => ({
+  useTranslation: (ns: string | string[]) => {
+    const defaultNs = Array.isArray(ns) ? ns[0] : ns;
+    return {
     t: (key: string, options?: { defaultValue?: string; ns?: string }) =>
-      options?.defaultValue ?? `${options?.ns ?? ns}:${key}`,
-  }),
+        options?.defaultValue ?? `${options?.ns ?? defaultNs}:${key}`,
+    };
+  },
 }));
 
 jest.mock("@expo/vector-icons", () => ({
@@ -134,6 +137,8 @@ describe("MealAddMethodScreen", () => {
     const { getByTestId, getByText } = renderWithTheme(<MealAddMethodScreen />);
 
     expect(getByText("meals:title")).toBeTruthy();
+    expect(getByText("chat:credits.costMultiple")).toBeTruthy();
+    expect(getByText("chat:credits.costZero")).toBeTruthy();
     fireEvent.press(getByTestId("meal-add-option-ai_photo"));
     fireEvent.press(getByTestId("meal-add-option-manual"));
 

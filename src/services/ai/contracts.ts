@@ -2,74 +2,115 @@ import { asNumber, asString, isRecord } from "@/services/contracts/guards";
 
 export type AiPersistence = "backend_owned";
 
-export type AiUsageWindow = {
-  usageCount: number;
-  remaining: number;
+export type AiCreditCosts = {
+  chat: number;
+  textMeal: number;
+  photo: number;
 };
 
-export type AiUsageStatus = {
-  dateKey: string;
-  usageCount: number;
-  dailyLimit: number;
-  remaining: number;
+export type AiCreditsStatus = {
+  userId: string;
+  tier: "free" | "premium";
+  balance: number;
+  allocation: number;
+  periodStartAt: string;
+  periodEndAt: string;
+  costs: AiCreditCosts;
+  renewalAnchorSource?: string | null;
+  revenueCatEntitlementId?: string | null;
+  revenueCatExpirationAt?: string | null;
+  lastRevenueCatEventId?: string | null;
 };
 
-export function getAiDailyLimit(usage: AiUsageWindow): number {
-  return Math.max(usage.usageCount + usage.remaining, 0);
+export type AiCreditsResponse = AiCreditsStatus;
+export type AiCreditsAction = "chat" | "textMeal" | "photo";
+
+function isValidDateString(value: string): boolean {
+  return Number.isFinite(Date.parse(value));
 }
 
-function parseAiUsageStatus(value: unknown): AiUsageStatus | null {
+function parseAiCreditCosts(value: unknown): AiCreditCosts | null {
   if (!isRecord(value)) return null;
 
-  const dateKey = asString(value.dateKey);
-  const usageCount = asNumber(value.usageCount);
-  const dailyLimit = asNumber(value.dailyLimit);
-  const remaining = asNumber(value.remaining);
+  const chat = asNumber(value.chat);
+  const textMeal = asNumber(value.textMeal);
+  const photo = asNumber(value.photo);
+  if (chat === undefined || textMeal === undefined || photo === undefined) {
+    return null;
+  }
+
+  return { chat, textMeal, photo };
+}
+
+function parseAiCreditsStatus(value: unknown): AiCreditsStatus | null {
+  if (!isRecord(value)) return null;
+
+  const userId = asString(value.userId);
+  const tierRaw = asString(value.tier);
+  const balance = asNumber(value.balance);
+  const allocation = asNumber(value.allocation);
+  const periodStartAt = asString(value.periodStartAt);
+  const periodEndAt = asString(value.periodEndAt);
+  const costs = parseAiCreditCosts(value.costs);
   if (
-    !dateKey ||
-    usageCount === undefined ||
-    dailyLimit === undefined ||
-    remaining === undefined
+    !userId ||
+    !tierRaw ||
+    (tierRaw !== "free" && tierRaw !== "premium") ||
+    balance === undefined ||
+    allocation === undefined ||
+    !periodStartAt ||
+    !periodEndAt ||
+    !isValidDateString(periodStartAt) ||
+    !isValidDateString(periodEndAt) ||
+    !costs
   ) {
     return null;
   }
 
   return {
-    dateKey,
-    usageCount,
-    dailyLimit,
-    remaining,
+    userId,
+    tier: tierRaw,
+    balance,
+    allocation,
+    periodStartAt,
+    periodEndAt,
+    costs,
+    renewalAnchorSource: asString(value.renewalAnchorSource) ?? null,
+    revenueCatEntitlementId: asString(value.revenueCatEntitlementId) ?? null,
+    revenueCatExpirationAt: asString(value.revenueCatExpirationAt) ?? null,
+    lastRevenueCatEventId: asString(value.lastRevenueCatEventId) ?? null,
   };
 }
 
-export function readAiUsageStatusFromApiErrorDetails(
-  details: unknown,
-): AiUsageStatus | null {
-  const direct = parseAiUsageStatus(details);
+export function hasCreditsFields(value: unknown): value is AiCreditsStatus {
+  return parseAiCreditsStatus(value) !== null;
+}
+
+export function parseCreditsFromResponse(value: unknown): AiCreditsStatus | null {
+  const direct = parseAiCreditsStatus(value);
   if (direct) return direct;
 
-  if (!isRecord(details)) return null;
+  if (!isRecord(value)) return null;
 
-  const usage = parseAiUsageStatus(details.usage);
-  if (usage) return usage;
+  const nestedCredits = parseAiCreditsStatus(value.credits);
+  if (nestedCredits) return nestedCredits;
 
-  if (isRecord(details.detail)) {
-    const detailUsage = parseAiUsageStatus(details.detail.usage);
-    if (detailUsage) return detailUsage;
-    return parseAiUsageStatus(details.detail);
+  if (isRecord(value.detail)) {
+    const nestedDetailCredits = parseAiCreditsStatus(value.detail.credits);
+    if (nestedDetailCredits) return nestedDetailCredits;
+    const nestedDetail = parseAiCreditsStatus(value.detail);
+    if (nestedDetail) return nestedDetail;
   }
 
   return null;
 }
 
-export type AiBackendResponseMeta = AiUsageWindow & {
-  dailyLimit?: number;
-  dateKey: string;
+export type AiBackendCreditsMeta = AiCreditsStatus & {
   version: string;
   persistence: AiPersistence;
 };
 
-export type AiAskBackendResponse = AiBackendResponseMeta & {
+export type AiAskBackendResponse = AiBackendCreditsMeta & {
   reply: string;
 };
 
@@ -80,8 +121,6 @@ export type AiAskE2EResponse = {
 };
 
 export type AiAskResponse = AiAskBackendResponse | AiAskE2EResponse;
-
-export type AiUsageResponse = AiUsageStatus;
 
 export type AiMealIngredient = {
   name: string;
@@ -100,10 +139,10 @@ export type AiTextMealPayload = {
   notes?: string | null;
 };
 
-export type AiTextMealAnalyzeResponse = AiBackendResponseMeta & {
+export type AiTextMealAnalyzeResponse = AiBackendCreditsMeta & {
   ingredients: AiMealIngredient[];
 };
 
-export type AiPhotoAnalyzeResponse = AiBackendResponseMeta & {
+export type AiPhotoAnalyzeResponse = AiBackendCreditsMeta & {
   ingredients: AiMealIngredient[];
 };

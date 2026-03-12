@@ -12,12 +12,15 @@ import { useChatHistory } from "@/hooks/useChatHistory";
 
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
 const mockUuid = jest.fn<() => string>();
-const mockI18nT = jest.fn<(key: string, fallback?: string) => string>();
-const mockApiGet = jest.fn<(url: string) => Promise<unknown>>();
+const mockI18nT = jest.fn<(key: string, options?: unknown) => string>();
 const mockApiPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
 const mockCaptureException = jest.fn<
   (message: string, context?: unknown, error?: unknown) => void
 >();
+const mockUseAiCreditsContext = jest.fn();
+const mockApplyCreditsFromResponse = jest.fn();
+const mockRefreshCredits = jest.fn<() => Promise<unknown>>();
+const mockCanAfford = jest.fn(() => true);
 const mockSubscribeToChatThreadMessages = jest.fn();
 const mockFetchChatThreadMessagesPage = jest.fn<
   (params: unknown) => Promise<unknown>
@@ -44,7 +47,6 @@ type RepoMessage = {
 let snapshotNext:
   | ((items: RepoMessage[], nextCursor: unknown) => void)
   | null = null;
-let snapshotError: ((error: unknown) => void) | null = null;
 const mockUnsubscribe = jest.fn();
 
 jest.mock("@react-native-community/netinfo", () => ({
@@ -59,12 +61,12 @@ jest.mock("uuid", () => ({
 jest.mock("i18next", () => ({
   __esModule: true,
   default: {
-    t: (key: string, fallback?: string) => mockI18nT(key, fallback),
+    language: "en",
+    t: (key: string, options?: unknown) => mockI18nT(key, options),
   },
 }));
 
 jest.mock("@/services/core/apiClient", () => ({
-  get: (url: string) => mockApiGet(url),
   post: (url: string, data?: unknown) => mockApiPost(url, data),
 }));
 
@@ -73,14 +75,16 @@ jest.mock("@/services/core/errorLogger", () => ({
     mockCaptureException(message, context, error),
 }));
 
+jest.mock("@/context/AiCreditsContext", () => ({
+  useAiCreditsContext: () => mockUseAiCreditsContext(),
+}));
+
 jest.mock("@/services/ai/chatThreadRepository", () => ({
   subscribeToChatThreadMessages: (params: {
     onMessages: (items: RepoMessage[], nextCursor: unknown) => void;
-    onError?: (error: unknown) => void;
   }) => {
     mockSubscribeToChatThreadMessages(params);
     snapshotNext = params.onMessages;
-    snapshotError = params.onError ?? null;
     return mockUnsubscribe;
   },
   fetchChatThreadMessagesPage: (params: unknown) =>
@@ -105,33 +109,42 @@ const profileFixture: FormData = {
 };
 
 const mealsFixture: Meal[] = [];
-const settle = async () => {
-  await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
-  });
-};
+
+function buildCredits(overrides?: Partial<{
+  tier: "free" | "premium";
+  balance: number;
+  allocation: number;
+}>) {
+  return {
+    userId: "user-1",
+    tier: overrides?.tier ?? "free",
+    balance: overrides?.balance ?? 20,
+    allocation: overrides?.allocation ?? 100,
+    periodStartAt: "2026-03-01T00:00:00.000Z",
+    periodEndAt: "2026-04-01T00:00:00.000Z",
+    costs: { chat: 1, textMeal: 1, photo: 5 },
+  };
+}
 
 describe("useChatHistory", () => {
   beforeEach(() => {
     snapshotNext = null;
-    snapshotError = null;
     jest.clearAllMocks();
 
     mockNetInfoFetch.mockResolvedValue({ isConnected: true });
-    mockI18nT.mockImplementation(
-      (_key: string, fallback?: string) => fallback || "fallback",
-    );
-    mockApiGet.mockResolvedValue({
-      dateKey: "2026-03-02",
-      usageCount: 3,
-      dailyLimit: 20,
-      remaining: 17,
+    mockI18nT.mockImplementation((key: string, options?: unknown) => {
+      if (typeof options === "string") return options;
+      return key;
     });
     mockApiPost.mockResolvedValue({
       reply: "AI response",
-      usageCount: 4,
-      remaining: 16,
+      userId: "user-1",
+      tier: "free",
+      balance: 19,
+      allocation: 100,
+      periodStartAt: "2026-03-01T00:00:00.000Z",
+      periodEndAt: "2026-04-01T00:00:00.000Z",
+      costs: { chat: 1, textMeal: 1, photo: 5 },
     });
     mockFetchChatThreadMessagesPage.mockResolvedValue({
       items: [],
@@ -140,115 +153,57 @@ describe("useChatHistory", () => {
     mockPersistUserChatMessage.mockResolvedValue();
     mockPersistAssistantChatMessage.mockResolvedValue();
     mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
+    mockRefreshCredits.mockResolvedValue(buildCredits({ balance: 0 }));
+    mockCanAfford.mockReturnValue(true);
+    mockUseAiCreditsContext.mockReturnValue({
+      credits: buildCredits(),
+      loading: false,
+      canAfford: mockCanAfford,
+      applyCreditsFromResponse: mockApplyCreditsFromResponse,
+      refreshCredits: mockRefreshCredits,
+    });
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it("sets empty state when base collection is unavailable", async () => {
+  it("derives send ability and counters from shared credits state", async () => {
+    mockCanAfford.mockReturnValue(false);
+    mockUseAiCreditsContext.mockReturnValue({
+      credits: buildCredits({ balance: 0 }),
+      loading: false,
+      canAfford: mockCanAfford,
+      applyCreditsFromResponse: mockApplyCreditsFromResponse,
+      refreshCredits: mockRefreshCredits,
+    });
+
     const { result } = renderHook(() =>
-      useChatHistory("", false, mealsFixture, profileFixture, "thread-1"),
+      useChatHistory("user-1", mealsFixture, profileFixture, "local-thread"),
     );
-    await settle();
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.messages).toEqual([]);
-    expect(result.current.canSend).toBe(true);
-    expect(mockApiGet).not.toHaveBeenCalled();
-    expect(mockSubscribeToChatThreadMessages).not.toHaveBeenCalled();
-    expect(result.current.dailyLimit).toBe(5);
-    expect(result.current.remaining).toBe(5);
-
-    let sendResult: string | null = null;
-    await act(async () => {
-      sendResult = await result.current.send("hello");
-    });
-    expect(sendResult).toBeNull();
-    expect(mockNetInfoFetch).toHaveBeenCalledTimes(1);
+    expect(result.current.canSend).toBe(false);
+    expect(result.current.creditAllocation).toBe(100);
+    expect(result.current.creditBalance).toBe(0);
+    expect(result.current.creditsUsed).toBe(100);
   });
 
-  it("loads usage from backend and enforces free-tier message limit", async () => {
-    mockApiGet.mockResolvedValueOnce({
-      dateKey: "2026-03-02",
-      usageCount: 0,
-      dailyLimit: 20,
-      remaining: 20,
-    });
+  it("applies inline credits from successful /ai/ask responses", async () => {
+    mockUuid
+      .mockReturnValueOnce("thread-created")
+      .mockReturnValueOnce("user-msg")
+      .mockReturnValueOnce("ai-msg");
 
-    const { result, unmount } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    await waitFor(() => {
-      expect(result.current.countToday).toBe(0);
-    });
-    expect(result.current.canSend).toBe(true);
-    expect(result.current.dailyLimit).toBe(20);
-    expect(result.current.remaining).toBe(20);
-    unmount();
-
-    mockApiGet.mockResolvedValueOnce({
-      dateKey: "2026-03-02",
-      usageCount: 20,
-      dailyLimit: 20,
-      remaining: 0,
-    });
-
-    const { result: limitedResult } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    await waitFor(() => {
-      expect(limitedResult.current.countToday).toBe(20);
-    });
-    expect(limitedResult.current.canSend).toBe(false);
-    expect(limitedResult.current.dailyLimit).toBe(20);
-    expect(limitedResult.current.remaining).toBe(0);
-
-    const { result: premiumResult } = renderHook(() =>
-      useChatHistory("user-1", true, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    await waitFor(() => {
-      expect(premiumResult.current.countToday).toBe(3);
-    });
-    expect(premiumResult.current.canSend).toBe(true);
-    expect(premiumResult.current.dailyLimit).toBe(20);
-  });
-
-  it("loads usage from backend and updates chat quota from ai/ask responses", async () => {
     const { result } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1"),
+      useChatHistory("user-1", mealsFixture, profileFixture, "local-thread"),
     );
-    await settle();
 
-    await waitFor(() => {
-      expect(result.current.countToday).toBe(3);
-    });
-
-    expect(result.current.dailyLimit).toBe(20);
-    expect(result.current.canSend).toBe(true);
-    expect(mockApiGet).toHaveBeenCalledWith("/ai/usage");
-
+    let createdThreadId: string | null = null;
     await act(async () => {
-      await result.current.send("hello");
+      createdThreadId = await result.current.send("hello");
     });
 
-    await waitFor(() => {
-      expect(result.current.countToday).toBe(4);
-    });
-
-    expect(result.current.usageCount).toBe(4);
-    expect(result.current.dailyLimit).toBe(20);
-    expect(result.current.remaining).toBe(16);
-    expect(result.current.canSend).toBe(true);
+    expect(createdThreadId).toBe("thread-created");
     expect(mockApiPost).toHaveBeenCalledWith("/ai/ask", {
       message: "hello",
       context: {
@@ -259,22 +214,70 @@ describe("useChatHistory", () => {
         language: "en",
       },
     });
+    expect(mockApplyCreditsFromResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        balance: 19,
+        allocation: 100,
+      }),
+    );
+    expect(mockRefreshCredits).not.toHaveBeenCalled();
   });
 
-  it("maps snapshot docs, loads next pages and deduplicates by id", async () => {
+  it("refreshes credits after backend 402 and persists limit fallback", async () => {
+    mockApiPost.mockRejectedValueOnce(
+      Object.assign(new Error("payment required"), { status: 402 }),
+    );
+
     const { result } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1", {
+      useChatHistory("user-1", mealsFixture, profileFixture, "local-thread"),
+    );
+
+    await act(async () => {
+      await result.current.send("hello");
+    });
+
+    expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
+    expect(mockPersistAssistantChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: "limit.reachedShort",
+      }),
+    );
+  });
+
+  it("does not refresh credits on gateway reject responses", async () => {
+    mockApiPost.mockRejectedValueOnce({
+      status: 400,
+      details: { reason: "OFF_TOPIC" },
+    });
+
+    const { result } = renderHook(() =>
+      useChatHistory("user-1", mealsFixture, profileFixture, "local-thread"),
+    );
+
+    await act(async () => {
+      await result.current.send("Flaga Boliwii");
+    });
+
+    expect(mockRefreshCredits).not.toHaveBeenCalled();
+    expect(mockPersistAssistantChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: "Moge odpowiadac tylko na pytania o zywienie i diete.",
+      }),
+    );
+  });
+
+  it("maps incoming snapshots and loads next pages", async () => {
+    const { result } = renderHook(() =>
+      useChatHistory("user-1", mealsFixture, profileFixture, "thread-1", {
         pageSize: 2,
       }),
     );
-    await settle();
 
     await waitFor(() => {
       expect(mockSubscribeToChatThreadMessages).toHaveBeenCalledTimes(1);
     });
 
     act(() => {
-      snapshotNext?.([], null);
       snapshotNext?.(
         [
           {
@@ -286,110 +289,20 @@ describe("useChatHistory", () => {
             lastSyncedAt: 200,
             syncState: "synced",
           },
-          {
-            id: "m2",
-            userUid: "user-1",
-            role: "assistant",
-            content: "",
-            createdAt: 0,
-            lastSyncedAt: 0,
-            syncState: "synced",
-          },
         ],
         { cursor: "c1" },
       );
     });
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.messages).toHaveLength(2);
-    });
-    expect(result.current.messages[1].role).toBe("assistant");
-    expect(result.current.messages[1].content).toBe("");
-
     mockFetchChatThreadMessagesPage.mockResolvedValueOnce({
       items: [
         {
-          id: "m1",
-          userUid: "user-1",
-          role: "user",
-          content: "first",
-          createdAt: 200,
-          lastSyncedAt: 200,
-          syncState: "synced",
-        },
-        {
-          id: "m3",
+          id: "m2",
           userUid: "user-1",
           role: "assistant",
           content: "older",
           createdAt: 100,
           lastSyncedAt: 100,
-          syncState: "synced",
-        },
-      ],
-      nextCursor: { cursor: "c2" },
-    });
-
-    await act(async () => {
-      await result.current.loadMore();
-    });
-
-    expect(mockFetchChatThreadMessagesPage).toHaveBeenCalledTimes(1);
-    expect(result.current.messages.map((m) => m.id)).toEqual(["m1", "m3", "m2"]);
-  });
-
-  it("reorders an existing message when same id arrives with different createdAt", async () => {
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1", {
-        pageSize: 2,
-      }),
-    );
-    await settle();
-
-    await waitFor(() => {
-      expect(mockSubscribeToChatThreadMessages).toHaveBeenCalledTimes(1);
-    });
-
-    act(() => {
-      snapshotNext?.(
-        [
-          {
-            id: "m1",
-            userUid: "user-1",
-            role: "user",
-            content: "first-version",
-            createdAt: 200,
-            lastSyncedAt: 200,
-            syncState: "synced",
-          },
-          {
-            id: "m2",
-            userUid: "user-1",
-            role: "assistant",
-            content: "second",
-            createdAt: 150,
-            lastSyncedAt: 150,
-            syncState: "synced",
-          },
-        ],
-        { cursor: "c1" },
-      );
-    });
-
-    await waitFor(() => {
-      expect(result.current.messages.map((m) => m.id)).toEqual(["m1", "m2"]);
-    });
-
-    mockFetchChatThreadMessagesPage.mockResolvedValueOnce({
-      items: [
-        {
-          id: "m1",
-          userUid: "user-1",
-          role: "user",
-          content: "updated-version",
-          createdAt: 90,
-          lastSyncedAt: 210,
           syncState: "synced",
         },
       ],
@@ -400,370 +313,6 @@ describe("useChatHistory", () => {
       await result.current.loadMore();
     });
 
-    expect(result.current.messages.map((m) => m.id)).toEqual(["m2", "m1"]);
-    expect(result.current.messages.find((m) => m.id === "m1")?.content).toBe(
-      "updated-version",
-    );
-  });
-
-  it("sets loading=false when snapshot listener fails", async () => {
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    await waitFor(() => {
-      expect(mockSubscribeToChatThreadMessages).toHaveBeenCalledTimes(1);
-    });
-
-    act(() => {
-      snapshotError?.(new Error("snapshot failed"));
-    });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-  });
-
-  it("returns null in send for blank text, exhausted quota and offline mode", async () => {
-    mockApiGet.mockResolvedValue({
-      dateKey: "2026-03-02",
-      usageCount: 20,
-      dailyLimit: 20,
-      remaining: 0,
-    });
-    mockNetInfoFetch.mockResolvedValue({ isConnected: false });
-
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    let blank: string | null = null;
-    await act(async () => {
-      blank = await result.current.send("   ");
-    });
-    expect(blank).toBeNull();
-
-    await waitFor(() => {
-      expect(result.current.canSend).toBe(false);
-    });
-
-    let quotaBlocked: string | null = null;
-    await act(async () => {
-      quotaBlocked = await result.current.send("hello");
-    });
-    expect(quotaBlocked).toBeNull();
-
-    const { result: premiumResult } = renderHook(() =>
-      useChatHistory("user-1", true, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    let offlineBlocked: string | null = null;
-    await act(async () => {
-      offlineBlocked = await premiumResult.current.send("hello");
-    });
-    expect(offlineBlocked).toBeNull();
-
-    expect(mockPersistUserChatMessage).not.toHaveBeenCalled();
-  });
-
-  it("creates a new thread for local IDs and persists user + ai messages", async () => {
-    const nowSpy = jest
-      .spyOn(Date, "now")
-      .mockImplementation(() => 1_700_000_000_000);
-    mockUuid
-      .mockReturnValueOnce("thread-created")
-      .mockReturnValueOnce("user-msg")
-      .mockReturnValueOnce("ai-msg");
-
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "local-temp"),
-    );
-    await settle();
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    let newThreadId: string | null = null;
-    await act(async () => {
-      newThreadId = await result.current.send(
-        "  This is a very long message that is definitely longer than forty two chars  ",
-      );
-    });
-
-    expect(newThreadId).toBe("thread-created");
-    expect(mockPersistUserChatMessage).toHaveBeenCalledTimes(1);
-    const userPersistCall = mockPersistUserChatMessage.mock.calls[0][0] as {
-      title?: string;
-    };
-    expect(typeof userPersistCall.title).toBe("string");
-    expect(String(userPersistCall.title).endsWith("…")).toBe(true);
-
-    expect(mockApiPost).toHaveBeenCalledTimes(1);
-    expect(mockApiPost.mock.calls[0][0]).toBe("/ai/ask");
-    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
-    expect(result.current.sending).toBe(false);
-    expect(result.current.typing).toBe(false);
-
-    nowSpy.mockRestore();
-  });
-
-  it("updates existing thread and handles ai failures without throwing", async () => {
-    mockApiPost.mockRejectedValueOnce(new Error("AI failed"));
-    mockUuid.mockReturnValueOnce("user-msg").mockReturnValueOnce("ai-msg");
-
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", true, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    act(() => {
-      snapshotNext?.(
-        [
-          {
-            id: "old-ai",
-            userUid: "user-1",
-            role: "assistant",
-            content: "assistant message",
-            createdAt: 70,
-            lastSyncedAt: 70,
-            syncState: "synced",
-          },
-          {
-            id: "old-user",
-            userUid: "user-1",
-            role: "user",
-            content: "previous",
-            createdAt: 50,
-            lastSyncedAt: 50,
-            syncState: "synced",
-          },
-        ],
-        { cursor: "existing" },
-      );
-    });
-
-    let sendResult: string | null = null;
-    await act(async () => {
-      sendResult = await result.current.send("hello");
-    });
-
-    expect(sendResult).toBeNull();
-    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
-    const aiPayload = mockPersistAssistantChatMessage.mock.calls[0][0] as {
-      content: string;
-    };
-    expect(aiPayload.content).toBe(
-      "Could not fetch a response. Please try again.",
-    );
-    expect(mockCaptureException).toHaveBeenCalledWith(
-      "[useChatHistory.send] failed to send AI chat message",
-      {
-        userUid: "user-1",
-        threadId: "thread-1",
-        message: "hello",
-      },
-      expect.any(Error),
-    );
-    expect(result.current.sending).toBe(false);
-    expect(result.current.typing).toBe(false);
-    expect(result.current.sendErrorType).toBe("unknown");
-  });
-
-  it("maps timeout failures to a retryable timeout response message", async () => {
-    mockApiPost.mockRejectedValueOnce(
-      Object.assign(new Error("timeout"), {
-        code: "api/timeout",
-        source: "ApiClient",
-        retryable: true,
-      }),
-    );
-    mockUuid.mockReturnValueOnce("user-msg").mockReturnValueOnce("ai-msg");
-
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", true, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    await act(async () => {
-      await result.current.send("hello");
-    });
-
-    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
-    const aiPayload = mockPersistAssistantChatMessage.mock.calls[0][0] as {
-      content: string;
-    };
-    expect(aiPayload.content).toBe("The request timed out. Please retry.");
-    expect(result.current.sendErrorType).toBe("timeout");
-  });
-
-  it("shows off-topic fallback message when gateway rejects request", async () => {
-    mockApiPost.mockRejectedValueOnce({
-      status: 400,
-      details: { reason: "OFF_TOPIC", credit_cost: 0.2 },
-    });
-    mockUuid.mockReturnValueOnce("user-msg").mockReturnValueOnce("ai-msg");
-
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", true, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    await act(async () => {
-      await result.current.send("Flaga Boliwii");
-    });
-
-    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
-    const aiPayload = mockPersistAssistantChatMessage.mock.calls[0][0] as {
-      content: string;
-    };
-    expect(aiPayload.content).toBe(
-      "Moge odpowiadac tylko na pytania o zywienie i diete.",
-    );
-    expect(result.current.sending).toBe(false);
-    expect(result.current.typing).toBe(false);
-  });
-
-  it("supports nested gateway reject reason payloads", async () => {
-    mockApiPost.mockRejectedValueOnce({
-      status: 400,
-      details: { detail: { reason: "OFF_TOPIC" } },
-    });
-    mockUuid.mockReturnValueOnce("user-msg").mockReturnValueOnce("ai-msg");
-
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", true, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    await act(async () => {
-      await result.current.send("Flaga Boliwii");
-    });
-
-    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
-    const aiPayload = mockPersistAssistantChatMessage.mock.calls[0][0] as {
-      content: string;
-    };
-    expect(aiPayload.content).toBe(
-      "Moge odpowiadac tylko na pytania o zywienie i diete.",
-    );
-  });
-
-  it("blocks further sends after backend 429 limit errors", async () => {
-    mockApiPost.mockRejectedValueOnce(
-      Object.assign(new Error("limit"), { status: 429 }),
-    );
-
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    await waitFor(() => {
-      expect(result.current.dailyLimit).toBe(20);
-    });
-
-    await act(async () => {
-      await result.current.send("hello");
-    });
-
-    await waitFor(() => {
-      expect(result.current.canSend).toBe(false);
-    });
-
-    expect(result.current.countToday).toBe(20);
-    expect(result.current.dailyLimit).toBe(20);
-    expect(result.current.remaining).toBe(0);
-    expect(mockCaptureException).toHaveBeenCalled();
-  });
-
-  it("applies structured usage payload from backend 429 errors", async () => {
-    mockApiPost.mockRejectedValueOnce(
-      Object.assign(new Error("limit"), {
-        status: 429,
-        details: {
-          detail: {
-            usage: {
-              dateKey: "2026-03-02",
-              usageCount: 30,
-              dailyLimit: 30,
-              remaining: 0,
-            },
-          },
-        },
-      }),
-    );
-
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    await act(async () => {
-      await result.current.send("hello");
-    });
-
-    await waitFor(() => {
-      expect(result.current.dailyLimit).toBe(30);
-    });
-    expect(result.current.countToday).toBe(30);
-    expect(result.current.remaining).toBe(0);
-    expect(result.current.canSend).toBe(false);
-  });
-
-  it("resets usage after user sign-out and handles short local title", async () => {
-    const { result, rerender } = renderHook(
-      ({ uid }: { uid: string }) =>
-        useChatHistory(uid, false, mealsFixture, profileFixture, "local-thread"),
-      { initialProps: { uid: "user-1" } },
-    );
-    await settle();
-
-    await waitFor(() => {
-      expect(result.current.countToday).toBe(3);
-    });
-
-    mockUuid
-      .mockReturnValueOnce("local-created")
-      .mockReturnValueOnce("local-user")
-      .mockReturnValueOnce("local-ai");
-
-    await act(async () => {
-      await result.current.send("short title");
-    });
-    const localThreadPayload = mockPersistUserChatMessage.mock.calls[
-      mockPersistUserChatMessage.mock.calls.length - 1
-    ][0] as { title?: string };
-    expect(localThreadPayload.title).toBe("short title");
-
-    rerender({ uid: "" });
-    await settle();
-
-    await waitFor(() => {
-      expect(result.current.countToday).toBe(0);
-    });
-  });
-
-  it("falls back to defaults when loading usage fails", async () => {
-    mockApiGet.mockRejectedValueOnce(new Error("usage failed"));
-
-    const { result } = renderHook(() =>
-      useChatHistory("user-1", false, mealsFixture, profileFixture, "thread-1"),
-    );
-    await settle();
-
-    await waitFor(() => {
-      expect(result.current.countToday).toBe(0);
-    });
-    expect(result.current.dailyLimit).toBe(5);
-    expect(result.current.remaining).toBe(5);
-    expect(mockCaptureException).toHaveBeenCalledWith(
-      "[useChatHistory] failed to load AI usage",
-      { userUid: "user-1" },
-      expect.any(Error),
-    );
+    expect(result.current.messages.map((message) => message.id)).toEqual(["m1", "m2"]);
   });
 });

@@ -38,10 +38,13 @@ describe("askDietAI", () => {
   it("uses backend ai/ask only and forwards raw chat context", async () => {
     mockPost.mockResolvedValueOnce({
       reply: "Backend reply",
-      usageCount: 3,
-      dailyLimit: 20,
-      remaining: 17,
-      dateKey: "2026-03-03",
+      userId: "user-1",
+      tier: "free",
+      balance: 99,
+      allocation: 100,
+      periodStartAt: "2026-03-03T00:00:00.000Z",
+      periodEndAt: "2026-04-03T00:00:00.000Z",
+      costs: { chat: 1, textMeal: 1, photo: 5 },
       version: "test",
       persistence: "backend_owned",
     });
@@ -105,48 +108,13 @@ describe("askDietAI", () => {
     });
   });
 
-  it("throws AiLimitExceededError when backend returns 429", async () => {
-    mockPost.mockRejectedValueOnce(Object.assign(new Error("limit"), { status: 429 }));
-
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { askDietAI, AiLimitExceededError } = require("@/services/ai/askDietAI");
-
-    await expect(
-      askDietAI("Question", [], [], {
-        unitsSystem: "metric",
-        age: "",
-        sex: null,
-        height: "",
-        weight: "",
-        preferences: [],
-        activityLevel: "moderate",
-        goal: "maintain",
-        surveyComplited: false,
-      }, { uid: "user-1" }),
-    ).rejects.toBeInstanceOf(AiLimitExceededError);
-
-    expect(mockLogWarning).toHaveBeenCalled();
-  });
-
-  it("attaches backend usage snapshot to AiLimitExceededError", async () => {
+  it("passes 402 through for credits refresh flow", async () => {
     mockPost.mockRejectedValueOnce(
-      Object.assign(new Error("limit"), {
-        status: 429,
-        details: {
-          detail: {
-            usage: {
-              dateKey: "2026-03-03",
-              usageCount: 20,
-              dailyLimit: 20,
-              remaining: 0,
-            },
-          },
-        },
-      }),
+      Object.assign(new Error("payment required"), { status: 402 }),
     );
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { askDietAI, AiLimitExceededError } = require("@/services/ai/askDietAI");
+    const { askDietAI } = require("@/services/ai/askDietAI");
 
     await expect(
       askDietAI("Question", [], [], {
@@ -161,13 +129,7 @@ describe("askDietAI", () => {
         surveyComplited: false,
       }, { uid: "user-1" }),
     ).rejects.toMatchObject({
-      name: AiLimitExceededError.name,
-      usage: {
-        dateKey: "2026-03-03",
-        usageCount: 20,
-        dailyLimit: 20,
-        remaining: 0,
-      },
+      status: 402,
     });
   });
 

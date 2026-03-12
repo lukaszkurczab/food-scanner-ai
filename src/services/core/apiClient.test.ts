@@ -54,11 +54,11 @@ describe("apiClient", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { get } = require("@/services/core/apiClient");
 
-    await get("/ai/usage");
+    await get("/ai/credits");
 
     expect(getIdToken).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.example.com/api/v1/ai/usage",
+      "https://api.example.com/api/v1/ai/credits",
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: "Bearer token-123",

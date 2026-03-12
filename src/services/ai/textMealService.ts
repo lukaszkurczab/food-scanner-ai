@@ -1,21 +1,17 @@
 import type { Ingredient } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import {
-  getAiDailyLimit,
   type AiTextMealAnalyzeResponse,
   type AiTextMealPayload,
 } from "@/services/ai/contracts";
+import { getErrorStatus } from "@/services/contracts/serviceError";
 import { post } from "@/services/core/apiClient";
 import { handleAiError } from "@/services/ai/handleAiError";
 import { logWarning } from "@/services/core/errorLogger";
 
 export type TextMealAnalyzeResult = {
   ingredients: Ingredient[];
-  usage: {
-    usageCount: number;
-    dailyLimit: number;
-    remaining: number;
-  };
+  credits: AiTextMealAnalyzeResponse;
 };
 
 function hasNonZeroNutrition(ingredient: Ingredient): boolean {
@@ -65,13 +61,13 @@ export async function extractIngredientsFromText(
 
     return {
       ingredients: mappedIngredients,
-      usage: {
-        usageCount: response.usageCount,
-        dailyLimit: response.dailyLimit ?? getAiDailyLimit(response),
-        remaining: response.remaining,
-      },
+      credits: response,
     };
   } catch (error) {
+    if (getErrorStatus(error) === 402) {
+      throw error;
+    }
+
     return handleAiError(
       error,
       "textMealService",

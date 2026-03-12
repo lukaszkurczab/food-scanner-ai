@@ -4,19 +4,13 @@ import NetInfo from "@react-native-community/netinfo";
 import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
 import type { Meal, FormData, ChatMessage } from "@/types";
-import { get, post } from "@/services/core/apiClient";
+import { post } from "@/services/core/apiClient";
 import { asString, isRecord } from "@/services/contracts/guards";
-import type {
-  AiAskBackendResponse,
-  AiUsageResponse,
-} from "@/services/ai/contracts";
-import {
-  getAiDailyLimit,
-  readAiUsageStatusFromApiErrorDetails,
-} from "@/services/ai/contracts";
+import type { AiAskBackendResponse } from "@/services/ai/contracts";
 import { getErrorStatus } from "@/services/contracts/serviceError";
 import { captureException } from "@/services/core/errorLogger";
 import { getAiUxErrorType, type AiUxErrorType } from "@/services/ai/uxError";
+import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import {
   type ChatMessageCursor,
   fetchChatThreadMessagesPage,
@@ -31,7 +25,6 @@ type AiHistoryItem = {
   text: string;
 };
 
-const DEFAULT_CHAT_DAILY_LIMIT = 5;
 const GATEWAY_REJECT_REASONS = new Set(["OFF_TOPIC", "ML_OFF_TOPIC", "TOO_SHORT"]);
 
 function buildAiContext(
@@ -122,96 +115,36 @@ function getGatewayRejectReason(error: unknown): string | null {
 
 export function useChatHistory(
   userUid: string,
-  isPremium: boolean,
   meals: Meal[],
   profile: FormData,
   threadId: string,
   opts: Options = {},
 ) {
+  const {
+    credits,
+    loading: creditsLoading,
+    canAfford,
+    applyCreditsFromResponse,
+    refreshCredits,
+  } = useAiCreditsContext();
   const pageSize = opts.pageSize ?? 50;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(true);
-  const [usageLoading, setUsageLoading] = useState(!!userUid);
   const [sending, setSending] = useState(false);
   const [typing, setTyping] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [sendErrorType, setSendErrorType] = useState<AiUxErrorType | null>(null);
 
-  const [dailyUsed, setDailyUsed] = useState(0);
-  const [dailyLimit, setDailyLimit] = useState(DEFAULT_CHAT_DAILY_LIMIT);
-  const [remainingToday, setRemainingToday] = useState(DEFAULT_CHAT_DAILY_LIMIT);
-
   const lastDocRef = useRef<ChatMessageCursor>(null);
 
   const isLocalThread = threadId.startsWith("local-");
   const canReadThread = !!userUid && !!threadId && !isLocalThread;
-
-  const applyBackendUsage = useCallback(
-    (usage: {
-      usageCount: number;
-      remaining: number;
-      dailyLimit?: number;
-    }) => {
-      setDailyUsed(usage.usageCount);
-      setRemainingToday(usage.remaining);
-      setDailyLimit(
-        usage.dailyLimit ?? getAiDailyLimit(usage),
-      );
-    },
-    [],
-  );
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (!userUid) {
-        /* istanbul ignore next -- defensive mounted check for sync branch */
-        if (mounted) {
-          setDailyUsed(0);
-          setDailyLimit(DEFAULT_CHAT_DAILY_LIMIT);
-          setRemainingToday(DEFAULT_CHAT_DAILY_LIMIT);
-          setUsageLoading(false);
-        }
-        return;
-      }
-
-      if (mounted) {
-        setUsageLoading(true);
-      }
-
-      try {
-        const usage = await get<AiUsageResponse>("/ai/usage");
-
-        /* istanbul ignore next -- defensive mounted check for async branch */
-        if (mounted) {
-          applyBackendUsage(usage);
-        }
-      } catch (error) {
-        captureException(
-          "[useChatHistory] failed to load AI usage",
-          { userUid },
-          error,
-        );
-        /* istanbul ignore next -- defensive mounted check for async branch */
-        if (mounted) {
-          setDailyUsed(0);
-          setDailyLimit(DEFAULT_CHAT_DAILY_LIMIT);
-          setRemainingToday(DEFAULT_CHAT_DAILY_LIMIT);
-        }
-      } finally {
-        /* istanbul ignore next -- defensive mounted check for async branch */
-        if (mounted) {
-          setUsageLoading(false);
-        }
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [applyBackendUsage, userUid]);
-
-  const canSend = isPremium || remainingToday > 0;
+  const usageLoading = !!userUid && creditsLoading;
+  const creditAllocation = credits?.allocation ?? 0;
+  const creditBalance = credits?.balance ?? 0;
+  const creditsUsed = Math.max(creditAllocation - creditBalance, 0);
+  const canSend = canAfford("chat");
   const loading = messagesLoading;
 
   useEffect(() => {
@@ -325,32 +258,23 @@ export function useChatHistory(
         if (!aiResponse.reply?.trim()) {
           setSendErrorType("unknown");
         }
-        applyBackendUsage({
-          usageCount: aiResponse.usageCount,
-          remaining: aiResponse.remaining,
-          dailyLimit: aiResponse.dailyLimit ?? getAiDailyLimit(aiResponse),
-        });
+        applyCreditsFromResponse(aiResponse);
       } catch (error) {
         const status = getErrorStatus(error);
         const gatewayReason = getGatewayRejectReason(error);
         const errorType = getAiUxErrorType(error);
-        if (status === 429) {
-          const usageFromError = isRecord(error)
-            ? readAiUsageStatusFromApiErrorDetails(error.details)
-            : null;
-          const limitForMessage = usageFromError?.dailyLimit ?? dailyLimit;
-          if (usageFromError) {
-            applyBackendUsage(usageFromError);
-          } else {
-            setRemainingToday(0);
-            setDailyUsed((prev) => Math.max(prev, dailyLimit));
-          }
+        if (status === 402) {
+          const refreshed = await refreshCredits();
+          const refreshedLimit = refreshed?.allocation ?? creditAllocation;
+          const refreshedUsed = refreshed
+            ? Math.max(refreshedLimit - refreshed.balance, 0)
+            : creditsUsed;
           aiText = i18next.t(
             "limit.reachedShort",
             {
               ns: "chat",
-              used: limitForMessage,
-              limit: limitForMessage,
+              used: refreshedUsed,
+              limit: refreshedLimit,
             },
           );
           setSendErrorType(null);
@@ -445,8 +369,10 @@ export function useChatHistory(
       meals,
       profile,
       messages,
-      dailyLimit,
-      applyBackendUsage,
+      creditAllocation,
+      creditsUsed,
+      applyCreditsFromResponse,
+      refreshCredits,
     ],
   );
 
@@ -457,10 +383,9 @@ export function useChatHistory(
     sending,
     typing,
     canSend,
-    countToday: dailyUsed,
-    usageCount: dailyUsed,
-    dailyLimit,
-    remaining: remainingToday,
+    creditsUsed,
+    creditAllocation,
+    creditBalance,
     sendErrorType,
     loadMore,
     send,
