@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, Linking, StyleSheet } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -11,6 +11,7 @@ import { Modal } from "@/components/Modal";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useUserProfileState } from "@/feature/UserProfile/hooks/useUserProfileState";
+import { getTermsUrl } from "@/utils/legalUrls";
 
 type ProfileNavigation = StackNavigationProp<RootStackParamList, "Profile">;
 
@@ -171,7 +172,10 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
       />
       <ListItem
         label={t("termsOfService")}
-        onPress={() => navigation.navigate("Terms")}
+        onPress={() => {
+          const url = getTermsUrl();
+          if (url) void Linking.openURL(url);
+        }}
         accessibilityLabel={t("termsOfService")}
       />
       <ListItem

@@ -103,7 +103,7 @@
       "appStore": "App Store",
       "googlePlay": "Google Play"
     },
-    "autorenewInfo": "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. You can manage or cancel in your {{storeName}} account settings."
+    "autorenewInfo": "Payment will be charged to your account at confirmation of purchase. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel subscriptions in your {{storeName}} account settings."
   },
   "change_password": "Change password",
   "old_password": "Current password",
@@ -141,9 +141,9 @@
   "paywall": {
     "title": "Premium monthly",
     "priceLabel": "Price",
-    "priceText": "29.99 zł  / month",
+    "priceText": "14.99 zł  / month",
     "subscribe": "Subscribe",
-    "disclaimer": "Subscription renews automatically. Manage subscriptions in account settings."
+    "disclaimer": "Payment will be charged to your account at confirmation of purchase. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel subscriptions in your {{storeName}} account settings."
   },
   "avatarPreview_title": "Use"
 }

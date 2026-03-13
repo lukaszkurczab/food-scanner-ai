@@ -103,7 +103,7 @@
       "appStore": "App Store",
       "googlePlay": "Google Play"
     },
-    "autorenewInfo": "Subskrypcja odnawia się automatycznie, jeśli nie anulujesz jej co najmniej 24 godziny przed końcem bieżącego okresu. Zarządzać lub anulować możesz w ustawieniach konta {{storeName}}."
+    "autorenewInfo": "Opłata zostanie pobrana z Twojego konta w momencie potwierdzenia zakupu. Subskrypcja odnawia się automatycznie, chyba że zostanie anulowana co najmniej 24 godziny przed końcem bieżącego okresu. Opłata za odnowienie zostanie pobrana w ciągu 24 godzin przed końcem bieżącego okresu. Subskrypcjami możesz zarządzać w ustawieniach konta {{storeName}}."
   },
   "change_password": "Zmień hasło",
   "old_password": "Obecne hasło",
@@ -142,8 +142,8 @@
   "paywall": {
     "title": "Premium na miesiąc",
     "priceLabel": "Cena",
-    "priceText": "29,99 zł  / miesiąc",
+    "priceText": "14,99 zł  / miesiąc",
     "subscribe": "Subskrybuj",
-    "disclaimer": "Subskrypcja odnawia się automatycznie. Zarządzaj subskrypcjami w ustawieniach konta."
+    "disclaimer": "Opłata zostanie pobrana z Twojego konta w momencie potwierdzenia zakupu. Subskrypcja odnawia się automatycznie, chyba że zostanie anulowana co najmniej 24 godziny przed końcem bieżącego okresu. Opłata za odnowienie zostanie pobrana w ciągu 24 godzin przed końcem bieżącego okresu. Subskrypcjami możesz zarządzać w ustawieniach konta {{storeName}}."
   }
 }

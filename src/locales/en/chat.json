@@ -59,7 +59,7 @@
     "emptyResponse": "I couldn't generate a useful response. Please try again."
   },
   "paywall": {
-    "autorenew": "Payment will be charged to your account. Subscription auto-renews unless canceled at least 24 hours before the end of the current period.",
+    "autorenew": "Payment will be charged to your account at confirmation of purchase. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel subscriptions in your {{storeName}} account settings.",
     "restore": "Restore Purchases",
     "terms": "Terms",
     "privacy": "Privacy"

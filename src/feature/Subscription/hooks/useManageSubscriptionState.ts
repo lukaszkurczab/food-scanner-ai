@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Alert, Linking } from "react-native";
 import Constants from "expo-constants";
+import { getTermsUrl } from "@/utils/legalUrls";
 import {
   openManageSubscriptions,
   restorePurchases,
@@ -23,10 +24,9 @@ export function useManageSubscriptionState(params: {
   const [paywallVisible, setPaywallVisible] = useState(false);
 
   const extra = (Constants.expoConfig?.extra ?? {}) as {
-    termsUrl?: unknown;
     privacyUrl?: unknown;
   };
-  const termsUrl = typeof extra.termsUrl === "string" ? extra.termsUrl : "";
+  const termsUrl = getTermsUrl();
   const privacyUrl =
     typeof extra.privacyUrl === "string" ? extra.privacyUrl : "";
 
