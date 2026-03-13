@@ -7,6 +7,7 @@ import {
   Linking,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -18,6 +19,7 @@ import { restorePurchases } from "@/services/billing/purchase";
 import { resolvePurchaseErrorMessage } from "@/services/billing/purchaseErrorMessage";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
+import { getTermsUrl } from "@/utils/legalUrls";
 
 type Props = {
   balance: number;
@@ -33,7 +35,6 @@ type PriceInfo = {
 
 type ExtraConfig = {
   disableBilling?: boolean;
-  termsUrl?: string;
   privacyUrl?: string;
 };
 
@@ -44,7 +45,6 @@ function getExtraConfig(): ExtraConfig {
   return {
     disableBilling:
       typeof extra.disableBilling === "boolean" ? extra.disableBilling : undefined,
-    termsUrl: typeof extra.termsUrl === "string" ? extra.termsUrl : undefined,
     privacyUrl: typeof extra.privacyUrl === "string" ? extra.privacyUrl : undefined,
   };
 }
@@ -80,7 +80,7 @@ export const PaywallCard: React.FC<Props> = ({
   const { uid } = useAuthContext();
   const { refreshPremium } = usePremiumContext();
   const extra = getExtraConfig();
-  const termsUrl = extra.termsUrl ?? "";
+  const termsUrl = getTermsUrl();
   const privacyUrl = extra.privacyUrl ?? "";
 
   const [loading, setLoading] = useState(false);
@@ -204,8 +204,9 @@ export const PaywallCard: React.FC<Props> = ({
 
       <Text style={styles.disclaimer}>
         {t("paywall.autorenew", {
+          storeName: Platform.OS === "ios" ? "App Store" : "Google Play",
           defaultValue:
-            "Payment will be charged to your account. Subscription auto-renews unless canceled at least 24 hours before the end of the current period.",
+            "Payment will be charged to your account at confirmation of purchase. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel subscriptions in your {{storeName}} account settings.",
         })}
       </Text>
 

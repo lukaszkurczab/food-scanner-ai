@@ -4,6 +4,7 @@ import {
   Text,
   Keyboard,
   TouchableOpacity,
+  Linking,
   StyleSheet,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -21,6 +22,7 @@ import { Feather } from "@expo/vector-icons";
 import { useAuthContext } from "@/context/AuthContext";
 import { useRegister } from "@/feature/Auth/hooks/useRegister";
 import { validateEmail } from "@/utils/validation";
+import { getTermsUrl } from "@/utils/legalUrls";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -188,7 +190,10 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
             </Text>
             <LinkText
               text={t("terms")}
-              onPress={() => navigation.navigate("Terms")}
+              onPress={() => {
+                const url = getTermsUrl();
+                if (url) void Linking.openURL(url);
+              }}
             />
             <Text style={styles.helperText}>
               {" & "}

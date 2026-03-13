@@ -6,6 +6,7 @@ import {
   Linking,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -96,8 +97,9 @@ export const PaywallModal: React.FC<Props> = ({
 
           <Text style={styles.disclaimer}>
             {t("paywall.disclaimer", {
+              storeName: Platform.OS === "ios" ? t("manageSubscription.store.appStore", { defaultValue: "App Store" }) : t("manageSubscription.store.googlePlay", { defaultValue: "Google Play" }),
               defaultValue:
-                "Auto-renewable subscription. Cancel anytime in your App Store settings.",
+                "Payment will be charged to your account at confirmation of purchase. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel subscriptions in your {{storeName}} account settings.",
             })}
           </Text>
 

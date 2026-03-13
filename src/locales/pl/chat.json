@@ -59,7 +59,7 @@
     "emptyResponse": "Nie udało się wygenerować odpowiedzi. Spróbuj ponownie."
   },
   "paywall": {
-    "autorenew": "Płatność zostanie pobrana z Twojego konta. Subskrypcja odnawia się automatycznie, jeśli nie anulujesz jej co najmniej 24 godziny przed końcem bieżącego okresu.",
+    "autorenew": "Opłata zostanie pobrana z Twojego konta w momencie potwierdzenia zakupu. Subskrypcja odnawia się automatycznie, chyba że zostanie anulowana co najmniej 24 godziny przed końcem bieżącego okresu. Opłata za odnowienie zostanie pobrana w ciągu 24 godzin przed końcem bieżącego okresu. Subskrypcjami możesz zarządzać w ustawieniach konta {{storeName}}.",
     "restore": "Przywróć zakupy",
     "terms": "Regulamin",
     "privacy": "Prywatność"
