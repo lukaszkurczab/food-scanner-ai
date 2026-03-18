@@ -21,6 +21,12 @@ import { calculateMacroTargets } from "@/utils/calculateMacroTargets";
 import { MacroTargetsRow } from "../components/MacroTargetsRow";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { useNutritionState } from "@/hooks/useNutritionState";
+import type {
+  NutritionCoachPriority,
+  NutritionState,
+  NutritionTopRisk,
+} from "@/services/nutritionState/nutritionStateTypes";
 
 function startEndOfLocalDay(d: Date) {
   const s = new Date(d);
@@ -47,6 +53,7 @@ function getMealsForDate(all: Meal[], d: Date): Meal[] {
 
 function buildLast7Days(): WeekDayItem[] {
   const now = new Date();
+  const todayStr = now.toDateString();
   const arr = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(now);
     d.setDate(now.getDate() - (6 - i));
@@ -55,8 +62,68 @@ function buildLast7Days(): WeekDayItem[] {
   return arr.map((d) => ({
     date: d,
     label: String(d.getDate()).padStart(2, "0"),
-    isToday: d.toDateString() === new Date().toDateString(),
+    isToday: d.toDateString() === todayStr,
   }));
+}
+
+function toLocalDayKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getTopRiskLabel(topRisk: NutritionTopRisk): string | null {
+  switch (topRisk) {
+    case "under_logging":
+      return "Under logging";
+    case "low_protein_consistency":
+      return "Low protein consistency";
+    case "high_unknown_meal_details":
+      return "Low meal detail quality";
+    case "calorie_under_target":
+      return "Below calorie target";
+    default:
+      return null;
+  }
+}
+
+function getCoachPriorityLabel(priority: NutritionCoachPriority): string | null {
+  switch (priority) {
+    case "logging_foundation":
+      return "Focus: logging foundation";
+    case "protein_consistency":
+      return "Focus: protein consistency";
+    case "meal_detail_quality":
+      return "Focus: meal detail quality";
+    case "calorie_adherence":
+      return "Focus: calorie adherence";
+    default:
+      return null;
+  }
+}
+
+function buildNutritionSummary(state: NutritionState): string | null {
+  const parts: string[] = [];
+
+  if (state.remaining.kcal !== null) {
+    parts.push(`${state.remaining.kcal} kcal left`);
+  }
+
+  const completeness = Math.round(state.quality.dataCompletenessScore * 100);
+  parts.push(`${completeness}% complete`);
+
+  const topRiskLabel = getTopRiskLabel(state.habits.topRisk);
+  if (topRiskLabel) {
+    parts.push(topRiskLabel);
+  } else {
+    const coachPriorityLabel = getCoachPriorityLabel(state.habits.coachPriority);
+    if (coachPriorityLabel) {
+      parts.push(coachPriorityLabel);
+    }
+  }
+
+  return parts.length > 0 ? parts.join(" • ") : null;
 }
 
 type HomeNavigation = StackNavigationProp<RootStackParamList>;
@@ -76,7 +143,17 @@ export default function HomeScreen({ navigation }: Props) {
 
   const last7Days = useMemo(buildLast7Days, []);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const selectedDayKey = useMemo(
+    () => toLocalDayKey(selectedDate),
+    [selectedDate],
+  );
   const isToday = selectedDate.toDateString() === new Date().toDateString();
+  const {
+    state: nutritionState,
+    enabled: nutritionStateEnabled,
+    source: nutritionStateSource,
+    error: nutritionStateError,
+  } = useNutritionState({ uid, dayKey: selectedDayKey });
 
   const dayMeals = useMemo(
     () => getMealsForDate(meals, selectedDate),
@@ -101,20 +178,36 @@ export default function HomeScreen({ navigation }: Props) {
   );
   const showWeeklyGraph = useMemo(() => data.some((v) => v > 0), [data]);
 
-  const totalCalories = dayMeals.reduce((sum, meal) => {
-    if (Array.isArray(meal.ingredients) && meal.ingredients.length) {
-      const mealKcal = meal.ingredients.reduce(
-        (acc, ing) => acc + (ing.kcal ?? 0),
-        0,
-      );
-      return sum + mealKcal;
+  const legacyMacros = useMemo(() => calculateTotalNutrients(dayMeals), [dayMeals]);
+  const legacyCalories = legacyMacros.kcal;
+
+  const hasUsableNutritionState =
+    nutritionStateEnabled &&
+    nutritionState.dayKey === selectedDayKey &&
+    nutritionStateSource !== "disabled" &&
+    nutritionStateSource !== "fallback" &&
+    nutritionStateError == null;
+
+  const totalCalories = hasUsableNutritionState
+    ? nutritionState.consumed.kcal
+    : legacyCalories;
+
+  const macros = hasUsableNutritionState
+    ? nutritionState.consumed
+    : legacyMacros;
+
+  const goalCalories = hasUsableNutritionState
+    ? (nutritionState.targets.kcal ?? userData?.calorieTarget ?? 0)
+    : hasSurvey
+      ? (userData?.calorieTarget ?? 0)
+      : 0;
+
+  const nutritionSummary = useMemo(() => {
+    if (!hasUsableNutritionState) {
+      return null;
     }
-    return sum + (meal.totals?.kcal ?? 0);
-  }, 0);
-
-  const macros = useMemo(() => calculateTotalNutrients(dayMeals), [dayMeals]);
-
-  const goalCalories = hasSurvey ? (userData?.calorieTarget ?? 0) : 0;
+    return buildNutritionSummary(nutritionState);
+  }, [hasUsableNutritionState, nutritionState]);
 
   const macroTargets = useMemo(
     () =>
@@ -127,6 +220,18 @@ export default function HomeScreen({ navigation }: Props) {
         : null,
     [userData?.calorieTarget, userData?.preferences, userData?.goal],
   );
+
+  const summaryToneStyle = useMemo(() => {
+    if (!nutritionSummary || !hasUsableNutritionState) {
+      return null;
+    }
+
+    if (nutritionState.habits.topRisk === "none") {
+      return styles.goalStatusSuccess;
+    }
+
+    return styles.goalStatusWarning;
+  }, [hasUsableNutritionState, nutritionState.habits.topRisk, nutritionSummary, styles]);
 
   return (
     <Layout>
@@ -141,7 +246,19 @@ export default function HomeScreen({ navigation }: Props) {
 
         {userData?.calorieTarget && userData.calorieTarget > 0 ? (
           <View style={[styles.headerRow, styles.headerRowGap]}>
-            <TargetProgressBar current={totalCalories} target={goalCalories} />
+            <View style={styles.headerContent}>
+              <TargetProgressBar current={totalCalories} target={goalCalories} />
+              {nutritionSummary ? (
+                <View
+                  style={[styles.goalStatusPill, summaryToneStyle]}
+                  testID="home-nutrition-summary"
+                >
+                  <Text style={[styles.goalStatusText, styles.goalLabelText]}>
+                    {nutritionSummary}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
             <StreakBadge value={streak} />
           </View>
         ) : (
@@ -156,6 +273,17 @@ export default function HomeScreen({ navigation }: Props) {
                 </Text>
               </View>
             </View>
+
+            {nutritionSummary ? (
+              <View
+                style={[styles.goalStatusPill, summaryToneStyle]}
+                testID="home-nutrition-summary"
+              >
+                <Text style={[styles.goalStatusText, styles.goalLabelText]}>
+                  {nutritionSummary}
+                </Text>
+              </View>
+            ) : null}
 
             <PrimaryButton
               label={t("home:setDailyGoal", "Set your daily goal")}
@@ -212,6 +340,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     screenGap: { gap: theme.spacing.lg },
     headerRow: { flexDirection: "row", alignItems: "center" },
     headerRowGap: { gap: theme.spacing.sm },
+    headerContent: { flex: 1, gap: theme.spacing.xs },
     goalCard: {
       backgroundColor: theme.card,
       padding: theme.spacing.lg,
@@ -253,8 +382,18 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.xs,
       borderRadius: theme.rounded.full,
       borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.background,
+      alignSelf: "flex-start",
+      maxWidth: "100%",
     },
     goalStatusText: {
       fontSize: theme.typography.size.xs,
+    },
+    goalStatusSuccess: {
+      backgroundColor: theme.success.background,
+    },
+    goalStatusWarning: {
+      backgroundColor: theme.warning.background,
     },
   });

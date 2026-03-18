@@ -33,8 +33,11 @@ import {
 } from "@/services/telemetry/telemetryClient";
 import {
   trackScreenView,
-  trackSessionStart,
 } from "@/services/telemetry/telemetryInstrumentation";
+import {
+  initTelemetryLifecycle,
+  stopTelemetryLifecycle,
+} from "@/services/telemetry/telemetryLifecycle";
 
 function Root() {
   const fontsLoaded = useAppFonts();
@@ -54,11 +57,12 @@ function Root() {
     void (async () => {
       await initTelemetryClient();
       initNotificationTelemetry();
-      await trackSessionStart();
+      await initTelemetryLifecycle();
     })();
 
     return () => {
       stopNotificationTelemetry();
+      stopTelemetryLifecycle();
       stopTelemetryClient();
     };
   }, []);
