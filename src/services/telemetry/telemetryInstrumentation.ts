@@ -136,6 +136,10 @@ export function trackSessionStart(): Promise<void> {
   return track("session_start", { source: "app_boot" });
 }
 
+export function trackSessionEnd(): Promise<void> {
+  return track("session_end", { source: "app_background" });
+}
+
 export function trackScreenView(routeName: string): Promise<void> {
   return track("screen_view", {
     screen: normalizeTelemetryScreenName(routeName),

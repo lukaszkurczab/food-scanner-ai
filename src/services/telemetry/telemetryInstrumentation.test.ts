@@ -12,6 +12,7 @@ import {
   trackNotificationOpened,
   trackNotificationScheduled,
   trackScreenView,
+  trackSessionEnd,
   trackSessionStart,
 } from "@/services/telemetry/telemetryInstrumentation";
 
@@ -48,16 +49,20 @@ describe("telemetryInstrumentation", () => {
 
   it("maps meal add methods and screen views to privacy-safe props", async () => {
     await trackSessionStart();
+    await trackSessionEnd();
     await trackScreenView("MealAddMethod");
     await trackMealAddMethodSelected("ai_photo");
 
     expect(mockTrack).toHaveBeenNthCalledWith(1, "session_start", {
       source: "app_boot",
     });
-    expect(mockTrack).toHaveBeenNthCalledWith(2, "screen_view", {
+    expect(mockTrack).toHaveBeenNthCalledWith(2, "session_end", {
+      source: "app_background",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(3, "screen_view", {
       screen: "meal_add_method",
     });
-    expect(mockTrack).toHaveBeenNthCalledWith(3, "meal_add_method_selected", {
+    expect(mockTrack).toHaveBeenNthCalledWith(4, "meal_add_method_selected", {
       mealInputMethod: "photo",
     });
   });
