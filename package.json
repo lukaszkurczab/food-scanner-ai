@@ -19,6 +19,7 @@
     "test": "jest --runInBand --coverage --watchman=false",
     "test:coverage:slice": "jest --runInBand --coverage --watchman=false --passWithNoTests",
     "e2e": "bash scripts/run-e2e-local.sh e2e/maestro",
+    "e2e:foundation": "bash scripts/run-e2e-local.sh e2e/maestro/foundation-smoke.yaml",
     "e2e:login": "bash scripts/run-e2e-local.sh e2e/maestro/login.yaml",
     "e2e:add-meal": "bash scripts/run-e2e-local.sh e2e/maestro/add-meal.yaml",
     "e2e:chat-ai": "bash scripts/run-e2e-local.sh e2e/maestro/chat-ai.yaml",

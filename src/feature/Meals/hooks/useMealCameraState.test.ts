@@ -150,6 +150,10 @@ describe("useMealCameraState", () => {
         periodStartAt: "2026-03-01T00:00:00.000Z",
         periodEndAt: "2026-04-01T00:00:00.000Z",
         costs: { chat: 1, textMeal: 1, photo: 5 },
+        model: "gpt-5.4",
+        runId: "run-photo-1",
+        confidence: 0.84,
+        warnings: ["partial_totals"],
       },
     });
 
@@ -178,6 +182,13 @@ describe("useMealCameraState", () => {
     expect(updateMeal).toHaveBeenCalledWith(
       expect.objectContaining({
         source: "ai",
+        inputMethod: "photo",
+        aiMeta: {
+          model: "gpt-5.4",
+          runId: "run-photo-1",
+          confidence: 0.84,
+          warnings: ["partial_totals"],
+        },
         photoUrl: "file:///meal.jpg",
         ingredients,
       }),
@@ -186,6 +197,13 @@ describe("useMealCameraState", () => {
       "user-1",
       expect.objectContaining({
         source: "ai",
+        inputMethod: "photo",
+        aiMeta: {
+          model: "gpt-5.4",
+          runId: "run-photo-1",
+          confidence: 0.84,
+          warnings: ["partial_totals"],
+        },
         photoUrl: "file:///meal.jpg",
         ingredients,
       }),

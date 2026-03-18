@@ -17,6 +17,7 @@ import { useUserContext } from "@contexts/UserContext";
 import { getAiUxErrorType } from "@/services/ai/uxError";
 import type { Ingredient, Meal } from "@/types";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
+import { getMealAiMetaFromAiResponse } from "@/services/meals/mealMetadata";
 
 const log = debugScope("Hook:useMealCameraState");
 
@@ -164,6 +165,8 @@ export function useMealCameraState({
             type: "other",
             timestamp: "",
             source: "manual",
+            inputMethod: "barcode",
+            aiMeta: null,
           };
           setMeal(nextMeal);
           if (uid) {
@@ -176,6 +179,8 @@ export function useMealCameraState({
             name: resolvedName,
             notes: `barcode:${code}`,
             ingredients: [ingredient],
+            inputMethod: "barcode",
+            aiMeta: null,
             updatedAt: new Date().toISOString(),
           };
           updateMeal({
@@ -183,6 +188,8 @@ export function useMealCameraState({
             name: resolvedName,
             notes: `barcode:${code}`,
             ingredients: [ingredient],
+            inputMethod: "barcode",
+            aiMeta: null,
           });
           if (uid) {
             await saveDraft(uid, nextMeal);
@@ -293,6 +300,8 @@ export function useMealCameraState({
             type: "other",
             timestamp: "",
             source: null,
+            inputMethod: "photo",
+            aiMeta: null,
           };
           setMeal(draftAfterPhoto);
         } else {
@@ -300,9 +309,14 @@ export function useMealCameraState({
             ...meal,
             mealId,
             photoUrl: finalUri,
+            inputMethod: meal.inputMethod ?? "photo",
             updatedAt: new Date().toISOString(),
           };
-          updateMeal({ photoUrl: finalUri, mealId });
+          updateMeal({
+            photoUrl: finalUri,
+            mealId,
+            inputMethod: meal.inputMethod ?? "photo",
+          });
         }
         if (uid) {
           await saveDraft(uid, draftAfterPhoto);
@@ -321,11 +335,16 @@ export function useMealCameraState({
           }
 
           if (ingredients && ingredients.length > 0) {
+            const aiMeta = analyzeResult
+              ? getMealAiMetaFromAiResponse(analyzeResult.credits)
+              : null;
             const analyzedMeal: Meal = {
               ...draftAfterPhoto,
               ingredients,
               photoUrl: finalUri,
               source: "ai",
+              inputMethod: "photo",
+              aiMeta,
               updatedAt: new Date().toISOString(),
             };
             updateMeal({
@@ -333,6 +352,8 @@ export function useMealCameraState({
               mealId,
               photoUrl: finalUri,
               source: "ai",
+              inputMethod: "photo",
+              aiMeta,
             });
             if (uid) {
               await saveDraft(uid, analyzedMeal);

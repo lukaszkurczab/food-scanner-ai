@@ -1,6 +1,20 @@
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "other";
 export type MealSource = "ai" | "manual" | "saved" | null;
 export type MealSyncState = "synced" | "pending" | "conflict" | "failed";
+export type MealInputMethod =
+  | "manual"
+  | "photo"
+  | "barcode"
+  | "text"
+  | "saved"
+  | "quick_add";
+
+export type MealAiMeta = {
+  model?: string | null;
+  runId?: string | null;
+  confidence?: number | null;
+  warnings?: string[] | null;
+};
 
 export type Ingredient = {
   id: string;
@@ -33,6 +47,8 @@ export interface Meal {
   lastSyncedAt?: number | null;
   syncState: MealSyncState;
   source: MealSource;
+  inputMethod?: MealInputMethod | null;
+  aiMeta?: MealAiMeta | null;
   imageId?: string | null;
   photoLocalPath?: string | null;
   photoUrl?: string | null;

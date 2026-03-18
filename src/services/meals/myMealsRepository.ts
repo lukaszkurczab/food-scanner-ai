@@ -5,6 +5,10 @@ import {
   getAllMyMealsLocal,
   getMyMealsPageLocal,
 } from "@/services/offline/myMeals.repo";
+import {
+  normalizeMealAiMeta,
+  normalizeMealInputMethod,
+} from "@/services/meals/mealMetadata";
 
 export type MyMealDoc = Meal & {
   uploadState?: "pending" | "done";
@@ -65,6 +69,8 @@ function normalizeMeal(raw: unknown): Meal | null {
     updatedAt,
     syncState: "synced",
     source: "saved",
+    inputMethod: normalizeMealInputMethod(meal.inputMethod),
+    aiMeta: normalizeMealAiMeta(meal.aiMeta),
     imageId: typeof meal.imageId === "string" ? meal.imageId : null,
     photoUrl: typeof meal.photoUrl === "string" ? meal.photoUrl : null,
     notes: typeof meal.notes === "string" ? meal.notes : null,

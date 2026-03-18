@@ -29,6 +29,8 @@ export type MealRow = {
   last_synced_at?: number | null;
   sync_state?: string | null;
   source: string | null;
+  input_method?: string | null;
+  ai_meta?: string | null;
   notes: string | null;
   tags: string | null;
 };

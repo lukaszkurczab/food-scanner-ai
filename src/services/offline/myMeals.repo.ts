@@ -2,6 +2,11 @@ import { getDB } from "./db";
 import type { Meal } from "@/types/meal";
 import type { MealRow } from "./types";
 import { emit } from "@/services/core/events";
+import {
+  normalizeMealInputMethod,
+  parseMealAiMeta,
+  serializeMealAiMeta,
+} from "@/services/meals/mealMetadata";
 
 function toEpochMs(value?: string | null): number {
   if (!value) return Date.now();
@@ -84,6 +89,8 @@ function rowToMeal(row: MealRow): Meal {
     lastSyncedAt: Number(row.last_synced_at ?? 0),
     syncState: parseMealSyncState(row.sync_state),
     source: parseMealSource(row.source),
+    inputMethod: normalizeMealInputMethod(row.input_method),
+    aiMeta: parseMealAiMeta(row.ai_meta),
     imageId: row.image_id ?? null,
     photoUrl: row.photo_url ?? null,
     photoLocalPath: localPath,
@@ -108,6 +115,7 @@ export async function upsertMyMealLocal(meal: Meal): Promise<void> {
   const ingredients = JSON.stringify(
     Array.isArray(meal.ingredients) ? meal.ingredients : []
   );
+  const aiMeta = serializeMealAiMeta(meal.aiMeta);
   const createdAt = meal.createdAt ?? meal.timestamp ?? meal.updatedAt;
   const syncState = normalizeMealSyncState(meal.syncState);
   const lastSyncedAt = syncState === "synced" ? toEpochMs(meal.updatedAt) : 0;
@@ -119,8 +127,8 @@ export async function upsertMyMealLocal(meal: Meal): Promise<void> {
       ingredients,
       photo_url, image_local, image_id,
       totals_kcal, totals_protein, totals_carbs, totals_fat,
-      deleted, created_at, updated_at, last_synced_at, sync_state, source, notes, tags
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      deleted, created_at, updated_at, last_synced_at, sync_state, source, input_method, ai_meta, notes, tags
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(cloud_id) DO UPDATE SET
       meal_id=excluded.meal_id,
       timestamp=excluded.timestamp,
@@ -143,6 +151,8 @@ export async function upsertMyMealLocal(meal: Meal): Promise<void> {
       END,
       sync_state=excluded.sync_state,
       source=excluded.source,
+      input_method=excluded.input_method,
+      ai_meta=excluded.ai_meta,
       notes=excluded.notes,
       tags=excluded.tags`,
     [
@@ -166,6 +176,8 @@ export async function upsertMyMealLocal(meal: Meal): Promise<void> {
       lastSyncedAt,
       syncState,
       meal.source ?? "saved",
+      normalizeMealInputMethod(meal.inputMethod),
+      aiMeta,
       meal.notes ?? null,
       tags,
     ],

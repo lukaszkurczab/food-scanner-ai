@@ -6,7 +6,7 @@ import { getDraftKey, getScreenKey } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import type { RootStackParamList } from "@/navigation/navigate";
-import type { Ingredient, Meal } from "@/types/meal";
+import type { Ingredient, Meal, MealInputMethod } from "@/types/meal";
 import { MaterialIcons } from "@expo/vector-icons";
 import { debugScope } from "@/utils/debug";
 import {
@@ -141,6 +141,14 @@ function hasMeaningfulDraft(payload: unknown): boolean {
   return hasIngredients || hasPhoto || hasTotals || hasDirtyFlag;
 }
 
+function getInputMethodForOption(option: MethodOption): MealInputMethod | null {
+  if (option.key === "ai_photo") return "photo";
+  if (option.key === "ai_text") return "text";
+  if (option.key === "manual") return "manual";
+  if (option.key === "saved") return "saved";
+  return null;
+}
+
 export function useMealAddMethodState(params: {
   navigation: MealAddMethodNavigationProp;
 }) {
@@ -196,7 +204,7 @@ export function useMealAddMethodState(params: {
   }, [checkDraft]);
 
   const primeEmptyMeal = useCallback(
-    async (nextScreen: AddMealStart) => {
+    async (nextScreen: AddMealStart, inputMethod?: MealInputMethod | null) => {
       if (!uid) return;
 
       const now = new Date().toISOString();
@@ -220,6 +228,8 @@ export function useMealAddMethodState(params: {
         type: "other",
         timestamp: "",
         source: null,
+        inputMethod: inputMethod ?? null,
+        aiMeta: null,
       };
 
       setMeal(emptyMeal);
@@ -233,7 +243,10 @@ export function useMealAddMethodState(params: {
     async (option: MethodOption) => {
       if (option.screen === "AddMeal") {
         const start = option.params.start;
-        await primeEmptyMeal(start || "Result");
+        await primeEmptyMeal(
+          start || "Result",
+          getInputMethodForOption(option),
+        );
         params.navigation.navigate("AddMeal", option.params);
         return;
       }

@@ -96,12 +96,16 @@ export default function SavedMealsScreen({
         type: "other",
         timestamp: "",
         source: null,
+        inputMethod: null,
+        aiMeta: null,
       };
 
       return {
         ...base,
         mealId: uuidv4(),
         source: "saved",
+        inputMethod: "saved",
+        aiMeta: null,
         ingredients: Array.isArray(picked.ingredients)
           ? picked.ingredients
           : [],

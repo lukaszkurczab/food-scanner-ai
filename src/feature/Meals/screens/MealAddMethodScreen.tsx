@@ -10,6 +10,7 @@ import { Layout } from "@/components";
 import { Modal } from "@/components/Modal";
 import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
 import { AiCreditsBadge } from "@/components/AiCreditsBadge";
+import { trackMealAddMethodSelected } from "@/services/telemetry/telemetryInstrumentation";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -58,7 +59,10 @@ const MealAddMethodScreen = () => {
               testID={`meal-add-option-${option.key}`}
               activeOpacity={0.85}
               style={styles.optionCard}
-              onPress={() => void state.handleOptionPress(option)}
+              onPress={() => {
+                void trackMealAddMethodSelected(option.key);
+                void state.handleOptionPress(option);
+              }}
             >
               <View style={styles.optionIconBox}>
                 <MaterialIcons

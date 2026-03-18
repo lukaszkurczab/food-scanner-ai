@@ -4,8 +4,10 @@ import { Platform } from "react-native";
 import {
   asBoolean,
   asNumber,
+  asString,
   isRecord,
 } from "@/services/contracts/guards";
+import { emitNotificationScheduledTelemetry } from "@/services/notifications/notificationTelemetry";
 import { fetchNotificationPrefs } from "@/services/notifications/notificationsRepository";
 
 type QuietHours = { startHour: number; endHour: number };
@@ -13,6 +15,7 @@ type QuietHours = { startHour: number; endHour: number };
 const SYS_KEY_PREFIX = "notif:sys:ids:";
 const SYS_PLANNED_KEY_PREFIX = "notif:sys:planned:";
 const SYS_PREFS_CACHE_KEY_PREFIX = "notif:sys:prefs:";
+const SYSTEM_NOTIFICATION_SOURCE = "system_notifications";
 
 function sysKey(uid: string, key: string) {
   return `${SYS_KEY_PREFIX}${uid}:${key}`;
@@ -250,7 +253,14 @@ async function scheduleKeyForNextDays(args: {
     if (!isAllowedWeekday(when, weekdays0to6)) continue;
 
     const id = await Notifications.scheduleNotificationAsync({
-      content: { title, body, data },
+      content: {
+        title,
+        body,
+        data: {
+          ...data,
+          source: SYSTEM_NOTIFICATION_SOURCE,
+        },
+      },
       trigger: Platform.select({
         android: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -265,6 +275,10 @@ async function scheduleKeyForNextDays(args: {
     });
 
     ids.push(id);
+    void emitNotificationScheduledTelemetry({
+      notificationType: asString(data.sys) ?? key,
+      source: SYSTEM_NOTIFICATION_SOURCE,
+    });
   }
 
   await storeIds(uid, key, ids);

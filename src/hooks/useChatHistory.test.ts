@@ -34,6 +34,8 @@ const mockPersistAssistantChatMessage = jest.fn<
 const mockGetDeadLetterCount = jest.fn<(uid: string, options?: unknown) => Promise<number>>();
 const mockRetryDeadLetterOps = jest.fn<(params: unknown) => Promise<number>>();
 const mockPushQueue = jest.fn<(uid: string) => Promise<void>>();
+const mockTrackAiChatSend = jest.fn<(message: string) => Promise<void>>();
+const mockTrackAiChatResult = jest.fn<(status: string) => Promise<void>>();
 
 type RepoMessage = {
   id: string;
@@ -106,6 +108,11 @@ jest.mock("@/services/offline/queue.repo", () => ({
 
 jest.mock("@/services/offline/sync.engine", () => ({
   pushQueue: (uid: string) => mockPushQueue(uid),
+}));
+
+jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
+  trackAiChatSend: (message: string) => mockTrackAiChatSend(message),
+  trackAiChatResult: (status: string) => mockTrackAiChatResult(status),
 }));
 
 const profileFixture: FormData = {
@@ -185,6 +192,8 @@ describe("useChatHistory", () => {
     mockGetDeadLetterCount.mockResolvedValue(0);
     mockRetryDeadLetterOps.mockResolvedValue(0);
     mockPushQueue.mockResolvedValue();
+    mockTrackAiChatSend.mockResolvedValue();
+    mockTrackAiChatResult.mockResolvedValue();
     mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
     mockRefreshCredits.mockResolvedValue(buildCredits({ balance: 0 }));
     mockCanAfford.mockReturnValue(true);
@@ -243,6 +252,8 @@ describe("useChatHistory", () => {
         language: "en",
       },
     });
+    expect(mockTrackAiChatSend).toHaveBeenCalledWith("hello");
+    expect(mockTrackAiChatResult).toHaveBeenCalledWith("success");
     expect(mockApplyCreditsFromResponse).toHaveBeenCalledWith(
       expect.objectContaining({
         balance: 19,
@@ -264,6 +275,8 @@ describe("useChatHistory", () => {
     });
 
     expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
+    expect(mockTrackAiChatSend).toHaveBeenCalledWith("hello");
+    expect(mockTrackAiChatResult).toHaveBeenCalledWith("payment_required");
     expect(mockPersistAssistantChatMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         content: "limit.reachedShort",
@@ -284,6 +297,8 @@ describe("useChatHistory", () => {
     });
 
     expect(mockRefreshCredits).not.toHaveBeenCalled();
+    expect(mockTrackAiChatSend).toHaveBeenCalledWith("Flaga Boliwii");
+    expect(mockTrackAiChatResult).toHaveBeenCalledWith("gateway_reject");
     expect(mockPersistAssistantChatMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         content: "Moge odpowiadac tylko na pytania o zywienie i diete.",

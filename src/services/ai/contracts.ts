@@ -108,6 +108,10 @@ export function parseCreditsFromResponse(value: unknown): AiCreditsStatus | null
 export type AiBackendCreditsMeta = AiCreditsStatus & {
   version: string;
   persistence: AiPersistence;
+  model?: string | null;
+  runId?: string | null;
+  confidence?: number | null;
+  warnings?: string[] | null;
 };
 
 export type AiAskBackendResponse = AiBackendCreditsMeta & {

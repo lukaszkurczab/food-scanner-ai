@@ -1,8 +1,11 @@
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import { isRecord } from "@/services/contracts/guards";
+import { emitNotificationScheduledTelemetry } from "@/services/notifications/notificationTelemetry";
 
 const KEY_PREFIX = "notif:ids:";
+const USER_NOTIFICATION_SOURCE = "user_notifications";
 
 function key(localKey: string) {
   return KEY_PREFIX + localKey;
@@ -21,6 +24,29 @@ function parseStoredIds(raw: string | null): string[] {
   } catch {
     return [];
   }
+}
+
+function buildTelemetryContent(
+  content: Notifications.NotificationContentInput,
+): Notifications.NotificationContentInput {
+  const data = isRecord(content.data) ? content.data : {};
+  return {
+    ...content,
+    data: {
+      ...data,
+      source: USER_NOTIFICATION_SOURCE,
+    },
+  };
+}
+
+function resolveNotificationTypeFromContent(
+  content: Notifications.NotificationContentInput,
+): string | null {
+  if (!isRecord(content.data)) {
+    return null;
+  }
+
+  return typeof content.data.type === "string" ? content.data.type : null;
 }
 
 async function storeId(localKey: string, id: string) {
@@ -69,8 +95,9 @@ export async function scheduleDailyAt(
   content: Notifications.NotificationContentInput,
   localKey: string
 ) {
+  const contentWithTelemetry = buildTelemetryContent(content);
   const id = await Notifications.scheduleNotificationAsync({
-    content,
+    content: contentWithTelemetry,
     trigger: Platform.select({
       android: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -88,6 +115,10 @@ export async function scheduleDailyAt(
     }) as Notifications.NotificationTriggerInput,
   });
   await storeId(localKey, id);
+  void emitNotificationScheduledTelemetry({
+    notificationType: resolveNotificationTypeFromContent(contentWithTelemetry),
+    source: USER_NOTIFICATION_SOURCE,
+  });
 }
 
 export async function scheduleWeekdaysIOS(
@@ -98,8 +129,9 @@ export async function scheduleWeekdaysIOS(
   localKey: string
 ) {
   for (const d of days0to6) {
+    const contentWithTelemetry = buildTelemetryContent(content);
     const id = await Notifications.scheduleNotificationAsync({
-      content,
+      content: contentWithTelemetry,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
         repeats: true,
@@ -109,6 +141,10 @@ export async function scheduleWeekdaysIOS(
       },
     });
     await storeId(localKey, id);
+    void emitNotificationScheduledTelemetry({
+      notificationType: resolveNotificationTypeFromContent(contentWithTelemetry),
+      source: USER_NOTIFICATION_SOURCE,
+    });
   }
 }
 
@@ -122,14 +158,15 @@ export async function scheduleMealReminder(
   title: string,
   body: string
 ) {
+  const contentWithTelemetry = buildTelemetryContent({
+    title,
+    body,
+    data: { notifId: n.id, type: "meal_reminder" },
+  });
   if (Platform.OS === "ios") {
     for (const d of n.days) {
       const id = await Notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body,
-          data: { notifId: n.id, type: "meal_reminder" },
-        },
+        content: contentWithTelemetry,
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
           repeats: true,
@@ -139,14 +176,14 @@ export async function scheduleMealReminder(
         } as Notifications.NotificationTriggerInput,
       });
       await storeId(n.id, id);
+      void emitNotificationScheduledTelemetry({
+        notificationType: "meal_reminder",
+        source: USER_NOTIFICATION_SOURCE,
+      });
     }
   } else {
     const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-        data: { notifId: n.id, type: "meal_reminder" },
-      },
+      content: contentWithTelemetry,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour: n.time.hour,
@@ -156,6 +193,10 @@ export async function scheduleMealReminder(
       } as Notifications.NotificationTriggerInput,
     });
     await storeId(n.id, id);
+    void emitNotificationScheduledTelemetry({
+      notificationType: "meal_reminder",
+      source: USER_NOTIFICATION_SOURCE,
+    });
   }
 }
 
@@ -164,8 +205,9 @@ export async function scheduleOneShotAt(
   content: Notifications.NotificationContentInput,
   localKey: string
 ) {
+  const contentWithTelemetry = buildTelemetryContent(content);
   const id = await Notifications.scheduleNotificationAsync({
-    content,
+    content: contentWithTelemetry,
     trigger: Platform.select({
       android: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -179,6 +221,10 @@ export async function scheduleOneShotAt(
     }) as Notifications.NotificationTriggerInput,
   });
   await storeId(localKey, id);
+  void emitNotificationScheduledTelemetry({
+    notificationType: resolveNotificationTypeFromContent(contentWithTelemetry),
+    source: USER_NOTIFICATION_SOURCE,
+  });
 }
 
 export function nextOccurrenceForDays(

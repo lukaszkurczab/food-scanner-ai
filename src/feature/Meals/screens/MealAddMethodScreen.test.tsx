@@ -17,6 +17,7 @@ type ModalProps = {
 
 const mockUseNavigation = jest.fn();
 const mockUseMealAddMethodState = jest.fn();
+const mockTrackMealAddMethodSelected = jest.fn<(optionKey: string) => Promise<void>>();
 
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockUseNavigation(),
@@ -24,6 +25,11 @@ jest.mock("@react-navigation/native", () => ({
 
 jest.mock("@/feature/Meals/hooks/useMealAddMethodState", () => ({
   useMealAddMethodState: (params: unknown) => mockUseMealAddMethodState(params),
+}));
+
+jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
+  trackMealAddMethodSelected: (optionKey: string) =>
+    mockTrackMealAddMethodSelected(optionKey),
 }));
 
 jest.mock("react-i18next", () => ({
@@ -106,6 +112,7 @@ jest.mock("@/components/Modal", () => {
 describe("MealAddMethodScreen", () => {
   beforeEach(() => {
     mockUseNavigation.mockReturnValue({ navigate: jest.fn() });
+    mockTrackMealAddMethodSelected.mockResolvedValue();
   });
 
   it("renders available options and forwards the selected option", () => {
@@ -142,6 +149,8 @@ describe("MealAddMethodScreen", () => {
     fireEvent.press(getByTestId("meal-add-option-ai_photo"));
     fireEvent.press(getByTestId("meal-add-option-manual"));
 
+    expect(mockTrackMealAddMethodSelected).toHaveBeenNthCalledWith(1, "ai_photo");
+    expect(mockTrackMealAddMethodSelected).toHaveBeenNthCalledWith(2, "manual");
     expect(handleOptionPress.mock.calls[0][0]).toEqual(options[0]);
     expect(handleOptionPress.mock.calls[1][0]).toEqual(options[1]);
   });

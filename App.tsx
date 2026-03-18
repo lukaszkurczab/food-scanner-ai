@@ -18,14 +18,50 @@ import { HistoryProvider } from "@/context/HistoryContext";
 import { AiCreditsProvider } from "@/context/AiCreditsContext";
 import { View, ActivityIndicator } from "react-native";
 import { Linking } from "react-native";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useAppFonts } from "@hooks/useAppFonts";
 import { ToastBridge } from "@/components";
 import { isE2EModeEnabled } from "@/services/e2e/config";
 import { handleE2EDeepLink } from "@/services/e2e/deepLink";
+import {
+  initNotificationTelemetry,
+  stopNotificationTelemetry,
+} from "@/services/notifications/notificationTelemetry";
+import {
+  initTelemetryClient,
+  stopTelemetryClient,
+} from "@/services/telemetry/telemetryClient";
+import {
+  trackScreenView,
+  trackSessionStart,
+} from "@/services/telemetry/telemetryInstrumentation";
 
 function Root() {
   const fontsLoaded = useAppFonts();
+  const previousRouteNameRef = useRef<string | undefined>(undefined);
+
+  const handleNavigationStateChange = useCallback(() => {
+    const currentRouteName = navigationRef.getCurrentRoute()?.name;
+    if (!currentRouteName || previousRouteNameRef.current === currentRouteName) {
+      return;
+    }
+
+    previousRouteNameRef.current = currentRouteName;
+    void trackScreenView(currentRouteName);
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      await initTelemetryClient();
+      initNotificationTelemetry();
+      await trackSessionStart();
+    })();
+
+    return () => {
+      stopNotificationTelemetry();
+      stopTelemetryClient();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isE2EModeEnabled()) return;
@@ -60,7 +96,11 @@ function Root() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={handleNavigationStateChange}
+      onStateChange={handleNavigationStateChange}
+    >
       <AiCreditsProvider>
         <PremiumProvider>
           <UserProvider>
