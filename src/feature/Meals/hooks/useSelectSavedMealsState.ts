@@ -151,12 +151,16 @@ export function useSelectSavedMealsState(params: {
         type: "other",
         timestamp: "",
         source: null,
+        inputMethod: null,
+        aiMeta: null,
       };
 
     const next: Meal = {
       ...base,
       mealId: picked.mealId || base.mealId,
       source: "saved",
+      inputMethod: "saved",
+      aiMeta: null,
       ingredients: Array.isArray(picked.ingredients) ? picked.ingredients : [],
       photoLocalPath: picked.photoLocalPath ?? null,
       photoUrl: picked.photoLocalPath ?? picked.photoUrl ?? null,

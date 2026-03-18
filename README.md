@@ -97,6 +97,8 @@ File: `.env`
 EXPO_PUBLIC_API_BASE_URL=
 EXPO_PUBLIC_API_VERSION=v1
 EXPO_PUBLIC_ENABLE_BACKEND_LOGGING=true
+EXPO_PUBLIC_ENABLE_TELEMETRY=false
+EXPO_PUBLIC_ENABLE_V2_STATE=false
 RC_IOS_API_KEY=
 RC_ANDROID_API_KEY=
 TERMS_URL=
@@ -114,6 +116,8 @@ Description:
 - `EXPO_PUBLIC_API_BASE_URL` - base URL of the backend API used for AI, logging, and other server-managed features.
 - `EXPO_PUBLIC_API_VERSION` - backend API version prefix used by the app.
 - `EXPO_PUBLIC_ENABLE_BACKEND_LOGGING` - enables forwarding selected client errors to the backend logging endpoint.
+- `EXPO_PUBLIC_ENABLE_TELEMETRY` - enables mobile telemetry batching and P0 event emission.
+- `EXPO_PUBLIC_ENABLE_V2_STATE` - enables the mobile consumer for `/api/v2/users/me/state` with local fallback caching.
 - `RC_IOS_API_KEY` - RevenueCat iOS API key (required for iOS subscriptions).
 - `RC_ANDROID_API_KEY` - RevenueCat Android API key (required for Android subscriptions).
 - `TERMS_URL` - terms and conditions URL (used in paywall/subscription screens).
@@ -152,3 +156,23 @@ Testing policy:
 
 - Prefer targeted tests for touched files/features during regular development.
 - Run the full test suite before releases, large refactors, or cross-feature changes.
+
+## E2E Smoke
+
+High-value Maestro smoke flows are available under `e2e/maestro/`.
+
+```bash
+# foundation smoke: login + add meal + chat + offline banner
+npm run e2e:foundation
+
+# existing focused flows
+npm run e2e:login
+npm run e2e:add-meal
+npm run e2e:chat-ai
+npm run e2e:offline-error
+```
+
+Cross-repo QA guidance for the Foundation Sprint lives in:
+
+- `../docs/foundation-qa-checklist.md`
+- `../docs/foundation-v2-rollout-playbook.md`

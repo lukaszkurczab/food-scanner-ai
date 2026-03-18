@@ -110,7 +110,9 @@ describe("useMealTextAiState", () => {
   it("applies credits from successful AI response", async () => {
     const navigation = { replace: jest.fn(), navigate: jest.fn() };
     const setMeal = jest.fn();
-    const saveDraft = jest.fn(async () => undefined);
+    const saveDraft = jest.fn<
+      (uid: string, draftOverride?: unknown) => Promise<void>
+    >(async () => undefined);
     const setLastScreen = jest.fn(async () => undefined);
     mockUseNavigation.mockReturnValue(navigation);
     mockUseMealDraftContext.mockReturnValue({
@@ -140,6 +142,10 @@ describe("useMealTextAiState", () => {
         periodStartAt: "2026-03-01T00:00:00.000Z",
         periodEndAt: "2026-04-01T00:00:00.000Z",
         costs: { chat: 1, textMeal: 1, photo: 5 },
+        model: "gpt-5.4-mini",
+        runId: "run-1",
+        confidence: 0.91,
+        warnings: ["partial_totals"],
       },
     });
 
@@ -161,6 +167,29 @@ describe("useMealTextAiState", () => {
 
     expect(mockApplyCreditsFromResponse).toHaveBeenCalledWith(
       expect.objectContaining({ balance: 99 }),
+    );
+    expect(setMeal).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        inputMethod: "text",
+        aiMeta: {
+          model: "gpt-5.4-mini",
+          runId: "run-1",
+          confidence: 0.91,
+          warnings: ["partial_totals"],
+        },
+      }),
+    );
+    expect(saveDraft).toHaveBeenLastCalledWith(
+      "user-1",
+      expect.objectContaining({
+        inputMethod: "text",
+        aiMeta: {
+          model: "gpt-5.4-mini",
+          runId: "run-1",
+          confidence: 0.91,
+          warnings: ["partial_totals"],
+        },
+      }),
     );
     await waitFor(() => {
       expect(navigation.replace).toHaveBeenCalledWith("AddMeal", { start: "Result" });

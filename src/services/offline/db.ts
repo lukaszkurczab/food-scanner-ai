@@ -425,6 +425,31 @@ export function runMigrations() {
       throw e;
     }
   }
+
+  if (v < 8) {
+    d.execSync("BEGIN");
+    try {
+      if (!columnExists(d, "meals", "input_method")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN input_method TEXT;`);
+      }
+      if (!columnExists(d, "meals", "ai_meta")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN ai_meta TEXT;`);
+      }
+      if (!columnExists(d, "my_meals", "input_method")) {
+        d.execSync(`ALTER TABLE my_meals ADD COLUMN input_method TEXT;`);
+      }
+      if (!columnExists(d, "my_meals", "ai_meta")) {
+        d.execSync(`ALTER TABLE my_meals ADD COLUMN ai_meta TEXT;`);
+      }
+
+      setUserVersion(d, 8);
+      d.execSync("COMMIT");
+      v = 8;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
 }
 
 export function resetOfflineStorage() {

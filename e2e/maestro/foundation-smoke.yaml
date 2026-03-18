@@ -1,0 +1,27 @@
+appId: com.lkurczab.foodscannerai
+---
+- runFlow: login.yaml
+- tapOn:
+    id: tab-add-meal
+- assertVisible:
+    id: meal-add-option-manual
+- tapOn:
+    id: meal-add-option-manual
+- tapOn:
+    id: meal-add-continue-button
+- tapOn:
+    id: meal-result-save-button
+- assertVisible:
+    id: tab-home
+- tapOn:
+    id: tab-chat
+- tapOn:
+    id: chat-input
+- inputText: "Plan a balanced dinner for today"
+- tapOn:
+    id: chat-send-button
+- assertVisible: "E2E_MOCK_CHAT_REPLY"
+- openLink: fitaly://e2e/reset?offline=1&logout=0
+- assertVisible:
+    id: offline-banner
+- openLink: fitaly://e2e/reset?offline=0&logout=0

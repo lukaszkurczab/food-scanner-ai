@@ -12,8 +12,9 @@ import { extractIngredientsFromText } from "@/services/ai/textMealService";
 import type { AiTextMealPayload } from "@/services/ai/contracts";
 import { getErrorStatus } from "@/services/contracts/serviceError";
 import { getAiUxErrorType } from "@/services/ai/uxError";
-import type { Ingredient, Meal } from "@/types";
+import type { Meal } from "@/types";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { getMealAiMetaFromAiResponse } from "@/services/meals/mealMetadata";
 
 const MAX_RETRIES = 3;
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -78,6 +79,8 @@ export function useMealTextAiState(params: {
       type: "other",
       timestamp: "",
       source: "ai",
+      inputMethod: "text",
+      aiMeta: null,
       cloudId: undefined,
     }),
     [],
@@ -92,29 +95,6 @@ export function useMealTextAiState(params: {
     await saveDraft(uid, base);
     return base;
   }, [buildInitialMeal, meal, saveDraft, setMeal, uid]);
-
-  const fillDraftAndGo = useCallback(
-    async (ingredients: Ingredient[]) => {
-      if (!uid) return;
-
-      const base = await ensureDraft();
-      if (!base) return;
-
-      const next: Meal = {
-        ...base,
-        name: name.trim() || base.name,
-        notes: desc.trim() || base.notes || null,
-        ingredients,
-        updatedAt: new Date().toISOString(),
-      };
-
-      setMeal(next);
-      await saveDraft(uid, next);
-      await setLastScreen(uid, "Result");
-      navigation.replace("AddMeal", { start: "Result" });
-    },
-    [desc, ensureDraft, name, navigation, saveDraft, setLastScreen, setMeal, uid],
-  );
 
   const buildPayload = useCallback((): AiTextMealPayload => {
     const parsedAmount = Number(amountRaw);
@@ -196,7 +176,24 @@ export function useMealTextAiState(params: {
 
       applyCreditsFromResponse(result.credits);
       setRetries(0);
-      await fillDraftAndGo(result.ingredients);
+      const aiMeta = getMealAiMetaFromAiResponse(result.credits);
+      const base = await ensureDraft();
+      if (!base) return;
+
+      const next: Meal = {
+        ...base,
+        name: name.trim() || base.name,
+        notes: desc.trim() || base.notes || null,
+        ingredients: result.ingredients,
+        inputMethod: "text",
+        aiMeta,
+        updatedAt: new Date().toISOString(),
+      };
+
+      setMeal(next);
+      await saveDraft(uid, next);
+      await setLastScreen(uid, "Result");
+      navigation.replace("AddMeal", { start: "Result" });
     } catch (error) {
       if (getErrorStatus(error) === 402) {
         await refreshCredits();
@@ -231,12 +228,17 @@ export function useMealTextAiState(params: {
     applyCreditsFromResponse,
     buildPayload,
     canAfford,
-    fillDraftAndGo,
+    desc,
+    ensureDraft,
     ingPreview,
     language,
     name,
+    navigation,
     nextRetryCount,
     refreshCredits,
+    saveDraft,
+    setLastScreen,
+    setMeal,
     setSubmitError,
     t,
     uid,

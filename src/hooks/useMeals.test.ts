@@ -38,6 +38,9 @@ const mockUpsertMyMealWithPhoto = jest.fn<
 >();
 const mockDebugLog = jest.fn();
 const mockDebugWarn = jest.fn();
+const mockTrackMealAdded = jest.fn<(meal: Meal) => Promise<void>>();
+const mockTrackMealUpdated = jest.fn<(meal: Meal) => Promise<void>>();
+const mockTrackMealDeleted = jest.fn<(meal?: Meal | null) => Promise<void>>();
 
 jest.mock("uuid", () => ({
   v4: () => mockUuid(),
@@ -101,6 +104,12 @@ jest.mock("@/services/offline/sync.engine", () => ({
 jest.mock("@/services/meals/myMealService", () => ({
   upsertMyMealWithPhoto: (uid: string, meal: Meal, localPhoto: string | null) =>
     mockUpsertMyMealWithPhoto(uid, meal, localPhoto),
+}));
+
+jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
+  trackMealAdded: (meal: Meal) => mockTrackMealAdded(meal),
+  trackMealUpdated: (meal: Meal) => mockTrackMealUpdated(meal),
+  trackMealDeleted: (meal?: Meal | null) => mockTrackMealDeleted(meal),
 }));
 
 jest.mock("@/utils/debug", () => ({
@@ -187,6 +196,9 @@ describe("useMeals", () => {
     mockPushQueue.mockResolvedValue();
     mockPullChanges.mockResolvedValue();
     mockUpsertMyMealWithPhoto.mockResolvedValue();
+    mockTrackMealAdded.mockResolvedValue();
+    mockTrackMealUpdated.mockResolvedValue();
+    mockTrackMealDeleted.mockResolvedValue();
   });
 
   afterEach(() => {
@@ -288,6 +300,12 @@ describe("useMeals", () => {
           source: null,
           cloudId: undefined,
           photoUrl: "file://local-photo.jpg",
+          aiMeta: {
+            model: "gpt-5.4-mini",
+            runId: "run-1",
+            confidence: 0.9,
+            warnings: ["partial_totals"],
+          },
         },
         { alsoSaveToMyMeals: true },
       );
@@ -304,12 +322,27 @@ describe("useMeals", () => {
     expect(savedPayload.cloudId).toBe("cloud-new");
     expect(savedPayload.mealId).toBe("meal-new");
     expect(savedPayload.source).toBe("manual");
+    expect(savedPayload.inputMethod).toBe("manual");
+    expect(savedPayload.aiMeta).toEqual({
+      model: "gpt-5.4-mini",
+      runId: "run-1",
+      confidence: 0.9,
+      warnings: ["partial_totals"],
+    });
     expect(savedPayload.totals).toEqual({ kcal: 50, protein: 6, fat: 3, carbs: 8 });
     expect(mockEnqueueUpsert).toHaveBeenCalledWith("user-1", savedPayload);
+    expect(mockTrackMealAdded).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudId: "cloud-new",
+        mealId: "meal-new",
+        source: "manual",
+      }),
+    );
     expect(mockUpsertMyMealLocal).toHaveBeenCalledWith(
       expect.objectContaining({
         cloudId: "meal-new",
         source: "saved",
+        inputMethod: "manual",
       }),
     );
     expect(mockEnqueueMyMealUpsert).toHaveBeenCalledWith(
@@ -426,6 +459,13 @@ describe("useMeals", () => {
       }),
       "file://saved-photo.jpg",
     );
+    expect(mockTrackMealUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mealId: "saved-doc",
+        cloudId: "saved-doc",
+        source: "saved",
+      }),
+    );
     expect(mockUpsertMealLocal).not.toHaveBeenCalled();
     expect(mockEnqueueUpsert).not.toHaveBeenCalled();
     expect(mockReconcileAll).not.toHaveBeenCalled();
@@ -467,6 +507,12 @@ describe("useMeals", () => {
       "user-1",
       expect.objectContaining({
         cloudId: "updated-cloud",
+      }),
+    );
+    expect(mockTrackMealUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudId: "updated-cloud",
+        source: "manual",
       }),
     );
 
@@ -517,6 +563,11 @@ describe("useMeals", () => {
       uid: "user-1",
       cloudId: "delete-me",
     });
+    expect(mockTrackMealDeleted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudId: "delete-me",
+      }),
+    );
 
     await act(async () => {
       jest.advanceTimersByTime(1200);
@@ -557,6 +608,12 @@ describe("useMeals", () => {
     expect(mockEnqueueUpsert).toHaveBeenCalledWith(
       "user-1",
       expect.objectContaining({ cloudId: "copy-cloud" }),
+    );
+    expect(mockTrackMealAdded).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudId: "copy-cloud",
+        mealId: "copy-meal",
+      }),
     );
     expect(mockEmit).toHaveBeenCalledWith("ui:toast", {
       key: "toast.mealAdded",

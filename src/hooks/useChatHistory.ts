@@ -19,6 +19,10 @@ import {
 } from "@/services/offline/queue.repo";
 import { pushQueue } from "@/services/offline/sync.engine";
 import {
+  trackAiChatResult,
+  trackAiChatSend,
+} from "@/services/telemetry/telemetryInstrumentation";
+import {
   type ChatMessageCursor,
   fetchChatThreadMessagesPage,
   persistAssistantChatMessage,
@@ -245,6 +249,7 @@ export function useChatHistory(
       const net = await NetInfo.fetch();
       if (!net.isConnected) return null;
       if (!userUid) return null;
+      void trackAiChatSend(trimmed);
 
       setSending(true);
       setTyping(true);
@@ -302,6 +307,7 @@ export function useChatHistory(
               "chat:errors.emptyResponse",
               "I couldn't generate a useful response. Please try again.",
             );
+        void trackAiChatResult("success");
         if (!aiResponse.reply?.trim()) {
           setSendErrorType("unknown");
         }
@@ -324,6 +330,7 @@ export function useChatHistory(
               limit: refreshedLimit,
             },
           );
+          void trackAiChatResult("payment_required");
           setSendErrorType(null);
         } else if (
           gatewayReason !== null &&
@@ -333,36 +340,42 @@ export function useChatHistory(
             "chat:errors.offTopic",
             "Moge odpowiadac tylko na pytania o zywienie i diete.",
           );
+          void trackAiChatResult("gateway_reject");
           setSendErrorType(null);
         } else if (errorType === "offline") {
           aiText = i18next.t(
             "chat:errors.offline",
             "You're offline. Reconnect and try again.",
           );
+          void trackAiChatResult("offline");
           setSendErrorType("offline");
         } else if (errorType === "timeout") {
           aiText = i18next.t(
             "chat:errors.timeout",
             "The request timed out. Please retry.",
           );
+          void trackAiChatResult("timeout");
           setSendErrorType("timeout");
         } else if (errorType === "unavailable") {
           aiText = i18next.t(
             "chat:errors.serviceUnavailable",
             "AI is temporarily unavailable. Please try again shortly.",
           );
+          void trackAiChatResult("unavailable");
           setSendErrorType("unavailable");
         } else if (errorType === "auth") {
           aiText = i18next.t(
             "chat:errors.authRequired",
             "Please sign in again to continue.",
           );
+          void trackAiChatResult("auth");
           setSendErrorType("auth");
         } else {
           aiText = i18next.t(
             "chat:errors.fetchFailed",
             "Could not fetch a response. Please try again.",
           );
+          void trackAiChatResult("error");
           setSendErrorType("unknown");
         }
         captureException(

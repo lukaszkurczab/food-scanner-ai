@@ -1,6 +1,10 @@
 import type { Meal } from "@/types/meal";
 import { get, post } from "@/services/core/apiClient";
 import { updateMyMealRemote } from "@/services/meals/myMealsRepository";
+import {
+  normalizeMealAiMeta,
+  normalizeMealInputMethod,
+} from "@/services/meals/mealMetadata";
 
 export type MealHistoryFilters = {
   calories?: [number, number];
@@ -87,6 +91,8 @@ function normalizeMeal(raw: unknown): Meal | null {
       meal.source === "ai" || meal.source === "manual" || meal.source === "saved"
         ? meal.source
         : null,
+    inputMethod: normalizeMealInputMethod(meal.inputMethod),
+    aiMeta: normalizeMealAiMeta(meal.aiMeta),
     imageId: typeof meal.imageId === "string" ? meal.imageId : null,
     photoUrl: typeof meal.photoUrl === "string" ? meal.photoUrl : null,
     notes: typeof meal.notes === "string" ? meal.notes : null,
