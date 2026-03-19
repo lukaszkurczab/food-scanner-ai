@@ -12,6 +12,9 @@ export type MealRow = {
   meal_id: string;
   user_uid: string;
   timestamp: string;
+  day_key?: string | null;
+  logged_at_local_min?: number | null;
+  tz_offset_min?: number | null;
   type: string;
   name: string | null;
   ingredients: string | null;

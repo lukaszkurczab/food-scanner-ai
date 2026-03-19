@@ -22,6 +22,26 @@ function normalizeMealSyncState(value: Meal["syncState"]): Meal["syncState"] {
   return "pending";
 }
 
+function toDayKey(value?: string | null): string | null {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export async function upsertMealLocal(meal: Meal): Promise<void> {
   const db = getDB();
   const tags = JSON.stringify(meal.tags || []);
@@ -35,15 +55,18 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
 
   db.runSync(
     `INSERT INTO meals (
-      cloud_id, meal_id, user_uid, timestamp, type, name,
+      cloud_id, meal_id, user_uid, timestamp, day_key, logged_at_local_min, tz_offset_min, type, name,
       ingredients,
       photo_url, image_local, image_id,
       totals_kcal, totals_protein, totals_carbs, totals_fat,
       deleted, created_at, updated_at, last_synced_at, sync_state, source, input_method, ai_meta, notes, tags
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(cloud_id) DO UPDATE SET
       meal_id=excluded.meal_id,
       timestamp=excluded.timestamp,
+      day_key=excluded.day_key,
+      logged_at_local_min=excluded.logged_at_local_min,
+      tz_offset_min=excluded.tz_offset_min,
       type=excluded.type,
       name=excluded.name,
       ingredients=excluded.ingredients,
@@ -72,6 +95,9 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       meal.mealId,
       meal.userUid,
       meal.timestamp,
+      toDayKey(meal.dayKey ?? meal.timestamp),
+      meal.loggedAtLocalMin ?? null,
+      meal.tzOffsetMin ?? null,
       meal.type,
       meal.name,
       ingredients,
@@ -156,6 +182,13 @@ function rowToMeal(r: MealRow): Meal {
     userUid: r.user_uid,
     mealId: r.meal_id,
     timestamp: r.timestamp,
+    dayKey: toDayKey(r.day_key ?? r.timestamp),
+    loggedAtLocalMin:
+      typeof r.logged_at_local_min === "number"
+        ? Number(r.logged_at_local_min)
+        : null,
+    tzOffsetMin:
+      typeof r.tz_offset_min === "number" ? Number(r.tz_offset_min) : null,
     type: parseMealType(r.type),
     name: r.name,
     ingredients: parseIngredients(r.ingredients),

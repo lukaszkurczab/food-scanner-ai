@@ -132,14 +132,16 @@ jest.mock("../components/EmptyDayView", () => ({
 
 jest.mock("../components/MacroTargetsRow", () => ({
   MacroTargetsRow: ({
+    macroTargets,
     consumed,
   }: {
+    macroTargets: { proteinGrams: number; fatGrams: number; carbsGrams: number };
     consumed: { protein: number; fat: number; carbs: number };
   }) =>
     mockReact.createElement(
       mockText,
       null,
-      `macros:${consumed.protein}/${consumed.fat}/${consumed.carbs}`,
+      `macro-targets:${macroTargets.proteinGrams}/${macroTargets.fatGrams}/${macroTargets.carbsGrams};consumed:${consumed.protein}/${consumed.fat}/${consumed.carbs}`,
     ),
 }));
 
@@ -208,6 +210,9 @@ describe("HomeScreen", () => {
   it("uses nutrition state for progress and summary when the state is available", async () => {
     const remoteState = createFallbackNutritionState("2026-03-18");
     remoteState.targets.kcal = 2000;
+    remoteState.targets.protein = 150;
+    remoteState.targets.fat = 70;
+    remoteState.targets.carbs = 180;
     remoteState.consumed.kcal = 1600;
     remoteState.consumed.protein = 120;
     remoteState.consumed.fat = 60;
@@ -216,6 +221,8 @@ describe("HomeScreen", () => {
     remoteState.quality.dataCompletenessScore = 0.75;
     remoteState.habits.topRisk = "under_logging";
     remoteState.habits.coachPriority = "logging_foundation";
+    remoteState.streak.current = 7;
+    remoteState.targets.kcal = 2100;
 
     mockUseNutritionState.mockReturnValue({
       state: remoteState,
@@ -233,11 +240,12 @@ describe("HomeScreen", () => {
     );
 
     await waitFor(() => {
-      expect(getByText("progress:1600/2000")).toBeTruthy();
+      expect(getByText("progress:1600/2100")).toBeTruthy();
     });
 
-    expect(getByText("macros:120/60/150")).toBeTruthy();
+    expect(getByText("macro-targets:150/70/180;consumed:120/60/150")).toBeTruthy();
     expect(getByText("meals:1")).toBeTruthy();
+    expect(getByText("streak:7")).toBeTruthy();
     expect(queryByTestId("home-nutrition-summary")).not.toBeNull();
     expect(getByText("400 kcal left • 75% complete • Under logging")).toBeTruthy();
   });
@@ -252,15 +260,17 @@ describe("HomeScreen", () => {
       expect(getByText("progress:500/2000")).toBeTruthy();
     });
 
-    expect(getByText("macros:25/15/45")).toBeTruthy();
+    expect(getByText("macro-targets:125/65/225;consumed:25/15/45")).toBeTruthy();
     expect(getByText("meals:1")).toBeTruthy();
     expect(queryByTestId("home-nutrition-summary")).toBeNull();
   });
 
-  it("falls back to legacy behavior when nutrition state returned an error", async () => {
+  it("renders stale nutrition state explicitly when cached state is available", async () => {
     const staleState = createFallbackNutritionState("2026-03-18");
-    staleState.targets.kcal = 2000;
+    staleState.targets.kcal = 2100;
     staleState.consumed.kcal = 1600;
+    staleState.remaining.kcal = 500;
+    staleState.quality.dataCompletenessScore = 0.75;
 
     mockUseNutritionState.mockReturnValue({
       state: staleState,
@@ -278,10 +288,11 @@ describe("HomeScreen", () => {
     );
 
     await waitFor(() => {
-      expect(getByText("progress:500/2000")).toBeTruthy();
+      expect(getByText("progress:1600/2100")).toBeTruthy();
     });
 
-    expect(queryByTestId("home-nutrition-summary")).toBeNull();
+    expect(queryByTestId("home-nutrition-summary")).not.toBeNull();
+    expect(getByText("Cached • 500 kcal left • 75% complete")).toBeTruthy();
   });
 
   it("maps the selected home day to the requested nutrition state dayKey", async () => {

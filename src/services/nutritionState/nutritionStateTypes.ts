@@ -33,6 +33,13 @@ export type NutritionRemaining = {
   fat: number | null;
 };
 
+export type NutritionOverTarget = {
+  kcal: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
+};
+
 export type NutritionQuality = {
   mealsLogged: number;
   missingNutritionMeals: number;
@@ -48,6 +55,19 @@ export type NutritionMealTypeCoverage14 = {
   coveredCount: number;
 };
 
+export type NutritionMealTypeFrequency14 = {
+  breakfast: number;
+  lunch: number;
+  dinner: number;
+  snack: number;
+  other: number;
+};
+
+export type NutritionDayCoverage14 = {
+  loggedDays: number;
+  validLoggedDays: number;
+};
+
 export type NutritionProteinDaysHit14 = {
   hitDays: number;
   eligibleDays: number;
@@ -55,18 +75,39 @@ export type NutritionProteinDaysHit14 = {
   ratio: number | null;
 };
 
+export type NutritionTimingPatterns14 = {
+  available: boolean;
+  observedDays: number;
+  firstMealMedianHour: number | null;
+  lastMealMedianHour: number | null;
+  eatingWindowHoursMedian: number | null;
+  breakfastMedianHour: number | null;
+  lunchMedianHour: number | null;
+  dinnerMedianHour: number | null;
+  snackMedianHour: number | null;
+  otherMedianHour: number | null;
+};
+
 export type NutritionBehavior = {
   loggingDays7: number;
+  validLoggingDays7: number;
   loggingConsistency28: number;
+  validLoggingConsistency28: number;
   avgMealsPerLoggedDay14: number;
+  avgValidMealsPerValidLoggedDay14: number;
   mealTypeCoverage14: NutritionMealTypeCoverage14;
+  mealTypeFrequency14: NutritionMealTypeFrequency14;
+  dayCoverage14: NutritionDayCoverage14;
   kcalAdherence14: number | null;
   kcalUnderTargetRatio14: number | null;
   proteinDaysHit14: NutritionProteinDaysHit14;
+  timingPatterns14: NutritionTimingPatterns14;
 };
 
 export type NutritionDataQuality = {
   daysWithUnknownMealDetails14: number;
+  daysUsingTimestampDayFallback14: number;
+  daysUsingTimestampTimingFallback14: number;
 };
 
 export type NutritionHabitsSummary = {
@@ -100,16 +141,31 @@ export type NutritionAiSummary = {
   costs: NutritionAiCosts;
 };
 
+export type NutritionComponentState = "ok" | "disabled" | "error";
+
+export type NutritionComponentStatus = {
+  habits: NutritionComponentState;
+  streak: NutritionComponentState;
+  ai: NutritionComponentState;
+};
+
+export type NutritionStateMeta = {
+  isDegraded: boolean;
+  componentStatus: NutritionComponentStatus;
+};
+
 export type NutritionState = {
   computedAt: string;
   dayKey: string;
   targets: NutritionTargets;
   consumed: NutritionConsumed;
   remaining: NutritionRemaining;
+  overTarget: NutritionOverTarget;
   quality: NutritionQuality;
   habits: NutritionHabitsSummary;
   streak: NutritionStreakSummary;
   ai: NutritionAiSummary;
+  meta: NutritionStateMeta;
 };
 
 export type NutritionStateSource =
@@ -126,4 +182,3 @@ export type NutritionStateResult = {
   isStale: boolean;
   error: unknown | null;
 };
-

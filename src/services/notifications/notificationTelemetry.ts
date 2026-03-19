@@ -12,7 +12,7 @@ const log = debugScope("Notifications:Telemetry");
 
 type NotificationTelemetryContext = {
   notificationType?: string | null;
-  source?: string | null;
+  origin?: string | null;
 };
 
 type RemovableSubscription = {
@@ -31,16 +31,16 @@ export function resolveNotificationTelemetryContext(
   if (!isRecord(data)) {
     return {
       notificationType: null,
-      source: null,
+      origin: null,
     };
   }
 
-  const explicitSource = asString(data.source);
-  if (explicitSource) {
+  const explicitOrigin = asString(data.origin) ?? asString(data.source);
+  if (explicitOrigin) {
     return {
       notificationType:
         asString(data.type) ?? asString(data.sys) ?? null,
-      source: explicitSource,
+      origin: explicitOrigin,
     };
   }
 
@@ -48,7 +48,7 @@ export function resolveNotificationTelemetryContext(
   if (systemType) {
     return {
       notificationType: systemType,
-      source: "system_notifications",
+      origin: "system_notifications",
     };
   }
 
@@ -56,13 +56,13 @@ export function resolveNotificationTelemetryContext(
   if (notificationType || asString(data.notifId)) {
     return {
       notificationType: notificationType ?? null,
-      source: "user_notifications",
+      origin: "user_notifications",
     };
   }
 
   return {
     notificationType: null,
-    source: null,
+    origin: null,
   };
 }
 
@@ -86,7 +86,7 @@ export async function emitNotificationScheduledTelemetry(
     "notification_scheduled",
     {
       notificationType: context.notificationType,
-      source: context.source,
+      origin: context.origin,
     },
   );
 }

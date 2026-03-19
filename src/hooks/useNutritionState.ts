@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
+import { on } from "@/services/core/events";
 import {
   createFallbackNutritionState,
   getCurrentNutritionStateDayKey,
   getNutritionState,
+  invalidateNutritionStateCache,
   refreshNutritionState,
 } from "@/services/nutritionState/nutritionStateService";
 import type {
@@ -29,6 +31,10 @@ function resolveDayKey(dayKey?: string | null): string {
   return dayKey?.trim() || getCurrentNutritionStateDayKey();
 }
 
+type NutritionStateMutationEvent = {
+  uid?: string | null;
+};
+
 export function useNutritionState({
   uid,
   dayKey,
@@ -42,6 +48,20 @@ export function useNutritionState({
   const [source, setSource] = useState<NutritionStateSource>("fallback");
   const [isStale, setIsStale] = useState<boolean>(true);
   const [error, setError] = useState<unknown | null>(null);
+
+  const applyResult = useCallback((result: {
+    state: NutritionState;
+    enabled: boolean;
+    source: NutritionStateSource;
+    isStale: boolean;
+    error: unknown | null;
+  }) => {
+    setState(result.state);
+    setEnabled(result.enabled);
+    setSource(result.source);
+    setIsStale(result.isStale);
+    setError(result.error);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -65,29 +85,57 @@ export function useNutritionState({
         return;
       }
 
-      setState(result.state);
-      setEnabled(result.enabled);
-      setSource(result.source);
-      setIsStale(result.isStale);
-      setError(result.error);
+      applyResult(result);
       setLoading(false);
     });
 
     return () => {
       active = false;
     };
-  }, [uid, resolvedDayKey]);
+  }, [applyResult, uid, resolvedDayKey]);
+
+  useEffect(() => {
+    if (!uid) {
+      return () => undefined;
+    }
+
+    let active = true;
+
+    const handleMealMutation = (event?: NutritionStateMutationEvent) => {
+      if (!active || event?.uid !== uid) {
+        return;
+      }
+
+      setLoading(true);
+      void (async () => {
+        await invalidateNutritionStateCache(uid, { dayKey: resolvedDayKey });
+        const result = await refreshNutritionState(uid, { dayKey: resolvedDayKey });
+        if (!active) {
+          return;
+        }
+        applyResult(result);
+        setLoading(false);
+      })();
+    };
+
+    const unsubscribers = [
+      on<NutritionStateMutationEvent>("meal:added", handleMealMutation),
+      on<NutritionStateMutationEvent>("meal:updated", handleMealMutation),
+      on<NutritionStateMutationEvent>("meal:deleted", handleMealMutation),
+    ];
+
+    return () => {
+      active = false;
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [applyResult, resolvedDayKey, uid]);
 
   const refresh = useCallback(async () => {
     const result = await refreshNutritionState(uid, { dayKey: resolvedDayKey });
-    setState(result.state);
-    setEnabled(result.enabled);
-    setSource(result.source);
-    setIsStale(result.isStale);
-    setError(result.error);
+    applyResult(result);
     setLoading(false);
     return result.state;
-  }, [uid, resolvedDayKey]);
+  }, [applyResult, uid, resolvedDayKey]);
 
   return {
     state,
@@ -99,4 +147,3 @@ export function useNutritionState({
     refresh,
   };
 }
-

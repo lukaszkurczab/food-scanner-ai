@@ -73,3 +73,21 @@ export function serializeMealAiMeta(
 export function getMealAiMetaFromAiResponse(value: unknown): MealAiMeta | null {
   return normalizeMealAiMeta(value);
 }
+
+export function deriveMealTimingMetadata(
+  timestamp: string | null | undefined,
+): { loggedAtLocalMin: number | null; tzOffsetMin: number | null } {
+  if (!timestamp) {
+    return { loggedAtLocalMin: null, tzOffsetMin: null };
+  }
+
+  const parsed = new Date(timestamp);
+  if (Number.isNaN(parsed.getTime())) {
+    return { loggedAtLocalMin: null, tzOffsetMin: null };
+  }
+
+  return {
+    loggedAtLocalMin: parsed.getHours() * 60 + parsed.getMinutes(),
+    tzOffsetMin: -parsed.getTimezoneOffset(),
+  };
+}

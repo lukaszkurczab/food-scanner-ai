@@ -55,6 +55,9 @@ export function runMigrations() {
           meal_id TEXT NOT NULL,
           user_uid TEXT NOT NULL,
           timestamp TEXT NOT NULL,
+          day_key TEXT,
+          logged_at_local_min INTEGER,
+          tz_offset_min INTEGER,
           type TEXT NOT NULL,
           name TEXT,
           ingredients TEXT,
@@ -221,6 +224,9 @@ export function runMigrations() {
           meal_id TEXT NOT NULL,
           user_uid TEXT NOT NULL,
           timestamp TEXT NOT NULL,
+          day_key TEXT,
+          logged_at_local_min INTEGER,
+          tz_offset_min INTEGER,
           type TEXT NOT NULL,
           name TEXT,
           ingredients TEXT,
@@ -445,6 +451,100 @@ export function runMigrations() {
       setUserVersion(d, 8);
       d.execSync("COMMIT");
       v = 8;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
+
+  if (v < 9) {
+    d.execSync("BEGIN");
+    try {
+      if (!columnExists(d, "meals", "day_key")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN day_key TEXT;`);
+      }
+      d.execSync(`
+        UPDATE meals
+        SET day_key = COALESCE(
+          NULLIF(day_key, ''),
+          strftime('%Y-%m-%d', timestamp, 'localtime')
+        )
+        WHERE day_key IS NULL OR day_key = '';
+      `);
+      if (!columnExists(d, "my_meals", "day_key")) {
+        d.execSync(`ALTER TABLE my_meals ADD COLUMN day_key TEXT;`);
+      }
+      d.execSync(`
+        UPDATE my_meals
+        SET day_key = COALESCE(
+          NULLIF(day_key, ''),
+          strftime('%Y-%m-%d', timestamp, 'localtime')
+        )
+        WHERE day_key IS NULL OR day_key = '';
+      `);
+
+      setUserVersion(d, 9);
+      d.execSync("COMMIT");
+      v = 9;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
+
+  if (v < 10) {
+    d.execSync("BEGIN");
+    try {
+      if (!columnExists(d, "meals", "logged_at_local_min")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN logged_at_local_min INTEGER;`);
+      }
+      if (!columnExists(d, "meals", "tz_offset_min")) {
+        d.execSync(`ALTER TABLE meals ADD COLUMN tz_offset_min INTEGER;`);
+      }
+      d.execSync(`
+        UPDATE meals
+        SET logged_at_local_min = COALESCE(
+          logged_at_local_min,
+          (CAST(strftime('%H', timestamp, 'localtime') AS INTEGER) * 60) +
+          CAST(strftime('%M', timestamp, 'localtime') AS INTEGER)
+        )
+        WHERE logged_at_local_min IS NULL;
+      `);
+      d.execSync(`
+        UPDATE meals
+        SET tz_offset_min = COALESCE(
+          tz_offset_min,
+          (CAST(strftime('%s', timestamp, 'localtime') AS INTEGER) - CAST(strftime('%s', timestamp) AS INTEGER)) / 60
+        )
+        WHERE tz_offset_min IS NULL;
+      `);
+      if (!columnExists(d, "my_meals", "logged_at_local_min")) {
+        d.execSync(`ALTER TABLE my_meals ADD COLUMN logged_at_local_min INTEGER;`);
+      }
+      if (!columnExists(d, "my_meals", "tz_offset_min")) {
+        d.execSync(`ALTER TABLE my_meals ADD COLUMN tz_offset_min INTEGER;`);
+      }
+      d.execSync(`
+        UPDATE my_meals
+        SET logged_at_local_min = COALESCE(
+          logged_at_local_min,
+          (CAST(strftime('%H', timestamp, 'localtime') AS INTEGER) * 60) +
+          CAST(strftime('%M', timestamp, 'localtime') AS INTEGER)
+        )
+        WHERE logged_at_local_min IS NULL;
+      `);
+      d.execSync(`
+        UPDATE my_meals
+        SET tz_offset_min = COALESCE(
+          tz_offset_min,
+          (CAST(strftime('%s', timestamp, 'localtime') AS INTEGER) - CAST(strftime('%s', timestamp) AS INTEGER)) / 60
+        )
+        WHERE tz_offset_min IS NULL;
+      `);
+
+      setUserVersion(d, 10);
+      d.execSync("COMMIT");
+      v = 10;
     } catch (e) {
       d.execSync("ROLLBACK");
       throw e;

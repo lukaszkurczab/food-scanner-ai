@@ -3,14 +3,14 @@ import type { TelemetryProps } from "@/services/telemetry/telemetryTypes";
 import { track } from "@/services/telemetry/telemetryClient";
 
 type MealInputMethod = "manual" | "photo" | "barcode" | "text" | "saved" | "quick_add";
-type NotificationTelemetrySource =
+type NotificationTelemetryOrigin =
   | "user_notifications"
   | "system_notifications"
   | "unknown";
 
 type NotificationTelemetryInput = {
   notificationType?: string | null;
-  source?: string | null;
+  origin?: string | null;
   actionIdentifier?: string | null;
   openedFromBackground?: boolean;
   foreground?: boolean;
@@ -42,10 +42,10 @@ function normalizeNotificationValue(value: string | null | undefined): string | 
   return normalized || null;
 }
 
-function normalizeNotificationSource(
-  source: string | null | undefined,
-): NotificationTelemetrySource {
-  switch (normalizeNotificationValue(source)) {
+function normalizeNotificationOrigin(
+  origin: string | null | undefined,
+): NotificationTelemetryOrigin {
+  switch (normalizeNotificationValue(origin)) {
     case "user_notifications":
       return "user_notifications";
     case "system_notifications":
@@ -61,7 +61,7 @@ function buildNotificationProps(
   const props: TelemetryProps = {
     notificationType:
       normalizeNotificationValue(input.notificationType) || "unknown",
-    source: normalizeNotificationSource(input.source),
+    origin: normalizeNotificationOrigin(input.origin),
   };
 
   const actionIdentifier = normalizeNotificationValue(input.actionIdentifier);
@@ -133,11 +133,11 @@ function buildMealProps(meal: Meal): TelemetryProps {
 }
 
 export function trackSessionStart(): Promise<void> {
-  return track("session_start", { source: "app_boot" });
+  return track("session_start", { origin: "app_boot" });
 }
 
 export function trackSessionEnd(): Promise<void> {
-  return track("session_end", { source: "app_background" });
+  return track("session_end", { origin: "app_background" });
 }
 
 export function trackScreenView(routeName: string): Promise<void> {
@@ -170,14 +170,14 @@ export function trackMealDeleted(meal?: Meal | null): Promise<void> {
 
 export function trackAiChatSend(message: string): Promise<void> {
   return track("ai_chat_send", {
-    source: "chat",
+    surface: "chat",
     chars: message.trim().length,
   });
 }
 
 export function trackAiChatResult(resultStatus: string): Promise<void> {
   return track("ai_chat_result", {
-    source: "chat",
+    surface: "chat",
     success: resultStatus === "success",
     resultStatus,
   });

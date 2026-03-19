@@ -54,10 +54,10 @@ describe("telemetryInstrumentation", () => {
     await trackMealAddMethodSelected("ai_photo");
 
     expect(mockTrack).toHaveBeenNthCalledWith(1, "session_start", {
-      source: "app_boot",
+      origin: "app_boot",
     });
     expect(mockTrack).toHaveBeenNthCalledWith(2, "session_end", {
-      source: "app_background",
+      origin: "app_background",
     });
     expect(mockTrack).toHaveBeenNthCalledWith(3, "screen_view", {
       screen: "meal_add_method",
@@ -92,11 +92,11 @@ describe("telemetryInstrumentation", () => {
       mealInputMethod: "saved",
     });
     expect(mockTrack).toHaveBeenNthCalledWith(4, "ai_chat_send", {
-      source: "chat",
+      surface: "chat",
       chars: 11,
     });
     expect(mockTrack).toHaveBeenNthCalledWith(5, "ai_chat_result", {
-      source: "chat",
+      surface: "chat",
       success: false,
       resultStatus: "gateway_reject",
     });
@@ -105,32 +105,32 @@ describe("telemetryInstrumentation", () => {
   it("maps notification telemetry events to privacy-safe props", async () => {
     await trackNotificationScheduled({
       notificationType: "day_fill",
-      source: "user_notifications",
+      origin: "user_notifications",
     });
     await trackNotificationFired({
       notificationType: "meal_reminder",
-      source: "system_notifications",
+      origin: "system_notifications",
       foreground: true,
     });
     await trackNotificationOpened({
       notificationType: "stats_weekly_summary",
-      source: "system_notifications",
+      origin: "system_notifications",
       openedFromBackground: true,
       actionIdentifier: "DEFAULT",
     });
 
     expect(mockTrack).toHaveBeenNthCalledWith(1, "notification_scheduled", {
       notificationType: "day_fill",
-      source: "user_notifications",
+      origin: "user_notifications",
     });
     expect(mockTrack).toHaveBeenNthCalledWith(2, "notification_fired", {
       notificationType: "meal_reminder",
-      source: "system_notifications",
+      origin: "system_notifications",
       foreground: true,
     });
     expect(mockTrack).toHaveBeenNthCalledWith(3, "notification_opened", {
       notificationType: "stats_weekly_summary",
-      source: "system_notifications",
+      origin: "system_notifications",
       openedFromBackground: true,
       actionIdentifier: "default",
     });

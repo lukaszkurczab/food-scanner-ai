@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { emit } from "@/services/core/events";
 import type { NutritionStateResult } from "@/services/nutritionState/nutritionStateTypes";
 import {
   createFallbackNutritionState,
@@ -12,6 +13,9 @@ const mockGetNutritionState = jest.fn<
 >();
 const mockRefreshNutritionState = jest.fn<
   (uid: string | null | undefined, options?: { dayKey?: string | null }) => Promise<NutritionStateResult>
+>();
+const mockInvalidateNutritionStateCache = jest.fn<
+  (uid: string | null | undefined, options?: { dayKey?: string | null }) => Promise<void>
 >();
 
 jest.mock("@/services/nutritionState/nutritionStateService", () => {
@@ -27,12 +31,17 @@ jest.mock("@/services/nutritionState/nutritionStateService", () => {
       uid: string | null | undefined,
       options?: { dayKey?: string | null },
     ) => mockRefreshNutritionState(uid, options),
+    invalidateNutritionStateCache: (
+      uid: string | null | undefined,
+      options?: { dayKey?: string | null },
+    ) => mockInvalidateNutritionStateCache(uid, options),
   };
 });
 
 describe("useNutritionState", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockInvalidateNutritionStateCache.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -146,5 +155,51 @@ describe("useNutritionState", () => {
     });
     expect(result.current.source).toBe("remote");
     expect(result.current.isStale).toBe(false);
+  });
+
+  it("invalidates and refreshes state after a meal mutation for the same user", async () => {
+    const initialState = createFallbackNutritionState("2026-03-18");
+    initialState.quality.mealsLogged = 1;
+    const refreshedState = createFallbackNutritionState("2026-03-18");
+    refreshedState.quality.mealsLogged = 2;
+
+    mockGetNutritionState.mockResolvedValue({
+      state: initialState,
+      source: "remote",
+      enabled: true,
+      isStale: false,
+      error: null,
+    });
+    mockRefreshNutritionState.mockResolvedValue({
+      state: refreshedState,
+      source: "remote",
+      enabled: true,
+      isStale: false,
+      error: null,
+    });
+
+    const { result } = renderHook(() =>
+      useNutritionState({ uid: "user-1", dayKey: "2026-03-18" }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    act(() => {
+      emit("meal:added", { uid: "user-1" });
+    });
+
+    await waitFor(() => {
+      expect(mockInvalidateNutritionStateCache).toHaveBeenCalledWith("user-1", {
+        dayKey: "2026-03-18",
+      });
+    });
+    expect(mockRefreshNutritionState).toHaveBeenCalledWith("user-1", {
+      dayKey: "2026-03-18",
+    });
+    await waitFor(() => {
+      expect(result.current.state.quality.mealsLogged).toBe(2);
+    });
   });
 });

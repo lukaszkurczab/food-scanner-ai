@@ -85,6 +85,9 @@ jest.mock("@/utils/debug", () => ({
 
 describe("notificationTelemetry", () => {
   beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const service = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
+    service.__resetNotificationTelemetryForTests();
     jest.clearAllMocks();
     mockNotificationReceivedListener = null;
     mockNotificationResponseListener = null;
@@ -102,7 +105,7 @@ describe("notificationTelemetry", () => {
     mockNotificationReceivedListener?.({
       request: {
         content: {
-          data: { type: "meal_reminder", source: "user_notifications" },
+          data: { type: "meal_reminder", origin: "user_notifications" },
         },
       },
     });
@@ -113,7 +116,7 @@ describe("notificationTelemetry", () => {
       notification: {
         request: {
           content: {
-            data: { sys: "stats_weekly_summary", source: "system_notifications" },
+            data: { sys: "stats_weekly_summary", origin: "system_notifications" },
           },
         },
       },
@@ -123,14 +126,36 @@ describe("notificationTelemetry", () => {
 
     expect(mockTrackNotificationFired).toHaveBeenCalledWith({
       notificationType: "meal_reminder",
-      source: "user_notifications",
+      origin: "user_notifications",
       foreground: true,
     });
     expect(mockTrackNotificationOpened).toHaveBeenCalledWith({
       notificationType: "stats_weekly_summary",
-      source: "system_notifications",
+      origin: "system_notifications",
       openedFromBackground: true,
       actionIdentifier: "DEFAULT",
+    });
+  });
+
+  it("keeps reading legacy notification payloads that still carry source", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const service = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
+
+    service.initNotificationTelemetry();
+    mockNotificationReceivedListener?.({
+      request: {
+        content: {
+          data: { type: "meal_reminder", source: "user_notifications" },
+        },
+      },
+    });
+
+    await Promise.resolve();
+
+    expect(mockTrackNotificationFired).toHaveBeenCalledWith({
+      notificationType: "meal_reminder",
+      origin: "user_notifications",
+      foreground: true,
     });
   });
 

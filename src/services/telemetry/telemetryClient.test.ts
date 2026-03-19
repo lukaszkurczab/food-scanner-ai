@@ -164,6 +164,25 @@ describe("telemetryClient", () => {
     ).toBeNull();
   });
 
+  it("drops a batch permanently when the backend rejects it with a non-retryable 4xx", async () => {
+    const error = Object.assign(new Error("invalid telemetry payload"), {
+      status: 422,
+      retryable: false,
+    });
+    mockPost.mockRejectedValueOnce(error);
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const telemetryClient = require("@/services/telemetry/telemetryClient") as typeof import("@/services/telemetry/telemetryClient");
+
+    await telemetryClient.track("screen_view", { screen: "home" });
+    await telemetryClient.flush();
+
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(
+      await AsyncStorage.getItem(telemetryClient.TELEMETRY_BUFFER_STORAGE_KEY),
+    ).toBeNull();
+  });
+
   it("is a graceful no-op for notification telemetry when telemetry is disabled", async () => {
     mockReadPublicEnv.mockImplementation((name: string) => {
       if (name === "EXPO_PUBLIC_ENABLE_TELEMETRY") {
@@ -178,7 +197,7 @@ describe("telemetryClient", () => {
     await telemetryClient.initTelemetryClient();
     await telemetryClient.track("notification_opened", {
       notificationType: "day_fill",
-      source: "user_notifications",
+      origin: "user_notifications",
     });
     await telemetryClient.flush();
 

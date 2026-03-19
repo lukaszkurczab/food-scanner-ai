@@ -3,6 +3,7 @@ import NetInfo from "@react-native-community/netinfo";
 import Constants from "expo-constants";
 import * as Localization from "expo-localization";
 import { Platform } from "react-native";
+import { v4 as uuidv4 } from "uuid";
 import * as apiClient from "@/services/core/apiClient";
 import { withV2 } from "@/services/core/apiVersioning";
 import { readPublicEnv } from "@/services/core/publicEnv";
@@ -39,15 +40,12 @@ let queue: TelemetryEvent[] = [];
 let queuedEventIds = new Set<string>();
 let retryAttempt = 0;
 let nextAllowedFlushAt = 0;
-let idCounter = 0;
-
 function isTelemetryEnabled(): boolean {
   return readPublicEnv("EXPO_PUBLIC_ENABLE_TELEMETRY") === "true";
 }
 
 function nextId(prefix: string): string {
-  idCounter += 1;
-  return `${prefix}_${Date.now().toString(36)}_${idCounter.toString(36)}`;
+  return `${prefix}_${uuidv4()}`;
 }
 
 function createSessionId(): string {
@@ -60,6 +58,19 @@ function createEventId(): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function shouldDropFailedBatch(error: unknown): boolean {
+  if (!isRecord(error)) {
+    return false;
+  }
+
+  return (
+    typeof error.status === "number" &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    error.status !== 429
+  );
 }
 
 function isTelemetryEvent(value: unknown): value is TelemetryEvent {
@@ -370,7 +381,14 @@ export async function flush(): Promise<void> {
         dropBatch(batch);
         resetRetryState();
         await persistQueue();
-      } catch {
+      } catch (error) {
+        if (shouldDropFailedBatch(error)) {
+          dropBatch(batch);
+          resetRetryState();
+          await persistQueue();
+          continue;
+        }
+
         scheduleRetry();
         await persistQueue();
         return;

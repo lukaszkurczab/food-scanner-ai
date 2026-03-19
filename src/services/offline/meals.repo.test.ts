@@ -34,6 +34,13 @@ const baseMeal = (overrides: Partial<Meal> = {}): Meal => ({
     confidence: 0.88,
     warnings: ["partial_totals"],
   },
+  dayKey: "2026-03-18",
+  totals: {
+    kcal: 500,
+    protein: 40,
+    carbs: 20,
+    fat: 10,
+  },
   ...overrides,
 });
 
@@ -60,15 +67,17 @@ describe("offline meals repo", () => {
         warnings: ["partial_totals"],
       }),
     );
+    expect(args).toContain("2026-03-18");
   });
 
-  it("hydrates v8 metadata and keeps legacy rows readable", async () => {
+  it("round-trips dayKey, inputMethod, aiMeta, and totals from local persistence", async () => {
     mockGetFirstSync
       .mockReturnValueOnce({
         cloud_id: "cloud-1",
         meal_id: "meal-1",
         user_uid: "user-1",
         timestamp: "2026-03-18T10:00:00.000Z",
+        day_key: "2026-03-18",
         type: "lunch",
         name: "Chicken bowl",
         ingredients: "[]",
@@ -127,12 +136,19 @@ describe("offline meals repo", () => {
 
     await expect(getMealByCloudIdLocal("user-1", "cloud-1")).resolves.toEqual(
       expect.objectContaining({
+        dayKey: "2026-03-18",
         inputMethod: "text",
         aiMeta: {
           model: "gpt-5.4",
           runId: "run-2",
           confidence: 0.5,
           warnings: ["low_confidence"],
+        },
+        totals: {
+          kcal: 500,
+          protein: 40,
+          carbs: 20,
+          fat: 10,
         },
       }),
     );

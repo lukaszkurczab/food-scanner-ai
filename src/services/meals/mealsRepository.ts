@@ -81,6 +81,10 @@ function normalizeMeal(raw: unknown): Meal | null {
     mealId,
     timestamp,
     dayKey: typeof meal.dayKey === "string" ? meal.dayKey : null,
+    loggedAtLocalMin:
+      typeof meal.loggedAtLocalMin === "number" ? meal.loggedAtLocalMin : null,
+    tzOffsetMin:
+      typeof meal.tzOffsetMin === "number" ? meal.tzOffsetMin : null,
     type: normalizedType,
     name: typeof meal.name === "string" ? meal.name : null,
     ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],

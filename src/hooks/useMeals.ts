@@ -19,6 +19,7 @@ import { debugScope } from "@/utils/debug";
 import { emit } from "@/services/core/events";
 import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/meals/myMealService";
+import { deriveMealTimingMetadata } from "@/services/meals/mealMetadata";
 import { formatStreakDate } from "@/services/gamification/streak.logic";
 import { refreshStreakFromBackend } from "@/services/gamification/streakService";
 import {
@@ -210,6 +211,8 @@ export function useMeals(userUid: string | null) {
       const cloudId = meal.cloudId ?? uuidv4();
       const mealId = meal.mealId ?? uuidv4();
       const totals = computeTotals(meal);
+      const timestamp = meal.timestamp ?? now;
+      const timingMetadata = deriveMealTimingMetadata(timestamp);
 
       const base: Meal = {
         ...meal,
@@ -224,8 +227,10 @@ export function useMeals(userUid: string | null) {
         inputMethod:
           meal.inputMethod ??
           (meal.source === "manual" || meal.source === null ? "manual" : null),
-        timestamp: meal.timestamp ?? now,
-        dayKey: meal.dayKey ?? formatStreakDate(new Date(meal.timestamp ?? now)),
+        timestamp,
+        dayKey: meal.dayKey ?? formatStreakDate(new Date(timestamp)),
+        loggedAtLocalMin: meal.loggedAtLocalMin ?? timingMetadata.loggedAtLocalMin,
+        tzOffsetMin: meal.tzOffsetMin ?? timingMetadata.tzOffsetMin,
         totals,
       };
 
@@ -290,6 +295,8 @@ export function useMeals(userUid: string | null) {
       const now = new Date().toISOString();
       const cloudId = meal.cloudId ?? uuidv4();
       const totals = computeTotals(meal);
+      const timestamp = meal.timestamp ?? now;
+      const timingMetadata = deriveMealTimingMetadata(timestamp);
 
       const payload: Meal = {
         ...meal,
@@ -300,8 +307,10 @@ export function useMeals(userUid: string | null) {
           meal.inputMethod ??
           (meal.source === "manual" || meal.source === null ? "manual" : null),
         totals,
-        timestamp: meal.timestamp ?? now,
-        dayKey: meal.dayKey ?? formatStreakDate(new Date(meal.timestamp ?? now)),
+        timestamp,
+        dayKey: meal.dayKey ?? formatStreakDate(new Date(timestamp)),
+        loggedAtLocalMin: meal.loggedAtLocalMin ?? timingMetadata.loggedAtLocalMin,
+        tzOffsetMin: meal.tzOffsetMin ?? timingMetadata.tzOffsetMin,
       };
 
       const maybeUri = meal.photoUrl;
