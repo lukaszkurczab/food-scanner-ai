@@ -116,8 +116,8 @@ Description:
 - `EXPO_PUBLIC_API_BASE_URL` - base URL of the backend API used for AI, logging, and other server-managed features.
 - `EXPO_PUBLIC_API_VERSION` - backend API version prefix used by the app.
 - `EXPO_PUBLIC_ENABLE_BACKEND_LOGGING` - enables forwarding selected client errors to the backend logging endpoint.
-- `EXPO_PUBLIC_ENABLE_TELEMETRY` - enables mobile telemetry batching and P0 event emission.
-- `EXPO_PUBLIC_ENABLE_V2_STATE` - enables the mobile consumer for `/api/v2/users/me/state` with local fallback caching.
+- `EXPO_PUBLIC_ENABLE_TELEMETRY` - enables mobile telemetry batching and P0 event emission.  **Also requires backend `TELEMETRY_ENABLED=true`.**
+- `EXPO_PUBLIC_ENABLE_V2_STATE` - enables the mobile consumer for `/api/v2/users/me/state` with local fallback caching.  **Also requires backend `STATE_ENABLED=true`.**
 - `RC_IOS_API_KEY` - RevenueCat iOS API key (required for iOS subscriptions).
 - `RC_ANDROID_API_KEY` - RevenueCat Android API key (required for Android subscriptions).
 - `TERMS_URL` - terms and conditions URL (used in paywall/subscription screens).
@@ -126,6 +126,25 @@ Description:
 - `DISABLE_BILLING` - disables billing in dev (`true`/`false`).
 - `FORCE_PREMIUM` - premium testing flag (`true`/`false`).
 - `GOOGLE_FONTS_KEY` - used only by `npm run fonts:download`.
+
+### Foundation flags
+
+These flags control v2 foundation surfaces introduced in the Foundation Sprint.  Each requires a matching backend flag — see [Foundation Rollout Runbook](../docs/runbooks/foundation-rollout-runbook.md).
+
+| Mobile flag | Backend flag | What it enables |
+|-------------|-------------|-----------------|
+| `EXPO_PUBLIC_ENABLE_TELEMETRY` | `TELEMETRY_ENABLED` | P0 event emission → v2 batch ingest |
+| `EXPO_PUBLIC_ENABLE_V2_STATE` | `STATE_ENABLED` | NutritionState v2 consumer on Home screen (targets, consumed, remaining, quality, habits, streak, AI summary) |
+
+To enable for QA: set both the mobile flag (`true`) and the backend flag (`true`), then rebuild the app (Expo requires rebuild for `EXPO_PUBLIC_*` changes).
+
+### v2 selective adoption
+
+The mobile app uses v2 endpoints selectively:
+- **Telemetry**: When `EXPO_PUBLIC_ENABLE_TELEMETRY=true`, the telemetry client batches events and sends them to `POST /api/v2/telemetry/events/batch`.
+- **NutritionState**: When `EXPO_PUBLIC_ENABLE_V2_STATE=true`, the Home screen fetches from `GET /api/v2/users/me/state?day=YYYY-MM-DD` with local fallback caching.  If the backend is unreachable or the flag is disabled, the consumer falls back to locally-computed state.
+
+All other features (meals, AI chat, photo analysis, subscriptions) continue to use v1 endpoints.
 
 If AI features are enabled locally, the mobile app still needs a reachable backend configured through `EXPO_PUBLIC_API_BASE_URL`; the OpenAI API key now lives only on the backend.
 
@@ -172,7 +191,11 @@ npm run e2e:chat-ai
 npm run e2e:offline-error
 ```
 
-Cross-repo QA guidance for the Foundation Sprint lives in:
+## Operator docs
 
-- `../docs/foundation-qa-checklist.md`
-- `../docs/foundation-v2-rollout-playbook.md`
+- [Foundation Contracts](../docs/contracts/foundation-contracts.md) — canonical shapes for all cross-repo contracts
+- [Foundation Rollout Runbook](../docs/runbooks/foundation-rollout-runbook.md) — enable/disable/rollback steps
+- [Foundation Observability](../docs/monitoring/foundation-observability.md) — what to monitor, suggested alerts
+- [Foundation Hardening Plan](../docs/foundation/foundation-hardening-plan.md) — completed PRs, remaining gaps
+- [Telemetry Taxonomy](../docs/telemetry-taxonomy.md) — event names, property rules, payload limits
+- [Foundation QA Checklist](../docs/foundation-qa-checklist.md) — automated + manual QA coverage

@@ -160,7 +160,31 @@ Durign work with firebase check firebaseRules.md and if it is necessery suggerst
 
 ## Backend sync
 
-During tasks check if changes require otrher changes on backend part (food-scanner-ai-backend)
+During tasks check if changes require other changes on backend part (food-scanner-ai-backend).
+
+### Cross-repo contract checklist
+
+When a change touches any of the surfaces below, **both repos must be updated**:
+
+1. **Did this change alter a cross-repo contract?**
+   - Meal type definitions (`MealType`, `MealSyncState`, `MealInputMethod`, `MealSource` in `types/meal.ts`)
+   - NutritionState type shape (`nutritionStateTypes.ts`)
+   - Gateway reject reasons (`GATEWAY_REJECT_REASONS` in `useChatHistory.ts`)
+   - Habit signal enums (`NutritionTopRisk`, `NutritionCoachPriority`)
+   - AI response types (`contracts.ts`)
+
+2. **Were paired contract fixtures updated?**
+   - Mobile: `src/__contract_fixtures__/*.json`
+   - Backend: `tests/contract_fixtures/*.json`
+   - These files must stay identical — copy after editing.
+
+3. **Were paired tests updated?**
+   - Mobile: `src/__contract_fixtures__/contractAlignment.test.ts`
+   - Backend: `tests/test_contract_alignment.py`
+
+4. **Verification:**
+   - Mobile: `npx jest contractAlignment`
+   - Backend: `pytest tests/test_contract_alignment.py`
 
 # After
 
