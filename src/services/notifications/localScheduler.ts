@@ -5,7 +5,7 @@ import { isRecord } from "@/services/contracts/guards";
 import { emitNotificationScheduledTelemetry } from "@/services/notifications/notificationTelemetry";
 
 const KEY_PREFIX = "notif:ids:";
-const USER_NOTIFICATION_SOURCE = "user_notifications";
+const USER_NOTIFICATION_ORIGIN = "user_notifications";
 
 function key(localKey: string) {
   return KEY_PREFIX + localKey;
@@ -34,7 +34,7 @@ function buildTelemetryContent(
     ...content,
     data: {
       ...data,
-      source: USER_NOTIFICATION_SOURCE,
+      origin: USER_NOTIFICATION_ORIGIN,
     },
   };
 }
@@ -117,7 +117,7 @@ export async function scheduleDailyAt(
   await storeId(localKey, id);
   void emitNotificationScheduledTelemetry({
     notificationType: resolveNotificationTypeFromContent(contentWithTelemetry),
-    source: USER_NOTIFICATION_SOURCE,
+    origin: USER_NOTIFICATION_ORIGIN,
   });
 }
 
@@ -143,7 +143,7 @@ export async function scheduleWeekdaysIOS(
     await storeId(localKey, id);
     void emitNotificationScheduledTelemetry({
       notificationType: resolveNotificationTypeFromContent(contentWithTelemetry),
-      source: USER_NOTIFICATION_SOURCE,
+      origin: USER_NOTIFICATION_ORIGIN,
     });
   }
 }
@@ -178,7 +178,7 @@ export async function scheduleMealReminder(
       await storeId(n.id, id);
       void emitNotificationScheduledTelemetry({
         notificationType: "meal_reminder",
-        source: USER_NOTIFICATION_SOURCE,
+        origin: USER_NOTIFICATION_ORIGIN,
       });
     }
   } else {
@@ -195,7 +195,7 @@ export async function scheduleMealReminder(
     await storeId(n.id, id);
     void emitNotificationScheduledTelemetry({
       notificationType: "meal_reminder",
-      source: USER_NOTIFICATION_SOURCE,
+      origin: USER_NOTIFICATION_ORIGIN,
     });
   }
 }
@@ -223,7 +223,7 @@ export async function scheduleOneShotAt(
   await storeId(localKey, id);
   void emitNotificationScheduledTelemetry({
     notificationType: resolveNotificationTypeFromContent(contentWithTelemetry),
-    source: USER_NOTIFICATION_SOURCE,
+    origin: USER_NOTIFICATION_ORIGIN,
   });
 }
 

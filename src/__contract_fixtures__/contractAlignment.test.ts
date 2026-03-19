@@ -142,6 +142,8 @@ describe("Meal item contract", () => {
 
   test("optional Foundation Sprint fields present", () => {
     expect(meal.dayKey).toBe("2026-03-18");
+    expect(meal.loggedAtLocalMin).toBe(780);
+    expect(meal.tzOffsetMin).toBe(60);
     expect(meal.source).toBe("ai");
     expect(meal.inputMethod).toBe("photo");
     expect(meal.aiMeta).toBeDefined();
@@ -167,7 +169,7 @@ describe("Nutrition state contract", () => {
   test("top-level keys match NutritionState type", () => {
     const expectedKeys = [
       "computedAt", "dayKey", "targets", "consumed", "remaining",
-      "quality", "habits", "streak", "ai",
+      "overTarget", "quality", "habits", "streak", "ai", "meta",
     ];
     expect(Object.keys(state).sort()).toEqual(expectedKeys.sort());
   });
@@ -176,6 +178,7 @@ describe("Nutrition state contract", () => {
     expect(typeof state.targets.kcal).toBe("number");
     expect(typeof state.consumed.protein).toBe("number");
     expect(typeof state.remaining.carbs).toBe("number");
+    expect(typeof state.overTarget.kcal).toBe("number");
   });
 
   test("quality shape", () => {
@@ -187,9 +190,17 @@ describe("Nutrition state contract", () => {
   test("habits summary shape", () => {
     expect(state.habits.available).toBe(true);
     expect(typeof state.habits.behavior.loggingDays7).toBe("number");
+    expect(typeof state.habits.behavior.validLoggingDays7).toBe("number");
     expect(typeof state.habits.behavior.loggingConsistency28).toBe("number");
+    expect(typeof state.habits.behavior.validLoggingConsistency28).toBe("number");
+    expect(typeof state.habits.behavior.avgValidMealsPerValidLoggedDay14).toBe("number");
     expect(typeof state.habits.behavior.mealTypeCoverage14.coveredCount).toBe("number");
+    expect(typeof state.habits.behavior.mealTypeFrequency14.lunch).toBe("number");
+    expect(typeof state.habits.behavior.dayCoverage14.validLoggedDays).toBe("number");
     expect(typeof state.habits.behavior.proteinDaysHit14.ratio).toBe("number");
+    expect(state.habits.behavior.timingPatterns14.available).toBe(true);
+    expect(typeof state.habits.behavior.timingPatterns14.firstMealMedianHour).toBe("number");
+    expect(typeof state.habits.dataQuality.daysUsingTimestampTimingFallback14).toBe("number");
   });
 
   test("streak summary shape", () => {
@@ -204,6 +215,8 @@ describe("Nutrition state contract", () => {
     expect(typeof state.ai.balance).toBe("number");
     expect(typeof state.ai.costs.chat).toBe("number");
     expect(typeof state.ai.costs.photo).toBe("number");
+    expect(state.meta.isDegraded).toBe(false);
+    expect(state.meta.componentStatus.habits).toBe("ok");
   });
 });
 

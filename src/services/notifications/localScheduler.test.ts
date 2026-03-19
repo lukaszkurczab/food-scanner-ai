@@ -6,7 +6,7 @@ const mockScheduleNotificationAsync = jest.fn<
 const mockGetItem = jest.fn<(key: string) => Promise<string | null>>();
 const mockSetItem = jest.fn<(key: string, value: string) => Promise<void>>();
 const mockEmitNotificationScheduledTelemetry = jest.fn<
-  (context: { notificationType?: string | null; source?: string | null }) => Promise<void>
+  (context: { notificationType?: string | null; origin?: string | null }) => Promise<void>
 >();
 
 jest.mock("expo-notifications", () => ({
@@ -38,7 +38,7 @@ jest.mock("react-native", () => ({
 jest.mock("@/services/notifications/notificationTelemetry", () => ({
   emitNotificationScheduledTelemetry: (context: {
     notificationType?: string | null;
-    source?: string | null;
+    origin?: string | null;
   }) => mockEmitNotificationScheduledTelemetry(context),
 }));
 
@@ -71,15 +71,14 @@ describe("localScheduler", () => {
           data: expect.objectContaining({
             notifId: "n-1",
             type: "day_fill",
-            source: "user_notifications",
+            origin: "user_notifications",
           }),
         }),
       }),
     );
     expect(mockEmitNotificationScheduledTelemetry).toHaveBeenCalledWith({
       notificationType: "day_fill",
-      source: "user_notifications",
+      origin: "user_notifications",
     });
   });
 });
-

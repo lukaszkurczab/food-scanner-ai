@@ -21,6 +21,26 @@ function normalizeMealSyncState(value: Meal["syncState"]): Meal["syncState"] {
   return "pending";
 }
 
+function toDayKey(value?: string | null): string | null {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 const MEAL_TYPES: Meal["type"][] = [
   "breakfast",
   "lunch",
@@ -81,6 +101,13 @@ function rowToMeal(row: MealRow): Meal {
     userUid: row.user_uid,
     mealId: row.meal_id,
     timestamp: row.timestamp,
+    dayKey: toDayKey(row.day_key ?? row.timestamp),
+    loggedAtLocalMin:
+      typeof row.logged_at_local_min === "number"
+        ? Number(row.logged_at_local_min)
+        : null,
+    tzOffsetMin:
+      typeof row.tz_offset_min === "number" ? Number(row.tz_offset_min) : null,
     type: parseMealType(row.type),
     name: row.name,
     ingredients: parseIngredients(row.ingredients),
@@ -123,15 +150,18 @@ export async function upsertMyMealLocal(meal: Meal): Promise<void> {
 
   db.runSync(
     `INSERT INTO my_meals (
-      cloud_id, meal_id, user_uid, timestamp, type, name,
+      cloud_id, meal_id, user_uid, timestamp, day_key, logged_at_local_min, tz_offset_min, type, name,
       ingredients,
       photo_url, image_local, image_id,
       totals_kcal, totals_protein, totals_carbs, totals_fat,
       deleted, created_at, updated_at, last_synced_at, sync_state, source, input_method, ai_meta, notes, tags
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(cloud_id) DO UPDATE SET
       meal_id=excluded.meal_id,
       timestamp=excluded.timestamp,
+      day_key=excluded.day_key,
+      logged_at_local_min=excluded.logged_at_local_min,
+      tz_offset_min=excluded.tz_offset_min,
       type=excluded.type,
       name=excluded.name,
       ingredients=excluded.ingredients,
@@ -160,6 +190,9 @@ export async function upsertMyMealLocal(meal: Meal): Promise<void> {
       meal.mealId,
       meal.userUid,
       meal.timestamp,
+      toDayKey(meal.dayKey ?? meal.timestamp),
+      meal.loggedAtLocalMin ?? null,
+      meal.tzOffsetMin ?? null,
       meal.type,
       meal.name ?? null,
       ingredients,

@@ -14,15 +14,21 @@ import type {
   NutritionAiSummary,
   NutritionBehavior,
   NutritionCoachPriority,
+  NutritionComponentState,
   NutritionConsumed,
   NutritionDataQuality,
+  NutritionDayCoverage14,
   NutritionHabitsSummary,
+  NutritionOverTarget,
   NutritionMealTypeCoverage14,
+  NutritionMealTypeFrequency14,
   NutritionProteinDaysHit14,
   NutritionQuality,
   NutritionRemaining,
   NutritionState,
+  NutritionStateMeta,
   NutritionStateResult,
+  NutritionTimingPatterns14,
   NutritionTopRisk,
   NutritionTargets,
 } from "@/services/nutritionState/nutritionStateTypes";
@@ -138,6 +144,15 @@ function createFallbackRemaining(): NutritionRemaining {
   };
 }
 
+function createFallbackOverTarget(): NutritionOverTarget {
+  return {
+    kcal: null,
+    protein: null,
+    carbs: null,
+    fat: null,
+  };
+}
+
 function createFallbackQuality(): NutritionQuality {
   return {
     mealsLogged: 0,
@@ -157,6 +172,23 @@ function createFallbackMealTypeCoverage14(): NutritionMealTypeCoverage14 {
   };
 }
 
+function createFallbackMealTypeFrequency14(): NutritionMealTypeFrequency14 {
+  return {
+    breakfast: 0,
+    lunch: 0,
+    dinner: 0,
+    snack: 0,
+    other: 0,
+  };
+}
+
+function createFallbackDayCoverage14(): NutritionDayCoverage14 {
+  return {
+    loggedDays: 0,
+    validLoggedDays: 0,
+  };
+}
+
 function createFallbackProteinDaysHit14(): NutritionProteinDaysHit14 {
   return {
     hitDays: 0,
@@ -166,21 +198,59 @@ function createFallbackProteinDaysHit14(): NutritionProteinDaysHit14 {
   };
 }
 
+function createFallbackTimingPatterns14(): NutritionTimingPatterns14 {
+  return {
+    available: false,
+    observedDays: 0,
+    firstMealMedianHour: null,
+    lastMealMedianHour: null,
+    eatingWindowHoursMedian: null,
+    breakfastMedianHour: null,
+    lunchMedianHour: null,
+    dinnerMedianHour: null,
+    snackMedianHour: null,
+    otherMedianHour: null,
+  };
+}
+
 function createFallbackBehavior(): NutritionBehavior {
   return {
     loggingDays7: 0,
+    validLoggingDays7: 0,
     loggingConsistency28: 0,
+    validLoggingConsistency28: 0,
     avgMealsPerLoggedDay14: 0,
+    avgValidMealsPerValidLoggedDay14: 0,
     mealTypeCoverage14: createFallbackMealTypeCoverage14(),
+    mealTypeFrequency14: createFallbackMealTypeFrequency14(),
+    dayCoverage14: createFallbackDayCoverage14(),
     kcalAdherence14: null,
     kcalUnderTargetRatio14: null,
     proteinDaysHit14: createFallbackProteinDaysHit14(),
+    timingPatterns14: createFallbackTimingPatterns14(),
   };
 }
 
 function createFallbackDataQuality(): NutritionDataQuality {
   return {
     daysWithUnknownMealDetails14: 0,
+    daysUsingTimestampDayFallback14: 0,
+    daysUsingTimestampTimingFallback14: 0,
+  };
+}
+
+function createFallbackComponentStatus(): NutritionStateMeta["componentStatus"] {
+  return {
+    habits: "disabled",
+    streak: "disabled",
+    ai: "disabled",
+  };
+}
+
+function createFallbackMeta(): NutritionStateMeta {
+  return {
+    isDegraded: false,
+    componentStatus: createFallbackComponentStatus(),
   };
 }
 
@@ -226,6 +296,7 @@ export function createFallbackNutritionState(dayKey?: string | null): NutritionS
     targets: createFallbackTargets(),
     consumed: createFallbackConsumed(),
     remaining: createFallbackRemaining(),
+    overTarget: createFallbackOverTarget(),
     quality: createFallbackQuality(),
     habits: createFallbackHabitsSummary(),
     streak: {
@@ -234,6 +305,7 @@ export function createFallbackNutritionState(dayKey?: string | null): NutritionS
       lastDate: null,
     },
     ai: createFallbackAiSummary(),
+    meta: createFallbackMeta(),
   };
 }
 
@@ -243,6 +315,10 @@ function createCacheKey(uid: string, dayKey: string): string {
 
 function createStorageKey(uid: string, dayKey: string): string {
   return `${NUTRITION_STATE_STORAGE_KEY_PREFIX}:${uid}:${dayKey}`;
+}
+
+function createStorageKeyPrefix(uid: string): string {
+  return `${NUTRITION_STATE_STORAGE_KEY_PREFIX}:${uid}:`;
 }
 
 function buildEndpoint(dayKey: string): string {
@@ -279,6 +355,16 @@ function normalizeRemaining(value: unknown): NutritionRemaining {
   };
 }
 
+function normalizeOverTarget(value: unknown): NutritionOverTarget {
+  const payload = isRecord(value) ? value : {};
+  return {
+    kcal: toNullableNumber(payload.kcal),
+    protein: toNullableNumber(payload.protein),
+    carbs: toNullableNumber(payload.carbs),
+    fat: toNullableNumber(payload.fat),
+  };
+}
+
 function normalizeQuality(value: unknown): NutritionQuality {
   const payload = isRecord(value) ? value : {};
   return {
@@ -305,6 +391,28 @@ function normalizeMealTypeCoverage14(value: unknown): NutritionMealTypeCoverage1
   };
 }
 
+function normalizeMealTypeFrequency14(value: unknown): NutritionMealTypeFrequency14 {
+  const payload = isRecord(value) ? value : {};
+  return {
+    breakfast: toClampedNumber(payload.breakfast, 0, { min: 0, max: 14 }),
+    lunch: toClampedNumber(payload.lunch, 0, { min: 0, max: 14 }),
+    dinner: toClampedNumber(payload.dinner, 0, { min: 0, max: 14 }),
+    snack: toClampedNumber(payload.snack, 0, { min: 0, max: 14 }),
+    other: toClampedNumber(payload.other, 0, { min: 0, max: 14 }),
+  };
+}
+
+function normalizeDayCoverage14(value: unknown): NutritionDayCoverage14 {
+  const payload = isRecord(value) ? value : {};
+  return {
+    loggedDays: toClampedNumber(payload.loggedDays, 0, { min: 0, max: 14 }),
+    validLoggedDays: toClampedNumber(payload.validLoggedDays, 0, {
+      min: 0,
+      max: 14,
+    }),
+  };
+}
+
 function normalizeProteinDaysHit14(value: unknown): NutritionProteinDaysHit14 {
   const payload = isRecord(value) ? value : {};
   return {
@@ -315,21 +423,53 @@ function normalizeProteinDaysHit14(value: unknown): NutritionProteinDaysHit14 {
   };
 }
 
+function normalizeTimingPatterns14(value: unknown): NutritionTimingPatterns14 {
+  const payload = isRecord(value) ? value : {};
+  return {
+    available: asBoolean(payload.available) ?? false,
+    observedDays: toClampedNumber(payload.observedDays, 0, { min: 0, max: 14 }),
+    firstMealMedianHour: toNullableNumber(payload.firstMealMedianHour),
+    lastMealMedianHour: toNullableNumber(payload.lastMealMedianHour),
+    eatingWindowHoursMedian: toNullableNumber(payload.eatingWindowHoursMedian),
+    breakfastMedianHour: toNullableNumber(payload.breakfastMedianHour),
+    lunchMedianHour: toNullableNumber(payload.lunchMedianHour),
+    dinnerMedianHour: toNullableNumber(payload.dinnerMedianHour),
+    snackMedianHour: toNullableNumber(payload.snackMedianHour),
+    otherMedianHour: toNullableNumber(payload.otherMedianHour),
+  };
+}
+
 function normalizeBehavior(value: unknown): NutritionBehavior {
   const payload = isRecord(value) ? value : {};
   return {
     loggingDays7: toClampedNumber(payload.loggingDays7, 0, { min: 0, max: 7 }),
+    validLoggingDays7: toClampedNumber(payload.validLoggingDays7, 0, {
+      min: 0,
+      max: 7,
+    }),
     loggingConsistency28: toClampedNumber(payload.loggingConsistency28, 0, {
+      min: 0,
+      max: 1,
+    }),
+    validLoggingConsistency28: toClampedNumber(payload.validLoggingConsistency28, 0, {
       min: 0,
       max: 1,
     }),
     avgMealsPerLoggedDay14: toClampedNumber(payload.avgMealsPerLoggedDay14, 0, {
       min: 0,
     }),
+    avgValidMealsPerValidLoggedDay14: toClampedNumber(
+      payload.avgValidMealsPerValidLoggedDay14,
+      0,
+      { min: 0 },
+    ),
     mealTypeCoverage14: normalizeMealTypeCoverage14(payload.mealTypeCoverage14),
+    mealTypeFrequency14: normalizeMealTypeFrequency14(payload.mealTypeFrequency14),
+    dayCoverage14: normalizeDayCoverage14(payload.dayCoverage14),
     kcalAdherence14: toNullableNumber(payload.kcalAdherence14),
     kcalUnderTargetRatio14: toNullableNumber(payload.kcalUnderTargetRatio14),
     proteinDaysHit14: normalizeProteinDaysHit14(payload.proteinDaysHit14),
+    timingPatterns14: normalizeTimingPatterns14(payload.timingPatterns14),
   };
 }
 
@@ -338,6 +478,16 @@ function normalizeDataQuality(value: unknown): NutritionDataQuality {
   return {
     daysWithUnknownMealDetails14: toClampedNumber(
       payload.daysWithUnknownMealDetails14,
+      0,
+      { min: 0, max: 14 },
+    ),
+    daysUsingTimestampDayFallback14: toClampedNumber(
+      payload.daysUsingTimestampDayFallback14,
+      0,
+      { min: 0, max: 14 },
+    ),
+    daysUsingTimestampTimingFallback14: toClampedNumber(
+      payload.daysUsingTimestampTimingFallback14,
       0,
       { min: 0, max: 14 },
     ),
@@ -378,6 +528,32 @@ function normalizeAiSummary(value: unknown): NutritionAiSummary {
   };
 }
 
+function toComponentState(value: unknown): NutritionComponentState {
+  switch (value) {
+    case "ok":
+    case "disabled":
+    case "error":
+      return value;
+    default:
+      return "disabled";
+  }
+}
+
+function normalizeMeta(value: unknown): NutritionStateMeta {
+  const payload = isRecord(value) ? value : {};
+  const componentStatus = isRecord(payload.componentStatus)
+    ? payload.componentStatus
+    : {};
+  return {
+    isDegraded: asBoolean(payload.isDegraded) ?? false,
+    componentStatus: {
+      habits: toComponentState(componentStatus.habits),
+      streak: toComponentState(componentStatus.streak),
+      ai: toComponentState(componentStatus.ai),
+    },
+  };
+}
+
 export function normalizeNutritionState(
   value: unknown,
   fallbackDayKey?: string | null,
@@ -393,6 +569,7 @@ export function normalizeNutritionState(
     targets: normalizeTargets(value.targets),
     consumed: normalizeConsumed(value.consumed),
     remaining: normalizeRemaining(value.remaining),
+    overTarget: normalizeOverTarget(value.overTarget),
     quality: normalizeQuality(value.quality),
     habits: normalizeHabitsSummary(value.habits),
     streak: {
@@ -405,6 +582,7 @@ export function normalizeNutritionState(
       lastDate: asString(isRecord(value.streak) ? value.streak.lastDate : undefined) ?? null,
     },
     ai: normalizeAiSummary(value.ai),
+    meta: normalizeMeta(value.meta),
   };
 }
 
@@ -547,6 +725,44 @@ export function refreshNutritionState(
   options?: { dayKey?: string | null },
 ): Promise<NutritionStateResult> {
   return getNutritionState(uid, { ...options, force: true });
+}
+
+export async function invalidateNutritionStateCache(
+  uid: string | null | undefined,
+  options?: { dayKey?: string | null },
+): Promise<void> {
+  if (!uid) {
+    return;
+  }
+
+  const normalizedDayKey = options?.dayKey?.trim();
+  if (normalizedDayKey) {
+    memoryCacheByKey.delete(createCacheKey(uid, normalizedDayKey));
+    try {
+      await AsyncStorage.removeItem(createStorageKey(uid, normalizedDayKey));
+    } catch {
+      // Ignore cache invalidation failures for best-effort refresh behavior.
+    }
+    return;
+  }
+
+  for (const cacheKey of Array.from(memoryCacheByKey.keys())) {
+    if (cacheKey.startsWith(`${uid}:`)) {
+      memoryCacheByKey.delete(cacheKey);
+    }
+  }
+
+  try {
+    const storageKeys = await AsyncStorage.getAllKeys();
+    const matchingKeys = storageKeys.filter((key) =>
+      key.startsWith(createStorageKeyPrefix(uid)),
+    );
+    if (matchingKeys.length > 0) {
+      await AsyncStorage.multiRemove(matchingKeys);
+    }
+  } catch {
+    // Ignore cache invalidation failures for best-effort refresh behavior.
+  }
 }
 
 export function __resetNutritionStateServiceForTests(): void {

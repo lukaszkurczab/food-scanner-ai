@@ -23,10 +23,12 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useNutritionState } from "@/hooks/useNutritionState";
 import type {
+  NutritionTargets,
   NutritionCoachPriority,
   NutritionState,
   NutritionTopRisk,
 } from "@/services/nutritionState/nutritionStateTypes";
+import type { MacroTargets } from "@/utils/calculateMacroTargets";
 
 function startEndOfLocalDay(d: Date) {
   const s = new Date(d);
@@ -103,8 +105,15 @@ function getCoachPriorityLabel(priority: NutritionCoachPriority): string | null 
   }
 }
 
-function buildNutritionSummary(state: NutritionState): string | null {
+function buildNutritionSummary(
+  state: NutritionState,
+  options?: { isStale?: boolean },
+): string | null {
   const parts: string[] = [];
+
+  if (options?.isStale) {
+    parts.push("Cached");
+  }
 
   if (state.remaining.kcal !== null) {
     parts.push(`${state.remaining.kcal} kcal left`);
@@ -124,6 +133,33 @@ function buildNutritionSummary(state: NutritionState): string | null {
   }
 
   return parts.length > 0 ? parts.join(" • ") : null;
+}
+
+function hasTargetValue(value: number | null): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function toMacroTargets(targets: NutritionTargets): MacroTargets | null {
+  if (
+    !hasTargetValue(targets.protein) &&
+    !hasTargetValue(targets.fat) &&
+    !hasTargetValue(targets.carbs)
+  ) {
+    return null;
+  }
+
+  const proteinGrams = targets.protein ?? 0;
+  const fatGrams = targets.fat ?? 0;
+  const carbsGrams = targets.carbs ?? 0;
+
+  return {
+    proteinGrams,
+    fatGrams,
+    carbsGrams,
+    proteinKcal: Math.round(proteinGrams * 4),
+    fatKcal: Math.round(fatGrams * 9),
+    carbsKcal: Math.round(carbsGrams * 4),
+  };
 }
 
 type HomeNavigation = StackNavigationProp<RootStackParamList>;
@@ -160,12 +196,21 @@ export default function HomeScreen({ navigation }: Props) {
     [meals, selectedDate],
   );
   const hasSurvey = !!userData?.surveyComplited;
+  const hasCanonicalNutritionState =
+    nutritionStateEnabled &&
+    nutritionState.dayKey === selectedDayKey &&
+    nutritionStateSource !== "disabled" &&
+    nutritionStateSource !== "fallback";
+  const shouldUseLegacyStreak = !hasCanonicalNutritionState;
 
   useEffect(() => {
-    if (!uid) return;
+    if (!uid || !shouldUseLegacyStreak) {
+      setStreak(0);
+      return;
+    }
     const unsub = subscribeStreak(uid, (s) => setStreak(s.current || 0));
     return unsub;
-  }, [uid]);
+  }, [shouldUseLegacyStreak, uid]);
 
   useEffect(() => {
     if (!uid) return;
@@ -180,36 +225,34 @@ export default function HomeScreen({ navigation }: Props) {
 
   const legacyMacros = useMemo(() => calculateTotalNutrients(dayMeals), [dayMeals]);
   const legacyCalories = legacyMacros.kcal;
+  const displayStreak = hasCanonicalNutritionState
+    ? nutritionState.streak.current
+    : streak;
 
-  const hasUsableNutritionState =
-    nutritionStateEnabled &&
-    nutritionState.dayKey === selectedDayKey &&
-    nutritionStateSource !== "disabled" &&
-    nutritionStateSource !== "fallback" &&
-    nutritionStateError == null;
-
-  const totalCalories = hasUsableNutritionState
+  const totalCalories = hasCanonicalNutritionState
     ? nutritionState.consumed.kcal
     : legacyCalories;
 
-  const macros = hasUsableNutritionState
+  const macros = hasCanonicalNutritionState
     ? nutritionState.consumed
     : legacyMacros;
 
-  const goalCalories = hasUsableNutritionState
+  const goalCalories = hasCanonicalNutritionState
     ? (nutritionState.targets.kcal ?? userData?.calorieTarget ?? 0)
     : hasSurvey
       ? (userData?.calorieTarget ?? 0)
       : 0;
 
   const nutritionSummary = useMemo(() => {
-    if (!hasUsableNutritionState) {
+    if (!hasCanonicalNutritionState) {
       return null;
     }
-    return buildNutritionSummary(nutritionState);
-  }, [hasUsableNutritionState, nutritionState]);
+    return buildNutritionSummary(nutritionState, {
+      isStale: nutritionStateError != null,
+    });
+  }, [hasCanonicalNutritionState, nutritionState, nutritionStateError]);
 
-  const macroTargets = useMemo(
+  const fallbackMacroTargets = useMemo(
     () =>
       userData?.calorieTarget && userData.calorieTarget > 0
         ? calculateMacroTargets({
@@ -220,9 +263,21 @@ export default function HomeScreen({ navigation }: Props) {
         : null,
     [userData?.calorieTarget, userData?.preferences, userData?.goal],
   );
+  const macroTargets = useMemo(() => {
+    if (!hasCanonicalNutritionState) {
+      return fallbackMacroTargets;
+    }
+
+    const stateTargets = toMacroTargets(nutritionState.targets);
+    if (stateTargets) {
+      return stateTargets;
+    }
+
+    return fallbackMacroTargets;
+  }, [fallbackMacroTargets, hasCanonicalNutritionState, nutritionState.targets]);
 
   const summaryToneStyle = useMemo(() => {
-    if (!nutritionSummary || !hasUsableNutritionState) {
+    if (!nutritionSummary || !hasCanonicalNutritionState) {
       return null;
     }
 
@@ -231,7 +286,7 @@ export default function HomeScreen({ navigation }: Props) {
     }
 
     return styles.goalStatusWarning;
-  }, [hasUsableNutritionState, nutritionState.habits.topRisk, nutritionSummary, styles]);
+  }, [hasCanonicalNutritionState, nutritionState.habits.topRisk, nutritionSummary, styles]);
 
   return (
     <Layout>
@@ -259,7 +314,7 @@ export default function HomeScreen({ navigation }: Props) {
                 </View>
               ) : null}
             </View>
-            <StreakBadge value={streak} />
+            <StreakBadge value={displayStreak} />
           </View>
         ) : (
           <View style={styles.goalCard}>

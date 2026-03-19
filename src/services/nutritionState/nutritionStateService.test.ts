@@ -170,5 +170,50 @@ describe("nutritionStateService", () => {
     expect(result.state.targets.kcal).toBe(2200);
     expect(mockWarn).toHaveBeenCalled();
   });
-});
 
+  it("invalidates cached state so the next read refetches from remote", async () => {
+    mockGet
+      .mockResolvedValueOnce({
+        computedAt: "2026-03-18T10:00:00Z",
+        dayKey: "2026-03-18",
+        targets: { kcal: 2000 },
+        consumed: { kcal: 1000, protein: 60, carbs: 90, fat: 20 },
+        remaining: { kcal: 1000, protein: null, carbs: null, fat: null },
+        quality: { mealsLogged: 1, missingNutritionMeals: 0, dataCompletenessScore: 1 },
+        habits: { available: false },
+        streak: { available: false, current: 0, lastDate: null },
+        ai: { available: false, costs: { chat: 0, textMeal: 0, photo: 0 } },
+      })
+      .mockResolvedValueOnce({
+        computedAt: "2026-03-18T11:00:00Z",
+        dayKey: "2026-03-18",
+        targets: { kcal: 2000 },
+        consumed: { kcal: 1400, protein: 80, carbs: 120, fat: 30 },
+        remaining: { kcal: 600, protein: null, carbs: null, fat: null },
+        quality: { mealsLogged: 2, missingNutritionMeals: 0, dataCompletenessScore: 1 },
+        habits: { available: false },
+        streak: { available: false, current: 0, lastDate: null },
+        ai: { available: false, costs: { chat: 0, textMeal: 0, photo: 0 } },
+      });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const service = require("@/services/nutritionState/nutritionStateService") as typeof import("@/services/nutritionState/nutritionStateService");
+
+    const first = await service.getNutritionState("user-1", {
+      dayKey: "2026-03-18",
+    });
+    await service.invalidateNutritionStateCache("user-1", {
+      dayKey: "2026-03-18",
+    });
+    const second = await service.getNutritionState("user-1", {
+      dayKey: "2026-03-18",
+    });
+
+    expect(first.state.consumed.kcal).toBe(1000);
+    expect(second.state.consumed.kcal).toBe(1400);
+    expect(mockGet).toHaveBeenCalledTimes(2);
+    expect(await AsyncStorage.getItem("nutrition-state:last:v1:user-1:2026-03-18")).toEqual(
+      expect.any(String),
+    );
+  });
+});

@@ -258,7 +258,7 @@ async function scheduleKeyForNextDays(args: {
         body,
         data: {
           ...data,
-          source: SYSTEM_NOTIFICATION_SOURCE,
+          origin: SYSTEM_NOTIFICATION_SOURCE,
         },
       },
       trigger: Platform.select({
@@ -277,7 +277,7 @@ async function scheduleKeyForNextDays(args: {
     ids.push(id);
     void emitNotificationScheduledTelemetry({
       notificationType: asString(data.sys) ?? key,
-      source: SYSTEM_NOTIFICATION_SOURCE,
+      origin: SYSTEM_NOTIFICATION_SOURCE,
     });
   }
 

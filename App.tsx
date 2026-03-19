@@ -18,7 +18,7 @@ import { HistoryProvider } from "@/context/HistoryContext";
 import { AiCreditsProvider } from "@/context/AiCreditsContext";
 import { View, ActivityIndicator } from "react-native";
 import { Linking } from "react-native";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useAppFonts } from "@hooks/useAppFonts";
 import { ToastBridge } from "@/components";
 import { isE2EModeEnabled } from "@/services/e2e/config";
@@ -32,26 +32,20 @@ import {
   stopTelemetryClient,
 } from "@/services/telemetry/telemetryClient";
 import {
-  trackScreenView,
-} from "@/services/telemetry/telemetryInstrumentation";
-import {
   initTelemetryLifecycle,
   stopTelemetryLifecycle,
 } from "@/services/telemetry/telemetryLifecycle";
+import { createNavigationTelemetryTracker } from "@/services/telemetry/navigationTelemetry";
 
 function Root() {
   const fontsLoaded = useAppFonts();
-  const previousRouteNameRef = useRef<string | undefined>(undefined);
+  const navigationTelemetryHandlerRef = useRef<(() => void) | null>(null);
 
-  const handleNavigationStateChange = useCallback(() => {
-    const currentRouteName = navigationRef.getCurrentRoute()?.name;
-    if (!currentRouteName || previousRouteNameRef.current === currentRouteName) {
-      return;
-    }
-
-    previousRouteNameRef.current = currentRouteName;
-    void trackScreenView(currentRouteName);
-  }, []);
+  if (!navigationTelemetryHandlerRef.current) {
+    navigationTelemetryHandlerRef.current = createNavigationTelemetryTracker({
+      getCurrentRouteName: () => navigationRef.getCurrentRoute()?.name,
+    });
+  }
 
   useEffect(() => {
     void (async () => {
@@ -102,8 +96,8 @@ function Root() {
   return (
     <NavigationContainer
       ref={navigationRef}
-      onReady={handleNavigationStateChange}
-      onStateChange={handleNavigationStateChange}
+      onReady={navigationTelemetryHandlerRef.current}
+      onStateChange={navigationTelemetryHandlerRef.current}
     >
       <AiCreditsProvider>
         <PremiumProvider>

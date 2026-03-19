@@ -39,6 +39,8 @@ export interface Meal {
   mealId: string;
   timestamp: string;
   dayKey?: string | null;
+  loggedAtLocalMin?: number | null;
+  tzOffsetMin?: number | null;
   type: MealType;
   name: string | null;
   ingredients: Ingredient[];
