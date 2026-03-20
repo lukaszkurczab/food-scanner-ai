@@ -42,21 +42,29 @@ export default function EmptyDayView({
   const { t } = useTranslation("home");
   const isCoachAware = mode === "coach_aware";
 
-  const coachHintKey = useMemo(() => {
+  const coachAwareCopy = useMemo(() => {
     if (!isCoachAware || !coachEmptyReason) {
       return null;
     }
 
-    if (coachEmptyReason === "insufficient_data") {
-      return isToday
-        ? "emptyDay.coachHint_insufficient_today"
-        : "emptyDay.coachHint_insufficient_past";
-    }
+    return {
+      title: t(`emptyDay.coachAware.${coachEmptyReason}.title`),
+      body: t(`emptyDay.coachAware.${coachEmptyReason}.body`),
+      whyTitle: t("emptyDay.coachAware.whyTitle", "Why am I seeing this?"),
+      whyBody: t(`emptyDay.coachAware.${coachEmptyReason}.whyBody`),
+    };
+  }, [coachEmptyReason, isCoachAware, t]);
 
-    return isToday
-      ? "emptyDay.coachHint_today"
-      : "emptyDay.coachHint_past";
-  }, [coachEmptyReason, isCoachAware, isToday]);
+  const titleText = coachAwareCopy?.title ?? t("emptyDay.title");
+  const subtitleText = coachAwareCopy?.body ?? (
+    isOffline
+      ? isToday
+        ? t("emptyDay.subtitle_offline_today")
+        : t("emptyDay.subtitle_offline_past")
+      : isToday
+        ? t("emptyDay.subtitle_today")
+        : null
+  );
 
   useEffect(() => {
     if (!isCoachAware || !coachEmptyReason) {
@@ -71,31 +79,20 @@ export default function EmptyDayView({
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
-        {t("emptyDay.title")}
+        {titleText}
       </Text>
 
-      {(isToday || isOffline) && (
+      {subtitleText ? (
         <Text style={styles.subtitle}>
-          {isOffline
-            ? isToday
-              ? t("emptyDay.subtitle_offline_today")
-              : t("emptyDay.subtitle_offline_past")
-            : t("emptyDay.subtitle_today")}
+          {subtitleText}
         </Text>
-      )}
+      ) : null}
 
-      {isCoachAware && coachHintKey ? (
+      {coachAwareCopy ? (
         <View style={styles.coachBox}>
-          <Text style={styles.coachEyebrow}>
-            {t("emptyDay.coachTitle", "Coaching note")}
-          </Text>
+          <Text style={styles.coachEyebrow}>{coachAwareCopy.whyTitle}</Text>
           <Text style={styles.coachText}>
-            {t(
-              coachHintKey,
-              isToday
-                ? "Start with one complete meal log so coaching has real data to work with."
-                : "Use history for context, then keep the next meal log complete so trends stay readable.",
-            )}
+            {coachAwareCopy.whyBody}
           </Text>
         </View>
       ) : null}

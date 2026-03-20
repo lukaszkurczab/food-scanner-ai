@@ -11,7 +11,15 @@ jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => `translated:${key}`,
+    t: (
+      key: string,
+      fallback?: string | { defaultValue?: string },
+    ) => {
+      if (typeof fallback === "string") {
+        return fallback;
+      }
+      return fallback?.defaultValue ?? `translated:${key}`;
+    },
   }),
 }));
 
@@ -29,8 +37,7 @@ describe("EmptyDayView", () => {
 
     expect(getByText("translated:emptyDay.title")).toBeTruthy();
     expect(getByText("translated:emptyDay.subtitle_today")).toBeTruthy();
-    expect(queryByText("translated:emptyDay.coachTitle")).toBeNull();
-    expect(queryByText("translated:emptyDay.coachHint_today")).toBeNull();
+    expect(queryByText("Why am I seeing this?")).toBeNull();
     expect(getByText("translated:emptyDay.addMeal")).toBeTruthy();
     expect(queryByText("translated:emptyDay.openHistory")).toBeNull();
 
@@ -46,7 +53,7 @@ describe("EmptyDayView", () => {
     );
 
     expect(getByText("translated:emptyDay.title")).toBeTruthy();
-    expect(queryByText("translated:emptyDay.coachHint_past")).toBeNull();
+    expect(queryByText("Why am I seeing this?")).toBeNull();
     expect(getByText("translated:emptyDay.openHistory")).toBeTruthy();
     expect(queryByText("translated:emptyDay.addMeal")).toBeNull();
 
@@ -63,7 +70,7 @@ describe("EmptyDayView", () => {
 
     expect(getByText("translated:emptyDay.title")).toBeTruthy();
     expect(getByText("translated:emptyDay.subtitle_offline_today")).toBeTruthy();
-    expect(queryByText("translated:emptyDay.coachTitle")).toBeNull();
+    expect(queryByText("Why am I seeing this?")).toBeNull();
     fireEvent.press(getByText("translated:emptyDay.addMeal"));
     expect(onAddMeal).toHaveBeenCalledTimes(1);
   });
@@ -76,7 +83,7 @@ describe("EmptyDayView", () => {
 
     expect(getByText("translated:emptyDay.title")).toBeTruthy();
     expect(getByText("translated:emptyDay.subtitle_offline_past")).toBeTruthy();
-    expect(queryByText("translated:emptyDay.coachTitle")).toBeNull();
+    expect(queryByText("Why am I seeing this?")).toBeNull();
     fireEvent.press(getByText("translated:emptyDay.openHistory"));
     expect(onOpenHistory).toHaveBeenCalledTimes(1);
   });
@@ -91,7 +98,10 @@ describe("EmptyDayView", () => {
       />,
     );
 
-    expect(getByText("translated:emptyDay.coachHint_insufficient_today")).toBeTruthy();
+    expect(getByText("translated:emptyDay.coachAware.insufficient_data.title")).toBeTruthy();
+    expect(getByText("translated:emptyDay.coachAware.insufficient_data.body")).toBeTruthy();
+    expect(getByText("Why am I seeing this?")).toBeTruthy();
+    expect(getByText("translated:emptyDay.coachAware.insufficient_data.whyBody")).toBeTruthy();
     expect(mockTrackCoachEmptyStateViewed).toHaveBeenCalledTimes(1);
   });
 

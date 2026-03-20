@@ -18,11 +18,19 @@
     "subtitle_today": "Add your first meal to start tracking.",
     "subtitle_offline_today": "You are offline. Local data may be incomplete for today.",
     "subtitle_offline_past": "You are offline. Connect to load meals for this day.",
-    "coachTitle": "Coaching note",
-    "coachHint_today": "Start with one complete meal log so coaching has real data to work with.",
-    "coachHint_past": "Use history for context, then keep the next meal log complete so trends stay readable.",
-    "coachHint_insufficient_today": "There is not enough recent signal yet. One solid meal log today is enough to restart the pattern.",
-    "coachHint_insufficient_past": "There is not enough recent signal yet. Review history, then keep the next meal log complete.",
+    "coachAware": {
+      "whyTitle": "Why am I seeing this?",
+      "no_data": {
+        "title": "Nothing logged yet today",
+        "body": "Start with your next meal and you’ll get a clearer daily view here.",
+        "whyBody": "There isn’t enough meal data for today yet, so there’s no separate insight to show."
+      },
+      "insufficient_data": {
+        "title": "There’s not enough signal yet",
+        "body": "Recent data is still too limited for a reliable insight. A few fuller entries will help.",
+        "whyBody": "There is some recent data, but not enough consistent and complete meal logging to generate a reliable insight."
+      }
+    },
     "addMeal": "Add meal",
     "openHistory": "Go to history"
   },
@@ -31,19 +39,43 @@
     "positiveEyebrow": "Momentum",
     "showWhy": "Why am I seeing this?",
     "hideWhy": "Hide why",
-    "whyTitle": "This is based on your recent logging",
-    "reasons": {
-      "valid_logging_days_7_low": "There have been too few solid logging days recently.",
-      "logging_consistency_28_low": "Logging consistency across the last few weeks is still low.",
-      "missing_nutrition_meals_today": "At least one meal today is missing useful nutrition detail.",
-      "unknown_meal_details_14_high": "Recent meals have been too vague to read clearly.",
-      "protein_hit_ratio_14_low": "Protein targets are being missed on too many logged days.",
-      "kcal_under_target_ratio_14_high": "Recent intake is landing under your calorie target too often.",
-      "meal_coverage_14_low": "There are too few complete meal days to read the pattern well.",
-      "streak_positive": "You have recent momentum worth protecting.",
-      "consistency_improving": "Logging consistency is moving in the right direction.",
-      "insufficient_data": "There is not enough recent data to form a stronger insight yet.",
-      "generic": "This insight comes from your recent logging pattern."
+    "whyTitle": "Why am I seeing this?",
+    "cta": {
+      "log_next_meal": "Log next meal",
+      "open_chat": "Open chat",
+      "review_history": "Review history"
+    },
+    "items": {
+      "under_logging": {
+        "title": "Logging has been light lately",
+        "body": "There have been fewer fully logged days recently. Logging your next meal will give you a clearer picture.",
+        "whyBody": "This insight is based on recent logging consistency and how many recent days had enough meal data to interpret."
+      },
+      "high_unknown_meal_details": {
+        "title": "Some meals need more detail",
+        "body": "A few recent meals are missing nutrition details. More complete entries will improve the insight quality.",
+        "whyBody": "This insight is based on recent meals with missing or incomplete nutrition details."
+      },
+      "low_protein_consistency": {
+        "title": "Protein has been low lately",
+        "body": "Recent days have missed your protein target more often. It may help to check your next few meals.",
+        "whyBody": "This insight is based on recent protein target coverage across your logged meals."
+      },
+      "calorie_under_target": {
+        "title": "You’ve been under target often",
+        "body": "Recent days have ended below your calorie target more often. It may be worth checking if that was intentional.",
+        "whyBody": "This insight is based on how often recent logged days finished below your calorie target."
+      },
+      "positive_momentum": {
+        "title": "Your logging looks steadier",
+        "body": "Recent entries have been more consistent and complete. You’re building a clearer picture over time.",
+        "whyBody": "This insight is based on improving logging consistency and meal completeness across recent days."
+      },
+      "stable": {
+        "title": "No major pattern stands out",
+        "body": "There isn’t one clear issue driving today’s view. You can review your history or go deeper in chat.",
+        "whyBody": "This insight appears when recent data does not show one dominant issue or one strong positive signal."
+      }
     }
   }
 }

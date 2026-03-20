@@ -27,60 +27,20 @@ export default function CoachInsightCard({
   const { t } = useTranslation("home");
   const [expanded, setExpanded] = useState(false);
 
-  const getReasonLabel = (reasonCode: string): string => {
-    switch (reasonCode) {
-      case "valid_logging_days_7_low":
-        return t("coachInsight.reasons.valid_logging_days_7_low", {
-          defaultValue: "There have been too few solid logging days recently.",
-        });
-      case "logging_consistency_28_low":
-        return t("coachInsight.reasons.logging_consistency_28_low", {
-          defaultValue: "Logging consistency across the last few weeks is still low.",
-        });
-      case "missing_nutrition_meals_today":
-        return t("coachInsight.reasons.missing_nutrition_meals_today", {
-          defaultValue: "At least one meal today is missing useful nutrition detail.",
-        });
-      case "unknown_meal_details_14_high":
-        return t("coachInsight.reasons.unknown_meal_details_14_high", {
-          defaultValue: "Recent meals have been too vague to read clearly.",
-        });
-      case "protein_hit_ratio_14_low":
-        return t("coachInsight.reasons.protein_hit_ratio_14_low", {
-          defaultValue: "Protein targets are being missed on too many logged days.",
-        });
-      case "kcal_under_target_ratio_14_high":
-        return t("coachInsight.reasons.kcal_under_target_ratio_14_high", {
-          defaultValue: "Recent intake is landing under your calorie target too often.",
-        });
-      case "meal_coverage_14_low":
-        return t("coachInsight.reasons.meal_coverage_14_low", {
-          defaultValue: "There are too few complete meal days to read the pattern well.",
-        });
-      case "streak_positive":
-        return t("coachInsight.reasons.streak_positive", {
-          defaultValue: "You have recent momentum worth protecting.",
-        });
-      case "consistency_improving":
-        return t("coachInsight.reasons.consistency_improving", {
-          defaultValue: "Logging consistency is moving in the right direction.",
-        });
-      case "insufficient_data":
-        return t("coachInsight.reasons.insufficient_data", {
-          defaultValue: "There is not enough recent data to form a stronger insight yet.",
-        });
-      default:
-        return t("coachInsight.reasons.generic", {
-          defaultValue: "This insight comes from your recent logging pattern.",
-        });
-    }
-  };
-
-  const reasonText = insight.reasonCodes.length > 0
-    ? insight.reasonCodes
-      .map((reasonCode) => `• ${getReasonLabel(reasonCode)}`)
-      .join("\n")
-    : getReasonLabel("generic");
+  const localizedTitle = t(`coachInsight.items.${insight.type}.title`, {
+    defaultValue: insight.title,
+  });
+  const localizedBody = t(`coachInsight.items.${insight.type}.body`, {
+    defaultValue: insight.body,
+  });
+  const localizedWhyBody = t(`coachInsight.items.${insight.type}.whyBody`, {
+    defaultValue: insight.body,
+  });
+  const localizedCtaLabel = insight.actionType === "none"
+    ? null
+    : t(`coachInsight.cta.${insight.actionType}`, {
+      defaultValue: insight.actionLabel ?? undefined,
+    });
 
   const showCta =
     insight.actionType !== "none" &&
@@ -135,8 +95,8 @@ export default function CoachInsightCard({
             ? t("coachInsight.positiveEyebrow", "Momentum")
             : t("coachInsight.defaultEyebrow", "Coach insight")}
         </Text>
-        <Text style={styles.title}>{insight.title}</Text>
-        <Text style={styles.body}>{insight.body}</Text>
+        <Text style={styles.title}>{localizedTitle}</Text>
+        <Text style={styles.body}>{localizedBody}</Text>
       </View>
 
       <Pressable
@@ -154,15 +114,15 @@ export default function CoachInsightCard({
       {expanded ? (
         <View style={styles.reasonBox}>
           <Text style={styles.reasonTitle}>
-            {t("coachInsight.whyTitle", "Based on recent logging signals")}
+            {t("coachInsight.whyTitle", "Why am I seeing this?")}
           </Text>
-          <Text style={styles.reasonText}>{reasonText}</Text>
+          <Text style={styles.reasonText}>{localizedWhyBody}</Text>
         </View>
       ) : null}
 
       {showCta ? (
         <PrimaryButton
-          label={insight.actionLabel ?? undefined}
+          label={localizedCtaLabel ?? undefined}
           onPress={handlePressCta}
           testID="coach-insight-cta"
         />
