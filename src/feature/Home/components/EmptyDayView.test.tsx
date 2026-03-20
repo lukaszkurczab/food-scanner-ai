@@ -1,7 +1,13 @@
 import { fireEvent } from "@testing-library/react-native";
-import { describe, expect, it, jest } from "@jest/globals";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import EmptyDayView from "@/feature/Home/components/EmptyDayView";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
+
+const mockTrackCoachEmptyStateViewed = jest.fn<() => Promise<void>>();
+
+jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
+  trackCoachEmptyStateViewed: () => mockTrackCoachEmptyStateViewed(),
+}));
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -10,6 +16,10 @@ jest.mock("react-i18next", () => ({
 }));
 
 describe("EmptyDayView", () => {
+  beforeEach(() => {
+    mockTrackCoachEmptyStateViewed.mockResolvedValue(undefined);
+  });
+
   it("renders today state and triggers add meal action", () => {
     const onAddMeal = jest.fn();
     const { getByText, queryByText } = renderWithTheme(
@@ -18,6 +28,8 @@ describe("EmptyDayView", () => {
 
     expect(getByText("translated:emptyDay.title")).toBeTruthy();
     expect(getByText("translated:emptyDay.subtitle_today")).toBeTruthy();
+    expect(getByText("translated:emptyDay.coachTitle")).toBeTruthy();
+    expect(getByText("translated:emptyDay.coachHint_today")).toBeTruthy();
     expect(getByText("translated:emptyDay.addMeal")).toBeTruthy();
     expect(queryByText("translated:emptyDay.openHistory")).toBeNull();
 
@@ -32,6 +44,7 @@ describe("EmptyDayView", () => {
     );
 
     expect(getByText("translated:emptyDay.title")).toBeTruthy();
+    expect(getByText("translated:emptyDay.coachHint_past")).toBeTruthy();
     expect(getByText("translated:emptyDay.openHistory")).toBeTruthy();
     expect(queryByText("translated:emptyDay.addMeal")).toBeNull();
 
@@ -61,5 +74,26 @@ describe("EmptyDayView", () => {
     expect(getByText("translated:emptyDay.subtitle_offline_past")).toBeTruthy();
     fireEvent.press(getByText("translated:emptyDay.openHistory"));
     expect(onOpenHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses insufficient-data coaching copy when the coach response says evidence is weak", () => {
+    const { getByText } = renderWithTheme(
+      <EmptyDayView
+        isToday
+        coachEmptyReason="insufficient_data"
+        onAddMeal={() => undefined}
+      />,
+    );
+
+    expect(getByText("translated:emptyDay.coachHint_insufficient_today")).toBeTruthy();
+    expect(mockTrackCoachEmptyStateViewed).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not emit empty-state telemetry when there is no coach empty reason", () => {
+    renderWithTheme(
+      <EmptyDayView isToday onAddMeal={() => undefined} />,
+    );
+
+    expect(mockTrackCoachEmptyStateViewed).not.toHaveBeenCalled();
   });
 });

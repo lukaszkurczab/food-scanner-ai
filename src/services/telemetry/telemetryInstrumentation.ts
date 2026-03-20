@@ -1,4 +1,5 @@
 import type { Meal } from "@/types/meal";
+import type { CoachActionType, CoachEmptyReason, CoachInsightType } from "@/services/coach/coachTypes";
 import type { TelemetryProps } from "@/services/telemetry/telemetryTypes";
 import { track } from "@/services/telemetry/telemetryClient";
 
@@ -199,4 +200,44 @@ export function trackNotificationOpened(
   input: NotificationTelemetryInput,
 ): Promise<void> {
   return track("notification_opened", buildNotificationProps(input));
+}
+
+export function trackCoachCardViewed(input: {
+  insightType: CoachInsightType;
+  actionType: CoachActionType;
+  isPositive: boolean;
+}): Promise<void> {
+  return track("coach_card_viewed", {
+    insightType: input.insightType,
+    actionType: input.actionType,
+    isPositive: input.isPositive,
+  });
+}
+
+export function trackCoachCardExpanded(input: {
+  insightType: CoachInsightType;
+}): Promise<void> {
+  return track("coach_card_expanded", {
+    insightType: input.insightType,
+  });
+}
+
+export function trackCoachCardCtaClicked(input: {
+  insightType: CoachInsightType;
+  actionType: CoachActionType;
+  targetScreen: "MealAddMethod" | "Chat" | "HistoryList";
+}): Promise<void> {
+  return track("coach_card_cta_clicked", {
+    insightType: input.insightType,
+    actionType: input.actionType,
+    targetScreen: input.targetScreen,
+  });
+}
+
+export function trackCoachEmptyStateViewed(input: {
+  emptyReason: CoachEmptyReason;
+}): Promise<void> {
+  return track("coach_empty_state_viewed", {
+    emptyReason: input.emptyReason,
+  });
 }

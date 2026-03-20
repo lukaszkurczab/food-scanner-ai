@@ -14,13 +14,16 @@ import {
   jest,
 } from "@jest/globals";
 import HomeScreen from "@/feature/Home/screens/HomeScreen";
+import type { CoachResponse } from "@/services/coach/coachTypes";
 import { createFallbackNutritionState } from "@/services/nutritionState/nutritionStateService";
+import { createFallbackCoachResponse } from "@/services/coach/coachService";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 const mockReact = React;
 
 const mockUseMeals = jest.fn();
 const mockUseNutritionState = jest.fn();
+const mockUseCoach = jest.fn();
 const mockUseUserContext = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockSubscribeStreak = jest.fn();
@@ -36,6 +39,11 @@ jest.mock("@/hooks/useMeals", () => ({
 jest.mock("@/hooks/useNutritionState", () => ({
   useNutritionState: (params: { uid: string | null | undefined; dayKey?: string | null }) =>
     mockUseNutritionState(params),
+}));
+
+jest.mock("@/hooks/useCoach", () => ({
+  useCoach: (params: { uid: string | null | undefined; dayKey?: string | null }) =>
+    mockUseCoach(params),
 }));
 
 jest.mock("@contexts/UserContext", () => ({
@@ -126,8 +134,8 @@ jest.mock("../components/WeeklyProgressGraph", () => ({
 
 jest.mock("../components/EmptyDayView", () => ({
   __esModule: true,
-  default: () =>
-    mockReact.createElement(mockText, null, "empty-day"),
+  default: ({ coachEmptyReason }: { coachEmptyReason?: string | null }) =>
+    mockReact.createElement(mockText, null, `empty-day:${coachEmptyReason ?? "none"}`),
 }));
 
 jest.mock("../components/MacroTargetsRow", () => ({
@@ -142,6 +150,29 @@ jest.mock("../components/MacroTargetsRow", () => ({
       mockText,
       null,
       `macro-targets:${macroTargets.proteinGrams}/${macroTargets.fatGrams}/${macroTargets.carbsGrams};consumed:${consumed.protein}/${consumed.fat}/${consumed.carbs}`,
+    ),
+}));
+
+jest.mock("../components/CoachInsightCard", () => ({
+  __esModule: true,
+  default: ({
+    insight,
+    onPressCta,
+  }: {
+    insight: { type: string };
+    onPressCta?: () => void;
+  }) =>
+    mockReact.createElement(
+      mockView,
+      null,
+      mockReact.createElement(mockText, null, `coach-card:${insight.type}`),
+      onPressCta
+        ? mockReact.createElement(
+            mockPressable,
+            { onPress: onPressCta },
+            mockReact.createElement(mockText, null, "coach-cta"),
+          )
+        : null,
     ),
 }));
 
@@ -161,6 +192,30 @@ function createMeal() {
     timestamp: new Date("2026-03-18T10:00:00.000Z").getTime(),
     totals: { kcal: 500, protein: 25, fat: 15, carbs: 45 },
     ingredients: [],
+  };
+}
+
+function createCoachResponse(overrides?: Partial<CoachResponse>): CoachResponse {
+  const coach = createFallbackCoachResponse("2026-03-18");
+  coach.meta.available = true;
+  coach.topInsight = {
+    id: "2026-03-18:under_logging",
+    type: "under_logging",
+    priority: 100,
+    title: "Logging looks too light to coach well",
+    body: "Log your next meal so today is easier to interpret and adjust.",
+    actionLabel: "Log next meal",
+    actionType: "log_next_meal",
+    reasonCodes: ["valid_logging_days_7_low"],
+    source: "rules",
+    validUntil: "2026-03-18T23:59:59Z",
+    confidence: 0.92,
+    isPositive: false,
+  };
+  coach.insights = coach.topInsight ? [coach.topInsight] : [];
+  return {
+    ...coach,
+    ...overrides,
   };
 }
 
@@ -197,6 +252,15 @@ describe("HomeScreen", () => {
       loading: false,
       enabled: false,
       source: "disabled",
+      isStale: true,
+      error: null,
+      refresh: jest.fn(),
+    });
+    mockUseCoach.mockReturnValue({
+      coach: createFallbackCoachResponse("2026-03-18"),
+      loading: false,
+      enabled: true,
+      source: "fallback",
       isStale: true,
       error: null,
       refresh: jest.fn(),
@@ -250,6 +314,45 @@ describe("HomeScreen", () => {
     expect(getByText("400 kcal left • 75% complete • Under logging")).toBeTruthy();
   });
 
+  it("renders coach insight card for a day with data when top insight is available", async () => {
+    const remoteState = createFallbackNutritionState("2026-03-18");
+    remoteState.targets.kcal = 2100;
+    remoteState.consumed.kcal = 1600;
+    remoteState.remaining.kcal = 500;
+    remoteState.quality.dataCompletenessScore = 0.75;
+
+    mockUseNutritionState.mockReturnValue({
+      state: remoteState,
+      loading: false,
+      enabled: true,
+      source: "remote",
+      isStale: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+    mockUseCoach.mockReturnValue({
+      coach: createCoachResponse(),
+      loading: false,
+      enabled: true,
+      source: "remote",
+      isStale: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const navigation = createNavigation();
+    const { getByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText("coach-card:under_logging")).toBeTruthy();
+    });
+
+    fireEvent.press(getByText("coach-cta"));
+    expect(navigation.navigate).toHaveBeenCalledWith("MealAddMethod");
+  });
+
   it("falls back to legacy meal totals when nutrition state is disabled", async () => {
     const navigation = createNavigation();
     const { getByText, queryByTestId } = renderWithTheme(
@@ -263,6 +366,41 @@ describe("HomeScreen", () => {
     expect(getByText("macro-targets:125/65/225;consumed:25/15/45")).toBeTruthy();
     expect(getByText("meals:1")).toBeTruthy();
     expect(queryByTestId("home-nutrition-summary")).toBeNull();
+  });
+
+  it("does not render a separate coach card on an empty day and passes empty reason into the empty state", async () => {
+    mockUseMeals.mockReturnValue({
+      meals: [],
+      getMeals: jest.fn(),
+    });
+    mockUseCoach.mockReturnValue({
+      coach: createCoachResponse({
+        topInsight: null,
+        insights: [],
+        meta: {
+          available: true,
+          emptyReason: "no_data",
+          isDegraded: false,
+        },
+      }),
+      loading: false,
+      enabled: true,
+      source: "remote",
+      isStale: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const navigation = createNavigation();
+    const { getByText, queryByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText("empty-day:no_data")).toBeTruthy();
+    });
+
+    expect(queryByText("coach-card:under_logging")).toBeNull();
   });
 
   it("renders stale nutrition state explicitly when cached state is available", async () => {
@@ -306,12 +444,20 @@ describe("HomeScreen", () => {
         uid: "user-1",
         dayKey: "2026-03-18",
       });
+      expect(mockUseCoach).toHaveBeenCalledWith({
+        uid: "user-1",
+        dayKey: "2026-03-18",
+      });
     });
 
     fireEvent.press(getByText("pick-2026-03-17"));
 
     await waitFor(() => {
       expect(mockUseNutritionState).toHaveBeenLastCalledWith({
+        uid: "user-1",
+        dayKey: "2026-03-17",
+      });
+      expect(mockUseCoach).toHaveBeenLastCalledWith({
         uid: "user-1",
         dayKey: "2026-03-17",
       });

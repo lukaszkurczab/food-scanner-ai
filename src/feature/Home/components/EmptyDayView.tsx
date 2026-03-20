@@ -1,15 +1,18 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { SecondaryButton } from "@/components/SecondaryButton";
 import { useTranslation } from "react-i18next";
+import type { CoachEmptyReason } from "@/services/coach/coachTypes";
+import { trackCoachEmptyStateViewed } from "@/services/telemetry/telemetryInstrumentation";
 
 type Props = {
   isToday: boolean;
   isOffline?: boolean;
   onAddMeal?: () => void;
   onOpenHistory?: () => void;
+  coachEmptyReason?: CoachEmptyReason | null;
 };
 
 export default function EmptyDayView({
@@ -17,10 +20,34 @@ export default function EmptyDayView({
   isOffline = false,
   onAddMeal,
   onOpenHistory,
+  coachEmptyReason = null,
 }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("home");
+
+  const coachHintKey = useMemo(() => {
+    if (coachEmptyReason === "insufficient_data") {
+      return isToday
+        ? "emptyDay.coachHint_insufficient_today"
+        : "emptyDay.coachHint_insufficient_past";
+    }
+
+    return isToday
+      ? "emptyDay.coachHint_today"
+      : "emptyDay.coachHint_past";
+  }, [coachEmptyReason, isToday]);
+
+  useEffect(() => {
+    if (!coachEmptyReason) {
+      return;
+    }
+
+    void trackCoachEmptyStateViewed({
+      emptyReason: coachEmptyReason,
+    }).catch(() => undefined);
+  }, [coachEmptyReason]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
@@ -37,25 +64,33 @@ export default function EmptyDayView({
         </Text>
       )}
 
-      {isToday ? (
-        <>
-          {onAddMeal ? (
-            <PrimaryButton
-              label={t("emptyDay.addMeal")}
-              onPress={onAddMeal}
-            />
-          ) : null}
-        </>
-      ) : (
-        <>
-          {onOpenHistory ? (
-            <SecondaryButton
-              label={t("emptyDay.openHistory")}
-              onPress={onOpenHistory}
-            />
-          ) : null}
-        </>
-      )}
+      <View style={styles.coachBox}>
+        <Text style={styles.coachEyebrow}>
+          {t("emptyDay.coachTitle", "Coaching note")}
+        </Text>
+        <Text style={styles.coachText}>
+          {t(
+            coachHintKey,
+            isToday
+              ? "Start with one complete meal log so coaching has real data to work with."
+              : "Use history for context, then keep the next meal log complete so trends stay readable.",
+          )}
+        </Text>
+      </View>
+
+      {isToday && onAddMeal ? (
+        <PrimaryButton
+          label={t("emptyDay.addMeal")}
+          onPress={onAddMeal}
+        />
+      ) : null}
+
+      {!isToday && onOpenHistory ? (
+        <SecondaryButton
+          label={t("emptyDay.openHistory")}
+          onPress={onOpenHistory}
+        />
+      ) : null}
     </View>
   );
 }
@@ -82,5 +117,27 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.textSecondary,
       fontSize: theme.typography.size.md,
       textAlign: "center",
+    },
+    coachBox: {
+      alignSelf: "stretch",
+      backgroundColor: theme.background,
+      borderRadius: theme.rounded.md,
+      padding: theme.spacing.md,
+      gap: theme.spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    coachEyebrow: {
+      color: theme.accentSecondary,
+      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.bold,
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+    },
+    coachText: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.sm,
+      lineHeight: 20,
+      textAlign: "left",
     },
   });

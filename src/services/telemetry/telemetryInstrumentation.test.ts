@@ -4,6 +4,10 @@ import {
   normalizeTelemetryScreenName,
   trackAiChatResult,
   trackAiChatSend,
+  trackCoachCardCtaClicked,
+  trackCoachCardExpanded,
+  trackCoachCardViewed,
+  trackCoachEmptyStateViewed,
   trackMealAddMethodSelected,
   trackMealAdded,
   trackMealDeleted,
@@ -133,6 +137,42 @@ describe("telemetryInstrumentation", () => {
       origin: "system_notifications",
       openedFromBackground: true,
       actionIdentifier: "default",
+    });
+  });
+
+  it("maps coach insight telemetry events to the backend allowlist", async () => {
+    await trackCoachCardViewed({
+      insightType: "under_logging",
+      actionType: "log_next_meal",
+      isPositive: false,
+    });
+    await trackCoachCardExpanded({
+      insightType: "under_logging",
+    });
+    await trackCoachCardCtaClicked({
+      insightType: "under_logging",
+      actionType: "log_next_meal",
+      targetScreen: "MealAddMethod",
+    });
+    await trackCoachEmptyStateViewed({
+      emptyReason: "no_data",
+    });
+
+    expect(mockTrack).toHaveBeenNthCalledWith(1, "coach_card_viewed", {
+      insightType: "under_logging",
+      actionType: "log_next_meal",
+      isPositive: false,
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(2, "coach_card_expanded", {
+      insightType: "under_logging",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(3, "coach_card_cta_clicked", {
+      insightType: "under_logging",
+      actionType: "log_next_meal",
+      targetScreen: "MealAddMethod",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(4, "coach_empty_state_viewed", {
+      emptyReason: "no_data",
     });
   });
 });

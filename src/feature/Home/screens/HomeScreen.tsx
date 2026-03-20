@@ -16,18 +16,21 @@ import { subscribeStreak } from "@/services/gamification/streakService";
 import { useAuthContext } from "@/context/AuthContext";
 import WeekStrip, { WeekDayItem } from "@/components/WeekStrip";
 import EmptyDayView from "../components/EmptyDayView";
+import CoachInsightCard from "../components/CoachInsightCard";
 import { StreakBadge } from "@components/StreakBadge";
 import { calculateMacroTargets } from "@/utils/calculateMacroTargets";
 import { MacroTargetsRow } from "../components/MacroTargetsRow";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useNutritionState } from "@/hooks/useNutritionState";
+import { useCoach } from "@/hooks/useCoach";
 import type {
   NutritionTargets,
   NutritionCoachPriority,
   NutritionState,
   NutritionTopRisk,
 } from "@/services/nutritionState/nutritionStateTypes";
+import type { CoachActionType } from "@/services/coach/coachTypes";
 import type { MacroTargets } from "@/utils/calculateMacroTargets";
 
 function startEndOfLocalDay(d: Date) {
@@ -190,11 +193,17 @@ export default function HomeScreen({ navigation }: Props) {
     source: nutritionStateSource,
     error: nutritionStateError,
   } = useNutritionState({ uid, dayKey: selectedDayKey });
+  const {
+    coach,
+    enabled: coachEnabled,
+    source: coachSource,
+  } = useCoach({ uid, dayKey: selectedDayKey });
 
   const dayMeals = useMemo(
     () => getMealsForDate(meals, selectedDate),
     [meals, selectedDate],
   );
+  const isEmptyDay = dayMeals.length === 0;
   const hasSurvey = !!userData?.surveyComplited;
   const hasCanonicalNutritionState =
     nutritionStateEnabled &&
@@ -202,6 +211,15 @@ export default function HomeScreen({ navigation }: Props) {
     nutritionStateSource !== "disabled" &&
     nutritionStateSource !== "fallback";
   const shouldUseLegacyStreak = !hasCanonicalNutritionState;
+  const hasCoachPayload =
+    coachEnabled &&
+    coach.dayKey === selectedDayKey &&
+    coachSource !== "disabled" &&
+    coachSource !== "fallback";
+  const topCoachInsight =
+    hasCoachPayload && !isEmptyDay ? coach.topInsight : null;
+  const coachEmptyReason =
+    isEmptyDay && hasCoachPayload ? coach.meta.emptyReason : null;
 
   useEffect(() => {
     if (!uid || !shouldUseLegacyStreak) {
@@ -288,6 +306,34 @@ export default function HomeScreen({ navigation }: Props) {
     return styles.goalStatusWarning;
   }, [hasCanonicalNutritionState, nutritionState.habits.topRisk, nutritionSummary, styles]);
 
+  const handleCoachAction = (actionType: CoachActionType) => {
+    switch (actionType) {
+      case "log_next_meal":
+        navigation.navigate("MealAddMethod");
+        return;
+      case "open_chat":
+        navigation.navigate("Chat");
+        return;
+      case "review_history":
+        navigation.navigate("HistoryList");
+        return;
+      default:
+        return;
+    }
+  };
+
+  const coachCtaTargetScreen = topCoachInsight
+    ? (
+      topCoachInsight.actionType === "log_next_meal"
+        ? "MealAddMethod"
+        : topCoachInsight.actionType === "open_chat"
+          ? "Chat"
+          : topCoachInsight.actionType === "review_history"
+            ? "HistoryList"
+            : null
+    )
+    : null;
+
   return (
     <Layout>
       <View style={[styles.screen, styles.screenGap]}>
@@ -358,7 +404,15 @@ export default function HomeScreen({ navigation }: Props) {
           />
         )}
 
-        {dayMeals.length === 0 ? (
+        {topCoachInsight ? (
+          <CoachInsightCard
+            insight={topCoachInsight}
+            ctaTargetScreen={coachCtaTargetScreen ?? undefined}
+            onPressCta={() => handleCoachAction(topCoachInsight.actionType)}
+          />
+        ) : null}
+
+        {isEmptyDay ? (
           <EmptyDayView
             isToday={isToday}
             onAddMeal={
@@ -368,6 +422,7 @@ export default function HomeScreen({ navigation }: Props) {
             onOpenHistory={
               isToday ? undefined : () => navigation.navigate("HistoryList")
             }
+            coachEmptyReason={coachEmptyReason}
           />
         ) : (
           <TodaysMealsList

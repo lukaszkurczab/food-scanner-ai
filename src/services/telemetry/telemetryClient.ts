@@ -419,7 +419,6 @@ export function __resetTelemetryClientForTests(): void {
   queuedEventIds = new Set<string>();
   retryAttempt = 0;
   nextAllowedFlushAt = 0;
-  idCounter = 0;
   flushIntervalMs = DEFAULT_FLUSH_INTERVAL_MS;
   maxBatchSize = DEFAULT_MAX_BATCH_SIZE;
   retryBaseMs = DEFAULT_RETRY_BASE_MS;
