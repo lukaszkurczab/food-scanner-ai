@@ -9,12 +9,6 @@ const mockGetReminderDecision = jest.fn<
     options?: { dayKey?: string | null },
   ) => Promise<ReminderDecisionResult>
 >();
-const mockRefreshReminderDecision = jest.fn<
-  (
-    uid: string | null | undefined,
-    options?: { dayKey?: string | null },
-  ) => Promise<ReminderDecisionResult>
->();
 
 jest.mock("@/services/reminders/reminderService", () => {
   return {
@@ -23,10 +17,6 @@ jest.mock("@/services/reminders/reminderService", () => {
       uid: string | null | undefined,
       options?: { dayKey?: string | null },
     ) => mockGetReminderDecision(uid, options),
-    refreshReminderDecision: (
-      uid: string | null | undefined,
-      options?: { dayKey?: string | null },
-    ) => mockRefreshReminderDecision(uid, options),
   };
 });
 
@@ -110,29 +100,30 @@ describe("useReminderDecision", () => {
   });
 
   it("supports explicit refresh and replaces the current decision", async () => {
-    mockGetReminderDecision.mockResolvedValue({
-      decision: null,
-      source: "fallback",
-      status: "service_unavailable",
-      enabled: true,
-      error: new Error("backend down"),
-    });
-    mockRefreshReminderDecision.mockResolvedValue({
-      decision: {
-        dayKey: "2026-03-18",
-        computedAt: "2026-03-18T12:05:00Z",
-        decision: "suppress",
-        kind: null,
-        reasonCodes: ["quiet_hours"],
-        scheduledAtUtc: null,
-        confidence: 1,
-        validUntil: "2026-03-18T22:00:00Z",
-      },
-      source: "remote",
-      status: "live_success",
-      enabled: true,
-      error: null,
-    });
+    mockGetReminderDecision
+      .mockResolvedValueOnce({
+        decision: null,
+        source: "fallback",
+        status: "service_unavailable",
+        enabled: true,
+        error: new Error("backend down"),
+      })
+      .mockResolvedValueOnce({
+        decision: {
+          dayKey: "2026-03-18",
+          computedAt: "2026-03-18T12:05:00Z",
+          decision: "suppress",
+          kind: null,
+          reasonCodes: ["quiet_hours"],
+          scheduledAtUtc: null,
+          confidence: 1,
+          validUntil: "2026-03-18T22:00:00Z",
+        },
+        source: "remote",
+        status: "live_success",
+        enabled: true,
+        error: null,
+      });
 
     const { result } = renderHook(() =>
       useReminderDecision({ uid: "user-1", dayKey: "2026-03-18" }),
@@ -149,7 +140,8 @@ describe("useReminderDecision", () => {
       await result.current.refresh();
     });
 
-    expect(mockRefreshReminderDecision).toHaveBeenCalledWith("user-1", {
+    expect(mockGetReminderDecision).toHaveBeenCalledTimes(2);
+    expect(mockGetReminderDecision).toHaveBeenLastCalledWith("user-1", {
       dayKey: "2026-03-18",
     });
     await waitFor(() => {

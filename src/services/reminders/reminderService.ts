@@ -298,10 +298,3 @@ export async function getReminderDecision(
     });
   }
 }
-
-export function refreshReminderDecision(
-  uid: string | null | undefined,
-  options?: { dayKey?: string | null },
-): Promise<ReminderDecisionResult> {
-  return getReminderDecision(uid, options);
-}

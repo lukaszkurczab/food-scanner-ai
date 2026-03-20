@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   getCurrentReminderDecisionDayKey,
   getReminderDecision,
-  refreshReminderDecision,
 } from "@/services/reminders/reminderService";
 import type {
   ReminderDecision,
@@ -85,7 +84,7 @@ export function useReminderDecision({
   }, [fetchEnabled, resolvedDayKey, uid]);
 
   const refresh = useCallback(async () => {
-    const result = await refreshReminderDecision(uid, { dayKey: resolvedDayKey });
+    const result = await getReminderDecision(uid, { dayKey: resolvedDayKey });
     setState({
       decision: result.decision,
       loading: false,
