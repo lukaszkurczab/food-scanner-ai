@@ -17,13 +17,28 @@ jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (
-      _key: string,
+      key: string,
       fallback?: string | { defaultValue?: string },
     ) => {
+      const translations: Record<string, string> = {
+        "coachInsight.defaultEyebrow": "Coach insight",
+        "coachInsight.showWhy": "Why this insight",
+        "coachInsight.hideWhy": "Hide why",
+        "coachInsight.whyTitle": "Why am I seeing this?",
+        "coachInsight.cta.log_next_meal": "Log next meal",
+        "coachInsight.items.under_logging.title": "Logging has been light lately",
+        "coachInsight.items.under_logging.body": "There have been fewer fully logged days recently. Logging your next meal will give you a clearer picture.",
+        "coachInsight.items.under_logging.whyBody": "This insight is based on recent logging consistency and how many recent days had enough meal data to interpret.",
+        "coachInsight.items.stable.title": "No major pattern stands out",
+        "coachInsight.items.stable.body": "There isn’t one clear issue driving today’s view. You can review your history or go deeper in chat.",
+      };
+      if (key in translations) {
+        return translations[key];
+      }
       if (typeof fallback === "string") {
         return fallback;
       }
-      return fallback?.defaultValue ?? _key;
+      return fallback?.defaultValue ?? key;
     },
   }),
 }));
@@ -64,8 +79,9 @@ describe("CoachInsightCard", () => {
     );
 
     expect(getByText("Coach insight")).toBeTruthy();
-    expect(getByText("Logging looks too light to coach well")).toBeTruthy();
-    expect(getByText("Log your next meal so today is easier to interpret and adjust.")).toBeTruthy();
+    expect(getByText("Logging has been light lately")).toBeTruthy();
+    expect(getByText("There have been fewer fully logged days recently. Logging your next meal will give you a clearer picture.")).toBeTruthy();
+    expect(getByText("Log next meal")).toBeTruthy();
 
     fireEvent.press(getByTestId("coach-insight-cta"));
     expect(onPressCta).toHaveBeenCalledTimes(1);
@@ -77,13 +93,12 @@ describe("CoachInsightCard", () => {
       <CoachInsightCard insight={createInsight()} />,
     );
 
-    expect(queryByText("Based on recent logging signals")).toBeNull();
+    expect(queryByText("Why am I seeing this?")).toBeNull();
 
     fireEvent.press(getByText("Why this insight"));
 
-    expect(getByText("Based on recent logging signals")).toBeTruthy();
-    expect(getByText(/There have been too few solid logging days recently\./)).toBeTruthy();
-    expect(getByText(/At least one meal today is missing useful nutrition detail\./)).toBeTruthy();
+    expect(getByText("Why am I seeing this?")).toBeTruthy();
+    expect(getByText("This insight is based on recent logging consistency and how many recent days had enough meal data to interpret.")).toBeTruthy();
     expect(mockTrackCoachCardExpanded).toHaveBeenCalledTimes(1);
   });
 
@@ -99,6 +114,8 @@ describe("CoachInsightCard", () => {
     );
 
     expect(getByText("Coach insight")).toBeTruthy();
+    expect(getByText("No major pattern stands out")).toBeTruthy();
+    expect(getByText("There isn’t one clear issue driving today’s view. You can review your history or go deeper in chat.")).toBeTruthy();
     expect(queryByTestId("coach-insight-cta")).toBeNull();
   });
 

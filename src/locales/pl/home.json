@@ -18,11 +18,19 @@
     "subtitle_today": "Dodaj pierwszy posiłek, aby rozpocząć zapis dnia.",
     "subtitle_offline_today": "Jesteś offline. Lokalne dane dla dzisiaj mogą być niepełne.",
     "subtitle_offline_past": "Jesteś offline. Połącz się z internetem, aby pobrać posiłki z tego dnia.",
-    "coachTitle": "Wskazówka coachingowa",
-    "coachHint_today": "Zacznij od jednego pełnego wpisu posiłku, aby coaching miał na czym pracować.",
-    "coachHint_past": "Sprawdź historię, a kolejny posiłek wpisz dokładniej, żeby trend był czytelny.",
-    "coachHint_insufficient_today": "Na razie jest za mało świeżych sygnałów. Jeden porządny wpis posiłku dzisiaj wystarczy, by odbudować wzorzec.",
-    "coachHint_insufficient_past": "Na razie jest za mało świeżych sygnałów. Sprawdź historię, a kolejny posiłek wpisz dokładnie.",
+    "coachAware": {
+      "whyTitle": "Dlaczego to widzę?",
+      "no_data": {
+        "title": "Na dziś nie ma jeszcze wpisów",
+        "body": "Zacznij od kolejnego posiłku, a tutaj pojawi się wyraźniejszy obraz dnia.",
+        "whyBody": "Na dziś nie ma jeszcze wystarczającej liczby wpisów, więc nie ma osobnego insightu do pokazania."
+      },
+      "insufficient_data": {
+        "title": "Na razie sygnał jest za słaby",
+        "body": "Ostatnich danych jest jeszcze zbyt mało, żeby pokazać wiarygodny insight. Pomoże kilka pełniejszych wpisów.",
+        "whyBody": "Są już pewne ostatnie dane, ale nadal za mało regularnych i pełnych wpisów, żeby wygenerować wiarygodny insight."
+      }
+    },
     "addMeal": "Dodaj posiłek",
     "openHistory": "Przejdź do historii"
   },
@@ -31,19 +39,43 @@
     "positiveEyebrow": "Momentum",
     "showWhy": "Dlaczego to widzę?",
     "hideWhy": "Ukryj wyjaśnienie",
-    "whyTitle": "To wynika z Twojego ostatniego sposobu logowania",
-    "reasons": {
-      "valid_logging_days_7_low": "Ostatnio było zbyt mało solidnie zalogowanych dni.",
-      "logging_consistency_28_low": "Regularność logowania z ostatnich tygodni wciąż jest niska.",
-      "missing_nutrition_meals_today": "Przynajmniej jeden dzisiejszy posiłek nie ma wystarczających danych żywieniowych.",
-      "unknown_meal_details_14_high": "Ostatnie posiłki były zbyt ogólne, żeby czytać je z pewnością.",
-      "protein_hit_ratio_14_low": "Cel białka jest trafiany zbyt rzadko w zalogowanych dniach.",
-      "kcal_under_target_ratio_14_high": "Ostatnio za często kończysz dzień poniżej celu kalorycznego.",
-      "meal_coverage_14_low": "Jest za mało kompletnych dni posiłków, by dobrze odczytać wzorzec.",
-      "streak_positive": "Masz ostatnio momentum, które warto utrzymać.",
-      "consistency_improving": "Regularność logowania idzie w dobrym kierunku.",
-      "insufficient_data": "Jest jeszcze za mało danych, aby zbudować mocniejszy insight.",
-      "generic": "Ten insight wynika z Twojego ostatniego wzorca logowania."
+    "whyTitle": "Dlaczego to widzę?",
+    "cta": {
+      "log_next_meal": "Dodaj kolejny posiłek",
+      "open_chat": "Otwórz chat",
+      "review_history": "Przejrzyj historię"
+    },
+    "items": {
+      "under_logging": {
+        "title": "Ostatnio logujesz mniej",
+        "body": "W ostatnich dniach było mniej pełnych wpisów. Dodanie kolejnego posiłku da wyraźniejszy obraz.",
+        "whyBody": "Ten insight opiera się na recent consistency logowania i na tym, ile ostatnich dni miało dość danych do sensownej interpretacji."
+      },
+      "high_unknown_meal_details": {
+        "title": "Część posiłków jest niepełna",
+        "body": "Kilka ostatnich posiłków nie ma pełnych danych odżywczych. Dokładniejsze wpisy poprawią jakość insightów.",
+        "whyBody": "Ten insight opiera się na ostatnich posiłkach, w których brakowało danych odżywczych albo były one niepełne."
+      },
+      "low_protein_consistency": {
+        "title": "Białko ostatnio wypada słabiej",
+        "body": "W ostatnich dniach częściej brakowało domknięcia celu białka. Warto przyjrzeć się kilku kolejnym posiłkom.",
+        "whyBody": "Ten insight opiera się na ostatnim pokryciu celu białka w zalogowanych posiłkach."
+      },
+      "calorie_under_target": {
+        "title": "Częściej kończysz poniżej celu",
+        "body": "W ostatnich dniach częściej kończyłeś dzień poniżej celu kalorii. Warto sprawdzić, czy to było zamierzone.",
+        "whyBody": "Ten insight opiera się na tym, jak często ostatnie zalogowane dni kończyły się poniżej celu kalorii."
+      },
+      "positive_momentum": {
+        "title": "Logowanie wygląda stabilniej",
+        "body": "Ostatnie wpisy są bardziej regularne i pełniejsze. Z czasem daje to wyraźniejszy obraz.",
+        "whyBody": "Ten insight opiera się na poprawie regularności logowania i kompletności posiłków w ostatnich dniach."
+      },
+      "stable": {
+        "title": "Nie widać jednego głównego wzorca",
+        "body": "Na ten moment nie widać jednego wyraźnego problemu. Możesz przejrzeć historię albo wejść głębiej w chat.",
+        "whyBody": "Ten insight pojawia się, gdy ostatnie dane nie pokazują jednego dominującego problemu ani mocnego pozytywnego sygnału."
+      }
     }
   }
 }
