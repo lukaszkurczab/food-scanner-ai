@@ -73,14 +73,41 @@ describe("reminderService", () => {
 
     const result = await service.getReminderDecision("user-1", { dayKey: "2026-03-18" });
 
+    const tzOffsetMin = service.getDeviceTzOffsetMin();
     expect(mockGet).toHaveBeenCalledWith(
-      "/api/v2/users/me/reminders/decision?day=2026-03-18",
+      `/api/v2/users/me/reminders/decision?day=2026-03-18&tzOffsetMin=${tzOffsetMin}`,
       { timeout: 15_000 },
     );
     expect(result.enabled).toBe(true);
     expect(result.source).toBe("remote");
     expect(result.status).toBe("live_success");
     expect(result.decision?.kind).toBe("log_next_meal");
+  });
+
+  it("includes tzOffsetMin in the endpoint URL derived from device timezone", async () => {
+    mockGet.mockResolvedValue(createHealthyPayload());
+
+    const service =
+      jest.requireActual("@/services/reminders/reminderService") as typeof import("@/services/reminders/reminderService");
+
+    await service.getReminderDecision("user-1", { dayKey: "2026-03-18" });
+
+    const calledUrl = mockGet.mock.calls[0]?.[0] as string;
+    expect(calledUrl).toContain("&tzOffsetMin=");
+    const match = calledUrl.match(/tzOffsetMin=(-?\d+)/);
+    expect(match).not.toBeNull();
+    const offset = Number(match![1]);
+    expect(offset).toBeGreaterThanOrEqual(-840);
+    expect(offset).toBeLessThanOrEqual(840);
+  });
+
+  it("getDeviceTzOffsetMin returns negated Date.getTimezoneOffset", () => {
+    const service =
+      jest.requireActual("@/services/reminders/reminderService") as typeof import("@/services/reminders/reminderService");
+
+    const result = service.getDeviceTzOffsetMin();
+    const expected = -new Date().getTimezoneOffset();
+    expect(result).toBe(expected);
   });
 
   it("returns a disabled fallback and skips the endpoint when the flag is off", async () => {

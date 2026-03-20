@@ -50,8 +50,14 @@ function normalizeDayKey(dayKey?: string | null): string {
   return normalized || getCurrentReminderDecisionDayKey();
 }
 
-function buildEndpoint(dayKey: string): string {
-  return `${REMINDER_ENDPOINT}?day=${encodeURIComponent(dayKey)}`;
+export function getDeviceTzOffsetMin(): number {
+  // Date.getTimezoneOffset() returns UTC-local in minutes (e.g. -60 for UTC+1).
+  // Backend expects local-UTC (positive east of UTC), so we negate.
+  return -new Date().getTimezoneOffset();
+}
+
+function buildEndpoint(dayKey: string, tzOffsetMin: number): string {
+  return `${REMINDER_ENDPOINT}?day=${encodeURIComponent(dayKey)}&tzOffsetMin=${tzOffsetMin}`;
 }
 
 function isReminderDecisionType(value: unknown): value is ReminderDecisionType {
@@ -253,8 +259,10 @@ export async function getReminderDecision(
     });
   }
 
+  const tzOffsetMin = getDeviceTzOffsetMin();
+
   try {
-    const payload = await get<unknown>(buildEndpoint(dayKey), { timeout: 15_000 });
+    const payload = await get<unknown>(buildEndpoint(dayKey, tzOffsetMin), { timeout: 15_000 });
     const normalized = normalizeReminderDecision(payload);
     if (!normalized) {
       emitSmartReminderDecisionFailureTelemetry("invalid_payload");
