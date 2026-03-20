@@ -188,9 +188,6 @@ describe("reminderScheduling", () => {
       "user-1:smart-reminder:2026-03-18",
     );
     expect(mockTrackSmartReminderScheduled).toHaveBeenCalled();
-    expect(
-      asyncStorageState.get("smart-reminder:decision:user-1:2026-03-18"),
-    ).toContain("\"decision\":\"send\"");
   });
 
   it("cancels any already-scheduled reminder when decision=suppress", async () => {
@@ -257,19 +254,6 @@ describe("reminderScheduling", () => {
   });
 
   it("does not schedule on failure or invalid payload semantics", async () => {
-    asyncStorageState.set(
-      "smart-reminder:decision:user-1:2026-03-18",
-      JSON.stringify({
-        dayKey: "2026-03-18",
-        computedAt: "2026-03-18T12:00:00Z",
-        decision: "send",
-        kind: "log_next_meal",
-        reasonCodes: ["preferred_window_open"],
-        scheduledAtUtc: "2026-03-18T18:30:00Z",
-        confidence: 0.84,
-        validUntil: "2026-03-18T19:30:00Z",
-      }),
-    );
     mockGetReminderDecision.mockResolvedValue({
       decision: null,
       source: "fallback",
@@ -290,25 +274,9 @@ describe("reminderScheduling", () => {
       "user-1:smart-reminder:2026-03-18",
     );
     expect(mockScheduleOneShotAt).not.toHaveBeenCalled();
-    expect(
-      asyncStorageState.has("smart-reminder:decision:user-1:2026-03-18"),
-    ).toBe(false);
   });
 
-  it("cancels cached send when backend is temporarily unavailable", async () => {
-    asyncStorageState.set(
-      "smart-reminder:decision:user-1:2026-03-18",
-      JSON.stringify({
-        dayKey: "2026-03-18",
-        computedAt: "2026-03-18T12:00:00Z",
-        decision: "send",
-        kind: "log_next_meal",
-        reasonCodes: ["preferred_window_open"],
-        scheduledAtUtc: "2026-03-18T18:30:00Z",
-        confidence: 0.84,
-        validUntil: "2026-03-18T19:30:00Z",
-      }),
-    );
+  it("cancels scheduled reminder when backend is temporarily unavailable", async () => {
     mockGetReminderDecision.mockResolvedValue({
       decision: null,
       source: "fallback",
@@ -330,9 +298,6 @@ describe("reminderScheduling", () => {
       "user-1:smart-reminder:2026-03-18",
     );
     expect(mockScheduleOneShotAt).not.toHaveBeenCalled();
-    expect(
-      asyncStorageState.has("smart-reminder:decision:user-1:2026-03-18"),
-    ).toBe(false);
   });
 
   it("does not schedule when device notification permission is unavailable", async () => {

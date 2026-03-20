@@ -29,13 +29,11 @@ export async function reconcileAll(uid: string) {
     let smartOwnsReminderTypes = false;
 
     if (smartRemindersEnabled) {
+      smartOwnsReminderTypes = true;
       try {
-        const reminderSchedulingResult = await reconcileReminderScheduling(uid);
-        smartOwnsReminderTypes =
-          reminderSchedulingResult.result.status === "live_success" &&
-          reminderSchedulingResult.result.decision !== null;
+        await reconcileReminderScheduling(uid);
       } catch (error) {
-        log.warn("smart reminder reconcile failed before legacy ownership decision", {
+        log.warn("smart reminder reconcile failed, legacy meal/day scheduling remains suppressed", {
           uid,
           error,
         });

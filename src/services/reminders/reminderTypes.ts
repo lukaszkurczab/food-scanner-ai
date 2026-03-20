@@ -18,6 +18,7 @@ export const REMINDER_REASON_CODES = [
   "already_logged_recently",
   "quiet_hours",
   "reminders_disabled",
+  "frequency_cap_reached",
   "insufficient_signal",
   "day_already_complete",
 ] as const;
@@ -37,6 +38,7 @@ export const SUPPRESS_REMINDER_REASON_CODES = [
   "already_logged_recently",
   "quiet_hours",
   "reminders_disabled",
+  "frequency_cap_reached",
 ] as const;
 
 export const NOOP_REMINDER_REASON_CODES = [
