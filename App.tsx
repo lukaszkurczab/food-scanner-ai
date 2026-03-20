@@ -19,6 +19,7 @@ import { AiCreditsProvider } from "@/context/AiCreditsContext";
 import { View, ActivityIndicator } from "react-native";
 import { Linking } from "react-native";
 import { useEffect, useRef } from "react";
+import { useAuthContext } from "@/context/AuthContext";
 import { useAppFonts } from "@hooks/useAppFonts";
 import { ToastBridge } from "@/components";
 import { isE2EModeEnabled } from "@/services/e2e/config";
@@ -36,10 +37,16 @@ import {
   stopTelemetryLifecycle,
 } from "@/services/telemetry/telemetryLifecycle";
 import { createNavigationTelemetryTracker } from "@/services/telemetry/navigationTelemetry";
+import {
+  initReminderRuntime,
+  setReminderRuntimeUid,
+  stopReminderRuntime,
+} from "@/services/reminders/reminderRuntime";
 
 function Root() {
   const fontsLoaded = useAppFonts();
   const navigationTelemetryHandlerRef = useRef<(() => void) | null>(null);
+  const { uid } = useAuthContext();
 
   if (!navigationTelemetryHandlerRef.current) {
     navigationTelemetryHandlerRef.current = createNavigationTelemetryTracker({
@@ -52,14 +59,20 @@ function Root() {
       await initTelemetryClient();
       initNotificationTelemetry();
       await initTelemetryLifecycle();
+      await initReminderRuntime();
     })();
 
     return () => {
+      stopReminderRuntime();
       stopNotificationTelemetry();
       stopTelemetryLifecycle();
       stopTelemetryClient();
     };
   }, []);
+
+  useEffect(() => {
+    void setReminderRuntimeUid(uid);
+  }, [uid]);
 
   useEffect(() => {
     if (!isE2EModeEnabled()) return;

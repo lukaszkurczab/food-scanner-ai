@@ -23,6 +23,9 @@ const mockResetOfflineStorage = jest.fn<() => void>();
 const mockCleanupUserOfflineAssets = jest.fn<
   (uid: string | null) => Promise<void>
 >();
+const mockCancelAllReminderScheduling = jest.fn<
+  (uid: string) => Promise<void>
+>();
 
 jest.mock("@react-native-firebase/app", () => ({
   getApp: jest.fn(),
@@ -60,6 +63,11 @@ jest.mock("@/services/offline/fileCleanup", () => ({
     mockCleanupUserOfflineAssets(uid),
 }));
 
+jest.mock("@/services/reminders/reminderScheduling", () => ({
+  cancelAllReminderScheduling: (uid: string) =>
+    mockCancelAllReminderScheduling(uid),
+}));
+
 jest.mock("@/services/user/usernameService", () => ({
   claimUsername: (...args: unknown[]) => mockClaimUsername(...args),
 }));
@@ -94,6 +102,8 @@ describe("authService", () => {
     mockResetOfflineStorage.mockReset();
     mockCleanupUserOfflineAssets.mockReset();
     mockCleanupUserOfflineAssets.mockResolvedValue(undefined);
+    mockCancelAllReminderScheduling.mockReset();
+    mockCancelAllReminderScheduling.mockResolvedValue(undefined);
     mockCreateUserWithEmailAndPassword.mockResolvedValue({
       user: {
         uid: "user-1",
@@ -159,6 +169,7 @@ describe("authService", () => {
 
     expect(mockSignOut).toHaveBeenCalled();
     expect(mockStopSyncLoop).toHaveBeenCalled();
+    expect(mockCancelAllReminderScheduling).toHaveBeenCalledWith("user-1");
     expect(mockResetOfflineStorage).toHaveBeenCalled();
     expect(mockCleanupUserOfflineAssets).toHaveBeenCalledWith("user-1");
     expect(mockMultiRemove).toHaveBeenCalledWith([

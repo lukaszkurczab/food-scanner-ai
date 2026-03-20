@@ -118,6 +118,7 @@ Description:
 - `EXPO_PUBLIC_ENABLE_BACKEND_LOGGING` - enables forwarding selected client errors to the backend logging endpoint.
 - `EXPO_PUBLIC_ENABLE_TELEMETRY` - enables mobile telemetry batching and P0 event emission.  **Also requires backend `TELEMETRY_ENABLED=true`.**
 - `EXPO_PUBLIC_ENABLE_V2_STATE` - enables the mobile consumer for `/api/v2/users/me/state` with local fallback caching.  **Also requires backend `STATE_ENABLED=true`.**
+- `EXPO_PUBLIC_ENABLE_SMART_REMINDERS` - enables the mobile consumer for `GET /api/v2/users/me/reminders/decision?day=YYYY-MM-DD` and Smart Reminders scheduling runtime.  **Also requires backend `SMART_REMINDERS_ENABLED=true`.**
 - `RC_IOS_API_KEY` - RevenueCat iOS API key (required for iOS subscriptions).
 - `RC_ANDROID_API_KEY` - RevenueCat Android API key (required for Android subscriptions).
 - `TERMS_URL` - terms and conditions URL (used in paywall/subscription screens).
@@ -135,6 +136,7 @@ These flags control v2 foundation surfaces introduced in the Foundation Sprint. 
 |-------------|-------------|-----------------|
 | `EXPO_PUBLIC_ENABLE_TELEMETRY` | `TELEMETRY_ENABLED` | P0 event emission → v2 batch ingest |
 | `EXPO_PUBLIC_ENABLE_V2_STATE` | `STATE_ENABLED` | NutritionState v2 consumer on Home screen (targets, consumed, remaining, quality, habits, streak, AI summary) |
+| `EXPO_PUBLIC_ENABLE_SMART_REMINDERS` | `SMART_REMINDERS_ENABLED` | Smart Reminders v1 decision fetch + mobile scheduling behavior |
 
 To enable for QA: set both the mobile flag (`true`) and the backend flag (`true`), then rebuild the app (Expo requires rebuild for `EXPO_PUBLIC_*` changes).
 
@@ -143,6 +145,8 @@ To enable for QA: set both the mobile flag (`true`) and the backend flag (`true`
 The mobile app uses v2 endpoints selectively:
 - **Telemetry**: When `EXPO_PUBLIC_ENABLE_TELEMETRY=true`, the telemetry client batches events and sends them to `POST /api/v2/telemetry/events/batch`.
 - **NutritionState**: When `EXPO_PUBLIC_ENABLE_V2_STATE=true`, the Home screen fetches from `GET /api/v2/users/me/state?day=YYYY-MM-DD` with local fallback caching.  If the backend is unreachable or the flag is disabled, the consumer falls back to locally-computed state.
+- **Smart Reminders**: When `EXPO_PUBLIC_ENABLE_SMART_REMINDERS=true`, the app fetches `GET /api/v2/users/me/reminders/decision?day=YYYY-MM-DD`, schedules only `decision="send"`, and cancels on `suppress`, `noop`, invalid payload, or failure. Mobile schedules from canonical backend `scheduledAtUtc`, not reconstructed local clock fields. Device notification permission stays a mobile execution concern, not part of the backend reminder decision contract.
+- **Smart Reminders scope**: Smart Reminders v1 currently depend on NutritionState, habit signals already surfaced through state, existing reminder preferences, and current-time evaluation context. Coach Insights v1 remain a separate surface and are not a runtime input to reminder decisions in v1.
 
 All other features (meals, AI chat, photo analysis, subscriptions) continue to use v1 endpoints.
 
@@ -195,3 +199,5 @@ npm run e2e:offline-error
 
 - [Coach Insights v1 Semantics](./docs/coach-insights-v1.md) — mobile contract handling, empty-state modes, telemetry rules
 - [Coach Insights v1 Rollout](./docs/coach-insights-v1-rollout.md) — preconditions, verification, rollback behavior
+- Smart Reminders v1 Semantics — see backend companion docs in `food-scanner-ai-backend/docs/smart-reminders-v1.md`
+- Smart Reminders v1 Rollout — see backend companion docs in `food-scanner-ai-backend/docs/smart-reminders-v1-rollout.md`

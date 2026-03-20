@@ -9,6 +9,7 @@ import {
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
 import { claimUsername } from "@/services/user/usernameService";
+import { cancelAllReminderScheduling } from "@/services/reminders/reminderScheduling";
 import { createInitialUserProfile } from "@/services/user/userService";
 import { stopSyncLoop } from "@/services/offline/sync.engine";
 import { resetOfflineStorage } from "@/services/offline/db";
@@ -64,6 +65,9 @@ export async function authLogout(): Promise<void> {
 
   await signOut(auth);
   stopSyncLoop();
+  if (uid) {
+    await cancelAllReminderScheduling(uid);
+  }
   try {
     resetOfflineStorage();
   } catch {

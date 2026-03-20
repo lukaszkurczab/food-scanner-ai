@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import {
   normalizeTelemetryScreenName,
+  toSmartReminderConfidenceBucket,
+  toSmartReminderScheduledWindow,
   trackAiChatResult,
   trackAiChatSend,
   trackCoachCardCtaClicked,
@@ -15,6 +17,11 @@ import {
   trackNotificationFired,
   trackNotificationOpened,
   trackNotificationScheduled,
+  trackSmartReminderDecisionFailed,
+  trackSmartReminderNoop,
+  trackSmartReminderScheduled,
+  trackSmartReminderScheduleFailed,
+  trackSmartReminderSuppressed,
   trackScreenView,
   trackSessionEnd,
   trackSessionStart,
@@ -173,6 +180,67 @@ describe("telemetryInstrumentation", () => {
     });
     expect(mockTrack).toHaveBeenNthCalledWith(4, "coach_empty_state_viewed", {
       emptyReason: "no_data",
+    });
+  });
+
+  it("maps smart reminder telemetry events to the backend allowlist", async () => {
+    expect(toSmartReminderConfidenceBucket(0.2)).toBe("low");
+    expect(toSmartReminderConfidenceBucket(0.7)).toBe("medium");
+    expect(toSmartReminderConfidenceBucket(0.9)).toBe("high");
+    expect(toSmartReminderScheduledWindow(360)).toBe("morning");
+    expect(toSmartReminderScheduledWindow(780)).toBe("afternoon");
+    expect(toSmartReminderScheduledWindow(1140)).toBe("evening");
+
+    await trackSmartReminderScheduled({
+      reminderKind: "log_next_meal",
+      decision: "send",
+      confidenceBucket: "high",
+      scheduledWindow: "evening",
+    });
+    await trackSmartReminderSuppressed({
+      decision: "suppress",
+      suppressionReason: "quiet_hours",
+      confidenceBucket: "high",
+    });
+    await trackSmartReminderNoop({
+      decision: "noop",
+      noopReason: "insufficient_signal",
+      confidenceBucket: "medium",
+    });
+    await trackSmartReminderDecisionFailed({
+      failureReason: "invalid_payload",
+    });
+    await trackSmartReminderScheduleFailed({
+      reminderKind: "log_next_meal",
+      decision: "send",
+      confidenceBucket: "high",
+      failureReason: "invalid_time",
+    });
+
+    expect(mockTrack).toHaveBeenNthCalledWith(1, "smart_reminder_scheduled", {
+      reminderKind: "log_next_meal",
+      decision: "send",
+      confidenceBucket: "high",
+      scheduledWindow: "evening",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(2, "smart_reminder_suppressed", {
+      decision: "suppress",
+      suppressionReason: "quiet_hours",
+      confidenceBucket: "high",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(3, "smart_reminder_noop", {
+      decision: "noop",
+      noopReason: "insufficient_signal",
+      confidenceBucket: "medium",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(4, "smart_reminder_decision_failed", {
+      failureReason: "invalid_payload",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(5, "smart_reminder_schedule_failed", {
+      reminderKind: "log_next_meal",
+      decision: "send",
+      confidenceBucket: "high",
+      failureReason: "invalid_time",
     });
   });
 });

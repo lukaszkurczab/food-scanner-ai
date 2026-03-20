@@ -2,24 +2,28 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { useNotifications } from "@/hooks/useNotifications";
+import { reconcileAll } from "@/services/notifications/engine";
 import { ensureAndroidChannel } from "@/services/notifications/localScheduler";
 import {
   cancelSystemNotifications,
-  runSystemNotifications,
 } from "@/services/notifications/system";
+import {
+  cancelAllReminderScheduling,
+} from "@/services/reminders/reminderScheduling";
 
 export function useNotificationsScreenState(uid: string | null) {
   const {
     items,
     toggle,
-    loadMotivationPrefs,
+    loadAllPrefs,
     setMotivationPrefs,
+    setSmartRemindersPrefs,
     setStatsPrefs,
-    loadStatsPrefs,
     remove,
   } = useNotifications(uid);
 
   const [motivationEnabled, setMotivationEnabled] = useState(false);
+  const [smartRemindersEnabled, setSmartRemindersEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
   const [systemAllowed, setSystemAllowed] = useState<boolean | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -34,9 +38,9 @@ export function useNotificationsScreenState(uid: string | null) {
   useEffect(() => {
     if (!uid) return;
     (async () => {
-      const motivation = await loadMotivationPrefs(uid);
-      const stats = await loadStatsPrefs(uid);
+      const { motivation, smartReminders, stats } = await loadAllPrefs(uid);
       setMotivationEnabled(!!motivation.enabled);
+      setSmartRemindersEnabled(!!smartReminders.enabled);
       setStatsEnabled(!!stats.enabled);
       const perm = await Notifications.getPermissionsAsync();
       setSystemAllowed(!!perm.granted);
@@ -44,10 +48,10 @@ export function useNotificationsScreenState(uid: string | null) {
         await ensureAndroidChannel();
       }
       if (perm.granted) {
-        await runSystemNotifications(uid);
+        await reconcileAll(uid);
       }
     })();
-  }, [uid, loadMotivationPrefs, loadStatsPrefs]);
+  }, [uid, loadAllPrefs]);
 
   useEffect(() => {
     (async () => {
@@ -58,6 +62,10 @@ export function useNotificationsScreenState(uid: string | null) {
           if (motivationEnabled) {
             setMotivationEnabled(false);
             await setMotivationPrefs(uid, false);
+          }
+          if (smartRemindersEnabled) {
+            setSmartRemindersEnabled(false);
+            await setSmartRemindersPrefs(uid, false);
           }
           if (statsEnabled) {
             setStatsEnabled(false);
@@ -70,6 +78,7 @@ export function useNotificationsScreenState(uid: string | null) {
           }
           await cancelSystemNotifications(uid, "motivation_dont_give_up");
           await cancelSystemNotifications(uid, "stats_weekly_summary");
+          await cancelAllReminderScheduling(uid);
         } catch {
           // Keep local toggles unchanged if sync fails.
         }
@@ -80,8 +89,10 @@ export function useNotificationsScreenState(uid: string | null) {
     uid,
     items,
     motivationEnabled,
+    smartRemindersEnabled,
     statsEnabled,
     setMotivationPrefs,
+    setSmartRemindersPrefs,
     setStatsPrefs,
     toggle,
   ]);
@@ -124,6 +135,33 @@ export function useNotificationsScreenState(uid: string | null) {
     [requestSystemPermission, systemAllowed, toggle, uid],
   );
 
+  const onToggleSmartReminders = useCallback(
+    async (enabled: boolean) => {
+      if (!uid) return;
+      if (enabled && systemAllowed === false) {
+        const allowed = await requestSystemPermission();
+        if (!allowed) return;
+      }
+
+      setSmartRemindersEnabled(enabled);
+      await setSmartRemindersPrefs(uid, enabled);
+
+      if (systemAllowed === false) {
+        if (!enabled) {
+          await cancelAllReminderScheduling(uid);
+        }
+        return;
+      }
+
+      if (enabled) {
+        await reconcileAll(uid);
+      } else {
+        await cancelAllReminderScheduling(uid);
+      }
+    },
+    [requestSystemPermission, setSmartRemindersPrefs, systemAllowed, uid],
+  );
+
   const onToggleMotivation = useCallback(
     async (enabled: boolean) => {
       if (!uid) return;
@@ -136,7 +174,7 @@ export function useNotificationsScreenState(uid: string | null) {
       await setMotivationPrefs(uid, enabled);
 
       if (enabled) {
-        await runSystemNotifications(uid);
+        await reconcileAll(uid);
       } else {
         await cancelSystemNotifications(uid, "motivation_dont_give_up");
       }
@@ -156,7 +194,7 @@ export function useNotificationsScreenState(uid: string | null) {
       await setStatsPrefs(uid, enabled);
 
       if (enabled) {
-        await runSystemNotifications(uid);
+        await reconcileAll(uid);
       } else {
         await cancelSystemNotifications(uid, "stats_weekly_summary");
       }
@@ -188,6 +226,7 @@ export function useNotificationsScreenState(uid: string | null) {
   return {
     items,
     motivationEnabled,
+    smartRemindersEnabled,
     statsEnabled,
     systemAllowed,
     confirmId,
@@ -196,6 +235,7 @@ export function useNotificationsScreenState(uid: string | null) {
     setSettingsCtaVisible,
     openSettings,
     onToggleReminder,
+    onToggleSmartReminders,
     onToggleMotivation,
     onToggleStats,
     askDelete,

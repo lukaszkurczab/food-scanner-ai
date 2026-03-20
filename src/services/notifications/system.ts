@@ -9,6 +9,7 @@ import {
 } from "@/services/contracts/guards";
 import { emitNotificationScheduledTelemetry } from "@/services/notifications/notificationTelemetry";
 import { fetchNotificationPrefs } from "@/services/notifications/notificationsRepository";
+import { parseStoredIds } from "@/services/notifications/storageUtils";
 
 type QuietHours = { startHour: number; endHour: number };
 
@@ -27,17 +28,6 @@ function plannedKey(uid: string, key: string) {
 
 function prefsCacheKey(uid: string) {
   return `${SYS_PREFS_CACHE_KEY_PREFIX}${uid}`;
-}
-
-function parseStoredIds(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((id): id is string => typeof id === "string");
-  } catch {
-    return [];
-  }
 }
 
 async function getStoredIds(uid: string, key: string): Promise<string[]> {

@@ -5,6 +5,7 @@ import type { UserNotification } from "@/types/notification";
 type GlobalPrefsDoc = {
   notifications?: {
     motivationEnabled?: boolean;
+    smartRemindersEnabled?: boolean;
     statsEnabled?: boolean;
     weekdays0to6?: number[];
     daysAhead?: number;

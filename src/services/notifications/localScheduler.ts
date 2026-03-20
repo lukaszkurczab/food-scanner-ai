@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { isRecord } from "@/services/contracts/guards";
 import { emitNotificationScheduledTelemetry } from "@/services/notifications/notificationTelemetry";
+import { parseStoredIds } from "@/services/notifications/storageUtils";
 
 const KEY_PREFIX = "notif:ids:";
 const USER_NOTIFICATION_ORIGIN = "user_notifications";
@@ -15,26 +16,19 @@ export function notificationScheduleKey(uid: string, notificationId: string): st
   return `${uid}:${notificationId}`;
 }
 
-function parseStoredIds(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((id): id is string => typeof id === "string");
-  } catch {
-    return [];
-  }
-}
-
 function buildTelemetryContent(
   content: Notifications.NotificationContentInput,
 ): Notifications.NotificationContentInput {
   const data = isRecord(content.data) ? content.data : {};
+  const explicitOrigin =
+    typeof data.origin === "string" && data.origin.trim().length > 0
+      ? data.origin
+      : null;
   return {
     ...content,
     data: {
       ...data,
-      origin: USER_NOTIFICATION_ORIGIN,
+      origin: explicitOrigin ?? USER_NOTIFICATION_ORIGIN,
     },
   };
 }
@@ -47,6 +41,19 @@ function resolveNotificationTypeFromContent(
   }
 
   return typeof content.data.type === "string" ? content.data.type : null;
+}
+
+function resolveNotificationOriginFromContent(
+  content: Notifications.NotificationContentInput,
+): string {
+  if (!isRecord(content.data)) {
+    return USER_NOTIFICATION_ORIGIN;
+  }
+
+  return typeof content.data.origin === "string" &&
+    content.data.origin.trim().length > 0
+    ? content.data.origin
+    : USER_NOTIFICATION_ORIGIN;
 }
 
 async function storeId(localKey: string, id: string) {
@@ -117,7 +124,7 @@ export async function scheduleDailyAt(
   await storeId(localKey, id);
   void emitNotificationScheduledTelemetry({
     notificationType: resolveNotificationTypeFromContent(contentWithTelemetry),
-    origin: USER_NOTIFICATION_ORIGIN,
+    origin: resolveNotificationOriginFromContent(contentWithTelemetry),
   });
 }
 
@@ -223,7 +230,7 @@ export async function scheduleOneShotAt(
   await storeId(localKey, id);
   void emitNotificationScheduledTelemetry({
     notificationType: resolveNotificationTypeFromContent(contentWithTelemetry),
-    origin: USER_NOTIFICATION_ORIGIN,
+    origin: resolveNotificationOriginFromContent(contentWithTelemetry),
   });
 }
 

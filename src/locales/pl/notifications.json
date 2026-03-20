@@ -2,6 +2,9 @@
   "screen": {
     "title": "Powiadomienia",
     "myReminders": "Moje przypomnienia",
+    "smartReminderHint": "Smart Reminders mogą dopasować moment przypomnienia do Twojego dnia, ostatniego logowania i godzin ciszy.",
+    "smartReminderDebugTitle": "QA Smart Reminder",
+    "smartReminders": "Smart Reminders",
     "addReminder": "Dodaj przypomnienie",
     "motivation": "Motywacja",
     "deleteTitle": "Usuń przypomnienie",
@@ -61,7 +64,7 @@
   },
   "permissions": {
     "title": "Włącz powiadomienia",
-    "message": "Włącz powiadomienia w ustawieniach systemowych, aby otrzymywać przypomnienia na czas.",
+    "message": "Włącz powiadomienia w ustawieniach systemowych, aby otrzymywać przypomnienia, w tym Smart Reminders, na czas.",
     "openSettings": "Otwórz ustawienia",
     "notNow": "Nie teraz"
   }
