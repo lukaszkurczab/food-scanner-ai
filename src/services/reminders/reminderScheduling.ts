@@ -28,8 +28,6 @@ const log = debugScope("ReminderScheduling");
 const SMART_REMINDER_KEY_PREFIX = "smart-reminder";
 const MIN_SCHEDULE_LEAD_MS = 30_000;
 const NOTIF_IDS_STORAGE_PREFIX = "notif:ids:";
-const REMINDER_DECISION_CACHE_PREFIX = "smart-reminder:decision";
-
 export type ReminderSchedulingOutcome =
   | "scheduled"
   | "cancelled"
@@ -64,10 +62,6 @@ function createReminderScheduleLocalKeyPrefix(uid: string): string {
 
 export function createReminderScheduleKey(uid: string, dayKey: string): string {
   return notificationScheduleKey(uid, createReminderLocalId(dayKey));
-}
-
-function createReminderDecisionCacheKey(uid: string, dayKey: string): string {
-  return `${REMINDER_DECISION_CACHE_PREFIX}:${uid}:${dayKey}`;
 }
 
 function resolveScheduledDate(
@@ -123,25 +117,7 @@ function buildReminderContent(
   };
 }
 
-async function writeCachedReminderDecision(
-  uid: string,
-  decision: ReminderDecision,
-): Promise<void> {
-  await AsyncStorage.setItem(
-    createReminderDecisionCacheKey(uid, decision.dayKey),
-    JSON.stringify(decision),
-  );
-}
-
-async function clearCachedReminderDecision(
-  uid: string,
-  dayKey: string,
-): Promise<void> {
-  await AsyncStorage.removeItem(createReminderDecisionCacheKey(uid, dayKey));
-}
-
 async function clearAndCancel(uid: string, dayKey: string, localKey: string): Promise<void> {
-  await clearCachedReminderDecision(uid, dayKey);
   await cancelAllForNotif(localKey);
 }
 
@@ -155,7 +131,6 @@ export async function cancelReminderScheduling(
 
 export async function cancelAllReminderScheduling(uid: string): Promise<void> {
   const localKeyPrefix = createReminderScheduleLocalKeyPrefix(uid);
-  const cacheKeyPrefix = `${REMINDER_DECISION_CACHE_PREFIX}:${uid}:`;
 
   try {
     const keys = await AsyncStorage.getAllKeys();
@@ -164,16 +139,9 @@ export async function cancelAllReminderScheduling(uid: string): Promise<void> {
         storageKey.startsWith(`${NOTIF_IDS_STORAGE_PREFIX}${localKeyPrefix}:`)
       )
       .map((storageKey) => storageKey.slice(NOTIF_IDS_STORAGE_PREFIX.length));
-    const cacheKeys = keys.filter((storageKey) =>
-      storageKey.startsWith(cacheKeyPrefix)
-    );
 
     for (const localKey of new Set(localKeys)) {
       await cancelAllForNotif(localKey);
-    }
-
-    for (const cacheKey of cacheKeys) {
-      await AsyncStorage.removeItem(cacheKey);
     }
   } catch (error) {
     log.warn("failed to cancel all smart reminder schedules", { uid, error });
@@ -357,7 +325,6 @@ export async function reconcileReminderScheduling(
       result,
     };
   }
-  await writeCachedReminderDecision(uid, result.decision);
   emitSmartReminderTelemetry(
     trackSmartReminderScheduled({
       reminderKind: result.decision.kind,

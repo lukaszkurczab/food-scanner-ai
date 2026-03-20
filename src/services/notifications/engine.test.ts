@@ -277,7 +277,7 @@ describe("notifications engine", () => {
     expect(mockReconcileReminderScheduling).toHaveBeenCalledWith("user-1");
   });
 
-  it("falls back to legacy meal/day scheduling when smart decision is unavailable", async () => {
+  it("does NOT fall back to legacy meal/day scheduling when smart decision is service_unavailable", async () => {
     mockIsSmartRemindersEnabled.mockReturnValue(true);
     mockReconcileReminderScheduling.mockResolvedValue({
       outcome: "cancelled",
@@ -320,8 +320,157 @@ describe("notifications engine", () => {
 
     await reconcileAll("user-1");
 
-    expect(mockScheduleDailyAt).toHaveBeenCalledTimes(1);
-    expect(mockScheduleOneShotAt).toHaveBeenCalledTimes(1);
+    expect(mockScheduleDailyAt).not.toHaveBeenCalled();
+    expect(mockScheduleOneShotAt).not.toHaveBeenCalled();
     expect(mockReconcileReminderScheduling).toHaveBeenCalledWith("user-1");
+  });
+
+  it("does NOT fall back to legacy meal/day scheduling when smart decision is invalid_payload", async () => {
+    mockIsSmartRemindersEnabled.mockReturnValue(true);
+    mockReconcileReminderScheduling.mockResolvedValue({
+      outcome: "cancelled",
+      localKey: "user-1:smart-reminder:2026-03-18",
+      result: {
+        decision: null,
+        source: "fallback",
+        status: "invalid_payload",
+        enabled: true,
+        error: new Error("contract drift"),
+      },
+    });
+    mockGetNotificationPlan.mockResolvedValue({
+      aiStyle: "friendly",
+      plans: [
+        {
+          id: "meal-any",
+          type: "meal_reminder",
+          enabled: true,
+          text: null,
+          time: { hour: 9, minute: 30 },
+          days: [1, 2, 3],
+          mealKind: null,
+          shouldSchedule: true,
+          missingKcal: null,
+        },
+      ],
+    });
+
+    await reconcileAll("user-1");
+
+    expect(mockScheduleDailyAt).not.toHaveBeenCalled();
+    expect(mockScheduleOneShotAt).not.toHaveBeenCalled();
+  });
+
+  it("does NOT fall back to legacy meal/day scheduling when reconcile throws", async () => {
+    mockIsSmartRemindersEnabled.mockReturnValue(true);
+    mockReconcileReminderScheduling.mockRejectedValue(new Error("unexpected crash"));
+    mockGetNotificationPlan.mockResolvedValue({
+      aiStyle: "friendly",
+      plans: [
+        {
+          id: "meal-any",
+          type: "meal_reminder",
+          enabled: true,
+          text: null,
+          time: { hour: 9, minute: 30 },
+          days: [1, 2, 3],
+          mealKind: null,
+          shouldSchedule: true,
+          missingKcal: null,
+        },
+        {
+          id: "fill-day",
+          type: "day_fill",
+          enabled: true,
+          text: null,
+          time: { hour: 20, minute: 0 },
+          days: [1, 2, 3],
+          mealKind: null,
+          shouldSchedule: true,
+          missingKcal: null,
+        },
+        {
+          id: "goal",
+          type: "calorie_goal",
+          enabled: true,
+          text: null,
+          time: { hour: 18, minute: 0 },
+          days: [1, 2, 3],
+          mealKind: null,
+          shouldSchedule: true,
+          missingKcal: 450,
+        },
+      ],
+    });
+
+    await reconcileAll("user-1");
+
+    expect(mockScheduleDailyAt).not.toHaveBeenCalled();
+    // Only calorie_goal should schedule — meal_reminder and day_fill are smart-owned
+    expect(mockScheduleOneShotAt).toHaveBeenCalledTimes(1);
+    expect(mockScheduleOneShotAt).toHaveBeenCalledWith(
+      new Date("2026-03-03T18:00:00.000Z"),
+      {
+        title: "Title",
+        body: "Body",
+        data: { notifId: "goal", type: "calorie_goal" },
+      },
+      "user-1:goal"
+    );
+  });
+
+  it("still schedules non-reminder types (calorie_goal) when smart decision fails", async () => {
+    mockIsSmartRemindersEnabled.mockReturnValue(true);
+    mockReconcileReminderScheduling.mockResolvedValue({
+      outcome: "cancelled",
+      localKey: "user-1:smart-reminder:2026-03-18",
+      result: {
+        decision: null,
+        source: "fallback",
+        status: "service_unavailable",
+        enabled: true,
+        error: new Error("backend down"),
+      },
+    });
+    mockGetNotificationPlan.mockResolvedValue({
+      aiStyle: "friendly",
+      plans: [
+        {
+          id: "meal-any",
+          type: "meal_reminder",
+          enabled: true,
+          text: null,
+          time: { hour: 9, minute: 30 },
+          days: [1, 2, 3],
+          mealKind: null,
+          shouldSchedule: true,
+          missingKcal: null,
+        },
+        {
+          id: "goal",
+          type: "calorie_goal",
+          enabled: true,
+          text: null,
+          time: { hour: 18, minute: 0 },
+          days: [1, 2, 3],
+          mealKind: null,
+          shouldSchedule: true,
+          missingKcal: 300,
+        },
+      ],
+    });
+
+    await reconcileAll("user-1");
+
+    // meal_reminder skipped (smart-owned), calorie_goal scheduled normally
+    expect(mockScheduleDailyAt).not.toHaveBeenCalled();
+    expect(mockScheduleOneShotAt).toHaveBeenCalledTimes(1);
+    expect(mockScheduleOneShotAt).toHaveBeenCalledWith(
+      new Date("2026-03-03T18:00:00.000Z"),
+      expect.objectContaining({
+        data: { notifId: "goal", type: "calorie_goal" },
+      }),
+      "user-1:goal"
+    );
   });
 });
