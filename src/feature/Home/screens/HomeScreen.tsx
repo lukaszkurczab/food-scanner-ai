@@ -26,11 +26,16 @@ import { useNutritionState } from "@/hooks/useNutritionState";
 import { useCoach } from "@/hooks/useCoach";
 import type {
   NutritionTargets,
-  NutritionCoachPriority,
   NutritionState,
-  NutritionTopRisk,
 } from "@/services/nutritionState/nutritionStateTypes";
-import type { CoachActionType } from "@/services/coach/coachTypes";
+import type {
+  CoachActionType,
+  CoachEmptyReason,
+  CoachInsight,
+  CoachResponse,
+  CoachResponseSource,
+  CoachResultStatus,
+} from "@/services/coach/coachTypes";
 import type { MacroTargets } from "@/utils/calculateMacroTargets";
 
 function startEndOfLocalDay(d: Date) {
@@ -78,36 +83,6 @@ function toLocalDayKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function getTopRiskLabel(topRisk: NutritionTopRisk): string | null {
-  switch (topRisk) {
-    case "under_logging":
-      return "Under logging";
-    case "low_protein_consistency":
-      return "Low protein consistency";
-    case "high_unknown_meal_details":
-      return "Low meal detail quality";
-    case "calorie_under_target":
-      return "Below calorie target";
-    default:
-      return null;
-  }
-}
-
-function getCoachPriorityLabel(priority: NutritionCoachPriority): string | null {
-  switch (priority) {
-    case "logging_foundation":
-      return "Focus: logging foundation";
-    case "protein_consistency":
-      return "Focus: protein consistency";
-    case "meal_detail_quality":
-      return "Focus: meal detail quality";
-    case "calorie_adherence":
-      return "Focus: calorie adherence";
-    default:
-      return null;
-  }
-}
-
 function buildNutritionSummary(
   state: NutritionState,
   options?: { isStale?: boolean },
@@ -124,16 +99,6 @@ function buildNutritionSummary(
 
   const completeness = Math.round(state.quality.dataCompletenessScore * 100);
   parts.push(`${completeness}% complete`);
-
-  const topRiskLabel = getTopRiskLabel(state.habits.topRisk);
-  if (topRiskLabel) {
-    parts.push(topRiskLabel);
-  } else {
-    const coachPriorityLabel = getCoachPriorityLabel(state.habits.coachPriority);
-    if (coachPriorityLabel) {
-      parts.push(coachPriorityLabel);
-    }
-  }
 
   return parts.length > 0 ? parts.join(" • ") : null;
 }
@@ -163,6 +128,57 @@ function toMacroTargets(targets: NutritionTargets): MacroTargets | null {
     fatKcal: Math.round(fatGrams * 9),
     carbsKcal: Math.round(carbsGrams * 4),
   };
+}
+
+type CoachSurfaceState = {
+  coach: CoachResponse;
+  enabled: boolean;
+  source: CoachResponseSource;
+  status: CoachResultStatus;
+  isStale: boolean;
+};
+
+function isRenderableLiveCoachSource(source: CoachResponseSource): boolean {
+  return source === "remote" || source === "memory";
+}
+
+function getRenderableLiveCoachInsight(
+  state: CoachSurfaceState,
+  options: { dayKey: string; isEmptyDay: boolean },
+): CoachInsight | null {
+  if (
+    !state.enabled ||
+    state.status !== "live_success" ||
+    state.isStale ||
+    !isRenderableLiveCoachSource(state.source) ||
+    state.coach.dayKey !== options.dayKey ||
+    !state.coach.meta.available ||
+    options.isEmptyDay
+  ) {
+    return null;
+  }
+
+  return state.coach.topInsight;
+}
+
+function getRenderableCoachEmptyReason(
+  state: CoachSurfaceState,
+  options: { dayKey: string; isEmptyDay: boolean },
+): CoachEmptyReason | null {
+  if (
+    !state.enabled ||
+    state.status !== "live_success" ||
+    state.isStale ||
+    !isRenderableLiveCoachSource(state.source) ||
+    state.coach.dayKey !== options.dayKey ||
+    !state.coach.meta.available ||
+    !options.isEmptyDay ||
+    state.coach.topInsight !== null
+  ) {
+    return null;
+  }
+
+  return state.coach.meta.emptyReason;
 }
 
 type HomeNavigation = StackNavigationProp<RootStackParamList>;
@@ -197,6 +213,8 @@ export default function HomeScreen({ navigation }: Props) {
     coach,
     enabled: coachEnabled,
     source: coachSource,
+    status: coachStatus,
+    isStale: coachIsStale,
   } = useCoach({ uid, dayKey: selectedDayKey });
 
   const dayMeals = useMemo(
@@ -211,15 +229,34 @@ export default function HomeScreen({ navigation }: Props) {
     nutritionStateSource !== "disabled" &&
     nutritionStateSource !== "fallback";
   const shouldUseLegacyStreak = !hasCanonicalNutritionState;
-  const hasCoachPayload =
-    coachEnabled &&
-    coach.dayKey === selectedDayKey &&
-    coachSource !== "disabled" &&
-    coachSource !== "fallback";
-  const topCoachInsight =
-    hasCoachPayload && !isEmptyDay ? coach.topInsight : null;
-  const coachEmptyReason =
-    isEmptyDay && hasCoachPayload ? coach.meta.emptyReason : null;
+  const topCoachInsight = getRenderableLiveCoachInsight(
+    {
+      coach,
+      enabled: coachEnabled,
+      source: coachSource,
+      status: coachStatus,
+      isStale: coachIsStale,
+    },
+    { dayKey: selectedDayKey, isEmptyDay },
+  );
+  const coachEmptyReason = getRenderableCoachEmptyReason(
+    {
+      coach,
+      enabled: coachEnabled,
+      source: coachSource,
+      status: coachStatus,
+      isStale: coachIsStale,
+    },
+    { dayKey: selectedDayKey, isEmptyDay },
+  );
+  const emptyDayProps = coachEmptyReason
+    ? {
+        mode: "coach_aware" as const,
+        coachEmptyReason,
+      }
+    : {
+        mode: "plain" as const,
+      };
 
   useEffect(() => {
     if (!uid || !shouldUseLegacyStreak) {
@@ -414,6 +451,7 @@ export default function HomeScreen({ navigation }: Props) {
 
         {isEmptyDay ? (
           <EmptyDayView
+            {...emptyDayProps}
             isToday={isToday}
             onAddMeal={
               isToday ? () => navigation.navigate("MealAddMethod") : undefined
@@ -422,7 +460,6 @@ export default function HomeScreen({ navigation }: Props) {
             onOpenHistory={
               isToday ? undefined : () => navigation.navigate("HistoryList")
             }
-            coachEmptyReason={coachEmptyReason}
           />
         ) : (
           <TodaysMealsList

@@ -77,11 +77,11 @@ describe("CoachInsightCard", () => {
       <CoachInsightCard insight={createInsight()} />,
     );
 
-    expect(queryByText("This is based on your recent logging")).toBeNull();
+    expect(queryByText("Based on recent logging signals")).toBeNull();
 
-    fireEvent.press(getByText("Why am I seeing this?"));
+    fireEvent.press(getByText("Why this insight"));
 
-    expect(getByText("This is based on your recent logging")).toBeTruthy();
+    expect(getByText("Based on recent logging signals")).toBeTruthy();
     expect(getByText(/There have been too few solid logging days recently\./)).toBeTruthy();
     expect(getByText(/At least one meal today is missing useful nutrition detail\./)).toBeTruthy();
     expect(mockTrackCoachCardExpanded).toHaveBeenCalledTimes(1);

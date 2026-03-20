@@ -7,15 +7,30 @@ import { useTranslation } from "react-i18next";
 import type { CoachEmptyReason } from "@/services/coach/coachTypes";
 import { trackCoachEmptyStateViewed } from "@/services/telemetry/telemetryInstrumentation";
 
-type Props = {
+type CommonProps = {
   isToday: boolean;
   isOffline?: boolean;
   onAddMeal?: () => void;
   onOpenHistory?: () => void;
-  coachEmptyReason?: CoachEmptyReason | null;
 };
 
+type PlainEmptyDayProps = {
+  mode?: "plain";
+  coachEmptyReason?: null;
+};
+
+type CoachAwareEmptyDayProps = {
+  mode: "coach_aware";
+  coachEmptyReason: CoachEmptyReason;
+};
+
+type Props = CommonProps & (
+  | PlainEmptyDayProps
+  | CoachAwareEmptyDayProps
+);
+
 export default function EmptyDayView({
+  mode = "plain",
   isToday,
   isOffline = false,
   onAddMeal,
@@ -25,8 +40,13 @@ export default function EmptyDayView({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("home");
+  const isCoachAware = mode === "coach_aware";
 
   const coachHintKey = useMemo(() => {
+    if (!isCoachAware || !coachEmptyReason) {
+      return null;
+    }
+
     if (coachEmptyReason === "insufficient_data") {
       return isToday
         ? "emptyDay.coachHint_insufficient_today"
@@ -36,17 +56,17 @@ export default function EmptyDayView({
     return isToday
       ? "emptyDay.coachHint_today"
       : "emptyDay.coachHint_past";
-  }, [coachEmptyReason, isToday]);
+  }, [coachEmptyReason, isCoachAware, isToday]);
 
   useEffect(() => {
-    if (!coachEmptyReason) {
+    if (!isCoachAware || !coachEmptyReason) {
       return;
     }
 
     void trackCoachEmptyStateViewed({
       emptyReason: coachEmptyReason,
     }).catch(() => undefined);
-  }, [coachEmptyReason]);
+  }, [coachEmptyReason, isCoachAware]);
 
   return (
     <View style={styles.container}>
@@ -64,19 +84,21 @@ export default function EmptyDayView({
         </Text>
       )}
 
-      <View style={styles.coachBox}>
-        <Text style={styles.coachEyebrow}>
-          {t("emptyDay.coachTitle", "Coaching note")}
-        </Text>
-        <Text style={styles.coachText}>
-          {t(
-            coachHintKey,
-            isToday
-              ? "Start with one complete meal log so coaching has real data to work with."
-              : "Use history for context, then keep the next meal log complete so trends stay readable.",
-          )}
-        </Text>
-      </View>
+      {isCoachAware && coachHintKey ? (
+        <View style={styles.coachBox}>
+          <Text style={styles.coachEyebrow}>
+            {t("emptyDay.coachTitle", "Coaching note")}
+          </Text>
+          <Text style={styles.coachText}>
+            {t(
+              coachHintKey,
+              isToday
+                ? "Start with one complete meal log so coaching has real data to work with."
+                : "Use history for context, then keep the next meal log complete so trends stay readable.",
+            )}
+          </Text>
+        </View>
+      ) : null}
 
       {isToday && onAddMeal ? (
         <PrimaryButton

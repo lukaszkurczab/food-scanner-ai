@@ -134,8 +134,18 @@ jest.mock("../components/WeeklyProgressGraph", () => ({
 
 jest.mock("../components/EmptyDayView", () => ({
   __esModule: true,
-  default: ({ coachEmptyReason }: { coachEmptyReason?: string | null }) =>
-    mockReact.createElement(mockText, null, `empty-day:${coachEmptyReason ?? "none"}`),
+  default: ({
+    mode,
+    coachEmptyReason,
+  }: {
+    mode?: string;
+    coachEmptyReason?: string | null;
+  }) =>
+    mockReact.createElement(
+      mockText,
+      null,
+      `empty-day:${mode ?? "plain"}:${coachEmptyReason ?? "none"}`,
+    ),
 }));
 
 jest.mock("../components/MacroTargetsRow", () => ({
@@ -261,6 +271,7 @@ describe("HomeScreen", () => {
       loading: false,
       enabled: true,
       source: "fallback",
+      status: "no_user",
       isStale: true,
       error: null,
       refresh: jest.fn(),
@@ -311,7 +322,7 @@ describe("HomeScreen", () => {
     expect(getByText("meals:1")).toBeTruthy();
     expect(getByText("streak:7")).toBeTruthy();
     expect(queryByTestId("home-nutrition-summary")).not.toBeNull();
-    expect(getByText("400 kcal left • 75% complete • Under logging")).toBeTruthy();
+    expect(getByText("400 kcal left • 75% complete")).toBeTruthy();
   });
 
   it("renders coach insight card for a day with data when top insight is available", async () => {
@@ -335,6 +346,7 @@ describe("HomeScreen", () => {
       loading: false,
       enabled: true,
       source: "remote",
+      status: "live_success",
       isStale: false,
       error: null,
       refresh: jest.fn(),
@@ -351,6 +363,161 @@ describe("HomeScreen", () => {
 
     fireEvent.press(getByText("coach-cta"));
     expect(navigation.navigate).toHaveBeenCalledWith("MealAddMethod");
+  });
+
+  it("does not render coach insight card from stale cache after a coach fetch failure", async () => {
+    const remoteState = createFallbackNutritionState("2026-03-18");
+    remoteState.targets.kcal = 2100;
+    remoteState.consumed.kcal = 1600;
+    remoteState.remaining.kcal = 500;
+    remoteState.quality.dataCompletenessScore = 0.75;
+
+    mockUseNutritionState.mockReturnValue({
+      state: remoteState,
+      loading: false,
+      enabled: true,
+      source: "remote",
+      isStale: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+    mockUseCoach.mockReturnValue({
+      coach: createCoachResponse(),
+      loading: false,
+      enabled: true,
+      source: "storage",
+      status: "stale_cache",
+      isStale: true,
+      error: new Error("backend down"),
+      refresh: jest.fn(),
+    });
+
+    const navigation = createNavigation();
+    const { queryByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    await waitFor(() => {
+      expect(queryByText("meals:1")).not.toBeNull();
+    });
+
+    expect(queryByText("coach-card:under_logging")).toBeNull();
+  });
+
+  it("does not render coach surfaces for invalid coach payloads", async () => {
+    const remoteState = createFallbackNutritionState("2026-03-18");
+    remoteState.targets.kcal = 2100;
+    remoteState.consumed.kcal = 1600;
+    remoteState.remaining.kcal = 500;
+    remoteState.quality.dataCompletenessScore = 0.75;
+
+    mockUseMeals.mockReturnValue({
+      meals: [],
+      getMeals: jest.fn(),
+    });
+    mockUseNutritionState.mockReturnValue({
+      state: remoteState,
+      loading: false,
+      enabled: true,
+      source: "remote",
+      isStale: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+    mockUseCoach.mockReturnValue({
+      coach: createCoachResponse({
+        topInsight: null,
+        insights: [],
+        meta: {
+          available: false,
+          emptyReason: null,
+          isDegraded: false,
+        },
+      }),
+      loading: false,
+      enabled: true,
+      source: "fallback",
+      status: "invalid_payload",
+      isStale: true,
+      error: new Error("coach/invalid-contract-payload"),
+      refresh: jest.fn(),
+    });
+
+    const navigation = createNavigation();
+    const { getByText, queryByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText("empty-day:plain:none")).toBeTruthy();
+    });
+
+    expect(queryByText("coach-card:under_logging")).toBeNull();
+  });
+
+  it("does not render coach surfaces for disabled or fallback coach states", async () => {
+    const remoteState = createFallbackNutritionState("2026-03-18");
+    remoteState.targets.kcal = 2100;
+    remoteState.consumed.kcal = 1600;
+    remoteState.remaining.kcal = 500;
+    remoteState.quality.dataCompletenessScore = 0.75;
+
+    mockUseMeals.mockReturnValue({
+      meals: [],
+      getMeals: jest.fn(),
+    });
+    mockUseNutritionState.mockReturnValue({
+      state: remoteState,
+      loading: false,
+      enabled: true,
+      source: "remote",
+      isStale: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    mockUseCoach.mockReturnValueOnce({
+      coach: createFallbackCoachResponse("2026-03-18"),
+      loading: false,
+      enabled: false,
+      source: "disabled",
+      status: "disabled",
+      isStale: true,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const navigation = createNavigation();
+    const disabledRender = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    await waitFor(() => {
+      expect(disabledRender.getByText("empty-day:plain:none")).toBeTruthy();
+    });
+
+    expect(disabledRender.queryByText("coach-card:under_logging")).toBeNull();
+
+    mockUseCoach.mockReturnValueOnce({
+      coach: createFallbackCoachResponse("2026-03-18"),
+      loading: false,
+      enabled: true,
+      source: "fallback",
+      status: "service_unavailable",
+      isStale: true,
+      error: new Error("backend down"),
+      refresh: jest.fn(),
+    });
+
+    const fallbackRender = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    await waitFor(() => {
+      expect(fallbackRender.getByText("empty-day:plain:none")).toBeTruthy();
+    });
+
+    expect(fallbackRender.queryByText("coach-card:under_logging")).toBeNull();
   });
 
   it("falls back to legacy meal totals when nutrition state is disabled", async () => {
@@ -386,6 +553,7 @@ describe("HomeScreen", () => {
       loading: false,
       enabled: true,
       source: "remote",
+      status: "live_success",
       isStale: false,
       error: null,
       refresh: jest.fn(),
@@ -397,10 +565,72 @@ describe("HomeScreen", () => {
     );
 
     await waitFor(() => {
-      expect(getByText("empty-day:no_data")).toBeTruthy();
+      expect(getByText("empty-day:coach_aware:no_data")).toBeTruthy();
     });
 
     expect(queryByText("coach-card:under_logging")).toBeNull();
+  });
+
+  it("uses plain empty state when coach service is unavailable", async () => {
+    mockUseMeals.mockReturnValue({
+      meals: [],
+      getMeals: jest.fn(),
+    });
+    mockUseCoach.mockReturnValue({
+      coach: createFallbackCoachResponse("2026-03-18"),
+      loading: false,
+      enabled: true,
+      source: "fallback",
+      status: "service_unavailable",
+      isStale: true,
+      error: new Error("backend down"),
+      refresh: jest.fn(),
+    });
+
+    const navigation = createNavigation();
+    const { getByText, queryByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText("empty-day:plain:none")).toBeTruthy();
+    });
+
+    expect(queryByText("coach-card:under_logging")).toBeNull();
+  });
+
+  it("uses plain empty state when only stale coach cache exists after failure", async () => {
+    mockUseMeals.mockReturnValue({
+      meals: [],
+      getMeals: jest.fn(),
+    });
+    mockUseCoach.mockReturnValue({
+      coach: createCoachResponse({
+        topInsight: null,
+        insights: [],
+        meta: {
+          available: true,
+          emptyReason: "insufficient_data",
+          isDegraded: false,
+        },
+      }),
+      loading: false,
+      enabled: true,
+      source: "storage",
+      status: "stale_cache",
+      isStale: true,
+      error: new Error("backend down"),
+      refresh: jest.fn(),
+    });
+
+    const navigation = createNavigation();
+    const { getByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText("empty-day:plain:none")).toBeTruthy();
+    });
   });
 
   it("renders stale nutrition state explicitly when cached state is available", async () => {

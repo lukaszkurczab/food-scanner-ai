@@ -53,9 +53,18 @@ export type CoachResponseSource =
   | "storage"
   | "fallback";
 
+export type CoachResultStatus =
+  | "live_success"
+  | "stale_cache"
+  | "invalid_payload"
+  | "disabled"
+  | "service_unavailable"
+  | "no_user";
+
 export type CoachResult = {
   coach: CoachResponse;
   source: CoachResponseSource;
+  status: CoachResultStatus;
   enabled: boolean;
   isStale: boolean;
   error: unknown | null;
