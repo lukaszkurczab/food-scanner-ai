@@ -111,9 +111,8 @@ function handleNotificationReceived(notification: Notifications.Notification): v
 function handleNotificationResponse(
   response: Notifications.NotificationResponse,
 ): void {
-  const context = resolveNotificationTelemetryContext(
-    response.notification.request.content.data,
-  );
+  const rawData = response.notification.request.content.data;
+  const context = resolveNotificationTelemetryContext(rawData);
   void safeTrack(
     trackNotificationOpened({
       ...context,

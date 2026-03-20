@@ -18,6 +18,18 @@ import {
 
 type BoolPrefs = { enabled: boolean };
 
+type PrefConfig = {
+  key: string;
+  field: "motivationEnabled" | "smartRemindersEnabled" | "statsEnabled";
+  defaultValue: boolean;
+};
+
+const PREF_CONFIGS: Record<string, PrefConfig> = {
+  motivation: { key: "motivation", field: "motivationEnabled", defaultValue: false },
+  smartReminders: { key: "smart-reminders", field: "smartRemindersEnabled", defaultValue: true },
+  stats: { key: "stats", field: "statsEnabled", defaultValue: false },
+};
+
 function parseCachedBoolPrefs(cached: string | null): BoolPrefs | null {
   if (!cached) return null;
   try {
@@ -25,6 +37,45 @@ function parseCachedBoolPrefs(cached: string | null): BoolPrefs | null {
     return { enabled: !!parsed.enabled };
   } catch {
     return null;
+  }
+}
+
+function cacheKey(uid: string, config: PrefConfig): string {
+  return `notif:prefs:${uid}:${config.key}`;
+}
+
+async function loadPref(
+  uid: string,
+  config: PrefConfig,
+  prefsData: Awaited<ReturnType<typeof fetchNotificationPrefs>> | null,
+): Promise<BoolPrefs> {
+  if (prefsData) {
+    const raw = prefsData.notifications?.[config.field];
+    const enabled = typeof raw === "boolean" ? raw : config.defaultValue;
+    await AsyncStorage.setItem(cacheKey(uid, config), JSON.stringify({ enabled }));
+    return { enabled };
+  }
+
+  try {
+    const cached = await AsyncStorage.getItem(cacheKey(uid, config));
+    const parsed = parseCachedBoolPrefs(cached);
+    if (parsed) return parsed;
+  } catch {
+    // Ignore malformed local cache fallback.
+  }
+  return { enabled: config.defaultValue };
+}
+
+async function savePref(
+  uid: string,
+  config: PrefConfig,
+  enabled: boolean,
+): Promise<void> {
+  try {
+    await updateNotificationPrefs(uid, { [config.field]: enabled });
+    await AsyncStorage.setItem(cacheKey(uid, config), JSON.stringify({ enabled }));
+  } catch {
+    await AsyncStorage.setItem(cacheKey(uid, config), JSON.stringify({ enabled }));
   }
 }
 
@@ -122,90 +173,39 @@ export function useNotifications(uid: string | null) {
     [update]
   );
 
-  const loadMotivationPrefs = useCallback(async (uidLocal: string) => {
+  const loadAllPrefs = useCallback(async (uidLocal: string) => {
+    let prefsData: Awaited<ReturnType<typeof fetchNotificationPrefs>> | null = null;
     try {
-      const data = await fetchNotificationPrefs(uidLocal);
-      const enabled = !!data?.notifications?.motivationEnabled;
-      await AsyncStorage.setItem(
-        `notif:prefs:${uidLocal}:motivation`,
-        JSON.stringify({ enabled })
-      );
-      return { enabled };
+      prefsData = await fetchNotificationPrefs(uidLocal);
     } catch {
-      try {
-        const cached = await AsyncStorage.getItem(
-          `notif:prefs:${uidLocal}:motivation`
-        );
-        const parsed = parseCachedBoolPrefs(cached);
-        if (parsed) return parsed;
-      } catch {
-        // Ignore malformed local cache fallback.
-      }
-      return { enabled: false };
+      // Fall through — loadPref will use cached values.
     }
-  }, []);
 
-  const loadStatsPrefs = useCallback(async (uidLocal: string) => {
-    try {
-      const data = await fetchNotificationPrefs(uidLocal);
-      const enabled = !!data?.notifications?.statsEnabled;
-      await AsyncStorage.setItem(
-        `notif:prefs:${uidLocal}:stats`,
-        JSON.stringify({ enabled })
-      );
-      return { enabled };
-    } catch {
-      try {
-        const cached = await AsyncStorage.getItem(
-          `notif:prefs:${uidLocal}:stats`
-        );
-        const parsed = parseCachedBoolPrefs(cached);
-        if (parsed) return parsed;
-      } catch {
-        // Ignore malformed local cache fallback.
-      }
-      return { enabled: false };
-    }
+    const [motivation, smartReminders, stats] = await Promise.all([
+      loadPref(uidLocal, PREF_CONFIGS.motivation, prefsData),
+      loadPref(uidLocal, PREF_CONFIGS.smartReminders, prefsData),
+      loadPref(uidLocal, PREF_CONFIGS.stats, prefsData),
+    ]);
+
+    return { motivation, smartReminders, stats };
   }, []);
 
   const setMotivationPrefs = useCallback(
-    async (uidLocal: string, enabled: boolean) => {
-      try {
-        await updateNotificationPrefs(uidLocal, {
-          motivationEnabled: enabled,
-        });
-        await AsyncStorage.setItem(
-          `notif:prefs:${uidLocal}:motivation`,
-          JSON.stringify({ enabled })
-        );
-      } catch {
-        await AsyncStorage.setItem(
-          `notif:prefs:${uidLocal}:motivation`,
-          JSON.stringify({ enabled })
-        );
-      }
-    },
-    []
+    (uidLocal: string, enabled: boolean) =>
+      savePref(uidLocal, PREF_CONFIGS.motivation, enabled),
+    [],
+  );
+
+  const setSmartRemindersPrefs = useCallback(
+    (uidLocal: string, enabled: boolean) =>
+      savePref(uidLocal, PREF_CONFIGS.smartReminders, enabled),
+    [],
   );
 
   const setStatsPrefs = useCallback(
-    async (uidLocal: string, enabled: boolean) => {
-      try {
-        await updateNotificationPrefs(uidLocal, {
-          statsEnabled: enabled,
-        });
-        await AsyncStorage.setItem(
-          `notif:prefs:${uidLocal}:stats`,
-          JSON.stringify({ enabled })
-        );
-      } catch {
-        await AsyncStorage.setItem(
-          `notif:prefs:${uidLocal}:stats`,
-          JSON.stringify({ enabled })
-        );
-      }
-    },
-    []
+    (uidLocal: string, enabled: boolean) =>
+      savePref(uidLocal, PREF_CONFIGS.stats, enabled),
+    [],
   );
 
   return useMemo(
@@ -216,10 +216,10 @@ export function useNotifications(uid: string | null) {
       update,
       remove,
       toggle,
-      loadMotivationPrefs,
+      loadAllPrefs,
       setMotivationPrefs,
+      setSmartRemindersPrefs,
       setStatsPrefs,
-      loadStatsPrefs,
     }),
     [
       items,
@@ -228,10 +228,10 @@ export function useNotifications(uid: string | null) {
       update,
       remove,
       toggle,
-      loadMotivationPrefs,
+      loadAllPrefs,
       setMotivationPrefs,
+      setSmartRemindersPrefs,
       setStatsPrefs,
-      loadStatsPrefs,
     ]
   );
 }

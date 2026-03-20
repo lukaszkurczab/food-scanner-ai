@@ -159,6 +159,38 @@ describe("notificationTelemetry", () => {
     });
   });
 
+  it("tracks smart reminder opens only through generic notification_opened", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const service = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
+
+    service.initNotificationTelemetry();
+    mockNotificationResponseListener?.({
+      actionIdentifier: "DEFAULT",
+      notification: {
+        request: {
+          content: {
+            data: {
+              type: "meal_reminder",
+              origin: "system_notifications",
+              smartReminder: true,
+              reminderKind: "log_next_meal",
+              scheduledWindow: "evening",
+            },
+          },
+        },
+      },
+    });
+
+    await Promise.resolve();
+
+    expect(mockTrackNotificationOpened).toHaveBeenCalledWith({
+      notificationType: "meal_reminder",
+      origin: "system_notifications",
+      openedFromBackground: false,
+      actionIdentifier: "DEFAULT",
+    });
+  });
+
   it("cleans up listeners on stop", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const service = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");

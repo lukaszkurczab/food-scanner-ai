@@ -81,4 +81,41 @@ describe("localScheduler", () => {
       origin: "user_notifications",
     });
   });
+
+  it("preserves explicit system origin for smart reminder scheduling", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const localScheduler = require("@/services/notifications/localScheduler") as typeof import("@/services/notifications/localScheduler");
+
+    await localScheduler.scheduleOneShotAt(
+      new Date("2026-03-18T18:30:00.000Z"),
+      {
+        title: "Title",
+        body: "Body",
+        data: {
+          type: "meal_reminder",
+          origin: "system_notifications",
+          smartReminder: true,
+          reminderKind: "log_next_meal",
+        },
+      },
+      "user-1:smart-reminder:2026-03-18",
+    );
+
+    expect(mockScheduleNotificationAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.objectContaining({
+          data: expect.objectContaining({
+            type: "meal_reminder",
+            origin: "system_notifications",
+            smartReminder: true,
+            reminderKind: "log_next_meal",
+          }),
+        }),
+      }),
+    );
+    expect(mockEmitNotificationScheduledTelemetry).toHaveBeenCalledWith({
+      notificationType: "meal_reminder",
+      origin: "system_notifications",
+    });
+  });
 });

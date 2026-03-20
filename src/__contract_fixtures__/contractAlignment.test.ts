@@ -22,6 +22,12 @@ import type {
   CoachSource,
 } from "@/services/coach/coachTypes";
 import type {
+  ReminderDecision,
+  ReminderDecisionType,
+  ReminderKind,
+  ReminderReasonCode,
+} from "@/services/reminders/reminderTypes";
+import type {
   NutritionState,
   NutritionTopRisk,
   NutritionCoachPriority,
@@ -34,6 +40,11 @@ import {
   getCoachInsightId,
   getCoachInsightValidUntil,
 } from "@/services/coach/coachContract";
+import {
+  REMINDER_DECISION_TYPES,
+  REMINDER_KINDS,
+  REMINDER_REASON_CODES,
+} from "@/services/reminders/reminderTypes";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -59,6 +70,15 @@ type EnumsFixture = {
   TopRisk: string[];
   CoachPriority: string[];
   AiTier: string[];
+  ReminderDecisionType: string[];
+  ReminderKind: string[];
+  ReminderReasonCode: string[];
+};
+
+type SmartReminderTelemetryFixture = {
+  eventNames: string[];
+  propsByEvent: Record<string, string[]>;
+  disallowedEventNames: string[];
 };
 
 describe("Enum parity", () => {
@@ -84,6 +104,9 @@ describe("Enum parity", () => {
     "meal_detail_quality", "calorie_adherence",
   ];
   const MOBILE_AI_TIERS: Array<"free" | "premium"> = ["free", "premium"];
+  const MOBILE_REMINDER_DECISION_TYPES: ReminderDecisionType[] = [...REMINDER_DECISION_TYPES];
+  const MOBILE_REMINDER_KINDS: ReminderKind[] = [...REMINDER_KINDS];
+  const MOBILE_REMINDER_REASON_CODES: ReminderReasonCode[] = [...REMINDER_REASON_CODES];
 
   // Gateway reject reasons — must match useChatHistory.ts GATEWAY_REJECT_REASONS
   // (minus ML_OFF_TOPIC which is mobile-only for future ML classifier)
@@ -121,6 +144,24 @@ describe("Enum parity", () => {
 
   test("AiTier values match backend", () => {
     expect([...MOBILE_AI_TIERS].sort()).toEqual([...enums.AiTier].sort());
+  });
+
+  test("ReminderDecisionType values match backend", () => {
+    expect([...MOBILE_REMINDER_DECISION_TYPES].sort()).toEqual(
+      [...enums.ReminderDecisionType].sort(),
+    );
+  });
+
+  test("ReminderKind values match backend", () => {
+    expect([...MOBILE_REMINDER_KINDS].sort()).toEqual(
+      [...enums.ReminderKind].sort(),
+    );
+  });
+
+  test("ReminderReasonCode values match backend", () => {
+    expect([...MOBILE_REMINDER_REASON_CODES].sort()).toEqual(
+      [...enums.ReminderReasonCode].sort(),
+    );
   });
 });
 
@@ -296,6 +337,139 @@ describe("Coach response contract", () => {
       "streak_positive",
       "consistency_improving",
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fixture: reminder_decision.json — canonical reminder decision shape
+// ---------------------------------------------------------------------------
+
+describe("Reminder decision contract", () => {
+  const sendReminder = loadFixture<ReminderDecision>("reminder_decision.json");
+  const suppressReminder = loadFixture<ReminderDecision>("reminder_decision_suppress.json");
+  const noopReminder = loadFixture<ReminderDecision>("reminder_decision_noop.json");
+
+  test("top-level keys match ReminderDecision type", () => {
+    const expectedKeys = [
+      "dayKey",
+      "computedAt",
+      "decision",
+      "kind",
+      "reasonCodes",
+      "scheduledAtUtc",
+      "confidence",
+      "validUntil",
+    ];
+    expect(Object.keys(sendReminder).sort()).toEqual(expectedKeys.sort());
+    expect(Object.keys(suppressReminder).sort()).toEqual(expectedKeys.sort());
+    expect(Object.keys(noopReminder).sort()).toEqual(expectedKeys.sort());
+  });
+
+  test("send reminder decision shape", () => {
+    expect(sendReminder.dayKey).toBe("2026-03-18");
+    expect(sendReminder.computedAt).toBe("2026-03-18T12:00:00Z");
+    expect(REMINDER_DECISION_TYPES).toContain(sendReminder.decision);
+    expect(REMINDER_KINDS).toContain(sendReminder.kind!);
+    expect(Array.isArray(sendReminder.reasonCodes)).toBe(true);
+    expect(sendReminder.reasonCodes).toEqual([
+      "preferred_window_today",
+      "day_partially_logged",
+    ]);
+    expect(sendReminder.scheduledAtUtc).toBe("2026-03-18T18:30:00Z");
+    expect(sendReminder.confidence).toBe(0.84);
+    expect(sendReminder.validUntil).toBe("2026-03-18T19:30:00Z");
+  });
+
+  test("suppress and noop semantics stay explicit", () => {
+    expect(suppressReminder.decision).toBe("suppress");
+    expect(suppressReminder.kind).toBeNull();
+    expect(suppressReminder.scheduledAtUtc).toBeNull();
+    expect(suppressReminder.reasonCodes).toEqual(["quiet_hours"]);
+
+    expect(noopReminder.decision).toBe("noop");
+    expect(noopReminder.kind).toBeNull();
+    expect(noopReminder.scheduledAtUtc).toBeNull();
+    expect(noopReminder.reasonCodes).toEqual(["insufficient_signal"]);
+  });
+
+  test("reason codes match mobile contract", () => {
+    for (const reasonCode of [
+      ...sendReminder.reasonCodes,
+      ...suppressReminder.reasonCodes,
+      ...noopReminder.reasonCodes,
+    ]) {
+      expect(REMINDER_REASON_CODES).toContain(reasonCode);
+    }
+  });
+
+  test("send semantics stay explicit", () => {
+    expect(sendReminder.decision).toBe("send");
+    expect(sendReminder.kind).toBe("log_next_meal");
+    expect(typeof sendReminder.scheduledAtUtc).toBe("string");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fixture: smart_reminder_telemetry.json — canonical smart reminder telemetry
+// ---------------------------------------------------------------------------
+
+describe("Smart reminder telemetry contract", () => {
+  const fixture = loadFixture<SmartReminderTelemetryFixture>("smart_reminder_telemetry.json");
+
+  const MOBILE_EVENT_NAMES = [
+    "smart_reminder_suppressed",
+    "smart_reminder_scheduled",
+    "smart_reminder_noop",
+    "smart_reminder_decision_failed",
+    "smart_reminder_schedule_failed",
+  ] as const;
+
+  const MOBILE_PROPS_BY_EVENT = {
+    smart_reminder_suppressed: [
+      "decision",
+      "suppressionReason",
+      "confidenceBucket",
+    ],
+    smart_reminder_scheduled: [
+      "reminderKind",
+      "decision",
+      "confidenceBucket",
+      "scheduledWindow",
+    ],
+    smart_reminder_noop: [
+      "decision",
+      "noopReason",
+      "confidenceBucket",
+    ],
+    smart_reminder_decision_failed: [
+      "failureReason",
+    ],
+    smart_reminder_schedule_failed: [
+      "reminderKind",
+      "decision",
+      "confidenceBucket",
+      "failureReason",
+    ],
+  } as const;
+
+  test("event names match backend fixture", () => {
+    expect([...fixture.eventNames].sort()).toEqual([...MOBILE_EVENT_NAMES].sort());
+  });
+
+  test("props match backend fixture", () => {
+    expect(Object.keys(fixture.propsByEvent).sort()).toEqual(
+      Object.keys(MOBILE_PROPS_BY_EVENT).sort(),
+    );
+
+    for (const [eventName, propNames] of Object.entries(MOBILE_PROPS_BY_EVENT)) {
+      expect([...fixture.propsByEvent[eventName]].sort()).toEqual([...propNames].sort());
+    }
+  });
+
+  test("disallowed smart reminder telemetry events stay disallowed on mobile", () => {
+    expect(fixture.disallowedEventNames.sort()).toEqual(
+      ["smart_reminder_decision_computed", "smart_reminder_opened"].sort(),
+    );
   });
 });
 

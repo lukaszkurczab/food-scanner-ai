@@ -8,6 +8,9 @@ import {
   nextOccurrenceForDays,
 } from "./localScheduler";
 import { getNotificationPlan } from "./planService";
+import { runSystemNotifications } from "./system";
+import { reconcileReminderScheduling } from "@/services/reminders/reminderScheduling";
+import { isSmartRemindersEnabled } from "@/services/reminders/reminderService";
 import i18n from "@/i18n";
 import { debugScope } from "@/utils/debug";
 
@@ -22,6 +25,22 @@ export async function reconcileAll(uid: string) {
     const { aiStyle, plans } = await getNotificationPlan(uid);
     log.log("reconcile start", { uid, count: plans.length });
     const locale = i18n.language;
+    const smartRemindersEnabled = isSmartRemindersEnabled();
+    let smartOwnsReminderTypes = false;
+
+    if (smartRemindersEnabled) {
+      try {
+        const reminderSchedulingResult = await reconcileReminderScheduling(uid);
+        smartOwnsReminderTypes =
+          reminderSchedulingResult.result.status === "live_success" &&
+          reminderSchedulingResult.result.decision !== null;
+      } catch (error) {
+        log.warn("smart reminder reconcile failed before legacy ownership decision", {
+          uid,
+          error,
+        });
+      }
+    }
 
     for (const n of plans) {
       await cancelAllForNotif(notificationScheduleKey(uid, n.id));
@@ -30,6 +49,17 @@ export async function reconcileAll(uid: string) {
     for (const n of plans) {
       if (!n.enabled || !n.shouldSchedule) {
         log.log("skip ineligible", { id: n.id, type: n.type });
+        continue;
+      }
+
+      if (
+        smartOwnsReminderTypes &&
+        (n.type === "meal_reminder" || n.type === "day_fill")
+      ) {
+        log.log("skip legacy reminder scheduling because smart reminders own this type", {
+          id: n.id,
+          type: n.type,
+        });
         continue;
       }
 
@@ -130,6 +160,12 @@ export async function reconcileAll(uid: string) {
         }
         continue;
       }
+    }
+
+    try {
+      await runSystemNotifications(uid);
+    } catch (error) {
+      log.warn("system notifications reconcile failed", { uid, error });
     }
   } finally {
     log.log("reconcile done", { uid });

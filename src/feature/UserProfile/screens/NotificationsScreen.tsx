@@ -11,6 +11,8 @@ import { Alert as AppAlert } from "@/components/Alert";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useNotificationsScreenState } from "@/feature/UserProfile/hooks/useNotificationsScreenState";
+import { useReminderDecision } from "@/hooks/useReminderDecision";
+import { buildSmartReminderQaRows } from "@/services/reminders/reminderSettings";
 
 type NotificationsNavigation = StackNavigationProp<
   RootStackParamList,
@@ -28,10 +30,29 @@ export default function NotificationsScreen({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("notifications");
+  const smartReminderDecision = useReminderDecision({ uid, fetchEnabled: __DEV__ });
+  const smartReminderQaRows = useMemo(
+    () =>
+      buildSmartReminderQaRows({
+        status: smartReminderDecision.status,
+        source: smartReminderDecision.source,
+        enabled: smartReminderDecision.enabled,
+        decision: smartReminderDecision.decision,
+        error: smartReminderDecision.error,
+      }),
+    [
+      smartReminderDecision.decision,
+      smartReminderDecision.enabled,
+      smartReminderDecision.error,
+      smartReminderDecision.source,
+      smartReminderDecision.status,
+    ],
+  );
 
   const {
     items,
     motivationEnabled,
+    smartRemindersEnabled,
     statsEnabled,
     confirmId,
     deleting,
@@ -39,6 +60,7 @@ export default function NotificationsScreen({
     setSettingsCtaVisible,
     openSettings,
     onToggleReminder,
+    onToggleSmartReminders,
     onToggleMotivation,
     onToggleStats,
     askDelete,
@@ -56,6 +78,12 @@ export default function NotificationsScreen({
 
         <View>
           <SectionHeader label={t("screen.myReminders")} />
+          <Text style={styles.sectionHint}>
+            {t(
+              "screen.smartReminderHint",
+              "Smart Reminders can adapt timing to your day, recent logging and quiet hours.",
+            )}
+          </Text>
           {items.map((item) => (
             <View key={item.id} style={styles.mb12}>
               <NotificationCard
@@ -78,6 +106,25 @@ export default function NotificationsScreen({
 
         <View>
           <SectionHeader label={t("screen.motivation")} />
+
+          <View style={styles.toggleRow}>
+            <Text
+              style={styles.toggleLabel}
+              numberOfLines={1}
+            >
+              {t("screen.smartReminders")}
+            </Text>
+
+            <ButtonToggle
+              value={smartRemindersEnabled}
+              onToggle={onToggleSmartReminders}
+              trackColor={
+                smartRemindersEnabled
+                  ? theme.accentSecondary
+                  : theme.textSecondary
+              }
+            />
+          </View>
 
           <View style={styles.toggleRow}>
             <Text
@@ -113,6 +160,19 @@ export default function NotificationsScreen({
             />
           </View>
         </View>
+
+        {__DEV__ && (
+          <View style={styles.debugSection}>
+            <SectionHeader
+              label={t("screen.smartReminderDebugTitle", "Smart Reminder QA")}
+            />
+            {smartReminderQaRows.map((row) => (
+              <Text key={row.label} style={styles.debugText}>
+                {row.label}: {row.value}
+              </Text>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       <AppAlert
@@ -162,6 +222,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     content: { gap: theme.spacing.lg },
     mb12: { marginBottom: theme.spacing.sm },
     addButton: { marginBottom: theme.spacing.md },
+    sectionHint: {
+      marginBottom: theme.spacing.md,
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.sm,
+      lineHeight: 20,
+    },
     toggleRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -174,5 +241,18 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
       fontSize: theme.typography.size.md,
+    },
+    debugSection: {
+      padding: theme.spacing.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.border,
+      borderRadius: theme.rounded.lg,
+      backgroundColor: theme.card,
+      gap: theme.spacing.xs,
+    },
+    debugText: {
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.sm,
     },
   });

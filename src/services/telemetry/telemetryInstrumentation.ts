@@ -1,5 +1,11 @@
 import type { Meal } from "@/types/meal";
 import type { CoachActionType, CoachEmptyReason, CoachInsightType } from "@/services/coach/coachTypes";
+import type {
+  NoopReminderReasonCode,
+  ReminderDecisionType,
+  ReminderKind,
+  SuppressReminderReasonCode,
+} from "@/services/reminders/reminderTypes";
 import type { TelemetryProps } from "@/services/telemetry/telemetryTypes";
 import { track } from "@/services/telemetry/telemetryClient";
 
@@ -15,6 +21,34 @@ type NotificationTelemetryInput = {
   actionIdentifier?: string | null;
   openedFromBackground?: boolean;
   foreground?: boolean;
+};
+
+type SmartReminderConfidenceBucket = "low" | "medium" | "high";
+type SmartReminderScheduledWindow =
+  | "overnight"
+  | "morning"
+  | "afternoon"
+  | "evening"
+  | "late_evening";
+type SmartReminderDecisionFailureReason =
+  | "invalid_payload"
+  | "service_unavailable";
+type SmartReminderScheduleFailureReason =
+  | "permission_unavailable"
+  | "invalid_time"
+  | "schedule_error";
+
+type SmartReminderTelemetryInput = {
+  reminderKind?: ReminderKind | null;
+  decision?: ReminderDecisionType | null;
+  suppressionReason?: SuppressReminderReasonCode | null;
+  noopReason?: NoopReminderReasonCode | null;
+  confidenceBucket?: SmartReminderConfidenceBucket | null;
+  scheduledWindow?: SmartReminderScheduledWindow | null;
+  failureReason?:
+    | SmartReminderDecisionFailureReason
+    | SmartReminderScheduleFailureReason
+    | null;
 };
 
 export function normalizeTelemetryScreenName(routeName: string): string {
@@ -79,6 +113,54 @@ function buildNotificationProps(
   }
 
   return props;
+}
+
+function buildSmartReminderProps(
+  input: SmartReminderTelemetryInput,
+): TelemetryProps {
+  const props: TelemetryProps = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (value != null) {
+      props[key] = value;
+    }
+  }
+  return props;
+}
+
+export function toSmartReminderConfidenceBucket(
+  confidence: number,
+): SmartReminderConfidenceBucket {
+  if (confidence >= 0.8) {
+    return "high";
+  }
+
+  if (confidence >= 0.5) {
+    return "medium";
+  }
+
+  return "low";
+}
+
+export function toSmartReminderScheduledWindow(
+  localMinuteOfDay: number,
+): SmartReminderScheduledWindow {
+  if (localMinuteOfDay < 360) {
+    return "overnight";
+  }
+
+  if (localMinuteOfDay < 720) {
+    return "morning";
+  }
+
+  if (localMinuteOfDay < 1020) {
+    return "afternoon";
+  }
+
+  if (localMinuteOfDay < 1260) {
+    return "evening";
+  }
+
+  return "late_evening";
 }
 
 export function mapMealAddMethodKeyToInputMethod(
@@ -200,6 +282,36 @@ export function trackNotificationOpened(
   input: NotificationTelemetryInput,
 ): Promise<void> {
   return track("notification_opened", buildNotificationProps(input));
+}
+
+export function trackSmartReminderScheduled(
+  input: Required<Pick<SmartReminderTelemetryInput, "reminderKind" | "decision" | "confidenceBucket" | "scheduledWindow">>,
+): Promise<void> {
+  return track("smart_reminder_scheduled", buildSmartReminderProps(input));
+}
+
+export function trackSmartReminderSuppressed(
+  input: Required<Pick<SmartReminderTelemetryInput, "decision" | "suppressionReason" | "confidenceBucket">>,
+): Promise<void> {
+  return track("smart_reminder_suppressed", buildSmartReminderProps(input));
+}
+
+export function trackSmartReminderNoop(
+  input: Required<Pick<SmartReminderTelemetryInput, "decision" | "noopReason" | "confidenceBucket">>,
+): Promise<void> {
+  return track("smart_reminder_noop", buildSmartReminderProps(input));
+}
+
+export function trackSmartReminderDecisionFailed(
+  input: Required<Pick<SmartReminderTelemetryInput, "failureReason">>,
+): Promise<void> {
+  return track("smart_reminder_decision_failed", buildSmartReminderProps(input));
+}
+
+export function trackSmartReminderScheduleFailed(
+  input: Required<Pick<SmartReminderTelemetryInput, "reminderKind" | "decision" | "confidenceBucket" | "failureReason">>,
+): Promise<void> {
+  return track("smart_reminder_schedule_failed", buildSmartReminderProps(input));
 }
 
 export function trackCoachCardViewed(input: {
