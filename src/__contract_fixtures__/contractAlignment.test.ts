@@ -15,6 +15,13 @@ import * as path from "path";
 
 import type { Meal, MealType, MealSyncState, MealInputMethod, MealSource } from "@/types/meal";
 import type {
+  CoachActionType,
+  CoachEmptyReason,
+  CoachInsightType,
+  CoachResponse,
+  CoachSource,
+} from "@/services/coach/coachTypes";
+import type {
   NutritionState,
   NutritionTopRisk,
   NutritionCoachPriority,
@@ -217,6 +224,71 @@ describe("Nutrition state contract", () => {
     expect(typeof state.ai.costs.photo).toBe("number");
     expect(state.meta.isDegraded).toBe(false);
     expect(state.meta.componentStatus.habits).toBe("ok");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fixture: coach_response.json — canonical coach shape
+// ---------------------------------------------------------------------------
+
+describe("Coach response contract", () => {
+  const coach = loadFixture<CoachResponse>("coach_response.json");
+
+  const MOBILE_COACH_INSIGHT_TYPES: CoachInsightType[] = [
+    "under_logging",
+    "high_unknown_meal_details",
+    "low_protein_consistency",
+    "calorie_under_target",
+    "positive_momentum",
+    "stable",
+  ];
+  const MOBILE_COACH_ACTION_TYPES: CoachActionType[] = [
+    "log_next_meal",
+    "open_chat",
+    "review_history",
+    "none",
+  ];
+  const MOBILE_COACH_SOURCES: CoachSource[] = ["rules"];
+  const MOBILE_COACH_EMPTY_REASONS: CoachEmptyReason[] = [
+    "no_data",
+    "insufficient_data",
+  ];
+
+  test("top-level keys match CoachResponse type", () => {
+    const expectedKeys = [
+      "dayKey",
+      "computedAt",
+      "source",
+      "insights",
+      "topInsight",
+      "meta",
+    ];
+    expect(Object.keys(coach).sort()).toEqual(expectedKeys.sort());
+  });
+
+  test("coach response shape", () => {
+    expect(coach.dayKey).toBe("2026-03-18");
+    expect(coach.computedAt).toBe("2026-03-18T12:00:00Z");
+    expect(MOBILE_COACH_SOURCES).toContain(coach.source);
+    expect(Array.isArray(coach.insights)).toBe(true);
+    expect(coach.insights).toHaveLength(2);
+    expect(coach.topInsight?.type).toBe("under_logging");
+    expect(coach.meta.available).toBe(true);
+    expect(coach.meta.emptyReason).toBeNull();
+    expect(coach.meta.isDegraded).toBe(false);
+  });
+
+  test("coach insight enum values match mobile contract", () => {
+    expect(MOBILE_COACH_INSIGHT_TYPES).toContain(coach.insights[0]?.type);
+    expect(MOBILE_COACH_INSIGHT_TYPES).toContain(coach.insights[1]?.type);
+    expect(MOBILE_COACH_ACTION_TYPES).toContain(coach.insights[0]?.actionType);
+    expect(MOBILE_COACH_ACTION_TYPES).toContain(coach.insights[1]?.actionType);
+  });
+
+  test("coach empty reason values match mobile contract", () => {
+    expect(MOBILE_COACH_EMPTY_REASONS).toContain("no_data");
+    expect(MOBILE_COACH_EMPTY_REASONS).toContain("insufficient_data");
+    expect(coach.meta.emptyReason).toBeNull();
   });
 });
 

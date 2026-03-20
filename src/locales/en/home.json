@@ -18,7 +18,32 @@
     "subtitle_today": "Add your first meal to start tracking.",
     "subtitle_offline_today": "You are offline. Local data may be incomplete for today.",
     "subtitle_offline_past": "You are offline. Connect to load meals for this day.",
+    "coachTitle": "Coaching note",
+    "coachHint_today": "Start with one complete meal log so coaching has real data to work with.",
+    "coachHint_past": "Use history for context, then keep the next meal log complete so trends stay readable.",
+    "coachHint_insufficient_today": "There is not enough recent signal yet. One solid meal log today is enough to restart the pattern.",
+    "coachHint_insufficient_past": "There is not enough recent signal yet. Review history, then keep the next meal log complete.",
     "addMeal": "Add meal",
     "openHistory": "Go to history"
+  },
+  "coachInsight": {
+    "defaultEyebrow": "Coach insight",
+    "positiveEyebrow": "Momentum",
+    "showWhy": "Why am I seeing this?",
+    "hideWhy": "Hide why",
+    "whyTitle": "This is based on your recent logging",
+    "reasons": {
+      "valid_logging_days_7_low": "There have been too few solid logging days recently.",
+      "logging_consistency_28_low": "Logging consistency across the last few weeks is still low.",
+      "missing_nutrition_meals_today": "At least one meal today is missing useful nutrition detail.",
+      "unknown_meal_details_14_high": "Recent meals have been too vague to read clearly.",
+      "protein_hit_ratio_14_low": "Protein targets are being missed on too many logged days.",
+      "kcal_under_target_ratio_14_high": "Recent intake is landing under your calorie target too often.",
+      "meal_coverage_14_low": "There are too few complete meal days to read the pattern well.",
+      "streak_positive": "You have recent momentum worth protecting.",
+      "consistency_improving": "Logging consistency is moving in the right direction.",
+      "insufficient_data": "There is not enough recent data to form a stronger insight yet.",
+      "generic": "This insight comes from your recent logging pattern."
+    }
   }
 }

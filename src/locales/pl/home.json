@@ -18,7 +18,32 @@
     "subtitle_today": "Dodaj pierwszy posiłek, aby rozpocząć zapis dnia.",
     "subtitle_offline_today": "Jesteś offline. Lokalne dane dla dzisiaj mogą być niepełne.",
     "subtitle_offline_past": "Jesteś offline. Połącz się z internetem, aby pobrać posiłki z tego dnia.",
+    "coachTitle": "Wskazówka coachingowa",
+    "coachHint_today": "Zacznij od jednego pełnego wpisu posiłku, aby coaching miał na czym pracować.",
+    "coachHint_past": "Sprawdź historię, a kolejny posiłek wpisz dokładniej, żeby trend był czytelny.",
+    "coachHint_insufficient_today": "Na razie jest za mało świeżych sygnałów. Jeden porządny wpis posiłku dzisiaj wystarczy, by odbudować wzorzec.",
+    "coachHint_insufficient_past": "Na razie jest za mało świeżych sygnałów. Sprawdź historię, a kolejny posiłek wpisz dokładnie.",
     "addMeal": "Dodaj posiłek",
     "openHistory": "Przejdź do historii"
+  },
+  "coachInsight": {
+    "defaultEyebrow": "Insight coacha",
+    "positiveEyebrow": "Momentum",
+    "showWhy": "Dlaczego to widzę?",
+    "hideWhy": "Ukryj wyjaśnienie",
+    "whyTitle": "To wynika z Twojego ostatniego sposobu logowania",
+    "reasons": {
+      "valid_logging_days_7_low": "Ostatnio było zbyt mało solidnie zalogowanych dni.",
+      "logging_consistency_28_low": "Regularność logowania z ostatnich tygodni wciąż jest niska.",
+      "missing_nutrition_meals_today": "Przynajmniej jeden dzisiejszy posiłek nie ma wystarczających danych żywieniowych.",
+      "unknown_meal_details_14_high": "Ostatnie posiłki były zbyt ogólne, żeby czytać je z pewnością.",
+      "protein_hit_ratio_14_low": "Cel białka jest trafiany zbyt rzadko w zalogowanych dniach.",
+      "kcal_under_target_ratio_14_high": "Ostatnio za często kończysz dzień poniżej celu kalorycznego.",
+      "meal_coverage_14_low": "Jest za mało kompletnych dni posiłków, by dobrze odczytać wzorzec.",
+      "streak_positive": "Masz ostatnio momentum, które warto utrzymać.",
+      "consistency_improving": "Regularność logowania idzie w dobrym kierunku.",
+      "insufficient_data": "Jest jeszcze za mało danych, aby zbudować mocniejszy insight.",
+      "generic": "Ten insight wynika z Twojego ostatniego wzorca logowania."
+    }
   }
 }
