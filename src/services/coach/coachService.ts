@@ -1,28 +1,36 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { get } from "@/services/core/apiClient";
 import { withV2 } from "@/services/core/apiVersioning";
+import { createServiceError } from "@/services/contracts/serviceError";
 import {
   asBoolean,
   asNumber,
   asString,
-  asStringArray,
   isRecord,
 } from "@/services/contracts/guards";
 import { readPublicEnv } from "@/services/core/publicEnv";
 import { debugScope } from "@/utils/debug";
+import {
+  getCoachInsightValidUntil,
+  isCanonicalCoachInsightId,
+  isCanonicalCoachValidUntil,
+  isCoachActionType,
+  isCoachDayKey,
+  isCoachEmptyReason,
+  isCoachInsightType,
+  isCoachSource,
+} from "@/services/coach/coachContract";
 import type {
-  CoachActionType,
-  CoachEmptyReason,
   CoachInsight,
-  CoachInsightType,
   CoachMeta,
   CoachResponse,
   CoachResult,
-  CoachSource,
+  CoachResultStatus,
 } from "@/services/coach/coachTypes";
 
 const log = debugScope("CoachService");
 const COACH_ENDPOINT = withV2("/users/me/coach");
+const COACH_SERVICE_SOURCE = "CoachService";
 
 export const COACH_STORAGE_KEY_PREFIX = "coach:last:v1";
 
@@ -69,73 +77,142 @@ function buildEndpoint(dayKey: string): string {
   return `${COACH_ENDPOINT}?day=${encodeURIComponent(dayKey)}`;
 }
 
-function toCoachInsightType(value: unknown): CoachInsightType {
-  switch (value) {
-    case "under_logging":
-    case "high_unknown_meal_details":
-    case "low_protein_consistency":
-    case "calorie_under_target":
-    case "positive_momentum":
-    case "stable":
-      return value;
-    default:
-      return "stable";
+function toStrictString(value: unknown): string | null {
+  const normalized = asString(value)?.trim();
+  return normalized && normalized.length > 0 ? normalized : null;
+}
+
+function toStrictStringArray(value: unknown): string[] | null {
+  if (!Array.isArray(value)) {
+    return null;
   }
-}
 
-function toCoachActionType(value: unknown): CoachActionType {
-  switch (value) {
-    case "log_next_meal":
-    case "open_chat":
-    case "review_history":
-    case "none":
-      return value;
-    default:
-      return "none";
+  const items = value.map((item) => toStrictString(item));
+  if (items.some((item) => item === null)) {
+    return null;
   }
+
+  return items as string[];
 }
 
-function toCoachSource(value: unknown): CoachSource {
-  return value === "rules" ? value : "rules";
+function createInvalidCoachPayloadError(reason: string, payload?: unknown): Error {
+  return createServiceError({
+    code: "coach/invalid-contract-payload",
+    source: COACH_SERVICE_SOURCE,
+    retryable: false,
+    message: reason,
+    cause: payload,
+  });
 }
 
-function toCoachEmptyReason(value: unknown): CoachEmptyReason | null {
-  switch (value) {
-    case "no_data":
-    case "insufficient_data":
-      return value;
-    default:
-      return null;
-  }
-}
-
-function normalizeCoachInsight(value: unknown): CoachInsight | null {
+function normalizeCoachInsight(
+  value: unknown,
+  options: { dayKey: string },
+): CoachInsight | null {
   if (!isRecord(value)) {
     return null;
   }
 
+  const type = value.type;
+  if (!isCoachInsightType(type)) {
+    return null;
+  }
+
+  const id = toStrictString(value.id);
+  if (!id || !isCanonicalCoachInsightId(id, options.dayKey, type)) {
+    return null;
+  }
+
+  const priority = asNumber(value.priority);
+  if (priority === undefined || priority < 0) {
+    return null;
+  }
+
+  const title = toStrictString(value.title);
+  const body = toStrictString(value.body);
+  if (!title || !body) {
+    return null;
+  }
+
+  const actionType = value.actionType;
+  if (!isCoachActionType(actionType)) {
+    return null;
+  }
+
+  const actionLabel =
+    value.actionLabel === null || value.actionLabel === undefined
+      ? null
+      : toStrictString(value.actionLabel);
+  if (value.actionLabel !== null && value.actionLabel !== undefined && !actionLabel) {
+    return null;
+  }
+  if ((actionType === "none" && actionLabel !== null) || (actionType !== "none" && actionLabel === null)) {
+    return null;
+  }
+
+  const reasonCodes = toStrictStringArray(value.reasonCodes);
+  if (reasonCodes === null) {
+    return null;
+  }
+
+  if (!isCoachSource(value.source)) {
+    return null;
+  }
+
+  if (!isCanonicalCoachValidUntil(value.validUntil, options.dayKey)) {
+    return null;
+  }
+
+  const confidence = asNumber(value.confidence);
+  const isPositive = asBoolean(value.isPositive);
+  if (
+    confidence === undefined ||
+    confidence < 0 ||
+    confidence > 1 ||
+    isPositive === undefined
+  ) {
+    return null;
+  }
+
   return {
-    id: asString(value.id) ?? "",
-    type: toCoachInsightType(value.type),
-    priority: Math.max(asNumber(value.priority) ?? 0, 0),
-    title: asString(value.title) ?? "",
-    body: asString(value.body) ?? "",
-    actionLabel: asString(value.actionLabel) ?? null,
-    actionType: toCoachActionType(value.actionType),
-    reasonCodes: asStringArray(value.reasonCodes),
-    source: toCoachSource(value.source),
-    validUntil: asString(value.validUntil) ?? null,
-    confidence: Math.min(Math.max(asNumber(value.confidence) ?? 0, 0), 1),
-    isPositive: asBoolean(value.isPositive) ?? false,
+    id,
+    type,
+    priority,
+    title,
+    body,
+    actionLabel,
+    actionType,
+    reasonCodes,
+    source: "rules",
+    validUntil: getCoachInsightValidUntil(options.dayKey),
+    confidence,
+    isPositive,
   };
 }
 
-function normalizeCoachMeta(value: unknown): CoachMeta {
+function normalizeCoachMeta(value: unknown): CoachMeta | null {
   const payload = isRecord(value) ? value : {};
+  const available = asBoolean(payload.available);
+  const isDegraded = asBoolean(payload.isDegraded);
+  const emptyReason = payload.emptyReason;
+
+  if (
+    available !== true ||
+    isDegraded === undefined ||
+    !(
+      emptyReason === null ||
+      emptyReason === undefined ||
+      isCoachEmptyReason(emptyReason)
+    )
+  ) {
+    return null;
+  }
+
   return {
-    available: asBoolean(payload.available) ?? false,
-    emptyReason: toCoachEmptyReason(payload.emptyReason),
-    isDegraded: asBoolean(payload.isDegraded) ?? false,
+    available,
+    emptyReason:
+      emptyReason === null || emptyReason === undefined ? null : emptyReason,
+    isDegraded,
   };
 }
 
@@ -156,28 +233,63 @@ export function createFallbackCoachResponse(dayKey?: string | null): CoachRespon
 
 export function normalizeCoachResponse(
   value: unknown,
-  fallbackDayKey?: string | null,
+  _fallbackDayKey?: string | null,
 ): CoachResponse | null {
   if (!isRecord(value)) {
     return null;
   }
 
-  const dayKey = asString(value.dayKey) ?? normalizeDayKey(fallbackDayKey);
-  const insights = Array.isArray(value.insights)
-    ? value.insights
-      .map((item) => normalizeCoachInsight(item))
-      .filter((item): item is CoachInsight => item !== null)
-      .slice(0, 3)
-    : [];
-  const topInsight = normalizeCoachInsight(value.topInsight);
+  const dayKey = toStrictString(value.dayKey);
+  const computedAt = toStrictString(value.computedAt);
+  if (!dayKey || !isCoachDayKey(dayKey) || !computedAt || !isCoachSource(value.source)) {
+    return null;
+  }
+
+  if (!Array.isArray(value.insights) || value.insights.length > 3) {
+    return null;
+  }
+
+  const insights = value.insights.map((item) =>
+    normalizeCoachInsight(item, { dayKey }),
+  );
+  if (insights.some((item) => item === null)) {
+    return null;
+  }
+
+  const topInsight =
+    value.topInsight === null
+      ? null
+      : normalizeCoachInsight(value.topInsight, { dayKey });
+  if (value.topInsight !== null && topInsight === null) {
+    return null;
+  }
+
+  const meta = normalizeCoachMeta(value.meta);
+  if (!meta || !meta.available) {
+    return null;
+  }
+
+  const normalizedInsights = insights as CoachInsight[];
+  if (normalizedInsights.length === 0) {
+    if (topInsight !== null) {
+      return null;
+    }
+    if (meta.emptyReason === null) {
+      return null;
+    }
+  } else {
+    if (!topInsight || topInsight.id !== normalizedInsights[0]?.id || meta.emptyReason !== null) {
+      return null;
+    }
+  }
 
   return {
     dayKey,
-    computedAt: asString(value.computedAt) ?? createComputedAt(),
-    source: toCoachSource(value.source),
-    insights,
+    computedAt,
+    source: "rules",
+    insights: normalizedInsights,
     topInsight,
-    meta: normalizeCoachMeta(value.meta),
+    meta,
   };
 }
 
@@ -204,6 +316,69 @@ async function readPersistedCoach(
   }
 }
 
+function buildCoachResult(input: {
+  coach: CoachResponse;
+  source: CoachResult["source"];
+  status: CoachResultStatus;
+  enabled: boolean;
+  isStale: boolean;
+  error: unknown | null;
+}): CoachResult {
+  return input;
+}
+
+function buildFallbackResult(input: {
+  dayKey: string;
+  source: CoachResult["source"];
+  status: CoachResultStatus;
+  enabled: boolean;
+  error: unknown | null;
+}): CoachResult {
+  return buildCoachResult({
+    coach: createFallbackCoachResponse(input.dayKey),
+    source: input.source,
+    status: input.status,
+    enabled: input.enabled,
+    isStale: true,
+    error: input.error,
+  });
+}
+
+async function buildCachedCoachResult(params: {
+  uid: string;
+  dayKey: string;
+  error: unknown;
+  status: Extract<CoachResultStatus, "stale_cache" | "invalid_payload">;
+}): Promise<CoachResult | null> {
+  const cacheKey = createCacheKey(params.uid, params.dayKey);
+  const memory = memoryCacheByKey.get(cacheKey);
+  if (memory) {
+    return buildCoachResult({
+      coach: memory,
+      source: "memory",
+      status: params.status,
+      enabled: true,
+      isStale: true,
+      error: params.error,
+    });
+  }
+
+  const persisted = await readPersistedCoach(params.uid, params.dayKey);
+  if (persisted) {
+    memoryCacheByKey.set(cacheKey, persisted);
+    return buildCoachResult({
+      coach: persisted,
+      source: "storage",
+      status: params.status,
+      enabled: true,
+      isStale: true,
+      error: params.error,
+    });
+  }
+
+  return null;
+}
+
 export async function getCoach(
   uid: string | null | undefined,
   options?: { dayKey?: string | null; force?: boolean },
@@ -212,36 +387,39 @@ export async function getCoach(
   const fallbackCoach = createFallbackCoachResponse(dayKey);
 
   if (!isCoachEnabled()) {
-    return {
+    return buildCoachResult({
       coach: fallbackCoach,
       source: "disabled",
+      status: "disabled",
       enabled: false,
       isStale: true,
       error: null,
-    };
+    });
   }
 
   if (!uid) {
-    return {
+    return buildCoachResult({
       coach: fallbackCoach,
       source: "fallback",
+      status: "no_user",
       enabled: true,
       isStale: true,
       error: null,
-    };
+    });
   }
 
   const cacheKey = createCacheKey(uid, dayKey);
   if (!options?.force) {
     const memory = memoryCacheByKey.get(cacheKey);
     if (memory) {
-      return {
+      return buildCoachResult({
         coach: memory,
         source: "memory",
+        status: "live_success",
         enabled: true,
         isStale: false,
         error: null,
-      };
+      });
     }
 
     const existing = inFlightByKey.get(cacheKey);
@@ -256,52 +434,44 @@ export async function getCoach(
       const payload = await get<unknown>(buildEndpoint(dayKey), { timeout: 15_000 });
       const normalized = normalizeCoachResponse(payload, dayKey);
       if (!normalized) {
-        throw new Error("Invalid coach payload");
+        throw createInvalidCoachPayloadError("Invalid coach contract payload", payload);
       }
 
       memoryCacheByKey.set(cacheKey, normalized);
       await persistCoach(uid, dayKey, normalized);
 
-      return {
+      return buildCoachResult({
         coach: normalized,
         source: "remote",
+        status: "live_success",
         enabled: true,
         isStale: false,
         error: null,
-      };
+      });
     } catch (error) {
       log.warn("getCoach backend error", { uid, dayKey, error });
+      const isInvalidPayload =
+        error instanceof Error &&
+        "code" in error &&
+        (error as { code?: unknown }).code === "coach/invalid-contract-payload";
 
-      const memory = memoryCacheByKey.get(cacheKey);
-      if (memory) {
-        return {
-          coach: memory,
-          source: "memory",
-          enabled: true,
-          isStale: true,
-          error,
-        };
-      }
-
-      const persisted = await readPersistedCoach(uid, dayKey);
-      if (persisted) {
-        memoryCacheByKey.set(cacheKey, persisted);
-        return {
-          coach: persisted,
-          source: "storage",
-          enabled: true,
-          isStale: true,
-          error,
-        };
-      }
-
-      return {
-        coach: fallbackCoach,
-        source: "fallback",
-        enabled: true,
-        isStale: true,
+      const cached = await buildCachedCoachResult({
+        uid,
+        dayKey,
         error,
-      };
+        status: isInvalidPayload ? "invalid_payload" : "stale_cache",
+      });
+      if (cached) {
+        return cached;
+      }
+
+      return buildFallbackResult({
+        dayKey,
+        source: "fallback",
+        status: isInvalidPayload ? "invalid_payload" : "service_unavailable",
+        enabled: true,
+        error,
+      });
     } finally {
       const current = inFlightByKey.get(cacheKey);
       if (current === entry) {

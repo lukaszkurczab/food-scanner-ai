@@ -129,7 +129,7 @@ Description:
 
 ### Foundation flags
 
-These flags control v2 foundation surfaces introduced in the Foundation Sprint.  Each requires a matching backend flag — see [Foundation Rollout Runbook](../docs/runbooks/foundation-rollout-runbook.md).
+These flags control v2 foundation surfaces introduced in the Foundation Sprint. Each requires a matching backend flag — see [Coach Insights v1 Rollout](./docs/coach-insights-v1-rollout.md).
 
 | Mobile flag | Backend flag | What it enables |
 |-------------|-------------|-----------------|
@@ -193,9 +193,5 @@ npm run e2e:offline-error
 
 ## Operator docs
 
-- [Foundation Contracts](../docs/contracts/foundation-contracts.md) — canonical shapes for all cross-repo contracts
-- [Foundation Rollout Runbook](../docs/runbooks/foundation-rollout-runbook.md) — enable/disable/rollback steps
-- [Foundation Observability](../docs/monitoring/foundation-observability.md) — what to monitor, suggested alerts
-- [Foundation Hardening Plan](../docs/foundation/foundation-hardening-plan.md) — completed PRs, remaining gaps
-- [Telemetry Taxonomy](../docs/telemetry-taxonomy.md) — event names, property rules, payload limits
-- [Foundation QA Checklist](../docs/foundation-qa-checklist.md) — automated + manual QA coverage
+- [Coach Insights v1 Semantics](./docs/coach-insights-v1.md) — mobile contract handling, empty-state modes, telemetry rules
+- [Coach Insights v1 Rollout](./docs/coach-insights-v1-rollout.md) — preconditions, verification, rollback behavior

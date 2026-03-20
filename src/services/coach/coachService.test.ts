@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { CoachResponse } from "@/services/coach/coachTypes";
 
 const mockGet = jest.fn<(path: string, options?: unknown) => Promise<unknown>>();
 const mockReadPublicEnv = jest.fn<(name: string) => string | undefined>();
@@ -32,6 +33,46 @@ jest.mock("@/utils/debug", () => ({
 }));
 
 describe("coachService", () => {
+  function createHealthyPayload(overrides?: Partial<CoachResponse>): CoachResponse {
+    return {
+      dayKey: "2026-03-18",
+      computedAt: "2026-03-18T12:00:00Z",
+      source: "rules",
+      insights: [
+        {
+          id: "2026-03-18:positive_momentum",
+          type: "positive_momentum",
+          priority: 40,
+          title: "Recent momentum is worth protecting",
+          body: "Keep the pattern going with one more complete log today.",
+          actionLabel: "Open chat",
+          actionType: "open_chat",
+          reasonCodes: ["streak_positive", "consistency_improving"],
+          source: "rules",
+          validUntil: "2026-03-18T23:59:59Z",
+          confidence: 0.74,
+          isPositive: true,
+        },
+      ],
+      topInsight: {
+        id: "2026-03-18:positive_momentum",
+        type: "positive_momentum",
+        priority: 40,
+        title: "Recent momentum is worth protecting",
+        body: "Keep the pattern going with one more complete log today.",
+        actionLabel: "Open chat",
+        actionType: "open_chat",
+        reasonCodes: ["streak_positive", "consistency_improving"],
+        source: "rules",
+        validUntil: "2026-03-18T23:59:59Z",
+        confidence: 0.74,
+        isPositive: true,
+      },
+      meta: { available: true, emptyReason: null, isDegraded: false },
+      ...overrides,
+    };
+  }
+
   beforeEach(async () => {
     jest.clearAllMocks();
     mockReadPublicEnv.mockImplementation((name: string) => {
@@ -51,14 +92,7 @@ describe("coachService", () => {
   });
 
   it("fetches coach insights and persists the last good response", async () => {
-    mockGet.mockResolvedValue({
-      dayKey: "2026-03-18",
-      computedAt: "2026-03-18T12:00:00Z",
-      source: "rules",
-      insights: [],
-      topInsight: null,
-      meta: { available: true, emptyReason: "no_data", isDegraded: false },
-    });
+    mockGet.mockResolvedValue(createHealthyPayload());
 
     const service =
       jest.requireActual("@/services/coach/coachService") as typeof import("@/services/coach/coachService");
@@ -70,8 +104,9 @@ describe("coachService", () => {
     });
     expect(result.enabled).toBe(true);
     expect(result.source).toBe("remote");
+    expect(result.status).toBe("live_success");
     expect(result.isStale).toBe(false);
-    expect(result.coach.meta.emptyReason).toBe("no_data");
+    expect(result.coach.topInsight?.type).toBe("positive_momentum");
     expect(await AsyncStorage.getItem("coach:last:v1:user-1:2026-03-18")).toEqual(
       expect.any(String),
     );
@@ -92,19 +127,13 @@ describe("coachService", () => {
 
     expect(result.enabled).toBe(false);
     expect(result.source).toBe("disabled");
+    expect(result.status).toBe("disabled");
     expect(result.coach.dayKey).toBe("2026-03-18");
     expect(mockGet).not.toHaveBeenCalled();
   });
 
   it("uses in-memory cache for repeated reads of the same user and day", async () => {
-    mockGet.mockResolvedValue({
-      dayKey: "2026-03-18",
-      computedAt: "2026-03-18T12:00:00Z",
-      source: "rules",
-      insights: [],
-      topInsight: null,
-      meta: { available: true, emptyReason: "no_data", isDegraded: false },
-    });
+    mockGet.mockResolvedValue(createHealthyPayload());
 
     const service =
       jest.requireActual("@/services/coach/coachService") as typeof import("@/services/coach/coachService");
@@ -113,21 +142,20 @@ describe("coachService", () => {
     const second = await service.getCoach("user-1", { dayKey: "2026-03-18" });
 
     expect(first.source).toBe("remote");
+    expect(first.status).toBe("live_success");
     expect(second.source).toBe("memory");
+    expect(second.status).toBe("live_success");
     expect(mockGet).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to persisted response when refresh fails", async () => {
     await AsyncStorage.setItem(
       "coach:last:v1:user-1:2026-03-18",
-      JSON.stringify({
-        dayKey: "2026-03-18",
-        computedAt: "2026-03-18T10:00:00Z",
-        source: "rules",
-        insights: [],
-        topInsight: null,
-        meta: { available: true, emptyReason: "insufficient_data", isDegraded: false },
-      }),
+      JSON.stringify(
+        createHealthyPayload({
+          computedAt: "2026-03-18T10:00:00Z",
+        }),
+      ),
     );
     mockGet.mockRejectedValue(new Error("backend down"));
 
@@ -137,21 +165,34 @@ describe("coachService", () => {
     const result = await service.getCoach("user-1", { dayKey: "2026-03-18" });
 
     expect(result.source).toBe("storage");
+    expect(result.status).toBe("stale_cache");
     expect(result.isStale).toBe(true);
-    expect(result.coach.meta.emptyReason).toBe("insufficient_data");
+    expect(result.coach.topInsight?.type).toBe("positive_momentum");
     expect(mockWarn).toHaveBeenCalled();
+  });
+
+  it("returns service unavailable fallback when refresh fails without cache", async () => {
+    mockGet.mockRejectedValue(new Error("backend down"));
+
+    const service =
+      jest.requireActual("@/services/coach/coachService") as typeof import("@/services/coach/coachService");
+
+    const result = await service.getCoach("user-1", { dayKey: "2026-03-18" });
+
+    expect(result.source).toBe("fallback");
+    expect(result.status).toBe("service_unavailable");
+    expect(result.isStale).toBe(true);
+    expect(result.coach.topInsight).toBeNull();
+    expect(result.coach.meta.available).toBe(false);
   });
 
   it("invalidates cached coach response so the next read refetches remote", async () => {
     mockGet
-      .mockResolvedValueOnce({
-        dayKey: "2026-03-18",
-        computedAt: "2026-03-18T10:00:00Z",
-        source: "rules",
-        insights: [],
-        topInsight: null,
-        meta: { available: true, emptyReason: "no_data", isDegraded: false },
-      })
+      .mockResolvedValueOnce(
+        createHealthyPayload({
+          computedAt: "2026-03-18T10:00:00Z",
+        }),
+      )
       .mockResolvedValueOnce({
         dayKey: "2026-03-18",
         computedAt: "2026-03-18T11:00:00Z",
@@ -196,8 +237,152 @@ describe("coachService", () => {
     await service.invalidateCoachCache("user-1", { dayKey: "2026-03-18" });
     const second = await service.getCoach("user-1", { dayKey: "2026-03-18" });
 
-    expect(first.coach.topInsight).toBeNull();
+    expect(first.status).toBe("live_success");
+    expect(first.coach.topInsight?.type).toBe("positive_momentum");
     expect(second.coach.topInsight?.type).toBe("under_logging");
+    expect(second.status).toBe("live_success");
     expect(mockGet).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects unknown insightType as invalid contract payload", async () => {
+    mockGet.mockResolvedValue({
+      ...createHealthyPayload(),
+      insights: [
+        {
+          ...createHealthyPayload().insights[0],
+          id: "2026-03-18:mystery_insight",
+          type: "mystery_insight",
+        },
+      ],
+      topInsight: {
+        ...createHealthyPayload().topInsight!,
+        id: "2026-03-18:mystery_insight",
+        type: "mystery_insight",
+      },
+    });
+
+    const service =
+      jest.requireActual("@/services/coach/coachService") as typeof import("@/services/coach/coachService");
+
+    const result = await service.getCoach("user-1", { dayKey: "2026-03-18" });
+
+    expect(result.source).toBe("fallback");
+    expect(result.status).toBe("invalid_payload");
+    expect(result.coach.topInsight).toBeNull();
+    expect(result.error).toEqual(
+      expect.objectContaining({ code: "coach/invalid-contract-payload" }),
+    );
+  });
+
+  it("rejects unknown actionType as invalid contract payload", async () => {
+    mockGet.mockResolvedValue({
+      ...createHealthyPayload(),
+      insights: [
+        {
+          ...createHealthyPayload().insights[0],
+          actionType: "do_something_else",
+        },
+      ],
+      topInsight: {
+        ...createHealthyPayload().topInsight!,
+        actionType: "do_something_else",
+      },
+    });
+
+    const service =
+      jest.requireActual("@/services/coach/coachService") as typeof import("@/services/coach/coachService");
+
+    const result = await service.getCoach("user-1", { dayKey: "2026-03-18" });
+
+    expect(result.source).toBe("fallback");
+    expect(result.status).toBe("invalid_payload");
+    expect(result.coach.topInsight).toBeNull();
+    expect(result.error).toEqual(
+      expect.objectContaining({ code: "coach/invalid-contract-payload" }),
+    );
+  });
+
+  it("rejects missing required fields as invalid contract payload", async () => {
+    mockGet.mockResolvedValue({
+      ...createHealthyPayload(),
+      insights: [
+        {
+          ...createHealthyPayload().insights[0],
+          title: "",
+        },
+      ],
+      topInsight: {
+        ...createHealthyPayload().topInsight!,
+        title: "",
+      },
+    });
+
+    const service =
+      jest.requireActual("@/services/coach/coachService") as typeof import("@/services/coach/coachService");
+
+    const result = await service.getCoach("user-1", { dayKey: "2026-03-18" });
+
+    expect(result.source).toBe("fallback");
+    expect(result.status).toBe("invalid_payload");
+    expect(result.coach.topInsight).toBeNull();
+    expect(result.error).toEqual(
+      expect.objectContaining({ code: "coach/invalid-contract-payload" }),
+    );
+  });
+
+  it("keeps stale cache semantics distinct from invalid payload", async () => {
+    await AsyncStorage.setItem(
+      "coach:last:v1:user-1:2026-03-18",
+      JSON.stringify(
+        createHealthyPayload({
+          computedAt: "2026-03-18T10:00:00Z",
+        }),
+      ),
+    );
+    mockGet.mockRejectedValue(new Error("backend down"));
+
+    const service =
+      jest.requireActual("@/services/coach/coachService") as typeof import("@/services/coach/coachService");
+
+    const result = await service.getCoach("user-1", { dayKey: "2026-03-18" });
+
+    expect(result.source).toBe("storage");
+    expect(result.status).toBe("stale_cache");
+    expect(result.isStale).toBe(true);
+  });
+
+  it("uses stale cache when the fresh payload is invalid", async () => {
+    await AsyncStorage.setItem(
+      "coach:last:v1:user-1:2026-03-18",
+      JSON.stringify(
+        createHealthyPayload({
+          computedAt: "2026-03-18T10:00:00Z",
+        }),
+      ),
+    );
+    mockGet.mockResolvedValue({
+      ...createHealthyPayload(),
+      insights: [
+        {
+          ...createHealthyPayload().insights[0],
+          id: "2026-03-18-positive-momentum",
+          priority: 40,
+        },
+      ],
+      topInsight: {
+        ...createHealthyPayload().topInsight!,
+        id: "2026-03-18-positive-momentum",
+      },
+    });
+
+    const service =
+      jest.requireActual("@/services/coach/coachService") as typeof import("@/services/coach/coachService");
+
+    const result = await service.getCoach("user-1", { dayKey: "2026-03-18" });
+
+    expect(result.source).toBe("storage");
+    expect(result.status).toBe("invalid_payload");
+    expect(result.isStale).toBe(true);
+    expect(result.coach.topInsight?.type).toBe("positive_momentum");
   });
 });

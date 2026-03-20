@@ -147,14 +147,14 @@ export default function CoachInsightCard({
         <Text style={styles.expanderText}>
           {expanded
             ? t("coachInsight.hideWhy", "Hide why")
-            : t("coachInsight.showWhy", "Why am I seeing this?")}
+            : t("coachInsight.showWhy", "Why this insight")}
         </Text>
       </Pressable>
 
       {expanded ? (
         <View style={styles.reasonBox}>
           <Text style={styles.reasonTitle}>
-            {t("coachInsight.whyTitle", "This is based on your recent logging")}
+            {t("coachInsight.whyTitle", "Based on recent logging signals")}
           </Text>
           <Text style={styles.reasonText}>{reasonText}</Text>
         </View>

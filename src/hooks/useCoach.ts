@@ -10,6 +10,7 @@ import {
 import type {
   CoachResponse,
   CoachResponseSource,
+  CoachResultStatus,
 } from "@/services/coach/coachTypes";
 
 type UseCoachParams = {
@@ -22,6 +23,7 @@ type UseCoachResult = {
   loading: boolean;
   enabled: boolean;
   source: CoachResponseSource;
+  status: CoachResultStatus;
   isStale: boolean;
   error: unknown | null;
   refresh: () => Promise<CoachResponse>;
@@ -46,6 +48,7 @@ export function useCoach({
   const [loading, setLoading] = useState<boolean>(!!uid);
   const [enabled, setEnabled] = useState<boolean>(true);
   const [source, setSource] = useState<CoachResponseSource>("fallback");
+  const [status, setStatus] = useState<CoachResultStatus>("no_user");
   const [isStale, setIsStale] = useState<boolean>(true);
   const [error, setError] = useState<unknown | null>(null);
 
@@ -53,12 +56,14 @@ export function useCoach({
     coach: CoachResponse;
     enabled: boolean;
     source: CoachResponseSource;
+    status: CoachResultStatus;
     isStale: boolean;
     error: unknown | null;
   }) => {
     setCoach(result.coach);
     setEnabled(result.enabled);
     setSource(result.source);
+    setStatus(result.status);
     setIsStale(result.isStale);
     setError(result.error);
   }, []);
@@ -71,6 +76,7 @@ export function useCoach({
       setLoading(false);
       setEnabled(true);
       setSource("fallback");
+      setStatus("no_user");
       setIsStale(true);
       setError(null);
       return () => {
@@ -142,6 +148,7 @@ export function useCoach({
     loading,
     enabled,
     source,
+    status,
     isStale,
     error,
     refresh,

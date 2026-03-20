@@ -53,6 +53,7 @@ describe("useCoach", () => {
     mockGetCoach.mockResolvedValue({
       coach: remoteCoach,
       source: "remote",
+      status: "live_success",
       enabled: true,
       isStale: false,
       error: null,
@@ -69,6 +70,7 @@ describe("useCoach", () => {
     expect(mockGetCoach).toHaveBeenCalledWith("user-1", { dayKey: "2026-03-18" });
     expect(result.current.coach.meta.available).toBe(true);
     expect(result.current.source).toBe("remote");
+    expect(result.current.status).toBe("live_success");
     expect(result.current.enabled).toBe(true);
   });
 
@@ -81,6 +83,7 @@ describe("useCoach", () => {
 
     expect(mockGetCoach).not.toHaveBeenCalled();
     expect(result.current.source).toBe("fallback");
+    expect(result.current.status).toBe("no_user");
     expect(result.current.isStale).toBe(true);
     expect(result.current.coach.topInsight).toBeNull();
   });
@@ -89,6 +92,7 @@ describe("useCoach", () => {
     mockGetCoach.mockResolvedValue({
       coach: createFallbackCoachResponse("2026-03-18"),
       source: "disabled",
+      status: "disabled",
       enabled: false,
       isStale: true,
       error: null,
@@ -104,6 +108,7 @@ describe("useCoach", () => {
 
     expect(result.current.enabled).toBe(false);
     expect(result.current.source).toBe("disabled");
+    expect(result.current.status).toBe("disabled");
   });
 
   it("keeps coach fallback stable on failure and supports explicit refresh", async () => {
@@ -132,6 +137,7 @@ describe("useCoach", () => {
     mockGetCoach.mockResolvedValue({
       coach: fallbackCoach,
       source: "storage",
+      status: "stale_cache",
       enabled: true,
       isStale: true,
       error: new Error("backend down"),
@@ -139,6 +145,7 @@ describe("useCoach", () => {
     mockRefreshCoach.mockResolvedValue({
       coach: refreshedCoach,
       source: "remote",
+      status: "live_success",
       enabled: true,
       isStale: false,
       error: null,
@@ -154,6 +161,7 @@ describe("useCoach", () => {
 
     expect(result.current.coach.meta.emptyReason).toBe("insufficient_data");
     expect(result.current.source).toBe("storage");
+    expect(result.current.status).toBe("stale_cache");
     expect(result.current.error).toEqual(expect.any(Error));
 
     await act(async () => {
@@ -165,7 +173,32 @@ describe("useCoach", () => {
       expect(result.current.coach.topInsight?.type).toBe("under_logging");
     });
     expect(result.current.source).toBe("remote");
+    expect(result.current.status).toBe("live_success");
     expect(result.current.isStale).toBe(false);
+  });
+
+  it("surfaces service unavailable distinctly when no live or cached coach payload exists", async () => {
+    mockGetCoach.mockResolvedValue({
+      coach: createFallbackCoachResponse("2026-03-18"),
+      source: "fallback",
+      status: "service_unavailable",
+      enabled: true,
+      isStale: true,
+      error: new Error("backend down"),
+    });
+
+    const { result } = renderHook(() =>
+      useCoach({ uid: "user-1", dayKey: "2026-03-18" }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.source).toBe("fallback");
+    expect(result.current.status).toBe("service_unavailable");
+    expect(result.current.coach.meta.available).toBe(false);
+    expect(result.current.error).toEqual(expect.any(Error));
   });
 
   it("invalidates and refreshes coach after a meal mutation for the same user", async () => {
@@ -193,6 +226,7 @@ describe("useCoach", () => {
     mockGetCoach.mockResolvedValue({
       coach: initialCoach,
       source: "remote",
+      status: "live_success",
       enabled: true,
       isStale: false,
       error: null,
@@ -200,6 +234,7 @@ describe("useCoach", () => {
     mockRefreshCoach.mockResolvedValue({
       coach: refreshedCoach,
       source: "remote",
+      status: "live_success",
       enabled: true,
       isStale: false,
       error: null,
