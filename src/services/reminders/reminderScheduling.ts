@@ -60,7 +60,7 @@ function createReminderScheduleLocalKeyPrefix(uid: string): string {
   return notificationScheduleKey(uid, SMART_REMINDER_KEY_PREFIX);
 }
 
-export function createReminderScheduleKey(uid: string, dayKey: string): string {
+function createReminderScheduleKey(uid: string, dayKey: string): string {
   return notificationScheduleKey(uid, createReminderLocalId(dayKey));
 }
 
@@ -117,16 +117,8 @@ function buildReminderContent(
   };
 }
 
-async function clearAndCancel(uid: string, dayKey: string, localKey: string): Promise<void> {
+async function clearAndCancel(localKey: string): Promise<void> {
   await cancelAllForNotif(localKey);
-}
-
-export async function cancelReminderScheduling(
-  uid: string,
-  options?: { dayKey?: string | null },
-): Promise<void> {
-  const dayKey = options?.dayKey?.trim() || getCurrentReminderDecisionDayKey();
-  await cancelAllForNotif(createReminderScheduleKey(uid, dayKey));
 }
 
 export async function cancelAllReminderScheduling(uid: string): Promise<void> {
@@ -158,7 +150,7 @@ export async function reconcileReminderScheduling(
   const result = await getReminderDecision(uid, { dayKey });
 
   if (result.status !== "live_success" || !result.decision) {
-    await clearAndCancel(uid, dayKey, localKey);
+    await clearAndCancel(localKey);
     log.log("skip scheduling because reminder decision is unavailable", {
       uid,
       dayKey,
@@ -172,7 +164,7 @@ export async function reconcileReminderScheduling(
   }
 
   if (result.decision.decision !== "send") {
-    await clearAndCancel(uid, dayKey, localKey);
+    await clearAndCancel(localKey);
     if (result.decision.decision === "suppress") {
       const suppressionReason = result.decision.reasonCodes[0];
       if (suppressionReason) {
@@ -228,7 +220,7 @@ export async function reconcileReminderScheduling(
 
   const permission = await Notifications.getPermissionsAsync();
   if (!permission.granted) {
-    await clearAndCancel(uid, dayKey, localKey);
+    await clearAndCancel(localKey);
     emitSmartReminderTelemetry(
       trackSmartReminderScheduleFailed({
         reminderKind: result.decision.kind,
@@ -258,7 +250,7 @@ export async function reconcileReminderScheduling(
 
   const when = resolveScheduledDate(result.decision, now);
   if (!when) {
-    await clearAndCancel(uid, dayKey, localKey);
+    await clearAndCancel(localKey);
     emitSmartReminderTelemetry(
       trackSmartReminderScheduleFailed({
         reminderKind: result.decision.kind,
@@ -297,7 +289,7 @@ export async function reconcileReminderScheduling(
       localKey,
     );
   } catch (error) {
-    await clearAndCancel(uid, dayKey, localKey);
+    await clearAndCancel(localKey);
     emitSmartReminderTelemetry(
       trackSmartReminderScheduleFailed({
         reminderKind: result.decision.kind,
