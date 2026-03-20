@@ -44,6 +44,9 @@ import {
   REMINDER_DECISION_TYPES,
   REMINDER_KINDS,
   REMINDER_REASON_CODES,
+  SEND_REMINDER_REASON_CODES,
+  SUPPRESS_REMINDER_REASON_CODES,
+  NOOP_REMINDER_REASON_CODES,
 } from "@/services/reminders/reminderTypes";
 
 // ---------------------------------------------------------------------------
@@ -470,6 +473,135 @@ describe("Smart reminder telemetry contract", () => {
     expect(fixture.disallowedEventNames.sort()).toEqual(
       ["smart_reminder_decision_computed", "smart_reminder_opened"].sort(),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Snapshot: smart_reminders_v1.contract.json — cross-repo contract snapshot
+// ---------------------------------------------------------------------------
+
+type ContractSnapshot = {
+  _version: string;
+  decisionTypes: string[];
+  reminderKinds: string[];
+  reasonCodes: {
+    all: string[];
+    send: string[];
+    suppress: string[];
+    noop: string[];
+  };
+  decisionShape: {
+    requiredFields: string[];
+    sendRequires: string[];
+    suppressForbids: string[];
+    noopForbids: string[];
+  };
+  telemetry: {
+    allowedEvents: string[];
+    disallowedEvents: string[];
+    propsByEvent: Record<string, string[]>;
+  };
+};
+
+describe("Smart Reminders v1 contract snapshot", () => {
+  const contract = loadFixture<ContractSnapshot>("smart_reminders_v1.contract.json");
+
+  test("snapshot version is v1", () => {
+    expect(contract._version).toBe("v1");
+  });
+
+  test("decision types match snapshot", () => {
+    expect([...REMINDER_DECISION_TYPES].sort()).toEqual(
+      [...contract.decisionTypes].sort(),
+    );
+  });
+
+  test("reminder kinds match snapshot", () => {
+    expect([...REMINDER_KINDS].sort()).toEqual(
+      [...contract.reminderKinds].sort(),
+    );
+  });
+
+  test("all reason codes match snapshot", () => {
+    expect([...REMINDER_REASON_CODES].sort()).toEqual(
+      [...contract.reasonCodes.all].sort(),
+    );
+  });
+
+  test("send reason codes match snapshot", () => {
+    expect([...SEND_REMINDER_REASON_CODES].sort()).toEqual(
+      [...contract.reasonCodes.send].sort(),
+    );
+  });
+
+  test("suppress reason codes match snapshot", () => {
+    expect([...SUPPRESS_REMINDER_REASON_CODES].sort()).toEqual(
+      [...contract.reasonCodes.suppress].sort(),
+    );
+  });
+
+  test("noop reason codes match snapshot", () => {
+    expect([...NOOP_REMINDER_REASON_CODES].sort()).toEqual(
+      [...contract.reasonCodes.noop].sort(),
+    );
+  });
+
+  test("reason code groups are exhaustive", () => {
+    const grouped = [
+      ...contract.reasonCodes.send,
+      ...contract.reasonCodes.suppress,
+      ...contract.reasonCodes.noop,
+    ].sort();
+    expect(grouped).toEqual([...contract.reasonCodes.all].sort());
+  });
+
+  test("decision shape required fields match ReminderDecision type", () => {
+    const typeFields = [
+      "dayKey",
+      "computedAt",
+      "decision",
+      "kind",
+      "reasonCodes",
+      "scheduledAtUtc",
+      "confidence",
+      "validUntil",
+    ].sort();
+    expect([...contract.decisionShape.requiredFields].sort()).toEqual(typeFields);
+  });
+
+  test("telemetry allowed events match snapshot", () => {
+    const MOBILE_EVENT_NAMES = [
+      "smart_reminder_suppressed",
+      "smart_reminder_scheduled",
+      "smart_reminder_noop",
+      "smart_reminder_decision_failed",
+      "smart_reminder_schedule_failed",
+    ];
+    expect([...MOBILE_EVENT_NAMES].sort()).toEqual(
+      [...contract.telemetry.allowedEvents].sort(),
+    );
+  });
+
+  test("telemetry disallowed events match snapshot", () => {
+    expect([...contract.telemetry.disallowedEvents].sort()).toEqual(
+      ["smart_reminder_decision_computed", "smart_reminder_opened"].sort(),
+    );
+  });
+
+  test("telemetry props per event match snapshot", () => {
+    const MOBILE_PROPS_BY_EVENT: Record<string, readonly string[]> = {
+      smart_reminder_suppressed: ["decision", "suppressionReason", "confidenceBucket"],
+      smart_reminder_scheduled: ["reminderKind", "decision", "confidenceBucket", "scheduledWindow"],
+      smart_reminder_noop: ["decision", "noopReason", "confidenceBucket"],
+      smart_reminder_decision_failed: ["failureReason"],
+      smart_reminder_schedule_failed: ["reminderKind", "decision", "confidenceBucket", "failureReason"],
+    };
+
+    for (const [eventName, props] of Object.entries(MOBILE_PROPS_BY_EVENT)) {
+      expect([...contract.telemetry.propsByEvent[eventName]].sort()).toEqual(
+        [...props].sort(),
+      );
+    }
   });
 });
 
