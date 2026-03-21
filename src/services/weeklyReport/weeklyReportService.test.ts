@@ -1,0 +1,169 @@
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import type { WeeklyReport } from "@/services/weeklyReport/weeklyReportTypes";
+
+const mockGet = jest.fn<(path: string, options?: unknown) => Promise<unknown>>();
+const mockReadPublicEnv = jest.fn<(name: string) => string | undefined>();
+const mockWarn = jest.fn<(...args: unknown[]) => void>();
+
+jest.mock("@/services/core/apiClient", () => ({
+  get: (path: string, options?: unknown) => mockGet(path, options),
+}));
+
+jest.mock("@/services/core/publicEnv", () => ({
+  readPublicEnv: (name: string) => mockReadPublicEnv(name),
+}));
+
+jest.mock("@/utils/debug", () => ({
+  debugScope: () => ({
+    log: jest.fn(),
+    warn: (...args: unknown[]) => mockWarn(...args),
+    error: jest.fn(),
+    time: jest.fn(),
+    timeEnd: jest.fn(),
+    child: () => ({
+      log: jest.fn(),
+      warn: (...args: unknown[]) => mockWarn(...args),
+      error: jest.fn(),
+      time: jest.fn(),
+      timeEnd: jest.fn(),
+      child: jest.fn(),
+    }),
+  }),
+}));
+
+describe("weeklyReportService", () => {
+  function createPayload(overrides?: Partial<WeeklyReport>): WeeklyReport {
+    return {
+      status: "ready",
+      period: {
+        startDay: "2026-03-09",
+        endDay: "2026-03-15",
+      },
+      summary: "Logging stayed steady across the week.",
+      insights: [
+        {
+          type: "consistency",
+          importance: "high",
+          tone: "positive",
+          title: "You stayed consistent on most days",
+          body: "You had valid logging on 6 of 7 days, which made the week readable.",
+          reasonCodes: ["valid_logged_days_7_high"],
+        },
+      ],
+      priorities: [
+        {
+          type: "maintain_consistency",
+          text: "Keep the same logging rhythm on most days.",
+          reasonCodes: ["maintain_best_pattern"],
+        },
+      ],
+      ...overrides,
+    };
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockReadPublicEnv.mockImplementation((name: string) => {
+      if (name === "EXPO_PUBLIC_ENABLE_WEEKLY_REPORTS") {
+        return "true";
+      }
+      return undefined;
+    });
+  });
+
+  it("fetches and normalizes a ready weekly report", async () => {
+    mockGet.mockResolvedValue(createPayload());
+
+    const service =
+      jest.requireActual("@/services/weeklyReport/weeklyReportService") as typeof import("@/services/weeklyReport/weeklyReportService");
+
+    const result = await service.getWeeklyReport("user-1", {
+      weekEnd: "2026-03-15",
+    });
+
+    expect(mockGet).toHaveBeenCalledWith(
+      "/api/v2/users/me/reports/weekly?weekEnd=2026-03-15",
+      { timeout: 15_000 },
+    );
+    expect(result.enabled).toBe(true);
+    expect(result.status).toBe("live_success");
+    expect(result.report.status).toBe("ready");
+    expect(result.report.insights[0]?.type).toBe("consistency");
+  });
+
+  it("derives the default weekEnd from UTC yesterday", () => {
+    const service =
+      jest.requireActual("@/services/weeklyReport/weeklyReportService") as typeof import("@/services/weeklyReport/weeklyReportService");
+
+    const result = service.getCurrentWeeklyReportWeekEnd(
+      new Date("2026-03-22T00:30:00+01:00"),
+    );
+
+    expect(result).toBe("2026-03-20");
+  });
+
+  it("returns disabled fallback and skips endpoint when feature flag is off", async () => {
+    mockReadPublicEnv.mockImplementation((name: string) => {
+      if (name === "EXPO_PUBLIC_ENABLE_WEEKLY_REPORTS") {
+        return "false";
+      }
+      return undefined;
+    });
+
+    const service =
+      jest.requireActual("@/services/weeklyReport/weeklyReportService") as typeof import("@/services/weeklyReport/weeklyReportService");
+
+    const result = await service.getWeeklyReport("user-1", {
+      weekEnd: "2026-03-15",
+    });
+
+    expect(result.enabled).toBe(false);
+    expect(result.source).toBe("disabled");
+    expect(result.status).toBe("disabled");
+    expect(result.report.status).toBe("not_available");
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it("supports insufficient-data payloads", async () => {
+    mockGet.mockResolvedValue(
+      createPayload({
+        status: "insufficient_data",
+        summary: "Log a few complete days to unlock a weekly report.",
+        insights: [],
+        priorities: [],
+      }),
+    );
+
+    const service =
+      jest.requireActual("@/services/weeklyReport/weeklyReportService") as typeof import("@/services/weeklyReport/weeklyReportService");
+
+    const result = await service.getWeeklyReport("user-1", {
+      weekEnd: "2026-03-15",
+    });
+
+    expect(result.status).toBe("live_success");
+    expect(result.report.status).toBe("insufficient_data");
+    expect(result.report.insights).toEqual([]);
+  });
+
+  it("falls back to unavailable state on invalid payload", async () => {
+    mockGet.mockResolvedValue({
+      ...createPayload(),
+      insights: [{ ...createPayload().insights[0], type: "mystery_type" }],
+    });
+
+    const service =
+      jest.requireActual("@/services/weeklyReport/weeklyReportService") as typeof import("@/services/weeklyReport/weeklyReportService");
+
+    const result = await service.getWeeklyReport("user-1", {
+      weekEnd: "2026-03-15",
+    });
+
+    expect(result.source).toBe("fallback");
+    expect(result.status).toBe("invalid_payload");
+    expect(result.report.status).toBe("not_available");
+    expect(result.error).toEqual(
+      expect.objectContaining({ code: "weekly-report/invalid-contract-payload" }),
+    );
+  });
+});

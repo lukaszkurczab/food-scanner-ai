@@ -32,6 +32,14 @@ import type {
   NutritionTopRisk,
   NutritionCoachPriority,
 } from "@/services/nutritionState/nutritionStateTypes";
+import type {
+  WeeklyReport,
+  WeeklyReportInsightImportance,
+  WeeklyReportInsightTone,
+  WeeklyReportInsightType,
+  WeeklyReportPriorityType,
+  WeeklyReportStatus,
+} from "@/services/weeklyReport/weeklyReportTypes";
 import {
   COACH_ACTION_TYPES,
   COACH_EMPTY_REASONS,
@@ -48,6 +56,14 @@ import {
   SUPPRESS_REMINDER_REASON_CODES,
   NOOP_REMINDER_REASON_CODES,
 } from "@/services/reminders/reminderTypes";
+import {
+  WEEKLY_REPORT_INSIGHT_IMPORTANCE,
+  WEEKLY_REPORT_INSIGHT_TONES,
+  WEEKLY_REPORT_INSIGHT_TYPES,
+  WEEKLY_REPORT_PRIORITY_TYPES,
+  WEEKLY_REPORT_STATUSES,
+  isWeeklyReportDayKey,
+} from "@/services/weeklyReport/weeklyReportContract";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -344,6 +360,64 @@ describe("Coach response contract", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Fixture: weekly_report.json — canonical weekly report shape
+// ---------------------------------------------------------------------------
+
+describe("Weekly report contract", () => {
+  const report = loadFixture<WeeklyReport>("weekly_report.json");
+
+  const MOBILE_WEEKLY_REPORT_STATUSES: WeeklyReportStatus[] = WEEKLY_REPORT_STATUSES;
+  const MOBILE_WEEKLY_REPORT_INSIGHT_TYPES: WeeklyReportInsightType[] =
+    WEEKLY_REPORT_INSIGHT_TYPES;
+  const MOBILE_WEEKLY_REPORT_INSIGHT_IMPORTANCE: WeeklyReportInsightImportance[] =
+    WEEKLY_REPORT_INSIGHT_IMPORTANCE;
+  const MOBILE_WEEKLY_REPORT_INSIGHT_TONES: WeeklyReportInsightTone[] =
+    WEEKLY_REPORT_INSIGHT_TONES;
+  const MOBILE_WEEKLY_REPORT_PRIORITY_TYPES: WeeklyReportPriorityType[] =
+    WEEKLY_REPORT_PRIORITY_TYPES;
+
+  test("top-level keys match WeeklyReport type", () => {
+    const expectedKeys = ["status", "period", "summary", "insights", "priorities"];
+    expect(Object.keys(report).sort()).toEqual(expectedKeys.sort());
+  });
+
+  test("period shape stays bounded", () => {
+    expect(isWeeklyReportDayKey(report.period.startDay)).toBe(true);
+    expect(isWeeklyReportDayKey(report.period.endDay)).toBe(true);
+    expect(report.period.startDay).toBe("2026-03-09");
+    expect(report.period.endDay).toBe("2026-03-15");
+  });
+
+  test("enum values match mobile weekly report contract", () => {
+    expect(MOBILE_WEEKLY_REPORT_STATUSES).toContain(report.status);
+    expect(report.insights.length).toBeLessThanOrEqual(4);
+    expect(report.priorities.length).toBeLessThanOrEqual(2);
+
+    for (const insight of report.insights) {
+      expect(MOBILE_WEEKLY_REPORT_INSIGHT_TYPES).toContain(insight.type);
+      expect(MOBILE_WEEKLY_REPORT_INSIGHT_IMPORTANCE).toContain(insight.importance);
+      expect(MOBILE_WEEKLY_REPORT_INSIGHT_TONES).toContain(insight.tone);
+      expect(Array.isArray(insight.reasonCodes)).toBe(true);
+    }
+
+    for (const priority of report.priorities) {
+      expect(MOBILE_WEEKLY_REPORT_PRIORITY_TYPES).toContain(priority.type);
+      expect(Array.isArray(priority.reasonCodes)).toBe(true);
+    }
+  });
+
+  test("ready fixture stays actionable and small", () => {
+    expect(report.status).toBe("ready");
+    expect(typeof report.summary).toBe("string");
+    expect(report.summary).toContain("Logging stayed steady across the week.");
+    expect(report.insights).toHaveLength(1);
+    expect(report.priorities).toHaveLength(1);
+    expect(report.insights[0]?.type).toBe("consistency");
+    expect(report.priorities[0]?.type).toBe("maintain_consistency");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Fixture: reminder_decision.json — canonical reminder decision shape
 // ---------------------------------------------------------------------------
 
@@ -481,6 +555,7 @@ describe("Smart reminder telemetry contract", () => {
 // ---------------------------------------------------------------------------
 
 type ContractSnapshot = {
+  _doc: string;
   _version: string;
   decisionTypes: string[];
   reminderKinds: string[];

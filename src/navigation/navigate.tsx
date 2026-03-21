@@ -25,6 +25,7 @@ export type RootStackParamList = {
     | undefined;
 
   Home: undefined;
+  WeeklyReport: undefined;
   Login: undefined;
   CheckMailbox: { email: string };
   ChangeEmailCheckMailbox: { email: string };
