@@ -24,6 +24,7 @@ const mockReact = React;
 const mockUseMeals = jest.fn();
 const mockUseNutritionState = jest.fn();
 const mockUseCoach = jest.fn();
+const mockUseWeeklyReport = jest.fn();
 const mockUseUserContext = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockSubscribeStreak = jest.fn();
@@ -44,6 +45,14 @@ jest.mock("@/hooks/useNutritionState", () => ({
 jest.mock("@/hooks/useCoach", () => ({
   useCoach: (params: { uid: string | null | undefined; dayKey?: string | null }) =>
     mockUseCoach(params),
+}));
+
+jest.mock("@/hooks/useWeeklyReport", () => ({
+  useWeeklyReport: (params: {
+    uid: string | null | undefined;
+    weekEnd?: string | null;
+    active?: boolean;
+  }) => mockUseWeeklyReport(params),
 }));
 
 jest.mock("@contexts/UserContext", () => ({
@@ -186,6 +195,27 @@ jest.mock("../components/CoachInsightCard", () => ({
     ),
 }));
 
+jest.mock("../components/WeeklyReportCard", () => ({
+  __esModule: true,
+  default: ({
+    report,
+    onPress,
+  }: {
+    report: { status: string };
+    onPress: () => void;
+  }) =>
+    mockReact.createElement(
+      mockView,
+      null,
+      mockReact.createElement(mockText, null, `weekly-report-card:${report.status}`),
+      mockReact.createElement(
+        mockPressable,
+        { onPress },
+        mockReact.createElement(mockText, null, "weekly-report-open"),
+      ),
+    ),
+}));
+
 type NavigationMock = {
   navigate: jest.Mock;
 };
@@ -276,6 +306,21 @@ describe("HomeScreen", () => {
       error: null,
       refresh: jest.fn(),
     });
+    mockUseWeeklyReport.mockReturnValue({
+      report: {
+        status: "ready",
+        period: { startDay: "2026-03-11", endDay: "2026-03-17" },
+        summary: "Logging stayed steady across the week.",
+        insights: [],
+        priorities: [],
+      },
+      loading: false,
+      enabled: true,
+      source: "remote",
+      status: "live_success",
+      error: null,
+      refresh: jest.fn(),
+    });
   });
 
   afterEach(() => {
@@ -363,6 +408,20 @@ describe("HomeScreen", () => {
 
     fireEvent.press(getByText("coach-cta"));
     expect(navigation.navigate).toHaveBeenCalledWith("MealAddMethod");
+  });
+
+  it("renders weekly report card on today and navigates to weekly report screen", async () => {
+    const navigation = createNavigation();
+    const { getByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText("weekly-report-card:ready")).toBeTruthy();
+    });
+
+    fireEvent.press(getByText("weekly-report-open"));
+    expect(navigation.navigate).toHaveBeenCalledWith("WeeklyReport");
   });
 
   it("does not render coach insight card from stale cache after a coach fetch failure", async () => {

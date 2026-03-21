@@ -3,6 +3,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import type { RootStackParamList } from "./navigate";
 import { useAuthContext } from "@/context/AuthContext";
 import HomeScreen from "@/feature/Home/screens/HomeScreen";
+import WeeklyReportScreen from "@/feature/Home/screens/WeeklyReportScreen";
 import HistoryListScreen from "@/feature/History/screens/HistoryListScreen";
 import StatisticsScreen from "@/feature/Statistics/screens/StatisticsScreen";
 import LoginScreen from "@/feature/Auth/screens/LoginScreen";
@@ -56,6 +57,7 @@ function renderAppScreens() {
     <>
       <Stack.Screen name="Loading" component={LoadingScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="WeeklyReport" component={WeeklyReportScreen} />
       <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="AvatarCamera" component={AvatarCameraScreen} />

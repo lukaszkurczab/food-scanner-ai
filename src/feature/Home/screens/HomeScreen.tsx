@@ -17,6 +17,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import WeekStrip, { WeekDayItem } from "@/components/WeekStrip";
 import EmptyDayView from "../components/EmptyDayView";
 import CoachInsightCard from "../components/CoachInsightCard";
+import WeeklyReportCard from "../components/WeeklyReportCard";
 import { StreakBadge } from "@components/StreakBadge";
 import { calculateMacroTargets } from "@/utils/calculateMacroTargets";
 import { MacroTargetsRow } from "../components/MacroTargetsRow";
@@ -24,6 +25,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useNutritionState } from "@/hooks/useNutritionState";
 import { useCoach } from "@/hooks/useCoach";
+import { useWeeklyReport } from "@/hooks/useWeeklyReport";
 import type {
   NutritionTargets,
   NutritionState,
@@ -216,6 +218,11 @@ export default function HomeScreen({ navigation }: Props) {
     status: coachStatus,
     isStale: coachIsStale,
   } = useCoach({ uid, dayKey: selectedDayKey });
+  const {
+    report: weeklyReport,
+    loading: weeklyReportLoading,
+    enabled: weeklyReportEnabled,
+  } = useWeeklyReport({ uid, active: isToday });
 
   const dayMeals = useMemo(
     () => getMealsForDate(meals, selectedDate),
@@ -472,6 +479,14 @@ export default function HomeScreen({ navigation }: Props) {
             }
           />
         )}
+
+        {isToday && weeklyReportEnabled ? (
+          <WeeklyReportCard
+            loading={weeklyReportLoading}
+            report={weeklyReport}
+            onPress={() => navigation.navigate("WeeklyReport")}
+          />
+        ) : null}
 
         {showWeeklyGraph && <WeeklyProgressGraph data={data} labels={labels} />}
 
