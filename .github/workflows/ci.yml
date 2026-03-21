@@ -36,3 +36,21 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+  contract-sync:
+    name: Cross-repo contract sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout mobile repo
+        uses: actions/checkout@v4
+
+      - name: Checkout backend repo (canonical contract source)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/food-scanner-ai-backend
+          path: _backend
+
+      - name: Verify contract sync
+        run: BACKEND_REPO=_backend ./scripts/verify-backend-contract.sh

@@ -111,6 +111,7 @@ export async function initReminderRuntime(): Promise<void> {
   initialized = true;
   currentAppState = AppState.currentState;
   appStateSubscription = AppState.addEventListener("change", handleAppStateChange);
+  log.log("reminder runtime initialized", { appState: currentAppState });
 
   if (currentUid && isForeground(currentAppState)) {
     await runReconcile("auth_ready", { force: true });
