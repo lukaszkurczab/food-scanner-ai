@@ -12,56 +12,63 @@ import { useUser } from "@/hooks/useUser";
 import { Platform } from "react-native";
 
 const mockSubscribeToUserProfile = jest.fn<(...args: unknown[]) => unknown>();
-const mockFetchUserProfileRemote = jest.fn<
-  (...args: unknown[]) => Promise<UserData | null>
->();
-const mockUpdateUserProfileRemote = jest.fn<
-  (...args: unknown[]) => Promise<void>
->();
+const mockFetchUserProfileRemote =
+  jest.fn<(...args: unknown[]) => Promise<UserData | null>>();
 const mockSavePhotoLocally = jest.fn<(...args: unknown[]) => Promise<string>>();
-const mockChangeUsernameService = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockChangeUsernameService =
+  jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockChangeEmailService = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockChangePasswordService = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockDeleteAccountService = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockExportUserDataService = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockEnqueueUserAvatarUpload = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockEnqueueUserProfileUpdate = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockGetQueuedOpsCount = jest.fn<(...args: unknown[]) => Promise<number>>();
-const mockGetDeadLetterCount = jest.fn<(...args: unknown[]) => Promise<number>>();
-const mockRetryDeadLetterOps = jest.fn<(...args: unknown[]) => Promise<number>>();
+const mockChangePasswordService =
+  jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockDeleteAccountService =
+  jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockExportUserDataService =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockEnqueueUserAvatarUpload =
+  jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockEnqueueUserProfileUpdate =
+  jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockGetSyncCounts =
+  jest.fn<(...args: unknown[]) => Promise<{ dead: number; pending: number }>>();
+const mockRetryDeadLetterOps =
+  jest.fn<(...args: unknown[]) => Promise<number>>();
 const mockPushQueue = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockAssertNoUndefined = jest.fn<(...args: unknown[]) => void>();
-const mockAsyncStorageGetItem = jest.fn<
-  (...args: unknown[]) => Promise<string | null>
->();
-const mockAsyncStorageSetItem = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockFsGetInfoAsync = jest.fn<
-  (...args: unknown[]) => Promise<{ exists: boolean }>
->();
-const mockFsMakeDirectoryAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockAsyncStorageGetItem =
+  jest.fn<(...args: unknown[]) => Promise<string | null>>();
+const mockAsyncStorageSetItem =
+  jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockFsGetInfoAsync =
+  jest.fn<(...args: unknown[]) => Promise<{ exists: boolean }>>();
+const mockFsMakeDirectoryAsync =
+  jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockFsDeleteAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockFsMoveAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockFsCopyAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockFsReadAsStringAsync = jest.fn<(...args: unknown[]) => Promise<string>>();
-const mockFsWriteAsStringAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockFsCreateDownloadResumable = jest.fn<
-  (...args: unknown[]) => { downloadAsync: () => Promise<{ status: number }> }
->();
-const mockFsStorageRequestPermissions = jest.fn<
-  (...args: unknown[]) => Promise<{ granted: boolean; directoryUri: string | null }>
->();
-const mockFsStorageCreateFile = jest.fn<(...args: unknown[]) => Promise<string>>();
-const mockPrintToFileAsync = jest.fn<
-  (...args: unknown[]) => Promise<{ uri: string }>
->();
+const mockFsReadAsStringAsync =
+  jest.fn<(...args: unknown[]) => Promise<string>>();
+const mockFsWriteAsStringAsync =
+  jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockFsCreateDownloadResumable =
+  jest.fn<
+    (...args: unknown[]) => { downloadAsync: () => Promise<{ status: number }> }
+  >();
+const mockFsStorageRequestPermissions =
+  jest.fn<
+    (
+      ...args: unknown[]
+    ) => Promise<{ granted: boolean; directoryUri: string | null }>
+  >();
+const mockFsStorageCreateFile =
+  jest.fn<(...args: unknown[]) => Promise<string>>();
+const mockPrintToFileAsync =
+  jest.fn<(...args: unknown[]) => Promise<{ uri: string }>>();
 const mockShareAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockNetInfoFetch = jest.fn<
-  (...args: unknown[]) => Promise<{ isConnected: boolean }>
->();
+const mockNetInfoFetch =
+  jest.fn<(...args: unknown[]) => Promise<{ isConnected: boolean }>>();
 const mockUnsub = jest.fn<() => void>();
-const mockI18nChangeLanguage = jest.fn<
-  (...args: unknown[]) => Promise<unknown>
->();
+const mockI18nChangeLanguage =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 const createExportPayload = () => ({
   profile: createUser(),
@@ -72,9 +79,10 @@ const createExportPayload = () => ({
 let mockSnapshotCb: ((snap: { data: () => unknown }) => void) | null = null;
 
 jest.mock("@/services/user/userProfileRepository", () => ({
-  subscribeToUserProfile: (...args: unknown[]) => mockSubscribeToUserProfile(...args),
-  fetchUserProfileRemote: (...args: unknown[]) => mockFetchUserProfileRemote(...args),
-  updateUserProfileRemote: (...args: unknown[]) => mockUpdateUserProfileRemote(...args),
+  subscribeToUserProfile: (...args: unknown[]) =>
+    mockSubscribeToUserProfile(...args),
+  fetchUserProfileRemote: (...args: unknown[]) =>
+    mockFetchUserProfileRemote(...args),
 }));
 
 jest.mock("@utils/savePhotoLocally", () => ({
@@ -82,10 +90,13 @@ jest.mock("@utils/savePhotoLocally", () => ({
 }));
 
 jest.mock("@/services/user/userService", () => ({
-  changeUsernameService: (...args: unknown[]) => mockChangeUsernameService(...args),
+  changeUsernameService: (...args: unknown[]) =>
+    mockChangeUsernameService(...args),
   changeEmailService: (...args: unknown[]) => mockChangeEmailService(...args),
-  changePasswordService: (...args: unknown[]) => mockChangePasswordService(...args),
-  deleteAccountService: (...args: unknown[]) => mockDeleteAccountService(...args),
+  changePasswordService: (...args: unknown[]) =>
+    mockChangePasswordService(...args),
+  deleteAccountService: (...args: unknown[]) =>
+    mockDeleteAccountService(...args),
   exportUserData: (...args: unknown[]) => mockExportUserDataService(...args),
 }));
 
@@ -94,8 +105,7 @@ jest.mock("@/services/offline/queue.repo", () => ({
     mockEnqueueUserProfileUpdate(...args),
   enqueueUserAvatarUpload: (...args: unknown[]) =>
     mockEnqueueUserAvatarUpload(...args),
-  getQueuedOpsCount: (...args: unknown[]) => mockGetQueuedOpsCount(...args),
-  getDeadLetterCount: (...args: unknown[]) => mockGetDeadLetterCount(...args),
+  getSyncCounts: (...args: unknown[]) => mockGetSyncCounts(...args),
   retryDeadLetterOps: (...args: unknown[]) => mockRetryDeadLetterOps(...args),
 }));
 
@@ -157,6 +167,24 @@ jest.mock("@/i18n", () => ({
     resolvedLanguage: "en",
     language: "en",
     changeLanguage: (...args: unknown[]) => mockI18nChangeLanguage(...args),
+    t: (key: string) => key,
+  },
+}));
+
+jest.mock("@/services/core/events", () => ({
+  emit: jest.fn(),
+  on: jest.fn(() => jest.fn()),
+}));
+
+jest.mock("@/services/user/profilePatch", () => ({
+  sanitizeUserProfilePatch: (patch: Partial<UserData>) => {
+    const next = { ...patch };
+    delete next.language;
+    delete next.darkTheme;
+    delete next.avatarLocalPath;
+    return Object.fromEntries(
+      Object.entries(next).filter(([, value]) => value !== undefined),
+    );
   },
 }));
 
@@ -210,6 +238,7 @@ describe("useUser", () => {
 
     setPlatformOs("ios");
     mockSnapshotCb = null;
+
     mockSubscribeToUserProfile.mockImplementation((...args: unknown[]) => {
       const params = args[0] as { onData: (data: UserData | null) => void };
       mockSnapshotCb = (snap) => {
@@ -217,8 +246,8 @@ describe("useUser", () => {
       };
       return mockUnsub;
     });
+
     mockFetchUserProfileRemote.mockResolvedValue(null);
-    mockUpdateUserProfileRemote.mockResolvedValue(undefined);
     mockSavePhotoLocally.mockResolvedValue("file:///photos/avatar.jpg");
     mockChangeUsernameService.mockResolvedValue(undefined);
     mockChangeEmailService.mockResolvedValue(undefined);
@@ -227,8 +256,7 @@ describe("useUser", () => {
     mockExportUserDataService.mockResolvedValue(createExportPayload());
     mockEnqueueUserAvatarUpload.mockResolvedValue(undefined);
     mockEnqueueUserProfileUpdate.mockResolvedValue(undefined);
-    mockGetQueuedOpsCount.mockResolvedValue(0);
-    mockGetDeadLetterCount.mockResolvedValue(0);
+    mockGetSyncCounts.mockResolvedValue({ dead: 0, pending: 0 });
     mockRetryDeadLetterOps.mockResolvedValue(0);
     mockPushQueue.mockResolvedValue(undefined);
     mockAssertNoUndefined.mockReturnValue(undefined);
@@ -268,6 +296,7 @@ describe("useUser", () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
+
     expect(result.current.userData).toBeNull();
     expect(result.current.language).toBe("en");
     expect(mockSubscribeToUserProfile).not.toHaveBeenCalled();
@@ -275,9 +304,10 @@ describe("useUser", () => {
     await act(async () => {
       await result.current.changeLanguage("pl");
     });
+
     expect(result.current.language).toBe("pl");
     expect(mockI18nChangeLanguage).toHaveBeenCalledWith("pl");
-    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
+    expect(mockFetchUserProfileRemote).not.toHaveBeenCalled();
   });
 
   it("loads cached profile, reacts to snapshot updates and unsubscribes", async () => {
@@ -292,6 +322,7 @@ describe("useUser", () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
+
     expect(result.current.userData?.username).toBe("neo");
     expect(result.current.language).toBe("en");
 
@@ -308,6 +339,7 @@ describe("useUser", () => {
     await waitFor(() => {
       expect(result.current.userData?.username).toBe("trinity");
     });
+
     expect(result.current.language).toBe("en");
     expect(mockAsyncStorageSetItem).toHaveBeenCalled();
 
@@ -322,14 +354,17 @@ describe("useUser", () => {
       avatarUrl: "https://cdn/avatar-remote.jpg",
       avatarLocalPath: "",
     });
+
     mockAsyncStorageGetItem
       .mockResolvedValueOnce(JSON.stringify(cached))
       .mockResolvedValueOnce(JSON.stringify(cached));
+
     let targetInfoReads = 0;
     mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
       const path = args[0] as string;
       if (path === "file:///docs/users/u1/images/") return { exists: false };
-      if (path === "file:///docs/users/u1/images/avatar.jpg.tmp") return { exists: true };
+      if (path === "file:///docs/users/u1/images/avatar.jpg.tmp")
+        return { exists: true };
       if (path === avatarPath) {
         targetInfoReads += 1;
         return { exists: targetInfoReads >= 1 };
@@ -345,9 +380,11 @@ describe("useUser", () => {
         "file:///docs/users/u1/images/avatar.jpg.tmp",
       );
     });
+
     await waitFor(() => {
       expect(result.current.userData?.avatarLocalPath).toBe(avatarPath);
     });
+
     expect(mockFsDeleteAsync).toHaveBeenCalledWith(
       "file:///docs/users/u1/images/avatar.jpg.tmp",
       { idempotent: true },
@@ -374,11 +411,13 @@ describe("useUser", () => {
       avatarUrl: "https://cdn/avatar-broken.jpg",
       avatarLocalPath: "",
     });
+
     mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
     mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
       const path = args[0] as string;
       if (path === "file:///docs/users/u1/images/") return { exists: true };
-      if (path === "file:///docs/users/u1/images/avatar.jpg.tmp") return { exists: true };
+      if (path === "file:///docs/users/u1/images/avatar.jpg.tmp")
+        return { exists: true };
       return { exists: false };
     });
     mockFsCreateDownloadResumable.mockReturnValueOnce({
@@ -390,6 +429,7 @@ describe("useUser", () => {
     await waitFor(() => {
       expect(mockFsCreateDownloadResumable).toHaveBeenCalled();
     });
+
     expect(result.current.userData?.avatarLocalPath).toBe("");
     expect(mockFsDeleteAsync).toHaveBeenCalledWith(
       "file:///docs/users/u1/images/avatar.jpg.tmp",
@@ -409,10 +449,11 @@ describe("useUser", () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
+
     expect(result.current.userData?.avatarLocalPath).toBe("");
     expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
       "user:profile:u1",
-      expect.stringContaining("\"avatarLocalPath\":\"\""),
+      expect.stringContaining('"avatarLocalPath":""'),
     );
   });
 
@@ -426,11 +467,14 @@ describe("useUser", () => {
 
     const { result } = renderHook(() => useUser("u1"));
     let profile: unknown = null;
+
     await act(async () => {
       profile = await result.current.fetchUserFromCloud();
     });
 
-    expect(profile).toEqual(expect.objectContaining({ username: "cached-name" }));
+    expect(profile).toEqual(
+      expect.objectContaining({ username: "cached-name" }),
+    );
     expect(mockFetchUserProfileRemote).not.toHaveBeenCalled();
   });
 
@@ -442,15 +486,19 @@ describe("useUser", () => {
     mockFetchUserProfileRemote.mockResolvedValueOnce(remote);
 
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(null);
     });
+
     let profile: unknown = null;
     await act(async () => {
       profile = await result.current.fetchUserFromCloud();
     });
 
-    expect(profile).toEqual(expect.objectContaining({ username: "remote-name" }));
+    expect(profile).toEqual(
+      expect.objectContaining({ username: "remote-name" }),
+    );
     expect(mockFetchUserProfileRemote).toHaveBeenCalledWith("u1");
     expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
       "user:profile:u1",
@@ -464,9 +512,12 @@ describe("useUser", () => {
     mockAsyncStorageGetItem
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce("{bad-json")
-      .mockResolvedValueOnce(JSON.stringify(createUser({ username: "from-cache" })));
+      .mockResolvedValueOnce(
+        JSON.stringify(createUser({ username: "from-cache" })),
+      );
 
     const { result } = renderHook(() => useUser("u1"));
+
     let malformedProfile: UserData | null = null;
     await act(async () => {
       malformedProfile = await result.current.fetchUserFromCloud();
@@ -475,15 +526,20 @@ describe("useUser", () => {
 
     mockNetInfoFetch.mockResolvedValueOnce({ isConnected: true });
     mockFetchUserProfileRemote.mockRejectedValueOnce(new Error("network"));
+
     let fallbackProfile: unknown = null;
     await act(async () => {
       fallbackProfile = await result.current.fetchUserFromCloud();
     });
-    expect(fallbackProfile).toEqual(expect.objectContaining({ username: "from-cache" }));
+
+    expect(fallbackProfile).toEqual(
+      expect.objectContaining({ username: "from-cache" }),
+    );
   });
 
   it("treats language and darkTheme as local-only profile fields", async () => {
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(createUser());
     });
@@ -501,7 +557,6 @@ describe("useUser", () => {
       "updateUserProfile payload",
     );
     expect(mockEnqueueUserProfileUpdate).not.toHaveBeenCalled();
-    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
     expect(result.current.language).toBe("pl");
     expect(result.current.userData?.darkTheme).toBe(true);
     expect(mockI18nChangeLanguage).toHaveBeenCalledWith("pl");
@@ -509,6 +564,7 @@ describe("useUser", () => {
 
   it("keeps mixed profile patch remote sync without local-only fields", async () => {
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(createUser());
     });
@@ -533,14 +589,16 @@ describe("useUser", () => {
       }),
     );
     expect(mockPushQueue).toHaveBeenCalledWith("u1");
-    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
+    expect(result.current.userData?.age).toBe("31");
   });
 
   it("queues profile update while offline without immediate push", async () => {
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(createUser());
     });
+
     mockNetInfoFetch.mockResolvedValueOnce({ isConnected: false });
 
     await act(async () => {
@@ -557,15 +615,14 @@ describe("useUser", () => {
       }),
     );
     expect(mockPushQueue).not.toHaveBeenCalledWith("u1");
-    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
     expect(result.current.syncState).toBe("pending");
   });
 
   it("marks profile sync as conflict when dead-letter ops exist", async () => {
-    mockGetDeadLetterCount.mockResolvedValue(1);
-    mockGetQueuedOpsCount.mockResolvedValue(0);
+    mockGetSyncCounts.mockResolvedValue({ dead: 1, pending: 0 });
 
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(createUser());
     });
@@ -576,9 +633,10 @@ describe("useUser", () => {
   });
 
   it("retries dead-letter profile operations and pushes when online", async () => {
-    mockGetDeadLetterCount.mockResolvedValue(1);
+    mockGetSyncCounts.mockResolvedValue({ dead: 1, pending: 0 });
     mockRetryDeadLetterOps.mockResolvedValue(1);
     mockNetInfoFetch.mockResolvedValue({ isConnected: true });
+
     const { result } = renderHook(() => useUser("u1"));
 
     await waitFor(() => {
@@ -598,14 +656,17 @@ describe("useUser", () => {
 
   it("sets avatar in offline and online modes", async () => {
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(createUser());
     });
 
     mockNetInfoFetch.mockResolvedValueOnce({ isConnected: false });
+
     await act(async () => {
       await result.current.setAvatar("file:///picked.jpg");
     });
+
     expect(mockSavePhotoLocally).toHaveBeenCalledWith({
       userUid: "u1",
       fileId: "avatar",
@@ -618,28 +679,24 @@ describe("useUser", () => {
       }),
     );
     expect(mockPushQueue).not.toHaveBeenCalled();
-    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalledWith(
-      "u1",
-      expect.objectContaining({
-        avatarLocalPath: "file:///photos/avatar.jpg",
-      }),
-    );
     expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
       "user:profile:u1",
-      expect.stringContaining("\"avatarLocalPath\":\"file:///photos/avatar.jpg\""),
+      expect.stringContaining('"avatarLocalPath":"file:///photos/avatar.jpg"'),
     );
 
     mockNetInfoFetch.mockResolvedValueOnce({ isConnected: true });
+
     await act(async () => {
       await result.current.setAvatar("file:///picked-2.jpg");
     });
+
     expect(mockEnqueueUserAvatarUpload).toHaveBeenCalledTimes(2);
     expect(mockPushQueue).toHaveBeenCalledWith("u1");
-    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
   });
 
   it("delegates account operations and deletes user doc", async () => {
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(createUser());
     });
@@ -647,10 +704,11 @@ describe("useUser", () => {
     await act(async () => {
       await result.current.changeUsername("morpheus", "pw");
     });
+
     expect(result.current.userData?.username).toBe("morpheus");
     expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
       "user:profile:u1",
-      expect.stringContaining("\"username\":\"morpheus\""),
+      expect.stringContaining('"username":"morpheus"'),
     );
 
     await act(async () => {
@@ -682,6 +740,7 @@ describe("useUser", () => {
 
   it("runs sync convenience helpers and language update for signed-in user", async () => {
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(createUser());
     });
@@ -693,10 +752,16 @@ describe("useUser", () => {
       await result.current.changeLanguage("it");
     });
 
-    expect(mockNetInfoFetch).toHaveBeenCalledTimes(3);
+    expect(mockNetInfoFetch).toHaveBeenCalledTimes(4);
     expect(result.current.language).toBe("en");
     expect(mockI18nChangeLanguage).toHaveBeenCalledWith("en");
-    expect(mockUpdateUserProfileRemote).not.toHaveBeenCalled();
+    expect(mockEnqueueUserProfileUpdate).toHaveBeenCalledWith(
+      "u1",
+      { language: "en" },
+      expect.objectContaining({
+        updatedAt: expect.any(String),
+      }),
+    );
   });
 
   it("exports user data for iOS and android SAF branches", async () => {
@@ -704,6 +769,7 @@ describe("useUser", () => {
     jest.setSystemTime(new Date("2026-03-11T12:00:00.000Z"));
 
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(createUser());
     });
@@ -723,6 +789,7 @@ describe("useUser", () => {
     );
 
     setPlatformOs("android");
+
     const androidResult = await result.current.exportUserData();
     expect(androidResult).toBe("content://tree/export.pdf");
     expect(mockFsStorageRequestPermissions).toHaveBeenCalled();
@@ -744,6 +811,7 @@ describe("useUser", () => {
     setPlatformOs("android");
 
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(createUser());
     });
@@ -763,6 +831,7 @@ describe("useUser", () => {
     setPlatformOs("android");
 
     const { result } = renderHook(() => useUser("u1"));
+
     await act(async () => {
       emitSnapshot(createUser());
     });

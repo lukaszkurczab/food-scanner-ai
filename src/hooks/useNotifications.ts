@@ -1,4 +1,3 @@
-// src/hooks/useNotifications.ts
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { UserNotification } from "@/types/notification";
@@ -25,8 +24,16 @@ type PrefConfig = {
 };
 
 const PREF_CONFIGS: Record<string, PrefConfig> = {
-  motivation: { key: "motivation", field: "motivationEnabled", defaultValue: false },
-  smartReminders: { key: "smart-reminders", field: "smartRemindersEnabled", defaultValue: true },
+  motivation: {
+    key: "motivation",
+    field: "motivationEnabled",
+    defaultValue: false,
+  },
+  smartReminders: {
+    key: "smart-reminders",
+    field: "smartRemindersEnabled",
+    defaultValue: true,
+  },
   stats: { key: "stats", field: "statsEnabled", defaultValue: false },
 };
 
@@ -52,7 +59,10 @@ async function loadPref(
   if (prefsData) {
     const raw = prefsData.notifications?.[config.field];
     const enabled = typeof raw === "boolean" ? raw : config.defaultValue;
-    await AsyncStorage.setItem(cacheKey(uid, config), JSON.stringify({ enabled }));
+    await AsyncStorage.setItem(
+      cacheKey(uid, config),
+      JSON.stringify({ enabled }),
+    );
     return { enabled };
   }
 
@@ -73,9 +83,15 @@ async function savePref(
 ): Promise<void> {
   try {
     await updateNotificationPrefs(uid, { [config.field]: enabled });
-    await AsyncStorage.setItem(cacheKey(uid, config), JSON.stringify({ enabled }));
+    await AsyncStorage.setItem(
+      cacheKey(uid, config),
+      JSON.stringify({ enabled }),
+    );
   } catch {
-    await AsyncStorage.setItem(cacheKey(uid, config), JSON.stringify({ enabled }));
+    await AsyncStorage.setItem(
+      cacheKey(uid, config),
+      JSON.stringify({ enabled }),
+    );
   }
 }
 
@@ -115,7 +131,7 @@ export function useNotifications(uid: string | null) {
       onData: (arr) => {
         setItems(arr);
         AsyncStorage.setItem(`notif:list:${uid}`, JSON.stringify(arr)).catch(
-          () => {}
+          () => {},
         );
         setLoading(false);
       },
@@ -126,7 +142,7 @@ export function useNotifications(uid: string | null) {
   const create = useCallback(
     async (
       uidLocal: string,
-      data: Omit<UserNotification, "id" | "createdAt" | "updatedAt">
+      data: Omit<UserNotification, "id" | "createdAt" | "updatedAt">,
     ) => {
       const id = uuidv4();
       const now = Date.now();
@@ -140,7 +156,7 @@ export function useNotifications(uid: string | null) {
       await reconcileNotifications(uidLocal);
       return id;
     },
-    [reconcileNotifications]
+    [reconcileNotifications],
   );
 
   const update = useCallback(
@@ -157,24 +173,28 @@ export function useNotifications(uid: string | null) {
       await upsertUserNotification(uidLocal, id, payload);
       await reconcileNotifications(uidLocal);
     },
-    [items, reconcileNotifications]
+    [items, reconcileNotifications],
   );
 
-  const remove = useCallback(async (uidLocal: string, id: string) => {
-    await cancelAllForNotif(notificationScheduleKey(uidLocal, id));
-    await deleteUserNotification(uidLocal, id);
-    await reconcileNotifications(uidLocal);
-  }, [reconcileNotifications]);
+  const remove = useCallback(
+    async (uidLocal: string, id: string) => {
+      await cancelAllForNotif(notificationScheduleKey(uidLocal, id));
+      await deleteUserNotification(uidLocal, id);
+      await reconcileNotifications(uidLocal);
+    },
+    [reconcileNotifications],
+  );
 
   const toggle = useCallback(
     async (uidLocal: string, id: string, enabled: boolean) => {
       await update(uidLocal, id, { enabled });
     },
-    [update]
+    [update],
   );
 
   const loadAllPrefs = useCallback(async (uidLocal: string) => {
-    let prefsData: Awaited<ReturnType<typeof fetchNotificationPrefs>> | null = null;
+    let prefsData: Awaited<ReturnType<typeof fetchNotificationPrefs>> | null =
+      null;
     try {
       prefsData = await fetchNotificationPrefs(uidLocal);
     } catch {
@@ -232,6 +252,6 @@ export function useNotifications(uid: string | null) {
       setMotivationPrefs,
       setSmartRemindersPrefs,
       setStatsPrefs,
-    ]
+    ],
   );
 }

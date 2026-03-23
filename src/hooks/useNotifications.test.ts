@@ -11,23 +11,21 @@ import { useNotifications } from "@/hooks/useNotifications";
 import type { UserNotification } from "@/types/notification";
 
 const mockUuid = jest.fn<() => string>();
-const mockSubscribeToUserNotifications = jest.fn<(...args: unknown[]) => () => void>();
-const mockUpsertUserNotification = jest.fn<
-  (uid: string, id: string, payload: unknown) => Promise<void>
->();
-const mockDeleteUserNotification = jest.fn<
-  (uid: string, id: string) => Promise<void>
->();
-const mockFetchNotificationPrefs = jest.fn<
-  (uid: string) => Promise<unknown>
->();
-const mockUpdateNotificationPrefs = jest.fn<
-  (uid: string, notifications: unknown) => Promise<void>
->();
+const mockSubscribeToUserNotifications =
+  jest.fn<(...args: unknown[]) => () => void>();
+const mockUpsertUserNotification =
+  jest.fn<(uid: string, id: string, payload: unknown) => Promise<void>>();
+const mockDeleteUserNotification =
+  jest.fn<(uid: string, id: string) => Promise<void>>();
+const mockFetchNotificationPrefs = jest.fn<(uid: string) => Promise<unknown>>();
+const mockUpdateNotificationPrefs =
+  jest.fn<(uid: string, notifications: unknown) => Promise<void>>();
 const mockReconcileAll = jest.fn<(uid: string) => Promise<void>>();
 const mockCancelAllForNotif = jest.fn<(key: string) => Promise<void>>();
-const mockNotificationScheduleKey = jest.fn<(uid: string, id: string) => string>();
-const mockStorageGetItem = jest.fn<(...args: unknown[]) => Promise<string | null>>();
+const mockNotificationScheduleKey =
+  jest.fn<(uid: string, id: string) => string>();
+const mockStorageGetItem =
+  jest.fn<(...args: unknown[]) => Promise<string | null>>();
 const mockStorageSetItem = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockUnsub = jest.fn<() => void>();
 
@@ -39,6 +37,7 @@ jest.mock("uuid", () => ({
 
 jest.mock("@/services/notifications/notificationsRepository", () => ({
   subscribeToUserNotifications: (params: {
+    uid: string;
     onData: (items: UserNotification[]) => void;
   }) => {
     mockSubscribeToUserNotifications(params);
@@ -72,7 +71,9 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   },
 }));
 
-const baseNotif = (overrides: Partial<UserNotification> = {}): UserNotification => ({
+const baseNotif = (
+  overrides: Partial<UserNotification> = {},
+): UserNotification => ({
   id: "n-1",
   type: "day_fill",
   name: "Test",
@@ -119,6 +120,7 @@ describe("useNotifications", () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
+
     expect(result.current.items).toEqual([]);
     expect(mockSubscribeToUserNotifications).not.toHaveBeenCalled();
   });
@@ -133,11 +135,13 @@ describe("useNotifications", () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
+
     expect(result.current.items).toEqual(cached);
 
     await act(async () => {
       emitNotifications([fresh]);
     });
+
     expect(result.current.items).toEqual([fresh]);
     expect(mockStorageSetItem).toHaveBeenCalledWith(
       "notif:list:u1",
@@ -156,15 +160,18 @@ describe("useNotifications", () => {
     await act(async () => {
       emitNotifications([]);
     });
+
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
+
     expect(result.current.items).toEqual([]);
   });
 
   it("creates, updates, toggles and removes notifications", async () => {
     const nowSpy = jest.spyOn(Date, "now").mockReturnValue(1000);
     const { result } = renderHook(() => useNotifications("u1"));
+
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
@@ -229,100 +236,143 @@ describe("useNotifications", () => {
     expect(mockCancelAllForNotif).toHaveBeenCalledWith("u1:n-del");
     expect(mockDeleteUserNotification).toHaveBeenCalledWith("u1", "n-del");
     expect(mockReconcileAll).toHaveBeenNthCalledWith(4, "u1");
+
     nowSpy.mockRestore();
   });
 
-  it("loads motivation prefs from cloud and caches them", async () => {
+  it("loads all prefs from cloud and caches them", async () => {
     mockFetchNotificationPrefs.mockResolvedValueOnce({
-      notifications: { motivationEnabled: true },
+      notifications: {
+        motivationEnabled: true,
+        smartRemindersEnabled: false,
+        statsEnabled: true,
+      },
     });
+
     const { result } = renderHook(() => useNotifications("u1"));
+
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    await expect(result.current.loadMotivationPrefs("u1")).resolves.toEqual({
-      enabled: true,
+    await expect(result.current.loadAllPrefs("u1")).resolves.toEqual({
+      motivation: { enabled: true },
+      smartReminders: { enabled: false },
+      stats: { enabled: true },
     });
+
     expect(mockStorageSetItem).toHaveBeenCalledWith(
       "notif:prefs:u1:motivation",
       JSON.stringify({ enabled: true }),
     );
+    expect(mockStorageSetItem).toHaveBeenCalledWith(
+      "notif:prefs:u1:smart-reminders",
+      JSON.stringify({ enabled: false }),
+    );
+    expect(mockStorageSetItem).toHaveBeenCalledWith(
+      "notif:prefs:u1:stats",
+      JSON.stringify({ enabled: true }),
+    );
   });
 
-  it("falls back to cached motivation prefs and then false on malformed cache", async () => {
+  it("falls back to cached prefs and defaults when cache is malformed or missing", async () => {
     mockFetchNotificationPrefs.mockRejectedValue(new Error("network"));
-    let motivationReads = 0;
+
     mockStorageGetItem.mockImplementation(async (...args: unknown[]) => {
       const key = args[0] as string;
+
       if (key === "notif:list:u1") return null;
       if (key === "notif:prefs:u1:motivation") {
-        motivationReads += 1;
-        return motivationReads === 1 ? JSON.stringify({ enabled: true }) : "{bad-json";
+        return JSON.stringify({ enabled: true });
       }
+      if (key === "notif:prefs:u1:smart-reminders") {
+        return "{bad-json";
+      }
+      if (key === "notif:prefs:u1:stats") {
+        return null;
+      }
+
       return null;
     });
 
     const { result } = renderHook(() => useNotifications("u1"));
+
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    await expect(result.current.loadMotivationPrefs("u1")).resolves.toEqual({
-      enabled: true,
-    });
-    await expect(result.current.loadMotivationPrefs("u1")).resolves.toEqual({
-      enabled: false,
+    await expect(result.current.loadAllPrefs("u1")).resolves.toEqual({
+      motivation: { enabled: true },
+      smartReminders: { enabled: true },
+      stats: { enabled: false },
     });
   });
 
-  it("loads stats prefs from cloud and falls back to false when cache is missing", async () => {
-    mockFetchNotificationPrefs
-      .mockResolvedValueOnce({
-        notifications: { statsEnabled: true },
-      })
-      .mockRejectedValueOnce(new Error("network"));
-    mockStorageGetItem.mockResolvedValueOnce(null);
+  it("uses defaults for missing cloud fields and still caches them", async () => {
+    mockFetchNotificationPrefs.mockResolvedValueOnce({
+      notifications: {},
+    });
 
     const { result } = renderHook(() => useNotifications("u1"));
+
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    await expect(result.current.loadStatsPrefs("u1")).resolves.toEqual({
-      enabled: true,
+    await expect(result.current.loadAllPrefs("u1")).resolves.toEqual({
+      motivation: { enabled: false },
+      smartReminders: { enabled: true },
+      stats: { enabled: false },
     });
-    await expect(result.current.loadStatsPrefs("u1")).resolves.toEqual({
-      enabled: false,
-    });
+
+    expect(mockStorageSetItem).toHaveBeenCalledWith(
+      "notif:prefs:u1:motivation",
+      JSON.stringify({ enabled: false }),
+    );
+    expect(mockStorageSetItem).toHaveBeenCalledWith(
+      "notif:prefs:u1:smart-reminders",
+      JSON.stringify({ enabled: true }),
+    );
+    expect(mockStorageSetItem).toHaveBeenCalledWith(
+      "notif:prefs:u1:stats",
+      JSON.stringify({ enabled: false }),
+    );
   });
 
   it("persists prefs to cache both on success and firestore failure", async () => {
     mockUpdateNotificationPrefs
       .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error("offline"));
 
     const { result } = renderHook(() => useNotifications("u1"));
+
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
     await result.current.setMotivationPrefs("u1", true);
-    expect(mockUpdateNotificationPrefs).toHaveBeenNthCalledWith(
-      1,
-      "u1",
-      { motivationEnabled: true },
-    );
+    expect(mockUpdateNotificationPrefs).toHaveBeenNthCalledWith(1, "u1", {
+      motivationEnabled: true,
+    });
+
+    await result.current.setSmartRemindersPrefs("u1", false);
+    expect(mockUpdateNotificationPrefs).toHaveBeenNthCalledWith(2, "u1", {
+      smartRemindersEnabled: false,
+    });
 
     await result.current.setStatsPrefs("u1", false);
-    expect(mockUpdateNotificationPrefs).toHaveBeenNthCalledWith(
-      2,
-      "u1",
-      { statsEnabled: false },
-    );
+    expect(mockUpdateNotificationPrefs).toHaveBeenNthCalledWith(3, "u1", {
+      statsEnabled: false,
+    });
+
     expect(mockStorageSetItem).toHaveBeenCalledWith(
       "notif:prefs:u1:motivation",
       JSON.stringify({ enabled: true }),
+    );
+    expect(mockStorageSetItem).toHaveBeenCalledWith(
+      "notif:prefs:u1:smart-reminders",
+      JSON.stringify({ enabled: false }),
     );
     expect(mockStorageSetItem).toHaveBeenCalledWith(
       "notif:prefs:u1:stats",
