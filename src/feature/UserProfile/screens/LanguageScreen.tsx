@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { BackTitleHeader, Layout, TextInput } from "@/components";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { useUserContext } from "@contexts/UserContext";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -78,7 +78,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
           value={search}
           onChangeText={setSearch}
           icon={
-            <MaterialIcons
+            <AppIcon
               name="search"
               size={20}
               color={theme.textSecondary}
@@ -119,7 +119,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
                 {item.label}
               </Text>
               {selected === item.code && (
-                <MaterialIcons
+                <AppIcon
                   name="check"
                   size={20}
                   color={theme.accentSecondary}

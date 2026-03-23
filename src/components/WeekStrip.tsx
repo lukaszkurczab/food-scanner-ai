@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { IconButton } from "@/components";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 
 export type WeekDayItem = { date: Date; label: string; isToday: boolean };
@@ -62,7 +62,7 @@ export default function WeekStrip({
           accessibilityLabel={t("weekStrip.open_history")}
           variant="ghost"
           onPress={onOpenHistory}
-          icon={<MaterialIcons name="calendar-today" />}
+          icon={<AppIcon name="calendar" />}
         />
       </View>
     </View>

@@ -15,7 +15,7 @@ import {
   ScreenCornerNavButton,
 } from "@/components";
 import { FallbackImage } from "../components/FallbackImage";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useMealDetailsScreenState } from "@/feature/History/hooks/useMealDetailsScreenState";
 import { MealSyncBadge } from "@/components/MealSyncBadge";
 
@@ -111,7 +111,7 @@ export default function MealDetailsScreen() {
                       styles.fab,
                     ]}
                   >
-                    <MaterialIcons name="ios-share" size={22} color={theme.text} />
+                    <AppIcon name="share" size={22} color={theme.text} />
                   </Pressable>
                 </>
               ) : (
@@ -121,8 +121,8 @@ export default function MealDetailsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={t("add_photo", { ns: "meals" })}
                 >
-                  <MaterialIcons
-                    name="add-a-photo"
+                  <AppIcon
+                    name="add-photo"
                     size={44}
                     color={theme.textSecondary}
                   />

@@ -16,7 +16,7 @@ import Animated, {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useTranslation } from "react-i18next";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import ZoomModal from "./ZoomModal";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
@@ -253,7 +253,7 @@ export const PhotoPreview = ({
                 },
               ]}
             >
-              <MaterialIcons name="check" size={24} color="#fff" />
+              <AppIcon name="check" size={24} color="#fff" />
             </Pressable>
             <Pressable
               onPress={handleCropCancel}
@@ -266,7 +266,7 @@ export const PhotoPreview = ({
                 },
               ]}
             >
-              <MaterialIcons name="close" size={24} color="#fff" />
+              <AppIcon name="close" size={24} color="#fff" />
             </Pressable>
           </>
         ) : (
@@ -281,7 +281,7 @@ export const PhotoPreview = ({
               },
             ]}
           >
-            <MaterialIcons name="crop" size={24} color="#fff" />
+            <AppIcon name="crop" size={24} color="#fff" />
           </Pressable>
         )}
 

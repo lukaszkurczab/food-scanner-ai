@@ -11,7 +11,7 @@ import {
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { getFirebaseAuth } from "@/FirebaseConfig";
 import { authSendPasswordReset } from "@/feature/Auth/services/authService";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -118,7 +118,7 @@ export default function CheckMailboxScreen({ navigation }: Props) {
 
       <View style={styles.illustrationWrap}>
         <View style={styles.iconCard}>
-          <MaterialIcons
+          <AppIcon
             name="email"
             size={128}
             color={theme.accentSecondary}

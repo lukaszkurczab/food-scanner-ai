@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import ColorPickerPanel from "./ColorPickerPanel";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import type { ElementId } from "./DraggableItem";
 import DraggableItem from "./DraggableItem";
 import ChartEditorPanel from "./editors/ChartEditorPanel";
@@ -181,7 +181,7 @@ export default function ShareEditorPanel({
                     style={styles.dropdownRow}
                     onPress={addCustomText}
                   >
-                    <MaterialIcons
+                    <AppIcon
                       name={hasCustomText ? "edit" : "add"}
                       size={20}
                       color={
@@ -204,8 +204,8 @@ export default function ShareEditorPanel({
                   style={styles.dropdownRow}
                   onPress={() => patch({ [item.key]: !active })}
                 >
-                  <MaterialIcons
-                    name={active ? "check-box" : "check-box-outline-blank"}
+                  <AppIcon
+                    name={active ? "checkbox" : "checkbox-empty"}
                     size={20}
                     color={active ? theme.accentSecondary : theme.textSecondary}
                   />

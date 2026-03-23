@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { SecondaryButton, Layout } from "@/components";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import type {
   MealAddScreenName,
   MealAddScreenProps,
@@ -50,8 +50,8 @@ export default function BarcodeProductNotFoundScreen({
     <Layout>
       <View style={styles.container}>
         <View style={styles.iconWrapper}>
-          <MaterialIcons
-            name="qr-code-scanner"
+          <AppIcon
+            name="scan-barcode"
             size={64}
             color={theme.textSecondary}
           />

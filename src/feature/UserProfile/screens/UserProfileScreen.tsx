@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { View, Text, Pressable, ActivityIndicator, Linking, StyleSheet } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { ButtonToggle, InputModal, Layout, PrimaryButton } from "@/components";
@@ -69,7 +69,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           overrideColor={state.overrideColor}
           overrideEmoji={state.overrideEmoji}
           fallbackIcon={
-            <MaterialIcons
+            <AppIcon
               name="person"
               size={52}
               color={theme.textSecondary}

@@ -1,6 +1,6 @@
 import type { StyleProp, ViewStyle } from "react-native";
 import { View, StyleSheet } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
 import { IconButton } from "./IconButton";
 
@@ -14,8 +14,8 @@ type Props = {
   containerStyle?: StyleProp<ViewStyle>;
 };
 
-const iconMap: Record<CornerIcon, "arrow-back" | "close"> = {
-  back: "arrow-back",
+const iconMap: Record<CornerIcon, "arrow-left" | "close"> = {
+  back: "arrow-left",
   close: "close",
 };
 
@@ -41,7 +41,7 @@ export function ScreenCornerNavButton({
       ]}
     >
       <IconButton
-        icon={<MaterialIcons name={iconMap[icon]} />}
+        icon={<AppIcon name={iconMap[icon]} />}
         onPress={onPress}
         size={44}
         accessibilityLabel={accessibilityLabel}

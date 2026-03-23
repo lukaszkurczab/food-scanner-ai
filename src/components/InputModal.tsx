@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { IconButton } from "@/components/IconButton";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 const WINDOW_HEIGHT = Dimensions.get("window").height;
@@ -104,7 +104,7 @@ export const InputModal: React.FC<Props> = ({
             {onClose && (
               <View style={styles.closeButton}>
                 <IconButton
-                  icon={<MaterialIcons name="close" />}
+                  icon={<AppIcon name="close" />}
                   onPress={onClose}
                   size={28}
                   iconColor={theme.textSecondary}

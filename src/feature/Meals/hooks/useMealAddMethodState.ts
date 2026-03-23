@@ -7,7 +7,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { Ingredient, Meal, MealInputMethod } from "@/types/meal";
-import { MaterialIcons } from "@expo/vector-icons";
+import type { AppIconName } from "@/components/AppIcon";
 import { debugScope } from "@/utils/debug";
 import {
   E2E_DETERMINISTIC_INGREDIENT,
@@ -27,7 +27,7 @@ type AddMealStart = NonNullable<
 
 type MethodOptionBase = {
   key: string;
-  icon: keyof typeof MaterialIcons.glyphMap;
+  icon: AppIconName;
   titleKey: string;
   descKey: string;
 };
@@ -46,7 +46,7 @@ export type MethodOption = AddMealMethodOption | NonAddMealMethodOption;
 export const mealAddMethodOptions: readonly MethodOption[] = [
   {
     key: "ai_photo",
-    icon: "camera-alt",
+    icon: "camera",
     titleKey: "aiTitle",
     descKey: "aiDesc",
     screen: "AddMeal",
@@ -75,7 +75,7 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
   },
   {
     key: "saved",
-    icon: "library-books",
+    icon: "saved-items",
     titleKey: "savedTitle",
     descKey: "savedDesc",
     screen: "SelectSavedMeal",

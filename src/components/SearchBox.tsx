@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { View, TextInput, Pressable, ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 
 type Props = {
@@ -70,7 +70,7 @@ export const SearchBox: React.FC<Props> = ({
 
   return (
     <View style={[styles.wrap, style]}>
-      <MaterialIcons name="search" size={24} color={theme.textSecondary} />
+      <AppIcon name="search" size={24} color={theme.textSecondary} />
 
       <TextInput
         value={local}
@@ -89,7 +89,7 @@ export const SearchBox: React.FC<Props> = ({
           accessibilityLabel={t("input.clear_search_accessibility")}
           style={styles.clearBtn}
         >
-          <MaterialIcons name="close" size={24} color={theme.textSecondary} />
+          <AppIcon name="close" size={24} color={theme.textSecondary} />
         </Pressable>
       )}
     </View>

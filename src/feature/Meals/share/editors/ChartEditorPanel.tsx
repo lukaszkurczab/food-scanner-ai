@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Dropdown } from "@/components/Dropdown";
 import { useTranslation } from "react-i18next";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import ColorPickerPanel from "../ColorPickerPanel";
 import type { ChartType, ShareOptions, ChartVariant } from "@/types/share";
 
@@ -333,11 +333,11 @@ export default function ChartEditorPanel({
           style={styles.checkboxRow}
           onPress={() => toggleBool("showChartKcalLabel")}
         >
-          <MaterialIcons
+          <AppIcon
             name={
               options.showChartKcalLabel === false
-                ? "check-box-outline-blank"
-                : "check-box"
+                ? "checkbox-empty"
+                : "checkbox"
             }
             size={20}
             color={
@@ -355,11 +355,11 @@ export default function ChartEditorPanel({
           style={styles.checkboxRow}
           onPress={() => toggleBool("showChartLegend")}
         >
-          <MaterialIcons
+          <AppIcon
             name={
               options.showChartLegend === false
-                ? "check-box-outline-blank"
-                : "check-box"
+                ? "checkbox-empty"
+                : "checkbox"
             }
             size={20}
             color={

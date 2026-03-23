@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon, { type AppIconName } from "@/components/AppIcon";
 import { navigate } from "@/navigation/navigate";
 import AvatarBadge from "@/components/AvatarBadge";
 import { useUserContext } from "@/context/UserContext";
@@ -35,17 +35,16 @@ export const BottomTabBar: React.FC = () => {
     borderColor = theme.border;
   }
 
-  type MaterialIconName = React.ComponentProps<typeof MaterialIcons>["name"];
   type TabItem = {
     key: string;
-    icon: MaterialIconName;
+    icon: AppIconName;
     onPress: () => void;
     isFab?: boolean;
   };
 
   const tabs: TabItem[] = [
-    { key: "Home", icon: "home-filled", onPress: () => navigate("Home") },
-    { key: "Stats", icon: "bar-chart", onPress: () => navigate("Statistics") },
+    { key: "Home", icon: "home", onPress: () => navigate("Home") },
+    { key: "Stats", icon: "stats", onPress: () => navigate("Statistics") },
     {
       key: "Add",
       icon: "add",
@@ -75,7 +74,7 @@ export const BottomTabBar: React.FC = () => {
                 style={styles.fab}
                 testID={testIdForTab(tab.key)}
               >
-                <MaterialIcons
+                <AppIcon
                   name={tab.icon}
                   size={32}
                   color={theme.onAccent}
@@ -101,7 +100,7 @@ export const BottomTabBar: React.FC = () => {
                   overrideColor={borderColor}
                   overrideEmoji={undefined}
                   fallbackIcon={
-                    <MaterialIcons
+                    <AppIcon
                       name="person"
                       size={24}
                       color={theme.textSecondary}
@@ -110,7 +109,7 @@ export const BottomTabBar: React.FC = () => {
                   accessibilityLabel={t("tabs.profile_accessibility")}
                 />
               ) : (
-                <MaterialIcons
+                <AppIcon
                   name={tab.icon}
                   size={26}
                   color={theme.text}

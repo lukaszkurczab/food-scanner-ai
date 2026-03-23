@@ -73,8 +73,9 @@ jest.mock("@hooks/useMeals", () => ({
   useMeals: (uid: string | null) => mockUseMeals(uid),
 }));
 
-jest.mock("@expo/vector-icons", () => ({
-  MaterialIcons: () => null,
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 jest.mock("@react-native-community/netinfo", () => ({

@@ -3,9 +3,9 @@ import { describe, expect, it, jest } from "@jest/globals";
 import { Checkbox } from "@/components/Checkbox";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
-const mockFeather = () => null;
-jest.mock("@expo/vector-icons", () => ({
-  Feather: mockFeather,
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 describe("Checkbox", () => {

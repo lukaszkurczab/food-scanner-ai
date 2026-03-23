@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 
 type Props = { title: string; description?: string };
 
@@ -11,7 +11,7 @@ export const EmptyState: React.FC<Props> = ({ title, description }) => {
   return (
     <View style={styles.container}>
       <View style={styles.iconBox}>
-        <MaterialIcons name="no-meals" size={76} color={theme.textSecondary} />
+        <AppIcon name="empty-meals" size={76} color={theme.textSecondary} />
       </View>
       <Text style={styles.title}>
         {title}

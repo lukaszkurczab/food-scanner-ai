@@ -10,7 +10,7 @@ import {
 } from "@/components";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { authLogout } from "@/feature/Auth/services/authService";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -129,7 +129,7 @@ export default function ChangeEmailCheckMailboxScreen() {
 
       <View style={styles.iconWrapper}>
         <View style={styles.iconCard}>
-          <MaterialIcons name="email" size={96} color={theme.accentSecondary} />
+          <AppIcon name="email" size={96} color={theme.accentSecondary} />
         </View>
       </View>
       <Text

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
 import { Layout, PhotoPreview, ScreenCornerNavButton } from "@/components";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -165,8 +165,8 @@ export default function AvatarCameraScreen({
               }
               accessibilityLabel={t("common:switch_camera") || "Switch camera"}
             >
-              <MaterialIcons
-                name="flip-camera-ios"
+              <AppIcon
+                name="flip-camera"
                 size={26}
                 color={theme.onAccent}
               />

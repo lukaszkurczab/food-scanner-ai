@@ -12,7 +12,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 
 type Option<T extends string> = {
   label: string;
@@ -121,8 +121,8 @@ export function Dropdown<T extends string>({
           ) : null}
         </View>
 
-        <MaterialIcons
-          name={open ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+        <AppIcon
+          name={open ? "chevron-up" : "chevron-down"}
           size={24}
           color={theme.textSecondary}
           style={styles.fieldIcon}

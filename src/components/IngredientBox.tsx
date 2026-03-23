@@ -8,7 +8,7 @@ import {
   StyleSheet as RNStyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import type { Ingredient } from "@/types";
 import { MacroChip } from "./MacroChip";
 import { useTranslation } from "react-i18next";
@@ -104,8 +104,8 @@ export const IngredientBox: React.FC<Props> = ({
 
         {editable && (
           <Pressable ref={menuAnchor} onPress={openMenu} style={styles.icon}>
-            <MaterialIcons
-              name="more-vert"
+            <AppIcon
+              name="more"
               size={24}
               color={theme.textSecondary}
             />
@@ -143,7 +143,7 @@ export const IngredientBox: React.FC<Props> = ({
                 onEditStart?.();
               }}
             >
-              <MaterialIcons
+              <AppIcon
                 name="edit"
                 color={theme.text}
                 size={18}
@@ -160,7 +160,7 @@ export const IngredientBox: React.FC<Props> = ({
                 onRemove?.();
               }}
             >
-              <MaterialIcons
+              <AppIcon
                 name="delete"
                 color={theme.error.text}
                 size={18}

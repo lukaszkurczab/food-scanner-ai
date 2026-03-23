@@ -31,7 +31,7 @@ import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "@/components/DateTimeSection";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import ReviewIngredientsEditor from "@/components/ReviewIngredientsEditor";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 
 const IMAGE_SIZE = 220;
 
@@ -241,7 +241,7 @@ export default function ResultScreen({
               hitSlop={8}
               disabled={saving}
             >
-              <MaterialIcons name="ios-share" size={22} color={theme.text} />
+              <AppIcon name="share" size={22} color={theme.text} />
             </Pressable>
           </>
         ) : (
@@ -250,8 +250,8 @@ export default function ResultScreen({
             disabled={saving}
             style={[styles.placeholder, { backgroundColor: theme.card }]}
           >
-            <MaterialIcons
-              name="add-a-photo"
+            <AppIcon
+              name="add-photo"
               size={44}
               color={theme.textSecondary}
             />

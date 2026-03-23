@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "@/theme/useTheme";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { Layout } from "@/components";
 import { Modal } from "@/components/Modal";
@@ -65,7 +65,7 @@ const MealAddMethodScreen = () => {
               }}
             >
               <View style={styles.optionIconBox}>
-                <MaterialIcons
+                <AppIcon
                   name={option.icon}
                   size={48}
                   color={theme.accentSecondary}

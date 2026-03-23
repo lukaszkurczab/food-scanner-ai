@@ -1,7 +1,7 @@
 import React from "react";
 import { TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Feather } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 
 type CheckboxProps = {
   checked: boolean;
@@ -38,7 +38,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
       activeOpacity={0.7}
       disabled={disabled}
     >
-      {checked && <Feather name="check" size={16} color={theme.onAccent} />}
+      {checked && <AppIcon name="check" size={16} color={theme.onAccent} />}
     </TouchableOpacity>
   );
 };

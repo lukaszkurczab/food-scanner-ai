@@ -14,7 +14,7 @@ import { calculateCalorieTarget } from "../utils/calculateCalorieTarget";
 import { assertNoUndefined } from "@/utils/findUndefined";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
 
 const STEPS = 5;
@@ -178,7 +178,7 @@ export default function OnboardingScreen({
       {mode === "refill" && (
         <View style={styles.closeButtonWrap}>
           <IconButton
-            icon={<MaterialIcons name="close" size={22} />}
+            icon={<AppIcon name="close" size={22} />}
             onPress={handleExitPress}
             accessibilityLabel={t("exit_refill_a11y")}
             iconColor={theme.text}

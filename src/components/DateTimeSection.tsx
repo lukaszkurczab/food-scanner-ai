@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Card, Modal } from "@/components";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { Clock24h, Clock12h, Calendar } from "@/components";
 import { useTranslation } from "react-i18next";
 
@@ -93,7 +93,7 @@ export const DateTimeSection: React.FC<Props> = ({
               <Text style={styles.dateText}>{dateText}</Text>
               <Text style={styles.timeText}>{timeText}</Text>
             </View>
-            <MaterialIcons name="calendar-month" size={24} color={theme.link} />
+            <AppIcon name="calendar" size={24} color={theme.link} />
           </View>
         </Card>
       </Pressable>

@@ -5,7 +5,7 @@ import { useTheme } from "@/theme/useTheme";
 import Loader from "@feature/Meals/components/Loader";
 import { useTranslation } from "react-i18next";
 import { Layout, PhotoPreview, ScreenCornerNavButton } from "@/components";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { Alert as AppAlert } from "@/components/Alert";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
@@ -197,8 +197,8 @@ export default function MealCameraScreen({
                     },
                   ]}
                 >
-                  <MaterialIcons
-                    name="psychology"
+                  <AppIcon
+                    name="sparkles"
                     size={22}
                     color={mode === "ai" ? theme.onAccent : theme.text}
                   />
@@ -214,8 +214,8 @@ export default function MealCameraScreen({
                     },
                   ]}
                 >
-                  <MaterialIcons
-                    name="qr-code-scanner"
+                  <AppIcon
+                    name="scan-barcode"
                     size={22}
                     color={mode === "barcode" ? theme.onAccent : theme.text}
                   />

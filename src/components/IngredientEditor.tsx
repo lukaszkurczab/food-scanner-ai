@@ -15,7 +15,7 @@ import { ErrorButton } from "./ErrorButton";
 import { NumberInput } from "./NumberInput";
 import { useNavigation } from "@react-navigation/native";
 import { Modal } from "./Modal";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -257,7 +257,7 @@ export const IngredientEditor: React.FC<Props> = ({
             { borderColor: theme.border, backgroundColor: theme.card },
           ]}
         >
-          <MaterialIcons name="qr-code-scanner" size={22} color={theme.text} />
+          <AppIcon name="scan-barcode" size={22} color={theme.text} />
         </Pressable>
       </View>
 

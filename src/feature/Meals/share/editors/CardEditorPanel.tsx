@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "@/components/Dropdown";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import ColorPickerPanel from "../ColorPickerPanel";
 import type { ShareOptions, CardVariant } from "@/types/share";
 
@@ -239,8 +239,8 @@ export default function CardEditorPanel({
           style={styles.toggleRow}
           onPress={() => patch({ cardShowKcal: !cardShowKcal })}
         >
-          <MaterialIcons
-            name={cardShowKcal ? "check-box" : "check-box-outline-blank"}
+          <AppIcon
+            name={cardShowKcal ? "checkbox" : "checkbox-empty"}
             size={20}
             color={cardShowKcal ? theme.accentSecondary : theme.textSecondary}
           />
@@ -252,8 +252,8 @@ export default function CardEditorPanel({
           style={styles.toggleRow}
           onPress={() => patch({ cardShowMacros: !cardShowMacros })}
         >
-          <MaterialIcons
-            name={cardShowMacros ? "check-box" : "check-box-outline-blank"}
+          <AppIcon
+            name={cardShowMacros ? "checkbox" : "checkbox-empty"}
             size={20}
             color={cardShowMacros ? theme.accentSecondary : theme.textSecondary}
           />

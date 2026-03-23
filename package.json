@@ -28,7 +28,6 @@
     "e2e:offline-error": "bash scripts/run-e2e-local.sh e2e/maestro/offline-error.yaml"
   },
   "dependencies": {
-    "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/datetimepicker": "8.4.1",
     "@react-native-community/netinfo": "11.4.1",
@@ -77,7 +76,6 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
-    "react-native-vector-icons": "^10.2.0",
     "react-native-view-shot": "4.0.3",
     "react-native-zip-archive": "^7.0.2",
     "reanimated-color-picker": "^4.1.1",
@@ -92,7 +90,6 @@
     "@types/lodash": "^4.17.20",
     "@types/lodash.debounce": "^4.0.9",
     "@types/react": "~19.0.10",
-    "@types/react-native-vector-icons": "^6.4.18",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "adm-zip": "^0.5.16",
@@ -106,6 +103,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^30.2.0",
+    "react-native-svg-transformer": "^1.5.3",
     "react-test-renderer": "19.0.0",
     "typescript": "5.8.3"
   },

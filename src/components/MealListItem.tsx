@@ -15,7 +15,7 @@ import type { Meal } from "@/types/meal";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import * as FileSystem from "expo-file-system";
 import { useTranslation } from "react-i18next";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { ensureLocalMealPhoto } from "@/services/meals/mealService.images";
 import { MealSyncBadge } from "@/components/MealSyncBadge";
 
@@ -188,7 +188,7 @@ const MealListItemBase: React.FC<Props> = ({
             hitSlop={8}
             style={[styles.actBtn, { borderColor: theme.border }]}
           >
-            <MaterialIcons name="delete-outline" size={24} color={theme.text} />
+            <AppIcon name="delete" size={24} color={theme.text} />
           </Pressable>
           <Pressable
             onPress={onEdit}
@@ -196,7 +196,7 @@ const MealListItemBase: React.FC<Props> = ({
             hitSlop={8}
             style={[styles.actBtn, { borderColor: theme.border }]}
           >
-            <MaterialIcons name="edit" size={24} color={theme.text} />
+            <AppIcon name="edit" size={24} color={theme.text} />
           </Pressable>
           <Pressable
             onPress={onDuplicate}
@@ -204,7 +204,7 @@ const MealListItemBase: React.FC<Props> = ({
             hitSlop={8}
             style={[styles.actBtn, { borderColor: theme.border }]}
           >
-            <MaterialIcons name="content-copy" size={24} color={theme.text} />
+            <AppIcon name="copy" size={24} color={theme.text} />
           </Pressable>
         </View>
       </View>

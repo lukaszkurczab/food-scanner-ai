@@ -16,7 +16,7 @@ import {
   Layout,
 } from "@/components";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
-import { Feather } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useUserContext } from "@contexts/UserContext";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -102,7 +102,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
 
   const renderEyeIcon = (show: boolean, toggle: () => void) => (
     <TouchableOpacity onPress={toggle}>
-      <Feather name={show ? "eye-off" : "eye"} size={22} color={theme.text} />
+      <AppIcon name={show ? "eye-off" : "eye"} size={22} color={theme.text} />
     </TouchableOpacity>
   );
 
