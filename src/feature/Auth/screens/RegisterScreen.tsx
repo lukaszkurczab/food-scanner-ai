@@ -18,7 +18,7 @@ import {
   Layout,
   Checkbox,
 } from "@/components";
-import { Feather } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useAuthContext } from "@/context/AuthContext";
 import { useRegister } from "@/feature/Auth/hooks/useRegister";
 import { validateEmail } from "@/utils/validation";
@@ -96,7 +96,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
       onPress={toggle}
       accessibilityLabel={t("toggle_password_visibility")}
     >
-      <Feather name={!show ? "eye-off" : "eye"} size={22} color={theme.text} />
+      <AppIcon name={!show ? "eye-off" : "eye"} size={22} color={theme.text} />
     </TouchableOpacity>
   );
 

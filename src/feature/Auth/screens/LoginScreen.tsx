@@ -11,7 +11,7 @@ import {
 } from "@/components";
 import NetInfo from "@react-native-community/netinfo";
 import { validateEmail } from "@/utils/validation";
-import { Feather } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useAuthContext } from "@/context/AuthContext";
 import { useLogin } from "@/feature/Auth/hooks/useLogin";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -128,7 +128,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           style={styles.fieldSpacing}
           icon={
             <Pressable onPress={() => setShowPassword((v) => !v)}>
-              <Feather
+              <AppIcon
                 name={showPassword ? "eye" : "eye-off"}
                 size={22}
                 color={theme.text}

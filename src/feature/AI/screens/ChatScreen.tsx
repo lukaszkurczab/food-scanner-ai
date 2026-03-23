@@ -25,7 +25,7 @@ import { EmptyState } from "../components/EmptyState";
 import { ChatHistorySheet } from "../components/ChatHistorySheet";
 import { IconButton } from "@/components/IconButton";
 import { AiCreditsBadge } from "@/components/AiCreditsBadge";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { v4 as uuidv4 } from "uuid";
 import { Layout } from "@components/Layout";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -185,7 +185,7 @@ export default function ChatScreen() {
       <View style={styles.header}>
         <IconButton
           testID="chat-history-button"
-          icon={<MaterialIcons name="menu" />}
+          icon={<AppIcon name="menu" />}
           onPress={() => setHistoryOpen(true)}
           variant="ghost"
           size={40}

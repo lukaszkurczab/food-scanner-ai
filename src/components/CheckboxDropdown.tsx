@@ -18,7 +18,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 
 type Option<T extends string | number> = {
@@ -179,8 +179,8 @@ export function CheckboxDropdown<T extends string | number>({
           {selectedLabels || t("none")}
         </Text>
 
-        <MaterialIcons
-          name={open ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+        <AppIcon
+          name={open ? "chevron-up" : "chevron-down"}
           size={24}
           color={theme.textSecondary}
           style={styles.fieldIcon}
@@ -231,9 +231,9 @@ export function CheckboxDropdown<T extends string | number>({
                       }}
                       disabled={isDisabled}
                     >
-                      <MaterialIcons
+                      <AppIcon
                         name={
-                          isSelected ? "check-box" : "check-box-outline-blank"
+                          isSelected ? "checkbox" : "checkbox-empty"
                         }
                         size={22}
                         color={

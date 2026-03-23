@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 
 type Props = {
   title?: string;
@@ -47,7 +47,7 @@ export const OfflineBanner: React.FC<Props> = ({
       accessibilityLiveRegion="polite"
       accessibilityRole="alert"
     >
-      <MaterialIcons
+      <AppIcon
         name="wifi-off"
         size={compact ? 16 : 18}
         color={theme.error.text}

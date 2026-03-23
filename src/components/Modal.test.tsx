@@ -3,8 +3,9 @@ import { describe, expect, it, jest } from "@jest/globals";
 import { Modal } from "@/components/Modal";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
-jest.mock("@expo/vector-icons", () => ({
-  MaterialIcons: () => null,
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 describe("Modal", () => {

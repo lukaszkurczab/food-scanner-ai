@@ -77,8 +77,9 @@ jest.mock("./IngredientEditor", () => ({
   },
 }));
 
-jest.mock("@expo/vector-icons", () => ({
-  MaterialIcons: () => null,
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 jest.mock("react-i18next", () => ({

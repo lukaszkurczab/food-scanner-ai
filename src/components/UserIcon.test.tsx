@@ -16,8 +16,9 @@ jest.mock("react-i18next", () => ({
   }),
 }));
 
-jest.mock("@expo/vector-icons", () => ({
-  MaterialIcons: ({ name }: { name: string }) => {
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: ({ name }: { name: string }) => {
     const { createElement } =
       jest.requireActual<typeof import("react")>("react");
     const { Text } =

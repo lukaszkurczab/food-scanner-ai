@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { View, Image, StyleProp, ViewStyle, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useUserContext } from "@/context/UserContext";
 import { useTranslation } from "react-i18next";
 
@@ -78,7 +78,7 @@ export const UserIcon: React.FC<Props> = ({
           onError={() => setError(true)}
         />
       ) : (
-        <MaterialIcons
+        <AppIcon
           name="person"
           size={size * 0.66}
           color={theme.textSecondary}
@@ -91,7 +91,7 @@ export const UserIcon: React.FC<Props> = ({
           accessible
           accessibilityLabel={t("user.premium_badge_accessibility")}
         >
-          <MaterialIcons
+          <AppIcon
             name="star"
             size={size * 0.22}
             color={theme.macro.fat}

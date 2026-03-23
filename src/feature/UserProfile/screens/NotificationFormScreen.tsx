@@ -25,7 +25,7 @@ import {
   type RouteProp,
 } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { Clock24h, Clock12h } from "@/components";
 import { Dropdown } from "@/components/Dropdown";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -157,7 +157,7 @@ export default function NotificationFormScreen() {
                     new Date(new Date().setHours(time.hour, time.minute, 0, 0)),
                   )}
                 </Text>
-                <MaterialIcons name="schedule" size={24} color={theme.link} />
+                <AppIcon name="schedule" size={24} color={theme.link} />
               </View>
             </Card>
           </Pressable>

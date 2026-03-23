@@ -7,7 +7,7 @@ import * as Sharing from "expo-sharing";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ScreenCornerNavButton } from "@/components";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import ShareCanvas from "@feature/Meals/share/ShareCanvas";
 import ShareEditorPanel, {
   ShareEditorMode,
@@ -169,7 +169,7 @@ export default function MealShareScreen() {
               ]}
               hitSlop={8}
             >
-              <MaterialIcons name="add" size={22} color={theme.text} />
+              <AppIcon name="add" size={22} color={theme.text} />
             </Pressable>
             <Pressable
               onPress={() => openMode("background")}
@@ -182,7 +182,7 @@ export default function MealShareScreen() {
               ]}
               hitSlop={8}
             >
-              <MaterialIcons name="color-lens" size={22} color={theme.text} />
+              <AppIcon name="palette" size={22} color={theme.text} />
             </Pressable>
           </View>
         </>

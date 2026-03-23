@@ -94,6 +94,7 @@ module.exports = {
   testMatch: ["<rootDir>/src/**/*.test.ts?(x)"],
   moduleNameMapper: {
     "^expo/virtual/env$": "<rootDir>/src/test-utils/expoVirtualEnvMock.ts",
+    "\\.svg$": "<rootDir>/src/test-utils/svgMock.tsx",
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@assets/(.*)$": "<rootDir>/assets/$1",
     "^@components/(.*)$": "<rootDir>/src/components/$1",

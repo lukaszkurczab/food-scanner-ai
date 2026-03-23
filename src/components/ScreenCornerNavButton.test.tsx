@@ -31,8 +31,9 @@ jest.mock("./IconButton", () => ({
   }) => mockIconButton(props),
 }));
 
-jest.mock("@expo/vector-icons", () => ({
-  MaterialIcons: () => null,
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 describe("ScreenCornerNavButton", () => {
@@ -53,7 +54,7 @@ describe("ScreenCornerNavButton", () => {
       iconColor?: string;
     };
 
-    expect(props.icon.props.name).toBe("arrow-back");
+    expect(props.icon.props.name).toBe("arrow-left");
     expect(props.accessibilityLabel).toBe("go-back");
     expect(props.backgroundColor).toBeUndefined();
     expect(props.iconColor).toBeUndefined();

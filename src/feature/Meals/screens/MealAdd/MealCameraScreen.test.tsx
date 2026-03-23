@@ -56,8 +56,9 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 4, right: 0, bottom: 0, left: 0 }),
 }));
 
-jest.mock("@expo/vector-icons", () => ({
-  MaterialIcons: ({ name }: { name: string }) => {
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: ({ name }: { name: string }) => {
     const { createElement } =
       jest.requireActual<typeof import("react")>("react");
     const { Text } =
@@ -363,8 +364,8 @@ describe("MealCameraScreen", () => {
 
     fireEvent.press(getByText("back:Back"));
     expect(getByText("chat:credits.costMultiple")).toBeTruthy();
-    fireEvent.press(getByText("psychology"));
-    fireEvent.press(getByText("qr-code-scanner"));
+    fireEvent.press(getByText("sparkles"));
+    fireEvent.press(getByText("scan-barcode"));
     fireEvent.press(getByText("meals:dev.sample_meal"));
     fireEvent.press(getByText("chat:limit.upgradeCta"));
     fireEvent.press(getByText("OK"));

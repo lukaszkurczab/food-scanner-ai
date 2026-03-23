@@ -53,8 +53,9 @@ jest.mock("@react-native-community/netinfo", () => ({
   useNetInfo: () => mockUseNetInfo(),
 }));
 
-jest.mock("@expo/vector-icons", () => ({
-  MaterialIcons: () => null,
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 jest.mock("@/feature/History/hooks/useMealDetailsScreenState", () => ({

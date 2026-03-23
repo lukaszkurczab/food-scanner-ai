@@ -2,8 +2,9 @@ import { describe, expect, it, jest } from "@jest/globals";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
-jest.mock("@expo/vector-icons", () => ({
-  MaterialIcons: () => null,
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 jest.mock("react-i18next", () => ({

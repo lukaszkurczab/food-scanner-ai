@@ -7,7 +7,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 
@@ -43,7 +43,7 @@ export function BackTitleHeader({
         testID={backButtonTestID}
         style={styles.backButton}
       >
-        <MaterialIcons name="chevron-left" size={28} color={theme.text} />
+        <AppIcon name="chevron-left" size={28} color={theme.text} />
       </Pressable>
 
       <Text style={styles.title} accessibilityRole="header" numberOfLines={1}>

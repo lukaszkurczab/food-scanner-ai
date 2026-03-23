@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
-import { Ionicons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { BackTitleHeader, FullScreenLoader, Layout, PrimaryButton } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
@@ -196,7 +196,7 @@ export default function ManageSubscriptionScreen({
                 >
                   {t(`manageSubscription.benefit_${key}`)}
                 </Text>
-                <Ionicons
+                <AppIcon
                   name={expanded === key ? "chevron-up" : "chevron-down"}
                   size={20}
                   color={theme.textSecondary}
@@ -228,7 +228,7 @@ export default function ManageSubscriptionScreen({
                 defaultValue: "Restore Purchases",
               })}
             </Text>
-            <Ionicons name="refresh" size={20} color={theme.textSecondary} />
+            <AppIcon name="refresh" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -240,7 +240,7 @@ export default function ManageSubscriptionScreen({
             <Text style={styles.actionText}>
               {t("manageSubscription.refundPolicy")}
             </Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+            <AppIcon name="chevron-right" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
 
           {!!termsUrl && !!privacyUrl && (
@@ -292,8 +292,8 @@ export default function ManageSubscriptionScreen({
                 defaultValue: "Manage subscription in store",
               })}
             </Text>
-            <Ionicons
-              name="chevron-forward"
+            <AppIcon
+              name="chevron-right"
               size={20}
               color={theme.accentSecondary}
             />
@@ -316,8 +316,8 @@ export default function ManageSubscriptionScreen({
                 ? t("manageSubscription.renewSubscription")
                 : t("manageSubscription.startSubscription")}
             </Text>
-            <Ionicons
-              name="chevron-forward"
+            <AppIcon
+              name="chevron-right"
               size={20}
               color={theme.accentSecondary}
             />
@@ -349,7 +349,7 @@ export default function ManageSubscriptionScreen({
             <Text style={styles.devText}>
               {`DEV: ${isPremiumComputed ? "Disable" : "Enable"} Premium`}
             </Text>
-            <Ionicons name="build" size={20} color={theme.textSecondary} />
+            <AppIcon name="settings" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         )}
       </View>

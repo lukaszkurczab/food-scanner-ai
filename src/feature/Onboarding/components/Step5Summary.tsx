@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { IconButton } from "@/components";
 import { FormData } from "@/types";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { cmToFtIn, kgToLbs } from "@utils/units";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
@@ -205,7 +205,7 @@ export default function Step5Summary({
                 {section.title}
               </Text>
               <IconButton
-                icon={<MaterialIcons name="edit" size={22} />}
+                icon={<AppIcon name="edit" size={22} />}
                 onPress={() => goToStep(section.step)}
                 accessibilityLabel={t("summary.edit")}
                 style={styles.editButton}

@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 
 interface ListItemProps {
   label: string;
@@ -65,7 +65,7 @@ export const ListItem: React.FC<ListItemProps> = ({
           style={styles.chevron}
         />
       ) : (
-        <MaterialIcons
+        <AppIcon
           name="chevron-right"
           size={28}
           color={theme.textSecondary}

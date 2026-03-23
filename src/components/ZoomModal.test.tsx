@@ -58,8 +58,9 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-jest.mock("@expo/vector-icons", () => ({
-  MaterialIcons: () => null,
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 describe("ZoomModal", () => {

@@ -16,7 +16,7 @@ import {
 import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useEditResultState } from "@/feature/History/hooks/useEditResultState";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
@@ -98,7 +98,7 @@ export default function EditResultScreen({ navigation }: Props) {
                   styles.fab,
                 ]}
               >
-                <MaterialIcons name="ios-share" size={22} color={theme.text} />
+                <AppIcon name="share" size={22} color={theme.text} />
               </Pressable>
             </>
           ) : (
@@ -108,8 +108,8 @@ export default function EditResultScreen({ navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel={t("add_photo", { ns: "meals" })}
             >
-              <MaterialIcons
-                name="add-a-photo"
+              <AppIcon
+                name="add-photo"
                 size={44}
                 color={theme.textSecondary}
               />

@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
   runOnJS,
 } from "react-native-reanimated";
-import { MaterialIcons } from "@expo/vector-icons";
+import AppIcon from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
 
 type ZoomModalProps = {
@@ -143,7 +143,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ visible, uri, onClose }) => {
           hitSlop={12}
           accessibilityLabel="Zamknij podgląd"
         >
-          <MaterialIcons name="close" size={24} color="#fff" />
+          <AppIcon name="close" size={24} color="#fff" />
         </Pressable>
       </View>
     </Modal>
