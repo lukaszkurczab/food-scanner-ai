@@ -56,30 +56,26 @@ export function MealSyncBadge({ syncState, lastSyncedAt }: Props) {
       : label;
 
   return (
-    <View
-      style={[
-        styles.badge,
-        tone === "success"
-          ? styles.success
-          : tone === "warning"
-            ? styles.warning
-            : styles.error,
-      ]}
-    >
-      <Text
-        style={[
-          styles.label,
-          tone === "success"
-            ? styles.successLabel
-            : tone === "warning"
-              ? styles.warningLabel
-              : styles.errorLabel,
-        ]}
-        numberOfLines={1}
-      >
-        {displayLabel}
-      </Text>
-    </View>
+    <>
+      {tone !== "success" && (
+        <View
+          style={[
+            styles.badge,
+            tone === "warning" ? styles.warning : styles.error,
+          ]}
+        >
+          <Text
+            style={[
+              styles.label,
+              tone === "warning" ? styles.warningLabel : styles.errorLabel,
+            ]}
+            numberOfLines={1}
+          >
+            {displayLabel}
+          </Text>
+        </View>
+      )}
+    </>
   );
 }
 
