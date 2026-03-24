@@ -13,7 +13,13 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import type { Meal, MealType, MealSyncState, MealInputMethod, MealSource } from "@/types/meal";
+import type {
+  Meal,
+  MealType,
+  MealSyncState,
+  MealInputMethod,
+  MealSource,
+} from "@/types/meal";
 import type {
   CoachActionType,
   CoachEmptyReason,
@@ -65,20 +71,12 @@ import {
   isWeeklyReportDayKey,
 } from "@/services/weeklyReport/weeklyReportContract";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const FIXTURES_DIR = path.join(__dirname);
 
 function loadFixture<T = unknown>(name: string): T {
   const raw = fs.readFileSync(path.join(FIXTURES_DIR, name), "utf-8");
   return JSON.parse(raw) as T;
 }
-
-// ---------------------------------------------------------------------------
-// Fixture: enums.json — canonical enum values
-// ---------------------------------------------------------------------------
 
 type EnumsFixture = {
   MealType: string[];
@@ -102,33 +100,55 @@ type SmartReminderTelemetryFixture = {
 
 describe("Enum parity", () => {
   const enums = loadFixture<EnumsFixture>("enums.json");
-
-  // These arrays are the single source of truth on the mobile side.
-  // They must exactly match the fixture (which is the single source of
-  // truth for the backend).  If either side adds/removes a value, the
-  // test breaks.
-
-  const MOBILE_MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack", "other"];
-  const MOBILE_SYNC_STATES: MealSyncState[] = ["synced", "pending", "conflict", "failed"];
-  const MOBILE_INPUT_METHODS: MealInputMethod[] = [
-    "manual", "photo", "barcode", "text", "saved", "quick_add",
+  const MOBILE_MEAL_TYPES: MealType[] = [
+    "breakfast",
+    "lunch",
+    "dinner",
+    "snack",
+    "other",
   ];
-  const MOBILE_MEAL_SOURCES: NonNullable<MealSource>[] = ["ai", "manual", "saved"];
+  const MOBILE_SYNC_STATES: MealSyncState[] = [
+    "synced",
+    "pending",
+    "conflict",
+    "failed",
+  ];
+  const MOBILE_INPUT_METHODS: MealInputMethod[] = [
+    "manual",
+    "photo",
+    "barcode",
+    "text",
+    "saved",
+    "quick_add",
+  ];
+  const MOBILE_MEAL_SOURCES: NonNullable<MealSource>[] = [
+    "ai",
+    "manual",
+    "saved",
+  ];
   const MOBILE_TOP_RISKS: NutritionTopRisk[] = [
-    "none", "under_logging", "low_protein_consistency",
-    "high_unknown_meal_details", "calorie_under_target",
+    "none",
+    "under_logging",
+    "low_protein_consistency",
+    "high_unknown_meal_details",
+    "calorie_under_target",
   ];
   const MOBILE_COACH_PRIORITIES: NutritionCoachPriority[] = [
-    "maintain", "logging_foundation", "protein_consistency",
-    "meal_detail_quality", "calorie_adherence",
+    "maintain",
+    "logging_foundation",
+    "protein_consistency",
+    "meal_detail_quality",
+    "calorie_adherence",
   ];
   const MOBILE_AI_TIERS: Array<"free" | "premium"> = ["free", "premium"];
-  const MOBILE_REMINDER_DECISION_TYPES: ReminderDecisionType[] = [...REMINDER_DECISION_TYPES];
+  const MOBILE_REMINDER_DECISION_TYPES: ReminderDecisionType[] = [
+    ...REMINDER_DECISION_TYPES,
+  ];
   const MOBILE_REMINDER_KINDS: ReminderKind[] = [...REMINDER_KINDS];
-  const MOBILE_REMINDER_REASON_CODES: ReminderReasonCode[] = [...REMINDER_REASON_CODES];
+  const MOBILE_REMINDER_REASON_CODES: ReminderReasonCode[] = [
+    ...REMINDER_REASON_CODES,
+  ];
 
-  // Gateway reject reasons — must match useChatHistory.ts GATEWAY_REJECT_REASONS
-  // (minus ML_OFF_TOPIC which is mobile-only for future ML classifier)
   const BACKEND_REJECT_REASONS = ["OFF_TOPIC", "TOO_SHORT"];
 
   test("MealType values match backend", () => {
@@ -136,15 +156,21 @@ describe("Enum parity", () => {
   });
 
   test("MealSyncState values match backend", () => {
-    expect([...MOBILE_SYNC_STATES].sort()).toEqual([...enums.MealSyncState].sort());
+    expect([...MOBILE_SYNC_STATES].sort()).toEqual(
+      [...enums.MealSyncState].sort(),
+    );
   });
 
   test("MealInputMethod values match backend", () => {
-    expect([...MOBILE_INPUT_METHODS].sort()).toEqual([...enums.MealInputMethod].sort());
+    expect([...MOBILE_INPUT_METHODS].sort()).toEqual(
+      [...enums.MealInputMethod].sort(),
+    );
   });
 
   test("MealSource values match backend", () => {
-    expect([...MOBILE_MEAL_SOURCES].sort()).toEqual([...enums.MealSource].sort());
+    expect([...MOBILE_MEAL_SOURCES].sort()).toEqual(
+      [...enums.MealSource].sort(),
+    );
   });
 
   test("GatewayRejectReasons match backend", () => {
@@ -158,7 +184,9 @@ describe("Enum parity", () => {
   });
 
   test("CoachPriority values match backend", () => {
-    expect([...MOBILE_COACH_PRIORITIES].sort()).toEqual([...enums.CoachPriority].sort());
+    expect([...MOBILE_COACH_PRIORITIES].sort()).toEqual(
+      [...enums.CoachPriority].sort(),
+    );
   });
 
   test("AiTier values match backend", () => {
@@ -183,10 +211,6 @@ describe("Enum parity", () => {
     );
   });
 });
-
-// ---------------------------------------------------------------------------
-// Fixture: meal_item.json — canonical meal shape
-// ---------------------------------------------------------------------------
 
 describe("Meal item contract", () => {
   const meal = loadFixture<Meal>("meal_item.json");
@@ -229,22 +253,33 @@ describe("Meal item contract", () => {
   });
 
   test("fixture type field is a valid MealType", () => {
-    const VALID: MealType[] = ["breakfast", "lunch", "dinner", "snack", "other"];
+    const VALID: MealType[] = [
+      "breakfast",
+      "lunch",
+      "dinner",
+      "snack",
+      "other",
+    ];
     expect(VALID).toContain(meal.type);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Fixture: nutrition_state.json — canonical state shape
-// ---------------------------------------------------------------------------
 
 describe("Nutrition state contract", () => {
   const state = loadFixture<NutritionState>("nutrition_state.json");
 
   test("top-level keys match NutritionState type", () => {
     const expectedKeys = [
-      "computedAt", "dayKey", "targets", "consumed", "remaining",
-      "overTarget", "quality", "habits", "streak", "ai", "meta",
+      "computedAt",
+      "dayKey",
+      "targets",
+      "consumed",
+      "remaining",
+      "overTarget",
+      "quality",
+      "habits",
+      "streak",
+      "ai",
+      "meta",
     ];
     expect(Object.keys(state).sort()).toEqual(expectedKeys.sort());
   });
@@ -267,15 +302,29 @@ describe("Nutrition state contract", () => {
     expect(typeof state.habits.behavior.loggingDays7).toBe("number");
     expect(typeof state.habits.behavior.validLoggingDays7).toBe("number");
     expect(typeof state.habits.behavior.loggingConsistency28).toBe("number");
-    expect(typeof state.habits.behavior.validLoggingConsistency28).toBe("number");
-    expect(typeof state.habits.behavior.avgValidMealsPerValidLoggedDay14).toBe("number");
-    expect(typeof state.habits.behavior.mealTypeCoverage14.coveredCount).toBe("number");
-    expect(typeof state.habits.behavior.mealTypeFrequency14.lunch).toBe("number");
-    expect(typeof state.habits.behavior.dayCoverage14.validLoggedDays).toBe("number");
+    expect(typeof state.habits.behavior.validLoggingConsistency28).toBe(
+      "number",
+    );
+    expect(typeof state.habits.behavior.avgValidMealsPerValidLoggedDay14).toBe(
+      "number",
+    );
+    expect(typeof state.habits.behavior.mealTypeCoverage14.coveredCount).toBe(
+      "number",
+    );
+    expect(typeof state.habits.behavior.mealTypeFrequency14.lunch).toBe(
+      "number",
+    );
+    expect(typeof state.habits.behavior.dayCoverage14.validLoggedDays).toBe(
+      "number",
+    );
     expect(typeof state.habits.behavior.proteinDaysHit14.ratio).toBe("number");
     expect(state.habits.behavior.timingPatterns14.available).toBe(true);
-    expect(typeof state.habits.behavior.timingPatterns14.firstMealMedianHour).toBe("number");
-    expect(typeof state.habits.dataQuality.daysUsingTimestampTimingFallback14).toBe("number");
+    expect(
+      typeof state.habits.behavior.timingPatterns14.firstMealMedianHour,
+    ).toBe("number");
+    expect(
+      typeof state.habits.dataQuality.daysUsingTimestampTimingFallback14,
+    ).toBe("number");
   });
 
   test("streak summary shape", () => {
@@ -294,10 +343,6 @@ describe("Nutrition state contract", () => {
     expect(state.meta.componentStatus.habits).toBe("ok");
   });
 });
-
-// ---------------------------------------------------------------------------
-// Fixture: coach_response.json — canonical coach shape
-// ---------------------------------------------------------------------------
 
 describe("Coach response contract", () => {
   const coach = loadFixture<CoachResponse>("coach_response.json");
@@ -359,14 +404,11 @@ describe("Coach response contract", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Fixture: weekly_report.json — canonical weekly report shape
-// ---------------------------------------------------------------------------
-
 describe("Weekly report contract", () => {
   const report = loadFixture<WeeklyReport>("weekly_report.json");
 
-  const MOBILE_WEEKLY_REPORT_STATUSES: WeeklyReportStatus[] = WEEKLY_REPORT_STATUSES;
+  const MOBILE_WEEKLY_REPORT_STATUSES: WeeklyReportStatus[] =
+    WEEKLY_REPORT_STATUSES;
   const MOBILE_WEEKLY_REPORT_INSIGHT_TYPES: WeeklyReportInsightType[] =
     WEEKLY_REPORT_INSIGHT_TYPES;
   const MOBILE_WEEKLY_REPORT_INSIGHT_IMPORTANCE: WeeklyReportInsightImportance[] =
@@ -377,7 +419,13 @@ describe("Weekly report contract", () => {
     WEEKLY_REPORT_PRIORITY_TYPES;
 
   test("top-level keys match WeeklyReport type", () => {
-    const expectedKeys = ["status", "period", "summary", "insights", "priorities"];
+    const expectedKeys = [
+      "status",
+      "period",
+      "summary",
+      "insights",
+      "priorities",
+    ];
     expect(Object.keys(report).sort()).toEqual(expectedKeys.sort());
   });
 
@@ -395,7 +443,9 @@ describe("Weekly report contract", () => {
 
     for (const insight of report.insights) {
       expect(MOBILE_WEEKLY_REPORT_INSIGHT_TYPES).toContain(insight.type);
-      expect(MOBILE_WEEKLY_REPORT_INSIGHT_IMPORTANCE).toContain(insight.importance);
+      expect(MOBILE_WEEKLY_REPORT_INSIGHT_IMPORTANCE).toContain(
+        insight.importance,
+      );
       expect(MOBILE_WEEKLY_REPORT_INSIGHT_TONES).toContain(insight.tone);
       expect(Array.isArray(insight.reasonCodes)).toBe(true);
     }
@@ -417,14 +467,14 @@ describe("Weekly report contract", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Fixture: reminder_decision.json — canonical reminder decision shape
-// ---------------------------------------------------------------------------
-
 describe("Reminder decision contract", () => {
   const sendReminder = loadFixture<ReminderDecision>("reminder_decision.json");
-  const suppressReminder = loadFixture<ReminderDecision>("reminder_decision_suppress.json");
-  const noopReminder = loadFixture<ReminderDecision>("reminder_decision_noop.json");
+  const suppressReminder = loadFixture<ReminderDecision>(
+    "reminder_decision_suppress.json",
+  );
+  const noopReminder = loadFixture<ReminderDecision>(
+    "reminder_decision_noop.json",
+  );
 
   test("top-level keys match ReminderDecision type", () => {
     const expectedKeys = [
@@ -486,12 +536,10 @@ describe("Reminder decision contract", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Fixture: smart_reminder_telemetry.json — canonical smart reminder telemetry
-// ---------------------------------------------------------------------------
-
 describe("Smart reminder telemetry contract", () => {
-  const fixture = loadFixture<SmartReminderTelemetryFixture>("smart_reminder_telemetry.json");
+  const fixture = loadFixture<SmartReminderTelemetryFixture>(
+    "smart_reminder_telemetry.json",
+  );
 
   const MOBILE_EVENT_NAMES = [
     "smart_reminder_suppressed",
@@ -513,14 +561,8 @@ describe("Smart reminder telemetry contract", () => {
       "confidenceBucket",
       "scheduledWindow",
     ],
-    smart_reminder_noop: [
-      "decision",
-      "noopReason",
-      "confidenceBucket",
-    ],
-    smart_reminder_decision_failed: [
-      "failureReason",
-    ],
+    smart_reminder_noop: ["decision", "noopReason", "confidenceBucket"],
+    smart_reminder_decision_failed: ["failureReason"],
     smart_reminder_schedule_failed: [
       "reminderKind",
       "decision",
@@ -530,7 +572,9 @@ describe("Smart reminder telemetry contract", () => {
   } as const;
 
   test("event names match backend fixture", () => {
-    expect([...fixture.eventNames].sort()).toEqual([...MOBILE_EVENT_NAMES].sort());
+    expect([...fixture.eventNames].sort()).toEqual(
+      [...MOBILE_EVENT_NAMES].sort(),
+    );
   });
 
   test("props match backend fixture", () => {
@@ -538,8 +582,12 @@ describe("Smart reminder telemetry contract", () => {
       Object.keys(MOBILE_PROPS_BY_EVENT).sort(),
     );
 
-    for (const [eventName, propNames] of Object.entries(MOBILE_PROPS_BY_EVENT)) {
-      expect([...fixture.propsByEvent[eventName]].sort()).toEqual([...propNames].sort());
+    for (const [eventName, propNames] of Object.entries(
+      MOBILE_PROPS_BY_EVENT,
+    )) {
+      expect([...fixture.propsByEvent[eventName]].sort()).toEqual(
+        [...propNames].sort(),
+      );
     }
   });
 
@@ -549,10 +597,6 @@ describe("Smart reminder telemetry contract", () => {
     );
   });
 });
-
-// ---------------------------------------------------------------------------
-// Snapshot: smart_reminders_v1.contract.json — cross-repo contract snapshot
-// ---------------------------------------------------------------------------
 
 type ContractSnapshot = {
   _doc: string;
@@ -579,12 +623,11 @@ type ContractSnapshot = {
 };
 
 describe("Smart Reminders v1 contract snapshot", () => {
-  const contract = loadFixture<ContractSnapshot>("smart_reminders_v1.contract.json");
+  const contract = loadFixture<ContractSnapshot>(
+    "smart_reminders_v1.contract.json",
+  );
 
   test("snapshot is generated by backend exporter, not hand-edited", () => {
-    // The _doc field is set by scripts/export_reminder_contract.py and must
-    // contain the canonical marker.  If someone hand-edits the snapshot
-    // instead of running sync-backend-contract.sh, this will catch it.
     expect(contract._doc).toContain("scripts/export_reminder_contract.py");
     expect(contract._doc).toContain("Canonical Smart Reminders v1 contract");
   });
@@ -649,7 +692,9 @@ describe("Smart Reminders v1 contract snapshot", () => {
       "confidence",
       "validUntil",
     ].sort();
-    expect([...contract.decisionShape.requiredFields].sort()).toEqual(typeFields);
+    expect([...contract.decisionShape.requiredFields].sort()).toEqual(
+      typeFields,
+    );
   });
 
   test("telemetry allowed events match snapshot", () => {
@@ -673,11 +718,25 @@ describe("Smart Reminders v1 contract snapshot", () => {
 
   test("telemetry props per event match snapshot", () => {
     const MOBILE_PROPS_BY_EVENT: Record<string, readonly string[]> = {
-      smart_reminder_suppressed: ["decision", "suppressionReason", "confidenceBucket"],
-      smart_reminder_scheduled: ["reminderKind", "decision", "confidenceBucket", "scheduledWindow"],
+      smart_reminder_suppressed: [
+        "decision",
+        "suppressionReason",
+        "confidenceBucket",
+      ],
+      smart_reminder_scheduled: [
+        "reminderKind",
+        "decision",
+        "confidenceBucket",
+        "scheduledWindow",
+      ],
       smart_reminder_noop: ["decision", "noopReason", "confidenceBucket"],
       smart_reminder_decision_failed: ["failureReason"],
-      smart_reminder_schedule_failed: ["reminderKind", "decision", "confidenceBucket", "failureReason"],
+      smart_reminder_schedule_failed: [
+        "reminderKind",
+        "decision",
+        "confidenceBucket",
+        "failureReason",
+      ],
     };
 
     for (const [eventName, props] of Object.entries(MOBILE_PROPS_BY_EVENT)) {
@@ -688,12 +747,10 @@ describe("Smart Reminders v1 contract snapshot", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Fixture: gateway_reject.json — HTTP 400 reject shape
-// ---------------------------------------------------------------------------
-
 describe("Gateway reject contract", () => {
-  const fixture = loadFixture<{ detail: Record<string, unknown> }>("gateway_reject.json");
+  const fixture = loadFixture<{ detail: Record<string, unknown> }>(
+    "gateway_reject.json",
+  );
 
   test("detail has required fields", () => {
     const { detail } = fixture;
@@ -704,8 +761,13 @@ describe("Gateway reject contract", () => {
   });
 
   test("reason is in mobile GATEWAY_REJECT_REASONS", () => {
-    // Mirror of useChatHistory.ts line 39
-    const GATEWAY_REJECT_REASONS = new Set(["OFF_TOPIC", "ML_OFF_TOPIC", "TOO_SHORT"]);
-    expect(GATEWAY_REJECT_REASONS.has(fixture.detail.reason as string)).toBe(true);
+    const GATEWAY_REJECT_REASONS = new Set([
+      "OFF_TOPIC",
+      "ML_OFF_TOPIC",
+      "TOO_SHORT",
+    ]);
+    expect(GATEWAY_REJECT_REASONS.has(fixture.detail.reason as string)).toBe(
+      true,
+    );
   });
 });

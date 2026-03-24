@@ -1,7 +1,3 @@
-#!/usr/bin/env node
-// Node 18+
-// Pobiera fonty przez Google Fonts API i zapisuje TTF do assets/fonts
-
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,10 +7,8 @@ const ROOT = path.resolve(__dirname, "..");
 const FONTS_DIR = path.join(ROOT, "assets", "fonts");
 const OUT_MAP = path.join(ROOT, "src", "utils", "loadFonts.generated.ts");
 
-// === TU WPISZ SWÓJ API KEY ===
 const API_KEY = process.env.GOOGLE_FONTS_KEY;
 
-// Popularne rodziny
 const CONFIG = [
   { family: "Inter", weights: [300, 400, 500, 600, 700] },
   { family: "Roboto", weights: [300, 400, 500, 700] },
@@ -123,7 +117,7 @@ async function main() {
   console.log(
     `\nGenerated ${path.relative(ROOT, OUT_MAP)} with ${
       collected.length
-    } entries.`
+    } entries.`,
   );
 }
 

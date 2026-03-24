@@ -39,7 +39,7 @@ export const UserIcon: React.FC<Props> = ({
       borderWidth,
       borderColor,
     }),
-    [size, borderWidth, borderColor]
+    [size, borderWidth, borderColor],
   );
   const imageStyle = useMemo(
     () => ({
@@ -47,21 +47,19 @@ export const UserIcon: React.FC<Props> = ({
       height: size,
       borderRadius: size / 2,
     }),
-    [size]
+    [size],
   );
   const premiumBadgeStyle = useMemo(
     () => ({
       borderRadius: size * 0.18,
       padding: size * 0.06,
     }),
-    [size]
+    [size],
   );
 
-  const computedLabel =
-    accessibilityLabel ?? t("user.avatar_accessibility");
+  const computedLabel = accessibilityLabel ?? t("user.avatar_accessibility");
 
   useEffect(() => {
-    // reset error when source changes
     setError(false);
   }, [sourceUri]);
 
@@ -78,11 +76,7 @@ export const UserIcon: React.FC<Props> = ({
           onError={() => setError(true)}
         />
       ) : (
-        <AppIcon
-          name="person"
-          size={size * 0.66}
-          color={theme.textSecondary}
-        />
+        <AppIcon name="person" size={size * 0.66} color={theme.textSecondary} />
       )}
 
       {isPremium && (
@@ -91,11 +85,7 @@ export const UserIcon: React.FC<Props> = ({
           accessible
           accessibilityLabel={t("user.premium_badge_accessibility")}
         >
-          <AppIcon
-            name="star"
-            size={size * 0.22}
-            color={theme.macro.fat}
-          />
+          <AppIcon name="star" size={size * 0.22} color={theme.macro.fat} />
         </View>
       )}
     </View>

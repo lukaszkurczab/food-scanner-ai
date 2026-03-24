@@ -15,7 +15,7 @@ export function getDB(): SQLite.SQLiteDatabase {
 
 function getUserVersion(d: SQLite.SQLiteDatabase): number {
   const row = d.getFirstSync<{ user_version: number }>(
-    `PRAGMA user_version`
+    `PRAGMA user_version`,
   ) as { user_version: number } | undefined;
   return row?.user_version ?? 0;
 }
@@ -25,7 +25,7 @@ function setUserVersion(d: SQLite.SQLiteDatabase, v: number) {
 function columnExists(
   d: SQLite.SQLiteDatabase,
   table: string,
-  column: string
+  column: string,
 ): boolean {
   try {
     const rows = d.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`);
@@ -37,15 +37,10 @@ function columnExists(
   }
 }
 
-/**
- * Run migrations on app start.
- * Call once in App.tsx before using any repos.
- */
 export function runMigrations() {
   const d = getDB();
   let v = getUserVersion(d);
 
-  // v0 → v1: initial schema
   if (v < 1) {
     d.execSync("BEGIN");
     try {
@@ -135,7 +130,6 @@ export function runMigrations() {
     }
   }
 
-  // v1 → v2: ensure indices exist
   if (v < 2) {
     d.execSync("BEGIN");
     try {
@@ -328,22 +322,22 @@ export function runMigrations() {
     try {
       if (!columnExists(d, "meals", "last_synced_at")) {
         d.execSync(
-          `ALTER TABLE meals ADD COLUMN last_synced_at INTEGER NOT NULL DEFAULT 0;`
+          `ALTER TABLE meals ADD COLUMN last_synced_at INTEGER NOT NULL DEFAULT 0;`,
         );
       }
       if (!columnExists(d, "meals", "sync_state")) {
         d.execSync(
-          `ALTER TABLE meals ADD COLUMN sync_state TEXT NOT NULL DEFAULT 'pending';`
+          `ALTER TABLE meals ADD COLUMN sync_state TEXT NOT NULL DEFAULT 'pending';`,
         );
       }
       if (!columnExists(d, "my_meals", "last_synced_at")) {
         d.execSync(
-          `ALTER TABLE my_meals ADD COLUMN last_synced_at INTEGER NOT NULL DEFAULT 0;`
+          `ALTER TABLE my_meals ADD COLUMN last_synced_at INTEGER NOT NULL DEFAULT 0;`,
         );
       }
       if (!columnExists(d, "my_meals", "sync_state")) {
         d.execSync(
-          `ALTER TABLE my_meals ADD COLUMN sync_state TEXT NOT NULL DEFAULT 'pending';`
+          `ALTER TABLE my_meals ADD COLUMN sync_state TEXT NOT NULL DEFAULT 'pending';`,
         );
       }
 
@@ -519,7 +513,9 @@ export function runMigrations() {
         WHERE tz_offset_min IS NULL;
       `);
       if (!columnExists(d, "my_meals", "logged_at_local_min")) {
-        d.execSync(`ALTER TABLE my_meals ADD COLUMN logged_at_local_min INTEGER;`);
+        d.execSync(
+          `ALTER TABLE my_meals ADD COLUMN logged_at_local_min INTEGER;`,
+        );
       }
       if (!columnExists(d, "my_meals", "tz_offset_min")) {
         d.execSync(`ALTER TABLE my_meals ADD COLUMN tz_offset_min INTEGER;`);
