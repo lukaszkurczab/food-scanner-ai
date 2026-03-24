@@ -79,7 +79,7 @@ export const LineGraph = ({
     yMax0: number,
     targetTicks: number,
     minTicks = 4,
-    maxTicks = 8
+    maxTicks = 8,
   ) => {
     let step = niceStep(yMax0 - yMin0, targetTicks);
     let yMin = Math.floor(yMin0 / step) * step;
@@ -102,9 +102,6 @@ export const LineGraph = ({
     return { step, yMin, yMax, intervals };
   };
 
-  // korekta zakresu:
-  // - jeśli wszystkie wartości są równe 0 -> [0, 1]
-  // - jeśli seria jest nieujemna i płaska -> [0, niceCeil(max || 1)]
   if (rawMax === rawMin) {
     if (rawMax <= 0) {
       rawMin = 0;

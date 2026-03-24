@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 type Props = {
   open: boolean;
   onClose: () => void;
-  width?: number; // px
+  width?: number;
   children: React.ReactNode;
 };
 
@@ -23,7 +23,7 @@ export function Drawer({ open, onClose, width, children }: Props) {
   const screenW = Dimensions.get("window").width;
   const w = useMemo(
     () => Math.min(width ?? 320, screenW * 0.86),
-    [width, screenW]
+    [width, screenW],
   );
 
   const x = useRef(new Animated.Value(-w)).current;

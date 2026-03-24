@@ -82,8 +82,9 @@ export const IngredientEditor: React.FC<Props> = ({
     };
   };
 
-  // Intentionally initialize baseline only once on mount.
-  useEffect(() => { syncBaselineFromState(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    syncBaselineFromState(false);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commit = () => {
     if (Object.keys(errors).length) return;
@@ -129,7 +130,7 @@ export const IngredientEditor: React.FC<Props> = ({
   const handleNumericChange = (
     value: string,
     setter: (value: string) => void,
-    key: NumericIngredientKey
+    key: NumericIngredientKey,
   ) => {
     setter(value);
     const numeric = parseNum(value);
@@ -138,7 +139,10 @@ export const IngredientEditor: React.FC<Props> = ({
     }
   };
 
-  const handleNumericBlur = (key: NumericIngredientKey, normalizedValue: string) => {
+  const handleNumericBlur = (
+    key: NumericIngredientKey,
+    normalizedValue: string,
+  ) => {
     const n = parseNum(normalizedValue);
     if (!Number.isNaN(n)) applyNumericPartial(key, n);
 
@@ -198,7 +202,7 @@ export const IngredientEditor: React.FC<Props> = ({
           fat: Number(ing.fat ?? 0),
           kcal: Number(ing.kcal ?? 0),
         };
-      }
+      },
     );
     return () => sub.remove();
   }, [onChangePartial]);
@@ -319,7 +323,9 @@ export const IngredientEditor: React.FC<Props> = ({
         blurFallback="0"
         placeholderTextColor={theme.textSecondary}
         onFocus={() => clearZeroOnFocus(protein, setProtein)}
-        onBlur={(normalizedValue) => handleNumericBlur("protein", normalizedValue)}
+        onBlur={(normalizedValue) =>
+          handleNumericBlur("protein", normalizedValue)
+        }
       />
 
       {errors.protein ? (
@@ -347,7 +353,9 @@ export const IngredientEditor: React.FC<Props> = ({
         blurFallback="0"
         placeholderTextColor={theme.textSecondary}
         onFocus={() => clearZeroOnFocus(carbs, setCarbs)}
-        onBlur={(normalizedValue) => handleNumericBlur("carbs", normalizedValue)}
+        onBlur={(normalizedValue) =>
+          handleNumericBlur("carbs", normalizedValue)
+        }
       />
 
       {errors.carbs ? (
@@ -443,7 +451,7 @@ export const IngredientEditor: React.FC<Props> = ({
           const nextCarbs = Number((baseline.current.carbs * r).toFixed(1));
           const nextFat = Number((baseline.current.fat * r).toFixed(1));
           const kcalFromMacros = Math.round(
-            nextProtein * 4 + nextCarbs * 4 + nextFat * 9
+            nextProtein * 4 + nextCarbs * 4 + nextFat * 9,
           );
           const nextKcal =
             Math.round(baseline.current.kcal * r) || kcalFromMacros;
