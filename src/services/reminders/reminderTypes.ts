@@ -49,20 +49,45 @@ export const NOOP_REMINDER_REASON_CODES = [
 export type ReminderDecisionType = (typeof REMINDER_DECISION_TYPES)[number];
 export type ReminderKind = (typeof REMINDER_KINDS)[number];
 export type ReminderReasonCode = (typeof REMINDER_REASON_CODES)[number];
-export type SendReminderReasonCode = (typeof SEND_REMINDER_REASON_CODES)[number];
-export type SuppressReminderReasonCode = (typeof SUPPRESS_REMINDER_REASON_CODES)[number];
-export type NoopReminderReasonCode = (typeof NOOP_REMINDER_REASON_CODES)[number];
+export type SendReminderReasonCode =
+  (typeof SEND_REMINDER_REASON_CODES)[number];
+export type SuppressReminderReasonCode =
+  (typeof SUPPRESS_REMINDER_REASON_CODES)[number];
+export type NoopReminderReasonCode =
+  (typeof NOOP_REMINDER_REASON_CODES)[number];
 
-export type ReminderDecision = {
+type ReminderDecisionBase = {
   dayKey: string;
   computedAt: string;
-  decision: ReminderDecisionType;
-  kind: ReminderKind | null;
-  reasonCodes: ReminderReasonCode[];
-  scheduledAtUtc: string | null;
   confidence: number;
   validUntil: string;
 };
+
+export type SendReminderDecision = ReminderDecisionBase & {
+  decision: "send";
+  kind: ReminderKind;
+  reasonCodes: SendReminderReasonCode[];
+  scheduledAtUtc: string;
+};
+
+export type SuppressReminderDecision = ReminderDecisionBase & {
+  decision: "suppress";
+  kind: null;
+  reasonCodes: SuppressReminderReasonCode[];
+  scheduledAtUtc: null;
+};
+
+export type NoopReminderDecision = ReminderDecisionBase & {
+  decision: "noop";
+  kind: null;
+  reasonCodes: NoopReminderReasonCode[];
+  scheduledAtUtc: null;
+};
+
+export type ReminderDecision =
+  | SendReminderDecision
+  | SuppressReminderDecision
+  | NoopReminderDecision;
 
 export type ReminderDecisionSource = "disabled" | "remote" | "fallback";
 
