@@ -127,6 +127,7 @@ type AppIconProps = {
   style?: StyleProp<ViewStyle>;
   testID?: string;
   accessibilityLabel?: string;
+  rotation?: `${number}deg`;
 };
 
 const DEFAULT_COLOR = "#2D2D3A";
@@ -142,10 +143,9 @@ export function AppIcon({
   style,
   testID,
   accessibilityLabel,
+  rotation = "0deg",
 }: AppIconProps) {
-  const resolved = isBaseIconName(name)
-    ? { icon: name }
-    : ROTATED_ICONS[name];
+  const resolved = isBaseIconName(name) ? { icon: name } : ROTATED_ICONS[name];
   const Icon = ICONS[resolved.icon];
 
   return (
@@ -158,7 +158,7 @@ export function AppIcon({
           width: size,
           height: size,
         },
-        resolved.rotation ? { transform: [{ rotate: resolved.rotation }] } : null,
+        rotation ? { transform: [{ rotate: rotation }] } : null,
         style,
       ]}
     >
