@@ -17,12 +17,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -44,10 +44,10 @@ jobs:
 
     steps:
       - name: Checkout mobile repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Checkout backend repo (canonical contract source)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ github.repository_owner }}/food-scanner-ai-backend
           path: _backend

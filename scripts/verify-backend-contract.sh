@@ -12,7 +12,7 @@
 # For CI with separate repos, set BACKEND_REPO to the checkout path.
 # Example GitHub Actions step:
 #
-#   - uses: actions/checkout@v4
+#   - uses: actions/checkout@v5
 #     with:
 #       repository: <org>/food-scanner-ai-backend
 #       path: backend
