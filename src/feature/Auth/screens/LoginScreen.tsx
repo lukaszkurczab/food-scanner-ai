@@ -3,8 +3,8 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
+  Button,
   TextInput,
-  PrimaryButton,
   ErrorBox,
   LinkText,
   Layout,
@@ -142,7 +142,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           iconPosition="right"
         />
 
-        <PrimaryButton
+        <Button
           testID="login-submit-button"
           label={t("login")}
           onPress={handleLogin}

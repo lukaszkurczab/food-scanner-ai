@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { SecondaryButton } from "@/components/SecondaryButton";
+import { Button } from "@/components";
 import { useTranslation } from "react-i18next";
 
 export const DateRangePicker: React.FC<{
@@ -32,7 +32,7 @@ export const DateRangePicker: React.FC<{
         <Text style={styles.summary}>{summary}</Text>
       </View>
 
-      <SecondaryButton label={t("dateRange.set")} onPress={onOpen} />
+      <Button label={t("dateRange.set")} variant="secondary" onPress={onOpen} />
     </View>
   );
 };

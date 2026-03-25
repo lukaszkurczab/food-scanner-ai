@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Pressable,
   Linking,
-  ActivityIndicator,
   Alert,
   Platform,
 } from "react-native";
@@ -15,6 +14,7 @@ import Purchases from "react-native-purchases";
 import type { PurchasesPackage } from "react-native-purchases";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
+import { Button } from "@/components/Button";
 import { restorePurchases } from "@/services/billing/purchase";
 import { resolvePurchaseErrorMessage } from "@/services/billing/purchaseErrorMessage";
 import { useAuthContext } from "@/context/AuthContext";
@@ -231,35 +231,21 @@ export const PaywallCard: React.FC<Props> = ({
         })}
       </Text>
 
-      <Pressable
+      <Button
+        label={t("limit.button")}
         onPress={onUpgrade}
-        style={({ pressed }) => [
-          styles.cta,
-          pressed ? styles.ctaPressed : null,
-        ]}
-        accessibilityRole="button"
-      >
-        <Text style={styles.ctaLabel}>{t("limit.button")}</Text>
-      </Pressable>
+        style={styles.cta}
+      />
 
-      <Pressable
+      <Button
+        label={t("paywall.restore", { defaultValue: "Restore Purchases" })}
+        variant="ghost"
         onPress={onRestore}
         disabled={loading || billingDisabled()}
-        style={({ pressed }) => [
-          styles.restore,
-          billingDisabled() ? styles.restoreDisabled : null,
-          pressed && !billingDisabled() ? styles.restorePressed : null,
-        ]}
-        accessibilityRole="button"
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color={theme.textSecondary} />
-        ) : (
-          <Text style={styles.restoreLabel}>
-            {t("paywall.restore", { defaultValue: "Restore Purchases" })}
-          </Text>
-        )}
-      </Pressable>
+        loading={loading}
+        fullWidth={false}
+        style={styles.restore}
+      />
 
       {canShowLinks && (
         <View style={styles.linksRow}>
@@ -335,41 +321,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.regular,
     },
     cta: {
-      alignSelf: "center",
-      minHeight: 44,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
       marginTop: theme.spacing.md,
-      borderRadius: theme.rounded.full,
-      backgroundColor: theme.cta.primaryBackground,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    ctaPressed: {
-      opacity: 0.84,
-    },
-    ctaLabel: {
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.cta.primaryText,
     },
     restore: {
       alignSelf: "center",
-      paddingVertical: theme.spacing.sm,
       marginTop: theme.spacing.xs,
-    },
-    restorePressed: {
-      opacity: 0.8,
-    },
-    restoreDisabled: {
-      opacity: 0.4,
-    },
-    restoreLabel: {
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.medium,
-      color: theme.textSecondary,
     },
     linksRow: {
       flexDirection: "row",

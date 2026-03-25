@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   Linking,
   StyleSheet,
-  ActivityIndicator,
   Platform,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/Button";
 import { Modal } from "@/components/Modal";
 
 type Props = {
@@ -55,32 +55,13 @@ export const PaywallModal: React.FC<Props> = ({
       title={t("paywall.title", { defaultValue: "Premium Monthly" })}
       footer={
         <View style={styles.footer}>
-          <TouchableOpacity
+          <Button
+            label={t("paywall.subscribe", { defaultValue: "Subscribe" })}
             onPress={onSubscribe}
-            disabled={busy}
-            activeOpacity={0.8}
-            accessibilityState={{ disabled: !!busy, busy: !!busy }}
-            style={[
-              styles.cta,
-              {
-                opacity: busy ? 0.7 : 1,
-              },
-            ]}
-          >
-            <View style={styles.ctaInner}>
-              {busy ? (
-                <ActivityIndicator
-                  testID="paywall-subscribe-spinner"
-                  size="small"
-                  color={theme.cta.primaryText}
-                />
-              ) : (
-                <Text style={styles.ctaText}>
-                  {t("paywall.subscribe", { defaultValue: "Subscribe" })}
-                </Text>
-              )}
-            </View>
-          </TouchableOpacity>
+            loading={!!busy}
+            disabled={!!busy}
+            testID="paywall-subscribe-button"
+          />
 
           <TouchableOpacity
             onPress={onRestore}
@@ -164,23 +145,6 @@ export const PaywallModal: React.FC<Props> = ({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     footer: { gap: theme.spacing.sm },
-    cta: {
-      borderRadius: theme.rounded.sm,
-      paddingVertical: theme.spacing.md,
-      alignItems: "center",
-      backgroundColor: theme.primary,
-    },
-    ctaInner: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 22,
-    },
-    ctaText: {
-      fontSize: theme.typography.size.bodyM,
-      fontFamily: theme.typography.fontFamily.extraBold,
-      color: theme.cta.primaryText,
-    },
     restoreButton: {
       paddingVertical: theme.spacing.sm,
       alignItems: "center",

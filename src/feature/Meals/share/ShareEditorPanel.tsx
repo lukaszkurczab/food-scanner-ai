@@ -4,6 +4,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import ColorPickerPanel from "./ColorPickerPanel";
 import AppIcon from "@/components/AppIcon";
+import { Button } from "@/components/Button";
 import type { ElementId } from "./DraggableItem";
 import DraggableItem from "./DraggableItem";
 import ChartEditorPanel from "./editors/ChartEditorPanel";
@@ -249,9 +250,12 @@ export default function ShareEditorPanel({
 
       {shouldShowDone && (
         <View style={styles.actions}>
-          <Pressable onPress={onClose} style={styles.button}>
-            <Text style={styles.buttonText}>{t("editor.done")}</Text>
-          </Pressable>
+          <Button
+            label={t("editor.done")}
+            onPress={onClose}
+            fullWidth={false}
+            style={styles.button}
+          />
         </View>
       )}
     </View>
@@ -307,12 +311,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     label: { fontSize: theme.typography.size.bodyL, color: theme.textSecondary },
     actions: { alignItems: "center", marginTop: theme.spacing.sm },
     button: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.sm,
-      borderRadius: theme.rounded.sm,
-      backgroundColor: theme.primary,
+      minWidth: 120,
     },
-    buttonText: { color: theme.cta.primaryText, fontSize: theme.typography.size.bodyS },
     checklistContainer: { marginTop: theme.spacing.xs },
     dropdownRow: {
       flexDirection: "row",

@@ -9,12 +9,10 @@ import {
 } from "react-native";
 import * as FileSystem from "expo-file-system";
 import {
+  Button,
   MealBox,
-  PrimaryButton,
-  SecondaryButton,
   Checkbox,
   Layout,
-  ErrorButton,
   Modal,
   PhotoPreview,
 } from "@/components";
@@ -127,7 +125,7 @@ export default function ResultScreen({
                 ? t("resultUnavailable.desc", { ns: "meals" })
                 : t("resultUnavailable.offlineDesc", { ns: "meals" })}
           </Text>
-          <PrimaryButton
+          <Button
             label={t("retry", { ns: "common" })}
             onPress={() => {
               void retryLoadDraft();
@@ -135,7 +133,8 @@ export default function ResultScreen({
             disabled={!uid}
             style={styles.emptyAction}
           />
-          <SecondaryButton
+          <Button
+            variant="secondary"
             label={t("select_method", { ns: "meals" })}
             onPress={() => navigation.replace("MealAddMethod")}
             style={styles.emptyAction}
@@ -305,14 +304,15 @@ export default function ResultScreen({
       </View>
 
       <View style={[styles.actions, styles.actionsSpacing]}>
-        <PrimaryButton
+        <Button
           testID="meal-result-save-button"
           label={t("save", { ns: "common" })}
           onPress={handleSave}
           loading={saving}
           disabled={saving}
         />
-        <ErrorButton
+        <Button
+          variant="destructive"
           label={t("cancel", { ns: "common" })}
           onPress={() => setShowCancelModal(true)}
           loading={saving}

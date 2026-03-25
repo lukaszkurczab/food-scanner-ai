@@ -8,6 +8,7 @@ type ButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  testID?: string;
   children?: ReactNode;
 };
 
@@ -76,16 +77,10 @@ jest.mock("@/components", () => {
         ),
         error ? createElement(Text, null, error) : null,
       ),
-    PrimaryButton: ({ label, onPress, disabled }: ButtonProps) =>
+    Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
       createElement(
         Pressable,
-        { onPress, disabled, accessibilityRole: "button" },
-        createElement(Text, null, label),
-      ),
-    SecondaryButton: ({ label, onPress }: ButtonProps) =>
-      createElement(
-        Pressable,
-        { onPress, accessibilityRole: "button" },
+        { onPress, disabled, testID, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
     Modal: ({

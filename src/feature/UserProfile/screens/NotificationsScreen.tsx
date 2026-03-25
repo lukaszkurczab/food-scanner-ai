@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
-import { BackTitleHeader, Layout, PrimaryButton } from "@/components";
+import { BackTitleHeader, Button, Layout } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -101,7 +101,7 @@ export default function NotificationsScreen({
           ))}
         </View>
 
-        <PrimaryButton
+        <Button
           label={t("screen.addReminder")}
           onPress={() => navigation.navigate("NotificationForm", { id: null })}
           style={styles.addButton}

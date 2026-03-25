@@ -14,11 +14,10 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "@/components/DateTimeSection";
 import {
+  Button,
   Layout,
   Card,
   Modal,
-  PrimaryButton,
-  SecondaryButton,
 } from "@/components";
 import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -71,14 +70,15 @@ export default function EditResultScreen({ navigation }: Props) {
               ? t("editUnavailable.desc", { ns: "meals" })
               : t("editUnavailable.offlineDesc", { ns: "meals" })}
           </Text>
-          <PrimaryButton
+          <Button
             label={t("retry", { ns: "common" })}
             onPress={() => {
               void state.reloadFromLocal();
             }}
             style={styles.emptyAction}
           />
-          <SecondaryButton
+          <Button
+            variant="secondary"
             label={t("back_to_saved", { ns: "meals" })}
             onPress={state.handleCancelConfirm}
             style={styles.emptyAction}

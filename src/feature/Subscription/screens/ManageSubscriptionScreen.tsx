@@ -12,7 +12,7 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
-import { BackTitleHeader, FullScreenLoader, Layout, PrimaryButton } from "@/components";
+import { BackTitleHeader, Button, FullScreenLoader, Layout } from "@/components";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -108,7 +108,7 @@ export default function ManageSubscriptionScreen({
                   "You're offline and subscription details are not available locally yet.",
               })}
             </Text>
-            <PrimaryButton
+            <Button
               label={t("common:retry")}
               onPress={() => {
                 void refreshPremium();

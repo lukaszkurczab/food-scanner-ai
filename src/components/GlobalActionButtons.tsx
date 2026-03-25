@@ -1,11 +1,9 @@
 import React, { useMemo } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { PrimaryButton } from "@/components/PrimaryButton";
-import { SecondaryButton } from "@/components/SecondaryButton";
-import { ErrorButton } from "@/components/ErrorButton";
+import { Button } from "@/components/Button";
 
-type ActionTone = "primary" | "secondary" | "destructive";
+type ActionTone = "primary" | "secondary" | "ghost" | "destructive";
 type LegacyActionVariant = "default" | "secondary" | "error";
 
 type GlobalActionButtonsProps = {
@@ -91,36 +89,11 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
     buttonTone: ActionTone;
     buttonStyle?: StyleProp<ViewStyle>;
   }) => {
-    if (buttonTone === "destructive") {
-      return (
-        <ErrorButton
-          label={buttonLabel}
-          onPress={buttonOnPress ?? (() => {})}
-          disabled={buttonDisabled}
-          loading={buttonLoading}
-          testID={buttonTestID}
-          style={buttonStyle}
-        />
-      );
-    }
-
-    if (buttonTone === "secondary") {
-      return (
-        <SecondaryButton
-          label={buttonLabel}
-          onPress={buttonOnPress ?? (() => {})}
-          disabled={buttonDisabled}
-          loading={buttonLoading}
-          testID={buttonTestID}
-          style={buttonStyle}
-        />
-      );
-    }
-
     return (
-      <PrimaryButton
+      <Button
         label={buttonLabel}
-        onPress={buttonOnPress ?? (() => {})}
+        variant={buttonTone}
+        onPress={buttonOnPress}
         disabled={buttonDisabled}
         loading={buttonLoading}
         testID={buttonTestID}

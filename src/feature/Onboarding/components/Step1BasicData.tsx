@@ -3,9 +3,8 @@ import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import {
+  Button,
   NumberInput,
-  PrimaryButton,
-  SecondaryButton,
   Dropdown,
 } from "@/components";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
@@ -202,14 +201,15 @@ export default function Step1BasicData({
           <View style={[styles.row, styles.rowGap]}>
             {form.sex === "male" ? (
               <>
-                <PrimaryButton
+                <Button
                   label={t("male")}
                   onPress={() => handleChange("sex", "male")}
                   style={styles.flex1}
                   textStyle={styles.buttonText}
                   accessibilityState={{ selected: true }}
                 />
-                <SecondaryButton
+                <Button
+                  variant="secondary"
                   label={t("female")}
                   onPress={() => handleChange("sex", "female")}
                   style={styles.flex1}
@@ -219,14 +219,15 @@ export default function Step1BasicData({
               </>
             ) : (
               <>
-                <SecondaryButton
+                <Button
+                  variant="secondary"
                   label={t("male")}
                   onPress={() => handleChange("sex", "male")}
                   style={styles.flex1}
                   textStyle={styles.buttonText}
                   accessibilityState={{ selected: false }}
                 />
-                <PrimaryButton
+                <Button
                   label={t("female")}
                   onPress={() => handleChange("sex", "female")}
                   style={styles.flex1}

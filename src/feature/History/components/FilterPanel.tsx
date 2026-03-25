@@ -8,9 +8,8 @@ import {
   StyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { RangeSlider } from "@/components";
+import { Button, RangeSlider } from "@/components";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { SecondaryButton } from "@/components";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { Calendar } from "@/components/Calendar";
 import { useTranslation } from "react-i18next";
@@ -180,7 +179,8 @@ export const FilterPanel: React.FC<{
             <Text style={styles.headerTitle}>
               {t("title", { ns: "history" })}
             </Text>
-            <SecondaryButton
+            <Button
+              variant="secondary"
               label={t("addFilter", { ns: "history" })}
               onPress={() => setOpenPicker(true)}
               style={styles.addFilterButton}
@@ -258,7 +258,8 @@ export const FilterPanel: React.FC<{
             secondaryOnPress={clear}
           />
         ) : (
-          <SecondaryButton
+          <Button
+            variant="secondary"
             label={t("actions.cancel", { ns: "history" })}
             onPress={clear}
           />

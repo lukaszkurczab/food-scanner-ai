@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { PrimaryButton } from "@/components/PrimaryButton";
+import { Button } from "@/components";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -133,7 +133,7 @@ export default function CoachInsightCard({
       ) : null}
 
       {showCta ? (
-        <PrimaryButton
+        <Button
           label={localizedCtaLabel ?? undefined}
           onPress={handlePressCta}
           testID="coach-insight-cta"

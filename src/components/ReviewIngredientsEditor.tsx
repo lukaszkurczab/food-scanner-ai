@@ -5,10 +5,9 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import {
+  Button,
   Layout,
   Modal as AppModal,
-  PrimaryButton,
-  SecondaryButton,
 } from "@/components";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { IngredientBox } from "@/components/IngredientBox";
@@ -388,7 +387,8 @@ export default function ReviewIngredientsEditor({
 
       {renderAddIngredientButton ? (
         addIngredientButtonVariant === "secondary" ? (
-          <SecondaryButton
+          <Button
+            variant="secondary"
             testID="meal-add-add-ingredient-button"
             label={t("add_ingredient", { ns: "meals" })}
             onPress={handleAddIngredient}
@@ -396,7 +396,7 @@ export default function ReviewIngredientsEditor({
             style={styles.addIngredientBtn}
           />
         ) : (
-          <PrimaryButton
+          <Button
             testID="meal-add-add-ingredient-button"
             label={t("add_ingredient", { ns: "meals" })}
             onPress={handleAddIngredient}
@@ -423,7 +423,7 @@ export default function ReviewIngredientsEditor({
       ) : null}
 
       {showContinueButton && !showStartOverButton ? (
-        <PrimaryButton
+        <Button
           testID="meal-add-continue-button"
           label={t("continue", { ns: "common" })}
           onPress={handleContinue}
@@ -435,7 +435,8 @@ export default function ReviewIngredientsEditor({
       ) : null}
 
       {!showContinueButton && showStartOverButton ? (
-        <SecondaryButton
+        <Button
+          variant="secondary"
           label={labels.startOverButtonLabel}
           onPress={() => setShowConfirmModal(true)}
           style={styles.startOverBtn}

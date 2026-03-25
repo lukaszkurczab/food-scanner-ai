@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { getFirebaseAuth } from "@/FirebaseConfig";
 import {
-  PrimaryButton,
+  Button,
   ScreenCornerNavButton,
   TextInput,
   LinkText,
@@ -173,7 +173,7 @@ export default function ResetPasswordScreen({ navigation }: Props) {
         style={styles.fieldSpacing}
       />
 
-      <PrimaryButton
+      <Button
         label={t("resetBtn")}
         onPress={onSubmit}
         loading={loading}

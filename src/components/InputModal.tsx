@@ -19,7 +19,7 @@ const WINDOW_HEIGHT = Dimensions.get("window").height;
 const MODAL_MAX_WIDTH = 400;
 const INPUT_VERTICAL_PADDING = 10;
 
-type InputModalActionTone = "primary" | "secondary" | "destructive";
+type InputModalActionTone = "primary" | "secondary" | "ghost" | "destructive";
 
 type InputModalAction = {
   label: string;

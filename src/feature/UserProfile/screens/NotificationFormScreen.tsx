@@ -9,8 +9,8 @@ import {
 } from "react-native";
 import {
   BackTitleHeader,
+  Button,
   Layout,
-  PrimaryButton,
   Card,
   Modal,
 } from "@/components";
@@ -219,7 +219,7 @@ export default function NotificationFormScreen() {
           />
         ) : (
           <View style={styles.actions}>
-            <PrimaryButton label={t("form.save")} onPress={onSave} />
+            <Button label={t("form.save")} onPress={onSave} />
           </View>
         )}
       </ScrollView>

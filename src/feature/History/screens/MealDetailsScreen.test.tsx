@@ -84,17 +84,7 @@ jest.mock("@/components", () => {
       onPress
         ? createElement(Pressable, { onPress }, children)
         : createElement(View, null, children),
-    PrimaryButton: ({
-      label,
-      onPress,
-      disabled,
-    }: ButtonProps) =>
-      createElement(
-        Pressable,
-        { onPress, disabled, accessibilityRole: "button" },
-        createElement(Text, null, label),
-      ),
-    ErrorButton: ({
+    Button: ({
       label,
       onPress,
       disabled,

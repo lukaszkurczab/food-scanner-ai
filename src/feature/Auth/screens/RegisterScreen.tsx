@@ -11,8 +11,8 @@ import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import {
+  Button,
   TextInput,
-  PrimaryButton,
   ErrorBox,
   LinkText,
   Layout,
@@ -206,7 +206,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           <Text style={styles.termsError}>{t(errors.terms)}</Text>
         ) : null}
 
-        <PrimaryButton
+        <Button
           label={t("sign_up")}
           onPress={handleSubmit}
           disabled={isFormDisabled}

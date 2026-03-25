@@ -47,4 +47,23 @@ describe("Modal", () => {
     fireEvent.press(getByLabelText("Close"));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("supports object-based actions", () => {
+    const onPrimary = jest.fn();
+    const onSecondary = jest.fn();
+    const { getByText } = renderWithTheme(
+      <Modal
+        visible
+        title="Delete meal"
+        primaryAction={{ label: "Delete", onPress: onPrimary, tone: "destructive" }}
+        secondaryAction={{ label: "Keep", onPress: onSecondary, tone: "ghost" }}
+      />,
+    );
+
+    fireEvent.press(getByText("Delete"));
+    fireEvent.press(getByText("Keep"));
+
+    expect(onPrimary).toHaveBeenCalledTimes(1);
+    expect(onSecondary).toHaveBeenCalledTimes(1);
+  });
 });

@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { SecondaryButton } from "@components/SecondaryButton";
+import { Button } from "@components/Button";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@theme/index";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -14,7 +14,8 @@ export const ButtonSection = () => {
 
   return (
     <>
-      <SecondaryButton
+      <Button
+        variant="secondary"
         label={t("savedMeals")}
         onPress={() => {
           navigation.navigate("SavedMeals");

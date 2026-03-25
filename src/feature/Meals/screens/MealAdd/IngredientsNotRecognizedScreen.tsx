@@ -2,11 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { View, StyleSheet, Text, Image } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import {
-  SecondaryButton,
-  ErrorButton,
-  Layout,
-} from "@/components";
+import { Button, Layout } from "@/components";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
@@ -137,13 +133,15 @@ export default function IngredientsNotRecognizedScreen({
           )
         )}
         {!isAiUnavailable && attempt >= MAX_ATTEMPTS ? (
-          <SecondaryButton
+          <Button
+            variant="secondary"
             label={t("select_method", "Back to method selection")}
             onPress={handleOtherMethod}
             style={styles.buttonSpacing}
           />
         ) : null}
-        <ErrorButton
+        <Button
+          variant="destructive"
           label={t("cancel", "Cancel")}
           onPress={handleCancel}
           style={styles.buttonSpacing}

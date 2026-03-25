@@ -8,8 +8,7 @@ import { MetricsGrid } from "../components/MetricsGrid";
 import { LineSection } from "../components/LineSection";
 import { MacroPieCard } from "../components/MacroPieCard";
 import { ProgressAveragesCard } from "../components/ProgressAveragesCard";
-import { DateInput, Layout } from "@/components";
-import { PrimaryButton } from "@/components/PrimaryButton";
+import { Button, DateInput, Layout } from "@/components";
 import { useTranslation } from "react-i18next";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { FREE_WINDOW_DAYS } from "@/services/meals/mealService";
@@ -81,7 +80,7 @@ export default function StatisticsScreen({ navigation }: Props) {
               d: accessWindowDays,
             })}
           </Text>
-          <PrimaryButton
+          <Button
             label={t("statistics:upgrade", "Odblokuj Premium")}
             onPress={() => navigation.navigate("ManageSubscription")}
             style={styles.bannerCta}
@@ -112,7 +111,7 @@ export default function StatisticsScreen({ navigation }: Props) {
                 )}
           </Text>
           {isOnline ? (
-            <PrimaryButton
+            <Button
               label={t("statistics:empty.cta")}
               onPress={() => navigation.navigate("MealAddMethod")}
               style={styles.emptyCta}

@@ -82,7 +82,7 @@ describe("PaywallModal", () => {
     openURLSpy.mockRestore();
   });
 
-  it("shows spinner state and blocks actions when busy", () => {
+  it("blocks actions when busy", () => {
     const onSubscribe = jest.fn();
     const onRestore = jest.fn();
     const { getByTestId, getByText, queryByText } = renderWithTheme(
@@ -96,8 +96,9 @@ describe("PaywallModal", () => {
       />,
     );
 
-    expect(getByTestId("paywall-subscribe-spinner")).toBeTruthy();
+    expect(getByTestId("paywall-subscribe-button")).toBeTruthy();
     expect(queryByText("Subscribe")).toBeNull();
+    fireEvent.press(getByTestId("paywall-subscribe-button"));
     fireEvent.press(getByText("Restore Purchases"));
     expect(onSubscribe).not.toHaveBeenCalled();
     expect(onRestore).not.toHaveBeenCalled();

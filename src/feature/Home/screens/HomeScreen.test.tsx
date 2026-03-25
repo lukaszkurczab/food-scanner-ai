@@ -89,7 +89,7 @@ jest.mock("@/components", () => ({
       `progress:${current}/${target}`,
     )
   ),
-  PrimaryButton: ({
+  Button: ({
     label,
     onPress,
   }: {
