@@ -5,77 +5,152 @@ import { PrimaryButton } from "@/components/PrimaryButton";
 import { SecondaryButton } from "@/components/SecondaryButton";
 import { ErrorButton } from "@/components/ErrorButton";
 
+type ActionTone = "primary" | "secondary" | "destructive";
+type LegacyActionVariant = "default" | "secondary" | "error";
+
 type GlobalActionButtonsProps = {
   label: string;
-  onPress: () => void;
-  secondaryLabel: string;
-  secondaryOnPress: () => void;
-  primaryDisabled?: boolean;
+  onPress?: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  testID?: string;
+  tone?: ActionTone;
   primaryLoading?: boolean;
-  secondaryDisabled?: boolean;
-  secondaryLoading?: boolean;
+  primaryDisabled?: boolean;
   primaryTestID?: string;
+  primaryVariant?: LegacyActionVariant;
+
+  secondaryLabel?: string;
+  secondaryOnPress?: () => void;
+  secondaryLoading?: boolean;
+  secondaryDisabled?: boolean;
   secondaryTestID?: string;
+  secondaryTone?: ActionTone;
+  secondaryVariant?: LegacyActionVariant;
+
   containerStyle?: StyleProp<ViewStyle>;
   primaryStyle?: StyleProp<ViewStyle>;
   secondaryStyle?: StyleProp<ViewStyle>;
-  layout?: "stacked" | "row";
+  layout?: "column" | "row";
   rowOrder?: "primary-secondary" | "secondary-primary";
-  secondaryVariant?: "secondary" | "error";
 };
 
 export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
   label,
   onPress,
+  loading = false,
+  disabled = false,
+  testID,
+  tone,
+  primaryLoading,
+  primaryDisabled,
+  primaryTestID,
+  primaryVariant,
+
   secondaryLabel,
   secondaryOnPress,
-  primaryDisabled = false,
-  primaryLoading = false,
-  secondaryDisabled = false,
   secondaryLoading = false,
-  primaryTestID,
+  secondaryDisabled = false,
   secondaryTestID,
+  secondaryTone,
+  secondaryVariant,
+
   containerStyle,
   primaryStyle,
   secondaryStyle,
-  layout = "stacked",
+  layout = "column",
   rowOrder = "primary-secondary",
-  secondaryVariant = "secondary",
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const normalizeTone = (
+    actionTone: ActionTone | undefined,
+    variant: LegacyActionVariant | undefined,
+    fallback: ActionTone,
+  ): ActionTone => {
+    if (actionTone) return actionTone;
+    if (variant === "error") return "destructive";
+    if (variant === "secondary") return "secondary";
+    return fallback;
+  };
 
-  const primaryElement = (
-    <PrimaryButton
-      label={label}
-      onPress={onPress}
-      disabled={primaryDisabled}
-      loading={primaryLoading}
-      testID={primaryTestID}
-      style={primaryStyle}
-    />
-  );
+  const renderButton = ({
+    buttonLabel,
+    buttonOnPress,
+    buttonLoading,
+    buttonDisabled,
+    buttonTestID,
+    buttonTone,
+    buttonStyle,
+  }: {
+    buttonLabel: string;
+    buttonOnPress?: () => void;
+    buttonLoading?: boolean;
+    buttonDisabled?: boolean;
+    buttonTestID?: string;
+    buttonTone: ActionTone;
+    buttonStyle?: StyleProp<ViewStyle>;
+  }) => {
+    if (buttonTone === "destructive") {
+      return (
+        <ErrorButton
+          label={buttonLabel}
+          onPress={buttonOnPress ?? (() => {})}
+          disabled={buttonDisabled}
+          loading={buttonLoading}
+          testID={buttonTestID}
+          style={buttonStyle}
+        />
+      );
+    }
 
-  const secondaryElement =
-    secondaryVariant === "error" ? (
-      <ErrorButton
-        label={secondaryLabel}
-        onPress={secondaryOnPress}
-        disabled={secondaryDisabled}
-        loading={secondaryLoading}
-        testID={secondaryTestID}
-        style={secondaryStyle}
-      />
-    ) : (
-      <SecondaryButton
-        label={secondaryLabel}
-        onPress={secondaryOnPress}
-        disabled={secondaryDisabled}
-        loading={secondaryLoading}
-        testID={secondaryTestID}
-        style={secondaryStyle}
+    if (buttonTone === "secondary") {
+      return (
+        <SecondaryButton
+          label={buttonLabel}
+          onPress={buttonOnPress ?? (() => {})}
+          disabled={buttonDisabled}
+          loading={buttonLoading}
+          testID={buttonTestID}
+          style={buttonStyle}
+        />
+      );
+    }
+
+    return (
+      <PrimaryButton
+        label={buttonLabel}
+        onPress={buttonOnPress ?? (() => {})}
+        disabled={buttonDisabled}
+        loading={buttonLoading}
+        testID={buttonTestID}
+        style={buttonStyle}
       />
     );
+  };
+
+  const primaryElement = renderButton({
+    buttonLabel: label,
+    buttonOnPress: onPress,
+    buttonLoading: primaryLoading ?? loading,
+    buttonDisabled: primaryDisabled ?? disabled,
+    buttonTestID: primaryTestID ?? testID,
+    buttonTone: normalizeTone(tone, primaryVariant, "primary"),
+    buttonStyle: primaryStyle,
+  });
+
+  const secondaryElement =
+    secondaryLabel != null
+      ? renderButton({
+          buttonLabel: secondaryLabel,
+          buttonOnPress: secondaryOnPress,
+          buttonLoading: secondaryLoading,
+          buttonDisabled: secondaryDisabled,
+          buttonTestID: secondaryTestID,
+          buttonTone: normalizeTone(secondaryTone, secondaryVariant, "secondary"),
+          buttonStyle: secondaryStyle,
+        })
+      : null;
 
   if (layout === "row") {
     const first =
@@ -85,14 +160,14 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
 
     return (
       <View style={[styles.rowContainer, containerStyle]}>
-        <View style={styles.rowItem}>{first}</View>
-        <View style={styles.rowItem}>{second}</View>
+        {first ? <View style={styles.rowItem}>{first}</View> : null}
+        {second ? <View style={styles.rowItem}>{second}</View> : null}
       </View>
     );
   }
 
   return (
-    <View style={[styles.stackedContainer, containerStyle]}>
+    <View style={[styles.columnContainer, containerStyle]}>
       {primaryElement}
       {secondaryElement}
     </View>
@@ -101,9 +176,9 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    stackedContainer: {
+    columnContainer: {
       paddingTop: theme.spacing.sm,
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
     rowContainer: {
       flexDirection: "row",

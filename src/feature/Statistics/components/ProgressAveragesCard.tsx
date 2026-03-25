@@ -94,11 +94,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.bold,
       marginBottom: theme.spacing.xs,
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
     },
     subtitle: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       marginBottom: theme.spacing.md,
     },
     fallbackText: { color: theme.textSecondary },

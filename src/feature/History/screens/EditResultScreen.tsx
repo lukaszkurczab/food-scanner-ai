@@ -1,5 +1,12 @@
 import { useMemo } from "react";
-import { View, Text, StyleSheet, Image, Pressable, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -21,10 +28,16 @@ import { useEditResultState } from "@/feature/History/hooks/useEditResultState";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 type ScreenRoute = RouteProp<RootStackParamList, "EditResult">;
-type EditResultNavigation = StackNavigationProp<RootStackParamList, "EditResult">;
+type EditResultNavigation = StackNavigationProp<
+  RootStackParamList,
+  "EditResult"
+>;
+
 type Props = {
   navigation: EditResultNavigation;
 };
+
+const IMAGE_SIZE = 220;
 
 export default function EditResultScreen({ navigation }: Props) {
   const theme = useTheme();
@@ -80,7 +93,10 @@ export default function EditResultScreen({ navigation }: Props) {
       <View style={styles.container}>
         <View style={styles.imageWrap}>
           {state.checkingImage ? (
-            <ActivityIndicator size="large" color={theme.accent} />
+            <ActivityIndicator
+              size="large"
+              color={theme.cta.primaryBackground}
+            />
           ) : state.image && !state.imageError ? (
             <>
               <Image
@@ -94,9 +110,7 @@ export default function EditResultScreen({ navigation }: Props) {
                 accessibilityRole="button"
                 accessibilityLabel={t("share", { ns: "common" })}
                 hitSlop={8}
-                style={[
-                  styles.fab,
-                ]}
+                style={styles.fab}
               >
                 <AppIcon name="share" size={22} color={theme.text} />
               </Pressable>
@@ -108,11 +122,7 @@ export default function EditResultScreen({ navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel={t("add_photo", { ns: "meals" })}
             >
-              <AppIcon
-                name="add-photo"
-                size={44}
-                color={theme.textSecondary}
-              />
+              <AppIcon name="add-photo" size={44} color={theme.textSecondary} />
               <Text style={styles.placeholderText}>
                 {t("add_photo", { ns: "meals" })}
               </Text>
@@ -122,11 +132,12 @@ export default function EditResultScreen({ navigation }: Props) {
 
         <Card>
           <Text style={styles.cardTitle}>
-            {t("meal_name", { ns: "meals", defaultValue: "Nazwa posiłku" })}
+            {t("meal_name", {
+              ns: "meals",
+              defaultValue: "Nazwa posiłku",
+            })}
           </Text>
-          <Text style={styles.cardValue}>
-            {state.mealName}
-          </Text>
+          <Text style={styles.cardValue}>{state.mealName}</Text>
         </Card>
 
         <DateTimeSection
@@ -144,48 +155,55 @@ export default function EditResultScreen({ navigation }: Props) {
           </Text>
         </Card>
 
-        <View
-          style={[
-            styles.actions,
-            styles.actionsSpacing,
-          ]}
-        >
+        <View style={[styles.actions, styles.actionsSpacing]}>
           <GlobalActionButtons
             label={t("save", { ns: "common" })}
             onPress={state.handleSave}
-            primaryLoading={state.saving}
-            primaryDisabled={!state.canSave}
+            loading={state.saving}
+            disabled={!state.canSave}
+            tone="primary"
             secondaryLabel={t("back_to_saved", {
               ns: "meals",
               defaultValue: "Wróć do zapisanych",
             })}
             secondaryOnPress={state.handleCancel}
             secondaryDisabled={state.saving}
+            secondaryTone="secondary"
           />
         </View>
       </View>
 
       <Modal
         visible={state.showCancelModal}
+        title={t("cancel_edit_title", {
+          ns: "meals",
+          defaultValue: "Discard changes?",
+        })}
         message={t("cancel_edit_message", {
           ns: "meals",
           defaultValue: "Porzucić zmiany i wrócić do zapisanych posiłków?",
         })}
-        primaryActionLabel={t("confirm", { ns: "common" })}
+        primaryAction={{
+          label: t("confirm", { ns: "common" }),
+          onPress: state.handleCancelConfirm,
+          tone: "primary",
+        }}
+        secondaryAction={{
+          label: t("cancel", { ns: "common" }),
+          onPress: state.closeCancelModal,
+          tone: "secondary",
+        }}
         onClose={state.closeCancelModal}
-        onPrimaryAction={state.handleCancelConfirm}
-        secondaryActionLabel={t("cancel", { ns: "common" })}
-        onSecondaryAction={state.closeCancelModal}
       />
     </Layout>
   );
 }
 
-const IMAGE_SIZE = 220;
-
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: { padding: theme.spacing.container },
+    container: {
+      padding: theme.spacing.screenPadding,
+    },
     imageWrap: {
       position: "relative",
       width: "100%",
@@ -208,14 +226,16 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: theme.rounded.lg,
       alignItems: "center",
       justifyContent: "center",
-      borderWidth: 2,
+      borderWidth: 1,
       gap: theme.spacing.xs,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
     },
     placeholderText: {
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       marginTop: theme.spacing.xs,
     },
     fab: {
@@ -228,52 +248,62 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      shadowOpacity: 0.15,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 3,
-      backgroundColor: theme.background,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
       shadowColor: theme.shadow,
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
     },
     cardTitle: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
       color: theme.text,
       fontFamily: theme.typography.fontFamily.semiBold,
       marginBottom: theme.spacing.sm,
     },
     cardValue: {
-      color: theme.text,
-      opacity: 0.8,
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
       marginBottom: theme.spacing.xs,
     },
     toggleText: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
       fontFamily: theme.typography.fontFamily.medium,
       color: theme.text,
       textAlign: "center",
     },
-    actions: { justifyContent: "space-between" },
-    actionsSpacing: { gap: theme.spacing.md, marginTop: theme.spacing.md },
+    actions: {
+      justifyContent: "space-between",
+    },
+    actionsSpacing: {
+      gap: theme.spacing.md,
+      marginTop: theme.spacing.md,
+    },
     emptyWrap: {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
       gap: theme.spacing.sm,
-      padding: theme.spacing.container,
+      padding: theme.spacing.screenPadding,
       paddingBottom: theme.spacing.xl,
     },
     emptyTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
       fontFamily: theme.typography.fontFamily.semiBold,
       textAlign: "center",
     },
     emptyDescription: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       textAlign: "center",
-      lineHeight: Math.round(theme.typography.size.sm * 1.5),
     },
     emptyAction: {
       alignSelf: "stretch",

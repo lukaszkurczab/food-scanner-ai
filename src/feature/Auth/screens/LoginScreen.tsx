@@ -57,14 +57,15 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     touched.email && !validateEmail(email)
       ? t("invalid_email")
       : errors.email
-      ? t(errors.email, { defaultValue: t("invalid_email") })
-      : undefined;
+        ? t(errors.email, { defaultValue: t("invalid_email") })
+        : undefined;
+
   const passwordError =
     touched.password && password.length < 6
       ? t("invalid_password")
       : errors.password
-      ? t(errors.password, { defaultValue: t("invalid_password") })
-      : undefined;
+        ? t(errors.password, { defaultValue: t("invalid_password") })
+        : undefined;
 
   const isFormValid = !!email && !!password && !emailError && !passwordError;
 
@@ -81,6 +82,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     if (key === "login_failed") return t("login_failed");
     return t("login_failed");
   };
+
   const displayCriticalError: string | null = internetError
     ? t("common:no_internet")
     : mapCritical(criticalError);
@@ -89,7 +91,9 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
   return (
     <Layout showNavigation={false}>
-      {displayCriticalError && <ErrorBox message={displayCriticalError} />}
+      {displayCriticalError ? (
+        <ErrorBox message={displayCriticalError} />
+      ) : null}
 
       <View style={styles.centerColumn}>
         <Text style={styles.title}>{t("common:app_title")}</Text>
@@ -99,7 +103,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           label={t("email")}
           value={email}
           onChangeText={setEmail}
-          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
@@ -116,7 +120,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           label={t("password")}
           value={password}
           onChangeText={setPassword}
-          onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+          onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
           secureTextEntry={!showPassword}
           autoCapitalize="none"
           autoComplete="password"
@@ -131,7 +135,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               <AppIcon
                 name={showPassword ? "eye" : "eye-off"}
                 size={22}
-                color={theme.text}
+                color={theme.textSecondary}
               />
             </Pressable>
           }
@@ -155,10 +159,9 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           {t("forgot_password")}
         </LinkText>
       </View>
+
       <View style={styles.rowCenter}>
-        <Text style={styles.footerText}>
-          {t("dont_have_account")}{" "}
-        </Text>
+        <Text style={styles.footerText}>{t("dont_have_account")} </Text>
         <LinkText
           onPress={() => navigation.navigate("Register")}
           disabled={loading}
@@ -172,23 +175,35 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    centerColumn: { flex: 1, justifyContent: "center" },
-    rowCenter: { flexDirection: "row", justifyContent: "center" },
+    centerColumn: {
+      flex: 1,
+      justifyContent: "center",
+    },
+    rowCenter: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: theme.spacing.md,
+    },
     title: {
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.xxl,
+      fontSize: theme.typography.size.h1,
+      lineHeight: theme.typography.lineHeight.h1,
       textAlign: "center",
-      marginBottom: theme.spacing.xxl,
+      marginBottom: theme.spacing.xl,
     },
-    fieldSpacing: { marginBottom: theme.spacing.xl },
+    fieldSpacing: {
+      marginBottom: theme.spacing.lg,
+    },
     centerLink: {
       alignSelf: "center",
-      marginBottom: theme.spacing.xl,
+      marginBottom: theme.spacing.lg,
     },
     footerText: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.regular,
     },
   });

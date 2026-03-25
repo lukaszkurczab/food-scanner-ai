@@ -1,7 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useTheme } from "@/theme/useTheme";
-import { baseColors } from "@/theme/colors";
 
 type MacroKey = "protein" | "fat" | "carbs";
 
@@ -25,21 +24,21 @@ const MIN_SHARE = 0.05;
 const MACRO_COLORS: Record<
   MacroKey,
   {
-    light: string;
-    dark: string;
+    light: keyof ReturnType<typeof useTheme>["macro"];
+    dark: keyof ReturnType<typeof useTheme>["macro"];
   }
 > = {
   protein: {
-    light: baseColors.blue,
-    dark: baseColors.proteinDark,
+    light: "protein",
+    dark: "proteinSoft",
   },
   fat: {
-    light: baseColors.yellow,
-    dark: baseColors.fatDark,
+    light: "fat",
+    dark: "fatSoft",
   },
   carbs: {
-    light: baseColors.carbsLight,
-    dark: baseColors.carbsDark,
+    light: "carbs",
+    dark: "carbsSoft",
   },
 };
 
@@ -127,13 +126,13 @@ export function MacroTargetDonut({ macro, targetGrams, consumedGrams }: Props) {
     {
       label: "remaining",
       value: remainingGrams,
-      color: colors.dark,
+      color: theme.macro[colors.dark],
       opacity: 0.4,
     },
     {
       label: "consumed",
       value: consumedClamped,
-      color: colors.light,
+      color: theme.macro[colors.light],
       opacity: 1,
     },
   ];

@@ -50,9 +50,7 @@ export const ErrorButton: React.FC<ErrorButtonProps> = ({
       {loading ? (
         <ActivityIndicator size="small" color={textColor} />
       ) : (
-        <Text style={styles.label}>
-          {label}
-        </Text>
+        <Text style={styles.label}>{label}</Text>
       )}
     </Pressable>
   );
@@ -61,30 +59,31 @@ export const ErrorButton: React.FC<ErrorButtonProps> = ({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     buttonBase: {
-      borderWidth: 1.5,
+      borderWidth: 1,
       borderRadius: theme.rounded.full,
       paddingVertical: theme.spacing.md,
       paddingHorizontal: theme.spacing.lg,
       alignSelf: "stretch",
       width: "100%",
+      minHeight: 52,
       alignItems: "center",
       justifyContent: "center",
     },
     buttonColors: {
-      backgroundColor: theme.error.background,
-      borderColor: theme.error.border,
+      backgroundColor: theme.error.surface,
+      borderColor: theme.error.main,
     },
     buttonPressed: {
-      opacity: 0.8,
+      opacity: 0.84,
     },
     buttonDisabled: {
-      opacity: 0.6,
+      opacity: 0.56,
     },
     label: {
       color: theme.error.text,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.bold,
-      letterSpacing: 0.2,
       textAlign: "center",
     },
   });

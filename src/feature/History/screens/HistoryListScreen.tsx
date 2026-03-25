@@ -22,7 +22,6 @@ import { useHistoryListState } from "@/feature/History/hooks/useHistoryListState
 import { FREE_WINDOW_DAYS } from "@/services/meals/mealService";
 import type { RootStackParamList } from "@/navigation/navigate";
 
-
 type SectionHeaderProps = {
   title: string;
   total: number;
@@ -37,13 +36,12 @@ const SectionHeaderComponent = ({
   kcalLabel,
 }: SectionHeaderProps) => {
   const styles = useMemo(() => makeStyles(theme), [theme]);
+
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>
-      {title}
-      </Text>
+      <Text style={styles.sectionTitle}>{title}</Text>
       <Text style={styles.sectionTotal}>
-      {total} {kcalLabel}
+        {total} {kcalLabel}
       </Text>
     </View>
   );
@@ -62,6 +60,7 @@ type HistoryRowProps = {
 
 const HistoryRowComponent = ({ meal, onPress, theme }: HistoryRowProps) => {
   const styles = useMemo(() => makeStyles(theme), [theme]);
+
   return (
     <View style={styles.mealRow}>
       <MemoMealListItem
@@ -77,7 +76,10 @@ const HistoryRowComponent = ({ meal, onPress, theme }: HistoryRowProps) => {
 
 const HistoryRow = React.memo(
   HistoryRowComponent,
-  (prev, next) => prev.meal === next.meal,
+  (prev, next) =>
+    prev.meal === next.meal &&
+    prev.onPress === next.onPress &&
+    prev.theme.mode === next.theme.mode,
 );
 HistoryRow.displayName = "HistoryRow";
 
@@ -99,6 +101,7 @@ const DeadLetterBannerComponent = ({
   theme,
 }: DeadLetterBannerProps) => {
   const styles = useMemo(() => makeStyles(theme), [theme]);
+
   return (
     <View style={styles.deadLetterBanner}>
       <View style={styles.deadLetterTextWrap}>
@@ -109,9 +112,15 @@ const DeadLetterBannerComponent = ({
         <Pressable
           onPress={onRetry}
           disabled={retrying}
-          style={retrying ? styles.deadLetterActionDisabled : undefined}
+          style={({ pressed }) => [
+            styles.deadLetterActionButton,
+            retrying && styles.deadLetterActionButtonDisabled,
+            pressed && !retrying ? styles.deadLetterActionButtonPressed : null,
+          ]}
         >
-          <Text style={styles.deadLetterAction}>{retrying ? "…" : actionLabel}</Text>
+          <Text style={styles.deadLetterAction}>
+            {retrying ? "…" : actionLabel}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -164,7 +173,7 @@ export default function HistoryListScreen({
   if (state.dataState === "loading") {
     return (
       <View style={styles.loadingState}>
-        <ActivityIndicator size="large" color={theme.accent} />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -207,12 +216,7 @@ export default function HistoryListScreen({
         </View>
       ) : (
         <>
-          <View
-            style={[
-              styles.topBar,
-              styles.topBarSpacing,
-            ]}
-          >
+          <View style={[styles.topBar, styles.topBarSpacing]}>
             <SearchBox
               value={state.query}
               onChange={state.setQuery}
@@ -223,11 +227,18 @@ export default function HistoryListScreen({
               onPress={state.toggleShowFilters}
             />
           </View>
+
           <SectionList
             sections={state.sections}
             keyExtractor={state.keyExtractor}
             refreshControl={
-              <RefreshControl refreshing={state.loading} onRefresh={state.refresh} />
+              <RefreshControl
+                refreshing={state.loading}
+                onRefresh={state.refresh}
+                tintColor={theme.primary}
+                colors={[theme.primary]}
+                progressBackgroundColor={theme.surface}
+              />
             }
             renderSectionHeader={renderSectionHeader}
             renderItem={renderItem}
@@ -263,69 +274,105 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
       backgroundColor: theme.background,
     },
+    fullHeight: {
+      flex: 1,
+    },
+    topBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    topBarSpacing: {
+      marginBottom: theme.spacing.lg,
+    },
+    searchBox: {
+      flex: 1,
+    },
+    listContent: {
+      paddingBottom: theme.spacing.sectionGapLarge,
+    },
     sectionHeader: {
       flexDirection: "row",
       justifyContent: "space-between",
-      alignItems: "baseline",
+      alignItems: "flex-end",
+      paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
+      backgroundColor: theme.background,
     },
     sectionTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
       fontFamily: theme.typography.fontFamily.semiBold,
     },
     sectionTotal: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.md,
-      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.labelL,
+      lineHeight: theme.typography.lineHeight.labelL,
+      fontFamily: theme.typography.fontFamily.medium,
     },
     deadLetterBanner: {
-      borderWidth: 1,
-      borderRadius: theme.rounded.md,
-      borderColor: theme.border,
-      backgroundColor: theme.warning.background,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      marginBottom: theme.spacing.sm,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: theme.spacing.sm,
+      gap: theme.spacing.md,
+      paddingHorizontal: theme.spacing.cardPadding,
+      paddingVertical: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.warning.main,
+      backgroundColor: theme.warning.surface,
+      borderRadius: theme.rounded.lg,
+      shadowColor: theme.shadow,
+      shadowOpacity: theme.isDark ? 0.18 : 0.08,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: theme.isDark ? 0 : 1,
     },
     deadLetterTextWrap: {
       flex: 1,
-      gap: theme.spacing.xs,
+      gap: theme.spacing.xxs,
     },
     deadLetterTitle: {
       color: theme.warning.text,
       fontFamily: theme.typography.fontFamily.semiBold,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
     },
     deadLetterDescription: {
       color: theme.warning.text,
       fontFamily: theme.typography.fontFamily.regular,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
     },
     deadLetterActionWrap: {
-      minWidth: 72,
       alignItems: "flex-end",
+      justifyContent: "center",
+    },
+    deadLetterActionButton: {
+      minHeight: 36,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.rounded.full,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+    },
+    deadLetterActionButtonDisabled: {
+      opacity: 0.6,
+    },
+    deadLetterActionButtonPressed: {
+      opacity: 0.85,
     },
     deadLetterAction: {
-      color: theme.text,
+      color: theme.primary,
       fontFamily: theme.typography.fontFamily.semiBold,
-      fontSize: theme.typography.size.sm,
-      textDecorationLine: "underline",
+      fontSize: theme.typography.size.labelL,
+      lineHeight: theme.typography.lineHeight.labelL,
     },
-    deadLetterActionDisabled: {
-      opacity: 0.65,
+    mealRow: {
+      marginBottom: theme.spacing.sm,
     },
-    mealRow: { marginBottom: theme.spacing.sm },
-    topBar: { flexDirection: "row" },
-    searchBox: { flex: 1 },
-    topBarSpacing: {
-      marginBottom: theme.spacing.md,
-      gap: theme.spacing.sm,
-    },
-    listContent: { paddingBottom: theme.spacing.lg },
-    fullHeight: { height: "100%" },
   });

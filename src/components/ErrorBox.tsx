@@ -14,11 +14,7 @@ export const ErrorBox: React.FC<ErrorBoxProps> = ({ message, style }) => {
   if (!message) return null;
 
   return (
-    <View
-      style={[styles.box, style]}
-      accessible
-      accessibilityRole="alert"
-    >
+    <View style={[styles.box, style]} accessible accessibilityRole="alert">
       <Text style={styles.message}>{message}</Text>
     </View>
   );
@@ -27,18 +23,20 @@ export const ErrorBox: React.FC<ErrorBoxProps> = ({ message, style }) => {
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     box: {
-      borderWidth: 1,
       width: "100%",
-      alignItems: "center",
-      backgroundColor: theme.error.background,
+      alignItems: "flex-start",
+      borderWidth: 1,
+      backgroundColor: theme.error.surface,
       borderColor: theme.error.border,
-      borderRadius: theme.rounded.sm,
-      padding: theme.spacing.sm,
+      borderRadius: theme.rounded.md,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
       marginBottom: theme.spacing.md,
     },
     message: {
       color: theme.error.text,
       fontFamily: theme.typography.fontFamily.medium,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
     },
   });

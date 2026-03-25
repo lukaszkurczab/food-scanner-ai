@@ -1,20 +1,24 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
-import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Appearance, Pressable, Text } from "react-native";
-import {
-  ThemeProvider,
-  THEME_MODE_STORAGE_KEY,
-} from "@/theme/ThemeProvider";
+import { ThemeProvider, THEME_MODE_STORAGE_KEY } from "@/theme/ThemeProvider";
 import { useTheme } from "@/theme/useTheme";
 
 const ThemeProbe = () => {
-  const theme = useTheme();
+  const { mode, setMode } = useTheme();
 
   return (
     <>
-      <Text testID="theme-mode">{theme.mode}</Text>
-      <Pressable testID="set-dark" onPress={() => theme.setMode("dark")}>
+      <Text testID="theme-mode">{mode}</Text>
+      <Pressable testID="set-dark" onPress={() => setMode("dark")}>
         <Text>set dark</Text>
       </Pressable>
     </>
@@ -24,18 +28,16 @@ const ThemeProbe = () => {
 describe("theme/ThemeProvider", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    const mockGetItem = AsyncStorage.getItem as jest.MockedFunction<
-      typeof AsyncStorage.getItem
-    >;
-    const mockSetItem = AsyncStorage.setItem as jest.MockedFunction<
-      typeof AsyncStorage.setItem
-    >;
-    mockGetItem.mockResolvedValue(null);
-    mockSetItem.mockResolvedValue(undefined);
+
+    jest.spyOn(AsyncStorage, "getItem").mockResolvedValue(null);
+
+    jest.spyOn(AsyncStorage, "setItem").mockResolvedValue();
+
     jest.spyOn(Appearance, "getColorScheme").mockReturnValue("light");
+
     jest.spyOn(Appearance, "addChangeListener").mockReturnValue({
       remove: jest.fn(),
-    } as never);
+    });
   });
 
   afterEach(() => {
@@ -51,7 +53,10 @@ describe("theme/ThemeProvider", () => {
 
     fireEvent.press(getByTestId("set-dark"));
 
-    expect(getByTestId("theme-mode").props.children).toBe("dark");
+    await waitFor(() => {
+      expect(getByTestId("theme-mode").props.children).toBe("dark");
+    });
+
     await waitFor(() => {
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(
         THEME_MODE_STORAGE_KEY,
@@ -61,10 +66,7 @@ describe("theme/ThemeProvider", () => {
   });
 
   it("loads persisted mode on mount", async () => {
-    const mockGetItem = AsyncStorage.getItem as jest.MockedFunction<
-      typeof AsyncStorage.getItem
-    >;
-    mockGetItem.mockResolvedValue("dark");
+    jest.spyOn(AsyncStorage, "getItem").mockResolvedValue("dark");
 
     const { getByTestId } = render(
       <ThemeProvider>
@@ -73,8 +75,8 @@ describe("theme/ThemeProvider", () => {
     );
 
     await waitFor(() => {
+      expect(AsyncStorage.getItem).toHaveBeenCalledWith(THEME_MODE_STORAGE_KEY);
       expect(getByTestId("theme-mode").props.children).toBe("dark");
     });
-    expect(AsyncStorage.getItem).toHaveBeenCalledWith(THEME_MODE_STORAGE_KEY);
   });
 });

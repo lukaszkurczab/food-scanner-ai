@@ -16,7 +16,8 @@ type Props = {
 };
 
 function parseArray(val: unknown): string[] {
-  if (Array.isArray(val)) return val.filter((item): item is string => typeof item === "string");
+  if (Array.isArray(val))
+    return val.filter((item): item is string => typeof item === "string");
   if (typeof val === "string") {
     try {
       const arr = JSON.parse(val);
@@ -187,23 +188,14 @@ export default function Step5Summary({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>
-            {t("summary.title")}
-          </Text>
-          <Text style={styles.subtitle}>
-            {t("summary.desc")}
-          </Text>
+          <Text style={styles.title}>{t("summary.title")}</Text>
+          <Text style={styles.subtitle}>{t("summary.desc")}</Text>
         </View>
 
         {summary.map((section) => (
-          <View
-            key={section.title}
-            style={styles.card}
-          >
+          <View key={section.title} style={styles.card}>
             <View style={styles.rowCenter}>
-              <Text style={styles.sectionTitle}>
-                {section.title}
-              </Text>
+              <Text style={styles.sectionTitle}>{section.title}</Text>
               <IconButton
                 icon={<AppIcon name="edit" size={22} />}
                 onPress={() => goToStep(section.step)}
@@ -220,12 +212,8 @@ export default function Step5Summary({
                     i < section.data.length - 1 && styles.rowDivider,
                   ]}
                 >
-                  <Text style={styles.itemLabel}>
-                    {item.label}
-                  </Text>
-                  <Text style={styles.itemValue}>
-                    {item.value}
-                  </Text>
+                  <Text style={styles.itemLabel}>{item.label}</Text>
+                  <Text style={styles.itemValue}>{item.value}</Text>
                 </View>
               ))}
             </View>
@@ -252,18 +240,18 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     header: { marginBottom: theme.spacing.xl },
     title: {
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.xxl,
+      fontSize: theme.typography.size.h1,
       color: theme.text,
       textAlign: "center",
       marginBottom: theme.spacing.md,
     },
     subtitle: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       textAlign: "center",
     },
     card: {
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderRadius: theme.rounded.lg,
       padding: theme.spacing.lg,
       marginBottom: theme.spacing.lg,
@@ -278,7 +266,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     rowCenter: { flexDirection: "row", alignItems: "center" },
     sectionTitle: {
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       color: theme.text,
       flex: 1,
     },
@@ -302,11 +290,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     itemLabel: {
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
     },
     itemValue: {
       color: theme.text,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
     },
     saveSpacing: { marginTop: theme.spacing.md },

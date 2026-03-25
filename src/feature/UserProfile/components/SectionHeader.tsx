@@ -33,7 +33,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     label: {
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.medium,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       marginBottom: theme.spacing.xs,
       letterSpacing: 0.5,
     },

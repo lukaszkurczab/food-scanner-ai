@@ -11,14 +11,14 @@ const makeStyles = (theme: Theme) => {
   const tightSpacing = theme.spacing.xs / 2;
   return StyleSheet.create({
     headingH2: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
       marginTop: theme.spacing.md,
       marginBottom: theme.spacing.xs,
     },
     headingH1: {
-      fontSize: theme.typography.size.xl,
+      fontSize: theme.typography.size.h1,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
       marginTop: theme.spacing.md,
@@ -32,14 +32,14 @@ const makeStyles = (theme: Theme) => {
     },
     baseText: {
       color: theme.text,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
     },
     bold: {
       fontFamily: theme.typography.fontFamily.bold,
     },
     paragraph: {
       color: theme.text,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       marginBottom: tightSpacing,
     },
     spacer: { height: theme.spacing.sm },

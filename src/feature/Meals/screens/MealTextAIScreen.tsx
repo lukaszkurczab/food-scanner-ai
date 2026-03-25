@@ -151,6 +151,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     formScroll: { flex: 1 },
     form: { gap: theme.spacing.md, paddingBottom: theme.spacing.sm },
-    input: { fontSize: theme.typography.size.md },
+    input: { fontSize: theme.typography.size.bodyM },
     actions: { gap: theme.spacing.sm, marginTop: theme.spacing.sm },
   });

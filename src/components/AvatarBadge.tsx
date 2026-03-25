@@ -50,7 +50,7 @@ export default function AvatarBadge({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const [isLoaded, setIsLoaded] = useState(() =>
-    uri ? isLocalUri(uri) : false
+    uri ? isLocalUri(uri) : false,
   );
   const [hasError, setHasError] = useState(false);
   const sel = pickBadge(badges);
@@ -64,6 +64,7 @@ export default function AvatarBadge({
   useEffect(() => {
     let cancelled = false;
     setHasError(false);
+
     if (!uri) {
       setIsLoaded(false);
       return () => {
@@ -79,6 +80,7 @@ export default function AvatarBadge({
     }
 
     setIsLoaded(false);
+
     if (typeof Image.queryCache === "function") {
       Image.queryCache([uri])
         .then((cache) => {
@@ -102,18 +104,21 @@ export default function AvatarBadge({
       borderRadius: size / 2,
       borderColor,
     }),
-    [size, borderColor]
+    [size, borderColor],
   );
+
   const avatarStyle = useMemo(
     () => ({
       width: avatarSize,
       height: avatarSize,
       borderRadius: avatarSize / 2,
     }),
-    [avatarSize]
+    [avatarSize],
   );
+
   const badgeSize = Math.max(22, Math.floor(size * 0.24));
   const badgeRadius = Math.max(11, Math.floor(size * 0.12));
+
   const badgeDotStyle = useMemo(
     () => ({
       width: badgeSize,
@@ -121,11 +126,14 @@ export default function AvatarBadge({
       borderRadius: badgeRadius,
       borderColor,
     }),
-    [badgeSize, badgeRadius, borderColor]
+    [badgeSize, badgeRadius, borderColor],
   );
+
   const emojiStyle = useMemo(
-    () => ({ fontSize: Math.max(12, Math.floor(size * 0.14)) }),
-    [size]
+    () => ({
+      fontSize: Math.max(12, Math.floor(size * 0.14)),
+    }),
+    [size],
   );
 
   return (
@@ -136,10 +144,9 @@ export default function AvatarBadge({
     >
       <View style={[styles.avatarFrame, avatarStyle]}>
         {showFallback ? (
-          <View style={styles.fallback}>
-            {fallbackIcon ?? null}
-          </View>
+          <View style={styles.fallback}>{fallbackIcon ?? null}</View>
         ) : null}
+
         {showImage ? (
           <Image
             source={{ uri }}
@@ -168,10 +175,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 3,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surface,
     },
     avatarFrame: {
       overflow: "hidden",
+      backgroundColor: theme.surfaceAlt,
     },
     image: {
       width: "100%",
@@ -184,7 +192,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       ...StyleSheet.absoluteFillObject,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceAlt,
     },
     badgeDot: {
       position: "absolute",
@@ -193,6 +201,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
       justifyContent: "center",
       borderWidth: StyleSheet.hairlineWidth,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
     },
   });

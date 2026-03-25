@@ -136,14 +136,14 @@ export default function ChartEditorPanel({
 
     const current =
       target === "chartTextColor"
-        ? options.chartTextColor ?? base
+        ? (options.chartTextColor ?? base)
         : target === "chartProteinColor"
-        ? options.chartProteinColor ?? base
-        : target === "chartCarbsColor"
-        ? options.chartCarbsColor ?? base
-        : target === "chartFatColor"
-        ? options.chartFatColor ?? base
-        : options.chartBackgroundColor ?? base;
+          ? (options.chartProteinColor ?? base)
+          : target === "chartCarbsColor"
+            ? (options.chartCarbsColor ?? base)
+            : target === "chartFatColor"
+              ? (options.chartFatColor ?? base)
+              : (options.chartBackgroundColor ?? base);
     setColorTarget(target);
     setTempColor(current);
   };
@@ -270,18 +270,14 @@ export default function ChartEditorPanel({
 
     return (
       <View style={styles.panel}>
-        <Text style={styles.label}>
-          {label}
-        </Text>
+        <Text style={styles.label}>{label}</Text>
         <ColorPickerPanel value={value} onChange={setTempColor} />
         <View style={styles.colorActions}>
           <Pressable
             onPress={cancelColor}
             style={[styles.button, styles.buttonSecondary]}
           >
-            <Text style={styles.buttonText}>
-              {t("common:back", "Back")}
-            </Text>
+            <Text style={styles.buttonText}>{t("common:back", "Back")}</Text>
           </Pressable>
           <Pressable
             onPress={confirmColor}
@@ -307,9 +303,7 @@ export default function ChartEditorPanel({
   const renderTypeTab = () => (
     <>
       <View style={styles.section}>
-        <Text style={styles.label}>
-          {t("editor.chart_type", "Chart type")}
-        </Text>
+        <Text style={styles.label}>{t("editor.chart_type", "Chart type")}</Text>
         <Dropdown
           value={chartType}
           options={[
@@ -343,7 +337,7 @@ export default function ChartEditorPanel({
             color={
               options.showChartKcalLabel === false
                 ? theme.textSecondary
-                : theme.accentSecondary
+                : theme.primary
             }
           />
           <Text style={styles.checkboxText}>
@@ -357,15 +351,13 @@ export default function ChartEditorPanel({
         >
           <AppIcon
             name={
-              options.showChartLegend === false
-                ? "checkbox-empty"
-                : "checkbox"
+              options.showChartLegend === false ? "checkbox-empty" : "checkbox"
             }
             size={20}
             color={
               options.showChartLegend === false
                 ? theme.textSecondary
-                : theme.accentSecondary
+                : theme.primary
             }
           />
           <Text style={styles.checkboxText}>
@@ -379,9 +371,7 @@ export default function ChartEditorPanel({
   const renderTextTab = () => (
     <>
       <View style={styles.section}>
-        <Text style={styles.label}>
-          {t("editor.chart_text", "Text")}
-        </Text>
+        <Text style={styles.label}>{t("editor.chart_text", "Text")}</Text>
 
         <Pressable
           style={styles.colorRow}
@@ -433,9 +423,7 @@ export default function ChartEditorPanel({
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.subLabel}>
-          {t("editor.weight", "Weight")}
-        </Text>
+        <Text style={styles.subLabel}>{t("editor.weight", "Weight")}</Text>
         <Dropdown
           value={currentWeight}
           options={fontWeightOptions}
@@ -491,9 +479,7 @@ export default function ChartEditorPanel({
             style={styles.colorRow}
             onPress={() => openColorPicker("chartProteinColor")}
           >
-            <Text style={styles.rowText}>
-              {t("meals:protein", "Protein")}
-            </Text>
+            <Text style={styles.rowText}>{t("meals:protein", "Protein")}</Text>
             <View
               style={[styles.colorPreview, { backgroundColor: proteinPreview }]}
             />
@@ -503,9 +489,7 @@ export default function ChartEditorPanel({
             style={styles.colorRow}
             onPress={() => openColorPicker("chartCarbsColor")}
           >
-            <Text style={styles.rowText}>
-              {t("meals:carbs", "Carbs")}
-            </Text>
+            <Text style={styles.rowText}>{t("meals:carbs", "Carbs")}</Text>
             <View
               style={[styles.colorPreview, { backgroundColor: carbsPreview }]}
             />
@@ -515,9 +499,7 @@ export default function ChartEditorPanel({
             style={styles.colorRow}
             onPress={() => openColorPicker("chartFatColor")}
           >
-            <Text style={styles.rowText}>
-              {t("meals:fat", "Fat")}
-            </Text>
+            <Text style={styles.rowText}>{t("meals:fat", "Fat")}</Text>
             <View
               style={[styles.colorPreview, { backgroundColor: fatPreview }]}
             />
@@ -549,36 +531,31 @@ export default function ChartEditorPanel({
     );
   };
 
-    return (
+  return (
     <View style={styles.panel}>
       <View style={styles.tabsRow}>
         <Pressable
-          style={[
-            styles.tab,
-            tab === "type" && styles.tabActive,
-          ]}
+          style={[styles.tab, tab === "type" && styles.tabActive]}
           onPress={() => setTab("type")}
         >
-          <Text style={[styles.tabLabel, tab === "type" && styles.tabLabelActive]}>
+          <Text
+            style={[styles.tabLabel, tab === "type" && styles.tabLabelActive]}
+          >
             {t("editor.tab_type", "Type")}
           </Text>
         </Pressable>
         <Pressable
-          style={[
-            styles.tab,
-            tab === "text" && styles.tabActive,
-          ]}
+          style={[styles.tab, tab === "text" && styles.tabActive]}
           onPress={() => setTab("text")}
         >
-          <Text style={[styles.tabLabel, tab === "text" && styles.tabLabelActive]}>
+          <Text
+            style={[styles.tabLabel, tab === "text" && styles.tabLabelActive]}
+          >
             {t("editor.tab_text", "Text")}
           </Text>
         </Pressable>
         <Pressable
-          style={[
-            styles.tab,
-            tab === "colors" && styles.tabActive,
-          ]}
+          style={[styles.tab, tab === "colors" && styles.tabActive]}
           onPress={() => setTab("colors")}
         >
           <Text
@@ -625,7 +602,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.sm,
       zIndex: 30,
       maxHeight: 520,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
     },
     tabsRow: {
@@ -642,13 +619,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       justifyContent: "center",
     },
     tabActive: {
-      backgroundColor: theme.accentSecondary,
+      backgroundColor: theme.primary,
     },
     tabLabel: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
     },
-    tabLabelActive: { color: theme.onAccent },
+    tabLabelActive: { color: theme.cta.primaryText },
     scroll: {
       flexGrow: 0,
     },
@@ -657,12 +634,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: theme.spacing.sm,
     },
     label: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       marginBottom: theme.spacing.xs,
       color: theme.textSecondary,
     },
     subLabel: {
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       color: theme.textSecondary,
     },
     checkboxRow: {
@@ -672,7 +649,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     checkboxText: {
       marginLeft: theme.spacing.sm,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       color: theme.text,
     },
     colorRow: {
@@ -681,7 +658,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       justifyContent: "space-between",
       paddingVertical: theme.spacing.xs,
     },
-    rowText: { color: theme.text, fontSize: theme.typography.size.sm },
+    rowText: { color: theme.text, fontSize: theme.typography.size.bodyS },
     colorPreview: {
       width: 24,
       height: 24,
@@ -698,12 +675,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.sm,
       borderRadius: theme.rounded.sm,
     },
-    buttonPrimary: { backgroundColor: theme.accentSecondary },
+    buttonPrimary: { backgroundColor: theme.primary },
     buttonSecondary: { backgroundColor: theme.background },
-    buttonText: { color: theme.text, fontSize: theme.typography.size.sm },
+    buttonText: { color: theme.text, fontSize: theme.typography.size.bodyS },
     buttonTextOnAccent: {
-      color: theme.onAccent,
-      fontSize: theme.typography.size.sm,
+      color: theme.cta.primaryText,
+      fontSize: theme.typography.size.bodyS,
     },
     colorActions: {
       marginTop: theme.spacing.md,
@@ -711,7 +688,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       justifyContent: "space-between",
       gap: theme.spacing.sm,
     },
-    dropdownLabel: { color: theme.text, fontSize: theme.typography.size.sm },
+    dropdownLabel: { color: theme.text, fontSize: theme.typography.size.bodyS },
     innerRadiusRow: {
       flexDirection: "row",
       justifyContent: "space-between",

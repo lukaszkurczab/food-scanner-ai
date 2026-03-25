@@ -86,23 +86,34 @@ export const Clock12h: React.FC<Props> = ({ value, onChange }) => {
           style={styles.input}
         />
         <View style={styles.periodColumn}>
-          <Pressable onPress={toggleAm}>
+          <Pressable
+            onPress={toggleAm}
+            style={[
+              styles.periodButton,
+              isAM ? styles.periodButtonActive : null,
+            ]}
+          >
             <Text
               style={[
                 styles.ampm,
-                isAM ? styles.ampmActive : null,
-                !isAM ? styles.ampmInactive : null,
+                isAM ? styles.ampmActive : styles.ampmInactive,
               ]}
             >
               AM
             </Text>
           </Pressable>
-          <Pressable onPress={togglePm}>
+
+          <Pressable
+            onPress={togglePm}
+            style={[
+              styles.periodButton,
+              !isAM ? styles.periodButtonActive : null,
+            ]}
+          >
             <Text
               style={[
                 styles.ampm,
-                !isAM ? styles.ampmActive : null,
-                isAM ? styles.ampmInactive : null,
+                !isAM ? styles.ampmActive : styles.ampmInactive,
               ]}
             >
               PM
@@ -118,7 +129,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
       alignItems: "center",
-      gap: theme.spacing.sm + theme.spacing.xs,
+      gap: theme.spacing.sm,
     },
     timeRow: {
       flexDirection: "row",
@@ -128,32 +139,49 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     input: {
       width: INPUT_WIDTH,
       textAlign: "center",
-      fontSize: theme.typography.size.xxl,
+      fontSize: theme.typography.size.displayL,
+      lineHeight: theme.typography.lineHeight.displayL,
       fontFamily: theme.typography.fontFamily.bold,
-      paddingVertical: theme.spacing.sm - 2,
+      paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.xs,
-      color: theme.text,
-      borderColor: theme.border,
-      backgroundColor: theme.card,
+      color: theme.input.text,
+      borderColor: theme.input.border,
+      backgroundColor: theme.input.background,
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
     },
     separator: {
-      fontSize: theme.typography.size.xxl,
+      fontSize: theme.typography.size.displayL,
+      lineHeight: theme.typography.lineHeight.displayL,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
     },
     periodColumn: {
       marginLeft: theme.spacing.sm,
-      gap: theme.spacing.sm - 2,
+      gap: theme.spacing.xs,
+    },
+    periodButton: {
+      minWidth: 48,
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.rounded.md,
+      backgroundColor: theme.surfaceAlt,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    periodButtonActive: {
+      backgroundColor: theme.primarySoft,
     },
     ampm: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.labelL,
+      lineHeight: theme.typography.lineHeight.labelL,
     },
     ampmActive: {
-      color: theme.text,
+      color: theme.primaryStrong,
       fontFamily: theme.typography.fontFamily.bold,
     },
     ampmInactive: {
       color: theme.textSecondary,
-      fontFamily: theme.typography.fontFamily.regular,
+      fontFamily: theme.typography.fontFamily.medium,
     },
   });

@@ -27,6 +27,8 @@ type ModalProps = {
   secondaryActionLabel?: string;
   onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
+  primaryAction?: { label: string; onPress?: () => void };
+  secondaryAction?: { label: string; onPress?: () => void };
 };
 
 const mockCalendarDate = new Date(2026, 0, 5, 8, 30);
@@ -110,24 +112,36 @@ jest.mock("@/components", () => {
       secondaryActionLabel,
       onPrimaryAction,
       onSecondaryAction,
+      primaryAction,
+      secondaryAction,
     }: ModalProps) => {
       if (!visible) return null;
+      const resolvedPrimaryAction = primaryAction ?? (
+        primaryActionLabel
+          ? { label: primaryActionLabel, onPress: onPrimaryAction }
+          : undefined
+      );
+      const resolvedSecondaryAction = secondaryAction ?? (
+        secondaryActionLabel
+          ? { label: secondaryActionLabel, onPress: onSecondaryAction }
+          : undefined
+      );
       return createElement(
         View,
         null,
         children,
-        onPrimaryAction
+        resolvedPrimaryAction
           ? createElement(
               RNPressable,
-              { onPress: onPrimaryAction },
-              createElement(Text, null, primaryActionLabel),
+              { onPress: resolvedPrimaryAction.onPress },
+              createElement(Text, null, resolvedPrimaryAction.label),
             )
           : null,
-        onSecondaryAction
+        resolvedSecondaryAction
           ? createElement(
               RNPressable,
-              { onPress: onSecondaryAction },
-              createElement(Text, null, secondaryActionLabel),
+              { onPress: resolvedSecondaryAction.onPress },
+              createElement(Text, null, resolvedSecondaryAction.label),
             )
           : null,
       );
@@ -155,7 +169,7 @@ describe("DateTimeSection", () => {
 
     fireEvent.press(UNSAFE_getAllByType(Pressable)[0]);
     fireEvent.press(getByText("calendar-pick"));
-    fireEvent.press(getByText("Zapisz"));
+    fireEvent.press(getByText("Save"));
 
     const next = onChange.mock.calls[0][0] as Date;
     expect(next.getFullYear()).toBe(2026);
@@ -173,7 +187,7 @@ describe("DateTimeSection", () => {
     );
 
     fireEvent.press(UNSAFE_getAllByType(Pressable)[0]);
-    fireEvent.press(getByText("Anuluj"));
+    fireEvent.press(getByText("Cancel"));
 
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -197,7 +211,7 @@ describe("DateTimeSection", () => {
 
     fireEvent.press(UNSAFE_getAllByType(Pressable)[0]);
     fireEvent.press(getByText("clock-12h"));
-    fireEvent.press(getByText("Zapisz"));
+    fireEvent.press(getByText("Save"));
 
     const next = onChange.mock.calls[0][0] as Date;
     expect(next.getHours()).toBe(21);
@@ -222,10 +236,11 @@ describe("DateTimeSection", () => {
     fireEvent.press(UNSAFE_getAllByType(Pressable)[0]);
     fireEvent.press(getByText("calendar-range"));
     fireEvent.press(getByText("calendar-toggle"));
-    fireEvent.press(getByText("Zapisz"));
+    fireEvent.press(getByText("Save"));
 
     const next = onChange.mock.calls[0][0] as Date;
     expect(next.getDate()).toBe(6);
-    expect(next.getHours()).toBe(7);
+    expect(next.getHours()).toBe(10);
+    expect(next.getMinutes()).toBe(30);
   });
 });

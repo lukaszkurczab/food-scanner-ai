@@ -24,48 +24,77 @@ export const MacroChip: React.FC<MacroChipProps> = ({
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals"]);
 
-  const colorMap: Record<MacroKind, string> = {
-    kcal: theme.text,
-    protein: theme.macro.protein,
-    carbs: theme.macro.carbs,
-    fat: theme.macro.fat,
-  };
+  const accent = useMemo(() => {
+    switch (kind) {
+      case "kcal":
+        return theme.macro.calories;
+      case "protein":
+        return theme.macro.protein;
+      case "carbs":
+        return theme.macro.carbs;
+      case "fat":
+        return theme.macro.fat;
+    }
+  }, [kind, theme]);
 
-  const defaultLabelMap: Record<MacroKind, string> = {
-    kcal: t("meals:calories"),
-    protein: t("meals:protein"),
-    carbs: t("meals:carbs"),
-    fat: t("meals:fat"),
-  };
+  const softAccent = useMemo(() => {
+    switch (kind) {
+      case "kcal":
+        return theme.macro.caloriesSoft;
+      case "protein":
+        return theme.macro.proteinSoft;
+      case "carbs":
+        return theme.macro.carbsSoft;
+      case "fat":
+        return theme.macro.fatSoft;
+    }
+  }, [kind, theme]);
 
-  const defaultUnitMap: Record<MacroKind, string> = {
-    kcal: "[kcal]",
-    protein: "[g]",
-    carbs: "[g]",
-    fat: "[g]",
-  };
+  const resolvedLabel = useMemo(() => {
+    if (label) return label;
 
-  const c = colorMap[kind];
-  const bg = String(kind === "kcal" ? theme.border : c) + "18";
+    switch (kind) {
+      case "kcal":
+        return t("meals:calories");
+      case "protein":
+        return t("meals:protein");
+      case "carbs":
+        return t("meals:carbs");
+      case "fat":
+        return t("meals:fat");
+    }
+  }, [kind, label, t]);
+
+  const resolvedUnit = useMemo(() => {
+    if (unit) return unit;
+
+    switch (kind) {
+      case "kcal":
+        return "[kcal]";
+      case "protein":
+      case "carbs":
+      case "fat":
+        return "[g]";
+    }
+  }, [kind, unit]);
+
   const chipStyle = useMemo(
-    () => ({ backgroundColor: bg, borderColor: c }),
-    [bg, c]
+    () => ({
+      backgroundColor: softAccent,
+      borderColor: accent,
+    }),
+    [softAccent, accent],
   );
-  const valueTextStyle = useMemo(() => ({ color: c }), [c]);
+
+  const valueTextStyle = useMemo(() => ({ color: accent }), [accent]);
 
   return (
     <View style={[styles.macroWrapper, style]}>
       <View style={styles.labelRow}>
-        <Text
-          numberOfLines={1}
-          ellipsizeMode="tail"
-          style={styles.macroLabel}
-        >
-          {label ?? defaultLabelMap[kind]}
+        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.macroLabel}>
+          {resolvedLabel}
         </Text>
-        <Text style={styles.unitText}>
-          {unit ?? defaultUnitMap[kind]}
-        </Text>
+        <Text style={styles.unitText}>{resolvedUnit}</Text>
       </View>
 
       <View style={[styles.macro, chipStyle]}>
@@ -87,36 +116,39 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     labelRow: {
       flexDirection: "row",
       alignItems: "center",
-      marginTop: theme.spacing.xs / 2,
+      marginTop: theme.spacing.xxs,
       marginBottom: theme.spacing.xs,
       minWidth: 0,
     },
     macroLabel: {
-      opacity: 0.7,
       flexShrink: 1,
       minWidth: 0,
-      color: theme.text,
-      fontSize: theme.typography.size.sm,
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.medium,
     },
     unitText: {
-      opacity: 0.7,
-      color: theme.text,
-      fontSize: theme.typography.size.sm,
-      marginLeft: theme.spacing.sm - theme.spacing.xs / 2,
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      marginLeft: theme.spacing.xs,
       flexShrink: 0,
       fontFamily: theme.typography.fontFamily.regular,
     },
     macro: {
       alignItems: "center",
       flexDirection: "row",
+      justifyContent: "center",
+      minHeight: 36,
       paddingVertical: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.sm + theme.spacing.xs / 2,
+      paddingHorizontal: theme.spacing.sm,
       borderWidth: 1,
       borderRadius: theme.rounded.full,
     },
     valueText: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.bold,
     },
   });

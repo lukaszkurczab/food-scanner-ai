@@ -84,7 +84,7 @@ export function CheckboxDropdown<T extends string | number>({
         .filter((o) => values.includes(o.value))
         .map((o) => o.label)
         .join(", "),
-    [values, options]
+    [values, options],
   );
 
   const updateDropdownPosition = useCallback(() => {
@@ -107,7 +107,7 @@ export function CheckboxDropdown<T extends string | number>({
     updateDropdownPosition();
     const subscription = Dimensions.addEventListener(
       "change",
-      updateDropdownPosition
+      updateDropdownPosition,
     );
 
     return () => subscription?.remove();
@@ -136,9 +136,10 @@ export function CheckboxDropdown<T extends string | number>({
         MENU_MAX_HEIGHT,
         Dimensions.get("window").height -
           (dropdownPos.y + dropdownPos.height) -
-          MENU_BOTTOM_OFFSET
+          MENU_BOTTOM_OFFSET,
       )
     : MENU_MAX_HEIGHT;
+
   const menuPositionStyle = useMemo(
     () =>
       dropdownPos
@@ -149,12 +150,12 @@ export function CheckboxDropdown<T extends string | number>({
             maxHeight: menuMaxHeight,
           }
         : null,
-    [dropdownPos, menuMaxHeight]
+    [dropdownPos, menuMaxHeight],
   );
 
   return (
     <View style={style}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label ? <Text style={styles.label}>{label}</Text> : null}
 
       <Pressable
         ref={fieldRef}
@@ -162,12 +163,11 @@ export function CheckboxDropdown<T extends string | number>({
           styles.field,
           error ? styles.fieldError : null,
           disabled ? styles.fieldDisabled : null,
-          style,
         ]}
         onPress={openDropdown}
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityState={{ disabled }}
+        accessibilityState={{ disabled, expanded: open }}
       >
         <Text
           style={[
@@ -181,15 +181,15 @@ export function CheckboxDropdown<T extends string | number>({
 
         <AppIcon
           name={open ? "chevron-up" : "chevron-down"}
-          size={24}
+          size={20}
           color={theme.textSecondary}
           style={styles.fieldIcon}
         />
       </Pressable>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      {open && dropdownPos && (
+      {open && dropdownPos ? (
         <Modal
           transparent
           animationType="none"
@@ -202,9 +202,7 @@ export function CheckboxDropdown<T extends string | number>({
               onPress={() => setOpen(false)}
             />
 
-            <View
-              style={[styles.menu, menuPositionStyle]}
-            >
+            <View style={[styles.menu, menuPositionStyle]}>
               <ScrollView
                 nestedScrollEnabled
                 contentContainerStyle={styles.menuContent}
@@ -212,7 +210,7 @@ export function CheckboxDropdown<T extends string | number>({
               >
                 {options.map((item) => {
                   const isSelected = values.includes(item.value);
-                  const isDisabled = disabled || blockedSet.has(item.value);
+                  const isDisabled = !!disabled || blockedSet.has(item.value);
 
                   return (
                     <TouchableOpacity
@@ -230,28 +228,29 @@ export function CheckboxDropdown<T extends string | number>({
                         disabled: isDisabled,
                       }}
                       disabled={isDisabled}
+                      activeOpacity={0.75}
                     >
                       <AppIcon
-                        name={
-                          isSelected ? "checkbox" : "checkbox-empty"
-                        }
+                        name={isSelected ? "checkbox" : "checkbox-empty"}
                         size={22}
-                        color={
-                          isSelected
-                            ? theme.accentSecondary ?? theme.accent
-                            : theme.textSecondary
-                        }
+                        color={isSelected ? theme.primary : theme.textSecondary}
                         style={styles.optionIcon}
                       />
 
-                      <Text
-                        style={[
-                          styles.optionText,
-                          isDisabled ? styles.optionTextDisabled : null,
-                        ]}
-                      >
-                        {renderLabel ? renderLabel(item) : item.label}
-                      </Text>
+                      <View style={styles.optionLabelWrap}>
+                        {renderLabel ? (
+                          renderLabel(item)
+                        ) : (
+                          <Text
+                            style={[
+                              styles.optionText,
+                              isDisabled ? styles.optionTextDisabled : null,
+                            ]}
+                          >
+                            {item.label}
+                          </Text>
+                        )}
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
@@ -259,7 +258,7 @@ export function CheckboxDropdown<T extends string | number>({
             </View>
           </View>
         </Modal>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -268,39 +267,43 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     label: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
-      marginBottom: theme.spacing.xs / 2,
+      fontSize: theme.typography.size.labelL,
+      lineHeight: theme.typography.lineHeight.labelL,
+      marginBottom: theme.spacing.xs,
       fontFamily: theme.typography.fontFamily.medium,
     },
     field: {
       flexDirection: "row",
       alignItems: "center",
-      padding: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
       borderRadius: theme.rounded.md,
       borderWidth: 1,
-      borderColor: theme.border,
-      backgroundColor: theme.card,
-      shadowColor: theme.shadow,
-      shadowOpacity: 0.12,
-      shadowRadius: theme.spacing.sm,
+      borderColor: theme.input.border,
+      backgroundColor: theme.input.background,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.16 : 0.08,
+      shadowRadius: 10,
       shadowOffset: { width: 0, height: SHADOW_OFFSET_Y },
-      elevation: 3,
+      elevation: 2,
+      minHeight: 52,
     },
     fieldError: {
-      borderColor: theme.error.border,
+      borderColor: theme.input.borderError,
     },
     fieldDisabled: {
-      backgroundColor: theme.disabled.background,
+      backgroundColor: theme.input.backgroundDisabled,
       opacity: 0.6,
     },
     valueText: {
-      color: theme.text,
-      fontSize: theme.typography.size.base,
+      color: theme.input.text,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       flex: 1,
       fontFamily: theme.typography.fontFamily.regular,
     },
     valueTextPlaceholder: {
-      color: theme.textSecondary,
+      color: theme.input.placeholder,
     },
     fieldIcon: {
       marginLeft: theme.spacing.xs,
@@ -308,30 +311,35 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     errorText: {
       color: theme.error.text,
       marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
     },
     modalRoot: {
       flex: 1,
     },
     modalOverlay: {
       ...StyleSheet.absoluteFillObject,
+      backgroundColor: "transparent",
       zIndex: 1,
     },
     menu: {
       position: "absolute",
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
       borderWidth: 1,
-      borderRadius: theme.rounded.md,
-      elevation: 6,
-      shadowColor: theme.shadow,
-      shadowOpacity: 0.1,
-      shadowRadius: theme.spacing.sm,
+      borderRadius: theme.rounded.lg,
+      elevation: 8,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.2 : 0.1,
+      shadowRadius: 12,
       shadowOffset: { width: 0, height: SHADOW_OFFSET_Y },
       zIndex: 2,
+      overflow: "hidden",
     },
     menuContent: {
       flexGrow: 1,
+      paddingVertical: theme.spacing.xs,
     },
     option: {
       flexDirection: "row",
@@ -340,19 +348,24 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingHorizontal: theme.spacing.md,
       backgroundColor: "transparent",
       opacity: 1,
+      minHeight: 48,
     },
     optionSelected: {
-      backgroundColor: theme.overlay,
+      backgroundColor: theme.primarySoft,
     },
     optionDisabled: {
-      opacity: 0.4,
+      opacity: 0.45,
     },
     optionIcon: {
       marginRight: theme.spacing.sm,
     },
+    optionLabelWrap: {
+      flex: 1,
+    },
     optionText: {
       color: theme.text,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
       flex: 1,
     },

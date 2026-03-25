@@ -20,7 +20,7 @@ export const WeeklyProgressGraph = ({
       style={[
         styles.container,
         {
-          backgroundColor: theme.card,
+          backgroundColor: theme.surfaceElevated,
           paddingTop: theme.spacing.md,
           paddingRight: theme.spacing.md,
           borderRadius: theme.rounded.md,
@@ -36,7 +36,7 @@ export const WeeklyProgressGraph = ({
           styles.title,
           {
             color: theme.text,
-            fontSize: theme.typography.size.lg,
+            fontSize: theme.typography.size.title,
             marginBottom: theme.spacing.md,
             paddingLeft: theme.spacing.md,
           },

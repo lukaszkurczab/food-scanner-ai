@@ -19,6 +19,17 @@ const WINDOW_HEIGHT = Dimensions.get("window").height;
 const MODAL_MAX_WIDTH = 400;
 const INPUT_VERTICAL_PADDING = 10;
 
+type InputModalActionTone = "primary" | "secondary" | "destructive";
+
+type InputModalAction = {
+  label: string;
+  onPress?: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  testID?: string;
+  tone?: InputModalActionTone;
+};
+
 type Props = {
   visible: boolean;
   title?: string;
@@ -27,9 +38,11 @@ type Props = {
   onChange: (text: string) => void;
   placeholder?: string;
   secureTextEntry?: boolean;
+  primaryAction?: InputModalAction;
+  secondaryAction?: InputModalAction;
   primaryActionLabel?: string;
-  onPrimaryAction?: () => void;
   secondaryActionLabel?: string;
+  onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
   onClose?: () => void;
   fullScreen?: boolean;
@@ -45,9 +58,11 @@ export const InputModal: React.FC<Props> = ({
   onChange,
   placeholder,
   secureTextEntry = false,
+  primaryAction,
+  secondaryAction,
   primaryActionLabel,
-  onPrimaryAction,
   secondaryActionLabel,
+  onPrimaryAction,
   onSecondaryAction,
   onClose,
   fullScreen = false,
@@ -56,20 +71,33 @@ export const InputModal: React.FC<Props> = ({
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+
   const modalSizeStyle = useMemo(
     () =>
       fullScreen
         ? styles.modalContainerFullScreenSize
         : styles.modalContainerDefaultSize,
-    [fullScreen, styles]
+    [fullScreen, styles],
+  );
+  const resolvedPrimaryAction = primaryAction ?? (
+    primaryActionLabel
+      ? {
+          label: primaryActionLabel,
+          onPress: onPrimaryAction,
+        }
+      : undefined
+  );
+  const resolvedSecondaryAction = secondaryAction ?? (
+    secondaryActionLabel
+      ? {
+          label: secondaryActionLabel,
+          onPress: onSecondaryAction,
+        }
+      : undefined
   );
 
   const actionsSideBySide =
-    !fullScreen &&
-    !!primaryActionLabel &&
-    !!onPrimaryAction &&
-    !!secondaryActionLabel &&
-    !!onSecondaryAction;
+    !fullScreen && !!resolvedPrimaryAction && !!resolvedSecondaryAction;
 
   const handleBackdropPress = () => {
     onClose?.();
@@ -83,17 +111,20 @@ export const InputModal: React.FC<Props> = ({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <View style={styles.overlay} />
-      </TouchableWithoutFeedback>
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboardAvoiding}
       >
         <View
-          style={[styles.centeredView, fullScreen && styles.centeredViewFullscreen]}
+          style={[
+            styles.centeredView,
+            fullScreen && styles.centeredViewFullscreen,
+          ]}
         >
+          <TouchableWithoutFeedback onPress={handleBackdropPress}>
+            <View style={styles.overlay} />
+          </TouchableWithoutFeedback>
+
           <View
             style={[
               styles.modalContainer,
@@ -101,28 +132,29 @@ export const InputModal: React.FC<Props> = ({
               fullScreen && styles.modalContainerFullScreen,
             ]}
           >
-            {onClose && (
+            {onClose ? (
               <View style={styles.closeButton}>
                 <IconButton
                   icon={<AppIcon name="close" />}
                   onPress={onClose}
-                  size={28}
+                  size={32}
                   iconColor={theme.textSecondary}
+                  accessibilityLabel="Close"
                 />
               </View>
-            )}
+            ) : null}
 
-            {title && <Text style={styles.title}>{title}</Text>}
+            {title ? <Text style={styles.title}>{title}</Text> : null}
 
-            {message && <Text style={styles.message}>{message}</Text>}
+            {message ? <Text style={styles.message}>{message}</Text> : null}
 
             <TextInput
               value={value}
               onChangeText={onChange}
               placeholder={placeholder}
-              placeholderTextColor={theme.textSecondary}
+              placeholderTextColor={theme.input.placeholder}
               secureTextEntry={secureTextEntry}
-              style={styles.input}
+              style={[styles.input, error ? styles.inputError : null]}
               autoCapitalize="none"
               autoCorrect={false}
               textContentType={secureTextEntry ? "password" : "none"}
@@ -130,30 +162,30 @@ export const InputModal: React.FC<Props> = ({
               accessibilityLabel={placeholder}
             />
 
-            {!!error && <Text style={styles.errorText}>{error}</Text>}
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             {footer ? (
               <View style={styles.footer}>{footer}</View>
-            ) : (primaryActionLabel && onPrimaryAction) ||
-              (secondaryActionLabel && onSecondaryAction) ? (
-              actionsSideBySide ? (
-                <GlobalActionButtons
-                  label={primaryActionLabel!}
-                  onPress={onPrimaryAction!}
-                  secondaryLabel={secondaryActionLabel!}
-                  secondaryOnPress={onSecondaryAction!}
-                  layout="row"
-                  rowOrder="secondary-primary"
-                  containerStyle={styles.actionsRow}
-                />
-              ) : (
-                <GlobalActionButtons
-                  label={primaryActionLabel!}
-                  onPress={onPrimaryAction!}
-                  secondaryLabel={secondaryActionLabel!}
-                  secondaryOnPress={onSecondaryAction!}
-                />
-              )
+            ) : resolvedPrimaryAction || resolvedSecondaryAction ? (
+              <GlobalActionButtons
+                label={resolvedPrimaryAction?.label ?? ""}
+                onPress={resolvedPrimaryAction?.onPress}
+                loading={resolvedPrimaryAction?.loading}
+                disabled={resolvedPrimaryAction?.disabled}
+                testID={resolvedPrimaryAction?.testID}
+                tone={resolvedPrimaryAction?.tone ?? "primary"}
+                secondaryLabel={resolvedSecondaryAction?.label}
+                secondaryOnPress={resolvedSecondaryAction?.onPress}
+                secondaryLoading={resolvedSecondaryAction?.loading}
+                secondaryDisabled={resolvedSecondaryAction?.disabled}
+                secondaryTestID={resolvedSecondaryAction?.testID}
+                secondaryTone={resolvedSecondaryAction?.tone ?? "secondary"}
+                layout={actionsSideBySide ? "row" : "column"}
+                rowOrder="secondary-primary"
+                containerStyle={
+                  actionsSideBySide ? styles.actionsRow : styles.actionsColumn
+                }
+              />
             ) : null}
           </View>
         </View>
@@ -187,13 +219,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignSelf: "center",
       minWidth: 260,
       elevation: 10,
-      backgroundColor: theme.card,
-      shadowColor: theme.shadow,
-      shadowOpacity: 0.16,
-      shadowRadius: theme.rounded.md,
-      shadowOffset: { width: 0, height: theme.spacing.xs },
+      backgroundColor: theme.surfaceElevated,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.28 : 0.12,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
       position: "relative",
-      borderRadius: theme.rounded.md,
+      borderRadius: theme.rounded.lg,
+      borderWidth: 1,
+      borderColor: theme.border,
       padding: theme.spacing.lg,
       maxWidth: MODAL_MAX_WIDTH,
     },
@@ -204,7 +238,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     modalContainerFullScreenSize: {
       width: "95%",
       maxHeight: WINDOW_HEIGHT * 0.96,
-      marginTop: theme.spacing.xxl,
+      marginTop: theme.spacing.nav,
     },
     modalContainerFullScreen: {
       flex: 1,
@@ -218,35 +252,44 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
       fontFamily: theme.typography.fontFamily.bold,
-      fontWeight: "bold",
       textAlign: "center",
       marginBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.xl,
     },
     message: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
       marginBottom: theme.spacing.sm,
       textAlign: "center",
     },
     input: {
       width: "100%",
-      borderRadius: theme.rounded.sm,
+      borderRadius: theme.rounded.md,
       borderWidth: 1,
-      borderColor: theme.border,
-      backgroundColor: theme.background,
-      color: theme.text,
+      borderColor: theme.input.border,
+      backgroundColor: theme.input.background,
+      color: theme.input.text,
       paddingVertical: INPUT_VERTICAL_PADDING,
       paddingHorizontal: theme.spacing.md,
       marginBottom: theme.spacing.md,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
+      minHeight: 48,
+    },
+    inputError: {
+      borderColor: theme.input.borderError,
     },
     errorText: {
       color: theme.error.text,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
       marginBottom: theme.spacing.sm,
       textAlign: "center",
     },
@@ -255,6 +298,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     actionsRow: {
       marginTop: theme.spacing.sm,
+    },
+    actionsColumn: {
+      marginTop: theme.spacing.sm,
+      gap: theme.spacing.sm,
     },
   });
 

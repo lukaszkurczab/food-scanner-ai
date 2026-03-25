@@ -191,7 +191,9 @@ export default function MealCameraScreen({
                     styles.modeBtn,
                     {
                       backgroundColor:
-                        mode === "ai" ? theme.accentSecondary : theme.card,
+                        mode === "ai"
+                          ? theme.primary
+                          : theme.surfaceElevated,
                       borderColor: theme.border,
                       opacity: canUsePhotoAi ? 1 : 0.6,
                     },
@@ -200,7 +202,7 @@ export default function MealCameraScreen({
                   <AppIcon
                     name="sparkles"
                     size={22}
-                    color={mode === "ai" ? theme.onAccent : theme.text}
+                    color={mode === "ai" ? theme.cta.primaryText : theme.text}
                   />
                 </Pressable>
                 <Pressable
@@ -209,7 +211,9 @@ export default function MealCameraScreen({
                     styles.modeBtn,
                     {
                       backgroundColor:
-                        mode === "barcode" ? theme.accentSecondary : theme.card,
+                        mode === "barcode"
+                          ? theme.primary
+                          : theme.surfaceElevated,
                       borderColor: theme.border,
                     },
                   ]}
@@ -217,7 +221,7 @@ export default function MealCameraScreen({
                   <AppIcon
                     name="scan-barcode"
                     size={22}
-                    color={mode === "barcode" ? theme.onAccent : theme.text}
+                    color={mode === "barcode" ? theme.cta.primaryText : theme.text}
                   />
                 </Pressable>
               </View>
@@ -226,14 +230,9 @@ export default function MealCameraScreen({
               <View pointerEvents="none" style={styles.barcodeOverlay}>
                 <View style={styles.barcodeFrame} />
                 <View
-                  style={[
-                    styles.barcodeHintCard,
-                    styles.barcodeHintPosition,
-                  ]}
+                  style={[styles.barcodeHintCard, styles.barcodeHintPosition]}
                 >
-                  <Text
-                    style={styles.barcodeHintText}
-                  >
+                  <Text style={styles.barcodeHintText}>
                     {scannedCode
                       ? tMeals("barcode_detected", {
                           defaultValue: "Detected:",
@@ -326,14 +325,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       backgroundColor: theme.background,
     },
     permissionTitle: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       textAlign: "center",
       marginBottom: theme.spacing.sm,
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
     },
     permissionSubtitle: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       textAlign: "center",
       marginBottom: theme.spacing.lg,
       color: theme.text,
@@ -343,11 +342,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.sm + theme.spacing.xs,
       paddingHorizontal: theme.spacing.lg + theme.spacing.xs,
       borderRadius: theme.rounded.lg,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
     },
     permissionButtonLabel: {
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       color: theme.text,
     },
     modeSwitch: {
@@ -402,12 +401,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingHorizontal: theme.spacing.sm,
       borderRadius: theme.rounded.sm,
       borderWidth: 1,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
     },
     devBtnText: {
       color: theme.text,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
     },
     barcodeOverlay: {
       ...StyleSheet.absoluteFillObject,
@@ -434,10 +433,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       transform: [{ translateY: -144 }],
     },
     barcodeHintText: {
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
       textAlign: "center",
-      color: theme.onAccent,
+      color: theme.cta.primaryText,
     },
     barcodeFrame: {
       width: "78%",
@@ -445,6 +444,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: 18,
       borderWidth: 2,
       backgroundColor: "rgba(0,0,0,0.18)",
-      borderColor: theme.onAccent,
+      borderColor: theme.cta.primaryText,
     },
   });

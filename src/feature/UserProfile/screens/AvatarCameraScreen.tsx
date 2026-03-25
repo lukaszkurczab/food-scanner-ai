@@ -140,7 +140,9 @@ export default function AvatarCameraScreen({
           <ScreenCornerNavButton
             icon="close"
             onPress={() =>
-              navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Profile")
+              navigation.canGoBack()
+                ? navigation.goBack()
+                : navigation.navigate("Profile")
             }
             accessibilityLabel={t("common:close", { defaultValue: "Close" })}
             tone="camera"
@@ -165,11 +167,7 @@ export default function AvatarCameraScreen({
               }
               accessibilityLabel={t("common:switch_camera") || "Switch camera"}
             >
-              <AppIcon
-                name="flip-camera"
-                size={26}
-                color={theme.onAccent}
-              />
+              <AppIcon name="flip-camera" size={26} color={theme.cta.primaryText} />
             </Pressable>
           </View>
         </View>
@@ -195,14 +193,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       padding: theme.spacing.lg,
     },
     permissionTitle: {
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       textAlign: "center",
       marginBottom: theme.spacing.sm,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
     },
     permissionText: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       textAlign: "center",
       marginBottom: theme.spacing.lg,
       opacity: 0.9,
@@ -212,11 +210,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.xl,
       borderRadius: theme.rounded.full,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
     },
     permissionButtonText: {
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       color: theme.text,
     },
     controlsWrapper: {
@@ -233,7 +231,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       height: SHUTTER,
       borderRadius: SHUTTER / 2,
       borderWidth: 4,
-      borderColor: theme.onAccent,
+      borderColor: theme.cta.primaryText,
       backgroundColor: "transparent",
       left: "50%",
       transform: [{ translateX: -SHUTTER / 2 }],
@@ -245,7 +243,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       height: SWITCH,
       borderRadius: SWITCH / 2,
       borderWidth: 2,
-      borderColor: theme.onAccent,
+      borderColor: theme.cta.primaryText,
       backgroundColor: theme.overlay,
       alignItems: "center",
       justifyContent: "center",

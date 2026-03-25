@@ -34,7 +34,7 @@ export const LineSection: React.FC<Props> = ({ labels, data, metric }) => {
           styles.title,
           {
             color: theme.text,
-            fontSize: theme.typography.size.lg,
+            fontSize: theme.typography.size.title,
             marginBottom: theme.spacing.md,
           },
         ]}

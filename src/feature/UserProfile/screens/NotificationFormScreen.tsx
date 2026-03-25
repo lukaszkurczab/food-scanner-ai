@@ -248,15 +248,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.md,
       borderWidth: 1,
       borderColor: theme.border,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       color: theme.text,
       borderRadius: theme.rounded.md,
       fontFamily: theme.typography.fontFamily.medium,
     },
     optionActive: {
-      borderColor: theme.accentSecondary,
-      backgroundColor: theme.accentSecondary,
-      color: theme.onAccent,
+      borderColor: theme.primary,
+      backgroundColor: theme.primary,
+      color: theme.cta.primaryText,
     },
     rowBetween: {
       flexDirection: "row",
@@ -265,7 +265,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.sm,
     },
     timeText: {
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
     },

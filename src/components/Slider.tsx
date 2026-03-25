@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Pressable, StyleSheet, LayoutChangeEvent } from "react-native";
 import Animated, {
   useSharedValue,
@@ -24,6 +24,10 @@ type SliderProps = {
 
 type ContextType = { startX: number };
 
+const THUMB_SIZE = 24;
+const THUMB_RADIUS = THUMB_SIZE / 2;
+const TRACK_HEIGHT = 6;
+
 export function Slider({
   value,
   onValueChange,
@@ -33,6 +37,8 @@ export function Slider({
   disabled = false,
 }: SliderProps) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
   const [trackWidth, setTrackWidth] = useState(1);
   const trackWidthAnim = useSharedValue(1);
   const thumbX = useSharedValue(0);
@@ -45,7 +51,7 @@ export function Slider({
   }, [value, trackWidth, minimumValue, maximumValue, thumbX]);
 
   const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: thumbX.value - 12 }],
+    transform: [{ translateX: thumbX.value - THUMB_RADIUS }],
   }));
 
   const fillStyle = useAnimatedStyle(() => ({
@@ -61,26 +67,34 @@ export function Slider({
     },
     onActive: (event, ctx) => {
       if (disabled) return;
+
       let x = ctx.startX + event.translationX;
       x = Math.max(0, Math.min(trackWidthAnim.value, x));
       thumbX.value = x;
+
       let ratio = x / trackWidthAnim.value;
       ratio = Math.max(0, Math.min(1, ratio));
+
       let val = minimumValue + ratio * (maximumValue - minimumValue);
       val = Math.round(val / step) * step;
       val = Math.max(minimumValue, Math.min(maximumValue, val));
+
       runOnJS(onValueChange)(val);
     },
   });
 
   const handleTrackPress = (evt: { nativeEvent: { locationX: number } }) => {
     if (disabled || !trackWidth) return;
-    const x = evt.nativeEvent.locationX;
+
+    const x = Math.max(0, Math.min(trackWidth, evt.nativeEvent.locationX));
+
     let ratio = x / trackWidth;
     ratio = Math.max(0, Math.min(1, ratio));
+
     let val = minimumValue + ratio * (maximumValue - minimumValue);
     val = Math.round(val / step) * step;
     val = Math.max(minimumValue, Math.min(maximumValue, val));
+
     thumbX.value = withTiming(x);
     onValueChange(val);
   };
@@ -89,6 +103,7 @@ export function Slider({
     const w = evt.nativeEvent.layout.width;
     setTrackWidth(w);
     trackWidthAnim.value = w;
+
     const ratio = (value - minimumValue) / (maximumValue - minimumValue);
     thumbX.value = withTiming(Math.max(0, Math.min(w, ratio * w)));
   };
@@ -96,25 +111,13 @@ export function Slider({
   return (
     <View style={styles.container}>
       <Pressable
-        style={[
-          styles.track,
-          {
-            backgroundColor: theme.border,
-          },
-        ]}
+        style={[styles.track, disabled && styles.trackDisabled]}
         onPress={handleTrackPress}
         onLayout={onTrackLayout}
         disabled={disabled}
       >
-        <Animated.View
-          style={[
-            styles.filled,
-            {
-              backgroundColor: theme.accent,
-            },
-            fillStyle,
-          ]}
-        />
+        <Animated.View style={[styles.filled, fillStyle]} />
+
         <View style={styles.trackOverlay}>
           <PanGestureHandler
             enabled={!disabled}
@@ -124,11 +127,7 @@ export function Slider({
               style={[
                 styles.thumb,
                 thumbStyle,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: theme.accent,
-                  shadowColor: theme.shadow,
-                },
+                disabled && styles.thumbDisabled,
               ]}
               pointerEvents={disabled ? "none" : "auto"}
             />
@@ -139,36 +138,54 @@ export function Slider({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { width: "100%", height: 40, justifyContent: "center" },
-  track: {
-    height: 6,
-    borderRadius: 3,
-    overflow: "visible",
-    width: "100%",
-    justifyContent: "center",
-  },
-  filled: {
-    position: "absolute",
-    height: 6,
-    borderRadius: 3,
-    left: 0,
-    top: 0,
-  },
-  trackOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  thumb: {
-    position: "absolute",
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    top: -9,
-    borderWidth: 2,
-    elevation: 2,
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      width: "100%",
+      height: 40,
+      justifyContent: "center",
+    },
+    track: {
+      height: TRACK_HEIGHT,
+      borderRadius: TRACK_HEIGHT / 2,
+      overflow: "visible",
+      width: "100%",
+      justifyContent: "center",
+      backgroundColor: theme.borderSoft,
+    },
+    trackDisabled: {
+      opacity: 0.5,
+    },
+    filled: {
+      position: "absolute",
+      height: TRACK_HEIGHT,
+      borderRadius: TRACK_HEIGHT / 2,
+      left: 0,
+      top: 0,
+      backgroundColor: theme.primary,
+    },
+    trackOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: "center",
+      alignItems: "flex-start",
+    },
+    thumb: {
+      position: "absolute",
+      width: THUMB_SIZE,
+      height: THUMB_SIZE,
+      borderRadius: THUMB_RADIUS,
+      top: -(THUMB_RADIUS - TRACK_HEIGHT / 2),
+      borderWidth: 2,
+      borderColor: theme.primary,
+      backgroundColor: theme.surfaceElevated,
+      elevation: 2,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.22 : 0.12,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    thumbDisabled: {
+      borderColor: theme.disabled.border,
+      backgroundColor: theme.disabled.background,
+    },
+  });

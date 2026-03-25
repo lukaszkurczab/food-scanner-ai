@@ -1,5 +1,11 @@
 import { useMemo } from "react";
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -36,13 +42,16 @@ export default function MealDetailsScreen() {
   const contentInsetsStyle = useMemo(
     () => ({
       paddingTop: insets.top + theme.spacing.xs + 44 + theme.spacing.sm,
-      paddingLeft: insets.left + 32,
-      paddingRight: insets.right + 32,
+      paddingLeft: insets.left + theme.spacing.screenPadding,
+      paddingRight: insets.right + theme.spacing.screenPadding,
+      paddingBottom: theme.spacing.sectionGapLarge,
     }),
     [
       insets.left,
       insets.right,
       insets.top,
+      theme.spacing.screenPadding,
+      theme.spacing.sectionGapLarge,
       theme.spacing.sm,
       theme.spacing.xs,
     ],
@@ -60,7 +69,9 @@ export default function MealDetailsScreen() {
           containerStyle={topLeftActionStyle}
         />
         <View style={[styles.emptyWrap, contentInsetsStyle]}>
-          <Text style={styles.emptyTitle}>{t("detailsUnavailable.title", { ns: "meals" })}</Text>
+          <Text style={styles.emptyTitle}>
+            {t("detailsUnavailable.title", { ns: "meals" })}
+          </Text>
           <Text style={styles.emptyDescription}>
             {isOnline
               ? t("detailsUnavailable.desc", { ns: "meals" })
@@ -90,59 +101,70 @@ export default function MealDetailsScreen() {
 
         <View style={[styles.content, contentInsetsStyle]}>
           {state.showImageBlock ? (
-            <View style={styles.imageWrap}>
-              {state.checkingImage ? (
-                <ActivityIndicator size="large" color={theme.accent} />
-              ) : state.effectivePhotoUri ? (
-                <>
-                  <FallbackImage
-                    uri={state.effectivePhotoUri}
-                    width={"100%"}
-                    height={220}
-                    borderRadius={theme.rounded.lg}
-                    onError={state.onImageError}
-                  />
+            <View style={styles.imageSection}>
+              <View style={styles.imageWrap}>
+                {state.checkingImage ? (
+                  <View style={styles.imageLoaderWrap}>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                  </View>
+                ) : state.effectivePhotoUri ? (
+                  <>
+                    <FallbackImage
+                      uri={state.effectivePhotoUri}
+                      width={"100%"}
+                      height={220}
+                      borderRadius={theme.rounded.xl}
+                      onError={state.onImageError}
+                    />
+                    <Pressable
+                      onPress={state.goShare}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("share", { ns: "common" })}
+                      hitSlop={8}
+                      style={({ pressed }) => [
+                        styles.fab,
+                        pressed ? styles.fabPressed : null,
+                      ]}
+                    >
+                      <AppIcon name="share" size={20} color={theme.text} />
+                    </Pressable>
+                  </>
+                ) : (
                   <Pressable
-                    onPress={state.goShare}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("share", { ns: "common" })}
-                    hitSlop={8}
-                    style={[
-                      styles.fab,
+                    onPress={state.handleAddPhoto}
+                    style={({ pressed }) => [
+                      styles.addPhoto,
+                      pressed ? styles.addPhotoPressed : null,
                     ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("add_photo", { ns: "meals" })}
                   >
-                    <AppIcon name="share" size={22} color={theme.text} />
+                    <AppIcon
+                      name="add-photo"
+                      size={40}
+                      color={theme.textSecondary}
+                    />
+                    <Text style={styles.addPhotoLabel}>
+                      {t("add_photo", { ns: "meals" })}
+                    </Text>
                   </Pressable>
-                </>
-              ) : (
-                <Pressable
-                  onPress={state.handleAddPhoto}
-                  style={styles.addPhoto}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("add_photo", { ns: "meals" })}
-                >
-                  <AppIcon
-                    name="add-photo"
-                    size={44}
-                    color={theme.textSecondary}
-                  />
-                  <Text style={styles.addPhotoLabel}>
-                    {t("add_photo", { ns: "meals" })}
-                  </Text>
-                </Pressable>
-              )}
+                )}
+              </View>
             </View>
           ) : null}
 
-          <MealBox
-            name={state.draft.name || ""}
-            type={state.draft.type}
-            nutrition={state.nutrition}
-            addedAt={state.draft.timestamp || state.draft.createdAt}
-            editable={state.edit && !state.saving}
-            onNameChange={state.edit ? state.setName : undefined}
-            onTypeChange={state.edit ? state.setType : undefined}
-          />
+          <View style={styles.section}>
+            <MealBox
+              name={state.draft.name || ""}
+              type={state.draft.type}
+              nutrition={state.nutrition}
+              addedAt={state.draft.timestamp || state.draft.createdAt}
+              editable={state.edit && !state.saving}
+              onNameChange={state.edit ? state.setName : undefined}
+              onTypeChange={state.edit ? state.setType : undefined}
+            />
+          </View>
+
           <View style={styles.syncBadgeWrap}>
             <MealSyncBadge
               syncState={state.draft.syncState}
@@ -151,30 +173,44 @@ export default function MealDetailsScreen() {
           </View>
 
           {!!state.draft.ingredients.length && (
-            <Card variant="outlined" onPress={state.toggleIngredients}>
-              <Text style={styles.toggleText}>
-                {state.showIngredients
-                  ? t("hide_ingredients", { ns: "meals" })
-                  : t("show_ingredients", { ns: "meals" })}
-              </Text>
-            </Card>
+            <View style={styles.section}>
+              <Card variant="outlined" onPress={state.toggleIngredients}>
+                <Text style={styles.toggleText}>
+                  {state.showIngredients
+                    ? t("hide_ingredients", { ns: "meals" })
+                    : t("show_ingredients", { ns: "meals" })}
+                </Text>
+              </Card>
+            </View>
           )}
 
-          {state.showIngredients &&
-            state.draft.ingredients.map((ingredient, idx) => (
-              <IngredientBox
-                key={ingredient.id || String(idx)}
-                ingredient={ingredient}
-                editable={state.edit && !state.saving}
-                onSave={(updated) => state.edit && state.updateIngredientAt(idx, updated)}
-                onRemove={() => state.edit && state.removeIngredientAt(idx)}
-              />
-            ))}
+          {state.showIngredients && (
+            <View style={styles.ingredientsList}>
+              {state.draft.ingredients.map((ingredient, idx) => (
+                <View
+                  key={ingredient.id || String(idx)}
+                  style={styles.ingredientItem}
+                >
+                  <IngredientBox
+                    ingredient={ingredient}
+                    editable={state.edit && !state.saving}
+                    onSave={(updated) =>
+                      state.edit && state.updateIngredientAt(idx, updated)
+                    }
+                    onRemove={() => state.edit && state.removeIngredientAt(idx)}
+                  />
+                </View>
+              ))}
+            </View>
+          )}
 
           <View style={styles.actionsWrap}>
             {!state.edit ? (
               <PrimaryButton
-                label={t("edit_meal", { ns: "meals", defaultValue: "Edit meal" })}
+                label={t("edit_meal", {
+                  ns: "meals",
+                  defaultValue: "Edit meal",
+                })}
                 onPress={state.startEdit}
               />
             ) : (
@@ -206,16 +242,22 @@ export default function MealDetailsScreen() {
             defaultValue:
               "You have unsaved edits. Do you really want to cancel and lose your changes?",
           })}
-          primaryActionLabel={t("discard", {
-            ns: "common",
-            defaultValue: "Discard",
-          })}
-          onPrimaryAction={state.confirmDiscard}
-          secondaryActionLabel={t("continue", {
-            ns: "common",
-            defaultValue: "Continue editing",
-          })}
-          onSecondaryAction={state.closeDiscardModal}
+          primaryAction={{
+            label: t("discard", {
+              ns: "common",
+              defaultValue: "Discard",
+            }),
+            onPress: state.confirmDiscard,
+            tone: "destructive",
+          }}
+          secondaryAction={{
+            label: t("continue", {
+              ns: "common",
+              defaultValue: "Continue editing",
+            }),
+            onPress: state.closeDiscardModal,
+            tone: "secondary",
+          }}
           onClose={state.closeDiscardModal}
         />
 
@@ -230,16 +272,22 @@ export default function MealDetailsScreen() {
             defaultValue:
               "You have unsaved changes. Do you really want to go back and lose them?",
           })}
-          primaryActionLabel={t("leave", {
-            ns: "common",
-            defaultValue: "Leave",
-          })}
-          onPrimaryAction={state.confirmLeave}
-          secondaryActionLabel={t("continue", {
-            ns: "common",
-            defaultValue: "Continue editing",
-          })}
-          onSecondaryAction={state.closeLeaveModal}
+          primaryAction={{
+            label: t("leave", {
+              ns: "common",
+              defaultValue: "Leave",
+            }),
+            onPress: state.confirmLeave,
+            tone: "destructive",
+          }}
+          secondaryAction={{
+            label: t("continue", {
+              ns: "common",
+              defaultValue: "Continue editing",
+            }),
+            onPress: state.closeLeaveModal,
+            tone: "secondary",
+          }}
           onClose={state.closeLeaveModal}
         />
       </>
@@ -253,54 +301,99 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingTop: 0,
       paddingLeft: 0,
       paddingRight: 0,
+      backgroundColor: theme.background,
     },
-    content: {},
-    imageWrap: { position: "relative" },
+    content: {
+      gap: theme.spacing.sectionGap,
+    },
+    section: {
+      gap: theme.spacing.sm,
+    },
+    imageSection: {
+      marginBottom: theme.spacing.xs,
+    },
+    imageWrap: {
+      position: "relative",
+      borderRadius: theme.rounded.xl,
+      overflow: "hidden",
+      backgroundColor: theme.surfaceAlt,
+    },
+    imageLoaderWrap: {
+      width: "100%",
+      height: 220,
+      borderRadius: theme.rounded.xl,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.surfaceAlt,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+    },
     fab: {
       position: "absolute",
       right: theme.spacing.sm,
       bottom: theme.spacing.sm,
       width: 44,
       height: 44,
-      borderRadius: 22,
+      borderRadius: theme.rounded.full,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      shadowOpacity: 0.15,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 3,
-      backgroundColor: theme.background,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
-      shadowColor: theme.shadow,
+      shadowColor: theme.text,
+      shadowOpacity: theme.isDark ? 0.24 : 0.12,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 3,
+    },
+    fabPressed: {
+      opacity: 0.88,
     },
     addPhoto: {
       width: "100%",
       height: 220,
-      borderRadius: theme.rounded.lg,
+      borderRadius: theme.rounded.xl,
       alignItems: "center",
       justifyContent: "center",
-      borderWidth: 2,
+      borderWidth: 1.5,
       borderColor: theme.border,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       gap: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    addPhotoPressed: {
+      opacity: 0.9,
     },
     addPhotoLabel: {
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.labelL,
+      lineHeight: theme.typography.lineHeight.labelL,
     },
     syncBadgeWrap: {
-      marginTop: theme.spacing.sm,
+      marginTop: -theme.spacing.sm,
       alignItems: "flex-start",
     },
     toggleText: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
       fontFamily: theme.typography.fontFamily.medium,
       color: theme.text,
       textAlign: "center",
     },
-    actionsWrap: { marginTop: theme.spacing.lg },
-    actionsStack: { gap: theme.spacing.sm },
+    ingredientsList: {
+      gap: theme.spacing.sm,
+    },
+    ingredientItem: {
+      marginBottom: 0,
+    },
+    actionsWrap: {
+      marginTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.sm,
+    },
+    actionsStack: {
+      gap: theme.spacing.sm,
+    },
     emptyWrap: {
       flex: 1,
       justifyContent: "center",
@@ -310,15 +403,18 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     emptyTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
       fontFamily: theme.typography.fontFamily.semiBold,
       textAlign: "center",
     },
     emptyDescription: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      fontFamily: theme.typography.fontFamily.regular,
       textAlign: "center",
-      lineHeight: Math.round(theme.typography.size.sm * 1.5),
+      maxWidth: 320,
     },
     emptyAction: {
       alignSelf: "stretch",

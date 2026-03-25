@@ -27,7 +27,7 @@ export const FallbackImage: React.FC<Props> = ({
       height,
       borderRadius: borderRadius ?? 16,
     }),
-    [width, height, borderRadius]
+    [width, height, borderRadius],
   );
 
   useEffect(() => {
@@ -54,6 +54,6 @@ export const FallbackImage: React.FC<Props> = ({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     image: {
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
     },
   });

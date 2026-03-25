@@ -20,7 +20,7 @@ export const DateRangePicker: React.FC<{
         day: "2-digit",
         month: "2-digit",
       }),
-    [locale]
+    [locale],
   );
 
   const summary = `${fmt.format(startDate)} - ${fmt.format(endDate)}`;
@@ -46,15 +46,21 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
+      gap: theme.spacing.md,
     },
     label: {
       color: theme.text,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
       fontFamily: theme.typography.fontFamily.bold,
+      flexShrink: 0,
     },
     summary: {
-      color: theme.text,
-      fontSize: theme.typography.size.md,
-      fontFamily: theme.typography.fontFamily.regular,
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.medium,
+      textAlign: "right",
+      flex: 1,
     },
   });

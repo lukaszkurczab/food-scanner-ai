@@ -3,13 +3,13 @@ import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import {
-  BackTitleHeader,
-  ErrorBox,
-  Layout,
-} from "@/components";
+import { BackTitleHeader, ErrorBox, Layout } from "@/components";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
-import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  type RouteProp,
+} from "@react-navigation/native";
 import AppIcon from "@/components/AppIcon";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { authLogout } from "@/feature/Auth/services/authService";
@@ -129,22 +129,14 @@ export default function ChangeEmailCheckMailboxScreen() {
 
       <View style={styles.iconWrapper}>
         <View style={styles.iconCard}>
-          <AppIcon name="email" size={96} color={theme.accentSecondary} />
+          <AppIcon name="email" size={96} color={theme.primary} />
         </View>
       </View>
-      <Text
-        style={styles.body}
-      >
-        {t("check_mailbox_desc", { email })}
-      </Text>
-      <Text
-        style={[styles.body, styles.bodySpacing]}
-      >
+      <Text style={styles.body}>{t("check_mailbox_desc", { email })}</Text>
+      <Text style={[styles.body, styles.bodySpacing]}>
         {t("check_mailbox_desc2")}
       </Text>
-      {error && (
-        <ErrorBox message={error} style={styles.error} />
-      )}
+      {error && <ErrorBox message={error} style={styles.error} />}
       <GlobalActionButtons
         label={t("back_to_login")}
         onPress={handleLogout}
@@ -167,7 +159,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     iconWrapper: { alignItems: "center", marginBottom: theme.spacing.xl },
     iconCard: {
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       width: 128,
       height: 128,
       borderRadius: theme.rounded.md,
@@ -175,7 +167,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
     },
     body: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       color: theme.textSecondary,
       textAlign: "center",
       marginBottom: theme.spacing.md,

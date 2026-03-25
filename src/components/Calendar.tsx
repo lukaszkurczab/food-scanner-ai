@@ -26,7 +26,9 @@ const startOfDay = (d: Date) => {
   x.setHours(0, 0, 0, 0);
   return x;
 };
+
 const isSameDay = (a: Date, b: Date) => +startOfDay(a) === +startOfDay(b);
+
 const clampToBounds = (d: Date, min?: Date, max?: Date) => {
   const t = +startOfDay(d);
   let out = t;
@@ -34,6 +36,15 @@ const clampToBounds = (d: Date, min?: Date, max?: Date) => {
   if (max && t > +startOfDay(max)) out = +startOfDay(max);
   return new Date(out);
 };
+
+function inBetween(d: Date, s: Date, e: Date) {
+  const t = +startOfDay(d);
+  const ss = +startOfDay(s);
+  const ee = +startOfDay(e);
+  if (ss === ee) return ss === t;
+  const [lo, hi] = ss < ee ? [ss, ee] : [ee, ss];
+  return t >= lo && t <= hi;
+}
 
 export const Calendar: React.FC<Props> = ({
   startDate,
@@ -75,6 +86,7 @@ export const Calendar: React.FC<Props> = ({
     const js = new Date(year, month, 1).getDay();
     return (js + 6) % 7;
   })();
+
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevMonthDays = new Date(year, month, 0).getDate();
 
@@ -98,20 +110,22 @@ export const Calendar: React.FC<Props> = ({
       dayNum = i - firstDay + 1;
       cellDate = new Date(year, month, dayNum);
     }
+
     cells.push({ date: startOfDay(cellDate), inMonth });
   }
 
   const fmtMonth = useMemo(
     () => new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }),
-    [locale]
+    [locale],
   );
+
   const fmtWeekday = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) => {
         const d = new Date(2024, 0, 1 + i);
         return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(d);
       }),
-    [locale]
+    [locale],
   );
 
   const handlePrev = () => setCursor(new Date(year, month - 1, 1));
@@ -119,30 +133,35 @@ export const Calendar: React.FC<Props> = ({
 
   const select = (d: Date) => {
     const bounded = clampToBounds(d, minDate, maxDate);
+
     if (mode === "single") {
       onPickSingle?.(bounded);
       return;
     }
+
     let s = normalized.s;
     let e = normalized.e;
+
     if (focus === "start") {
       if (isSameDay(bounded, s) && isSameDay(s, e)) {
         onChangeRange({ start: s, end: s });
         return;
       }
+
       s = bounded;
       e = bounded;
       onChangeRange({ start: s, end: e });
       onToggleFocus?.();
-    } else {
-      if (isSameDay(bounded, s)) {
-        onChangeRange({ start: s, end: s });
-      } else {
-        e = bounded;
-        onChangeRange({ start: s, end: e });
-      }
-      onToggleFocus?.();
+      return;
     }
+
+    if (isSameDay(bounded, s)) {
+      onChangeRange({ start: s, end: s });
+    } else {
+      e = bounded;
+      onChangeRange({ start: s, end: e });
+    }
+    onToggleFocus?.();
   };
 
   const isDisabled = (d: Date) =>
@@ -160,9 +179,7 @@ export const Calendar: React.FC<Props> = ({
           <Text style={styles.navText}>‹</Text>
         </Pressable>
 
-        <Text style={styles.monthText}>
-          {fmtMonth.format(monthStart)}
-        </Text>
+        <Text style={styles.monthText}>{fmtMonth.format(monthStart)}</Text>
 
         <Pressable onPress={handleNext} style={styles.navBtn}>
           <Text style={styles.navText}>›</Text>
@@ -179,8 +196,6 @@ export const Calendar: React.FC<Props> = ({
                 {
                   width: cellSize,
                   marginRight: i % 7 !== 6 ? GAP : 0,
-                  color: theme.textSecondary,
-                  textAlign: "center",
                 },
               ]}
             >
@@ -208,7 +223,7 @@ export const Calendar: React.FC<Props> = ({
                 style={[
                   styles.cell,
                   {
-                    opacity: disabled ? 0.4 : 1,
+                    opacity: disabled ? 0.38 : 1,
                     width: cellSize,
                     height: cellSize,
                     marginRight: i % 7 !== 6 ? GAP : 0,
@@ -216,34 +231,50 @@ export const Calendar: React.FC<Props> = ({
                   },
                 ]}
               >
-                {selected && (
+                {selected ? (
                   <View
                     style={[
-                      styles.dotCircle,
+                      styles.selectionFill,
+                      selectedStart || selectedEnd
+                        ? styles.selectionStrong
+                        : styles.selectionSoft,
                       {
-                        borderColor: theme.accentSecondary,
-                        borderWidth: 2,
-                        borderRadius: theme.rounded.full,
+                        backgroundColor:
+                          selectedStart || selectedEnd
+                            ? theme.primary
+                            : theme.primarySoft,
                       },
                     ]}
                   />
-                )}
+                ) : null}
+
                 <Text
                   style={[
                     styles.dayText,
-                    c.inMonth ? styles.dayTextInMonth : styles.dayTextOutsideMonth,
+                    c.inMonth
+                      ? styles.dayTextInMonth
+                      : styles.dayTextOutsideMonth,
+                    selectedStart || selectedEnd
+                      ? styles.dayTextSelected
+                      : null,
                   ]}
                 >
                   {c.date.getDate()}
                 </Text>
-                {isSameDay(c.date, today) && (
+
+                {isSameDay(c.date, today) ? (
                   <View
                     style={[
                       styles.todayMark,
-                      { backgroundColor: theme.link, marginTop: 3 },
+                      {
+                        backgroundColor:
+                          selectedStart || selectedEnd
+                            ? theme.cta.primaryText
+                            : theme.accentWarm,
+                      },
                     ]}
                   />
-                )}
+                ) : null}
               </Pressable>
             );
           })}
@@ -252,15 +283,6 @@ export const Calendar: React.FC<Props> = ({
     </View>
   );
 };
-
-function inBetween(d: Date, s: Date, e: Date) {
-  const t = +startOfDay(d);
-  const ss = +startOfDay(s);
-  const ee = +startOfDay(e);
-  if (ss === ee) return ss === t;
-  const [lo, hi] = ss < ee ? [ss, ee] : [ee, ss];
-  return t >= lo && t <= hi;
-}
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
@@ -271,39 +293,81 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginBottom: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
       paddingHorizontal: theme.spacing.xs,
     },
     navBtn: {
+      width: 40,
+      height: 40,
       borderRadius: theme.rounded.full,
-      padding: theme.spacing.sm,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.surfaceAlt,
     },
     navText: {
       color: theme.link,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
+      fontFamily: theme.typography.fontFamily.semiBold,
     },
     monthText: {
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
     },
-    weekRow: { flexDirection: "row" },
-    weekText: { fontSize: theme.typography.size.xs },
-    grid: { flexDirection: "row", flexWrap: "wrap" },
-    cell: { alignItems: "center", justifyContent: "center" },
+    weekRow: {
+      flexDirection: "row",
+    },
+    weekText: {
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      color: theme.textSecondary,
+      textAlign: "center",
+    },
+    grid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+    },
+    cell: {
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+      overflow: "hidden",
+      borderRadius: theme.rounded.md,
+    },
+    selectionFill: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: theme.rounded.md,
+    },
+    selectionStrong: {
+      opacity: 1,
+    },
+    selectionSoft: {
+      opacity: 0.28,
+    },
     dayText: {
-      fontFamily: theme.typography.fontFamily.regular,
+      fontFamily: theme.typography.fontFamily.medium,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      zIndex: 1,
     },
     dayTextInMonth: {
       color: theme.text,
     },
     dayTextOutsideMonth: {
-      color: theme.textSecondary,
+      color: theme.textTertiary,
     },
-    dotCircle: { position: "absolute", width: "82%", height: "82%" },
+    dayTextSelected: {
+      color: theme.cta.primaryText,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
     todayMark: {
-      width: theme.spacing.xs,
-      height: theme.spacing.xs,
-      borderRadius: theme.spacing.xs / 2,
+      width: 4,
+      height: 4,
+      borderRadius: theme.rounded.full,
+      marginTop: 4,
+      zIndex: 1,
     },
   });

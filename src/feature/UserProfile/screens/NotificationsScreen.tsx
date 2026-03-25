@@ -30,7 +30,10 @@ export default function NotificationsScreen({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("notifications");
-  const smartReminderDecision = useReminderDecision({ uid, fetchEnabled: __DEV__ });
+  const smartReminderDecision = useReminderDecision({
+    uid,
+    fetchEnabled: __DEV__,
+  });
   const smartReminderQaRows = useMemo(
     () =>
       buildSmartReminderQaRows({
@@ -108,10 +111,7 @@ export default function NotificationsScreen({
           <SectionHeader label={t("screen.motivation")} />
 
           <View style={styles.toggleRow}>
-            <Text
-              style={styles.toggleLabel}
-              numberOfLines={1}
-            >
+            <Text style={styles.toggleLabel} numberOfLines={1}>
               {t("screen.smartReminders")}
             </Text>
 
@@ -120,17 +120,14 @@ export default function NotificationsScreen({
               onToggle={onToggleSmartReminders}
               trackColor={
                 smartRemindersEnabled
-                  ? theme.accentSecondary
+                  ? theme.primary
                   : theme.textSecondary
               }
             />
           </View>
 
           <View style={styles.toggleRow}>
-            <Text
-              style={styles.toggleLabel}
-              numberOfLines={1}
-            >
+            <Text style={styles.toggleLabel} numberOfLines={1}>
               {t("screen.motivation")}
             </Text>
 
@@ -138,16 +135,13 @@ export default function NotificationsScreen({
               value={motivationEnabled}
               onToggle={onToggleMotivation}
               trackColor={
-                motivationEnabled ? theme.accentSecondary : theme.textSecondary
+                motivationEnabled ? theme.primary : theme.textSecondary
               }
             />
           </View>
 
           <View style={styles.toggleRow}>
-            <Text
-              style={styles.toggleLabel}
-              numberOfLines={1}
-            >
+            <Text style={styles.toggleLabel} numberOfLines={1}>
               {t("screen.stats")}
             </Text>
 
@@ -155,7 +149,7 @@ export default function NotificationsScreen({
               value={statsEnabled}
               onToggle={onToggleStats}
               trackColor={
-                statsEnabled ? theme.accentSecondary : theme.textSecondary
+                statsEnabled ? theme.primary : theme.textSecondary
               }
             />
           </View>
@@ -180,7 +174,7 @@ export default function NotificationsScreen({
         title={t("permissions.title", "Enable notifications")}
         message={t(
           "permissions.message",
-          "Notifications are disabled. You can enable them in Settings."
+          "Notifications are disabled. You can enable them in Settings.",
         )}
         onClose={() => setSettingsCtaVisible(false)}
         primaryAction={{
@@ -226,7 +220,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: theme.spacing.md,
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.regular,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       lineHeight: 20,
     },
     toggleRow: {
@@ -240,19 +234,19 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
     },
     debugSection: {
       padding: theme.spacing.md,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.border,
       borderRadius: theme.rounded.lg,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       gap: theme.spacing.xs,
     },
     debugText: {
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.regular,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
     },
   });

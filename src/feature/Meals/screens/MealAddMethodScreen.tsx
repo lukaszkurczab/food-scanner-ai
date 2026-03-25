@@ -39,16 +39,8 @@ const MealAddMethodScreen = () => {
 
   return (
     <Layout>
-      <Text
-        style={styles.title}
-      >
-        {t("title")}
-      </Text>
-      <Text
-        style={styles.subtitle}
-      >
-        {t("subtitle")}
-      </Text>
+      <Text style={styles.title}>{t("title")}</Text>
+      <Text style={styles.subtitle}>{t("subtitle")}</Text>
 
       <View style={styles.optionsWrap}>
         {state.options.map((option) => {
@@ -68,14 +60,12 @@ const MealAddMethodScreen = () => {
                 <AppIcon
                   name={option.icon}
                   size={48}
-                  color={theme.accentSecondary}
+                  color={theme.primary}
                 />
               </View>
               <View style={styles.optionContent}>
                 <View style={styles.optionHeader}>
-                  <Text style={styles.optionTitle}>
-                    {t(option.titleKey)}
-                  </Text>
+                  <Text style={styles.optionTitle}>{t(option.titleKey)}</Text>
                   <AiCreditsBadge
                     text={buildCostLabel(cost)}
                     tone={cost > 0 ? "accent" : "neutral"}
@@ -130,14 +120,14 @@ export default MealAddMethodScreen;
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     title: {
-      fontSize: theme.typography.size.xxl,
+      fontSize: theme.typography.size.h1,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
       textAlign: "center",
       marginBottom: theme.spacing.md,
     },
     subtitle: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       color: theme.textSecondary,
       textAlign: "center",
       marginBottom: theme.spacing.xl,
@@ -150,7 +140,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     optionCard: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderRadius: theme.rounded.md,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.md,
@@ -178,13 +168,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: theme.spacing.xs,
     },
     optionTitle: {
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
       flexShrink: 1,
     },
     optionDescription: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       color: theme.textSecondary,
       opacity: 0.95,
     },

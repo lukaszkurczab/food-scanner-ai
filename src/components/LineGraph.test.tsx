@@ -45,7 +45,7 @@ describe("LineGraph", () => {
 
     const getActiveLabels = () =>
       UNSAFE_getAllByType(SvgText).filter(
-        (node) => node.props.fontWeight === "bold",
+        (node) => node.props.fontWeight === "700",
       );
 
     expect(getActiveLabels()).toHaveLength(0);

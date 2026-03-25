@@ -50,11 +50,7 @@ export default function BarcodeProductNotFoundScreen({
     <Layout>
       <View style={styles.container}>
         <View style={styles.iconWrapper}>
-          <AppIcon
-            name="scan-barcode"
-            size={64}
-            color={theme.textSecondary}
-          />
+          <AppIcon name="scan-barcode" size={64} color={theme.textSecondary} />
         </View>
         <Text style={styles.title}>
           {t("barcode_not_found_title", "We couldn't find this product")}
@@ -114,23 +110,23 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       justifyContent: "center",
       marginBottom: theme.spacing.lg,
       borderWidth: 1,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
     },
     title: {
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
       textAlign: "center",
       color: theme.text,
     },
     subtitle: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       textAlign: "center",
       marginTop: theme.spacing.sm,
       color: theme.textSecondary,
     },
     code: {
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       textAlign: "center",
       marginTop: theme.spacing.sm,
       color: theme.textSecondary,

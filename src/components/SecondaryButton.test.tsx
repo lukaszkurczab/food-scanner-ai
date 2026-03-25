@@ -1,3 +1,4 @@
+import { Pressable } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import { SecondaryButton } from "@/components/SecondaryButton";
@@ -30,5 +31,21 @@ describe("SecondaryButton", () => {
     );
 
     expect(queryByText("Cancel")).toBeNull();
+  });
+
+  it("applies pressed and disabled styles correctly", () => {
+    const { UNSAFE_getByType, rerender } = renderWithTheme(
+      <SecondaryButton label="Cancel" onPress={() => undefined} />,
+    );
+
+    const enabledButton = UNSAFE_getByType(Pressable);
+    const enabledStyle = enabledButton.props.style({ pressed: true }) as Array<unknown>;
+    expect(enabledStyle).toContainEqual(expect.objectContaining({ opacity: 0.84 }));
+
+    rerender(<SecondaryButton label="Cancel" onPress={() => undefined} disabled />);
+    const disabledButton = UNSAFE_getByType(Pressable);
+    const disabledStyle = disabledButton.props.style({ pressed: true }) as Array<unknown>;
+    expect(disabledStyle).toContainEqual(expect.objectContaining({ opacity: 0.6 }));
+    expect(disabledButton.props.android_ripple).toBeUndefined();
   });
 });

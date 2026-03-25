@@ -182,7 +182,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     content: { flexGrow: 1, justifyContent: "center" },
     info: {
       marginBottom: theme.spacing.xxl,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       lineHeight: 22,
       color: theme.textSecondary,
     },
@@ -199,13 +199,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: theme.spacing.xs,
     },
     addButtonText: {
-      color: theme.accentSecondary,
-      fontSize: theme.typography.size.base,
+      color: theme.primary,
+      fontSize: theme.typography.size.bodyL,
       fontFamily: theme.typography.fontFamily.bold,
     },
     addDescription: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       marginBottom: theme.spacing.sm,
     },
     attachment: {
@@ -221,22 +221,22 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     removeText: {
       color: theme.error.text,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
     },
     infoNote: {
       color: theme.text,
       marginTop: theme.spacing.sm,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
     },
     sendButton: {
       marginTop: theme.spacing.xxl,
       minHeight: 58,
     },
-    sendButtonText: { fontSize: theme.typography.size.lg },
+    sendButtonText: { fontSize: theme.typography.size.title },
     thankYou: { alignItems: "center", marginTop: theme.spacing.xxl },
     thankYouText: {
       color: theme.text,
-      fontSize: theme.typography.size.xl,
+      fontSize: theme.typography.size.h1,
       fontFamily: theme.typography.fontFamily.bold,
       textAlign: "center",
     },

@@ -105,7 +105,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     label: {
       flex: 1,
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
     },
     chevron: {
       marginLeft: theme.spacing.sm + theme.spacing.xs,

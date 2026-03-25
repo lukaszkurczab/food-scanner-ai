@@ -53,10 +53,13 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
 
   useEffect(() => {
     if (!trackW) return;
+
     const toPx = (v: number) =>
       Math.max(0, Math.min(trackW, ((v - min) / (max - min)) * trackW));
+
     const lx = toPx(value[0]);
     const rx = toPx(value[1]);
+
     leftX.value = withTiming(Math.min(lx, rx));
     rightX.value = withTiming(Math.max(lx, rx));
   }, [value, trackW, min, max, leftX, rightX]);
@@ -70,6 +73,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
   const leftThumbStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: leftX.value - THUMB_RADIUS }],
   }));
+
   const rightThumbStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: rightX.value - THUMB_RADIUS }],
   }));
@@ -79,7 +83,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     minV: number,
     maxV: number,
     stepV: number,
-    trackPx: number
+    trackPx: number,
   ) => {
     "worklet";
     const ratio = Math.max(0, Math.min(1, xPx / Math.max(1, trackPx)));
@@ -99,9 +103,11 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     },
     onActive: (e, ctx) => {
       if (disabled) return;
+
       let x = ctx.startX + e.translationX;
       if (x < 0) x = 0;
       if (x > rightX.value) x = rightX.value;
+
       leftX.value = x;
 
       const lVal = calcVal(x, min, max, step, trackWAnim.value);
@@ -119,9 +125,11 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     },
     onActive: (e, ctx) => {
       if (disabled) return;
+
       let x = ctx.startX + e.translationX;
       if (x < leftX.value) x = leftX.value;
       if (x > trackWAnim.value) x = trackWAnim.value;
+
       rightX.value = x;
 
       const lVal = calcVal(leftX.value, min, max, step, trackWAnim.value);
@@ -132,16 +140,20 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
 
   const onTrackPress = (evt: { nativeEvent: { locationX: number } }) => {
     if (disabled || !trackW) return;
+
     const x = Math.max(0, Math.min(trackW, evt.nativeEvent.locationX));
     const dL = Math.abs(x - leftX.value);
     const dR = Math.abs(x - rightX.value);
+
     if (dL <= dR) {
       const clamped = Math.max(0, Math.min(rightX.value, x));
       leftX.value = withTiming(clamped);
+
       const lVal =
         Math.round((min + (clamped / trackW) * (max - min)) / step) * step;
       const rVal =
         Math.round((min + (rightX.value / trackW) * (max - min)) / step) * step;
+
       onChange([
         Math.max(min, Math.min(max, lVal)),
         Math.max(min, Math.min(max, rVal)),
@@ -149,10 +161,12 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     } else {
       const clamped = Math.max(leftX.value, Math.min(trackW, x));
       rightX.value = withTiming(clamped);
+
       const lVal =
         Math.round((min + (leftX.value / trackW) * (max - min)) / step) * step;
       const rVal =
         Math.round((min + (clamped / trackW) * (max - min)) / step) * step;
+
       onChange([
         Math.max(min, Math.min(max, lVal)),
         Math.max(min, Math.min(max, rVal)),
@@ -167,65 +181,27 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
 
     const toPx = (v: number) =>
       Math.max(0, Math.min(w, ((v - min) / (max - min)) * w));
+
     leftX.value = withTiming(toPx(value[0]));
     rightX.value = withTiming(toPx(value[1]));
   };
 
-  const header = useMemo(
-    () => (
+  return (
+    <View style={styles.container}>
       <View style={styles.headerRow}>
-        {!!label && (
-          <Text style={styles.headerLabel}>
-            {label}
-          </Text>
-        )}
+        {label ? <Text style={styles.headerLabel}>{label}</Text> : <View />}
         <Text style={styles.headerValue}>
           {value[0]}–{value[1]}
         </Text>
       </View>
-    ),
-    [label, styles, value]
-  );
-  const containerStyle = useMemo(
-    () => ({
-      paddingHorizontal: theme.spacing.md,
-      gap: theme.spacing.sm,
-    }),
-    [theme.spacing.md, theme.spacing.sm]
-  );
-  const trackColorStyle = useMemo(
-    () => ({ backgroundColor: theme.border }),
-    [theme.border]
-  );
-  const fillColorStyle = useMemo(
-    () => ({ backgroundColor: theme.accentSecondary }),
-    [theme.accentSecondary]
-  );
-  const thumbColorStyle = useMemo(
-    () => ({
-      backgroundColor: theme.accentSecondary,
-      shadowColor: theme.shadow,
-    }),
-    [theme.accentSecondary, theme.shadow]
-  );
-
-  return (
-    <View style={[styles.container, containerStyle]}>
-      {header}
 
       <Pressable
         onLayout={onTrackLayout}
         onPress={onTrackPress}
         disabled={disabled}
-        style={[styles.track, trackColorStyle]}
+        style={[styles.track, disabled && styles.trackDisabled]}
       >
-        <Animated.View
-          style={[
-            styles.fill,
-            fillColorStyle,
-            fillStyle,
-          ]}
-        />
+        <Animated.View style={[styles.fill, fillStyle]} />
 
         <View style={styles.overlay}>
           <PanGestureHandler enabled={!disabled} onGestureEvent={onLeftGesture}>
@@ -233,7 +209,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
               style={[
                 styles.thumb,
                 leftThumbStyle,
-                thumbColorStyle,
+                disabled && styles.thumbDisabled,
               ]}
             />
           </PanGestureHandler>
@@ -246,7 +222,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
               style={[
                 styles.thumb,
                 rightThumbStyle,
-                thumbColorStyle,
+                disabled && styles.thumbDisabled,
               ]}
             />
           </PanGestureHandler>
@@ -265,36 +241,47 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
       width: "100%",
+      paddingHorizontal: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
     headerRow: {
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
+      gap: theme.spacing.md,
     },
     headerLabel: {
       color: theme.text,
-      fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.md,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      flex: 1,
     },
     headerValue: {
       color: theme.text,
-      fontSize: theme.typography.size.md,
-      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.medium,
     },
     track: {
       position: "relative",
-      height: theme.spacing.sm,
+      height: 8,
       borderRadius: theme.rounded.full,
       width: "100%",
       justifyContent: "center",
       overflow: "visible",
+      backgroundColor: theme.borderSoft,
+    },
+    trackDisabled: {
+      opacity: 0.5,
     },
     fill: {
       position: "absolute",
       left: 0,
-      height: theme.spacing.sm,
+      height: 8,
       borderRadius: theme.rounded.full,
+      backgroundColor: theme.primary,
     },
     overlay: {
       ...StyleSheet.absoluteFillObject,
@@ -306,19 +293,29 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       width: THUMB_RADIUS * 2,
       height: THUMB_RADIUS * 2,
       borderRadius: THUMB_RADIUS,
-      top: -(THUMB_RADIUS - theme.spacing.xs),
-      elevation: 2,
-      shadowOpacity: 0.15,
-      shadowRadius: theme.spacing.xs / 2,
-      shadowOffset: { width: 0, height: 1 },
+      top: -(THUMB_RADIUS - 4),
+      backgroundColor: theme.surfaceElevated,
+      borderWidth: 2,
+      borderColor: theme.primary,
+      elevation: 3,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.22 : 0.12,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    thumbDisabled: {
+      borderColor: theme.disabled.border,
+      backgroundColor: theme.disabled.background,
     },
     minMaxRow: {
-      marginTop: theme.spacing.sm - theme.spacing.xs / 2,
+      marginTop: theme.spacing.xs,
       flexDirection: "row",
       justifyContent: "space-between",
     },
     minMaxText: {
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
     },
   });

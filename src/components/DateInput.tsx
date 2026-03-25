@@ -40,7 +40,7 @@ export const DateInput: React.FC<Props> = ({
         month: "2-digit",
         day: "2-digit",
       }),
-    [locale, i18n.language]
+    [locale, i18n.language],
   );
 
   const open = (f: "start" | "end") => {
@@ -52,8 +52,10 @@ export const DateInput: React.FC<Props> = ({
   const normalizeRange = (r: DateRange): DateRange => {
     const s = new Date(r.start);
     let e = new Date(r.end);
+
     if (!allowSingleDay && +e < +s + DAY) e = new Date(+s + DAY);
     if (allowSingleDay && +e < +s) e = new Date(+s);
+
     return { start: s, end: e };
   };
 
@@ -69,6 +71,7 @@ export const DateInput: React.FC<Props> = ({
     setVisible(false);
     onChange(normalizeRange(temp));
   };
+
   const cancel = () => {
     setVisible(false);
     setTemp(range);
@@ -93,7 +96,7 @@ export const DateInput: React.FC<Props> = ({
       <Modal
         visible={visible}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={cancel}
       >
         <View style={styles.backdrop}>
@@ -133,7 +136,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.sm,
     },
     label: {
-      color: theme.text,
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.labelL,
+      lineHeight: theme.typography.lineHeight.labelL,
       fontFamily: theme.typography.fontFamily.medium,
     },
     rowCenter: {
@@ -143,41 +148,55 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     input: {
       flex: 1,
+      minHeight: 52,
       borderWidth: 1,
-      borderColor: theme.border,
-      backgroundColor: theme.card,
-      borderRadius: theme.rounded.sm,
+      borderColor: theme.input.border,
+      backgroundColor: theme.input.background,
+      borderRadius: theme.rounded.md,
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
+      justifyContent: "center",
     },
     inputText: {
-      color: theme.text,
+      color: theme.input.text,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.medium,
       textAlign: "center",
       width: "100%",
     },
     separator: {
-      color: theme.textSecondary,
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
+      fontFamily: theme.typography.fontFamily.medium,
     },
     backdrop: {
       flex: 1,
-      backgroundColor: theme.shadow,
+      backgroundColor: theme.overlay,
       alignItems: "center",
       justifyContent: "center",
-      padding: theme.spacing.md,
+      padding: theme.spacing.lg,
     },
     card: {
       width: "100%",
       borderWidth: 1,
       borderColor: theme.border,
-      borderRadius: theme.rounded.md,
-      backgroundColor: theme.background,
-      padding: theme.spacing.md,
+      borderRadius: theme.rounded.lg,
+      backgroundColor: theme.surfaceElevated,
+      padding: theme.spacing.lg,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.24 : 0.12,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 6,
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
       fontFamily: theme.typography.fontFamily.bold,
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
     },
     spacer: {
       height: theme.spacing.md,

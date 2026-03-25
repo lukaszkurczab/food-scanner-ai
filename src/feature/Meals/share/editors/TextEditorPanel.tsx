@@ -541,7 +541,7 @@ export default function TextEditorPanel({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    label: { fontSize: theme.typography.size.base, color: theme.textSecondary },
+    label: { fontSize: theme.typography.size.bodyL, color: theme.textSecondary },
     spacer: { height: theme.spacing.md },
     colorRow: {
       flexDirection: "row",
@@ -549,7 +549,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       justifyContent: "space-between",
       paddingVertical: theme.spacing.xs,
     },
-    rowText: { color: theme.text, fontSize: theme.typography.size.sm },
+    rowText: { color: theme.text, fontSize: theme.typography.size.bodyS },
     colorPreview: {
       width: 24,
       height: 24,
@@ -568,14 +568,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.sm,
       borderRadius: theme.rounded.sm,
     },
-    buttonPrimary: { backgroundColor: theme.accentSecondary },
+    buttonPrimary: { backgroundColor: theme.primary },
     buttonSecondary: { backgroundColor: theme.background },
-    buttonText: { color: theme.text, fontSize: theme.typography.size.sm },
+    buttonText: { color: theme.text, fontSize: theme.typography.size.bodyS },
     buttonTextOnAccent: {
-      color: theme.onAccent,
-      fontSize: theme.typography.size.sm,
+      color: theme.cta.primaryText,
+      fontSize: theme.typography.size.bodyS,
     },
-    dropdownLabel: { color: theme.text, fontSize: theme.typography.size.sm },
+    dropdownLabel: { color: theme.text, fontSize: theme.typography.size.bodyS },
     removeButton: {
       alignSelf: "flex-start",
       paddingVertical: theme.spacing.xs,
@@ -583,11 +583,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: theme.rounded.sm,
       borderWidth: 1,
       borderColor: theme.error.border,
-      backgroundColor: theme.error.background,
+      backgroundColor: theme.error.surface,
     },
     removeButtonText: {
       color: theme.error.text,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.medium,
     },
   });

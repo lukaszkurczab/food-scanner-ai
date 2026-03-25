@@ -3,31 +3,36 @@ import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import AppIcon from "@/components/AppIcon";
 
-type Props = { title: string; description?: string };
+type Props = {
+  title: string;
+  description?: string;
+};
 
 export const EmptyState: React.FC<Props> = ({ title, description }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+
   return (
     <View style={styles.container}>
       <View style={styles.iconBox}>
         <AppIcon name="empty-meals" size={76} color={theme.textSecondary} />
       </View>
-      <Text style={styles.title}>
-        {title}
-      </Text>
-      {!!description && (
-        <Text style={styles.description}>
-          {description}
-        </Text>
-      )}
+
+      <Text style={styles.title}>{title}</Text>
+
+      {description ? (
+        <Text style={styles.description}>{description}</Text>
+      ) : null}
     </View>
   );
 };
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: { alignItems: "center", padding: theme.spacing.lg },
+    container: {
+      alignItems: "center",
+      padding: theme.spacing.lg,
+    },
     iconBox: {
       width: 140,
       height: 140,
@@ -35,11 +40,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: theme.spacing.md,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.border,
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
       fontFamily: theme.typography.fontFamily.bold,
       marginBottom: theme.spacing.xs,
       textAlign: "center",
@@ -48,6 +56,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.textSecondary,
       textAlign: "center",
       marginBottom: theme.spacing.md,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
     },
   });

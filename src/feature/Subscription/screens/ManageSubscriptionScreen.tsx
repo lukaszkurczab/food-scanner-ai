@@ -295,7 +295,7 @@ export default function ManageSubscriptionScreen({
             <AppIcon
               name="chevron-right"
               size={20}
-              color={theme.accentSecondary}
+              color={theme.primary}
             />
           </TouchableOpacity>
         )}
@@ -319,7 +319,7 @@ export default function ManageSubscriptionScreen({
             <AppIcon
               name="chevron-right"
               size={20}
-              color={theme.accentSecondary}
+              color={theme.primary}
             />
           </TouchableOpacity>
         )}
@@ -362,7 +362,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     flex: { flex: 1 },
     sectionSpacing: { marginBottom: theme.spacing.xl },
     sectionLabel: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       fontFamily: theme.typography.fontFamily.bold,
       marginBottom: theme.spacing.sm,
       color: theme.textSecondary,
@@ -376,7 +376,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     rowBetweenSpacing: { marginBottom: theme.spacing.sm },
     busy: { opacity: 0.6 },
     statusText: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       fontFamily: theme.typography.fontFamily.regular,
       color: theme.text,
     },
@@ -387,34 +387,34 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingBottom: theme.spacing.sm,
     },
     benefitTitle: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       fontFamily: theme.typography.fontFamily.medium,
       color: theme.text,
       flexShrink: 1,
     },
     benefitDesc: {
       marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       opacity: 0.8,
       color: theme.textSecondary,
     },
     actionRow: { paddingVertical: theme.spacing.sm },
     actionRowTop: { marginTop: theme.spacing.xl },
     actionText: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       fontFamily: theme.typography.fontFamily.medium,
       color: theme.text,
     },
     legalSection: { marginTop: theme.spacing.lg, gap: theme.spacing.sm },
     legalText: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
-      lineHeight: theme.typography.lineHeight.tight,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
     },
     legalLinks: { flexDirection: "row", gap: theme.spacing.md },
     legalLink: {
-      color: theme.accentSecondary,
-      fontSize: theme.typography.size.sm,
+      color: theme.primary,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
     },
     dividerTop: {
@@ -429,12 +429,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     linkText: {
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.md,
-      color: theme.accentSecondary,
+      fontSize: theme.typography.size.bodyM,
+      color: theme.primary,
     },
     devText: {
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       color: theme.text,
     },
     emptyWrap: {
@@ -446,22 +446,22 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     emptyTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.semiBold,
       textAlign: "center",
     },
     emptyDescription: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       textAlign: "center",
-      lineHeight: Math.round(theme.typography.size.sm * 1.5),
+      lineHeight: Math.round(theme.typography.size.bodyS * 1.5),
     },
     emptyAction: {
       marginTop: theme.spacing.sm,
       alignSelf: "stretch",
     },
     emptyBack: {
-      color: theme.accentSecondary,
+      color: theme.primary,
       fontFamily: theme.typography.fontFamily.medium,
       textDecorationLine: "underline",
     },

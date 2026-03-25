@@ -1,5 +1,10 @@
-import React from "react";
-import { TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from "react-native";
+import React, { useMemo } from "react";
+import {
+  TouchableOpacity,
+  StyleSheet,
+  StyleProp,
+  ViewStyle,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import AppIcon from "@/components/AppIcon";
 
@@ -19,6 +24,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   accessibilityLabel = "Checkbox",
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
     <TouchableOpacity
@@ -28,29 +34,40 @@ export const Checkbox: React.FC<CheckboxProps> = ({
       accessibilityLabel={accessibilityLabel}
       style={[
         styles.box,
-        {
-          borderColor: checked ? theme.accentSecondary : theme.textSecondary,
-          backgroundColor: checked ? theme.accentSecondary : "transparent",
-          opacity: disabled ? 0.5 : 1,
-        },
+        checked ? styles.boxChecked : styles.boxUnchecked,
+        disabled && styles.boxDisabled,
         style,
       ]}
-      activeOpacity={0.7}
+      activeOpacity={0.75}
       disabled={disabled}
     >
-      {checked && <AppIcon name="check" size={16} color={theme.onAccent} />}
+      {checked ? (
+        <AppIcon name="check" size={16} color={theme.cta.primaryText} />
+      ) : null}
     </TouchableOpacity>
   );
 };
 
-const styles = StyleSheet.create({
-  box: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
-    marginRight: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    box: {
+      width: 22,
+      height: 22,
+      borderRadius: theme.rounded.xs,
+      borderWidth: 1.5,
+      marginRight: 10,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    boxChecked: {
+      borderColor: theme.primary,
+      backgroundColor: theme.primary,
+    },
+    boxUnchecked: {
+      borderColor: theme.border,
+      backgroundColor: theme.surface,
+    },
+    boxDisabled: {
+      opacity: 0.5,
+    },
+  });

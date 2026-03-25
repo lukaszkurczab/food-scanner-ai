@@ -20,7 +20,7 @@ export default function Loader({
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ActivityIndicator
         size={size}
-        color={theme.accentSecondary || "#1696ff"}
+        color={theme.primary || "#1696ff"}
         style={styles.spinner}
       />
       <Text style={[styles.title, { color: theme.text }]}>{text}</Text>

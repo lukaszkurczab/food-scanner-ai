@@ -46,7 +46,6 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
   const [emailValidated, setEmailValidated] = useState(true);
-
   const [emailTouched, setEmailTouched] = useState(false);
 
   const { setFirebaseUser } = useAuthContext();
@@ -62,16 +61,15 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
 
   const handleValidateEmail = () => {
     setEmailTouched(true);
-    const val = validateEmail(email);
-    setEmailValidated(val);
+    setEmailValidated(validateEmail(email));
   };
 
   const emailLiveError =
-    email && !emailValidated ? t("invalid_email") : undefined;
+    emailTouched && email && !emailValidated ? t("invalid_email") : undefined;
 
   const isFormDisabled =
-    !username ||
-    !email ||
+    !username.trim() ||
+    !email.trim() ||
     !password ||
     !confirmPassword ||
     !termsAccepted ||
@@ -87,7 +85,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
       password,
       confirmPassword,
       username.trim(),
-      termsAccepted
+      termsAccepted,
     );
   };
 
@@ -95,20 +93,23 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
     <TouchableOpacity
       onPress={toggle}
       accessibilityLabel={t("toggle_password_visibility")}
+      activeOpacity={0.75}
     >
-      <AppIcon name={!show ? "eye-off" : "eye"} size={22} color={theme.text} />
+      <AppIcon
+        name={!show ? "eye-off" : "eye"}
+        size={22}
+        color={theme.textSecondary}
+      />
     </TouchableOpacity>
   );
 
   return (
     <Layout showNavigation={false}>
       <View style={styles.centerBoth}>
-        <Text style={styles.title}>
-          {t("common:app_title")}
-        </Text>
+        <Text style={styles.title}>{t("common:app_title")}</Text>
 
-        {!isConnected && <ErrorBox message={t("common:no_internet")} />}
-        {errors.general && <ErrorBox message={t(errors.general)} />}
+        {!isConnected ? <ErrorBox message={t("common:no_internet")} /> : null}
+        {errors.general ? <ErrorBox message={t(errors.general)} /> : null}
 
         <TextInput
           label={t("username")}
@@ -185,9 +186,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
             accessibilityLabel={t("accept_terms")}
           />
           <View style={styles.rowJustifyCenter}>
-            <Text style={styles.helperText}>
-              {t("accept_terms")}{" "}
-            </Text>
+            <Text style={styles.helperText}>{t("accept_terms")} </Text>
             <LinkText
               text={t("terms")}
               onPress={() => {
@@ -195,9 +194,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
                 if (url) void Linking.openURL(url);
               }}
             />
-            <Text style={styles.helperText}>
-              {" & "}
-            </Text>
+            <Text style={styles.helperText}>{" & "}</Text>
             <LinkText
               text={t("privacy_policy")}
               onPress={() => navigation.navigate("Privacy")}
@@ -205,11 +202,9 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           </View>
         </View>
 
-        {errors.terms && (
-          <Text style={styles.termsError}>
-            {t(errors.terms)}
-          </Text>
-        )}
+        {errors.terms ? (
+          <Text style={styles.termsError}>{t(errors.terms)}</Text>
+        ) : null}
 
         <PrimaryButton
           label={t("sign_up")}
@@ -221,9 +216,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
       </View>
 
       <View style={styles.rowJustifyCenter}>
-        <Text style={styles.helperText}>
-          {t("already_have_account")}{" "}
-        </Text>
+        <Text style={styles.helperText}>{t("already_have_account")} </Text>
         <LinkText
           text={t("sign_in")}
           onPress={() => navigation.replace("Login")}
@@ -235,29 +228,50 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    centerBoth: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
-    rowJustifyCenter: { flexDirection: "row", justifyContent: "center" },
+    centerBoth: {
+      flexGrow: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    rowJustifyCenter: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      flexWrap: "wrap",
+    },
     title: {
-      fontSize: theme.typography.size.xl,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.xl,
       textAlign: "center",
     },
-    fieldSpacing: { marginBottom: theme.spacing.md },
+    fieldSpacing: {
+      marginBottom: theme.spacing.md,
+    },
     termsRow: {
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-start",
       marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.xs,
+      width: "100%",
     },
     helperText: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.regular,
     },
     termsError: {
       color: theme.error.text,
-      fontSize: theme.typography.size.xs,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
       marginTop: theme.spacing.xs,
+      alignSelf: "flex-start",
+      fontFamily: theme.typography.fontFamily.medium,
     },
-    submitSpacing: { marginTop: theme.spacing.xl },
+    submitSpacing: {
+      marginTop: theme.spacing.xl,
+    },
   });

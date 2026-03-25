@@ -23,15 +23,13 @@ export const TodaysMealsList = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        {t("todaysMeals")}
-      </Text>
+      <Text style={styles.title}>{t("todaysMeals")}</Text>
 
       {meals.map((meal) => {
         const kcal =
           Array.isArray(meal.ingredients) && meal.ingredients.length
             ? meal.ingredients.reduce((sum, i) => sum + (i.kcal ?? 0), 0)
-            : meal.totals?.kcal ?? 0;
+            : (meal.totals?.kcal ?? 0);
         return (
           <View
             key={
@@ -50,11 +48,7 @@ export const TodaysMealsList = ({
                 syncState={meal.syncState}
                 lastSyncedAt={meal.lastSyncedAt}
               />
-              <Text
-                style={styles.mealKcal}
-              >
-                {kcal} kcal
-              </Text>
+              <Text style={styles.mealKcal}>{kcal} kcal</Text>
             </View>
           </View>
         );
@@ -70,7 +64,7 @@ export const TodaysMealsList = ({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       padding: theme.spacing.md,
       borderRadius: theme.rounded.md,
       shadowColor: theme.shadow,
@@ -81,7 +75,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
     },
     mealRow: {
@@ -93,7 +87,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     mealName: {
       color: theme.text,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       flex: 1,
     },
     metaWrap: {
@@ -102,6 +96,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     mealKcal: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
     },
   });

@@ -42,6 +42,7 @@ export function ChatHistorySheet({
 
   useEffect(() => {
     if (!open || !userUid) return;
+
     setLoading(true);
     setRefreshFailed(false);
 
@@ -67,11 +68,13 @@ export function ChatHistorySheet({
   }, [onSelectThread, onClose]);
 
   const rows = useMemo(() => threads, [threads]);
+
   const emptyStateTitle = refreshFailed
     ? t("history.errorTitle")
     : isOnline
       ? t("history.emptyTitle")
       : t("offline.title");
+
   const emptyStateDescription = refreshFailed
     ? t("history.refreshError")
     : isOnline
@@ -87,9 +90,7 @@ export function ChatHistorySheet({
           onPress={createNewChat}
           style={({ pressed }) => [
             styles.newBtn,
-            {
-              opacity: pressed ? 0.9 : 1,
-            },
+            pressed ? styles.newBtnPressed : null,
           ]}
           accessibilityRole="button"
           accessibilityLabel={t("new")}
@@ -111,13 +112,8 @@ export function ChatHistorySheet({
               }}
               style={({ pressed }) => [
                 styles.item,
-                {
-                  backgroundColor:
-                    activeThreadId === item.id
-                      ? theme.overlay
-                      : "transparent",
-                  opacity: pressed ? 0.85 : 1,
-                },
+                activeThreadId === item.id ? styles.itemActive : null,
+                pressed ? styles.itemPressed : null,
               ]}
               accessibilityRole="button"
               accessibilityLabel={item.title || t("label")}
@@ -125,6 +121,7 @@ export function ChatHistorySheet({
               <Text style={styles.itemTitle} numberOfLines={1}>
                 {item.title || t("new")}
               </Text>
+
               {!!item.lastMessage && (
                 <Text style={styles.itemSub} numberOfLines={1}>
                   {item.lastMessage}
@@ -135,7 +132,7 @@ export function ChatHistorySheet({
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
               {loading ? (
-                <ActivityIndicator />
+                <ActivityIndicator color={theme.primary} />
               ) : (
                 <>
                   <Text style={styles.emptyTitle}>{emptyStateTitle}</Text>
@@ -156,48 +153,67 @@ export function ChatHistorySheet({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     header: {
-      paddingHorizontal: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
       paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.sm + theme.spacing.xs,
+      paddingBottom: theme.spacing.sm,
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
       gap: theme.spacing.sm,
     },
     headerTitle: {
-      fontSize: theme.typography.size.md,
-      fontFamily: theme.typography.fontFamily.extraBold,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
+      fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
     },
     newBtn: {
-      height: 40,
-      borderRadius: theme.rounded.sm,
+      minHeight: 44,
+      borderRadius: theme.rounded.md,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.accentSecondary,
+      backgroundColor: theme.cta.primaryBackground,
+    },
+    newBtnPressed: {
+      opacity: 0.84,
     },
     newBtnText: {
-      fontSize: theme.typography.size.sm,
-      fontFamily: theme.typography.fontFamily.extraBold,
-      color: theme.onAccent,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.cta.primaryText,
     },
-    listWrap: { flex: 1, padding: theme.spacing.sm },
+    listWrap: {
+      flex: 1,
+      padding: theme.spacing.sm,
+    },
     item: {
-      borderRadius: theme.rounded.sm,
+      borderRadius: theme.rounded.md,
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.sm,
       borderWidth: 1,
       marginBottom: theme.spacing.sm,
       borderColor: theme.border,
+      backgroundColor: theme.surface,
+    },
+    itemActive: {
+      backgroundColor: theme.primarySoft,
+      borderColor: theme.primary,
+    },
+    itemPressed: {
+      opacity: 0.9,
     },
     itemTitle: {
-      fontSize: theme.typography.size.sm,
-      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.semiBold,
       color: theme.text,
     },
     itemSub: {
       marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.xs,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
       color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
     },
     listContent: {
       flexGrow: 1,
@@ -213,13 +229,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     emptyTitle: {
       textAlign: "center",
       color: theme.text,
-      fontSize: theme.typography.size.sm,
-      fontFamily: theme.typography.fontFamily.extraBold,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.bold,
     },
     emptyDescription: {
       textAlign: "center",
       color: theme.textSecondary,
-      fontSize: theme.typography.size.xs,
-      lineHeight: Math.round(theme.typography.size.xs * 1.5),
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.regular,
     },
   });

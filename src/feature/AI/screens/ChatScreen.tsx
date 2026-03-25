@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   FlatList,
@@ -56,7 +56,6 @@ export default function ChatScreen() {
   const uid = user?.uid || "";
   const { userData } = useUserContext();
   const { credits } = useAiCreditsContext();
-
   const { meals } = useMeals(uid);
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -77,12 +76,7 @@ export default function ChatScreen() {
     send,
     loadMore,
     retryFailedSyncOps,
-  } = useChatHistory(
-    uid,
-    meals || [],
-    userData ?? EMPTY_PROFILE,
-    threadId,
-  );
+  } = useChatHistory(uid, meals || [], userData ?? EMPTY_PROFILE, threadId);
 
   const data = useMemo(
     () => [...messages].sort((a, b) => b.createdAt - a.createdAt),
@@ -118,6 +112,7 @@ export default function ChatScreen() {
       allocation: credits?.allocation ?? 0,
     });
   }, [credits?.allocation, credits?.balance, t]);
+
   const offlineEmpty = net.isConnected === false;
   const emptyTitle = offlineEmpty ? t("offline.title") : t("empty.title");
   const emptySubtitle = offlineEmpty
@@ -127,6 +122,7 @@ export default function ChatScreen() {
   const emptyFooterText = offlineEmpty ? undefined : footerText;
 
   const emptyDisabled = sending || limitReached || !net.isConnected;
+
   const retryEnabled =
     !!lastUserMessageRef.current &&
     !!net.isConnected &&
@@ -139,9 +135,7 @@ export default function ChatScreen() {
 
   const helperText = useMemo(() => {
     if (!net.isConnected) return t("offline.short");
-    if (limitReached) {
-      return t("limit.reachedShort");
-    }
+    if (limitReached) return t("limit.reachedShort");
     if (sending) return t("sending", { defaultValue: "AI is thinking..." });
     if (sendErrorType === "offline") return t("errors.offline");
     if (sendErrorType === "timeout") return t("errors.timeout");
@@ -149,13 +143,7 @@ export default function ChatScreen() {
     if (sendErrorType === "auth") return t("errors.authRequired");
     if (sendErrorType === "unknown") return t("errors.fetchFailed");
     return undefined;
-  }, [
-    limitReached,
-    net.isConnected,
-    sendErrorType,
-    sending,
-    t,
-  ]);
+  }, [limitReached, net.isConnected, sendErrorType, sending, t]);
 
   const handleRetry = useCallback(() => {
     const last = lastUserMessageRef.current;
@@ -164,8 +152,8 @@ export default function ChatScreen() {
   }, [handleSend]);
 
   const listContentStyle = useMemo(
-    () => [styles.listContent, limitReached && styles.listContentLimit],
-    [limitReached, styles],
+    () => [styles.listContent, limitReached ? styles.listContentLimit : null],
+    [limitReached, styles.listContent, styles.listContentLimit],
   );
 
   useFocusEffect(
@@ -174,9 +162,7 @@ export default function ChatScreen() {
       const now = Date.now();
       if (now - lastChatPullRef.current < 30_000) return;
       lastChatPullRef.current = now;
-      void pullChatChanges(uid).catch(() => {
-        // Best-effort background refresh for chat history/messages.
-      });
+      void pullChatChanges(uid).catch(() => {});
     }, [uid]),
   );
 
@@ -200,7 +186,7 @@ export default function ChatScreen() {
         />
       </View>
 
-      {limitReached && (
+      {limitReached ? (
         <View style={styles.stickyBanner} pointerEvents="box-none">
           <PaywallCard
             balance={credits?.balance ?? 0}
@@ -209,9 +195,9 @@ export default function ChatScreen() {
             onUpgrade={() => navigation.navigate("ManageSubscription")}
           />
         </View>
-      )}
+      ) : null}
 
-      {failedSyncCount > 0 && (
+      {failedSyncCount > 0 ? (
         <View style={styles.deadLetterBanner}>
           <View style={styles.deadLetterTextWrap}>
             <Text style={styles.deadLetterTitle}>
@@ -221,23 +207,26 @@ export default function ChatScreen() {
               {t("deadLetterSubtitle")}
             </Text>
           </View>
+
           <Pressable
             onPress={() => {
               void retryFailedSyncOps();
             }}
             disabled={retryingFailedSync}
-            style={retryingFailedSync ? styles.deadLetterRetryDisabled : undefined}
+            style={
+              retryingFailedSync ? styles.deadLetterRetryDisabled : undefined
+            }
           >
             <Text style={styles.deadLetterRetryLabel}>
               {retryingFailedSync ? "…" : t("deadLetterRetry")}
             </Text>
           </Pressable>
         </View>
-      )}
+      ) : null}
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator />
+          <ActivityIndicator color={theme.primary} />
         </View>
       ) : (
         <>
@@ -252,9 +241,7 @@ export default function ChatScreen() {
             renderItem={({ item }) => (
               <View
                 testID={
-                  item.role === "user"
-                    ? "chat-message-user"
-                    : "chat-message-ai"
+                  item.role === "user" ? "chat-message-user" : "chat-message-ai"
                 }
               >
                 <Bubble
@@ -281,6 +268,7 @@ export default function ChatScreen() {
             }
             contentContainerStyle={listContentStyle}
           />
+
           <InputBar
             placeholder={t("input.placeholder")}
             disabled={sending || limitReached || !net.isConnected}
@@ -322,7 +310,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
       minHeight: 0,
     },
-    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    center: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
     stickyBanner: {
       position: "absolute",
       top: theme.spacing.sm,
@@ -332,15 +324,18 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderWidth: 1,
       zIndex: 20,
       elevation: 4,
-      backgroundColor: theme.overlay,
-      borderColor: theme.accentSecondary,
-      shadowColor: theme.shadow,
+      backgroundColor: theme.surfaceElevated,
+      borderColor: theme.primary,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.2 : 0.08,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
     },
     deadLetterBanner: {
       borderWidth: 1,
-      borderColor: theme.border,
+      borderColor: theme.warning.main,
       borderRadius: theme.rounded.md,
-      backgroundColor: theme.warning.background,
+      backgroundColor: theme.warning.surface,
       marginHorizontal: theme.spacing.sm,
       marginBottom: theme.spacing.xs,
       marginTop: theme.spacing.xs,
@@ -357,16 +352,20 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     deadLetterTitle: {
       color: theme.warning.text,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.semiBold,
     },
     deadLetterDescription: {
       color: theme.warning.text,
-      fontSize: theme.typography.size.xs,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.regular,
     },
     deadLetterRetryLabel: {
       color: theme.warning.text,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.semiBold,
       textDecorationLine: "underline",
     },

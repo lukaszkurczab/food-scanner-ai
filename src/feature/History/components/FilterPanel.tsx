@@ -36,6 +36,7 @@ function freeWindowStart(
     x.setMonth(x.getMonth() - 1);
     return x;
   }
+
   const c = new Date(today);
   c.setDate(today.getDate() - (windowDays - 1));
   c.setHours(0, 0, 0, 0);
@@ -53,7 +54,7 @@ export const FilterPanel: React.FC<{
   const { filters: ctxFilters, applyFilters, clearFilters } = useFilters(scope);
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
-  const ALL_FILTERS: { key: FilterKey; label: string }[] = useMemo(
+  const allFilters: { key: FilterKey; label: string }[] = useMemo(
     () => [
       { key: "calories", label: t("filters.calories", { ns: "history" }) },
       { key: "protein", label: t("filters.protein", { ns: "history" }) },
@@ -66,12 +67,14 @@ export const FilterPanel: React.FC<{
 
   const initialRange: Range = useMemo(() => {
     const today = new Date();
+
     if (ctxFilters?.dateRange) {
       return {
         start: new Date(ctxFilters.dateRange.start),
         end: new Date(ctxFilters.dateRange.end),
       };
     }
+
     const start = freeWindowStart(today, windowDays, isPremium);
     return { start, end: today };
   }, [ctxFilters, windowDays, isPremium]);
@@ -110,6 +113,7 @@ export const FilterPanel: React.FC<{
     setActive((prev) =>
       prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k],
     );
+
   const removeChip = (k: FilterKey) =>
     setActive((prev) => prev.filter((x) => x !== k));
 
@@ -118,6 +122,7 @@ export const FilterPanel: React.FC<{
     setFocus("start");
     setOpenCalendar(true);
   };
+
   const applyCalendar = () => {
     const s =
       +localRange.start <= +localRange.end ? localRange.start : localRange.end;
@@ -138,8 +143,7 @@ export const FilterPanel: React.FC<{
   };
 
   const apply = () => {
-    const payload = buildPayload();
-    applyFilters(payload);
+    applyFilters(buildPayload());
   };
 
   const clear = () => {
@@ -150,13 +154,9 @@ export const FilterPanel: React.FC<{
   const summaryChips = useMemo(
     () =>
       active.map((k) => {
-        const meta = ALL_FILTERS.find((f) => f.key === k)!;
+        const meta = allFilters.find((f) => f.key === k)!;
         return (
-          <Pressable
-            key={k}
-            onPress={() => removeChip(k)}
-            style={styles.chip}
-          >
+          <Pressable key={k} onPress={() => removeChip(k)} style={styles.chip}>
             <Text style={styles.chipLabel}>{meta.label}</Text>
             <Text style={styles.chipIcon}>
               {t("symbols.times", { ns: "history" })}
@@ -164,7 +164,7 @@ export const FilterPanel: React.FC<{
           </Pressable>
         );
       }),
-    [active, ALL_FILTERS, styles, t],
+    [active, allFilters, styles, t],
   );
 
   const hasActive = active.length > 0;
@@ -176,9 +176,7 @@ export const FilterPanel: React.FC<{
         contentContainerStyle={styles.scrollContent}
       >
         <View>
-          <View
-            style={styles.headerRow}
-          >
+          <View style={styles.headerRow}>
             <Text style={styles.headerTitle}>
               {t("title", { ns: "history" })}
             </Text>
@@ -190,9 +188,7 @@ export const FilterPanel: React.FC<{
           </View>
 
           {hasActive ? (
-            <View style={styles.chipRow}>
-              {summaryChips}
-            </View>
+            <View style={styles.chipRow}>{summaryChips}</View>
           ) : (
             <Text style={styles.emptyText}>
               {t("noneSelected", { ns: "history" })}
@@ -200,7 +196,7 @@ export const FilterPanel: React.FC<{
           )}
         </View>
 
-        {active.includes("calories") && (
+        {active.includes("calories") ? (
           <RangeSlider
             label={t("filters.calories", { ns: "history" })}
             min={0}
@@ -209,8 +205,9 @@ export const FilterPanel: React.FC<{
             value={calories}
             onChange={setCalories}
           />
-        )}
-        {active.includes("protein") && (
+        ) : null}
+
+        {active.includes("protein") ? (
           <RangeSlider
             label={t("filters.protein", { ns: "history" })}
             min={0}
@@ -219,8 +216,9 @@ export const FilterPanel: React.FC<{
             value={protein}
             onChange={setProtein}
           />
-        )}
-        {active.includes("carbs") && (
+        ) : null}
+
+        {active.includes("carbs") ? (
           <RangeSlider
             label={t("filters.carbs", { ns: "history" })}
             min={0}
@@ -229,8 +227,9 @@ export const FilterPanel: React.FC<{
             value={carbs}
             onChange={setCarbs}
           />
-        )}
-        {active.includes("fat") && (
+        ) : null}
+
+        {active.includes("fat") ? (
           <RangeSlider
             label={t("filters.fat", { ns: "history" })}
             min={0}
@@ -239,19 +238,18 @@ export const FilterPanel: React.FC<{
             value={fat}
             onChange={setFat}
           />
-        )}
-        {active.includes("date") && (
+        ) : null}
+
+        {active.includes("date") ? (
           <DateRangePicker
             startDate={dateRange.start}
             endDate={dateRange.end}
             onOpen={openCalendarModal}
           />
-        )}
+        ) : null}
       </ScrollView>
 
-      <View
-        style={styles.footer}
-      >
+      <View style={styles.footer}>
         {hasActive ? (
           <GlobalActionButtons
             label={t("actions.apply", { ns: "history" })}
@@ -277,38 +275,29 @@ export const FilterPanel: React.FC<{
           onPress={() => setOpenPicker(false)}
           style={styles.modalBackdrop}
         >
-          <Pressable
-            onPress={() => {}}
-            style={styles.modalCard}
-          >
+          <Pressable onPress={() => {}} style={styles.modalCard}>
             <Text style={styles.modalTitle}>
               {t("actions.choose", { ns: "history" })}
             </Text>
 
             <View style={styles.modalList}>
-              {ALL_FILTERS.map(({ key, label }) => {
+              {allFilters.map(({ key, label }) => {
                 const selected = active.includes(key);
+
                 return (
                   <Pressable
                     key={key}
                     onPress={() => addOrRemove(key)}
                     style={[
                       styles.rowItem,
-                      {
-                        borderColor: selected
-                          ? theme.accentSecondary
-                          : theme.border,
-                        backgroundColor: selected
-                          ? theme.overlay
-                          : theme.background,
-                      },
+                      selected ? styles.rowItemSelected : styles.rowItemDefault,
                     ]}
                   >
                     <Text style={styles.rowItemLabel}>{label}</Text>
                     <Text
                       style={[
                         styles.rowItemIcon,
-                        selected && styles.rowItemIconActive,
+                        selected ? styles.rowItemIconActive : null,
                       ]}
                     >
                       {selected
@@ -331,7 +320,6 @@ export const FilterPanel: React.FC<{
         </Pressable>
       </Modal>
 
-      {/* Calendar Modal */}
       <Modal
         visible={openCalendar}
         transparent
@@ -342,10 +330,7 @@ export const FilterPanel: React.FC<{
           onPress={() => setOpenCalendar(false)}
           style={styles.modalBackdrop}
         >
-          <Pressable
-            onPress={() => {}}
-            style={styles.modalCard}
-          >
+          <Pressable onPress={() => {}} style={styles.modalCard}>
             <Text style={styles.modalTitle}>
               {t("actions.selectDateRange", { ns: "history" })}
             </Text>
@@ -376,44 +361,80 @@ export const FilterPanel: React.FC<{
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
-    scroll: { flex: 1 },
-    scrollContent: { gap: theme.spacing.lg },
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      gap: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.md,
+    },
     headerRow: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
       marginBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
     headerTitle: {
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      flex: 1,
     },
-    addFilterButton: { paddingVertical: theme.spacing.sm, maxWidth: 200 },
-    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm },
-    emptyText: { color: theme.textSecondary },
+    addFilterButton: {
+      maxWidth: 200,
+    },
+    chipRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+    },
+    emptyText: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
     chip: {
       paddingVertical: theme.spacing.xs,
       paddingHorizontal: theme.spacing.sm,
       borderWidth: 1,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: theme.card,
-      borderColor: theme.accentSecondary,
+      backgroundColor: theme.surfaceElevated,
+      borderColor: theme.primary,
       borderRadius: theme.rounded.full,
     },
-    chipLabel: { color: theme.text },
-    chipIcon: { color: theme.accentSecondary, marginLeft: theme.spacing.sm },
+    chipLabel: {
+      color: theme.text,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    chipIcon: {
+      color: theme.primary,
+      marginLeft: theme.spacing.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
     footer: {
       borderTopWidth: 1,
       borderTopColor: theme.border,
       padding: theme.spacing.md,
       gap: theme.spacing.sm,
+      backgroundColor: theme.background,
     },
     modalBackdrop: {
       flex: 1,
-      backgroundColor: theme.shadow,
+      backgroundColor: theme.isDark ? "rgba(0,0,0,0.48)" : "rgba(0,0,0,0.24)",
       justifyContent: "center",
       alignItems: "center",
       padding: theme.spacing.md,
@@ -422,32 +443,59 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       width: "100%",
       maxWidth: 560,
       borderRadius: theme.rounded.lg,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       padding: theme.spacing.md,
       borderWidth: 1,
       borderColor: theme.border,
       gap: theme.spacing.md,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.22 : 0.1,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
     },
     modalTitle: {
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
     },
-    modalList: { gap: theme.spacing.sm },
+    modalList: {
+      gap: theme.spacing.sm,
+    },
     rowItem: {
       paddingVertical: theme.spacing.sm + theme.spacing.xs,
       paddingHorizontal: theme.spacing.sm,
-      borderWidth: 1.5,
+      borderWidth: 1,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      borderRadius: theme.rounded.sm,
+      borderRadius: theme.rounded.md,
     },
-    rowItemLabel: { color: theme.text },
+    rowItemDefault: {
+      borderColor: theme.border,
+      backgroundColor: theme.surface,
+    },
+    rowItemSelected: {
+      borderColor: theme.primary,
+      backgroundColor: theme.primarySoft,
+    },
+    rowItemLabel: {
+      color: theme.text,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
     rowItemIcon: {
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
     },
-    rowItemIconActive: { color: theme.accentSecondary },
-    modalActions: { gap: theme.spacing.sm },
+    rowItemIconActive: {
+      color: theme.primary,
+    },
+    modalActions: {
+      gap: theme.spacing.sm,
+    },
   });

@@ -20,7 +20,7 @@ const ProgressDots: React.FC<Props> = ({ step, total, style }) => {
   );
   const getDotStyle = (index: number) => ({
     backgroundColor:
-      index + 1 <= step ? theme.accentSecondary : theme.textSecondary,
+      index + 1 <= step ? theme.primary : theme.textSecondary,
     opacity: index + 1 === step ? 1 : 0.6,
   });
 

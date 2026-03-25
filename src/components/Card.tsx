@@ -20,7 +20,8 @@ export const Card: React.FC<CardProps> = ({
   const theme = useTheme();
 
   const cardStyle: ViewStyle = {
-    backgroundColor: variant === "outlined" ? theme.background : theme.card,
+    backgroundColor:
+      variant === "outlined" ? theme.background : theme.surfaceElevated,
     borderRadius: variant === "stat" ? theme.rounded.sm : theme.rounded.md,
     borderWidth: variant === "outlined" ? 1 : 0,
     borderColor: variant === "outlined" ? theme.border : undefined,

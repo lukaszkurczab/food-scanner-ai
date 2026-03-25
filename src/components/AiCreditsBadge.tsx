@@ -24,9 +24,7 @@ export function AiCreditsBadge({
 
   return (
     <View testID={testID} style={[styles.baseContainer, containerStyle]}>
-      <Text style={[styles.baseText, textStyle]}>
-        {text}
-      </Text>
+      <Text style={[styles.baseText, textStyle]}>{text}</Text>
     </View>
   );
 }
@@ -41,19 +39,20 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignSelf: "flex-start",
     },
     accentContainer: {
-      backgroundColor: theme.accentSecondary,
-      borderColor: theme.accentSecondary,
+      backgroundColor: theme.accentWarm,
+      borderColor: theme.accentWarm,
     },
     neutralContainer: {
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceAlt,
       borderColor: theme.border,
     },
     baseText: {
-      fontSize: theme.typography.size.xs,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
       fontFamily: theme.typography.fontFamily.bold,
     },
     accentText: {
-      color: theme.onAccent,
+      color: theme.cta.primaryText,
     },
     neutralText: {
       color: theme.textSecondary,
