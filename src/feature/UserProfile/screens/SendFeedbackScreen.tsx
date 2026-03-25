@@ -8,10 +8,9 @@ import {
   Alert,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { BackTitleHeader, Layout, LongTextInput } from "@/components";
+import { BackTitleHeader, Button, Layout, LongTextInput } from "@/components";
 import * as ImagePicker from "expo-image-picker";
 import { useTranslation } from "react-i18next";
-import { PrimaryButton } from "@/components/PrimaryButton";
 import NetInfo from "@react-native-community/netinfo";
 import * as Device from "expo-device";
 import { sendFeedback } from "@/services/feedback/feedbackService";
@@ -152,7 +151,7 @@ export default function SendFeedbackScreen({
                 })}
               </Text>
 
-              <PrimaryButton
+              <Button
                 label={t("send", { defaultValue: "Send" })}
                 style={styles.sendButton}
                 loading={sending}

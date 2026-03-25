@@ -68,7 +68,7 @@ jest.mock("@/components", () => {
       title: string;
     }) => createElement(Text, null, `header:${title}`),
     FullScreenLoader: () => createElement(Text, null, "full-screen-loader"),
-    PrimaryButton: ({
+    Button: ({
       label,
       onPress,
       disabled,

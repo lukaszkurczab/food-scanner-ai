@@ -5,8 +5,7 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import type { RootStackParamList } from "@/navigation/navigate";
-import { PrimaryButton } from "@/components/PrimaryButton";
-import { ScreenCornerNavButton } from "@/components";
+import { Button, ScreenCornerNavButton } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import ShareCanvas from "@feature/Meals/share/ShareCanvas";
 import ShareEditorPanel, {
@@ -189,7 +188,7 @@ export default function MealShareScreen() {
       )}
 
       <View style={styles.shareBtnWrap}>
-        <PrimaryButton label={t("share")} onPress={share} />
+        <Button label={t("share")} onPress={share} />
       </View>
 
       <ShareEditorPanel

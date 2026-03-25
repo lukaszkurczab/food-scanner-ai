@@ -10,66 +10,29 @@ type MockButtonProps = {
   disabled?: boolean;
   testID?: string;
   loading?: boolean;
+  variant?: "primary" | "secondary" | "ghost" | "destructive";
 };
 
-const mockPrimaryButton = jest.fn(
-  ({ label, onPress, disabled, testID }: MockButtonProps) => (
+const mockButton = jest.fn(
+  ({ label, onPress, disabled, testID, variant = "primary" }: MockButtonProps) => (
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      testID={testID || "primary-button"}
+      testID={testID || `${variant}-button`}
       accessibilityRole="button"
     >
-      <Text>{`PRIMARY:${label}`}</Text>
+      <Text>{`${variant.toUpperCase()}:${label}`}</Text>
     </Pressable>
   ),
 );
 
-const mockSecondaryButton = jest.fn(
-  ({ label, onPress, disabled, testID }: MockButtonProps) => (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      testID={testID || "secondary-button"}
-      accessibilityRole="button"
-    >
-      <Text>{`SECONDARY:${label}`}</Text>
-    </Pressable>
-  ),
-);
-
-const mockErrorButton = jest.fn(
-  ({ label, onPress, disabled, testID }: MockButtonProps) => (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      testID={testID || "error-button"}
-      accessibilityRole="button"
-    >
-      <Text>{`ERROR:${label}`}</Text>
-    </Pressable>
-  ),
-);
-
-jest.mock("@/components/PrimaryButton", () => ({
-  PrimaryButton: (props: unknown) =>
-    mockPrimaryButton(props as MockButtonProps),
-}));
-
-jest.mock("@/components/SecondaryButton", () => ({
-  SecondaryButton: (props: unknown) =>
-    mockSecondaryButton(props as MockButtonProps),
-}));
-
-jest.mock("@/components/ErrorButton", () => ({
-  ErrorButton: (props: unknown) => mockErrorButton(props as MockButtonProps),
+jest.mock("@/components/Button", () => ({
+  Button: (props: unknown) => mockButton(props as MockButtonProps),
 }));
 
 describe("GlobalActionButtons", () => {
   beforeEach(() => {
-    mockPrimaryButton.mockClear();
-    mockSecondaryButton.mockClear();
-    mockErrorButton.mockClear();
+    mockButton.mockClear();
   });
 
   it("renders stacked layout by default and handles presses", () => {
@@ -124,7 +87,7 @@ describe("GlobalActionButtons", () => {
       />,
     );
 
-    expect(getByText("ERROR:Delete")).toBeTruthy();
+    expect(getByText("DESTRUCTIVE:Delete")).toBeTruthy();
     expect(queryByText("SECONDARY:Delete")).toBeNull();
   });
 
@@ -142,19 +105,23 @@ describe("GlobalActionButtons", () => {
       />,
     );
 
-    const primaryProps = mockPrimaryButton.mock.calls[0]?.[0] as {
+    const primaryProps = mockButton.mock.calls[0]?.[0] as {
       disabled?: boolean;
       loading?: boolean;
+      variant?: string;
     };
-    const secondaryProps = mockSecondaryButton.mock.calls[0]?.[0] as {
+    const secondaryProps = mockButton.mock.calls[1]?.[0] as {
       disabled?: boolean;
       loading?: boolean;
+      variant?: string;
     };
 
     expect(primaryProps.disabled).toBe(true);
     expect(primaryProps.loading).toBe(true);
+    expect(primaryProps.variant).toBe("primary");
     expect(secondaryProps.disabled).toBe(true);
     expect(secondaryProps.loading).toBe(true);
+    expect(secondaryProps.variant).toBe("secondary");
   });
 
   it("applies provided container style", () => {

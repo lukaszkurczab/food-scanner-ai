@@ -10,8 +10,7 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
-import { PrimaryButton } from "./PrimaryButton";
-import { ErrorButton } from "./ErrorButton";
+import { Button } from "./Button";
 import { NumberInput } from "./NumberInput";
 import { useNavigation } from "@react-navigation/native";
 import { Modal } from "./Modal";
@@ -364,14 +363,15 @@ export const IngredientEditor: React.FC<Props> = ({
 
       {errors.kcal ? <Text style={styles.errText}>{errors.kcal}</Text> : null}
 
-      <PrimaryButton
+      <Button
         style={styles.primaryBtn}
         onPress={commit}
         disabled={hasBlockingErrors}
         label={t("save_changes", { ns: "common" })}
       />
 
-      <ErrorButton
+      <Button
+        variant="destructive"
         style={styles.cancelBtn}
         onPress={onCancel}
         label={t("cancel", { ns: "common" })}

@@ -9,6 +9,8 @@ type ButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  testID?: string;
+  variant?: string;
   children?: ReactNode;
 };
 
@@ -40,16 +42,10 @@ jest.mock("@/components", () => {
     jest.requireActual<typeof import("react-native")>("react-native");
   return {
     __esModule: true,
-    PrimaryButton: ({ label, onPress, disabled }: ButtonProps) =>
+    Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
       createElement(
         Pressable,
-        { onPress, disabled, accessibilityRole: "button" },
-        createElement(Text, null, label),
-      ),
-    SecondaryButton: ({ label, onPress }: ButtonProps) =>
-      createElement(
-        Pressable,
-        { onPress, accessibilityRole: "button" },
+        { onPress, disabled, testID, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
     Dropdown: (props: DropdownProps) => {

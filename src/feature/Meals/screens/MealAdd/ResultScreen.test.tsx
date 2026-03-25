@@ -119,16 +119,10 @@ jest.mock("@/components", () => {
             )
           : null,
       ),
-    PrimaryButton: ({ label, onPress, disabled, testID }: ButtonProps) =>
+    Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
       createElement(
         Pressable,
         { onPress, disabled, testID, accessibilityRole: "button" },
-        createElement(Text, null, label),
-      ),
-    SecondaryButton: ({ label, onPress, disabled }: ButtonProps) =>
-      createElement(
-        Pressable,
-        { onPress, disabled, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
     Checkbox: ({ checked, onChange }: CheckboxProps) =>
@@ -144,12 +138,6 @@ jest.mock("@/components", () => {
           null,
           checked ? "checkbox-checked" : "checkbox-unchecked",
         ),
-      ),
-    ErrorButton: ({ label, onPress, disabled }: ButtonProps) =>
-      createElement(
-        Pressable,
-        { onPress, disabled, accessibilityRole: "button" },
-        createElement(Text, null, label),
       ),
     Modal: ({
       visible,

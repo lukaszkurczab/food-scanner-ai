@@ -21,6 +21,8 @@ type ButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  testID?: string;
+  variant?: string;
   children?: ReactNode;
 };
 
@@ -50,16 +52,10 @@ jest.mock("@/components", () => {
       createElement(Text, null, placeholder),
     LongTextInput: ({ placeholder }: TextInputProps) =>
       createElement(Text, null, placeholder),
-    PrimaryButton: ({ label, onPress, disabled }: ButtonProps) =>
+    Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
       createElement(
         Pressable,
-        { onPress, disabled, accessibilityRole: "button" },
-        createElement(Text, null, label),
-      ),
-    SecondaryButton: ({ label, onPress }: ButtonProps) =>
-      createElement(
-        Pressable,
-        { onPress, accessibilityRole: "button" },
+        { onPress, disabled, testID, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
   };

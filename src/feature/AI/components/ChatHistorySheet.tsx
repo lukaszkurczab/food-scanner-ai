@@ -11,6 +11,7 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import type { ChatThread } from "@/types";
+import { Button } from "@/components";
 import { Drawer } from "@/components/Drawer";
 import { useTranslation } from "react-i18next";
 import { subscribeToChatThreads } from "@/services/ai/chatThreadRepository";
@@ -86,17 +87,7 @@ export function ChatHistorySheet({
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t("label")}</Text>
 
-        <Pressable
-          onPress={createNewChat}
-          style={({ pressed }) => [
-            styles.newBtn,
-            pressed ? styles.newBtnPressed : null,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={t("new")}
-        >
-          <Text style={styles.newBtnText}>{t("new")}</Text>
-        </Pressable>
+        <Button label={t("new")} onPress={createNewChat} fullWidth={false} />
       </View>
 
       <View style={styles.listWrap}>
@@ -165,22 +156,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       lineHeight: theme.typography.lineHeight.title,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
-    },
-    newBtn: {
-      minHeight: 44,
-      borderRadius: theme.rounded.md,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: theme.cta.primaryBackground,
-    },
-    newBtnPressed: {
-      opacity: 0.84,
-    },
-    newBtnText: {
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.cta.primaryText,
     },
     listWrap: {
       flex: 1,

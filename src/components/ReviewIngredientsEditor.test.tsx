@@ -123,13 +123,7 @@ jest.mock("@/components", () => {
             );
           })()
         : null,
-    PrimaryButton: ({ label, onPress, disabled, testID }: ButtonProps) =>
-      createElement(
-        Pressable,
-        { onPress, disabled, testID, accessibilityRole: "button" },
-        createElement(Text, null, label),
-      ),
-    SecondaryButton: ({ label, onPress, disabled, testID }: ButtonProps) =>
+    Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
       createElement(
         Pressable,
         { onPress, disabled, testID, accessibilityRole: "button" },

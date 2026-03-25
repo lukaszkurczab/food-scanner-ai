@@ -1,8 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { PrimaryButton } from "@/components/PrimaryButton";
-import { SecondaryButton } from "@/components/SecondaryButton";
+import { Button } from "@/components";
 import { useTranslation } from "react-i18next";
 import type { CoachEmptyReason } from "@/services/coach/coachTypes";
 import { trackCoachEmptyStateViewed } from "@/services/telemetry/telemetryInstrumentation";
@@ -89,11 +88,12 @@ export default function EmptyDayView({
       ) : null}
 
       {isToday && onAddMeal ? (
-        <PrimaryButton label={t("emptyDay.addMeal")} onPress={onAddMeal} />
+        <Button label={t("emptyDay.addMeal")} onPress={onAddMeal} />
       ) : null}
 
       {!isToday && onOpenHistory ? (
-        <SecondaryButton
+        <Button
+          variant="secondary"
           label={t("emptyDay.openHistory")}
           onPress={onOpenHistory}
         />

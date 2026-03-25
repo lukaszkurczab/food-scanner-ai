@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Dimensions, StyleSheet, ViewStyle } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import { Layout, PrimaryButton } from "@/components";
+import { Button, Layout } from "@/components";
 import { ScrollableBox } from "@/components/ScrollableBox";
 import { parseMarkdownToReactNative } from "@/utils/parseMarkdownToReactNative";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -39,7 +39,7 @@ export default function PrivacyScreen({ navigation }: PrivacyScreenProps) {
         {parseMarkdownToReactNative(privacyText, theme)}
       </ScrollableBox>
 
-      <PrimaryButton
+      <Button
         label={t("close")}
         onPress={handleClose}
         style={styles.cta}

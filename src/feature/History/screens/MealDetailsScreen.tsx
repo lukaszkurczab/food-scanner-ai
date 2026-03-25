@@ -11,12 +11,11 @@ import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  Button,
   Layout,
   Card,
-  PrimaryButton,
   IngredientBox,
   MealBox,
-  ErrorButton,
   Modal,
   ScreenCornerNavButton,
 } from "@/components";
@@ -77,7 +76,7 @@ export default function MealDetailsScreen() {
               ? t("detailsUnavailable.desc", { ns: "meals" })
               : t("detailsUnavailable.offlineDesc", { ns: "meals" })}
           </Text>
-          <PrimaryButton
+          <Button
             label={t("retry", { ns: "common" })}
             onPress={() => {
               void state.reloadFromLocal();
@@ -206,7 +205,7 @@ export default function MealDetailsScreen() {
 
           <View style={styles.actionsWrap}>
             {!state.edit ? (
-              <PrimaryButton
+              <Button
                 label={t("edit_meal", {
                   ns: "meals",
                   defaultValue: "Edit meal",
@@ -215,13 +214,14 @@ export default function MealDetailsScreen() {
               />
             ) : (
               <View style={styles.actionsStack}>
-                <PrimaryButton
+                <Button
                   label={t("save_changes", { ns: "common" })}
                   onPress={state.handleSave}
                   loading={state.saving}
                   disabled={state.saving || !state.isDirty}
                 />
-                <ErrorButton
+                <Button
+                  variant="destructive"
                   label={t("cancel", { ns: "common" })}
                   onPress={state.handleCancel}
                   disabled={state.saving}

@@ -4,19 +4,20 @@ import {
   Text,
   Modal,
   Pressable,
-  ActivityIndicator,
   GestureResponderEvent,
   StyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
+import { Button, type ButtonVariant } from "@/components/Button";
 
 type Variant = "info" | "success" | "warning" | "error";
 
 type Action = {
   label: string;
   onPress?: (e: GestureResponderEvent) => void;
-  tone?: "primary" | "secondary" | "destructive";
+  tone?: ButtonVariant;
   loading?: boolean;
+  disabled?: boolean;
   testID?: string;
 };
 
@@ -73,22 +74,11 @@ function getVariantColors(
   };
 }
 
-function getPrimaryActionBackground(
-  theme: ReturnType<typeof useTheme>,
-  tone?: Action["tone"],
-) {
-  if (tone === "destructive") return theme.cta.destructiveBackground;
-  if (tone === "secondary") return theme.cta.secondaryBackground;
-  return theme.cta.primaryBackground;
-}
-
-function getPrimaryActionTextColor(
-  theme: ReturnType<typeof useTheme>,
-  tone?: Action["tone"],
-) {
-  if (tone === "destructive") return theme.cta.destructiveText;
-  if (tone === "secondary") return theme.cta.secondaryText;
-  return theme.cta.primaryText;
+function resolveActionVariant(tone?: Action["tone"]): ButtonVariant {
+  if (tone === "destructive") return "destructive";
+  if (tone === "secondary") return "secondary";
+  if (tone === "ghost") return "ghost";
+  return "primary";
 }
 
 export function Alert({
@@ -109,18 +99,6 @@ export function Alert({
     () => getVariantColors(theme, variant),
     [theme, variant],
   );
-  const primaryActionBackground = getPrimaryActionBackground(
-    theme,
-    primaryAction?.tone,
-  );
-  const primaryActionTextColor = getPrimaryActionTextColor(
-    theme,
-    primaryAction?.tone,
-  );
-  const primaryActionBorderColor =
-    primaryAction?.tone === "secondary"
-      ? theme.cta.secondaryBorder
-      : "transparent";
 
   return (
     <Modal
@@ -162,55 +140,41 @@ export function Alert({
 
           <View style={styles.actionsRow}>
             {secondaryAction ? (
-              <Pressable
-                disabled={secondaryAction.loading}
-                onPress={secondaryAction.onPress}
-                testID={secondaryAction.testID}
-                style={[
-                  styles.actionButton,
-                  styles.secondaryAction,
-                  secondaryAction.loading && styles.actionDisabled,
-                ]}
-              >
-                {secondaryAction.loading ? (
-                  <ActivityIndicator color={theme.text} />
-                ) : (
-                  <Text style={styles.secondaryActionText}>
-                    {secondaryAction.label}
-                  </Text>
-                )}
-              </Pressable>
+              <View style={styles.actionItem}>
+                <Button
+                  label={secondaryAction.label}
+                  variant={resolveActionVariant(secondaryAction.tone ?? "secondary")}
+                  onPress={
+                    secondaryAction.onPress
+                      ? () =>
+                          secondaryAction.onPress?.(
+                            {} as GestureResponderEvent,
+                          )
+                      : undefined
+                  }
+                  disabled={secondaryAction.disabled}
+                  loading={secondaryAction.loading}
+                  testID={secondaryAction.testID}
+                />
+              </View>
             ) : null}
 
             {primaryAction ? (
-              <Pressable
-                disabled={primaryAction.loading}
-                onPress={primaryAction.onPress}
-                testID={primaryAction.testID}
-                style={[
-                  styles.actionButton,
-                  {
-                    backgroundColor: primaryActionBackground,
-                    borderColor: primaryActionBorderColor,
-                  },
-                  primaryAction.tone === "secondary" &&
-                    styles.secondaryToneButton,
-                  primaryAction.loading && styles.actionDisabled,
-                ]}
-              >
-                {primaryAction.loading ? (
-                  <ActivityIndicator color={primaryActionTextColor} />
-                ) : (
-                  <Text
-                    style={[
-                      styles.primaryActionText,
-                      { color: primaryActionTextColor },
-                    ]}
-                  >
-                    {primaryAction.label}
-                  </Text>
-                )}
-              </Pressable>
+              <View style={styles.actionItem}>
+                <Button
+                  label={primaryAction.label}
+                  variant={resolveActionVariant(primaryAction.tone)}
+                  onPress={
+                    primaryAction.onPress
+                      ? () =>
+                          primaryAction.onPress?.({} as GestureResponderEvent)
+                      : undefined
+                  }
+                  disabled={primaryAction.disabled}
+                  loading={primaryAction.loading}
+                  testID={primaryAction.testID}
+                />
+              </View>
             ) : null}
           </View>
         </Pressable>
@@ -260,35 +224,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingBottom: theme.spacing.lg,
       paddingTop: theme.spacing.xs,
     },
-    actionButton: {
-      paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.md,
-      borderRadius: theme.rounded.md,
-      borderWidth: 1,
-      minHeight: 44,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    secondaryToneButton: {
-      backgroundColor: theme.cta.secondaryBackground,
-    },
-    actionDisabled: {
-      opacity: 0.7,
-    },
-    secondaryAction: {
-      borderWidth: 1,
-      borderColor: theme.cta.secondaryBorder,
-      backgroundColor: theme.cta.secondaryBackground,
-    },
-    secondaryActionText: {
-      color: theme.cta.secondaryText,
-      fontFamily: theme.typography.fontFamily.medium,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-    },
-    primaryActionText: {
-      fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
+    actionItem: {
+      flex: 1,
     },
   });

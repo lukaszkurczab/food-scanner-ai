@@ -6,7 +6,7 @@ import { TodaysMealsList } from "../components/TodaysMealsList";
 import { ButtonSection } from "../components/ButtonSection";
 import { useUserContext } from "@contexts/UserContext";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
-import { Layout, TargetProgressBar, PrimaryButton } from "@/components";
+import { Button, Layout, TargetProgressBar } from "@/components";
 import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
 import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
 import { useMeals } from "@hooks/useMeals";
@@ -443,7 +443,7 @@ export default function HomeScreen({ navigation }: Props) {
               </View>
             ) : null}
 
-            <PrimaryButton
+            <Button
               label={t("home:setDailyGoal", "Set your daily goal")}
               onPress={() => navigation.navigate("Onboarding")}
             />

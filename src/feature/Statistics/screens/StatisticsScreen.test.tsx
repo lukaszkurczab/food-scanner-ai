@@ -57,6 +57,18 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: ReactNode }) =>
       createElement(View, null, children),
+    Button: ({
+      label,
+      onPress,
+    }: {
+      label: string;
+      onPress: () => void;
+    }) =>
+      createElement(
+        Pressable,
+        { onPress, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
     DateInput: ({ range, onChange }: DateInputProps) =>
       createElement(
         Pressable,
@@ -75,26 +87,6 @@ jest.mock("@/components", () => {
       ),
   };
 });
-
-jest.mock("@/components/PrimaryButton", () => ({
-  PrimaryButton: ({
-    label,
-    onPress,
-  }: {
-    label: string;
-    onPress: () => void;
-  }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Pressable, Text } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(
-      Pressable,
-      { onPress, accessibilityRole: "button" },
-      createElement(Text, null, label),
-    );
-  },
-}));
 
 jest.mock("../components/RangeTabs", () => ({
   RangeTabs: ({
@@ -191,36 +183,36 @@ describe("StatisticsScreen", () => {
 
   it("renders loading and empty states with their CTAs", () => {
     const navigation = { navigate: jest.fn() };
-    mockUseStatisticsState
-      .mockReturnValueOnce({
-        active: "7d",
-        setActive: jest.fn(),
-        customRange: {
-          start: new Date("2026-01-01T00:00:00.000Z"),
-          end: new Date("2026-01-07T00:00:00.000Z"),
-        },
-        setCustomRange: jest.fn(),
-        isWindowLimited: false,
-        loadingMeals: true,
-        empty: false,
-      })
-      .mockReturnValueOnce({
-        active: "7d",
-        setActive: jest.fn(),
-        customRange: {
-          start: new Date("2026-01-01T00:00:00.000Z"),
-          end: new Date("2026-01-07T00:00:00.000Z"),
-        },
-        setCustomRange: jest.fn(),
-        isWindowLimited: false,
-        loadingMeals: false,
-        empty: true,
-      });
+    mockUseStatisticsState.mockReturnValue({
+      active: "7d",
+      setActive: jest.fn(),
+      customRange: {
+        start: new Date("2026-01-01T00:00:00.000Z"),
+        end: new Date("2026-01-07T00:00:00.000Z"),
+      },
+      setCustomRange: jest.fn(),
+      isWindowLimited: false,
+      loadingMeals: true,
+      empty: false,
+    });
 
     const loading = renderWithTheme(
       <StatisticsScreen navigation={navigation as never} />,
     );
     expect(loading.getByText("common:loading")).toBeTruthy();
+
+    mockUseStatisticsState.mockReturnValue({
+      active: "7d",
+      setActive: jest.fn(),
+      customRange: {
+        start: new Date("2026-01-01T00:00:00.000Z"),
+        end: new Date("2026-01-07T00:00:00.000Z"),
+      },
+      setCustomRange: jest.fn(),
+      isWindowLimited: false,
+      loadingMeals: false,
+      empty: true,
+    });
 
     const empty = renderWithTheme(
       <StatisticsScreen navigation={navigation as never} />,

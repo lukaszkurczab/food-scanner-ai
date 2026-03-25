@@ -8,6 +8,8 @@ import { renderWithTheme } from "@/test-utils/renderWithTheme";
 type ButtonProps = {
   label: string;
   onPress: () => void;
+  disabled?: boolean;
+  testID?: string;
   children?: ReactNode;
 };
 
@@ -41,22 +43,10 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: ReactNode }) =>
       createElement(View, null, children),
-    PrimaryButton: ({ label, onPress }: ButtonProps) =>
+    Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
       createElement(
         Pressable,
-        { onPress, accessibilityRole: "button" },
-        createElement(Text, null, label),
-      ),
-    SecondaryButton: ({ label, onPress }: ButtonProps) =>
-      createElement(
-        Pressable,
-        { onPress, accessibilityRole: "button" },
-        createElement(Text, null, label),
-      ),
-    ErrorButton: ({ label, onPress }: ButtonProps) =>
-      createElement(
-        Pressable,
-        { onPress, accessibilityRole: "button" },
+        { onPress, disabled, testID, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
   };

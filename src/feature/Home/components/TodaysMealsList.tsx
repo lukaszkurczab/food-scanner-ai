@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import type { Meal } from "@/types/meal";
 import { useTranslation } from "react-i18next";
-import { PrimaryButton } from "@components/PrimaryButton";
+import { Button } from "@components/Button";
 import { MealSyncBadge } from "@/components/MealSyncBadge";
 
 type Props = {
@@ -55,7 +55,7 @@ export const TodaysMealsList = ({
       })}
 
       {handleAddMeal ? (
-        <PrimaryButton label={t("addMeal")} onPress={handleAddMeal} />
+        <Button label={t("addMeal")} onPress={handleAddMeal} />
       ) : null}
     </View>
   );

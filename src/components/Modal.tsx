@@ -18,7 +18,7 @@ import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 const WINDOW_HEIGHT = Dimensions.get("window").height;
 const MODAL_MAX_WIDTH = 500;
 
-export type ModalActionTone = "primary" | "secondary" | "destructive";
+export type ModalActionTone = "primary" | "secondary" | "ghost" | "destructive";
 
 export type ModalAction = {
   label: string;

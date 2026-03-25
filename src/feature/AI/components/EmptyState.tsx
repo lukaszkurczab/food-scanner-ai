@@ -7,6 +7,7 @@ import {
   ViewStyle,
   StyleProp,
 } from "react-native";
+import { Button } from "@/components";
 import { useTheme } from "@/theme/useTheme";
 
 export type EmptyStateSuggestion = {
@@ -72,19 +73,12 @@ export const EmptyState = memo(function EmptyState({
         ) : null}
 
         {cta ? (
-          <Pressable
-            disabled={disabled}
+          <Button
+            label={cta.label}
             onPress={cta.onPress}
-            style={({ pressed }) => [
-              styles.cta,
-              disabled ? styles.disabled : null,
-              pressed && !disabled ? styles.pressed : null,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={cta.label}
-          >
-            <Text style={styles.ctaText}>{cta.label}</Text>
-          </Pressable>
+            disabled={disabled}
+            style={styles.cta}
+          />
         ) : null}
 
         {footerText ? <Text style={styles.footer}>{footerText}</Text> : null}
@@ -149,17 +143,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     cta: {
       marginTop: theme.spacing.md,
-      borderRadius: theme.rounded.md,
-      paddingVertical: theme.spacing.sm + theme.spacing.xs,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: theme.cta.primaryBackground,
-    },
-    ctaText: {
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.cta.primaryText,
     },
     footer: {
       marginTop: theme.spacing.sm,

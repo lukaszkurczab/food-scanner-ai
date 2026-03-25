@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import { SecondaryButton, Layout } from "@/components";
+import { Button, Layout } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import type {
   MealAddScreenName,
@@ -82,7 +82,8 @@ export default function BarcodeProductNotFoundScreen({
           />
         )}
         {isLastAttempt ? (
-          <SecondaryButton
+          <Button
+            variant="secondary"
             label={t("barcode_back_to_review", "Back to ingredients")}
             onPress={handleBack}
             style={styles.buttonSpacing}

@@ -102,6 +102,53 @@ export type ThemeDefinition = {
     destructiveText: string;
   };
 
+  button: {
+    primary: {
+      background: string;
+      border: string;
+      text: string;
+      pressedBackground: string;
+      pressedBorder: string;
+      pressedText: string;
+      disabledBackground: string;
+      disabledBorder: string;
+      disabledText: string;
+    };
+    secondary: {
+      background: string;
+      border: string;
+      text: string;
+      pressedBackground: string;
+      pressedBorder: string;
+      pressedText: string;
+      disabledBackground: string;
+      disabledBorder: string;
+      disabledText: string;
+    };
+    ghost: {
+      background: string;
+      border: string;
+      text: string;
+      pressedBackground: string;
+      pressedBorder: string;
+      pressedText: string;
+      disabledBackground: string;
+      disabledBorder: string;
+      disabledText: string;
+    };
+    destructive: {
+      background: string;
+      border: string;
+      text: string;
+      pressedBackground: string;
+      pressedBorder: string;
+      pressedText: string;
+      disabledBackground: string;
+      disabledBorder: string;
+      disabledText: string;
+    };
+  };
+
   input: {
     background: string;
     backgroundDisabled: string;
@@ -213,11 +260,58 @@ const lightTheme: ThemeDefinition = {
     primaryBackground: baseColors.olive500,
     primaryText: baseColors.cream0,
     secondaryBackground: baseColors.cream0,
-    secondaryText: baseColors.olive500,
+    secondaryText: baseColors.ink900,
     secondaryBorder: baseColors.sand300,
     ghostText: baseColors.olive500,
     destructiveBackground: baseColors.errorStrong,
     destructiveText: baseColors.onError,
+  },
+
+  button: {
+    primary: {
+      background: baseColors.olive500,
+      border: baseColors.olive500,
+      text: baseColors.cream0,
+      pressedBackground: baseColors.olive700,
+      pressedBorder: baseColors.olive700,
+      pressedText: baseColors.cream0,
+      disabledBackground: baseColors.sand100,
+      disabledBorder: baseColors.sand100,
+      disabledText: baseColors.ink500,
+    },
+    secondary: {
+      background: baseColors.cream0,
+      border: baseColors.sand300,
+      text: baseColors.ink900,
+      pressedBackground: baseColors.cream50,
+      pressedBorder: baseColors.sand300,
+      pressedText: baseColors.ink900,
+      disabledBackground: baseColors.sand100,
+      disabledBorder: baseColors.sand300,
+      disabledText: baseColors.ink500,
+    },
+    ghost: {
+      background: "transparent",
+      border: "transparent",
+      text: baseColors.olive500,
+      pressedBackground: baseColors.cream50,
+      pressedBorder: "transparent",
+      pressedText: baseColors.olive700,
+      disabledBackground: "transparent",
+      disabledBorder: "transparent",
+      disabledText: baseColors.ink500,
+    },
+    destructive: {
+      background: baseColors.errorSurface,
+      border: baseColors.errorBorder,
+      text: baseColors.errorStrong,
+      pressedBackground: baseColors.error,
+      pressedBorder: baseColors.error,
+      pressedText: baseColors.onError,
+      disabledBackground: baseColors.sand100,
+      disabledBorder: baseColors.sand300,
+      disabledText: baseColors.ink500,
+    },
   },
 
   input: {
@@ -336,6 +430,53 @@ const darkTheme: ThemeDefinition = {
     ghostText: baseColors.olive400,
     destructiveBackground: "#C85D4C",
     destructiveText: baseColors.onError,
+  },
+
+  button: {
+    primary: {
+      background: baseColors.olive400,
+      border: baseColors.olive400,
+      text: baseColors.ink900,
+      pressedBackground: "#A6BDA0",
+      pressedBorder: "#A6BDA0",
+      pressedText: baseColors.ink900,
+      disabledBackground: "#222722",
+      disabledBorder: "#222722",
+      disabledText: baseColors.darkTextTertiary,
+    },
+    secondary: {
+      background: baseColors.darkSurface,
+      border: baseColors.darkBorder,
+      text: baseColors.darkText,
+      pressedBackground: baseColors.darkSurfaceAlt,
+      pressedBorder: baseColors.darkBorder,
+      pressedText: baseColors.darkText,
+      disabledBackground: "#1B1F1B",
+      disabledBorder: baseColors.darkBorderSoft,
+      disabledText: baseColors.darkTextTertiary,
+    },
+    ghost: {
+      background: "transparent",
+      border: "transparent",
+      text: "#9BB896",
+      pressedBackground: baseColors.darkBorderSoft,
+      pressedBorder: "transparent",
+      pressedText: baseColors.darkText,
+      disabledBackground: "transparent",
+      disabledBorder: "transparent",
+      disabledText: baseColors.darkTextTertiary,
+    },
+    destructive: {
+      background: "#2D201D",
+      border: "#8A4A40",
+      text: "#F2C4BB",
+      pressedBackground: "#C85D4C",
+      pressedBorder: "#C85D4C",
+      pressedText: baseColors.onError,
+      disabledBackground: "#1B1F1B",
+      disabledBorder: baseColors.darkBorderSoft,
+      disabledText: baseColors.darkTextTertiary,
+    },
   },
 
   input: {

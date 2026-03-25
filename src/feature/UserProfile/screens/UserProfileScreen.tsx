@@ -10,7 +10,7 @@ import {
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import { ButtonToggle, InputModal, Layout, PrimaryButton } from "@/components";
+import { Button, ButtonToggle, InputModal, Layout } from "@/components";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
 import AvatarBadge from "@/components/AvatarBadge";
@@ -60,7 +60,7 @@ export default function UserProfileScreen({
               ? t("profileUnavailableDesc")
               : t("profileUnavailableOfflineDesc")}
           </Text>
-          <PrimaryButton
+          <Button
             label={t("common:retry")}
             onPress={() => {
               void state.handleRetryProfileLoad();
