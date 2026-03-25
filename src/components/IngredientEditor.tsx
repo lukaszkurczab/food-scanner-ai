@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   TextInput as RNTextInput,
@@ -32,17 +32,21 @@ const parseNum = (v: string) => {
   const n = parseFloat(v.replace(",", "."));
   return Number.isFinite(n) ? n : NaN;
 };
+
 type NumericIngredientKey = "amount" | "protein" | "carbs" | "fat" | "kcal";
+
 const AMOUNT_MAX_DECIMALS = 1;
 
 export const IngredientEditor: React.FC<Props> = ({
   initial,
   onCommit,
   onCancel,
+  onDelete,
   onChangePartial,
   errors = {},
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals", "common"]);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const unitLabel = initial?.unit === "ml" ? "ml" : "g";
@@ -64,8 +68,11 @@ export const IngredientEditor: React.FC<Props> = ({
     fat: Number(initial.fat ?? 0),
     kcal: Number(initial.kcal ?? 0),
   });
+
   const [showRecalc, setShowRecalc] = useState(false);
   const recalcRatioRef = useRef(1);
+
+  const hasBlockingErrors = Object.keys(errors).length > 0;
 
   const syncBaselineFromState = (keepAmount = true) => {
     const amt = keepAmount ? baseline.current.amount : parseNum(amount) || 0;
@@ -73,6 +80,7 @@ export const IngredientEditor: React.FC<Props> = ({
     const c = parseNum(carbs);
     const f = parseNum(fat);
     const k = parseNum(kcal);
+
     baseline.current = {
       amount: Number.isFinite(amt) ? amt : 0,
       protein: Number.isFinite(p) ? p : baseline.current.protein,
@@ -87,7 +95,8 @@ export const IngredientEditor: React.FC<Props> = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commit = () => {
-    if (Object.keys(errors).length) return;
+    if (hasBlockingErrors) return;
+
     onCommit({
       id: initial.id,
       name: name.trim(),
@@ -157,18 +166,18 @@ export const IngredientEditor: React.FC<Props> = ({
       } else {
         baseline.current.amount = nextAmt;
       }
-    } else {
-      const num = Number.isFinite(n) ? n : 0;
-      if (key === "protein") baseline.current.protein = num;
-      if (key === "carbs") baseline.current.carbs = num;
-      if (key === "fat") baseline.current.fat = num;
-      if (key === "kcal") baseline.current.kcal = num;
+      return;
     }
+
+    const num = Number.isFinite(n) ? n : 0;
+    if (key === "protein") baseline.current.protein = num;
+    if (key === "carbs") baseline.current.carbs = num;
+    if (key === "fat") baseline.current.fat = num;
+    if (key === "kcal") baseline.current.kcal = num;
   };
 
   const normalizeOnBlurName = (val: string) => {
-    const v = val.trim();
-    const next = v === "" ? "" : v;
+    const next = val.trim();
     setName(next);
     onChangePartial?.({ name: next });
   };
@@ -179,6 +188,7 @@ export const IngredientEditor: React.FC<Props> = ({
       (payload: { ingredient: Ingredient }) => {
         const ing = payload?.ingredient;
         if (!ing) return;
+
         setName(ing.name || "");
         setAmount(String(ing.amount ?? 100));
         setProtein(String(ing.protein ?? 0));
@@ -204,34 +214,21 @@ export const IngredientEditor: React.FC<Props> = ({
         };
       },
     );
+
     return () => sub.remove();
   }, [onChangePartial]);
 
   const inputStyle = (hasErr?: boolean, touched?: boolean) => [
     styles.input,
-    {
-      borderColor: hasErr && touched ? theme.error.border : theme.border,
-      color: theme.text,
-      backgroundColor: theme.mode === "dark" ? theme.card : theme.background,
-    },
+    hasErr && touched ? styles.inputError : null,
   ];
 
   return (
-    <View
-      style={[
-        styles.box,
-        {
-          backgroundColor: theme.background,
-          borderColor: theme.border,
-          borderRadius: theme.rounded.md,
-          padding: theme.spacing.md,
-        },
-      ]}
-    >
+    <View style={styles.box}>
       <View style={styles.nameRow}>
         <RNTextInput
           style={[
-            inputStyle(Boolean(errors.name), nameTouched),
+            ...inputStyle(Boolean(errors.name), nameTouched),
             styles.nameInput,
           ]}
           value={name}
@@ -240,7 +237,7 @@ export const IngredientEditor: React.FC<Props> = ({
             onChangePartial?.({ name: v });
           }}
           placeholder={t("ingredient_name", { ns: "meals" })}
-          placeholderTextColor={theme.textSecondary}
+          placeholderTextColor={theme.input.placeholder}
           onBlur={() => {
             setNameTouched(true);
             normalizeOnBlurName(name);
@@ -256,39 +253,30 @@ export const IngredientEditor: React.FC<Props> = ({
               attempt: 1,
             })
           }
-          style={[
-            styles.barcodeButton,
-            { borderColor: theme.border, backgroundColor: theme.card },
-          ]}
+          style={styles.barcodeButton}
         >
           <AppIcon name="scan-barcode" size={22} color={theme.text} />
         </Pressable>
       </View>
 
       {errors.name && nameTouched ? (
-        <Text style={[styles.errText, { color: theme.error.text }]}>
-          {errors.name}
-        </Text>
+        <Text style={styles.errText}>{errors.name}</Text>
       ) : null}
 
-      <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
+      <Text style={styles.editLabel}>
         {String(t("amount", { ns: "meals" })).replace("[g]", `[${unitLabel}]`)}
       </Text>
       <NumberInput
         variant="native"
         style={[
           styles.editInput,
-          {
-            color: theme.text,
-            borderColor:
-              errors.amount && amountTouched ? theme.error.text : theme.border,
-          },
+          errors.amount && amountTouched ? styles.inputError : null,
         ]}
         value={amount}
         onChangeText={(v) => handleNumericChange(v, setAmount, "amount")}
         maxDecimals={getNumericMaxDecimals("amount")}
         blurFallback="0"
-        placeholderTextColor={theme.textSecondary}
+        placeholderTextColor={theme.input.placeholder}
         onFocus={() => clearZeroOnFocus(amount, setAmount)}
         onBlur={(normalizedValue) => {
           setAmountTouched(true);
@@ -297,31 +285,21 @@ export const IngredientEditor: React.FC<Props> = ({
       />
 
       {errors.amount && amountTouched ? (
-        <Text style={[styles.errText, { color: theme.error.text }]}>
-          {errors.amount}
-        </Text>
+        <Text style={styles.errText}>{errors.amount}</Text>
       ) : null}
 
-      <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-        {t("protein", { ns: "meals" })} [g]
-      </Text>
+      <Text style={styles.editLabel}>{t("protein", { ns: "meals" })} [g]</Text>
       <NumberInput
         variant="native"
         style={[
           styles.editInput,
-          {
-            color: theme.macro.protein,
-            backgroundColor: theme.macro.protein + "24",
-            borderWidth: 1,
-            borderColor: errors.protein
-              ? theme.error.text
-              : theme.macro.protein,
-          },
+          styles.macroProteinInput,
+          errors.protein ? styles.inputError : null,
         ]}
         value={protein}
         onChangeText={(v) => handleNumericChange(v, setProtein, "protein")}
         blurFallback="0"
-        placeholderTextColor={theme.textSecondary}
+        placeholderTextColor={theme.input.placeholder}
         onFocus={() => clearZeroOnFocus(protein, setProtein)}
         onBlur={(normalizedValue) =>
           handleNumericBlur("protein", normalizedValue)
@@ -329,110 +307,81 @@ export const IngredientEditor: React.FC<Props> = ({
       />
 
       {errors.protein ? (
-        <Text style={[styles.errText, { color: theme.error.text }]}>
-          {errors.protein}
-        </Text>
+        <Text style={styles.errText}>{errors.protein}</Text>
       ) : null}
 
-      <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-        {t("carbs", { ns: "meals" })} [g]
-      </Text>
+      <Text style={styles.editLabel}>{t("carbs", { ns: "meals" })} [g]</Text>
       <NumberInput
         variant="native"
         style={[
           styles.editInput,
-          {
-            color: theme.macro.carbs,
-            backgroundColor: theme.macro.carbs + "24",
-            borderWidth: 1,
-            borderColor: errors.carbs ? theme.error.text : theme.macro.carbs,
-          },
+          styles.macroCarbsInput,
+          errors.carbs ? styles.inputError : null,
         ]}
         value={carbs}
         onChangeText={(v) => handleNumericChange(v, setCarbs, "carbs")}
         blurFallback="0"
-        placeholderTextColor={theme.textSecondary}
+        placeholderTextColor={theme.input.placeholder}
         onFocus={() => clearZeroOnFocus(carbs, setCarbs)}
         onBlur={(normalizedValue) =>
           handleNumericBlur("carbs", normalizedValue)
         }
       />
 
-      {errors.carbs ? (
-        <Text style={[styles.errText, { color: theme.error.text }]}>
-          {errors.carbs}
-        </Text>
-      ) : null}
+      {errors.carbs ? <Text style={styles.errText}>{errors.carbs}</Text> : null}
 
-      <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
-        {t("fat", { ns: "meals" })} [g]
-      </Text>
+      <Text style={styles.editLabel}>{t("fat", { ns: "meals" })} [g]</Text>
       <NumberInput
         variant="native"
         style={[
           styles.editInput,
-          {
-            color: theme.macro.fat,
-            backgroundColor: theme.macro.fat + "24",
-            borderWidth: 1,
-            borderColor: errors.fat ? theme.error.text : theme.macro.fat,
-          },
+          styles.macroFatInput,
+          errors.fat ? styles.inputError : null,
         ]}
         value={fat}
         onChangeText={(v) => handleNumericChange(v, setFat, "fat")}
         blurFallback="0"
-        placeholderTextColor={theme.textSecondary}
+        placeholderTextColor={theme.input.placeholder}
         onFocus={() => clearZeroOnFocus(fat, setFat)}
         onBlur={(normalizedValue) => handleNumericBlur("fat", normalizedValue)}
       />
 
-      {errors.fat ? (
-        <Text style={[styles.errText, { color: theme.error.text }]}>
-          {errors.fat}
-        </Text>
-      ) : null}
+      {errors.fat ? <Text style={styles.errText}>{errors.fat}</Text> : null}
 
-      <Text style={[styles.editLabel, { color: theme.textSecondary }]}>
+      <Text style={styles.editLabel}>
         {t("calories", { ns: "meals" })} [kcal]
       </Text>
       <NumberInput
         variant="native"
-        style={[
-          styles.editInput,
-          {
-            color: theme.text,
-            borderColor: errors.kcal ? theme.error.text : theme.border,
-          },
-        ]}
+        style={[styles.editInput, errors.kcal ? styles.inputError : null]}
         value={kcal}
         onChangeText={(v) => handleNumericChange(v, setKcal, "kcal")}
         blurFallback="0"
-        placeholderTextColor={theme.textSecondary}
+        placeholderTextColor={theme.input.placeholder}
         onFocus={() => clearZeroOnFocus(kcal, setKcal)}
         onBlur={(normalizedValue) => handleNumericBlur("kcal", normalizedValue)}
       />
 
-      {errors.kcal ? (
-        <Text style={[styles.errText, { color: theme.error.text }]}>
-          {errors.kcal}
-        </Text>
-      ) : null}
+      {errors.kcal ? <Text style={styles.errText}>{errors.kcal}</Text> : null}
 
       <PrimaryButton
         style={styles.primaryBtn}
         onPress={commit}
-        disabled={Object.keys(errors).length > 0}
-      >
-        <Text style={[styles.saveBtnText, { color: theme.onAccent }]}>
-          {t("save_changes", { ns: "common" })}
-        </Text>
-      </PrimaryButton>
+        disabled={hasBlockingErrors}
+        label={t("save_changes", { ns: "common" })}
+      />
 
       <ErrorButton
-        style={[styles.outlineBtn, { borderColor: theme.error.border }]}
+        style={styles.cancelBtn}
         onPress={onCancel}
         label={t("cancel", { ns: "common" })}
       />
+
+      <Pressable onPress={onDelete} style={styles.deleteLink}>
+        <Text style={styles.deleteLinkText}>
+          {t("remove", { ns: "common", defaultValue: "Remove" })}
+        </Text>
+      </Pressable>
 
       <Modal
         visible={showRecalc}
@@ -441,48 +390,59 @@ export const IngredientEditor: React.FC<Props> = ({
           defaultValue:
             "Adjust protein, carbs, fat and kcal proportionally to the new amount?",
         })}
-        primaryActionLabel={t("confirm", {
-          ns: "common",
-          defaultValue: "Confirm",
-        })}
-        onPrimaryAction={() => {
-          const r = recalcRatioRef.current;
-          const nextProtein = Number((baseline.current.protein * r).toFixed(1));
-          const nextCarbs = Number((baseline.current.carbs * r).toFixed(1));
-          const nextFat = Number((baseline.current.fat * r).toFixed(1));
-          const kcalFromMacros = Math.round(
-            nextProtein * 4 + nextCarbs * 4 + nextFat * 9,
-          );
-          const nextKcal =
-            Math.round(baseline.current.kcal * r) || kcalFromMacros;
+        primaryAction={{
+          label: t("confirm", {
+            ns: "common",
+            defaultValue: "Confirm",
+          }),
+          onPress: () => {
+            const r = recalcRatioRef.current;
+            const nextProtein = Number(
+              (baseline.current.protein * r).toFixed(1),
+            );
+            const nextCarbs = Number((baseline.current.carbs * r).toFixed(1));
+            const nextFat = Number((baseline.current.fat * r).toFixed(1));
+            const kcalFromMacros = Math.round(
+              nextProtein * 4 + nextCarbs * 4 + nextFat * 9,
+            );
+            const nextKcal =
+              Math.round(baseline.current.kcal * r) || kcalFromMacros;
 
-          setProtein(String(nextProtein));
-          setCarbs(String(nextCarbs));
-          setFat(String(nextFat));
-          setKcal(String(nextKcal));
-          onChangePartial?.({
-            protein: nextProtein,
-            carbs: nextCarbs,
-            fat: nextFat,
-            kcal: nextKcal,
-          });
+            setProtein(String(nextProtein));
+            setCarbs(String(nextCarbs));
+            setFat(String(nextFat));
+            setKcal(String(nextKcal));
 
-          baseline.current = {
-            amount: parseNum(amount) || baseline.current.amount,
-            protein: nextProtein,
-            carbs: nextCarbs,
-            fat: nextFat,
-            kcal: nextKcal,
-          };
-          setShowRecalc(false);
+            onChangePartial?.({
+              protein: nextProtein,
+              carbs: nextCarbs,
+              fat: nextFat,
+              kcal: nextKcal,
+            });
+
+            baseline.current = {
+              amount: parseNum(amount) || baseline.current.amount,
+              protein: nextProtein,
+              carbs: nextCarbs,
+              fat: nextFat,
+              kcal: nextKcal,
+            };
+
+            setShowRecalc(false);
+          },
+          tone: "primary",
         }}
-        secondaryActionLabel={t("cancel", {
-          ns: "common",
-          defaultValue: "Cancel",
-        })}
-        onSecondaryAction={() => {
-          baseline.current.amount = parseNum(amount) || baseline.current.amount;
-          setShowRecalc(false);
+        secondaryAction={{
+          label: t("cancel", {
+            ns: "common",
+            defaultValue: "Cancel",
+          }),
+          onPress: () => {
+            baseline.current.amount =
+              parseNum(amount) || baseline.current.amount;
+            setShowRecalc(false);
+          },
+          tone: "secondary",
         }}
         onClose={() => {
           baseline.current.amount = parseNum(amount) || baseline.current.amount;
@@ -493,49 +453,111 @@ export const IngredientEditor: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  box: { borderWidth: 1, marginBottom: 16 },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 6,
-    fontSize: 16,
-  },
-  nameInput: {
-    flex: 1,
-    marginRight: 8,
-  },
-  barcodeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errText: { fontSize: 12, marginBottom: 8 },
-  primaryBtn: { marginVertical: 8 },
-  outlineBtn: {
-    padding: 12,
-    alignItems: "center",
-    marginTop: 8,
-    borderWidth: 1,
-  },
-  editInput: {
-    borderWidth: 1.2,
-    backgroundColor: "transparent",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginBottom: 7,
-    fontSize: 16,
-  },
-  editLabel: { marginBottom: 5, fontSize: 15, fontWeight: "600" },
-  saveBtnText: { fontWeight: "bold", fontSize: 16 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    box: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surface,
+      borderRadius: theme.rounded.lg,
+      padding: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
+    },
+    nameRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: theme.spacing.xs,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.input.border,
+      backgroundColor: theme.input.background,
+      color: theme.input.text,
+      borderRadius: theme.rounded.md,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.xs,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
+      minHeight: 48,
+    },
+    inputError: {
+      borderColor: theme.input.borderError,
+    },
+    nameInput: {
+      flex: 1,
+      marginRight: theme.spacing.sm,
+    },
+    barcodeButton: {
+      width: 44,
+      height: 44,
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surfaceAlt,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    errText: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
+      marginBottom: theme.spacing.sm,
+    },
+    primaryBtn: {
+      marginTop: theme.spacing.sm,
+    },
+    cancelBtn: {
+      marginTop: theme.spacing.sm,
+    },
+    editInput: {
+      borderWidth: 1,
+      borderColor: theme.input.border,
+      backgroundColor: theme.input.background,
+      color: theme.input.text,
+      borderRadius: theme.rounded.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      marginBottom: theme.spacing.sm,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
+      minHeight: 48,
+    },
+    editLabel: {
+      marginBottom: theme.spacing.xs,
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.labelL,
+      lineHeight: theme.typography.lineHeight.labelL,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    macroProteinInput: {
+      color: theme.macro.protein,
+      backgroundColor: theme.macro.proteinSoft,
+      borderColor: theme.macro.protein,
+    },
+    macroCarbsInput: {
+      color: theme.macro.carbs,
+      backgroundColor: theme.macro.carbsSoft,
+      borderColor: theme.macro.carbs,
+    },
+    macroFatInput: {
+      color: theme.macro.fat,
+      backgroundColor: theme.macro.fatSoft,
+      borderColor: theme.macro.fat,
+    },
+    deleteLink: {
+      alignSelf: "center",
+      marginTop: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+    },
+    deleteLinkText: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+  });

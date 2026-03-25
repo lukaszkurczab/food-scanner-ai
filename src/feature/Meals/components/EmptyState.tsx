@@ -13,14 +13,8 @@ export const EmptyState: React.FC<Props> = ({ title, description }) => {
       <View style={styles.iconBox}>
         <AppIcon name="empty-meals" size={76} color={theme.textSecondary} />
       </View>
-      <Text style={styles.title}>
-        {title}
-      </Text>
-      {!!description && (
-        <Text style={styles.description}>
-          {description}
-        </Text>
-      )}
+      <Text style={styles.title}>{title}</Text>
+      {!!description && <Text style={styles.description}>{description}</Text>}
     </View>
   );
 };
@@ -32,14 +26,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       width: 140,
       height: 140,
       borderRadius: theme.rounded.md,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       marginBottom: theme.spacing.md,
       alignItems: "center",
       justifyContent: "center",
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
       marginBottom: theme.spacing.xs,
       textAlign: "center",
@@ -48,6 +42,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.textSecondary,
       textAlign: "center",
       marginBottom: theme.spacing.md,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
     },
   });

@@ -24,13 +24,13 @@ export const BottomTabBar: React.FC = () => {
 
   let borderColor: string;
   if (isPremium) {
-    borderColor = "#C9A227";
+    borderColor = theme.chart.fat;
   } else if (safeBadges.some((b) => b.type === "streak")) {
     const streakBadges = safeBadges.filter((b) => b.type === "streak");
     streakBadges.sort(
-      (a, b) => (b.milestone as number) - (a.milestone as number)
+      (a, b) => (b.milestone as number) - (a.milestone as number),
     );
-    borderColor = streakBadges[0].color;
+    borderColor = streakBadges[0]?.color ?? theme.border;
   } else {
     borderColor = theme.border;
   }
@@ -77,7 +77,7 @@ export const BottomTabBar: React.FC = () => {
                 <AppIcon
                   name={tab.icon}
                   size={32}
-                  color={theme.onAccent}
+                  color={theme.cta.primaryText}
                   style={styles.iconCentered}
                 />
               </Pressable>
@@ -85,6 +85,7 @@ export const BottomTabBar: React.FC = () => {
           }
 
           const isProfile = tab.key.toLowerCase() === "profile";
+
           return (
             <Pressable
               key={tab.key}
@@ -96,7 +97,7 @@ export const BottomTabBar: React.FC = () => {
                 <AvatarBadge
                   size={40}
                   uri={avatarSrc || undefined}
-                  badges={[]}
+                  badges={safeBadges}
                   overrideColor={borderColor}
                   overrideEmoji={undefined}
                   fallbackIcon={
@@ -131,25 +132,30 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       left: 0,
       right: 0,
       bottom: 0,
-      borderTopEndRadius: theme.rounded.lg,
-      borderTopLeftRadius: theme.rounded.lg,
+      borderTopEndRadius: theme.rounded.xl,
+      borderTopLeftRadius: theme.rounded.xl,
     },
     container: {
       flexDirection: "row",
       alignSelf: "center",
       alignItems: "center",
-      padding: theme.spacing.sm,
       width: "100%",
       justifyContent: "space-evenly",
+      paddingHorizontal: theme.spacing.sm,
+      paddingTop: theme.spacing.xs,
+      paddingBottom:
+        Platform.OS === "ios" ? theme.spacing.sm : theme.spacing.xs,
+      minHeight: 64,
+      backgroundColor: theme.surfaceElevated,
+      borderTopWidth: 1,
+      borderTopColor: theme.borderSoft,
+      borderTopEndRadius: theme.rounded.lg,
+      borderTopLeftRadius: theme.rounded.lg,
       shadowColor: theme.shadow,
-      shadowOpacity: Platform.OS === "android" ? 0.22 : 0.12,
-      shadowRadius: theme.spacing.xl - theme.spacing.xs,
-      shadowOffset: { width: 0, height: theme.spacing.xs },
-      elevation: 20,
-      height: 56,
-      backgroundColor: theme.card,
-      borderTopEndRadius: theme.rounded.md,
-      borderTopLeftRadius: theme.rounded.md,
+      shadowOpacity: Platform.OS === "android" ? 0.2 : 0.1,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: -2 },
+      elevation: 12,
     },
     tab: {
       width: 56,
@@ -163,13 +169,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       justifyContent: "center",
       alignItems: "center",
       marginTop: -20,
-      backgroundColor: theme.accentSecondary,
+      backgroundColor: theme.cta.primaryBackground,
       borderRadius: theme.rounded.full,
       shadowColor: theme.shadow,
-      shadowOpacity: 0.3,
-      shadowRadius: theme.spacing.md + theme.spacing.xs / 2,
-      elevation: 6,
-      borderWidth: 0,
+      shadowOpacity: theme.isDark ? 0.28 : 0.16,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 8,
+      borderWidth: 1,
+      borderColor: theme.primaryStrong,
     },
     iconCentered: {
       alignSelf: "center",

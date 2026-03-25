@@ -138,7 +138,12 @@ export default function ShareEditorPanel({
   };
 
   const elementItems: {
-    key: "showTitle" | "showKcal" | "showChart" | "showMacroOverlay" | "showCustom";
+    key:
+      | "showTitle"
+      | "showKcal"
+      | "showChart"
+      | "showMacroOverlay"
+      | "showCustom";
     label: string;
   }[] = [
     { key: "showTitle", label: t("editor.show_title", "Title") },
@@ -159,9 +164,7 @@ export default function ShareEditorPanel({
     <View style={styles.panel}>
       {mode === "options" && (
         <View style={styles.section}>
-          <Text style={styles.label}>
-            {t("editor.elements", "Elements")}
-          </Text>
+          <Text style={styles.label}>{t("editor.elements", "Elements")}</Text>
 
           <View style={styles.checklistContainer}>
             {elementItems.map((item) => {
@@ -186,13 +189,11 @@ export default function ShareEditorPanel({
                       size={20}
                       color={
                         hasCustomText
-                          ? theme.accentSecondary
+                          ? theme.primary
                           : theme.textSecondary
                       }
                     />
-                    <Text style={styles.dropdownLabel}>
-                      {item.label}
-                    </Text>
+                    <Text style={styles.dropdownLabel}>{item.label}</Text>
                   </Pressable>
                 );
               }
@@ -207,11 +208,9 @@ export default function ShareEditorPanel({
                   <AppIcon
                     name={active ? "checkbox" : "checkbox-empty"}
                     size={20}
-                    color={active ? theme.accentSecondary : theme.textSecondary}
+                    color={active ? theme.primary : theme.textSecondary}
                   />
-                  <Text style={styles.dropdownLabel}>
-                    {item.label}
-                  </Text>
+                  <Text style={styles.dropdownLabel}>{item.label}</Text>
                 </Pressable>
               );
             })}
@@ -240,9 +239,7 @@ export default function ShareEditorPanel({
 
       {mode === "background" && (
         <View style={styles.section}>
-          <Text style={styles.label}>
-            {t("editor.background_color")}
-          </Text>
+          <Text style={styles.label}>{t("editor.background_color")}</Text>
           <ColorPickerPanel
             value={options.bgColor || "#000000"}
             onChange={(hex) => patch({ bgColor: hex })}
@@ -252,10 +249,7 @@ export default function ShareEditorPanel({
 
       {shouldShowDone && (
         <View style={styles.actions}>
-          <Pressable
-            onPress={onClose}
-            style={styles.button}
-          >
+          <Pressable onPress={onClose} style={styles.button}>
             <Text style={styles.buttonText}>{t("editor.done")}</Text>
           </Pressable>
         </View>
@@ -306,19 +300,19 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: theme.rounded.sm,
       padding: theme.spacing.md,
       gap: theme.spacing.sm,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
     },
     section: { marginBottom: theme.spacing.sm },
-    label: { fontSize: theme.typography.size.base, color: theme.textSecondary },
+    label: { fontSize: theme.typography.size.bodyL, color: theme.textSecondary },
     actions: { alignItems: "center", marginTop: theme.spacing.sm },
     button: {
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.sm,
       borderRadius: theme.rounded.sm,
-      backgroundColor: theme.accentSecondary,
+      backgroundColor: theme.primary,
     },
-    buttonText: { color: theme.onAccent, fontSize: theme.typography.size.sm },
+    buttonText: { color: theme.cta.primaryText, fontSize: theme.typography.size.bodyS },
     checklistContainer: { marginTop: theme.spacing.xs },
     dropdownRow: {
       flexDirection: "row",
@@ -328,7 +322,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     dropdownLabel: {
       marginLeft: theme.spacing.sm,
       color: theme.text,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
     },
     dragWrap: { zIndex: 60 },
   });

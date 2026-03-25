@@ -172,13 +172,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       backgroundColor: theme.border,
     },
     title: {
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
       textAlign: "center",
       color: theme.text,
     },
     subtitle: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       textAlign: "center",
       marginTop: theme.spacing.sm,
       color: theme.textSecondary,

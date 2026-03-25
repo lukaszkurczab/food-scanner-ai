@@ -231,7 +231,11 @@ export const PhotoPreview = ({
               {!loadError ? (
                 <Animated.Image
                   source={{ uri: photoUri }}
-                  style={[styles.img, aStyle, { backgroundColor: theme.card }]}
+                  style={[
+                    styles.img,
+                    aStyle,
+                    { backgroundColor: theme.surfaceElevated },
+                  ]}
                   resizeMode="cover"
                   onError={() => setLoadError(true)}
                 />

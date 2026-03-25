@@ -41,6 +41,7 @@ const MealListItemBase: React.FC<Props> = ({
   selected = false,
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["common", "meals", "home"]);
   const [localUri, setLocalUri] = useState<string | null>(null);
   const [rowWidth, setRowWidth] = useState(0);
@@ -52,14 +53,17 @@ const MealListItemBase: React.FC<Props> = ({
 
   useEffect(() => {
     let cancelled = false;
+
     async function restore() {
       if (!mealId || !meal.userUid) return;
 
       const directLocal =
         meal.photoLocalPath || meal.localPhotoUrl || meal.photoUrl || "";
+
       if (
         directLocal &&
-        (directLocal.startsWith("file://") || directLocal.startsWith("content://"))
+        (directLocal.startsWith("file://") ||
+          directLocal.startsWith("content://"))
       ) {
         try {
           const info = await FileSystem.getInfoAsync(directLocal);
@@ -68,7 +72,7 @@ const MealListItemBase: React.FC<Props> = ({
             return;
           }
         } catch {
-          // Ignore local file probing failure and continue fallback.
+          //
         }
       }
 
@@ -78,9 +82,12 @@ const MealListItemBase: React.FC<Props> = ({
         imageId: meal.imageId ?? null,
         photoUrl: meal.photoUrl ?? null,
       });
+
       if (!cancelled) setLocalUri(resolvedLocal);
     }
+
     void restore();
+
     return () => {
       cancelled = true;
     };
@@ -116,6 +123,7 @@ const MealListItemBase: React.FC<Props> = ({
         const current = clamp(-g.dx, 0, ACTION_WIDTH);
         const target =
           current > ACTION_WIDTH * 0.4 || velocity > 0.6 ? ACTION_WIDTH : 0;
+
         Animated.spring(reveal, {
           toValue: target,
           useNativeDriver: true,
@@ -143,7 +151,11 @@ const MealListItemBase: React.FC<Props> = ({
 
   const nutrition = calculateTotalNutrients([meal]);
   const imageUri =
-    localUri || meal.photoLocalPath || meal.localPhotoUrl || meal.photoUrl || null;
+    localUri ||
+    meal.photoLocalPath ||
+    meal.localPhotoUrl ||
+    meal.photoUrl ||
+    null;
 
   const translateX = reveal.interpolate({
     inputRange: [0, ACTION_WIDTH],
@@ -163,48 +175,39 @@ const MealListItemBase: React.FC<Props> = ({
       });
       return;
     }
+
     onPress();
   };
 
   return (
     <View onLayout={onLayout} style={styles.root}>
-      <View
-        pointerEvents="box-none"
-        style={[StyleSheet.absoluteFill, { justifyContent: "center" }]}
-      >
-        <View
-          style={[
-            styles.actions,
-            {
-              width: ACTION_WIDTH,
-              right: 0,
-              position: "absolute",
-            },
-          ]}
-        >
+      <View pointerEvents="box-none" style={styles.actionsLayer}>
+        <View style={styles.actions}>
           <Pressable
             onPress={onDelete}
             accessibilityLabel={t("delete", { ns: "common" })}
             hitSlop={8}
-            style={[styles.actBtn, { borderColor: theme.border }]}
+            style={styles.actBtn}
           >
-            <AppIcon name="delete" size={24} color={theme.text} />
+            <AppIcon name="delete" size={22} color={theme.error.text} />
           </Pressable>
+
           <Pressable
             onPress={onEdit}
             accessibilityLabel={t("edit", { ns: "common" })}
             hitSlop={8}
-            style={[styles.actBtn, { borderColor: theme.border }]}
+            style={styles.actBtn}
           >
-            <AppIcon name="edit" size={24} color={theme.text} />
+            <AppIcon name="edit" size={22} color={theme.text} />
           </Pressable>
+
           <Pressable
             onPress={onDuplicate}
             accessibilityLabel={t("duplicate", { ns: "common" })}
             hitSlop={8}
-            style={[styles.actBtn, { borderColor: theme.border }]}
+            style={styles.actBtn}
           >
-            <AppIcon name="copy" size={24} color={theme.text} />
+            <AppIcon name="copy" size={22} color={theme.text} />
           </Pressable>
         </View>
       </View>
@@ -218,16 +221,7 @@ const MealListItemBase: React.FC<Props> = ({
       >
         <Pressable
           onPress={handleCardPress}
-          style={[
-            styles.card,
-            {
-              backgroundColor: theme.background,
-              borderColor: selected ? theme.accent : theme.border,
-              borderWidth: selected ? 2 : 1,
-              shadowColor: theme.shadow,
-              shadowOpacity: selected ? 0.12 : 0.07,
-            },
-          ]}
+          style={[styles.card, selected ? styles.cardSelected : null]}
         >
           {onSelect ? (
             <Pressable
@@ -240,49 +234,40 @@ const MealListItemBase: React.FC<Props> = ({
               <View
                 style={[
                   styles.selectCircle,
-                  {
-                    borderColor: selected ? theme.accent : theme.border,
-                    backgroundColor: selected ? theme.accent : "transparent",
-                  },
+                  selected ? styles.selectCircleSelected : null,
                 ]}
               >
-                {selected ? (
-                  <Text
-                    style={[styles.checkMark, { color: theme.onAccent }]}
-                  >
-                    ✓
-                  </Text>
-                ) : null}
+                {selected ? <Text style={styles.checkMark}>✓</Text> : null}
               </View>
             </Pressable>
           ) : null}
 
-          {imageUri && (
+          {imageUri ? (
             <FallbackImage
               uri={imageUri}
               width={72}
               height={72}
-              borderRadius={theme.rounded.sm}
+              borderRadius={theme.rounded.md}
             />
-          )}
+          ) : null}
 
-          <View style={[styles.contentWrap, { marginLeft: theme.spacing.md }]}>
+          <View
+            style={[
+              styles.contentWrap,
+              imageUri || onSelect ? styles.contentWithOffset : null,
+            ]}
+          >
             <View style={styles.headerRow}>
-              <Text
-                numberOfLines={1}
-                style={[styles.mealName, { color: theme.text }]}
-              >
+              <Text numberOfLines={1} style={styles.mealName}>
                 {meal.name || t("meal", { ns: "home" })}
               </Text>
+
               <View style={styles.metaWrap}>
                 <MealSyncBadge
                   syncState={meal.syncState}
                   lastSyncedAt={meal.lastSyncedAt}
                 />
-                <Text
-                  numberOfLines={1}
-                  style={[styles.kcalText, { color: theme.text }]}
-                >
+                <Text numberOfLines={1} style={styles.kcalText}>
                   {nutrition.kcal} {t("kcal")}
                 </Text>
               </View>
@@ -303,6 +288,7 @@ const MealListItemBase: React.FC<Props> = ({
 function areMealsEqual(a?: Meal, b?: Meal) {
   if (!a && !b) return true;
   if (!a || !b) return false;
+
   return (
     (a.cloudId || a.mealId) === (b.cloudId || b.mealId) &&
     a.updatedAt === b.updatedAt &&
@@ -331,85 +317,123 @@ function propsEqual(prev: Props, next: Props) {
 
 export const MealListItem = React.memo(MealListItemBase, propsEqual);
 
-const styles = StyleSheet.create({
-  root: {
-    position: "relative",
-  },
-  animatedRow: {},
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "center",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  selectBoxWrap: { width: 40, alignItems: "center", justifyContent: "center" },
-  selectCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 14,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkMark: {
-    fontSize: 16,
-    lineHeight: 16,
-  },
-  contentWrap: {
-    flex: 1,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  metaWrap: {
-    alignItems: "flex-end",
-    gap: 4,
-  },
-  chipsRow: { flexDirection: "row", justifyContent: "space-between", gap: 6 },
-  mealName: {
-    fontSize: 18,
-    fontWeight: "700",
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 0,
-    marginRight: 8,
-    maxWidth: "68%",
-  },
-  kcalText: {
-    fontSize: 20,
-    fontWeight: "700",
-    flexShrink: 0,
-  },
-  actions: {
-    paddingBottom: 12,
-    paddingLeft: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
-    top: 0,
-    bottom: 0,
-  },
-  actBtn: {
-    width: 48,
-    height: "100%",
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    flex: 1,
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    root: {
+      position: "relative",
+      marginBottom: theme.spacing.md,
+    },
+    actionsLayer: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: "center",
+    },
+    animatedRow: {},
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "center",
+      padding: theme.spacing.md,
+      borderRadius: theme.rounded.lg,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surface,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.18 : 0.08,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 2,
+    },
+    cardSelected: {
+      borderColor: theme.primary,
+      borderWidth: 2,
+      shadowOpacity: theme.isDark ? 0.24 : 0.12,
+    },
+    selectBoxWrap: {
+      width: 40,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    selectCircle: {
+      width: 22,
+      height: 22,
+      borderRadius: theme.rounded.full,
+      borderWidth: 1.5,
+      borderColor: theme.border,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "transparent",
+    },
+    selectCircleSelected: {
+      borderColor: theme.primary,
+      backgroundColor: theme.primary,
+    },
+    checkMark: {
+      fontSize: 14,
+      lineHeight: 14,
+      color: theme.cta.primaryText,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    contentWrap: {
+      flex: 1,
+    },
+    contentWithOffset: {
+      marginLeft: theme.spacing.md,
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.sm,
+      gap: theme.spacing.sm,
+    },
+    metaWrap: {
+      alignItems: "flex-end",
+      gap: theme.spacing.xs,
+    },
+    chipsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    mealName: {
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      flexGrow: 1,
+      flexShrink: 1,
+      minWidth: 0,
+      marginRight: theme.spacing.sm,
+      maxWidth: "68%",
+    },
+    kcalText: {
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.text,
+      flexShrink: 0,
+    },
+    actions: {
+      position: "absolute",
+      right: 0,
+      top: 0,
+      bottom: 0,
+      width: ACTION_WIDTH,
+      paddingLeft: theme.spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      borderRadius: theme.rounded.lg,
+    },
+    actBtn: {
+      width: 48,
+      height: "100%",
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surfaceElevated,
+      justifyContent: "center",
+      alignItems: "center",
+      flex: 1,
+    },
+  });

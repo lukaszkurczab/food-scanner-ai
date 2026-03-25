@@ -200,7 +200,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
       marginBottom: theme.spacing.xs,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
     },
     input: { marginBottom: theme.spacing.md },
     inputLarge: { marginBottom: theme.spacing.xl },

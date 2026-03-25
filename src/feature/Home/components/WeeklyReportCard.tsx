@@ -29,11 +29,7 @@ function getBody(report: WeeklyReport): string {
   return "Open the report to see the latest status.";
 }
 
-export default function WeeklyReportCard({
-  loading,
-  report,
-  onPress,
-}: Props) {
+export default function WeeklyReportCard({ loading, report, onPress }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
@@ -44,7 +40,9 @@ export default function WeeklyReportCard({
       style={({ pressed }) => [
         styles.container,
         report.status === "ready" ? styles.readyContainer : null,
-        report.status === "insufficient_data" ? styles.insufficientContainer : null,
+        report.status === "insufficient_data"
+          ? styles.insufficientContainer
+          : null,
         pressed ? styles.pressed : null,
       ]}
       testID="weekly-report-card"
@@ -70,7 +68,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       padding: theme.spacing.lg,
       gap: theme.spacing.sm,
       borderWidth: 1,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
       shadowColor: theme.shadow,
       shadowOpacity: 0.08,
@@ -78,10 +76,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       elevation: 2,
     },
     readyContainer: {
-      borderColor: theme.success.background,
+      borderColor: theme.success.surface,
     },
     insufficientContainer: {
-      borderColor: theme.warning.background,
+      borderColor: theme.warning.surface,
     },
     pressed: {
       opacity: 0.9,
@@ -91,24 +89,24 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     eyebrow: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
       textTransform: "uppercase",
       letterSpacing: 0.8,
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
     },
     body: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       lineHeight: 22,
     },
     cta: {
-      color: theme.accentSecondary,
-      fontSize: theme.typography.size.sm,
+      color: theme.primary,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
     },
   });

@@ -25,7 +25,7 @@ export const UserIcon: React.FC<Props> = ({
   const { userData } = useUserContext();
   const { t } = useTranslation("common");
 
-  const borderColor = isPremium ? theme.macro.fat : theme.card;
+  const borderColor = isPremium ? theme.macro.fat : theme.surfaceElevated;
   const borderWidth = isPremium ? 4 : 2;
   const sourceUri = userData
     ? userData.avatarLocalPath || userData.avatarUrl || null
@@ -99,14 +99,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     container: {
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       position: "relative",
     },
     premiumBadge: {
       position: "absolute",
       bottom: theme.spacing.sm,
       right: theme.spacing.sm,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       elevation: 3,
     },
   });

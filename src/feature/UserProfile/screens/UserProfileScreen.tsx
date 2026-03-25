@@ -1,5 +1,12 @@
 import { useMemo } from "react";
-import { View, Text, Pressable, ActivityIndicator, Linking, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  ActivityIndicator,
+  Linking,
+  StyleSheet,
+} from "react-native";
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -19,7 +26,9 @@ type UserProfileScreenProps = {
   navigation: ProfileNavigation;
 };
 
-export default function UserProfileScreen({ navigation }: UserProfileScreenProps) {
+export default function UserProfileScreen({
+  navigation,
+}: UserProfileScreenProps) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -30,8 +39,10 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
     return (
       <Layout>
         <View style={styles.emptyStateWrap}>
-          <ActivityIndicator size="large" color={theme.accent} />
-          <Text style={styles.emptyStateDescription}>{t("common:loading")}</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={styles.emptyStateDescription}>
+            {t("common:loading")}
+          </Text>
         </View>
       </Layout>
     );
@@ -41,7 +52,9 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
     return (
       <Layout>
         <View style={styles.emptyStateWrap}>
-          <Text style={styles.emptyStateTitle}>{t("profileUnavailableTitle")}</Text>
+          <Text style={styles.emptyStateTitle}>
+            {t("profileUnavailableTitle")}
+          </Text>
           <Text style={styles.emptyStateDescription}>
             {state.isOnline
               ? t("profileUnavailableDesc")
@@ -69,15 +82,15 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           overrideColor={state.overrideColor}
           overrideEmoji={state.overrideEmoji}
           fallbackIcon={
-            <AppIcon
-              name="person"
-              size={52}
-              color={theme.textSecondary}
-            />
+            <AppIcon name="person" size={52} color={theme.textSecondary} />
           }
           accessibilityLabel={t("profilePicture")}
         />
-        <Text style={styles.username} accessibilityRole="header" numberOfLines={1}>
+        <Text
+          style={styles.username}
+          accessibilityRole="header"
+          numberOfLines={1}
+        >
           {state.userData.username}
         </Text>
         <Text style={styles.email} numberOfLines={1}>
@@ -104,7 +117,11 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
                   void state.retryProfileSync();
                 }}
                 disabled={state.retryingProfileSync}
-                style={state.retryingProfileSync ? styles.syncRetryDisabled : undefined}
+                style={
+                  state.retryingProfileSync
+                    ? styles.syncRetryDisabled
+                    : undefined
+                }
               >
                 {state.retryingProfileSync ? (
                   <ActivityIndicator size="small" color={theme.warning.text} />
@@ -148,9 +165,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
       />
 
       <SectionHeader label={t("settingsSection")} />
-      <View
-        style={styles.toggleRow}
-      >
+      <View style={styles.toggleRow}>
         <Text style={styles.toggleLabel} numberOfLines={1}>
           {t("toggleDarkMode")}
         </Text>
@@ -159,9 +174,9 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           onToggle={state.handleThemeToggle}
           accessibilityLabel={t("toggleDarkMode")}
           trackColor={
-            state.darkTheme ? theme.accentSecondary : theme.textSecondary
+            state.darkTheme ? theme.primary : theme.textSecondary
           }
-          thumbColor={theme.card}
+          thumbColor={theme.surfaceElevated}
           borderColor={theme.border}
         />
       </View>
@@ -200,14 +215,10 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
         accessibilityRole="button"
         accessibilityLabel={t("deleteAccount")}
       >
-        <Text style={styles.deleteText}>
-          {t("deleteAccount")}
-        </Text>
+        <Text style={styles.deleteText}>{t("deleteAccount")}</Text>
       </Pressable>
 
-      <Text style={styles.version}>
-        {t("appVersion")} 1.0.1
-      </Text>
+      <Text style={styles.version}>{t("appVersion")} 1.0.1</Text>
 
       <InputModal
         visible={state.showDeleteModal}
@@ -243,22 +254,22 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: theme.spacing.xl,
     },
     username: {
-      fontSize: theme.typography.size.xl,
+      fontSize: theme.typography.size.h1,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
       marginBottom: theme.spacing.xs,
     },
     email: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       color: theme.textSecondary,
     },
     streak: {
       color: theme.textSecondary,
       marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
     },
     syncState: {
-      fontSize: theme.typography.size.xs,
+      fontSize: theme.typography.size.caption,
       color: theme.textSecondary,
     },
     syncBanner: {
@@ -266,7 +277,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderWidth: 1,
       borderColor: theme.border,
       borderRadius: theme.rounded.md,
-      backgroundColor: theme.warning.background,
+      backgroundColor: theme.warning.surface,
       paddingVertical: theme.spacing.xs + 2,
       paddingHorizontal: theme.spacing.sm,
       width: "100%",
@@ -280,14 +291,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: 2,
     },
     syncBannerTitle: {
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.semiBold,
       color: theme.warning.text,
     },
     syncRetryLabel: {
       color: theme.warning.text,
       fontFamily: theme.typography.fontFamily.semiBold,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       textDecorationLine: "underline",
     },
     syncRetryDisabled: {
@@ -305,20 +316,20 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
     },
     deleteAccount: {
       alignItems: "center",
       marginVertical: theme.spacing.xl,
     },
     deleteText: {
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.error.text,
     },
     version: {
       textAlign: "center",
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       color: theme.textSecondary,
     },
     emptyStateWrap: {
@@ -330,15 +341,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     emptyStateTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.semiBold,
       textAlign: "center",
     },
     emptyStateDescription: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       textAlign: "center",
-      lineHeight: Math.round(theme.typography.size.sm * 1.5),
+      lineHeight: Math.round(theme.typography.size.bodyS * 1.5),
     },
     emptyStateAction: {
       marginTop: theme.spacing.sm,

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Pressable,
   Text,
@@ -30,8 +30,10 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   ...rest
 }) => {
   const theme = useTheme();
-  const backgroundColor = theme.accentSecondary;
-  const textColor = theme.onAccent;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
+  const backgroundColor = theme.cta.primaryBackground;
+  const textColor = theme.cta.primaryText;
   const disabledBg = theme.disabled.background;
   const disabledText = theme.disabled.text;
   const isDisabled = disabled || loading;
@@ -42,11 +44,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
         styles.button,
         {
           backgroundColor: isDisabled ? disabledBg : backgroundColor,
-          opacity: pressed && !isDisabled ? 0.8 : isDisabled ? 0.6 : 1,
-          borderRadius: theme.rounded.lg,
-          paddingVertical: theme.spacing.md,
-          paddingHorizontal: theme.spacing.lg,
-          shadowColor: theme.shadow,
+          opacity: pressed && !isDisabled ? 0.84 : isDisabled ? 0.6 : 1,
         },
         style,
       ]}
@@ -64,9 +62,6 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
             styles.label,
             {
               color: isDisabled ? disabledText : textColor,
-              fontSize: theme.typography.size.md,
-              fontFamily: theme.typography.fontFamily.bold,
-              letterSpacing: 0.7,
             },
             textStyle,
           ]}
@@ -78,20 +73,27 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  button: {
-    alignSelf: "stretch",
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  label: {
-    fontWeight: "bold",
-    letterSpacing: 0.2,
-    textAlign: "center",
-  },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    button: {
+      alignSelf: "stretch",
+      width: "100%",
+      minHeight: 52,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.rounded.full,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      shadowColor: "#000000",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: theme.isDark ? 0.24 : 0.12,
+      shadowRadius: 12,
+      elevation: 4,
+    },
+    label: {
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.bold,
+      textAlign: "center",
+    },
+  });

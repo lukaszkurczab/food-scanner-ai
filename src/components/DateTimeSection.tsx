@@ -45,7 +45,7 @@ export const DateTimeSection: React.FC<Props> = ({
         month: "long",
         year: "numeric",
       }),
-    [locale]
+    [locale],
   );
 
   const fmtTime = useMemo(
@@ -55,7 +55,7 @@ export const DateTimeSection: React.FC<Props> = ({
         minute: "2-digit",
         hour12: prefers12h,
       }),
-    [locale, prefers12h]
+    [locale, prefers12h],
   );
 
   const [visible, setVisible] = useState(false);
@@ -100,33 +100,52 @@ export const DateTimeSection: React.FC<Props> = ({
 
       <Modal
         visible={visible}
-        message={
-          t("meals:meal_time", "Czas posiłku") +
-          " — " +
-          t("meals:pick_date_time", "Wybierz datę i godzinę")
-        }
-        primaryActionLabel={t("common:save", "Zapisz")}
-        secondaryActionLabel={t("common:cancel", "Anuluj")}
+        title={t("meals:meal_time", "Meal time")}
         onClose={handleCancel}
-        onSecondaryAction={handleCancel}
-        onPrimaryAction={handleSave}
+        primaryAction={{
+          label: t("common:save", "Save"),
+          onPress: handleSave,
+          tone: "primary",
+        }}
+        secondaryAction={{
+          label: t("common:cancel", "Cancel"),
+          onPress: handleCancel,
+          tone: "secondary",
+        }}
       >
         <View style={styles.modalContent}>
+          <Text style={styles.modalMessage}>
+            {t("meals:pick_date_time", "Choose date and time")}
+          </Text>
+
           {prefers12h ? (
             <Clock12h value={tmp} onChange={setTmp} />
           ) : (
             <Clock24h value={tmp} onChange={setTmp} />
           )}
+
           <Calendar
             startDate={tmp}
             endDate={tmp}
             focus="start"
-            onChangeRange={({ start }) => setTmp(start)}
+            onChangeRange={({ start }) =>
+              setTmp((prev) => {
+                const next = new Date(start);
+                next.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                return next;
+              })
+            }
             onToggleFocus={() => {}}
             minDate={minDate}
             maxDate={maxDate}
             mode="single"
-            onPickSingle={(d) => setTmp(d)}
+            onPickSingle={(d) =>
+              setTmp((prev) => {
+                const next = new Date(d);
+                next.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                return next;
+              })
+            }
           />
         </View>
       </Modal>
@@ -149,17 +168,27 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
     },
     dateText: {
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
       color: theme.text,
       fontFamily: theme.typography.fontFamily.bold,
     },
     timeText: {
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.regular,
+      marginTop: theme.spacing.xxs,
     },
     modalContent: {
       paddingTop: theme.spacing.sm,
       gap: theme.spacing.md,
+    },
+    modalMessage: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
+      textAlign: "center",
     },
   });

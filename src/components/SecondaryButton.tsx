@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Pressable,
   Text,
@@ -7,6 +7,7 @@ import {
   ViewStyle,
   TextStyle,
   PressableProps,
+  StyleSheet,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
@@ -29,51 +30,63 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   ...rest
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
-  const textColor = disabled ? theme.textSecondary : theme.accentSecondary;
-  const borderColor = textColor;
+  const isDisabled = disabled || loading;
+  const textColor = isDisabled ? theme.disabled.text : theme.cta.secondaryText;
 
   return (
     <Pressable
       style={({ pressed }) => [
-        {
-          borderColor,
-          borderWidth: 1,
-          borderRadius: theme.rounded.lg,
-          paddingVertical: theme.spacing.md,
-          paddingHorizontal: theme.spacing.lg,
-          alignSelf: "stretch",
-          width: "100%",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: pressed && !disabled ? 0.9 : disabled ? 0.6 : 1,
-        },
+        styles.button,
+        isDisabled ? styles.buttonDisabled : null,
+        pressed && !isDisabled ? styles.buttonPressed : null,
         style,
       ]}
       onPress={onPress}
-      disabled={disabled || loading}
-      android_ripple={!disabled ? { color: theme.overlay } : undefined}
+      disabled={isDisabled}
+      android_ripple={!isDisabled ? { color: theme.overlay } : undefined}
       accessibilityRole="button"
       {...rest}
     >
       {loading ? (
         <ActivityIndicator size="small" color={textColor} />
       ) : (
-        <Text
-          style={[
-            {
-              color: textColor,
-              fontSize: theme.typography.size.base,
-              fontFamily: theme.typography.fontFamily.bold,
-              letterSpacing: 1,
-              textAlign: "center",
-            },
-            textStyle,
-          ]}
-        >
+        <Text style={[styles.label, { color: textColor }, textStyle]}>
           {label}
         </Text>
       )}
     </Pressable>
   );
 };
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    button: {
+      alignSelf: "stretch",
+      width: "100%",
+      minHeight: 52,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: theme.cta.secondaryBorder,
+      backgroundColor: theme.cta.secondaryBackground,
+      borderRadius: theme.rounded.full,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    buttonPressed: {
+      opacity: 0.84,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+      borderColor: theme.disabled.border,
+      backgroundColor: theme.disabled.background,
+    },
+    label: {
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.bold,
+      textAlign: "center",
+    },
+  });

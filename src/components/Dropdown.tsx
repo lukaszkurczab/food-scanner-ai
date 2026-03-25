@@ -38,7 +38,8 @@ type DropdownPosition = {
 };
 
 const MENU_MAX_HEIGHT = 240;
-const FIELD_MIN_HEIGHT = 48;
+const FIELD_MIN_HEIGHT = 52;
+const MENU_BOTTOM_OFFSET = 24;
 const SHADOW_OFFSET_Y = 2;
 
 export function Dropdown<T extends string>({
@@ -77,9 +78,12 @@ export function Dropdown<T extends string>({
   const menuMaxHeight = dropdownPos
     ? Math.min(
         MENU_MAX_HEIGHT,
-        Dimensions.get("window").height - (dropdownPos.y + dropdownPos.height)
+        Dimensions.get("window").height -
+          (dropdownPos.y + dropdownPos.height) -
+          MENU_BOTTOM_OFFSET,
       )
     : MENU_MAX_HEIGHT;
+
   const menuPositionStyle = useMemo(
     () =>
       dropdownPos
@@ -90,12 +94,12 @@ export function Dropdown<T extends string>({
             maxHeight: menuMaxHeight,
           }
         : null,
-    [dropdownPos, menuMaxHeight]
+    [dropdownPos, menuMaxHeight],
   );
 
   return (
     <View style={style}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label ? <Text style={styles.label}>{label}</Text> : null}
 
       <Pressable
         ref={fieldRef}
@@ -107,7 +111,7 @@ export function Dropdown<T extends string>({
         onPress={() => !disabled && openDropdown()}
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityState={{ disabled }}
+        accessibilityState={{ disabled, expanded: open }}
       >
         <View style={styles.fieldContent}>
           {selected ? (
@@ -118,20 +122,24 @@ export function Dropdown<T extends string>({
                 {selected.label}
               </Text>
             )
-          ) : null}
+          ) : (
+            <Text style={styles.placeholderText} numberOfLines={1}>
+              —
+            </Text>
+          )}
         </View>
 
         <AppIcon
           name={open ? "chevron-up" : "chevron-down"}
-          size={24}
+          size={20}
           color={theme.textSecondary}
           style={styles.fieldIcon}
         />
       </Pressable>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      {open && dropdownPos && (
+      {open && dropdownPos ? (
         <Modal
           transparent
           animationType="none"
@@ -143,6 +151,7 @@ export function Dropdown<T extends string>({
               <ScrollView
                 nestedScrollEnabled
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.menuContent}
               >
                 {options.map((item, idx) => {
                   const isSelected = value === item.value;
@@ -154,9 +163,13 @@ export function Dropdown<T extends string>({
                         setOpen(false);
                         onChange(item.value);
                       }}
-                      style={[styles.option, isSelected && styles.optionSelected]}
+                      style={[
+                        styles.option,
+                        isSelected ? styles.optionSelected : null,
+                      ]}
                       accessibilityRole="button"
                       accessibilityLabel={item.label}
+                      activeOpacity={0.75}
                     >
                       {renderLabel ? (
                         renderLabel(item)
@@ -164,7 +177,7 @@ export function Dropdown<T extends string>({
                         <Text
                           style={[
                             styles.optionText,
-                            isSelected && styles.optionTextSelected,
+                            isSelected ? styles.optionTextSelected : null,
                           ]}
                         >
                           {item.label}
@@ -177,7 +190,7 @@ export function Dropdown<T extends string>({
             </View>
           </Pressable>
         </Modal>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -186,8 +199,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     label: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
-      marginBottom: theme.spacing.xs / 2,
+      fontSize: theme.typography.size.labelL,
+      lineHeight: theme.typography.lineHeight.labelL,
+      marginBottom: theme.spacing.xs,
       fontFamily: theme.typography.fontFamily.medium,
     },
     field: {
@@ -196,29 +210,37 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
       minHeight: FIELD_MIN_HEIGHT,
-      borderRadius: theme.rounded.sm,
+      borderRadius: theme.rounded.md,
       borderWidth: 1,
-      borderColor: theme.border,
-      backgroundColor: theme.card,
-      shadowColor: theme.shadow,
-      shadowOpacity: 0.12,
-      shadowRadius: theme.spacing.sm,
+      borderColor: theme.input.border,
+      backgroundColor: theme.input.background,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.16 : 0.08,
+      shadowRadius: 10,
       shadowOffset: { width: 0, height: SHADOW_OFFSET_Y },
-      elevation: 3,
+      elevation: 2,
     },
     fieldError: {
-      borderColor: theme.error.border,
+      borderColor: theme.input.borderError,
     },
     fieldDisabled: {
-      backgroundColor: theme.disabled.background,
+      backgroundColor: theme.input.backgroundDisabled,
       opacity: 0.6,
     },
     fieldContent: {
       flex: 1,
+      justifyContent: "center",
     },
     selectedText: {
-      color: theme.text,
-      fontSize: theme.typography.size.base,
+      color: theme.input.text,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    placeholderText: {
+      color: theme.input.placeholder,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
     },
     fieldIcon: {
@@ -227,38 +249,48 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     errorText: {
       color: theme.error.text,
       marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
     },
     modalOverlay: {
       flex: 1,
+      backgroundColor: "transparent",
     },
     menu: {
       position: "absolute",
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
       borderWidth: 1,
-      borderRadius: theme.rounded.sm,
-      shadowColor: theme.shadow,
-      shadowOpacity: 0.1,
-      shadowRadius: theme.spacing.sm,
+      borderRadius: theme.rounded.lg,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.2 : 0.1,
+      shadowRadius: 12,
       shadowOffset: { width: 0, height: SHADOW_OFFSET_Y },
-      elevation: 3,
+      elevation: 8,
       zIndex: 100,
+      overflow: "hidden",
+    },
+    menuContent: {
+      paddingVertical: theme.spacing.xs,
     },
     option: {
       paddingVertical: theme.spacing.md,
       paddingHorizontal: theme.spacing.md,
+      minHeight: 48,
+      justifyContent: "center",
     },
     optionSelected: {
-      backgroundColor: theme.overlay,
+      backgroundColor: theme.primarySoft,
     },
     optionText: {
       color: theme.text,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
-      fontWeight: "normal",
     },
     optionTextSelected: {
-      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.primaryStrong,
+      fontFamily: theme.typography.fontFamily.semiBold,
     },
   });

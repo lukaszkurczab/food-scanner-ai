@@ -285,7 +285,10 @@ export default function HomeScreen({ navigation }: Props) {
   );
   const showWeeklyGraph = useMemo(() => data.some((v) => v > 0), [data]);
 
-  const legacyMacros = useMemo(() => calculateTotalNutrients(dayMeals), [dayMeals]);
+  const legacyMacros = useMemo(
+    () => calculateTotalNutrients(dayMeals),
+    [dayMeals],
+  );
   const legacyCalories = legacyMacros.kcal;
   const displayStreak = hasCanonicalNutritionState
     ? nutritionState.streak.current
@@ -336,7 +339,11 @@ export default function HomeScreen({ navigation }: Props) {
     }
 
     return fallbackMacroTargets;
-  }, [fallbackMacroTargets, hasCanonicalNutritionState, nutritionState.targets]);
+  }, [
+    fallbackMacroTargets,
+    hasCanonicalNutritionState,
+    nutritionState.targets,
+  ]);
 
   const summaryToneStyle = useMemo(() => {
     if (!nutritionSummary || !hasCanonicalNutritionState) {
@@ -348,7 +355,12 @@ export default function HomeScreen({ navigation }: Props) {
     }
 
     return styles.goalStatusWarning;
-  }, [hasCanonicalNutritionState, nutritionState.habits.topRisk, nutritionSummary, styles]);
+  }, [
+    hasCanonicalNutritionState,
+    nutritionState.habits.topRisk,
+    nutritionSummary,
+    styles,
+  ]);
 
   const handleCoachAction = (actionType: CoachActionType) => {
     switch (actionType) {
@@ -367,15 +379,13 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   const coachCtaTargetScreen = topCoachInsight
-    ? (
-      topCoachInsight.actionType === "log_next_meal"
-        ? "MealAddMethod"
-        : topCoachInsight.actionType === "open_chat"
-          ? "Chat"
-          : topCoachInsight.actionType === "review_history"
-            ? "HistoryList"
-            : null
-    )
+    ? topCoachInsight.actionType === "log_next_meal"
+      ? "MealAddMethod"
+      : topCoachInsight.actionType === "open_chat"
+        ? "Chat"
+        : topCoachInsight.actionType === "review_history"
+          ? "HistoryList"
+          : null
     : null;
 
   return (
@@ -392,7 +402,10 @@ export default function HomeScreen({ navigation }: Props) {
         {userData?.calorieTarget && userData.calorieTarget > 0 ? (
           <View style={[styles.headerRow, styles.headerRowGap]}>
             <View style={styles.headerContent}>
-              <TargetProgressBar current={totalCalories} target={goalCalories} />
+              <TargetProgressBar
+                current={totalCalories}
+                target={goalCalories}
+              />
               {nutritionSummary ? (
                 <View
                   style={[styles.goalStatusPill, summaryToneStyle]}
@@ -504,7 +517,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     headerRowGap: { gap: theme.spacing.sm },
     headerContent: { flex: 1, gap: theme.spacing.xs },
     goalCard: {
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       padding: theme.spacing.lg,
       borderRadius: theme.rounded.md,
       shadowColor: theme.shadow,
@@ -525,7 +538,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       width: "100%",
     },
     goalLabel: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       marginBottom: 2,
     },
     goalLabelText: {
@@ -533,7 +546,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.medium,
     },
     goalValue: {
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
     },
     goalValueText: {
       color: theme.text,
@@ -550,12 +563,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       maxWidth: "100%",
     },
     goalStatusText: {
-      fontSize: theme.typography.size.xs,
+      fontSize: theme.typography.size.caption,
     },
     goalStatusSuccess: {
-      backgroundColor: theme.success.background,
+      backgroundColor: theme.success.surface,
     },
     goalStatusWarning: {
-      backgroundColor: theme.warning.background,
+      backgroundColor: theme.warning.surface,
     },
   });

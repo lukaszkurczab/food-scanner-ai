@@ -45,14 +45,8 @@ export default function ResultScreen({
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
-  const {
-    meal,
-    setLastScreen,
-    clearMeal,
-    saveDraft,
-    loadDraft,
-    setPhotoUrl,
-  } = useMealDraftContext();
+  const { meal, setLastScreen, clearMeal, saveDraft, loadDraft, setPhotoUrl } =
+    useMealDraftContext();
   const { userData } = useUserContext();
   const { addMeal } = useMeals(uid ?? null);
 
@@ -216,7 +210,7 @@ export default function ResultScreen({
     <Layout showNavigation={false}>
       <View style={styles.imageWrapper}>
         {checkingImage ? (
-          <ActivityIndicator size="large" color={theme.accent} />
+          <ActivityIndicator size="large" color={theme.primary} />
         ) : image && !imageError ? (
           <>
             <Pressable
@@ -248,13 +242,12 @@ export default function ResultScreen({
           <Pressable
             onPress={() => !saving && openCamera()}
             disabled={saving}
-            style={[styles.placeholder, { backgroundColor: theme.card }]}
+            style={[
+              styles.placeholder,
+              { backgroundColor: theme.surfaceElevated },
+            ]}
           >
-            <AppIcon
-              name="add-photo"
-              size={44}
-              color={theme.textSecondary}
-            />
+            <AppIcon name="add-photo" size={44} color={theme.textSecondary} />
             <Text
               style={[styles.placeholderText, { color: theme.textSecondary }]}
             >
@@ -390,7 +383,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.xs,
     },
     placeholderText: {
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       fontWeight: "500",
       marginTop: 3,
     },
@@ -404,20 +397,20 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       justifyContent: "center",
       alignItems: "center",
       gap: theme.spacing.sm,
-      padding: theme.spacing.container,
+      padding: theme.spacing.screenPadding,
       paddingBottom: theme.spacing.xl,
     },
     emptyTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.semiBold,
       textAlign: "center",
     },
     emptyDescription: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       textAlign: "center",
-      lineHeight: Math.round(theme.typography.size.sm * 1.5),
+      lineHeight: Math.round(theme.typography.size.bodyS * 1.5),
     },
     emptyAction: {
       alignSelf: "stretch",

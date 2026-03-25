@@ -53,9 +53,9 @@ export function StyleModal({
       regular: { fontFamily: theme.typography.fontFamily.regular },
       medium: { fontFamily: theme.typography.fontFamily.medium },
       bold: { fontFamily: theme.typography.fontFamily.bold },
-      light: { fontFamily: theme.typography.fontFamily.light },
+      light: { fontFamily: theme.typography.fontFamily.regular },
     }),
-    [theme]
+    [theme],
   );
 
   return (
@@ -63,9 +63,7 @@ export function StyleModal({
       <View style={styles.container}>
         {target === "custom" && (
           <View style={styles.previewWrap}>
-            <Text style={styles.previewText}>
-              {previewText}
-            </Text>
+            <Text style={styles.previewText}>{previewText}</Text>
           </View>
         )}
 
@@ -87,28 +85,16 @@ export function StyleModal({
         </View>
 
         <View style={styles.toggleRow}>
-          <Pressable
-            onPress={onToggleItalic}
-            style={styles.toggleChip}
-          >
-            <Text style={styles.italicText}>
-              {t("editor.italic")}
-            </Text>
+          <Pressable onPress={onToggleItalic} style={styles.toggleChip}>
+            <Text style={styles.italicText}>{t("editor.italic")}</Text>
           </Pressable>
-          <Pressable
-            onPress={onToggleUnderline}
-            style={styles.toggleChip}
-          >
-            <Text style={styles.underlineText}>
-              {t("editor.underline")}
-            </Text>
+          <Pressable onPress={onToggleUnderline} style={styles.toggleChip}>
+            <Text style={styles.underlineText}>{t("editor.underline")}</Text>
           </Pressable>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {t("editor.color")}
-          </Text>
+          <Text style={styles.sectionTitle}>{t("editor.color")}</Text>
           <View style={styles.swatchRow}>
             {uniqueQuickColors.slice(0, 8).map((hex, idx) => {
               const active = (color || "#FFFFFF").toUpperCase() === hex;
@@ -152,17 +138,13 @@ export function StyleModal({
               }}
               style={styles.applyButton}
             >
-              <Text style={styles.applyLabel}>
-                {t("editor.apply")}
-              </Text>
+              <Text style={styles.applyLabel}>{t("editor.apply")}</Text>
             </Pressable>
           </View>
 
           {typeof customText === "string" && onChangeCustomText && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                {t("editor.text_label")}
-              </Text>
+              <Text style={styles.sectionTitle}>{t("editor.text_label")}</Text>
               <StyledInput
                 placeholder={t("editor.enter_text_placeholder")}
                 value={customText}
@@ -187,7 +169,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     previewText: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       textAlign: "center",
     },
     fontRow: {
@@ -201,10 +183,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: theme.rounded.sm,
       borderWidth: 1,
       borderColor: theme.border,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
     },
     fontChipActive: {
-      borderColor: theme.accentSecondary,
+      borderColor: theme.primary,
       backgroundColor: theme.overlay,
     },
     fontChipText: {
@@ -223,7 +205,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     section: { gap: theme.spacing.sm },
     sectionTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
     },
     swatchRow: {
       flexDirection: "row",
@@ -238,7 +220,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderColor: theme.border,
     },
     swatchActive: {
-      borderColor: theme.accentSecondary,
+      borderColor: theme.primary,
     },
     inputRow: {
       flexDirection: "row",
@@ -252,11 +234,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderWidth: 1,
       borderColor: theme.border,
       borderRadius: theme.rounded.sm,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
     },
     applyLabel: {
       color: theme.text,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
     },
     bottomSpacer: { height: theme.spacing.xs },
   });

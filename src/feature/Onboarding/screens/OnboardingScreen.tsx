@@ -163,7 +163,7 @@ export default function OnboardingScreen({
     return (
       <Layout showNavigation={false} disableScroll>
         <View style={styles.loadingWrap}>
-          <ActivityIndicator color={theme.accent} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>{t("common:loading")}</Text>
         </View>
       </Layout>

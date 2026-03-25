@@ -1,5 +1,11 @@
 import React, { useMemo } from "react";
-import { View, Text, Pressable, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import type { UserNotification } from "@/types/notification";
 import { ButtonToggle } from "@/components/ButtonToggle";
@@ -21,8 +27,9 @@ export const NotificationCard: React.FC<Props> = ({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("notifications");
+
   const time = `${String(item.time.hour).padStart(2, "0")}:${String(
-    item.time.minute
+    item.time.minute,
   ).padStart(2, "0")}`;
 
   return (
@@ -32,18 +39,12 @@ export const NotificationCard: React.FC<Props> = ({
         <Text style={styles.secondaryText}>{t(`type.${item.type}`)}</Text>
         <Text style={styles.secondaryText}>{time}</Text>
       </View>
+
       <View style={styles.actionsColumn}>
-        <ButtonToggle
-          value={!!item.enabled}
-          onToggle={onToggle}
-          trackColor={
-            item.enabled ? theme.accentSecondary : theme.textSecondary
-          }
-        />
-        <TouchableOpacity onPress={onRemove}>
-          <Text style={styles.deleteText}>
-            {t("form.delete", "Delete")}
-          </Text>
+        <ButtonToggle value={!!item.enabled} onToggle={onToggle} />
+
+        <TouchableOpacity onPress={onRemove} activeOpacity={0.75}>
+          <Text style={styles.deleteText}>{t("form.delete", "Delete")}</Text>
         </TouchableOpacity>
       </View>
     </Pressable>
@@ -53,30 +54,43 @@ export const NotificationCard: React.FC<Props> = ({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     card: {
-      borderBottomWidth: 1,
+      borderWidth: 1,
       borderColor: theme.border,
-      padding: theme.spacing.sm,
+      backgroundColor: theme.surface,
+      borderRadius: theme.rounded.md,
+      padding: theme.spacing.md,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
+      gap: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
     },
     detailsColumn: {
+      flex: 1,
       gap: theme.spacing.xs,
+      minWidth: 0,
     },
     title: {
       color: theme.text,
-      fontFamily: theme.typography.fontFamily.bold,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
     },
     secondaryText: {
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
     },
     actionsColumn: {
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
       alignItems: "center",
+      justifyContent: "center",
     },
     deleteText: {
-      color: theme.error.text || "#d00",
-      fontFamily: theme.typography.fontFamily.regular,
+      color: theme.error.text,
+      fontFamily: theme.typography.fontFamily.medium,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
     },
   });

@@ -83,66 +83,70 @@ export const TextInput: React.FC<Props> = ({
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const [isFocused, setIsFocused] = useState(false);
 
-  const inputBg =
-    theme.card ||
-    (theme.mode === "dark" ? theme.background + "E6" : theme.background);
-
   const hasError = !!error;
   const errorMsg = typeof error === "string" ? error : undefined;
+  const iconSize = 22;
+  const isEditable = editable !== undefined ? editable : !disabled;
+  const resolvedSpellCheck = spellCheck ?? autoCorrect;
+  const inputMinHeight = multiline ? Math.max(48, numberOfLines * 24) : 52;
 
   const borderColor = hasError
-    ? theme.error.border || theme.error.background
+    ? theme.input.borderError
     : isFocused
-    ? theme.accentSecondary
-    : theme.border || "transparent";
-
-  const borderWidth = hasError ? 1.5 : 1;
+      ? theme.primary
+      : theme.input.border;
 
   const iconColor = hasError ? theme.error.text : theme.textSecondary;
-  const iconSize = 22;
 
   const inputPaddingLeft =
     icon && iconPosition === "left"
-      ? theme.spacing.lg + iconSize
-      : theme.spacing.md;
-  const inputPaddingRight =
-    icon && iconPosition === "right"
-      ? theme.spacing.lg + iconSize
+      ? theme.spacing.md + iconSize + theme.spacing.xs
       : theme.spacing.md;
 
-  const isEditable = editable !== undefined ? editable : !disabled;
-  const resolvedSpellCheck = spellCheck ?? autoCorrect;
-  const inputMinHeight = multiline ? Math.max(48, numberOfLines * 24) : 48;
+  const inputPaddingRight =
+    icon && iconPosition === "right"
+      ? theme.spacing.md + iconSize + theme.spacing.xs
+      : rightLabel
+        ? theme.spacing.xl + theme.spacing.md
+        : theme.spacing.md;
+
   const inputWrapperDynamicStyle = useMemo(
     () => ({
-      backgroundColor: inputBg,
+      backgroundColor: isEditable
+        ? theme.input.background
+        : theme.input.backgroundDisabled,
       borderColor,
-      borderWidth,
       alignItems: multiline ? "flex-start" : "center",
       minHeight: inputMinHeight,
       opacity: !isEditable ? 0.7 : 1,
     }),
-    [inputBg, borderColor, borderWidth, multiline, inputMinHeight, isEditable]
+    [
+      isEditable,
+      theme.input.background,
+      theme.input.backgroundDisabled,
+      borderColor,
+      multiline,
+      inputMinHeight,
+    ],
   );
+
   const textInputDynamicStyle = useMemo<TextStyle>(
     () => ({
       paddingLeft: inputPaddingLeft,
       paddingRight: inputPaddingRight,
-      textAlignVertical: multiline
-        ? ("top" as const)
-        : ("center" as const),
+      textAlignVertical: multiline ? "top" : "center",
       minHeight: inputMinHeight,
     }),
-    [inputPaddingLeft, inputPaddingRight, multiline, inputMinHeight]
+    [inputPaddingLeft, inputPaddingRight, multiline, inputMinHeight],
   );
 
   const focusShadowStyle =
     isFocused && !hasError
       ? Platform.select({
           ios: {
-            shadowColor: theme.accentSecondary,
+            shadowColor: "#000000",
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.3,
+            shadowOpacity: theme.isDark ? 0.18 : 0.08,
             shadowRadius: 8,
           },
           android: {
@@ -153,11 +157,8 @@ export const TextInput: React.FC<Props> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {label && (
-        <Text style={styles.label}>
-          {label}
-        </Text>
-      )}
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+
       <View
         style={[
           styles.inputWrapper,
@@ -165,14 +166,14 @@ export const TextInput: React.FC<Props> = ({
           focusShadowStyle,
         ]}
       >
-        {icon && iconPosition === "left" && (
+        {icon && iconPosition === "left" ? (
           <View style={styles.iconLeft}>
             {React.cloneElement(icon, {
               size: icon.props.size ?? iconSize,
               color: icon.props.color ?? iconColor,
             })}
           </View>
-        )}
+        ) : null}
 
         <RNTextInput
           testID={testID}
@@ -190,7 +191,7 @@ export const TextInput: React.FC<Props> = ({
             onBlur?.();
           }}
           placeholder={placeholder}
-          placeholderTextColor={theme.textSecondary}
+          placeholderTextColor={theme.input.placeholder}
           keyboardType={keyboardType}
           secureTextEntry={secureTextEntry}
           editable={isEditable}
@@ -204,35 +205,26 @@ export const TextInput: React.FC<Props> = ({
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
           maxLength={maxLength}
-          style={[
-            styles.input,
-            textInputDynamicStyle,
-            inputStyle,
-          ]}
-          selectionColor={theme.accent}
+          style={[styles.input, textInputDynamicStyle, inputStyle]}
+          selectionColor={theme.primary}
           underlineColorAndroid="transparent"
         />
 
-        {!!rightLabel && (
-          <Text style={styles.rightLabel}>
-            {rightLabel}
-          </Text>
-        )}
+        {rightLabel ? (
+          <Text style={styles.rightLabel}>{rightLabel}</Text>
+        ) : null}
 
-        {icon && iconPosition === "right" && (
+        {icon && iconPosition === "right" ? (
           <View style={styles.iconRight}>
             {React.cloneElement(icon, {
               size: icon.props.size ?? iconSize,
               color: icon.props.color ?? iconColor,
             })}
           </View>
-        )}
+        ) : null}
       </View>
-      {!!errorMsg && (
-        <Text style={styles.errorText}>
-          {errorMsg}
-        </Text>
-      )}
+
+      {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
     </View>
   );
 };
@@ -244,42 +236,47 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     label: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
-      marginBottom: theme.spacing.xs / 2,
+      fontSize: theme.typography.size.labelL,
+      lineHeight: theme.typography.lineHeight.labelL,
+      marginBottom: theme.spacing.xs,
       fontFamily: theme.typography.fontFamily.medium,
     },
     inputWrapper: {
       width: "100%",
       position: "relative",
       overflow: "hidden",
-      shadowOffset: { width: 1, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 2,
-      elevation: 3,
-      borderRadius: theme.rounded.sm,
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
       flexDirection: "row",
-      shadowColor: theme.shadow,
+      shadowColor: "#000000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme.isDark ? 0.16 : 0.08,
+      shadowRadius: 8,
+      elevation: 2,
     },
     input: {
       flex: 1,
-      color: theme.text,
-      fontSize: theme.typography.size.base,
+      color: theme.input.text,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
       paddingVertical: theme.spacing.sm,
     },
     rightLabel: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       marginLeft: theme.spacing.sm,
       fontFamily: theme.typography.fontFamily.medium,
       marginRight: theme.spacing.md,
+      alignSelf: "center",
     },
     errorText: {
       color: theme.error.text,
-      fontSize: theme.typography.size.xs,
-      marginTop: theme.spacing.xs / 2,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      marginTop: theme.spacing.xs,
       fontFamily: theme.typography.fontFamily.medium,
-      letterSpacing: 0.1,
     },
     iconLeft: {
       position: "absolute",

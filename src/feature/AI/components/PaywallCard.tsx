@@ -42,10 +42,14 @@ function getExtraConfig(): ExtraConfig {
   const raw = Constants.expoConfig?.extra;
   if (!raw || typeof raw !== "object") return {};
   const extra = raw as Record<string, unknown>;
+
   return {
     disableBilling:
-      typeof extra.disableBilling === "boolean" ? extra.disableBilling : undefined,
-    privacyUrl: typeof extra.privacyUrl === "string" ? extra.privacyUrl : undefined,
+      typeof extra.disableBilling === "boolean"
+        ? extra.disableBilling
+        : undefined,
+    privacyUrl:
+      typeof extra.privacyUrl === "string" ? extra.privacyUrl : undefined,
   };
 }
 
@@ -79,6 +83,7 @@ export const PaywallCard: React.FC<Props> = ({
   const { t } = useTranslation("chat");
   const { uid } = useAuthContext();
   const { refreshPremium } = usePremiumContext();
+
   const extra = getExtraConfig();
   const termsUrl = getTermsUrl();
   const privacyUrl = extra.privacyUrl ?? "";
@@ -91,8 +96,9 @@ export const PaywallCard: React.FC<Props> = ({
 
   const canShowLinks = useMemo(
     () => !!termsUrl && !!privacyUrl,
-    [termsUrl, privacyUrl]
+    [termsUrl, privacyUrl],
   );
+
   const renewalDate = formatRenewalDate(renewalAt);
 
   useEffect(() => {
@@ -105,25 +111,33 @@ export const PaywallCard: React.FC<Props> = ({
         const offerings = await Purchases.getOfferings();
         const current = offerings.current;
         const packages = current?.availablePackages ?? [];
+
         const findById = (id: string) =>
           packages.find((p) => p.identifier === id);
+
         const monthly =
           findById("$rc_monthly") ||
           packages.find((p) => p.packageType === "MONTHLY");
+
         const annual =
           findById("$rc_annual") ||
           packages.find((p) => p.packageType === "ANNUAL");
-        const selected = monthly || annual || packages[0] || null;
 
+        const selected = monthly || annual || packages[0] || null;
         const product = selected?.product;
+
         const priceText = product?.priceString
           ? String(product.priceString)
           : null;
         const periodText = selected ? packagePeriodLabel(selected) : null;
 
-        if (mounted) setPriceInfo({ priceText, periodText });
+        if (mounted) {
+          setPriceInfo({ priceText, periodText });
+        }
       } catch {
-        if (mounted) setPriceInfo({ priceText: null, periodText: null });
+        if (mounted) {
+          setPriceInfo({ priceText: null, periodText: null });
+        }
       }
     })();
 
@@ -134,38 +148,43 @@ export const PaywallCard: React.FC<Props> = ({
 
   const onRestore = async () => {
     if (loading) return;
+
     const title = t("paywall.restoreTitle", {
       defaultValue: "Manage subscription",
     });
+
     if (billingDisabled()) {
       Alert.alert(
         title,
         t("paywall.billingUnavailable", {
           defaultValue: "Billing is unavailable on this device.",
-        })
+        }),
       );
       return;
     }
+
     if (!uid) {
       Alert.alert(
         title,
         t("paywall.signInRequired", {
           defaultValue: "Please sign in to restore purchases.",
-        })
+        }),
       );
       return;
     }
 
     setLoading(true);
+
     try {
       const res = await restorePurchases(uid);
+
       if (res.status === "success") {
         await refreshPremium();
         Alert.alert(
           title,
           t("paywall.restoreSuccess", {
             defaultValue: "Purchases restored.",
-          })
+          }),
         );
       } else if (res.status === "cancelled") {
         return;
@@ -173,9 +192,10 @@ export const PaywallCard: React.FC<Props> = ({
         const fallback = t("paywall.restoreFailed", {
           defaultValue: "Restore failed. Try again later.",
         });
+
         Alert.alert(
           title,
-          resolvePurchaseErrorMessage(t, res.errorCode, fallback)
+          resolvePurchaseErrorMessage(t, res.errorCode, fallback),
         );
       }
     } finally {
@@ -186,6 +206,7 @@ export const PaywallCard: React.FC<Props> = ({
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{t("limit.title")}</Text>
+
       <Text style={styles.body}>
         {t("limit.body", {
           balance,
@@ -214,9 +235,7 @@ export const PaywallCard: React.FC<Props> = ({
         onPress={onUpgrade}
         style={({ pressed }) => [
           styles.cta,
-          {
-            opacity: pressed ? 0.9 : 1,
-          },
+          pressed ? styles.ctaPressed : null,
         ]}
         accessibilityRole="button"
       >
@@ -228,9 +247,8 @@ export const PaywallCard: React.FC<Props> = ({
         disabled={loading || billingDisabled()}
         style={({ pressed }) => [
           styles.restore,
-          {
-            opacity: billingDisabled() ? 0.4 : pressed ? 0.8 : 1,
-          },
+          billingDisabled() ? styles.restoreDisabled : null,
+          pressed && !billingDisabled() ? styles.restorePressed : null,
         ]}
         accessibilityRole="button"
       >
@@ -253,7 +271,9 @@ export const PaywallCard: React.FC<Props> = ({
               {t("paywall.terms", { defaultValue: "Terms" })}
             </Text>
           </Pressable>
+
           <Text style={styles.dot}>•</Text>
+
           <Pressable
             onPress={() => Linking.openURL(privacyUrl)}
             accessibilityRole="link"
@@ -275,57 +295,80 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: theme.rounded.md,
       alignSelf: "stretch",
       borderWidth: 1,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
-      shadowColor: theme.shadow,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.2 : 0.08,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 3,
     },
     title: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.bold,
       marginBottom: theme.spacing.xs,
       textAlign: "center",
       color: theme.text,
     },
     body: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       marginBottom: theme.spacing.sm,
       textAlign: "center",
       color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
     },
     priceLine: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.bold,
       textAlign: "center",
       marginBottom: theme.spacing.xs,
       color: theme.text,
     },
     disclaimer: {
-      fontSize: theme.typography.size.xs,
-      lineHeight: theme.typography.size.sm,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
       textAlign: "center",
       color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
     },
     cta: {
       alignSelf: "center",
+      minHeight: 44,
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
       marginTop: theme.spacing.md,
       borderRadius: theme.rounded.full,
-      backgroundColor: theme.accentSecondary,
+      backgroundColor: theme.cta.primaryBackground,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    ctaPressed: {
+      opacity: 0.84,
     },
     ctaLabel: {
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
-      color: theme.onAccent,
+      color: theme.cta.primaryText,
     },
     restore: {
       alignSelf: "center",
       paddingVertical: theme.spacing.sm,
       marginTop: theme.spacing.xs,
     },
+    restorePressed: {
+      opacity: 0.8,
+    },
+    restoreDisabled: {
+      opacity: 0.4,
+    },
     restoreLabel: {
-      fontSize: theme.typography.size.sm,
-      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
       color: theme.textSecondary,
     },
     linksRow: {
@@ -335,14 +378,16 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginTop: theme.spacing.xs,
     },
     link: {
-      fontSize: theme.typography.size.sm,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.accentSecondary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      color: theme.link,
     },
     dot: {
       marginHorizontal: theme.spacing.sm,
-      fontSize: theme.typography.size.sm,
-      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
       color: theme.textSecondary,
     },
   });

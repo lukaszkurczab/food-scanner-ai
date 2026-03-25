@@ -163,7 +163,7 @@ export default function MealShareScreen() {
               style={[
                 styles.iconBtn,
                 {
-                  backgroundColor: theme.card,
+                  backgroundColor: theme.surfaceElevated,
                   borderColor: theme.border,
                 },
               ]}
@@ -176,7 +176,7 @@ export default function MealShareScreen() {
               style={[
                 styles.iconBtn,
                 {
-                  backgroundColor: theme.card,
+                  backgroundColor: theme.surfaceElevated,
                   borderColor: theme.border,
                 },
               ]}

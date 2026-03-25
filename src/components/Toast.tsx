@@ -11,37 +11,40 @@ export function ToastContainer() {
   const messageRef = useRef("");
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const show = useCallback((msg: string) => {
-    messageRef.current = msg;
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    timeoutRef.current = setTimeout(() => {
+  const show = useCallback(
+    (msg: string) => {
+      messageRef.current = msg;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       Animated.parallel([
         Animated.timing(opacity, {
-          toValue: 0,
+          toValue: 1,
           duration: 250,
           useNativeDriver: true,
         }),
         Animated.timing(translateY, {
-          toValue: -50,
+          toValue: 0,
           duration: 250,
           useNativeDriver: true,
         }),
       ]).start();
-    }, 2500);
-  }, [opacity, translateY]);
+
+      timeoutRef.current = setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: -50,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }, 2500);
+    },
+    [opacity, translateY],
+  );
 
   useEffect(() => {
     showToast = show;
@@ -59,7 +62,7 @@ export function ToastContainer() {
         {
           opacity,
           transform: [{ translateY }],
-          backgroundColor: theme.card,
+          backgroundColor: theme.surfaceElevated,
           borderColor: theme.border,
         },
       ]}

@@ -230,7 +230,7 @@ export default function SavedMealsScreen({
         <>
           {validating && (
             <View style={styles.validatingWrap}>
-              <ActivityIndicator size="large" color={theme.accent} />
+              <ActivityIndicator size="large" color={theme.primary} />
             </View>
           )}
           <FlatList

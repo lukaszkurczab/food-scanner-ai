@@ -28,7 +28,7 @@ export const TypingDots: React.FC = () => {
             duration: 350,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start();
 
     make(dot1, 0);
@@ -77,7 +77,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       gap: theme.spacing.xs + 2,
       elevation: 2,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       shadowColor: theme.shadow,
     },
     dot: {

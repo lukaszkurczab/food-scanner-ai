@@ -55,4 +55,18 @@ describe("UserIcon", () => {
     expect(getByLabelText("user.premium_badge_accessibility")).toBeTruthy();
     expect(getByText("star")).toBeTruthy();
   });
+
+  it("uses avatar url and custom accessibility label when provided", () => {
+    mockUseUserContext.mockReturnValue({
+      userData: { avatarLocalPath: null, avatarUrl: "https://example.com/avatar.jpg" },
+    });
+    const { UNSAFE_getByType, getByLabelText } = renderWithTheme(
+      <UserIcon accessibilityLabel="custom-avatar" />,
+    );
+
+    expect(getByLabelText("custom-avatar")).toBeTruthy();
+    expect(UNSAFE_getByType(Image).props.source.uri).toBe(
+      "https://example.com/avatar.jpg",
+    );
+  });
 });

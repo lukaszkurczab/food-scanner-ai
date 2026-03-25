@@ -1,16 +1,16 @@
 import { Pressable, Text } from "react-native";
-import { fireEvent } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
 import { describe, expect, it } from "@jest/globals";
 import { useTheme } from "@/theme/useTheme";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 const ThemeProbe = () => {
-  const theme = useTheme();
+  const { mode, setMode } = useTheme();
 
   return (
     <>
-      <Text testID="theme-mode">{theme.mode}</Text>
-      <Pressable testID="set-dark" onPress={() => theme.setMode("dark")}>
+      <Text testID="theme-mode">{mode}</Text>
+      <Pressable testID="set-dark" onPress={() => setMode("dark")}>
         <Text>set dark</Text>
       </Pressable>
     </>
@@ -18,12 +18,17 @@ const ThemeProbe = () => {
 };
 
 describe("renderWithTheme", () => {
-  it("renders content inside ThemeProvider and allows mode changes", () => {
+  it("renders content inside ThemeProvider and allows mode changes", async () => {
     const { getByTestId } = renderWithTheme(<ThemeProbe />);
 
-    expect(getByTestId("theme-mode").props.children).toBe("light");
+    await waitFor(() => {
+      expect(getByTestId("theme-mode").props.children).toBe("light");
+    });
 
     fireEvent.press(getByTestId("set-dark"));
-    expect(getByTestId("theme-mode").props.children).toBe("dark");
+
+    await waitFor(() => {
+      expect(getByTestId("theme-mode").props.children).toBe("dark");
+    });
   });
 });

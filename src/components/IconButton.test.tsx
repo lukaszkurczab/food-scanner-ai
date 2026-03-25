@@ -36,7 +36,7 @@ describe("IconButton", () => {
       />,
     );
 
-    expect(getByTestId("fake-icon").props.children).toBe("40:rgb(1, 2, 3)");
+    expect(getByTestId("fake-icon").props.children).toBe("25:rgb(1, 2, 3)");
   });
 
   it("keeps explicit icon size/color and blocks press while disabled", () => {

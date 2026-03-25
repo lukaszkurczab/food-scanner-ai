@@ -13,22 +13,21 @@ export const FilterBadgeButton: React.FC<Props> = ({
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const hasActive = activeCount > 0;
+
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.btn,
-        {
-          opacity: pressed ? 0.9 : 1,
-        },
-      ]}
+      style={({ pressed }) => [styles.btn, pressed ? styles.btnPressed : null]}
+      accessibilityRole="button"
+      accessibilityLabel={t("filters")}
     >
       <Text style={styles.label}>{t("filters")}</Text>
-      {hasActive && (
+
+      {hasActive ? (
         <View style={styles.badge}>
           <Text style={styles.badgeLabel}>{activeCount}</Text>
         </View>
-      )}
+      ) : null}
     </Pressable>
   );
 };
@@ -38,16 +37,23 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     btn: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
+      minHeight: 40,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.sm,
-      borderRadius: theme.rounded.sm,
+      borderRadius: theme.rounded.md,
       borderWidth: 1,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
+      position: "relative",
+    },
+    btnPressed: {
+      opacity: 0.9,
     },
     label: {
       color: theme.text,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.medium,
     },
     badge: {
@@ -61,11 +67,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       position: "absolute",
       top: -5,
       right: -5,
-      backgroundColor: theme.accent,
+      backgroundColor: theme.primary,
     },
     badgeLabel: {
-      color: theme.onAccent,
-      fontSize: theme.typography.size.xs,
+      color: theme.cta.primaryText,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
       fontFamily: theme.typography.fontFamily.bold,
     },
   });

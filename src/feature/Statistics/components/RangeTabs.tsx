@@ -19,18 +19,18 @@ export const RangeTabs: React.FC<RangeTabsProps> = ({
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const containerStyle = useMemo(
     () => ({
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderRadius: theme.rounded.full,
       padding: theme.spacing.xs,
       borderColor: theme.border,
     }),
-    [theme.card, theme.rounded.full, theme.spacing.xs, theme.border]
+    [theme.surfaceElevated, theme.rounded.full, theme.spacing.xs, theme.border],
   );
   const getTabStateStyle = (isActive: boolean) => ({
-    backgroundColor: isActive ? theme.accentSecondary : "transparent",
+    backgroundColor: isActive ? theme.primary : "transparent",
   });
   const getTabTextStyle = (isActive: boolean) => ({
-    color: isActive ? theme.onAccent : theme.textSecondary,
+    color: isActive ? theme.cta.primaryText : theme.textSecondary,
   });
 
   return (
@@ -78,7 +78,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       opacity: 0.9,
     },
     tabText: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       fontFamily: theme.typography.fontFamily.medium,
       textAlign: "center",
     },

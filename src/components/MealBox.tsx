@@ -40,11 +40,15 @@ const fmt = (iso?: string) => {
   if (!iso) return "";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
-  if (typeof Intl !== "undefined" && typeof Intl.DateTimeFormat === "function") {
+
+  if (
+    typeof Intl !== "undefined" &&
+    typeof Intl.DateTimeFormat === "function"
+  ) {
     try {
       return new Intl.DateTimeFormat(undefined, dateTimeOptions).format(d);
     } catch {
-      // fall through to fallback below
+      //
     }
   }
 
@@ -64,28 +68,29 @@ export const MealBox = ({
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals", "common"]);
 
-  const macroChartData = [
-    {
-      value: nutrition.protein,
-      color: theme.macro.protein,
-      label: t("meals:protein"),
-    },
-    { value: nutrition.fat, color: theme.macro.fat, label: t("meals:fat") },
-    {
-      value: nutrition.carbs,
-      color: theme.macro.carbs,
-      label: t("meals:carbs"),
-    },
-  ];
+  const macroChartData = useMemo(
+    () => [
+      {
+        value: nutrition.protein,
+        color: theme.macro.protein,
+        label: t("meals:protein"),
+      },
+      {
+        value: nutrition.fat,
+        color: theme.macro.fat,
+        label: t("meals:fat"),
+      },
+      {
+        value: nutrition.carbs,
+        color: theme.macro.carbs,
+        label: t("meals:carbs"),
+      },
+    ],
+    [nutrition.protein, nutrition.fat, nutrition.carbs, theme.macro, t],
+  );
 
-  const renderNutritionGraph = () => {
-    if (nutrition.protein || nutrition.carbs || nutrition.fat)
-      return (
-        <View style={styles.graphWrapper}>
-          <PieChart data={macroChartData} maxSize={140} />
-        </View>
-      );
-  };
+  const hasMacroData =
+    nutrition.protein > 0 || nutrition.carbs > 0 || nutrition.fat > 0;
 
   return (
     <View style={styles.container}>
@@ -98,9 +103,7 @@ export const MealBox = ({
           maxLength={48}
         />
       ) : (
-        <Text style={styles.nameText}>
-          {name}
-        </Text>
+        <Text style={styles.nameText}>{name}</Text>
       )}
 
       <View style={styles.typeSection}>
@@ -137,7 +140,11 @@ export const MealBox = ({
         <MacroChip kind="fat" value={nutrition.fat} />
       </View>
 
-      {renderNutritionGraph()}
+      {hasMacroData ? (
+        <View style={styles.graphWrapper}>
+          <PieChart data={macroChartData} maxSize={140} />
+        </View>
+      ) : null}
     </View>
   );
 };
@@ -145,22 +152,23 @@ export const MealBox = ({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
-      backgroundColor: theme.background,
+      backgroundColor: theme.surface,
       borderRadius: theme.rounded.lg,
       borderWidth: 1,
       borderColor: theme.border,
       padding: theme.spacing.lg,
       marginBottom: theme.spacing.lg,
       marginTop: theme.spacing.lg,
-      shadowColor: theme.shadow,
-      shadowOffset: { width: 1, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 2,
+      shadowColor: "#000000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: theme.isDark ? 0.2 : 0.08,
+      shadowRadius: 12,
       elevation: 3,
     },
     nameText: {
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.xl,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
       color: theme.text,
     },
     typeSection: {
@@ -170,23 +178,24 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginTop: theme.spacing.sm,
     },
     typeText: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       color: theme.text,
-      fontFamily: theme.typography.fontFamily.regular,
+      fontFamily: theme.typography.fontFamily.medium,
     },
     addedAtText: {
       marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.sm,
-      color: theme.text,
-      opacity: 0.7,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.regular,
     },
     macrosRow: {
       flexDirection: "row",
       justifyContent: "space-between",
-      marginTop: theme.spacing.sm + theme.spacing.xs / 2,
-      marginBottom: theme.spacing.xs / 2,
-      gap: theme.spacing.sm + theme.spacing.xs / 2,
+      marginTop: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
+      gap: theme.spacing.sm,
     },
     graphWrapper: {
       alignItems: "center",

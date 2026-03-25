@@ -91,7 +91,7 @@ export default function StatisticsScreen({ navigation }: Props) {
 
       {state.loadingMeals ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator color={theme.accent} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>
             {t("common:loading")}
           </Text>
@@ -181,7 +181,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderWidth: 1,
       borderRadius: theme.rounded.sm,
       backgroundColor: theme.overlay,
-      borderColor: theme.accentSecondary,
+      borderColor: theme.primary,
     },
     bannerTitle: {
       color: theme.text,
@@ -203,7 +203,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     emptyTitle: {
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       textAlign: "center",
       color: theme.text,
     },

@@ -11,6 +11,7 @@ import {
 import { useTheme } from "@/theme/useTheme";
 
 type Variant = "info" | "success" | "warning" | "error";
+
 type Action = {
   label: string;
   onPress?: (e: GestureResponderEvent) => void;
@@ -33,10 +34,13 @@ type Props = {
 
 const MODAL_MAX_WIDTH = 480;
 
-function getVariantColors(theme: ReturnType<typeof useTheme>, variant: Variant) {
+function getVariantColors(
+  theme: ReturnType<typeof useTheme>,
+  variant: Variant,
+) {
   if (variant === "error") {
     return {
-      background: theme.error.background,
+      background: theme.error.surface,
       border: theme.error.border,
       title: theme.error.text,
       message: theme.error.text,
@@ -45,7 +49,7 @@ function getVariantColors(theme: ReturnType<typeof useTheme>, variant: Variant) 
 
   if (variant === "success") {
     return {
-      background: theme.success.background,
+      background: theme.success.surface,
       border: theme.border,
       title: theme.success.text,
       message: theme.success.text,
@@ -54,7 +58,7 @@ function getVariantColors(theme: ReturnType<typeof useTheme>, variant: Variant) 
 
   if (variant === "warning") {
     return {
-      background: theme.warning.background,
+      background: theme.warning.surface,
       border: theme.border,
       title: theme.warning.text,
       message: theme.warning.text,
@@ -62,7 +66,7 @@ function getVariantColors(theme: ReturnType<typeof useTheme>, variant: Variant) 
   }
 
   return {
-    background: theme.card,
+    background: theme.surface,
     border: theme.border,
     title: theme.text,
     message: theme.textSecondary,
@@ -71,11 +75,20 @@ function getVariantColors(theme: ReturnType<typeof useTheme>, variant: Variant) 
 
 function getPrimaryActionBackground(
   theme: ReturnType<typeof useTheme>,
-  tone?: Action["tone"]
+  tone?: Action["tone"],
 ) {
-  if (tone === "destructive") return theme.error.border;
-  if (tone === "secondary") return theme.accentSecondary;
-  return theme.accent;
+  if (tone === "destructive") return theme.cta.destructiveBackground;
+  if (tone === "secondary") return theme.cta.secondaryBackground;
+  return theme.cta.primaryBackground;
+}
+
+function getPrimaryActionTextColor(
+  theme: ReturnType<typeof useTheme>,
+  tone?: Action["tone"],
+) {
+  if (tone === "destructive") return theme.cta.destructiveText;
+  if (tone === "secondary") return theme.cta.secondaryText;
+  return theme.cta.primaryText;
 }
 
 export function Alert({
@@ -92,11 +105,22 @@ export function Alert({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
-  const tone = useMemo(() => getVariantColors(theme, variant), [theme, variant]);
+  const tone = useMemo(
+    () => getVariantColors(theme, variant),
+    [theme, variant],
+  );
   const primaryActionBackground = getPrimaryActionBackground(
     theme,
-    primaryAction?.tone
+    primaryAction?.tone,
   );
+  const primaryActionTextColor = getPrimaryActionTextColor(
+    theme,
+    primaryAction?.tone,
+  );
+  const primaryActionBorderColor =
+    primaryAction?.tone === "secondary"
+      ? theme.cta.secondaryBorder
+      : "transparent";
 
   return (
     <Modal
@@ -108,7 +132,7 @@ export function Alert({
     >
       <Pressable
         onPress={dismissOnBackdrop ? onClose : undefined}
-        style={[styles.backdrop, { backgroundColor: theme.shadow }]}
+        style={[styles.backdrop, { backgroundColor: theme.overlay }]}
       >
         <Pressable
           onPress={() => {}}
@@ -128,6 +152,7 @@ export function Alert({
             >
               {title}
             </Text>
+
             {message ? (
               <Text style={[styles.message, { color: tone.message }]}>
                 {message}
@@ -164,14 +189,24 @@ export function Alert({
                 testID={primaryAction.testID}
                 style={[
                   styles.actionButton,
-                  { backgroundColor: primaryActionBackground },
+                  {
+                    backgroundColor: primaryActionBackground,
+                    borderColor: primaryActionBorderColor,
+                  },
+                  primaryAction.tone === "secondary" &&
+                    styles.secondaryToneButton,
                   primaryAction.loading && styles.actionDisabled,
                 ]}
               >
                 {primaryAction.loading ? (
-                  <ActivityIndicator color={theme.onAccent} />
+                  <ActivityIndicator color={primaryActionTextColor} />
                 ) : (
-                  <Text style={styles.primaryActionText}>
+                  <Text
+                    style={[
+                      styles.primaryActionText,
+                      { color: primaryActionTextColor },
+                    ]}
+                  >
                     {primaryAction.label}
                   </Text>
                 )}
@@ -195,55 +230,65 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     card: {
       width: "100%",
       maxWidth: MODAL_MAX_WIDTH,
-      borderRadius: theme.rounded.md,
+      borderRadius: theme.rounded.lg,
       borderWidth: 1,
-      shadowOpacity: 0.3,
-      shadowRadius: theme.rounded.md,
-      shadowOffset: { width: 0, height: theme.spacing.sm },
-      elevation: theme.spacing.sm,
+      shadowOpacity: theme.isDark ? 0.24 : 0.12,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
       overflow: "hidden",
     },
     content: {
-      padding: theme.spacing.container,
+      padding: theme.spacing.lg,
       gap: theme.spacing.sm,
     },
     title: {
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
     },
     message: {
       fontFamily: theme.typography.fontFamily.regular,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
     },
     actionsRow: {
       flexDirection: "row",
       justifyContent: "flex-end",
-      gap: theme.spacing.sm + theme.spacing.xs,
-      paddingHorizontal: theme.spacing.md,
-      paddingBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.lg,
       paddingTop: theme.spacing.xs,
     },
     actionButton: {
-      paddingVertical: theme.spacing.sm + theme.spacing.xs,
+      paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
-      borderRadius: theme.rounded.sm + theme.spacing.xs,
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
+      minHeight: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    secondaryToneButton: {
+      backgroundColor: theme.cta.secondaryBackground,
     },
     actionDisabled: {
       opacity: 0.7,
     },
     secondaryAction: {
       borderWidth: 1,
-      borderColor: theme.border,
-      backgroundColor: theme.card,
+      borderColor: theme.cta.secondaryBorder,
+      backgroundColor: theme.cta.secondaryBackground,
     },
     secondaryActionText: {
-      color: theme.text,
+      color: theme.cta.secondaryText,
       fontFamily: theme.typography.fontFamily.medium,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
     },
     primaryActionText: {
-      color: theme.onAccent,
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
     },
   });

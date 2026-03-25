@@ -46,15 +46,11 @@ export const EmptyState = memo(function EmptyState({
   return (
     <View style={[styles.root, style]}>
       <View style={styles.card}>
-        <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+        <Text style={styles.title}>{title}</Text>
 
-        {!!subtitle && (
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            {subtitle}
-          </Text>
-        )}
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
 
-        {suggestions.length > 0 && (
+        {suggestions.length > 0 ? (
           <View style={styles.chipsWrap}>
             {suggestions.map((s) => (
               <Pressable
@@ -63,45 +59,35 @@ export const EmptyState = memo(function EmptyState({
                 onPress={() => onPick(s.value)}
                 style={({ pressed }) => [
                   styles.chip,
-                  {
-                    opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
-                  },
+                  disabled ? styles.disabled : null,
+                  pressed && !disabled ? styles.pressed : null,
                 ]}
                 accessibilityRole="button"
                 accessibilityLabel={s.label}
               >
-                <Text style={[styles.chipText, { color: theme.text }]}>
-                  {s.label}
-                </Text>
+                <Text style={styles.chipText}>{s.label}</Text>
               </Pressable>
             ))}
           </View>
-        )}
+        ) : null}
 
-        {!!cta && (
+        {cta ? (
           <Pressable
             disabled={disabled}
             onPress={cta.onPress}
             style={({ pressed }) => [
               styles.cta,
-              {
-                opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
-              },
+              disabled ? styles.disabled : null,
+              pressed && !disabled ? styles.pressed : null,
             ]}
             accessibilityRole="button"
             accessibilityLabel={cta.label}
           >
-            <Text style={[styles.ctaText, { color: theme.onAccent }]}>
-              {cta.label}
-            </Text>
+            <Text style={styles.ctaText}>{cta.label}</Text>
           </Pressable>
-        )}
+        ) : null}
 
-        {!!footerText && (
-          <Text style={[styles.footer, { color: theme.textSecondary }]}>
-            {footerText}
-          </Text>
-        )}
+        {footerText ? <Text style={styles.footer}>{footerText}</Text> : null}
       </View>
     </View>
   );
@@ -117,28 +103,30 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       justifyContent: "center",
     },
     card: {
-      borderRadius: theme.rounded.md,
+      borderRadius: theme.rounded.lg,
       borderWidth: 1,
-      padding: theme.spacing.md,
-      shadowOpacity: 0.12,
-      shadowRadius: 10,
+      padding: theme.spacing.lg,
+      backgroundColor: theme.surfaceElevated,
+      borderColor: theme.border,
+      shadowColor: "#000000",
+      shadowOpacity: theme.isDark ? 0.2 : 0.08,
+      shadowRadius: 12,
       shadowOffset: { width: 0, height: 6 },
       elevation: 2,
-      backgroundColor: theme.overlay,
-      borderColor: theme.accentSecondary,
-      shadowColor: theme.shadow,
     },
     title: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
       fontFamily: theme.typography.fontFamily.bold,
       marginBottom: theme.spacing.xs,
       color: theme.text,
     },
     subtitle: {
-      fontSize: theme.typography.size.sm,
-      lineHeight: theme.typography.lineHeight.tight,
-      marginBottom: theme.spacing.sm + theme.spacing.xs,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      marginBottom: theme.spacing.md,
       color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
     },
     chipsWrap: {
       flexDirection: "row",
@@ -150,31 +138,40 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.sm,
       borderRadius: theme.rounded.full,
       borderWidth: 1,
-      backgroundColor: theme.background,
+      backgroundColor: theme.surface,
       borderColor: theme.border,
     },
     chipText: {
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.semiBold,
       color: theme.text,
     },
     cta: {
-      marginTop: theme.spacing.sm + theme.spacing.xs,
-      borderRadius: theme.rounded.sm,
+      marginTop: theme.spacing.md,
+      borderRadius: theme.rounded.md,
       paddingVertical: theme.spacing.sm + theme.spacing.xs,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.accentSecondary,
+      backgroundColor: theme.cta.primaryBackground,
     },
     ctaText: {
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
-      color: theme.onAccent,
+      color: theme.cta.primaryText,
     },
     footer: {
       marginTop: theme.spacing.sm,
-      fontSize: theme.typography.size.xs,
-      lineHeight: theme.typography.size.sm,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
       color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    disabled: {
+      opacity: 0.45,
+    },
+    pressed: {
+      opacity: 0.88,
     },
   });

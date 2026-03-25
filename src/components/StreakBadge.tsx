@@ -19,12 +19,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
       paddingVertical: theme.spacing.xs,
       borderRadius: theme.rounded.full,
-      backgroundColor: theme.accentSecondary,
+      backgroundColor: theme.accentWarm,
       marginLeft: theme.spacing.sm,
     },
     label: {
-      color: theme.onAccent,
+      color: theme.cta.primaryText,
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
     },
   });

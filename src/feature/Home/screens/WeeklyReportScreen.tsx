@@ -74,7 +74,7 @@ function StateBlock({
 
   return (
     <View style={styles.centerBox}>
-      {loading ? <ActivityIndicator color={theme.accentSecondary} /> : null}
+      {loading ? <ActivityIndicator color={theme.primary} /> : null}
       <Text style={styles.stateTitle}>{title}</Text>
       <Text style={styles.stateBody}>{body}</Text>
     </View>
@@ -96,7 +96,11 @@ export default function WeeklyReportScreen({ navigation }: Props) {
         body="Checking the latest closed week."
       />
     );
-  } else if (enabled && status === "live_success" && report.status === "ready") {
+  } else if (
+    enabled &&
+    status === "live_success" &&
+    report.status === "ready"
+  ) {
     content = (
       <View style={styles.content}>
         <View style={styles.hero}>
@@ -113,7 +117,10 @@ export default function WeeklyReportScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>What mattered most</Text>
           <View style={styles.sectionStack}>
             {report.insights.map((insight) => (
-              <InsightRow key={`${insight.type}:${insight.title}`} insight={insight} />
+              <InsightRow
+                key={`${insight.type}:${insight.title}`}
+                insight={insight}
+              />
             ))}
           </View>
         </View>
@@ -122,13 +129,20 @@ export default function WeeklyReportScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>Next week priorities</Text>
           <View style={styles.priorityCard}>
             {report.priorities.map((priority) => (
-              <PriorityRow key={`${priority.type}:${priority.text}`} priority={priority} />
+              <PriorityRow
+                key={`${priority.type}:${priority.text}`}
+                priority={priority}
+              />
             ))}
           </View>
         </View>
       </View>
     );
-  } else if (enabled && status === "live_success" && report.status === "insufficient_data") {
+  } else if (
+    enabled &&
+    status === "live_success" &&
+    report.status === "insufficient_data"
+  ) {
     content = (
       <StateBlock
         title="Not enough data yet"
@@ -146,7 +160,10 @@ export default function WeeklyReportScreen({ navigation }: Props) {
 
   return (
     <Layout showNavigation={false}>
-      <BackTitleHeader title="Weekly report" onBack={() => navigation.goBack()} />
+      <BackTitleHeader
+        title="Weekly report"
+        onBack={() => navigation.goBack()}
+      />
       {content}
     </Layout>
   );
@@ -162,25 +179,25 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: theme.rounded.lg,
       padding: theme.spacing.lg,
       gap: theme.spacing.sm,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderWidth: 1,
       borderColor: theme.border,
     },
     heroEyebrow: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
       textTransform: "uppercase",
       letterSpacing: 0.8,
     },
     heroPeriod: {
       color: theme.text,
-      fontSize: theme.typography.size.xl,
+      fontSize: theme.typography.size.h1,
       fontFamily: theme.typography.fontFamily.bold,
     },
     heroSummary: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       lineHeight: 22,
     },
     section: {
@@ -188,7 +205,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     sectionTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
     },
     sectionStack: {
@@ -199,39 +216,39 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       padding: theme.spacing.md,
       gap: theme.spacing.xs,
       borderWidth: 1,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
     },
     positiveBlock: {
-      borderColor: theme.success.background,
+      borderColor: theme.success.surface,
     },
     neutralBlock: {
       borderColor: theme.border,
     },
     negativeBlock: {
-      borderColor: theme.warning.background,
+      borderColor: theme.warning.surface,
     },
     blockEyebrow: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
       textTransform: "uppercase",
       letterSpacing: 0.8,
     },
     blockTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       fontFamily: theme.typography.fontFamily.bold,
     },
     blockBody: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       lineHeight: 22,
     },
     priorityCard: {
       borderRadius: theme.rounded.md,
       padding: theme.spacing.md,
       gap: theme.spacing.sm,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderWidth: 1,
       borderColor: theme.border,
     },
@@ -241,14 +258,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.sm,
     },
     priorityBullet: {
-      color: theme.accentSecondary,
-      fontSize: theme.typography.size.lg,
+      color: theme.primary,
+      fontSize: theme.typography.size.title,
       lineHeight: 22,
     },
     priorityText: {
       flex: 1,
       color: theme.text,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       lineHeight: 22,
       fontFamily: theme.typography.fontFamily.medium,
     },
@@ -262,13 +279,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     stateTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
       textAlign: "center",
     },
     stateBody: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       lineHeight: 22,
       textAlign: "center",
     },

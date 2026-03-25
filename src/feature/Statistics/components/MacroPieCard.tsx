@@ -44,7 +44,7 @@ export const MacroPieCard: React.FC<Props> = ({ protein, carbs, fat }) => {
           styles.title,
           {
             color: theme.text,
-            fontSize: theme.typography.size.lg,
+            fontSize: theme.typography.size.title,
             marginBottom: theme.spacing.md,
           },
         ]}

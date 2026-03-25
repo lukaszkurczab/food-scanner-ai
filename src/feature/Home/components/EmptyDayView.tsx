@@ -24,10 +24,7 @@ type CoachAwareEmptyDayProps = {
   coachEmptyReason: CoachEmptyReason;
 };
 
-type Props = CommonProps & (
-  | PlainEmptyDayProps
-  | CoachAwareEmptyDayProps
-);
+type Props = CommonProps & (PlainEmptyDayProps | CoachAwareEmptyDayProps);
 
 export default function EmptyDayView({
   mode = "plain",
@@ -56,15 +53,15 @@ export default function EmptyDayView({
   }, [coachEmptyReason, isCoachAware, t]);
 
   const titleText = coachAwareCopy?.title ?? t("emptyDay.title");
-  const subtitleText = coachAwareCopy?.body ?? (
-    isOffline
+  const subtitleText =
+    coachAwareCopy?.body ??
+    (isOffline
       ? isToday
         ? t("emptyDay.subtitle_offline_today")
         : t("emptyDay.subtitle_offline_past")
       : isToday
         ? t("emptyDay.subtitle_today")
-        : null
-  );
+        : null);
 
   useEffect(() => {
     if (!isCoachAware || !coachEmptyReason) {
@@ -78,30 +75,21 @@ export default function EmptyDayView({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        {titleText}
-      </Text>
+      <Text style={styles.title}>{titleText}</Text>
 
       {subtitleText ? (
-        <Text style={styles.subtitle}>
-          {subtitleText}
-        </Text>
+        <Text style={styles.subtitle}>{subtitleText}</Text>
       ) : null}
 
       {coachAwareCopy ? (
         <View style={styles.coachBox}>
           <Text style={styles.coachEyebrow}>{coachAwareCopy.whyTitle}</Text>
-          <Text style={styles.coachText}>
-            {coachAwareCopy.whyBody}
-          </Text>
+          <Text style={styles.coachText}>{coachAwareCopy.whyBody}</Text>
         </View>
       ) : null}
 
       {isToday && onAddMeal ? (
-        <PrimaryButton
-          label={t("emptyDay.addMeal")}
-          onPress={onAddMeal}
-        />
+        <PrimaryButton label={t("emptyDay.addMeal")} onPress={onAddMeal} />
       ) : null}
 
       {!isToday && onOpenHistory ? (
@@ -117,7 +105,7 @@ export default function EmptyDayView({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       padding: theme.spacing.lg,
       borderRadius: theme.rounded.md,
       alignItems: "center",
@@ -129,12 +117,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
     },
     subtitle: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       textAlign: "center",
     },
     coachBox: {
@@ -147,15 +135,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderColor: theme.border,
     },
     coachEyebrow: {
-      color: theme.accentSecondary,
-      fontSize: theme.typography.size.sm,
+      color: theme.primary,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
       textTransform: "uppercase",
       letterSpacing: 0.8,
     },
     coachText: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       lineHeight: 20,
       textAlign: "left",
     },

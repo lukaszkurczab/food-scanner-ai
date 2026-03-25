@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Text,
   TouchableOpacity,
@@ -27,20 +27,32 @@ export const LinkText: React.FC<LinkTextProps> = ({
   ...rest
 }) => {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
   return (
-    <TouchableOpacity onPress={onPress} disabled={disabled} {...rest}>
-      <Text style={[styles(theme).link, disabled && { opacity: 0.6 }, style]}>
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.75}
+      accessibilityRole="button"
+      {...rest}
+    >
+      <Text style={[styles.link, disabled ? styles.linkDisabled : null, style]}>
         {children || text}
       </Text>
     </TouchableOpacity>
   );
 };
 
-const styles = (theme: ReturnType<typeof useTheme>) =>
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     link: {
       color: theme.link,
-      fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.sm,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+    },
+    linkDisabled: {
+      opacity: 0.5,
     },
   });

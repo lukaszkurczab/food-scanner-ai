@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { View, Image, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { lightTheme, darkTheme } from "@/theme/themes";
+import { themes } from "@/theme/themes";
 import { getFilterOverlay } from "@/utils/photoFilters";
 import TextSticker from "./TextSticker";
 import DraggableItem, { ElementId } from "./DraggableItem";
@@ -52,9 +52,9 @@ export default function ShareCanvas({
 
   const palette =
     options.themePreset === "light"
-      ? lightTheme
+      ? themes.light
       : options.themePreset === "dark"
-        ? darkTheme
+        ? themes.dark
         : themeSys;
 
   const [photoErr, setPhotoErr] = useState(false);
@@ -299,8 +299,8 @@ export default function ShareCanvas({
                   carbs: options.chartCarbsColor ?? String(palette.macro.carbs),
                   fat: options.chartFatColor ?? String(palette.macro.fat),
                 },
-                accent: String(palette.accent),
-                accentSecondary: String(palette.accentSecondary),
+                accent: String(palette.primary),
+                accentSecondary: String(palette.primarySoft),
               }}
               showKcalLabel={options.showChartKcalLabel !== false}
               showLegend={options.showChartLegend !== false}

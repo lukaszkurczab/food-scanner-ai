@@ -21,7 +21,7 @@ export const ButtonToggle: React.FC<ButtonToggleProps> = ({
 }) => {
   const theme = useTheme();
   const resolvedTrack = trackColor ?? theme.border;
-  const resolvedThumb = thumbColor ?? theme.card;
+  const resolvedThumb = thumbColor ?? theme.surfaceElevated;
   const resolvedBorder = borderColor ?? theme.border;
   const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
 

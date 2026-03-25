@@ -122,7 +122,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
                 <AppIcon
                   name="check"
                   size={20}
-                  color={theme.accentSecondary}
+                  color={theme.primary}
                 />
               )}
             </Pressable>
@@ -143,7 +143,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: theme.spacing.xs,
       marginHorizontal: theme.spacing.sm,
     },
-    searchInputText: { fontSize: theme.typography.size.base },
+    searchInputText: { fontSize: theme.typography.size.bodyL },
     languageRow: {
       paddingVertical: theme.spacing.md,
       borderBottomWidth: StyleSheet.hairlineWidth,
@@ -152,13 +152,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     rowCenter: { flexDirection: "row", alignItems: "center" },
     rowGap8: { gap: theme.spacing.sm },
     languageLabel: {
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       color: theme.text,
       fontFamily: theme.typography.fontFamily.regular,
       flex: 1,
     },
     languageLabelActive: {
-      color: theme.accentSecondary,
+      color: theme.primary,
       fontFamily: theme.typography.fontFamily.bold,
     },
     list: { marginTop: theme.spacing.lg },

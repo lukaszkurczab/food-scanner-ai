@@ -67,7 +67,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
       alignItems: "center",
-      gap: theme.spacing.sm + theme.spacing.xs,
+      gap: theme.spacing.sm,
     },
     timeRow: {
       flexDirection: "row",
@@ -77,16 +77,20 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     input: {
       width: INPUT_WIDTH,
       textAlign: "center",
-      fontSize: theme.typography.size.xxl,
+      fontSize: theme.typography.size.displayL,
+      lineHeight: theme.typography.lineHeight.displayL,
       fontFamily: theme.typography.fontFamily.bold,
-      paddingVertical: theme.spacing.sm - 2,
+      paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.xs,
-      color: theme.text,
-      borderColor: theme.border,
-      backgroundColor: theme.card,
+      color: theme.input.text,
+      borderColor: theme.input.border,
+      backgroundColor: theme.input.background,
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
     },
     separator: {
-      fontSize: theme.typography.size.xxl,
+      fontSize: theme.typography.size.displayL,
+      lineHeight: theme.typography.lineHeight.displayL,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
     },

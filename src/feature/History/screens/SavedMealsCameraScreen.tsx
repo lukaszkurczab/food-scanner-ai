@@ -146,9 +146,7 @@ export default function SavedMealsCameraScreen({
             onPress={requestPermission}
             style={styles.permissionButton}
           >
-            <Text style={styles.permissionButtonLabel}>
-              {t("continue")}
-            </Text>
+            <Text style={styles.permissionButtonLabel}>{t("continue")}</Text>
           </Pressable>
         </View>
       </Layout>
@@ -237,7 +235,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       backgroundColor: theme.background,
     },
     permissionText: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       textAlign: "center",
       marginBottom: theme.spacing.lg,
       color: theme.text,
@@ -246,11 +244,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.sm + theme.spacing.xs,
       paddingHorizontal: theme.spacing.lg + theme.spacing.xs,
       borderRadius: theme.rounded.lg,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
     },
     permissionButtonLabel: {
       fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       color: theme.text,
     },
     cameraWrap: { flex: 1, backgroundColor: theme.background },
@@ -285,11 +283,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingHorizontal: theme.spacing.sm,
       borderRadius: theme.rounded.sm,
       borderWidth: 1,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
     },
     devBtnText: {
       color: theme.text,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
     },
   });

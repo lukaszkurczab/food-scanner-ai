@@ -75,10 +75,57 @@ describe("InputBar", () => {
     expect(onHelperActionPress).toHaveBeenCalledTimes(1);
   });
 
+  it("does not render helper action without both label and handler", () => {
+    const noLabel = renderWithTheme(
+      <InputBar
+        onSend={() => undefined}
+        helperText="Retry failed request"
+        onHelperActionPress={() => undefined}
+      />,
+    );
+    expect(noLabel.queryByTestId("chat-helper-action")).toBeNull();
+
+    const noHandler = renderWithTheme(
+      <InputBar
+        onSend={() => undefined}
+        helperText="Retry failed request"
+        helperActionLabel="Retry"
+      />,
+    );
+    expect(noHandler.queryByTestId("chat-helper-action")).toBeNull();
+  });
+
+  it("keeps helper action disabled when requested", () => {
+    const onHelperActionPress = jest.fn();
+    const { getByTestId } = renderWithTheme(
+      <InputBar
+        onSend={() => undefined}
+        helperText="Retry failed request"
+        helperActionLabel="Retry"
+        onHelperActionPress={onHelperActionPress}
+        helperActionDisabled
+      />,
+    );
+
+    fireEvent.press(getByTestId("chat-helper-action"));
+    expect(onHelperActionPress).not.toHaveBeenCalled();
+  });
+
+  it("sends on submit editing when input is valid", () => {
+    const onSend = jest.fn();
+    const { getByTestId } = renderWithTheme(<InputBar onSend={onSend} />);
+
+    fireEvent.changeText(getByTestId("chat-input"), "submitted");
+    fireEvent(getByTestId("chat-input"), "submitEditing");
+
+    expect(onSend).toHaveBeenCalledWith("submitted");
+  });
+
   it("applies pressed and released opacity styles on send button", () => {
-    const { UNSAFE_getAllByType } = renderWithTheme(
+    const { UNSAFE_getAllByType, getByTestId } = renderWithTheme(
       <InputBar onSend={() => undefined} />,
     );
+    fireEvent.changeText(getByTestId("chat-input"), "hello");
     const sendButton = UNSAFE_getAllByType(Pressable).find(
       (node) => node.props.testID === "chat-send-button",
     );
@@ -89,7 +136,9 @@ describe("InputBar", () => {
     const pressedStyles = buttonStyle({ pressed: true });
     const releasedStyles = buttonStyle({ pressed: false });
 
-    expect(pressedStyles[1]).toEqual(expect.objectContaining({ opacity: 0.9 }));
-    expect(releasedStyles[1]).toEqual(expect.objectContaining({ opacity: 1 }));
+    expect(pressedStyles).toContainEqual(expect.objectContaining({ opacity: 0.84 }));
+    expect(releasedStyles).not.toContainEqual(
+      expect.objectContaining({ opacity: 0.84 }),
+    );
   });
 });

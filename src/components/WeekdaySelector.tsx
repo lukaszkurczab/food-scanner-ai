@@ -17,6 +17,7 @@ export const WeekdaySelector: React.FC<Props> = ({ value, onChange }) => {
     <View style={styles.row}>
       {labels.map((l, idx) => {
         const active = value.includes(idx);
+
         return (
           <Pressable
             key={idx}
@@ -53,24 +54,30 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.sm,
     },
     dayChipBase: {
+      minWidth: 40,
+      minHeight: 40,
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
-      borderRadius: theme.rounded.sm,
+      borderRadius: theme.rounded.md,
       borderWidth: 1,
+      alignItems: "center",
+      justifyContent: "center",
     },
     dayChipActive: {
-      backgroundColor: theme.accentSecondary,
-      borderColor: theme.accentSecondary,
+      backgroundColor: theme.primarySoft,
+      borderColor: theme.primary,
     },
     dayChipIdle: {
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
     },
     dayLabelBase: {
       fontFamily: theme.typography.fontFamily.medium,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
     },
     dayLabelActive: {
-      color: theme.onAccent,
+      color: theme.primaryStrong,
     },
     dayLabelIdle: {
       color: theme.text,

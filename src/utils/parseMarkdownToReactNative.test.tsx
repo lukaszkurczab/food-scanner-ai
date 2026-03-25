@@ -1,7 +1,7 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
-import { lightTheme } from "@/theme/themes";
+import { themes } from "@/theme/themes";
 import { spacing } from "@/theme/spacing";
 import { rounded } from "@/theme/rounded";
 import { typography } from "@/theme/typography";
@@ -12,7 +12,7 @@ type ThemeType = ReturnType<typeof useTheme>;
 
 const createTheme = (): ThemeType =>
   ({
-    ...lightTheme,
+    ...themes.light,
     spacing,
     rounded,
     typography,

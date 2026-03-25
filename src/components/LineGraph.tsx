@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, StyleSheet, LayoutChangeEvent } from "react-native";
 import {
   Svg,
@@ -33,18 +33,23 @@ export const LineGraph = ({
   title,
   stepY,
   stepX = 1,
-  height = 120,
+  height = 140,
   smooth = true,
   approxYTicks = 4,
   color,
 }: LineGraphProps) => {
   const theme = useTheme();
-  const strokeColor = color || String(theme.accent);
+  const strokeColor = color || theme.primary;
+  const gridColor = theme.borderSoft;
+  const axisColor = theme.border;
+  const tickColor = theme.textSecondary;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
   const [width, setWidth] = useState(0);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const topPad = 22;
-  const bottomPad = 16;
+  const topPad = 24;
+  const bottomPad = 20;
   const rightPad = 12;
   const yAxisWidth = 40;
 
@@ -149,6 +154,7 @@ export const LineGraph = ({
   const xAt = (i: number) =>
     yAxisWidth +
     chartW * (safeData.length <= 1 ? 0 : i / (safeData.length - 1));
+
   const yAt = (v: number) => {
     const range = Math.max(1e-9, yMax - yMin);
     return topPad + chartH - ((v - yMin) / range) * chartH;
@@ -159,12 +165,14 @@ export const LineGraph = ({
   function buildMonotonePath(points: { x: number; y: number }[]) {
     const n = points.length;
     if (n < 2) return "";
-    if (n === 2)
+    if (n === 2) {
       return `M${points[0].x},${points[0].y} L${points[1].x},${points[1].y}`;
+    }
 
     const dx = Array(n - 1);
     const dy = Array(n - 1);
     const m = Array(n - 1);
+
     for (let i = 0; i < n - 1; i++) {
       dx[i] = points[i + 1].x - points[i].x;
       dy[i] = points[i + 1].y - points[i].y;
@@ -174,6 +182,7 @@ export const LineGraph = ({
     const t = Array(n);
     t[0] = m[0];
     t[n - 1] = m[n - 2];
+
     for (let i = 1; i < n - 1; i++) {
       t[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2;
     }
@@ -215,7 +224,12 @@ export const LineGraph = ({
       : pts.reduce((acc, p, i) => acc + `${i ? "L" : "M"}${p.x},${p.y} `, "")
     : "";
 
-  const clipId = "clipArea";
+  const areaPath =
+    pts.length >= 2
+      ? `${linePath} L${pts[pts.length - 1].x},${topPad + chartH} L${pts[0].x},${topPad + chartH} Z`
+      : "";
+
+  const clipId = "lineGraphClipArea";
 
   const yTicks: number[] = [];
   for (let v = yMin; v <= yMax + 1e-9; v += yStep) {
@@ -230,7 +244,7 @@ export const LineGraph = ({
 
   const colW = chartW / Math.max(1, safeData.length - 1);
   const hitHalf = Math.max(20, colW / 2);
-  const clampY = (y: number) => Math.max(topPad + 10, y - 8);
+  const tooltipY = (y: number) => Math.max(topPad + 12, y - 12);
 
   const formatTick = (v: number) => {
     if (Number.isInteger(yStep)) return Math.round(v).toString();
@@ -240,16 +254,14 @@ export const LineGraph = ({
 
   return (
     <View style={styles.container} onLayout={onLayout}>
-      {title && (
-        <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
-      )}
+      {title ? <Text style={styles.title}>{title}</Text> : null}
 
-      {width > 0 && (
+      {width > 0 ? (
         <Svg width={width} height={topPad + chartH + bottomPad}>
           <Defs>
             <LinearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={strokeColor} stopOpacity={0.22} />
-              <Stop offset="80%" stopColor={strokeColor} stopOpacity={0.03} />
+              <Stop offset="0%" stopColor={strokeColor} stopOpacity={0.2} />
+              <Stop offset="100%" stopColor={strokeColor} stopOpacity={0.02} />
             </LinearGradient>
             <ClipPath id={clipId}>
               <Rect x={yAxisWidth} y={topPad} width={chartW} height={chartH} />
@@ -265,15 +277,15 @@ export const LineGraph = ({
                   y1={y}
                   x2={yAxisWidth + chartW}
                   y2={y}
-                  stroke={theme.border}
+                  stroke={gridColor}
                   strokeWidth={1}
-                  opacity={0.35}
+                  opacity={0.8}
                 />
                 <SvgText
                   x={yAxisWidth - 6}
-                  y={y + 3}
+                  y={y + 4}
                   fontSize="10"
-                  fill={theme.textSecondary}
+                  fill={tickColor}
                   textAnchor="end"
                 >
                   {formatTick(v)}
@@ -287,20 +299,23 @@ export const LineGraph = ({
             y1={topPad + chartH}
             x2={yAxisWidth + chartW}
             y2={topPad + chartH}
-            stroke={theme.border}
+            stroke={axisColor}
             strokeWidth={1}
           />
 
-          {hasEnoughPoints && (
-            <Path
-              d={linePath}
-              fill="none"
-              stroke={strokeColor}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          )}
+          {hasEnoughPoints ? (
+            <G clipPath={`url(#${clipId})`}>
+              <Path d={areaPath} fill="url(#areaGradient)" />
+              <Path
+                d={linePath}
+                fill="none"
+                stroke={strokeColor}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </G>
+          ) : null}
 
           {pts.map((p, i) => (
             <G key={i}>
@@ -314,43 +329,76 @@ export const LineGraph = ({
                   setActiveIndex((prev) => (prev === i ? null : i))
                 }
               />
-              <Circle cx={p.x} cy={p.y} r={4} fill={strokeColor} />
 
-              {activeIndex === i && (
-                <SvgText
-                  x={p.x}
-                  y={clampY(p.y)}
-                  fontSize="12"
-                  fontWeight="bold"
-                  fill={theme.textSecondary}
-                  textAnchor="middle"
-                >
-                  {p.v}
-                </SvgText>
-              )}
+              <Circle
+                cx={p.x}
+                cy={p.y}
+                r={activeIndex === i ? 5 : 4}
+                fill={strokeColor}
+              />
 
-              {i % stepX === 0 && (
+              {activeIndex === i ? (
+                <>
+                  <Circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={9}
+                    fill={strokeColor}
+                    opacity={0.12}
+                  />
+                  <SvgText
+                    x={p.x}
+                    y={tooltipY(p.y)}
+                    fontSize="12"
+                    fontWeight="700"
+                    fill={theme.text}
+                    textAnchor="middle"
+                  >
+                    {p.v}
+                  </SvgText>
+                </>
+              ) : null}
+
+              {i % stepX === 0 ? (
                 <SvgText
                   x={i === 0 ? p.x + 2 : i === pts.length - 1 ? p.x - 2 : p.x}
                   y={topPad + chartH + 14}
                   fontSize="10"
-                  fill={theme.textSecondary}
+                  fill={tickColor}
                   textAnchor={
                     i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle"
                   }
                 >
                   {labels[i] ?? ""}
                 </SvgText>
-              )}
+              ) : null}
             </G>
           ))}
         </Svg>
-      )}
+      ) : null}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { marginBottom: 20, overflow: "hidden", width: "100%" },
-  title: { fontWeight: "bold", marginBottom: 8 },
-});
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      width: "100%",
+      marginBottom: theme.spacing.lg,
+      overflow: "hidden",
+      backgroundColor: theme.surface,
+      borderRadius: theme.rounded.lg,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      paddingHorizontal: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.xs,
+    },
+    title: {
+      color: theme.text,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
+      fontFamily: theme.typography.fontFamily.bold,
+      marginBottom: theme.spacing.xs,
+    },
+  });

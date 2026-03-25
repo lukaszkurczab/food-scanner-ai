@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { Appearance } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { lightTheme, darkTheme } from "./themes";
+import { themes } from "./themes";
 import { spacing } from "./spacing";
 import { rounded } from "./rounded";
 import { typography } from "./typography";
@@ -39,7 +39,7 @@ const isThemeMode = (value: unknown): value is ThemeMode =>
   value === "light" || value === "dark";
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: { ...lightTheme, spacing, rounded, typography },
+  theme: { ...themes.light, spacing, rounded, typography },
   mode: "light",
   setMode: () => {},
 });
@@ -102,7 +102,7 @@ export const ThemeProvider: React.FC<Props> = ({
   }, [mode, onModeChange, shouldFollowSystem]);
 
   const theme = useMemo<ThemeType>(() => {
-    const base = internalMode === "dark" ? darkTheme : lightTheme;
+    const base = internalMode === "dark" ? themes.dark : themes.light;
     return { ...base, spacing, rounded, typography };
   }, [internalMode]);
 

@@ -72,7 +72,7 @@ export const PaywallModal: React.FC<Props> = ({
                 <ActivityIndicator
                   testID="paywall-subscribe-spinner"
                   size="small"
-                  color={theme.onAccent}
+                  color={theme.cta.primaryText}
                 />
               ) : (
                 <Text style={styles.ctaText}>
@@ -97,7 +97,14 @@ export const PaywallModal: React.FC<Props> = ({
 
           <Text style={styles.disclaimer}>
             {t("paywall.disclaimer", {
-              storeName: Platform.OS === "ios" ? t("manageSubscription.store.appStore", { defaultValue: "App Store" }) : t("manageSubscription.store.googlePlay", { defaultValue: "Google Play" }),
+              storeName:
+                Platform.OS === "ios"
+                  ? t("manageSubscription.store.appStore", {
+                      defaultValue: "App Store",
+                    })
+                  : t("manageSubscription.store.googlePlay", {
+                      defaultValue: "Google Play",
+                    }),
               defaultValue:
                 "Payment will be charged to your account at confirmation of purchase. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel subscriptions in your {{storeName}} account settings.",
             })}
@@ -134,9 +141,7 @@ export const PaywallModal: React.FC<Props> = ({
         <Text style={styles.priceLabel}>
           {t("paywall.priceLabel", { defaultValue: "Price" })}
         </Text>
-        <Text style={styles.priceValue}>
-          {priceText}
-        </Text>
+        <Text style={styles.priceValue}>{priceText}</Text>
       </View>
 
       <View style={styles.benefits}>
@@ -145,10 +150,7 @@ export const PaywallModal: React.FC<Props> = ({
         </Text>
 
         {BENEFITS.map((key) => (
-          <View
-            key={key}
-            style={styles.benefitRow}
-          >
+          <View key={key} style={styles.benefitRow}>
             <Text style={styles.benefitText}>
               {t(`manageSubscription.benefit_${key}`)}
             </Text>
@@ -166,7 +168,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: theme.rounded.sm,
       paddingVertical: theme.spacing.md,
       alignItems: "center",
-      backgroundColor: theme.accentSecondary,
+      backgroundColor: theme.primary,
     },
     ctaInner: {
       flexDirection: "row",
@@ -175,23 +177,23 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       minHeight: 22,
     },
     ctaText: {
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       fontFamily: theme.typography.fontFamily.extraBold,
-      color: theme.onAccent,
+      color: theme.cta.primaryText,
     },
     restoreButton: {
       paddingVertical: theme.spacing.sm,
       alignItems: "center",
     },
     linkText: {
-      color: theme.accentSecondary,
-      fontSize: theme.typography.size.sm,
+      color: theme.primary,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
     },
     disclaimer: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.xs,
-      lineHeight: theme.typography.lineHeight.tight,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
       textAlign: "center",
     },
     linksRow: {
@@ -202,18 +204,18 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     priceBlock: { alignItems: "center", marginBottom: theme.spacing.lg },
     priceLabel: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       marginBottom: theme.spacing.xs,
     },
     priceValue: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.extraBold,
     },
     benefits: { gap: theme.spacing.sm },
     benefitsTitle: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       fontFamily: theme.typography.fontFamily.bold,
       marginBottom: theme.spacing.xs,
     },
@@ -223,11 +225,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
       borderColor: theme.border,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
     },
     benefitText: {
       color: theme.text,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       fontFamily: theme.typography.fontFamily.semiBold,
       flex: 1,
     },

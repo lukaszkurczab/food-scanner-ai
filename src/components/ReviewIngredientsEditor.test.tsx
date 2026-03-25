@@ -22,6 +22,8 @@ type ModalProps = {
   onPrimaryAction?: () => void;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
+  primaryAction?: { label: string; onPress?: () => void };
+  secondaryAction?: { label: string; onPress?: () => void };
 };
 
 const mockUseMealDraftContext = jest.fn();
@@ -77,28 +79,49 @@ jest.mock("@/components", () => {
       onPrimaryAction,
       secondaryActionLabel,
       onSecondaryAction,
+      primaryAction,
+      secondaryAction,
     }: ModalProps) =>
       visible
-        ? createElement(
-            View,
-            null,
-            title ? createElement(Text, null, title) : null,
-            message ? createElement(Text, null, message) : null,
-            primaryActionLabel
-              ? createElement(
-                  Pressable,
-                  { onPress: onPrimaryAction, accessibilityRole: "button" },
-                  createElement(Text, null, primaryActionLabel),
-                )
-              : null,
-            secondaryActionLabel
-              ? createElement(
-                  Pressable,
-                  { onPress: onSecondaryAction, accessibilityRole: "button" },
-                  createElement(Text, null, secondaryActionLabel),
-                )
-              : null,
-          )
+        ? (() => {
+            const resolvedPrimaryAction = primaryAction ?? (
+              primaryActionLabel
+                ? { label: primaryActionLabel, onPress: onPrimaryAction }
+                : undefined
+            );
+            const resolvedSecondaryAction = secondaryAction ?? (
+              secondaryActionLabel
+                ? { label: secondaryActionLabel, onPress: onSecondaryAction }
+                : undefined
+            );
+
+            return createElement(
+              View,
+              null,
+              title ? createElement(Text, null, title) : null,
+              message ? createElement(Text, null, message) : null,
+              resolvedPrimaryAction
+                ? createElement(
+                    Pressable,
+                    {
+                      onPress: resolvedPrimaryAction.onPress,
+                      accessibilityRole: "button",
+                    },
+                    createElement(Text, null, resolvedPrimaryAction.label),
+                  )
+                : null,
+              resolvedSecondaryAction
+                ? createElement(
+                    Pressable,
+                    {
+                      onPress: resolvedSecondaryAction.onPress,
+                      accessibilityRole: "button",
+                    },
+                    createElement(Text, null, resolvedSecondaryAction.label),
+                  )
+                : null,
+            );
+          })()
         : null,
     PrimaryButton: ({ label, onPress, disabled, testID }: ButtonProps) =>
       createElement(

@@ -16,7 +16,10 @@ import { useUserContext } from "@contexts/UserContext";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
-type EditUserDataNavigation = StackNavigationProp<RootStackParamList, "EditUserData">;
+type EditUserDataNavigation = StackNavigationProp<
+  RootStackParamList,
+  "EditUserData"
+>;
 
 type ChangeUserDataScreenProps = {
   navigation: EditUserDataNavigation;
@@ -59,7 +62,7 @@ export default function ChangeUserDataScreen({
         </View>
         {isUploading && (
           <View style={styles.uploadOverlay}>
-            <ActivityIndicator size="large" color={theme.accentSecondary} />
+            <ActivityIndicator size="large" color={theme.primary} />
           </View>
         )}
       </View>
@@ -70,7 +73,7 @@ export default function ChangeUserDataScreen({
           onPress={() => setPhotoModal(false)}
         >
           <Pressable
-            style={[styles.modal, { backgroundColor: theme.card }]}
+            style={[styles.modal, { backgroundColor: theme.surfaceElevated }]}
             onPress={(e) => e.stopPropagation()}
           >
             <Pressable

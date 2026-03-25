@@ -242,7 +242,7 @@ export default function CardEditorPanel({
           <AppIcon
             name={cardShowKcal ? "checkbox" : "checkbox-empty"}
             size={20}
-            color={cardShowKcal ? theme.accentSecondary : theme.textSecondary}
+            color={cardShowKcal ? theme.primary : theme.textSecondary}
           />
           <Text style={styles.toggleText}>
             {t("editor.show_card_kcal", "Show calories")}
@@ -255,7 +255,7 @@ export default function CardEditorPanel({
           <AppIcon
             name={cardShowMacros ? "checkbox" : "checkbox-empty"}
             size={20}
-            color={cardShowMacros ? theme.accentSecondary : theme.textSecondary}
+            color={cardShowMacros ? theme.primary : theme.textSecondary}
           />
           <Text style={styles.toggleText}>
             {t("editor.show_card_macros", "Show macros")}
@@ -488,11 +488,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     section: { marginBottom: theme.spacing.sm },
     label: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       marginBottom: theme.spacing.xs,
       color: theme.textSecondary,
     },
-    subLabel: { fontSize: theme.typography.size.sm, color: theme.textSecondary },
+    subLabel: { fontSize: theme.typography.size.bodyS, color: theme.textSecondary },
     subLabelSpacing: { marginTop: theme.spacing.sm },
     tabsRow: {
       flexDirection: "row",
@@ -507,19 +507,19 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
       justifyContent: "center",
     },
-    tabActive: { backgroundColor: theme.accentSecondary },
+    tabActive: { backgroundColor: theme.primary },
     tabLabel: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
     },
-    tabLabelActive: { color: theme.onAccent },
+    tabLabelActive: { color: theme.cta.primaryText },
     colorRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       paddingVertical: theme.spacing.xs,
     },
-    rowText: { color: theme.text, fontSize: theme.typography.size.sm },
+    rowText: { color: theme.text, fontSize: theme.typography.size.bodyS },
     colorPreview: {
       width: 24,
       height: 24,
@@ -538,12 +538,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.sm,
       borderRadius: theme.rounded.sm,
     },
-    buttonPrimary: { backgroundColor: theme.accentSecondary },
+    buttonPrimary: { backgroundColor: theme.primary },
     buttonSecondary: { backgroundColor: theme.background },
-    buttonText: { color: theme.text, fontSize: theme.typography.size.sm },
+    buttonText: { color: theme.text, fontSize: theme.typography.size.bodyS },
     buttonTextOnAccent: {
-      color: theme.onAccent,
-      fontSize: theme.typography.size.sm,
+      color: theme.cta.primaryText,
+      fontSize: theme.typography.size.bodyS,
     },
     toggleRow: {
       flexDirection: "row",
@@ -552,8 +552,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     toggleText: {
       marginLeft: theme.spacing.sm,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       color: theme.text,
     },
-    dropdownLabel: { color: theme.text, fontSize: theme.typography.size.sm },
+    dropdownLabel: { color: theme.text, fontSize: theme.typography.size.bodyS },
   });

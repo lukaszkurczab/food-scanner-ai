@@ -14,7 +14,10 @@ import {
 type Props = {
   insight: CoachInsight;
   onPressCta?: () => void;
-  ctaTargetScreen?: Extract<keyof RootStackParamList, "MealAddMethod" | "Chat" | "HistoryList">;
+  ctaTargetScreen?: Extract<
+    keyof RootStackParamList,
+    "MealAddMethod" | "Chat" | "HistoryList"
+  >;
 };
 
 export default function CoachInsightCard({
@@ -36,11 +39,12 @@ export default function CoachInsightCard({
   const localizedWhyBody = t(`coachInsight.items.${insight.type}.whyBody`, {
     defaultValue: insight.body,
   });
-  const localizedCtaLabel = insight.actionType === "none"
-    ? null
-    : t(`coachInsight.cta.${insight.actionType}`, {
-      defaultValue: insight.actionLabel ?? undefined,
-    });
+  const localizedCtaLabel =
+    insight.actionType === "none"
+      ? null
+      : t(`coachInsight.cta.${insight.actionType}`, {
+          defaultValue: insight.actionLabel ?? undefined,
+        });
 
   const showCta =
     insight.actionType !== "none" &&
@@ -90,7 +94,12 @@ export default function CoachInsightCard({
       testID="coach-insight-card"
     >
       <View style={styles.header}>
-        <Text style={[styles.eyebrow, insight.isPositive ? styles.eyebrowPositive : null]}>
+        <Text
+          style={[
+            styles.eyebrow,
+            insight.isPositive ? styles.eyebrowPositive : null,
+          ]}
+        >
           {insight.isPositive
             ? t("coachInsight.positiveEyebrow", "Momentum")
             : t("coachInsight.defaultEyebrow", "Coach insight")}
@@ -102,7 +111,10 @@ export default function CoachInsightCard({
       <Pressable
         accessibilityRole="button"
         onPress={handleExpandToggle}
-        style={({ pressed }) => [styles.expander, pressed ? styles.expanderPressed : null]}
+        style={({ pressed }) => [
+          styles.expander,
+          pressed ? styles.expanderPressed : null,
+        ]}
       >
         <Text style={styles.expanderText}>
           {expanded
@@ -138,7 +150,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       padding: theme.spacing.lg,
       gap: theme.spacing.md,
       borderWidth: 1,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
       shadowColor: theme.shadow,
       shadowOpacity: 0.08,
       shadowRadius: 12,
@@ -148,14 +160,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderColor: theme.border,
     },
     containerPositive: {
-      borderColor: theme.success.background,
+      borderColor: theme.success.surface,
     },
     header: {
       gap: theme.spacing.xs,
     },
     eyebrow: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
       textTransform: "uppercase",
       letterSpacing: 0.8,
@@ -165,12 +177,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.bold,
     },
     body: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyM,
       lineHeight: 22,
     },
     expander: {
@@ -180,8 +192,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       opacity: 0.75,
     },
     expanderText: {
-      color: theme.accentSecondary,
-      fontSize: theme.typography.size.sm,
+      color: theme.primary,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
     },
     reasonBox: {
@@ -194,12 +206,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     reasonTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.bold,
     },
     reasonText: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       lineHeight: 20,
     },
   });

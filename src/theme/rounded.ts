@@ -1,6 +1,9 @@
 export const rounded = {
-  sm: 8,
+  xs: 8,
+  sm: 12,
   md: 16,
-  lg: 32,
+  lg: 20,
+  xl: 24,
+  xxl: 28,
   full: 9999,
 };

@@ -341,21 +341,21 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     sectionGap: { gap: theme.spacing.lg },
     actionsWrap: { paddingTop: theme.spacing.sm },
     title: {
-      fontSize: theme.typography.size.xl,
+      fontSize: theme.typography.size.h1,
       fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
       textAlign: "center",
       marginBottom: theme.spacing.sm,
     },
     subtitle: {
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyL,
       color: theme.textSecondary,
       textAlign: "center",
     },
-    buttonText: { fontSize: theme.typography.size.sm },
+    buttonText: { fontSize: theme.typography.size.bodyS },
     errorText: {
       color: theme.error.text,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       textAlign: "center",
     },
   });

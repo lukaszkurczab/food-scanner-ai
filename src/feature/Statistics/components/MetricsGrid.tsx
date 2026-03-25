@@ -63,7 +63,7 @@ export const MetricsGrid: React.FC<Props> = ({
               styles.card,
               {
                 borderColor: tItem.borderColor,
-                backgroundColor: active ? theme.overlay : theme.card,
+                backgroundColor: active ? theme.overlay : theme.surfaceElevated,
                 borderRadius: theme.rounded.md,
               },
             ]}
@@ -73,7 +73,7 @@ export const MetricsGrid: React.FC<Props> = ({
                 styles.label,
                 {
                   color: theme.text,
-                  fontSize: theme.typography.size.lg,
+                  fontSize: theme.typography.size.title,
                   marginBottom: theme.spacing.md,
                 },
               ]}
@@ -85,7 +85,7 @@ export const MetricsGrid: React.FC<Props> = ({
                 styles.value,
                 {
                   color: theme.text,
-                  fontSize: theme.typography.size.lg,
+                  fontSize: theme.typography.size.title,
                 },
               ]}
             >

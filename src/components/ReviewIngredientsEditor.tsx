@@ -17,7 +17,9 @@ import { useAuthContext } from "@/context/AuthContext";
 import type { Ingredient } from "@/types";
 
 type FieldErrors = Partial<Record<keyof Ingredient, string>>;
-type NavigationAction = Parameters<NavigationProp<ParamListBase>["dispatch"]>[0];
+type NavigationAction = Parameters<
+  NavigationProp<ParamListBase>["dispatch"]
+>[0];
 
 type TextOverrides = Partial<{
   startOverButtonLabel: string;
@@ -65,6 +67,7 @@ export default function ReviewIngredientsEditor({
   showStartOverButton = true,
 }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals", "common"]);
   const {
     meal,
@@ -98,6 +101,7 @@ export default function ReviewIngredientsEditor({
   const validate = useCallback(
     (ingredient: Ingredient): FieldErrors => {
       const errors: FieldErrors = {};
+
       if (!ingredient.name?.trim()) {
         errors.name = t("ingredient_name_required", { ns: "meals" });
       }
@@ -116,6 +120,7 @@ export default function ReviewIngredientsEditor({
       if ((ingredient.kcal ?? 0) < 0) {
         errors.kcal = t("ingredient_invalid_values", { ns: "meals" });
       }
+
       return errors;
     },
     [t],
@@ -123,13 +128,16 @@ export default function ReviewIngredientsEditor({
 
   const errorsByIndex = useMemo(() => {
     const map = new Map<number, FieldErrors>();
-    ingredients.forEach((ingredient, idx) => map.set(idx, validate(ingredient)));
+    ingredients.forEach((ingredient, idx) =>
+      map.set(idx, validate(ingredient)),
+    );
     if (localDraft) map.set(-1, validate(localDraft));
     return map;
   }, [ingredients, localDraft, validate]);
 
   const hasAnyErrors = useMemo(
-    () => Array.from(errorsByIndex.values()).some((e) => Object.keys(e).length > 0),
+    () =>
+      Array.from(errorsByIndex.values()).some((e) => Object.keys(e).length > 0),
     [errorsByIndex],
   );
 
@@ -156,6 +164,7 @@ export default function ReviewIngredientsEditor({
 
   const handleAddIngredient = () => {
     if (editingIdx !== null || localDraft) return;
+
     setLocalDraft({
       id: uuidv4(),
       name: "",
@@ -174,6 +183,7 @@ export default function ReviewIngredientsEditor({
       setEditingIdx(null);
       return;
     }
+
     if (editingIdx === idx) setEditingIdx(null);
     removeIngredient(idx);
     await persist();
@@ -189,17 +199,22 @@ export default function ReviewIngredientsEditor({
       await persist();
       return;
     }
+
     updateIngredient(idx, updated);
     if (editingIdx === idx) setEditingIdx(null);
     await persist();
   };
 
-  const handlePartialChange = async (idx: number, patch: Partial<Ingredient>) => {
+  const handlePartialChange = async (
+    idx: number,
+    patch: Partial<Ingredient>,
+  ) => {
     if (idx === -1) {
       setLocalDraft((prev) => ({ ...(prev ?? ({} as Ingredient)), ...patch }));
       await persist();
       return;
     }
+
     const current = ingredients[idx];
     updateIngredient(idx, { ...current, ...patch });
     await persist();
@@ -252,6 +267,7 @@ export default function ReviewIngredientsEditor({
 
     const sub = navigation.addListener("beforeRemove", (e) => {
       if (allowLeaveRef.current) return;
+
       if (handleTransientBack()) {
         e.preventDefault();
         return;
@@ -265,6 +281,7 @@ export default function ReviewIngredientsEditor({
       exitActionRef.current = e.data.action as NavigationAction;
       setShowExitModal(true);
     });
+
     return sub;
   }, [
     editingIdx,
@@ -278,6 +295,7 @@ export default function ReviewIngredientsEditor({
   const handleConfirmExit = () => {
     const action = exitActionRef.current;
     setShowExitModal(false);
+
     if (action && navigation) {
       allowLeaving();
       navigation.dispatch(action);
@@ -287,11 +305,14 @@ export default function ReviewIngredientsEditor({
   const labels = useMemo(
     () => ({
       startOverButtonLabel:
-        textOverrides?.startOverButtonLabel ?? t("select_method", { ns: "meals" }),
+        textOverrides?.startOverButtonLabel ??
+        t("select_method", { ns: "meals" }),
       startOverTitle:
-        textOverrides?.startOverTitle ?? t("confirm_exit_title", { ns: "meals" }),
+        textOverrides?.startOverTitle ??
+        t("confirm_exit_title", { ns: "meals" }),
       startOverMessage:
-        textOverrides?.startOverMessage ?? t("confirm_exit_message", { ns: "meals" }),
+        textOverrides?.startOverMessage ??
+        t("confirm_exit_message", { ns: "meals" }),
       startOverPrimaryLabel:
         textOverrides?.startOverPrimaryLabel ?? t("yes", { ns: "common" }),
       startOverSecondaryLabel:
@@ -323,11 +344,11 @@ export default function ReviewIngredientsEditor({
   const content = (
     <View
       style={[
-        styles(theme).container,
-        containerPadding ? { padding: theme.spacing.container } : null,
+        styles.container,
+        containerPadding ? styles.containerPadded : null,
       ]}
     >
-      {localDraft && (
+      {localDraft ? (
         <IngredientBox
           key="local-draft"
           ingredient={localDraft}
@@ -343,10 +364,11 @@ export default function ReviewIngredientsEditor({
             errorsByIndex.get(-1) && Object.keys(errorsByIndex.get(-1)!).length,
           )}
         />
-      )}
+      ) : null}
 
       {ingredients.map((ingredient, idx) => {
         const errors = errorsByIndex.get(idx);
+
         return (
           <IngredientBox
             key={`ing-${ingredient.id || idx}`}
@@ -364,14 +386,14 @@ export default function ReviewIngredientsEditor({
         );
       })}
 
-      {renderAddIngredientButton &&
-        (addIngredientButtonVariant === "secondary" ? (
+      {renderAddIngredientButton ? (
+        addIngredientButtonVariant === "secondary" ? (
           <SecondaryButton
             testID="meal-add-add-ingredient-button"
             label={t("add_ingredient", { ns: "meals" })}
             onPress={handleAddIngredient}
             disabled={disableAddIngredientWhileEditing && editingIdx !== null}
-            style={styles(theme).addIngredientBtn}
+            style={styles.addIngredientBtn}
           />
         ) : (
           <PrimaryButton
@@ -379,20 +401,24 @@ export default function ReviewIngredientsEditor({
             label={t("add_ingredient", { ns: "meals" })}
             onPress={handleAddIngredient}
             disabled={disableAddIngredientWhileEditing && editingIdx !== null}
-            style={styles(theme).addIngredientBtn}
+            style={styles.addIngredientBtn}
           />
-        ))}
+        )
+      ) : null}
 
       {showContinueButton && showStartOverButton ? (
         <GlobalActionButtons
           label={t("continue", { ns: "common" })}
           onPress={handleContinue}
-          primaryDisabled={ingredients.length === 0 || hasAnyErrors || editingIdx !== null}
-          primaryTestID="meal-add-continue-button"
-          primaryStyle={styles(theme).continueBtn}
+          disabled={
+            ingredients.length === 0 || hasAnyErrors || editingIdx !== null
+          }
+          testID="meal-add-continue-button"
+          primaryStyle={styles.continueBtn}
           secondaryLabel={labels.startOverButtonLabel}
           secondaryOnPress={() => setShowConfirmModal(true)}
-          secondaryStyle={styles(theme).startOverBtn}
+          secondaryStyle={styles.startOverBtn}
+          layout="column"
         />
       ) : null}
 
@@ -401,8 +427,10 @@ export default function ReviewIngredientsEditor({
           testID="meal-add-continue-button"
           label={t("continue", { ns: "common" })}
           onPress={handleContinue}
-          disabled={ingredients.length === 0 || hasAnyErrors || editingIdx !== null}
-          style={styles(theme).continueBtn}
+          disabled={
+            ingredients.length === 0 || hasAnyErrors || editingIdx !== null
+          }
+          style={styles.continueBtn}
         />
       ) : null}
 
@@ -410,7 +438,7 @@ export default function ReviewIngredientsEditor({
         <SecondaryButton
           label={labels.startOverButtonLabel}
           onPress={() => setShowConfirmModal(true)}
-          style={styles(theme).startOverBtn}
+          style={styles.startOverBtn}
         />
       ) : null}
 
@@ -418,25 +446,37 @@ export default function ReviewIngredientsEditor({
         visible={showConfirmModal}
         title={labels.startOverTitle}
         message={labels.startOverMessage}
-        primaryActionLabel={labels.startOverPrimaryLabel}
-        onPrimaryAction={handleStartOverConfirmed}
-        secondaryActionLabel={labels.startOverSecondaryLabel}
-        onSecondaryAction={() => setShowConfirmModal(false)}
+        primaryAction={{
+          label: labels.startOverPrimaryLabel,
+          onPress: handleStartOverConfirmed,
+          tone: "primary",
+        }}
+        secondaryAction={{
+          label: labels.startOverSecondaryLabel,
+          onPress: () => setShowConfirmModal(false),
+          tone: "secondary",
+        }}
         onClose={() => setShowConfirmModal(false)}
       />
 
-      {enableBeforeRemoveGuard && (
+      {enableBeforeRemoveGuard ? (
         <AppModal
           visible={showExitModal}
           title={labels.exitTitle}
           message={labels.exitMessage}
-          primaryActionLabel={labels.exitPrimaryLabel}
-          onPrimaryAction={handleConfirmExit}
-          secondaryActionLabel={labels.exitSecondaryLabel}
-          onSecondaryAction={() => setShowExitModal(false)}
+          primaryAction={{
+            label: labels.exitPrimaryLabel,
+            onPress: handleConfirmExit,
+            tone: "destructive",
+          }}
+          secondaryAction={{
+            label: labels.exitSecondaryLabel,
+            onPress: () => setShowExitModal(false),
+            tone: "secondary",
+          }}
           onClose={() => setShowExitModal(false)}
         />
-      )}
+      ) : null}
     </View>
   );
 
@@ -447,9 +487,14 @@ export default function ReviewIngredientsEditor({
   return <Layout showNavigation={false}>{content}</Layout>;
 }
 
-const styles = (theme: ReturnType<typeof useTheme>) =>
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: { flex: 1 },
+    container: {
+      flex: 1,
+    },
+    containerPadded: {
+      padding: theme.spacing.screenPadding,
+    },
     addIngredientBtn: {
       marginTop: 2,
       marginBottom: theme.spacing.md,
@@ -460,5 +505,8 @@ const styles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: theme.spacing.sm,
       width: "100%",
     },
-    startOverBtn: { marginTop: 0, width: "100%" },
+    startOverBtn: {
+      marginTop: 0,
+      width: "100%",
+    },
   });

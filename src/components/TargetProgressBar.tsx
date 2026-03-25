@@ -19,6 +19,7 @@ export const TargetProgressBar = ({
 }: Props) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+
   const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
 
   if (onThreshold && target > 0 && current / target >= thresholdPct) {
@@ -28,25 +29,28 @@ export const TargetProgressBar = ({
   const minH = 16;
   const inheritedHeight =
     typeof height === "number" && height > 0 ? height : minH;
-  const dotSize = Math.max(10, (inheritedHeight ?? minH) - 6);
+  const dotSize = Math.max(10, inheritedHeight - 6);
+
   const barDynamicStyle = useMemo(
     () => ({
       height: inheritedHeight,
       minHeight: minH,
     }),
-    [inheritedHeight]
+    [inheritedHeight],
   );
+
   const dotDynamicStyle = useMemo(
     () => ({
       width: dotSize,
       height: inheritedHeight,
       borderRadius: inheritedHeight / 2,
     }),
-    [dotSize, inheritedHeight]
+    [dotSize, inheritedHeight],
   );
+
   const progressDynamicStyle = useMemo<ViewStyle>(
     () => ({ width: `${pct}%` as `${number}%` }),
-    [pct]
+    [pct],
   );
 
   return (
@@ -80,35 +84,43 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       justifyContent: "space-between",
       paddingHorizontal: theme.spacing.xs,
+      marginBottom: theme.spacing.xs,
+      gap: theme.spacing.sm,
     },
     label: {
-      marginBottom: theme.spacing.sm - theme.spacing.xs / 2,
       color: theme.text,
-      fontSize: theme.typography.size.lg,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
       fontFamily: theme.typography.fontFamily.bold,
+      flexShrink: 1,
     },
     percentWrapper: {
-      paddingHorizontal: theme.spacing.md - theme.spacing.xs + theme.spacing.xs / 2,
+      paddingHorizontal: theme.spacing.sm,
       alignSelf: "center",
     },
     percentText: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.medium,
     },
     bar: {
       width: "100%",
       overflow: "hidden",
-      backgroundColor: theme.border,
+      backgroundColor: theme.borderSoft,
       borderRadius: theme.rounded.full,
+      position: "relative",
     },
     dot: {
-      backgroundColor: theme.accent,
+      backgroundColor: theme.primary,
       position: "absolute",
+      left: 0,
+      top: 0,
+      zIndex: 1,
     },
     progress: {
       height: "100%",
-      backgroundColor: theme.accent,
+      backgroundColor: theme.primary,
       borderRadius: theme.rounded.full,
     },
   });

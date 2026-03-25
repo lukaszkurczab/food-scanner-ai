@@ -41,9 +41,7 @@ export function MacroTargetsRow({ macroTargets, consumed }: Props) {
             targetGrams={macroTargets.proteinGrams}
             consumedGrams={consumed.protein}
           />
-          <Text style={styles.label}>
-            {proteinLabel}
-          </Text>
+          <Text style={styles.label}>{proteinLabel}</Text>
         </View>
         <View style={styles.item}>
           <MacroTargetDonut
@@ -51,9 +49,7 @@ export function MacroTargetsRow({ macroTargets, consumed }: Props) {
             targetGrams={macroTargets.fatGrams}
             consumedGrams={consumed.fat}
           />
-          <Text style={styles.label}>
-            {fatLabel}
-          </Text>
+          <Text style={styles.label}>{fatLabel}</Text>
         </View>
         <View style={styles.item}>
           <MacroTargetDonut
@@ -61,9 +57,7 @@ export function MacroTargetsRow({ macroTargets, consumed }: Props) {
             targetGrams={macroTargets.carbsGrams}
             consumedGrams={consumed.carbs}
           />
-          <Text style={styles.label}>
-            {carbsLabel}
-          </Text>
+          <Text style={styles.label}>{carbsLabel}</Text>
         </View>
       </View>
     </View>
@@ -75,7 +69,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     container: {
       borderRadius: theme.rounded.md,
       padding: theme.spacing.md,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surfaceElevated,
     },
     row: {
       flexDirection: "row",
@@ -88,7 +82,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     label: {
       marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.sm,
+      fontSize: theme.typography.size.bodyS,
       fontFamily: theme.typography.fontFamily.medium,
       color: theme.text,
       textAlign: "center",

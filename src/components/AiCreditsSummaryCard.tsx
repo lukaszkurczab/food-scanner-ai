@@ -47,11 +47,11 @@ export function AiCreditsSummaryCard({
 
       <View style={styles.row}>
         <Text style={styles.label}>
-          {t("manageSubscription.aiCreditsBalance", { defaultValue: "Balance" })}
+          {t("manageSubscription.aiCreditsBalance", {
+            defaultValue: "Balance",
+          })}
         </Text>
-        <Text style={styles.value}>
-          {loading ? "..." : balance ?? "-"}
-        </Text>
+        <Text style={styles.value}>{loading ? "..." : (balance ?? "-")}</Text>
       </View>
 
       <View style={styles.row}>
@@ -61,7 +61,7 @@ export function AiCreditsSummaryCard({
           })}
         </Text>
         <Text style={styles.value}>
-          {loading ? "..." : allocation ?? "-"}
+          {loading ? "..." : (allocation ?? "-")}
         </Text>
       </View>
 
@@ -69,9 +69,7 @@ export function AiCreditsSummaryCard({
         <Text style={styles.label}>
           {t("manageSubscription.aiCreditsTier", { defaultValue: "Tier" })}
         </Text>
-        <Text style={styles.value}>
-          {loading ? "..." : tierLabel}
-        </Text>
+        <Text style={styles.value}>{loading ? "..." : tierLabel}</Text>
       </View>
 
       <View style={styles.row}>
@@ -83,10 +81,10 @@ export function AiCreditsSummaryCard({
         <Text style={styles.value}>
           {loading
             ? "..."
-            : renewalDate ??
+            : (renewalDate ??
               t("manageSubscription.aiCreditsRenewalUnknown", {
                 defaultValue: "Unavailable",
-              })}
+              }))}
         </Text>
       </View>
     </View>
@@ -96,17 +94,23 @@ export function AiCreditsSummaryCard({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     card: {
-      borderRadius: theme.rounded.md,
+      borderRadius: theme.rounded.lg,
       borderWidth: 1,
       borderColor: theme.border,
-      backgroundColor: theme.card,
-      padding: theme.spacing.md,
-      gap: theme.spacing.xs,
+      backgroundColor: theme.surface,
+      padding: theme.spacing.lg,
+      gap: theme.spacing.sm,
       marginBottom: theme.spacing.xl,
+      shadowColor: "#000000",
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 2,
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.md,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
       fontFamily: theme.typography.fontFamily.bold,
       marginBottom: theme.spacing.xs,
     },
@@ -115,15 +119,21 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
       justifyContent: "space-between",
       gap: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
     },
     label: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
       fontFamily: theme.typography.fontFamily.medium,
+      flex: 1,
     },
     value: {
       color: theme.text,
-      fontSize: theme.typography.size.base,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
       fontFamily: theme.typography.fontFamily.bold,
+      textAlign: "right",
+      flexShrink: 0,
     },
   });
