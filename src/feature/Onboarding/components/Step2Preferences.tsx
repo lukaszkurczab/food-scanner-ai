@@ -283,7 +283,7 @@ export default function Step2Preferences({
       </ScrollView>
       <View style={styles.actionsWrap}>
         <GlobalActionButtons
-          label={editMode ? t("summary.confirm", "Confirm") : t("next")}
+          label={editMode ? t("summary.save", "Save") : t("next")}
           onPress={editMode ? onConfirmEdit : handleNext}
           primaryDisabled={!canNext}
           secondaryLabel={t("back")}

@@ -317,7 +317,7 @@ export default function Step1BasicData({
       </ScrollView>
       <View style={styles.actionsWrap}>
         <GlobalActionButtons
-          label={editMode ? t("summary.confirm", "Confirm") : t("next")}
+          label={editMode ? t("summary.save", "Save") : t("next")}
           onPress={editMode ? onConfirmEdit : onNext}
           primaryDisabled={!canNext()}
           secondaryLabel={t("cancel")}

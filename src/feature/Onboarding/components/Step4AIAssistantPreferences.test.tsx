@@ -129,7 +129,7 @@ describe("Step4AIAssistantPreferences", () => {
       />,
     );
 
-    fireEvent.press(getByText("summary.confirm"));
+    fireEvent.press(getByText("summary.save"));
     expect(base.onConfirmEdit).toHaveBeenCalledTimes(1);
     expect(base.onNext).not.toHaveBeenCalled();
   });

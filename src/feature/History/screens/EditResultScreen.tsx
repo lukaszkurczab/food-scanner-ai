@@ -184,9 +184,9 @@ export default function EditResultScreen({ navigation }: Props) {
           defaultValue: "Porzucić zmiany i wrócić do zapisanych posiłków?",
         })}
         primaryAction={{
-          label: t("confirm", { ns: "common" }),
+          label: t("discard", { ns: "common" }),
           onPress: state.handleCancelConfirm,
-          tone: "primary",
+          tone: "destructive",
         }}
         secondaryAction={{
           label: t("cancel", { ns: "common" }),
