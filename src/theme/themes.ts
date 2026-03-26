@@ -151,10 +151,12 @@ export type ThemeDefinition = {
 
   input: {
     background: string;
+    backgroundError: string;
     backgroundDisabled: string;
     text: string;
     placeholder: string;
     border: string;
+    borderDisabled: string;
     borderFocused: string;
     borderError: string;
   };
@@ -316,10 +318,12 @@ const lightTheme: ThemeDefinition = {
 
   input: {
     background: baseColors.cream0,
+    backgroundError: baseColors.errorSurface,
     backgroundDisabled: baseColors.sand100,
     text: baseColors.ink900,
     placeholder: baseColors.ink500,
     border: baseColors.sand300,
+    borderDisabled: baseColors.sand200,
     borderFocused: baseColors.olive400,
     borderError: baseColors.error,
   },
@@ -481,10 +485,12 @@ const darkTheme: ThemeDefinition = {
 
   input: {
     background: "#202520",
+    backgroundError: "#2D201D",
     backgroundDisabled: "#1B1F1B",
     text: baseColors.darkText,
     placeholder: baseColors.darkTextTertiary,
     border: baseColors.darkBorder,
+    borderDisabled: baseColors.darkBorderSoft,
     borderFocused: baseColors.olive400,
     borderError: "#C85D4C",
   },

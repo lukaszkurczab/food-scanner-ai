@@ -1,21 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  View,
-  TextInput,
-  Pressable,
-  ViewStyle,
-  StyleSheet,
-} from "react-native";
-import { useTheme } from "@/theme/useTheme";
+import React, { useEffect, useRef, useState } from "react";
+import { Pressable, type StyleProp, type ViewStyle } from "react-native";
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
+import { TextInput as AppTextInput } from "@/components/TextInput";
 
 type Props = {
   value: string;
   onChange: (text: string) => void;
   placeholder?: string;
   debounceMs?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 export const SearchBox: React.FC<Props> = ({
@@ -25,8 +19,6 @@ export const SearchBox: React.FC<Props> = ({
   debounceMs = 200,
   style,
 }) => {
-  const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation();
 
   const [local, setLocal] = useState(value);
@@ -59,65 +51,28 @@ export const SearchBox: React.FC<Props> = ({
   };
 
   return (
-    <View style={[styles.wrap, style]}>
-      <AppIcon name="search" size={20} color={theme.textSecondary} />
-
-      <TextInput
-        value={local}
-        onChangeText={onTextChange}
-        placeholder={placeholder ?? t("input.search")}
-        placeholderTextColor={theme.input.placeholder}
-        style={styles.input}
-        returnKeyType="search"
-        accessibilityLabel={t("input.search_accessibility")}
-      />
-
-      {local.length > 0 ? (
-        <Pressable
-          onPress={clear}
-          accessibilityRole="button"
-          accessibilityLabel={t("input.clear_search_accessibility")}
-          style={styles.clearBtn}
-        >
-          <AppIcon name="close" size={18} color={theme.textSecondary} />
-        </Pressable>
-      ) : null}
-    </View>
+    <AppTextInput
+      value={local}
+      onChangeText={onTextChange}
+      placeholder={placeholder ?? t("input.search")}
+      returnKeyType="search"
+      accessibilityLabel={t("input.search_accessibility")}
+      autoCapitalize="none"
+      autoCorrect={false}
+      spellCheck={false}
+      left={<AppIcon name="search" size={20} />}
+      right={
+        local.length > 0 ? (
+          <Pressable
+            onPress={clear}
+            accessibilityRole="button"
+            accessibilityLabel={t("input.clear_search_accessibility")}
+          >
+            <AppIcon name="close" size={18} />
+          </Pressable>
+        ) : null
+      }
+      style={style}
+    />
   );
 };
-
-const makeStyles = (theme: ReturnType<typeof useTheme>) =>
-  StyleSheet.create({
-    wrap: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: theme.input.border,
-      backgroundColor: theme.input.background,
-      borderRadius: theme.rounded.md,
-      paddingHorizontal: theme.spacing.md,
-      minHeight: 52,
-      alignSelf: "stretch",
-      flexShrink: 1,
-      shadowColor: "#000000",
-      shadowOpacity: theme.isDark ? 0.12 : 0.06,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 2,
-    },
-    input: {
-      flex: 1,
-      marginLeft: theme.spacing.sm,
-      paddingVertical: theme.spacing.sm,
-      color: theme.input.text,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      fontFamily: theme.typography.fontFamily.regular,
-    },
-    clearBtn: {
-      marginLeft: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.xs,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.rounded.sm,
-    },
-  });
