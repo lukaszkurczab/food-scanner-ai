@@ -8,17 +8,15 @@ import {
   Platform,
   KeyboardAvoidingView,
   Dimensions,
-  TextInput,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { IconButton } from "@/components/IconButton";
 import AppIcon from "@/components/AppIcon";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
+import { TextInput as AppTextInput } from "@/components/TextInput";
 
 const WINDOW_HEIGHT = Dimensions.get("window").height;
 const MODAL_MAX_WIDTH = 400;
-const INPUT_VERTICAL_PADDING = 10;
-
 type InputModalActionTone = "primary" | "secondary" | "ghost" | "destructive";
 
 type InputModalAction = {
@@ -148,21 +146,18 @@ export const InputModal: React.FC<Props> = ({
 
             {message ? <Text style={styles.message}>{message}</Text> : null}
 
-            <TextInput
+            <AppTextInput
               value={value}
               onChangeText={onChange}
               placeholder={placeholder}
-              placeholderTextColor={theme.input.placeholder}
               secureTextEntry={secureTextEntry}
-              style={[styles.input, error ? styles.inputError : null]}
+              style={styles.input}
               autoCapitalize="none"
               autoCorrect={false}
               textContentType={secureTextEntry ? "password" : "none"}
-              accessible
               accessibilityLabel={placeholder}
+              error={error}
             />
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             {footer ? (
               <View style={styles.footer}>{footer}</View>
@@ -268,30 +263,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       textAlign: "center",
     },
     input: {
-      width: "100%",
-      borderRadius: theme.rounded.md,
-      borderWidth: 1,
-      borderColor: theme.input.border,
-      backgroundColor: theme.input.background,
-      color: theme.input.text,
-      paddingVertical: INPUT_VERTICAL_PADDING,
-      paddingHorizontal: theme.spacing.md,
       marginBottom: theme.spacing.md,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      fontFamily: theme.typography.fontFamily.regular,
-      minHeight: 48,
-    },
-    inputError: {
-      borderColor: theme.input.borderError,
-    },
-    errorText: {
-      color: theme.error.text,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.medium,
-      marginBottom: theme.spacing.sm,
-      textAlign: "center",
     },
     footer: {
       marginTop: theme.spacing.md,

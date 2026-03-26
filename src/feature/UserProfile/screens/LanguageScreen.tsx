@@ -7,7 +7,7 @@ import {
   FlatList,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { BackTitleHeader, Layout, TextInput } from "@/components";
+import { BackTitleHeader, Layout, SearchBox } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { useUserContext } from "@contexts/UserContext";
@@ -73,23 +73,12 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
           onBack={() => navigation.goBack()}
         />
 
-        <TextInput
+        <SearchBox
           placeholder={t("input.search", { defaultValue: "Search" })}
           value={search}
-          onChangeText={setSearch}
-          icon={
-            <AppIcon
-              name="search"
-              size={20}
-              color={theme.textSecondary}
-            />
-          }
-          iconPosition="right"
+          onChange={setSearch}
+          debounceMs={0}
           style={styles.searchInput}
-          inputStyle={styles.searchInputText}
-          autoCapitalize="none"
-          autoCorrect={false}
-          returnKeyType="search"
         />
 
         <FlatList
@@ -143,7 +132,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: theme.spacing.xs,
       marginHorizontal: theme.spacing.sm,
     },
-    searchInputText: { fontSize: theme.typography.size.bodyL },
     languageRow: {
       paddingVertical: theme.spacing.md,
       borderBottomWidth: StyleSheet.hairlineWidth,

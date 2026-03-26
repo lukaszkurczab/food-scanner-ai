@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import {
   View,
   Text,
-  TextInput,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
   Layout,
   Card,
   Modal,
+  TextInput,
 } from "@/components";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -124,7 +124,6 @@ export default function NotificationFormScreen() {
             value={name}
             onChangeText={setName}
             placeholder={notifId ? t("form.edit") : t("form.create")}
-            placeholderTextColor={theme.textSecondary}
             style={styles.input}
           />
         </View>
@@ -203,7 +202,6 @@ export default function NotificationFormScreen() {
             value={text}
             onChangeText={setText}
             placeholder=""
-            placeholderTextColor={theme.textSecondary}
             style={styles.input}
           />
         </View>
@@ -236,11 +234,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.medium,
     },
     input: {
-      borderWidth: 1,
-      borderColor: theme.border,
-      borderRadius: theme.rounded.md,
-      padding: theme.spacing.md,
-      color: theme.text,
+      marginTop: theme.spacing.xxs,
     },
     option: {
       flex: 1,
