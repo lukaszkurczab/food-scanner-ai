@@ -251,8 +251,8 @@ export default function MealDetailsScreen() {
             tone: "destructive",
           }}
           secondaryAction={{
-            label: t("continue", {
-              ns: "common",
+            label: t("continue_editing", {
+              ns: "meals",
               defaultValue: "Continue editing",
             }),
             onPress: state.closeDiscardModal,
@@ -281,8 +281,8 @@ export default function MealDetailsScreen() {
             tone: "destructive",
           }}
           secondaryAction={{
-            label: t("continue", {
-              ns: "common",
+            label: t("continue_editing", {
+              ns: "meals",
               defaultValue: "Continue editing",
             }),
             onPress: state.closeLeaveModal,

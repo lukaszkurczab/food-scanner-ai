@@ -3,7 +3,7 @@
   "step1_description": "Potrzebujemy kilku podstawowych informacji, aby obliczyć Twoje dzienne zapotrzebowanie kaloryczne.",
   "unitsSystem": "System jednostek",
   "metric": "Metryczny",
-  "imperial": "Imperialny",
+  "imperial": "Imperialny (ft, lb)",
   "age": "Wiek",
   "sex": "Płeć",
   "male": "Mężczyzna",
@@ -140,7 +140,6 @@
     "health": "Zdrowie",
     "ai": "Ustawienia asystenta",
     "edit": "Edytuj",
-    "save": "Zapisz",
-    "confirm": "Potwierdź"
+    "save": "Zapisz"
   }
 }

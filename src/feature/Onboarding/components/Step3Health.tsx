@@ -199,7 +199,7 @@ export default function Step3Health({
         <GlobalActionButtons
           label={
             editMode
-              ? t("summary.confirm", "Confirm")
+              ? t("summary.save", "Save")
               : hasAnyHealthDetails
                 ? t("next")
                 : t("skip")

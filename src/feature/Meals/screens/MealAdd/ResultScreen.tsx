@@ -322,9 +322,10 @@ export default function ResultScreen({
 
       <Modal
         visible={showCancelModal}
+        title={t("confirm_exit_title", { ns: "meals" })}
         message={t("confirm_exit_message", { ns: "meals" })}
         primaryAction={{
-          label: t("confirm", { ns: "common" }),
+          label: t("leave", { ns: "common" }),
           onPress: handleCancelConfirm,
           tone: "destructive",
         }}

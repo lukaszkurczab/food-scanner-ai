@@ -332,7 +332,8 @@ export default function ReviewIngredientsEditor({
         textOverrides?.exitPrimaryLabel ??
         t("discard", { ns: "meals", defaultValue: "Discard" }),
       exitSecondaryLabel:
-        textOverrides?.exitSecondaryLabel ?? t("continue", { ns: "common" }),
+        textOverrides?.exitSecondaryLabel ??
+        t("continue_editing", { ns: "meals", defaultValue: "Continue editing" }),
     }),
     [t, textOverrides],
   );

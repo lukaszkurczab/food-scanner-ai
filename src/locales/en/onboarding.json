@@ -3,7 +3,7 @@
   "step1_description": "We need some basic information to calculate your daily calorie needs.",
   "unitsSystem": "Units system",
   "metric": "Metric",
-  "imperial": "Imperial",
+  "imperial": "Imperial (ft, lb)",
   "age": "Age",
   "sex": "Sex",
   "male": "Male",
@@ -140,7 +140,6 @@
     "health": "Health",
     "ai": "Assistant Settings",
     "edit": "Edit",
-    "save": "Save",
-    "confirm": "Confirm"
+    "save": "Save"
   }
 }

@@ -360,9 +360,9 @@ export const IngredientEditor: React.FC<Props> = ({
             "Adjust protein, carbs, fat and kcal proportionally to the new amount?",
         })}
         primaryAction={{
-          label: t("confirm", {
-            ns: "common",
-            defaultValue: "Confirm",
+          label: t("recalc_confirm", {
+            ns: "meals",
+            defaultValue: "Recalculate now",
           }),
           onPress: () => {
             const r = recalcRatioRef.current;

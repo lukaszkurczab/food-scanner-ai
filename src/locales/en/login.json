@@ -28,7 +28,6 @@
   "terms": "Terms",
   "privacy_policy": "Privacy Policy",
   "toggle_password_visibility": "Show/hide password",
-  "agreement_prefix": "By signing up, you agree to our ",
   "register_failed": "Couldn't create your account. Please try again.",
   "already_have_account": "Already have an account?"
 }

@@ -57,7 +57,7 @@ export default function EditReviewIngredientsScreen() {
         ns: "common",
         defaultValue: "Wyjdź",
       }),
-      exitSecondaryLabel: t("continue", { ns: "common" }),
+      exitSecondaryLabel: t("continue_editing", { ns: "meals" }),
     }),
     [t]
   );

@@ -128,7 +128,7 @@ describe("Step3Health", () => {
       />,
     );
 
-    fireEvent.press(getByText("summary.confirm"));
+    fireEvent.press(getByText("summary.save"));
     expect(onConfirmEdit).toHaveBeenCalledTimes(1);
   });
 

@@ -134,7 +134,7 @@ export default function Step4AIAssistantPreferences({
         <GlobalActionButtons
           label={
             editMode
-              ? t("summary.confirm", "Confirm")
+              ? t("summary.save", "Save")
               : hasAnyAiDetails
                 ? t("next")
                 : t("skip")
