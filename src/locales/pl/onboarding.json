@@ -17,13 +17,13 @@
   "skip": "Pomiń",
   "cancel": "Anuluj",
   "back": "Wstecz",
-  "exit_first_title": "Wyjść z ankiety?",
-  "exit_first_desc": "Ankietę możesz uzupełnić później w profilu. Obecny postęp nie zostanie zapisany.",
-  "exit_first_primary": "Wyjdź",
-  "exit_first_secondary": "Kontynuuj",
+  "exit_first_title": "Pominąć onboarding na razie?",
+  "exit_first_desc": "Możesz uzupełnić te informacje później w profilu. Obecny postęp nie zostanie zapisany.",
+  "exit_first_primary": "Przejdź do aplikacji",
+  "exit_first_secondary": "Kontynuuj onboarding",
   "exit_first_a11y": "Pomiń",
   "exit_refill_title": "Zapisać zmiany przed wyjściem?",
-  "exit_refill_desc": "Możesz zapisać zaktualizowane preferencje lub je porzucić.",
+  "exit_refill_desc": "Możesz zapisać zmiany albo je odrzucić.",
   "exit_refill_save": "Zapisz",
   "exit_refill_discard": "Odrzuć",
   "exit_refill_a11y": "Zamknij",
@@ -46,13 +46,13 @@
   "calorieDeficit": "Deficyt kaloryczny:",
   "calorieSurplus": "Nadwyżka kalorii:",
   "errors": {
-    "ageRequired": "Wymagany wiek",
+    "ageRequired": "Podaj wiek",
     "ageInvalid": "Podaj prawidłowy wiek (16-120)",
     "sexRequired": "Wybierz płeć",
-    "heightRequired": "Wymagany wzrost",
+    "heightRequired": "Podaj wzrost",
     "heightInvalid": "Podaj prawidłowy wzrost",
     "heightInchInvalid": "Cale muszą być w zakresie 0-11",
-    "weightRequired": "Wymagana waga",
+    "weightRequired": "Podaj wagę",
     "weightInvalid": "Podaj prawidłową wagę",
     "selectActivity": "Wybierz poziom aktywności",
     "selectGoal": "Wybierz swój cel",
@@ -63,7 +63,7 @@
   "preferences": {
     "label": "Preferencje żywieniowe",
     "none": "Brak",
-    "lowCarb": "Niska zawartość węglowodanów",
+    "lowCarb": "Niskowęglowodanowa",
     "keto": "Keto",
     "highProtein": "Wysokobiałkowa",
     "highCarb": "Wysokowęglowodanowa",
@@ -102,7 +102,7 @@
     "lifestylePlaceholder": "Codzienne nawyki"
   },
   "validation": {
-    "otherRequired": "Wymagane"
+    "otherRequired": "Uzupełnij to pole"
   },
   "step4_title": "Spersonalizuj wsparcie AI",
   "step4_description": "Powiedz nam, jak AI może Cię wspierać. Twoje preferencje pozwolą nam lepiej dopasować asystenta do Twoich potrzeb.",
