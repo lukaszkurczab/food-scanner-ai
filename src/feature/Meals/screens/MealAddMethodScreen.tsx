@@ -84,10 +84,15 @@ const MealAddMethodScreen = () => {
         visible={state.showResumeModal}
         title={t("continue_draft_title")}
         message={t("continue_draft_message")}
-        primaryActionLabel={t("continue")}
-        onPrimaryAction={state.handleContinueDraft}
-        secondaryActionLabel={t("discard")}
-        onSecondaryAction={state.handleDiscardDraft}
+        primaryAction={{
+          label: t("continue"),
+          onPress: state.handleContinueDraft,
+        }}
+        secondaryAction={{
+          label: t("discard"),
+          onPress: state.handleDiscardDraft,
+          tone: "destructive",
+        }}
         onClose={state.closeResumeModal}
       />
 
@@ -98,16 +103,20 @@ const MealAddMethodScreen = () => {
           defaultValue: "Daily limit reached",
         })}
         message={t("limit.reachedShort", { ns: "chat" })}
-        primaryActionLabel={t("limit.upgradeCta", {
-          ns: "chat",
-          defaultValue: "Upgrade",
-        })}
-        onPrimaryAction={state.handleAiLimitUpgrade}
-        secondaryActionLabel={t("cancel", {
-          ns: "common",
-          defaultValue: "Close",
-        })}
-        onSecondaryAction={state.closeAiLimitModal}
+        primaryAction={{
+          label: t("limit.upgradeCta", {
+            ns: "chat",
+            defaultValue: "Upgrade",
+          }),
+          onPress: state.handleAiLimitUpgrade,
+        }}
+        secondaryAction={{
+          label: t("cancel", {
+            ns: "common",
+            defaultValue: "Close",
+          }),
+          onPress: state.closeAiLimitModal,
+        }}
         onClose={state.closeAiLimitModal}
         stackActions
       />

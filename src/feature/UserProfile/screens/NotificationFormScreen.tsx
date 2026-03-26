@@ -163,12 +163,16 @@ export default function NotificationFormScreen() {
 
           <Modal
             visible={timeVisible}
-            message={t("form.time")}
-            primaryActionLabel={t("form.save")}
-            secondaryActionLabel={t("form.cancel")}
+            title={t("form.time")}
+            primaryAction={{
+              label: t("form.save"),
+              onPress: confirmTime,
+            }}
+            secondaryAction={{
+              label: t("form.cancel"),
+              onPress: closeTimePicker,
+            }}
             onClose={closeTimePicker}
-            onSecondaryAction={closeTimePicker}
-            onPrimaryAction={confirmTime}
           >
             <View style={styles.modalContent}>
               {prefers12h ? (
@@ -212,7 +216,7 @@ export default function NotificationFormScreen() {
             onPress={onSave}
             secondaryLabel={t("form.delete")}
             secondaryOnPress={onDelete}
-            secondaryVariant="error"
+            secondaryTone="destructive"
             layout="row"
           />
         ) : (

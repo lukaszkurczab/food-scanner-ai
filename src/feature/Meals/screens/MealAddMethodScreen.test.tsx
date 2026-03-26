@@ -8,10 +8,8 @@ type ModalProps = {
   visible: boolean;
   title?: string;
   message?: string;
-  primaryActionLabel?: string;
-  onPrimaryAction?: () => void;
-  secondaryActionLabel?: string;
-  onSecondaryAction?: () => void;
+  primaryAction?: { label: string; onPress?: () => void };
+  secondaryAction?: { label: string; onPress?: () => void };
   onClose?: () => void;
 };
 
@@ -72,10 +70,8 @@ jest.mock("@/components/Modal", () => {
       visible,
       title,
       message,
-      primaryActionLabel,
-      onPrimaryAction,
-      secondaryActionLabel,
-      onSecondaryAction,
+      primaryAction,
+      secondaryAction,
       onClose,
     }: ModalProps) =>
       visible
@@ -84,18 +80,24 @@ jest.mock("@/components/Modal", () => {
             null,
             title ? createElement(Text, null, title) : null,
             message ? createElement(Text, null, message) : null,
-            primaryActionLabel
+            primaryAction
               ? createElement(
                   Pressable,
-                  { onPress: onPrimaryAction, accessibilityRole: "button" },
-                  createElement(Text, null, primaryActionLabel),
+                  {
+                    onPress: primaryAction.onPress,
+                    accessibilityRole: "button",
+                  },
+                  createElement(Text, null, primaryAction.label),
                 )
               : null,
-            secondaryActionLabel
+            secondaryAction
               ? createElement(
                   Pressable,
-                  { onPress: onSecondaryAction, accessibilityRole: "button" },
-                  createElement(Text, null, secondaryActionLabel),
+                  {
+                    onPress: secondaryAction.onPress,
+                    accessibilityRole: "button",
+                  },
+                  createElement(Text, null, secondaryAction.label),
                 )
               : null,
             onClose

@@ -1,14 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  View,
-  ScrollView,
-  Modal,
-  Pressable,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, ScrollView, Pressable, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Button, RangeSlider } from "@/components";
+import { Button, Modal, RangeSlider } from "@/components";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { Calendar } from "@/components/Calendar";
@@ -268,93 +261,69 @@ export const FilterPanel: React.FC<{
 
       <Modal
         visible={openPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpenPicker(false)}
+        title={t("actions.choose", { ns: "history" })}
+        onClose={() => setOpenPicker(false)}
+        primaryAction={{
+          label: t("actions.done", { ns: "history" }),
+          onPress: () => setOpenPicker(false),
+        }}
+        secondaryAction={{
+          label: t("actions.reset", { ns: "history" }),
+          onPress: () => setActive([]),
+        }}
       >
-        <Pressable
-          onPress={() => setOpenPicker(false)}
-          style={styles.modalBackdrop}
-        >
-          <Pressable onPress={() => {}} style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
-              {t("actions.choose", { ns: "history" })}
-            </Text>
+        <View style={styles.modalList}>
+          {allFilters.map(({ key, label }) => {
+            const selected = active.includes(key);
 
-            <View style={styles.modalList}>
-              {allFilters.map(({ key, label }) => {
-                const selected = active.includes(key);
-
-                return (
-                  <Pressable
-                    key={key}
-                    onPress={() => addOrRemove(key)}
-                    style={[
-                      styles.rowItem,
-                      selected ? styles.rowItemSelected : styles.rowItemDefault,
-                    ]}
-                  >
-                    <Text style={styles.rowItemLabel}>{label}</Text>
-                    <Text
-                      style={[
-                        styles.rowItemIcon,
-                        selected ? styles.rowItemIconActive : null,
-                      ]}
-                    >
-                      {selected
-                        ? t("symbols.check", { ns: "history" })
-                        : t("symbols.plus", { ns: "history" })}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <GlobalActionButtons
-              label={t("actions.done", { ns: "history" })}
-              onPress={() => setOpenPicker(false)}
-              secondaryLabel={t("actions.reset", { ns: "history" })}
-              secondaryOnPress={() => setActive([])}
-              containerStyle={styles.modalActions}
-            />
-          </Pressable>
-        </Pressable>
+            return (
+              <Pressable
+                key={key}
+                onPress={() => addOrRemove(key)}
+                style={[
+                  styles.rowItem,
+                  selected ? styles.rowItemSelected : styles.rowItemDefault,
+                ]}
+              >
+                <Text style={styles.rowItemLabel}>{label}</Text>
+                <Text
+                  style={[
+                    styles.rowItemIcon,
+                    selected ? styles.rowItemIconActive : null,
+                  ]}
+                >
+                  {selected
+                    ? t("symbols.check", { ns: "history" })
+                    : t("symbols.plus", { ns: "history" })}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </Modal>
 
       <Modal
         visible={openCalendar}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpenCalendar(false)}
+        title={t("actions.selectDateRange", { ns: "history" })}
+        onClose={() => setOpenCalendar(false)}
+        primaryAction={{
+          label: t("actions.save", { ns: "history" }),
+          onPress: applyCalendar,
+        }}
+        secondaryAction={{
+          label: t("actions.cancel", { ns: "history" }),
+          onPress: () => setOpenCalendar(false),
+        }}
       >
-        <Pressable
-          onPress={() => setOpenCalendar(false)}
-          style={styles.modalBackdrop}
-        >
-          <Pressable onPress={() => {}} style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
-              {t("actions.selectDateRange", { ns: "history" })}
-            </Text>
-
-            <Calendar
-              startDate={localRange.start}
-              endDate={localRange.end}
-              focus={focus}
-              onChangeRange={(r) => setLocalRange(r)}
-              onToggleFocus={() =>
-                setFocus((f) => (f === "start" ? "end" : "start"))
-              }
-            />
-
-            <GlobalActionButtons
-              label={t("actions.save", { ns: "history" })}
-              onPress={applyCalendar}
-              secondaryLabel={t("actions.cancel", { ns: "history" })}
-              secondaryOnPress={() => setOpenCalendar(false)}
-              containerStyle={styles.modalActions}
-            />
-          </Pressable>
-        </Pressable>
+        <Calendar
+          startDate={localRange.start}
+          endDate={localRange.end}
+          focus={focus}
+          onChangeRange={(r) => setLocalRange(r)}
+          onToggleFocus={() =>
+            setFocus((f) => (f === "start" ? "end" : "start"))
+          }
+        />
       </Modal>
     </View>
   );
@@ -433,34 +402,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.sm,
       backgroundColor: theme.background,
     },
-    modalBackdrop: {
-      flex: 1,
-      backgroundColor: theme.isDark ? "rgba(0,0,0,0.48)" : "rgba(0,0,0,0.24)",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: theme.spacing.md,
-    },
-    modalCard: {
-      width: "100%",
-      maxWidth: 560,
-      borderRadius: theme.rounded.lg,
-      backgroundColor: theme.surfaceElevated,
-      padding: theme.spacing.md,
-      borderWidth: 1,
-      borderColor: theme.border,
-      gap: theme.spacing.md,
-      shadowColor: "#000000",
-      shadowOpacity: theme.isDark ? 0.22 : 0.1,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 4,
-    },
-    modalTitle: {
-      color: theme.text,
-      fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-    },
     modalList: {
       gap: theme.spacing.sm,
     },
@@ -495,8 +436,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     rowItemIconActive: {
       color: theme.primary,
-    },
-    modalActions: {
-      gap: theme.spacing.sm,
     },
   });

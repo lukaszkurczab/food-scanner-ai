@@ -323,11 +323,16 @@ export default function ResultScreen({
       <Modal
         visible={showCancelModal}
         message={t("confirm_exit_message", { ns: "meals" })}
-        primaryActionLabel={t("confirm", { ns: "common" })}
+        primaryAction={{
+          label: t("confirm", { ns: "common" }),
+          onPress: handleCancelConfirm,
+          tone: "destructive",
+        }}
+        secondaryAction={{
+          label: t("cancel", { ns: "common" }),
+          onPress: () => setShowCancelModal(false),
+        }}
         onClose={() => setShowCancelModal(false)}
-        onPrimaryAction={handleCancelConfirm}
-        secondaryActionLabel={t("cancel", { ns: "common" })}
-        onSecondaryAction={() => setShowCancelModal(false)}
       />
     </Layout>
   );

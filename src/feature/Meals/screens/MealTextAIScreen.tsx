@@ -133,10 +133,14 @@ export default function MealTextAIScreen() {
           used: creditsUsed,
           limit: creditAllocation,
         })}
-        primaryActionLabel={t("limit.upgradeCta", { ns: "chat" })}
-        onPrimaryAction={openPaywall}
-        secondaryActionLabel={t("cancel", { ns: "common" })}
-        onSecondaryAction={closeLimitModal}
+        primaryAction={{
+          label: t("limit.upgradeCta", { ns: "chat" }),
+          onPress: openPaywall,
+        }}
+        secondaryAction={{
+          label: t("cancel", { ns: "common" }),
+          onPress: closeLimitModal,
+        }}
         onClose={closeLimitModal}
       />
     </Layout>

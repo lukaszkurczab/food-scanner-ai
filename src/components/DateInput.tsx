@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, Pressable, Modal, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
+import { Modal } from "@/components/Modal";
 import { Calendar } from "./Calendar";
-import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 export type DateRange = { start: Date; end: Date };
 
@@ -95,35 +95,26 @@ export const DateInput: React.FC<Props> = ({
 
       <Modal
         visible={visible}
-        transparent
-        animationType="fade"
-        onRequestClose={cancel}
+        title={t("statistics:pickRange")}
+        onClose={cancel}
+        primaryAction={{
+          label: t("common:confirm"),
+          onPress: confirm,
+        }}
+        secondaryAction={{
+          label: t("common:cancel"),
+          onPress: cancel,
+        }}
       >
-        <View style={styles.backdrop}>
-          <View style={styles.card}>
-            <Text style={styles.title}>{t("statistics:pickRange")}</Text>
-
-            <Calendar
-              startDate={temp.start}
-              endDate={temp.end}
-              focus={focus}
-              onChangeRange={handleCalendarChange}
-              onToggleFocus={handleToggleFocus}
-              minDate={minDate}
-              maxDate={maxDate}
-            />
-
-            <View style={styles.spacer} />
-
-            <GlobalActionButtons
-              label={t("common:confirm")}
-              onPress={confirm}
-              secondaryLabel={t("common:cancel")}
-              secondaryOnPress={cancel}
-              containerStyle={styles.buttonsCol}
-            />
-          </View>
-        </View>
+        <Calendar
+          startDate={temp.start}
+          endDate={temp.end}
+          focus={focus}
+          onChangeRange={handleCalendarChange}
+          onToggleFocus={handleToggleFocus}
+          minDate={minDate}
+          maxDate={maxDate}
+        />
       </Modal>
     </View>
   );
@@ -170,38 +161,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontSize: theme.typography.size.title,
       lineHeight: theme.typography.lineHeight.title,
       fontFamily: theme.typography.fontFamily.medium,
-    },
-    backdrop: {
-      flex: 1,
-      backgroundColor: theme.overlay,
-      alignItems: "center",
-      justifyContent: "center",
-      padding: theme.spacing.lg,
-    },
-    card: {
-      width: "100%",
-      borderWidth: 1,
-      borderColor: theme.border,
-      borderRadius: theme.rounded.lg,
-      backgroundColor: theme.surfaceElevated,
-      padding: theme.spacing.lg,
-      shadowColor: "#000000",
-      shadowOpacity: theme.isDark ? 0.24 : 0.12,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 6,
-    },
-    title: {
-      color: theme.text,
-      fontSize: theme.typography.size.h2,
-      lineHeight: theme.typography.lineHeight.h2,
-      fontFamily: theme.typography.fontFamily.bold,
-      marginBottom: theme.spacing.md,
-    },
-    spacer: {
-      height: theme.spacing.md,
-    },
-    buttonsCol: {
-      gap: theme.spacing.sm,
     },
   });

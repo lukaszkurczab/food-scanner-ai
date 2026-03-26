@@ -23,10 +23,6 @@ type CardProps = {
 type ModalProps = {
   visible: boolean;
   children: ReactNode;
-  primaryActionLabel?: string;
-  secondaryActionLabel?: string;
-  onPrimaryAction?: () => void;
-  onSecondaryAction?: () => void;
   primaryAction?: { label: string; onPress?: () => void };
   secondaryAction?: { label: string; onPress?: () => void };
 };
@@ -108,40 +104,26 @@ jest.mock("@/components", () => {
     Modal: ({
       visible,
       children,
-      primaryActionLabel,
-      secondaryActionLabel,
-      onPrimaryAction,
-      onSecondaryAction,
       primaryAction,
       secondaryAction,
     }: ModalProps) => {
       if (!visible) return null;
-      const resolvedPrimaryAction = primaryAction ?? (
-        primaryActionLabel
-          ? { label: primaryActionLabel, onPress: onPrimaryAction }
-          : undefined
-      );
-      const resolvedSecondaryAction = secondaryAction ?? (
-        secondaryActionLabel
-          ? { label: secondaryActionLabel, onPress: onSecondaryAction }
-          : undefined
-      );
       return createElement(
         View,
         null,
         children,
-        resolvedPrimaryAction
+        primaryAction
           ? createElement(
               RNPressable,
-              { onPress: resolvedPrimaryAction.onPress },
-              createElement(Text, null, resolvedPrimaryAction.label),
+              { onPress: primaryAction.onPress },
+              createElement(Text, null, primaryAction.label),
             )
           : null,
-        resolvedSecondaryAction
+        secondaryAction
           ? createElement(
               RNPressable,
-              { onPress: resolvedSecondaryAction.onPress },
-              createElement(Text, null, resolvedSecondaryAction.label),
+              { onPress: secondaryAction.onPress },
+              createElement(Text, null, secondaryAction.label),
             )
           : null,
       );

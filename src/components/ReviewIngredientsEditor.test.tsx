@@ -18,10 +18,6 @@ type ModalProps = {
   visible: boolean;
   title?: string;
   message?: string;
-  primaryActionLabel?: string;
-  onPrimaryAction?: () => void;
-  secondaryActionLabel?: string;
-  onSecondaryAction?: () => void;
   primaryAction?: { label: string; onPress?: () => void };
   secondaryAction?: { label: string; onPress?: () => void };
 };
@@ -75,53 +71,36 @@ jest.mock("@/components", () => {
       visible,
       title,
       message,
-      primaryActionLabel,
-      onPrimaryAction,
-      secondaryActionLabel,
-      onSecondaryAction,
       primaryAction,
       secondaryAction,
     }: ModalProps) =>
       visible
-        ? (() => {
-            const resolvedPrimaryAction = primaryAction ?? (
-              primaryActionLabel
-                ? { label: primaryActionLabel, onPress: onPrimaryAction }
-                : undefined
-            );
-            const resolvedSecondaryAction = secondaryAction ?? (
-              secondaryActionLabel
-                ? { label: secondaryActionLabel, onPress: onSecondaryAction }
-                : undefined
-            );
-
-            return createElement(
-              View,
-              null,
-              title ? createElement(Text, null, title) : null,
-              message ? createElement(Text, null, message) : null,
-              resolvedPrimaryAction
-                ? createElement(
-                    Pressable,
-                    {
-                      onPress: resolvedPrimaryAction.onPress,
-                      accessibilityRole: "button",
-                    },
-                    createElement(Text, null, resolvedPrimaryAction.label),
-                  )
-                : null,
-              resolvedSecondaryAction
-                ? createElement(
-                    Pressable,
-                    {
-                      onPress: resolvedSecondaryAction.onPress,
-                      accessibilityRole: "button",
-                    },
-                    createElement(Text, null, resolvedSecondaryAction.label),
-                  )
-                : null,
-            );
-          })()
+        ? createElement(
+            View,
+            null,
+            title ? createElement(Text, null, title) : null,
+            message ? createElement(Text, null, message) : null,
+            primaryAction
+              ? createElement(
+                  Pressable,
+                  {
+                    onPress: primaryAction.onPress,
+                    accessibilityRole: "button",
+                  },
+                  createElement(Text, null, primaryAction.label),
+                )
+              : null,
+            secondaryAction
+              ? createElement(
+                  Pressable,
+                  {
+                    onPress: secondaryAction.onPress,
+                    accessibilityRole: "button",
+                  },
+                  createElement(Text, null, secondaryAction.label),
+                )
+              : null,
+          )
         : null,
     Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
       createElement(

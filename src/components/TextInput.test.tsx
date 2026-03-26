@@ -6,13 +6,9 @@ import { renderWithTheme } from "@/test-utils/renderWithTheme";
 import { themes } from "@/theme/themes";
 import { typography } from "@/theme/typography";
 
-const MockAdornment = ({
-  size,
-  color,
-}: {
-  size?: number;
-  color?: string;
-}) => <Text>{`${size ?? "none"}-${color ?? "none"}`}</Text>;
+const MockAdornment = ({ size, color }: { size?: number; color?: string }) => (
+  <Text>{`${size ?? "none"}-${color ?? "none"}`}</Text>
+);
 
 describe("TextInput", () => {
   it("renders label, right label and error text", () => {
@@ -64,13 +60,11 @@ describe("TextInput", () => {
       />,
     );
 
-    expect(
-      StyleSheet.flatten(getByPlaceholderText("Age").props.style),
-    ).toEqual(
+    expect(StyleSheet.flatten(getByPlaceholderText("Age").props.style)).toEqual(
       expect.objectContaining({
-        paddingVertical: 0,
-        paddingHorizontal: 0,
         minHeight: typography.lineHeight.bodyM,
+        textAlignVertical: "center",
+        includeFontPadding: false,
       }),
     );
   });
@@ -89,9 +83,7 @@ describe("TextInput", () => {
     );
 
     expect(getByText("Helpful hint")).toBeTruthy();
-    expect(
-      getByText(`22-${themes.light.textSecondary}`),
-    ).toBeTruthy();
+    expect(getByText(`22-${themes.light.textSecondary}`)).toBeTruthy();
     expect(getByPlaceholderText("Search").props.editable).toBe(false);
   });
 

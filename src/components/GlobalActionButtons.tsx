@@ -4,7 +4,6 @@ import { useTheme } from "@/theme/useTheme";
 import { Button } from "@/components/Button";
 
 type ActionTone = "primary" | "secondary" | "ghost" | "destructive";
-type LegacyActionVariant = "default" | "secondary" | "error";
 
 type GlobalActionButtonsProps = {
   label: string;
@@ -16,7 +15,6 @@ type GlobalActionButtonsProps = {
   primaryLoading?: boolean;
   primaryDisabled?: boolean;
   primaryTestID?: string;
-  primaryVariant?: LegacyActionVariant;
 
   secondaryLabel?: string;
   secondaryOnPress?: () => void;
@@ -24,7 +22,6 @@ type GlobalActionButtonsProps = {
   secondaryDisabled?: boolean;
   secondaryTestID?: string;
   secondaryTone?: ActionTone;
-  secondaryVariant?: LegacyActionVariant;
 
   containerStyle?: StyleProp<ViewStyle>;
   primaryStyle?: StyleProp<ViewStyle>;
@@ -43,7 +40,6 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
   primaryLoading,
   primaryDisabled,
   primaryTestID,
-  primaryVariant,
 
   secondaryLabel,
   secondaryOnPress,
@@ -51,7 +47,6 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
   secondaryDisabled = false,
   secondaryTestID,
   secondaryTone,
-  secondaryVariant,
 
   containerStyle,
   primaryStyle,
@@ -61,16 +56,6 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const normalizeTone = (
-    actionTone: ActionTone | undefined,
-    variant: LegacyActionVariant | undefined,
-    fallback: ActionTone,
-  ): ActionTone => {
-    if (actionTone) return actionTone;
-    if (variant === "error") return "destructive";
-    if (variant === "secondary") return "secondary";
-    return fallback;
-  };
 
   const renderButton = ({
     buttonLabel,
@@ -108,7 +93,7 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
     buttonLoading: primaryLoading ?? loading,
     buttonDisabled: primaryDisabled ?? disabled,
     buttonTestID: primaryTestID ?? testID,
-    buttonTone: normalizeTone(tone, primaryVariant, "primary"),
+    buttonTone: tone ?? "primary",
     buttonStyle: primaryStyle,
   });
 
@@ -120,7 +105,7 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
           buttonLoading: secondaryLoading,
           buttonDisabled: secondaryDisabled,
           buttonTestID: secondaryTestID,
-          buttonTone: normalizeTone(secondaryTone, secondaryVariant, "secondary"),
+          buttonTone: secondaryTone ?? "secondary",
           buttonStyle: secondaryStyle,
         })
       : null;
