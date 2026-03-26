@@ -248,10 +248,14 @@ export default function OnboardingScreen({
         visible={showExitModal}
         title={exitTitle}
         message={exitDesc}
-        primaryActionLabel={exitPrimaryLabel}
-        onPrimaryAction={exitPrimary}
-        secondaryActionLabel={exitSecondaryLabel}
-        onSecondaryAction={exitSecondary}
+        primaryAction={{
+          label: exitPrimaryLabel,
+          onPress: exitPrimary,
+        }}
+        secondaryAction={{
+          label: exitSecondaryLabel,
+          onPress: exitSecondary,
+        }}
         onClose={() => setShowExitModal(false)}
       />
     </Layout>

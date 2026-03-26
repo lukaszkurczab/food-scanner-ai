@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
-  TextInput as RNTextInput,
   Text,
   StyleSheet,
   DeviceEventEmitter,
@@ -10,11 +9,8 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
-import { Button } from "./Button";
-import { NumberInput } from "./NumberInput";
+import { NumberInput, TextInput, Modal, AppIcon, Button } from "./index";
 import { useNavigation } from "@react-navigation/native";
-import { Modal } from "./Modal";
-import AppIcon from "@/components/AppIcon";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -217,32 +213,22 @@ export const IngredientEditor: React.FC<Props> = ({
     return () => sub.remove();
   }, [onChangePartial]);
 
-  const inputStyle = (hasErr?: boolean, touched?: boolean) => [
-    styles.input,
-    hasErr && touched ? styles.inputError : null,
-  ];
-
   return (
     <View style={styles.box}>
-      <View style={styles.nameRow}>
-        <RNTextInput
-          style={[
-            ...inputStyle(Boolean(errors.name), nameTouched),
-            styles.nameInput,
-          ]}
+      <View style={styles.row}>
+        <TextInput
+          style={styles.nameField}
           value={name}
           onChangeText={(v) => {
             setName(v);
             onChangePartial?.({ name: v });
           }}
           placeholder={t("ingredient_name", { ns: "meals" })}
-          placeholderTextColor={theme.input.placeholder}
           onBlur={() => {
             setNameTouched(true);
             normalizeOnBlurName(name);
           }}
         />
-
         <Pressable
           onPress={() =>
             navigation.navigate("AddMeal", {
@@ -266,16 +252,11 @@ export const IngredientEditor: React.FC<Props> = ({
         {String(t("amount", { ns: "meals" })).replace("[g]", `[${unitLabel}]`)}
       </Text>
       <NumberInput
-        variant="native"
-        style={[
-          styles.editInput,
-          errors.amount && amountTouched ? styles.inputError : null,
-        ]}
+        fieldStyle={[errors.amount && amountTouched ? styles.inputError : null]}
         value={amount}
         onChangeText={(v) => handleNumericChange(v, setAmount, "amount")}
         maxDecimals={getNumericMaxDecimals("amount")}
         blurFallback="0"
-        placeholderTextColor={theme.input.placeholder}
         onFocus={() => clearZeroOnFocus(amount, setAmount)}
         onBlur={(normalizedValue) => {
           setAmountTouched(true);
@@ -289,16 +270,13 @@ export const IngredientEditor: React.FC<Props> = ({
 
       <Text style={styles.editLabel}>{t("protein", { ns: "meals" })} [g]</Text>
       <NumberInput
-        variant="native"
-        style={[
-          styles.editInput,
-          styles.macroProteinInput,
+        fieldStyle={[
+          styles.macroProteinField,
           errors.protein ? styles.inputError : null,
         ]}
         value={protein}
         onChangeText={(v) => handleNumericChange(v, setProtein, "protein")}
         blurFallback="0"
-        placeholderTextColor={theme.input.placeholder}
         onFocus={() => clearZeroOnFocus(protein, setProtein)}
         onBlur={(normalizedValue) =>
           handleNumericBlur("protein", normalizedValue)
@@ -311,16 +289,13 @@ export const IngredientEditor: React.FC<Props> = ({
 
       <Text style={styles.editLabel}>{t("carbs", { ns: "meals" })} [g]</Text>
       <NumberInput
-        variant="native"
-        style={[
-          styles.editInput,
-          styles.macroCarbsInput,
+        fieldStyle={[
+          styles.macroCarbsField,
           errors.carbs ? styles.inputError : null,
         ]}
         value={carbs}
         onChangeText={(v) => handleNumericChange(v, setCarbs, "carbs")}
         blurFallback="0"
-        placeholderTextColor={theme.input.placeholder}
         onFocus={() => clearZeroOnFocus(carbs, setCarbs)}
         onBlur={(normalizedValue) =>
           handleNumericBlur("carbs", normalizedValue)
@@ -331,16 +306,13 @@ export const IngredientEditor: React.FC<Props> = ({
 
       <Text style={styles.editLabel}>{t("fat", { ns: "meals" })} [g]</Text>
       <NumberInput
-        variant="native"
-        style={[
-          styles.editInput,
-          styles.macroFatInput,
+        fieldStyle={[
+          styles.macroFatField,
           errors.fat ? styles.inputError : null,
         ]}
         value={fat}
         onChangeText={(v) => handleNumericChange(v, setFat, "fat")}
         blurFallback="0"
-        placeholderTextColor={theme.input.placeholder}
         onFocus={() => clearZeroOnFocus(fat, setFat)}
         onBlur={(normalizedValue) => handleNumericBlur("fat", normalizedValue)}
       />
@@ -351,12 +323,9 @@ export const IngredientEditor: React.FC<Props> = ({
         {t("calories", { ns: "meals" })} [kcal]
       </Text>
       <NumberInput
-        variant="native"
-        style={[styles.editInput, errors.kcal ? styles.inputError : null]}
         value={kcal}
         onChangeText={(v) => handleNumericChange(v, setKcal, "kcal")}
         blurFallback="0"
-        placeholderTextColor={theme.input.placeholder}
         onFocus={() => clearZeroOnFocus(kcal, setKcal)}
         onBlur={(normalizedValue) => handleNumericBlur("kcal", normalizedValue)}
       />
@@ -463,31 +432,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       padding: theme.spacing.lg,
       marginBottom: theme.spacing.md,
     },
-    nameRow: {
-      flexDirection: "row",
-      alignItems: "center",
+    nameField: {
       marginBottom: theme.spacing.xs,
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: theme.input.border,
-      backgroundColor: theme.input.background,
-      color: theme.input.text,
-      borderRadius: theme.rounded.md,
-      paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.md,
-      marginBottom: theme.spacing.xs,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      fontFamily: theme.typography.fontFamily.regular,
-      minHeight: 48,
     },
     inputError: {
       borderColor: theme.input.borderError,
-    },
-    nameInput: {
-      flex: 1,
-      marginRight: theme.spacing.sm,
     },
     barcodeButton: {
       width: 44,
@@ -512,19 +461,17 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     cancelBtn: {
       marginTop: theme.spacing.sm,
     },
-    editInput: {
+    editField: {
       borderWidth: 1,
       borderColor: theme.input.border,
       backgroundColor: theme.input.background,
-      color: theme.input.text,
       borderRadius: theme.rounded.md,
       paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
+      paddingVertical: 0,
+      paddingTop: 0,
+      paddingBottom: 0,
       marginBottom: theme.spacing.sm,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      fontFamily: theme.typography.fontFamily.regular,
-      minHeight: 48,
+      minHeight: 52,
     },
     editLabel: {
       marginBottom: theme.spacing.xs,
@@ -533,26 +480,38 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       lineHeight: theme.typography.lineHeight.labelL,
       fontFamily: theme.typography.fontFamily.medium,
     },
-    macroProteinInput: {
-      color: theme.macro.protein,
+    macroProteinField: {
       backgroundColor: theme.macro.proteinSoft,
       borderColor: theme.macro.protein,
     },
-    macroCarbsInput: {
-      color: theme.macro.carbs,
+    macroProteinInputText: {
+      color: theme.macro.protein,
+    },
+    macroCarbsField: {
       backgroundColor: theme.macro.carbsSoft,
       borderColor: theme.macro.carbs,
     },
-    macroFatInput: {
-      color: theme.macro.fat,
+    macroCarbsInputText: {
+      color: theme.macro.carbs,
+    },
+    macroFatField: {
       backgroundColor: theme.macro.fatSoft,
       borderColor: theme.macro.fat,
+    },
+    macroFatInputText: {
+      color: theme.macro.fat,
     },
     deleteLink: {
       alignSelf: "center",
       marginTop: theme.spacing.md,
       paddingVertical: theme.spacing.xs,
       paddingHorizontal: theme.spacing.sm,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      width: "100%",
     },
     deleteLinkText: {
       color: theme.error.text,

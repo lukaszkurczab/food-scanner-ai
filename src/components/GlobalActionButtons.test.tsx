@@ -76,14 +76,14 @@ describe("GlobalActionButtons", () => {
     expect(onPrimary).toHaveBeenCalledTimes(1);
   });
 
-  it("uses error variant for the secondary action", () => {
+  it("uses destructive tone for the secondary action", () => {
     const { queryByText, getByText } = renderWithTheme(
       <GlobalActionButtons
         label="Save"
         onPress={() => {}}
         secondaryLabel="Delete"
         secondaryOnPress={() => {}}
-        secondaryVariant="error"
+        secondaryTone="destructive"
       />,
     );
 

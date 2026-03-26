@@ -20,7 +20,7 @@ type ScreenCornerNavButtonProps = {
   accessibilityLabel: string;
 };
 
-type AlertProps = {
+type ModalProps = {
   visible: boolean;
   title: string;
   message: string;
@@ -149,15 +149,15 @@ jest.mock("@/components", () => {
   };
 });
 
-jest.mock("@/components/Alert", () => ({
-  Alert: ({
+jest.mock("@/components/Modal", () => ({
+  Modal: ({
     visible,
     title,
     message,
     onClose,
     primaryAction,
     secondaryAction,
-  }: AlertProps) => {
+  }: ModalProps) => {
     const { createElement } =
       jest.requireActual<typeof import("react")>("react");
     const { Pressable, Text, View } =
@@ -184,7 +184,7 @@ jest.mock("@/components/Alert", () => ({
           createElement(
             Pressable,
             { onPress: onClose, accessibilityRole: "button" },
-            createElement(Text, null, "close-alert"),
+            createElement(Text, null, "close-modal"),
           ),
         )
       : null;

@@ -6,7 +6,7 @@ import Loader from "@feature/Meals/components/Loader";
 import { useTranslation } from "react-i18next";
 import { Layout, PhotoPreview, ScreenCornerNavButton } from "@/components";
 import AppIcon from "@/components/AppIcon";
-import { Alert as AppAlert } from "@/components/Alert";
+import { Modal } from "@/components/Modal";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -270,7 +270,7 @@ export default function MealCameraScreen({
           </View>
         </View>
       </View>
-      <AppAlert
+      <Modal
         visible={premiumModal}
         title={tChat("limit.reachedTitle")}
         message={tChat("limit.photoRequired", {
@@ -286,7 +286,7 @@ export default function MealCameraScreen({
           onPress: closePremiumModal,
         }}
       />
-      <AppAlert
+      <Modal
         visible={barcodeModal}
         title={tMeals("barcode_no_code_title", {
           defaultValue: "No barcode detected",

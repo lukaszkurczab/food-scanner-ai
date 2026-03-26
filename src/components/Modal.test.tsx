@@ -10,17 +10,15 @@ jest.mock("@/components/AppIcon", () => ({
 
 describe("Modal", () => {
   it("renders title/message and handles action presses", () => {
-    const onPrimaryAction = jest.fn();
-    const onSecondaryAction = jest.fn();
+    const onPrimaryPress = jest.fn();
+    const onSecondaryPress = jest.fn();
     const { getByText } = renderWithTheme(
       <Modal
         visible
         title="Sync error"
         message="Try again"
-        primaryActionLabel="Retry"
-        secondaryActionLabel="Cancel"
-        onPrimaryAction={onPrimaryAction}
-        onSecondaryAction={onSecondaryAction}
+        primaryAction={{ label: "Retry", onPress: onPrimaryPress }}
+        secondaryAction={{ label: "Cancel", onPress: onSecondaryPress }}
       />,
     );
 
@@ -30,8 +28,8 @@ describe("Modal", () => {
     fireEvent.press(getByText("Retry"));
     fireEvent.press(getByText("Cancel"));
 
-    expect(onPrimaryAction).toHaveBeenCalledTimes(1);
-    expect(onSecondaryAction).toHaveBeenCalledTimes(1);
+    expect(onPrimaryPress).toHaveBeenCalledTimes(1);
+    expect(onSecondaryPress).toHaveBeenCalledTimes(1);
   });
 
   it("calls onClose from close button", () => {
@@ -55,7 +53,11 @@ describe("Modal", () => {
       <Modal
         visible
         title="Delete meal"
-        primaryAction={{ label: "Delete", onPress: onPrimary, tone: "destructive" }}
+        primaryAction={{
+          label: "Delete",
+          onPress: onPrimary,
+          tone: "destructive",
+        }}
         secondaryAction={{ label: "Keep", onPress: onSecondary, tone: "ghost" }}
       />,
     );

@@ -6,8 +6,8 @@ import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { NotificationCard } from "@/components/NotificationCard";
 import { ButtonToggle } from "@/components/ButtonToggle";
+import { Modal } from "@/components/Modal";
 import SectionHeader from "../components/SectionHeader";
-import { Alert as AppAlert } from "@/components/Alert";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useNotificationsScreenState } from "@/feature/UserProfile/hooks/useNotificationsScreenState";
@@ -158,7 +158,7 @@ export default function NotificationsScreen({
         )}
       </ScrollView>
 
-      <AppAlert
+      <Modal
         visible={settingsCtaVisible}
         title={t("permissions.title", "Enable notifications")}
         message={t(
@@ -178,7 +178,7 @@ export default function NotificationsScreen({
         }}
       />
 
-      <AppAlert
+      <Modal
         visible={!!confirmId}
         title={t("screen.deleteTitle", "Delete reminder")}
         message={t("screen.deleteMsg", "Are you sure?")}

@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from "react";
 import {
   TextInput as RNTextInput,
+  StyleSheet,
   type KeyboardTypeOptions,
   type TextInputProps as RNTextInputProps,
 } from "react-native";
@@ -95,6 +96,10 @@ export const NumberInput: React.FC<Props> = (props) => {
     return (
       <RNTextInput
         {...nativeProps}
+        style={[
+          styles.nativeInput,
+          nativeProps.style,
+        ]}
         value={value}
         onChangeText={handleChangeText}
         keyboardType={resolvedKeyboardType}
@@ -117,3 +122,13 @@ export const NumberInput: React.FC<Props> = (props) => {
     />
   );
 };
+
+const styles = StyleSheet.create({
+  nativeInput: {
+    paddingVertical: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    textAlignVertical: "center",
+    includeFontPadding: false,
+  },
+});

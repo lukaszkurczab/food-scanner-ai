@@ -28,6 +28,7 @@ type Props = {
   multiline?: boolean;
   numberOfLines?: number;
   style?: StyleProp<ViewStyle>;
+  fieldStyle?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
   onEndEditing?: () => void;
   disabled?: boolean;
@@ -48,6 +49,7 @@ type Props = {
 };
 
 const DEFAULT_ICON_SIZE = 22;
+const SINGLE_LINE_FIELD_HEIGHT = 52;
 
 const resolveAdornment = (
   node: React.ReactNode,
@@ -81,6 +83,7 @@ export const TextInput = forwardRef<RNTextInput, Props>(
       multiline = false,
       numberOfLines = 1,
       style,
+      fieldStyle,
       inputStyle,
       disabled = false,
       editable,
@@ -156,9 +159,10 @@ export const TextInput = forwardRef<RNTextInput, Props>(
             {
               backgroundColor,
               borderColor,
-              minHeight: inputMinHeight,
+              minHeight: multiline ? inputMinHeight : SINGLE_LINE_FIELD_HEIGHT,
               alignItems: multiline ? "flex-start" : "center",
             },
+            fieldStyle,
           ]}
         >
           {resolvedLeft ? (
@@ -209,6 +213,7 @@ export const TextInput = forwardRef<RNTextInput, Props>(
                   ? inputMinHeight - theme.spacing.sm * 2
                   : theme.typography.lineHeight.bodyM,
                 textAlignVertical: multiline ? "top" : "center",
+                includeFontPadding: false,
               },
               inputStyle,
             ]}
@@ -244,11 +249,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
       width: "100%",
+      flexShrink: 1,
     },
     label: {
       color: theme.textSecondary,
       fontSize: theme.typography.size.labelS,
-      lineHeight: theme.typography.lineHeight.labelS,
       marginBottom: theme.spacing.xxs + theme.spacing.xxs / 2,
       fontFamily: theme.typography.fontFamily.medium,
     },
@@ -260,31 +265,29 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.sm,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.md,
+      justifyContent: "center",
     },
     input: {
       flex: 1,
       color: theme.input.text,
-      fontSize: theme.typography.size.bodyM,
+      fontSize: theme.typography.size.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
     },
     rightLabel: {
       color: theme.textSecondary,
       fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
       marginLeft: theme.spacing.xs,
       fontFamily: theme.typography.fontFamily.medium,
     },
     helperText: {
       color: theme.textSecondary,
       fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
       marginTop: theme.spacing.xs - theme.spacing.xxs / 2,
       fontFamily: theme.typography.fontFamily.regular,
     },
     errorText: {
       color: theme.error.text,
       fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
       marginTop: theme.spacing.xs - theme.spacing.xxs / 2,
       fontFamily: theme.typography.fontFamily.medium,
     },

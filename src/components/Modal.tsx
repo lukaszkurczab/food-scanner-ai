@@ -4,7 +4,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableWithoutFeedback,
+  Pressable,
   ScrollView,
   Platform,
   KeyboardAvoidingView,
@@ -29,17 +29,13 @@ export type ModalAction = {
   testID?: string;
 };
 
-type Props = {
+export type ModalProps = {
   visible: boolean;
   title?: string;
   message?: string;
   children?: React.ReactNode;
   primaryAction?: ModalAction;
   secondaryAction?: ModalAction;
-  primaryActionLabel?: string;
-  secondaryActionLabel?: string;
-  onPrimaryAction?: () => void;
-  onSecondaryAction?: () => void;
   onClose?: () => void;
   fullScreen?: boolean;
   footer?: React.ReactNode;
@@ -48,17 +44,13 @@ type Props = {
   closeOnBackdropPress?: boolean;
 };
 
-export const Modal: React.FC<Props> = ({
+export const Modal: React.FC<ModalProps> = ({
   visible,
   title,
   message,
   children,
   primaryAction,
   secondaryAction,
-  primaryActionLabel,
-  secondaryActionLabel,
-  onPrimaryAction,
-  onSecondaryAction,
   onClose,
   fullScreen = false,
   footer,
@@ -69,24 +61,7 @@ export const Modal: React.FC<Props> = ({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
-  const modalBackground = theme.surfaceElevated;
-  const contentBottomPadding = contentPaddingBottom ?? theme.spacing.lg;
-  const resolvedPrimaryAction = primaryAction ?? (
-    primaryActionLabel
-      ? {
-          label: primaryActionLabel,
-          onPress: onPrimaryAction,
-        }
-      : undefined
-  );
-  const resolvedSecondaryAction = secondaryAction ?? (
-    secondaryActionLabel
-      ? {
-          label: secondaryActionLabel,
-          onPress: onSecondaryAction,
-        }
-      : undefined
-  );
+  const contentBottomPadding = contentPaddingBottom ?? 0;
 
   const handleBackdropPress = () => {
     if (!closeOnBackdropPress) return;
@@ -94,10 +69,8 @@ export const Modal: React.FC<Props> = ({
   };
 
   const actionsSideBySide =
-    !fullScreen &&
-    !stackActions &&
-    !!resolvedPrimaryAction &&
-    !!resolvedSecondaryAction;
+    !fullScreen && !stackActions && !!primaryAction && !!secondaryAction;
+  const hasBodyContent = !!message || !!children;
 
   return (
     <RNModal
@@ -118,99 +91,106 @@ export const Modal: React.FC<Props> = ({
           ]}
           pointerEvents="box-none"
         >
-          <TouchableWithoutFeedback onPress={handleBackdropPress}>
-            <View style={styles.overlay} />
-          </TouchableWithoutFeedback>
+          <Pressable style={styles.overlay} onPress={handleBackdropPress} />
 
           <View
             style={[
-              styles.modalContainer,
-              {
-                backgroundColor: modalBackground,
-                borderColor: theme.border,
-                width: fullScreen ? "95%" : "90%",
-                maxHeight: fullScreen
-                  ? WINDOW_HEIGHT * 0.96
-                  : WINDOW_HEIGHT * 0.8,
-                marginTop: fullScreen ? theme.spacing.nav : 0,
-              },
-              fullScreen && styles.modalContainerFullScreen,
+              styles.dialogFrame,
+              fullScreen ? styles.dialogFrameFullScreen : null,
             ]}
+            pointerEvents="box-none"
           >
-            {onClose ? (
-              <View style={styles.closeButton}>
-                <IconButton
-                  icon={
-                    <AppIcon
-                      name="close"
-                      size={20}
-                      color={theme.textSecondary}
-                    />
-                  }
-                  onPress={onClose}
-                  size={32}
-                  iconColor={theme.textSecondary}
-                  accessibilityLabel="Close"
-                />
-              </View>
-            ) : null}
-
-            {title ? <Text style={styles.title}>{title}</Text> : null}
-
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={[
-                styles.scrollContent,
-                { paddingBottom: contentBottomPadding },
+            <View
+              style={[
+                styles.modalContainer,
+                {
+                  borderColor: theme.border,
+                  maxHeight: fullScreen
+                    ? WINDOW_HEIGHT * 0.96
+                    : WINDOW_HEIGHT * 0.8,
+                },
+                fullScreen && styles.modalContainerFullScreen,
               ]}
-              showsVerticalScrollIndicator={false}
             >
-              {children ? (
-                children
-              ) : message ? (
-                <Text style={styles.message}>{message}</Text>
+              {onClose ? (
+                <View style={styles.closeButton}>
+                  <IconButton
+                    icon={
+                      <AppIcon
+                        name="close"
+                        size={18}
+                        color={theme.textSecondary}
+                      />
+                    }
+                    onPress={onClose}
+                    size={32}
+                    iconColor={theme.textSecondary}
+                    accessibilityLabel="Close"
+                  />
+                </View>
               ) : null}
-            </ScrollView>
 
-            {footer ? (
-              <View style={styles.footer}>{footer}</View>
-            ) : resolvedPrimaryAction || resolvedSecondaryAction ? (
-              actionsSideBySide ? (
-                <GlobalActionButtons
-                  label={resolvedPrimaryAction?.label ?? ""}
-                  onPress={resolvedPrimaryAction?.onPress}
-                  loading={resolvedPrimaryAction?.loading}
-                  disabled={resolvedPrimaryAction?.disabled}
-                  testID={resolvedPrimaryAction?.testID}
-                  tone={resolvedPrimaryAction?.tone ?? "primary"}
-                  secondaryLabel={resolvedSecondaryAction?.label}
-                  secondaryOnPress={resolvedSecondaryAction?.onPress}
-                  secondaryLoading={resolvedSecondaryAction?.loading}
-                  secondaryDisabled={resolvedSecondaryAction?.disabled}
-                  secondaryTestID={resolvedSecondaryAction?.testID}
-                  secondaryTone={resolvedSecondaryAction?.tone ?? "secondary"}
-                  layout="row"
-                  rowOrder="secondary-primary"
-                  containerStyle={styles.actionsRow}
-                />
-              ) : (
-                <GlobalActionButtons
-                  label={resolvedPrimaryAction?.label ?? ""}
-                  onPress={resolvedPrimaryAction?.onPress}
-                  loading={resolvedPrimaryAction?.loading}
-                  disabled={resolvedPrimaryAction?.disabled}
-                  testID={resolvedPrimaryAction?.testID}
-                  tone={resolvedPrimaryAction?.tone ?? "primary"}
-                  secondaryLabel={resolvedSecondaryAction?.label}
-                  secondaryOnPress={resolvedSecondaryAction?.onPress}
-                  secondaryLoading={resolvedSecondaryAction?.loading}
-                  secondaryDisabled={resolvedSecondaryAction?.disabled}
-                  secondaryTestID={resolvedSecondaryAction?.testID}
-                  secondaryTone={resolvedSecondaryAction?.tone ?? "secondary"}
-                  containerStyle={styles.actionsColumn}
-                />
-              )
-            ) : null}
+              {title ? <Text style={styles.title}>{title}</Text> : null}
+
+              {hasBodyContent ? (
+                <ScrollView
+                  style={[
+                    styles.scrollView,
+                    title ? styles.scrollViewWithTitle : null,
+                  ]}
+                  contentContainerStyle={[
+                    styles.scrollContent,
+                    { paddingBottom: contentBottomPadding },
+                  ]}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <View style={styles.contentStack}>
+                    {message ? <Text style={styles.message}>{message}</Text> : null}
+                    {children}
+                  </View>
+                </ScrollView>
+              ) : null}
+
+              {footer ? (
+                <View style={styles.footer}>{footer}</View>
+              ) : primaryAction || secondaryAction ? (
+                actionsSideBySide ? (
+                  <GlobalActionButtons
+                    label={primaryAction?.label ?? ""}
+                    onPress={primaryAction?.onPress}
+                    loading={primaryAction?.loading}
+                    disabled={primaryAction?.disabled}
+                    testID={primaryAction?.testID}
+                    tone={primaryAction?.tone ?? "primary"}
+                    secondaryLabel={secondaryAction?.label}
+                    secondaryOnPress={secondaryAction?.onPress}
+                    secondaryLoading={secondaryAction?.loading}
+                    secondaryDisabled={secondaryAction?.disabled}
+                    secondaryTestID={secondaryAction?.testID}
+                    secondaryTone={secondaryAction?.tone ?? "secondary"}
+                    layout="row"
+                    rowOrder="secondary-primary"
+                    containerStyle={styles.actionsRow}
+                  />
+                ) : (
+                  <GlobalActionButtons
+                    label={primaryAction?.label ?? ""}
+                    onPress={primaryAction?.onPress}
+                    loading={primaryAction?.loading}
+                    disabled={primaryAction?.disabled}
+                    testID={primaryAction?.testID}
+                    tone={primaryAction?.tone ?? "primary"}
+                    secondaryLabel={secondaryAction?.label}
+                    secondaryOnPress={secondaryAction?.onPress}
+                    secondaryLoading={secondaryAction?.loading}
+                    secondaryDisabled={secondaryAction?.disabled}
+                    secondaryTestID={secondaryAction?.testID}
+                    secondaryTone={secondaryAction?.tone ?? "secondary"}
+                    containerStyle={styles.actionsColumn}
+                  />
+                )
+              ) : null}
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -222,12 +202,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     overlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: theme.overlay,
+      backgroundColor: theme.isDark
+        ? "rgba(0, 0, 0, 0.48)"
+        : "rgba(47, 49, 43, 0.42)",
       zIndex: 0,
     },
     keyboardAvoiding: {
       flex: 1,
-      justifyContent: "center",
     },
     centeredView: {
       flex: 1,
@@ -239,60 +220,76 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       minHeight: WINDOW_HEIGHT,
       justifyContent: "flex-start",
     },
+    dialogFrame: {
+      width: "100%",
+      paddingHorizontal: theme.spacing.screenPadding,
+      alignItems: "center",
+    },
+    dialogFrameFullScreen: {
+      flex: 1,
+      paddingHorizontal: theme.spacing.xs,
+      paddingTop: theme.spacing.nav,
+    },
     modalContainer: {
-      alignSelf: "center",
+      width: "100%",
       minWidth: 260,
       maxWidth: MODAL_MAX_WIDTH,
       position: "relative",
       borderWidth: 1,
-      borderRadius: theme.rounded.lg,
-      padding: theme.spacing.lg,
-      elevation: 10,
+      borderRadius: theme.rounded.xl,
+      backgroundColor: theme.surface,
+      padding: theme.spacing.xl,
+      elevation: 4,
       shadowColor: "#000000",
-      shadowOpacity: theme.isDark ? 0.28 : 0.12,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: theme.isDark ? 0.18 : 0.08,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 10 },
     },
     modalContainerFullScreen: {
       flex: 1,
-      width: "98%",
     },
     closeButton: {
       position: "absolute",
-      right: theme.spacing.sm,
-      top: theme.spacing.sm,
+      right: theme.spacing.md,
+      top: theme.spacing.md,
       zIndex: 10,
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.h1,
-      lineHeight: theme.typography.lineHeight.h1,
-      fontFamily: theme.typography.fontFamily.bold,
-      textAlign: "center",
-      marginBottom: theme.spacing.md,
-      paddingHorizontal: theme.spacing.xl,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      textAlign: "left",
+      paddingRight: theme.spacing.xxl,
     },
     scrollView: {
       flexGrow: 0,
+      width: "100%",
+    },
+    scrollViewWithTitle: {
+      marginTop: theme.spacing.sm,
     },
     scrollContent: {
-      paddingBottom: theme.spacing.lg,
+      width: "100%",
+    },
+    contentStack: {
+      gap: theme.spacing.sm,
     },
     message: {
       color: theme.textSecondary,
       fontSize: theme.typography.size.bodyL,
       lineHeight: theme.typography.lineHeight.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
-      textAlign: "center",
+      textAlign: "left",
     },
     footer: {
-      marginTop: theme.spacing.md,
+      marginTop: theme.spacing.lg,
     },
     actionsRow: {
-      marginTop: theme.spacing.sm,
+      marginTop: theme.spacing.lg,
     },
     actionsColumn: {
-      marginTop: theme.spacing.sm,
+      marginTop: theme.spacing.lg,
       gap: theme.spacing.sm,
     },
   });

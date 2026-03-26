@@ -10,7 +10,7 @@ import {
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import { Button, ButtonToggle, InputModal, Layout } from "@/components";
+import { Button, ButtonToggle, Layout, TextInput } from "@/components";
 import SectionHeader from "../components/SectionHeader";
 import ListItem from "../components/ListItem";
 import AvatarBadge from "@/components/AvatarBadge";
@@ -215,27 +215,43 @@ export default function UserProfileScreen({
 
       <Text style={styles.version}>{t("appVersion")} 1.0.1</Text>
 
-      <InputModal
+      <Modal
         visible={state.showDeleteModal}
         title={t("deleteAccount")}
         message={t("deleteAccountWarning")}
-        primaryActionLabel={t("confirm")}
-        onPrimaryAction={state.handleDeleteAccount}
-        secondaryActionLabel={t("cancel")}
-        onSecondaryAction={state.closeDeleteModal}
+        primaryAction={{
+          label: t("confirm"),
+          onPress: state.handleDeleteAccount,
+          tone: "destructive",
+        }}
+        secondaryAction={{
+          label: t("cancel"),
+          onPress: state.closeDeleteModal,
+        }}
         onClose={state.closeDeleteModal}
-        placeholder={t("enterPassword")}
-        value={state.password}
-        onChange={state.setPassword}
-        secureTextEntry={true}
-      />
+      >
+        <View style={styles.deleteModalContent}>
+          <TextInput
+            placeholder={t("enterPassword")}
+            value={state.password}
+            onChangeText={state.setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="password"
+            accessibilityLabel={t("enterPassword")}
+          />
+        </View>
+      </Modal>
 
       <Modal
         visible={state.exportModalVisible}
         title={state.exportModalTitle}
         message={state.exportModalMessage}
-        primaryActionLabel={t("confirm")}
-        onPrimaryAction={state.closeExportModal}
+        primaryAction={{
+          label: t("confirm"),
+          onPress: state.closeExportModal,
+        }}
         onClose={state.closeExportModal}
       />
     </Layout>
@@ -316,6 +332,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     deleteAccount: {
       alignItems: "center",
       marginVertical: theme.spacing.xl,
+    },
+    deleteModalContent: {
+      gap: theme.spacing.sm,
     },
     deleteText: {
       fontSize: theme.typography.size.title,
