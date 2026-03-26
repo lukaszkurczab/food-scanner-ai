@@ -20,6 +20,7 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/components/Checkbox";
 
 type Option<T extends string | number> = {
   label: string;
@@ -230,11 +231,12 @@ export function CheckboxDropdown<T extends string | number>({
                       disabled={isDisabled}
                       activeOpacity={0.75}
                     >
-                      <AppIcon
-                        name={isSelected ? "checkbox" : "checkbox-empty"}
-                        size={22}
-                        color={isSelected ? theme.primary : theme.textSecondary}
-                        style={styles.optionIcon}
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={() => handleToggle(item.value)}
+                        disabled={isDisabled}
+                        style={styles.optionCheckbox}
+                        accessibilityLabel={item.label}
                       />
 
                       <View style={styles.optionLabelWrap}>
@@ -356,7 +358,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     optionDisabled: {
       opacity: 0.45,
     },
-    optionIcon: {
+    optionCheckbox: {
       marginRight: theme.spacing.sm,
     },
     optionLabelWrap: {

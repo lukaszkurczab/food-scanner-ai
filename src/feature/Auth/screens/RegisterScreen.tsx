@@ -184,6 +184,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
             checked={termsAccepted}
             onChange={setTermsAccepted}
             accessibilityLabel={t("accept_terms")}
+            style={styles.termsCheckbox}
           />
           <View style={styles.rowJustifyCenter}>
             <Text style={styles.helperText}>{t("accept_terms")} </Text>
@@ -256,6 +257,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginTop: theme.spacing.md,
       marginBottom: theme.spacing.xs,
       width: "100%",
+    },
+    termsCheckbox: {
+      marginRight: theme.spacing.sm,
+      marginTop: 1,
     },
     helperText: {
       color: theme.textSecondary,

@@ -173,11 +173,6 @@ export default function UserProfileScreen({
           value={state.darkTheme}
           onToggle={state.handleThemeToggle}
           accessibilityLabel={t("toggleDarkMode")}
-          trackColor={
-            state.darkTheme ? theme.primary : theme.textSecondary
-          }
-          thumbColor={theme.surfaceElevated}
-          borderColor={theme.border}
         />
       </View>
       <ListItem

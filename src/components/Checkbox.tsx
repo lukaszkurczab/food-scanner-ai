@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import {
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   StyleProp,
   ViewStyle,
@@ -25,37 +25,41 @@ export const Checkbox: React.FC<CheckboxProps> = ({
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const iconColor = disabled ? theme.disabled.text : theme.surfaceElevated;
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={() => !disabled && onChange(!checked)}
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled }}
       accessibilityLabel={accessibilityLabel}
-      style={[
+      style={({ pressed }) => [
         styles.box,
         checked ? styles.boxChecked : styles.boxUnchecked,
-        disabled && styles.boxDisabled,
+        disabled
+          ? checked
+            ? styles.boxCheckedDisabled
+            : styles.boxUncheckedDisabled
+          : null,
+        pressed && !disabled ? styles.boxPressed : null,
         style,
       ]}
-      activeOpacity={0.75}
       disabled={disabled}
     >
       {checked ? (
-        <AppIcon name="check" size={16} color={theme.cta.primaryText} />
+        <AppIcon name="check" size={14} color={iconColor} />
       ) : null}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     box: {
-      width: 22,
-      height: 22,
+      width: 24,
+      height: 24,
       borderRadius: theme.rounded.xs,
-      borderWidth: 1.5,
-      marginRight: 10,
+      borderWidth: 2,
       justifyContent: "center",
       alignItems: "center",
     },
@@ -67,7 +71,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderColor: theme.border,
       backgroundColor: theme.surface,
     },
-    boxDisabled: {
-      opacity: 0.5,
+    boxCheckedDisabled: {
+      borderColor: theme.disabled.border,
+      backgroundColor: theme.disabled.background,
+    },
+    boxUncheckedDisabled: {
+      borderColor: theme.input.borderDisabled,
+      backgroundColor: theme.input.backgroundDisabled,
+    },
+    boxPressed: {
+      opacity: 0.82,
     },
   });

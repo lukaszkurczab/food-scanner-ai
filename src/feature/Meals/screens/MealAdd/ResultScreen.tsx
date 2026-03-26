@@ -388,7 +388,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginTop: 3,
     },
     rowCenter: { flexDirection: "row", alignItems: "center" },
-    checkboxSpacing: { marginVertical: theme.spacing.md },
+    checkboxSpacing: {
+      marginVertical: theme.spacing.md,
+      marginRight: theme.spacing.sm,
+    },
     checkboxLabel: { color: theme.text },
     actions: { justifyContent: "space-between" },
     actionsSpacing: { gap: theme.spacing.md, marginTop: theme.spacing.md },

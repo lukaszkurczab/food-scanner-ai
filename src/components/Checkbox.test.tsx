@@ -1,7 +1,9 @@
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
+import { StyleSheet } from "react-native";
 import { Checkbox } from "@/components/Checkbox";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
+import { themes } from "@/theme/themes";
 
 jest.mock("@/components/AppIcon", () => ({
   __esModule: true,
@@ -27,5 +29,20 @@ describe("Checkbox", () => {
 
     fireEvent.press(getByRole("checkbox"));
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("uses the updated checkbox dimensions and disabled state colors", () => {
+    const { getByRole } = renderWithTheme(
+      <Checkbox checked onChange={() => undefined} disabled />,
+    );
+
+    expect(StyleSheet.flatten(getByRole("checkbox").props.style)).toEqual(
+      expect.objectContaining({
+        width: 24,
+        height: 24,
+        borderWidth: 2,
+        backgroundColor: themes.light.disabled.background,
+      }),
+    );
   });
 });

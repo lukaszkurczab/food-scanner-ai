@@ -9,6 +9,7 @@ type ButtonToggleProps = {
   trackColor?: string;
   thumbColor?: string;
   borderColor?: string;
+  disabled?: boolean;
 };
 
 export const ButtonToggle: React.FC<ButtonToggleProps> = ({
@@ -18,11 +19,15 @@ export const ButtonToggle: React.FC<ButtonToggleProps> = ({
   trackColor,
   thumbColor,
   borderColor,
+  disabled = false,
 }) => {
   const theme = useTheme();
-  const resolvedTrack = trackColor ?? theme.border;
+  const resolvedActiveTrack = trackColor ?? theme.primary;
+  const resolvedInactiveTrack = borderColor ?? theme.border;
+  const resolvedDisabledTrack = theme.input.backgroundDisabled;
   const resolvedThumb = thumbColor ?? theme.surfaceElevated;
-  const resolvedBorder = borderColor ?? theme.border;
+  const resolvedDisabledThumb = theme.surface;
+  const resolvedBorder = value ? resolvedActiveTrack : resolvedInactiveTrack;
   const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
 
   useEffect(() => {
@@ -35,21 +40,28 @@ export const ButtonToggle: React.FC<ButtonToggleProps> = ({
 
   const thumbTranslate = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 29],
+    outputRange: [0, 24],
   });
 
   return (
     <Pressable
-      onPress={() => onToggle(!value)}
+      onPress={() => {
+        if (!disabled) onToggle(!value);
+      }}
       accessibilityRole="switch"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ checked: value }}
+      accessibilityState={{ checked: value, disabled }}
+      disabled={disabled}
       style={({ pressed }) => [
         styles.switch,
         {
-          backgroundColor: resolvedTrack,
-          borderColor: resolvedBorder,
-          opacity: pressed ? 0.7 : 1,
+          backgroundColor: disabled
+            ? resolvedDisabledTrack
+            : value
+              ? resolvedActiveTrack
+              : resolvedInactiveTrack,
+          borderColor: disabled ? theme.input.borderDisabled : resolvedBorder,
+          opacity: pressed && !disabled ? 0.84 : 1,
         },
       ]}
     >
@@ -57,7 +69,7 @@ export const ButtonToggle: React.FC<ButtonToggleProps> = ({
         style={[
           styles.thumb,
           {
-            backgroundColor: resolvedThumb,
+            backgroundColor: disabled ? resolvedDisabledThumb : resolvedThumb,
             transform: [{ translateX: thumbTranslate }],
           },
         ]}
@@ -68,10 +80,10 @@ export const ButtonToggle: React.FC<ButtonToggleProps> = ({
 
 const styles = StyleSheet.create({
   switch: {
-    width: 60,
+    width: 56,
     height: 32,
     borderRadius: 16,
-    borderWidth: 1.5,
+    borderWidth: 1,
     justifyContent: "center",
     overflow: "hidden",
   },
@@ -80,7 +92,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     position: "absolute",
-    top: 2.5,
-    left: 2.5,
+    top: 3,
+    left: 4,
   },
 });

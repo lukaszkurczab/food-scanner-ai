@@ -118,11 +118,6 @@ export default function NotificationsScreen({
             <ButtonToggle
               value={smartRemindersEnabled}
               onToggle={onToggleSmartReminders}
-              trackColor={
-                smartRemindersEnabled
-                  ? theme.primary
-                  : theme.textSecondary
-              }
             />
           </View>
 
@@ -134,9 +129,6 @@ export default function NotificationsScreen({
             <ButtonToggle
               value={motivationEnabled}
               onToggle={onToggleMotivation}
-              trackColor={
-                motivationEnabled ? theme.primary : theme.textSecondary
-              }
             />
           </View>
 
@@ -148,9 +140,6 @@ export default function NotificationsScreen({
             <ButtonToggle
               value={statsEnabled}
               onToggle={onToggleStats}
-              trackColor={
-                statsEnabled ? theme.primary : theme.textSecondary
-              }
             />
           </View>
         </View>
