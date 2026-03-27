@@ -123,6 +123,39 @@ jest.mock("@/components", () => {
         { onPress, disabled, testID, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
+    GlobalActionButtons: ({
+      label,
+      onPress,
+      secondaryLabel,
+      secondaryOnPress,
+      primaryTestID,
+    }: {
+      label: string;
+      onPress: () => void;
+      secondaryLabel?: string;
+      secondaryOnPress?: () => void;
+      primaryTestID?: string;
+    }) =>
+      createElement(
+        View,
+        null,
+        secondaryLabel
+          ? createElement(
+              Pressable,
+              { onPress: secondaryOnPress, accessibilityRole: "button" },
+              createElement(Text, null, secondaryLabel),
+            )
+          : null,
+        createElement(
+          Pressable,
+          {
+            onPress,
+            testID: primaryTestID,
+            accessibilityRole: "button",
+          },
+          createElement(Text, null, label),
+        ),
+      ),
     Checkbox: ({ checked, onChange }: CheckboxProps) =>
       createElement(
         Pressable,
@@ -455,7 +488,7 @@ describe("ResultScreen", () => {
     fireEvent.press(getByText("common:cancel"));
     expect(getByText("meals:confirm_exit_message")).toBeTruthy();
 
-    fireEvent.press(getByText("common:confirm"));
+    fireEvent.press(getByText("common:leave"));
 
     expect(ctx.clearMeal).toHaveBeenCalledWith("user-1");
     expect(testProps.navigate).toHaveBeenCalledWith("Home");

@@ -394,9 +394,9 @@ describe("MealDetailsScreen", () => {
     fireEvent.press(screen.getByText("common:save_changes"));
     fireEvent.press(screen.getByText("common:cancel"));
     fireEvent.press(screen.getAllByText("common:discard")[0]);
-    fireEvent.press(screen.getAllByText("common:continue")[0]);
+    fireEvent.press(screen.getAllByText("meals:continue_editing")[0]);
     fireEvent.press(screen.getAllByText("common:leave")[0]);
-    fireEvent.press(screen.getAllByText("common:continue")[1]);
+    fireEvent.press(screen.getAllByText("meals:continue_editing")[1]);
 
     expect(state.handleAddPhoto).toHaveBeenCalledTimes(1);
     expect(state.setName).toHaveBeenCalledWith("Edited meal");

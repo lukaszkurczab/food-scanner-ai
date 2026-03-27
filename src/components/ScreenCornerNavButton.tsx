@@ -1,8 +1,7 @@
 import type { StyleProp, ViewStyle } from "react-native";
-import { View, StyleSheet } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import AppIcon from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
-import { IconButton } from "./IconButton";
 
 type CornerIcon = "back" | "close";
 
@@ -10,8 +9,9 @@ type Props = {
   icon: CornerIcon;
   onPress: () => void;
   accessibilityLabel: string;
-  tone?: "default" | "camera";
   containerStyle?: StyleProp<ViewStyle>;
+  disabled?: boolean;
+  testID?: string;
 };
 
 const iconMap: Record<CornerIcon, "arrow-left" | "close"> = {
@@ -23,38 +23,56 @@ export function ScreenCornerNavButton({
   icon,
   onPress,
   accessibilityLabel,
-  tone = "default",
   containerStyle,
+  disabled = false,
+  testID,
 }: Props) {
   const theme = useTheme();
-  const isCameraTone = tone === "camera";
 
   return (
-    <View
-      style={[
-        styles.container,
+    <Pressable
+      testID={testID ?? "screen-corner-button"}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => [
+        styles.button,
         {
           top: theme.spacing.md,
           left: theme.spacing.md,
+          backgroundColor:
+            disabled || pressed ? theme.surfaceAlt : theme.surfaceElevated,
+          borderColor: theme.border,
         },
         containerStyle,
       ]}
     >
-      <IconButton
-        icon={<AppIcon name={iconMap[icon]} />}
-        onPress={onPress}
-        size={44}
-        accessibilityLabel={accessibilityLabel}
-        backgroundColor={isCameraTone ? "rgba(0,0,0,0.45)" : undefined}
-        iconColor={isCameraTone ? "#fff" : undefined}
+      <AppIcon
+        name={iconMap[icon]}
+        size={20}
+        color={disabled ? theme.textTertiary : theme.text}
       />
-    </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  button: {
     position: "absolute",
     zIndex: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    shadowColor: "#000000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
 });

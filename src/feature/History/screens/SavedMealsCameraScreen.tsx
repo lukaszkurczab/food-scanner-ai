@@ -182,7 +182,6 @@ export default function SavedMealsCameraScreen({
               icon="close"
               onPress={() => navigation.goBack()}
               accessibilityLabel={t("close", { defaultValue: "Close" })}
-              tone="camera"
               containerStyle={topLeftActionStyle}
             />
             <View style={styles.shutterWrapper}>

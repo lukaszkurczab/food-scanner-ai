@@ -173,7 +173,6 @@ export default function MealCameraScreen({
                   ? tCommon("back", { defaultValue: "Back" })
                   : tCommon("close", { defaultValue: "Close" })
               }
-              tone="camera"
               containerStyle={topLeftActionStyle}
             />
             {!skipDetection && (

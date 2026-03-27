@@ -9,10 +9,14 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
-import { NumberInput, TextInput, Modal, AppIcon, Button } from "./index";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { NumberInput } from "./NumberInput";
+import { TextInput } from "./TextInput";
+import { Modal } from "./Modal";
+import AppIcon from "./AppIcon";
+import { Button } from "./Button";
 
 type Props = {
   initial: Ingredient;

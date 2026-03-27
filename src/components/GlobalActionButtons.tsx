@@ -56,6 +56,7 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const hasSecondaryAction = secondaryLabel != null;
 
   const renderButton = ({
     buttonLabel,
@@ -126,8 +127,8 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
 
   return (
     <View style={[styles.columnContainer, containerStyle]}>
+      {hasSecondaryAction ? secondaryElement : null}
       {primaryElement}
-      {secondaryElement}
     </View>
   );
 };

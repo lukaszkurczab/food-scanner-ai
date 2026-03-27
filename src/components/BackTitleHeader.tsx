@@ -7,9 +7,17 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import AppIcon from "@/components/AppIcon";
+import AppIcon, { type AppIconName } from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
+
+type HeaderAction = {
+  icon: AppIconName;
+  onPress: () => void;
+  accessibilityLabel: string;
+  testID?: string;
+  disabled?: boolean;
+};
 
 export type BackTitleHeaderProps = {
   title: string;
@@ -17,6 +25,8 @@ export type BackTitleHeaderProps = {
   style?: StyleProp<ViewStyle>;
   backAccessibilityLabel?: string;
   backButtonTestID?: string;
+  trailingAction?: HeaderAction;
+  titleSize?: "h1" | "h2";
 };
 
 export function BackTitleHeader({
@@ -25,6 +35,8 @@ export function BackTitleHeader({
   style,
   backAccessibilityLabel,
   backButtonTestID = "back-title-header-back",
+  trailingAction,
+  titleSize = "h1",
 }: BackTitleHeaderProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -34,21 +46,51 @@ export function BackTitleHeader({
     <View style={[styles.container, style]}>
       <Pressable
         onPress={onBack}
-        hitSlop={12}
         accessibilityRole="button"
         accessibilityLabel={
           backAccessibilityLabel ??
           t("common:back", { defaultValue: "Back" })
         }
         testID={backButtonTestID}
-        style={styles.backButton}
+        style={({ pressed }) => [
+          styles.iconButton,
+          pressed ? styles.iconButtonPressed : null,
+        ]}
       >
-        <AppIcon name="chevron-left" size={28} color={theme.text} />
+        <AppIcon name="arrow-left" size={20} color={theme.text} />
       </Pressable>
 
-      <Text style={styles.title} accessibilityRole="header" numberOfLines={1}>
+      <Text
+        style={[styles.title, titleSize === "h2" ? styles.titleCompact : null]}
+        accessibilityRole="header"
+        numberOfLines={1}
+      >
         {title}
       </Text>
+
+      {trailingAction ? (
+        <Pressable
+          onPress={trailingAction.onPress}
+          disabled={trailingAction.disabled}
+          accessibilityRole="button"
+          accessibilityLabel={trailingAction.accessibilityLabel}
+          testID={trailingAction.testID}
+          style={({ pressed }) => [
+            styles.iconButton,
+            pressed || trailingAction.disabled ? styles.iconButtonPressed : null,
+          ]}
+        >
+          <AppIcon
+            name={trailingAction.icon}
+            size={20}
+            color={
+              trailingAction.disabled ? theme.textTertiary : theme.textSecondary
+            }
+          />
+        </Pressable>
+      ) : (
+        <View style={styles.trailingSpacer} />
+      )}
     </View>
   );
 }
@@ -56,20 +98,41 @@ export function BackTitleHeader({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
-      alignItems: "center",
       flexDirection: "row",
+      alignItems: "center",
+      minHeight: 76,
+      marginHorizontal: -(theme.spacing.screenPadding + theme.spacing.sm),
+      paddingHorizontal: theme.spacing.screenPaddingWide,
+      paddingVertical: theme.spacing.md,
       marginBottom: theme.spacing.lg,
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
+      backgroundColor: theme.background,
     },
-    backButton: {
+    iconButton: {
+      width: 44,
+      height: 44,
       alignItems: "center",
       justifyContent: "center",
+      borderRadius: theme.rounded.md,
+    },
+    iconButtonPressed: {
+      backgroundColor: theme.surfaceAlt,
     },
     title: {
-      fontSize: 22,
-      fontFamily: theme.typography.fontFamily.bold,
+      flex: 1,
       color: theme.text,
-      flexShrink: 1,
+      fontSize: theme.typography.size.h1,
+      lineHeight: theme.typography.lineHeight.h1,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    titleCompact: {
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    trailingSpacer: {
+      width: 44,
+      height: 44,
     },
   });
 

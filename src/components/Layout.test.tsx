@@ -22,7 +22,9 @@ jest.mock("@/services/e2e/connectivity", () => ({
 
 jest.mock("@/components/BottomTabBar", () => ({
   __esModule: true,
-  default: () => {
+  BOTTOM_TAB_BAR_BASE_HEIGHT: 44,
+  BOTTOM_TAB_BAR_BOTTOM_OFFSET: 0,
+  BottomTabBar: () => {
     const { createElement } =
       jest.requireActual<typeof import("react")>("react");
     const { Text: RNText } =

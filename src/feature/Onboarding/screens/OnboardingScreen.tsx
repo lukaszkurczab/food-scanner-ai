@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { View, StyleSheet, ActivityIndicator, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import ProgressDots from "@/feature/Onboarding/components/ProgressDots";
-import { Modal, Layout, IconButton } from "@/components";
+import { Modal, Layout, ScreenCornerNavButton } from "@/components";
 import type { FormData, OnboardingMode, UserData } from "@/types";
 import Step1BasicData from "@/feature/Onboarding/components/Step1BasicData";
 import Step2Preferences from "@/feature/Onboarding/components/Step2Preferences";
@@ -14,8 +14,8 @@ import { calculateCalorieTarget } from "../utils/calculateCalorieTarget";
 import { assertNoUndefined } from "@/utils/findUndefined";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
-import AppIcon from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const STEPS = 5;
 
@@ -52,6 +52,7 @@ export default function OnboardingScreen({
 }: OnboardingScreenProps) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { userData, updateUser, syncUserProfile } = useUserContext();
   const [step, setStep] = useState(1);
@@ -176,14 +177,16 @@ export default function OnboardingScreen({
       disableScroll
     >
       {mode === "refill" && (
-        <View style={styles.closeButtonWrap}>
-          <IconButton
-            icon={<AppIcon name="close" size={22} />}
-            onPress={handleExitPress}
-            accessibilityLabel={t("exit_refill_a11y")}
-            iconColor={theme.text}
-          />
-        </View>
+        <ScreenCornerNavButton
+          icon="close"
+          onPress={handleExitPress}
+          accessibilityLabel={t("exit_refill_a11y")}
+          containerStyle={{
+            top: insets.top + theme.spacing.xs,
+            right: insets.right + theme.spacing.sm,
+            left: undefined,
+          }}
+        />
       )}
       <ProgressDots step={step} total={STEPS} />
 
@@ -264,15 +267,6 @@ export default function OnboardingScreen({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    closeButtonWrap: {
-      position: "absolute",
-      right: 0,
-      top: 0,
-      transform: [{ translateX: 16 }, { translateY: -16 }],
-      zIndex: 30,
-      backgroundColor: "transparent",
-      padding: theme.spacing.xs,
-    },
     loadingWrap: {
       flex: 1,
       alignItems: "center",

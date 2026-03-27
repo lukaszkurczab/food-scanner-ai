@@ -145,7 +145,6 @@ export default function AvatarCameraScreen({
                 : navigation.navigate("Profile")
             }
             accessibilityLabel={t("common:close", { defaultValue: "Close" })}
-            tone="camera"
             containerStyle={topLeftActionStyle}
           />
           <View style={styles.controlsWrapper}>

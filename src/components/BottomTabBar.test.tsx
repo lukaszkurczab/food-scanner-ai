@@ -18,6 +18,9 @@ const mockUseBadges = jest.fn<
 
 jest.mock("@/navigation/navigate", () => ({
   navigate: (route: string) => mockNavigate(route),
+  navigationRef: {
+    getCurrentRoute: () => undefined,
+  },
 }));
 
 jest.mock("@/components/AvatarBadge", () => ({
@@ -50,6 +53,10 @@ jest.mock("react-i18next", () => ({
 jest.mock("@/components/AppIcon", () => ({
   __esModule: true,
   default: () => null,
+}));
+
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
 describe("BottomTabBar", () => {

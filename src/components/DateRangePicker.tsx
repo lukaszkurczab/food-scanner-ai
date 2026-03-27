@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Button } from "@/components";
+import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 
 export const DateRangePicker: React.FC<{
@@ -27,12 +27,22 @@ export const DateRangePicker: React.FC<{
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.label}>{t("dateRange.label")}</Text>
-        <Text style={styles.summary}>{summary}</Text>
-      </View>
-
-      <Button label={t("dateRange.set")} variant="secondary" onPress={onOpen} />
+      <Text style={styles.label}>{t("dateRange.label")}</Text>
+      <Pressable
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={t("dateRange.set")}
+        style={({ pressed }) => [
+          styles.field,
+          pressed ? styles.fieldPressed : null,
+        ]}
+      >
+        <View style={styles.valueWrap}>
+          <Text style={styles.value}>{summary}</Text>
+          <Text style={styles.hint}>{t("dateRange.set")}</Text>
+        </View>
+        <AppIcon name="calendar" size={20} color={theme.textSecondary} />
+      </Pressable>
     </View>
   );
 };
@@ -40,27 +50,44 @@ export const DateRangePicker: React.FC<{
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
-      gap: theme.spacing.md,
-    },
-    headerRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      gap: theme.spacing.md,
+      gap: theme.spacing.xs,
     },
     label: {
-      color: theme.text,
-      fontSize: theme.typography.size.title,
-      lineHeight: theme.typography.lineHeight.title,
-      fontFamily: theme.typography.fontFamily.bold,
-      flexShrink: 0,
-    },
-    summary: {
       color: theme.textSecondary,
+      fontSize: theme.typography.size.labelS,
+      lineHeight: theme.typography.lineHeight.labelS,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    field: {
+      minHeight: 56,
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
+      borderColor: theme.input.border,
+      backgroundColor: theme.input.background,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    fieldPressed: {
+      backgroundColor: theme.surfaceAlt,
+      borderColor: theme.input.borderFocused,
+    },
+    valueWrap: {
+      flex: 1,
+    },
+    value: {
+      color: theme.text,
       fontSize: theme.typography.size.bodyL,
       lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    hint: {
+      marginTop: theme.spacing.xxs,
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.labelS,
+      lineHeight: theme.typography.lineHeight.labelS,
       fontFamily: theme.typography.fontFamily.medium,
-      textAlign: "right",
-      flex: 1,
     },
   });

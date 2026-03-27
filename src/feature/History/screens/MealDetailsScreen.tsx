@@ -21,6 +21,7 @@ import {
 } from "@/components";
 import { FallbackImage } from "../components/FallbackImage";
 import AppIcon from "@/components/AppIcon";
+import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { useMealDetailsScreenState } from "@/feature/History/hooks/useMealDetailsScreenState";
 import { MealSyncBadge } from "@/components/MealSyncBadge";
 
@@ -213,20 +214,16 @@ export default function MealDetailsScreen() {
                 onPress={state.startEdit}
               />
             ) : (
-              <View style={styles.actionsStack}>
-                <Button
-                  label={t("save_changes", { ns: "common" })}
-                  onPress={state.handleSave}
-                  loading={state.saving}
-                  disabled={state.saving || !state.isDirty}
-                />
-                <Button
-                  variant="destructive"
-                  label={t("cancel", { ns: "common" })}
-                  onPress={state.handleCancel}
-                  disabled={state.saving}
-                />
-              </View>
+              <GlobalActionButtons
+                label={t("save_changes", { ns: "common" })}
+                onPress={state.handleSave}
+                loading={state.saving}
+                disabled={state.saving || !state.isDirty}
+                secondaryLabel={t("cancel", { ns: "common" })}
+                secondaryOnPress={state.handleCancel}
+                secondaryDisabled={state.saving}
+                secondaryTone="destructive"
+              />
             )}
           </View>
         </View>
@@ -390,9 +387,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     actionsWrap: {
       marginTop: theme.spacing.sm,
       paddingBottom: theme.spacing.sm,
-    },
-    actionsStack: {
-      gap: theme.spacing.sm,
     },
     emptyWrap: {
       flex: 1,
