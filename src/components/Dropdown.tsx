@@ -13,6 +13,11 @@ import {
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import AppIcon from "@/components/AppIcon";
+import {
+  getPickerControlStyleParts,
+  PICKER_MENU_BOTTOM_OFFSET,
+  PICKER_MENU_MAX_HEIGHT,
+} from "@/components/pickerControlStyles";
 
 type Option<T extends string> = {
   label: string;
@@ -36,11 +41,6 @@ type DropdownPosition = {
   width: number;
   height: number;
 };
-
-const MENU_MAX_HEIGHT = 240;
-const FIELD_MIN_HEIGHT = 52;
-const MENU_BOTTOM_OFFSET = 24;
-const SHADOW_OFFSET_Y = 2;
 
 export function Dropdown<T extends string>({
   label,
@@ -77,12 +77,12 @@ export function Dropdown<T extends string>({
 
   const menuMaxHeight = dropdownPos
     ? Math.min(
-        MENU_MAX_HEIGHT,
+        PICKER_MENU_MAX_HEIGHT,
         Dimensions.get("window").height -
           (dropdownPos.y + dropdownPos.height) -
-          MENU_BOTTOM_OFFSET,
+          PICKER_MENU_BOTTOM_OFFSET,
       )
-    : MENU_MAX_HEIGHT;
+    : PICKER_MENU_MAX_HEIGHT;
 
   const menuPositionStyle = useMemo(
     () =>
@@ -105,6 +105,7 @@ export function Dropdown<T extends string>({
         ref={fieldRef}
         style={[
           styles.field,
+          open ? styles.fieldOpen : null,
           error ? styles.fieldError : null,
           disabled ? styles.fieldDisabled : null,
         ]}
@@ -112,6 +113,7 @@ export function Dropdown<T extends string>({
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityState={{ disabled, expanded: open }}
+        testID="dropdown-field"
       >
         <View style={styles.fieldContent}>
           {selected ? (
@@ -197,100 +199,14 @@ export function Dropdown<T extends string>({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    label: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.labelL,
-      lineHeight: theme.typography.lineHeight.labelL,
-      marginBottom: theme.spacing.xs,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    field: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.md,
-      minHeight: FIELD_MIN_HEIGHT,
-      borderRadius: theme.rounded.md,
-      borderWidth: 1,
-      borderColor: theme.input.border,
-      backgroundColor: theme.input.background,
-      shadowColor: "#000000",
-      shadowOpacity: theme.isDark ? 0.16 : 0.08,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: SHADOW_OFFSET_Y },
-      elevation: 2,
-    },
-    fieldError: {
-      borderColor: theme.input.borderError,
-    },
-    fieldDisabled: {
-      backgroundColor: theme.input.backgroundDisabled,
-      opacity: 0.6,
-    },
+    ...getPickerControlStyleParts(theme),
     fieldContent: {
       flex: 1,
       justifyContent: "center",
     },
-    selectedText: {
-      color: theme.input.text,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      fontFamily: theme.typography.fontFamily.regular,
-    },
-    placeholderText: {
-      color: theme.input.placeholder,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      fontFamily: theme.typography.fontFamily.regular,
-    },
-    fieldIcon: {
-      marginLeft: theme.spacing.xs,
-    },
-    errorText: {
-      color: theme.error.text,
-      marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
+    selectedText: getPickerControlStyleParts(theme).valueText,
     modalOverlay: {
       flex: 1,
       backgroundColor: "transparent",
-    },
-    menu: {
-      position: "absolute",
-      backgroundColor: theme.surfaceElevated,
-      borderColor: theme.border,
-      borderWidth: 1,
-      borderRadius: theme.rounded.lg,
-      shadowColor: "#000000",
-      shadowOpacity: theme.isDark ? 0.2 : 0.1,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: SHADOW_OFFSET_Y },
-      elevation: 8,
-      zIndex: 100,
-      overflow: "hidden",
-    },
-    menuContent: {
-      paddingVertical: theme.spacing.xs,
-    },
-    option: {
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
-      minHeight: 48,
-      justifyContent: "center",
-    },
-    optionSelected: {
-      backgroundColor: theme.primarySoft,
-    },
-    optionText: {
-      color: theme.text,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      fontFamily: theme.typography.fontFamily.regular,
-    },
-    optionTextSelected: {
-      color: theme.primaryStrong,
-      fontFamily: theme.typography.fontFamily.semiBold,
     },
   });

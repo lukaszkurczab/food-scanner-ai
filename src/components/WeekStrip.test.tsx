@@ -1,38 +1,21 @@
-import { createElement } from "react";
-import { Pressable, Text } from "react-native";
+import { Pressable } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import WeekStrip from "@/components/WeekStrip";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
-const mockCreateElement = createElement;
-const mockPressable = Pressable;
-const mockText = Text;
+let mockLanguage: string | undefined = "en-US";
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => `translated:${key}`,
+    i18n: { language: mockLanguage },
   }),
 }));
 
 jest.mock("@/components/AppIcon", () => ({
   __esModule: true,
   default: () => null,
-}));
-
-jest.mock("@/components", () => ({
-  IconButton: ({
-    accessibilityLabel,
-    onPress,
-  }: {
-    accessibilityLabel?: string;
-    onPress: () => void;
-  }) =>
-    mockCreateElement(
-      mockPressable,
-      { onPress, accessibilityRole: "button", accessibilityLabel },
-      mockCreateElement(mockText, null, accessibilityLabel ?? "icon-button"),
-    ),
 }));
 
 describe("WeekStrip", () => {
@@ -59,5 +42,58 @@ describe("WeekStrip", () => {
 
     fireEvent.press(getByLabelText("translated:weekStrip.open_history"));
     expect(onOpenHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to formatted weekday labels and omits history action when absent", () => {
+    mockLanguage = undefined;
+    const onSelect = jest.fn();
+    const days = [
+      { date: new Date(2026, 0, 4), label: "04", isToday: false },
+      { date: new Date(2026, 0, 5), isToday: false },
+    ];
+    const weekdayFormatter = new Intl.DateTimeFormat(undefined, {
+      weekday: "short",
+    });
+    const expectedLabel = weekdayFormatter
+      .format(days[1].date)
+      .replace(".", "");
+
+    const { getByLabelText, queryByLabelText } = renderWithTheme(
+      <WeekStrip
+        days={days}
+        selectedDate={days[0].date}
+        onSelect={onSelect}
+      />,
+    );
+
+    fireEvent.press(getByLabelText(`${expectedLabel} 05`));
+
+    expect(onSelect).toHaveBeenCalledWith(days[1].date);
+    expect(
+      queryByLabelText("translated:weekStrip.open_history"),
+    ).toBeNull();
+
+    mockLanguage = "en-US";
+  });
+
+  it("applies pressed styles for day cells and history action", () => {
+    const days = [{ date: new Date(2026, 0, 1), label: "M", isToday: false }];
+    const { UNSAFE_getAllByType } = renderWithTheme(
+      <WeekStrip
+        days={days}
+        selectedDate={days[0].date}
+        onSelect={() => undefined}
+        onOpenHistory={() => undefined}
+      />,
+    );
+    const [dayPressable, historyPressable] = UNSAFE_getAllByType(Pressable);
+
+    const dayStyles = dayPressable.props.style({ pressed: true });
+    const historyStyles = historyPressable.props.style({ pressed: true });
+
+    expect(dayStyles).toHaveLength(3);
+    expect(historyStyles).toHaveLength(2);
+    expect(dayStyles[2]).toBeTruthy();
+    expect(historyStyles[1]).toBeTruthy();
   });
 });

@@ -12,7 +12,11 @@ import {
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { ScrollView } from "react-native-gesture-handler";
-import BottomTabBar from "@/components/BottomTabBar";
+import {
+  BottomTabBar,
+  BOTTOM_TAB_BAR_BASE_HEIGHT,
+  BOTTOM_TAB_BAR_BOTTOM_OFFSET,
+} from "@/components/BottomTabBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useE2ENetInfo } from "@/services/e2e/connectivity";
@@ -25,8 +29,6 @@ type LayoutProps = {
   showOfflineBanner?: boolean;
   keyboardAvoiding?: boolean;
 };
-
-const TAB_BAR_HEIGHT = 36;
 
 export const Layout = ({
   children,
@@ -64,7 +66,7 @@ export const Layout = ({
 
   const shouldShowTabBar = showNavigation && !isKeyboardVisible;
   const bottomPadding = shouldShowTabBar
-    ? TAB_BAR_HEIGHT + insets.bottom + 8
+    ? BOTTOM_TAB_BAR_BASE_HEIGHT + insets.bottom + BOTTOM_TAB_BAR_BOTTOM_OFFSET
     : isKeyboardVisible
       ? 0
       : insets.bottom + 8;
@@ -82,63 +84,63 @@ export const Layout = ({
 
   const content = (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View
-        style={[
-          styles.root,
-          {
-            backgroundColor: theme.background,
-            paddingTop: insets.top + 16,
-            paddingBottom: bottomPadding,
-            paddingLeft: insets.left + 32,
-            paddingRight: insets.right + 32,
-          },
-          style,
-        ]}
-      >
-        <StatusBar
-          barStyle={theme.mode === "dark" ? "light-content" : "dark-content"}
-          backgroundColor={theme.background}
-        />
+      <View style={[styles.root]}>
+        <View
+          style={[
+            {
+              backgroundColor: theme.background,
+              paddingTop: insets.top + 16,
+              paddingBottom: bottomPadding,
+              paddingLeft: insets.left + 32,
+              paddingRight: insets.right + 32,
+            },
+            style,
+          ]}
+        >
+          <StatusBar
+            barStyle={theme.mode === "dark" ? "light-content" : "dark-content"}
+            backgroundColor={theme.background}
+          />
 
-        {shouldShowOffline && (
-          <View
-            pointerEvents="none"
-            onLayout={(event) => {
-              const nextHeight = event.nativeEvent.layout.height;
-              if (nextHeight !== offlineBannerHeight) {
-                setOfflineBannerHeight(nextHeight);
-              }
-            }}
-            style={[
-              styles.offlineBannerWrap,
-              {
-                top: insets.top + theme.spacing.sm,
-                left: insets.left + theme.spacing.md,
-                right: insets.right + theme.spacing.md,
-              },
-            ]}
-          >
-            <OfflineBanner compact style={styles.offlineBanner} />
-          </View>
-        )}
+          {shouldShowOffline && (
+            <View
+              pointerEvents="none"
+              onLayout={(event) => {
+                const nextHeight = event.nativeEvent.layout.height;
+                if (nextHeight !== offlineBannerHeight) {
+                  setOfflineBannerHeight(nextHeight);
+                }
+              }}
+              style={[
+                styles.offlineBannerWrap,
+                {
+                  top: insets.top + theme.spacing.sm,
+                  left: insets.left + theme.spacing.md,
+                  right: insets.right + theme.spacing.md,
+                },
+              ]}
+            >
+              <OfflineBanner compact style={styles.offlineBanner} />
+            </View>
+          )}
 
-        {disableScroll ? (
-          <View style={[styles.content, { paddingTop: contentTopPadding }]}>
-            {children}
-          </View>
-        ) : (
-          <ScrollView
-            contentContainerStyle={[
-              styles.scrollContent,
-              { paddingTop: contentTopPadding },
-            ]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {children}
-          </ScrollView>
-        )}
-
+          {disableScroll ? (
+            <View style={[styles.content, { paddingTop: contentTopPadding }]}>
+              {children}
+            </View>
+          ) : (
+            <ScrollView
+              contentContainerStyle={[
+                styles.scrollContent,
+                { paddingTop: contentTopPadding },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {children}
+            </ScrollView>
+          )}
+        </View>
         {shouldShowTabBar && <BottomTabBar />}
       </View>
     </TouchableWithoutFeedback>

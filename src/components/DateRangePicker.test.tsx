@@ -1,3 +1,4 @@
+import { Pressable } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import { DateRangePicker } from "@/components/DateRangePicker";
@@ -32,5 +33,22 @@ describe("DateRangePicker", () => {
 
     fireEvent.press(getByText("translated:dateRange.set"));
     expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies pressed styles to the picker field", () => {
+    const { UNSAFE_getByType } = renderWithTheme(
+      <DateRangePicker
+        startDate={new Date(2026, 0, 5)}
+        endDate={new Date(2026, 0, 10)}
+        onOpen={() => undefined}
+      />,
+    );
+
+    const pressedStyles = UNSAFE_getByType(Pressable).props.style({
+      pressed: true,
+    });
+
+    expect(pressedStyles).toHaveLength(2);
+    expect(pressedStyles[1]).toBeTruthy();
   });
 });

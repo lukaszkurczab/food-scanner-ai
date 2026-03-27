@@ -1,14 +1,52 @@
 import React, { useMemo } from "react";
-import { View, Pressable, StyleSheet, Platform } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import AppIcon, { type AppIconName } from "@/components/AppIcon";
-import { navigate } from "@/navigation/navigate";
+import {
+  navigate,
+  navigationRef,
+  type RootStackParamList,
+} from "@/navigation/navigate";
 import AvatarBadge from "@/components/AvatarBadge";
 import { useUserContext } from "@/context/UserContext";
 import { useBadges } from "@/hooks/useBadges";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useTranslation } from "react-i18next";
+
+export const BOTTOM_TAB_BAR_BASE_HEIGHT = 88;
+export const BOTTOM_TAB_BAR_BOTTOM_OFFSET = 8;
+
+type TabKey = "Home" | "Statistics" | "Chat" | "Profile";
+
+function getActiveTab(routeName?: keyof RootStackParamList): TabKey | null {
+  if (!routeName) return null;
+
+  if (routeName === "Home" || routeName === "WeeklyReport") return "Home";
+  if (routeName === "Statistics") return "Statistics";
+  if (routeName === "Chat") return "Chat";
+
+  if (
+    [
+      "Profile",
+      "EditUserData",
+      "AvatarCamera",
+      "UsernameChange",
+      "ChangeEmail",
+      "ChangeEmailCheckMailbox",
+      "ChangePassword",
+      "Language",
+      "SendFeedback",
+      "ManageSubscription",
+      "Notifications",
+      "NotificationForm",
+    ].includes(routeName)
+  ) {
+    return "Profile";
+  }
+
+  return null;
+}
 
 export const BottomTabBar: React.FC = () => {
   const theme = useTheme();
@@ -21,6 +59,7 @@ export const BottomTabBar: React.FC = () => {
 
   const avatarSrc = userData?.avatarLocalPath || userData?.avatarUrl || "";
   const safeBadges = Array.isArray(badges) ? badges : [];
+  const activeTab = getActiveTab(navigationRef.getCurrentRoute()?.name);
 
   let borderColor: string;
   if (isPremium) {
@@ -40,30 +79,51 @@ export const BottomTabBar: React.FC = () => {
     icon: AppIconName;
     onPress: () => void;
     isFab?: boolean;
+    activeKey?: TabKey;
   };
 
   const tabs: TabItem[] = [
-    { key: "Home", icon: "home", onPress: () => navigate("Home") },
-    { key: "Stats", icon: "stats", onPress: () => navigate("Statistics") },
+    {
+      key: "Home",
+      icon: "home",
+      onPress: () => navigate("Home"),
+      activeKey: "Home",
+    },
+    {
+      key: "Statistics",
+      icon: "stats",
+      onPress: () => navigate("Statistics"),
+      activeKey: "Statistics",
+    },
     {
       key: "Add",
       icon: "add",
       isFab: true,
       onPress: () => navigate("MealAddMethod"),
     },
-    { key: "History", icon: "assistant", onPress: () => navigate("Chat") },
-    { key: "Profile", icon: "person", onPress: () => navigate("Profile") },
+    {
+      key: "Chat",
+      icon: "assistant",
+      onPress: () => navigate("Chat"),
+      activeKey: "Chat",
+    },
+    {
+      key: "Profile",
+      icon: "person",
+      onPress: () => navigate("Profile"),
+      activeKey: "Profile",
+    },
   ];
 
   const testIdForTab = (key: string): string => {
     if (key === "Add") return "tab-add-meal";
-    if (key === "History") return "tab-chat";
-    if (key === "Stats") return "tab-statistics";
+    if (key === "Chat") return "tab-chat";
+    if (key === "Statistics") return "tab-statistics";
     return `tab-${key.toLowerCase()}`;
   };
 
   return (
-    <View style={styles.wrapper}>
+    <View pointerEvents="box-none" style={styles.wrapper}>
       <View style={styles.container}>
         {tabs.map((tab) => {
           if (tab.isFab) {
@@ -85,6 +145,7 @@ export const BottomTabBar: React.FC = () => {
           }
 
           const isProfile = tab.key.toLowerCase() === "profile";
+          const isActive = tab.activeKey === activeTab;
 
           return (
             <Pressable
@@ -92,19 +153,20 @@ export const BottomTabBar: React.FC = () => {
               onPress={tab.onPress}
               style={styles.tab}
               testID={testIdForTab(tab.key)}
+              accessibilityState={{ selected: isActive }}
             >
               {isProfile ? (
                 <AvatarBadge
-                  size={40}
+                  size={34}
                   uri={avatarSrc || undefined}
                   badges={safeBadges}
-                  overrideColor={borderColor}
+                  overrideColor={isActive ? theme.primary : borderColor}
                   overrideEmoji={undefined}
                   fallbackIcon={
                     <AppIcon
                       name="person"
-                      size={24}
-                      color={theme.textSecondary}
+                      size={20}
+                      color={isActive ? theme.primary : theme.textSecondary}
                     />
                   }
                   accessibilityLabel={t("tabs.profile_accessibility")}
@@ -112,8 +174,8 @@ export const BottomTabBar: React.FC = () => {
               ) : (
                 <AppIcon
                   name={tab.icon}
-                  size={26}
-                  color={theme.text}
+                  size={28}
+                  color={isActive ? theme.primary : theme.textSecondary}
                   style={styles.iconCentered}
                 />
               )}
@@ -129,33 +191,20 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     wrapper: {
       position: "absolute",
-      left: 0,
-      right: 0,
       bottom: 0,
-      borderTopEndRadius: theme.rounded.xl,
-      borderTopLeftRadius: theme.rounded.xl,
+      alignItems: "center",
     },
     container: {
       flexDirection: "row",
-      alignSelf: "center",
       alignItems: "center",
       width: "100%",
-      justifyContent: "space-evenly",
+      justifyContent: "space-between",
       paddingHorizontal: theme.spacing.sm,
-      paddingTop: theme.spacing.xs,
-      paddingBottom:
-        Platform.OS === "ios" ? theme.spacing.sm : theme.spacing.xs,
-      minHeight: 64,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.sm,
       backgroundColor: theme.surfaceElevated,
-      borderTopWidth: 1,
-      borderTopColor: theme.borderSoft,
-      borderTopEndRadius: theme.rounded.lg,
-      borderTopLeftRadius: theme.rounded.lg,
-      shadowColor: theme.shadow,
-      shadowOpacity: Platform.OS === "android" ? 0.2 : 0.1,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: -2 },
-      elevation: 12,
+      borderTopEndRadius: theme.rounded.xl,
+      borderTopStartRadius: theme.rounded.xl,
     },
     tab: {
       width: 56,
@@ -164,16 +213,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
     },
     fab: {
-      width: 58,
-      height: 58,
+      width: 56,
+      height: 56,
       justifyContent: "center",
       alignItems: "center",
-      marginTop: -20,
       backgroundColor: theme.cta.primaryBackground,
       borderRadius: theme.rounded.full,
       shadowColor: theme.shadow,
-      shadowOpacity: theme.isDark ? 0.28 : 0.16,
-      shadowRadius: 14,
+      shadowOpacity: theme.isDark ? 0.24 : 0.14,
+      shadowRadius: 12,
       shadowOffset: { width: 0, height: 6 },
       elevation: 8,
       borderWidth: 1,

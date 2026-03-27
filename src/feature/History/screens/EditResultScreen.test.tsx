@@ -337,7 +337,7 @@ describe("EditResultScreen", () => {
     expect(placeholder.getByText("meals:cancel_edit_message")).toBeTruthy();
 
     fireEvent.press(placeholder.getByLabelText("meals:add_photo"));
-    fireEvent.press(placeholder.getByText("common:confirm"));
+    fireEvent.press(placeholder.getByText("common:discard"));
     fireEvent.press(placeholder.getByText("common:cancel"));
 
     const state = mockUseEditResultState.mock.results[1]?.value as ReturnType<

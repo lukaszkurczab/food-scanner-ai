@@ -1,13 +1,12 @@
 import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { IconButton } from "@/components";
-import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
+import AppIcon from "@/components/AppIcon";
 
 export type WeekDayItem = {
   date: Date;
-  label: string;
+  label?: string;
   isToday: boolean;
 };
 
@@ -15,7 +14,7 @@ type Props = {
   days: WeekDayItem[];
   selectedDate: Date;
   onSelect: (d: Date) => void;
-  onOpenHistory: () => void;
+  onOpenHistory?: () => void;
   streak?: number;
 };
 
@@ -27,7 +26,14 @@ export default function WeekStrip({
 }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { t } = useTranslation("history");
+  const { i18n, t } = useTranslation("history");
+  const weekdayFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(i18n?.language || undefined, {
+        weekday: "short",
+      }),
+    [i18n?.language],
+  );
 
   return (
     <View style={styles.row}>
@@ -35,44 +41,67 @@ export default function WeekStrip({
         {days.map((d) => {
           const selected =
             d.date.toDateString() === selectedDate.toDateString();
+          const hasWeekdayLabel =
+            typeof d.label === "string" && /[^\d\s]/.test(d.label);
+          const rawWeekdayLabel = hasWeekdayLabel
+            ? d.label!
+            : weekdayFormatter.format(d.date);
+          const weekdayLabel = rawWeekdayLabel.replace(".", "");
+          const dayNumber = String(d.date.getDate()).padStart(2, "0");
 
           return (
             <Pressable
               key={d.date.toISOString()}
               onPress={() => onSelect(d.date)}
-              style={[
-                styles.pill,
-                selected ? styles.pillSelected : styles.pillDefault,
+              accessibilityRole="button"
+              accessibilityLabel={`${weekdayLabel} ${dayNumber}`}
+              style={({ pressed }) => [
+                styles.dayItem,
+                selected && styles.dayItemSelected,
+                pressed ? styles.dayItemPressed : null,
               ]}
             >
               <Text
                 style={[
-                  styles.dayText,
-                  selected ? styles.dayTextSelected : styles.dayTextDefault,
-                  d.isToday ? styles.dayTextToday : styles.dayTextRegular,
+                  styles.weekdayText,
+                  selected
+                    ? styles.weekdayTextSelected
+                    : styles.weekdayTextDefault,
                 ]}
               >
-                {d.label}
+                {weekdayLabel}
+              </Text>
+              <Text
+                style={[
+                  styles.dayNumberText,
+                  selected
+                    ? styles.dayNumberTextSelected
+                    : styles.dayNumberTextDefault,
+                  d.isToday ? styles.dayNumberToday : null,
+                ]}
+              >
+                {dayNumber}
               </Text>
             </Pressable>
           );
         })}
       </View>
-
-      <View style={styles.rightBox}>
-        <IconButton
-          accessibilityLabel={t("weekStrip.open_history")}
-          variant="ghost"
+      {onOpenHistory ? (
+        <Pressable
           onPress={onOpenHistory}
-          icon={<AppIcon name="calendar" />}
-        />
-      </View>
+          accessibilityRole="button"
+          accessibilityLabel={t("weekStrip.open_history")}
+          style={({ pressed }) => [
+            styles.historyButton,
+            pressed ? styles.historyButtonPressed : null,
+          ]}
+        >
+          <AppIcon name="history" size={20} color={theme.text} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
-
-const DAY_W = 40;
-const DAY_H = 36;
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
@@ -85,44 +114,61 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
       minWidth: 0,
       flexDirection: "row",
-      gap: theme.spacing.sm,
+      gap: theme.spacing.xxs,
     },
-    pill: {
-      width: DAY_W,
-      height: DAY_H,
-      borderRadius: DAY_H / 2,
+    dayItem: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 68,
+      borderRadius: theme.rounded.sm,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    dayItemSelected: {
+      backgroundColor: theme.primary,
+      borderColor: theme.primary,
+    },
+    dayItemPressed: {
+      opacity: 0.92,
+    },
+    weekdayText: {
+      fontSize: theme.typography.size.overline,
+      lineHeight: theme.typography.lineHeight.labelS,
+      fontFamily: theme.typography.fontFamily.medium,
+      textTransform: "uppercase",
+    },
+    weekdayTextDefault: {
+      color: theme.textSecondary,
+    },
+    weekdayTextSelected: {
+      color: theme.textInverse,
+    },
+    dayNumberText: {
+      fontSize: theme.typography.size.numericM,
+      lineHeight: theme.typography.lineHeight.numericM,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    dayNumberTextDefault: {
+      color: theme.text,
+    },
+    dayNumberTextSelected: {
+      color: theme.textInverse,
+    },
+    dayNumberToday: {
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    historyButton: {
+      width: 44,
+      height: 44,
+      marginLeft: theme.spacing.sm,
+      borderRadius: theme.rounded.md,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-    },
-    pillSelected: {
-      backgroundColor: theme.primarySoft,
-      borderColor: theme.primary,
-    },
-    pillDefault: {
+      borderColor: theme.borderSoft,
       backgroundColor: theme.surfaceElevated,
-      borderColor: theme.border,
     },
-    dayText: {
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-    },
-    dayTextSelected: {
-      color: theme.primaryStrong,
-    },
-    dayTextDefault: {
-      color: theme.text,
-    },
-    dayTextToday: {
-      fontFamily: theme.typography.fontFamily.bold,
-    },
-    dayTextRegular: {
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    rightBox: {
-      width: 56,
-      alignItems: "flex-end",
-      justifyContent: "center",
-      marginLeft: theme.spacing.sm,
+    historyButtonPressed: {
+      backgroundColor: theme.surface,
     },
   });

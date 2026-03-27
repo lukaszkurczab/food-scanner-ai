@@ -14,7 +14,6 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { DateTimeSection } from "@/components/DateTimeSection";
 import {
-  Button,
   Layout,
   Card,
   Modal,
@@ -70,18 +69,14 @@ export default function EditResultScreen({ navigation }: Props) {
               ? t("editUnavailable.desc", { ns: "meals" })
               : t("editUnavailable.offlineDesc", { ns: "meals" })}
           </Text>
-          <Button
+          <GlobalActionButtons
             label={t("retry", { ns: "common" })}
             onPress={() => {
               void state.reloadFromLocal();
             }}
-            style={styles.emptyAction}
-          />
-          <Button
-            variant="secondary"
-            label={t("back_to_saved", { ns: "meals" })}
-            onPress={state.handleCancelConfirm}
-            style={styles.emptyAction}
+            secondaryLabel={t("back_to_saved", { ns: "meals" })}
+            secondaryOnPress={state.handleCancelConfirm}
+            containerStyle={styles.emptyActionGroup}
           />
         </View>
       </Layout>
@@ -305,7 +300,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       lineHeight: theme.typography.lineHeight.bodyS,
       textAlign: "center",
     },
-    emptyAction: {
+    emptyActionGroup: {
       alignSelf: "stretch",
+      width: "100%",
     },
   });

@@ -10,6 +10,7 @@ import {
 import * as FileSystem from "expo-file-system";
 import {
   Button,
+  GlobalActionButtons,
   MealBox,
   Checkbox,
   Layout,
@@ -304,19 +305,17 @@ export default function ResultScreen({
       </View>
 
       <View style={[styles.actions, styles.actionsSpacing]}>
-        <Button
-          testID="meal-result-save-button"
+        <GlobalActionButtons
           label={t("save", { ns: "common" })}
           onPress={handleSave}
           loading={saving}
           disabled={saving}
-        />
-        <Button
-          variant="destructive"
-          label={t("cancel", { ns: "common" })}
-          onPress={() => setShowCancelModal(true)}
-          loading={saving}
-          disabled={saving}
+          primaryTestID="meal-result-save-button"
+          secondaryLabel={t("cancel", { ns: "common" })}
+          secondaryOnPress={() => setShowCancelModal(true)}
+          secondaryLoading={saving}
+          secondaryDisabled={saving}
+          secondaryTone="destructive"
         />
       </View>
 

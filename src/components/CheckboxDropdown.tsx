@@ -21,6 +21,11 @@ import { useTheme } from "@/theme/useTheme";
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/Checkbox";
+import {
+  getPickerControlStyleParts,
+  PICKER_MENU_BOTTOM_OFFSET,
+  PICKER_MENU_MAX_HEIGHT,
+} from "@/components/pickerControlStyles";
 
 type Option<T extends string | number> = {
   label: string;
@@ -46,10 +51,6 @@ type DropdownPosition = {
   width: number;
   height: number;
 };
-
-const MENU_MAX_HEIGHT = 260;
-const MENU_BOTTOM_OFFSET = 32;
-const SHADOW_OFFSET_Y = 2;
 
 export function CheckboxDropdown<T extends string | number>({
   label,
@@ -134,12 +135,12 @@ export function CheckboxDropdown<T extends string | number>({
 
   const menuMaxHeight = dropdownPos
     ? Math.min(
-        MENU_MAX_HEIGHT,
+        PICKER_MENU_MAX_HEIGHT,
         Dimensions.get("window").height -
           (dropdownPos.y + dropdownPos.height) -
-          MENU_BOTTOM_OFFSET,
+          PICKER_MENU_BOTTOM_OFFSET,
       )
-    : MENU_MAX_HEIGHT;
+    : PICKER_MENU_MAX_HEIGHT;
 
   const menuPositionStyle = useMemo(
     () =>
@@ -162,6 +163,7 @@ export function CheckboxDropdown<T extends string | number>({
         ref={fieldRef}
         style={[
           styles.field,
+          open ? styles.fieldOpen : null,
           error ? styles.fieldError : null,
           disabled ? styles.fieldDisabled : null,
         ]}
@@ -169,6 +171,7 @@ export function CheckboxDropdown<T extends string | number>({
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityState={{ disabled, expanded: open }}
+        testID="checkbox-dropdown-field"
       >
         <Text
           style={[
@@ -267,55 +270,13 @@ export function CheckboxDropdown<T extends string | number>({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    label: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.labelL,
-      lineHeight: theme.typography.lineHeight.labelL,
-      marginBottom: theme.spacing.xs,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    field: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.md,
-      borderRadius: theme.rounded.md,
-      borderWidth: 1,
-      borderColor: theme.input.border,
-      backgroundColor: theme.input.background,
-      shadowColor: "#000000",
-      shadowOpacity: theme.isDark ? 0.16 : 0.08,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: SHADOW_OFFSET_Y },
-      elevation: 2,
-      minHeight: 52,
-    },
-    fieldError: {
-      borderColor: theme.input.borderError,
-    },
-    fieldDisabled: {
-      backgroundColor: theme.input.backgroundDisabled,
-      opacity: 0.6,
-    },
+    ...getPickerControlStyleParts(theme),
     valueText: {
-      color: theme.input.text,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
+      ...getPickerControlStyleParts(theme).valueText,
       flex: 1,
-      fontFamily: theme.typography.fontFamily.regular,
     },
     valueTextPlaceholder: {
       color: theme.input.placeholder,
-    },
-    fieldIcon: {
-      marginLeft: theme.spacing.xs,
-    },
-    errorText: {
-      color: theme.error.text,
-      marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.medium,
     },
     modalRoot: {
       flex: 1,
@@ -325,35 +286,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       backgroundColor: "transparent",
       zIndex: 1,
     },
-    menu: {
-      position: "absolute",
-      backgroundColor: theme.surfaceElevated,
-      borderColor: theme.border,
-      borderWidth: 1,
-      borderRadius: theme.rounded.lg,
-      elevation: 8,
-      shadowColor: "#000000",
-      shadowOpacity: theme.isDark ? 0.2 : 0.1,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: SHADOW_OFFSET_Y },
-      zIndex: 2,
-      overflow: "hidden",
-    },
     menuContent: {
       flexGrow: 1,
-      paddingVertical: theme.spacing.xs,
     },
     option: {
+      ...getPickerControlStyleParts(theme).option,
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
       backgroundColor: "transparent",
       opacity: 1,
-      minHeight: 48,
-    },
-    optionSelected: {
-      backgroundColor: theme.primarySoft,
     },
     optionDisabled: {
       opacity: 0.45,
@@ -365,10 +306,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
     },
     optionText: {
-      color: theme.text,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      fontFamily: theme.typography.fontFamily.regular,
+      ...getPickerControlStyleParts(theme).optionText,
       flex: 1,
     },
     optionTextDisabled: {

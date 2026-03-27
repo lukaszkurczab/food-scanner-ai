@@ -7,7 +7,7 @@ import {
   ViewStyle,
   StyleProp,
 } from "react-native";
-import { Button } from "@/components";
+import { Button } from "@/components/Button";
 import { useTheme } from "@/theme/useTheme";
 
 export type EmptyStateSuggestion = {

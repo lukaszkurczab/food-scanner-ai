@@ -46,18 +46,18 @@ export const OfflineBanner: React.FC<Props> = ({
         style,
       ]}
       accessibilityLiveRegion="polite"
-      accessibilityRole="alert"
     >
       <AppIcon
         name="wifi-off"
         size={compact ? 16 : 18}
-        color={theme.warning.text}
+        color={theme.textSecondary}
         style={styles.icon}
       />
 
-      <Text style={styles.title}>{resolvedTitle}</Text>
-
-      {!compact ? <Text style={styles.desc}>{resolvedSubtitle}</Text> : null}
+      <View style={styles.textWrap}>
+        <Text style={styles.title}>{resolvedTitle}</Text>
+        {!compact ? <Text style={styles.desc}>{resolvedSubtitle}</Text> : null}
+      </View>
     </View>
   );
 };
@@ -67,14 +67,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     banner: {
       borderWidth: 1,
       alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: theme.warning.surface,
-      borderColor: theme.warning.main,
+      flexDirection: "row",
+      backgroundColor: theme.surfaceAlt,
+      borderColor: theme.borderSoft,
       borderRadius: theme.rounded.md,
     },
     bannerCompact: {
       paddingVertical: 10,
-      paddingHorizontal: 12,
+      paddingHorizontal: 14,
       margin: 8,
     },
     bannerRegular: {
@@ -83,22 +83,27 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       margin: 12,
     },
     icon: {
-      marginBottom: 4,
+      marginRight: theme.spacing.sm,
+      alignSelf: "flex-start",
+      marginTop: 1,
+    },
+    textWrap: {
+      flex: 1,
     },
     title: {
-      color: theme.warning.text,
-      textAlign: "center",
-      fontFamily: theme.typography.fontFamily.semiBold,
+      color: theme.text,
+      textAlign: "left",
+      fontFamily: theme.typography.fontFamily.medium,
       fontSize: theme.typography.size.bodyS,
       lineHeight: theme.typography.lineHeight.bodyS,
     },
     desc: {
       marginTop: 4,
-      color: theme.warning.text,
+      color: theme.textSecondary,
       fontSize: theme.typography.size.caption,
       lineHeight: theme.typography.lineHeight.caption,
       fontFamily: theme.typography.fontFamily.regular,
-      textAlign: "center",
+      textAlign: "left",
     },
   });
 

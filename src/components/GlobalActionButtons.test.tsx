@@ -105,12 +105,12 @@ describe("GlobalActionButtons", () => {
       />,
     );
 
-    const primaryProps = mockButton.mock.calls[0]?.[0] as {
+    const secondaryProps = mockButton.mock.calls[0]?.[0] as {
       disabled?: boolean;
       loading?: boolean;
       variant?: string;
     };
-    const secondaryProps = mockButton.mock.calls[1]?.[0] as {
+    const primaryProps = mockButton.mock.calls[1]?.[0] as {
       disabled?: boolean;
       loading?: boolean;
       variant?: string;

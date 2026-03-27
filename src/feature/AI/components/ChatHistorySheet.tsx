@@ -11,7 +11,7 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "@/theme/useTheme";
 import type { ChatThread } from "@/types";
-import { Button } from "@/components";
+import { Button } from "@/components/Button";
 import { Drawer } from "@/components/Drawer";
 import { useTranslation } from "react-i18next";
 import { subscribeToChatThreads } from "@/services/ai/chatThreadRepository";

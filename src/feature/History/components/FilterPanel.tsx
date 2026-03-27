@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, ScrollView, Pressable, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { Button, Modal, RangeSlider } from "@/components";
+import { Button, RangeSlider } from "@/components";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { Calendar } from "@/components/Calendar";
+import { Modal } from "@/components/Modal";
 import { useTranslation } from "react-i18next";
 import { Filters, FilterScope, useFilters } from "@/context/HistoryContext";
 
