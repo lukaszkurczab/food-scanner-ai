@@ -4,6 +4,7 @@ import {
   StyleSheet,
   StyleProp,
   ViewStyle,
+  type PressableProps,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import AppIcon from "@/components/AppIcon";
@@ -13,6 +14,8 @@ type CheckboxProps = {
   onChange: (checked: boolean) => void;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  error?: boolean;
+  hitSlop?: PressableProps["hitSlop"];
   accessibilityLabel?: string;
 };
 
@@ -21,6 +24,8 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   onChange,
   style,
   disabled = false,
+  error = false,
+  hitSlop = 8,
   accessibilityLabel = "Checkbox",
 }) => {
   const theme = useTheme();
@@ -30,12 +35,14 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   return (
     <Pressable
       onPress={() => !disabled && onChange(!checked)}
+      hitSlop={hitSlop}
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled }}
       accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [
         styles.box,
         checked ? styles.boxChecked : styles.boxUnchecked,
+        error && !checked && !disabled ? styles.boxError : null,
         disabled
           ? checked
             ? styles.boxCheckedDisabled
@@ -70,6 +77,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     boxUnchecked: {
       borderColor: theme.border,
       backgroundColor: theme.surface,
+    },
+    boxError: {
+      borderColor: theme.error.border,
     },
     boxCheckedDisabled: {
       borderColor: theme.disabled.border,

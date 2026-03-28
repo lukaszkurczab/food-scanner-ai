@@ -78,7 +78,7 @@ export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
       else if (code === "username/unavailable") e.username = "username_taken";
       else if (code === "auth/weak-password")
         e.password = "password_too_weak";
-      else e.general = "registration_failed";
+      else e.general = "register_failed";
       setErrors(e);
     } finally {
       setLoading(false);

@@ -1,6 +1,8 @@
 {
   "email": "Email",
   "password": "Password",
+  "welcome_back": "Welcome back",
+  "create_account": "Create your account",
   "login": "Log in",
   "forgot_password": "Forgot password?",
   "dont_have_account": "Don't have an account?",
