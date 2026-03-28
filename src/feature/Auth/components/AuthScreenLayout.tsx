@@ -4,19 +4,21 @@ import { Layout } from "@/components";
 import { useTheme } from "@/theme/useTheme";
 
 type AuthScreenLayoutProps = {
+  brand: string;
   title: string;
-  subtitle?: string;
-  heroVariant?: "default" | "compact";
+  description?: string;
   banner?: ReactNode;
+  bottomAction?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
 };
 
 export function AuthScreenLayout({
+  brand,
   title,
-  subtitle,
-  heroVariant = "default",
+  description,
   banner,
+  bottomAction,
   footer,
   children,
 }: AuthScreenLayoutProps) {
@@ -26,27 +28,31 @@ export function AuthScreenLayout({
   return (
     <Layout showNavigation={false} style={styles.layout}>
       <View style={styles.container}>
-        <View style={styles.main}>
-          {banner ? <View style={styles.banner}>{banner}</View> : null}
+        <View style={styles.content}>
+          <View style={styles.hero}>
+            <Text style={styles.wordmark}>{brand}</Text>
 
-          <View
-            style={[
-              styles.hero,
-              heroVariant === "compact"
-                ? styles.heroCompact
-                : styles.heroDefault,
-            ]}
-          >
-            <Text style={styles.title} accessibilityRole="header">
-              {title}
-            </Text>
-            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+            <View style={styles.headingGroup}>
+              <Text style={styles.title} accessibilityRole="header">
+                {title}
+              </Text>
+              {description ? (
+                <Text style={styles.description}>{description}</Text>
+              ) : null}
+            </View>
           </View>
+
+          {banner ? <View style={styles.banner}>{banner}</View> : null}
 
           <View style={styles.form}>{children}</View>
         </View>
 
-        {footer ? <View style={styles.footer}>{footer}</View> : null}
+        {bottomAction || footer ? (
+          <View style={styles.bottomBlock}>
+            {bottomAction}
+            {footer ? <View style={styles.footer}>{footer}</View> : null}
+          </View>
+        ) : null}
       </View>
     </Layout>
   );
@@ -55,53 +61,60 @@ export function AuthScreenLayout({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     layout: {
-      paddingLeft: theme.spacing.screenPadding,
-      paddingRight: theme.spacing.screenPadding,
+      paddingLeft: theme.spacing.screenPaddingWide,
+      paddingRight: theme.spacing.screenPaddingWide,
       flex: 1,
     },
     container: {
       flexGrow: 1,
       justifyContent: "space-between",
     },
-    main: {
+    content: {
       flexGrow: 1,
-    },
-    banner: {
-      marginTop: theme.spacing.sm,
-      marginBottom: theme.spacing.md,
+      paddingTop: theme.spacing.xl,
     },
     hero: {
       alignItems: "center",
+      paddingBottom: theme.spacing.sectionGap,
     },
-    heroDefault: {
-      paddingTop: theme.spacing.hero,
-      paddingBottom: theme.spacing.xxl,
-    },
-    heroCompact: {
-      paddingTop: theme.spacing.xxxl,
-      paddingBottom: theme.spacing.xl,
-    },
-    title: {
+    wordmark: {
       color: theme.primary,
-      fontFamily: theme.typography.fontFamily.bold,
+      fontFamily: theme.typography.fontFamily.semiBold,
       fontSize: theme.typography.size.displayM,
-      lineHeight: theme.typography.lineHeight.displayM,
+      lineHeight: theme.typography.lineHeight.displayL,
       textAlign: "center",
     },
-    subtitle: {
+    headingGroup: {
       marginTop: theme.spacing.xs,
+      width: "100%",
+      alignItems: "center",
+    },
+    title: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.h2,
+      textAlign: "center",
+    },
+    description: {
+      marginTop: theme.spacing.sm,
       color: theme.textSecondary,
       fontFamily: theme.typography.fontFamily.regular,
       fontSize: theme.typography.size.bodyL,
       lineHeight: theme.typography.lineHeight.bodyL,
       textAlign: "center",
     },
+    banner: {
+      marginBottom: theme.spacing.lg,
+    },
     form: {
       width: "100%",
-      flex: 1,
+      flexGrow: 1,
+    },
+    bottomBlock: {
+      paddingTop: theme.spacing.sectionGapLarge,
+      paddingBottom: theme.spacing.sm,
     },
     footer: {
-      paddingTop: theme.spacing.sectionGapLarge,
-      paddingBottom: theme.spacing.xl,
+      marginTop: theme.spacing.md,
     },
   });

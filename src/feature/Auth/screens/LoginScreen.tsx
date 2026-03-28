@@ -48,8 +48,10 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     return () => unsubscribe();
   }, []);
 
+  const normalizedEmail = email.trim();
+
   const emailError =
-    touched.email && !validateEmail(email)
+    touched.email && !validateEmail(normalizedEmail)
       ? t("invalid_email")
       : errors.email
         ? t(errors.email, { defaultValue: t("invalid_email") })
@@ -62,12 +64,12 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         ? t(errors.password, { defaultValue: t("invalid_password") })
         : undefined;
 
-  const isFormValid = !!email && !!password && !emailError && !passwordError;
+  const isFormValid = validateEmail(normalizedEmail) && password.length >= 6;
 
   const handleLogin = async () => {
     setTouched({ email: true, password: true });
     if (!isFormValid) return;
-    await login(email.trim(), password);
+    await login(normalizedEmail, password);
   };
 
   const mapCritical = (key: string | null): string | null => {
@@ -86,12 +88,21 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
   return (
     <AuthScreenLayout
-      title={t("common:app_title")}
-      subtitle={t("welcome_back")}
+      brand={t("common:app_title")}
+      title={t("welcome_back")}
       banner={
         displayCriticalError ? (
           <ErrorBox message={displayCriticalError} />
         ) : null
+      }
+      bottomAction={
+        <Button
+          testID="login-submit-button"
+          label={t("login")}
+          onPress={handleLogin}
+          disabled={isLoginDisabled}
+          loading={loading}
+        />
       }
       footer={
         <View style={styles.footerRow}>
@@ -105,7 +116,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         </View>
       }
     >
-      <View style={styles.formSection}>
+      <View style={styles.formBlock}>
         <TextInput
           testID="login-email-input"
           label={t("email")}
@@ -164,27 +175,18 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           </LinkText>
         </View>
       </View>
-
-      <Button
-        testID="login-submit-button"
-        label={t("login")}
-        onPress={handleLogin}
-        disabled={isLoginDisabled}
-        loading={loading}
-        style={styles.cta}
-      />
     </AuthScreenLayout>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    formSection: {
+    formBlock: {
       width: "100%",
-      flexGrow: 1,
+      paddingTop: theme.spacing.xxxl,
     },
     emailField: {
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
     },
     passwordSection: {
       marginBottom: theme.spacing.sectionGap,
@@ -194,9 +196,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     forgotPasswordLink: {
       alignSelf: "flex-end",
-    },
-    cta: {
-      marginTop: theme.spacing.xs,
+      marginTop: theme.spacing.sm,
     },
     footerRow: {
       flexDirection: "row",

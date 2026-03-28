@@ -14,9 +14,14 @@ import { Button, TextInput, ErrorBox, LinkText, Checkbox } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import { useAuthContext } from "@/context/AuthContext";
 import { useRegister } from "@/feature/Auth/hooks/useRegister";
-import { validateEmail } from "@/utils/validation";
 import { getTermsUrl } from "@/utils/legalUrls";
 import { AuthScreenLayout } from "@/feature/Auth/components/AuthScreenLayout";
+import {
+  validateRegisterEmail,
+  validateRegisterPassword,
+  validateRegisterPasswordConfirmation,
+  validateRegisterUsername,
+} from "@/feature/Auth/utils/registerValidation";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -39,8 +44,12 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
-  const [emailValidated, setEmailValidated] = useState(true);
-  const [emailTouched, setEmailTouched] = useState(false);
+  const [touched, setTouched] = useState({
+    username: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+  });
 
   const { setFirebaseUser } = useAuthContext();
   const { register, loading, errors, clearError } =
@@ -53,11 +62,6 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
     return () => unsubscribe();
   }, []);
 
-  const handleValidateEmail = () => {
-    setEmailTouched(true);
-    setEmailValidated(validateEmail(email));
-  };
-
   const clearFieldError = (
     key: "email" | "username" | "password" | "confirmPassword" | "terms",
   ) => {
@@ -65,21 +69,60 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
     clearError("general");
   };
 
-  const emailLiveError =
-    emailTouched && email && !emailValidated ? t("invalid_email") : undefined;
+  const usernameIsValid = validateRegisterUsername(username);
+  const emailIsValid = validateRegisterEmail(email.trim());
+  const passwordIsValid = validateRegisterPassword(password);
+  const confirmPasswordIsValid = validateRegisterPasswordConfirmation(
+    password,
+    confirmPassword,
+  );
+
+  const usernameError =
+    touched.username && !usernameIsValid
+      ? t("username_too_short")
+      : errors.username
+        ? t(errors.username)
+        : undefined;
+
+  const emailError =
+    touched.email && !emailIsValid
+      ? t("invalid_email")
+      : errors.email
+        ? t(errors.email)
+        : undefined;
+
+  const passwordError =
+    touched.password && !passwordIsValid
+      ? t("password_too_weak")
+      : errors.password
+        ? t(errors.password)
+        : undefined;
+
+  const confirmPasswordError =
+    touched.confirmPassword && confirmPassword && !confirmPasswordIsValid
+      ? t("passwords_dont_match")
+      : errors.confirmPassword
+        ? t(errors.confirmPassword)
+        : undefined;
 
   const isFormDisabled =
-    !username.trim() ||
-    !email.trim() ||
-    !password ||
+    !usernameIsValid ||
+    !emailIsValid ||
+    !passwordIsValid ||
     !confirmPassword ||
+    !confirmPasswordIsValid ||
     !termsAccepted ||
     loading ||
-    !isConnected ||
-    !!emailLiveError;
+    !isConnected;
 
   const handleSubmit = () => {
-    setEmailTouched(true);
+    setTouched({
+      username: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+    });
+    if (isFormDisabled) return;
     Keyboard.dismiss();
     register(
       email.trim(),
@@ -106,9 +149,8 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
 
   return (
     <AuthScreenLayout
-      title={t("common:app_title")}
-      subtitle={t("create_account")}
-      heroVariant="compact"
+      brand={t("common:app_title")}
+      title={t("create_account")}
       banner={
         !isConnected ? (
           <ErrorBox message={t("common:no_internet")} />
@@ -122,11 +164,20 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           <LinkText
             text={t("sign_in")}
             onPress={() => navigation.replace("Login")}
+            disabled={loading}
           />
         </View>
       }
+      bottomAction={
+        <Button
+          label={t("sign_up")}
+          onPress={handleSubmit}
+          disabled={isFormDisabled}
+          loading={loading}
+        />
+      }
     >
-      <View style={styles.formSection}>
+      <View style={styles.formBlock}>
         <TextInput
           label={t("username")}
           value={username}
@@ -138,9 +189,11 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
             setUsername(val);
             clearFieldError("username");
           }}
-          error={errors.username ? t(errors.username) : undefined}
+          onBlur={() => setTouched((prev) => ({ ...prev, username: true }))}
+          error={usernameError}
           accessibilityLabel={t("username")}
-          style={styles.fieldSpacing}
+          editable={!loading}
+          style={styles.field}
         />
 
         <TextInput
@@ -153,16 +206,13 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           placeholder={t("enter_email", { ns: "login" })}
           onChangeText={(val) => {
             setEmail(val);
-            if (emailTouched) setEmailValidated(validateEmail(val));
             clearFieldError("email");
           }}
-          onBlur={handleValidateEmail}
-          error={
-            (emailTouched && emailLiveError) ||
-            (errors.email ? t(errors.email) : undefined)
-          }
+          onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+          error={emailError}
           accessibilityLabel={t("email", { ns: "login" })}
-          style={styles.fieldSpacing}
+          editable={!loading}
+          style={styles.field}
         />
 
         <TextInput
@@ -177,15 +227,16 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
             setPassword(val);
             clearFieldError("password");
           }}
-          error={errors.password ? t(errors.password) : undefined}
+          onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+          error={passwordError}
           accessibilityLabel={t("password", { ns: "login" })}
           icon={renderEyeIcon(showPassword, () => setShowPassword((v) => !v))}
           iconPosition="right"
-          style={styles.fieldSpacing}
+          editable={!loading}
+          style={styles.field}
         />
 
         <TextInput
-          label={t("confirm_password")}
           value={confirmPassword}
           autoCapitalize="none"
           autoComplete="new-password"
@@ -196,10 +247,14 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
             setConfirmPassword(val);
             clearFieldError("confirmPassword");
           }}
-          error={errors.confirmPassword ? t(errors.confirmPassword) : undefined}
+          onBlur={() =>
+            setTouched((prev) => ({ ...prev, confirmPassword: true }))
+          }
+          error={confirmPasswordError}
           accessibilityLabel={t("confirm_password")}
           icon={renderEyeIcon(showConfirm, () => setShowConfirm((v) => !v))}
           iconPosition="right"
+          editable={!loading}
           style={styles.confirmField}
         />
 
@@ -211,6 +266,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
                 setTermsAccepted(checked);
                 clearFieldError("terms");
               }}
+              disabled={loading}
               error={Boolean(errors.terms)}
               accessibilityLabel={
                 errors.terms ? t(errors.terms) : t("accept_terms")
@@ -253,22 +309,14 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           </View>
         </View>
       </View>
-      <Button
-        label={t("sign_up")}
-        onPress={handleSubmit}
-        disabled={isFormDisabled}
-        loading={loading}
-        style={styles.submitSpacing}
-      />
     </AuthScreenLayout>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    formSection: {
+    formBlock: {
       width: "100%",
-      flexGrow: 1,
     },
     footerRow: {
       flexDirection: "row",
@@ -276,14 +324,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignItems: "center",
       flexWrap: "wrap",
     },
-    fieldSpacing: {
-      marginBottom: theme.spacing.sm + 2,
-    },
-    confirmField: {
+    field: {
       marginBottom: theme.spacing.lg,
     },
-    legalSection: {
+    confirmField: {
       marginBottom: theme.spacing.sectionGap,
+    },
+    legalSection: {
+      marginBottom: theme.spacing.sm,
     },
     termsRow: {
       flexDirection: "row",
@@ -292,17 +340,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     termsCheckbox: {
       marginRight: theme.spacing.sm,
-      alignSelf: "flex-start",
-      marginTop: 1,
     },
     termsCopy: {
       flex: 1,
-      minHeight: 24,
-      justifyContent: "center",
     },
     termsLine: {
       flexDirection: "row",
-      alignItems: "center",
       flexWrap: "wrap",
     },
     helperText: {
@@ -316,8 +359,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     termsLinkError: {
       color: theme.error.text,
-    },
-    submitSpacing: {
-      marginTop: theme.spacing.sm,
     },
   });
