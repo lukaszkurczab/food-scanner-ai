@@ -1,46 +1,23 @@
-import React, { useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { useMemo } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/theme/useTheme";
 import {
-  Dropdown,
-  Slider,
   CheckboxDropdown,
+  Dropdown,
+  GlobalActionButtons,
+  RowPicker,
+  Slider,
 } from "@/components";
-import { GlobalActionButtons } from "@/components/GlobalActionButtons";
-import { ActivityLevel, FormData, Preference } from "@/types";
-
-const PREFERENCE_OPTIONS: { label: string; value: Preference }[] = [
-  { label: "preferences.lowCarb", value: "lowCarb" },
-  { label: "preferences.keto", value: "keto" },
-  { label: "preferences.highProtein", value: "highProtein" },
-  { label: "preferences.highCarb", value: "highCarb" },
-  { label: "preferences.lowFat", value: "lowFat" },
-  { label: "preferences.balanced", value: "balanced" },
-  { label: "preferences.vegetarian", value: "vegetarian" },
-  { label: "preferences.vegan", value: "vegan" },
-  { label: "preferences.pescatarian", value: "pescatarian" },
-  { label: "preferences.mediterranean", value: "mediterranean" },
-  { label: "preferences.glutenFree", value: "glutenFree" },
-  { label: "preferences.dairyFree", value: "dairyFree" },
-  { label: "preferences.paleo", value: "paleo" },
-];
-
-const PREFERENCE_CONFLICTS: Record<Preference, Preference[]> = {
-  lowCarb: ["highCarb", "balanced", "keto"],
-  keto: ["highCarb", "balanced", "lowFat", "lowCarb"],
-  highProtein: [],
-  highCarb: ["keto", "lowCarb"],
-  lowFat: ["keto"],
-  balanced: ["keto", "lowCarb"],
-  vegetarian: ["vegan", "pescatarian"],
-  vegan: ["vegetarian", "pescatarian"],
-  pescatarian: ["vegan", "vegetarian"],
-  mediterranean: [],
-  glutenFree: [],
-  dairyFree: [],
-  paleo: [],
-};
+import type { OnboardingMode } from "@/types";
+import { trackOnboardingOptionSelected } from "@/services/telemetry/telemetryInstrumentation";
+import { useTheme } from "@/theme/useTheme";
+import type { FormData, Preference } from "@/types";
+import {
+  ACTIVITY_OPTIONS,
+  GOAL_OPTIONS,
+  PREFERENCE_CONFLICTS,
+  PREFERENCE_OPTIONS,
+} from "@/feature/Onboarding/constants";
 
 type Props = {
   form: FormData;
@@ -49,247 +26,218 @@ type Props = {
   setErrors: React.Dispatch<
     React.SetStateAction<Partial<Record<keyof FormData, string>>>
   >;
-  editMode: boolean;
-  onConfirmEdit: () => void;
-  onNext: () => void;
+  onContinue: () => void;
   onBack: () => void;
+  mode: OnboardingMode;
+  submitting?: boolean;
 };
+
+const MIN_CALORIE_ADJUSTMENT = 0.1;
+const MAX_CALORIE_ADJUSTMENT = 0.5;
 
 export default function Step2Preferences({
   form,
   setForm,
   errors,
   setErrors,
-  editMode,
-  onConfirmEdit,
-  onNext,
+  onContinue,
   onBack,
+  mode,
+  submitting = false,
 }: Props) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
-  const MIN_DEFICIT = 0.1,
-    MAX_DEFICIT = 0.5;
-  const MIN_SURPLUS = 0.1,
-    MAX_SURPLUS = 0.5;
-
   const disabledPreferences = useMemo(() => {
-    const set = new Set<Preference>();
-    for (const v of form.preferences ?? []) {
-      (PREFERENCE_CONFLICTS[v] ?? []).forEach((b) => set.add(b));
+    const blocked = new Set<Preference>();
+    for (const selectedPreference of form.preferences ?? []) {
+      for (const conflict of PREFERENCE_CONFLICTS[selectedPreference] ?? []) {
+        blocked.add(conflict);
+      }
     }
-    return Array.from(set);
+    return blocked;
   }, [form.preferences]);
 
-  function validate(): boolean {
-    let valid = true;
-    const newErrors: Partial<Record<keyof FormData, string>> = {};
-    if (!form.activityLevel) {
-      newErrors.activityLevel = t("errors.selectActivity");
-      valid = false;
-    }
-    if (!form.goal) {
-      newErrors.goal = t("errors.selectGoal");
-      valid = false;
-    }
-    if (
-      form.goal === "lose" &&
-      (form.calorieDeficit === undefined || isNaN(form.calorieDeficit))
-    ) {
-      newErrors.calorieDeficit = t("errors.selectDeficit");
-      valid = false;
-    }
-    if (
-      form.goal === "increase" &&
-      (form.calorieSurplus === undefined || isNaN(form.calorieSurplus))
-    ) {
-      newErrors.calorieSurplus = t("errors.selectSurplus");
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  }
+  const calorieAdjustmentValue =
+    form.goal === "increase"
+      ? form.calorieSurplus ?? 0.2
+      : form.calorieDeficit ?? 0.2;
 
-  const canNext = useMemo(() => {
-    if (!form.activityLevel) return false;
-    if (!form.goal) return false;
-    if (
-      form.goal === "lose" &&
-      (form.calorieDeficit === undefined || isNaN(form.calorieDeficit))
-    )
-      return false;
-    if (
-      form.goal === "increase" &&
-      (form.calorieSurplus === undefined || isNaN(form.calorieSurplus))
-    )
-      return false;
-    return true;
-  }, [form]);
-
-  function handleGoalChange(val: "lose" | "maintain" | "increase") {
-    setForm((prev) => ({
-      ...prev,
-      goal: val,
-      calorieDeficit: val === "lose" ? (prev.calorieDeficit ?? 0.2) : 0.2,
-      calorieSurplus: val === "increase" ? (prev.calorieSurplus ?? 0.2) : 0.2,
-    }));
-  }
-
-  useEffect(() => {
-    setErrors((prev) => {
-      let changed = false;
-      const next = { ...prev };
-      if (prev.activityLevel && form.activityLevel) {
-        next.activityLevel = undefined;
-        changed = true;
-      }
-      if (prev.goal && form.goal) {
-        next.goal = undefined;
-        changed = true;
-      }
-      if (
-        prev.calorieDeficit &&
-        form.goal === "lose" &&
-        form.calorieDeficit !== undefined
-      ) {
-        next.calorieDeficit = undefined;
-        changed = true;
-      }
-      if (
-        prev.calorieSurplus &&
-        form.goal === "increase" &&
-        form.calorieSurplus !== undefined
-      ) {
-        next.calorieSurplus = undefined;
-        changed = true;
-      }
-      return changed ? next : prev;
-    });
-  }, [form.activityLevel, form.goal, form.calorieDeficit, form.calorieSurplus, setErrors]);
-
-  const handleNext = () => {
-    if (validate()) onNext();
-  };
+  const calorieAdjustmentError =
+    form.goal === "increase" ? errors.calorieSurplus : errors.calorieDeficit;
 
   return (
     <View style={styles.container}>
       <ScrollView
-        style={styles.formScroll}
-        contentContainerStyle={styles.formContent}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.sectionGap}>
-          <View>
-            <Text style={styles.title}>{t("step2_title")}</Text>
-            <Text style={styles.subtitle}>{t("step2_description")}</Text>
-          </View>
+        <View style={styles.header}>
+          <Text style={styles.title}>{t("step2.title")}</Text>
+          <Text style={styles.subtitle}>{t("step2.description")}</Text>
+        </View>
 
+        <View style={styles.panel}>
           <CheckboxDropdown
-            label={t("preferences.label")}
-            options={PREFERENCE_OPTIONS.map((o) => ({
-              ...o,
-              label: t(o.label),
+            label={t("step2.preferencesLabel")}
+            options={PREFERENCE_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+              disabled: disabledPreferences.has(option.value),
             }))}
             values={form.preferences}
-            onChange={(newPrefs) =>
-              setForm((prev) => ({ ...prev, preferences: newPrefs }))
-            }
-            error={undefined}
-            disabled={false}
-            disabledValues={disabledPreferences}
+            onChange={(nextPreferences) => {
+              setForm((current) => ({
+                ...current,
+                preferences: nextPreferences as Preference[],
+              }));
+              const latestValue = nextPreferences[nextPreferences.length - 1];
+              if (latestValue) {
+                void trackOnboardingOptionSelected({
+                  mode,
+                  step: 2,
+                  field: "preference",
+                  value: latestValue,
+                });
+              }
+            }}
+            disabledValues={[...disabledPreferences]}
           />
+          <Text style={styles.helperText}>{t("step2.preferencesHelper")}</Text>
+        </View>
 
+        <View style={styles.panel}>
           <Dropdown
-            label={`${t("activityLevel")}*`}
-            value={form.activityLevel}
-            options={[
-              { label: t("activity.sedentary"), value: "sedentary" },
-              { label: t("activity.light"), value: "light" },
-              { label: t("activity.moderate"), value: "moderate" },
-              { label: t("activity.active"), value: "active" },
-              { label: t("activity.very_active"), value: "very_active" },
-            ]}
-            onChange={(val) =>
-              setForm((prev) => ({
-                ...prev,
-                activityLevel: val as ActivityLevel,
-              }))
-            }
+            label={t("step2.activityLabel")}
+            options={ACTIVITY_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
+            value={form.activityLevel || null}
+            onChange={(nextActivityLevel) => {
+              if (!nextActivityLevel) return;
+              setForm((current) => ({
+                ...current,
+                activityLevel: nextActivityLevel,
+              }));
+              setErrors((current) => ({
+                ...current,
+                activityLevel: undefined,
+              }));
+              void trackOnboardingOptionSelected({
+                mode,
+                step: 2,
+                field: "activityLevel",
+                value: nextActivityLevel,
+              });
+            }}
             error={errors.activityLevel}
           />
+          {form.activityLevel ? (
+            <Text style={styles.helperText}>
+              {
+                t(
+                  ACTIVITY_OPTIONS.find((option) => option.value === form.activityLevel)
+                    ?.descriptionKey ?? "activity.moderate",
+                )
+              }
+            </Text>
+          ) : null}
+        </View>
 
-          <Dropdown
-            label={`${t("goalTitle")}*`}
-            value={form.goal}
-            options={[
-              { label: t("goal.lose"), value: "lose" },
-              { label: t("goal.maintain"), value: "maintain" },
-              { label: t("goal.increase"), value: "increase" },
-            ]}
-            onChange={(val) =>
-              handleGoalChange(val as "lose" | "maintain" | "increase")
-            }
+        <View style={styles.panel}>
+          <RowPicker
+            label={t("step2.goalLabel")}
+            options={GOAL_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
+            value={form.goal || null}
+            onChange={(nextGoal) => {
+              setForm((current) => ({
+                ...current,
+                goal: nextGoal,
+                calorieDeficit: current.calorieDeficit ?? 0.2,
+                calorieSurplus: current.calorieSurplus ?? 0.2,
+              }));
+              setErrors((current) => ({
+                ...current,
+                goal: undefined,
+                calorieDeficit: undefined,
+                calorieSurplus: undefined,
+              }));
+              void trackOnboardingOptionSelected({
+                mode,
+                step: 2,
+                field: "goal",
+                value: nextGoal,
+              });
+            }}
             error={errors.goal}
+            size="compact"
           />
+          {form.goal ? (
+            <Text style={styles.helperText}>
+              {
+                t(
+                  GOAL_OPTIONS.find((option) => option.value === form.goal)
+                    ?.descriptionKey ?? "goalDescription.maintain",
+                )
+              }
+            </Text>
+          ) : null}
 
-          {form.goal === "lose" && (
-            <View>
-              <Text style={styles.sliderLabel}>
-                {t("calorieDeficit")}{" "}
-                {Math.round((form.calorieDeficit ?? 0.2) * 100)}%
+          {form.goal && form.goal !== "maintain" ? (
+            <View style={styles.adjustmentWrap}>
+              <Text style={styles.adjustmentLabel}>
+                {t("step2.calorieAdjustmentLabel", {
+                  percentage: Math.round(calorieAdjustmentValue * 100),
+                })}
+              </Text>
+              <Text style={styles.adjustmentHelper}>
+                {form.goal === "increase"
+                  ? t("step2.calorieSurplusHelper")
+                  : t("step2.calorieDeficitHelper")}
               </Text>
               <Slider
-                value={form.calorieDeficit ?? 0.2}
-                minimumValue={MIN_DEFICIT}
-                maximumValue={MAX_DEFICIT}
+                value={calorieAdjustmentValue}
+                minimumValue={MIN_CALORIE_ADJUSTMENT}
+                maximumValue={MAX_CALORIE_ADJUSTMENT}
                 step={0.01}
-                onValueChange={(v) =>
-                  setForm((prev) => ({ ...prev, calorieDeficit: v }))
-                }
+                onValueChange={(nextValue) => {
+                  setForm((current) => ({
+                    ...current,
+                    calorieDeficit:
+                      current.goal === "lose" ? nextValue : current.calorieDeficit,
+                    calorieSurplus:
+                      current.goal === "increase" ? nextValue : current.calorieSurplus,
+                  }));
+                  setErrors((current) => ({
+                    ...current,
+                    calorieDeficit: undefined,
+                    calorieSurplus: undefined,
+                  }));
+                }}
               />
-              {errors.calorieDeficit && (
-                <Text style={styles.errorText}>
-                  {errors.calorieDeficit}
-                </Text>
-              )}
+              {calorieAdjustmentError ? (
+                <Text style={styles.errorText}>{calorieAdjustmentError}</Text>
+              ) : null}
             </View>
-          )}
-
-          {form.goal === "increase" && (
-            <View>
-              <Text style={styles.sliderLabel}>
-                {t("calorieSurplus")}{" "}
-                {Math.round((form.calorieSurplus ?? 0.2) * 100)}%
-              </Text>
-              <Slider
-                value={form.calorieSurplus ?? 0.2}
-                minimumValue={MIN_SURPLUS}
-                maximumValue={MAX_SURPLUS}
-                step={0.01}
-                onValueChange={(v) =>
-                  setForm((prev) => ({ ...prev, calorieSurplus: v }))
-                }
-              />
-              {errors.calorieSurplus && (
-                <Text style={styles.errorText}>
-                  {errors.calorieSurplus}
-                </Text>
-              )}
-            </View>
-          )}
+          ) : null}
         </View>
       </ScrollView>
-      <View style={styles.actionsWrap}>
-        <GlobalActionButtons
-          label={editMode ? t("summary.save", "Save") : t("next")}
-          onPress={editMode ? onConfirmEdit : handleNext}
-          primaryDisabled={!canNext}
-          secondaryLabel={t("back")}
-          secondaryOnPress={onBack}
-        />
-      </View>
+
+      <GlobalActionButtons
+        label={t("step2.primaryCta")}
+        onPress={onContinue}
+        loading={submitting}
+        secondaryLabel={t("common:back")}
+        secondaryOnPress={onBack}
+        containerStyle={styles.footer}
+      />
     </View>
   );
 }
@@ -299,31 +247,69 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     container: {
       flex: 1,
     },
-    formScroll: { flex: 1 },
-    formContent: { paddingBottom: theme.spacing.sm },
-    sectionGap: { gap: theme.spacing.lg },
-    actionsWrap: { paddingTop: theme.spacing.sm },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: theme.spacing.md,
+      gap: theme.spacing.xl,
+    },
+    header: {
+      gap: theme.spacing.sm,
+    },
     title: {
-      fontSize: theme.typography.size.h1,
-      fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
-      textAlign: "center",
-      marginBottom: theme.spacing.sm,
+      fontSize: theme.typography.size.displayM,
+      lineHeight: theme.typography.lineHeight.displayM,
+      fontFamily: theme.typography.fontFamily.semiBold,
     },
     subtitle: {
-      fontSize: theme.typography.size.bodyL,
       color: theme.textSecondary,
-      textAlign: "center",
-      marginBottom: theme.spacing.md,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
     },
-    sliderLabel: {
-      fontFamily: theme.typography.fontFamily.medium,
+    panel: {
+      padding: theme.spacing.cardPaddingLarge,
+      borderRadius: theme.rounded.xl,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surfaceElevated,
+      gap: theme.spacing.lg,
+      shadowColor: theme.shadow,
+      shadowOpacity: theme.isDark ? 0.16 : 0.08,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 3,
+    },
+    helperText: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyL,
-      marginBottom: theme.spacing.xs,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    adjustmentWrap: {
+      gap: theme.spacing.sm,
+    },
+    adjustmentLabel: {
+      color: theme.text,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    adjustmentHelper: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.regular,
     },
     errorText: {
       color: theme.error.text,
-      fontSize: theme.typography.size.bodyS,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    footer: {
+      paddingTop: theme.spacing.md,
     },
   });

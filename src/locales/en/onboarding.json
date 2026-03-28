@@ -1,68 +1,84 @@
 {
-  "step1_title": "Tell us about yourself",
-  "step1_description": "We need some basic information to calculate your daily calorie needs.",
-  "unitsSystem": "Units system",
+  "progress": "Step {{current}} of {{total}}",
+  "optional": "Optional",
   "metric": "Metric",
-  "imperial": "Imperial (ft, lb)",
+  "imperial": "Imperial",
   "age": "Age",
   "sex": "Sex",
   "male": "Male",
   "female": "Female",
-  "none": "None",
   "height": "Height",
-  "heightFt": "Height (ft)",
-  "heightIn": "Height (in)",
+  "heightFt": "Feet",
+  "heightIn": "Inches",
   "weight": "Weight",
-  "next": "Next",
-  "skip": "Skip",
-  "cancel": "Cancel",
-  "back": "Back",
-  "exit_first_title": "Skip onboarding for now?",
-  "exit_first_desc": "You can fill this in later from your profile. Your current progress won't be saved.",
-  "exit_first_primary": "Go to the app",
-  "exit_first_secondary": "Continue onboarding",
-  "exit_first_a11y": "Skip onboarding",
-  "exit_refill_title": "Save changes before exit?",
-  "exit_refill_desc": "You can save your changes or discard them.",
-  "exit_refill_save": "Save",
-  "exit_refill_discard": "Discard",
-  "exit_refill_a11y": "Close survey",
-  "step2_title": "Personalize your plan",
-  "step2_description": "Let us know your dietary preferences, activity level, and your goal.",
-  "activityLevel": "Activity level",
-  "activity": {
-    "sedentary": "Sedentary (little or no exercise)",
-    "light": "Lightly active (light exercise/sports 1-3 days/week)",
-    "moderate": "Moderately active (moderate exercise/sports 3-5 days/week)",
-    "active": "Active (hard exercise/sports 6-7 days/week)",
-    "very_active": "Very active (very hard exercise or physical job)"
+  "step1": {
+    "title": "The basics",
+    "description": "A few details help us set up your plan with the right targets from the start.",
+    "unitsLabel": "Units",
+    "sexLabel": "Sex",
+    "primaryCta": "Continue",
+    "secondaryCtaFirst": "Later"
   },
-  "goalTitle": "Goal",
+  "step2": {
+    "title": "Shape your plan",
+    "description": "Pick the preferences and pace that feel realistic for everyday life.",
+    "preferencesLabel": "Dietary preferences",
+    "preferencesHelper": "Choose any that matter to you. Leave it blank if you want to keep things open.",
+    "activityLabel": "Activity level",
+    "goalLabel": "Weight goal",
+    "calorieAdjustmentLabel": "Daily calorie adjustment: {{percentage}}%",
+    "calorieDeficitHelper": "A lighter adjustment is easier to sustain. You can fine-tune this later.",
+    "calorieSurplusHelper": "A steadier increase keeps the plan easier to follow over time.",
+    "primaryCta": "Continue"
+  },
+  "step3": {
+    "title": "Health details",
+    "description": "Share anything we should keep in mind. You can also leave this for later.",
+    "conditionsLabel": "Chronic conditions",
+    "conditionsOtherLabel": "Other condition",
+    "allergiesLabel": "Allergies or intolerances",
+    "allergiesOtherLabel": "Other allergy or intolerance",
+    "notesLabel": "Additional routine or lifestyle notes",
+    "notesPlaceholder": "Anything that would help us keep your plan practical and safe.",
+    "primaryCta": "Save now",
+    "skipCta": "Skip"
+  },
+  "step4": {
+    "title": "Make it yours",
+    "description": "Pick the kind of support that feels most natural. You can always adjust it later.",
+    "toneLabel": "Assistant tone",
+    "focusLabel": "Assistant focus",
+    "noteLabel": "Optional note",
+    "notePlaceholder": "Anything else you'd like the assistant to keep in mind?",
+    "primaryCta": "Start plan",
+    "skipCta": "Skip",
+    "disclaimer": "Assistant guidance is informational and does not replace medical advice."
+  },
+  "activityShort": {
+    "sedentary": "Sedentary",
+    "light": "Light",
+    "moderate": "Moderate",
+    "active": "Active",
+    "very_active": "Very active"
+  },
+  "activity": {
+    "sedentary": "Little or no structured exercise most days.",
+    "light": "Light workouts or regular walks a few times a week.",
+    "moderate": "A balanced mix of movement or training through the week.",
+    "active": "Hard training or a physically active routine most days.",
+    "very_active": "Very demanding training or physical work on top of daily life."
+  },
   "goal": {
     "lose": "Lose weight",
-    "maintain": "Maintain weight",
-    "increase": "Increase weight"
+    "maintain": "Maintain",
+    "increase": "Gain weight"
   },
-  "calorieDeficit": "Calorie deficit:",
-  "calorieSurplus": "Calorie surplus:",
-  "errors": {
-    "ageRequired": "Enter your age",
-    "ageInvalid": "Enter a valid age (16-120)",
-    "sexRequired": "Select your sex",
-    "heightRequired": "Enter your height",
-    "heightInvalid": "Enter a valid height",
-    "heightInchInvalid": "Inches must be between 0 and 11",
-    "weightRequired": "Enter your weight",
-    "weightInvalid": "Enter a valid weight",
-    "selectActivity": "Select your activity level",
-    "selectGoal": "Select your goal",
-    "selectDeficit": "Set your desired calorie deficit",
-    "selectSurplus": "Set your desired calorie surplus",
-    "aiFocusOther": "Please specify your focus area"
+  "goalDescription": {
+    "lose": "Create a manageable calorie deficit.",
+    "maintain": "Keep your intake steady and consistent.",
+    "increase": "Create a steady calorie surplus."
   },
   "preferences": {
-    "label": "Dietary preferences",
-    "none": "None",
     "lowCarb": "Low-carb",
     "keto": "Keto",
     "highProtein": "High protein",
@@ -77,69 +93,83 @@
     "dairyFree": "Dairy-free",
     "paleo": "Paleo"
   },
-  "step3_title": "Your health profile",
-  "step3_description": "Knowing about any health conditions or allergies ensures that our recommendations are safe and suitable for you.",
   "healthProfile": {
-    "title": "Your health profile",
-    "desc": "Knowing about any health conditions or allergies ensures that our recommendations are safe and suitable for you.",
-    "chronicDisease": "Chronic disease",
     "disease": {
       "diabetes": "Diabetes",
       "hypertension": "Hypertension",
       "asthma": "Asthma",
       "other": "Other",
-      "otherPlaceholder": "Please specify..."
+      "otherPlaceholder": "Tell us what applies"
     },
-    "allergies": "Allergies",
     "allergy": {
       "peanuts": "Peanuts",
       "gluten": "Gluten",
       "lactose": "Lactose",
       "other": "Other",
-      "otherPlaceholder": "Please specify..."
+      "otherPlaceholder": "Tell us what applies"
+    }
+  },
+  "ai": {
+    "style": {
+      "none": "Default",
+      "concise": "Concise",
+      "friendly": "Friendly",
+      "detailed": "Detailed"
     },
-    "lifestyle": "Your lifestyle",
-    "lifestylePlaceholder": "Your daily habits"
+    "styleDescription": {
+      "none": "Balanced guidance with no extra preference.",
+      "concise": "Short, clear replies that stay focused on the next step.",
+      "friendly": "A warmer tone with a bit more encouragement.",
+      "detailed": "More context when you want to understand the why."
+    },
+    "focus": {
+      "none": "Default",
+      "mealPlanning": "Meal planning",
+      "analyzingMistakes": "Spotting patterns",
+      "motivation": "Motivation"
+    },
+    "focusDescription": {
+      "none": "Keep support broad and balanced.",
+      "mealPlanning": "Help with planning meals that fit your targets.",
+      "analyzingMistakes": "Notice patterns that might be slowing progress.",
+      "motivation": "Offer more encouragement when consistency feels harder."
+    }
+  },
+  "skipOnboardingModal": {
+    "title": "Skip setup for now?",
+    "body": "You can finish onboarding later from your profile. For now, we'll take you straight into the app.",
+    "primaryCta": "Skip",
+    "secondaryCta": "Back"
+  },
+  "skipStepModal": {
+    "title": "Skip this step?",
+    "step3Body": "You can add health details later if you want us to factor them in.",
+    "step4Body": "You can personalize assistant tone and focus later from your profile.",
+    "primaryCta": "Skip",
+    "secondaryCta": "Back"
+  },
+  "exitRefillModal": {
+    "title": "Save changes before leaving?",
+    "body": "You can save what you've updated so far or leave without applying these edits.",
+    "primaryCta": "Save",
+    "secondaryCta": "Discard",
+    "closeA11y": "Close onboarding edits"
+  },
+  "errors": {
+    "ageRequired": "Enter your age",
+    "ageInvalid": "Enter a valid age between 16 and 120",
+    "sexRequired": "Choose your sex",
+    "heightRequired": "Enter your height",
+    "heightInvalid": "Enter a valid height",
+    "heightInchInvalid": "Inches need to stay between 0 and 11",
+    "weightRequired": "Enter your weight",
+    "weightInvalid": "Enter a valid weight",
+    "selectActivity": "Choose your activity level",
+    "selectGoal": "Choose your goal",
+    "selectDeficit": "Set a calorie deficit",
+    "selectSurplus": "Set a calorie surplus"
   },
   "validation": {
     "otherRequired": "Fill in this field"
-  },
-  "step4_title": "Personalize your experience",
-  "step4_description": "Tell us how you'd like our AI assistant to support you on your journey. Your preferences help us tailor the experience just for you.",
-  "ai": {
-    "assistantStyle": "Assistant’s style",
-    "style": {
-      "none": "No preference",
-      "concise": "Concise",
-      "friendly": "Friendly & motivational",
-      "detailed": "Detailed & scientific",
-      "strict": "Strict & direct"
-    },
-    "areaOfFocus": "Area of focus",
-    "focus": {
-      "none": "No preference",
-      "mealPlanning": "Meal planning",
-      "analyzingMistakes": "Analyzing mistakes",
-      "quickAnswers": "Quick answers",
-      "motivation": "Motivation",
-      "other": "Other"
-    },
-    "anythingElse": "Anything to note?",
-    "anythingElse_placeholder": "Anything else we should know?",
-    "focus_placeholder": "Type your own focus...",
-    "errors": {
-      "aiFocusOther": "Please specify your focus area"
-    },
-    "disclaimer": "AI responses are for informational purposes only and are not medical advice."
-  },
-  "summary": {
-    "title": "Review your info",
-    "desc": "Here’s a summary of what you’ve shared. Feel free to go back and make any changes before we get started!",
-    "personalInfo": "Personal Info",
-    "dietGoal": "Diet and Goal",
-    "health": "Health",
-    "ai": "Assistant Settings",
-    "edit": "Edit",
-    "save": "Save"
   }
 }

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -64,16 +64,38 @@ export function Dropdown<T extends string>({
 
   const handleOutsidePress = () => setOpen(false);
 
+  const updateDropdownPosition = useCallback(() => {
+    if (!fieldRef.current) return;
+
+    fieldRef.current.measureInWindow((x, y, width, height) => {
+      setDropdownPos({ x, y, width, height });
+    });
+  }, []);
+
   const openDropdown = () => {
-    if (fieldRef.current) {
-      fieldRef.current.measureInWindow((x, y, width, height) => {
-        setDropdownPos({ x, y, width, height });
-        setOpen(true);
-      });
-    } else {
-      setOpen(true);
-    }
+    if (disabled) return;
+    setOpen(true);
+    setTimeout(updateDropdownPosition, 1);
   };
+
+  useEffect(() => {
+    if (!open) return;
+
+    updateDropdownPosition();
+    const subscription = Dimensions.addEventListener(
+      "change",
+      updateDropdownPosition,
+    );
+
+    return () => subscription?.remove();
+  }, [open, updateDropdownPosition]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const interval = setInterval(updateDropdownPosition, 200);
+    return () => clearInterval(interval);
+  }, [open, updateDropdownPosition]);
 
   const menuMaxHeight = dropdownPos
     ? Math.min(
@@ -132,10 +154,10 @@ export function Dropdown<T extends string>({
         </View>
 
         <AppIcon
-          name={open ? "chevron-up" : "chevron-down"}
+          name="chevron-down"
           size={20}
           color={theme.textSecondary}
-          style={styles.fieldIcon}
+          style={[styles.fieldIcon, open ? styles.fieldIconOpen : null]}
         />
       </Pressable>
 
@@ -148,7 +170,8 @@ export function Dropdown<T extends string>({
           visible={open}
           onRequestClose={handleOutsidePress}
         >
-          <Pressable style={styles.modalOverlay} onPress={handleOutsidePress}>
+          <View style={styles.modalRoot}>
+            <Pressable style={styles.modalOverlay} onPress={handleOutsidePress} />
             <View style={[styles.menu, menuPositionStyle]}>
               <ScrollView
                 nestedScrollEnabled
@@ -190,7 +213,7 @@ export function Dropdown<T extends string>({
                 })}
               </ScrollView>
             </View>
-          </Pressable>
+          </View>
         </Modal>
       ) : null}
     </View>
@@ -205,8 +228,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       justifyContent: "center",
     },
     selectedText: getPickerControlStyleParts(theme).valueText,
-    modalOverlay: {
+    modalRoot: {
       flex: 1,
+    },
+    modalOverlay: {
+      ...StyleSheet.absoluteFillObject,
       backgroundColor: "transparent",
+      zIndex: 1,
     },
   });

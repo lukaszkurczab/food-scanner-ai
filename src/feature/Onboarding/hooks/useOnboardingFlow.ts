@@ -1,0 +1,479 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import { useUserContext } from "@/context/UserContext";
+import type { FormData, OnboardingMode, UserData } from "@/types";
+import type { RootStackParamList } from "@/navigation/navigate";
+import { calculateCalorieTarget } from "@/feature/Onboarding/utils/calculateCalorieTarget";
+import { assertNoUndefined } from "@/utils/findUndefined";
+import { cmToFtIn, kgToLbs } from "@/utils/units";
+import {
+  trackOnboardingCompleted,
+  trackOnboardingExitAction,
+  trackOnboardingNavigation,
+  trackOnboardingSkipConfirmed,
+  trackOnboardingStepCompleted,
+  trackOnboardingStepSkipped,
+  trackScreenView,
+} from "@/services/telemetry/telemetryInstrumentation";
+import {
+  INITIAL_FORM,
+  ONBOARDING_TOTAL_STEPS,
+  resetOptionalAssistantFields,
+  resetOptionalHealthFields,
+} from "@/feature/Onboarding/constants";
+
+type OnboardingNavigation = StackNavigationProp<RootStackParamList, "Onboarding">;
+
+type OnboardingErrorKey =
+  | keyof FormData
+  | "chronicDiseasesOther"
+  | "allergiesOther";
+
+type OnboardingErrors = Partial<Record<OnboardingErrorKey, string>>;
+
+type ModalState =
+  | { type: "skip_onboarding" }
+  | { type: "skip_step"; step: 3 | 4 }
+  | { type: "exit_refill" }
+  | null;
+
+function normalizeStringArray(values: string[] | undefined): string[] {
+  return [...(values ?? [])].sort();
+}
+
+function normalizeFormForCompare(form: FormData) {
+  return {
+    unitsSystem: form.unitsSystem,
+    age: form.age,
+    sex: form.sex,
+    height: form.height,
+    heightInch: form.heightInch ?? "",
+    weight: form.weight,
+    preferences: normalizeStringArray(form.preferences),
+    activityLevel: form.activityLevel,
+    goal: form.goal,
+    calorieDeficit: form.calorieDeficit ?? null,
+    calorieSurplus: form.calorieSurplus ?? null,
+    chronicDiseases: normalizeStringArray(form.chronicDiseases),
+    chronicDiseasesOther: form.chronicDiseasesOther ?? "",
+    allergies: normalizeStringArray(form.allergies),
+    allergiesOther: form.allergiesOther ?? "",
+    lifestyle: form.lifestyle ?? "",
+    aiStyle: form.aiStyle ?? "none",
+    aiFocus: form.aiFocus ?? "none",
+    aiFocusOther: form.aiFocusOther ?? "",
+    aiNote: form.aiNote ?? "",
+  };
+}
+
+function buildInitialForm(userData: UserData | null): FormData {
+  if (!userData) return INITIAL_FORM;
+  return {
+    ...INITIAL_FORM,
+    ...userData,
+    heightInch: userData.heightInch ?? "",
+    chronicDiseases: userData.chronicDiseases ?? [],
+    allergies: userData.allergies ?? [],
+    chronicDiseasesOther: userData.chronicDiseasesOther ?? "",
+    allergiesOther: userData.allergiesOther ?? "",
+    lifestyle: userData.lifestyle ?? "",
+    aiStyle: userData.aiStyle ?? "none",
+    aiFocus: userData.aiFocus ?? "none",
+    aiFocusOther: "",
+    aiNote: userData.aiNote ?? "",
+  };
+}
+
+function getStepScreenName(step: number): string {
+  switch (step) {
+    case 1:
+      return "onboarding_step_1_basics";
+    case 2:
+      return "onboarding_step_2_shape_plan";
+    case 3:
+      return "onboarding_step_3_health_details";
+    case 4:
+      return "onboarding_step_4_make_it_yours";
+    default:
+      return "onboarding_unknown";
+  }
+}
+
+function validateStep1(form: FormData, t: (key: string) => string): OnboardingErrors {
+  const nextErrors: OnboardingErrors = {};
+
+  if (!form.age) {
+    nextErrors.age = t("errors.ageRequired");
+  } else if (!/^\d+$/.test(form.age) || Number(form.age) < 16 || Number(form.age) > 120) {
+    nextErrors.age = t("errors.ageInvalid");
+  }
+
+  if (!form.sex) {
+    nextErrors.sex = t("errors.sexRequired");
+  }
+
+  if (form.unitsSystem === "metric") {
+    if (!form.height) {
+      nextErrors.height = t("errors.heightRequired");
+    } else if (!/^\d{2,3}$/.test(form.height) || Number(form.height) < 90 || Number(form.height) > 250) {
+      nextErrors.height = t("errors.heightInvalid");
+    }
+
+    if (!form.weight) {
+      nextErrors.weight = t("errors.weightRequired");
+    } else if (!/^\d+$/.test(form.weight) || Number(form.weight) < 30 || Number(form.weight) > 300) {
+      nextErrors.weight = t("errors.weightInvalid");
+    }
+
+    return nextErrors;
+  }
+
+  const { ft } = cmToFtIn(Number(form.height || 0));
+  const inch = Number(form.heightInch || 0);
+  const lbs = kgToLbs(Number(form.weight || 0));
+
+  if (!form.height) {
+    nextErrors.height = t("errors.heightRequired");
+  } else if (ft < 3 || ft > 8) {
+    nextErrors.height = t("errors.heightInvalid");
+  }
+
+  if (inch < 0 || inch > 11) {
+    nextErrors.heightInch = t("errors.heightInchInvalid");
+  }
+
+  if (!form.weight) {
+    nextErrors.weight = t("errors.weightRequired");
+  } else if (lbs < 70 || lbs > 660) {
+    nextErrors.weight = t("errors.weightInvalid");
+  }
+
+  return nextErrors;
+}
+
+function validateStep2(form: FormData, t: (key: string) => string): OnboardingErrors {
+  const nextErrors: OnboardingErrors = {};
+
+  if (!form.activityLevel) {
+    nextErrors.activityLevel = t("errors.selectActivity");
+  }
+
+  if (!form.goal) {
+    nextErrors.goal = t("errors.selectGoal");
+  }
+
+  if (form.goal === "lose" && typeof form.calorieDeficit !== "number") {
+    nextErrors.calorieDeficit = t("errors.selectDeficit");
+  }
+
+  if (form.goal === "increase" && typeof form.calorieSurplus !== "number") {
+    nextErrors.calorieSurplus = t("errors.selectSurplus");
+  }
+
+  return nextErrors;
+}
+
+function validateStep3(form: FormData, t: (key: string) => string): OnboardingErrors {
+  const nextErrors: OnboardingErrors = {};
+
+  if ((form.chronicDiseases ?? []).includes("other") && !form.chronicDiseasesOther?.trim()) {
+    nextErrors.chronicDiseasesOther = t("validation.otherRequired");
+  }
+
+  if ((form.allergies ?? []).includes("other") && !form.allergiesOther?.trim()) {
+    nextErrors.allergiesOther = t("validation.otherRequired");
+  }
+
+  return nextErrors;
+}
+
+function validateStep4(): OnboardingErrors {
+  return {};
+}
+
+function findFirstInvalidStep(form: FormData, t: (key: string) => string) {
+  const step1Errors = validateStep1(form, t);
+  if (Object.keys(step1Errors).length > 0) return { step: 1 as const, errors: step1Errors };
+
+  const step2Errors = validateStep2(form, t);
+  if (Object.keys(step2Errors).length > 0) return { step: 2 as const, errors: step2Errors };
+
+  const step3Errors = validateStep3(form, t);
+  if (Object.keys(step3Errors).length > 0) return { step: 3 as const, errors: step3Errors };
+
+  const step4Errors = validateStep4();
+  if (Object.keys(step4Errors).length > 0) return { step: 4 as const, errors: step4Errors };
+
+  return null;
+}
+
+function buildCompletedPatch(form: FormData): Partial<UserData> {
+  const payload = {
+    ...form,
+    surveyComplited: true,
+    avatarLocalPath: form.avatarLocalPath ?? "",
+    calorieTarget: calculateCalorieTarget(form),
+    surveyCompletedAt: new Date().toISOString(),
+  } satisfies Partial<UserData>;
+
+  assertNoUndefined(payload, "onboarding completed payload");
+  return payload;
+}
+
+function buildPartialSavePatch(form: FormData): Partial<UserData> {
+  const payload = {
+    ...form,
+    avatarLocalPath: form.avatarLocalPath ?? "",
+    calorieTarget: calculateCalorieTarget(form),
+  } satisfies Partial<UserData>;
+
+  assertNoUndefined(payload, "onboarding partial payload");
+  return payload;
+}
+
+export function useOnboardingFlow(params: {
+  mode: OnboardingMode;
+  navigation: OnboardingNavigation;
+}) {
+  const { t } = useTranslation("onboarding");
+  const { userData, updateUser, syncUserProfile } = useUserContext();
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState<FormData>(INITIAL_FORM);
+  const [initialForm, setInitialForm] = useState<FormData>(INITIAL_FORM);
+  const [errors, setErrors] = useState<OnboardingErrors>({});
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [modalState, setModalState] = useState<ModalState>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [hasConfirmedOptionalSkip, setHasConfirmedOptionalSkip] = useState(false);
+
+  useEffect(() => {
+    const nextInitialForm = buildInitialForm(userData);
+    setForm(nextInitialForm);
+    setInitialForm(nextInitialForm);
+    setIsLoaded(true);
+  }, [userData]);
+
+  useEffect(() => {
+    void trackScreenView(getStepScreenName(step));
+  }, [step]);
+
+  const isDirty = useMemo(() => {
+    return (
+      JSON.stringify(normalizeFormForCompare(form)) !==
+      JSON.stringify(normalizeFormForCompare(initialForm))
+    );
+  }, [form, initialForm]);
+
+  const progressLabel = t("progress", {
+    current: step,
+    total: ONBOARDING_TOTAL_STEPS,
+  });
+
+  const validateCurrentStep = useCallback(
+    (currentStep: number) => {
+      const nextErrors =
+        currentStep === 1
+          ? validateStep1(form, t)
+          : currentStep === 2
+            ? validateStep2(form, t)
+            : currentStep === 3
+            ? validateStep3(form, t)
+              : validateStep4();
+
+      setErrors(nextErrors);
+      return Object.keys(nextErrors).length === 0;
+    },
+    [form, t],
+  );
+
+  const goToProfile = useCallback(() => {
+    params.navigation.navigate("Profile");
+  }, [params.navigation]);
+
+  const finishOnboarding = useCallback(async (nextForm?: FormData) => {
+    const resolvedForm = nextForm ?? form;
+    setSubmitting(true);
+    try {
+      await updateUser(buildCompletedPatch(resolvedForm));
+      await syncUserProfile();
+      void trackOnboardingCompleted({ mode: params.mode });
+      if (params.mode === "first") {
+        params.navigation.replace("Home");
+      } else {
+        goToProfile();
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }, [form, goToProfile, params.mode, params.navigation, syncUserProfile, updateUser]);
+
+  const handlePrimaryAction = useCallback(async () => {
+    if (!validateCurrentStep(step)) return;
+
+    void trackOnboardingStepCompleted({
+      mode: params.mode,
+      step,
+    });
+
+    if (step === ONBOARDING_TOTAL_STEPS) {
+      await finishOnboarding();
+      return;
+    }
+
+    void trackOnboardingNavigation({
+      mode: params.mode,
+      step,
+      direction: "next",
+    });
+    setErrors({});
+    setStep((current) => Math.min(ONBOARDING_TOTAL_STEPS, current + 1));
+  }, [finishOnboarding, params.mode, step, validateCurrentStep]);
+
+  const handleBack = useCallback(() => {
+    if (step <= 1) return;
+    void trackOnboardingNavigation({
+      mode: params.mode,
+      step,
+      direction: "back",
+    });
+    setErrors({});
+    setStep((current) => Math.max(1, current - 1));
+  }, [params.mode, step]);
+
+  const handleStep1SecondaryAction = useCallback(() => {
+    if (params.mode === "first") {
+      setModalState({ type: "skip_onboarding" });
+      return;
+    }
+
+    if (!isDirty) {
+      goToProfile();
+      return;
+    }
+
+    setModalState({ type: "exit_refill" });
+  }, [goToProfile, isDirty, params.mode]);
+
+  const handleCloseRefill = useCallback(() => {
+    if (params.mode !== "refill") return;
+    if (!isDirty) {
+      goToProfile();
+      return;
+    }
+    setModalState({ type: "exit_refill" });
+  }, [goToProfile, isDirty, params.mode]);
+
+  const applyOptionalStepSkip = useCallback(async (skipStep: 3 | 4) => {
+    void trackOnboardingSkipConfirmed({
+      mode: params.mode,
+      step: skipStep,
+    });
+
+    setErrors({});
+
+    if (skipStep === 3) {
+      setForm((current) => resetOptionalHealthFields(current));
+      setStep(4);
+      return;
+    }
+
+    const nextForm = resetOptionalAssistantFields(form);
+    setForm(nextForm);
+    await finishOnboarding(nextForm);
+  }, [finishOnboarding, form, params.mode]);
+
+  const handleSkipStep = useCallback(async () => {
+    if (step !== 3 && step !== 4) return;
+    void trackOnboardingStepSkipped({
+      mode: params.mode,
+      step,
+    });
+
+    if (hasConfirmedOptionalSkip) {
+      await applyOptionalStepSkip(step);
+      return;
+    }
+
+    setModalState({ type: "skip_step", step });
+  }, [applyOptionalStepSkip, hasConfirmedOptionalSkip, params.mode, step]);
+
+  const handleModalClose = useCallback(() => {
+    setModalState(null);
+  }, []);
+
+  const handleSkipConfirm = useCallback(async () => {
+    if (!modalState) return;
+
+    if (modalState.type === "skip_onboarding") {
+      void trackOnboardingSkipConfirmed({
+        mode: params.mode,
+        step: 1,
+      });
+      params.navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+      return;
+    }
+
+    if (modalState.type !== "skip_step") return;
+
+    setHasConfirmedOptionalSkip(true);
+    setModalState(null);
+    await applyOptionalStepSkip(modalState.step);
+  }, [applyOptionalStepSkip, modalState, params.mode, params.navigation]);
+
+  const handleSaveAndExit = useCallback(async () => {
+    const invalidStep = findFirstInvalidStep(form, t);
+    if (invalidStep) {
+      setModalState(null);
+      setErrors(invalidStep.errors);
+      setStep(invalidStep.step);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await updateUser(buildPartialSavePatch(form));
+      await syncUserProfile();
+      void trackOnboardingExitAction({
+        mode: params.mode,
+        action: "save",
+      });
+      goToProfile();
+    } finally {
+      setSubmitting(false);
+    }
+  }, [form, goToProfile, params.mode, syncUserProfile, t, updateUser]);
+
+  const handleDiscardAndExit = useCallback(() => {
+    setModalState(null);
+    void trackOnboardingExitAction({
+      mode: params.mode,
+      action: "discard",
+    });
+    goToProfile();
+  }, [goToProfile, params.mode]);
+
+  return {
+    errors,
+    form,
+    handleBack,
+    handleCloseRefill,
+    handleDiscardAndExit,
+    handleModalClose,
+    handlePrimaryAction,
+    handleSaveAndExit,
+    handleSkipConfirm,
+    handleSkipStep,
+    handleStep1SecondaryAction,
+    initialForm,
+    isDirty,
+    isLoaded,
+    modalState,
+    progressLabel,
+    setErrors,
+    setForm,
+    step,
+    submitting,
+    totalSteps: ONBOARDING_TOTAL_STEPS,
+  };
+}

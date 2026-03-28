@@ -1,68 +1,84 @@
 {
-  "step1_title": "Powiedz nam coś o sobie",
-  "step1_description": "Potrzebujemy kilku podstawowych informacji, aby obliczyć Twoje dzienne zapotrzebowanie kaloryczne.",
-  "unitsSystem": "System jednostek",
-  "metric": "Metryczny",
-  "imperial": "Imperialny (ft, lb)",
+  "progress": "Krok {{current}} z {{total}}",
+  "optional": "Opcjonalne",
+  "metric": "Metryczne",
+  "imperial": "Imperialne",
   "age": "Wiek",
   "sex": "Płeć",
   "male": "Mężczyzna",
   "female": "Kobieta",
-  "none": "Brak",
   "height": "Wzrost",
-  "heightFt": "Wzrost (ft)",
-  "heightIn": "Wzrost (cal)",
+  "heightFt": "Stopy",
+  "heightIn": "Cale",
   "weight": "Waga",
-  "next": "Dalej",
-  "skip": "Pomiń",
-  "cancel": "Anuluj",
-  "back": "Wstecz",
-  "exit_first_title": "Pominąć onboarding na razie?",
-  "exit_first_desc": "Możesz uzupełnić te informacje później w profilu. Obecny postęp nie zostanie zapisany.",
-  "exit_first_primary": "Przejdź do aplikacji",
-  "exit_first_secondary": "Kontynuuj onboarding",
-  "exit_first_a11y": "Pomiń",
-  "exit_refill_title": "Zapisać zmiany przed wyjściem?",
-  "exit_refill_desc": "Możesz zapisać zmiany albo je odrzucić.",
-  "exit_refill_save": "Zapisz",
-  "exit_refill_discard": "Odrzuć",
-  "exit_refill_a11y": "Zamknij",
-  "step2_title": "Spersonalizuj swój plan",
-  "step2_description": "Podaj swoje preferencje żywieniowe, poziom aktywności i cel.",
-  "activityLevel": "Poziom aktywności",
-  "activity": {
-    "sedentary": "Siedzący tryb życia (brak lub minimalna aktywność)",
-    "light": "Lekka aktywność (lekka aktywność/sport 1-3 dni w tygodniu)",
-    "moderate": "Umiarkowana aktywność (sport 3-5 dni w tygodniu)",
-    "active": "Wysoka aktywność (sport 6-7 dni w tygodniu)",
-    "very_active": "Bardzo wysoka aktywność lub praca fizyczna"
+  "step1": {
+    "title": "Podstawy",
+    "description": "Kilka prostych danych pomoże nam od razu ustawić plan na właściwych parametrach.",
+    "unitsLabel": "Jednostki",
+    "sexLabel": "Płeć",
+    "primaryCta": "Dalej",
+    "secondaryCtaFirst": "Na później"
   },
-  "goalTitle": "Cel",
+  "step2": {
+    "title": "Ułóż swój plan",
+    "description": "Wybierz preferencje i tempo, które będą realne w codziennym rytmie.",
+    "preferencesLabel": "Preferencje żywieniowe",
+    "preferencesHelper": "Zaznacz tylko to, co ma znaczenie. Jeśli wolisz, zostaw to puste.",
+    "activityLabel": "Poziom aktywności",
+    "goalLabel": "Cel wagowy",
+    "calorieAdjustmentLabel": "Dzienna korekta kalorii: {{percentage}}%",
+    "calorieDeficitHelper": "Lżejszy deficyt łatwiej utrzymać. W każdej chwili możesz to później dopracować.",
+    "calorieSurplusHelper": "Spokojniejsza nadwyżka zwykle lepiej wspiera regularność planu.",
+    "primaryCta": "Dalej"
+  },
+  "step3": {
+    "title": "Szczegóły zdrowotne",
+    "description": "Dodaj wszystko, co warto wziąć pod uwagę. Możesz też wrócić do tego później.",
+    "conditionsLabel": "Choroby przewlekłe",
+    "conditionsOtherLabel": "Inna choroba przewlekła",
+    "allergiesLabel": "Alergie lub nietolerancje",
+    "allergiesOtherLabel": "Inna alergia lub nietolerancja",
+    "notesLabel": "Dodatkowe informacje o rutynie lub stylu życia",
+    "notesPlaceholder": "Napisz tylko to, co pomoże nam utrzymać plan praktycznym i bezpiecznym.",
+    "primaryCta": "Zapisz dalej",
+    "skipCta": "Pomiń"
+  },
+  "step4": {
+    "title": "Dopasuj do siebie",
+    "description": "Wybierz sposób wsparcia, który najbardziej Ci odpowiada. Zawsze możesz to później zmienić.",
+    "toneLabel": "Ton asystenta",
+    "focusLabel": "Obszar wsparcia",
+    "noteLabel": "Opcjonalna notatka",
+    "notePlaceholder": "Czy jest coś jeszcze, co asystent powinien brać pod uwagę?",
+    "primaryCta": "Zacznij plan",
+    "skipCta": "Pomiń",
+    "disclaimer": "Wskazówki asystenta mają charakter informacyjny i nie zastępują porady medycznej."
+  },
+  "activityShort": {
+    "sedentary": "Siedzący",
+    "light": "Lekki",
+    "moderate": "Umiarkowany",
+    "active": "Aktywny",
+    "very_active": "Bardzo aktywny"
+  },
+  "activity": {
+    "sedentary": "Mało ruchu lub brak regularnych treningów w większości dni.",
+    "light": "Lekkie treningi albo regularne spacery kilka razy w tygodniu.",
+    "moderate": "Zrównoważona ilość ruchu lub treningu w ciągu tygodnia.",
+    "active": "Mocniejsze treningi albo fizycznie aktywna rutyna przez większość dni.",
+    "very_active": "Bardzo wymagające treningi lub praca fizyczna na co dzień."
+  },
   "goal": {
     "lose": "Schudnąć",
-    "maintain": "Utrzymać wagę",
-    "increase": "Zwiększyć wagę"
+    "maintain": "Utrzymać",
+    "increase": "Przybrać"
   },
-  "calorieDeficit": "Deficyt kaloryczny:",
-  "calorieSurplus": "Nadwyżka kalorii:",
-  "errors": {
-    "ageRequired": "Podaj wiek",
-    "ageInvalid": "Podaj prawidłowy wiek (16-120)",
-    "sexRequired": "Wybierz płeć",
-    "heightRequired": "Podaj wzrost",
-    "heightInvalid": "Podaj prawidłowy wzrost",
-    "heightInchInvalid": "Cale muszą być w zakresie 0-11",
-    "weightRequired": "Podaj wagę",
-    "weightInvalid": "Podaj prawidłową wagę",
-    "selectActivity": "Wybierz poziom aktywności",
-    "selectGoal": "Wybierz swój cel",
-    "selectDeficit": "Ustaw oczekiwany deficyt kalorii",
-    "selectSurplus": "Ustaw oczekiwaną nadwyżkę kalorii",
-    "aiFocusOther": "Podaj własny obszar wsparcia"
+  "goalDescription": {
+    "lose": "Ustawić możliwy do utrzymania deficyt kalorii.",
+    "maintain": "Utrzymać spokojny i stabilny poziom spożycia.",
+    "increase": "Ustawić stopniową nadwyżkę kalorii."
   },
   "preferences": {
-    "label": "Preferencje żywieniowe",
-    "none": "Brak",
     "lowCarb": "Niskowęglowodanowa",
     "keto": "Keto",
     "highProtein": "Wysokobiałkowa",
@@ -77,69 +93,83 @@
     "dairyFree": "Bezmleczna",
     "paleo": "Paleo"
   },
-  "step3_title": "Twój profil zdrowotny",
-  "step3_description": "Znajomość chorób przewlekłych lub alergii pozwoli nam zapewnić bezpieczne i dopasowane rekomendacje.",
   "healthProfile": {
-    "title": "Twój profil zdrowotny",
-    "desc": "Znajomość chorób przewlekłych lub alergii pozwoli nam zapewnić bezpieczne i dopasowane rekomendacje.",
-    "chronicDisease": "Choroby przewlekłe",
     "disease": {
       "diabetes": "Cukrzyca",
       "hypertension": "Nadciśnienie",
       "asthma": "Astma",
       "other": "Inne",
-      "otherPlaceholder": "Wpisz własne..."
+      "otherPlaceholder": "Opisz, co dotyczy Ciebie"
     },
-    "allergies": "Alergie",
     "allergy": {
       "peanuts": "Orzeszki ziemne",
       "gluten": "Gluten",
       "lactose": "Laktoza",
       "other": "Inne",
-      "otherPlaceholder": "Wpisz własne..."
+      "otherPlaceholder": "Opisz, co dotyczy Ciebie"
+    }
+  },
+  "ai": {
+    "style": {
+      "none": "Domyślny",
+      "concise": "Zwięzły",
+      "friendly": "Przyjazny",
+      "detailed": "Szczegółowy"
     },
-    "lifestyle": "Twój styl życia",
-    "lifestylePlaceholder": "Codzienne nawyki"
+    "styleDescription": {
+      "none": "Zrównoważone wsparcie bez dodatkowych preferencji.",
+      "concise": "Krótkie, jasne odpowiedzi skupione na następnym kroku.",
+      "friendly": "Cieplejszy ton i odrobina więcej wsparcia.",
+      "detailed": "Więcej kontekstu, gdy chcesz rozumieć dlaczego."
+    },
+    "focus": {
+      "none": "Domyślny",
+      "mealPlanning": "Planowanie posiłków",
+      "analyzingMistakes": "Wyłapywanie schematów",
+      "motivation": "Motywacja"
+    },
+    "focusDescription": {
+      "none": "Szerokie, zrównoważone wsparcie na co dzień.",
+      "mealPlanning": "Pomoc w planowaniu posiłków pod Twoje cele.",
+      "analyzingMistakes": "Wyłapywanie schematów, które mogą spowalniać progres.",
+      "motivation": "Odrobinę więcej wsparcia, gdy trudniej o regularność."
+    }
+  },
+  "skipOnboardingModal": {
+    "title": "Pominąć konfigurację na teraz?",
+    "body": "Onboarding możesz dokończyć później z poziomu profilu. Na razie przeniesiemy Cię prosto do aplikacji.",
+    "primaryCta": "Pomiń",
+    "secondaryCta": "Wróć"
+  },
+  "skipStepModal": {
+    "title": "Pominąć ten krok?",
+    "step3Body": "Szczegóły zdrowotne możesz dodać później, jeśli chcesz, żebyśmy uwzględniali je w planie.",
+    "step4Body": "Ton i focus asystenta możesz dopasować później z poziomu profilu.",
+    "primaryCta": "Pomiń",
+    "secondaryCta": "Wróć"
+  },
+  "exitRefillModal": {
+    "title": "Zapisać zmiany przed wyjściem?",
+    "body": "Możesz zapisać to, co już zmieniłeś, albo wyjść bez stosowania tych edycji.",
+    "primaryCta": "Zapisz",
+    "secondaryCta": "Odrzuć",
+    "closeA11y": "Zamknij edycję onboardingu"
+  },
+  "errors": {
+    "ageRequired": "Podaj wiek",
+    "ageInvalid": "Podaj prawidłowy wiek między 16 a 120",
+    "sexRequired": "Wybierz płeć",
+    "heightRequired": "Podaj wzrost",
+    "heightInvalid": "Podaj prawidłowy wzrost",
+    "heightInchInvalid": "Cale muszą mieścić się w zakresie 0-11",
+    "weightRequired": "Podaj wagę",
+    "weightInvalid": "Podaj prawidłową wagę",
+    "selectActivity": "Wybierz poziom aktywności",
+    "selectGoal": "Wybierz cel",
+    "selectDeficit": "Ustaw deficyt kalorii",
+    "selectSurplus": "Ustaw nadwyżkę kalorii"
   },
   "validation": {
     "otherRequired": "Uzupełnij to pole"
-  },
-  "step4_title": "Spersonalizuj wsparcie AI",
-  "step4_description": "Powiedz nam, jak AI może Cię wspierać. Twoje preferencje pozwolą nam lepiej dopasować asystenta do Twoich potrzeb.",
-  "ai": {
-    "assistantStyle": "Styl asystenta",
-    "style": {
-      "none": "Brak preferencji",
-      "concise": "Zwięzły",
-      "friendly": "Przyjazny i motywujący",
-      "detailed": "Szczegółowy i naukowy",
-      "strict": "Surowy i bezpośredni"
-    },
-    "areaOfFocus": "Obszar wsparcia",
-    "focus": {
-      "none": "Brak preferencji",
-      "mealPlanning": "Planowanie posiłków",
-      "analyzingMistakes": "Analiza błędów",
-      "quickAnswers": "Szybkie odpowiedzi",
-      "motivation": "Motywacja",
-      "other": "Inne"
-    },
-    "anythingElse": "Dodatkowe informacje?",
-    "anythingElse_placeholder": "Czy jest coś, co powinniśmy wiedzieć?",
-    "focus_placeholder": "Podaj własny obszar...",
-    "errors": {
-      "aiFocusOther": "Podaj własny obszar wsparcia"
-    },
-    "disclaimer": "Odpowiedzi AI mają charakter informacyjny i nie stanowią porady medycznej."
-  },
-  "summary": {
-    "title": "Podsumowanie",
-    "desc": "Oto podsumowanie Twoich odpowiedzi. Wróć i popraw, jeśli coś wymaga zmiany.",
-    "personalInfo": "Dane osobowe",
-    "dietGoal": "Cel i preferencje",
-    "health": "Zdrowie",
-    "ai": "Ustawienia asystenta",
-    "edit": "Edytuj",
-    "save": "Zapisz"
   }
 }

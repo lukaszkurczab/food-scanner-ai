@@ -1,15 +1,12 @@
-import React, { useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { useMemo } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { GlobalActionButtons, NumberInput, RowPicker } from "@/components";
+import { trackOnboardingOptionSelected } from "@/services/telemetry/telemetryInstrumentation";
 import { useTheme } from "@/theme/useTheme";
-import {
-  Button,
-  NumberInput,
-  Dropdown,
-} from "@/components";
-import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { cmToFtIn, ftInToCm, kgToLbs, lbsToKg } from "@/utils/units";
-import { UnitsSystem, FormData } from "@/types";
+import type { FormData, OnboardingMode } from "@/types";
+import { SEX_OPTIONS, UNITS_OPTIONS } from "@/feature/Onboarding/constants";
 
 type Props = {
   form: FormData;
@@ -18,15 +15,15 @@ type Props = {
   setErrors: React.Dispatch<
     React.SetStateAction<Partial<Record<keyof FormData, string>>>
   >;
-  editMode: boolean;
-  onConfirmEdit: () => void;
-  onNext: () => void;
-  onCancel: () => void;
+  mode: OnboardingMode;
+  onContinue: () => void;
+  onSecondaryAction: () => void;
+  submitting?: boolean;
 };
 
 function getString(value: unknown): string {
   if (typeof value === "string") return value;
-  if (typeof value === "number") return value.toString();
+  if (typeof value === "number") return String(value);
   return "";
 }
 
@@ -35,295 +32,230 @@ export default function Step1BasicData({
   setForm,
   errors,
   setErrors,
-  editMode,
-  onConfirmEdit,
-  onNext,
-  onCancel,
+  mode,
+  onContinue,
+  onSecondaryAction,
+  submitting = false,
 }: Props) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
-  const cm = Number(form.height || 0);
-  const kg = Number(form.weight || 0);
-  const { ft: dispFt, inch: dispIn } = cm ? cmToFtIn(cm) : { ft: 0, inch: 0 };
-  const dispLbs = kg ? kgToLbs(kg) : 0;
+  const heightCm = Number(form.height || 0);
+  const weightKg = Number(form.weight || 0);
+  const { ft: displayFt, inch: displayInch } = heightCm
+    ? cmToFtIn(heightCm)
+    : { ft: 0, inch: 0 };
+  const displayLbs = weightKg ? kgToLbs(weightKg) : 0;
 
-  const validate = (
-    field: keyof FormData,
-    value: string,
-  ): string | undefined => {
-    switch (field) {
-      case "age": {
-        if (!value) return t("errors.ageRequired");
-        if (!/^\d+$/.test(value) || Number(value) < 16 || Number(value) > 120)
-          return t("errors.ageInvalid");
-        break;
-      }
-      case "sex": {
-        if (!value) return t("errors.sexRequired");
-        break;
-      }
-      case "height": {
-        if (!value && form.unitsSystem === "metric")
-          return t("errors.heightRequired");
-        if (form.unitsSystem === "metric") {
-          if (!/^\d{2,3}$/.test(value)) return t("errors.heightInvalid");
-          const v = Number(value);
-          if (v < 90 || v > 250) return t("errors.heightInvalid");
-        } else {
-          if (!/^\d+$/.test(value)) return t("errors.heightInvalid");
-          const ft = Number(value);
-          if (ft < 3 || ft > 8) return t("errors.heightInvalid");
-        }
-        break;
-      }
-      case "heightInch": {
-        if (form.unitsSystem === "imperial") {
-          if (
-            value &&
-            (!/^\d+$/.test(value) || Number(value) < 0 || Number(value) > 11)
-          )
-            return t("errors.heightInchInvalid");
-        }
-        break;
-      }
-      case "weight": {
-        if (!value && form.unitsSystem === "metric")
-          return t("errors.weightRequired");
-        if (form.unitsSystem === "metric") {
-          if (!/^\d+$/.test(value)) return t("errors.weightInvalid");
-          const v = Number(value);
-          if (v < 30 || v > 300) return t("errors.weightInvalid");
-        } else {
-          if (!/^\d+$/.test(value)) return t("errors.weightInvalid");
-          const lbs = Number(value);
-          if (lbs < 70 || lbs > 660) return t("errors.weightInvalid");
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  };
-
-  const handleBlur = (field: keyof FormData) => {
-    const error = validate(field, getString(form[field]));
-    setErrors((prev) => ({ ...prev, [field]: error }));
-  };
-
-  const handleChange = (field: keyof FormData, value: string) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
+  const clearError = (field: keyof FormData) => {
+    setErrors((current) => ({
+      ...current,
+      [field]: undefined,
     }));
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  const handleHeightFtChange = (ftStr: string) => {
-    const ft = Number(ftStr.replace(/[^0-9]/g, "")) || 0;
-    const inch = Number(getString(form.heightInch)) || 0;
-    const toCm = ftInToCm(ft, inch);
-    setForm((p) => ({ ...p, height: String(toCm), heightInch: String(inch) }));
-    setErrors((e) => ({ ...e, height: undefined }));
+  const handleHeightFeetChange = (rawValue: string) => {
+    const nextFeet = Number(rawValue.replace(/[^0-9]/g, "")) || 0;
+    const nextInch = Number(getString(form.heightInch)) || 0;
+    setForm((current) => ({
+      ...current,
+      height: String(ftInToCm(nextFeet, nextInch)),
+      heightInch: String(nextInch),
+    }));
+    clearError("height");
   };
 
-  const handleHeightInChange = (inStr: string) => {
-    const inch = Number(inStr.replace(/[^0-9]/g, "")) || 0;
-    const ft = dispFt || 0;
-    const toCm = ftInToCm(ft, inch);
-    setForm((p) => ({ ...p, height: String(toCm), heightInch: String(inch) }));
-    setErrors((e) => ({ ...e, heightInch: undefined }));
+  const handleHeightInchChange = (rawValue: string) => {
+    const nextInch = Number(rawValue.replace(/[^0-9]/g, "")) || 0;
+    const nextFeet = displayFt || 0;
+    setForm((current) => ({
+      ...current,
+      height: String(ftInToCm(nextFeet, nextInch)),
+      heightInch: String(nextInch),
+    }));
+    clearError("heightInch");
   };
 
-  const handleWeightLbsChange = (lbsStr: string) => {
-    const lbs = Number(lbsStr.replace(/[^0-9]/g, "")) || 0;
-    const toKg = lbsToKg(lbs);
-    setForm((p) => ({ ...p, weight: String(toKg) }));
-    setErrors((e) => ({ ...e, weight: undefined }));
+  const handleWeightLbsChange = (rawValue: string) => {
+    const nextLbs = Number(rawValue.replace(/[^0-9]/g, "")) || 0;
+    setForm((current) => ({
+      ...current,
+      weight: String(lbsToKg(nextLbs)),
+    }));
+    clearError("weight");
   };
-
-  const canNext = () => {
-    if (validate("age", getString(form.age))) return false;
-    if (validate("sex", getString(form.sex))) return false;
-    if (form.unitsSystem === "metric") {
-      if (validate("height", getString(form.height))) return false;
-      if (validate("weight", getString(form.weight))) return false;
-    } else {
-      if (validate("height", String(dispFt || ""))) return false;
-      if (validate("heightInch", String(dispIn ?? ""))) return false;
-      if (validate("weight", String(dispLbs || ""))) return false;
-    }
-    return true;
-  };
-
-  const heightLabel = form.unitsSystem === "metric" ? "cm" : "ft + in";
-  const weightLabel = form.unitsSystem === "metric" ? "kg" : "lbs";
 
   return (
     <View style={styles.container}>
       <ScrollView
-        style={styles.formScroll}
-        contentContainerStyle={styles.formContent}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.sectionGap}>
-          <View>
-            <Text style={styles.title}>{t("step1_title")}</Text>
-            <Text style={styles.subtitle}>{t("step1_description")}</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>{t("step1.title")}</Text>
+          <Text style={styles.subtitle}>{t("step1.description")}</Text>
+        </View>
+
+        <View style={styles.panel}>
+          <View style={styles.topRow}>
+            <RowPicker
+              label={t("step1.unitsLabel")}
+              options={UNITS_OPTIONS.map((option) => ({
+                value: option.value,
+                label: t(option.labelKey),
+              }))}
+              value={form.unitsSystem}
+              onChange={(nextUnitsSystem) => {
+                setForm((current) => ({
+                  ...current,
+                  unitsSystem: nextUnitsSystem,
+                }));
+                void trackOnboardingOptionSelected({
+                  mode,
+                  step: 1,
+                  field: "unitsSystem",
+                  value: nextUnitsSystem,
+                });
+              }}
+              style={styles.topRowItem}
+            />
           </View>
 
-          <Dropdown
-            label={t("unitsSystem")}
-            value={form.unitsSystem}
-            options={[
-              { label: t("metric"), value: "metric" },
-              { label: t("imperial"), value: "imperial" },
-            ]}
-            onChange={(val) =>
-              setForm((prev) => ({ ...prev, unitsSystem: val as UnitsSystem }))
-            }
-          />
+          <View style={styles.topRow}>
+            <RowPicker
+              label={t("step1.sexLabel")}
+              options={SEX_OPTIONS.map((option) => ({
+                value: option.value,
+                label: t(option.labelKey),
+              }))}
+              value={form.sex}
+              onChange={(nextSex) => {
+                setForm((current) => ({
+                  ...current,
+                  sex: nextSex,
+                }));
+                clearError("sex");
+                void trackOnboardingOptionSelected({
+                  mode,
+                  step: 1,
+                  field: "sex",
+                  value: nextSex,
+                });
+              }}
+              error={errors.sex}
+              style={styles.topRowItem}
+            />
+          </View>
 
           <NumberInput
-            label={`${t("age")}*`}
+            label={t("age")}
             value={getString(form.age)}
-            onChangeText={(val) => handleChange("age", val)}
+            onChangeText={(nextAge) => {
+              setForm((current) => ({
+                ...current,
+                age: nextAge,
+              }));
+              clearError("age");
+            }}
+            keyboardType="number-pad"
             maxDecimals={0}
             allowEmptyOnBlur
-            keyboardType="number-pad"
-            onBlur={() => handleBlur("age")}
             error={errors.age}
             accessibilityLabel={t("age")}
+            returnKeyType="done"
           />
-
-          <View style={[styles.row, styles.rowGap]}>
-            {form.sex === "male" ? (
-              <>
-                <Button
-                  label={t("male")}
-                  onPress={() => handleChange("sex", "male")}
-                  style={styles.flex1}
-                  textStyle={styles.buttonText}
-                  accessibilityState={{ selected: true }}
-                />
-                <Button
-                  variant="secondary"
-                  label={t("female")}
-                  onPress={() => handleChange("sex", "female")}
-                  style={styles.flex1}
-                  textStyle={styles.buttonText}
-                  accessibilityState={{ selected: false }}
-                />
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="secondary"
-                  label={t("male")}
-                  onPress={() => handleChange("sex", "male")}
-                  style={styles.flex1}
-                  textStyle={styles.buttonText}
-                  accessibilityState={{ selected: false }}
-                />
-                <Button
-                  label={t("female")}
-                  onPress={() => handleChange("sex", "female")}
-                  style={styles.flex1}
-                  textStyle={styles.buttonText}
-                  accessibilityState={{ selected: true }}
-                />
-              </>
-            )}
-          </View>
-          {errors.sex && (
-            <Text style={styles.errorText}>
-              {errors.sex}
-            </Text>
-          )}
 
           {form.unitsSystem === "metric" ? (
             <NumberInput
-              label={`${t("height")}*`}
+              label={t("height")}
               value={getString(form.height)}
-              onChangeText={(val) => setForm((p) => ({ ...p, height: val }))}
+              onChangeText={(nextHeight) => {
+                setForm((current) => ({
+                  ...current,
+                  height: nextHeight,
+                }));
+                clearError("height");
+              }}
+              keyboardType="number-pad"
               maxDecimals={0}
               allowEmptyOnBlur
-              keyboardType="number-pad"
-              onBlur={() => handleBlur("height")}
+              rightLabel="cm"
               error={errors.height}
-              rightLabel={heightLabel}
               accessibilityLabel={t("height")}
             />
           ) : (
-            <View style={[styles.row, styles.rowGap]}>
+            <View style={styles.row}>
               <NumberInput
-                label={`${t("heightFt")}*`}
-                value={dispFt ? String(dispFt) : ""}
-                onChangeText={handleHeightFtChange}
+                label={t("heightFt")}
+                value={displayFt ? String(displayFt) : ""}
+                onChangeText={handleHeightFeetChange}
+                keyboardType="number-pad"
                 maxDecimals={0}
                 allowEmptyOnBlur
-                keyboardType="number-pad"
-                onBlur={() => handleBlur("height")}
-                error={errors.height}
                 rightLabel="ft"
+                error={errors.height}
                 accessibilityLabel={t("heightFt")}
-                style={styles.flex1}
+                style={styles.rowItem}
               />
               <NumberInput
-                label={`${t("heightIn")}*`}
-                value={String(dispIn ?? 0)}
-                onChangeText={handleHeightInChange}
+                label={t("heightIn")}
+                value={String(displayInch || "")}
+                onChangeText={handleHeightInchChange}
+                keyboardType="number-pad"
                 maxDecimals={0}
                 allowEmptyOnBlur
-                keyboardType="number-pad"
-                onBlur={() => handleBlur("heightInch")}
-                error={errors.heightInch}
                 rightLabel="in"
+                error={errors.heightInch}
                 accessibilityLabel={t("heightIn")}
-                style={styles.flex1}
+                style={styles.rowItem}
               />
             </View>
           )}
 
           <NumberInput
-            label={`${t("weight")}*`}
+            label={t("weight")}
             value={
               form.unitsSystem === "metric"
                 ? getString(form.weight)
-                : String(dispLbs || "")
+                : displayLbs
+                  ? String(displayLbs)
+                  : ""
             }
             onChangeText={
               form.unitsSystem === "metric"
-                ? (val) => {
-                    setForm((p) => ({
-                      ...p,
-                      weight: val,
+                ? (nextWeight) => {
+                    setForm((current) => ({
+                      ...current,
+                      weight: nextWeight,
                     }));
-                    setErrors((e) => ({ ...e, weight: undefined }));
+                    clearError("weight");
                   }
                 : handleWeightLbsChange
             }
+            keyboardType="number-pad"
             maxDecimals={0}
             allowEmptyOnBlur
-            keyboardType="number-pad"
-            onBlur={() => handleBlur("weight")}
+            rightLabel={form.unitsSystem === "metric" ? "kg" : "lb"}
             error={errors.weight}
-            rightLabel={weightLabel}
             accessibilityLabel={t("weight")}
           />
         </View>
       </ScrollView>
-      <View style={styles.actionsWrap}>
-        <GlobalActionButtons
-          label={editMode ? t("summary.save", "Save") : t("next")}
-          onPress={editMode ? onConfirmEdit : onNext}
-          primaryDisabled={!canNext()}
-          secondaryLabel={t("cancel")}
-          secondaryOnPress={onCancel}
-        />
-      </View>
+
+      <GlobalActionButtons
+        label={t("step1.primaryCta")}
+        onPress={onContinue}
+        loading={submitting}
+        secondaryLabel={
+          mode === "first" ? t("step1.secondaryCtaFirst") : t("common:cancel")
+        }
+        secondaryOnPress={onSecondaryAction}
+        secondaryTone={mode === "first" ? "ghost" : "secondary"}
+        containerStyle={styles.footer}
+      />
     </View>
   );
 }
@@ -333,30 +265,57 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     container: {
       flex: 1,
     },
-    formScroll: { flex: 1 },
-    formContent: { paddingBottom: theme.spacing.sm },
-    column: { flexDirection: "column" },
-    row: { flexDirection: "row" },
-    rowGap: { gap: theme.spacing.sm },
-    flex1: { flex: 1 },
-    sectionGap: { gap: theme.spacing.lg },
-    actionsWrap: { paddingTop: theme.spacing.sm },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: theme.spacing.md,
+      gap: theme.spacing.xl,
+    },
+    header: {
+      gap: theme.spacing.sm,
+    },
     title: {
-      fontSize: theme.typography.size.h1,
-      fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
-      textAlign: "center",
-      marginBottom: theme.spacing.sm,
+      fontSize: theme.typography.size.displayM,
+      lineHeight: theme.typography.lineHeight.displayM,
+      fontFamily: theme.typography.fontFamily.semiBold,
     },
     subtitle: {
-      fontSize: theme.typography.size.bodyL,
       color: theme.textSecondary,
-      textAlign: "center",
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
     },
-    buttonText: { fontSize: theme.typography.size.bodyS },
-    errorText: {
-      color: theme.error.text,
-      fontSize: theme.typography.size.bodyS,
-      textAlign: "center",
+    panel: {
+      padding: theme.spacing.cardPaddingLarge,
+      borderRadius: theme.rounded.xl,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surfaceElevated,
+      gap: theme.spacing.md,
+      shadowColor: theme.shadow,
+      shadowOpacity: theme.isDark ? 0.16 : 0.08,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 3,
+    },
+    row: {
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+    },
+    topRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: theme.spacing.sm,
+    },
+    topRowItem: {
+      flex: 1,
+    },
+    rowItem: {
+      flex: 1,
+    },
+    footer: {
+      paddingTop: theme.spacing.md,
     },
   });

@@ -28,14 +28,12 @@ export type ChronicDisease =
   | "asthma"
   | "other";
 export type Allergy = "none" | "peanuts" | "gluten" | "lactose" | "other";
-export type AiStyle = "none" | "concise" | "friendly" | "detailed" | "strict";
+export type AiStyle = "none" | "concise" | "friendly" | "detailed";
 export type AiFocus =
   | "none"
   | "mealPlanning"
   | "analyzingMistakes"
-  | "quickAnswers"
-  | "motivation"
-  | "other";
+  | "motivation";
 
 export type OnboardingMode = "first" | "refill";
 

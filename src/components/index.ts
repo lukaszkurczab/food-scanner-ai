@@ -17,6 +17,8 @@ export * from "./CheckboxDropdown";
 export * from "./LongTextInput";
 export * from "./BottomTabBar";
 export * from "./ButtonToggle";
+export * from "./SelectableGroup";
+export * from "./RowPicker";
 export * from "./UserIcon";
 export * from "./AiCreditsBadge";
 export * from "./AiCreditsSummaryCard";

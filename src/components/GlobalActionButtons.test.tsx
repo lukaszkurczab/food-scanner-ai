@@ -105,12 +105,12 @@ describe("GlobalActionButtons", () => {
       />,
     );
 
-    const secondaryProps = mockButton.mock.calls[0]?.[0] as {
+    const primaryProps = mockButton.mock.calls[0]?.[0] as {
       disabled?: boolean;
       loading?: boolean;
       variant?: string;
     };
-    const primaryProps = mockButton.mock.calls[1]?.[0] as {
+    const secondaryProps = mockButton.mock.calls[1]?.[0] as {
       disabled?: boolean;
       loading?: boolean;
       variant?: string;
@@ -137,5 +137,21 @@ describe("GlobalActionButtons", () => {
     );
 
     expect(getByTestId("save-btn")).toBeTruthy();
+  });
+
+  it("renders primary action before secondary action in stacked layout", () => {
+    const { getAllByRole } = renderWithTheme(
+      <GlobalActionButtons
+        label="Save"
+        onPress={() => {}}
+        secondaryLabel="Cancel"
+        secondaryOnPress={() => {}}
+      />,
+    );
+
+    const buttons = getAllByRole("button");
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]?.props.testID).toBe("primary-button");
+    expect(buttons[1]?.props.testID).toBe("secondary-button");
   });
 });

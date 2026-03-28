@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import AppIcon from "@/components/AppIcon";
 
 export type WeekDayItem = {
   date: Date;
@@ -18,15 +17,10 @@ type Props = {
   streak?: number;
 };
 
-export default function WeekStrip({
-  days,
-  selectedDate,
-  onSelect,
-  onOpenHistory,
-}: Props) {
+export default function WeekStrip({ days, selectedDate, onSelect }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { i18n, t } = useTranslation("history");
+  const { i18n } = useTranslation("history");
   const weekdayFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(i18n?.language || undefined, {
@@ -86,19 +80,6 @@ export default function WeekStrip({
           );
         })}
       </View>
-      {onOpenHistory ? (
-        <Pressable
-          onPress={onOpenHistory}
-          accessibilityRole="button"
-          accessibilityLabel={t("weekStrip.open_history")}
-          style={({ pressed }) => [
-            styles.historyButton,
-            pressed ? styles.historyButtonPressed : null,
-          ]}
-        >
-          <AppIcon name="history" size={20} color={theme.text} />
-        </Pressable>
-      ) : null}
     </View>
   );
 }

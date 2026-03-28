@@ -1,17 +1,18 @@
 import React, { useMemo } from "react";
-import { View, ViewStyle, StyleSheet } from "react-native";
+import { View, ViewStyle, StyleSheet, Text } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
 type Props = {
   step: number;
   total: number;
+  label?: string;
   style?: ViewStyle;
 };
 
-const DOT_SIZE = 12;
-const DOT_SPACING = 12;
+const DOT_SIZE = 8;
+const DOT_SPACING = 8;
 
-const ProgressDots: React.FC<Props> = ({ step, total, style }) => {
+const ProgressDots: React.FC<Props> = ({ step, total, label, style }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const rowStyle = useMemo(
@@ -25,10 +26,13 @@ const ProgressDots: React.FC<Props> = ({ step, total, style }) => {
   });
 
   return (
-    <View style={[styles.row, rowStyle, style]}>
-      {Array.from({ length: total }).map((_, i) => (
-        <View key={i} style={[styles.dot, getDotStyle(i)]} />
-      ))}
+    <View style={[styles.wrap, rowStyle, style]}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+      <View style={styles.row}>
+        {Array.from({ length: total }).map((_, i) => (
+          <View key={i} style={[styles.dot, getDotStyle(i)]} />
+        ))}
+      </View>
     </View>
   );
 };
@@ -37,9 +41,17 @@ export default ProgressDots;
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    wrap: {
+      gap: theme.spacing.sm,
+    },
+    label: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
     row: {
       flexDirection: "row",
-      paddingRight: theme.spacing.xl - theme.spacing.xs,
       gap: DOT_SPACING,
     },
     dot: {

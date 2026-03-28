@@ -17,6 +17,7 @@ import {
   trackNotificationFired,
   trackNotificationOpened,
   trackNotificationScheduled,
+  trackOnboardingOptionSelected,
   trackSmartReminderDecisionFailed,
   trackSmartReminderNoop,
   trackSmartReminderScheduled,
@@ -180,6 +181,22 @@ describe("telemetryInstrumentation", () => {
     });
     expect(mockTrack).toHaveBeenNthCalledWith(4, "coach_empty_state_viewed", {
       emptyReason: "no_data",
+    });
+  });
+
+  it("maps onboarding option selection events to the backend allowlist", async () => {
+    await trackOnboardingOptionSelected({
+      step: 2,
+      mode: "first",
+      field: "goal",
+      value: "maintain",
+    });
+
+    expect(mockTrack).toHaveBeenCalledWith("onboarding_option_selected", {
+      step: 2,
+      mode: "first",
+      field: "goal",
+      value: "maintain",
     });
   });
 

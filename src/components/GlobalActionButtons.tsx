@@ -127,8 +127,8 @@ export const GlobalActionButtons: React.FC<GlobalActionButtonsProps> = ({
 
   return (
     <View style={[styles.columnContainer, containerStyle]}>
-      {hasSecondaryAction ? secondaryElement : null}
       {primaryElement}
+      {hasSecondaryAction ? secondaryElement : null}
     </View>
   );
 };
