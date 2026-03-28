@@ -36,7 +36,7 @@ export default function ResetPasswordScreen({ navigation }: Props) {
 
   const [email, setEmail] = useState("");
   const [touched, setTouched] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [noInternet, setNoInternet] = useState(false);
 
@@ -68,131 +68,110 @@ export default function ResetPasswordScreen({ navigation }: Props) {
     setTouched(true);
   };
 
-  useEffect(() => {
-    if (!touched) return;
-
-    if (!email) {
-      setError(t("errorRequired"));
-    } else if (!validateEmail(email)) {
-      setError(t("errorInvalid"));
-    } else {
-      setError(null);
-    }
-  }, [email, touched, t]);
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailValidationError = !normalizedEmail
+    ? t("errorRequired")
+    : !validateEmail(normalizedEmail)
+      ? t("errorInvalid")
+      : null;
 
   const onSubmit = async () => {
     Keyboard.dismiss();
     setTouched(true);
 
-    if (!email) {
-      setError(t("errorRequired"));
+    if (emailValidationError) {
       return;
     }
 
-    if (!validateEmail(email)) {
-      setError(t("errorInvalid"));
-      return;
-    }
-
-    setError(null);
+    setSubmitError(null);
     setLoading(true);
 
     try {
       await getFirebaseAuth();
-      await authSendPasswordReset(email.trim().toLowerCase());
+      await authSendPasswordReset(normalizedEmail);
 
       navigation.navigate("CheckMailbox", {
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
       });
     } catch (err: unknown) {
       const code = getErrorCode(err);
-      setLoading(false);
 
       if (code === "auth/network-request-failed" || noInternet) {
-        setError(t("errorNoInternet"));
+        setSubmitError(t("errorNoInternet"));
       } else if (code === "auth/user-not-found") {
-        setError(t("errorNotFound") ?? "User not found");
+        setSubmitError(t("errorNotFound") ?? "User not found");
       } else {
-        setError(t("errorGeneric") ?? "Unexpected error");
+        setSubmitError(t("errorGeneric") ?? "Unexpected error");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (error) setError(null);
-  }, [email, error]);
+  const bannerError = noInternet ? t("errorNoInternet") : submitError;
 
   return (
-    <View style={styles.screen}>
-      <AuthScreenLayout
-        title={t("title")}
-        subtitle={t("description")}
-        banner={noInternet ? <ErrorBox message={t("errorNoInternet")} /> : null}
-        footer={
-          <View style={styles.footerRow}>
-            <Text style={styles.footerText}>{t("rememberPassword")} </Text>
-            <LinkText
-              onPress={() => navigation.navigate("Login")}
-              accessibilityRole="link"
-            >
-              {t("login")}
-            </LinkText>
-          </View>
-        }
-      >
-        <View style={styles.formSection}>
-          <TextInput
-            ref={inputRef}
-            label={t("email")}
-            placeholder={t("emailPlaceholder")}
-            value={email}
-            onChangeText={setEmail}
-            onBlur={handleBlur}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="emailAddress"
-            error={touched && error ? error : undefined}
-            disabled={loading || noInternet}
-            accessibilityLabel={t("email")}
-            returnKeyType="done"
-            onSubmitEditing={onSubmit}
-            style={styles.fieldSpacing}
-          />
-        </View>
+    <AuthScreenLayout
+      brand={t("common:app_title")}
+      title={t("title")}
+      description={t("description")}
+      banner={bannerError ? <ErrorBox message={bannerError} /> : null}
+      bottomAction={
         <Button
           label={t("resetBtn")}
           onPress={onSubmit}
           loading={loading}
-          disabled={
-            loading || noInternet || !email || !!error || !validateEmail(email)
-          }
+          disabled={loading || noInternet || Boolean(emailValidationError)}
           accessibilityLabel={t("resetBtn")}
-          style={styles.actionSpacing}
         />
-      </AuthScreenLayout>
-    </View>
+      }
+      footer={
+        <View style={styles.footerRow}>
+          <Text style={styles.footerText}>{t("rememberPassword")} </Text>
+          <LinkText
+            onPress={() => navigation.navigate("Login")}
+            accessibilityRole="link"
+            disabled={loading}
+          >
+            {t("login")}
+          </LinkText>
+        </View>
+      }
+    >
+      <View style={styles.formBlock}>
+        <TextInput
+          ref={inputRef}
+          label={t("email")}
+          placeholder={t("emailPlaceholder")}
+          value={email}
+          onChangeText={(value) => {
+            setEmail(value);
+            if (submitError) setSubmitError(null);
+          }}
+          onBlur={handleBlur}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          textContentType="emailAddress"
+          error={touched && emailValidationError ? emailValidationError : undefined}
+          disabled={loading || noInternet}
+          accessibilityLabel={t("email")}
+          returnKeyType="done"
+          onSubmitEditing={onSubmit}
+          style={styles.field}
+        />
+      </View>
+    </AuthScreenLayout>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    screen: {
-      flex: 1,
-    },
-    topLeftAction: {
-      top: 0,
-      left: 0,
-    },
-    formSection: {
+    formBlock: {
       width: "100%",
-      flexGrow: 1,
     },
-    fieldSpacing: {
-      marginBottom: theme.spacing.sectionGap,
-    },
-    actionSpacing: {
-      marginTop: theme.spacing.xs,
+    field: {
+      marginBottom: theme.spacing.sm,
     },
     footerRow: {
       alignItems: "center",

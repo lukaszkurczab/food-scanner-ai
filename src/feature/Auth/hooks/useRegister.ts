@@ -3,6 +3,12 @@ import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { authRegister } from "@/feature/Auth/services/authService";
 import { isUsernameAvailable } from "@/services/user/usernameService";
 import { createDefaultKeepLoggingNotification } from "@/services/notifications/notificationsRepository";
+import {
+  validateRegisterEmail,
+  validateRegisterPassword,
+  validateRegisterPasswordConfirmation,
+  validateRegisterUsername,
+} from "@/feature/Auth/utils/registerValidation";
 
 type RegisterErrors = {
   email?: string;
@@ -31,29 +37,20 @@ export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
     });
   };
 
-  const isValidEmail = (email: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const isStrongPassword = (p: string) =>
-    p.length >= 6 &&
-    p.length <= 21 &&
-    /[a-z]/.test(p) &&
-    /[A-Z]/.test(p) &&
-    /[0-9]/.test(p) &&
-    /[^A-Za-z0-9]/.test(p);
-
   const register = async (
     email: string,
     password: string,
     confirmPassword: string,
     username: string,
-    termsAccepted: boolean
+    termsAccepted: boolean,
   ) => {
     const newErrors: RegisterErrors = {};
-    if (!isValidEmail(email)) newErrors.email = "invalid_email";
-    if (!username.trim() || username.length < 3)
+    if (!validateRegisterEmail(email)) newErrors.email = "invalid_email";
+    if (!validateRegisterUsername(username))
       newErrors.username = "username_too_short";
-    if (!isStrongPassword(password)) newErrors.password = "password_too_weak";
-    if (password !== confirmPassword)
+    if (!validateRegisterPassword(password))
+      newErrors.password = "password_too_weak";
+    if (!validateRegisterPasswordConfirmation(password, confirmPassword))
       newErrors.confirmPassword = "passwords_dont_match";
     if (!termsAccepted) newErrors.terms = "must_accept_terms";
     setErrors(newErrors);
