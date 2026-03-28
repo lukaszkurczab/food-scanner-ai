@@ -19,9 +19,8 @@ jest.mock("@/components/AppIcon", () => ({
 }));
 
 describe("WeekStrip", () => {
-  it("selects day and opens history", () => {
+  it("selects day", () => {
     const onSelect = jest.fn();
-    const onOpenHistory = jest.fn();
     const days = [
       { date: new Date(2026, 0, 1), label: "M", isToday: false },
       { date: new Date(2026, 0, 2), label: "T", isToday: false },
@@ -33,18 +32,14 @@ describe("WeekStrip", () => {
         days={days}
         selectedDate={days[0].date}
         onSelect={onSelect}
-        onOpenHistory={onOpenHistory}
       />,
     );
 
     fireEvent.press(getByText("W"));
     expect(onSelect).toHaveBeenCalledWith(days[2].date);
-
-    fireEvent.press(getByLabelText("translated:weekStrip.open_history"));
-    expect(onOpenHistory).toHaveBeenCalledTimes(1);
   });
 
-  it("falls back to formatted weekday labels and omits history action when absent", () => {
+  it("falls back to formatted weekday labels", () => {
     mockLanguage = undefined;
     const onSelect = jest.fn();
     const days = [
@@ -58,7 +53,7 @@ describe("WeekStrip", () => {
       .format(days[1].date)
       .replace(".", "");
 
-    const { getByLabelText, queryByLabelText } = renderWithTheme(
+    const { getByLabelText } = renderWithTheme(
       <WeekStrip
         days={days}
         selectedDate={days[0].date}
@@ -69,31 +64,24 @@ describe("WeekStrip", () => {
     fireEvent.press(getByLabelText(`${expectedLabel} 05`));
 
     expect(onSelect).toHaveBeenCalledWith(days[1].date);
-    expect(
-      queryByLabelText("translated:weekStrip.open_history"),
-    ).toBeNull();
 
     mockLanguage = "en-US";
   });
 
-  it("applies pressed styles for day cells and history action", () => {
+  it("applies pressed styles for day cells", () => {
     const days = [{ date: new Date(2026, 0, 1), label: "M", isToday: false }];
     const { UNSAFE_getAllByType } = renderWithTheme(
       <WeekStrip
         days={days}
         selectedDate={days[0].date}
         onSelect={() => undefined}
-        onOpenHistory={() => undefined}
       />,
     );
-    const [dayPressable, historyPressable] = UNSAFE_getAllByType(Pressable);
+    const [dayPressable] = UNSAFE_getAllByType(Pressable);
 
     const dayStyles = dayPressable.props.style({ pressed: true });
-    const historyStyles = historyPressable.props.style({ pressed: true });
 
     expect(dayStyles).toHaveLength(3);
-    expect(historyStyles).toHaveLength(2);
     expect(dayStyles[2]).toBeTruthy();
-    expect(historyStyles[1]).toBeTruthy();
   });
 });

@@ -1,48 +1,16 @@
-import { useState, useEffect, useMemo } from "react";
-import { View, StyleSheet, ActivityIndicator, Text } from "react-native";
+import { useEffect, useMemo } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import type { StackScreenProps } from "@react-navigation/stack";
+import { Layout, Modal } from "@/components";
+import { useTheme } from "@/theme/useTheme";
+import type { RootStackParamList } from "@/navigation/navigate";
 import ProgressDots from "@/feature/Onboarding/components/ProgressDots";
-import { Modal, Layout, ScreenCornerNavButton } from "@/components";
-import type { FormData, OnboardingMode, UserData } from "@/types";
 import Step1BasicData from "@/feature/Onboarding/components/Step1BasicData";
 import Step2Preferences from "@/feature/Onboarding/components/Step2Preferences";
 import Step3Health from "@/feature/Onboarding/components/Step3Health";
 import Step4AIAssistantPreferences from "@/feature/Onboarding/components/Step4AIAssistantPreferences";
-import Step5Summary from "@/feature/Onboarding/components/Step5Summary";
-import { useUserContext } from "@contexts/UserContext";
-import { calculateCalorieTarget } from "../utils/calculateCalorieTarget";
-import { assertNoUndefined } from "@/utils/findUndefined";
-import type { StackScreenProps } from "@react-navigation/stack";
-import type { RootStackParamList } from "@/navigation/navigate";
-import { useTheme } from "@/theme/useTheme";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const STEPS = 5;
-
-export const INITIAL_FORM: FormData = {
-  unitsSystem: "metric",
-  age: "",
-  sex: "female",
-  height: "",
-  weight: "",
-  preferences: [],
-  activityLevel: "moderate",
-  goal: "maintain",
-  calorieDeficit: 0.3,
-  calorieSurplus: 0.3,
-  chronicDiseases: [],
-  chronicDiseasesOther: "",
-  allergies: [],
-  allergiesOther: "",
-  lifestyle: "",
-  aiStyle: "none",
-  avatarLocalPath: "",
-  aiFocus: "none",
-  aiFocusOther: "",
-  aiNote: "",
-  surveyComplited: true,
-  calorieTarget: 0,
-};
+import { useOnboardingFlow } from "@/feature/Onboarding/hooks/useOnboardingFlow";
 
 type OnboardingScreenProps = StackScreenProps<RootStackParamList, "Onboarding">;
 
@@ -52,117 +20,55 @@ export default function OnboardingScreen({
 }: OnboardingScreenProps) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { userData, updateUser, syncUserProfile } = useUserContext();
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState<FormData>(INITIAL_FORM);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
-    {},
-  );
-  const [showExitModal, setShowExitModal] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const mode = route.params?.mode ?? "first";
 
-  const [editMode, setEditMode] = useState<{
-    editing: boolean;
-    returnStep: number;
-  }>({
-    editing: false,
-    returnStep: STEPS,
+  const state = useOnboardingFlow({
+    mode,
+    navigation,
   });
 
-  const mode: OnboardingMode = useMemo(() => {
-    const param = route.params?.mode;
-    if (param) return param;
-    if (userData?.surveyComplited) return "refill";
-    return "first";
-  }, [route.params?.mode, userData?.surveyComplited]);
-
   useEffect(() => {
-    if (!navigation?.setOptions) return;
-    if (mode === "first") {
-      navigation.setOptions({ gestureEnabled: false });
-    } else {
-      navigation.setOptions({ gestureEnabled: true });
+    navigation.setOptions({
+      gestureEnabled: mode === "refill",
+    });
+  }, [mode, navigation]);
+
+  const modalCopy = useMemo(() => {
+    if (!state.modalState) return null;
+
+    if (state.modalState.type === "skip_onboarding") {
+      return {
+        title: t("skipOnboardingModal.title"),
+        message: t("skipOnboardingModal.body"),
+        primaryLabel: t("skipOnboardingModal.primaryCta"),
+        secondaryLabel: t("skipOnboardingModal.secondaryCta"),
+      };
     }
-  }, [navigation, mode]);
 
-  useEffect(() => {
-    if (userData) {
-      setForm({
-        ...INITIAL_FORM,
-        ...userData,
-        sex: userData.sex ?? "female",
-      });
+    if (state.modalState.type === "skip_step") {
+      return {
+        title: t("skipStepModal.title"),
+        message:
+          state.modalState.step === 3
+            ? t("skipStepModal.step3Body")
+            : t("skipStepModal.step4Body"),
+        primaryLabel: t("skipStepModal.primaryCta"),
+        secondaryLabel: t("skipStepModal.secondaryCta"),
+      };
     }
-    setIsLoaded(true);
-  }, [userData]);
 
-  const nextStep = () => setStep((s) => Math.min(STEPS, s + 1));
-  const prevStep = () => setStep((s) => Math.max(1, s - 1));
+    return {
+      title: t("exitRefillModal.title"),
+      message: t("exitRefillModal.body"),
+      primaryLabel: t("exitRefillModal.primaryCta"),
+      secondaryLabel: t("exitRefillModal.secondaryCta"),
+    };
+  }, [state.modalState, t]);
 
-  const goToStep = (stepNumber: number) => {
-    setEditMode({ editing: true, returnStep: STEPS });
-    setStep(stepNumber);
-  };
-
-  const confirmEdit = () => {
-    setEditMode({ editing: false, returnStep: STEPS });
-    setStep(STEPS);
-  };
-
-  const handleFinish = async () => {
-    try {
-      const payload = {
-        ...form,
-        surveyComplited: true,
-        avatarLocalPath: form.avatarLocalPath ?? "",
-        calorieTarget: calculateCalorieTarget(form),
-        surveyCompletedAt: new Date().toISOString(),
-      } satisfies Partial<UserData>;
-      assertNoUndefined(payload, "handleFinish payload");
-      await updateUser(payload);
-      await syncUserProfile();
-      if (mode === "first") {
-        navigation.replace("Home");
-      } else {
-        navigation.navigate("Profile");
-      }
-    } catch {
-      // Keep user on onboarding if profile update fails.
-    }
-  };
-
-  const handleExitPress = () => setShowExitModal(true);
-
-  const exitPrimary = async () => {
-    setShowExitModal(false);
-    if (mode === "first") {
-      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-      return;
-    }
-    await handleFinish();
-  };
-
-  const exitSecondary = () => {
-    setShowExitModal(false);
-    if (mode === "refill") {
-      navigation.navigate("Profile");
-    }
-  };
-
-  const exitTitle =
-    mode === "first" ? t("exit_first_title") : t("exit_refill_title");
-  const exitDesc =
-    mode === "first" ? t("exit_first_desc") : t("exit_refill_desc");
-  const exitPrimaryLabel =
-    mode === "first" ? t("exit_first_primary") : t("exit_refill_save");
-  const exitSecondaryLabel =
-    mode === "first" ? t("exit_first_secondary") : t("exit_refill_discard");
-
-  if (!isLoaded) {
+  if (!state.isLoaded) {
     return (
-      <Layout showNavigation={false} disableScroll>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
         <View style={styles.loadingWrap}>
           <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>{t("common:loading")}</Text>
@@ -172,101 +78,101 @@ export default function OnboardingScreen({
   }
 
   return (
-    <Layout
-      showNavigation={false}
-      disableScroll
-    >
-      {mode === "refill" && (
-        <ScreenCornerNavButton
-          icon="close"
-          onPress={handleExitPress}
-          accessibilityLabel={t("exit_refill_a11y")}
-          containerStyle={{
-            top: insets.top + theme.spacing.xs,
-            right: insets.right + theme.spacing.sm,
-            left: undefined,
-          }}
+    <>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
+        <ProgressDots
+          step={state.step}
+          total={state.totalSteps}
+          label={state.progressLabel}
+          style={styles.progress}
         />
-      )}
-      <ProgressDots step={step} total={STEPS} />
 
-      {step === 1 && (
-        <Step1BasicData
-          form={form}
-          setForm={setForm}
-          errors={errors}
-          setErrors={setErrors}
-          onNext={editMode.editing ? confirmEdit : nextStep}
-          onCancel={handleExitPress}
-          editMode={editMode.editing}
-          onConfirmEdit={confirmEdit}
-        />
-      )}
-      {step === 2 && (
-        <Step2Preferences
-          form={form}
-          setForm={setForm}
-          errors={errors}
-          setErrors={setErrors}
-          onNext={editMode.editing ? confirmEdit : nextStep}
-          onBack={editMode.editing ? () => setStep(1) : prevStep}
-          editMode={editMode.editing}
-          onConfirmEdit={confirmEdit}
-        />
-      )}
-      {step === 3 && (
-        <Step3Health
-          form={form}
-          setForm={setForm}
-          errors={errors}
-          setErrors={setErrors}
-          onNext={editMode.editing ? confirmEdit : nextStep}
-          onBack={editMode.editing ? () => setStep(2) : prevStep}
-          editMode={editMode.editing}
-          onConfirmEdit={confirmEdit}
-        />
-      )}
-      {step === 4 && (
-        <Step4AIAssistantPreferences
-          form={form}
-          setForm={setForm}
-          errors={errors}
-          setErrors={setErrors}
-          onNext={editMode.editing ? confirmEdit : nextStep}
-          onBack={editMode.editing ? () => setStep(3) : prevStep}
-          editMode={editMode.editing}
-          onConfirmEdit={confirmEdit}
-        />
-      )}
-      {step === 5 && (
-        <Step5Summary
-          form={form}
-          goToStep={goToStep}
-          onFinish={handleFinish}
-          onBack={prevStep}
-        />
-      )}
+        {state.step === 1 ? (
+          <Step1BasicData
+            form={state.form}
+            setForm={state.setForm}
+            errors={state.errors}
+            setErrors={state.setErrors}
+            mode={mode}
+            onContinue={state.handlePrimaryAction}
+            onSecondaryAction={state.handleStep1SecondaryAction}
+            submitting={state.submitting}
+          />
+        ) : null}
+
+        {state.step === 2 ? (
+          <Step2Preferences
+            form={state.form}
+            setForm={state.setForm}
+            errors={state.errors}
+            setErrors={state.setErrors}
+            onContinue={state.handlePrimaryAction}
+            onBack={state.handleBack}
+            mode={mode}
+            submitting={state.submitting}
+          />
+        ) : null}
+
+        {state.step === 3 ? (
+          <Step3Health
+            form={state.form}
+            setForm={state.setForm}
+            errors={state.errors}
+            setErrors={state.setErrors}
+            onContinue={state.handlePrimaryAction}
+            onBack={state.handleBack}
+            onSkip={state.handleSkipStep}
+            mode={mode}
+            submitting={state.submitting}
+          />
+        ) : null}
+
+        {state.step === 4 ? (
+          <Step4AIAssistantPreferences
+            form={state.form}
+            setForm={state.setForm}
+            onContinue={state.handlePrimaryAction}
+            onBack={state.handleBack}
+            mode={mode}
+            submitting={state.submitting}
+          />
+        ) : null}
+      </Layout>
 
       <Modal
-        visible={showExitModal}
-        title={exitTitle}
-        message={exitDesc}
+        visible={!!state.modalState}
+        title={modalCopy?.title}
+        message={modalCopy?.message}
+        onClose={state.handleModalClose}
         primaryAction={{
-          label: exitPrimaryLabel,
-          onPress: exitPrimary,
+          label: modalCopy?.primaryLabel ?? "",
+          onPress:
+            state.modalState?.type === "exit_refill"
+              ? state.handleSaveAndExit
+              : state.handleSkipConfirm,
+          loading: state.submitting,
         }}
         secondaryAction={{
-          label: exitSecondaryLabel,
-          onPress: exitSecondary,
+          label: modalCopy?.secondaryLabel ?? "",
+          onPress:
+            state.modalState?.type === "exit_refill"
+              ? state.handleDiscardAndExit
+              : state.handleModalClose,
+          tone:
+            state.modalState?.type === "exit_refill"
+              ? "destructive"
+              : "secondary",
         }}
-        onClose={() => setShowExitModal(false)}
       />
-    </Layout>
+    </>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    layout: {
+      flex: 1,
+    },
     loadingWrap: {
       flex: 1,
       alignItems: "center",
@@ -275,5 +181,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     loadingText: {
       color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    progress: {
+      marginBottom: theme.spacing.xl,
     },
   });

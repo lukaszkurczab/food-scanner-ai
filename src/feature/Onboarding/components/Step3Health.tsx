@@ -1,36 +1,27 @@
-import React, { useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { useMemo } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/theme/useTheme";
 import {
-  CheckboxDropdown,
+  GlobalActionButtons,
   LongTextInput,
+  SelectableGroup,
   TextInput,
 } from "@/components";
-import { GlobalActionButtons } from "@/components/GlobalActionButtons";
-import { FormData, ChronicDisease, Allergy } from "@/types";
-
-const CHRONIC_DISEASE_OPTIONS: { label: string; value: ChronicDisease }[] = [
-  { label: "Diabetes", value: "diabetes" },
-  { label: "Hypertension", value: "hypertension" },
-  { label: "Asthma", value: "asthma" },
-  { label: "Other", value: "other" },
-];
-
-const ALLERGIES_OPTIONS: { label: string; value: Allergy }[] = [
-  { label: "Peanuts", value: "peanuts" },
-  { label: "Gluten", value: "gluten" },
-  { label: "Lactose", value: "lactose" },
-  { label: "Other", value: "other" },
-];
+import { trackOnboardingOptionSelected } from "@/services/telemetry/telemetryInstrumentation";
+import { useTheme } from "@/theme/useTheme";
+import type { Allergy, ChronicDisease, FormData, OnboardingMode } from "@/types";
+import {
+  ALLERGY_OPTIONS,
+  CHRONIC_DISEASE_OPTIONS,
+} from "@/feature/Onboarding/constants";
 
 type Props = {
   form: FormData;
   setForm: React.Dispatch<React.SetStateAction<FormData>>;
-  errors?: Partial<
+  errors: Partial<
     Record<keyof FormData | "chronicDiseasesOther" | "allergiesOther", string>
   >;
-  setErrors?: React.Dispatch<
+  setErrors: React.Dispatch<
     React.SetStateAction<
       Partial<
         Record<
@@ -40,21 +31,23 @@ type Props = {
       >
     >
   >;
-  editMode: boolean;
-  onConfirmEdit: () => void;
-  onNext: () => void;
+  onContinue: () => void;
   onBack: () => void;
+  onSkip: () => void;
+  mode: OnboardingMode;
+  submitting?: boolean;
 };
 
 export default function Step3Health({
   form,
   setForm,
-  errors = {},
+  errors,
   setErrors,
-  editMode,
-  onConfirmEdit,
-  onNext,
+  onContinue,
   onBack,
+  onSkip,
+  mode,
+  submitting = false,
 }: Props) {
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
@@ -62,150 +55,175 @@ export default function Step3Health({
 
   const hasChronicOther = (form.chronicDiseases ?? []).includes("other");
   const hasAllergyOther = (form.allergies ?? []).includes("other");
-  const hasAnyHealthDetails = useMemo(() => {
-    const hasDiseases = (form.chronicDiseases ?? []).length > 0;
-    const hasAllergies = (form.allergies ?? []).length > 0;
-    const hasLifestyle = Boolean(form.lifestyle?.trim());
-    const hasDiseaseOther = Boolean(form.chronicDiseasesOther?.trim());
-    const hasAllergyOther = Boolean(form.allergiesOther?.trim());
-    return (
-      hasDiseases ||
-      hasAllergies ||
-      hasLifestyle ||
-      hasDiseaseOther ||
-      hasAllergyOther
-    );
-  }, [
-    form.allergies,
-    form.allergiesOther,
-    form.chronicDiseases,
-    form.chronicDiseasesOther,
-    form.lifestyle,
-  ]);
-
-  const validate = () => {
-    let valid = true;
-    const newErrors: Partial<
-      Record<keyof FormData | "chronicDiseasesOther" | "allergiesOther", string>
-    > = {};
-
-    if (hasChronicOther && !form.chronicDiseasesOther?.trim()) {
-      newErrors.chronicDiseasesOther = t("validation.otherRequired");
-      valid = false;
-    }
-    if (hasAllergyOther && !form.allergiesOther?.trim()) {
-      newErrors.allergiesOther = t("validation.otherRequired");
-      valid = false;
-    }
-    if (setErrors) setErrors(newErrors);
-    return valid;
-  };
-
-  const handleNext = () => {
-    if (validate()) onNext();
-  };
+  const hasHealthInput =
+    (form.chronicDiseases?.length ?? 0) > 0 ||
+    !!form.chronicDiseasesOther?.trim() ||
+    (form.allergies?.length ?? 0) > 0 ||
+    !!form.allergiesOther?.trim() ||
+    !!form.lifestyle?.trim();
 
   return (
     <View style={styles.container}>
       <ScrollView
-        style={styles.formScroll}
-        contentContainerStyle={styles.formContent}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.sectionGap}>
-          <View>
-            <Text style={styles.title}>
-              {t("healthProfile.title")}
-            </Text>
-            <Text style={styles.subtitle}>
-              {t("healthProfile.desc")}
-            </Text>
+        <View style={styles.header}>
+          <View style={styles.optionalBadge}>
+            <Text style={styles.optionalBadgeText}>{t("optional")}</Text>
           </View>
+          <Text style={styles.title}>{t("step3.title")}</Text>
+          <Text style={styles.subtitle}>{t("step3.description")}</Text>
+        </View>
 
-          <View>
-            <CheckboxDropdown<ChronicDisease>
-              label={t("healthProfile.chronicDisease")}
-              options={CHRONIC_DISEASE_OPTIONS.map((o) => ({
-                ...o,
-                label: t(`healthProfile.disease.${o.value}`),
-              }))}
-              values={form.chronicDiseases ?? []}
-              onChange={(val) =>
-                setForm((prev) => ({
-                  ...prev,
-                  chronicDiseases: val as ChronicDisease[],
-                  chronicDiseasesOther: val.includes("other")
-                    ? (prev.chronicDiseasesOther ?? "")
-                    : undefined,
-                }))
+        <View style={styles.panel}>
+          <SelectableGroup
+            label={t("step3.conditionsLabel")}
+            options={CHRONIC_DISEASE_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
+            values={form.chronicDiseases ?? []}
+            onChange={(nextValue) => {
+              const isSelecting = !(form.chronicDiseases ?? []).includes(nextValue);
+              setForm((current) => {
+                const currentValues = current.chronicDiseases ?? [];
+                const hasValue = currentValues.includes(nextValue);
+                const nextValues = hasValue
+                  ? currentValues.filter((item) => item !== nextValue)
+                  : [...currentValues, nextValue];
+
+                return {
+                  ...current,
+                  chronicDiseases: nextValues as ChronicDisease[],
+                  chronicDiseasesOther: nextValues.includes("other")
+                    ? (current.chronicDiseasesOther ?? "")
+                    : "",
+                };
+              });
+              setErrors((current) => ({
+                ...current,
+                chronicDiseasesOther: undefined,
+              }));
+              if (isSelecting) {
+                void trackOnboardingOptionSelected({
+                  mode,
+                  step: 3,
+                  field: "chronicDisease",
+                  value: nextValue,
+                });
               }
-            />
-            {hasChronicOther && (
-              <TextInput
-                value={form.chronicDiseasesOther ?? ""}
-                onChangeText={(v) =>
-                  setForm((prev) => ({ ...prev, chronicDiseasesOther: v }))
-                }
-                placeholder={t("healthProfile.disease.otherPlaceholder")}
-                error={errors.chronicDiseasesOther}
-                style={styles.fieldSpacing}
-              />
-            )}
-          </View>
+            }}
+            selectionMode="multiple"
+            variant="chip"
+          />
 
-          <View>
-            <CheckboxDropdown<Allergy>
-              label={t("healthProfile.allergies")}
-              options={ALLERGIES_OPTIONS.map((o) => ({
-                ...o,
-                label: t(`healthProfile.allergy.${o.value}`),
-              }))}
-              values={form.allergies ?? []}
-              onChange={(val) =>
-                setForm((prev) => ({
-                  ...prev,
-                  allergies: val as Allergy[],
-                  allergiesOther: val.includes("other")
-                    ? (prev.allergiesOther ?? "")
-                    : undefined,
-                }))
+          {hasChronicOther ? (
+            <TextInput
+              label={t("step3.conditionsOtherLabel")}
+              value={form.chronicDiseasesOther ?? ""}
+              onChangeText={(nextValue) => {
+                setForm((current) => ({
+                  ...current,
+                  chronicDiseasesOther: nextValue,
+                }));
+                setErrors((current) => ({
+                  ...current,
+                  chronicDiseasesOther: undefined,
+                }));
+              }}
+              placeholder={t("healthProfile.disease.otherPlaceholder")}
+              error={errors.chronicDiseasesOther}
+            />
+          ) : null}
+        </View>
+
+        <View style={styles.panel}>
+          <SelectableGroup
+            label={t("step3.allergiesLabel")}
+            options={ALLERGY_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
+            values={form.allergies ?? []}
+            onChange={(nextValue) => {
+              const isSelecting = !(form.allergies ?? []).includes(nextValue);
+              setForm((current) => {
+                const currentValues = current.allergies ?? [];
+                const hasValue = currentValues.includes(nextValue);
+                const nextValues = hasValue
+                  ? currentValues.filter((item) => item !== nextValue)
+                  : [...currentValues, nextValue];
+
+                return {
+                  ...current,
+                  allergies: nextValues as Allergy[],
+                  allergiesOther: nextValues.includes("other")
+                    ? (current.allergiesOther ?? "")
+                    : "",
+                };
+              });
+              setErrors((current) => ({
+                ...current,
+                allergiesOther: undefined,
+              }));
+              if (isSelecting) {
+                void trackOnboardingOptionSelected({
+                  mode,
+                  step: 3,
+                  field: "allergy",
+                  value: nextValue,
+                });
               }
-            />
-            {hasAllergyOther && (
-              <TextInput
-                value={form.allergiesOther ?? ""}
-                onChangeText={(v) =>
-                  setForm((prev) => ({ ...prev, allergiesOther: v }))
-                }
-                placeholder={t("healthProfile.allergy.otherPlaceholder")}
-                error={errors.allergiesOther}
-                style={styles.fieldSpacing}
-              />
-            )}
-          </View>
+            }}
+            selectionMode="multiple"
+            variant="chip"
+          />
 
+          {hasAllergyOther ? (
+            <TextInput
+              label={t("step3.allergiesOtherLabel")}
+              value={form.allergiesOther ?? ""}
+              onChangeText={(nextValue) => {
+                setForm((current) => ({
+                  ...current,
+                  allergiesOther: nextValue,
+                }));
+                setErrors((current) => ({
+                  ...current,
+                  allergiesOther: undefined,
+                }));
+              }}
+              placeholder={t("healthProfile.allergy.otherPlaceholder")}
+              error={errors.allergiesOther}
+            />
+          ) : null}
+        </View>
+
+        <View style={styles.panel}>
           <LongTextInput
-            label={t("healthProfile.lifestyle")}
+            label={t("step3.notesLabel")}
             value={form.lifestyle ?? ""}
-            onChangeText={(val) =>
-              setForm((prev) => ({ ...prev, lifestyle: val }))
-            }
-            placeholder={t("healthProfile.lifestylePlaceholder")}
+            onChangeText={(nextValue) => {
+              setForm((current) => ({
+                ...current,
+                lifestyle: nextValue,
+              }));
+            }}
+            placeholder={t("step3.notesPlaceholder")}
+            maxLength={220}
           />
         </View>
       </ScrollView>
-      <View style={styles.actionsWrap}>
+
+      <View style={styles.footer}>
         <GlobalActionButtons
-          label={
-            editMode
-              ? t("summary.save", "Save")
-              : hasAnyHealthDetails
-                ? t("next")
-                : t("skip")
-          }
-          onPress={editMode ? onConfirmEdit : handleNext}
-          secondaryLabel={t("back")}
+          label={hasHealthInput ? t("step3.primaryCta") : t("step3.skipCta")}
+          onPress={hasHealthInput ? onContinue : onSkip}
+          loading={submitting}
+          secondaryLabel={t("common:back")}
           secondaryOnPress={onBack}
         />
       </View>
@@ -218,22 +236,57 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     container: {
       flex: 1,
     },
-    formScroll: { flex: 1 },
-    formContent: { paddingBottom: theme.spacing.sm },
-    sectionGap: { gap: theme.spacing.lg },
-    actionsWrap: { paddingTop: theme.spacing.sm },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: theme.spacing.md,
+      gap: theme.spacing.xl,
+    },
+    header: {
+      gap: theme.spacing.sm,
+    },
+    optionalBadge: {
+      alignSelf: "flex-start",
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.rounded.full,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surface,
+    },
+    optionalBadgeText: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
     title: {
-      fontSize: theme.typography.size.h1,
-      fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
-      textAlign: "center",
-      marginBottom: theme.spacing.sm,
+      fontSize: theme.typography.size.displayM,
+      lineHeight: theme.typography.lineHeight.displayM,
+      fontFamily: theme.typography.fontFamily.semiBold,
     },
     subtitle: {
-      fontSize: theme.typography.size.bodyL,
       color: theme.textSecondary,
-      textAlign: "center",
-      marginBottom: theme.spacing.md,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
     },
-    fieldSpacing: { marginTop: theme.spacing.md },
+    panel: {
+      padding: theme.spacing.cardPaddingLarge,
+      borderRadius: theme.rounded.xl,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surfaceElevated,
+      gap: theme.spacing.lg,
+      shadowColor: theme.shadow,
+      shadowOpacity: theme.isDark ? 0.16 : 0.08,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 3,
+    },
+    footer: {
+      paddingTop: theme.spacing.md,
+    },
   });

@@ -54,6 +54,10 @@ export function getPickerControlStyleParts(theme: ReturnType<typeof useTheme>) {
     },
     fieldIcon: {
       marginLeft: theme.spacing.sm,
+      transform: [{ rotate: "-90deg" }],
+    },
+    fieldIconOpen: {
+      transform: [{ rotate: "90deg" }],
     },
     errorText: {
       color: theme.error.text,

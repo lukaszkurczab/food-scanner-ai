@@ -64,15 +64,12 @@ const AI_STYLES = [
   "concise",
   "friendly",
   "detailed",
-  "strict",
 ] as const satisfies readonly AiStyle[];
 const AI_FOCUS = [
   "none",
   "mealPlanning",
   "analyzingMistakes",
-  "quickAnswers",
   "motivation",
-  "other",
 ] as const satisfies readonly AiFocus[];
 
 function pickEnum<T extends string>(
@@ -152,4 +149,3 @@ export function parseUserData(payload: unknown): UserData | null {
 
   return data;
 }
-

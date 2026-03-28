@@ -51,6 +51,26 @@ type SmartReminderTelemetryInput = {
     | null;
 };
 
+type OnboardingModeTelemetry = "first" | "refill";
+type OnboardingNavigationDirection = "next" | "back";
+type OnboardingExitAction = "save" | "discard";
+
+type OnboardingTelemetryInput = {
+  step: number;
+  mode: OnboardingModeTelemetry;
+};
+
+type OnboardingOptionField =
+  | "unitsSystem"
+  | "sex"
+  | "preference"
+  | "activityLevel"
+  | "goal"
+  | "chronicDisease"
+  | "allergy"
+  | "aiStyle"
+  | "aiFocus";
+
 export function normalizeTelemetryScreenName(routeName: string): string {
   const normalized = routeName
     .trim()
@@ -351,5 +371,76 @@ export function trackCoachEmptyStateViewed(input: {
 }): Promise<void> {
   return track("coach_empty_state_viewed", {
     emptyReason: input.emptyReason,
+  });
+}
+
+export function trackOnboardingNavigation(input: {
+  step: number;
+  mode: OnboardingModeTelemetry;
+  direction: OnboardingNavigationDirection;
+}): Promise<void> {
+  return track("onboarding_navigation", {
+    step: input.step,
+    mode: input.mode,
+    direction: input.direction,
+  });
+}
+
+export function trackOnboardingStepCompleted(
+  input: OnboardingTelemetryInput,
+): Promise<void> {
+  return track("onboarding_step_completed", {
+    step: input.step,
+    mode: input.mode,
+  });
+}
+
+export function trackOnboardingCompleted(input: {
+  mode: OnboardingModeTelemetry;
+}): Promise<void> {
+  return track("onboarding_completed", {
+    mode: input.mode,
+  });
+}
+
+export function trackOnboardingStepSkipped(
+  input: OnboardingTelemetryInput,
+): Promise<void> {
+  return track("onboarding_step_skipped", {
+    step: input.step,
+    mode: input.mode,
+  });
+}
+
+export function trackOnboardingSkipConfirmed(
+  input: OnboardingTelemetryInput,
+): Promise<void> {
+  return track("onboarding_skip_confirmed", {
+    step: input.step,
+    mode: input.mode,
+  });
+}
+
+export function trackOnboardingExitAction(input: {
+  mode: OnboardingModeTelemetry;
+  action: OnboardingExitAction;
+}): Promise<void> {
+  return track("onboarding_exit_action", {
+    mode: input.mode,
+    action: input.action,
+  });
+}
+
+export function trackOnboardingOptionSelected(input: {
+  step: number;
+  mode: OnboardingModeTelemetry;
+  field: OnboardingOptionField;
+  value: string;
+}): Promise<void> {
+  return track("onboarding_option_selected", {
+    step: input.step,
+    mode: input.mode,
+    field: input.field,
+    value: input.value,
   });
 }

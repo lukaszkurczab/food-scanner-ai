@@ -46,7 +46,5 @@ export const AI_FOCUS = [
   "none",
   "mealPlanning",
   "analyzingMistakes",
-  "quickAnswers",
   "motivation",
-  "other",
 ] as const;
