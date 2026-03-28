@@ -3,26 +3,20 @@ import {
   View,
   Text,
   Keyboard,
-  TouchableOpacity,
+  Pressable,
   Linking,
   StyleSheet,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
-import {
-  Button,
-  TextInput,
-  ErrorBox,
-  LinkText,
-  Layout,
-  Checkbox,
-} from "@/components";
+import { Button, TextInput, ErrorBox, LinkText, Checkbox } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import { useAuthContext } from "@/context/AuthContext";
 import { useRegister } from "@/feature/Auth/hooks/useRegister";
 import { validateEmail } from "@/utils/validation";
 import { getTermsUrl } from "@/utils/legalUrls";
+import { AuthScreenLayout } from "@/feature/Auth/components/AuthScreenLayout";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -64,6 +58,13 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
     setEmailValidated(validateEmail(email));
   };
 
+  const clearFieldError = (
+    key: "email" | "username" | "password" | "confirmPassword" | "terms",
+  ) => {
+    clearError(key);
+    clearError("general");
+  };
+
   const emailLiveError =
     emailTouched && email && !emailValidated ? t("invalid_email") : undefined;
 
@@ -90,27 +91,42 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   };
 
   const renderEyeIcon = (show: boolean, toggle: () => void) => (
-    <TouchableOpacity
+    <Pressable
       onPress={toggle}
       accessibilityLabel={t("toggle_password_visibility")}
-      activeOpacity={0.75}
+      hitSlop={8}
     >
       <AppIcon
         name={!show ? "eye-off" : "eye"}
         size={22}
         color={theme.textSecondary}
       />
-    </TouchableOpacity>
+    </Pressable>
   );
 
   return (
-    <Layout showNavigation={false}>
-      <View style={styles.centerBoth}>
-        <Text style={styles.title}>{t("common:app_title")}</Text>
-
-        {!isConnected ? <ErrorBox message={t("common:no_internet")} /> : null}
-        {errors.general ? <ErrorBox message={t(errors.general)} /> : null}
-
+    <AuthScreenLayout
+      title={t("common:app_title")}
+      subtitle={t("create_account")}
+      heroVariant="compact"
+      banner={
+        !isConnected ? (
+          <ErrorBox message={t("common:no_internet")} />
+        ) : errors.general ? (
+          <ErrorBox message={t(errors.general)} />
+        ) : null
+      }
+      footer={
+        <View style={styles.footerRow}>
+          <Text style={styles.helperText}>{t("already_have_account")} </Text>
+          <LinkText
+            text={t("sign_in")}
+            onPress={() => navigation.replace("Login")}
+          />
+        </View>
+      }
+    >
+      <View style={styles.formSection}>
         <TextInput
           label={t("username")}
           value={username}
@@ -120,7 +136,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           placeholder={t("enter_username")}
           onChangeText={(val) => {
             setUsername(val);
-            clearError("username");
+            clearFieldError("username");
           }}
           error={errors.username ? t(errors.username) : undefined}
           accessibilityLabel={t("username")}
@@ -137,6 +153,8 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           placeholder={t("enter_email", { ns: "login" })}
           onChangeText={(val) => {
             setEmail(val);
+            if (emailTouched) setEmailValidated(validateEmail(val));
+            clearFieldError("email");
           }}
           onBlur={handleValidateEmail}
           error={
@@ -155,7 +173,10 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           textContentType="newPassword"
           placeholder={t("enter_password", { ns: "login" })}
           secureTextEntry={!showPassword}
-          onChangeText={setPassword}
+          onChangeText={(val) => {
+            setPassword(val);
+            clearFieldError("password");
+          }}
           error={errors.password ? t(errors.password) : undefined}
           accessibilityLabel={t("password", { ns: "login" })}
           icon={renderEyeIcon(showPassword, () => setShowPassword((v) => !v))}
@@ -171,96 +192,118 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           textContentType="newPassword"
           placeholder={t("enter_confirm_password")}
           secureTextEntry={!showConfirm}
-          onChangeText={setConfirmPassword}
+          onChangeText={(val) => {
+            setConfirmPassword(val);
+            clearFieldError("confirmPassword");
+          }}
           error={errors.confirmPassword ? t(errors.confirmPassword) : undefined}
           accessibilityLabel={t("confirm_password")}
           icon={renderEyeIcon(showConfirm, () => setShowConfirm((v) => !v))}
           iconPosition="right"
-          style={styles.fieldSpacing}
+          style={styles.confirmField}
         />
 
-        <View style={styles.termsRow}>
-          <Checkbox
-            checked={termsAccepted}
-            onChange={setTermsAccepted}
-            accessibilityLabel={t("accept_terms")}
-            style={styles.termsCheckbox}
-          />
-          <View style={styles.rowJustifyCenter}>
-            <Text style={styles.helperText}>{t("accept_terms")} </Text>
-            <LinkText
-              text={t("terms")}
-              onPress={() => {
-                const url = getTermsUrl();
-                if (url) void Linking.openURL(url);
+        <View style={styles.legalSection}>
+          <View style={styles.termsRow}>
+            <Checkbox
+              checked={termsAccepted}
+              onChange={(checked) => {
+                setTermsAccepted(checked);
+                clearFieldError("terms");
               }}
+              error={Boolean(errors.terms)}
+              accessibilityLabel={
+                errors.terms ? t(errors.terms) : t("accept_terms")
+              }
+              style={styles.termsCheckbox}
             />
-            <Text style={styles.helperText}>{" & "}</Text>
-            <LinkText
-              text={t("privacy_policy")}
-              onPress={() => navigation.navigate("Privacy")}
-            />
+            <View style={styles.termsCopy}>
+              <View style={styles.termsLine}>
+                <Text
+                  style={[
+                    styles.helperText,
+                    errors.terms ? styles.termsTextError : null,
+                  ]}
+                >
+                  {t("accept_terms")}{" "}
+                </Text>
+                <LinkText
+                  text={t("terms")}
+                  style={errors.terms ? styles.termsLinkError : undefined}
+                  onPress={() => {
+                    const url = getTermsUrl();
+                    if (url) void Linking.openURL(url);
+                  }}
+                />
+                <Text
+                  style={[
+                    styles.helperText,
+                    errors.terms ? styles.termsTextError : null,
+                  ]}
+                >
+                  {" & "}
+                </Text>
+                <LinkText
+                  text={t("privacy_policy")}
+                  style={errors.terms ? styles.termsLinkError : undefined}
+                  onPress={() => navigation.navigate("Privacy")}
+                />
+              </View>
+            </View>
           </View>
         </View>
-
-        {errors.terms ? (
-          <Text style={styles.termsError}>{t(errors.terms)}</Text>
-        ) : null}
-
-        <Button
-          label={t("sign_up")}
-          onPress={handleSubmit}
-          disabled={isFormDisabled}
-          loading={loading}
-          style={styles.submitSpacing}
-        />
       </View>
-
-      <View style={styles.rowJustifyCenter}>
-        <Text style={styles.helperText}>{t("already_have_account")} </Text>
-        <LinkText
-          text={t("sign_in")}
-          onPress={() => navigation.replace("Login")}
-        />
-      </View>
-    </Layout>
+      <Button
+        label={t("sign_up")}
+        onPress={handleSubmit}
+        disabled={isFormDisabled}
+        loading={loading}
+        style={styles.submitSpacing}
+      />
+    </AuthScreenLayout>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    centerBoth: {
+    formSection: {
+      width: "100%",
       flexGrow: 1,
-      alignItems: "center",
-      justifyContent: "center",
     },
-    rowJustifyCenter: {
+    footerRow: {
       flexDirection: "row",
       justifyContent: "center",
       alignItems: "center",
       flexWrap: "wrap",
     },
-    title: {
-      fontSize: theme.typography.size.h2,
-      lineHeight: theme.typography.lineHeight.h2,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-      marginBottom: theme.spacing.xl,
-      textAlign: "center",
-    },
     fieldSpacing: {
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.sm + 2,
+    },
+    confirmField: {
+      marginBottom: theme.spacing.lg,
+    },
+    legalSection: {
+      marginBottom: theme.spacing.sectionGap,
     },
     termsRow: {
       flexDirection: "row",
-      alignItems: "flex-start",
-      marginTop: theme.spacing.md,
-      marginBottom: theme.spacing.xs,
+      alignItems: "center",
       width: "100%",
     },
     termsCheckbox: {
       marginRight: theme.spacing.sm,
+      alignSelf: "flex-start",
       marginTop: 1,
+    },
+    termsCopy: {
+      flex: 1,
+      minHeight: 24,
+      justifyContent: "center",
+    },
+    termsLine: {
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "wrap",
     },
     helperText: {
       color: theme.textSecondary,
@@ -268,15 +311,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.regular,
     },
-    termsError: {
+    termsTextError: {
       color: theme.error.text,
-      fontSize: theme.typography.size.caption,
-      lineHeight: theme.typography.lineHeight.caption,
-      marginTop: theme.spacing.xs,
-      alignSelf: "flex-start",
-      fontFamily: theme.typography.fontFamily.medium,
+    },
+    termsLinkError: {
+      color: theme.error.text,
     },
     submitSpacing: {
-      marginTop: theme.spacing.xl,
+      marginTop: theme.spacing.sm,
     },
   });

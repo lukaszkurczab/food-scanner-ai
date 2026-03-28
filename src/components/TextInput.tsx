@@ -148,10 +148,19 @@ export const TextInput = forwardRef<RNTextInput, Props>(
     );
 
     const helperMessage = errorMsg ?? helperText;
+    const labelColor = hasError
+      ? theme.error.text
+      : isFocused
+        ? theme.primary
+        : isEditable
+          ? theme.textSecondary
+          : theme.textTertiary;
 
     return (
       <View style={[styles.container, style]}>
-        {label ? <Text style={styles.label}>{label}</Text> : null}
+        {label ? (
+          <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
+        ) : null}
 
         <View
           style={[
@@ -252,7 +261,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexShrink: 1,
     },
     label: {
-      color: theme.textSecondary,
       fontSize: theme.typography.size.labelS,
       marginBottom: theme.spacing.xxs + theme.spacing.xxs / 2,
       fontFamily: theme.typography.fontFamily.medium,
@@ -281,13 +289,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     helperText: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyM,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
       marginTop: theme.spacing.xs - theme.spacing.xxs / 2,
       fontFamily: theme.typography.fontFamily.regular,
     },
     errorText: {
       color: theme.error.text,
-      fontSize: theme.typography.size.bodyM,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
       marginTop: theme.spacing.xs - theme.spacing.xxs / 2,
       fontFamily: theme.typography.fontFamily.medium,
     },

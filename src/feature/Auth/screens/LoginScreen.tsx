@@ -2,18 +2,13 @@ import { useMemo, useState, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
-import {
-  Button,
-  TextInput,
-  ErrorBox,
-  LinkText,
-  Layout,
-} from "@/components";
+import { Button, TextInput, ErrorBox, LinkText } from "@/components";
 import NetInfo from "@react-native-community/netinfo";
 import { validateEmail } from "@/utils/validation";
 import AppIcon from "@/components/AppIcon";
 import { useAuthContext } from "@/context/AuthContext";
 import { useLogin } from "@/feature/Auth/hooks/useLogin";
+import { AuthScreenLayout } from "@/feature/Auth/components/AuthScreenLayout";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -90,14 +85,27 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const isLoginDisabled = !isFormValid || loading || internetError;
 
   return (
-    <Layout showNavigation={false}>
-      {displayCriticalError ? (
-        <ErrorBox message={displayCriticalError} />
-      ) : null}
-
-      <View style={styles.centerColumn}>
-        <Text style={styles.title}>{t("common:app_title")}</Text>
-
+    <AuthScreenLayout
+      title={t("common:app_title")}
+      subtitle={t("welcome_back")}
+      banner={
+        displayCriticalError ? (
+          <ErrorBox message={displayCriticalError} />
+        ) : null
+      }
+      footer={
+        <View style={styles.footerRow}>
+          <Text style={styles.footerText}>{t("dont_have_account")} </Text>
+          <LinkText
+            onPress={() => navigation.navigate("Register")}
+            disabled={loading}
+          >
+            {t("sign_up")}
+          </LinkText>
+        </View>
+      }
+    >
+      <View style={styles.formSection}>
         <TextInput
           testID="login-email-input"
           label={t("email")}
@@ -112,93 +120,89 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           editable={!loading}
           placeholder={t("enter_email")}
           accessibilityLabel={t("email")}
-          style={styles.fieldSpacing}
+          style={styles.emailField}
         />
 
-        <TextInput
-          testID="login-password-input"
-          label={t("password")}
-          value={password}
-          onChangeText={setPassword}
-          onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
-          secureTextEntry={!showPassword}
-          autoCapitalize="none"
-          autoComplete="password"
-          textContentType="password"
-          error={passwordError}
-          editable={!loading}
-          placeholder={t("enter_password")}
-          accessibilityLabel={t("password")}
-          style={styles.fieldSpacing}
-          icon={
-            <Pressable onPress={() => setShowPassword((v) => !v)}>
-              <AppIcon
-                name={showPassword ? "eye" : "eye-off"}
-                size={22}
-                color={theme.textSecondary}
-              />
-            </Pressable>
-          }
-          iconPosition="right"
-        />
+        <View style={styles.passwordSection}>
+          <TextInput
+            testID="login-password-input"
+            label={t("password")}
+            value={password}
+            onChangeText={setPassword}
+            onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            autoComplete="password"
+            textContentType="password"
+            error={passwordError}
+            editable={!loading}
+            placeholder={t("enter_password")}
+            accessibilityLabel={t("password")}
+            style={styles.passwordField}
+            icon={
+              <Pressable
+                onPress={() => setShowPassword((v) => !v)}
+                hitSlop={8}
+                accessibilityLabel={t("toggle_password_visibility")}
+              >
+                <AppIcon
+                  name={showPassword ? "eye" : "eye-off"}
+                  size={22}
+                  color={theme.textSecondary}
+                />
+              </Pressable>
+            }
+            iconPosition="right"
+          />
 
-        <Button
-          testID="login-submit-button"
-          label={t("login")}
-          onPress={handleLogin}
-          disabled={isLoginDisabled}
-          loading={loading}
-          style={styles.fieldSpacing}
-        />
-
-        <LinkText
-          onPress={() => navigation.navigate("ResetPassword")}
-          disabled={loading}
-          style={styles.centerLink}
-        >
-          {t("forgot_password")}
-        </LinkText>
+          <LinkText
+            onPress={() => navigation.navigate("ResetPassword")}
+            disabled={loading}
+            style={styles.forgotPasswordLink}
+          >
+            {t("forgot_password")}
+          </LinkText>
+        </View>
       </View>
 
-      <View style={styles.rowCenter}>
-        <Text style={styles.footerText}>{t("dont_have_account")} </Text>
-        <LinkText
-          onPress={() => navigation.navigate("Register")}
-          disabled={loading}
-        >
-          {t("sign_up")}
-        </LinkText>
-      </View>
-    </Layout>
+      <Button
+        testID="login-submit-button"
+        label={t("login")}
+        onPress={handleLogin}
+        disabled={isLoginDisabled}
+        loading={loading}
+        style={styles.cta}
+      />
+    </AuthScreenLayout>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    centerColumn: {
-      flex: 1,
-      justifyContent: "center",
+    formSection: {
+      width: "100%",
+      flexGrow: 1,
     },
-    rowCenter: {
+    emailField: {
+      marginBottom: theme.spacing.md,
+    },
+    passwordSection: {
+      marginBottom: theme.spacing.sectionGap,
+    },
+    passwordField: {
+      marginBottom: theme.spacing.xxs,
+    },
+    forgotPasswordLink: {
+      alignSelf: "flex-end",
+    },
+    cta: {
+      marginTop: theme.spacing.xs,
+    },
+    footerRow: {
       flexDirection: "row",
       justifyContent: "center",
       alignItems: "center",
-      marginTop: theme.spacing.md,
-    },
-    title: {
-      color: theme.text,
-      fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.h1,
-      lineHeight: theme.typography.lineHeight.h1,
-      textAlign: "center",
-      marginBottom: theme.spacing.xl,
-    },
-    fieldSpacing: {
-      marginBottom: theme.spacing.lg,
-    },
-    centerLink: {
-      alignSelf: "center",
-      marginBottom: theme.spacing.lg,
+      flexWrap: "wrap",
     },
     footerText: {
       color: theme.textSecondary,

@@ -11,16 +11,10 @@ import NetInfo from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { getFirebaseAuth } from "@/FirebaseConfig";
-import {
-  Button,
-  ScreenCornerNavButton,
-  TextInput,
-  LinkText,
-  ErrorBox,
-  Layout,
-} from "@/components";
+import { Button, TextInput, LinkText, ErrorBox } from "@/components";
 import { validateEmail } from "@/utils/validation";
 import { authSendPasswordReset } from "@/feature/Auth/services/authService";
+import { AuthScreenLayout } from "@/feature/Auth/components/AuthScreenLayout";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -129,110 +123,79 @@ export default function ResetPasswordScreen({ navigation }: Props) {
   }, [email, error]);
 
   return (
-    <Layout showNavigation={false}>
-      <ScreenCornerNavButton
-        icon="back"
-        onPress={() =>
-          navigation.canGoBack()
-            ? navigation.goBack()
-            : navigation.navigate("Login")
+    <View style={styles.screen}>
+      <AuthScreenLayout
+        title={t("title")}
+        subtitle={t("description")}
+        banner={noInternet ? <ErrorBox message={t("errorNoInternet")} /> : null}
+        footer={
+          <View style={styles.footerRow}>
+            <Text style={styles.footerText}>{t("rememberPassword")} </Text>
+            <LinkText
+              onPress={() => navigation.navigate("Login")}
+              accessibilityRole="link"
+            >
+              {t("login")}
+            </LinkText>
+          </View>
         }
-        accessibilityLabel={t("common:back", { defaultValue: "Back" })}
-        containerStyle={styles.topLeftAction}
-      />
-
-      {noInternet ? (
-        <View style={styles.noInternet}>
-          <ErrorBox message={t("errorNoInternet")} />
+      >
+        <View style={styles.formSection}>
+          <TextInput
+            ref={inputRef}
+            label={t("email")}
+            placeholder={t("emailPlaceholder")}
+            value={email}
+            onChangeText={setEmail}
+            onBlur={handleBlur}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            textContentType="emailAddress"
+            error={touched && error ? error : undefined}
+            disabled={loading || noInternet}
+            accessibilityLabel={t("email")}
+            returnKeyType="done"
+            onSubmitEditing={onSubmit}
+            style={styles.fieldSpacing}
+          />
         </View>
-      ) : null}
-
-      <View style={styles.headerBlock}>
-        <Text style={styles.title} accessibilityRole="header">
-          {t("title")}
-        </Text>
-        <Text style={styles.subtitle}>{t("description")}</Text>
-      </View>
-
-      <TextInput
-        ref={inputRef}
-        label={t("email")}
-        placeholder={t("emailPlaceholder")}
-        value={email}
-        onChangeText={setEmail}
-        onBlur={handleBlur}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        textContentType="emailAddress"
-        error={touched && error ? error : undefined}
-        disabled={loading || noInternet}
-        accessibilityLabel={t("email")}
-        returnKeyType="done"
-        onSubmitEditing={onSubmit}
-        style={styles.fieldSpacing}
-      />
-
-      <Button
-        label={t("resetBtn")}
-        onPress={onSubmit}
-        loading={loading}
-        disabled={
-          loading || noInternet || !email || !!error || !validateEmail(email)
-        }
-        accessibilityLabel={t("resetBtn")}
-        style={styles.actionSpacing}
-      />
-
-      <View style={styles.footerRow}>
-        <Text style={styles.footerText}>{t("rememberPassword")} </Text>
-        <LinkText
-          onPress={() => navigation.navigate("Login")}
-          accessibilityRole="link"
-        >
-          {t("login")}
-        </LinkText>
-      </View>
-    </Layout>
+        <Button
+          label={t("resetBtn")}
+          onPress={onSubmit}
+          loading={loading}
+          disabled={
+            loading || noInternet || !email || !!error || !validateEmail(email)
+          }
+          accessibilityLabel={t("resetBtn")}
+          style={styles.actionSpacing}
+        />
+      </AuthScreenLayout>
+    </View>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    screen: {
+      flex: 1,
+    },
     topLeftAction: {
       top: 0,
       left: 0,
     },
-    noInternet: {
-      marginBottom: theme.spacing.lg,
-    },
-    headerBlock: {
-      marginBottom: theme.spacing.lg,
-    },
-    title: {
-      fontSize: theme.typography.size.h1,
-      lineHeight: theme.typography.lineHeight.h1,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-      textAlign: "center",
-      marginBottom: theme.spacing.md,
-    },
-    subtitle: {
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      fontFamily: theme.typography.fontFamily.regular,
-      color: theme.textSecondary,
-      textAlign: "center",
+    formSection: {
+      width: "100%",
+      flexGrow: 1,
     },
     fieldSpacing: {
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.sectionGap,
     },
     actionSpacing: {
-      marginVertical: theme.spacing.md,
+      marginTop: theme.spacing.xs,
     },
     footerRow: {
       alignItems: "center",
-      marginTop: theme.spacing.lg,
       flexDirection: "row",
       justifyContent: "center",
       flexWrap: "wrap",
