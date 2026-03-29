@@ -223,7 +223,7 @@ describe("MealTextAIScreen", () => {
     fireEvent.press(getByText("meals:amount-blur"));
     fireEvent.press(getByText("meals:description_optional-change"));
     fireEvent.press(getByText("meals:analyze (2/3)"));
-    fireEvent.press(getByText("meals:select_method"));
+    fireEvent.press(getByText("meals:change_method"));
 
     expect(onNameChange).toHaveBeenCalledWith("New meal");
     expect(onNameBlur).toHaveBeenCalledTimes(1);
@@ -236,7 +236,9 @@ describe("MealTextAIScreen", () => {
       "meals:description_optional-updated",
     );
     expect(onAnalyze).toHaveBeenCalledTimes(1);
-    expect(navigation.navigate).toHaveBeenCalledWith("MealAddMethod");
+    expect(navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
+      selectionMode: "temporary",
+    });
     expect(getByText("name-error")).toBeTruthy();
     expect(getByText("submit-error")).toBeTruthy();
   });

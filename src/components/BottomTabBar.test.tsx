@@ -3,7 +3,14 @@ import { describe, expect, it, jest, beforeEach } from "@jest/globals";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
-const mockNavigate = jest.fn<(route: string) => void>();
+const mockNavigate = jest.fn<(route: string, params?: unknown) => void>();
+const mockUseNavigation = jest.fn();
+type NavState = {
+  index: number;
+  routes: Array<{ name: string }>;
+};
+type NavStateSelector = (state: NavState) => unknown;
+const mockUseNavigationState = jest.fn<(selector: NavStateSelector) => unknown>();
 const mockAvatarBadge = jest.fn<(props: unknown) => null>(() => null);
 const mockUseAuthContext = jest.fn<() => { uid: string }>(() => ({ uid: "u-1" }));
 const mockUseUserContext = jest.fn<
@@ -16,11 +23,15 @@ const mockUseBadges = jest.fn<
   (uid: string) => { badges: Array<{ type: string; milestone: number; color: string }> }
 >(() => ({ badges: [] }));
 
-jest.mock("@/navigation/navigate", () => ({
-  navigate: (route: string) => mockNavigate(route),
-  navigationRef: {
-    getCurrentRoute: () => undefined,
-  },
+const makeNavState = (routeName: string) => ({
+  index: 0,
+  routes: [{ name: routeName }],
+});
+
+jest.mock("@react-navigation/native", () => ({
+  useNavigation: () => mockUseNavigation(),
+  useNavigationState: (selector: NavStateSelector) =>
+    mockUseNavigationState(selector),
 }));
 
 jest.mock("@/components/AvatarBadge", () => ({
@@ -62,6 +73,12 @@ jest.mock("react-native-safe-area-context", () => ({
 describe("BottomTabBar", () => {
   beforeEach(() => {
     mockNavigate.mockClear();
+    mockUseNavigation.mockReturnValue({
+      navigate: (route: string, params?: unknown) => mockNavigate(route, params),
+    });
+    mockUseNavigationState.mockImplementation((selector) =>
+      selector(makeNavState("Home")),
+    );
     mockAvatarBadge.mockClear();
     mockUseBadges.mockClear();
     mockUsePremiumContext.mockReturnValue({ isPremium: false });
@@ -82,16 +99,19 @@ describe("BottomTabBar", () => {
     fireEvent.press(getByTestId("tab-chat"));
     fireEvent.press(getByTestId("tab-profile"));
 
-    expect(mockNavigate.mock.calls.map((call) => call[0])).toEqual([
-      "Home",
-      "Statistics",
-      "MealAddMethod",
-      "Chat",
-      "Profile",
+    expect(mockNavigate.mock.calls).toEqual([
+      ["Home"],
+      ["Statistics"],
+      ["MealAddMethod", { selectionMode: "temporary" }],
+      ["Chat"],
+      ["Profile"],
     ]);
   });
 
   it("uses highest streak badge color for profile border when not premium", () => {
+    mockUseNavigationState.mockImplementation((selector) =>
+      selector(makeNavState("Home")),
+    );
     renderWithTheme(<BottomTabBar />);
 
     const avatarProps = mockAvatarBadge.mock.calls[0][0] as {
@@ -107,6 +127,9 @@ describe("BottomTabBar", () => {
 
   it("uses premium border color when user has premium", () => {
     mockUsePremiumContext.mockReturnValue({ isPremium: true });
+    mockUseNavigationState.mockImplementation((selector) =>
+      selector(makeNavState("Home")),
+    );
     renderWithTheme(<BottomTabBar />);
 
     const avatarProps = mockAvatarBadge.mock.calls[0][0] as {

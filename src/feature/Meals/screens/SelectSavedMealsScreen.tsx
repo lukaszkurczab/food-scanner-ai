@@ -61,7 +61,10 @@ export default function SelectSavedMealScreen({
     saveDraft,
     setLastScreen,
     onNavigateResult: () => navigation.navigate("AddMeal", { start: "Result" }),
-    onStartOver: () => navigation.replace("MealAddMethod"),
+    onStartOver: () =>
+      navigation.replace("MealAddMethod", {
+        selectionMode: "temporary",
+      }),
   });
 
   const renderItem = useCallback(
@@ -118,7 +121,7 @@ export default function SelectSavedMealScreen({
           label={t("meals:select", "Select")}
           onPress={() => {}}
           primaryDisabled
-          secondaryLabel={t("meals:select_method", "Start over")}
+          secondaryLabel={t("meals:change_method", "Change add method")}
           secondaryOnPress={handleStartOver}
         />
       </Layout>
@@ -148,7 +151,7 @@ export default function SelectSavedMealScreen({
         label={t("meals:select", "Select")}
         onPress={handleConfirm}
         primaryDisabled={!selectedId}
-        secondaryLabel={t("meals:select_method", "Start over")}
+        secondaryLabel={t("meals:change_method", "Change add method")}
         secondaryOnPress={handleStartOver}
       />
     </Layout>

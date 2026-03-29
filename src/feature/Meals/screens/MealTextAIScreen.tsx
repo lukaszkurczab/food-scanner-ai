@@ -119,8 +119,12 @@ export default function MealTextAIScreen() {
             onPress={onAnalyze}
             primaryLoading={loading}
             primaryDisabled={analyzeDisabled}
-            secondaryLabel={t("select_method", { ns: "meals" })}
-            secondaryOnPress={() => navigation.navigate("MealAddMethod")}
+            secondaryLabel={t("change_method", { ns: "meals" })}
+            secondaryOnPress={() =>
+              navigation.navigate("MealAddMethod", {
+                selectionMode: "temporary",
+              })
+            }
             secondaryDisabled={loading}
           />
         </View>

@@ -90,7 +90,14 @@ function renderAppScreens() {
         component={ChangePasswordScreen}
       />
       <Stack.Screen name="SendFeedback" component={SendFeedbackScreen} />
-      <Stack.Screen name="MealAddMethod" component={MealAddMethodScreen} />
+      <Stack.Screen
+        name="MealAddMethod"
+        component={MealAddMethodScreen}
+        options={{
+          presentation: "transparentModal",
+          cardStyle: { backgroundColor: "transparent" },
+        }}
+      />
       <Stack.Screen name="AddMeal" component={AddMealScreen} />
       <Stack.Screen
         name="SavedMealsCamera"

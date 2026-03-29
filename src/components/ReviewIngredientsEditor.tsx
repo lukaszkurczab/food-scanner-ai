@@ -305,7 +305,7 @@ export default function ReviewIngredientsEditor({
     () => ({
       startOverButtonLabel:
         textOverrides?.startOverButtonLabel ??
-        t("select_method", { ns: "meals" }),
+        t("change_method", { ns: "meals" }),
       startOverTitle:
         textOverrides?.startOverTitle ??
         t("confirm_exit_title", { ns: "meals" }),

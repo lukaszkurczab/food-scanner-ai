@@ -5,6 +5,7 @@ import {
   StyleProp,
   StyleSheet,
   Text,
+  View,
   TextStyle,
   ViewStyle,
   type PressableProps,
@@ -41,6 +42,8 @@ export const Button: React.FC<ButtonProps> = ({
   const tokens = theme.button[variant];
   const isDisabled = disabled || loading;
   const content = children ?? label;
+  const isTextContent =
+    typeof content === "string" || typeof content === "number";
   const resolvedAccessibilityLabel =
     accessibilityLabel ?? (typeof content === "string" ? content : undefined);
 
@@ -76,6 +79,8 @@ export const Button: React.FC<ButtonProps> = ({
           size="small"
           color={isDisabled ? tokens.disabledText : tokens.text}
         />
+      ) : !isTextContent ? (
+        <View style={styles.customContent}>{content}</View>
       ) : (
         <Text
           style={[
@@ -114,5 +119,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.medium,
       fontSize: theme.typography.size.bodyM,
       lineHeight: theme.typography.lineHeight.bodyM,
+    },
+    customContent: {
+      alignSelf: "stretch",
+      alignItems: "center",
+      justifyContent: "center",
     },
   });

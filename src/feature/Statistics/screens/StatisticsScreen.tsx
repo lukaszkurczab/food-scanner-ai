@@ -113,7 +113,11 @@ export default function StatisticsScreen({ navigation }: Props) {
           {isOnline ? (
             <Button
               label={t("statistics:empty.cta")}
-              onPress={() => navigation.navigate("MealAddMethod")}
+              onPress={() =>
+                navigation.navigate("MealAddMethod", {
+                  selectionMode: "temporary",
+                })
+              }
               style={styles.emptyCta}
             />
           ) : null}

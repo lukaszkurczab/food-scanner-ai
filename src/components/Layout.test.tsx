@@ -5,6 +5,7 @@ import { Layout } from "@/components/Layout";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 const mockUseE2ENetInfo = jest.fn<() => { isConnected: boolean | null }>();
+const mockInsets = { top: 0, bottom: 0, left: 0, right: 0 };
 
 jest.mock("react-native-gesture-handler", () => {
   const { ScrollView } =
@@ -13,7 +14,7 @@ jest.mock("react-native-gesture-handler", () => {
 });
 
 jest.mock("react-native-safe-area-context", () => ({
-  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  useSafeAreaInsets: () => mockInsets,
 }));
 
 jest.mock("@/services/e2e/connectivity", () => ({
@@ -46,6 +47,10 @@ describe("Layout", () => {
   afterEach(() => {
     jest.restoreAllMocks();
     mockUseE2ENetInfo.mockReset();
+    mockInsets.top = 0;
+    mockInsets.bottom = 0;
+    mockInsets.left = 0;
+    mockInsets.right = 0;
   });
 
   it("renders content and bottom tab when navigation is enabled", () => {
@@ -160,5 +165,45 @@ describe("Layout", () => {
       listeners.get(hideEventName)?.();
     });
     expect(getRootPaddingBottom()).toBe(44);
+  });
+
+  it("does not double-count safe-area inset when bottom navigation is visible", () => {
+    mockUseE2ENetInfo.mockReturnValue({ isConnected: true });
+    mockInsets.bottom = 34;
+
+    const { UNSAFE_getAllByType } = renderWithTheme(
+      <Layout>
+        <Text>screen-content</Text>
+      </Layout>,
+    );
+
+    const rootView = UNSAFE_getAllByType(View).find((node) => {
+      const flattened = StyleSheet.flatten(node.props.style);
+      return flattened?.paddingLeft === 32 && flattened?.paddingRight === 32;
+    });
+
+    expect(rootView).toBeTruthy();
+    expect(StyleSheet.flatten(rootView?.props.style).paddingBottom).toBe(44);
+  });
+
+  it("keeps the padded layout surface stretched to full height", () => {
+    mockUseE2ENetInfo.mockReturnValue({ isConnected: true });
+    const { UNSAFE_getAllByType } = renderWithTheme(
+      <Layout showNavigation={false}>
+        <Text>screen-content</Text>
+      </Layout>,
+    );
+
+    const paddedSurface = UNSAFE_getAllByType(View).find((node) => {
+      const flattened = StyleSheet.flatten(node.props.style);
+      return (
+        flattened?.paddingLeft === 32 &&
+        flattened?.paddingRight === 32 &&
+        flattened?.backgroundColor
+      );
+    });
+
+    expect(paddedSurface).toBeTruthy();
+    expect(StyleSheet.flatten(paddedSurface?.props.style).flex).toBe(1);
   });
 });

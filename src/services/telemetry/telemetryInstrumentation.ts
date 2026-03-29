@@ -187,10 +187,14 @@ export function mapMealAddMethodKeyToInputMethod(
   key: string,
 ): MealInputMethod | null {
   switch (key) {
+    case "photo":
     case "ai_photo":
       return "photo";
+    case "text":
     case "ai_text":
       return "text";
+    case "barcode":
+      return "barcode";
     case "manual":
       return "manual";
     case "saved":

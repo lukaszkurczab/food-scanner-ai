@@ -1,0 +1,109 @@
+import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
+
+const mockGetItem = jest.fn<(key: string) => Promise<string | null>>();
+const mockSetItem = jest.fn<(key: string, value: string) => Promise<void>>();
+const mockNavigate = jest.fn();
+const mockReplace = jest.fn();
+const mockSetMeal = jest.fn();
+const mockSaveDraft = jest.fn<(uid: string, meal: unknown) => Promise<void>>();
+const mockSetLastScreen = jest.fn<(uid: string, screen: string) => Promise<void>>();
+const mockLoadDraft = jest.fn<(uid: string) => Promise<void>>();
+const mockRemoveDraft = jest.fn<(uid: string) => Promise<void>>();
+
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  __esModule: true,
+  default: {
+    getItem: (key: string) => mockGetItem(key),
+    setItem: (key: string, value: string) => mockSetItem(key, value),
+  },
+}));
+
+jest.mock("@/context/AuthContext", () => ({
+  useAuthContext: () => ({ uid: null }),
+}));
+
+jest.mock("@contexts/MealDraftContext", () => ({
+  getDraftKey: (uid: string) => `draft:${uid}`,
+  getScreenKey: (uid: string) => `screen:${uid}`,
+  useMealDraftContext: () => ({
+    setMeal: mockSetMeal,
+    saveDraft: (uid: string, meal: unknown) => mockSaveDraft(uid, meal),
+    setLastScreen: (uid: string, screen: string) => mockSetLastScreen(uid, screen),
+    loadDraft: (uid: string) => mockLoadDraft(uid),
+    removeDraft: (uid: string) => mockRemoveDraft(uid),
+  }),
+}));
+
+jest.mock("@/services/e2e/config", () => ({
+  E2E_DETERMINISTIC_INGREDIENT: {
+    id: "ingredient-1",
+    name: "ingredient",
+    kcal: 100,
+    protein: 1,
+    fat: 1,
+    carbs: 1,
+    amount: 1,
+    unit: "g",
+  },
+  isE2EModeEnabled: () => false,
+}));
+
+describe("useMealAddMethodState", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetItem.mockResolvedValue(null);
+    mockSetItem.mockResolvedValue(undefined);
+    mockSaveDraft.mockResolvedValue(undefined);
+    mockSetLastScreen.mockResolvedValue(undefined);
+    mockLoadDraft.mockResolvedValue(undefined);
+    mockRemoveDraft.mockResolvedValue(undefined);
+  });
+
+  it("broadcasts persisted default method changes to other hook instances", async () => {
+    const navigation = {
+      navigate: mockNavigate,
+      replace: mockReplace,
+    } as const;
+
+    const homeHook = renderHook(() =>
+      useMealAddMethodState({
+        navigation,
+        replaceOnStart: false,
+      }),
+    );
+    const chooserHook = renderHook(() =>
+      useMealAddMethodState({
+        navigation,
+        replaceOnStart: true,
+        persistSelection: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(homeHook.result.current.preferredMethodKey).toBe("photo");
+    });
+
+    const textOption = chooserHook.result.current.options.find(
+      (option) => option.key === "text",
+    );
+
+    expect(textOption).toBeTruthy();
+
+    await act(async () => {
+      await chooserHook.result.current.handleOptionPress(textOption!);
+    });
+
+    expect(mockSetItem).toHaveBeenCalledWith(
+      "meal-add-preferred-method",
+      "text",
+    );
+    expect(mockReplace).toHaveBeenCalledWith("MealTextAI");
+
+    await waitFor(() => {
+      expect(homeHook.result.current.preferredMethodKey).toBe("text");
+    });
+    expect(homeHook.result.current.preferredOption.key).toBe("text");
+  });
+});

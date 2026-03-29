@@ -114,7 +114,7 @@ describe("IngredientsNotRecognizedScreen", () => {
     expect(props.flow.goBack).toHaveBeenCalledTimes(1);
   });
 
-  it("goes back to method selection and clears the draft", () => {
+  it("opens the temporary method chooser and clears the draft", () => {
     const clearMeal = jest.fn();
     mockUseMealDraftContext.mockReturnValue({ clearMeal });
     const props = buildProps({
@@ -128,9 +128,11 @@ describe("IngredientsNotRecognizedScreen", () => {
     );
 
     expect(queryByText("Retake photo (3/3)")).toBeNull();
-    fireEvent.press(getByText("Back to method selection"));
+    fireEvent.press(getByText("Change add method"));
 
     expect(clearMeal).toHaveBeenCalledWith("user-1");
-    expect(props.navigation.replace).toHaveBeenCalledWith("MealAddMethod");
+    expect(props.navigation.replace).toHaveBeenCalledWith("MealAddMethod", {
+      selectionMode: "temporary",
+    });
   });
 });

@@ -9,15 +9,22 @@ import type { RootStackParamList } from "@/navigation/navigate";
 import type { Ingredient, Meal, MealInputMethod } from "@/types/meal";
 import type { AppIconName } from "@/components/AppIcon";
 import { debugScope } from "@/utils/debug";
+import { emit, on } from "@/services/core/events";
 import {
   E2E_DETERMINISTIC_INGREDIENT,
   isE2EModeEnabled,
 } from "@/services/e2e/config";
 
-type MealAddMethodNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "MealAddMethod"
->;
+type MealAddMethodNavigationProp = {
+  navigate: Pick<
+    StackNavigationProp<RootStackParamList, "Home">,
+    "navigate"
+  >["navigate"];
+  replace: Pick<
+    StackNavigationProp<RootStackParamList, "Home">,
+    "replace"
+  >["replace"];
+};
 
 type DraftResumeScreen = "AddMeal" | "EditReviewIngredients" | "EditResult";
 
@@ -26,7 +33,7 @@ type AddMealStart = NonNullable<
 >;
 
 type MethodOptionBase = {
-  key: string;
+  key: "photo" | "text" | "barcode" | "saved";
   icon: AppIconName;
   titleKey: string;
   descKey: string;
@@ -45,10 +52,10 @@ export type MethodOption = AddMealMethodOption | NonAddMealMethodOption;
 
 export const mealAddMethodOptions: readonly MethodOption[] = [
   {
-    key: "ai_photo",
+    key: "photo",
     icon: "camera",
-    titleKey: "aiTitle",
-    descKey: "aiDesc",
+    titleKey: "photoTitle",
+    descKey: "photoDesc",
     screen: "AddMeal",
     params: {
       start: "MealCamera",
@@ -57,20 +64,23 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
     },
   },
   {
-    key: "ai_text",
-    icon: "chat",
-    titleKey: "aiTextTitle",
-    descKey: "aiTextDesc",
+    key: "text",
+    icon: "edit",
+    titleKey: "textTitle",
+    descKey: "textDesc",
     screen: "MealTextAI",
   },
   {
-    key: "manual",
-    icon: "edit",
-    titleKey: "manualTitle",
-    descKey: "manualDesc",
+    key: "barcode",
+    icon: "scan-barcode",
+    titleKey: "barcodeTitle",
+    descKey: "barcodeDesc",
     screen: "AddMeal",
     params: {
-      start: "Result",
+      start: "MealCamera",
+      barcodeOnly: true,
+      returnTo: "Result",
+      attempt: 1,
     },
   },
   {
@@ -89,6 +99,9 @@ const isDraftResumeScreen = (value: string): value is DraftResumeScreen =>
 
 const log = debugScope("Hook:useMealAddMethodState");
 const E2E_DRAFT_MEAL_ID = "e2e-draft-meal";
+const PREFERRED_METHOD_STORAGE_KEY = "meal-add-preferred-method";
+const DEFAULT_PREFERRED_METHOD = "photo";
+const PREFERRED_METHOD_CHANGED_EVENT = "meal:add-method:preferred-changed";
 
 function makeE2EDraftIngredient(): Ingredient {
   return { ...E2E_DETERMINISTIC_INGREDIENT };
@@ -142,66 +155,76 @@ function hasMeaningfulDraft(payload: unknown): boolean {
 }
 
 function getInputMethodForOption(option: MethodOption): MealInputMethod | null {
-  if (option.key === "ai_photo") return "photo";
-  if (option.key === "ai_text") return "text";
-  if (option.key === "manual") return "manual";
+  if (option.key === "photo") return "photo";
+  if (option.key === "text") return "text";
+  if (option.key === "barcode") return "barcode";
   if (option.key === "saved") return "saved";
   return null;
 }
 
+function isMealAddMethodOptionKey(
+  value: string | null,
+): value is MethodOption["key"] {
+  return mealAddMethodOptions.some((option) => option.key === value);
+}
+
+function getMethodOptionByKey(key: MethodOption["key"]): MethodOption {
+  return (
+    mealAddMethodOptions.find((option) => option.key === key) ??
+    mealAddMethodOptions[0]
+  );
+}
+
 export function useMealAddMethodState(params: {
   navigation: MealAddMethodNavigationProp;
+  replaceOnStart?: boolean;
+  persistSelection?: boolean;
 }) {
   const { uid } = useAuthContext();
   const { setMeal, saveDraft, setLastScreen, loadDraft, removeDraft } =
     useMealDraftContext();
 
+  const [preferredMethodKey, setPreferredMethodKey] =
+    useState<MethodOption["key"]>(DEFAULT_PREFERRED_METHOD);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [resumeScreen, setResumeScreen] =
     useState<DraftResumeScreen | null>(null);
-  const [showAiLimitModal, setShowAiLimitModal] = useState(false);
-
-  const checkDraft = useCallback(async () => {
-    if (!uid) return;
-
-    const [draftRaw, lastScreenStored] = await Promise.all([
-      AsyncStorage.getItem(getDraftKey(uid)),
-      AsyncStorage.getItem(getScreenKey(uid)),
-    ]);
-
-    if (!draftRaw) {
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(draftRaw) as unknown;
-      if (!hasMeaningfulDraft(parsed)) {
-        log.log("Removing inactive meal draft after startup sanity-check.");
-        await removeDraft(uid);
-        return;
-      }
-
-      if (!lastScreenStored || !isDraftResumeScreen(lastScreenStored)) {
-        log.log("Active draft found but no resumable screen.", {
-          lastScreenStored: lastScreenStored ?? null,
-        });
-        return;
-      }
-
-      setResumeScreen(lastScreenStored);
-      setShowResumeModal(true);
-      log.log("Active draft found. Showing resume modal.", {
-        resumeScreen: lastScreenStored,
-      });
-    } catch {
-      log.log("Removing malformed meal draft payload.");
-      await removeDraft(uid);
-    }
-  }, [removeDraft, uid]);
+  const [pendingOption, setPendingOption] = useState<MethodOption | null>(null);
 
   useEffect(() => {
-    void checkDraft();
-  }, [checkDraft]);
+    let cancelled = false;
+
+    const loadPreferredMethod = async () => {
+      const stored = await AsyncStorage.getItem(PREFERRED_METHOD_STORAGE_KEY);
+
+      if (!cancelled && isMealAddMethodOptionKey(stored)) {
+        setPreferredMethodKey(stored);
+      }
+    };
+
+    void loadPreferredMethod();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = on<{ key?: MethodOption["key"] }>(
+      PREFERRED_METHOD_CHANGED_EVENT,
+      (payload) => {
+        if (!payload?.key || !isMealAddMethodOptionKey(payload.key)) {
+          return;
+        }
+
+        setPreferredMethodKey(payload.key);
+      },
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   const primeEmptyMeal = useCallback(
     async (nextScreen: AddMealStart, inputMethod?: MealInputMethod | null) => {
@@ -239,7 +262,43 @@ export function useMealAddMethodState(params: {
     [saveDraft, setLastScreen, setMeal, uid],
   );
 
-  const handleOptionPress = useCallback(
+  const persistPreferredMethod = useCallback(async (key: MethodOption["key"]) => {
+    setPreferredMethodKey(key);
+    await AsyncStorage.setItem(PREFERRED_METHOD_STORAGE_KEY, key);
+    emit(PREFERRED_METHOD_CHANGED_EVENT, { key });
+  }, []);
+
+  const openAddMeal = useCallback(
+    (routeParams: RootStackParamList["AddMeal"]) => {
+      if (params.replaceOnStart) {
+        params.navigation.replace("AddMeal", routeParams);
+        return;
+      }
+
+      params.navigation.navigate("AddMeal", routeParams);
+    },
+    [params.navigation, params.replaceOnStart],
+  );
+
+  const openSimpleScreen = useCallback(
+    (
+      name:
+        | "MealTextAI"
+        | "SelectSavedMeal"
+        | "EditReviewIngredients"
+        | "EditResult",
+    ) => {
+      if (params.replaceOnStart) {
+        params.navigation.replace(name);
+        return;
+      }
+
+      params.navigation.navigate(name);
+    },
+    [params.navigation, params.replaceOnStart],
+  );
+
+  const executeOption = useCallback(
     async (option: MethodOption) => {
       if (option.screen === "AddMeal") {
         const start = option.params.start;
@@ -247,14 +306,85 @@ export function useMealAddMethodState(params: {
           start || "Result",
           getInputMethodForOption(option),
         );
-        params.navigation.navigate("AddMeal", option.params);
+        openAddMeal(option.params);
         return;
       }
 
-      params.navigation.navigate(option.screen);
+      openSimpleScreen(option.screen);
     },
-    [params.navigation, primeEmptyMeal],
+    [openAddMeal, openSimpleScreen, primeEmptyMeal],
   );
+
+  const checkDraftBeforeLaunch = useCallback(
+    async (option: MethodOption): Promise<boolean> => {
+      if (!uid) return false;
+
+      const [draftRaw, lastScreenStored] = await Promise.all([
+        AsyncStorage.getItem(getDraftKey(uid)),
+        AsyncStorage.getItem(getScreenKey(uid)),
+      ]);
+
+      if (!draftRaw) {
+        return false;
+      }
+
+      try {
+        const parsed = JSON.parse(draftRaw) as unknown;
+        if (!hasMeaningfulDraft(parsed)) {
+          log.log("Removing inactive meal draft after startup sanity-check.");
+          await removeDraft(uid);
+          return false;
+        }
+
+        if (!lastScreenStored || !isDraftResumeScreen(lastScreenStored)) {
+          log.log("Active draft found but no resumable screen.", {
+            lastScreenStored: lastScreenStored ?? null,
+          });
+          return false;
+        }
+
+        setPendingOption(option);
+        setResumeScreen(lastScreenStored);
+        setShowResumeModal(true);
+        log.log("Active draft found. Showing resume modal.", {
+          resumeScreen: lastScreenStored,
+          pendingOption: option.key,
+        });
+        return true;
+      } catch {
+        log.log("Removing malformed meal draft payload.");
+        await removeDraft(uid);
+        return false;
+      }
+    },
+    [removeDraft, uid],
+  );
+
+  const handleOptionPress = useCallback(
+    async (option: MethodOption) => {
+      if (params.persistSelection) {
+        await persistPreferredMethod(option.key);
+      }
+
+      const shouldPauseForDraft = await checkDraftBeforeLaunch(option);
+      if (shouldPauseForDraft) {
+        return;
+      }
+
+      await executeOption(option);
+    },
+    [
+      checkDraftBeforeLaunch,
+      executeOption,
+      params.persistSelection,
+      persistPreferredMethod,
+    ],
+  );
+
+  const handleDirectStart = useCallback(async () => {
+    const option = getMethodOptionByKey(preferredMethodKey);
+    await handleOptionPress(option);
+  }, [handleOptionPress, preferredMethodKey]);
 
   const handleContinueDraft = useCallback(async () => {
     if (uid) {
@@ -262,48 +392,49 @@ export function useMealAddMethodState(params: {
     }
 
     setShowResumeModal(false);
+    setPendingOption(null);
 
     if (resumeScreen) {
       if (resumeScreen === "AddMeal") {
         log.log("Resuming AddMeal draft at Result.");
-        params.navigation.navigate("AddMeal", { start: "Result" });
+        openAddMeal({ start: "Result" });
         return;
       }
-      params.navigation.navigate(resumeScreen);
+      openSimpleScreen(resumeScreen);
     }
-  }, [loadDraft, params.navigation, resumeScreen, uid]);
+  }, [loadDraft, openAddMeal, openSimpleScreen, resumeScreen, uid]);
 
   const handleDiscardDraft = useCallback(async () => {
     if (uid) {
       await removeDraft(uid);
     }
 
-    setResumeScreen(null);
     setShowResumeModal(false);
-  }, [removeDraft, uid]);
+    setResumeScreen(null);
+
+    const nextOption = pendingOption;
+    setPendingOption(null);
+
+    if (nextOption) {
+      await executeOption(nextOption);
+    }
+  }, [executeOption, pendingOption, removeDraft, uid]);
 
   const closeResumeModal = useCallback(() => {
     setShowResumeModal(false);
+    setPendingOption(null);
+    setResumeScreen(null);
   }, []);
-
-  const closeAiLimitModal = useCallback(() => {
-    setShowAiLimitModal(false);
-  }, []);
-
-  const handleAiLimitUpgrade = useCallback(() => {
-    setShowAiLimitModal(false);
-    params.navigation.navigate("ManageSubscription");
-  }, [params.navigation]);
 
   return {
     options: mealAddMethodOptions,
+    preferredMethodKey,
+    preferredOption: getMethodOptionByKey(preferredMethodKey),
+    handleDirectStart,
     showResumeModal,
-    showAiLimitModal,
     handleOptionPress,
     handleContinueDraft,
     handleDiscardDraft,
     closeResumeModal,
-    closeAiLimitModal,
-    handleAiLimitUpgrade,
   };
 }

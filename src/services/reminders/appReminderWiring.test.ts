@@ -60,6 +60,9 @@ jest.mock("@react-navigation/native", () => {
 });
 
 jest.mock("@/navigation/navigate", () => ({
+  getCurrentRouteNameSafe: jest.fn(),
+  markNavigationReady: jest.fn(),
+  markNavigationUnavailable: jest.fn(),
   navigationRef: { getCurrentRoute: jest.fn() },
 }));
 

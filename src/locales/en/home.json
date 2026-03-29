@@ -12,6 +12,33 @@
   "totalToday": "Total today",
   "noGoalSet": "No daily goal",
   "setDailyGoal": "Set your daily goal",
+  "mealCount_one": "{{count}} meal",
+  "mealCount_other": "{{count}} meals",
+  "methodSelector": "Method: {{method}}",
+  "hero": {
+    "greeting": {
+      "morning": "Good morning, {{name}}",
+      "afternoon": "Good afternoon, {{name}}",
+      "evening": "Good evening, {{name}}"
+    },
+    "todayEmpty": {
+      "cta": "Log breakfast",
+      "supportCopy": "Start with your first meal and the rest of today will build from there."
+    },
+    "todayInProgress": {
+      "cta": "Log next meal"
+    },
+    "pastIncomplete": {
+      "meta": "You missed a meal log",
+      "cta": "Add a missed meal",
+      "supportCopy": "You can still fill in what was missing."
+    },
+    "completed": {
+      "title": "Goal reached, {{name}}",
+      "cta": "Review your day",
+      "support": "See your full breakdown for today"
+    }
+  },
 
   "emptyDay": {
     "title": "No meals on this day",

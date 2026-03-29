@@ -1,81 +1,71 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useNetInfo } from "@react-native-community/netinfo";
+import { Layout, Modal } from "@/components";
 import { useTheme } from "@/theme/useTheme";
-import { TodaysMealsList } from "../components/TodaysMealsList";
-import { ButtonSection } from "../components/ButtonSection";
-import { useUserContext } from "@contexts/UserContext";
-import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
-import { Button, Layout, TargetProgressBar } from "@/components";
-import { getLastNDaysAggregated } from "@/utils/getLastNDaysAggregated";
-import { WeeklyProgressGraph } from "../components/WeeklyProgressGraph";
-import { useMeals } from "@hooks/useMeals";
-import type { Meal } from "@/types/meal";
 import { useTranslation } from "react-i18next";
-import { subscribeStreak } from "@/services/gamification/streakService";
+import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
-import WeekStrip, { WeekDayItem } from "@/components/WeekStrip";
-import EmptyDayView from "../components/EmptyDayView";
-import CoachInsightCard from "../components/CoachInsightCard";
-import WeeklyReportCard from "../components/WeeklyReportCard";
-import { StreakBadge } from "@components/StreakBadge";
+import { useMeals } from "@/hooks/useMeals";
+import { useNutritionState } from "@/hooks/useNutritionState";
+import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import { calculateMacroTargets } from "@/utils/calculateMacroTargets";
+import WeekStrip, { type WeekDayItem } from "@/components/WeekStrip";
 import { MacroTargetsRow } from "../components/MacroTargetsRow";
+import { TodaysMealsList } from "../components/TodaysMealsList";
+import HomeHeroCard from "../components/HomeHeroCard";
+import type { Meal } from "@/types/meal";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
-import { useNutritionState } from "@/hooks/useNutritionState";
-import { useCoach } from "@/hooks/useCoach";
-import { useWeeklyReport } from "@/hooks/useWeeklyReport";
 import type {
   NutritionTargets,
-  NutritionState,
 } from "@/services/nutritionState/nutritionStateTypes";
-import type {
-  CoachActionType,
-  CoachEmptyReason,
-  CoachInsight,
-  CoachResponse,
-  CoachResponseSource,
-  CoachResultStatus,
-} from "@/services/coach/coachTypes";
 import type { MacroTargets } from "@/utils/calculateMacroTargets";
+import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
 
-function startEndOfLocalDay(d: Date) {
-  const s = new Date(d);
-  s.setHours(0, 0, 0, 0);
-  const e = new Date(s.getTime() + 24 * 60 * 60 * 1000);
-  return { start: s.getTime(), end: e.getTime() };
+function startEndOfLocalDay(date: Date) {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start: start.getTime(), end: end.getTime() };
 }
 
-function parseMealTs(m: Meal): number | null {
-  const raw = m.timestamp || m.createdAt;
+function parseMealTs(meal: Meal): number | null {
+  const raw = meal.timestamp || meal.createdAt;
   if (!raw) return null;
   if (typeof raw === "number") return raw;
-  const t = Date.parse(raw);
-  return Number.isNaN(t) ? null : t;
+  const parsed = Date.parse(raw);
+  return Number.isNaN(parsed) ? null : parsed;
 }
 
-function getMealsForDate(all: Meal[], d: Date): Meal[] {
-  const { start, end } = startEndOfLocalDay(d);
-  return all.filter((m) => {
-    const ts = parseMealTs(m);
-    return ts !== null && ts >= start && ts < end;
-  });
+function getMealsForDate(allMeals: Meal[], date: Date): Meal[] {
+  const { start, end } = startEndOfLocalDay(date);
+
+  return allMeals
+    .filter((meal) => {
+      const timestamp = parseMealTs(meal);
+      return timestamp !== null && timestamp >= start && timestamp < end;
+    })
+    .sort((left, right) => {
+      const leftTimestamp = parseMealTs(left) ?? 0;
+      const rightTimestamp = parseMealTs(right) ?? 0;
+      return leftTimestamp - rightTimestamp;
+    });
 }
 
 function buildLast7Days(): WeekDayItem[] {
   const now = new Date();
-  const todayStr = now.toDateString();
-  const arr = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(now);
-    d.setDate(now.getDate() - (6 - i));
-    return d;
+  const todayString = now.toDateString();
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(now);
+    date.setDate(now.getDate() - (6 - index));
+
+    return {
+      date,
+      label: String(date.getDate()).padStart(2, "0"),
+      isToday: date.toDateString() === todayString,
+    };
   });
-  return arr.map((d) => ({
-    date: d,
-    label: String(d.getDate()).padStart(2, "0"),
-    isToday: d.toDateString() === todayStr,
-  }));
 }
 
 function toLocalDayKey(date: Date): string {
@@ -85,26 +75,6 @@ function toLocalDayKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function buildNutritionSummary(
-  state: NutritionState,
-  options?: { isStale?: boolean },
-): string | null {
-  const parts: string[] = [];
-
-  if (options?.isStale) {
-    parts.push("Cached");
-  }
-
-  if (state.remaining.kcal !== null) {
-    parts.push(`${state.remaining.kcal} kcal left`);
-  }
-
-  const completeness = Math.round(state.quality.dataCompletenessScore * 100);
-  parts.push(`${completeness}% complete`);
-
-  return parts.length > 0 ? parts.join(" • ") : null;
-}
-
 function hasTargetValue(value: number | null): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
@@ -112,78 +82,48 @@ function hasTargetValue(value: number | null): value is number {
 function toMacroTargets(targets: NutritionTargets): MacroTargets | null {
   if (
     !hasTargetValue(targets.protein) &&
-    !hasTargetValue(targets.fat) &&
-    !hasTargetValue(targets.carbs)
+    !hasTargetValue(targets.carbs) &&
+    !hasTargetValue(targets.fat)
   ) {
     return null;
   }
 
   const proteinGrams = targets.protein ?? 0;
-  const fatGrams = targets.fat ?? 0;
   const carbsGrams = targets.carbs ?? 0;
+  const fatGrams = targets.fat ?? 0;
 
   return {
     proteinGrams,
-    fatGrams,
     carbsGrams,
+    fatGrams,
     proteinKcal: Math.round(proteinGrams * 4),
-    fatKcal: Math.round(fatGrams * 9),
     carbsKcal: Math.round(carbsGrams * 4),
+    fatKcal: Math.round(fatGrams * 9),
   };
 }
 
-type CoachSurfaceState = {
-  coach: CoachResponse;
-  enabled: boolean;
-  source: CoachResponseSource;
-  status: CoachResultStatus;
-  isStale: boolean;
-};
-
-function isRenderableLiveCoachSource(source: CoachResponseSource): boolean {
-  return source === "remote" || source === "memory";
+function clampProgress(value: number): number {
+  return Math.max(0, Math.min(value, 1));
 }
 
-function getRenderableLiveCoachInsight(
-  state: CoachSurfaceState,
-  options: { dayKey: string; isEmptyDay: boolean },
-): CoachInsight | null {
-  if (
-    !state.enabled ||
-    state.status !== "live_success" ||
-    state.isStale ||
-    !isRenderableLiveCoachSource(state.source) ||
-    state.coach.dayKey !== options.dayKey ||
-    !state.coach.meta.available ||
-    options.isEmptyDay
-  ) {
-    return null;
-  }
-
-  return state.coach.topInsight;
+function getGreetingKey(hour: number): "morning" | "afternoon" | "evening" {
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
 }
 
-function getRenderableCoachEmptyReason(
-  state: CoachSurfaceState,
-  options: { dayKey: string; isEmptyDay: boolean },
-): CoachEmptyReason | null {
-  if (
-    !state.enabled ||
-    state.status !== "live_success" ||
-    state.isStale ||
-    !isRenderableLiveCoachSource(state.source) ||
-    state.coach.dayKey !== options.dayKey ||
-    !state.coach.meta.available ||
-    !options.isEmptyDay ||
-    state.coach.topInsight !== null
-  ) {
-    return null;
-  }
-
-  return state.coach.meta.emptyReason;
+function getMealCountLabel(
+  t: (key: string, options?: Record<string, unknown>) => string,
+  count: number,
+): string {
+  return t("home:mealCount", {
+    count,
+    defaultValue: count === 1 ? "1 meal" : `${count} meals`,
+  });
 }
 
-type HomeNavigation = StackNavigationProp<RootStackParamList>;
+type HomeNavigation = StackNavigationProp<RootStackParamList, "Home">;
+
 type Props = {
   navigation: HomeNavigation;
 };
@@ -191,131 +131,49 @@ type Props = {
 export default function HomeScreen({ navigation }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { t } = useTranslation(["home", "common"]);
-  const netInfo = useNetInfo();
+  const { t, i18n } = useTranslation(["home", "common", "meals"]);
   const { userData } = useUserContext();
   const { uid } = useAuthContext();
-  const [streak, setStreak] = useState(0);
   const { meals, getMeals } = useMeals(uid);
-
-  const last7Days = useMemo(buildLast7Days, []);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const last7Days = useMemo(buildLast7Days, []);
   const selectedDayKey = useMemo(
     () => toLocalDayKey(selectedDate),
     [selectedDate],
   );
-  const isToday = selectedDate.toDateString() === new Date().toDateString();
-  const {
-    state: nutritionState,
-    enabled: nutritionStateEnabled,
-    source: nutritionStateSource,
-    error: nutritionStateError,
-  } = useNutritionState({ uid, dayKey: selectedDayKey });
-  const {
-    coach,
-    enabled: coachEnabled,
-    source: coachSource,
-    status: coachStatus,
-    isStale: coachIsStale,
-  } = useCoach({ uid, dayKey: selectedDayKey });
-  const {
-    report: weeklyReport,
-    loading: weeklyReportLoading,
-    enabled: weeklyReportEnabled,
-  } = useWeeklyReport({ uid, active: isToday });
+  const { state: nutritionState, enabled: nutritionStateEnabled, source: nutritionStateSource } =
+    useNutritionState({ uid, dayKey: selectedDayKey });
+  const mealAddEntry = useMealAddMethodState({
+    navigation,
+    replaceOnStart: false,
+  });
 
+  useEffect(() => {
+    if (!uid) return;
+    getMeals();
+  }, [getMeals, uid]);
+
+  const isToday = selectedDate.toDateString() === new Date().toDateString();
   const dayMeals = useMemo(
     () => getMealsForDate(meals, selectedDate),
     [meals, selectedDate],
   );
-  const isEmptyDay = dayMeals.length === 0;
-  const hasSurvey = !!userData?.surveyComplited;
+  const mealCount = dayMeals.length;
   const hasCanonicalNutritionState =
     nutritionStateEnabled &&
     nutritionState.dayKey === selectedDayKey &&
     nutritionStateSource !== "disabled" &&
     nutritionStateSource !== "fallback";
-  const shouldUseLegacyStreak = !hasCanonicalNutritionState;
-  const topCoachInsight = getRenderableLiveCoachInsight(
-    {
-      coach,
-      enabled: coachEnabled,
-      source: coachSource,
-      status: coachStatus,
-      isStale: coachIsStale,
-    },
-    { dayKey: selectedDayKey, isEmptyDay },
-  );
-  const coachEmptyReason = getRenderableCoachEmptyReason(
-    {
-      coach,
-      enabled: coachEnabled,
-      source: coachSource,
-      status: coachStatus,
-      isStale: coachIsStale,
-    },
-    { dayKey: selectedDayKey, isEmptyDay },
-  );
-  const emptyDayProps = coachEmptyReason
-    ? {
-        mode: "coach_aware" as const,
-        coachEmptyReason,
-      }
-    : {
-        mode: "plain" as const,
-      };
 
-  useEffect(() => {
-    if (!uid || !shouldUseLegacyStreak) {
-      setStreak(0);
-      return;
-    }
-    const unsub = subscribeStreak(uid, (s) => setStreak(s.current || 0));
-    return unsub;
-  }, [shouldUseLegacyStreak, uid]);
-
-  useEffect(() => {
-    if (!uid) return;
-    getMeals();
-  }, [uid, getMeals]);
-
-  const { labels, data } = useMemo(
-    () => getLastNDaysAggregated(meals, 7, "kcal"),
-    [meals],
-  );
-  const showWeeklyGraph = useMemo(() => data.some((v) => v > 0), [data]);
-
-  const legacyMacros = useMemo(
-    () => calculateTotalNutrients(dayMeals),
-    [dayMeals],
-  );
-  const legacyCalories = legacyMacros.kcal;
-  const displayStreak = hasCanonicalNutritionState
-    ? nutritionState.streak.current
-    : streak;
-
-  const totalCalories = hasCanonicalNutritionState
-    ? nutritionState.consumed.kcal
-    : legacyCalories;
-
-  const macros = hasCanonicalNutritionState
+  const legacyMacros = useMemo(() => calculateTotalNutrients(dayMeals), [dayMeals]);
+  const consumed = hasCanonicalNutritionState
     ? nutritionState.consumed
     : legacyMacros;
+  const totalCalories = consumed.kcal;
 
   const goalCalories = hasCanonicalNutritionState
     ? (nutritionState.targets.kcal ?? userData?.calorieTarget ?? 0)
-    : hasSurvey
-      ? (userData?.calorieTarget ?? 0)
-      : 0;
-
-  const nutritionSummary = useMemo(() => {
-    if (!hasCanonicalNutritionState) {
-      return null;
-    }
-    return buildNutritionSummary(nutritionState, {
-      isStale: nutritionStateError != null,
-    });
-  }, [hasCanonicalNutritionState, nutritionState, nutritionStateError]);
+    : (userData?.calorieTarget ?? 0);
 
   const fallbackMacroTargets = useMemo(
     () =>
@@ -326,7 +184,7 @@ export default function HomeScreen({ navigation }: Props) {
             goal: userData.goal,
           })
         : null,
-    [userData?.calorieTarget, userData?.preferences, userData?.goal],
+    [userData?.calorieTarget, userData?.goal, userData?.preferences],
   );
   const macroTargets = useMemo(() => {
     if (!hasCanonicalNutritionState) {
@@ -334,59 +192,149 @@ export default function HomeScreen({ navigation }: Props) {
     }
 
     const stateTargets = toMacroTargets(nutritionState.targets);
-    if (stateTargets) {
-      return stateTargets;
+    return stateTargets ?? fallbackMacroTargets;
+  }, [fallbackMacroTargets, hasCanonicalNutritionState, nutritionState.targets]);
+
+  const numberFormatter = useMemo(
+    () => new Intl.NumberFormat(i18n.language || undefined),
+    [i18n.language],
+  );
+  const fullDateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(i18n.language || undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }),
+    [i18n.language],
+  );
+
+  const displayName = useMemo(() => {
+    const candidate = userData?.username?.trim();
+    if (!candidate) return null;
+    return candidate.split(/\s+/)[0] ?? null;
+  }, [userData?.username]);
+
+  const kcalProgressLabel = useMemo(() => {
+    const consumedLabel = numberFormatter.format(totalCalories);
+    if (goalCalories > 0) {
+      return `${consumedLabel} / ${numberFormatter.format(goalCalories)} kcal`;
+    }
+    return `${consumedLabel} kcal`;
+  }, [goalCalories, numberFormatter, totalCalories]);
+
+  const isCompletedDay = goalCalories > 0 && totalCalories >= goalCalories && mealCount > 0;
+  const isPastIncompleteDay = !isToday && !isCompletedDay;
+  const isTodayEmpty = isToday && mealCount === 0 && !isCompletedDay;
+
+  const selectedMethodName = t(`meals:${mealAddEntry.preferredOption.titleKey}`);
+  const methodSelectorLabel = t("home:methodSelector", {
+    method: selectedMethodName,
+    defaultValue: `Method: ${selectedMethodName}`,
+  });
+
+  const heroModel = useMemo(() => {
+    if (isCompletedDay) {
+      return {
+        title: displayName
+          ? t("home:hero.completed.title", {
+              name: displayName,
+              defaultValue: `Goal reached, ${displayName}`,
+            })
+          : "Goal reached",
+        meta: `${kcalProgressLabel} · ${getMealCountLabel(t, mealCount)}`,
+        ctaLabel: t("home:hero.completed.cta", "Review your day"),
+        tone: "success" as const,
+        supportText: t(
+          "home:hero.completed.support",
+          "See your full breakdown for today",
+        ),
+        showMethodSelector: false,
+        progress: null,
+        supportCopy: null,
+      };
     }
 
-    return fallbackMacroTargets;
+    if (isPastIncompleteDay) {
+      return {
+        title: fullDateFormatter.format(selectedDate),
+        meta: t(
+          "home:hero.pastIncomplete.meta",
+          "You missed a meal log",
+        ),
+        ctaLabel: t("home:hero.pastIncomplete.cta", "Add a missed meal"),
+        tone: "default" as const,
+        supportText: null,
+        showMethodSelector: true,
+        progress: null,
+        supportCopy:
+          mealCount === 0
+            ? t(
+                "home:hero.pastIncomplete.supportCopy",
+                "You can still fill in what was missing.",
+              )
+            : null,
+      };
+    }
+
+    const greetingKey = getGreetingKey(new Date().getHours());
+    const greeting = displayName
+      ? t(`home:hero.greeting.${greetingKey}`, {
+          name: displayName,
+          defaultValue: `${
+            greetingKey === "morning"
+              ? "Good morning"
+              : greetingKey === "afternoon"
+                ? "Good afternoon"
+                : "Good evening"
+          }, ${displayName}`,
+        })
+      : greetingKey === "morning"
+        ? "Good morning"
+        : greetingKey === "afternoon"
+          ? "Good afternoon"
+          : "Good evening";
+
+    if (isTodayEmpty) {
+      return {
+        title: greeting,
+        meta: fullDateFormatter.format(selectedDate),
+        ctaLabel: t("home:hero.todayEmpty.cta", "Log breakfast"),
+        tone: "default" as const,
+        supportText: null,
+        showMethodSelector: true,
+        progress: null,
+        supportCopy: t(
+          "home:hero.todayEmpty.supportCopy",
+          "Start with your first meal and the rest of today will build from there.",
+        ),
+      };
+    }
+
+    return {
+      title: greeting,
+      meta: `${getMealCountLabel(t, mealCount)} · ${kcalProgressLabel}`,
+      ctaLabel: t("home:hero.todayInProgress.cta", "Log next meal"),
+      tone: "default" as const,
+      supportText: null,
+      showMethodSelector: true,
+      progress:
+        goalCalories > 0 ? clampProgress(totalCalories / goalCalories) : null,
+      supportCopy: null,
+    };
   }, [
-    fallbackMacroTargets,
-    hasCanonicalNutritionState,
-    nutritionState.targets,
+    displayName,
+    fullDateFormatter,
+    goalCalories,
+    isCompletedDay,
+    isPastIncompleteDay,
+    isTodayEmpty,
+    kcalProgressLabel,
+    mealCount,
+    selectedDate,
+    t,
+    totalCalories,
   ]);
-
-  const summaryToneStyle = useMemo(() => {
-    if (!nutritionSummary || !hasCanonicalNutritionState) {
-      return null;
-    }
-
-    if (nutritionState.habits.topRisk === "none") {
-      return styles.goalStatusSuccess;
-    }
-
-    return styles.goalStatusWarning;
-  }, [
-    hasCanonicalNutritionState,
-    nutritionState.habits.topRisk,
-    nutritionSummary,
-    styles,
-  ]);
-
-  const handleCoachAction = (actionType: CoachActionType) => {
-    switch (actionType) {
-      case "log_next_meal":
-        navigation.navigate("MealAddMethod");
-        return;
-      case "open_chat":
-        navigation.navigate("Chat");
-        return;
-      case "review_history":
-        navigation.navigate("HistoryList");
-        return;
-      default:
-        return;
-    }
-  };
-
-  const coachCtaTargetScreen = topCoachInsight
-    ? topCoachInsight.actionType === "log_next_meal"
-      ? "MealAddMethod"
-      : topCoachInsight.actionType === "open_chat"
-        ? "Chat"
-        : topCoachInsight.actionType === "review_history"
-          ? "HistoryList"
-          : null
-    : null;
 
   return (
     <Layout>
@@ -395,180 +343,95 @@ export default function HomeScreen({ navigation }: Props) {
           days={last7Days}
           selectedDate={selectedDate}
           onSelect={setSelectedDate}
-          onOpenHistory={() => navigation.navigate("HistoryList")}
-          streak={streak}
         />
 
-        {userData?.calorieTarget && userData.calorieTarget > 0 ? (
-          <View style={[styles.headerRow, styles.headerRowGap]}>
-            <View style={styles.headerContent}>
-              <TargetProgressBar
-                current={totalCalories}
-                target={goalCalories}
-              />
-              {nutritionSummary ? (
-                <View
-                  style={[styles.goalStatusPill, summaryToneStyle]}
-                  testID="home-nutrition-summary"
-                >
-                  <Text style={[styles.goalStatusText, styles.goalLabelText]}>
-                    {nutritionSummary}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-            <StreakBadge value={displayStreak} />
-          </View>
-        ) : (
-          <View style={styles.goalCard}>
-            <View style={styles.goalRow}>
-              <View style={styles.goalRowContent}>
-                <Text style={[styles.goalLabel, styles.goalLabelText]}>
-                  {t("home:totalToday", "Total today")}
-                </Text>
-                <Text style={[styles.goalValue, styles.goalValueText]}>
-                  {totalCalories} {t("common:kcal", "kcal")}
-                </Text>
-              </View>
-            </View>
+        <HomeHeroCard
+          title={heroModel.title}
+          meta={heroModel.meta}
+          ctaLabel={heroModel.ctaLabel}
+          onPressCta={() => {
+            if (isCompletedDay) {
+              navigation.navigate("HistoryList");
+              return;
+            }
 
-            {nutritionSummary ? (
-              <View
-                style={[styles.goalStatusPill, summaryToneStyle]}
-                testID="home-nutrition-summary"
-              >
-                <Text style={[styles.goalStatusText, styles.goalLabelText]}>
-                  {nutritionSummary}
-                </Text>
-              </View>
-            ) : null}
+            void mealAddEntry.handleDirectStart();
+          }}
+          methodLabel={heroModel.showMethodSelector ? methodSelectorLabel : undefined}
+          methodIcon={heroModel.showMethodSelector ? mealAddEntry.preferredOption.icon : undefined}
+          onPressMethodSelector={
+            heroModel.showMethodSelector
+              ? () =>
+                  navigation.navigate("MealAddMethod", {
+                    selectionMode: "persistDefault",
+                  })
+              : undefined
+          }
+          progress={heroModel.progress}
+          supportText={heroModel.supportText ?? undefined}
+          tone={heroModel.tone}
+        />
 
-            <Button
-              label={t("home:setDailyGoal", "Set your daily goal")}
-              onPress={() => navigation.navigate("Onboarding")}
-            />
-          </View>
-        )}
-
-        {macroTargets && (
+        {macroTargets ? (
           <MacroTargetsRow
             macroTargets={macroTargets}
             consumed={{
-              protein: macros.protein,
-              fat: macros.fat,
-              carbs: macros.carbs,
+              protein: consumed.protein,
+              carbs: consumed.carbs,
+              fat: consumed.fat,
             }}
           />
-        )}
-
-        {topCoachInsight ? (
-          <CoachInsightCard
-            insight={topCoachInsight}
-            ctaTargetScreen={coachCtaTargetScreen ?? undefined}
-            onPressCta={() => handleCoachAction(topCoachInsight.actionType)}
-          />
         ) : null}
 
-        {isEmptyDay ? (
-          <EmptyDayView
-            {...emptyDayProps}
-            isToday={isToday}
-            onAddMeal={
-              isToday ? () => navigation.navigate("MealAddMethod") : undefined
-            }
-            isOffline={netInfo.isConnected === false}
-            onOpenHistory={
-              isToday ? undefined : () => navigation.navigate("HistoryList")
-            }
-          />
-        ) : (
+        {heroModel.supportCopy ? (
+          <Text style={styles.supportCopy}>{heroModel.supportCopy}</Text>
+        ) : null}
+
+        {mealCount > 0 ? (
           <TodaysMealsList
             meals={dayMeals}
-            handleAddMeal={
-              isToday ? () => navigation.navigate("MealAddMethod") : undefined
-            }
-            onOpenMeal={(meal: Meal) =>
-              navigation.navigate("MealDetails", { meal })
-            }
-          />
-        )}
-
-        {isToday && weeklyReportEnabled ? (
-          <WeeklyReportCard
-            loading={weeklyReportLoading}
-            report={weeklyReport}
-            onPress={() => navigation.navigate("WeeklyReport")}
+            onOpenMeal={(meal) => navigation.navigate("MealDetails", { meal })}
           />
         ) : null}
-
-        {showWeeklyGraph && <WeeklyProgressGraph data={data} labels={labels} />}
-
-        <ButtonSection />
       </View>
+
+      <Modal
+        visible={mealAddEntry.showResumeModal}
+        title={t("meals:continue_draft_title")}
+        message={t("meals:continue_draft_message")}
+        primaryAction={{
+          label: t("meals:continue"),
+          onPress: () => {
+            void mealAddEntry.handleContinueDraft();
+          },
+        }}
+        secondaryAction={{
+          label: t("meals:discard"),
+          onPress: () => {
+            void mealAddEntry.handleDiscardDraft();
+          },
+          tone: "destructive",
+        }}
+        onClose={mealAddEntry.closeResumeModal}
+      />
     </Layout>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    screen: { flex: 1 },
-    screenGap: { gap: theme.spacing.lg },
-    headerRow: { flexDirection: "row", alignItems: "center" },
-    headerRowGap: { gap: theme.spacing.sm },
-    headerContent: { flex: 1, gap: theme.spacing.xs },
-    goalCard: {
-      backgroundColor: theme.surfaceElevated,
-      padding: theme.spacing.lg,
-      borderRadius: theme.rounded.md,
-      shadowColor: theme.shadow,
-      shadowOpacity: 0.08,
-      shadowRadius: 12,
-      elevation: 2,
-      gap: theme.spacing.md,
+    screen: {
+      flex: 1,
     },
-    goalRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
+    screenGap: {
+      gap: theme.spacing.sectionGap,
     },
-    goalRowContent: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      width: "100%",
-    },
-    goalLabel: {
-      fontSize: theme.typography.size.bodyM,
-      marginBottom: 2,
-    },
-    goalLabelText: {
-      color: theme.textSecondary,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    goalValue: {
-      fontSize: theme.typography.size.title,
-    },
-    goalValueText: {
-      color: theme.text,
-      fontFamily: theme.typography.fontFamily.semiBold,
-    },
-    goalStatusPill: {
+    supportCopy: {
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.regular,
+      textAlign: "left",
       paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.rounded.full,
-      borderWidth: 1,
-      borderColor: theme.border,
-      backgroundColor: theme.background,
-      alignSelf: "flex-start",
-      maxWidth: "100%",
-    },
-    goalStatusText: {
-      fontSize: theme.typography.size.caption,
-    },
-    goalStatusSuccess: {
-      backgroundColor: theme.success.surface,
-    },
-    goalStatusWarning: {
-      backgroundColor: theme.warning.surface,
     },
   });

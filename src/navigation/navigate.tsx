@@ -33,7 +33,11 @@ export type RootStackParamList = {
   Profile: undefined;
   ResetPassword: undefined;
   Terms: undefined;
-  MealAddMethod: undefined;
+  MealAddMethod:
+    | {
+        selectionMode?: "persistDefault" | "temporary";
+      }
+    | undefined;
   Statistics: undefined;
   EditReviewIngredients: { savedCloudId?: string } | undefined;
   EditResult: { savedCloudId?: string } | undefined;
@@ -71,6 +75,55 @@ export type RootStackParamList = {
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
+let navigationReady = false;
+const pendingNavigationOperations: Array<() => void> = [];
+
+function flushPendingNavigationOperations(): void {
+  if (!navigationReady || !navigationRef.isReady()) {
+    return;
+  }
+
+  while (pendingNavigationOperations.length > 0) {
+    const operation = pendingNavigationOperations.shift();
+    operation?.();
+
+    if (!navigationReady || !navigationRef.isReady()) {
+      return;
+    }
+  }
+}
+
+function runOrQueueNavigationOperation(operation: () => void): void {
+  if (!navigationReady || !navigationRef.isReady()) {
+    pendingNavigationOperations.push(operation);
+    return;
+  }
+
+  operation();
+}
+
+export function markNavigationReady(): void {
+  navigationReady = true;
+  flushPendingNavigationOperations();
+}
+
+export function markNavigationUnavailable(): void {
+  navigationReady = false;
+}
+
+export function getCurrentRouteNameSafe():
+  | keyof RootStackParamList
+  | undefined {
+  if (!navigationReady || !navigationRef.isReady()) {
+    return undefined;
+  }
+
+  try {
+    return navigationRef.getCurrentRoute()?.name;
+  } catch {
+    return undefined;
+  }
+}
 
 type ScreenNames = keyof RootStackParamList;
 type ScreensWithOptionalParams = {
@@ -92,14 +145,14 @@ export function navigate<Name extends ScreenNames>(
   name: Name,
   params?: RootStackParamList[Name],
 ): void {
-  if (navigationRef.isReady()) {
+  runOrQueueNavigationOperation(() => {
     navigationRef.dispatch(
       CommonActions.navigate({
         name: name as string,
         params,
       }),
     );
-  }
+  });
 }
 
 export function resetNavigation<Name extends ScreensWithOptionalParams>(
@@ -114,7 +167,12 @@ export function resetNavigation<Name extends ScreenNames>(
   name: Name,
   params?: RootStackParamList[Name],
 ): void {
-  if (navigationRef.isReady()) {
+  runOrQueueNavigationOperation(() => {
     navigationRef.reset({ index: 0, routes: [{ name, params }] });
-  }
+  });
+}
+
+export function __resetNavigationForTests(): void {
+  navigationReady = false;
+  pendingNavigationOperations.length = 0;
 }
