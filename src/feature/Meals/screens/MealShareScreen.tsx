@@ -117,7 +117,7 @@ export default function MealShareScreen() {
       navigation.navigate("SavedMeals");
       return;
     }
-    navigation.navigate("MealAddMethod");
+    navigation.navigate("MealAddMethod", { selectionMode: "temporary" });
   };
 
   return (

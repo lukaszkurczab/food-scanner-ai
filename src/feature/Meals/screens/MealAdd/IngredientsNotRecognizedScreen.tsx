@@ -58,7 +58,9 @@ export default function IngredientsNotRecognizedScreen({
 
   const handleOtherMethod = () => {
     if (uid) clearMeal(uid);
-    navigation.replace("MealAddMethod");
+    navigation.replace("MealAddMethod", {
+      selectionMode: "temporary",
+    });
   };
 
   const handleCancel = () => {
@@ -126,7 +128,7 @@ export default function IngredientsNotRecognizedScreen({
             <GlobalActionButtons
               label={`${t("retake", "Retake photo")} (${attempt}/${MAX_ATTEMPTS})`}
               onPress={handleRetake}
-              secondaryLabel={t("select_method", "Back to method selection")}
+              secondaryLabel={t("change_method", "Change add method")}
               secondaryOnPress={handleOtherMethod}
               containerStyle={styles.buttonSpacingNone}
             />
@@ -135,7 +137,7 @@ export default function IngredientsNotRecognizedScreen({
         {!isAiUnavailable && attempt >= MAX_ATTEMPTS ? (
           <Button
             variant="secondary"
-            label={t("select_method", "Back to method selection")}
+            label={t("change_method", "Change add method")}
             onPress={handleOtherMethod}
             style={styles.buttonSpacing}
           />

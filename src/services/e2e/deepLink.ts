@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApp } from "@react-native-firebase/app";
 import { getAuth, signOut } from "@react-native-firebase/auth";
-import { navigationRef, resetNavigation } from "@/navigation/navigate";
+import { resetNavigation } from "@/navigation/navigate";
 import { stopSyncLoop } from "@/services/offline/sync.engine";
 import { resetOfflineStorage } from "@/services/offline/db";
 import { setE2EForcedOffline } from "@/services/e2e/connectivity";
@@ -48,15 +48,7 @@ function isResetDeepLink(url: string): boolean {
 function resetToAuthOrHome(logout: boolean) {
   const auth = getAuth(getApp());
   const target = logout || !auth.currentUser ? "Login" : "Home";
-
-  if (navigationRef.isReady()) {
-    resetNavigation(target);
-    return;
-  }
-
-  setTimeout(() => {
-    resetNavigation(target);
-  }, 250);
+  resetNavigation(target);
 }
 
 async function runReset(options: ResetOptions) {

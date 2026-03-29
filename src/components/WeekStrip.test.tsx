@@ -27,7 +27,7 @@ describe("WeekStrip", () => {
       { date: new Date(2026, 0, 3), label: "W", isToday: true },
     ];
 
-    const { getByText, getByLabelText } = renderWithTheme(
+    const { getByText } = renderWithTheme(
       <WeekStrip
         days={days}
         selectedDate={days[0].date}

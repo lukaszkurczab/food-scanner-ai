@@ -2,18 +2,6 @@ import { describe, expect, it, jest } from "@jest/globals";
 import { MacroTargetsRow } from "@/feature/Home/components/MacroTargetsRow";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
-const mockMacroTargetDonut = jest.fn<
-  (props: { macro: "protein" | "fat" | "carbs"; targetGrams: number; consumedGrams: number }) => null
->(() => null);
-
-jest.mock("./MacroTargetDonut", () => ({
-  MacroTargetDonut: (props: {
-    macro: "protein" | "fat" | "carbs";
-    targetGrams: number;
-    consumedGrams: number;
-  }) => mockMacroTargetDonut(props),
-}));
-
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, fallback?: string) => fallback ?? key,
@@ -39,7 +27,7 @@ describe("MacroTargetsRow", () => {
     expect(toJSON()).toBeNull();
   });
 
-  it("renders macro labels and forwards donut props", () => {
+  it("renders grouped macro values and labels", () => {
     const { getByText } = renderWithTheme(
       <MacroTargetsRow
         macroTargets={{
@@ -54,24 +42,11 @@ describe("MacroTargetsRow", () => {
       />,
     );
 
+    expect(getByText("80 / 150g")).toBeTruthy();
+    expect(getByText("110 / 220g")).toBeTruthy();
+    expect(getByText("30 / 60g")).toBeTruthy();
     expect(getByText("Protein")).toBeTruthy();
-    expect(getByText("Fat")).toBeTruthy();
     expect(getByText("Carbs")).toBeTruthy();
-    expect(mockMacroTargetDonut).toHaveBeenCalledTimes(3);
-    expect(mockMacroTargetDonut).toHaveBeenCalledWith({
-      macro: "protein",
-      targetGrams: 150,
-      consumedGrams: 80,
-    });
-    expect(mockMacroTargetDonut).toHaveBeenCalledWith({
-      macro: "fat",
-      targetGrams: 60,
-      consumedGrams: 30,
-    });
-    expect(mockMacroTargetDonut).toHaveBeenCalledWith({
-      macro: "carbs",
-      targetGrams: 220,
-      consumedGrams: 110,
-    });
+    expect(getByText("Fat")).toBeTruthy();
   });
 });

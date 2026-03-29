@@ -12,6 +12,33 @@
   "totalToday": "Razem dzisiaj",
   "noGoalSet": "Brak celu dziennego",
   "setDailyGoal": "Ustaw cel dzienny",
+  "mealCount_one": "{{count}} posiłek",
+  "mealCount_other": "{{count}} posiłki",
+  "methodSelector": "Metoda: {{method}}",
+  "hero": {
+    "greeting": {
+      "morning": "Dzień dobry, {{name}}",
+      "afternoon": "Dzień dobry, {{name}}",
+      "evening": "Dobry wieczór, {{name}}"
+    },
+    "todayEmpty": {
+      "cta": "Dodaj śniadanie",
+      "supportCopy": "Zacznij od pierwszego posiłku, a reszta dnia ułoży się stąd naturalnie."
+    },
+    "todayInProgress": {
+      "cta": "Dodaj kolejny posiłek"
+    },
+    "pastIncomplete": {
+      "meta": "Brakuje wpisu z tego dnia",
+      "cta": "Dodaj pominięty posiłek",
+      "supportCopy": "Wciąż możesz uzupełnić to, czego brakuje."
+    },
+    "completed": {
+      "title": "Cel osiągnięty, {{name}}",
+      "cta": "Przejrzyj swój dzień",
+      "support": "Zobacz pełne podsumowanie dzisiejszego dnia"
+    }
+  },
 
   "emptyDay": {
     "title": "Brak posiłków tego dnia",

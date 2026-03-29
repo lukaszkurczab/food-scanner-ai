@@ -1,12 +1,13 @@
 import React, { useMemo } from "react";
 import { View, Pressable, StyleSheet } from "react-native";
+import {
+  useNavigation,
+  useNavigationState,
+} from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { useTheme } from "@/theme/useTheme";
 import AppIcon, { type AppIconName } from "@/components/AppIcon";
-import {
-  navigate,
-  navigationRef,
-  type RootStackParamList,
-} from "@/navigation/navigate";
+import type { RootStackParamList } from "@/navigation/navigate";
 import AvatarBadge from "@/components/AvatarBadge";
 import { useUserContext } from "@/context/UserContext";
 import { useBadges } from "@/hooks/useBadges";
@@ -51,6 +52,11 @@ function getActiveTab(routeName?: keyof RootStackParamList): TabKey | null {
 export const BottomTabBar: React.FC = () => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const navigation =
+    useNavigation<StackNavigationProp<RootStackParamList>>();
+  const currentRouteName = useNavigationState(
+    (state) => state.routes[state.index]?.name as keyof RootStackParamList | undefined,
+  );
   const { uid } = useAuthContext();
   const { userData } = useUserContext();
   const { isPremium } = usePremiumContext();
@@ -59,7 +65,7 @@ export const BottomTabBar: React.FC = () => {
 
   const avatarSrc = userData?.avatarLocalPath || userData?.avatarUrl || "";
   const safeBadges = Array.isArray(badges) ? badges : [];
-  const activeTab = getActiveTab(navigationRef.getCurrentRoute()?.name);
+  const activeTab = getActiveTab(currentRouteName);
 
   let borderColor: string;
   if (isPremium) {
@@ -86,31 +92,34 @@ export const BottomTabBar: React.FC = () => {
     {
       key: "Home",
       icon: "home",
-      onPress: () => navigate("Home"),
+      onPress: () => navigation.navigate("Home"),
       activeKey: "Home",
     },
     {
       key: "Statistics",
       icon: "stats",
-      onPress: () => navigate("Statistics"),
+      onPress: () => navigation.navigate("Statistics"),
       activeKey: "Statistics",
     },
     {
       key: "Add",
       icon: "add",
       isFab: true,
-      onPress: () => navigate("MealAddMethod"),
+      onPress: () =>
+        navigation.navigate("MealAddMethod", {
+          selectionMode: "temporary",
+        }),
     },
     {
       key: "Chat",
       icon: "assistant",
-      onPress: () => navigate("Chat"),
+      onPress: () => navigation.navigate("Chat"),
       activeKey: "Chat",
     },
     {
       key: "Profile",
       icon: "person",
-      onPress: () => navigate("Profile"),
+      onPress: () => navigation.navigate("Profile"),
       activeKey: "Profile",
     },
   ];

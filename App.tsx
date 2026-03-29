@@ -9,7 +9,12 @@ initRevenueCat();
 import { ThemeController } from "@/theme/ThemeController";
 import AppNavigator from "@/navigation/AppNavigator";
 import { NavigationContainer } from "@react-navigation/native";
-import { navigationRef } from "@/navigation/navigate";
+import {
+  getCurrentRouteNameSafe,
+  markNavigationReady,
+  markNavigationUnavailable,
+  navigationRef,
+} from "@/navigation/navigate";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserProvider } from "@/context/UserContext";
 import { MealDraftProvider } from "@/context/MealDraftContext";
@@ -50,7 +55,7 @@ function Root() {
 
   if (!navigationTelemetryHandlerRef.current) {
     navigationTelemetryHandlerRef.current = createNavigationTelemetryTracker({
-      getCurrentRouteName: () => navigationRef.getCurrentRoute()?.name,
+      getCurrentRouteName: getCurrentRouteNameSafe,
     });
   }
 
@@ -73,6 +78,12 @@ function Root() {
   useEffect(() => {
     void setReminderRuntimeUid(uid);
   }, [uid]);
+
+  useEffect(() => {
+    return () => {
+      markNavigationUnavailable();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isE2EModeEnabled()) return;
@@ -109,7 +120,10 @@ function Root() {
   return (
     <NavigationContainer
       ref={navigationRef}
-      onReady={navigationTelemetryHandlerRef.current}
+      onReady={() => {
+        markNavigationReady();
+        navigationTelemetryHandlerRef.current?.();
+      }}
       onStateChange={navigationTelemetryHandlerRef.current}
     >
       <AiCreditsProvider>

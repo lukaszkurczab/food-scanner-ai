@@ -39,4 +39,16 @@ describe("navigationTelemetry", () => {
     expect(mockTrackScreenView).toHaveBeenNthCalledWith(1, "Home");
     expect(mockTrackScreenView).toHaveBeenNthCalledWith(2, "MealAddMethod");
   });
+
+  it("ignores navigation getters that throw before the container is ready", () => {
+    const handler = createNavigationTelemetryTracker({
+      getCurrentRouteName: () => {
+        throw new Error("navigation not ready");
+      },
+      trackScreenViewFn: mockTrackScreenView,
+    });
+
+    expect(() => handler()).not.toThrow();
+    expect(mockTrackScreenView).not.toHaveBeenCalled();
+  });
 });

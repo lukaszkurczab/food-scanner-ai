@@ -224,7 +224,7 @@ describe("SelectSavedMealScreen", () => {
     );
 
     fireEvent.press(getByText("change-search"));
-    fireEvent.press(getByText("Start over"));
+    fireEvent.press(getByText("Change add method"));
 
     expect(getByText("No saved meals")).toBeTruthy();
     expect(setQueryText).toHaveBeenCalledWith("pasta");
@@ -256,7 +256,7 @@ describe("SelectSavedMealScreen", () => {
 
     expect(getByText("common:offline.title")).toBeTruthy();
     expect(getByText("savedMeals.offlineEmpty")).toBeTruthy();
-    fireEvent.press(getByText("Start over"));
+    fireEvent.press(getByText("Change add method"));
     expect(handleStartOver).toHaveBeenCalledTimes(1);
   });
 
@@ -332,6 +332,8 @@ describe("SelectSavedMealScreen", () => {
 
     expect(mockSyncMyMeals).toHaveBeenCalledWith("user-1");
     expect(navigate).toHaveBeenCalledWith("AddMeal", { start: "Result" });
-    expect(replace).toHaveBeenCalledWith("MealAddMethod");
+    expect(replace).toHaveBeenCalledWith("MealAddMethod", {
+      selectionMode: "temporary",
+    });
   });
 });

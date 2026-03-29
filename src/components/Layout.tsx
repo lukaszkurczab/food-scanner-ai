@@ -66,7 +66,7 @@ export const Layout = ({
 
   const shouldShowTabBar = showNavigation && !isKeyboardVisible;
   const bottomPadding = shouldShowTabBar
-    ? BOTTOM_TAB_BAR_BASE_HEIGHT + insets.bottom + BOTTOM_TAB_BAR_BOTTOM_OFFSET
+    ? BOTTOM_TAB_BAR_BASE_HEIGHT + BOTTOM_TAB_BAR_BOTTOM_OFFSET
     : isKeyboardVisible
       ? 0
       : insets.bottom + 8;
@@ -84,9 +84,10 @@ export const Layout = ({
 
   const content = (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={[styles.root]}>
+      <View style={[styles.root, { backgroundColor: theme.background }]}>
         <View
           style={[
+            styles.surface,
             {
               backgroundColor: theme.background,
               paddingTop: insets.top + 16,
@@ -130,6 +131,7 @@ export const Layout = ({
             </View>
           ) : (
             <ScrollView
+              style={styles.content}
               contentContainerStyle={[
                 styles.scrollContent,
                 { paddingTop: contentTopPadding },
@@ -164,6 +166,7 @@ export const Layout = ({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   root: { flex: 1 },
+  surface: { flex: 1 },
   content: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   offlineBannerWrap: {

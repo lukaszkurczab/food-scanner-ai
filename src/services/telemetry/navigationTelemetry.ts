@@ -14,7 +14,14 @@ export function createNavigationTelemetryTracker({
   let previousRouteName: string | undefined;
 
   return () => {
-    const currentRouteName = getCurrentRouteName()?.trim();
+    let currentRouteName: string | undefined;
+
+    try {
+      currentRouteName = getCurrentRouteName()?.trim();
+    } catch {
+      return;
+    }
+
     if (!currentRouteName || previousRouteName === currentRouteName) {
       return;
     }

@@ -1,83 +1,89 @@
 import { useMemo } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RouteProp } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/theme/useTheme";
 import type { RootStackParamList } from "@/navigation/navigate";
-import type { StackNavigationProp } from "@react-navigation/stack";
 import AppIcon from "@/components/AppIcon";
-import { useTranslation } from "react-i18next";
-import { Layout } from "@/components";
 import { Modal } from "@/components/Modal";
+import { useTranslation } from "react-i18next";
 import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
-import { AiCreditsBadge } from "@/components/AiCreditsBadge";
 import { trackMealAddMethodSelected } from "@/services/telemetry/telemetryInstrumentation";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
   "MealAddMethod"
 >;
+type MealAddMethodRouteProp = RouteProp<RootStackParamList, "MealAddMethod">;
 
 const MealAddMethodScreen = () => {
+  const navigation = useNavigation<MealAddMethodNavigationProp>();
+  const route = useRoute<MealAddMethodRouteProp>();
+  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const navigation = useNavigation<MealAddMethodNavigationProp>();
-  const { t } = useTranslation(["meals", "chat"]);
+  const { t } = useTranslation(["meals"]);
+  const persistSelection = route.params?.selectionMode === "persistDefault";
 
-  const state = useMealAddMethodState({ navigation });
-
-  const optionCost = (key: string): number => {
-    if (key === "ai_photo") return 5;
-    if (key === "ai_text") return 1;
-    return 0;
-  };
-
-  const buildCostLabel = (cost: number): string => {
-    if (cost === 0) return t("credits.costZero", { ns: "chat" });
-    if (cost === 1) return t("credits.costSingle", { ns: "chat" });
-    return t("credits.costMultiple", { ns: "chat", count: cost });
-  };
+  const state = useMealAddMethodState({
+    navigation,
+    replaceOnStart: true,
+    persistSelection,
+  });
 
   return (
-    <Layout>
-      <Text style={styles.title}>{t("title")}</Text>
-      <Text style={styles.subtitle}>{t("subtitle")}</Text>
+    <View style={styles.overlay}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => navigation.goBack()}
+        style={styles.dismissArea}
+      />
 
-      <View style={styles.optionsWrap}>
-        {state.options.map((option) => {
-          const cost = optionCost(option.key);
-          return (
-            <TouchableOpacity
+      <View
+        style={[
+          styles.sheet,
+          { paddingBottom: Math.max(insets.bottom, theme.spacing.lg) },
+        ]}
+      >
+        <View style={styles.handle} />
+        <Text style={styles.title}>{t("title", "Add meal")}</Text>
+
+        <View style={styles.optionsWrap}>
+          {state.options.map((option) => (
+            <Pressable
               key={option.key}
-              testID={`meal-add-option-${option.key}`}
-              activeOpacity={0.85}
-              style={styles.optionCard}
+              accessibilityRole="button"
               onPress={() => {
                 void trackMealAddMethodSelected(option.key);
                 void state.handleOptionPress(option);
               }}
+              style={({ pressed }) => [
+                styles.optionRow,
+                pressed ? styles.optionRowPressed : null,
+              ]}
+              testID={`meal-add-option-${option.key}`}
             >
               <View style={styles.optionIconBox}>
                 <AppIcon
                   name={option.icon}
-                  size={48}
+                  size={19}
                   color={theme.primary}
                 />
               </View>
+
               <View style={styles.optionContent}>
-                <View style={styles.optionHeader}>
-                  <Text style={styles.optionTitle}>{t(option.titleKey)}</Text>
-                  <AiCreditsBadge
-                    text={buildCostLabel(cost)}
-                    tone={cost > 0 ? "accent" : "neutral"}
-                  />
-                </View>
-                <Text style={styles.optionDescription}>
+                <Text numberOfLines={1} style={styles.optionTitle}>
+                  {t(option.titleKey)}
+                </Text>
+                <Text numberOfLines={2} style={styles.optionDescription}>
                   {t(option.descKey)}
                 </Text>
               </View>
-            </TouchableOpacity>
-          );
-        })}
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       <Modal
@@ -86,41 +92,20 @@ const MealAddMethodScreen = () => {
         message={t("continue_draft_message")}
         primaryAction={{
           label: t("continue"),
-          onPress: state.handleContinueDraft,
+          onPress: () => {
+            void state.handleContinueDraft();
+          },
         }}
         secondaryAction={{
           label: t("discard"),
-          onPress: state.handleDiscardDraft,
+          onPress: () => {
+            void state.handleDiscardDraft();
+          },
           tone: "destructive",
         }}
         onClose={state.closeResumeModal}
       />
-
-      <Modal
-        visible={state.showAiLimitModal}
-        title={t("limit.reachedTitle", {
-          ns: "chat",
-          defaultValue: "Daily limit reached",
-        })}
-        message={t("limit.reachedShort", { ns: "chat" })}
-        primaryAction={{
-          label: t("limit.upgradeCta", {
-            ns: "chat",
-            defaultValue: "Upgrade",
-          }),
-          onPress: state.handleAiLimitUpgrade,
-        }}
-        secondaryAction={{
-          label: t("cancel", {
-            ns: "common",
-            defaultValue: "Close",
-          }),
-          onPress: state.closeAiLimitModal,
-        }}
-        onClose={state.closeAiLimitModal}
-        stackActions
-      />
-    </Layout>
+    </View>
   );
 };
 
@@ -128,63 +113,79 @@ export default MealAddMethodScreen;
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    title: {
-      fontSize: theme.typography.size.h1,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-      textAlign: "center",
-      marginBottom: theme.spacing.md,
+    overlay: {
+      flex: 1,
+      backgroundColor: theme.overlay,
+      justifyContent: "flex-end",
     },
-    subtitle: {
-      fontSize: theme.typography.size.bodyM,
-      color: theme.textSecondary,
+    dismissArea: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    sheet: {
+      backgroundColor: theme.surface,
+      borderTopLeftRadius: theme.rounded.xl,
+      borderTopRightRadius: theme.rounded.xl,
+      paddingTop: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.screenPadding,
+      gap: theme.spacing.sm,
+      shadowColor: theme.shadow,
+      shadowOpacity: theme.isDark ? 0.4 : 0.18,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: -6 },
+      elevation: 12,
+    },
+    handle: {
+      width: 40,
+      height: 4,
+      borderRadius: theme.rounded.full,
+      backgroundColor: theme.border,
+      alignSelf: "center",
+    },
+    title: {
+      color: theme.text,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
+      fontFamily: theme.typography.fontFamily.semiBold,
       textAlign: "center",
-      marginBottom: theme.spacing.xl,
     },
     optionsWrap: {
-      flexGrow: 1,
-      justifyContent: "flex-start",
-      gap: theme.spacing.xl,
+      gap: theme.spacing.xs,
+      paddingBottom: theme.spacing.sm,
     },
-    optionCard: {
+    optionRow: {
       flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: theme.surfaceElevated,
+      alignItems: "flex-start",
+      gap: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.xs,
       borderRadius: theme.rounded.md,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      borderWidth: 1.5,
-      borderColor: theme.border,
-      shadowColor: theme.shadow,
-      shadowOpacity: 0.1,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 12,
+    },
+    optionRowPressed: {
+      backgroundColor: theme.surfaceAlt,
     },
     optionIconBox: {
-      width: 64,
-      height: 64,
+      width: 38,
+      height: 38,
       borderRadius: theme.rounded.sm,
-      marginRight: theme.spacing.lg,
+      backgroundColor: theme.surfaceAlt,
+      alignItems: "center",
       justifyContent: "center",
-      alignItems: "center",
     },
-    optionContent: { flex: 1 },
-    optionHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.xs,
+    optionContent: {
+      flex: 1,
+      gap: 2,
+      paddingTop: 1,
     },
     optionTitle: {
-      fontSize: theme.typography.size.title,
-      fontFamily: theme.typography.fontFamily.bold,
       color: theme.text,
-      flexShrink: 1,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      fontFamily: theme.typography.fontFamily.medium,
     },
     optionDescription: {
-      fontSize: theme.typography.size.bodyL,
-      color: theme.textSecondary,
-      opacity: 0.95,
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.regular,
     },
   });

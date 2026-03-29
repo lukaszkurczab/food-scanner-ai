@@ -218,7 +218,9 @@ describe("StatisticsScreen", () => {
       <StatisticsScreen navigation={navigation as never} />,
     );
     fireEvent.press(empty.getByText("statistics:empty.cta"));
-    expect(navigation.navigate).toHaveBeenCalledWith("MealAddMethod");
+    expect(navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
+      selectionMode: "temporary",
+    });
   });
 
   it("renders premium banner, custom range controls and statistics cards", () => {

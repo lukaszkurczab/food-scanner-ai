@@ -14,11 +14,13 @@ type ModalProps = {
 };
 
 const mockUseNavigation = jest.fn();
+const mockUseRoute = jest.fn();
 const mockUseMealAddMethodState = jest.fn();
 const mockTrackMealAddMethodSelected = jest.fn<(optionKey: string) => Promise<void>>();
 
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockUseNavigation(),
+  useRoute: () => mockUseRoute(),
 }));
 
 jest.mock("@/feature/Meals/hooks/useMealAddMethodState", () => ({
@@ -31,32 +33,16 @@ jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
 }));
 
 jest.mock("react-i18next", () => ({
-  useTranslation: (ns: string | string[]) => {
-    const defaultNs = Array.isArray(ns) ? ns[0] : ns;
-    return {
-    t: (key: string, options?: { defaultValue?: string; ns?: string }) =>
-        options?.defaultValue ?? `${options?.ns ?? defaultNs}:${key}`,
-    };
-  },
+  useTranslation: () => ({
+    t: (key: string, options?: { defaultValue?: string }) =>
+      options?.defaultValue ?? `meals:${key}`,
+  }),
 }));
 
 jest.mock("@/components/AppIcon", () => ({
   __esModule: true,
   default: () => null,
 }));
-
-jest.mock("@/components", () => {
-  const { createElement } =
-    jest.requireActual<typeof import("react")>("react");
-  const { View } =
-    jest.requireActual<typeof import("react-native")>("react-native");
-
-  return {
-    __esModule: true,
-    Layout: ({ children }: { children?: ReactNode }) =>
-      createElement(View, null, children),
-  };
-});
 
 jest.mock("@/components/Modal", () => {
   const { createElement } =
@@ -83,27 +69,21 @@ jest.mock("@/components/Modal", () => {
             primaryAction
               ? createElement(
                   Pressable,
-                  {
-                    onPress: primaryAction.onPress,
-                    accessibilityRole: "button",
-                  },
+                  { onPress: primaryAction.onPress },
                   createElement(Text, null, primaryAction.label),
                 )
               : null,
             secondaryAction
               ? createElement(
                   Pressable,
-                  {
-                    onPress: secondaryAction.onPress,
-                    accessibilityRole: "button",
-                  },
+                  { onPress: secondaryAction.onPress },
                   createElement(Text, null, secondaryAction.label),
                 )
               : null,
             onClose
               ? createElement(
                   Pressable,
-                  { onPress: onClose, accessibilityRole: "button" },
+                  { onPress: onClose },
                   createElement(Text, null, "close-modal"),
                 )
               : null,
@@ -112,25 +92,47 @@ jest.mock("@/components/Modal", () => {
   };
 });
 
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+
+jest.mock("@/components", () => {
+  const { createElement } =
+    jest.requireActual<typeof import("react")>("react");
+  const { View } =
+    jest.requireActual<typeof import("react-native")>("react-native");
+
+  return {
+    __esModule: true,
+    Layout: ({ children }: { children?: ReactNode }) =>
+      createElement(View, null, children),
+  };
+});
+
 describe("MealAddMethodScreen", () => {
   beforeEach(() => {
-    mockUseNavigation.mockReturnValue({ navigate: jest.fn() });
+    mockUseNavigation.mockReturnValue({
+      replace: jest.fn(),
+      navigate: jest.fn(),
+      goBack: jest.fn(),
+    });
+    mockUseRoute.mockReturnValue({ params: undefined });
     mockTrackMealAddMethodSelected.mockResolvedValue();
   });
 
-  it("renders available options and forwards the selected option", () => {
+  it("renders lightweight method rows and forwards the selected option", () => {
     const options = [
       {
-        key: "ai_photo",
-        icon: "camera-alt",
-        titleKey: "aiTitle",
-        descKey: "aiDesc",
+        key: "photo",
+        icon: "camera",
+        titleKey: "photoTitle",
+        descKey: "photoDesc",
       },
       {
-        key: "manual",
-        icon: "edit",
-        titleKey: "manualTitle",
-        descKey: "manualDesc",
+        key: "barcode",
+        icon: "scan-barcode",
+        titleKey: "barcodeTitle",
+        descKey: "barcodeDesc",
       },
     ] as const;
     const handleOptionPress = jest.fn<
@@ -141,29 +143,51 @@ describe("MealAddMethodScreen", () => {
       options,
       handleOptionPress,
       showResumeModal: false,
-      showAiLimitModal: false,
     });
 
     const { getByTestId, getByText } = renderWithTheme(<MealAddMethodScreen />);
 
     expect(getByText("meals:title")).toBeTruthy();
-    expect(getByText("chat:credits.costMultiple")).toBeTruthy();
-    expect(getByText("chat:credits.costZero")).toBeTruthy();
-    fireEvent.press(getByTestId("meal-add-option-ai_photo"));
-    fireEvent.press(getByTestId("meal-add-option-manual"));
+    expect(getByText("meals:photoTitle")).toBeTruthy();
+    expect(getByText("meals:barcodeTitle")).toBeTruthy();
 
-    expect(mockTrackMealAddMethodSelected).toHaveBeenNthCalledWith(1, "ai_photo");
-    expect(mockTrackMealAddMethodSelected).toHaveBeenNthCalledWith(2, "manual");
+    fireEvent.press(getByTestId("meal-add-option-photo"));
+    fireEvent.press(getByTestId("meal-add-option-barcode"));
+
+    expect(mockTrackMealAddMethodSelected).toHaveBeenNthCalledWith(1, "photo");
+    expect(mockTrackMealAddMethodSelected).toHaveBeenNthCalledWith(2, "barcode");
     expect(handleOptionPress.mock.calls[0][0]).toEqual(options[0]);
     expect(handleOptionPress.mock.calls[1][0]).toEqual(options[1]);
+    expect(mockUseMealAddMethodState).toHaveBeenCalledWith({
+      navigation: expect.anything(),
+      replaceOnStart: true,
+      persistSelection: false,
+    });
   });
 
-  it("wires resume draft and AI limit modal actions", () => {
-    const handleContinueDraft = jest.fn();
-    const handleDiscardDraft = jest.fn();
+  it("persists the selected method only for Home-driven chooser usage", () => {
+    mockUseRoute.mockReturnValue({
+      params: { selectionMode: "persistDefault" },
+    });
+    mockUseMealAddMethodState.mockReturnValue({
+      options: [],
+      handleOptionPress: jest.fn(),
+      showResumeModal: false,
+    });
+
+    renderWithTheme(<MealAddMethodScreen />);
+
+    expect(mockUseMealAddMethodState).toHaveBeenCalledWith({
+      navigation: expect.anything(),
+      replaceOnStart: true,
+      persistSelection: true,
+    });
+  });
+
+  it("wires resume draft modal actions", () => {
+    const handleContinueDraft = jest.fn(async () => undefined);
+    const handleDiscardDraft = jest.fn(async () => undefined);
     const closeResumeModal = jest.fn();
-    const handleAiLimitUpgrade = jest.fn();
-    const closeAiLimitModal = jest.fn();
 
     mockUseMealAddMethodState.mockReturnValue({
       options: [],
@@ -172,22 +196,15 @@ describe("MealAddMethodScreen", () => {
       handleContinueDraft,
       handleDiscardDraft,
       closeResumeModal,
-      showAiLimitModal: true,
-      handleAiLimitUpgrade,
-      closeAiLimitModal,
     });
 
     const { getByText } = renderWithTheme(<MealAddMethodScreen />);
 
     fireEvent.press(getByText("meals:continue"));
     fireEvent.press(getByText("meals:discard"));
-    fireEvent.press(getByText("Upgrade"));
-    fireEvent.press(getByText("Close"));
 
     expect(handleContinueDraft).toHaveBeenCalledTimes(1);
     expect(handleDiscardDraft).toHaveBeenCalledTimes(1);
-    expect(handleAiLimitUpgrade).toHaveBeenCalledTimes(1);
-    expect(closeAiLimitModal).toHaveBeenCalledTimes(1);
     expect(closeResumeModal).not.toHaveBeenCalled();
   });
 });

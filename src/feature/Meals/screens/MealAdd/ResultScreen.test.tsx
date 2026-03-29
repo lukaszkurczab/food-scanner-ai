@@ -321,8 +321,8 @@ describe("ResultScreen", () => {
 
     expect(getByText("meals:resultUnavailable.title")).toBeTruthy();
     expect(getByText("meals:resultUnavailable.authDesc")).toBeTruthy();
-    fireEvent.press(getByText("meals:select_method"));
-    expect(props.navigation.replace).toHaveBeenCalledWith("MealAddMethod");
+    fireEvent.press(getByText("meals:back_home"));
+    expect(props.navigation.navigate).toHaveBeenCalledWith("Home");
   });
 
   it("retries loading draft when meal data is missing", () => {

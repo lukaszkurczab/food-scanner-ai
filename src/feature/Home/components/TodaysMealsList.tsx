@@ -1,62 +1,68 @@
 import { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import type { Meal } from "@/types/meal";
 import { useTranslation } from "react-i18next";
-import { Button } from "@components/Button";
-import { MealSyncBadge } from "@/components/MealSyncBadge";
 
 type Props = {
   meals: Meal[];
-  handleAddMeal?: () => void;
   onOpenMeal?: (meal: Meal) => void;
 };
 
-export const TodaysMealsList = ({
-  meals,
-  handleAddMeal,
-  onOpenMeal,
-}: Props) => {
+export const TodaysMealsList = ({ meals, onOpenMeal }: Props) => {
   const theme = useTheme();
-  const { t } = useTranslation("home");
+  const { t, i18n } = useTranslation("home");
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const numberFormatter = useMemo(
+    () => new Intl.NumberFormat(i18n.language || undefined),
+    [i18n.language],
+  );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t("todaysMeals")}</Text>
-
-      {meals.map((meal) => {
+      {meals.map((meal, index) => {
         const kcal =
           Array.isArray(meal.ingredients) && meal.ingredients.length
-            ? meal.ingredients.reduce((sum, i) => sum + (i.kcal ?? 0), 0)
+            ? meal.ingredients.reduce((sum, ingredient) => sum + (ingredient.kcal ?? 0), 0)
             : (meal.totals?.kcal ?? 0);
+
+        const subtitle =
+          Array.isArray(meal.ingredients) && meal.ingredients.length
+            ? meal.ingredients
+                .slice(0, 3)
+                .map((ingredient) => ingredient.name?.trim())
+                .filter((value): value is string => !!value)
+                .join(", ")
+            : null;
+
+        const isLast = index === meals.length - 1;
+
         return (
-          <View
-            key={
-              meal.cloudId || meal.mealId || `${meal.name}-${meal.timestamp}`
-            }
-            style={styles.mealRow}
+          <Pressable
+            key={meal.cloudId || meal.mealId || `${meal.name}-${meal.timestamp}`}
+            onPress={onOpenMeal ? () => onOpenMeal(meal) : undefined}
+            style={({ pressed }) => [
+              styles.row,
+              !isLast ? styles.rowDivider : null,
+              pressed ? styles.rowPressed : null,
+            ]}
           >
-            <Text
-              style={styles.mealName}
-              onPress={onOpenMeal ? () => onOpenMeal(meal) : undefined}
-            >
-              {meal.name || t("meal")}
-            </Text>
-            <View style={styles.metaWrap}>
-              <MealSyncBadge
-                syncState={meal.syncState}
-                lastSyncedAt={meal.lastSyncedAt}
-              />
-              <Text style={styles.mealKcal}>{kcal} kcal</Text>
+            <View style={styles.info}>
+              <Text numberOfLines={2} style={styles.name}>
+                {meal.name || t("meal")}
+              </Text>
+              {subtitle ? (
+                <Text numberOfLines={1} style={styles.subtitle}>
+                  {subtitle}
+                </Text>
+              ) : null}
             </View>
-          </View>
+            <Text numberOfLines={1} style={styles.kcal}>
+              {numberFormatter.format(Math.max(0, Math.round(kcal)))} kcal
+            </Text>
+          </Pressable>
         );
       })}
-
-      {handleAddMeal ? (
-        <Button label={t("addMeal")} onPress={handleAddMeal} />
-      ) : null}
     </View>
   );
 };
@@ -65,37 +71,47 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
       backgroundColor: theme.surfaceElevated,
-      padding: theme.spacing.md,
-      borderRadius: theme.rounded.md,
-      shadowColor: theme.shadow,
-      shadowOpacity: 0.08,
-      shadowRadius: 12,
-      elevation: 2,
-      gap: theme.spacing.md,
+      borderRadius: theme.rounded.lg,
+      paddingHorizontal: theme.spacing.md,
     },
-    title: {
-      color: theme.text,
-      fontSize: theme.typography.size.title,
-      fontFamily: theme.typography.fontFamily.bold,
-    },
-    mealRow: {
+    row: {
       flexDirection: "row",
+      alignItems: "flex-start",
       justifyContent: "space-between",
-      alignItems: "center",
-      paddingVertical: theme.spacing.xs,
-      gap: theme.spacing.sm,
+      gap: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
     },
-    mealName: {
+    rowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.borderSoft,
+    },
+    rowPressed: {
+      opacity: 0.88,
+    },
+    info: {
+      flex: 1,
+      gap: 3,
+      paddingRight: theme.spacing.xs,
+    },
+    name: {
       color: theme.text,
       fontSize: theme.typography.size.bodyM,
-      flex: 1,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      fontFamily: theme.typography.fontFamily.medium,
     },
-    metaWrap: {
-      alignItems: "flex-end",
-      gap: theme.spacing.xs,
+    subtitle: {
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.regular,
     },
-    mealKcal: {
+    kcal: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyM,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.regular,
+      minWidth: 56,
+      textAlign: "right",
+      paddingTop: 1,
     },
   });

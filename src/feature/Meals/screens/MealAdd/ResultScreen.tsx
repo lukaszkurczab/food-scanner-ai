@@ -136,8 +136,8 @@ export default function ResultScreen({
           />
           <Button
             variant="secondary"
-            label={t("select_method", { ns: "meals" })}
-            onPress={() => navigation.replace("MealAddMethod")}
+            label={t("back_home", { ns: "meals" })}
+            onPress={() => navigation.navigate("Home")}
             style={styles.emptyAction}
           />
         </View>
@@ -271,7 +271,12 @@ export default function ResultScreen({
         onContinue={() => {}}
         onStartOver={() => {
           clearMeal(uid);
-          navigation.replace("MealAddMethod");
+          navigation.replace("MealAddMethod", {
+            selectionMode: "temporary",
+          });
+        }}
+        textOverrides={{
+          startOverButtonLabel: t("change_method", { ns: "meals" }),
         }}
         addIngredientButtonVariant="secondary"
         hideAddIngredientWhileEditing

@@ -199,7 +199,7 @@ describe("ReviewIngredientsEditor", () => {
       />,
     );
 
-    fireEvent.press(getByText("meals:select_method"));
+    fireEvent.press(getByText("meals:change_method"));
     fireEvent.press(getByText("common:yes"));
 
     expect(onStartOver).toHaveBeenCalledTimes(1);

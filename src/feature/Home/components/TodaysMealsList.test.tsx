@@ -7,23 +7,10 @@ import { renderWithTheme } from "@/test-utils/renderWithTheme";
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => `translated:${key}`,
+    i18n: { language: "en" },
   }),
 }));
 
-jest.mock("@/components/MealSyncBadge", () => ({
-  MealSyncBadge: ({
-    syncState,
-  }: {
-    syncState: string;
-    lastSyncedAt?: number | null;
-  }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Text } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(Text, null, `sync:${syncState}`);
-  },
-}));
 
 const buildMeal = (overrides: Partial<Meal> = {}): Meal => ({
   userUid: "u1",
@@ -41,9 +28,8 @@ const buildMeal = (overrides: Partial<Meal> = {}): Meal => ({
 });
 
 describe("TodaysMealsList", () => {
-  it("renders meals, computes kcal and handles actions", () => {
+  it("renders meals, computes kcal and handles row presses", () => {
     const onOpenMeal = jest.fn<(meal: Meal) => void>();
-    const onAddMeal = jest.fn();
     const mealWithIngredients = buildMeal({
       mealId: "m1",
       name: "Chicken",
@@ -63,32 +49,26 @@ describe("TodaysMealsList", () => {
       <TodaysMealsList
         meals={[mealWithIngredients, mealWithTotals]}
         onOpenMeal={onOpenMeal}
-        handleAddMeal={onAddMeal}
       />,
     );
 
-    expect(screen.getByText("translated:todaysMeals")).toBeTruthy();
     expect(screen.getByText("Chicken")).toBeTruthy();
     expect(screen.getByText("150 kcal")).toBeTruthy();
-    expect(screen.getAllByText("sync:synced")).toHaveLength(2);
+    expect(screen.getByText("A, B")).toBeTruthy();
     expect(screen.getByText("Omelette")).toBeTruthy();
     expect(screen.getByText("320 kcal")).toBeTruthy();
 
     fireEvent.press(screen.getByText("Chicken"));
     expect(onOpenMeal).toHaveBeenCalledWith(mealWithIngredients);
-
-    fireEvent.press(screen.getByText("translated:addMeal"));
-    expect(onAddMeal).toHaveBeenCalledTimes(1);
   });
 
-  it("uses translated fallback meal name and hides add button without handler", () => {
-    const { getByText, queryByText } = renderWithTheme(
+  it("uses translated fallback meal name", () => {
+    const { getByText } = renderWithTheme(
       <TodaysMealsList
         meals={[buildMeal({ name: "", totals: { kcal: 123, protein: 0, fat: 0, carbs: 0 } })]}
       />,
     );
 
     expect(getByText("translated:meal")).toBeTruthy();
-    expect(queryByText("translated:addMeal")).toBeNull();
   });
 });
