@@ -103,16 +103,35 @@ export default function SavedMealsScreen({
       return {
         ...base,
         mealId: uuidv4(),
+        cloudId: undefined,
+        userUid: uid ?? "",
+        createdAt: base.createdAt || now,
+        updatedAt: now,
+        syncState: "pending",
+        deleted: false,
         source: "saved",
         inputMethod: "saved",
         aiMeta: null,
         ingredients: Array.isArray(picked.ingredients)
-          ? picked.ingredients
+          ? picked.ingredients.map((ingredient) => ({
+              ...ingredient,
+              id: ingredient.id || uuidv4(),
+            }))
           : [],
-        photoLocalPath: picked.photoLocalPath ?? null,
-        photoUrl: picked.photoLocalPath ?? picked.photoUrl ?? null,
-        updatedAt: now,
-        name: picked.name ?? "",
+        type: picked.type || "other",
+        timestamp: picked.timestamp || base.timestamp || now,
+        photoLocalPath: picked.photoLocalPath ?? picked.localPhotoUrl ?? null,
+        localPhotoUrl: picked.localPhotoUrl ?? picked.photoLocalPath ?? null,
+        photoUrl:
+          picked.photoLocalPath ??
+          picked.localPhotoUrl ??
+          picked.photoUrl ??
+          null,
+        imageId: picked.imageId ?? null,
+        notes: picked.notes ?? null,
+        tags: Array.isArray(picked.tags) ? [...picked.tags] : [],
+        totals: picked.totals ? { ...picked.totals } : undefined,
+        name: picked.name ?? null,
       };
     },
     [draftMeal, uid],
@@ -123,9 +142,9 @@ export default function SavedMealsScreen({
       if (!uid) return;
       const next = buildDraftFromSaved(meal);
       setMeal(next);
-      await saveDraft(uid);
-      await setLastScreen(uid, "Result");
-      navigation.navigate("AddMeal", { start: "Result" });
+      await saveDraft(uid, next);
+      await setLastScreen(uid, "ReviewMeal");
+      navigation.navigate("AddMeal", { start: "ReviewMeal" });
     },
     [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation],
   );
@@ -135,11 +154,9 @@ export default function SavedMealsScreen({
       if (!uid) return;
       const next = buildDraftFromSaved(meal);
       setMeal(next);
-      await saveDraft(uid);
-      await setLastScreen(uid, "EditReviewIngredients");
-      navigation.navigate("EditReviewIngredients", {
-        savedCloudId: meal.cloudId,
-      });
+      await saveDraft(uid, next);
+      await setLastScreen(uid, "EditMealDetails");
+      navigation.navigate("AddMeal", { start: "EditMealDetails" });
     },
     [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation],
   );

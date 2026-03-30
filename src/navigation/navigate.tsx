@@ -6,21 +6,21 @@ export type RootStackParamList = {
     | {
         start?:
           | "MealCamera"
-          | "BarcodeProductNotFound"
-          | "IngredientsNotRecognized"
-          | "Result";
-        barcodeOnly?: boolean;
+          | "BarcodeScan"
+          | "DescribeMeal"
+          | "ReviewMeal"
+          | "EditMealDetails";
         id?: string;
         skipDetection?: boolean;
-        returnTo?:
-          | "MealCamera"
-          | "BarcodeProductNotFound"
-          | "IngredientsNotRecognized"
-          | "Result";
         attempt?: number;
         code?: string;
+        showManualEntry?: boolean;
         image?: string;
-        reason?: "not_recognized" | "ai_unavailable";
+        reason?:
+          | "not_recognized"
+          | "ai_unavailable"
+          | "offline"
+          | "timeout";
       }
     | undefined;
 
@@ -39,8 +39,6 @@ export type RootStackParamList = {
       }
     | undefined;
   Statistics: undefined;
-  EditReviewIngredients: { savedCloudId?: string } | undefined;
-  EditResult: { savedCloudId?: string } | undefined;
   Privacy: undefined;
   ManageSubscription: undefined;
   ChangePassword: undefined;
@@ -58,14 +56,13 @@ export type RootStackParamList = {
   Notifications: undefined;
   NotificationForm: { id?: string | null } | undefined;
   Loading: undefined;
-  MealTextAI: undefined;
   MealDetails: {
     meal: Meal;
     edit?: boolean;
     baseline?: Meal;
     localPhotoUrl?: string | null;
   };
-  MealShare: { meal: Meal; returnTo: "Result" | "MealDetails" };
+  MealShare: { meal: Meal; returnTo: "MealDetails" };
   SavedMealsCamera:
     | {
         id?: string;

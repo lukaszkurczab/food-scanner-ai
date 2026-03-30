@@ -200,8 +200,8 @@ describe("MealAddMethodScreen", () => {
 
     const { getByText } = renderWithTheme(<MealAddMethodScreen />);
 
-    fireEvent.press(getByText("meals:continue"));
-    fireEvent.press(getByText("meals:discard"));
+    fireEvent.press(getByText("meals:resume_draft_continue"));
+    fireEvent.press(getByText("meals:resume_draft_discard"));
 
     expect(handleContinueDraft).toHaveBeenCalledTimes(1);
     expect(handleDiscardDraft).toHaveBeenCalledTimes(1);

@@ -2,10 +2,8 @@ import { useMemo } from "react";
 import { View, StyleSheet, Pressable, Text, Linking } from "react-native";
 import { CameraView } from "expo-camera";
 import { useTheme } from "@/theme/useTheme";
-import Loader from "@feature/Meals/components/Loader";
 import { useTranslation } from "react-i18next";
 import { Layout, PhotoPreview, ScreenCornerNavButton } from "@/components";
-import AppIcon from "@/components/AppIcon";
 import { Modal } from "@/components/Modal";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
@@ -16,7 +14,7 @@ export default function MealCameraScreen({
   navigation,
   flow,
   params,
-}: MealAddScreenProps<"MealCamera">) {
+}: MealAddScreenProps<"CameraDefault">) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
@@ -46,26 +44,15 @@ export default function MealCameraScreen({
     isCameraReady,
     isTakingPhoto,
     photoUri,
-    isLoading,
     premiumModal,
-    barcodeModal,
-    scannedCode,
-    mode,
     canUsePhotoAi,
     skipDetection,
-    barcodeOnly,
-    showBarcodeOverlay,
-    barcodeTypes,
     setIsCameraReady,
     handleTakePicture,
     handleAccept,
     handleRetake,
-    onBarcodeScanned,
     onUseSample,
-    openAiMode,
-    openBarcodeMode,
     closePremiumModal,
-    closeBarcodeModal,
     goManagePremium,
   } = useMealCameraState({ navigation, flow, params });
 
@@ -113,29 +100,6 @@ export default function MealCameraScreen({
     );
   }
 
-  if (isLoading) {
-    const isBarcodeFlow = mode === "barcode" && !skipDetection;
-    return (
-      <Layout showNavigation={false} disableScroll style={styles.layout}>
-        <Loader
-          text={
-            isBarcodeFlow
-              ? tCommon("barcode_loader_title", "Looking up product...")
-              : tCommon("camera_loader_title", "Analyzing your meal...")
-          }
-          subtext={
-            isBarcodeFlow
-              ? tCommon(
-                  "barcode_loader_subtext",
-                  "Fetching product data from the database.",
-                )
-              : tCommon("camera_loader_subtext", "This may take a few seconds.")
-          }
-        />
-      </Layout>
-    );
-  }
-
   if (photoUri) {
     return (
       <Layout showNavigation={false} disableScroll style={styles.layout}>
@@ -143,7 +107,6 @@ export default function MealCameraScreen({
           photoUri={photoUri}
           onRetake={handleRetake}
           onAccept={handleAccept}
-          isLoading={isLoading}
           secondaryText={tCommon("camera_retake")}
           primaryText={tCommon("camera_use_photo")}
         />
@@ -159,10 +122,6 @@ export default function MealCameraScreen({
             ref={cameraRef}
             style={styles.camera}
             onCameraReady={() => setIsCameraReady(true)}
-            onBarcodeScanned={onBarcodeScanned}
-            barcodeScannerSettings={{
-              barcodeTypes,
-            }}
           />
           <View style={StyleSheet.absoluteFill}>
             <ScreenCornerNavButton
@@ -175,6 +134,7 @@ export default function MealCameraScreen({
               }
               containerStyle={topLeftActionStyle}
             />
+
             {!skipDetection && (
               <View style={[styles.creditsBadgePosition, topRightActionStyle]}>
                 <AiCreditsBadge
@@ -182,68 +142,39 @@ export default function MealCameraScreen({
                 />
               </View>
             )}
-            {!skipDetection && !barcodeOnly && (
-              <View style={styles.modeSwitch}>
-                <Pressable
-                  onPress={openAiMode}
-                  style={[
-                    styles.modeBtn,
-                    {
-                      backgroundColor:
-                        mode === "ai"
-                          ? theme.primary
-                          : theme.surfaceElevated,
-                      borderColor: theme.border,
-                      opacity: canUsePhotoAi ? 1 : 0.6,
-                    },
-                  ]}
-                >
-                  <AppIcon
-                    name="sparkles"
-                    size={22}
-                    color={mode === "ai" ? theme.cta.primaryText : theme.text}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={openBarcodeMode}
-                  style={[
-                    styles.modeBtn,
-                    {
-                      backgroundColor:
-                        mode === "barcode"
-                          ? theme.primary
-                          : theme.surfaceElevated,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                >
-                  <AppIcon
-                    name="scan-barcode"
-                    size={22}
-                    color={mode === "barcode" ? theme.cta.primaryText : theme.text}
-                  />
-                </Pressable>
+
+            <View style={styles.photoGuideWrap}>
+              <View style={styles.photoGuidePill}>
+                <Text style={styles.photoGuidePillText}>
+                  {tMeals("camera_default_label", {
+                    defaultValue: "Photo meal",
+                  })}
+                </Text>
               </View>
-            )}
-            {showBarcodeOverlay && (
-              <View pointerEvents="none" style={styles.barcodeOverlay}>
-                <View style={styles.barcodeFrame} />
-                <View
-                  style={[styles.barcodeHintCard, styles.barcodeHintPosition]}
-                >
-                  <Text style={styles.barcodeHintText}>
-                    {scannedCode
-                      ? tMeals("barcode_detected", {
-                          defaultValue: "Detected:",
-                        }) + ` ${scannedCode}`
-                      : tCommon("barcode_hint", {
+              <View style={styles.photoGuideCard}>
+                <Text style={styles.photoGuideTitle}>
+                  {tMeals("camera_default_title", {
+                    defaultValue: "Capture your meal",
+                  })}
+                </Text>
+                <Text style={styles.photoGuideText}>
+                  {skipDetection
+                    ? tMeals("camera_replace_subtitle", {
+                        defaultValue:
+                          "Take a new photo to update the current draft.",
+                      })
+                    : canUsePhotoAi
+                      ? tMeals("camera_default_subtitle", {
                           defaultValue:
-                            "Scan the barcode by placing it inside the frame",
+                            "Frame the whole plate clearly. We'll prepare a draft for review.",
+                        })
+                      : tChat("limit.photoRequired", {
+                          cost: 5,
                         })}
-                  </Text>
-                </View>
+                </Text>
               </View>
-            )}
+            </View>
+
             <View style={styles.shutterWrapper}>
               <Pressable
                 style={({ pressed }) => [
@@ -252,8 +183,11 @@ export default function MealCameraScreen({
                 ]}
                 onPress={handleTakePicture}
                 disabled={isTakingPhoto || !isCameraReady}
-              />
+              >
+                <View style={styles.shutterCore} />
+              </Pressable>
             </View>
+
             {typeof __DEV__ !== "undefined" && __DEV__ && (
               <View style={styles.devRow}>
                 <Pressable
@@ -269,6 +203,7 @@ export default function MealCameraScreen({
           </View>
         </View>
       </View>
+
       <Modal
         visible={premiumModal}
         title={tChat("limit.reachedTitle")}
@@ -285,27 +220,19 @@ export default function MealCameraScreen({
           onPress: closePremiumModal,
         }}
       />
-      <Modal
-        visible={barcodeModal}
-        title={tMeals("barcode_no_code_title", {
-          defaultValue: "No barcode detected",
-        })}
-        message={tMeals("barcode_no_code_msg", {
-          defaultValue:
-            "Place the code in the frame and try again, then press the button.",
-        })}
-        onClose={closeBarcodeModal}
-        primaryAction={{
-          label: tCommon("confirm", { defaultValue: "OK" }),
-          onPress: closeBarcodeModal,
-        }}
-      />
     </Layout>
   );
 }
 
-const makeStyles = (theme: ReturnType<typeof useTheme>) =>
-  StyleSheet.create({
+const makeStyles = (theme: ReturnType<typeof useTheme>) => {
+  const overlayCard = theme.isDark
+    ? "rgba(0, 0, 0, 0.52)"
+    : "rgba(17, 24, 39, 0.58)";
+  const overlayStroke = "rgba(255, 255, 255, 0.88)";
+  const overlayPrimaryText = "rgba(255, 255, 255, 0.96)";
+  const overlaySecondaryText = "rgba(255, 255, 255, 0.78)";
+
+  return StyleSheet.create({
     layout: {
       paddingTop: 0,
       paddingBottom: 0,
@@ -348,27 +275,55 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontSize: theme.typography.size.bodyL,
       color: theme.text,
     },
-    modeSwitch: {
-      position: "absolute",
-      bottom: 120,
-      left: 0,
-      right: 0,
-      flexDirection: "row",
-      justifyContent: "center",
-      alignItems: "center",
-      gap: theme.spacing.md,
-    },
-    modeBtn: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      borderWidth: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      marginHorizontal: theme.spacing.xs,
-    },
     creditsBadgePosition: {
       position: "absolute",
+    },
+    photoGuideWrap: {
+      position: "absolute",
+      left: theme.spacing.lg,
+      right: theme.spacing.lg,
+      bottom: 126,
+      alignItems: "center",
+      gap: theme.spacing.xs,
+    },
+    photoGuidePill: {
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.rounded.full,
+      backgroundColor: overlayCard,
+      borderWidth: 1,
+      borderColor: theme.overlay,
+    },
+    photoGuidePillText: {
+      color: overlayPrimaryText,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.medium,
+      letterSpacing: 0.4,
+      textTransform: "uppercase",
+    },
+    photoGuideCard: {
+      width: "100%",
+      maxWidth: 360,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+      borderRadius: theme.rounded.xl,
+      backgroundColor: overlayCard,
+      gap: theme.spacing.xs,
+      alignItems: "center",
+    },
+    photoGuideTitle: {
+      color: overlayPrimaryText,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.bold,
+      textAlign: "center",
+    },
+    photoGuideText: {
+      color: overlaySecondaryText,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      textAlign: "center",
     },
     shutterWrapper: {
       position: "absolute",
@@ -379,12 +334,20 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       justifyContent: "flex-end",
     },
     shutterButton: {
-      borderColor: "white",
+      alignItems: "center",
+      justifyContent: "center",
+      borderColor: overlayStroke,
       width: 68,
       height: 68,
       borderRadius: 34,
-      borderWidth: 4,
-      backgroundColor: "transparent",
+      borderWidth: 2,
+      backgroundColor: "rgba(255, 255, 255, 0.08)",
+    },
+    shutterCore: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: overlayStroke,
     },
     devRow: {
       position: "absolute",
@@ -407,42 +370,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.text,
       fontSize: theme.typography.size.bodyS,
     },
-    barcodeOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    barcodeHintCard: {
-      position: "absolute",
-      left: theme.spacing.md,
-      right: theme.spacing.md,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: theme.spacing.sm,
-      paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.sm,
-      borderRadius: theme.rounded.md,
-      borderWidth: 1,
-      backgroundColor: "rgba(0,0,0,0.55)",
-      borderColor: theme.border,
-    },
-    barcodeHintPosition: {
-      top: "50%",
-      transform: [{ translateY: -144 }],
-    },
-    barcodeHintText: {
-      fontSize: theme.typography.size.bodyS,
-      fontFamily: theme.typography.fontFamily.bold,
-      textAlign: "center",
-      color: theme.cta.primaryText,
-    },
-    barcodeFrame: {
-      width: "78%",
-      aspectRatio: 1.6,
-      borderRadius: 18,
-      borderWidth: 2,
-      backgroundColor: "rgba(0,0,0,0.18)",
-      borderColor: theme.cta.primaryText,
-    },
   });
+};

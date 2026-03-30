@@ -1,12 +1,19 @@
 import { useCallback, useMemo } from "react";
-import { View, FlatList, RefreshControl, StyleSheet } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
-import { FullScreenLoader, Layout } from "@/components";
+import { Button, FullScreenLoader, Layout } from "@/components";
 import { SearchBox } from "@/components/SearchBox";
 import { MealListItem } from "@/components/MealListItem";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -14,7 +21,6 @@ import { useTranslation } from "react-i18next";
 import { useSelectSavedMealsState } from "@/feature/Meals/hooks/useSelectSavedMealsState";
 import { syncMyMeals } from "@/services/meals/myMealService";
 import type { RootStackParamList } from "@/navigation/navigate";
-import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 type SelectSavedMealNavigation = StackNavigationProp<
   RootStackParamList,
@@ -60,7 +66,8 @@ export default function SelectSavedMealScreen({
     setMeal,
     saveDraft,
     setLastScreen,
-    onNavigateResult: () => navigation.navigate("AddMeal", { start: "Result" }),
+    onNavigateReview: () =>
+      navigation.navigate("AddMeal", { start: "ReviewMeal" }),
     onStartOver: () =>
       navigation.replace("MealAddMethod", {
         selectionMode: "temporary",
@@ -100,6 +107,20 @@ export default function SelectSavedMealScreen({
     const isOfflineEmpty = !isOnline && !queryText.trim();
     return (
       <Layout>
+        <View style={styles.headerBlock}>
+          <Text style={styles.eyebrow}>
+            {t("saved_list_eyebrow", "Saved meals")}
+          </Text>
+          <Text style={styles.title}>
+            {t("saved_list_title", "Reuse one of your saved meals")}
+          </Text>
+          <Text style={styles.subtitle}>
+            {t(
+              "saved_list_subtitle",
+              "Pick a saved meal, review it, and log it again when you're ready.",
+            )}
+          </Text>
+        </View>
         <View style={styles.searchWrap}>
           <SearchBox value={queryText} onChange={setQueryText} />
         </View>
@@ -107,22 +128,22 @@ export default function SelectSavedMealScreen({
           title={
             isOfflineEmpty
               ? t("common:offline.title")
-              : t("meals:noSavedMeals", "No saved meals")
+              : queryText
+                ? t("meals:noMealsFound", "No meals found")
+                : t("meals:noSavedMeals", "No saved meals")
           }
           description={
             isOfflineEmpty
               ? t("savedMeals.offlineEmpty", { ns: "meals" })
               : queryText
-              ? t("meals:tryDifferentSearch", "Try a different search.")
-              : t("meals:saveMealsToReuse", "Save meals to reuse them later.")
+                ? t("meals:tryDifferentSearch", "Try a different search.")
+                : t("meals:saveMealsToReuse", "Save meals to reuse them later.")
           }
         />
-        <GlobalActionButtons
-          label={t("meals:select", "Select")}
-          onPress={() => {}}
-          primaryDisabled
-          secondaryLabel={t("meals:change_method", "Change add method")}
-          secondaryOnPress={handleStartOver}
+        <Button
+          label={t("meals:change_method", "Change add method")}
+          onPress={handleStartOver}
+          style={styles.primaryAction}
         />
       </Layout>
     );
@@ -130,6 +151,20 @@ export default function SelectSavedMealScreen({
 
   return (
     <Layout disableScroll>
+      <View style={styles.headerBlock}>
+        <Text style={styles.eyebrow}>
+          {t("saved_list_eyebrow", "Saved meals")}
+        </Text>
+        <Text style={styles.title}>
+          {t("saved_list_title", "Reuse one of your saved meals")}
+        </Text>
+        <Text style={styles.subtitle}>
+          {t(
+            "saved_list_subtitle",
+            "Pick a saved meal, review it, and log it again when you're ready.",
+          )}
+        </Text>
+      </View>
       <View style={styles.searchWrap}>
         <SearchBox value={queryText} onChange={setQueryText} />
       </View>
@@ -147,22 +182,76 @@ export default function SelectSavedMealScreen({
         initialNumToRender={step}
         windowSize={7}
       />
-      <GlobalActionButtons
-        label={t("meals:select", "Select")}
+      <Button
+        label={t("saved_list_use_cta", "Review selected meal")}
         onPress={handleConfirm}
-        primaryDisabled={!selectedId}
-        secondaryLabel={t("meals:change_method", "Change add method")}
-        secondaryOnPress={handleStartOver}
+        disabled={!selectedId}
+        style={styles.primaryAction}
       />
+      <Pressable
+        accessibilityRole="button"
+        onPress={handleStartOver}
+        style={({ pressed }) => [
+          styles.secondaryAction,
+          pressed ? styles.secondaryActionPressed : null,
+        ]}
+      >
+        <Text style={styles.secondaryActionLabel}>
+          {t("meals:change_method", "Change add method")}
+        </Text>
+      </Pressable>
     </Layout>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    headerBlock: {
+      gap: theme.spacing.xs,
+      paddingTop: theme.spacing.sm,
+    },
+    eyebrow: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.labelS,
+      lineHeight: theme.typography.lineHeight.labelS,
+      fontFamily: theme.typography.fontFamily.medium,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    title: {
+      color: theme.text,
+      fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    subtitle: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
+    },
     listItemWrap: {
       marginBottom: theme.spacing.sm,
     },
     searchWrap: { paddingVertical: theme.spacing.md },
     listContent: { paddingBottom: theme.spacing.lg },
+    primaryAction: {
+      marginTop: theme.spacing.sm,
+    },
+    secondaryAction: {
+      alignSelf: "center",
+      minHeight: 40,
+      justifyContent: "center",
+      paddingHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
+    },
+    secondaryActionPressed: {
+      opacity: 0.72,
+    },
+    secondaryActionLabel: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
   });

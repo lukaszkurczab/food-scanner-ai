@@ -31,45 +31,49 @@ export default function AddMealScreen() {
 
   const initialStep: Step = useMemo(() => {
     const p = (route.params ?? {}) as NonNullable<RootStackParamList["AddMeal"]>;
-    const start = p.start ?? "MealCamera";
+    const start = typeof p.start === "string" ? p.start : "MealCamera";
 
     if (start === "MealCamera") {
       return {
-        name: "MealCamera",
+        name: "CameraDefault",
         params: {
-          barcodeOnly: !!p.barcodeOnly,
           id: p.id,
           skipDetection: !!p.skipDetection,
-          returnTo: p.returnTo || "Result",
           attempt: typeof p.attempt === "number" ? p.attempt : 1,
         },
       };
     }
 
-    if (start === "BarcodeProductNotFound") {
+    if (start === "BarcodeScan") {
       return {
-        name: "BarcodeProductNotFound",
+        name: "BarcodeScan",
         params: {
           code: p.code,
-          attempt: typeof p.attempt === "number" ? p.attempt : 1,
-          returnTo: p.returnTo || "Result",
+          showManualEntry: !!p.showManualEntry,
         },
       };
     }
 
-    if (start === "IngredientsNotRecognized") {
-      return {
-        name: "IngredientsNotRecognized",
-        params: {
-          image: p.image,
-          id: p.id,
-          attempt: typeof p.attempt === "number" ? p.attempt : 1,
-          reason: p.reason,
-        },
-      };
+    if (start === "DescribeMeal") {
+      return { name: "DescribeMeal", params: {} };
     }
 
-    return { name: "Result", params: {} };
+    if (start === "ReviewMeal") {
+      return { name: "ReviewMeal", params: {} };
+    }
+
+    if (start === "EditMealDetails") {
+      return { name: "EditMealDetails", params: {} };
+    }
+
+    return {
+      name: "CameraDefault",
+      params: {
+        id: p.id,
+        skipDetection: !!p.skipDetection,
+        attempt: typeof p.attempt === "number" ? p.attempt : 1,
+      },
+    };
   }, [route.params]);
 
   const [stack, setStack] = useState<Step[]>([initialStep]);
@@ -112,7 +116,7 @@ export default function AddMealScreen() {
   const current = stack[stack.length - 1];
 
   useEffect(() => {
-    if (current.name === "MealCamera") return;
+    if (current.name === "CameraDefault" || current.name === "BarcodeScan") return;
 
     const onBackPress = () => {
       if (stack.length > 1) {
@@ -128,7 +132,7 @@ export default function AddMealScreen() {
   }, [current.name, goBack, navigation, stack.length]);
 
   useEffect(() => {
-    if (current.name === "MealCamera") return;
+    if (current.name === "CameraDefault" || current.name === "BarcodeScan") return;
 
     const sub = navigation.addListener("beforeRemove", (e) => {
       if (stack.length <= 1) return;
@@ -149,5 +153,11 @@ export default function AddMealScreen() {
   }, [current.name, goBack, navigation, stack.length]);
   const Screen = MapMealAddScreens(current.name);
 
-  return <Screen navigation={navigation} flow={flow} params={current.params} />;
+  return (
+    <Screen
+      navigation={navigation}
+      flow={flow}
+      params={current.params as never}
+    />
+  );
 }

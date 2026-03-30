@@ -47,6 +47,7 @@ type Props = {
   wrapInLayout?: boolean;
   showContinueButton?: boolean;
   showStartOverButton?: boolean;
+  fillContainer?: boolean;
 };
 
 export default function ReviewIngredientsEditor({
@@ -64,6 +65,7 @@ export default function ReviewIngredientsEditor({
   wrapInLayout = true,
   showContinueButton = true,
   showStartOverButton = true,
+  fillContainer = true,
 }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -344,7 +346,7 @@ export default function ReviewIngredientsEditor({
   const content = (
     <View
       style={[
-        styles.container,
+        fillContainer ? styles.container : null,
         containerPadding ? styles.containerPadded : null,
       ]}
     >

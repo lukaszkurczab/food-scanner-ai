@@ -3,29 +3,9 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
 
-type VisionAnalyzeMockResult = {
-  ingredients: Array<{
-    id: string;
-    name: string;
-    amount: number;
-    unit: "g" | "ml";
-    protein: number;
-    carbs: number;
-    fat: number;
-    kcal: number;
-  }> | null;
-  credits: unknown;
-};
-
-const mockDetectIngredientsWithVision = jest.fn<
-  (uid: string, imageUri: string, opts?: { lang?: string }) => Promise<VisionAnalyzeMockResult | null>
->();
 const mockUseMealDraftContext = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockUseAiCreditsContext = jest.fn();
-const mockUseUserContext = jest.fn();
-const mockApplyCreditsFromResponse = jest.fn();
-const mockRefreshCredits = jest.fn();
 const mockCanAfford = jest.fn(() => true);
 
 jest.mock("expo-camera", () => ({
@@ -43,23 +23,6 @@ jest.mock("@/context/AuthContext", () => ({
 
 jest.mock("@/context/AiCreditsContext", () => ({
   useAiCreditsContext: () => mockUseAiCreditsContext(),
-}));
-
-jest.mock("@contexts/UserContext", () => ({
-  useUserContext: () => mockUseUserContext(),
-}));
-
-jest.mock("@/services/ai/visionService", () => ({
-  detectIngredientsWithVision: (
-    uid: string,
-    imageUri: string,
-    opts?: { lang?: string },
-  ) => mockDetectIngredientsWithVision(uid, imageUri, opts),
-}));
-
-jest.mock("@/services/barcode/barcodeService", () => ({
-  fetchProductByBarcode: jest.fn(),
-  extractBarcodeFromPayload: (value: string) => value,
 }));
 
 jest.mock("@/utils/devSamples", () => ({
@@ -81,8 +44,11 @@ const baseMeal = (): Meal => ({
 });
 
 describe("useMealCameraState", () => {
+  const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    (globalThis as { __DEV__?: boolean }).__DEV__ = false;
 
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUseAiCreditsContext.mockReturnValue({
@@ -96,13 +62,14 @@ describe("useMealCameraState", () => {
         costs: { chat: 1, textMeal: 1, photo: 5 },
       },
       canAfford: mockCanAfford,
-      refreshCredits: mockRefreshCredits,
-      applyCreditsFromResponse: mockApplyCreditsFromResponse,
     });
-    mockUseUserContext.mockReturnValue({ language: "en" });
   });
 
-  it("persists analyzed photo drafts with AI source before opening result screen", async () => {
+  afterEach(() => {
+    (globalThis as { __DEV__?: boolean }).__DEV__ = originalDev;
+  });
+
+  it("persists photo drafts before moving to preparing review", async () => {
     const setMeal = jest.fn();
     const updateMeal = jest.fn();
     const setLastScreen = jest.fn(async () => undefined);
@@ -128,35 +95,6 @@ describe("useMealCameraState", () => {
       saveDraft,
     });
 
-    const ingredients = [
-      {
-        id: "ing-1",
-        name: "Chicken",
-        amount: 100,
-        unit: "g" as const,
-        protein: 22,
-        carbs: 0,
-        fat: 4,
-        kcal: 130,
-      },
-    ];
-    mockDetectIngredientsWithVision.mockResolvedValue({
-      ingredients,
-      credits: {
-        userId: "user-1",
-        tier: "free",
-        balance: 5,
-        allocation: 100,
-        periodStartAt: "2026-03-01T00:00:00.000Z",
-        periodEndAt: "2026-04-01T00:00:00.000Z",
-        costs: { chat: 1, textMeal: 1, photo: 5 },
-        model: "gpt-5.4",
-        runId: "run-photo-1",
-        confidence: 0.84,
-        warnings: ["partial_totals"],
-      },
-    });
-
     const { result } = renderHook(() =>
       useMealCameraState({
         navigation: navigation as never,
@@ -169,49 +107,62 @@ describe("useMealCameraState", () => {
       await result.current.handleAccept("file:///meal.jpg");
     });
 
-    expect(mockDetectIngredientsWithVision).toHaveBeenCalledWith(
-      "user-1",
-      "file:///meal.jpg",
-      expect.objectContaining({ lang: "en" }),
-    );
-    expect(mockApplyCreditsFromResponse).toHaveBeenCalledWith(
-      expect.objectContaining({
-        balance: 5,
-      }),
-    );
     expect(updateMeal).toHaveBeenCalledWith(
       expect.objectContaining({
-        source: "ai",
-        inputMethod: "photo",
-        aiMeta: {
-          model: "gpt-5.4",
-          runId: "run-photo-1",
-          confidence: 0.84,
-          warnings: ["partial_totals"],
-        },
         photoUrl: "file:///meal.jpg",
-        ingredients,
+        inputMethod: "photo",
       }),
     );
     expect(saveDraft).toHaveBeenLastCalledWith(
       "user-1",
       expect.objectContaining({
-        source: "ai",
-        inputMethod: "photo",
-        aiMeta: {
-          model: "gpt-5.4",
-          runId: "run-photo-1",
-          confidence: 0.84,
-          warnings: ["partial_totals"],
-        },
         photoUrl: "file:///meal.jpg",
-        ingredients,
+        inputMethod: "photo",
       }),
     );
-    expect(flow.goTo).toHaveBeenCalledWith("Result", {});
+    expect(flow.goTo).toHaveBeenCalledWith("PreparingReviewPhoto", {
+      image: "file:///meal.jpg",
+      id: "meal-1",
+      attempt: 1,
+    });
   });
 
-  it("opens insufficient-credits modal when photo AI is not affordable", () => {
+  it("replaces the camera step with review when detection is skipped", async () => {
+    const flow = {
+      goTo: jest.fn(),
+      replace: jest.fn(),
+      goBack: jest.fn(),
+      canGoBack: jest.fn(() => false),
+    };
+    const navigation = {
+      addListener: jest.fn(() => () => undefined),
+      navigate: jest.fn(),
+    };
+
+    mockUseMealDraftContext.mockReturnValue({
+      meal: baseMeal(),
+      setMeal: jest.fn(),
+      updateMeal: jest.fn(),
+      setLastScreen: jest.fn(async () => undefined),
+      saveDraft: jest.fn(async () => undefined),
+    });
+
+    const { result } = renderHook(() =>
+      useMealCameraState({
+        navigation: navigation as never,
+        flow: flow as never,
+        params: { skipDetection: true },
+      }),
+    );
+
+    await act(async () => {
+      await result.current.handleAccept("file:///meal.jpg");
+    });
+
+    expect(flow.replace).toHaveBeenCalledWith("ReviewMeal", {});
+  });
+
+  it("opens insufficient-credits modal when photo AI is not affordable", async () => {
     mockCanAfford.mockReturnValue(false);
 
     const flow = {
@@ -241,8 +192,8 @@ describe("useMealCameraState", () => {
       }),
     );
 
-    act(() => {
-      result.current.openAiMode();
+    await act(async () => {
+      await result.current.handleTakePicture();
     });
 
     expect(result.current.premiumModal).toBe(true);

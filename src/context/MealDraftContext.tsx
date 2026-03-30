@@ -116,7 +116,13 @@ export const MealDraftProvider = ({ children }: Props) => {
   const setLastScreen = useCallback(async (userUid: string, screen: string) => {
     const normalized =
       screen === "MealCamera" ||
-      screen === "Result" ||
+      screen === "CameraDefault" ||
+      screen === "BarcodeScan" ||
+      screen === "PreparingReviewPhoto" ||
+      screen === "DescribeMeal" ||
+      screen === "TextAnalyzing" ||
+      screen === "ReviewMeal" ||
+      screen === "EditMealDetails" ||
       screen === "IngredientsNotRecognized" ||
       screen === "BarcodeProductNotFound"
         ? "AddMeal"
@@ -130,7 +136,13 @@ export const MealDraftProvider = ({ children }: Props) => {
     const screen = await AsyncStorage.getItem(getScreenKey(userUid));
     const normalized =
       screen === "MealCamera" ||
-      screen === "Result" ||
+      screen === "CameraDefault" ||
+      screen === "BarcodeScan" ||
+      screen === "PreparingReviewPhoto" ||
+      screen === "DescribeMeal" ||
+      screen === "TextAnalyzing" ||
+      screen === "ReviewMeal" ||
+      screen === "EditMealDetails" ||
       screen === "IngredientsNotRecognized" ||
       screen === "BarcodeProductNotFound"
         ? "AddMeal"

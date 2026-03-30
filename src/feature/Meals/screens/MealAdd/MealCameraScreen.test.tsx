@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Linking } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import MealCameraScreen from "@/feature/Meals/screens/MealAdd/MealCameraScreen";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
@@ -35,18 +35,11 @@ type ModalProps = {
   };
 };
 
-type LoaderProps = {
-  text: string;
-  subtext: string;
-};
-
 type CameraViewProps = {
   onCameraReady?: () => void;
-  onBarcodeScanned?: (payload: { data: string }) => void;
 };
 
 const mockUseMealCameraState = jest.fn();
-const mockOpenSettings = jest.fn();
 
 jest.mock("@/feature/Meals/hooks/useMealCameraState", () => ({
   useMealCameraState: (params: unknown) => mockUseMealCameraState(params),
@@ -56,19 +49,8 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 4, right: 0, bottom: 0, left: 0 }),
 }));
 
-jest.mock("@/components/AppIcon", () => ({
-  __esModule: true,
-  default: ({ name }: { name: string }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Text } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(Text, null, name);
-  },
-}));
-
 jest.mock("expo-camera", () => ({
-  CameraView: ({ onCameraReady, onBarcodeScanned }: CameraViewProps) => {
+  CameraView: ({ onCameraReady }: CameraViewProps) => {
     const { createElement } =
       jest.requireActual<typeof import("react")>("react");
     const { Pressable, Text, View } =
@@ -83,21 +65,13 @@ jest.mock("expo-camera", () => ({
         { onPress: onCameraReady, accessibilityRole: "button" },
         createElement(Text, null, "camera-ready"),
       ),
-      createElement(
-        Pressable,
-        {
-          onPress: () => onBarcodeScanned?.({ data: "1234567890" }),
-          accessibilityRole: "button",
-        },
-        createElement(Text, null, "barcode-scan"),
-      ),
     );
   },
 }));
 
 jest.mock("react-i18next", () => ({
   useTranslation: (ns: string) => ({
-    t: (key: string, options?: { defaultValue?: string } | string) =>
+    t: (key: string, options?: { defaultValue?: string; cost?: number } | string) =>
       typeof options === "string"
         ? options
         : options?.defaultValue ?? `${ns}:${key}`,
@@ -191,23 +165,9 @@ jest.mock("@/components/Modal", () => ({
   },
 }));
 
-jest.mock("@feature/Meals/components/Loader", () => ({
-  __esModule: true,
-  default: ({ text, subtext }: LoaderProps) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Text, View } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(
-      View,
-      null,
-      createElement(Text, null, text),
-      createElement(Text, null, subtext),
-    );
-  },
-}));
-
-const buildHookState = (overrides?: Partial<ReturnType<typeof baseHookState>>) => ({
+const buildHookState = (
+  overrides?: Partial<ReturnType<typeof baseHookState>>,
+) => ({
   ...baseHookState(),
   ...overrides,
 });
@@ -220,27 +180,15 @@ function baseHookState() {
     isCameraReady: true,
     isTakingPhoto: false,
     photoUri: null as string | null,
-    isLoading: false,
     premiumModal: false,
-    barcodeModal: false,
-    scannedCode: null as string | null,
-    mode: "ai" as "ai" | "barcode",
-    isPremium: true,
     canUsePhotoAi: true,
     skipDetection: false,
-    barcodeOnly: false,
-    showBarcodeOverlay: false,
-    barcodeTypes: ["ean13"],
     setIsCameraReady: jest.fn(),
     handleTakePicture: jest.fn(async () => undefined),
     handleAccept: jest.fn(async () => undefined),
     handleRetake: jest.fn(),
-    onBarcodeScanned: jest.fn(),
     onUseSample: jest.fn(async () => undefined),
-    openAiMode: jest.fn(),
-    openBarcodeMode: jest.fn(),
     closePremiumModal: jest.fn(),
-    closeBarcodeModal: jest.fn(),
     goManagePremium: jest.fn(),
   };
 }
@@ -249,22 +197,21 @@ const buildProps = () =>
   ({
     navigation: {
       goBack: jest.fn(),
-    } as unknown as MealAddScreenProps<"MealCamera">["navigation"],
+    } as unknown as MealAddScreenProps<"CameraDefault">["navigation"],
     flow: {
       goTo: jest.fn(),
       replace: jest.fn(),
       goBack: jest.fn(),
       canGoBack: jest.fn(() => true),
-    } as unknown as MealAddScreenProps<"MealCamera">["flow"],
+    } as unknown as MealAddScreenProps<"CameraDefault">["flow"],
     params: {},
-  }) as MealAddScreenProps<"MealCamera">;
+  }) as MealAddScreenProps<"CameraDefault">;
 
 describe("MealCameraScreen", () => {
   const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
 
   beforeEach(() => {
     mockUseMealCameraState.mockReset();
-    mockOpenSettings.mockReset();
     (globalThis as { __DEV__?: boolean }).__DEV__ = true;
     jest
       .spyOn(Linking, "openSettings")
@@ -311,29 +258,6 @@ describe("MealCameraScreen", () => {
     expect(Linking.openSettings).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the loader for barcode lookup and AI analysis", () => {
-    mockUseMealCameraState
-      .mockReturnValueOnce(
-        buildHookState({
-          isLoading: true,
-          mode: "barcode",
-          skipDetection: false,
-        }),
-      )
-      .mockReturnValueOnce(
-        buildHookState({
-          isLoading: true,
-          mode: "ai",
-        }),
-      );
-
-    const barcode = renderWithTheme(<MealCameraScreen {...buildProps()} />);
-    expect(barcode.getByText("Looking up product...")).toBeTruthy();
-
-    const ai = renderWithTheme(<MealCameraScreen {...buildProps()} />);
-    expect(ai.getByText("Analyzing your meal...")).toBeTruthy();
-  });
-
   it("renders photo preview actions when a photo was captured", () => {
     const hookState = buildHookState({
       photoUri: "file:///meal.jpg",
@@ -349,34 +273,28 @@ describe("MealCameraScreen", () => {
     expect(hookState.handleAccept).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the active camera UI and forwards actions", () => {
+  it("renders the active photo camera UI and forwards actions", () => {
     const props = buildProps();
     const hookState = buildHookState({
-      mode: "barcode",
-      scannedCode: "5901234123457",
-      showBarcodeOverlay: true,
       premiumModal: true,
-      barcodeModal: true,
     });
     mockUseMealCameraState.mockReturnValue(hookState);
 
     const { getByText } = renderWithTheme(<MealCameraScreen {...props} />);
 
     fireEvent.press(getByText("back:Back"));
-    expect(getByText("chat:credits.costMultiple")).toBeTruthy();
-    fireEvent.press(getByText("sparkles"));
-    fireEvent.press(getByText("scan-barcode"));
     fireEvent.press(getByText("meals:dev.sample_meal"));
     fireEvent.press(getByText("chat:limit.upgradeCta"));
-    fireEvent.press(getByText("OK"));
 
-    expect(getByText("Detected: 5901234123457")).toBeTruthy();
+    expect(getByText("chat:credits.costMultiple")).toBeTruthy();
+    expect(getByText("Photo meal")).toBeTruthy();
+    expect(getByText("Capture your meal")).toBeTruthy();
+    expect(
+      getByText("Frame the whole plate clearly. We'll prepare a draft for review."),
+    ).toBeTruthy();
     expect(props.flow.goBack).toHaveBeenCalledTimes(1);
-    expect(hookState.openAiMode).toHaveBeenCalledTimes(1);
-    expect(hookState.openBarcodeMode).toHaveBeenCalledTimes(1);
     expect(hookState.onUseSample).toHaveBeenCalledTimes(1);
     expect(hookState.goManagePremium).toHaveBeenCalledTimes(1);
-    expect(hookState.closeBarcodeModal).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to navigation.goBack when the flow cannot step back", () => {

@@ -88,22 +88,26 @@ const MealAddMethodScreen = () => {
 
       <Modal
         visible={state.showResumeModal}
-        title={t("continue_draft_title")}
-        message={t("continue_draft_message")}
+        title={t("resume_draft_title", "Continue your draft?")}
+        message={t(
+          "resume_draft_message",
+          "You already have an unfinished meal draft. Continue it or discard it before starting something new.",
+        )}
         primaryAction={{
-          label: t("continue"),
+          label: t("resume_draft_continue", "Continue draft"),
           onPress: () => {
             void state.handleContinueDraft();
           },
         }}
         secondaryAction={{
-          label: t("discard"),
+          label: t("resume_draft_discard", "Start fresh"),
           onPress: () => {
             void state.handleDiscardDraft();
           },
           tone: "destructive",
         }}
         onClose={state.closeResumeModal}
+        stackActions
       />
     </View>
   );

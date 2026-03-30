@@ -1,16 +1,8 @@
-import { Pressable, TextInput as RNTextInput } from "react-native";
+import { TextInput as RNTextInput } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest, beforeEach } from "@jest/globals";
 import { IngredientEditor } from "@/components/IngredientEditor";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
-
-const mockNavigate = jest.fn();
-
-jest.mock("@react-navigation/native", () => ({
-  useNavigation: () => ({
-    navigate: (...args: unknown[]) => mockNavigate(...args),
-  }),
-}));
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -19,14 +11,9 @@ jest.mock("react-i18next", () => ({
   }),
 }));
 
-jest.mock("@/components/AppIcon", () => ({
-  __esModule: true,
-  default: () => null,
-}));
-
 describe("IngredientEditor", () => {
   beforeEach(() => {
-    mockNavigate.mockClear();
+    jest.clearAllMocks();
   });
 
   it("commits parsed ingredient values", () => {
@@ -94,35 +81,5 @@ describe("IngredientEditor", () => {
 
     fireEvent.press(getByText("common:save_changes"));
     expect(onCommit).not.toHaveBeenCalled();
-  });
-
-  it("navigates to barcode scanner from barcode action", () => {
-    const { UNSAFE_getAllByType } = renderWithTheme(
-      <IngredientEditor
-        initial={{
-          id: "ing-1",
-          name: "Apple",
-          amount: 100,
-          unit: "g",
-          protein: 1,
-          carbs: 10,
-          fat: 2,
-          kcal: 50,
-        }}
-        onCommit={() => undefined}
-        onCancel={() => undefined}
-        onDelete={() => undefined}
-      />,
-    );
-
-    const pressables = UNSAFE_getAllByType(Pressable);
-    fireEvent.press(pressables[0]);
-
-    expect(mockNavigate).toHaveBeenCalledWith("AddMeal", {
-      start: "MealCamera",
-      barcodeOnly: true,
-      returnTo: "Result",
-      attempt: 1,
-    });
   });
 });

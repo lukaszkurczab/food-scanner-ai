@@ -30,11 +30,8 @@ import SavedMealsScreen from "@/feature/History/screens/SavedMealsScreen";
 import SelectSavedMealScreen from "@/feature/Meals/screens/SelectSavedMealsScreen";
 import NotificationsScreen from "@/feature/UserProfile/screens/NotificationsScreen";
 import NotificationFormScreen from "@/feature/UserProfile/screens/NotificationFormScreen";
-import MealTextAIScreen from "@/feature/Meals/screens/MealTextAIScreen";
 import MealShareScreen from "@/feature/Meals/screens/MealShareScreen";
 import ChatScreen from "@/feature/AI/screens/ChatScreen";
-import EditReviewIngredientsScreen from "@/feature/History/screens/EditReviewIngredientsScreen";
-import EditResultScreen from "@/feature/History/screens/EditResultScreen";
 import SavedMealsCameraScreen from "@/feature/History/screens/SavedMealsCameraScreen";
 import AddMealScreen from "@feature/Meals/screens/AddMealScreen";
 import { isE2EModeEnabled } from "@/services/e2e/config";
@@ -103,12 +100,6 @@ function renderAppScreens() {
         name="SavedMealsCamera"
         component={SavedMealsCameraScreen}
       />
-      <Stack.Screen
-        name="EditReviewIngredients"
-        component={EditReviewIngredientsScreen}
-      />
-      <Stack.Screen name="EditResult" component={EditResultScreen} />
-      <Stack.Screen name="MealTextAI" component={MealTextAIScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen
         name="NotificationForm"

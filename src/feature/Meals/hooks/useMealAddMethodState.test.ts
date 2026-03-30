@@ -11,6 +11,7 @@ const mockSaveDraft = jest.fn<(uid: string, meal: unknown) => Promise<void>>();
 const mockSetLastScreen = jest.fn<(uid: string, screen: string) => Promise<void>>();
 const mockLoadDraft = jest.fn<(uid: string) => Promise<void>>();
 const mockRemoveDraft = jest.fn<(uid: string) => Promise<void>>();
+const mockUseAuthContext = jest.fn();
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   __esModule: true,
@@ -21,7 +22,7 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 }));
 
 jest.mock("@/context/AuthContext", () => ({
-  useAuthContext: () => ({ uid: null }),
+  useAuthContext: () => mockUseAuthContext(),
 }));
 
 jest.mock("@contexts/MealDraftContext", () => ({
@@ -53,6 +54,7 @@ jest.mock("@/services/e2e/config", () => ({
 describe("useMealAddMethodState", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAuthContext.mockReturnValue({ uid: null });
     mockGetItem.mockResolvedValue(null);
     mockSetItem.mockResolvedValue(undefined);
     mockSaveDraft.mockResolvedValue(undefined);
@@ -99,11 +101,56 @@ describe("useMealAddMethodState", () => {
       "meal-add-preferred-method",
       "text",
     );
-    expect(mockReplace).toHaveBeenCalledWith("MealTextAI");
+    expect(mockReplace).toHaveBeenCalledWith("AddMeal", {
+      start: "DescribeMeal",
+    });
 
     await waitFor(() => {
       expect(homeHook.result.current.preferredMethodKey).toBe("text");
     });
     expect(homeHook.result.current.preferredOption.key).toBe("text");
+  });
+
+  it("resumes unfinished AddMeal drafts in the new review flow", async () => {
+    mockUseAuthContext.mockReturnValue({ uid: "user-1" });
+    mockGetItem.mockImplementation(async (key: string) => {
+      if (key === "meal-add-preferred-method") return null;
+      if (key === "draft:user-1") {
+        return JSON.stringify({
+          mealId: "draft-1",
+          createdAt: "2026-03-30T08:00:00.000Z",
+          ingredients: [{ name: "Chicken", amount: 120, kcal: 220 }],
+        });
+      }
+      if (key === "screen:user-1") return "AddMeal";
+      return null;
+    });
+
+    const navigation = {
+      navigate: mockNavigate,
+      replace: mockReplace,
+    } as const;
+
+    const { result } = renderHook(() =>
+      useMealAddMethodState({
+        navigation,
+        replaceOnStart: true,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.handleOptionPress(result.current.options[0]);
+    });
+
+    expect(result.current.showResumeModal).toBe(true);
+
+    await act(async () => {
+      await result.current.handleContinueDraft();
+    });
+
+    expect(mockLoadDraft).toHaveBeenCalledWith("user-1");
+    expect(mockReplace).toHaveBeenCalledWith("AddMeal", {
+      start: "ReviewMeal",
+    });
   });
 });

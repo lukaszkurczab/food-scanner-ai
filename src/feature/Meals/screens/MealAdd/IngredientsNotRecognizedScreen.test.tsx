@@ -87,10 +87,9 @@ describe("IngredientsNotRecognizedScreen", () => {
 
     fireEvent.press(getByText("Retake photo (2/3)"));
 
-    expect(props.flow.goTo).toHaveBeenCalledWith("MealCamera", {
+    expect(props.flow.goTo).toHaveBeenCalledWith("CameraDefault", {
       id: "meal-1",
       attempt: 3,
-      returnTo: "IngredientsNotRecognized",
     });
   });
 
@@ -109,7 +108,7 @@ describe("IngredientsNotRecognizedScreen", () => {
     fireEvent.press(getByText("Use product database"));
     fireEvent.press(getByText("Cancel"));
 
-    expect(props.flow.replace).toHaveBeenCalledWith("Result", {});
+    expect(props.flow.replace).toHaveBeenCalledWith("ReviewMeal", {});
     expect(props.navigation.replace).toHaveBeenCalledWith("SavedMeals");
     expect(props.flow.goBack).toHaveBeenCalledTimes(1);
   });

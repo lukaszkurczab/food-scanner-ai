@@ -373,7 +373,9 @@ describe("SavedMealsScreen", () => {
     const navigate = jest.fn<(screen: string, params?: unknown) => void>();
     const toggleShowFilters = jest.fn();
     const setMeal = jest.fn();
-    const saveDraft = jest.fn<(uid: string) => Promise<void>>(
+    const saveDraft = jest.fn<
+      (uid: string, draftOverride?: Meal | null) => Promise<void>
+    >(
       async (_uid: string) => undefined,
     );
     const setLastScreen = jest.fn<(uid: string, screen: string) => Promise<void>>(
@@ -438,6 +440,7 @@ describe("SavedMealsScreen", () => {
         1,
         expect.objectContaining({
           mealId: "duplicated-meal-id",
+          cloudId: undefined,
           source: "saved",
           name: "Pasta bake",
           photoUrl: "https://example.com/pasta.jpg",
@@ -445,15 +448,24 @@ describe("SavedMealsScreen", () => {
           userUid: "user-1",
         }),
       );
-      expect(saveDraft).toHaveBeenNthCalledWith(1, "user-1");
-      expect(setLastScreen).toHaveBeenNthCalledWith(1, "user-1", "Result");
+      expect(saveDraft).toHaveBeenNthCalledWith(
+        1,
+        "user-1",
+        expect.objectContaining({
+          mealId: "duplicated-meal-id",
+          cloudId: undefined,
+          source: "saved",
+        }),
+      );
+      expect(setLastScreen).toHaveBeenNthCalledWith(1, "user-1", "ReviewMeal");
       expect(navigate).toHaveBeenNthCalledWith(2, "AddMeal", {
-        start: "Result",
+        start: "ReviewMeal",
       });
       expect(setMeal).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({
           mealId: "edited-meal-id",
+          cloudId: undefined,
           source: "saved",
           name: "Pasta bake",
           photoUrl: "https://example.com/pasta.jpg",
@@ -461,14 +473,22 @@ describe("SavedMealsScreen", () => {
           userUid: "user-1",
         }),
       );
-      expect(saveDraft).toHaveBeenNthCalledWith(2, "user-1");
+      expect(saveDraft).toHaveBeenNthCalledWith(
+        2,
+        "user-1",
+        expect.objectContaining({
+          mealId: "edited-meal-id",
+          cloudId: undefined,
+          source: "saved",
+        }),
+      );
       expect(setLastScreen).toHaveBeenNthCalledWith(
         2,
         "user-1",
-        "EditReviewIngredients",
+        "EditMealDetails",
       );
-      expect(navigate).toHaveBeenNthCalledWith(3, "EditReviewIngredients", {
-        savedCloudId: "cloud-1",
+      expect(navigate).toHaveBeenNthCalledWith(3, "AddMeal", {
+        start: "EditMealDetails",
       });
     });
   });
@@ -476,7 +496,9 @@ describe("SavedMealsScreen", () => {
   it("does not duplicate or edit when the user is missing", async () => {
     const navigate = jest.fn<(screen: string, params?: unknown) => void>();
     const setMeal = jest.fn();
-    const saveDraft = jest.fn<(uid: string) => Promise<void>>(
+    const saveDraft = jest.fn<
+      (uid: string, draftOverride?: Meal | null) => Promise<void>
+    >(
       async (_uid: string) => undefined,
     );
     const setLastScreen = jest.fn<(uid: string, screen: string) => Promise<void>>(

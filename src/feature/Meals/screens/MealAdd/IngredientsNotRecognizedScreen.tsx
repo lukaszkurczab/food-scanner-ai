@@ -34,22 +34,17 @@ export default function IngredientsNotRecognizedScreen({
 
   const handleRetake = () => {
     if (attempt < MAX_ATTEMPTS) {
-      flow.goTo("MealCamera", {
+      flow.goTo("CameraDefault", {
         id,
         attempt: attempt + 1,
-        returnTo: "IngredientsNotRecognized",
       });
     } else {
-      navigation.replace("AddMeal", {
-        start: "Result",
-        id,
-        image,
-      });
+      flow.replace("ReviewMeal", {});
     }
   };
 
   const handleManualEntry = () => {
-    flow.replace("Result", {});
+    flow.replace("ReviewMeal", {});
   };
 
   const handleOpenProductDatabase = () => {

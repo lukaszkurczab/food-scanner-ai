@@ -1,47 +1,64 @@
-import { useCallback, useMemo, useState } from "react";
-import { Keyboard } from "react-native";
-import NetInfo from "@react-native-community/netinfo";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { v4 as uuidv4 } from "uuid";
-import { Toast } from "@/components";
-import { useAuthContext } from "@/context/AuthContext";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
-import { useMealDraftContext } from "@contexts/MealDraftContext";
-import { extractIngredientsFromText } from "@/services/ai/textMealService";
-import type { AiTextMealPayload } from "@/services/ai/contracts";
-import { getErrorStatus } from "@/services/contracts/serviceError";
-import { getAiUxErrorType } from "@/services/ai/uxError";
-import type { Meal } from "@/types";
 import type { RootStackParamList } from "@/navigation/navigate";
-import { getMealAiMetaFromAiResponse } from "@/services/meals/mealMetadata";
+import type {
+  MealAddFlowApi,
+  MealAddStepParams,
+} from "@/feature/Meals/feature/MapMealAddScreens";
 
-const MAX_RETRIES = 3;
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 export function useMealTextAiState(params: {
   t: Translate;
   language?: string;
+  flow: Pick<MealAddFlowApi, "goTo">;
+  initialValues?: MealAddStepParams["DescribeMeal"];
 }) {
-  const { t, language } = params;
-  const { uid } = useAuthContext();
+  const { t, flow, initialValues } = params;
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { credits, canAfford, applyCreditsFromResponse, refreshCredits } = useAiCreditsContext();
-  const { meal, setMeal, saveDraft, setLastScreen } = useMealDraftContext();
+  const { credits, canAfford } = useAiCreditsContext();
 
-  const [name, setName] = useState("");
-  const [ingPreview, setIngPreview] = useState("");
-  const [amount, setAmount] = useState("");
-  const [desc, setDesc] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState(initialValues?.name ?? "");
+  const [ingPreview, setIngPreview] = useState(initialValues?.ingPreview ?? "");
+  const [amount, setAmount] = useState(initialValues?.amount ?? "");
+  const [desc, setDesc] = useState(initialValues?.desc ?? "");
   const [touched, setTouched] = useState<{ name: boolean; amount: boolean }>({
     name: false,
     amount: false,
   });
-  const [showLimitModal, setShowLimitModal] = useState(false);
-  const [retries, setRetries] = useState(0);
-  const [ingredientsError, setIngredientsError] = useState<string | undefined>();
-  const [submitError, setSubmitError] = useState<string | undefined>();
+  const [showLimitModal, setShowLimitModal] = useState(
+    Boolean(initialValues?.showLimitModal),
+  );
+  const [retries, setRetries] = useState(initialValues?.retries ?? 0);
+  const [ingredientsError, setIngredientsError] = useState<
+    string | undefined
+  >(initialValues?.ingredientsError);
+  const [submitError, setSubmitError] = useState<string | undefined>(
+    initialValues?.submitError,
+  );
+
+  useEffect(() => {
+    setName(initialValues?.name ?? "");
+    setIngPreview(initialValues?.ingPreview ?? "");
+    setAmount(initialValues?.amount ?? "");
+    setDesc(initialValues?.desc ?? "");
+    setShowLimitModal(Boolean(initialValues?.showLimitModal));
+    setRetries(initialValues?.retries ?? 0);
+    setIngredientsError(initialValues?.ingredientsError);
+    setSubmitError(initialValues?.submitError);
+    setTouched({ name: false, amount: false });
+  }, [
+    initialValues?.amount,
+    initialValues?.desc,
+    initialValues?.ingPreview,
+    initialValues?.ingredientsError,
+    initialValues?.name,
+    initialValues?.retries,
+    initialValues?.showLimitModal,
+    initialValues?.submitError,
+  ]);
 
   const amountRaw = amount;
   const amountNum = useMemo(() => Number(amountRaw), [amountRaw]);
@@ -63,65 +80,7 @@ export function useMealTextAiState(params: {
     return undefined;
   }, [amountNum, amountRaw, t, touched.amount]);
 
-  const buildInitialMeal = useCallback(
-    (uid: string): Meal => ({
-      mealId: uuidv4(),
-      userUid: uid,
-      name: null,
-      photoUrl: null,
-      ingredients: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      syncState: "pending",
-      tags: [],
-      deleted: false,
-      notes: null,
-      type: "other",
-      timestamp: "",
-      source: "ai",
-      inputMethod: "text",
-      aiMeta: null,
-      cloudId: undefined,
-    }),
-    [],
-  );
-
-  const ensureDraft = useCallback(async (): Promise<Meal | null> => {
-    if (!uid) return null;
-    if (meal) return meal;
-
-    const base = buildInitialMeal(uid);
-    setMeal(base);
-    await saveDraft(uid, base);
-    return base;
-  }, [buildInitialMeal, meal, saveDraft, setMeal, uid]);
-
-  const buildPayload = useCallback((): AiTextMealPayload => {
-    const parsedAmount = Number(amountRaw);
-    const amount_g =
-      isFinite(parsedAmount) && parsedAmount > 0
-        ? Math.round(parsedAmount)
-        : null;
-    const ingredientsText = ingPreview.trim();
-    const nameText = name.trim();
-    return {
-      name: nameText || null,
-      ingredients: ingredientsText || nameText || null,
-      amount_g,
-      notes: desc.trim() || null,
-    };
-  }, [amountRaw, desc, ingPreview, name]);
-
-  const nextRetryCount = useCallback(
-    (current: number) => Math.min(current + 1, MAX_RETRIES),
-    [],
-  );
-
-  const onAnalyze = useCallback(async () => {
-    if (!uid) return;
-
-    Keyboard.dismiss();
-    await new Promise((resolve) => requestAnimationFrame(resolve));
+  const onAnalyze = useCallback(() => {
     setIngredientsError(undefined);
     setSubmitError(undefined);
 
@@ -154,98 +113,16 @@ export function useMealTextAiState(params: {
       return;
     }
 
-    try {
-      const net = await NetInfo.fetch();
-      if (!net.isConnected) {
-        setSubmitError(t("text_ai_error_offline", { ns: "meals" }));
-        return;
-      }
-
-      setLoading(true);
-      const payload = buildPayload();
-      const result = await extractIngredientsFromText(uid, payload, {
-        lang: language || "en",
-      });
-
-      if (!result || result.ingredients.length === 0) {
-        setRetries((prev) => nextRetryCount(prev));
-        setSubmitError(t("text_ai_not_recognized_retry", { ns: "meals" }));
-        Toast.show(t("not_recognized_title", { ns: "meals" }));
-        return;
-      }
-
-      applyCreditsFromResponse(result.credits);
-      setRetries(0);
-      const aiMeta = getMealAiMetaFromAiResponse(result.credits);
-      const base = await ensureDraft();
-      if (!base) return;
-
-      const next: Meal = {
-        ...base,
-        name: name.trim() || base.name,
-        notes: desc.trim() || base.notes || null,
-        ingredients: result.ingredients,
-        inputMethod: "text",
-        aiMeta,
-        updatedAt: new Date().toISOString(),
-      };
-
-      setMeal(next);
-      await saveDraft(uid, next);
-      await setLastScreen(uid, "Result");
-      navigation.replace("AddMeal", { start: "Result" });
-    } catch (error) {
-      if (getErrorStatus(error) === 402) {
-        await refreshCredits();
-        setShowLimitModal(true);
-        return;
-      }
-      const errorType = getAiUxErrorType(error);
-      if (errorType === "offline") {
-        setSubmitError(t("text_ai_error_offline", { ns: "meals" }));
-        return;
-      }
-      if (errorType === "timeout") {
-        setSubmitError(t("text_ai_error_timeout", { ns: "meals" }));
-        return;
-      }
-      if (errorType === "unavailable") {
-        setSubmitError(t("text_ai_error_unavailable", { ns: "meals" }));
-        return;
-      }
-      if (errorType === "auth") {
-        setSubmitError(t("text_ai_error_auth", { ns: "meals" }));
-        return;
-      }
-      setRetries((prev) => nextRetryCount(prev));
-      setSubmitError(t("text_ai_analyze_failed", { ns: "meals" }));
-      Toast.show(t("text_ai_analyze_failed", { ns: "meals" }));
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    amountRaw,
-    applyCreditsFromResponse,
-    buildPayload,
-    canAfford,
-    desc,
-    ensureDraft,
-    ingPreview,
-    language,
-    name,
-    navigation,
-    nextRetryCount,
-    refreshCredits,
-    saveDraft,
-    setLastScreen,
-    setMeal,
-    setSubmitError,
-    t,
-    uid,
-  ]);
+    flow.goTo("TextAnalyzing", {
+      name: name.trim(),
+      ingPreview,
+      amount,
+      desc,
+      retries,
+    });
+  }, [amount, amountRaw, canAfford, desc, flow, ingPreview, name, retries, t]);
 
   const analyzeDisabled =
-    loading ||
     !name.trim() ||
     (amountRaw.length > 0 && (!isFinite(amountNum) || amountNum <= 0)) ||
     (!ingPreview.trim() && !amountRaw.length);
@@ -307,7 +184,7 @@ export function useMealTextAiState(params: {
     ingPreview,
     amount,
     desc,
-    loading,
+    loading: false,
     retries,
     showLimitModal,
     creditsUsed,
