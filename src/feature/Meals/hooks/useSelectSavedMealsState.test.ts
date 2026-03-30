@@ -56,7 +56,7 @@ describe("useSelectSavedMealsState", () => {
           (uid: string, draftOverride?: Meal | null) => Promise<void>
         >(async () => undefined),
         setLastScreen: jest.fn(async () => undefined),
-        onNavigateResult: jest.fn(),
+        onNavigateReview: jest.fn(),
         onStartOver: jest.fn(),
       }),
     );
@@ -80,7 +80,7 @@ describe("useSelectSavedMealsState", () => {
           (uid: string, draftOverride?: Meal | null) => Promise<void>
         >(async () => undefined),
         setLastScreen: jest.fn(async () => undefined),
-        onNavigateResult: jest.fn(),
+        onNavigateReview: jest.fn(),
         onStartOver: jest.fn(),
       }),
     );
@@ -117,7 +117,7 @@ describe("useSelectSavedMealsState", () => {
     const setLastScreen = jest.fn<
       (uid: string, screen: string) => Promise<void>
     >(async () => undefined);
-    const onNavigateResult = jest.fn();
+    const onNavigateReview = jest.fn();
     const onStartOver = jest.fn();
 
     const { result } = renderHook(() =>
@@ -128,7 +128,7 @@ describe("useSelectSavedMealsState", () => {
         setMeal,
         saveDraft,
         setLastScreen,
-        onNavigateResult,
+        onNavigateReview,
         onStartOver,
       }),
     );
@@ -152,7 +152,8 @@ describe("useSelectSavedMealsState", () => {
 
     expect(setMeal).toHaveBeenCalledWith(
       expect.objectContaining({
-        mealId: "meal-1",
+        mealId: "uuid-new",
+        cloudId: undefined,
         source: "saved",
         name: "Chicken pasta",
       }),
@@ -160,12 +161,12 @@ describe("useSelectSavedMealsState", () => {
     expect(saveDraft).toHaveBeenCalledWith(
       "user-1",
       expect.objectContaining({
-        mealId: "meal-1",
+        mealId: "uuid-new",
         source: "saved",
       }),
     );
-    expect(setLastScreen).toHaveBeenCalledWith("user-1", "Result");
-    expect(onNavigateResult).toHaveBeenCalledTimes(1);
+    expect(setLastScreen).toHaveBeenCalledWith("user-1", "ReviewMeal");
+    expect(onNavigateReview).toHaveBeenCalledTimes(1);
 
     act(() => {
       result.current.handleStartOver();

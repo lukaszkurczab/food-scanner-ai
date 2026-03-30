@@ -9,7 +9,6 @@ type ButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  testID?: string;
   children?: ReactNode;
 };
 
@@ -37,10 +36,10 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: ReactNode }) =>
       createElement(View, null, children),
-    Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
+    Button: ({ label, onPress, disabled }: ButtonProps) =>
       createElement(
         Pressable,
-        { onPress, disabled, testID, accessibilityRole: "button" },
+        { onPress, disabled, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
   };
@@ -51,54 +50,48 @@ const buildProps = (
 ) =>
   ({
     navigation: {
-      replace: jest.fn<(screen: string, params?: unknown) => void>(),
+      goBack: jest.fn(),
+      addListener: jest.fn(() => jest.fn()),
     } as unknown as MealAddScreenProps<"BarcodeProductNotFound">["navigation"],
     flow: {
       goTo: jest.fn(),
       replace: jest.fn(),
       goBack: jest.fn(),
-      canGoBack: jest.fn(() => true),
+      canGoBack: jest.fn(() => false),
     } as unknown as MealAddScreenProps<"BarcodeProductNotFound">["flow"],
     params,
   }) as MealAddScreenProps<"BarcodeProductNotFound">;
 
 describe("BarcodeProductNotFoundScreen", () => {
-  it("retries barcode scanning before the last attempt", () => {
+  it("lets the new barcode flow edit the searched code in the manual sheet", () => {
     const props = buildProps({
       code: "5901234123457",
-      attempt: 1,
-      returnTo: "IngredientsNotRecognized",
     });
 
     const { getByText } = renderWithTheme(
       <BarcodeProductNotFoundScreen {...props} />,
     );
 
-    fireEvent.press(getByText("Scan again (1/3)"));
+    expect(getByText("5901234123457")).toBeTruthy();
+    fireEvent.press(getByText("Edit code"));
 
-    expect(getByText("Scanned code: 5901234123457")).toBeTruthy();
-    expect(props.navigation.replace).toHaveBeenCalledWith("AddMeal", {
-      start: "MealCamera",
-      barcodeOnly: true,
-      attempt: 2,
-      returnTo: "IngredientsNotRecognized",
+    expect(props.flow.replace).toHaveBeenCalledWith("BarcodeScan", {
+      code: "5901234123457",
+      showManualEntry: true,
     });
   });
 
-  it("returns to the result step after the last attempt", () => {
+  it("lets the new barcode flow restart scanning", () => {
     const props = buildProps({
-      attempt: 3,
+      code: "5901234123457",
     });
 
-    const { getByText, queryByText } = renderWithTheme(
+    const { getByText } = renderWithTheme(
       <BarcodeProductNotFoundScreen {...props} />,
     );
 
-    expect(queryByText("Scan again (3/3)")).toBeNull();
-    fireEvent.press(getByText("Back to ingredients"));
+    fireEvent.press(getByText("Scan again"));
 
-    expect(props.navigation.replace).toHaveBeenCalledWith("AddMeal", {
-      start: "Result",
-    });
+    expect(props.flow.replace).toHaveBeenCalledWith("BarcodeScan", {});
   });
 });

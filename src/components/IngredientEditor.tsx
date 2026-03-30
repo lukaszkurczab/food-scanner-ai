@@ -9,13 +9,9 @@ import {
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import type { Ingredient } from "@/types";
-import { useNavigation } from "@react-navigation/native";
-import type { StackNavigationProp } from "@react-navigation/stack";
-import type { RootStackParamList } from "@/navigation/navigate";
 import { NumberInput } from "./NumberInput";
 import { TextInput } from "./TextInput";
 import { Modal } from "./Modal";
-import AppIcon from "./AppIcon";
 import { Button } from "./Button";
 
 type Props = {
@@ -47,7 +43,6 @@ export const IngredientEditor: React.FC<Props> = ({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals", "common"]);
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const unitLabel = initial?.unit === "ml" ? "ml" : "g";
 
   const [name, setName] = useState(initial.name ?? "");
@@ -219,34 +214,19 @@ export const IngredientEditor: React.FC<Props> = ({
 
   return (
     <View style={styles.box}>
-      <View style={styles.row}>
-        <TextInput
-          style={styles.nameField}
-          value={name}
-          onChangeText={(v) => {
-            setName(v);
-            onChangePartial?.({ name: v });
-          }}
-          placeholder={t("ingredient_name", { ns: "meals" })}
-          onBlur={() => {
-            setNameTouched(true);
-            normalizeOnBlurName(name);
-          }}
-        />
-        <Pressable
-          onPress={() =>
-            navigation.navigate("AddMeal", {
-              start: "MealCamera",
-              barcodeOnly: true,
-              returnTo: "Result",
-              attempt: 1,
-            })
-          }
-          style={styles.barcodeButton}
-        >
-          <AppIcon name="scan-barcode" size={22} color={theme.text} />
-        </Pressable>
-      </View>
+      <TextInput
+        style={styles.nameField}
+        value={name}
+        onChangeText={(v) => {
+          setName(v);
+          onChangePartial?.({ name: v });
+        }}
+        placeholder={t("ingredient_name", { ns: "meals" })}
+        onBlur={() => {
+          setNameTouched(true);
+          normalizeOnBlurName(name);
+        }}
+      />
 
       {errors.name && nameTouched ? (
         <Text style={styles.errText}>{errors.name}</Text>
@@ -442,16 +422,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     inputError: {
       borderColor: theme.input.borderError,
     },
-    barcodeButton: {
-      width: 44,
-      height: 44,
-      borderRadius: theme.rounded.md,
-      borderWidth: 1,
-      borderColor: theme.border,
-      backgroundColor: theme.surfaceAlt,
-      justifyContent: "center",
-      alignItems: "center",
-    },
     errText: {
       color: theme.error.text,
       fontSize: theme.typography.size.bodyS,
@@ -510,12 +480,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginTop: theme.spacing.md,
       paddingVertical: theme.spacing.xs,
       paddingHorizontal: theme.spacing.sm,
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: theme.spacing.sm,
-      width: "100%",
     },
     deleteLinkText: {
       color: theme.error.text,

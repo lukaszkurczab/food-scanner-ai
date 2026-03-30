@@ -226,6 +226,7 @@ describe("SelectSavedMealScreen", () => {
     fireEvent.press(getByText("change-search"));
     fireEvent.press(getByText("Change add method"));
 
+    expect(getByText("Reuse one of your saved meals")).toBeTruthy();
     expect(getByText("No saved meals")).toBeTruthy();
     expect(setQueryText).toHaveBeenCalledWith("pasta");
     expect(handleStartOver).toHaveBeenCalledTimes(1);
@@ -254,6 +255,7 @@ describe("SelectSavedMealScreen", () => {
       <SelectSavedMealScreen navigation={{} as never} />,
     );
 
+    expect(getByText("Reuse one of your saved meals")).toBeTruthy();
     expect(getByText("common:offline.title")).toBeTruthy();
     expect(getByText("savedMeals.offlineEmpty")).toBeTruthy();
     fireEvent.press(getByText("Change add method"));
@@ -285,7 +287,7 @@ describe("SelectSavedMealScreen", () => {
 
     fireEvent.press(getByText("Chicken pasta"));
     fireEvent.press(getByText("select:Chicken pasta"));
-    fireEvent.press(getByText("Select"));
+    fireEvent.press(getByText("Review selected meal"));
 
     expect(getByText("search:chi")).toBeTruthy();
     expect(handleSelect).toHaveBeenCalledWith(
@@ -322,16 +324,16 @@ describe("SelectSavedMealScreen", () => {
 
     const hookArgs = mockUseSelectSavedMealsState.mock.calls.at(-1)?.[0] as {
       syncSavedMeals: () => Promise<unknown> | unknown;
-      onNavigateResult: () => void;
+      onNavigateReview: () => void;
       onStartOver: () => void;
     };
 
     await hookArgs.syncSavedMeals();
-    hookArgs.onNavigateResult();
+    hookArgs.onNavigateReview();
     hookArgs.onStartOver();
 
     expect(mockSyncMyMeals).toHaveBeenCalledWith("user-1");
-    expect(navigate).toHaveBeenCalledWith("AddMeal", { start: "Result" });
+    expect(navigate).toHaveBeenCalledWith("AddMeal", { start: "ReviewMeal" });
     expect(replace).toHaveBeenCalledWith("MealAddMethod", {
       selectionMode: "temporary",
     });

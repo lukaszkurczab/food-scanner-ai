@@ -1,28 +1,64 @@
-import MealCameraScreen from "../screens/MealAdd/MealCameraScreen";
+import BarcodeScanScreen from "../screens/MealAdd/BarcodeScanScreen";
 import BarcodeProductNotFoundScreen from "../screens/MealAdd/BarcodeProductNotFoundScreen";
+import DescribeMealScreen from "../screens/MealAdd/DescribeMealScreen";
+import EditMealDetailsScreen from "../screens/MealAdd/EditMealDetailsScreen";
 import IngredientsNotRecognizedScreen from "../screens/MealAdd/IngredientsNotRecognizedScreen";
-import ResultScreen from "../screens/MealAdd/ResultScreen";
+import MealCameraScreen from "../screens/MealAdd/MealCameraScreen";
+import PreparingReviewPhotoScreen from "../screens/MealAdd/PreparingReviewPhotoScreen";
+import ReviewMealScreen from "../screens/MealAdd/ReviewMealScreen";
+import TextAnalyzingScreen from "../screens/MealAdd/TextAnalyzingScreen";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
 export type MealAddScreenName =
-  | "MealCamera"
+  | "CameraDefault"
+  | "BarcodeScan"
+  | "PreparingReviewPhoto"
+  | "DescribeMeal"
+  | "TextAnalyzing"
+  | "ReviewMeal"
+  | "EditMealDetails"
   | "BarcodeProductNotFound"
-  | "IngredientsNotRecognized"
-  | "Result";
+  | "IngredientsNotRecognized";
 
 export type MealAddStepParams = {
-  MealCamera: {
-    barcodeOnly?: boolean;
+  CameraDefault: {
     id?: string;
     skipDetection?: boolean;
-    returnTo?: MealAddScreenName;
+    attempt?: number;
+    showPremiumModal?: boolean;
+  };
+  BarcodeScan: {
+    code?: string;
+    showManualEntry?: boolean;
+  };
+  PreparingReviewPhoto: {
+    image: string;
+    id?: string;
     attempt?: number;
   };
+  DescribeMeal: {
+    name?: string;
+    ingPreview?: string;
+    amount?: string;
+    desc?: string;
+    retries?: number;
+    ingredientsError?: string;
+    submitError?: string;
+    showLimitModal?: boolean;
+  };
+  TextAnalyzing: {
+    name: string;
+    ingPreview: string;
+    amount: string;
+    desc: string;
+    retries?: number;
+  };
+  ReviewMeal: Record<string, never>;
+  EditMealDetails: Record<string, never>;
   BarcodeProductNotFound: {
     code?: string;
     attempt?: number;
-    returnTo?: MealAddScreenName;
   };
   IngredientsNotRecognized: {
     image?: string;
@@ -30,7 +66,6 @@ export type MealAddStepParams = {
     attempt?: number;
     reason?: "not_recognized" | "ai_unavailable" | "offline" | "timeout";
   };
-  Result: Record<string, unknown>;
 };
 
 export type MealAddFlowApi = {
@@ -54,14 +89,24 @@ export type MealAddScreenProps<N extends MealAddScreenName> = {
 
 const MapMealAddScreens = (screenName: MealAddScreenName) => {
   switch (screenName) {
-    case "MealCamera":
+    case "CameraDefault":
       return MealCameraScreen;
+    case "BarcodeScan":
+      return BarcodeScanScreen;
+    case "PreparingReviewPhoto":
+      return PreparingReviewPhotoScreen;
+    case "DescribeMeal":
+      return DescribeMealScreen;
+    case "TextAnalyzing":
+      return TextAnalyzingScreen;
+    case "ReviewMeal":
+      return ReviewMealScreen;
+    case "EditMealDetails":
+      return EditMealDetailsScreen;
     case "BarcodeProductNotFound":
       return BarcodeProductNotFoundScreen;
     case "IngredientsNotRecognized":
       return IngredientsNotRecognizedScreen;
-    case "Result":
-      return ResultScreen;
     default:
       throw new Error(`Unknown screen: ${screenName}`);
   }

@@ -6,12 +6,11 @@ import { getDraftKey, getScreenKey } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import type { RootStackParamList } from "@/navigation/navigate";
-import type { Ingredient, Meal, MealInputMethod } from "@/types/meal";
+import type { Meal, MealInputMethod } from "@/types/meal";
 import type { AppIconName } from "@/components/AppIcon";
 import { debugScope } from "@/utils/debug";
 import { emit, on } from "@/services/core/events";
 import {
-  E2E_DETERMINISTIC_INGREDIENT,
   isE2EModeEnabled,
 } from "@/services/e2e/config";
 
@@ -26,7 +25,7 @@ type MealAddMethodNavigationProp = {
   >["replace"];
 };
 
-type DraftResumeScreen = "AddMeal" | "EditReviewIngredients" | "EditResult";
+type DraftResumeScreen = "AddMeal";
 
 type AddMealStart = NonNullable<
   NonNullable<RootStackParamList["AddMeal"]>["start"]
@@ -45,7 +44,7 @@ type AddMealMethodOption = MethodOptionBase & {
 };
 
 type NonAddMealMethodOption = MethodOptionBase & {
-  screen: "MealTextAI" | "SelectSavedMeal";
+  screen: "SelectSavedMeal";
 };
 
 export type MethodOption = AddMealMethodOption | NonAddMealMethodOption;
@@ -59,7 +58,6 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
     screen: "AddMeal",
     params: {
       start: "MealCamera",
-      returnTo: "Result",
       attempt: 1,
     },
   },
@@ -68,7 +66,10 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
     icon: "edit",
     titleKey: "textTitle",
     descKey: "textDesc",
-    screen: "MealTextAI",
+    screen: "AddMeal",
+    params: {
+      start: "DescribeMeal",
+    },
   },
   {
     key: "barcode",
@@ -77,10 +78,7 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
     descKey: "barcodeDesc",
     screen: "AddMeal",
     params: {
-      start: "MealCamera",
-      barcodeOnly: true,
-      returnTo: "Result",
-      attempt: 1,
+      start: "BarcodeScan",
     },
   },
   {
@@ -92,20 +90,21 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
   },
 ] as const;
 
-const isDraftResumeScreen = (value: string): value is DraftResumeScreen =>
-  value === "AddMeal" ||
-  value === "EditReviewIngredients" ||
-  value === "EditResult";
+function normalizeDraftResumeScreen(
+  value: string | null,
+): DraftResumeScreen | null {
+  if (value === "AddMeal") {
+    return "AddMeal";
+  }
+
+  return null;
+}
 
 const log = debugScope("Hook:useMealAddMethodState");
 const E2E_DRAFT_MEAL_ID = "e2e-draft-meal";
 const PREFERRED_METHOD_STORAGE_KEY = "meal-add-preferred-method";
 const DEFAULT_PREFERRED_METHOD = "photo";
 const PREFERRED_METHOD_CHANGED_EVENT = "meal:add-method:preferred-changed";
-
-function makeE2EDraftIngredient(): Ingredient {
-  return { ...E2E_DETERMINISTIC_INGREDIENT };
-}
 
 const hasNonEmptyText = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
@@ -232,16 +231,12 @@ export function useMealAddMethodState(params: {
 
       const now = new Date().toISOString();
       const isE2E = isE2EModeEnabled();
-      const deterministicIngredients =
-        isE2E && nextScreen === "Result"
-          ? [makeE2EDraftIngredient()]
-          : [];
       const emptyMeal: Meal = {
         mealId: isE2E ? E2E_DRAFT_MEAL_ID : uuidv4(),
         userUid: uid,
         name: null,
         photoUrl: null,
-        ingredients: deterministicIngredients,
+        ingredients: [],
         createdAt: now,
         updatedAt: now,
         syncState: "pending",
@@ -281,13 +276,7 @@ export function useMealAddMethodState(params: {
   );
 
   const openSimpleScreen = useCallback(
-    (
-      name:
-        | "MealTextAI"
-        | "SelectSavedMeal"
-        | "EditReviewIngredients"
-        | "EditResult",
-    ) => {
+    (name: "SelectSavedMeal") => {
       if (params.replaceOnStart) {
         params.navigation.replace(name);
         return;
@@ -303,7 +292,7 @@ export function useMealAddMethodState(params: {
       if (option.screen === "AddMeal") {
         const start = option.params.start;
         await primeEmptyMeal(
-          start || "Result",
+          start ?? "MealCamera",
           getInputMethodForOption(option),
         );
         openAddMeal(option.params);
@@ -336,7 +325,10 @@ export function useMealAddMethodState(params: {
           return false;
         }
 
-        if (!lastScreenStored || !isDraftResumeScreen(lastScreenStored)) {
+        const normalizedResumeScreen =
+          normalizeDraftResumeScreen(lastScreenStored);
+
+        if (!normalizedResumeScreen) {
           log.log("Active draft found but no resumable screen.", {
             lastScreenStored: lastScreenStored ?? null,
           });
@@ -344,10 +336,10 @@ export function useMealAddMethodState(params: {
         }
 
         setPendingOption(option);
-        setResumeScreen(lastScreenStored);
+        setResumeScreen(normalizedResumeScreen);
         setShowResumeModal(true);
         log.log("Active draft found. Showing resume modal.", {
-          resumeScreen: lastScreenStored,
+          resumeScreen: normalizedResumeScreen,
           pendingOption: option.key,
         });
         return true;
@@ -394,15 +386,11 @@ export function useMealAddMethodState(params: {
     setShowResumeModal(false);
     setPendingOption(null);
 
-    if (resumeScreen) {
-      if (resumeScreen === "AddMeal") {
-        log.log("Resuming AddMeal draft at Result.");
-        openAddMeal({ start: "Result" });
-        return;
-      }
-      openSimpleScreen(resumeScreen);
+    if (resumeScreen === "AddMeal") {
+      log.log("Resuming AddMeal draft at ReviewMeal.");
+      openAddMeal({ start: "ReviewMeal" });
     }
-  }, [loadDraft, openAddMeal, openSimpleScreen, resumeScreen, uid]);
+  }, [loadDraft, openAddMeal, resumeScreen, uid]);
 
   const handleDiscardDraft = useCallback(async () => {
     if (uid) {

@@ -7,6 +7,48 @@ jest.mock("../screens/MealAdd/MealCameraScreen", () => ({
   },
 }));
 
+jest.mock("../screens/MealAdd/BarcodeScanScreen", () => ({
+  __esModule: true,
+  default: function MockBarcodeScanScreen() {
+    return null;
+  },
+}));
+
+jest.mock("../screens/MealAdd/PreparingReviewPhotoScreen", () => ({
+  __esModule: true,
+  default: function MockPreparingReviewPhotoScreen() {
+    return null;
+  },
+}));
+
+jest.mock("../screens/MealAdd/DescribeMealScreen", () => ({
+  __esModule: true,
+  default: function MockDescribeMealScreen() {
+    return null;
+  },
+}));
+
+jest.mock("../screens/MealAdd/TextAnalyzingScreen", () => ({
+  __esModule: true,
+  default: function MockTextAnalyzingScreen() {
+    return null;
+  },
+}));
+
+jest.mock("../screens/MealAdd/ReviewMealScreen", () => ({
+  __esModule: true,
+  default: function MockReviewMealScreen() {
+    return null;
+  },
+}));
+
+jest.mock("../screens/MealAdd/EditMealDetailsScreen", () => ({
+  __esModule: true,
+  default: function MockEditMealDetailsScreen() {
+    return null;
+  },
+}));
+
 jest.mock("../screens/MealAdd/BarcodeProductNotFoundScreen", () => ({
   __esModule: true,
   default: function MockBarcodeProductNotFoundScreen() {
@@ -21,29 +63,34 @@ jest.mock("../screens/MealAdd/IngredientsNotRecognizedScreen", () => ({
   },
 }));
 
-jest.mock("../screens/MealAdd/ResultScreen", () => ({
-  __esModule: true,
-  default: function MockResultScreen() {
-    return null;
-  },
-}));
-
-import MealCameraScreen from "../screens/MealAdd/MealCameraScreen";
+import BarcodeScanScreen from "../screens/MealAdd/BarcodeScanScreen";
 import BarcodeProductNotFoundScreen from "../screens/MealAdd/BarcodeProductNotFoundScreen";
+import DescribeMealScreen from "../screens/MealAdd/DescribeMealScreen";
+import EditMealDetailsScreen from "../screens/MealAdd/EditMealDetailsScreen";
 import IngredientsNotRecognizedScreen from "../screens/MealAdd/IngredientsNotRecognizedScreen";
-import ResultScreen from "../screens/MealAdd/ResultScreen";
+import MealCameraScreen from "../screens/MealAdd/MealCameraScreen";
+import PreparingReviewPhotoScreen from "../screens/MealAdd/PreparingReviewPhotoScreen";
+import ReviewMealScreen from "../screens/MealAdd/ReviewMealScreen";
+import TextAnalyzingScreen from "../screens/MealAdd/TextAnalyzingScreen";
 import MapMealAddScreens from "./MapMealAddScreens";
 
 describe("MapMealAddScreens", () => {
   it("returns the correct screen component for each flow step", () => {
-    expect(MapMealAddScreens("MealCamera")).toBe(MealCameraScreen);
+    expect(MapMealAddScreens("CameraDefault")).toBe(MealCameraScreen);
+    expect(MapMealAddScreens("BarcodeScan")).toBe(BarcodeScanScreen);
+    expect(MapMealAddScreens("PreparingReviewPhoto")).toBe(
+      PreparingReviewPhotoScreen,
+    );
+    expect(MapMealAddScreens("DescribeMeal")).toBe(DescribeMealScreen);
+    expect(MapMealAddScreens("TextAnalyzing")).toBe(TextAnalyzingScreen);
+    expect(MapMealAddScreens("ReviewMeal")).toBe(ReviewMealScreen);
+    expect(MapMealAddScreens("EditMealDetails")).toBe(EditMealDetailsScreen);
     expect(MapMealAddScreens("BarcodeProductNotFound")).toBe(
       BarcodeProductNotFoundScreen,
     );
     expect(MapMealAddScreens("IngredientsNotRecognized")).toBe(
       IngredientsNotRecognizedScreen,
     );
-    expect(MapMealAddScreens("Result")).toBe(ResultScreen);
   });
 
   it("throws for an unsupported flow step", () => {

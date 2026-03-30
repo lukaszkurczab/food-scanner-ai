@@ -20,7 +20,7 @@ export function useSelectSavedMealsState(params: {
   setMeal: (meal: Meal) => void;
   saveDraft: (uid: string, draftOverride?: Meal | null) => Promise<void>;
   setLastScreen: (uid: string, screen: string) => Promise<void>;
-  onNavigateResult: () => void;
+  onNavigateReview: () => void;
   onStartOver: () => void;
 }) {
   const [queryText, setQueryText] = useState("");
@@ -157,21 +157,42 @@ export function useSelectSavedMealsState(params: {
 
     const next: Meal = {
       ...base,
-      mealId: picked.mealId || base.mealId,
+      mealId: base.mealId,
+      cloudId: undefined,
+      userUid: params.uid,
+      createdAt: base.createdAt || now,
+      updatedAt: now,
+      syncState: "pending",
+      deleted: false,
       source: "saved",
       inputMethod: "saved",
       aiMeta: null,
-      ingredients: Array.isArray(picked.ingredients) ? picked.ingredients : [],
-      photoLocalPath: picked.photoLocalPath ?? null,
-      photoUrl: picked.photoLocalPath ?? picked.photoUrl ?? null,
-      updatedAt: now,
-      name: picked.name ?? "",
+      ingredients: Array.isArray(picked.ingredients)
+        ? picked.ingredients.map((ingredient) => ({
+            ...ingredient,
+            id: ingredient.id || uuidv4(),
+          }))
+        : [],
+      type: picked.type || "other",
+      timestamp: picked.timestamp || base.timestamp || now,
+      photoLocalPath: picked.photoLocalPath ?? picked.localPhotoUrl ?? null,
+      localPhotoUrl: picked.localPhotoUrl ?? picked.photoLocalPath ?? null,
+      photoUrl:
+        picked.photoLocalPath ??
+        picked.localPhotoUrl ??
+        picked.photoUrl ??
+        null,
+      imageId: picked.imageId ?? null,
+      notes: picked.notes ?? null,
+      tags: Array.isArray(picked.tags) ? [...picked.tags] : [],
+      totals: picked.totals ? { ...picked.totals } : undefined,
+      name: picked.name ?? null,
     };
 
     params.setMeal(next);
     await params.saveDraft(params.uid, next);
-    await params.setLastScreen(params.uid, "Result");
-    params.onNavigateResult();
+    await params.setLastScreen(params.uid, "ReviewMeal");
+    params.onNavigateReview();
   }, [
     params,
     selectedId,

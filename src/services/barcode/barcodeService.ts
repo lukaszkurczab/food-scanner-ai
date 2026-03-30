@@ -5,6 +5,11 @@ import { debugScope } from "@/utils/debug";
 
 const log = debugScope("BarcodeService");
 
+export type BarcodeLookupResult =
+  | { kind: "found"; name: string; ingredient: Ingredient }
+  | { kind: "not_found" }
+  | { kind: "error" };
+
 const toNumber = (v: unknown): number => {
   if (typeof v === "number") return isFinite(v) ? v : 0;
   if (typeof v === "string") {
@@ -14,25 +19,38 @@ const toNumber = (v: unknown): number => {
   return 0;
 };
 
-export async function fetchProductByBarcode(
-  barcode: string
-): Promise<{ name: string; ingredient: Ingredient } | null> {
+export async function lookupBarcodeProduct(
+  barcode: string,
+): Promise<BarcodeLookupResult> {
   try {
     const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(
-      barcode
+      barcode,
     )}.json`;
     const res = await fetch(url, { headers: { Accept: "application/json" } });
     if (!res.ok) {
       log.warn("OpenFoodFacts lookup failed", { barcode, status: res.status });
-      return null;
+      return res.status === 404 ? { kind: "not_found" } : { kind: "error" };
     }
+
     const json = await res.json();
+    const status =
+      typeof json === "object" &&
+      json !== null &&
+      "status" in json &&
+      typeof json.status === "number"
+        ? json.status
+        : null;
+
+    if (status === 0) {
+      return { kind: "not_found" };
+    }
+
     const decoded = parseOffProductResponse(json);
     if (!decoded) {
       log.warn("OpenFoodFacts response did not match expected schema", {
         barcode,
       });
-      return null;
+      return status === 0 ? { kind: "not_found" } : { kind: "error" };
     }
 
     const p = decoded.product;
@@ -74,11 +92,20 @@ export async function fetchProductByBarcode(
       kcal,
     };
 
-    return { name: ingredient.name, ingredient };
+    return { kind: "found", name: ingredient.name, ingredient };
   } catch (error: unknown) {
     log.error("Barcode lookup failed", { barcode, error });
-    return null;
+    return { kind: "error" };
   }
+}
+
+export async function fetchProductByBarcode(
+  barcode: string,
+): Promise<{ name: string; ingredient: Ingredient } | null> {
+  const result = await lookupBarcodeProduct(barcode);
+  return result.kind === "found"
+    ? { name: result.name, ingredient: result.ingredient }
+    : null;
 }
 
 export function extractBarcodeFromPayload(payload: string): string | null {

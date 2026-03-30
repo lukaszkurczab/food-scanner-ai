@@ -113,11 +113,7 @@ export default function MealShareScreen() {
       navigation.goBack();
       return;
     }
-    if (route.params.returnTo === "MealDetails") {
-      navigation.navigate("SavedMeals");
-      return;
-    }
-    navigation.navigate("MealAddMethod", { selectionMode: "temporary" });
+    navigation.navigate("SavedMeals");
   };
 
   return (

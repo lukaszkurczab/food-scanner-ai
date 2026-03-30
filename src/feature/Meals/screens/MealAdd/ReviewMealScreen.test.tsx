@@ -1,0 +1,253 @@
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import ReviewMealScreen from "@/feature/Meals/screens/MealAdd/ReviewMealScreen";
+import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
+import { renderWithTheme } from "@/test-utils/renderWithTheme";
+import type { Meal } from "@/types/meal";
+
+type ButtonProps = {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+};
+
+type CheckboxProps = {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+};
+
+type ModalProps = {
+  visible: boolean;
+  primaryAction?: { label: string; onPress?: () => void };
+  secondaryAction?: { label: string; onPress?: () => void };
+};
+
+const mockUseAuthContext = jest.fn();
+const mockUseMealDraftContext = jest.fn();
+const mockUseUserContext = jest.fn();
+const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
+const mockUseMeals = jest.fn();
+const mockGetInfoAsync = jest.fn<(uri: string) => Promise<{ exists: boolean }>>();
+
+jest.mock("expo-file-system", () => ({
+  getInfoAsync: (uri: string) => mockGetInfoAsync(uri),
+}));
+
+jest.mock("@/context/AuthContext", () => ({
+  useAuthContext: () => mockUseAuthContext(),
+}));
+
+jest.mock("@contexts/MealDraftContext", () => ({
+  useMealDraftContext: () => mockUseMealDraftContext(),
+}));
+
+jest.mock("@contexts/UserContext", () => ({
+  useUserContext: () => mockUseUserContext(),
+}));
+
+jest.mock("@hooks/useMeals", () => ({
+  useMeals: (uid: string | null) => mockUseMeals(uid),
+}));
+
+jest.mock("@react-native-community/netinfo", () => ({
+  useNetInfo: () => mockUseNetInfo(),
+}));
+
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    i18n: { language: "en" },
+    t: (key: string, options?: { ns?: string; defaultValue?: string; count?: number }) =>
+      options?.defaultValue ??
+      (options?.count !== undefined ? `${options.ns}:${key}:${options.count}` : options?.ns ? `${options.ns}:${key}` : key),
+  }),
+}));
+
+jest.mock("@/components", () => {
+  const { createElement } =
+    jest.requireActual<typeof import("react")>("react");
+  const { Pressable, Text, View } =
+    jest.requireActual<typeof import("react-native")>("react-native");
+
+  return {
+    __esModule: true,
+    Layout: ({ children }: { children?: unknown }) =>
+      createElement(View, null, children as never),
+    Card: ({
+      children,
+      onPress,
+    }: {
+      children?: unknown;
+      onPress?: () => void;
+    }) =>
+      onPress
+        ? createElement(Pressable, { onPress }, children as never)
+        : createElement(View, null, children as never),
+    Button: ({ label, onPress, disabled }: ButtonProps) =>
+      createElement(
+        Pressable,
+        { onPress, disabled, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
+    Checkbox: ({ checked, onChange }: CheckboxProps) =>
+      createElement(
+        Pressable,
+        {
+          onPress: () => onChange(!checked),
+          testID: "save-to-my-meals-checkbox",
+          accessibilityRole: "checkbox",
+        },
+        createElement(Text, null, checked ? "checked" : "unchecked"),
+      ),
+    Modal: ({ visible, primaryAction, secondaryAction }: ModalProps) =>
+      visible
+        ? createElement(
+            View,
+            null,
+            primaryAction
+              ? createElement(
+                  Pressable,
+                  { onPress: primaryAction.onPress, accessibilityRole: "button" },
+                  createElement(Text, null, primaryAction.label),
+                )
+              : null,
+            secondaryAction
+              ? createElement(
+                  Pressable,
+                  { onPress: secondaryAction.onPress, accessibilityRole: "button" },
+                  createElement(Text, null, secondaryAction.label),
+                )
+              : null,
+          )
+        : null,
+    PhotoPreview: () => createElement(Text, null, "photo-preview"),
+  };
+});
+
+jest.mock("@/components/MacroChip", () => ({
+  MacroChip: ({ kind, value }: { kind: string; value: number }) => {
+    const { createElement } =
+      jest.requireActual<typeof import("react")>("react");
+    const { Text } =
+      jest.requireActual<typeof import("react-native")>("react-native");
+    return createElement(Text, null, `${kind}:${value}`);
+  },
+}));
+
+const buildMeal = (overrides?: Partial<Meal>): Meal => ({
+  userUid: "user-1",
+  mealId: "meal-1",
+  timestamp: "2026-01-10T12:00:00.000Z",
+  type: "breakfast",
+  name: "Protein bowl",
+  ingredients: [
+    {
+      id: "ing-1",
+      name: "Chicken",
+      amount: 180,
+      kcal: 250,
+      protein: 35,
+      carbs: 0,
+      fat: 8,
+    },
+  ],
+  createdAt: "2026-01-10T12:00:00.000Z",
+  updatedAt: "2026-01-10T12:00:00.000Z",
+  syncState: "synced",
+  source: "manual",
+  photoUrl: "file:///meal.jpg",
+  ...overrides,
+});
+
+const buildDraftContext = (mealOverrides?: Partial<Meal>) => ({
+  meal: buildMeal(mealOverrides),
+  clearMeal: jest.fn(),
+  loadDraft: jest.fn(async (_uid: string) => undefined),
+  saveDraft: jest.fn(async (_uid: string, _draft?: Meal | null) => undefined),
+  setLastScreen: jest.fn(async (_uid: string, _screen: string) => undefined),
+  setPhotoUrl: jest.fn(),
+});
+
+const buildProps = () => {
+  const navigate = jest.fn<(screen: string, params?: unknown) => void>();
+  const flowGoTo = jest.fn<(screen: string, params?: unknown) => void>();
+
+  return {
+    navigate,
+    flowGoTo,
+    props: {
+      navigation: {
+        navigate,
+      } as unknown as MealAddScreenProps<"ReviewMeal">["navigation"],
+      flow: {
+        goTo: flowGoTo,
+        replace: jest.fn(),
+        goBack: jest.fn(),
+        canGoBack: jest.fn(() => true),
+      } as unknown as MealAddScreenProps<"ReviewMeal">["flow"],
+      params: {},
+    } as MealAddScreenProps<"ReviewMeal">,
+  };
+};
+
+describe("ReviewMealScreen", () => {
+  beforeEach(() => {
+    mockGetInfoAsync.mockReset();
+    mockGetInfoAsync.mockResolvedValue({ exists: true });
+    mockUseNetInfo.mockReturnValue({ isConnected: true });
+    mockUseAuthContext.mockReturnValue({ uid: "user-1" });
+    mockUseUserContext.mockReturnValue({ userData: { uid: "user-1" } });
+    mockUseMeals.mockReturnValue({
+      addMeal: jest.fn(async () => undefined),
+      meals: [],
+    });
+  });
+
+  it("routes to edit details and change photo from the new review screen", async () => {
+    const ctx = buildDraftContext();
+    const testProps = buildProps();
+    mockUseMealDraftContext.mockReturnValue(ctx);
+
+    const { getAllByText, getByText } = renderWithTheme(
+      <ReviewMealScreen {...testProps.props} />,
+    );
+
+    await waitFor(() => {
+      expect(mockGetInfoAsync).toHaveBeenCalledWith("file:///meal.jpg");
+    });
+
+    fireEvent.press(getAllByText("Edit details")[0]);
+    fireEvent.press(getByText("meals:change_photo"));
+
+    expect(testProps.flowGoTo).toHaveBeenNthCalledWith(1, "EditMealDetails", {});
+    expect(testProps.flowGoTo).toHaveBeenNthCalledWith(2, "CameraDefault", {
+      id: "meal-1",
+      skipDetection: true,
+    });
+  });
+
+  it("saves the reviewed meal and navigates home", async () => {
+    const addMeal = jest.fn(async () => undefined);
+    const ctx = buildDraftContext();
+    const testProps = buildProps();
+
+    mockUseMealDraftContext.mockReturnValue(ctx);
+    mockUseMeals.mockReturnValue({ addMeal, meals: [] });
+
+    const { getByText } = renderWithTheme(
+      <ReviewMealScreen {...testProps.props} />,
+    );
+
+    fireEvent.press(getByText("common:save"));
+
+    await waitFor(() => {
+      expect(addMeal).toHaveBeenCalledTimes(1);
+      expect(ctx.clearMeal).toHaveBeenCalledWith("user-1");
+      expect(testProps.navigate).toHaveBeenCalledWith("Home");
+    });
+  });
+});

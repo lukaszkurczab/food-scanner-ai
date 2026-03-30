@@ -50,10 +50,7 @@ jest.mock("../feature/MapMealAddScreens", () => {
           createElement(
             Pressable,
             {
-              onPress: () =>
-                props.flow.replace("Result", {
-                  replaced: true,
-                }),
+              onPress: () => props.flow.replace("ReviewMeal", { replaced: true }),
             },
             createElement(Text, null, "flow-replace"),
           ),
@@ -112,29 +109,57 @@ describe("AddMealScreen", () => {
     jest.restoreAllMocks();
   });
 
-  it("builds the initial MealCamera step from route params", () => {
+  it("maps the legacy MealCamera start to CameraDefault", () => {
     mockUseRoute.mockReturnValue({
       params: {
         start: "MealCamera",
-        barcodeOnly: true,
         id: "meal-1",
         skipDetection: true,
-        returnTo: "Result",
         attempt: 2,
       },
     });
 
     const { getByText } = renderWithTheme(<AddMealScreen />);
 
-    expect(getByText("screen:MealCamera")).toBeTruthy();
+    expect(getByText("screen:CameraDefault")).toBeTruthy();
     expect(
       getByText(
-        'params:{"barcodeOnly":true,"id":"meal-1","skipDetection":true,"returnTo":"Result","attempt":2}',
+        'params:{"id":"meal-1","skipDetection":true,"attempt":2}',
       ),
     ).toBeTruthy();
   });
 
-  it("supports flow push, replace and custom back handling", () => {
+  it("maps the BarcodeScan start to the new barcode flow", () => {
+    mockUseRoute.mockReturnValue({
+      params: {
+        start: "BarcodeScan",
+        code: "5901234123457",
+        showManualEntry: true,
+      },
+    });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    expect(getByText("screen:BarcodeScan")).toBeTruthy();
+    expect(
+      getByText('params:{"code":"5901234123457","showManualEntry":true}'),
+    ).toBeTruthy();
+  });
+
+  it("maps the ReviewMeal start to the new review screen", () => {
+    mockUseRoute.mockReturnValue({
+      params: {
+        start: "ReviewMeal",
+      },
+    });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    expect(getByText("screen:ReviewMeal")).toBeTruthy();
+    expect(getByText("params:{}")).toBeTruthy();
+  });
+
+  it("maps the EditMealDetails start to the new editor screen", () => {
     const navigation = {
       goBack: jest.fn(),
       addListener: jest.fn(
@@ -145,11 +170,11 @@ describe("AddMealScreen", () => {
       ),
     };
     mockUseNavigation.mockReturnValue(navigation);
-    mockUseRoute.mockReturnValue({ params: { start: "Result" } });
+    mockUseRoute.mockReturnValue({ params: { start: "EditMealDetails" } });
 
     const { getByText } = renderWithTheme(<AddMealScreen />);
 
-    expect(getByText("screen:Result")).toBeTruthy();
+    expect(getByText("screen:EditMealDetails")).toBeTruthy();
     fireEvent.press(getByText("flow-go-to"));
     expect(getByText("screen:IngredientsNotRecognized")).toBeTruthy();
     expect(getByText("can-go-back:true")).toBeTruthy();
@@ -164,7 +189,7 @@ describe("AddMealScreen", () => {
     expect(preventDefault).toHaveBeenCalledTimes(1);
 
     fireEvent.press(getByText("flow-replace"));
-    expect(getByText("screen:Result")).toBeTruthy();
+    expect(getByText("screen:ReviewMeal")).toBeTruthy();
     expect(getByText('params:{"replaced":true}')).toBeTruthy();
 
     expect(mockBackHandlerAddEventListener).toHaveBeenCalled();
@@ -173,7 +198,7 @@ describe("AddMealScreen", () => {
       handled = backHandlerListener?.() ?? false;
     });
     expect(handled).toBe(true);
-    expect(getByText("screen:Result")).toBeTruthy();
+    expect(getByText("screen:ReviewMeal")).toBeTruthy();
     expect(navigation.goBack).toHaveBeenCalledTimes(1);
   });
 
@@ -188,9 +213,7 @@ describe("AddMealScreen", () => {
       ),
     };
     mockUseNavigation.mockReturnValue(navigation);
-    mockUseRoute.mockReturnValue({
-      params: { start: "IngredientsNotRecognized", image: "file:///meal.jpg" },
-    });
+    mockUseRoute.mockReturnValue({ params: { start: "ReviewMeal" } });
 
     renderWithTheme(<AddMealScreen />);
 

@@ -1,19 +1,14 @@
-import { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "@/theme/useTheme";
+import { useCallback, useEffect, useMemo } from "react";
+import { BackHandler, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Button, Layout } from "@/components";
 import AppIcon from "@/components/AppIcon";
-import type {
-  MealAddScreenName,
-  MealAddScreenProps,
-} from "@/feature/Meals/feature/MapMealAddScreens";
-import { GlobalActionButtons } from "@/components/GlobalActionButtons";
-
-const MAX_ATTEMPTS = 3;
+import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
+import { useTheme } from "@/theme/useTheme";
 
 export default function BarcodeProductNotFoundScreen({
   navigation,
+  flow,
   params,
 }: MealAddScreenProps<"BarcodeProductNotFound">) {
   const theme = useTheme();
@@ -21,30 +16,48 @@ export default function BarcodeProductNotFoundScreen({
   const { t } = useTranslation("meals");
 
   const code = params?.code;
-  const attempt = params?.attempt || 1;
-  const returnTo: MealAddScreenName = params?.returnTo || "Result";
 
-  const isLastAttempt = attempt >= MAX_ATTEMPTS;
+  const handleBackToBarcode = useCallback(() => {
+    flow.replace("BarcodeScan", code ? { code } : {});
+  }, [code, flow]);
 
-  const handleRetry = () => {
-    if (isLastAttempt) {
-      handleBack();
-      return;
-    }
+  const handleScanAgain = useCallback(() => {
+    flow.replace("BarcodeScan", {});
+  }, [flow]);
 
-    navigation.replace("AddMeal", {
-      start: "MealCamera",
-      barcodeOnly: true,
-      attempt: attempt + 1,
-      returnTo,
+  const handleEditCode = useCallback(() => {
+    flow.replace("BarcodeScan", {
+      code,
+      showManualEntry: true,
     });
-  };
+  }, [code, flow]);
 
-  const handleBack = () => {
-    navigation.replace("AddMeal", {
-      start: returnTo,
+  useEffect(() => {
+    const onBackPress = () => {
+      handleBackToBarcode();
+      return true;
+    };
+
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => sub.remove();
+  }, [handleBackToBarcode]);
+
+  useEffect(() => {
+    const sub = navigation.addListener("beforeRemove", (e) => {
+      const actionType = e.data.action.type;
+      const isBackAction =
+        actionType === "GO_BACK" ||
+        actionType === "POP" ||
+        actionType === "POP_TO_TOP";
+
+      if (!isBackAction) return;
+
+      e.preventDefault();
+      handleBackToBarcode();
     });
-  };
+
+    return sub;
+  }, [handleBackToBarcode, navigation]);
 
   return (
     <Layout>
@@ -52,43 +65,52 @@ export default function BarcodeProductNotFoundScreen({
         <View style={styles.iconWrapper}>
           <AppIcon name="scan-barcode" size={64} color={theme.textSecondary} />
         </View>
+
         <Text style={styles.title}>
-          {t("barcode_not_found_title", "We couldn't find this product")}
+          {t("barcode_not_found_title", {
+            defaultValue: "We couldn't find this product",
+          })}
         </Text>
         <Text style={styles.subtitle}>
-          {isLastAttempt
-            ? t(
-                "barcode_not_found_last",
-                "We still couldn't find the product. Please add the meal manually or choose a different method.",
-              )
-            : t("barcode_not_found_sub", {
-                defaultValue:
-                  "We couldn't get nutrition data for this barcode. You can try again or choose a different method.",
-              })}
+          {t("barcode_not_found_sub", {
+            defaultValue:
+              "We searched this barcode, but there isn't a matching product in the catalog yet.",
+          })}
         </Text>
+
         {code ? (
-          <Text style={styles.code}>
-            {t("barcode_code_label", "Scanned code")}: {code}
-          </Text>
+          <View style={styles.codeCard}>
+            <Text style={styles.codeLabel}>
+              {t("barcode_searched_code_label", {
+                defaultValue: "Searched code",
+              })}
+            </Text>
+            <Text style={styles.codeValue}>{code}</Text>
+          </View>
         ) : null}
-        <View style={styles.spacer} />
-        {!isLastAttempt && (
-          <GlobalActionButtons
-            label={`${t("barcode_try_again", "Scan again")} (${attempt}/${MAX_ATTEMPTS})`}
-            onPress={handleRetry}
-            secondaryLabel={t("barcode_back_to_review", "Back to ingredients")}
-            secondaryOnPress={handleBack}
-            containerStyle={styles.buttonSpacingNone}
-          />
-        )}
-        {isLastAttempt ? (
+
+        <View style={styles.actions}>
           <Button
-            variant="secondary"
-            label={t("barcode_back_to_review", "Back to ingredients")}
-            onPress={handleBack}
-            style={styles.buttonSpacing}
+            label={t("barcode_not_found_edit_code", {
+              defaultValue: "Edit code",
+            })}
+            onPress={handleEditCode}
           />
-        ) : null}
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleScanAgain}
+            style={({ pressed }) => [
+              styles.secondaryAction,
+              pressed ? styles.secondaryActionPressed : null,
+            ]}
+          >
+            <Text style={styles.secondaryActionLabel}>
+              {t("barcode_not_found_scan_again", {
+                defaultValue: "Scan again",
+              })}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </Layout>
   );
@@ -98,41 +120,78 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.screenPadding,
       backgroundColor: theme.background,
     },
     iconWrapper: {
-      width: 140,
-      height: 140,
-      borderRadius: theme.rounded.lg,
+      width: 124,
+      height: 124,
+      borderRadius: theme.rounded.xl,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: theme.spacing.lg,
+      alignSelf: "center",
+      marginBottom: theme.spacing.xl,
       borderWidth: 1,
       backgroundColor: theme.surfaceElevated,
       borderColor: theme.border,
     },
     title: {
       fontSize: theme.typography.size.title,
+      lineHeight: theme.typography.lineHeight.title,
       fontFamily: theme.typography.fontFamily.bold,
       textAlign: "center",
       color: theme.text,
     },
     subtitle: {
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      textAlign: "center",
+      marginTop: theme.spacing.sm,
+      color: theme.textSecondary,
+    },
+    codeCard: {
+      marginTop: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      borderRadius: theme.rounded.lg,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surface,
+      alignItems: "center",
+      gap: theme.spacing.xxs,
+    },
+    codeLabel: {
+      fontSize: theme.typography.size.labelS,
+      lineHeight: theme.typography.lineHeight.labelS,
+      fontFamily: theme.typography.fontFamily.medium,
+      color: theme.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    codeValue: {
       fontSize: theme.typography.size.bodyL,
-      textAlign: "center",
-      marginTop: theme.spacing.sm,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      color: theme.text,
+    },
+    actions: {
+      marginTop: theme.spacing.xl,
+      gap: theme.spacing.sm,
+    },
+    secondaryAction: {
+      minHeight: 40,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: theme.spacing.md,
+    },
+    secondaryActionPressed: {
+      opacity: 0.72,
+    },
+    secondaryActionLabel: {
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      fontFamily: theme.typography.fontFamily.medium,
       color: theme.textSecondary,
     },
-    code: {
-      fontSize: theme.typography.size.bodyS,
-      textAlign: "center",
-      marginTop: theme.spacing.sm,
-      color: theme.textSecondary,
-    },
-    spacer: { height: theme.spacing.lg },
-    buttonSpacing: { marginTop: theme.spacing.sm },
-    buttonSpacingNone: { marginTop: 0 },
   });

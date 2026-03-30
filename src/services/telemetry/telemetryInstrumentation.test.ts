@@ -56,7 +56,7 @@ describe("telemetryInstrumentation", () => {
 
   it("normalizes route names into stable telemetry screen names", () => {
     expect(normalizeTelemetryScreenName("MealAddMethod")).toBe("meal_add_method");
-    expect(normalizeTelemetryScreenName("MealTextAI")).toBe("meal_text_ai");
+    expect(normalizeTelemetryScreenName("ReviewMeal")).toBe("review_meal");
   });
 
   it("maps meal add methods and screen views to privacy-safe props", async () => {
