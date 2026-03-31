@@ -49,7 +49,6 @@ type Props = {
 };
 
 const DEFAULT_ICON_SIZE = 22;
-const SINGLE_LINE_FIELD_HEIGHT = 52;
 
 const resolveAdornment = (
   node: React.ReactNode,
@@ -113,7 +112,7 @@ export const TextInput = forwardRef<RNTextInput, Props>(
     const isEditable = editable !== undefined ? editable : !disabled;
     const resolvedSpellCheck = spellCheck ?? autoCorrect;
     const inputMinHeight = multiline
-      ? Math.max(96, numberOfLines * theme.typography.lineHeight.bodyM)
+      ? numberOfLines * theme.typography.lineHeight.bodyM
       : theme.typography.lineHeight.bodyM;
 
     const borderColor = hasError
@@ -168,8 +167,9 @@ export const TextInput = forwardRef<RNTextInput, Props>(
             {
               backgroundColor,
               borderColor,
-              minHeight: multiline ? inputMinHeight : SINGLE_LINE_FIELD_HEIGHT,
+              minHeight: multiline ? inputMinHeight : 0,
               alignItems: multiline ? "flex-start" : "center",
+              justifyContent: multiline ? "flex-start" : "center",
             },
             fieldStyle,
           ]}
@@ -220,9 +220,11 @@ export const TextInput = forwardRef<RNTextInput, Props>(
               {
                 minHeight: multiline
                   ? inputMinHeight - theme.spacing.sm * 2
-                  : theme.typography.lineHeight.bodyM,
+                  : undefined,
+                height: multiline ? undefined : "100%",
                 textAlignVertical: multiline ? "top" : "center",
                 includeFontPadding: false,
+                paddingVertical: multiline ? undefined : 0,
               },
               inputStyle,
             ]}
@@ -272,7 +274,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       gap: theme.spacing.sm,
       paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.md,
       justifyContent: "center",
     },
     input: {
@@ -280,6 +281,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.input.text,
       fontSize: theme.typography.size.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      marginVertical: theme.spacing.xs,
     },
     rightLabel: {
       color: theme.textSecondary,

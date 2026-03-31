@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ViewToken } from "react-native";
-import { v4 as uuidv4 } from "uuid";
 import type { Meal } from "@/types/meal";
 import { subscribeToMyMealsOrderedByName } from "@/services/meals/myMealsRepository";
+import { buildSavedMealDraft } from "@/feature/Meals/utils/buildSavedMealDraft";
 
 const STEP = 20;
 const TAIL_THRESHOLD = 10;
@@ -16,7 +16,6 @@ const normalizeText = (value: unknown): string =>
 export function useSelectSavedMealsState(params: {
   uid: string | null;
   syncSavedMeals: () => Promise<void>;
-  draftMeal: Meal | null;
   setMeal: (meal: Meal) => void;
   saveDraft: (uid: string, draftOverride?: Meal | null) => Promise<void>;
   setLastScreen: (uid: string, screen: string) => Promise<void>;
@@ -26,7 +25,6 @@ export function useSelectSavedMealsState(params: {
   const [queryText, setQueryText] = useState("");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Meal[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [limit, setLimit] = useState(STEP);
 
   const loadingMoreRef = useRef(false);
@@ -41,7 +39,6 @@ export function useSelectSavedMealsState(params: {
     if (!params.uid) {
       setItems([]);
       setLoading(false);
-      setSelectedId(null);
       setLimit(STEP);
       return;
     }
@@ -62,7 +59,7 @@ export function useSelectSavedMealsState(params: {
 
   const refresh = useCallback(async () => {
     await params.syncSavedMeals();
-  }, [params]);
+  }, [params.syncSavedMeals]);
 
   const visibleAll = useMemo(() => {
     const queryTextNormalized = normalizeText(queryText);
@@ -123,85 +120,29 @@ export function useSelectSavedMealsState(params: {
     },
   );
 
-  const handleSelect = useCallback((meal: Meal) => {
-    const id = meal.cloudId || meal.mealId;
-    setSelectedId((prev) => (prev === id ? null : id));
-  }, []);
+  const handleAddMeal = useCallback(async (picked: Meal) => {
+    if (!params.uid) return;
 
-  const handleConfirm = useCallback(async () => {
-    if (!params.uid || !selectedId) return;
-    const picked = visibleAll.find((meal) => (meal.cloudId || meal.mealId) === selectedId);
-    if (!picked) return;
-
-    const now = new Date().toISOString();
-    const base: Meal =
-      params.draftMeal ??
-      {
-        mealId: uuidv4(),
-        userUid: params.uid,
-        name: "",
-        photoUrl: null,
-        ingredients: [],
-        createdAt: now,
-        updatedAt: now,
-        syncState: "pending",
-        tags: [],
-        deleted: false,
-        notes: null,
-        type: "other",
-        timestamp: "",
-        source: null,
-        inputMethod: null,
-        aiMeta: null,
-      };
-
-    const next: Meal = {
-      ...base,
-      mealId: base.mealId,
-      cloudId: undefined,
-      userUid: params.uid,
-      createdAt: base.createdAt || now,
-      updatedAt: now,
-      syncState: "pending",
-      deleted: false,
-      source: "saved",
-      inputMethod: "saved",
-      aiMeta: null,
-      ingredients: Array.isArray(picked.ingredients)
-        ? picked.ingredients.map((ingredient) => ({
-            ...ingredient,
-            id: ingredient.id || uuidv4(),
-          }))
-        : [],
-      type: picked.type || "other",
-      timestamp: picked.timestamp || base.timestamp || now,
-      photoLocalPath: picked.photoLocalPath ?? picked.localPhotoUrl ?? null,
-      localPhotoUrl: picked.localPhotoUrl ?? picked.photoLocalPath ?? null,
-      photoUrl:
-        picked.photoLocalPath ??
-        picked.localPhotoUrl ??
-        picked.photoUrl ??
-        null,
-      imageId: picked.imageId ?? null,
-      notes: picked.notes ?? null,
-      tags: Array.isArray(picked.tags) ? [...picked.tags] : [],
-      totals: picked.totals ? { ...picked.totals } : undefined,
-      name: picked.name ?? null,
-    };
+    const next = buildSavedMealDraft({
+      picked,
+      uid: params.uid,
+    });
 
     params.setMeal(next);
     await params.saveDraft(params.uid, next);
     await params.setLastScreen(params.uid, "ReviewMeal");
     params.onNavigateReview();
   }, [
-    params,
-    selectedId,
-    visibleAll,
+    params.onNavigateReview,
+    params.saveDraft,
+    params.setLastScreen,
+    params.setMeal,
+    params.uid,
   ]);
 
   const handleStartOver = useCallback(() => {
     params.onStartOver();
-  }, [params]);
+  }, [params.onStartOver]);
 
   const keyExtractor = useCallback(
     (item: Meal) => item.cloudId || item.mealId,
@@ -214,10 +155,8 @@ export function useSelectSavedMealsState(params: {
     setQueryText,
     loading,
     pageItems,
-    selectedId,
     refresh,
-    handleSelect,
-    handleConfirm,
+    handleAddMeal,
     handleStartOver,
     keyExtractor,
     onViewableItemsChanged,

@@ -7,10 +7,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/theme/useTheme";
 import type { RootStackParamList } from "@/navigation/navigate";
 import AppIcon from "@/components/AppIcon";
-import { Modal } from "@/components/Modal";
 import { useTranslation } from "react-i18next";
 import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
 import { trackMealAddMethodSelected } from "@/services/telemetry/telemetryInstrumentation";
+import { ResumeDraftSheet } from "@/feature/Meals/components/ResumeDraftSheet";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -26,11 +26,13 @@ const MealAddMethodScreen = () => {
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals"]);
   const persistSelection = route.params?.selectionMode === "persistDefault";
+  const resetStackOnStart = route.params?.origin === "mealAddFlow";
 
   const state = useMealAddMethodState({
     navigation,
     replaceOnStart: true,
     persistSelection,
+    resetStackOnStart,
   });
 
   return (
@@ -86,29 +88,18 @@ const MealAddMethodScreen = () => {
         </View>
       </View>
 
-      <Modal
-        visible={state.showResumeModal}
-        title={t("resume_draft_title", "Continue your draft?")}
-        message={t(
-          "resume_draft_message",
-          "You already have an unfinished meal draft. Continue it or discard it before starting something new.",
-        )}
-        primaryAction={{
-          label: t("resume_draft_continue", "Continue draft"),
-          onPress: () => {
+      {state.showResumeModal ? (
+        <ResumeDraftSheet
+          meal={state.resumeDraftMeal}
+          onResume={() => {
             void state.handleContinueDraft();
-          },
-        }}
-        secondaryAction={{
-          label: t("resume_draft_discard", "Start fresh"),
-          onPress: () => {
+          }}
+          onDiscard={() => {
             void state.handleDiscardDraft();
-          },
-          tone: "destructive",
-        }}
-        onClose={state.closeResumeModal}
-        stackActions
-      />
+          }}
+          onClose={state.closeResumeModal}
+        />
+      ) : null}
     </View>
   );
 };

@@ -50,7 +50,6 @@ describe("useSelectSavedMealsState", () => {
       useSelectSavedMealsState({
         uid: null,
         syncSavedMeals: jest.fn(async () => undefined),
-        draftMeal: null,
         setMeal: jest.fn(),
         saveDraft: jest.fn<
           (uid: string, draftOverride?: Meal | null) => Promise<void>
@@ -69,12 +68,11 @@ describe("useSelectSavedMealsState", () => {
     expect(mockSubscribeToMyMealsOrderedByName).not.toHaveBeenCalled();
   });
 
-  it("hydrates cached items, subscribes to repository data and mirrors cache", async () => {
+  it("subscribes to repository data and keeps list sorted by name", async () => {
     const { result, unmount } = renderHook(() =>
       useSelectSavedMealsState({
         uid: "user-1",
         syncSavedMeals: jest.fn(async () => undefined),
-        draftMeal: null,
         setMeal: jest.fn(),
         saveDraft: jest.fn<
           (uid: string, draftOverride?: Meal | null) => Promise<void>
@@ -109,7 +107,7 @@ describe("useSelectSavedMealsState", () => {
     expect(mockUnsubscribe).toHaveBeenCalled();
   });
 
-  it("selects a meal and confirms draft navigation flow", async () => {
+  it("builds a saved-meal draft and navigates straight to review", async () => {
     const setMeal = jest.fn();
     const saveDraft = jest.fn<
       (uid: string, draftOverride?: Meal | null) => Promise<void>
@@ -124,7 +122,6 @@ describe("useSelectSavedMealsState", () => {
       useSelectSavedMealsState({
         uid: "user-1",
         syncSavedMeals: jest.fn(async () => undefined),
-        draftMeal: null,
         setMeal,
         saveDraft,
         setLastScreen,
@@ -142,12 +139,7 @@ describe("useSelectSavedMealsState", () => {
     });
 
     await act(async () => {
-      result.current.handleSelect(result.current.pageItems[0]);
-    });
-    expect(result.current.selectedId).toBe("meal-1");
-
-    await act(async () => {
-      await result.current.handleConfirm();
+      await result.current.handleAddMeal(result.current.pageItems[0]);
     });
 
     expect(setMeal).toHaveBeenCalledWith(
@@ -155,6 +147,7 @@ describe("useSelectSavedMealsState", () => {
         mealId: "uuid-new",
         cloudId: undefined,
         source: "saved",
+        inputMethod: "saved",
         name: "Chicken pasta",
       }),
     );

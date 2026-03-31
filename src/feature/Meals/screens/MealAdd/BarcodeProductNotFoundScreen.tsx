@@ -73,6 +73,7 @@ export default function BarcodeProductNotFoundScreen({
   const handleTryAnotherMethod = useCallback(() => {
     navigation.navigate("MealAddMethod", {
       selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   }, [navigation]);
 

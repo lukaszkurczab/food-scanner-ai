@@ -265,6 +265,7 @@ describe("BarcodeProductNotFoundScreen", () => {
 
     expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
       selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   });
 

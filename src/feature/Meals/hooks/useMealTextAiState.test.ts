@@ -52,7 +52,7 @@ describe("useMealTextAiState", () => {
       result.current.onNameChange("Chicken and rice");
     });
     act(() => {
-      result.current.onIngredientsChange("chicken, rice");
+      result.current.onQuickDescriptionChange("Chicken and rice with cucumber");
     });
     act(() => {
       result.current.onAnalyze();
@@ -77,13 +77,7 @@ describe("useMealTextAiState", () => {
       result.current.onNameChange("Chicken and rice");
     });
     act(() => {
-      result.current.onIngredientsChange("chicken, rice");
-    });
-    act(() => {
-      result.current.onAmountChange("250");
-    });
-    act(() => {
-      result.current.onDescChange("extra tahini");
+      result.current.onQuickDescriptionChange("Chicken and rice with cucumber");
     });
     act(() => {
       result.current.onAnalyze();
@@ -91,9 +85,7 @@ describe("useMealTextAiState", () => {
 
     expect(flow.goTo).toHaveBeenCalledWith("TextAnalyzing", {
       name: "Chicken and rice",
-      ingPreview: "chicken, rice",
-      amount: "250",
-      desc: "extra tahini",
+      quickDescription: "Chicken and rice with cucumber",
       retries: 0,
     });
   });
@@ -109,9 +101,7 @@ describe("useMealTextAiState", () => {
         flow: { goTo: jest.fn() },
         initialValues: {
           name: "Meal",
-          ingPreview: "rice",
-          amount: "120",
-          desc: "notes",
+          quickDescription: "rice",
           retries: 2,
           showLimitModal: true,
           submitError: "submit-error",

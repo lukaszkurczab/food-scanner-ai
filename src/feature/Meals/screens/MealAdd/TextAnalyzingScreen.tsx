@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import NetInfo from "@react-native-community/netinfo";
-import { Layout, Toast } from "@/components";
-import Loader from "@feature/Meals/components/Loader";
+import { StyleSheet, View } from "react-native";
+import { Layout, TextInput, Toast } from "@/components";
 import { useTranslation } from "react-i18next";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -14,28 +14,28 @@ import type { AiTextMealPayload } from "@/services/ai/contracts";
 import { getErrorStatus } from "@/services/contracts/serviceError";
 import { getAiUxErrorType } from "@/services/ai/uxError";
 import { getMealAiMetaFromAiResponse } from "@/services/meals/mealMetadata";
+import { AiCreditsBadge } from "@/components/AiCreditsBadge";
+import {
+  MealAddPhotoScaffold,
+  MealAddStatusBanner,
+} from "@/feature/Meals/components/MealAddPhotoScaffold";
+import { useTheme } from "@/theme/useTheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { v4 as uuidv4 } from "uuid";
 
 const MAX_RETRIES = 3;
+const TEXT_PREVIEW_HEIGHT = 441;
 
 const nextRetryCount = (current: number) => Math.min(current + 1, MAX_RETRIES);
 
 const buildPayload = (
   params: MealAddScreenProps<"TextAnalyzing">["params"],
-): AiTextMealPayload => {
-  const parsedAmount = Number(params.amount);
-  const amount_g =
-    Number.isFinite(parsedAmount) && parsedAmount > 0
-      ? Math.round(parsedAmount)
-      : null;
-
-  return {
-    name: params.name.trim() || null,
-    ingredients: params.ingPreview.trim() || params.name.trim() || null,
-    amount_g,
-    notes: params.desc.trim() || null,
-  };
-};
+): AiTextMealPayload => ({
+  name: params.name.trim() || null,
+  ingredients: params.quickDescription.trim() || params.name.trim() || null,
+  amount_g: null,
+  notes: null,
+});
 
 const buildInitialMeal = (uid: string): Meal => ({
   mealId: uuidv4(),
@@ -61,11 +61,22 @@ export default function TextAnalyzingScreen({
   flow,
   params,
 }: MealAddScreenProps<"TextAnalyzing">) {
-  const { t } = useTranslation("meals");
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
+  const { t } = useTranslation(["meals", "chat"]);
   const { uid } = useAuthContext();
   const { language } = useUserContext();
   const { meal, saveDraft, setLastScreen, setMeal } = useMealDraftContext();
   const { applyCreditsFromResponse, refreshCredits } = useAiCreditsContext();
+  const previewTopInset = useMemo(
+    () =>
+      Math.max(
+        theme.spacing.xxl,
+        Math.round(insets.top * 0.65) + theme.spacing.xs,
+      ),
+    [insets.top, theme.spacing.xs, theme.spacing.xxl],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -76,9 +87,7 @@ export default function TextAnalyzingScreen({
       if (cancelled) return;
       flow.replace("DescribeMeal", {
         name: params.name,
-        ingPreview: params.ingPreview,
-        amount: params.amount,
-        desc: params.desc,
+        quickDescription: params.quickDescription,
         retries: params.retries ?? 0,
         ...patch,
       });
@@ -131,7 +140,7 @@ export default function TextAnalyzingScreen({
         const nextMeal: Meal = {
           ...baseMeal,
           name: params.name.trim() || baseMeal.name,
-          notes: params.desc.trim() || baseMeal.notes || null,
+          notes: params.quickDescription.trim() || baseMeal.notes || null,
           ingredients: result.ingredients,
           source: "ai",
           inputMethod: "text",
@@ -210,14 +219,75 @@ export default function TextAnalyzingScreen({
   ]);
 
   return (
-    <Layout showNavigation={false} disableScroll>
-      <Loader
-        text={t("text_analyzing_title", "Analyzing your description...")}
-        subtext={t(
-          "text_analyzing_subtitle",
-          "We are turning your notes into a meal draft for review.",
-        )}
-      />
+    <Layout showNavigation={false} disableScroll style={styles.layout}>
+      <View style={styles.fill}>
+        <MealAddPhotoScaffold
+          topInset={previewTopInset}
+          previewHeight={TEXT_PREVIEW_HEIGHT}
+          preview={
+            <View style={styles.preview}>
+              <TextInput
+                label={t("meal_name", { ns: "meals" })}
+                value={params.name}
+                onChangeText={() => {}}
+                editable={false}
+                style={styles.previewNameField}
+              />
+              <TextInput
+                label={t("describe_meal_quick_description_label", {
+                  ns: "meals",
+                })}
+                value={params.quickDescription}
+                onChangeText={() => {}}
+                editable={false}
+                style={styles.previewDescriptionField}
+                multiline
+                numberOfLines={8}
+              />
+            </View>
+          }
+          eyebrow={t("text_analyzing_overline")}
+          title={t("text_analyzing_title")}
+          description={t("text_analyzing_subtitle")}
+          accessory={
+            <AiCreditsBadge
+              text={`✦ ${String(t("credits.costSingle", { ns: "chat" }))}`}
+              tone="success"
+            />
+          }
+          content={
+            <MealAddStatusBanner label={t("text_analyzing_status")} />
+          }
+          footerNote={t("text_analyzing_footer")}
+        />
+      </View>
     </Layout>
   );
 }
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    layout: {
+      paddingTop: 0,
+      paddingBottom: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+    fill: {
+      flex: 1,
+      backgroundColor: theme.surface,
+    },
+    preview: {
+      flex: 1,
+      backgroundColor: theme.backgroundSecondary,
+      paddingHorizontal: 24,
+      paddingTop: 24,
+      paddingBottom: 24,
+    },
+    previewNameField: {
+      marginBottom: 24,
+    },
+    previewDescriptionField: {
+      flex: 1,
+    },
+  });

@@ -6,6 +6,7 @@ const mockGetItem = jest.fn<(key: string) => Promise<string | null>>();
 const mockSetItem = jest.fn<(key: string, value: string) => Promise<void>>();
 const mockNavigate = jest.fn();
 const mockReplace = jest.fn();
+const mockDispatch = jest.fn();
 const mockSetMeal = jest.fn();
 const mockSaveDraft = jest.fn<(uid: string, meal: unknown) => Promise<void>>();
 const mockSetLastScreen = jest.fn<(uid: string, screen: string) => Promise<void>>();
@@ -67,6 +68,7 @@ describe("useMealAddMethodState", () => {
     const navigation = {
       navigate: mockNavigate,
       replace: mockReplace,
+      dispatch: mockDispatch,
     } as const;
 
     const homeHook = renderHook(() =>
@@ -129,6 +131,7 @@ describe("useMealAddMethodState", () => {
     const navigation = {
       navigate: mockNavigate,
       replace: mockReplace,
+      dispatch: mockDispatch,
     } as const;
 
     const { result } = renderHook(() =>
@@ -143,6 +146,9 @@ describe("useMealAddMethodState", () => {
     });
 
     expect(result.current.showResumeModal).toBe(true);
+    expect(result.current.resumeDraftMeal).toEqual(
+      expect.objectContaining({ mealId: "draft-1" }),
+    );
 
     await act(async () => {
       await result.current.handleContinueDraft();
@@ -152,5 +158,44 @@ describe("useMealAddMethodState", () => {
     expect(mockReplace).toHaveBeenCalledWith("AddMeal", {
       start: "ReviewMeal",
     });
+    expect(result.current.resumeDraftMeal).toBeNull();
+  });
+
+  it("resets the stack when starting a new method from inside the meal add flow", async () => {
+    mockUseAuthContext.mockReturnValue({ uid: "user-1" });
+
+    const navigation = {
+      navigate: mockNavigate,
+      replace: mockReplace,
+      dispatch: mockDispatch,
+    } as const;
+
+    const { result } = renderHook(() =>
+      useMealAddMethodState({
+        navigation,
+        replaceOnStart: true,
+        resetStackOnStart: true,
+      }),
+    );
+
+    const textOption = result.current.options.find((option) => option.key === "text");
+
+    await act(async () => {
+      await result.current.handleOptionPress(textOption!);
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "RESET",
+        payload: {
+          index: 1,
+          routes: [
+            { name: "Home" },
+            { name: "AddMeal", params: { start: "DescribeMeal" } },
+          ],
+        },
+      }),
+    );
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 });

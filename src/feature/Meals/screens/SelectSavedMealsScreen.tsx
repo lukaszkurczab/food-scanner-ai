@@ -1,19 +1,26 @@
 import { useCallback, useMemo } from "react";
-import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
-import { Button, FullScreenLoader, Layout, TextButton } from "@/components";
-import { SearchBox } from "@/components/SearchBox";
-import { MealListItem } from "@/components/MealListItem";
+import { Button, FullScreenLoader, Layout, TextInput } from "@/components";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useTranslation } from "react-i18next";
 import { useSelectSavedMealsState } from "@/feature/Meals/hooks/useSelectSavedMealsState";
 import { syncMyMeals } from "@/services/meals/myMealService";
 import type { RootStackParamList } from "@/navigation/navigate";
+import AppIcon from "@/components/AppIcon";
+import { SavedMealActionCard } from "@/feature/Meals/components/SavedMealActionCard";
 
 type SelectSavedMealNavigation = StackNavigationProp<
   RootStackParamList,
@@ -29,7 +36,6 @@ export default function SelectSavedMealScreen({
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { uid } = useAuthContext();
   const {
-    meal: draftMeal,
     setMeal,
     saveDraft,
     setLastScreen,
@@ -44,10 +50,8 @@ export default function SelectSavedMealScreen({
     setQueryText,
     loading,
     pageItems,
-    selectedId,
     refresh,
-    handleSelect,
-    handleConfirm,
+    handleAddMeal,
     handleStartOver,
     keyExtractor,
     onViewableItemsChanged,
@@ -55,7 +59,6 @@ export default function SelectSavedMealScreen({
   } = useSelectSavedMealsState({
     uid,
     syncSavedMeals: () => syncMyMeals(uid),
-    draftMeal,
     setMeal,
     saveDraft,
     setLastScreen,
@@ -64,33 +67,39 @@ export default function SelectSavedMealScreen({
     onStartOver: () =>
       navigation.navigate("MealAddMethod", {
         selectionMode: "temporary",
+        origin: "mealAddFlow",
       }),
   });
 
   const renderItem = useCallback(
     ({ item }: { item: Meal }) => {
-      const id = item.cloudId || item.mealId;
-      const selected = selectedId === id;
       return (
         <View style={styles.listItemWrap}>
-          <MealListItem
-            meal={item}
-            onPress={() => handleSelect(item)}
-            onSelect={() => handleSelect(item)}
-            selected={selected}
-            onDuplicate={() => {}}
-            onEdit={() => {}}
-            onDelete={() => {}}
-          />
+          <SavedMealActionCard meal={item} onAdd={handleAddMeal} />
         </View>
       );
     },
-    [handleSelect, selectedId, styles],
+    [handleAddMeal, styles],
+  );
+
+  const renderFooter = useCallback(
+    () => (
+      <Pressable
+        accessibilityRole="button"
+        onPress={handleStartOver}
+        style={styles.footerLink}
+      >
+        <Text style={styles.footerLinkLabel}>
+          {t("meals:change_method", "Change add method")}
+        </Text>
+      </Pressable>
+    ),
+    [handleStartOver, styles, t],
   );
 
   if (loading) {
     return (
-      <Layout disableScroll>
+      <Layout disableScroll showNavigation={false}>
         <FullScreenLoader />
       </Layout>
     );
@@ -99,133 +108,208 @@ export default function SelectSavedMealScreen({
   if (!pageItems.length) {
     const isOfflineEmpty = !isOnline && !queryText.trim();
     return (
-      <Layout>
-        <View style={styles.headerBlock}>
-          <Text style={styles.eyebrow}>
-            {t("saved_list_eyebrow", "Saved meals")}
-          </Text>
-          <Text style={styles.title}>
-            {t("saved_list_title", "Reuse one of your saved meals")}
-          </Text>
-          <Text style={styles.subtitle}>
-            {t(
-              "saved_list_subtitle",
-              "Pick a saved meal, review it, and log it again when you're ready.",
+      <Layout disableScroll showNavigation={false} style={styles.layout}>
+        <View style={styles.screen}>
+          <View style={styles.searchWrap}>
+            <TextInput
+              value={queryText}
+              onChangeText={setQueryText}
+              placeholder={t(
+                "saved_list_search_placeholder",
+                "Search saved meals",
+              )}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              style={styles.searchInput}
+              fieldStyle={styles.searchField}
+              inputStyle={styles.searchText}
+            />
+          </View>
+
+          <View style={styles.emptyContent}>
+            {!queryText.trim() ? (
+              <>
+                <View style={styles.emptyIconTile}>
+                  <AppIcon
+                    name="saved-items"
+                    size={26}
+                    color={theme.accentWarmStrong}
+                  />
+                </View>
+                <Text style={styles.emptyTitle}>
+                  {t("saved_list_empty_title", "No saved meals yet")}
+                </Text>
+                <Text style={styles.emptyDescription}>
+                  {isOfflineEmpty
+                    ? t("savedMeals.offlineEmpty", { ns: "meals" })
+                    : t(
+                        "saved_list_empty_description",
+                        "Save a meal after review to reuse it here.",
+                      )}
+                </Text>
+                <Button
+                  label={t(
+                    "saved_list_empty_cta",
+                    "Choose another method",
+                  )}
+                  variant="secondary"
+                  onPress={handleStartOver}
+                  style={styles.emptyPrimaryAction}
+                  textStyle={styles.emptyPrimaryActionLabel}
+                />
+              </>
+            ) : (
+              <EmptyState
+                title={t("meals:noMealsFound", "No meals found")}
+                description={t(
+                  "meals:tryDifferentSearch",
+                  "Try a different search.",
+                )}
+              />
             )}
-          </Text>
+          </View>
+
+          {renderFooter()}
         </View>
-        <View style={styles.searchWrap}>
-          <SearchBox value={queryText} onChange={setQueryText} />
-        </View>
-        <EmptyState
-          title={
-            isOfflineEmpty
-              ? t("common:offline.title")
-              : queryText
-                ? t("meals:noMealsFound", "No meals found")
-                : t("meals:noSavedMeals", "No saved meals")
-          }
-          description={
-            isOfflineEmpty
-              ? t("savedMeals.offlineEmpty", { ns: "meals" })
-              : queryText
-                ? t("meals:tryDifferentSearch", "Try a different search.")
-                : t("meals:saveMealsToReuse", "Save meals to reuse them later.")
-          }
-        />
-        <Button
-          label={t("meals:change_method", "Change add method")}
-          onPress={handleStartOver}
-          style={styles.primaryAction}
-        />
       </Layout>
     );
   }
 
   return (
-    <Layout disableScroll>
-      <View style={styles.headerBlock}>
-        <Text style={styles.eyebrow}>
-          {t("saved_list_eyebrow", "Saved meals")}
-        </Text>
-        <Text style={styles.title}>
-          {t("saved_list_title", "Reuse one of your saved meals")}
-        </Text>
-        <Text style={styles.subtitle}>
-          {t(
-            "saved_list_subtitle",
-            "Pick a saved meal, review it, and log it again when you're ready.",
-          )}
-        </Text>
+    <Layout disableScroll showNavigation={false} style={styles.layout}>
+      <View style={styles.screen}>
+        <View style={styles.searchWrap}>
+          <TextInput
+            value={queryText}
+            onChangeText={setQueryText}
+            placeholder={t(
+              "saved_list_search_placeholder",
+              "Search saved meals",
+            )}
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            style={styles.searchInput}
+            fieldStyle={styles.searchField}
+            inputStyle={styles.searchText}
+          />
+        </View>
+        <FlatList
+          style={styles.list}
+          data={pageItems}
+          keyExtractor={keyExtractor}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={refresh} />
+          }
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+          onViewableItemsChanged={onViewableItemsChanged.current}
+          viewabilityConfig={viewabilityConfig}
+          initialNumToRender={step}
+          windowSize={7}
+          showsVerticalScrollIndicator={false}
+        />
+        {renderFooter()}
       </View>
-      <View style={styles.searchWrap}>
-        <SearchBox value={queryText} onChange={setQueryText} />
-      </View>
-      <FlatList
-        data={pageItems}
-        keyExtractor={keyExtractor}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refresh} />
-        }
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        onViewableItemsChanged={onViewableItemsChanged.current}
-        viewabilityConfig={viewabilityConfig}
-        removeClippedSubviews
-        initialNumToRender={step}
-        windowSize={7}
-      />
-      <Button
-        label={t("saved_list_use_cta", "Review selected meal")}
-        onPress={handleConfirm}
-        disabled={!selectedId}
-        style={styles.primaryAction}
-      />
-      <TextButton
-        label={t("meals:change_method", "Change add method")}
-        onPress={handleStartOver}
-        style={styles.secondaryAction}
-        tone="link"
-      />
     </Layout>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    headerBlock: {
-      gap: theme.spacing.xs,
-      paddingTop: theme.spacing.sm,
+    layout: {
+      paddingLeft: 20,
+      paddingRight: 20,
     },
-    eyebrow: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.labelS,
-      lineHeight: theme.typography.lineHeight.labelS,
-      fontFamily: theme.typography.fontFamily.medium,
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-    },
-    title: {
-      color: theme.text,
-      fontSize: theme.typography.size.title,
-      lineHeight: theme.typography.lineHeight.title,
-      fontFamily: theme.typography.fontFamily.bold,
-    },
-    subtitle: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
+    screen: {
+      flex: 1,
+      minHeight: 0,
     },
     listItemWrap: {
-      marginBottom: theme.spacing.sm,
+      marginBottom: 12,
     },
-    searchWrap: { paddingVertical: theme.spacing.md },
-    listContent: { paddingBottom: theme.spacing.lg },
-    primaryAction: {
-      marginTop: theme.spacing.sm,
+    searchWrap: {
+      paddingTop: 18,
+      paddingBottom: 18,
     },
-    secondaryAction: {
-      marginTop: theme.spacing.xs,
-      marginBottom: theme.spacing.sm,
+    searchInput: {
+      width: "100%",
+    },
+    searchField: {
+      minHeight: 48,
+      borderRadius: 12,
+      backgroundColor: theme.surface,
+      borderColor: theme.borderSoft,
+      paddingHorizontal: 16,
+    },
+    searchText: {
+      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      color: theme.text,
+    },
+    list: {
+      flex: 1,
+      minHeight: 0,
+    },
+    listContent: {
+      paddingBottom: 12,
+    },
+    emptyContent: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingBottom: 48,
+    },
+    emptyIconTile: {
+      width: 72,
+      height: 72,
+      borderRadius: theme.rounded.xl,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.backgroundSecondary,
+      marginBottom: 16,
+    },
+    emptyTitle: {
+      color: theme.text,
+      textAlign: "center",
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.displayM,
+      lineHeight: theme.typography.lineHeight.displayM,
+      marginBottom: 16,
+    },
+    emptyDescription: {
+      maxWidth: 290,
+      color: theme.textTertiary,
+      textAlign: "center",
+      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      marginBottom: 24,
+    },
+    emptyPrimaryAction: {
+      minHeight: 42,
+      borderRadius: 12,
+      borderColor: "rgba(207, 197, 184, 0.45)",
+    },
+    emptyPrimaryActionLabel: {
+      color: theme.primary,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: 20,
+    },
+    footerLink: {
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 32,
+      marginTop: 2,
+    },
+    footerLinkLabel: {
+      color: theme.primary,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
     },
   });

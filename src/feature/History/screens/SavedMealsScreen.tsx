@@ -9,7 +9,6 @@ import {
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
-import { v4 as uuidv4 } from "uuid";
 import {
   FullScreenLoader,
   Layout,
@@ -28,6 +27,7 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { useSavedMealsData } from "@/feature/History/hooks/useSavedMealsData";
 import { syncMyMeals } from "@/services/meals/myMealService";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { buildSavedMealDraft } from "@/feature/Meals/utils/buildSavedMealDraft";
 
 type SavedMealsNavigation = StackNavigationProp<RootStackParamList, "SavedMeals">;
 
@@ -78,87 +78,36 @@ export default function SavedMealsScreen({
     syncSavedMeals: () => syncMyMeals(uid),
   });
 
-  const buildDraftFromSaved = useCallback(
-    (picked: Meal): Meal => {
-      const now = new Date().toISOString();
-      const base: Meal = draftMeal ?? {
-        mealId: uuidv4(),
-        userUid: uid ?? "",
-        name: "",
-        photoUrl: null,
-        ingredients: [],
-        createdAt: now,
-        updatedAt: now,
-        syncState: "pending",
-        tags: [],
-        deleted: false,
-        notes: null,
-        type: "other",
-        timestamp: "",
-        source: null,
-        inputMethod: null,
-        aiMeta: null,
-      };
-
-      return {
-        ...base,
-        mealId: uuidv4(),
-        cloudId: undefined,
-        userUid: uid ?? "",
-        createdAt: base.createdAt || now,
-        updatedAt: now,
-        syncState: "pending",
-        deleted: false,
-        source: "saved",
-        inputMethod: "saved",
-        aiMeta: null,
-        ingredients: Array.isArray(picked.ingredients)
-          ? picked.ingredients.map((ingredient) => ({
-              ...ingredient,
-              id: ingredient.id || uuidv4(),
-            }))
-          : [],
-        type: picked.type || "other",
-        timestamp: picked.timestamp || base.timestamp || now,
-        photoLocalPath: picked.photoLocalPath ?? picked.localPhotoUrl ?? null,
-        localPhotoUrl: picked.localPhotoUrl ?? picked.photoLocalPath ?? null,
-        photoUrl:
-          picked.photoLocalPath ??
-          picked.localPhotoUrl ??
-          picked.photoUrl ??
-          null,
-        imageId: picked.imageId ?? null,
-        notes: picked.notes ?? null,
-        tags: Array.isArray(picked.tags) ? [...picked.tags] : [],
-        totals: picked.totals ? { ...picked.totals } : undefined,
-        name: picked.name ?? null,
-      };
-    },
-    [draftMeal, uid],
-  );
-
   const onDuplicate = useCallback(
     async (meal: Meal) => {
       if (!uid) return;
-      const next = buildDraftFromSaved(meal);
+      const next = buildSavedMealDraft({
+        picked: meal,
+        uid,
+        createdAt: draftMeal?.createdAt,
+      });
       setMeal(next);
       await saveDraft(uid, next);
       await setLastScreen(uid, "ReviewMeal");
       navigation.navigate("AddMeal", { start: "ReviewMeal" });
     },
-    [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation],
+    [draftMeal?.createdAt, navigation, saveDraft, setLastScreen, setMeal, uid],
   );
 
   const onEdit = useCallback(
     async (meal: Meal) => {
       if (!uid) return;
-      const next = buildDraftFromSaved(meal);
+      const next = buildSavedMealDraft({
+        picked: meal,
+        uid,
+        createdAt: draftMeal?.createdAt,
+      });
       setMeal(next);
       await saveDraft(uid, next);
       await setLastScreen(uid, "EditMealDetails");
       navigation.navigate("AddMeal", { start: "EditMealDetails" });
     },
-    [uid, buildDraftFromSaved, setMeal, saveDraft, setLastScreen, navigation],
+    [draftMeal?.createdAt, navigation, saveDraft, setLastScreen, setMeal, uid],
   );
 
   const keyExtractor = useCallback(

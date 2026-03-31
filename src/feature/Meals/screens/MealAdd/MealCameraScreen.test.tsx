@@ -353,6 +353,7 @@ describe("MealCameraScreen", () => {
     expect(hookState.goManagePremium).toHaveBeenCalledTimes(1);
     expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
       selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   });
 

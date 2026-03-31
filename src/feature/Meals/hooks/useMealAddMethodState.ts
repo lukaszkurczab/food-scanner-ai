@@ -23,6 +23,10 @@ type MealAddMethodNavigationProp = {
     StackNavigationProp<RootStackParamList, "Home">,
     "replace"
   >["replace"];
+  dispatch: Pick<
+    StackNavigationProp<RootStackParamList, "Home">,
+    "dispatch"
+  >["dispatch"];
 };
 
 type DraftResumeScreen = "AddMeal";
@@ -178,6 +182,7 @@ export function useMealAddMethodState(params: {
   navigation: MealAddMethodNavigationProp;
   replaceOnStart?: boolean;
   persistSelection?: boolean;
+  resetStackOnStart?: boolean;
 }) {
   const { uid } = useAuthContext();
   const { setMeal, saveDraft, setLastScreen, loadDraft, removeDraft } =
@@ -189,6 +194,7 @@ export function useMealAddMethodState(params: {
   const [resumeScreen, setResumeScreen] =
     useState<DraftResumeScreen | null>(null);
   const [pendingOption, setPendingOption] = useState<MethodOption | null>(null);
+  const [resumeDraftMeal, setResumeDraftMeal] = useState<Meal | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -265,6 +271,22 @@ export function useMealAddMethodState(params: {
 
   const openAddMeal = useCallback(
     (routeParams: RootStackParamList["AddMeal"]) => {
+      if (params.resetStackOnStart) {
+        params.navigation.dispatch(
+          {
+            type: "RESET",
+            payload: {
+              index: 1,
+              routes: [
+                { name: "Home" },
+                { name: "AddMeal", params: routeParams },
+              ],
+            },
+          } as never,
+        );
+        return;
+      }
+
       if (params.replaceOnStart) {
         params.navigation.replace("AddMeal", routeParams);
         return;
@@ -272,11 +294,27 @@ export function useMealAddMethodState(params: {
 
       params.navigation.navigate("AddMeal", routeParams);
     },
-    [params.navigation, params.replaceOnStart],
+    [params.navigation, params.replaceOnStart, params.resetStackOnStart],
   );
 
   const openSimpleScreen = useCallback(
     (name: "SelectSavedMeal") => {
+      if (params.resetStackOnStart) {
+        params.navigation.dispatch(
+          {
+            type: "RESET",
+            payload: {
+              index: 1,
+              routes: [
+                { name: "Home" },
+                { name },
+              ],
+            },
+          } as never,
+        );
+        return;
+      }
+
       if (params.replaceOnStart) {
         params.navigation.replace(name);
         return;
@@ -284,7 +322,7 @@ export function useMealAddMethodState(params: {
 
       params.navigation.navigate(name);
     },
-    [params.navigation, params.replaceOnStart],
+    [params.navigation, params.replaceOnStart, params.resetStackOnStart],
   );
 
   const executeOption = useCallback(
@@ -337,6 +375,7 @@ export function useMealAddMethodState(params: {
 
         setPendingOption(option);
         setResumeScreen(normalizedResumeScreen);
+        setResumeDraftMeal(parsed as Meal);
         setShowResumeModal(true);
         log.log("Active draft found. Showing resume modal.", {
           resumeScreen: normalizedResumeScreen,
@@ -385,6 +424,8 @@ export function useMealAddMethodState(params: {
 
     setShowResumeModal(false);
     setPendingOption(null);
+    setResumeScreen(null);
+    setResumeDraftMeal(null);
 
     if (resumeScreen === "AddMeal") {
       log.log("Resuming AddMeal draft at ReviewMeal.");
@@ -399,6 +440,7 @@ export function useMealAddMethodState(params: {
 
     setShowResumeModal(false);
     setResumeScreen(null);
+    setResumeDraftMeal(null);
 
     const nextOption = pendingOption;
     setPendingOption(null);
@@ -412,6 +454,7 @@ export function useMealAddMethodState(params: {
     setShowResumeModal(false);
     setPendingOption(null);
     setResumeScreen(null);
+    setResumeDraftMeal(null);
   }, []);
 
   return {
@@ -420,6 +463,7 @@ export function useMealAddMethodState(params: {
     preferredOption: getMethodOptionByKey(preferredMethodKey),
     handleDirectStart,
     showResumeModal,
+    resumeDraftMeal,
     handleOptionPress,
     handleContinueDraft,
     handleDiscardDraft,

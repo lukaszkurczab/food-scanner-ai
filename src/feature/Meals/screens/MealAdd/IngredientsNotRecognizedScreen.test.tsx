@@ -139,6 +139,7 @@ describe("IngredientsNotRecognizedScreen", () => {
     expect(clearMeal).toHaveBeenCalledWith("user-1");
     expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
       selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   });
 
@@ -167,6 +168,7 @@ describe("IngredientsNotRecognizedScreen", () => {
     expect(clearMeal).toHaveBeenCalledWith("user-1");
     expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
       selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   });
 

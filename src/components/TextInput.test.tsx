@@ -4,7 +4,6 @@ import { Text, StyleSheet } from "react-native";
 import { TextInput as AppTextInput } from "@/components/TextInput";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 import { themes } from "@/theme/themes";
-import { typography } from "@/theme/typography";
 
 const MockAdornment = ({ size, color }: { size?: number; color?: string }) => (
   <Text>{`${size ?? "none"}-${color ?? "none"}`}</Text>
@@ -51,7 +50,7 @@ describe("TextInput", () => {
     expect(onBlur).toHaveBeenCalledTimes(1);
   });
 
-  it("uses centered single-line input metrics with 16/12 field padding", () => {
+  it("uses centered single-line input metrics without extra vertical padding", () => {
     const { getByPlaceholderText } = renderWithTheme(
       <AppTextInput
         value="24"
@@ -62,9 +61,10 @@ describe("TextInput", () => {
 
     expect(StyleSheet.flatten(getByPlaceholderText("Age").props.style)).toEqual(
       expect.objectContaining({
-        minHeight: typography.lineHeight.bodyM,
+        height: "100%",
         textAlignVertical: "center",
         includeFontPadding: false,
+        paddingVertical: 0,
       }),
     );
   });
