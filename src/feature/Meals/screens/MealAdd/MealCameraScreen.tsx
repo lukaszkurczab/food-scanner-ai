@@ -80,6 +80,7 @@ export default function MealCameraScreen({
   const handleChangeMethod = () => {
     navigation.navigate("MealAddMethod", {
       selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   };
 

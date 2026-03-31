@@ -268,6 +268,7 @@ export default function BarcodeScanScreen({
   const handleChangeMethod = useCallback(() => {
     navigation.navigate("MealAddMethod", {
       selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   }, [navigation]);
 

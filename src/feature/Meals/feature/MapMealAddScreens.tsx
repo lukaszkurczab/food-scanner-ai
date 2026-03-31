@@ -54,19 +54,15 @@ export type MealAddStepParams = {
   };
   DescribeMeal: {
     name?: string;
-    ingPreview?: string;
-    amount?: string;
-    desc?: string;
+    quickDescription?: string;
     retries?: number;
-    ingredientsError?: string;
+    descriptionError?: string;
     submitError?: string;
     showLimitModal?: boolean;
   };
   TextAnalyzing: {
     name: string;
-    ingPreview: string;
-    amount: string;
-    desc: string;
+    quickDescription: string;
     retries?: number;
   };
   ReviewMeal: Record<string, never>;

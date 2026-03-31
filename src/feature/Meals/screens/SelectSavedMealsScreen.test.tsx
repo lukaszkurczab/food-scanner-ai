@@ -9,11 +9,9 @@ type ButtonProps = {
   label: string;
   onPress?: () => void;
   disabled?: boolean;
-  testID?: string;
 };
 
 const mockUseAuthContext = jest.fn();
-const mockUseMeals = jest.fn();
 const mockUseMealDraftContext = jest.fn();
 const mockUseSelectSavedMealsState = jest.fn();
 const mockSyncMyMeals = jest.fn();
@@ -21,10 +19,6 @@ const mockUseNetInfo = jest.fn();
 
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
-}));
-
-jest.mock("@hooks/useMeals", () => ({
-  useMeals: (uid: string | null) => mockUseMeals(uid),
 }));
 
 jest.mock("@contexts/MealDraftContext", () => ({
@@ -51,6 +45,11 @@ jest.mock("react-i18next", () => ({
   }),
 }));
 
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 jest.mock("@/components", () => {
   const { createElement } =
     jest.requireActual<typeof import("react")>("react");
@@ -62,55 +61,42 @@ jest.mock("@/components", () => {
     Layout: ({ children }: { children?: ReactNode }) =>
       createElement(View, null, children),
     FullScreenLoader: () => createElement(Text, null, "full-screen-loader"),
-    Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
+    Button: ({ label, onPress, disabled }: ButtonProps) =>
       createElement(
         Pressable,
-        { onPress, disabled, testID, accessibilityRole: "button" },
+        { onPress, disabled, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
-    TextButton: ({ label, onPress, disabled, testID }: ButtonProps) =>
+    TextInput: ({
+      value,
+      onChangeText,
+      placeholder,
+    }: {
+      value: string;
+      onChangeText: (value: string) => void;
+      placeholder?: string;
+    }) =>
       createElement(
-        Pressable,
-        { onPress, disabled, testID, accessibilityRole: "button" },
-        createElement(Text, null, label),
+        View,
+        null,
+        createElement(Text, null, `input:${value}`),
+        createElement(Text, null, placeholder ?? "placeholder"),
+        createElement(
+          Pressable,
+          { onPress: () => onChangeText("pasta") },
+          createElement(Text, null, "change-search"),
+        ),
       ),
   };
 });
 
-jest.mock("@/components/SearchBox", () => ({
-  SearchBox: ({
-    value,
-    onChange,
-  }: {
-    value: string;
-    onChange: (value: string) => void;
-  }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Pressable, Text, View } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(
-      View,
-      null,
-      createElement(Text, null, `search:${value}`),
-      createElement(
-        Pressable,
-        { onPress: () => onChange("pasta") },
-        createElement(Text, null, "change-search"),
-      ),
-    );
-  },
-}));
-
-jest.mock("@/components/MealListItem", () => ({
-  MealListItem: ({
+jest.mock("@/feature/Meals/components/SavedMealActionCard", () => ({
+  SavedMealActionCard: ({
     meal,
-    onPress,
-    onSelect,
+    onAdd,
   }: {
     meal: Meal;
-    onPress: () => void;
-    onSelect?: () => void;
+    onAdd: (meal: Meal) => void;
   }) => {
     const { createElement } =
       jest.requireActual<typeof import("react")>("react");
@@ -119,15 +105,11 @@ jest.mock("@/components/MealListItem", () => ({
     return createElement(
       View,
       null,
+      createElement(Text, null, meal.name ?? "unnamed-meal"),
       createElement(
         Pressable,
-        { onPress },
-        createElement(Text, null, meal.name ?? "unnamed-meal"),
-      ),
-      createElement(
-        Pressable,
-        { onPress: onSelect },
-        createElement(Text, null, `select:${meal.name ?? "unnamed-meal"}`),
+        { onPress: () => onAdd(meal) },
+        createElement(Text, null, `add:${meal.name ?? "unnamed-meal"}`),
       ),
     );
   },
@@ -173,9 +155,7 @@ describe("SelectSavedMealScreen", () => {
     mockSyncMyMeals.mockReset();
     mockUseNetInfo.mockReturnValue({ isConnected: true });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
-    mockUseMeals.mockReturnValue({ getMeals: jest.fn(async () => undefined) });
     mockUseMealDraftContext.mockReturnValue({
-      meal: null,
       setMeal: jest.fn(),
       saveDraft: jest.fn(async () => undefined),
       setLastScreen: jest.fn(async () => undefined),
@@ -189,10 +169,8 @@ describe("SelectSavedMealScreen", () => {
       setQueryText: jest.fn(),
       loading: true,
       pageItems: [],
-      selectedId: null,
       refresh: jest.fn(),
-      handleSelect: jest.fn(),
-      handleConfirm: jest.fn(),
+      handleAddMeal: jest.fn(),
       handleStartOver: jest.fn(),
       keyExtractor: jest.fn(),
       onViewableItemsChanged: { current: jest.fn() },
@@ -215,10 +193,8 @@ describe("SelectSavedMealScreen", () => {
       setQueryText,
       loading: false,
       pageItems: [],
-      selectedId: null,
       refresh: jest.fn(),
-      handleSelect: jest.fn(),
-      handleConfirm: jest.fn(),
+      handleAddMeal: jest.fn(),
       handleStartOver,
       keyExtractor: jest.fn(),
       onViewableItemsChanged: { current: jest.fn() },
@@ -230,16 +206,15 @@ describe("SelectSavedMealScreen", () => {
     );
 
     fireEvent.press(getByText("change-search"));
+    fireEvent.press(getByText("Choose another method"));
     fireEvent.press(getByText("Change add method"));
 
-    expect(getByText("Reuse one of your saved meals")).toBeTruthy();
-    expect(getByText("No saved meals")).toBeTruthy();
+    expect(getByText("No saved meals yet")).toBeTruthy();
     expect(setQueryText).toHaveBeenCalledWith("pasta");
-    expect(handleStartOver).toHaveBeenCalledTimes(1);
+    expect(handleStartOver).toHaveBeenCalledTimes(2);
   });
 
   it("shows offline-empty state copy when there are no local saved meals", () => {
-    const handleStartOver = jest.fn();
     mockUseNetInfo.mockReturnValue({ isConnected: false });
     mockUseSelectSavedMealsState.mockReturnValue({
       step: 20,
@@ -247,11 +222,9 @@ describe("SelectSavedMealScreen", () => {
       setQueryText: jest.fn(),
       loading: false,
       pageItems: [],
-      selectedId: null,
       refresh: jest.fn(),
-      handleSelect: jest.fn(),
-      handleConfirm: jest.fn(),
-      handleStartOver,
+      handleAddMeal: jest.fn(),
+      handleStartOver: jest.fn(),
       keyExtractor: jest.fn(),
       onViewableItemsChanged: { current: jest.fn() },
       viewabilityConfig: {},
@@ -261,26 +234,19 @@ describe("SelectSavedMealScreen", () => {
       <SelectSavedMealScreen navigation={{} as never} />,
     );
 
-    expect(getByText("Reuse one of your saved meals")).toBeTruthy();
-    expect(getByText("common:offline.title")).toBeTruthy();
     expect(getByText("savedMeals.offlineEmpty")).toBeTruthy();
-    fireEvent.press(getByText("Change add method"));
-    expect(handleStartOver).toHaveBeenCalledTimes(1);
   });
 
-  it("renders meals list and wires selection plus confirm actions", () => {
-    const handleSelect = jest.fn();
-    const handleConfirm = jest.fn();
+  it("renders meals list and wires inline add actions", () => {
+    const handleAddMeal = jest.fn();
     mockUseSelectSavedMealsState.mockReturnValue({
       step: 20,
       queryText: "chi",
       setQueryText: jest.fn(),
       loading: false,
       pageItems: [buildMeal()],
-      selectedId: "meal-1",
       refresh: jest.fn(),
-      handleSelect,
-      handleConfirm,
+      handleAddMeal,
       handleStartOver: jest.fn(),
       keyExtractor: (meal: Meal) => meal.mealId,
       onViewableItemsChanged: { current: jest.fn() },
@@ -291,31 +257,24 @@ describe("SelectSavedMealScreen", () => {
       <SelectSavedMealScreen navigation={{} as never} />,
     );
 
-    fireEvent.press(getByText("Chicken pasta"));
-    fireEvent.press(getByText("select:Chicken pasta"));
-    fireEvent.press(getByText("Review selected meal"));
+    fireEvent.press(getByText("add:Chicken pasta"));
 
-    expect(getByText("search:chi")).toBeTruthy();
-    expect(handleSelect).toHaveBeenCalledWith(
+    expect(getByText("input:chi")).toBeTruthy();
+    expect(handleAddMeal).toHaveBeenCalledWith(
       expect.objectContaining({ name: "Chicken pasta" }),
     );
-    expect(handleConfirm).toHaveBeenCalledTimes(1);
-    expect(handleSelect).toHaveBeenCalledTimes(2);
   });
 
   it("passes working sync and navigation callbacks to state hook", async () => {
     const navigate = jest.fn();
-    const replace = jest.fn();
     mockUseSelectSavedMealsState.mockReturnValue({
       step: 20,
       queryText: "",
       setQueryText: jest.fn(),
       loading: false,
       pageItems: [],
-      selectedId: null,
       refresh: jest.fn(),
-      handleSelect: jest.fn(),
-      handleConfirm: jest.fn(),
+      handleAddMeal: jest.fn(),
       handleStartOver: jest.fn(),
       keyExtractor: jest.fn(),
       onViewableItemsChanged: { current: jest.fn() },
@@ -323,9 +282,7 @@ describe("SelectSavedMealScreen", () => {
     });
 
     renderWithTheme(
-      <SelectSavedMealScreen
-        navigation={{ navigate, replace } as unknown as never}
-      />,
+      <SelectSavedMealScreen navigation={{ navigate } as unknown as never} />,
     );
 
     const hookArgs = mockUseSelectSavedMealsState.mock.calls.at(-1)?.[0] as {
@@ -342,6 +299,7 @@ describe("SelectSavedMealScreen", () => {
     expect(navigate).toHaveBeenCalledWith("AddMeal", { start: "ReviewMeal" });
     expect(navigate).toHaveBeenCalledWith("MealAddMethod", {
       selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   });
 });

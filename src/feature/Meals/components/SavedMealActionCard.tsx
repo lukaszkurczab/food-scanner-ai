@@ -1,0 +1,127 @@
+import { useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "@/theme/useTheme";
+import type { Meal } from "@/types/meal";
+import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
+import { MealThumbnail } from "@/feature/Meals/components/MealThumbnail";
+import { formatMealRelativeTime } from "@/feature/Meals/utils/formatMealRelativeTime";
+
+type SavedMealActionCardProps = {
+  meal: Meal;
+  onAdd: (meal: Meal) => void;
+};
+
+export function SavedMealActionCard({
+  meal,
+  onAdd,
+}: SavedMealActionCardProps) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { t, i18n } = useTranslation(["meals"]);
+
+  const totals = calculateTotalNutrients([meal]);
+  const usedAgo = formatMealRelativeTime(
+    meal.updatedAt || meal.createdAt,
+    i18n.language,
+  );
+  const mealTypeLabel = t(meal.type || "other");
+
+  return (
+    <View style={styles.card}>
+      <MealThumbnail
+        meal={meal}
+        size={52}
+        borderRadius={15}
+        placeholderLabel={t("saved_list_no_photo", "No\nphoto")}
+      />
+
+      <View style={styles.copyWrap}>
+        <Text numberOfLines={2} style={styles.name}>
+          {meal.name || t("meal", { ns: "home", defaultValue: "Meal" })}
+        </Text>
+        <Text numberOfLines={1} style={styles.primaryMeta}>
+          {mealTypeLabel} • {totals.kcal} {t("kcal", { defaultValue: "kcal" })}
+        </Text>
+        <Text numberOfLines={1} style={styles.secondaryMeta}>
+          {usedAgo
+            ? t("saved_list_used", {
+                time: usedAgo,
+                defaultValue: "Used {{time}}",
+              })
+            : t("saved_list_recent", "Recently used")}
+        </Text>
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => onAdd(meal)}
+        style={({ pressed }) => [
+          styles.addButton,
+          pressed ? styles.addButtonPressed : null,
+        ]}
+        testID={`saved-meal-add-${meal.cloudId || meal.mealId}`}
+      >
+        <Text style={styles.addButtonLabel}>
+          {t("saved_list_add", "Add")}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      minHeight: 104,
+      padding: 12,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: "rgba(79, 104, 75, 0.24)",
+      backgroundColor: theme.surface,
+    },
+    copyWrap: {
+      flex: 1,
+      minWidth: 0,
+      gap: 1,
+    },
+    name: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: 17,
+      lineHeight: 22,
+    },
+    primaryMeta: {
+      color: theme.primarySoft,
+      fontFamily: theme.typography.fontFamily.medium,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    secondaryMeta: {
+      color: theme.textTertiary,
+      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    addButton: {
+      width: 62,
+      height: 30,
+      borderRadius: 10,
+      backgroundColor: theme.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      opacity: 0.96,
+    },
+    addButtonPressed: {
+      backgroundColor: theme.primaryStrong,
+    },
+    addButtonLabel: {
+      color: theme.textInverse,
+      fontFamily: theme.typography.fontFamily.medium,
+      fontSize: 14,
+      lineHeight: 18,
+    },
+  });

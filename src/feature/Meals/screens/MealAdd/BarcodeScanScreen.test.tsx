@@ -270,6 +270,7 @@ describe("BarcodeScanScreen", () => {
 
     expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
       selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   });
 

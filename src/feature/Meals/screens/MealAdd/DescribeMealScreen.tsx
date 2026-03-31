@@ -1,20 +1,18 @@
 import { useMemo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button, ErrorBox, Layout, Modal, TextInput } from "@/components";
 import { AiCreditsBadge } from "@/components/AiCreditsBadge";
-import { LongTextInput } from "@/components/LongTextInput";
-import { TextInput as ShortInput } from "@/components/TextInput";
-import {
-  Button,
-  Layout,
-  Modal,
-  NumberInput,
-  ErrorBox,
-  TextButton,
-} from "@/components";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useMealTextAiState } from "@/feature/Meals/hooks/useMealTextAiState";
+import {
+  MealAddPhotoScaffold,
+  MealAddTextLink,
+} from "@/feature/Meals/components/MealAddPhotoScaffold";
 import { useTheme } from "@/theme/useTheme";
+
+const TEXT_PREVIEW_HEIGHT = 441;
 
 export default function DescribeMealScreen({
   navigation,
@@ -23,29 +21,29 @@ export default function DescribeMealScreen({
 }: MealAddScreenProps<"DescribeMeal">) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation(["meals", "chat", "common"]);
+  const previewTopInset = useMemo(
+    () =>
+      Math.max(
+        theme.spacing.xxl,
+        Math.round(insets.top * 0.65) + theme.spacing.xs,
+      ),
+    [insets.top, theme.spacing.xs, theme.spacing.xxl],
+  );
 
   const {
     name,
-    ingPreview,
-    amount,
-    desc,
+    quickDescription,
     loading,
-    retries,
     showLimitModal,
     creditsUsed,
-    nameError,
-    amountError,
-    ingredientsError,
+    descriptionError,
     submitError,
     analyzeDisabled,
     creditAllocation,
     onNameChange,
-    onIngredientsChange,
-    onAmountChange,
-    onDescChange,
-    onNameBlur,
-    onAmountBlur,
+    onQuickDescriptionChange,
     onAnalyze,
     closeLimitModal,
     openPaywall,
@@ -57,139 +55,77 @@ export default function DescribeMealScreen({
   });
 
   return (
-    <Layout showNavigation={false} disableScroll>
-      <View style={styles.content}>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.heroCard}>
-            <View style={styles.heroHeader}>
-              <Text style={styles.eyebrow}>
-                {t("describe_meal_eyebrow", {
+    <Layout showNavigation={false} disableScroll style={styles.layout}>
+      <View style={styles.fill}>
+        <MealAddPhotoScaffold
+          topInset={previewTopInset}
+          previewHeight={TEXT_PREVIEW_HEIGHT}
+          preview={
+            <View style={styles.preview}>
+              <TextInput
+                label={t("meal_name", { ns: "meals" })}
+                value={name}
+                onChangeText={onNameChange}
+                placeholder={t("describe_meal_name_placeholder", {
                   ns: "meals",
-                  defaultValue: "Text meal",
                 })}
-              </Text>
-              <Text style={styles.title}>
-                {t("aiTextTitle", { ns: "meals" })}
-              </Text>
-              <Text style={styles.subtitle}>
-                {t("describe_meal_subtitle", {
-                  ns: "meals",
-                  defaultValue:
-                    "Write a quick description and we'll turn it into a meal draft for review.",
-                })}
-              </Text>
-            </View>
-
-            <View style={styles.badgeRow}>
-              <AiCreditsBadge text={t("credits.costSingle", { ns: "chat" })} />
-            </View>
-          </View>
-
-          <View style={styles.primaryCard}>
-            <ShortInput
-              label={t("meal_name", { ns: "meals" })}
-              value={name}
-              onChangeText={onNameChange}
-              placeholder={t("describe_meal_name_placeholder", {
-                ns: "meals",
-                defaultValue: "Chicken rice bowl",
-              })}
-              onBlur={onNameBlur}
-              error={nameError}
-              inputStyle={styles.input}
-              disabled={loading}
-            />
-            <LongTextInput
-              label={t("ingredients_optional", { ns: "meals" })}
-              value={ingPreview}
-              onChangeText={onIngredientsChange}
-              placeholder={t("describe_meal_ingredients_placeholder", {
-                ns: "meals",
-                defaultValue:
-                  "Grilled chicken, jasmine rice, cucumber, yogurt sauce",
-              })}
-              inputStyle={styles.input}
-              numberOfLines={5}
-              error={ingredientsError}
-              disabled={loading}
-            />
-
-            <Text style={styles.helperText}>
-              {t("describe_meal_helper", {
-                ns: "meals",
-                defaultValue:
-                  "A short ingredient list is enough. Add optional details only if they matter.",
-              })}
-            </Text>
-          </View>
-
-          <View style={styles.optionalCard}>
-            <Text style={styles.optionalTitle}>
-              {t("describe_meal_optional_title", {
-                ns: "meals",
-                defaultValue: "Optional details",
-              })}
-            </Text>
-
-            <View style={styles.optionalFields}>
-              <NumberInput
-                label={t("amount", { ns: "meals" })}
-                value={amount}
-                onChangeText={onAmountChange}
-                placeholder={t("amount", { ns: "meals" })}
-                maxDecimals={1}
-                allowEmptyOnBlur
-                onBlur={onAmountBlur}
-                error={amountError}
-                inputStyle={styles.input}
-                disabled={loading}
+                autoCapitalize="words"
+                autoCorrect={false}
+                spellCheck={false}
+                maxLength={80}
               />
-              <LongTextInput
-                label={t("description_optional", { ns: "meals" })}
-                value={desc}
-                onChangeText={onDescChange}
-                placeholder={t("describe_meal_description_placeholder", {
+              <TextInput
+                label={t("describe_meal_quick_description_label", {
                   ns: "meals",
-                  defaultValue:
-                    "Homemade, lightly spicy, cooked with olive oil",
                 })}
-                numberOfLines={6}
-                inputStyle={styles.input}
-                disabled={loading}
+                value={quickDescription}
+                onChangeText={onQuickDescriptionChange}
+                placeholder={t("describe_meal_quick_description_placeholder", {
+                  ns: "meals",
+                })}
+                multiline
+                numberOfLines={10}
+                autoCapitalize="sentences"
+                autoCorrect={false}
+                spellCheck={false}
+                maxLength={300}
               />
             </View>
-          </View>
-
-          <ErrorBox message={submitError ?? ""} />
-        </ScrollView>
-
-        <View style={styles.footer}>
-          <Button
-            label={
-              retries > 0
-                ? `${t("analyze", { ns: "meals" })} (${retries}/3)`
-                : t("analyze", { ns: "meals" })
-            }
-            onPress={onAnalyze}
-            loading={loading}
-            disabled={analyzeDisabled}
-          />
-          <TextButton
-            label={t("change_method", { ns: "meals" })}
-            onPress={() =>
-              navigation.navigate("MealAddMethod", {
-                selectionMode: "temporary",
-              })
-            }
-            disabled={loading}
-            tone="link"
-          />
-        </View>
+          }
+          eyebrow={t("describe_meal_sheet_overline", { ns: "meals" })}
+          title={t("describe_meal_sheet_title", { ns: "meals" })}
+          description={t("describe_meal_sheet_subtitle", { ns: "meals" })}
+          accessory={
+            <AiCreditsBadge
+              text={`✦ ${String(t("credits.costSingle", { ns: "chat" }))}`}
+              tone="success"
+            />
+          }
+          content={
+            <>
+              {descriptionError || submitError ? (
+                <ErrorBox message={descriptionError ?? submitError ?? ""} />
+              ) : null}
+              <Button
+                label={t("describe_meal_primary_cta", { ns: "meals" })}
+                onPress={onAnalyze}
+                disabled={analyzeDisabled}
+                loading={loading}
+                style={styles.primaryButton}
+              />
+              <MealAddTextLink
+                label={t("change_method", { ns: "meals" })}
+                onPress={() =>
+                  navigation.navigate("MealAddMethod", {
+                    selectionMode: "temporary",
+                    origin: "mealAddFlow",
+                  })
+                }
+                disabled={loading}
+              />
+            </>
+          }
+        />
       </View>
 
       <Modal
@@ -216,85 +152,32 @@ export default function DescribeMealScreen({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    content: {
+    layout: {
+      paddingTop: 0,
+      paddingBottom: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+    fill: {
       flex: 1,
-      gap: theme.spacing.md,
-    },
-    scroll: {
-      flex: 1,
-    },
-    scrollContent: {
-      gap: theme.spacing.md,
-      paddingTop: theme.spacing.sm,
-      paddingBottom: theme.spacing.md,
-    },
-    heroCard: {
-      gap: theme.spacing.md,
-      padding: theme.spacing.lg,
-      borderRadius: theme.rounded.xl,
-      borderWidth: 1,
-      borderColor: theme.borderSoft,
-      backgroundColor: theme.surfaceElevated,
-    },
-    heroHeader: {
-      gap: theme.spacing.xs,
-    },
-    eyebrow: {
-      color: theme.primary,
-      fontSize: theme.typography.size.labelS,
-      lineHeight: theme.typography.lineHeight.labelS,
-      fontFamily: theme.typography.fontFamily.medium,
-      textTransform: "uppercase",
-      letterSpacing: 0.6,
-    },
-    title: {
-      color: theme.text,
-      fontSize: theme.typography.size.title,
-      lineHeight: theme.typography.lineHeight.title,
-      fontFamily: theme.typography.fontFamily.bold,
-    },
-    subtitle: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      maxWidth: 360,
-    },
-    badgeRow: {
-      alignItems: "flex-start",
-    },
-    primaryCard: {
-      borderRadius: theme.rounded.xl,
-      borderWidth: 1,
-      borderColor: theme.borderSoft,
-      backgroundColor: theme.surfaceElevated,
-      padding: theme.spacing.md,
-      gap: theme.spacing.md,
-    },
-    helperText: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-    },
-    optionalCard: {
-      borderRadius: theme.rounded.xl,
-      borderWidth: 1,
-      borderColor: theme.borderSoft,
       backgroundColor: theme.surface,
-      padding: theme.spacing.md,
-      gap: theme.spacing.sm,
     },
-    optionalTitle: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.labelS,
-      lineHeight: theme.typography.lineHeight.labelS,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    optionalFields: {
+    preview: {
+      flex: 1,
+      backgroundColor: theme.backgroundSecondary,
+      paddingHorizontal: 24,
+      paddingTop: 24,
+      paddingBottom: 24,
       gap: theme.spacing.md,
     },
-    input: { fontSize: theme.typography.size.bodyM },
-    footer: {
-      gap: theme.spacing.xs,
-      paddingBottom: theme.spacing.sm,
+    previewNameField: {
+      marginBottom: 24,
+    },
+    previewDescriptionField: {
+      flex: 1,
+    },
+    primaryButton: {
+      minHeight: 48,
+      borderRadius: theme.rounded.sm,
     },
   });

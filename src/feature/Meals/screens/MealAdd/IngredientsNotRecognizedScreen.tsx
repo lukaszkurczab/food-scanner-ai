@@ -55,6 +55,7 @@ export default function IngredientsNotRecognizedScreen({
     if (uid) clearMeal(uid);
     navigation.navigate("MealAddMethod", {
       selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   };
 

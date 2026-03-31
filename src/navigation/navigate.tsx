@@ -36,6 +36,7 @@ export type RootStackParamList = {
   MealAddMethod:
     | {
         selectionMode?: "persistDefault" | "temporary";
+        origin?: "default" | "mealAddFlow";
       }
     | undefined;
   Statistics: undefined;

@@ -21,89 +21,43 @@ export function useMealTextAiState(params: {
   const { credits, canAfford } = useAiCreditsContext();
 
   const [name, setName] = useState(initialValues?.name ?? "");
-  const [ingPreview, setIngPreview] = useState(initialValues?.ingPreview ?? "");
-  const [amount, setAmount] = useState(initialValues?.amount ?? "");
-  const [desc, setDesc] = useState(initialValues?.desc ?? "");
-  const [touched, setTouched] = useState<{ name: boolean; amount: boolean }>({
-    name: false,
-    amount: false,
-  });
+  const [quickDescription, setQuickDescription] = useState(
+    initialValues?.quickDescription ?? "",
+  );
   const [showLimitModal, setShowLimitModal] = useState(
     Boolean(initialValues?.showLimitModal),
   );
   const [retries, setRetries] = useState(initialValues?.retries ?? 0);
-  const [ingredientsError, setIngredientsError] = useState<
+  const [descriptionError, setDescriptionError] = useState<
     string | undefined
-  >(initialValues?.ingredientsError);
+  >(initialValues?.descriptionError);
   const [submitError, setSubmitError] = useState<string | undefined>(
     initialValues?.submitError,
   );
 
   useEffect(() => {
     setName(initialValues?.name ?? "");
-    setIngPreview(initialValues?.ingPreview ?? "");
-    setAmount(initialValues?.amount ?? "");
-    setDesc(initialValues?.desc ?? "");
+    setQuickDescription(initialValues?.quickDescription ?? "");
     setShowLimitModal(Boolean(initialValues?.showLimitModal));
     setRetries(initialValues?.retries ?? 0);
-    setIngredientsError(initialValues?.ingredientsError);
+    setDescriptionError(initialValues?.descriptionError);
     setSubmitError(initialValues?.submitError);
-    setTouched({ name: false, amount: false });
   }, [
-    initialValues?.amount,
-    initialValues?.desc,
-    initialValues?.ingPreview,
-    initialValues?.ingredientsError,
+    initialValues?.descriptionError,
     initialValues?.name,
+    initialValues?.quickDescription,
     initialValues?.retries,
     initialValues?.showLimitModal,
     initialValues?.submitError,
   ]);
 
-  const amountRaw = amount;
-  const amountNum = useMemo(() => Number(amountRaw), [amountRaw]);
-
-  const nameError: string | undefined = useMemo(() => {
-    if (!touched.name) return undefined;
-    if (!name.trim()) {
-      return t("meal_name_required", { ns: "meals" });
-    }
-    return undefined;
-  }, [name, t, touched.name]);
-
-  const amountError: string | undefined = useMemo(() => {
-    if (!touched.amount) return undefined;
-    if (amountRaw.length === 0) return undefined;
-    if (!isFinite(amountNum) || amountNum <= 0) {
-      return t("ingredient_invalid_values", { ns: "meals" });
-    }
-    return undefined;
-  }, [amountNum, amountRaw, t, touched.amount]);
-
   const onAnalyze = useCallback(() => {
-    setIngredientsError(undefined);
+    setDescriptionError(undefined);
     setSubmitError(undefined);
 
-    const missingName = !name.trim();
-    const amountProvided = amountRaw.length > 0;
-    const invalidAmount =
-      amountProvided &&
-      (!isFinite(Number(amountRaw)) || Number(amountRaw) <= 0);
-    const missingIngredientsAndAmount = !ingPreview.trim() && !amountRaw.length;
-
-    if (missingName) {
-      setTouched((prev) => ({ ...prev, name: true }));
-      return;
-    }
-
-    if (invalidAmount) {
-      setTouched((prev) => ({ ...prev, amount: true }));
-      return;
-    }
-
-    if (missingIngredientsAndAmount) {
-      setIngredientsError(
-        t("text_ai_require_ingredients_or_amount", { ns: "meals" }),
+    if (!quickDescription.trim()) {
+      setDescriptionError(
+        t("text_ai_require_quick_description", { ns: "meals" }),
       );
       return;
     }
@@ -115,17 +69,15 @@ export function useMealTextAiState(params: {
 
     flow.goTo("TextAnalyzing", {
       name: name.trim(),
-      ingPreview,
-      amount,
-      desc,
+      quickDescription: quickDescription.trim(),
       retries,
     });
-  }, [amount, amountRaw, canAfford, desc, flow, ingPreview, name, retries, t]);
+  }, [canAfford, flow, name, quickDescription, retries, t]);
 
-  const analyzeDisabled =
-    !name.trim() ||
-    (amountRaw.length > 0 && (!isFinite(amountNum) || amountNum <= 0)) ||
-    (!ingPreview.trim() && !amountRaw.length);
+  const analyzeDisabled = useMemo(
+    () => !quickDescription.trim(),
+    [quickDescription],
+  );
 
   const creditAllocation = credits?.allocation ?? 0;
   const creditsUsed = Math.max(creditAllocation - (credits?.balance ?? 0), 0);
@@ -136,39 +88,15 @@ export function useMealTextAiState(params: {
     if (retries > 0) setRetries(0);
   }, [retries, submitError]);
 
-  const onIngredientsChange = useCallback(
+  const onQuickDescriptionChange = useCallback(
     (text: string) => {
-      setIngPreview(text);
-      if (ingredientsError) setIngredientsError(undefined);
+      setQuickDescription(text);
+      if (descriptionError) setDescriptionError(undefined);
       if (submitError) setSubmitError(undefined);
       if (retries > 0) setRetries(0);
     },
-    [ingredientsError, retries, submitError],
+    [descriptionError, retries, submitError],
   );
-
-  const onAmountChange = useCallback(
-    (text: string) => {
-      setAmount(text);
-      if (ingredientsError) setIngredientsError(undefined);
-      if (submitError) setSubmitError(undefined);
-      if (retries > 0) setRetries(0);
-    },
-    [ingredientsError, retries, submitError],
-  );
-
-  const onDescChange = useCallback((text: string) => {
-    setDesc(text);
-    if (submitError) setSubmitError(undefined);
-    if (retries > 0) setRetries(0);
-  }, [retries, submitError]);
-
-  const onNameBlur = useCallback(() => {
-    setTouched((prev) => ({ ...prev, name: true }));
-  }, []);
-
-  const onAmountBlur = useCallback(() => {
-    setTouched((prev) => ({ ...prev, amount: true }));
-  }, []);
 
   const closeLimitModal = useCallback(() => {
     setShowLimitModal(false);
@@ -181,25 +109,17 @@ export function useMealTextAiState(params: {
 
   return {
     name,
-    ingPreview,
-    amount,
-    desc,
+    quickDescription,
     loading: false,
     retries,
     showLimitModal,
     creditsUsed,
-    nameError,
-    amountError,
-    ingredientsError,
+    descriptionError,
     submitError,
     analyzeDisabled,
     creditAllocation,
     onNameChange,
-    onIngredientsChange,
-    onAmountChange,
-    onDescChange,
-    onNameBlur,
-    onAmountBlur,
+    onQuickDescriptionChange,
     onAnalyze,
     closeLimitModal,
     openPaywall,
