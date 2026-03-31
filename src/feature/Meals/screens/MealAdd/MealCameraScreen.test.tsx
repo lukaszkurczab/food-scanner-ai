@@ -356,29 +356,17 @@ describe("MealCameraScreen", () => {
     });
   });
 
-  it("renders simulator preview controls on simulator", () => {
+  it("does not render simulator preview controls on simulator", () => {
     mockDevice.isDevice = false;
-    const props = buildProps();
     mockUseMealCameraState.mockReturnValue(buildHookState());
 
-    const { getByTestId, getByText } = renderWithTheme(
-      <MealCameraScreen {...props} />,
+    const { queryByText, queryByTestId } = renderWithTheme(
+      <MealCameraScreen {...buildProps()} />,
     );
 
-    expect(getByText("Preview credits: Credits OK")).toBeTruthy();
-    expect(getByText("Preview review: S03 · Preparing")).toBeTruthy();
-
-    fireEvent.press(getByTestId("simulator-preview-credits"));
-    fireEvent.press(getByTestId("simulator-preview-review"));
-
-    expect(props.flow.replace).toHaveBeenNthCalledWith(1, "CameraDefault", {
-      simulatorCreditsState: "low",
-      simulatorReviewState: "success",
-    });
-    expect(props.flow.replace).toHaveBeenNthCalledWith(2, "CameraDefault", {
-      simulatorCreditsState: "ok",
-      simulatorReviewState: "slow",
-    });
+    expect(queryByText("Preview credits: Credits OK")).toBeNull();
+    expect(queryByText("Preview review: S03 · Preparing")).toBeNull();
+    expect(queryByTestId("simulator-preview-review")).toBeNull();
   });
 
   it("renders the low credits note when the remaining balance is low", () => {

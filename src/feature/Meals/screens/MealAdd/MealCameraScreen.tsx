@@ -14,7 +14,6 @@ import { AiCreditsBadge } from "@/components/AiCreditsBadge";
 import type {
   MealAddScreenProps,
   MealAddSimulatorCreditsState,
-  MealAddSimulatorReviewState,
 } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
 import {
@@ -23,24 +22,6 @@ import {
 } from "@/feature/Meals/components/MealAddPhotoScaffold";
 import { useTheme } from "@/theme/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const SIMULATOR_CREDITS_STATES: MealAddSimulatorCreditsState[] = [
-  "ok",
-  "low",
-  "none",
-];
-
-const SIMULATOR_REVIEW_STATES: MealAddSimulatorReviewState[] = [
-  "success",
-  "slow",
-  "failed",
-  "offline",
-];
-
-const getNextState = <T extends string>(values: T[], current: T): T => {
-  const currentIndex = values.indexOf(current);
-  return values[(currentIndex + 1) % values.length] ?? values[0];
-};
 
 export default function MealCameraScreen({
   navigation,
@@ -57,7 +38,6 @@ export default function MealCameraScreen({
   const isSimulatorPreview =
     typeof __DEV__ !== "undefined" && __DEV__ && !Device.isDevice;
   const simulatorCreditsState = params.simulatorCreditsState ?? "ok";
-  const simulatorReviewState = params.simulatorReviewState ?? "success";
 
   const topLeftActionStyle = useMemo(
     () => ({
@@ -168,53 +148,6 @@ export default function MealCameraScreen({
             count: Math.max(previewRemainingAfterPhoto, 0),
             defaultValue: "✦ {{count}} credits remaining",
           });
-
-  const handleCycleSimulatorCreditsState = () => {
-    flow.replace("CameraDefault", {
-      ...params,
-      simulatorCreditsState: getNextState(
-        SIMULATOR_CREDITS_STATES,
-        simulatorCreditsState,
-      ),
-      simulatorReviewState,
-    });
-  };
-
-  const handleCycleSimulatorReviewState = () => {
-    flow.replace("CameraDefault", {
-      ...params,
-      simulatorCreditsState,
-      simulatorReviewState: getNextState(
-        SIMULATOR_REVIEW_STATES,
-        simulatorReviewState,
-      ),
-    });
-  };
-
-  const simulatorCreditsLabel = tMeals(
-    `simulator_preview_credits_${simulatorCreditsState}`,
-    {
-      defaultValue:
-        simulatorCreditsState === "low"
-          ? "Low credits"
-          : simulatorCreditsState === "none"
-            ? "No credits"
-            : "Credits OK",
-    },
-  );
-  const simulatorReviewLabel = tMeals(
-    `simulator_preview_review_${simulatorReviewState}`,
-    {
-      defaultValue:
-        simulatorReviewState === "slow"
-          ? "S03B · Taking longer"
-          : simulatorReviewState === "failed"
-            ? "S03C · Failed"
-            : simulatorReviewState === "offline"
-              ? "S03D · Offline"
-              : "S03 · Preparing",
-    },
-  );
 
   if (!permission) {
     return (
@@ -328,28 +261,6 @@ export default function MealCameraScreen({
                   onPress={handleChangeMethod}
                 />
               ) : null}
-
-              {isSimulatorPreview && !skipDetection ? (
-                <>
-                  <MealAddTextLink
-                    label={tMeals("simulator_preview_cycle_credits", {
-                      state: simulatorCreditsLabel,
-                      defaultValue: `Preview credits: ${simulatorCreditsLabel}`,
-                    })}
-                    onPress={handleCycleSimulatorCreditsState}
-                    testID="simulator-preview-credits"
-                  />
-                  <MealAddTextLink
-                    label={tMeals("simulator_preview_cycle_review", {
-                      state: simulatorReviewLabel,
-                      defaultValue: `Preview review: ${simulatorReviewLabel}`,
-                    })}
-                    onPress={handleCycleSimulatorReviewState}
-                    testID="simulator-preview-review"
-                  />
-                </>
-              ) : null}
-
             </>
           }
         />
