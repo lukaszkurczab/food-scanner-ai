@@ -1,6 +1,6 @@
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import EditMealDetailsScreen from "@/feature/Meals/screens/MealAdd/EditMealDetailsScreen";
+import ManualMealEntryScreen from "@/feature/Meals/screens/MealAdd/ManualMealEntryScreen";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 import type { Meal } from "@/types/meal";
@@ -8,23 +8,14 @@ import type { Meal } from "@/types/meal";
 type ButtonProps = {
   label: string;
   onPress: () => void;
+  disabled?: boolean;
 };
 
 const mockUseAuthContext = jest.fn();
 const mockUseMealDraftContext = jest.fn();
-const mockUseUserContext = jest.fn();
-const mockUseMeals = jest.fn();
 
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
-}));
-
-jest.mock("@/context/UserContext", () => ({
-  useUserContext: () => mockUseUserContext(),
-}));
-
-jest.mock("@/hooks/useMeals", () => ({
-  useMeals: (uid: string | null) => mockUseMeals(uid),
 }));
 
 jest.mock("@contexts/MealDraftContext", () => ({
@@ -49,27 +40,28 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: unknown }) =>
       createElement(View, null, children as never),
-    Card: ({ children }: { children?: unknown }) =>
-      createElement(View, null, children as never),
-    Button: ({ label, onPress }: ButtonProps) =>
+    Button: ({ label, onPress, disabled }: ButtonProps) =>
       createElement(
         Pressable,
-        { onPress, accessibilityRole: "button" },
+        { onPress, accessibilityRole: "button", disabled },
         createElement(Text, null, label),
       ),
     TextInput: ({
       value,
       onChangeText,
       onBlur,
+      placeholder,
     }: {
       value: string;
       onChangeText: (value: string) => void;
       onBlur?: () => void;
+      placeholder?: string;
     }) =>
       createElement(TextInput, {
         value,
         onChangeText,
         onBlur,
+        placeholder,
         testID: "meal-name-input",
       }),
     Calendar: () => createElement(View, null, "calendar"),
@@ -78,52 +70,40 @@ jest.mock("@/components", () => {
   };
 });
 
-jest.mock("@/components/ReviewIngredientsEditor", () => ({
-  __esModule: true,
-  default: () => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Text } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(Text, null, "review-ingredients-editor");
-  },
-}));
-
 const buildMeal = (overrides?: Partial<Meal>): Meal => ({
   userUid: "user-1",
   mealId: "meal-1",
   timestamp: "2026-01-10T12:00:00.000Z",
-  type: "breakfast",
-  name: "Protein bowl",
+  type: "other",
+  name: null,
   ingredients: [],
   createdAt: "2026-01-10T12:00:00.000Z",
   updatedAt: "2026-01-10T12:00:00.000Z",
-  syncState: "synced",
-  source: "manual",
+  syncState: "pending",
+  source: null,
   photoUrl: null,
+  inputMethod: "manual",
   ...overrides,
 });
 
 const buildProps = () =>
   ({
-    navigation: {} as never,
+    navigation: { navigate: jest.fn<(screen: "Home") => void>() } as never,
     flow: {
       goTo: jest.fn(),
       replace: jest.fn(),
       goBack: jest.fn(),
       canGoBack: jest.fn(() => true),
-    } as unknown as MealAddScreenProps<"EditMealDetails">["flow"],
+    } as unknown as MealAddScreenProps<"ManualMealEntry">["flow"],
     params: {},
-  }) as MealAddScreenProps<"EditMealDetails">;
+  }) as MealAddScreenProps<"ManualMealEntry">;
 
-describe("EditMealDetailsScreen", () => {
+describe("ManualMealEntryScreen", () => {
   beforeEach(() => {
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
-    mockUseUserContext.mockReturnValue({ userData: { uid: "user-1" } });
-    mockUseMeals.mockReturnValue({ addMeal: jest.fn(async () => undefined) });
   });
 
-  it("persists detail edits and returns to review", async () => {
+  it("persists the draft and moves to review", async () => {
     const saveDraft = jest.fn(async (_uid: string, _draft?: Meal | null) => undefined);
     const setMeal = jest.fn();
     const props = buildProps();
@@ -134,21 +114,26 @@ describe("EditMealDetailsScreen", () => {
       saveDraft,
       setMeal,
       setLastScreen: jest.fn(async () => undefined),
-      clearMeal: jest.fn(),
     });
 
     const { getByText, getByTestId } = renderWithTheme(
-      <EditMealDetailsScreen {...props} />,
+      <ManualMealEntryScreen {...props} />,
     );
 
-    fireEvent.changeText(getByTestId("meal-name-input"), "Edited meal");
+    fireEvent.changeText(getByTestId("meal-name-input"), "Manual lunch");
     fireEvent(getByTestId("meal-name-input"), "blur");
-    fireEvent.press(getByText("Back to review"));
+    fireEvent.press(getByText("Prepare review"));
 
     await waitFor(() => {
-      expect(setMeal).toHaveBeenCalled();
-      expect(saveDraft).toHaveBeenCalled();
-      expect(props.flow.goBack).toHaveBeenCalledTimes(1);
+      expect(saveDraft).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({
+          name: "Manual lunch",
+          source: "manual",
+          inputMethod: "manual",
+        }),
+      );
+      expect(props.flow.replace).toHaveBeenCalledWith("ReviewMeal", {});
     });
   });
 });

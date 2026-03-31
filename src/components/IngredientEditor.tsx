@@ -21,6 +21,9 @@ type Props = {
   onDelete: () => void;
   onChangePartial?: (patch: Partial<Ingredient>) => void;
   errors?: Partial<Record<keyof Ingredient, string>>;
+  variant?: "default" | "sheet";
+  submitLabel?: string;
+  showDelete?: boolean;
 };
 
 const parseNum = (v: string) => {
@@ -39,11 +42,15 @@ export const IngredientEditor: React.FC<Props> = ({
   onDelete,
   onChangePartial,
   errors = {},
+  variant = "default",
+  submitLabel,
+  showDelete = true,
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals", "common"]);
   const unitLabel = initial?.unit === "ml" ? "ml" : "g";
+  const isSheetVariant = variant === "sheet";
 
   const [name, setName] = useState(initial.name ?? "");
   const [amount, setAmount] = useState(String(initial.amount ?? 0));
@@ -67,6 +74,8 @@ export const IngredientEditor: React.FC<Props> = ({
   const recalcRatioRef = useRef(1);
 
   const hasBlockingErrors = Object.keys(errors).length > 0;
+  const resolvedSubmitLabel =
+    submitLabel ?? t("save_changes", { ns: "common" });
 
   const syncBaselineFromState = (keepAmount = true) => {
     const amt = keepAmount ? baseline.current.amount : parseNum(amount) || 0;
@@ -213,128 +222,322 @@ export const IngredientEditor: React.FC<Props> = ({
   }, [onChangePartial]);
 
   return (
-    <View style={styles.box}>
-      <TextInput
-        style={styles.nameField}
-        value={name}
-        onChangeText={(v) => {
-          setName(v);
-          onChangePartial?.({ name: v });
-        }}
-        placeholder={t("ingredient_name", { ns: "meals" })}
-        onBlur={() => {
-          setNameTouched(true);
-          normalizeOnBlurName(name);
-        }}
-      />
-
-      {errors.name && nameTouched ? (
-        <Text style={styles.errText}>{errors.name}</Text>
-      ) : null}
-
-      <Text style={styles.editLabel}>
-        {String(t("amount", { ns: "meals" })).replace("[g]", `[${unitLabel}]`)}
-      </Text>
-      <NumberInput
-        fieldStyle={[errors.amount && amountTouched ? styles.inputError : null]}
-        value={amount}
-        onChangeText={(v) => handleNumericChange(v, setAmount, "amount")}
-        maxDecimals={getNumericMaxDecimals("amount")}
-        blurFallback="0"
-        onFocus={() => clearZeroOnFocus(amount, setAmount)}
-        onBlur={(normalizedValue) => {
-          setAmountTouched(true);
-          handleNumericBlur("amount", normalizedValue);
-        }}
-      />
-
-      {errors.amount && amountTouched ? (
-        <Text style={styles.errText}>{errors.amount}</Text>
-      ) : null}
-
-      <Text style={styles.editLabel}>{t("protein", { ns: "meals" })} [g]</Text>
-      <NumberInput
-        fieldStyle={[
-          styles.macroProteinField,
-          errors.protein ? styles.inputError : null,
-        ]}
-        value={protein}
-        onChangeText={(v) => handleNumericChange(v, setProtein, "protein")}
-        blurFallback="0"
-        onFocus={() => clearZeroOnFocus(protein, setProtein)}
-        onBlur={(normalizedValue) =>
-          handleNumericBlur("protein", normalizedValue)
-        }
-      />
-
-      {errors.protein ? (
-        <Text style={styles.errText}>{errors.protein}</Text>
-      ) : null}
-
-      <Text style={styles.editLabel}>{t("carbs", { ns: "meals" })} [g]</Text>
-      <NumberInput
-        fieldStyle={[
-          styles.macroCarbsField,
-          errors.carbs ? styles.inputError : null,
-        ]}
-        value={carbs}
-        onChangeText={(v) => handleNumericChange(v, setCarbs, "carbs")}
-        blurFallback="0"
-        onFocus={() => clearZeroOnFocus(carbs, setCarbs)}
-        onBlur={(normalizedValue) =>
-          handleNumericBlur("carbs", normalizedValue)
-        }
-      />
-
-      {errors.carbs ? <Text style={styles.errText}>{errors.carbs}</Text> : null}
-
-      <Text style={styles.editLabel}>{t("fat", { ns: "meals" })} [g]</Text>
-      <NumberInput
-        fieldStyle={[
-          styles.macroFatField,
-          errors.fat ? styles.inputError : null,
-        ]}
-        value={fat}
-        onChangeText={(v) => handleNumericChange(v, setFat, "fat")}
-        blurFallback="0"
-        onFocus={() => clearZeroOnFocus(fat, setFat)}
-        onBlur={(normalizedValue) => handleNumericBlur("fat", normalizedValue)}
-      />
-
-      {errors.fat ? <Text style={styles.errText}>{errors.fat}</Text> : null}
-
-      <Text style={styles.editLabel}>
-        {t("calories", { ns: "meals" })} [kcal]
-      </Text>
-      <NumberInput
-        value={kcal}
-        onChangeText={(v) => handleNumericChange(v, setKcal, "kcal")}
-        blurFallback="0"
-        onFocus={() => clearZeroOnFocus(kcal, setKcal)}
-        onBlur={(normalizedValue) => handleNumericBlur("kcal", normalizedValue)}
-      />
-
-      {errors.kcal ? <Text style={styles.errText}>{errors.kcal}</Text> : null}
-
-      <Button
-        style={styles.primaryBtn}
-        onPress={commit}
-        disabled={hasBlockingErrors}
-        label={t("save_changes", { ns: "common" })}
-      />
-
-      <Button
-        variant="destructive"
-        style={styles.cancelBtn}
-        onPress={onCancel}
-        label={t("cancel", { ns: "common" })}
-      />
-
-      <Pressable onPress={onDelete} style={styles.deleteLink}>
-        <Text style={styles.deleteLinkText}>
-          {t("remove", { ns: "common", defaultValue: "Remove" })}
+    <View style={[styles.box, isSheetVariant ? styles.sheetBox : null]}>
+      {isSheetVariant ? (
+        <Text style={styles.sectionTitle}>
+          {t("review_meal_edit_ingredient_basics", {
+            ns: "meals",
+            defaultValue: "Ingredient basics",
+          })}
         </Text>
-      </Pressable>
+      ) : null}
+
+      <View style={isSheetVariant ? styles.fieldGroup : undefined}>
+        <TextInput
+          style={isSheetVariant ? styles.sheetFieldContainer : styles.nameField}
+          fieldStyle={isSheetVariant ? styles.sheetField : undefined}
+          label={
+            isSheetVariant ? t("ingredient_name", { ns: "meals" }) : undefined
+          }
+          value={name}
+          onChangeText={(v) => {
+            setName(v);
+            onChangePartial?.({ name: v });
+          }}
+          placeholder={t("ingredient_name", { ns: "meals" })}
+          onBlur={() => {
+            setNameTouched(true);
+            normalizeOnBlurName(name);
+          }}
+        />
+
+        {errors.name && nameTouched ? (
+          <Text style={styles.errText}>{errors.name}</Text>
+        ) : null}
+
+        {isSheetVariant ? (
+          <View style={styles.row}>
+            <View style={styles.fieldColumn}>
+              <NumberInput
+                style={styles.sheetFieldContainer}
+                fieldStyle={[
+                  styles.sheetField,
+                  errors.amount && amountTouched ? styles.inputError : null,
+                ]}
+                label={t("amount", { ns: "meals" }).replace("[g]", "").trim()}
+                rightLabel={unitLabel}
+                value={amount}
+                onChangeText={(v) => handleNumericChange(v, setAmount, "amount")}
+                maxDecimals={getNumericMaxDecimals("amount")}
+                blurFallback="0"
+                onFocus={() => clearZeroOnFocus(amount, setAmount)}
+                onBlur={(normalizedValue) => {
+                  setAmountTouched(true);
+                  handleNumericBlur("amount", normalizedValue);
+                }}
+              />
+              {errors.amount && amountTouched ? (
+                <Text style={styles.errText}>{errors.amount}</Text>
+              ) : null}
+            </View>
+
+            <View style={styles.fieldColumn}>
+              <TextInput
+                style={styles.sheetFieldContainer}
+                fieldStyle={styles.sheetField}
+                label={t("review_meal_edit_ingredient_unit", {
+                  ns: "meals",
+                  defaultValue: "Unit",
+                })}
+                value={unitLabel}
+                onChangeText={() => undefined}
+                editable={false}
+                right={<Text style={styles.sheetChevron}>›</Text>}
+              />
+            </View>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.editLabel}>
+              {String(t("amount", { ns: "meals" })).replace(
+                "[g]",
+                `[${unitLabel}]`,
+              )}
+            </Text>
+            <NumberInput
+              fieldStyle={[
+                errors.amount && amountTouched ? styles.inputError : null,
+              ]}
+              value={amount}
+              onChangeText={(v) => handleNumericChange(v, setAmount, "amount")}
+              maxDecimals={getNumericMaxDecimals("amount")}
+              blurFallback="0"
+              onFocus={() => clearZeroOnFocus(amount, setAmount)}
+              onBlur={(normalizedValue) => {
+                setAmountTouched(true);
+                handleNumericBlur("amount", normalizedValue);
+              }}
+            />
+            {errors.amount && amountTouched ? (
+              <Text style={styles.errText}>{errors.amount}</Text>
+            ) : null}
+          </>
+        )}
+      </View>
+
+      {isSheetVariant ? (
+        <>
+          <Text style={styles.sectionTitle}>
+            {t("review_meal_edit_ingredient_nutrition", {
+              ns: "meals",
+              defaultValue: "Nutrition values",
+            })}
+          </Text>
+
+          <View style={styles.fieldGroup}>
+            <View style={styles.row}>
+              <View style={styles.fieldColumn}>
+                <NumberInput
+                  style={styles.sheetFieldContainer}
+                  fieldStyle={[styles.sheetField, errors.kcal ? styles.inputError : null]}
+                  label={t("calories", { ns: "meals" })}
+                  rightLabel="kcal"
+                  value={kcal}
+                  onChangeText={(v) => handleNumericChange(v, setKcal, "kcal")}
+                  blurFallback="0"
+                  onFocus={() => clearZeroOnFocus(kcal, setKcal)}
+                  onBlur={(normalizedValue) =>
+                    handleNumericBlur("kcal", normalizedValue)
+                  }
+                />
+                {errors.kcal ? <Text style={styles.errText}>{errors.kcal}</Text> : null}
+              </View>
+
+              <View style={styles.fieldColumn}>
+                <NumberInput
+                  style={styles.sheetFieldContainer}
+                  fieldStyle={[
+                    styles.sheetField,
+                    errors.protein ? styles.inputError : null,
+                  ]}
+                  label={t("protein", { ns: "meals" })}
+                  rightLabel="g"
+                  value={protein}
+                  onChangeText={(v) => handleNumericChange(v, setProtein, "protein")}
+                  blurFallback="0"
+                  onFocus={() => clearZeroOnFocus(protein, setProtein)}
+                  onBlur={(normalizedValue) =>
+                    handleNumericBlur("protein", normalizedValue)
+                  }
+                />
+                {errors.protein ? (
+                  <Text style={styles.errText}>{errors.protein}</Text>
+                ) : null}
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.fieldColumn}>
+                <NumberInput
+                  style={styles.sheetFieldContainer}
+                  fieldStyle={[
+                    styles.sheetField,
+                    errors.carbs ? styles.inputError : null,
+                  ]}
+                  label={t("carbs", { ns: "meals" })}
+                  rightLabel="g"
+                  value={carbs}
+                  onChangeText={(v) => handleNumericChange(v, setCarbs, "carbs")}
+                  blurFallback="0"
+                  onFocus={() => clearZeroOnFocus(carbs, setCarbs)}
+                  onBlur={(normalizedValue) =>
+                    handleNumericBlur("carbs", normalizedValue)
+                  }
+                />
+                {errors.carbs ? <Text style={styles.errText}>{errors.carbs}</Text> : null}
+              </View>
+
+              <View style={styles.fieldColumn}>
+                <NumberInput
+                  style={styles.sheetFieldContainer}
+                  fieldStyle={[
+                    styles.sheetField,
+                    errors.fat ? styles.inputError : null,
+                  ]}
+                  label={t("fat", { ns: "meals" })}
+                  rightLabel="g"
+                  value={fat}
+                  onChangeText={(v) => handleNumericChange(v, setFat, "fat")}
+                  blurFallback="0"
+                  onFocus={() => clearZeroOnFocus(fat, setFat)}
+                  onBlur={(normalizedValue) =>
+                    handleNumericBlur("fat", normalizedValue)
+                  }
+                />
+                {errors.fat ? <Text style={styles.errText}>{errors.fat}</Text> : null}
+              </View>
+            </View>
+          </View>
+        </>
+      ) : (
+        <>
+          <Text style={styles.editLabel}>{t("protein", { ns: "meals" })} [g]</Text>
+          <NumberInput
+            fieldStyle={[
+              styles.macroProteinField,
+              errors.protein ? styles.inputError : null,
+            ]}
+            value={protein}
+            onChangeText={(v) => handleNumericChange(v, setProtein, "protein")}
+            blurFallback="0"
+            onFocus={() => clearZeroOnFocus(protein, setProtein)}
+            onBlur={(normalizedValue) =>
+              handleNumericBlur("protein", normalizedValue)
+            }
+          />
+
+          {errors.protein ? (
+            <Text style={styles.errText}>{errors.protein}</Text>
+          ) : null}
+
+          <Text style={styles.editLabel}>{t("carbs", { ns: "meals" })} [g]</Text>
+          <NumberInput
+            fieldStyle={[
+              styles.macroCarbsField,
+              errors.carbs ? styles.inputError : null,
+            ]}
+            value={carbs}
+            onChangeText={(v) => handleNumericChange(v, setCarbs, "carbs")}
+            blurFallback="0"
+            onFocus={() => clearZeroOnFocus(carbs, setCarbs)}
+            onBlur={(normalizedValue) =>
+              handleNumericBlur("carbs", normalizedValue)
+            }
+          />
+
+          {errors.carbs ? <Text style={styles.errText}>{errors.carbs}</Text> : null}
+
+          <Text style={styles.editLabel}>{t("fat", { ns: "meals" })} [g]</Text>
+          <NumberInput
+            fieldStyle={[
+              styles.macroFatField,
+              errors.fat ? styles.inputError : null,
+            ]}
+            value={fat}
+            onChangeText={(v) => handleNumericChange(v, setFat, "fat")}
+            blurFallback="0"
+            onFocus={() => clearZeroOnFocus(fat, setFat)}
+            onBlur={(normalizedValue) =>
+              handleNumericBlur("fat", normalizedValue)
+            }
+          />
+
+          {errors.fat ? <Text style={styles.errText}>{errors.fat}</Text> : null}
+
+          <Text style={styles.editLabel}>
+            {t("calories", { ns: "meals" })} [kcal]
+          </Text>
+          <NumberInput
+            value={kcal}
+            onChangeText={(v) => handleNumericChange(v, setKcal, "kcal")}
+            blurFallback="0"
+            onFocus={() => clearZeroOnFocus(kcal, setKcal)}
+            onBlur={(normalizedValue) => handleNumericBlur("kcal", normalizedValue)}
+          />
+
+          {errors.kcal ? <Text style={styles.errText}>{errors.kcal}</Text> : null}
+        </>
+      )}
+
+      {isSheetVariant ? (
+        <View style={styles.sheetActions}>
+          <Button
+            variant="secondary"
+            style={styles.sheetActionButton}
+            fullWidth={false}
+            onPress={onCancel}
+            label={t("cancel", { ns: "common" })}
+          />
+
+          <Button
+            style={styles.sheetActionButton}
+            fullWidth={false}
+            onPress={commit}
+            disabled={hasBlockingErrors}
+            label={resolvedSubmitLabel}
+          />
+        </View>
+      ) : (
+        <>
+          <Button
+            style={styles.primaryBtn}
+            onPress={commit}
+            disabled={hasBlockingErrors}
+            label={resolvedSubmitLabel}
+          />
+
+          <Button
+            variant="destructive"
+            style={styles.cancelBtn}
+            onPress={onCancel}
+            label={t("cancel", { ns: "common" })}
+          />
+        </>
+      )}
+
+      {showDelete ? (
+        <Pressable onPress={onDelete} style={styles.deleteLink}>
+          <Text style={styles.deleteLinkText}>
+            {t("review_meal_edit_remove_ingredient", {
+              ns: "meals",
+              defaultValue: t("remove", {
+                ns: "common",
+                defaultValue: "Remove",
+              }),
+            })}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <Modal
         visible={showRecalc}
@@ -419,6 +622,44 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     nameField: {
       marginBottom: theme.spacing.xs,
     },
+    sheetBox: {
+      borderWidth: 0,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      padding: 0,
+      marginBottom: 0,
+      gap: theme.spacing.md,
+    },
+    fieldGroup: {
+      gap: theme.spacing.sm,
+    },
+    row: {
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+    },
+    fieldColumn: {
+      flex: 1,
+      gap: theme.spacing.xxs,
+    },
+    sectionTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: 18,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    sheetFieldContainer: {
+      flex: 1,
+    },
+    sheetField: {
+      minHeight: 54,
+      borderRadius: theme.rounded.md,
+    },
+    sheetChevron: {
+      color: theme.textSecondary,
+      fontSize: 18,
+      lineHeight: 18,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
     inputError: {
       borderColor: theme.input.borderError,
     },
@@ -486,5 +727,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontSize: theme.typography.size.bodyS,
       lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.medium,
+    },
+    sheetActions: {
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
+    },
+    sheetActionButton: {
+      flex: 1,
     },
   });

@@ -122,6 +122,7 @@ export const MealDraftProvider = ({ children }: Props) => {
       screen === "DescribeMeal" ||
       screen === "TextAnalyzing" ||
       screen === "ReviewMeal" ||
+      screen === "ManualMealEntry" ||
       screen === "EditMealDetails" ||
       screen === "IngredientsNotRecognized" ||
       screen === "BarcodeProductNotFound"
@@ -142,6 +143,7 @@ export const MealDraftProvider = ({ children }: Props) => {
       screen === "DescribeMeal" ||
       screen === "TextAnalyzing" ||
       screen === "ReviewMeal" ||
+      screen === "ManualMealEntry" ||
       screen === "EditMealDetails" ||
       screen === "IngredientsNotRecognized" ||
       screen === "BarcodeProductNotFound"

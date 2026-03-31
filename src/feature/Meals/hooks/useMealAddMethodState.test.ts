@@ -198,4 +198,41 @@ describe("useMealAddMethodState", () => {
     );
     expect(mockReplace).not.toHaveBeenCalled();
   });
+
+  it("starts the dedicated manual entry screen for the manual option", async () => {
+    mockUseAuthContext.mockReturnValue({ uid: "user-1" });
+
+    const navigation = {
+      navigate: mockNavigate,
+      replace: mockReplace,
+      dispatch: mockDispatch,
+    } as const;
+
+    const { result } = renderHook(() =>
+      useMealAddMethodState({
+        navigation,
+        replaceOnStart: true,
+      }),
+    );
+
+    const manualOption = result.current.options.find(
+      (option) => option.key === "manual",
+    );
+
+    expect(manualOption).toBeTruthy();
+
+    await act(async () => {
+      await result.current.handleOptionPress(manualOption!);
+    });
+
+    expect(mockReplace).toHaveBeenCalledWith("AddMeal", {
+      start: "ManualMealEntry",
+    });
+    expect(mockSaveDraft).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({
+        inputMethod: "manual",
+      }),
+    );
+  });
 });
