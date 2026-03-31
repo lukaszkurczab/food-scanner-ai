@@ -23,11 +23,6 @@ export default {
     newArchEnabled: true,
     assetBundlePatterns: ["**/*"],
     icon: "./assets/icon.png",
-    splash: {
-      image: "./assets/splash.png",
-      resizeMode: "contain",
-      backgroundColor: "#ffffff",
-    },
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.lkurczab.foodscannerai",
@@ -45,7 +40,7 @@ export default {
       icon: "./assets/playstore.png",
       adaptiveIcon: {
         foregroundImage: "./assets/playstore.png",
-        backgroundColor: "#ffffff",
+        backgroundColor: "#FFFDF8",
       },
       package: "com.lkurczab.foodscannerai",
       googleServicesFile: androidGoogleServicesFile,
@@ -56,6 +51,14 @@ export default {
       androidCollapsedTitle: "fitaly",
     },
     plugins: [
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/splash.png",
+          imageWidth: 180,
+          backgroundColor: "#FFFDF8",
+        },
+      ],
       [
         "expo-camera",
         {
