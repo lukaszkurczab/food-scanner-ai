@@ -1,14 +1,11 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Camera body (compact, centered) -->
-  <path d="M8 9.5C8 8.95 8.45 8.5 9 8.5H10.5L11.5 7H12.5L13.5 8.5H15C15.55 8.5 16 8.95 16 9.5V14.5C16 15.05 15.55 15.5 15 15.5H9C8.45 15.5 8 15.05 8 14.5V9.5Z" stroke="#2D2D3A" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M8 9.5C8 8.95 8.45 8.5 9 8.5H10.5L11 7H12.5L13.5 8.5H15C15.55 8.5 16 8.95 16 9.5V14.5C16 15.05 15.55 15.5 15 15.5H9C8.45 15.5 8 15.05 8 14.5V9.5Z" stroke="#2D2D3A" stroke-width="1" stroke-linejoin="round"/>
   <!-- Lens -->
-  <circle cx="12" cy="12" r="2" stroke="#2D2D3A" stroke-width="1"/>
+  <circle cx="12" cy="12" r="1.5" stroke="#2D2D3A" stroke-width="1"/>
   <!-- Top clockwise arc (left-bottom → right-top, through 12 o'clock) -->
   <path d="M4 15A8.5 8.5 0 0 1 18.5 6.5" stroke="#2D2D3A" stroke-width="1" stroke-linecap="round"/>
   <!-- Arrowhead at top-right -->
-  <path d="M17 4.5L18.5 6.5L16 7.5" stroke="#2D2D3A" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Bottom clockwise arc (right-top → left-bottom, through 6 o'clock) -->
+  <path d="M18.5 4.5L18.5 6.5L16.5 6.5" stroke="#2D2D3A" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M20 9A8.5 8.5 0 0 1 5.5 17.5" stroke="#2D2D3A" stroke-width="1" stroke-linecap="round"/>
-  <!-- Arrowhead at bottom-left -->
-  <path d="M7 19.5L5.5 17.5L8 16.5" stroke="#2D2D3A" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5.5 19.5L5.4 17.5L7.5 17.4" stroke="#2D2D3A" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

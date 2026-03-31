@@ -1,19 +1,12 @@
 import { useCallback, useMemo } from "react";
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
-import { Button, FullScreenLoader, Layout } from "@/components";
+import { Button, FullScreenLoader, Layout, TextButton } from "@/components";
 import { SearchBox } from "@/components/SearchBox";
 import { MealListItem } from "@/components/MealListItem";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -69,7 +62,7 @@ export default function SelectSavedMealScreen({
     onNavigateReview: () =>
       navigation.navigate("AddMeal", { start: "ReviewMeal" }),
     onStartOver: () =>
-      navigation.replace("MealAddMethod", {
+      navigation.navigate("MealAddMethod", {
         selectionMode: "temporary",
       }),
   });
@@ -188,18 +181,12 @@ export default function SelectSavedMealScreen({
         disabled={!selectedId}
         style={styles.primaryAction}
       />
-      <Pressable
-        accessibilityRole="button"
+      <TextButton
+        label={t("meals:change_method", "Change add method")}
         onPress={handleStartOver}
-        style={({ pressed }) => [
-          styles.secondaryAction,
-          pressed ? styles.secondaryActionPressed : null,
-        ]}
-      >
-        <Text style={styles.secondaryActionLabel}>
-          {t("meals:change_method", "Change add method")}
-        </Text>
-      </Pressable>
+        style={styles.secondaryAction}
+        tone="link"
+      />
     </Layout>
   );
 }
@@ -238,20 +225,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginTop: theme.spacing.sm,
     },
     secondaryAction: {
-      alignSelf: "center",
-      minHeight: 40,
-      justifyContent: "center",
-      paddingHorizontal: theme.spacing.md,
       marginTop: theme.spacing.xs,
       marginBottom: theme.spacing.sm,
-    },
-    secondaryActionPressed: {
-      opacity: 0.72,
-    },
-    secondaryActionLabel: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
-      fontFamily: theme.typography.fontFamily.medium,
     },
   });

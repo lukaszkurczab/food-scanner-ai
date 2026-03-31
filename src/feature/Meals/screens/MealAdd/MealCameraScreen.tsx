@@ -1,14 +1,46 @@
 import { useMemo } from "react";
 import { View, StyleSheet, Pressable, Text, Linking } from "react-native";
 import { CameraView } from "expo-camera";
-import { useTheme } from "@/theme/useTheme";
+import * as Device from "expo-device";
 import { useTranslation } from "react-i18next";
-import { Layout, PhotoPreview, ScreenCornerNavButton } from "@/components";
+import {
+  Button,
+  Layout,
+  PhotoPreview,
+  ScreenCornerNavButton,
+} from "@/components";
 import { Modal } from "@/components/Modal";
-import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
-import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AiCreditsBadge } from "@/components/AiCreditsBadge";
+import type {
+  MealAddScreenProps,
+  MealAddSimulatorCreditsState,
+  MealAddSimulatorReviewState,
+} from "@/feature/Meals/feature/MapMealAddScreens";
+import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
+import {
+  MealAddPhotoScaffold,
+  MealAddTextLink,
+} from "@/feature/Meals/components/MealAddPhotoScaffold";
+import { useTheme } from "@/theme/useTheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const SIMULATOR_CREDITS_STATES: MealAddSimulatorCreditsState[] = [
+  "ok",
+  "low",
+  "none",
+];
+
+const SIMULATOR_REVIEW_STATES: MealAddSimulatorReviewState[] = [
+  "success",
+  "slow",
+  "failed",
+  "offline",
+];
+
+const getNextState = <T extends string>(values: T[], current: T): T => {
+  const currentIndex = values.indexOf(current);
+  return values[(currentIndex + 1) % values.length] ?? values[0];
+};
 
 export default function MealCameraScreen({
   navigation,
@@ -22,6 +54,11 @@ export default function MealCameraScreen({
   const { t: tMeals } = useTranslation("meals");
   const { t: tChat } = useTranslation("chat");
   const canStepBack = flow.canGoBack();
+  const isSimulatorPreview =
+    typeof __DEV__ !== "undefined" && __DEV__ && !Device.isDevice;
+  const simulatorCreditsState = params.simulatorCreditsState ?? "ok";
+  const simulatorReviewState = params.simulatorReviewState ?? "success";
+
   const topLeftActionStyle = useMemo(
     () => ({
       top: insets.top + theme.spacing.xs,
@@ -29,29 +66,25 @@ export default function MealCameraScreen({
     }),
     [insets.left, insets.top, theme.spacing.sm, theme.spacing.xs],
   );
-  const topRightActionStyle = useMemo(
-    () => ({
-      top: insets.top + theme.spacing.xs,
-      right: insets.right + theme.spacing.sm,
-    }),
-    [insets.right, insets.top, theme.spacing.sm, theme.spacing.xs],
+  const previewTopInset = useMemo(
+    () => Math.max(theme.spacing.xxl, Math.round(insets.top * 0.65) + theme.spacing.xs),
+    [insets.top, theme.spacing.xs, theme.spacing.xxl],
   );
 
   const {
     permission,
     requestPermission,
     cameraRef,
-    isCameraReady,
     isTakingPhoto,
     photoUri,
     premiumModal,
     canUsePhotoAi,
+    credits,
     skipDetection,
     setIsCameraReady,
     handleTakePicture,
     handleAccept,
     handleRetake,
-    onUseSample,
     closePremiumModal,
     goManagePremium,
   } = useMealCameraState({ navigation, flow, params });
@@ -63,6 +96,125 @@ export default function MealCameraScreen({
     }
     navigation.goBack();
   };
+
+  const handleChangeMethod = () => {
+    navigation.navigate("MealAddMethod", {
+      selectionMode: "temporary",
+    });
+  };
+
+  const photoCost = credits?.costs.photo ?? 5;
+  const rawBadgeLabel = tChat(
+    photoCost === 1 ? "credits.costSingle" : "credits.costMultiple",
+    photoCost === 1 ? undefined : { count: photoCost },
+  );
+  const badgeText = `✦ ${String(rawBadgeLabel)}`;
+
+  const remainingAfterPhoto = credits ? credits.balance - photoCost : null;
+  const actualCreditsState: MealAddSimulatorCreditsState =
+    !skipDetection && Boolean(credits) && !canUsePhotoAi
+      ? "none"
+      : !skipDetection &&
+          canUsePhotoAi &&
+          remainingAfterPhoto !== null &&
+          remainingAfterPhoto <= 2
+        ? "low"
+        : "ok";
+  const cameraCreditsState =
+    isSimulatorPreview && !skipDetection
+      ? simulatorCreditsState
+      : actualCreditsState;
+  const previewRemainingAfterPhoto =
+    isSimulatorPreview && !skipDetection
+      ? cameraCreditsState === "ok"
+        ? 74
+        : cameraCreditsState === "low"
+          ? 2
+          : 0
+      : remainingAfterPhoto;
+  const showNoCreditsState = !skipDetection && cameraCreditsState === "none";
+  const isLowCredits = !skipDetection && cameraCreditsState === "low";
+
+  const title = showNoCreditsState
+    ? tMeals("camera_no_credits_title", {
+        defaultValue: "No credits left for photo",
+      })
+    : tMeals("camera_default_title", {
+        defaultValue: "Take a clear photo",
+      });
+  const description = showNoCreditsState
+    ? tMeals("camera_no_credits_subtitle", {
+        defaultValue: "You need 1 credit to continue. Choose another path below.",
+      })
+    : skipDetection
+      ? tMeals("camera_replace_subtitle", {
+          defaultValue: "Take a new photo to update the current draft.",
+        })
+      : tMeals("camera_default_subtitle", {
+          defaultValue: "Center the full meal in the frame. One photo is enough to start.",
+        });
+  const footerNote = showNoCreditsState
+    ? tMeals("camera_no_credits_note", {
+        defaultValue: "0 left. Manual, barcode, and saved still work.",
+      })
+    : skipDetection || previewRemainingAfterPhoto === null
+      ? undefined
+      : isLowCredits
+        ? tMeals("camera_low_credits_note", {
+            count: Math.max(previewRemainingAfterPhoto, 0),
+            defaultValue: "Only {{count}} credits left after this photo",
+          })
+        : tMeals("camera_credits_remaining_note", {
+            count: Math.max(previewRemainingAfterPhoto, 0),
+            defaultValue: "✦ {{count}} credits remaining",
+          });
+
+  const handleCycleSimulatorCreditsState = () => {
+    flow.replace("CameraDefault", {
+      ...params,
+      simulatorCreditsState: getNextState(
+        SIMULATOR_CREDITS_STATES,
+        simulatorCreditsState,
+      ),
+      simulatorReviewState,
+    });
+  };
+
+  const handleCycleSimulatorReviewState = () => {
+    flow.replace("CameraDefault", {
+      ...params,
+      simulatorCreditsState,
+      simulatorReviewState: getNextState(
+        SIMULATOR_REVIEW_STATES,
+        simulatorReviewState,
+      ),
+    });
+  };
+
+  const simulatorCreditsLabel = tMeals(
+    `simulator_preview_credits_${simulatorCreditsState}`,
+    {
+      defaultValue:
+        simulatorCreditsState === "low"
+          ? "Low credits"
+          : simulatorCreditsState === "none"
+            ? "No credits"
+            : "Credits OK",
+    },
+  );
+  const simulatorReviewLabel = tMeals(
+    `simulator_preview_review_${simulatorReviewState}`,
+    {
+      defaultValue:
+        simulatorReviewState === "slow"
+          ? "S03B · Taking longer"
+          : simulatorReviewState === "failed"
+            ? "S03C · Failed"
+            : simulatorReviewState === "offline"
+              ? "S03D · Offline"
+              : "S03 · Preparing",
+    },
+  );
 
   if (!permission) {
     return (
@@ -80,13 +232,11 @@ export default function MealCameraScreen({
           <Text style={styles.permissionTitle}>
             {tCommon("camera_permission_title")}
           </Text>
-
           <Text style={styles.permissionSubtitle}>
             {blocked
               ? tMeals("camera_permission_blocked_message")
               : tCommon("camera_permission_message")}
           </Text>
-
           <Pressable
             onPress={blocked ? () => Linking.openSettings() : requestPermission}
             style={styles.permissionButton}
@@ -117,98 +267,99 @@ export default function MealCameraScreen({
   return (
     <Layout showNavigation={false} disableScroll style={styles.layout}>
       <View style={styles.fill}>
-        <View style={styles.cameraWrap}>
-          <CameraView
-            ref={cameraRef}
-            style={styles.camera}
-            onCameraReady={() => setIsCameraReady(true)}
-          />
-          <View style={StyleSheet.absoluteFill}>
-            <ScreenCornerNavButton
-              icon={canStepBack ? "back" : "close"}
-              onPress={handleTopLeftPress}
-              accessibilityLabel={
-                canStepBack
-                  ? tCommon("back", { defaultValue: "Back" })
-                  : tCommon("close", { defaultValue: "Close" })
-              }
-              containerStyle={topLeftActionStyle}
+        <MealAddPhotoScaffold
+          topInset={previewTopInset}
+          preview={
+            <CameraView
+              ref={cameraRef}
+              style={styles.camera}
+              onCameraReady={() => setIsCameraReady(true)}
             />
-
-            {!skipDetection && (
-              <View style={[styles.creditsBadgePosition, topRightActionStyle]}>
-                <AiCreditsBadge
-                  text={tChat("credits.costMultiple", { count: 5 })}
+          }
+          topAction={
+            canStepBack ? (
+              <ScreenCornerNavButton
+                icon="back"
+                onPress={handleTopLeftPress}
+                accessibilityLabel={tCommon("back", { defaultValue: "Back" })}
+                containerStyle={topLeftActionStyle}
+              />
+            ) : undefined
+          }
+          eyebrow={tMeals("camera_default_label", {
+            defaultValue: "Photo",
+          })}
+          title={title}
+          description={description}
+          accessory={
+            !skipDetection ? (
+              <AiCreditsBadge text={badgeText} tone="success" />
+            ) : undefined
+          }
+          content={
+            <>
+              {!showNoCreditsState ? (
+                <Button
+                  label={tCommon("camera_take_photo", {
+                    defaultValue: "Take photo",
+                  })}
+                  onPress={handleTakePicture}
+                  disabled={isTakingPhoto}
+                  style={styles.captureButton}
                 />
-              </View>
-            )}
+              ) : null}
 
-            <View style={styles.photoGuideWrap}>
-              <View style={styles.photoGuidePill}>
-                <Text style={styles.photoGuidePillText}>
-                  {tMeals("camera_default_label", {
-                    defaultValue: "Photo meal",
-                  })}
-                </Text>
-              </View>
-              <View style={styles.photoGuideCard}>
-                <Text style={styles.photoGuideTitle}>
-                  {tMeals("camera_default_title", {
-                    defaultValue: "Capture your meal",
-                  })}
-                </Text>
-                <Text style={styles.photoGuideText}>
-                  {skipDetection
-                    ? tMeals("camera_replace_subtitle", {
-                        defaultValue:
-                          "Take a new photo to update the current draft.",
-                      })
-                    : canUsePhotoAi
-                      ? tMeals("camera_default_subtitle", {
-                          defaultValue:
-                            "Frame the whole plate clearly. We'll prepare a draft for review.",
-                        })
-                      : tChat("limit.photoRequired", {
-                          cost: 5,
-                        })}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.shutterWrapper}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.shutterButton,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}
-                onPress={handleTakePicture}
-                disabled={isTakingPhoto || !isCameraReady}
-              >
-                <View style={styles.shutterCore} />
-              </Pressable>
-            </View>
-
-            {typeof __DEV__ !== "undefined" && __DEV__ && (
-              <View style={styles.devRow}>
-                <Pressable
-                  onPress={() => void onUseSample()}
-                  style={styles.devBtn}
+              {footerNote ? (
+                <Text
+                  style={[
+                    styles.inlineNote,
+                    isLowCredits ? styles.inlineNoteWarning : null,
+                  ]}
                 >
-                  <Text style={styles.devBtnText}>
-                    {tMeals("dev.sample_meal")}
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
-        </View>
+                  {footerNote}
+                </Text>
+              ) : null}
+
+              {!skipDetection ? (
+                <MealAddTextLink
+                  label={tMeals("change_method", {
+                    defaultValue: "Change add method",
+                  })}
+                  onPress={handleChangeMethod}
+                />
+              ) : null}
+
+              {isSimulatorPreview && !skipDetection ? (
+                <>
+                  <MealAddTextLink
+                    label={tMeals("simulator_preview_cycle_credits", {
+                      state: simulatorCreditsLabel,
+                      defaultValue: `Preview credits: ${simulatorCreditsLabel}`,
+                    })}
+                    onPress={handleCycleSimulatorCreditsState}
+                    testID="simulator-preview-credits"
+                  />
+                  <MealAddTextLink
+                    label={tMeals("simulator_preview_cycle_review", {
+                      state: simulatorReviewLabel,
+                      defaultValue: `Preview review: ${simulatorReviewLabel}`,
+                    })}
+                    onPress={handleCycleSimulatorReviewState}
+                    testID="simulator-preview-review"
+                  />
+                </>
+              ) : null}
+
+            </>
+          }
+        />
       </View>
 
       <Modal
         visible={premiumModal}
         title={tChat("limit.reachedTitle")}
         message={tChat("limit.photoRequired", {
-          cost: 5,
+          cost: photoCost,
         })}
         onClose={closePremiumModal}
         primaryAction={{
@@ -224,25 +375,25 @@ export default function MealCameraScreen({
   );
 }
 
-const makeStyles = (theme: ReturnType<typeof useTheme>) => {
-  const overlayCard = theme.isDark
-    ? "rgba(0, 0, 0, 0.52)"
-    : "rgba(17, 24, 39, 0.58)";
-  const overlayStroke = "rgba(255, 255, 255, 0.88)";
-  const overlayPrimaryText = "rgba(255, 255, 255, 0.96)";
-  const overlaySecondaryText = "rgba(255, 255, 255, 0.78)";
-
-  return StyleSheet.create({
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
     layout: {
       paddingTop: 0,
       paddingBottom: 0,
       paddingLeft: 0,
       paddingRight: 0,
     },
-    fill: { flex: 1 },
-    flexBackground: { flex: 1, backgroundColor: theme.background },
-    cameraWrap: { flex: 1, backgroundColor: theme.background },
-    camera: { flex: 1 },
+    fill: {
+      flex: 1,
+      backgroundColor: theme.surface,
+    },
+    camera: {
+      flex: 1,
+    },
+    flexBackground: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
     permissionWrap: {
       flex: 1,
       justifyContent: "center",
@@ -275,100 +426,19 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) => {
       fontSize: theme.typography.size.bodyL,
       color: theme.text,
     },
-    creditsBadgePosition: {
-      position: "absolute",
+    captureButton: {
+      minHeight: 48,
+      borderRadius: theme.rounded.sm,
     },
-    photoGuideWrap: {
-      position: "absolute",
-      left: theme.spacing.lg,
-      right: theme.spacing.lg,
-      bottom: 126,
-      alignItems: "center",
-      gap: theme.spacing.xs,
-    },
-    photoGuidePill: {
-      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.rounded.full,
-      backgroundColor: overlayCard,
-      borderWidth: 1,
-      borderColor: theme.overlay,
-    },
-    photoGuidePillText: {
-      color: overlayPrimaryText,
+    inlineNote: {
+      color: theme.textTertiary,
       fontSize: theme.typography.size.caption,
       lineHeight: theme.typography.lineHeight.caption,
-      fontFamily: theme.typography.fontFamily.medium,
-      letterSpacing: 0.4,
-      textTransform: "uppercase",
-    },
-    photoGuideCard: {
-      width: "100%",
-      maxWidth: 360,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.md,
-      borderRadius: theme.rounded.xl,
-      backgroundColor: overlayCard,
-      gap: theme.spacing.xs,
-      alignItems: "center",
-    },
-    photoGuideTitle: {
-      color: overlayPrimaryText,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      fontFamily: theme.typography.fontFamily.bold,
+      fontFamily: theme.typography.fontFamily.regular,
       textAlign: "center",
+      marginTop: theme.spacing.xs,
     },
-    photoGuideText: {
-      color: overlaySecondaryText,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      textAlign: "center",
-    },
-    shutterWrapper: {
-      position: "absolute",
-      bottom: 48,
-      left: 0,
-      right: 0,
-      alignItems: "center",
-      justifyContent: "flex-end",
-    },
-    shutterButton: {
-      alignItems: "center",
-      justifyContent: "center",
-      borderColor: overlayStroke,
-      width: 68,
-      height: 68,
-      borderRadius: 34,
-      borderWidth: 2,
-      backgroundColor: "rgba(255, 255, 255, 0.08)",
-    },
-    shutterCore: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      backgroundColor: overlayStroke,
-    },
-    devRow: {
-      position: "absolute",
-      top: theme.spacing.md,
-      left: theme.spacing.md,
-      right: theme.spacing.md,
-      flexDirection: "row",
-      gap: theme.spacing.sm,
-      justifyContent: "flex-start",
-    },
-    devBtn: {
-      paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.sm,
-      borderRadius: theme.rounded.sm,
-      borderWidth: 1,
-      backgroundColor: theme.surfaceElevated,
-      borderColor: theme.border,
-    },
-    devBtnText: {
-      color: theme.text,
-      fontSize: theme.typography.size.bodyS,
+    inlineNoteWarning: {
+      color: theme.accentWarm,
     },
   });
-};

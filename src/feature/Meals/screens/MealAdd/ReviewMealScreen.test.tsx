@@ -1,4 +1,5 @@
-import { fireEvent, waitFor } from "@testing-library/react-native";
+import { BackHandler } from "react-native";
+import { act, fireEvent, waitFor } from "@testing-library/react-native";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import ReviewMealScreen from "@/feature/Meals/screens/MealAdd/ReviewMealScreen";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
@@ -28,6 +29,7 @@ const mockUseUserContext = jest.fn();
 const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
 const mockUseMeals = jest.fn();
 const mockGetInfoAsync = jest.fn<(uri: string) => Promise<{ exists: boolean }>>();
+const mockBackHandlerAddEventListener = jest.fn();
 
 jest.mock("expo-file-system", () => ({
   getInfoAsync: (uri: string) => mockGetInfoAsync(uri),
@@ -88,6 +90,12 @@ jest.mock("@/components", () => {
         ? createElement(Pressable, { onPress }, children as never)
         : createElement(View, null, children as never),
     Button: ({ label, onPress, disabled }: ButtonProps) =>
+      createElement(
+        Pressable,
+        { onPress, disabled, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
+    TextButton: ({ label, onPress, disabled }: ButtonProps) =>
       createElement(
         Pressable,
         { onPress, disabled, accessibilityRole: "button" },
@@ -175,13 +183,26 @@ const buildDraftContext = (mealOverrides?: Partial<Meal>) => ({
 const buildProps = () => {
   const navigate = jest.fn<(screen: string, params?: unknown) => void>();
   const flowGoTo = jest.fn<(screen: string, params?: unknown) => void>();
+  let beforeRemoveListener:
+    | ((event: {
+        data: { action: { type: string } };
+        preventDefault: () => void;
+      }) => void)
+    | undefined;
 
   return {
     navigate,
     flowGoTo,
+    getBeforeRemoveListener: () => beforeRemoveListener,
     props: {
       navigation: {
         navigate,
+        addListener: jest.fn(
+          (_eventName: string, listener: typeof beforeRemoveListener) => {
+            beforeRemoveListener = listener ?? undefined;
+            return jest.fn();
+          },
+        ),
       } as unknown as MealAddScreenProps<"ReviewMeal">["navigation"],
       flow: {
         goTo: flowGoTo,
@@ -196,6 +217,15 @@ const buildProps = () => {
 
 describe("ReviewMealScreen", () => {
   beforeEach(() => {
+    jest
+      .spyOn(BackHandler, "addEventListener")
+      .mockImplementation(
+        ((_eventName: string, _listener: () => boolean) => {
+          mockBackHandlerAddEventListener();
+          return { remove: jest.fn() };
+        }) as typeof BackHandler.addEventListener,
+      );
+
     mockGetInfoAsync.mockReset();
     mockGetInfoAsync.mockResolvedValue({ exists: true });
     mockUseNetInfo.mockReturnValue({ isConnected: true });
@@ -205,6 +235,10 @@ describe("ReviewMealScreen", () => {
       addMeal: jest.fn(async () => undefined),
       meals: [],
     });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("routes to edit details and change photo from the new review screen", async () => {
@@ -249,5 +283,33 @@ describe("ReviewMealScreen", () => {
       expect(ctx.clearMeal).toHaveBeenCalledWith("user-1");
       expect(testProps.navigate).toHaveBeenCalledWith("Home");
     });
+  });
+
+  it("shows the leave-flow modal on navigation back instead of returning to camera", async () => {
+    const ctx = buildDraftContext();
+    const testProps = buildProps();
+    mockUseMealDraftContext.mockReturnValue(ctx);
+
+    const { getByText } = renderWithTheme(
+      <ReviewMealScreen {...testProps.props} />,
+    );
+
+    const preventDefault = jest.fn();
+    act(() => {
+      testProps.getBeforeRemoveListener()?.({
+        data: { action: { type: "GO_BACK" } },
+        preventDefault,
+      });
+    });
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(getByText("common:leave")).toBeTruthy();
+    });
+
+    fireEvent.press(getByText("common:leave"));
+    expect(ctx.clearMeal).toHaveBeenCalledWith("user-1");
+    expect(testProps.navigate).toHaveBeenCalledWith("Home");
+    expect(mockBackHandlerAddEventListener).toHaveBeenCalled();
   });
 });

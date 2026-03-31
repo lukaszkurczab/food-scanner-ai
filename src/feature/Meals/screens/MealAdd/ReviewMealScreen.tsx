@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   Image,
   Pressable,
   StyleSheet,
@@ -17,6 +18,7 @@ import {
   Layout,
   Modal,
   PhotoPreview,
+  TextButton,
 } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import { MacroChip } from "@/components/MacroChip";
@@ -82,6 +84,51 @@ export default function ReviewMealScreen({
   useEffect(() => {
     setImageError(false);
   }, [image]);
+
+  useEffect(() => {
+    const sub = navigation.addListener("beforeRemove", (e) => {
+      const actionType = e.data.action.type;
+      const isBackAction =
+        actionType === "GO_BACK" ||
+        actionType === "POP" ||
+        actionType === "POP_TO_TOP";
+
+      if (!isBackAction) return;
+
+      e.preventDefault();
+
+      if (previewVisible) {
+        setPreviewVisible(false);
+        return;
+      }
+
+      if (!showCancelModal) {
+        setShowCancelModal(true);
+      }
+    });
+
+    return sub;
+  }, [navigation, previewVisible, showCancelModal]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (previewVisible) {
+        setPreviewVisible(false);
+        return true;
+      }
+
+      if (showCancelModal) {
+        setShowCancelModal(false);
+        return true;
+      }
+
+      setShowCancelModal(true);
+      return true;
+    };
+
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => sub.remove();
+  }, [previewVisible, showCancelModal]);
 
   useEffect(() => {
     const photoUrl = meal?.photoUrl;
@@ -157,6 +204,7 @@ export default function ReviewMealScreen({
 
   const handleCancelConfirm = useCallback(() => {
     if (!uid) return;
+    setShowCancelModal(false);
     clearMeal(uid);
     navigation.navigate("Home");
   }, [clearMeal, navigation, uid]);
@@ -429,35 +477,19 @@ export default function ReviewMealScreen({
           loading={saving}
           disabled={saving}
         />
-        <Pressable
-          accessibilityRole="button"
+        <TextButton
+          label={t("review_meal_edit_cta", {
+            ns: "meals",
+            defaultValue: "Edit details",
+          })}
           accessibilityLabel={t("review_meal_edit_cta", { ns: "meals" })}
           onPress={handleOpenEdit}
-          style={({ pressed }) => [
-            styles.secondaryAction,
-            pressed ? styles.inlineActionPressed : null,
-          ]}
-        >
-          <Text style={styles.secondaryActionLabel}>
-            {t("review_meal_edit_cta", {
-              ns: "meals",
-              defaultValue: "Edit details",
-            })}
-          </Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
+        />
+        <TextButton
+          label={t("cancel", { ns: "common" })}
           accessibilityLabel={t("cancel", { ns: "common" })}
           onPress={() => setShowCancelModal(true)}
-          style={({ pressed }) => [
-            styles.dismissAction,
-            pressed ? styles.inlineActionPressed : null,
-          ]}
-        >
-          <Text style={styles.dismissActionLabel}>
-            {t("cancel", { ns: "common" })}
-          </Text>
-        </Pressable>
+        />
       </View>
 
       <Modal
@@ -665,31 +697,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     footer: {
       gap: theme.spacing.xs,
       paddingBottom: theme.spacing.sm,
-    },
-    secondaryAction: {
-      alignSelf: "center",
-      minHeight: 44,
-      justifyContent: "center",
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.xs,
-    },
-    secondaryActionLabel: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    dismissAction: {
-      alignSelf: "center",
-      minHeight: 40,
-      justifyContent: "center",
-      paddingHorizontal: theme.spacing.md,
-    },
-    dismissActionLabel: {
-      color: theme.textTertiary,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.medium,
     },
     emptyWrap: {
       flex: 1,

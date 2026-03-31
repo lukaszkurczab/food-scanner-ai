@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import * as Device from "expo-device";
 import { v4 as uuidv4 } from "uuid";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { getSampleMealUri } from "@/utils/devSamples";
@@ -30,11 +31,15 @@ export function useMealCameraState({
   const { meal, setMeal, updateMeal, setLastScreen, saveDraft } =
     useMealDraftContext();
   const { uid } = useAuthContext();
-  const { canAfford } = useAiCreditsContext();
+  const { canAfford, credits } = useAiCreditsContext();
 
   const routeId = params?.id as string | undefined;
   const skipDetection = !!params?.skipDetection;
   const attempt = params?.attempt || 1;
+  const simulatorCreditsState = params?.simulatorCreditsState ?? "ok";
+  const simulatorReviewState = params?.simulatorReviewState ?? "success";
+  const isSimulatorPreview =
+    typeof __DEV__ !== "undefined" && __DEV__ && !Device.isDevice;
 
   const fallbackMealIdRef = useRef<string>(uuidv4());
   const mealId = meal?.mealId || routeId || fallbackMealIdRef.current;
@@ -89,46 +94,6 @@ export function useMealCameraState({
 
     return sub;
   }, [flow, navigation, photoUri]);
-
-  const handleTakePicture = useCallback(async () => {
-    const canUsePhotoAi = canAfford("photo");
-    log.log("takePicture start", {
-      skipDetection,
-      canUsePhotoAi,
-      isCameraReady,
-    });
-
-    if (typeof __DEV__ !== "undefined" && __DEV__) {
-      try {
-        const uri = await getSampleMealUri();
-        setPhotoUri(uri);
-        return;
-      } catch {
-        // Ignore missing local sample image in development mode.
-      }
-    }
-
-    if (!skipDetection && !canUsePhotoAi) {
-      setPremiumModal(true);
-      return;
-    }
-
-    if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
-    setIsTakingPhoto(true);
-    try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
-      if (photo?.uri) {
-        setPhotoUri(photo.uri);
-      }
-    } finally {
-      setIsTakingPhoto(false);
-    }
-  }, [
-    canAfford,
-    isCameraReady,
-    isTakingPhoto,
-    skipDetection,
-  ]);
 
   const handleAccept = useCallback(
     async (optimizedUri?: string) => {
@@ -192,28 +157,85 @@ export function useMealCameraState({
         image: finalUri,
         id: mealId,
         attempt,
+        ...(isSimulatorPreview
+          ? {
+              simulatorCreditsState,
+              simulatorReviewState,
+            }
+          : {}),
       });
     },
     [
       attempt,
       flow,
+      isSimulatorPreview,
       meal,
       mealId,
       photoUri,
       saveDraft,
       setMeal,
       skipDetection,
+      simulatorCreditsState,
+      simulatorReviewState,
       uid,
+      updateMeal,
     ],
   );
 
+  const handleTakePicture = useCallback(async () => {
+    const canUsePhotoAi = credits ? canAfford("photo") : true;
+    log.log("takePicture start", {
+      skipDetection,
+      canUsePhotoAi,
+      isCameraReady,
+      isSimulatorPreview,
+      simulatorCreditsState,
+      simulatorReviewState,
+    });
+
+    if (isSimulatorPreview) {
+      if (!skipDetection && simulatorCreditsState === "none") {
+        return;
+      }
+
+      try {
+        const uri = await getSampleMealUri();
+        await handleAccept(uri);
+      } catch {
+        // Ignore missing local sample image on simulator preview.
+      }
+      return;
+    }
+
+    if (!skipDetection && credits && !canUsePhotoAi) {
+      setPremiumModal(true);
+      return;
+    }
+
+    if (isTakingPhoto || !isCameraReady || !cameraRef.current) return;
+    setIsTakingPhoto(true);
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
+      if (photo?.uri) {
+        setPhotoUri(photo.uri);
+      }
+    } finally {
+      setIsTakingPhoto(false);
+    }
+  }, [
+    canAfford,
+    credits,
+    handleAccept,
+    isCameraReady,
+    isSimulatorPreview,
+    isTakingPhoto,
+    simulatorCreditsState,
+    simulatorReviewState,
+    skipDetection,
+  ]);
+
   const handleRetake = useCallback(() => {
     setPhotoUri(null);
-  }, []);
-
-  const onUseSample = useCallback(async () => {
-    const uri = await getSampleMealUri();
-    setPhotoUri(uri);
   }, []);
 
   const closePremiumModal = useCallback(() => {
@@ -233,13 +255,13 @@ export function useMealCameraState({
     isTakingPhoto,
     photoUri,
     premiumModal,
-    canUsePhotoAi: canAfford("photo"),
+    canUsePhotoAi: credits ? canAfford("photo") : true,
+    credits,
     skipDetection,
     setIsCameraReady,
     handleTakePicture,
     handleAccept,
     handleRetake,
-    onUseSample,
     closePremiumModal,
     goManagePremium,
   };

@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { View, StyleSheet, Text, Image } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import { Button, Layout } from "@/components";
+import { Button, Layout, TextButton } from "@/components";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
@@ -53,7 +53,7 @@ export default function IngredientsNotRecognizedScreen({
 
   const handleOtherMethod = () => {
     if (uid) clearMeal(uid);
-    navigation.replace("MealAddMethod", {
+    navigation.navigate("MealAddMethod", {
       selectionMode: "temporary",
     });
   };
@@ -80,9 +80,15 @@ export default function IngredientsNotRecognizedScreen({
             ? t("ai_offline_title", "You're offline")
             : isTimeout
               ? t("ai_timeout_title", "AI analysis timed out")
-            : isAiUnavailable
-            ? t("ai_unavailable_title", "AI analysis is currently unavailable")
-            : t("not_recognized_title", "We couldn't recognize the ingredients")}
+              : isAiUnavailable
+                ? t(
+                    "ai_unavailable_title",
+                    "AI analysis is currently unavailable",
+                  )
+                : t(
+                    "not_recognized_title",
+                    "We couldn't recognize the ingredients",
+                  )}
         </Text>
         <Text style={styles.subtitle}>
           {isOffline
@@ -95,17 +101,17 @@ export default function IngredientsNotRecognizedScreen({
                   "ai_timeout_sub",
                   "The analysis took too long. Please try again in a moment.",
                 )
-            : isAiUnavailable
-            ? t(
-                "ai_unavailable_sub",
-                "We couldn't connect to the AI analysis server. You can enter ingredients manually or use the product database.",
-              )
-            : attempt < MAX_ATTEMPTS
-              ? t("not_recognized_sub", "Try again or select other method")
-              : t(
-                  "not_recognized_last",
-                  "Please add the meal manually or try later.",
-                )}
+              : isAiUnavailable
+                ? t(
+                    "ai_unavailable_sub",
+                    "We couldn't connect to the AI analysis server. You can enter ingredients manually or use the product database.",
+                  )
+                : attempt < MAX_ATTEMPTS
+                  ? t("not_recognized_sub", "Try again or select other method")
+                  : t(
+                      "not_recognized_last",
+                      "Please add the meal manually or try later.",
+                    )}
         </Text>
         <View style={styles.spacer} />
         {isAiUnavailable ? (
@@ -113,28 +119,36 @@ export default function IngredientsNotRecognizedScreen({
             <GlobalActionButtons
               label={t("ai_unavailable_manual", "Enter ingredients manually")}
               onPress={handleManualEntry}
-              secondaryLabel={t("ai_unavailable_product_db", "Use product database")}
+              secondaryLabel={t(
+                "ai_unavailable_product_db",
+                "Use product database",
+              )}
               secondaryOnPress={handleOpenProductDatabase}
               containerStyle={styles.buttonSpacingNone}
             />
           </>
         ) : (
           attempt < MAX_ATTEMPTS && (
-            <GlobalActionButtons
-              label={`${t("retake", "Retake photo")} (${attempt}/${MAX_ATTEMPTS})`}
-              onPress={handleRetake}
-              secondaryLabel={t("change_method", "Change add method")}
-              secondaryOnPress={handleOtherMethod}
-              containerStyle={styles.buttonSpacingNone}
-            />
+            <View style={styles.actionGroup}>
+              <GlobalActionButtons
+                label={`${t("retake", "Retake photo")} (${attempt}/${MAX_ATTEMPTS})`}
+                onPress={handleRetake}
+                containerStyle={styles.buttonSpacingNone}
+              />
+              <TextButton
+                label={t("change_method", "Change add method")}
+                onPress={handleOtherMethod}
+                tone="link"
+              />
+            </View>
           )
         )}
         {!isAiUnavailable && attempt >= MAX_ATTEMPTS ? (
-          <Button
-            variant="secondary"
+          <TextButton
             label={t("change_method", "Change add method")}
             onPress={handleOtherMethod}
             style={styles.buttonSpacing}
+            tone="link"
           />
         ) : null}
         <Button
@@ -179,6 +193,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.textSecondary,
     },
     spacer: { height: theme.spacing.lg },
+    actionGroup: {
+      gap: theme.spacing.xs,
+    },
     buttonSpacing: { marginTop: theme.spacing.sm },
     buttonSpacingNone: { marginTop: 0 },
   });

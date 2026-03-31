@@ -1,7 +1,14 @@
 import type { ReactNode } from "react";
 import { Linking } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
-import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
 import MealCameraScreen from "@/feature/Meals/screens/MealAdd/MealCameraScreen";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
@@ -39,7 +46,15 @@ type CameraViewProps = {
   onCameraReady?: () => void;
 };
 
+type ButtonProps = {
+  label: string;
+  onPress?: () => void;
+  disabled?: boolean;
+  testID?: string;
+};
+
 const mockUseMealCameraState = jest.fn();
+const mockDevice = { isDevice: true };
 
 jest.mock("@/feature/Meals/hooks/useMealCameraState", () => ({
   useMealCameraState: (params: unknown) => mockUseMealCameraState(params),
@@ -48,6 +63,8 @@ jest.mock("@/feature/Meals/hooks/useMealCameraState", () => ({
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 4, right: 0, bottom: 0, left: 0 }),
 }));
+
+jest.mock("expo-device", () => mockDevice);
 
 jest.mock("expo-camera", () => ({
   CameraView: ({ onCameraReady }: CameraViewProps) => {
@@ -71,10 +88,22 @@ jest.mock("expo-camera", () => ({
 
 jest.mock("react-i18next", () => ({
   useTranslation: (ns: string) => ({
-    t: (key: string, options?: { defaultValue?: string; cost?: number } | string) =>
-      typeof options === "string"
-        ? options
-        : options?.defaultValue ?? `${ns}:${key}`,
+    t: (
+      key: string,
+      options?: { defaultValue?: string; count?: number } | string,
+    ) => {
+      if (typeof options === "string") {
+        return options;
+      }
+
+      if (options?.defaultValue) {
+        return options.count !== undefined
+          ? options.defaultValue.replace("{{count}}", String(options.count))
+          : options.defaultValue;
+      }
+
+      return `${ns}:${key}`;
+    },
   }),
 }));
 
@@ -88,6 +117,18 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: ReactNode }) =>
       createElement(View, null, children),
+    Button: ({ label, onPress, disabled }: ButtonProps) =>
+      createElement(
+        Pressable,
+        { onPress, disabled, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
+    TextButton: ({ label, onPress, disabled, testID }: ButtonProps) =>
+      createElement(
+        Pressable,
+        { onPress, disabled, testID, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
     PhotoPreview: ({
       photoUri,
       onRetake,
@@ -182,12 +223,20 @@ function baseHookState() {
     photoUri: null as string | null,
     premiumModal: false,
     canUsePhotoAi: true,
+    credits: {
+      userId: "user-1",
+      tier: "free" as const,
+      balance: 9,
+      allocation: 100,
+      periodStartAt: "2026-03-01T00:00:00.000Z",
+      periodEndAt: "2026-04-01T00:00:00.000Z",
+      costs: { chat: 1, textMeal: 1, photo: 5 },
+    },
     skipDetection: false,
     setIsCameraReady: jest.fn(),
     handleTakePicture: jest.fn(async () => undefined),
     handleAccept: jest.fn(async () => undefined),
     handleRetake: jest.fn(),
-    onUseSample: jest.fn(async () => undefined),
     closePremiumModal: jest.fn(),
     goManagePremium: jest.fn(),
   };
@@ -196,7 +245,9 @@ function baseHookState() {
 const buildProps = () =>
   ({
     navigation: {
+      navigate: jest.fn(),
       goBack: jest.fn(),
+      replace: jest.fn(),
     } as unknown as MealAddScreenProps<"CameraDefault">["navigation"],
     flow: {
       goTo: jest.fn(),
@@ -213,6 +264,7 @@ describe("MealCameraScreen", () => {
   beforeEach(() => {
     mockUseMealCameraState.mockReset();
     (globalThis as { __DEV__?: boolean }).__DEV__ = true;
+    mockDevice.isDevice = true;
     jest
       .spyOn(Linking, "openSettings")
       .mockImplementation(async () => Promise.resolve());
@@ -274,6 +326,8 @@ describe("MealCameraScreen", () => {
   });
 
   it("renders the active photo camera UI and forwards actions", () => {
+    mockDevice.isDevice = true;
+    (globalThis as { __DEV__?: boolean }).__DEV__ = false;
     const props = buildProps();
     const hookState = buildHookState({
       premiumModal: true,
@@ -283,28 +337,117 @@ describe("MealCameraScreen", () => {
     const { getByText } = renderWithTheme(<MealCameraScreen {...props} />);
 
     fireEvent.press(getByText("back:Back"));
-    fireEvent.press(getByText("meals:dev.sample_meal"));
+    fireEvent.press(getByText("Take photo"));
+    fireEvent.press(getByText("Change add method"));
     fireEvent.press(getByText("chat:limit.upgradeCta"));
 
-    expect(getByText("chat:credits.costMultiple")).toBeTruthy();
-    expect(getByText("Photo meal")).toBeTruthy();
-    expect(getByText("Capture your meal")).toBeTruthy();
+    expect(getByText("✦ chat:credits.costMultiple")).toBeTruthy();
+    expect(getByText("Photo")).toBeTruthy();
+    expect(getByText("Take a clear photo")).toBeTruthy();
     expect(
-      getByText("Frame the whole plate clearly. We'll prepare a draft for review."),
+      getByText("Center the full meal in the frame. One photo is enough to start."),
     ).toBeTruthy();
+    expect(getByText("✦ 4 credits remaining")).toBeTruthy();
     expect(props.flow.goBack).toHaveBeenCalledTimes(1);
-    expect(hookState.onUseSample).toHaveBeenCalledTimes(1);
+    expect(hookState.handleTakePicture).toHaveBeenCalledTimes(1);
     expect(hookState.goManagePremium).toHaveBeenCalledTimes(1);
+    expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
+      selectionMode: "temporary",
+    });
   });
 
-  it("falls back to navigation.goBack when the flow cannot step back", () => {
+  it("renders simulator preview controls on simulator", () => {
+    mockDevice.isDevice = false;
+    const props = buildProps();
+    mockUseMealCameraState.mockReturnValue(buildHookState());
+
+    const { getByTestId, getByText } = renderWithTheme(
+      <MealCameraScreen {...props} />,
+    );
+
+    expect(getByText("Preview credits: Credits OK")).toBeTruthy();
+    expect(getByText("Preview review: S03 · Preparing")).toBeTruthy();
+
+    fireEvent.press(getByTestId("simulator-preview-credits"));
+    fireEvent.press(getByTestId("simulator-preview-review"));
+
+    expect(props.flow.replace).toHaveBeenNthCalledWith(1, "CameraDefault", {
+      simulatorCreditsState: "low",
+      simulatorReviewState: "success",
+    });
+    expect(props.flow.replace).toHaveBeenNthCalledWith(2, "CameraDefault", {
+      simulatorCreditsState: "ok",
+      simulatorReviewState: "slow",
+    });
+  });
+
+  it("renders the low credits note when the remaining balance is low", () => {
+    mockDevice.isDevice = true;
+    (globalThis as { __DEV__?: boolean }).__DEV__ = false;
+    mockUseMealCameraState.mockReturnValue(
+      buildHookState({
+        credits: {
+          userId: "user-1",
+          tier: "free",
+          balance: 7,
+          allocation: 100,
+          periodStartAt: "2026-03-01T00:00:00.000Z",
+          periodEndAt: "2026-04-01T00:00:00.000Z",
+          costs: { chat: 1, textMeal: 1, photo: 5 },
+        },
+      }),
+    );
+
+    const { getByText } = renderWithTheme(<MealCameraScreen {...buildProps()} />);
+    expect(getByText("Only 2 credits left after this photo")).toBeTruthy();
+  });
+
+  it("renders the no-credits state without the take photo CTA", () => {
+    mockDevice.isDevice = true;
+    (globalThis as { __DEV__?: boolean }).__DEV__ = false;
+    mockUseMealCameraState.mockReturnValue(
+      buildHookState({
+        canUsePhotoAi: false,
+        credits: {
+          userId: "user-1",
+          tier: "free",
+          balance: 0,
+          allocation: 100,
+          periodStartAt: "2026-03-01T00:00:00.000Z",
+          periodEndAt: "2026-04-01T00:00:00.000Z",
+          costs: { chat: 1, textMeal: 1, photo: 5 },
+        },
+      }),
+    );
+
+    const { getByText, queryByText } = renderWithTheme(
+      <MealCameraScreen {...buildProps()} />,
+    );
+
+    expect(getByText("No credits left for photo")).toBeTruthy();
+    expect(queryByText("Take photo")).toBeNull();
+  });
+
+  it("does not render the top-left close button on the entry camera screen", () => {
     const props = buildProps();
     props.flow.canGoBack = jest.fn(() => false) as never;
     mockUseMealCameraState.mockReturnValue(buildHookState());
 
-    const { getByText } = renderWithTheme(<MealCameraScreen {...props} />);
+    const { queryByText } = renderWithTheme(<MealCameraScreen {...props} />);
 
-    fireEvent.press(getByText("close:Close"));
-    expect(props.navigation.goBack).toHaveBeenCalledTimes(1);
+    expect(queryByText("close:Close")).toBeNull();
+    expect(queryByText("back:Back")).toBeNull();
+    expect(props.navigation.goBack).not.toHaveBeenCalled();
+  });
+
+  it("forwards the camera ready callback to the hook state", () => {
+    const hookState = buildHookState();
+    mockUseMealCameraState.mockReturnValue(hookState);
+
+    const { getByText } = renderWithTheme(<MealCameraScreen {...buildProps()} />);
+
+    fireEvent.press(getByText("camera-ready"));
+
+    expect(hookState.setIsCameraReady).toHaveBeenCalledWith(true);
   });
 });

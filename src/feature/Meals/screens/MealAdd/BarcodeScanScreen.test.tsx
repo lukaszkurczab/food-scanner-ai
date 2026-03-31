@@ -122,6 +122,12 @@ jest.mock("@/components", () => {
         { onPress, disabled, testID, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
+    TextButton: ({ label, onPress, disabled, testID }: ButtonProps) =>
+      createElement(
+        Pressable,
+        { onPress, disabled, testID, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
     ErrorBox: ({ message }: { message: string }) =>
       message ? createElement(Text, null, message) : null,
     TextInput: ({ testID, value, onChangeText, placeholder }: TextInputProps) =>
@@ -151,6 +157,7 @@ const buildProps = (
   ({
     navigation: {
       goBack: jest.fn(),
+      navigate: jest.fn(),
       addListener: jest.fn(() => jest.fn()),
     } as unknown as MealAddScreenProps<"BarcodeScan">["navigation"],
     flow: {
@@ -248,6 +255,43 @@ describe("BarcodeScanScreen", () => {
         "BarcodeProductNotFound",
         {
           code: "5901234123457",
+          codeSource: "scan",
+        },
+      );
+    });
+  });
+
+  it("opens the add method chooser from the footer link", () => {
+    const props = buildProps();
+
+    const { getByText } = renderWithTheme(<BarcodeScanScreen {...props} />);
+
+    fireEvent.press(getByText("Change add method"));
+
+    expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
+      selectionMode: "temporary",
+    });
+  });
+
+  it("marks not found results from manual entry as manual source", async () => {
+    mockLookupBarcodeProduct.mockResolvedValue({
+      kind: "not_found",
+    });
+    const props = buildProps({ showManualEntry: true });
+
+    const { getByTestId, getByText } = renderWithTheme(
+      <BarcodeScanScreen {...props} />,
+    );
+
+    fireEvent.changeText(getByTestId("barcode-manual-input"), "5901234123457");
+    fireEvent.press(getByText("Search product"));
+
+    await waitFor(() => {
+      expect(props.flow.replace).toHaveBeenCalledWith(
+        "BarcodeProductNotFound",
+        {
+          code: "5901234123457",
+          codeSource: "manual",
         },
       );
     });

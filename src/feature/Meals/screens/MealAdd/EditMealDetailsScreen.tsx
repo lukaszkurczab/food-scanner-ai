@@ -38,6 +38,10 @@ function isValidIsoDate(value?: string | null) {
   return !Number.isNaN(new Date(value).getTime());
 }
 
+function getMealDateOrNow(value?: string | null) {
+  return isValidIsoDate(value) && value ? new Date(value) : new Date();
+}
+
 function formatMealTime(value: Date, locale: string, hour12: boolean) {
   return new Intl.DateTimeFormat(locale, {
     hour: "2-digit",
@@ -73,13 +77,12 @@ export default function EditMealDetailsScreen({
   const { uid } = useAuthContext();
   const { meal, loadDraft, saveDraft, setMeal, setLastScreen } =
     useMealDraftContext();
+  const mealTimestamp = meal?.timestamp;
 
   const [mealName, setMealName] = useState(meal?.name ?? "");
   const [typePickerVisible, setTypePickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
-  const [pickerDate, setPickerDate] = useState<Date>(
-    isValidIsoDate(meal?.timestamp) ? new Date(meal?.timestamp) : new Date(),
-  );
+  const [pickerDate, setPickerDate] = useState<Date>(getMealDateOrNow(mealTimestamp));
   const [editingIngredientIndex, setEditingIngredientIndex] = useState<
     number | null
   >(null);
@@ -90,10 +93,10 @@ export default function EditMealDetailsScreen({
   }, [meal?.name]);
 
   useEffect(() => {
-    if (isValidIsoDate(meal?.timestamp)) {
-      setPickerDate(new Date(meal.timestamp));
+    if (isValidIsoDate(mealTimestamp) && mealTimestamp) {
+      setPickerDate(new Date(mealTimestamp));
     }
-  }, [meal?.timestamp]);
+  }, [mealTimestamp]);
 
   useEffect(() => {
     if (uid) {
@@ -142,12 +145,9 @@ export default function EditMealDetailsScreen({
   );
 
   const handleOpenTimePicker = useCallback(() => {
-    const selectedAt = isValidIsoDate(meal?.timestamp)
-      ? new Date(meal.timestamp)
-      : new Date();
-    setPickerDate(selectedAt);
+    setPickerDate(getMealDateOrNow(mealTimestamp));
     setTimePickerVisible(true);
-  }, [meal?.timestamp]);
+  }, [mealTimestamp]);
 
   const handleSaveTime = useCallback(async () => {
     await persistMealPatch({ timestamp: pickerDate.toISOString() });
@@ -209,9 +209,7 @@ export default function EditMealDetailsScreen({
     flow.goBack();
   }, [flow, mealName, persistMealPatch]);
 
-  const selectedAt = isValidIsoDate(meal?.timestamp)
-    ? new Date(meal.timestamp)
-    : new Date();
+  const selectedAt = getMealDateOrNow(mealTimestamp);
 
   const locale = i18n?.language || "en";
   const prefers12h = useMemo(() => {

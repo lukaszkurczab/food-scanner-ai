@@ -1,10 +1,17 @@
 import { useMemo } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { AiCreditsBadge } from "@/components/AiCreditsBadge";
 import { LongTextInput } from "@/components/LongTextInput";
 import { TextInput as ShortInput } from "@/components/TextInput";
-import { Button, Layout, Modal, NumberInput, ErrorBox } from "@/components";
+import {
+  Button,
+  Layout,
+  Modal,
+  NumberInput,
+  ErrorBox,
+  TextButton,
+} from "@/components";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useMealTextAiState } from "@/feature/Meals/hooks/useMealTextAiState";
 import { useTheme } from "@/theme/useTheme";
@@ -66,7 +73,9 @@ export default function DescribeMealScreen({
                   defaultValue: "Text meal",
                 })}
               </Text>
-              <Text style={styles.title}>{t("aiTextTitle", { ns: "meals" })}</Text>
+              <Text style={styles.title}>
+                {t("aiTextTitle", { ns: "meals" })}
+              </Text>
               <Text style={styles.subtitle}>
                 {t("describe_meal_subtitle", {
                   ns: "meals",
@@ -146,7 +155,8 @@ export default function DescribeMealScreen({
                 onChangeText={onDescChange}
                 placeholder={t("describe_meal_description_placeholder", {
                   ns: "meals",
-                  defaultValue: "Homemade, lightly spicy, cooked with olive oil",
+                  defaultValue:
+                    "Homemade, lightly spicy, cooked with olive oil",
                 })}
                 numberOfLines={6}
                 inputStyle={styles.input}
@@ -169,25 +179,16 @@ export default function DescribeMealScreen({
             loading={loading}
             disabled={analyzeDisabled}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("change_method", { ns: "meals" })}
-            disabled={loading}
+          <TextButton
+            label={t("change_method", { ns: "meals" })}
             onPress={() =>
               navigation.navigate("MealAddMethod", {
                 selectionMode: "temporary",
               })
             }
-            style={({ pressed }) => [
-              styles.secondaryAction,
-              loading ? styles.secondaryActionDisabled : null,
-              pressed && !loading ? styles.secondaryActionPressed : null,
-            ]}
-          >
-            <Text style={styles.secondaryActionLabel}>
-              {t("change_method", { ns: "meals" })}
-            </Text>
-          </Pressable>
+            disabled={loading}
+            tone="link"
+          />
         </View>
       </View>
 
@@ -295,24 +296,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     footer: {
       gap: theme.spacing.xs,
       paddingBottom: theme.spacing.sm,
-    },
-    secondaryAction: {
-      alignSelf: "center",
-      minHeight: 44,
-      justifyContent: "center",
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.xs,
-    },
-    secondaryActionPressed: {
-      opacity: 0.72,
-    },
-    secondaryActionDisabled: {
-      opacity: 0.48,
-    },
-    secondaryActionLabel: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
-      fontFamily: theme.typography.fontFamily.medium,
     },
   });

@@ -2,16 +2,20 @@ import { act, renderHook } from "@testing-library/react-native";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
+import { getSampleMealUri } from "@/utils/devSamples";
 
 const mockUseMealDraftContext = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockUseAiCreditsContext = jest.fn();
 const mockCanAfford = jest.fn(() => true);
+const mockDevice = { isDevice: true };
 
 jest.mock("expo-camera", () => ({
   CameraView: () => null,
   useCameraPermissions: () => [{ granted: true, canAskAgain: true }, jest.fn()],
 }));
+
+jest.mock("expo-device", () => mockDevice);
 
 jest.mock("@contexts/MealDraftContext", () => ({
   useMealDraftContext: () => mockUseMealDraftContext(),
@@ -45,10 +49,15 @@ const baseMeal = (): Meal => ({
 
 describe("useMealCameraState", () => {
   const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
+  const mockedGetSampleMealUri = getSampleMealUri as jest.MockedFunction<
+    typeof getSampleMealUri
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
     (globalThis as { __DEV__?: boolean }).__DEV__ = false;
+    mockDevice.isDevice = true;
+    mockCanAfford.mockReturnValue(true);
 
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUseAiCreditsContext.mockReturnValue({
@@ -197,5 +206,70 @@ describe("useMealCameraState", () => {
     });
 
     expect(result.current.premiumModal).toBe(true);
+  });
+
+  it("uses the mocked sample photo on simulator and skips confirmation", async () => {
+    (globalThis as { __DEV__?: boolean }).__DEV__ = true;
+    mockDevice.isDevice = false;
+    mockedGetSampleMealUri.mockResolvedValue("file:///sample-meal.jpg");
+
+    const flow = {
+      goTo: jest.fn(),
+      replace: jest.fn(),
+      goBack: jest.fn(),
+      canGoBack: jest.fn(() => false),
+    };
+    const navigation = {
+      addListener: jest.fn(() => () => undefined),
+      navigate: jest.fn(),
+    };
+    const updateMeal = jest.fn();
+    const saveDraft = jest.fn<
+      (uid: string, draftOverride?: Meal | null) => Promise<void>
+    >(async () => undefined);
+
+    mockUseMealDraftContext.mockReturnValue({
+      meal: baseMeal(),
+      setMeal: jest.fn(),
+      updateMeal,
+      setLastScreen: jest.fn(async () => undefined),
+      saveDraft,
+    });
+
+    const { result } = renderHook(() =>
+      useMealCameraState({
+        navigation: navigation as never,
+        flow: flow as never,
+        params: {
+          simulatorCreditsState: "low",
+          simulatorReviewState: "failed",
+        },
+      }),
+    );
+
+    await act(async () => {
+      await result.current.handleTakePicture();
+    });
+
+    expect(mockedGetSampleMealUri).toHaveBeenCalledTimes(1);
+    expect(updateMeal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        photoUrl: "file:///sample-meal.jpg",
+        inputMethod: "photo",
+      }),
+    );
+    expect(saveDraft).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({
+        photoUrl: "file:///sample-meal.jpg",
+      }),
+    );
+    expect(flow.goTo).toHaveBeenCalledWith("PreparingReviewPhoto", {
+      image: "file:///sample-meal.jpg",
+      id: "meal-1",
+      attempt: 1,
+      simulatorCreditsState: "low",
+      simulatorReviewState: "failed",
+    });
   });
 });

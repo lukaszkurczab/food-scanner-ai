@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { Layout } from "@/components";
-import Loader from "@feature/Meals/components/Loader";
+import { Image, StyleSheet, View } from "react-native";
+import * as Device from "expo-device";
+import { Button, Layout } from "@/components";
 import { useTranslation } from "react-i18next";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -13,6 +14,21 @@ import { getErrorStatus } from "@/services/contracts/serviceError";
 import { getMealAiMetaFromAiResponse } from "@/services/meals/mealMetadata";
 import type { Meal } from "@/types";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
+import { useTheme } from "@/theme/useTheme";
+import {
+  MealAddPhotoScaffold,
+  MealAddStatusBanner,
+} from "@/feature/Meals/components/MealAddPhotoScaffold";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+type PreparingReviewUiState =
+  | "preparing"
+  | "slow"
+  | "failed"
+  | "offline";
+
+const SLOW_ANALYSIS_DELAY_MS = 8000;
+const SIMULATOR_PREVIEW_DELAY_MS = 900;
 
 const getRecognitionFailureReason = (
   error: unknown,
@@ -44,17 +60,49 @@ const buildFallbackPhotoDraft = (uid: string, image: string, id?: string): Meal 
 });
 
 export default function PreparingReviewPhotoScreen({
+  navigation,
   flow,
   params,
 }: MealAddScreenProps<"PreparingReviewPhoto">) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation(["common", "meals"]);
   const { uid } = useAuthContext();
   const { language } = useUserContext();
   const { meal, saveDraft, setMeal, updateMeal } = useMealDraftContext();
   const { applyCreditsFromResponse, refreshCredits } = useAiCreditsContext();
+  const [uiState, setUiState] = useState<PreparingReviewUiState>("preparing");
+  const [imageError, setImageError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
+  const inFlightRef = useRef(false);
+  const ignoreResultRef = useRef(false);
+  const isSimulatorPreview =
+    typeof __DEV__ !== "undefined" &&
+    __DEV__ &&
+    !Device.isDevice &&
+    Boolean(params.simulatorReviewState);
+  const previewTopInset = useMemo(
+    () =>
+      Math.max(
+        theme.spacing.xxl,
+        Math.round(insets.top * 0.65) + theme.spacing.xs,
+      ),
+    [insets.top, theme.spacing.xs, theme.spacing.xxl],
+  );
+
+  const ensureDraftWithPhoto = useCallback(async () => {
+    if (!uid || !params.image || meal) return meal;
+
+    const fallbackDraft = buildFallbackPhotoDraft(uid, params.image, params.id);
+    setMeal(fallbackDraft);
+    await saveDraft(uid, fallbackDraft);
+    return fallbackDraft;
+  }, [meal, params.id, params.image, saveDraft, setMeal, uid]);
 
   useEffect(() => {
     let cancelled = false;
+    let slowTimer: ReturnType<typeof setTimeout> | undefined;
 
     const analyze = async () => {
       if (!params.image || !uid) {
@@ -63,6 +111,52 @@ export default function PreparingReviewPhotoScreen({
         }
         return;
       }
+
+      await ensureDraftWithPhoto();
+
+      if (isSimulatorPreview) {
+        inFlightRef.current = true;
+        ignoreResultRef.current = false;
+        if (!cancelled) {
+          setUiState("preparing");
+        }
+
+        slowTimer = setTimeout(() => {
+          if (cancelled) return;
+
+          inFlightRef.current = false;
+
+          switch (params.simulatorReviewState) {
+            case "slow":
+              setUiState("slow");
+              break;
+            case "failed":
+              setUiState("failed");
+              break;
+            case "offline":
+              setUiState("offline");
+              break;
+            case "success":
+            default:
+              flow.replace("ReviewMeal", {});
+              break;
+          }
+        }, SIMULATOR_PREVIEW_DELAY_MS);
+
+        return;
+      }
+
+      inFlightRef.current = true;
+      ignoreResultRef.current = false;
+      if (!cancelled) {
+        setUiState("preparing");
+      }
+
+      slowTimer = setTimeout(() => {
+        if (!cancelled && inFlightRef.current) {
+          setUiState("slow");
+        }
+      }, SLOW_ANALYSIS_DELAY_MS);
 
       try {
         const analyzeResult = await detectIngredientsWithVision(uid, params.image, {
@@ -74,14 +168,13 @@ export default function PreparingReviewPhotoScreen({
           applyCreditsFromResponse(analyzeResult.credits);
         }
 
+        if (cancelled || ignoreResultRef.current) {
+          return;
+        }
+
         if (!ingredients || ingredients.length === 0) {
           if (!cancelled) {
-            flow.replace("IngredientsNotRecognized", {
-              image: params.image,
-              id: params.id,
-              attempt: params.attempt,
-              reason: "not_recognized",
-            });
+            setUiState("failed");
           }
           return;
         }
@@ -121,6 +214,10 @@ export default function PreparingReviewPhotoScreen({
           flow.replace("ReviewMeal", {});
         }
       } catch (error) {
+        if (cancelled || ignoreResultRef.current) {
+          return;
+        }
+
         if (getErrorStatus(error) === 402) {
           await refreshCredits();
           if (!cancelled) {
@@ -128,19 +225,25 @@ export default function PreparingReviewPhotoScreen({
               id: params.id,
               attempt: params.attempt,
               showPremiumModal: true,
+              simulatorCreditsState: params.simulatorCreditsState,
+              simulatorReviewState: params.simulatorReviewState,
             });
           }
           return;
         }
 
         if (!cancelled) {
-          flow.replace("IngredientsNotRecognized", {
-            image: params.image,
-            id: params.id,
-            attempt: params.attempt,
-            reason: getRecognitionFailureReason(error),
-          });
+          const reason = getRecognitionFailureReason(error);
+          setUiState(
+            reason === "offline"
+              ? "offline"
+              : reason === "timeout"
+                ? "slow"
+                : "failed",
+          );
         }
+      } finally {
+        inFlightRef.current = false;
       }
     };
 
@@ -148,34 +251,257 @@ export default function PreparingReviewPhotoScreen({
 
     return () => {
       cancelled = true;
+      inFlightRef.current = false;
+      if (slowTimer) {
+        clearTimeout(slowTimer);
+      }
     };
   }, [
     applyCreditsFromResponse,
+    ensureDraftWithPhoto,
     flow,
+    isSimulatorPreview,
     language,
     meal,
     params.attempt,
     params.id,
     params.image,
+    params.simulatorCreditsState,
+    params.simulatorReviewState,
     refreshCredits,
+    retryKey,
     saveDraft,
     setMeal,
     uid,
     updateMeal,
   ]);
 
+  useEffect(() => {
+    setImageError(false);
+  }, [params.image]);
+
+  const handleManualEntry = useCallback(() => {
+    ignoreResultRef.current = true;
+    flow.replace("ReviewMeal", {});
+  }, [flow]);
+
+  const handleKeepWaiting = useCallback(() => {
+    if (inFlightRef.current) {
+      setUiState("preparing");
+      return;
+    }
+
+    setRetryKey((current) => current + 1);
+  }, []);
+
+  const handleTryAgain = useCallback(() => {
+    ignoreResultRef.current = true;
+    flow.replace("CameraDefault", {
+      id: params.id,
+      attempt: (params.attempt ?? 1) + 1,
+      simulatorCreditsState: params.simulatorCreditsState,
+      simulatorReviewState: params.simulatorReviewState,
+    });
+  }, [
+    flow,
+    params.attempt,
+    params.id,
+    params.simulatorCreditsState,
+    params.simulatorReviewState,
+  ]);
+
+  const handleSaveDraft = useCallback(() => {
+    ignoreResultRef.current = true;
+    navigation.navigate("Home");
+  }, [navigation]);
+
+  const screenCopy = useMemo(() => {
+    switch (uiState) {
+      case "slow":
+        return {
+          eyebrow: t("preparing_review_slow_label", {
+            ns: "meals",
+            defaultValue: "Still preparing",
+          }),
+          title: t("preparing_review_slow_title", {
+            ns: "meals",
+            defaultValue: "This is taking a bit longer",
+          }),
+          description: t("preparing_review_slow_subtitle", {
+            ns: "meals",
+            defaultValue:
+              "We're still working on the photo. You can keep waiting or switch to manual entry.",
+          }),
+        };
+      case "failed":
+        return {
+          eyebrow: t("preparing_review_failed_label", {
+            ns: "meals",
+            defaultValue: "Couldn't prepare review",
+          }),
+          title: t("preparing_review_failed_title", {
+            ns: "meals",
+            defaultValue: "We couldn't prepare review",
+          }),
+          description: t("preparing_review_failed_subtitle", {
+            ns: "meals",
+            defaultValue:
+              "This photo didn't give us a reliable meal summary this time.",
+          }),
+        };
+      case "offline":
+        return {
+          eyebrow: t("preparing_review_offline_label", {
+            ns: "meals",
+            defaultValue: "Connection lost",
+          }),
+          title: t("preparing_review_offline_title", {
+            ns: "meals",
+            defaultValue: "Your meal is safe",
+          }),
+          description: t("preparing_review_offline_subtitle", {
+            ns: "meals",
+            defaultValue:
+              "Finish later when you're back online, or add it manually now.",
+          }),
+        };
+      case "preparing":
+      default:
+        return {
+          eyebrow: t("preparing_review_label", {
+            ns: "meals",
+            defaultValue: "Preparing review",
+          }),
+          title: t("camera_loader_title", {
+            ns: "common",
+            defaultValue: "Preparing your review",
+          }),
+          description: t("preparing_review_subtitle", {
+            ns: "meals",
+            defaultValue:
+              "Photo analysis has started. Review Meal opens automatically when the first result is ready.",
+          }),
+        };
+    }
+  }, [t, uiState]);
+
   return (
-    <Layout showNavigation={false} disableScroll>
-      <Loader
-        text={t("camera_loader_title", {
-          ns: "common",
-          defaultValue: "Preparing your meal review...",
-        })}
-        subtext={t("preparing_review_subtitle", {
-          ns: "meals",
-          defaultValue: "We are analyzing the photo and building a draft for review.",
-        })}
+    <Layout showNavigation={false} disableScroll style={styles.layout}>
+      <MealAddPhotoScaffold
+        topInset={previewTopInset}
+        preview={
+          params.image && !imageError ? (
+            <Image
+              source={{ uri: params.image }}
+              style={styles.previewImage}
+              resizeMode="cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <View style={styles.previewFallback} />
+          )
+        }
+        previewOverlay={<View pointerEvents="none" style={styles.previewOverlay} />}
+        eyebrow={screenCopy.eyebrow}
+        title={screenCopy.title}
+        description={screenCopy.description}
+        footerNote={
+          uiState === "preparing"
+            ? t("preparing_review_footer", {
+                ns: "meals",
+                defaultValue: "Review Meal opens automatically. No action needed.",
+              })
+            : undefined
+        }
+        content={
+          uiState === "preparing" ? (
+            <MealAddStatusBanner
+              label={t("preparing_review_status", {
+                ns: "meals",
+                defaultValue: "Photo analysis started",
+              })}
+            />
+          ) : (
+            <View style={styles.actions}>
+              <Button
+                variant="secondary"
+                label={
+                  uiState === "slow"
+                    ? t("preparing_review_slow_secondary", {
+                        ns: "meals",
+                        defaultValue: "Use manual entry",
+                      })
+                    : t("preparing_review_failed_secondary", {
+                        ns: "meals",
+                        defaultValue: "Add manually",
+                      })
+                }
+                onPress={handleManualEntry}
+                style={styles.secondaryButton}
+              />
+              <Button
+                label={
+                  uiState === "slow"
+                    ? t("preparing_review_slow_primary", {
+                        ns: "meals",
+                        defaultValue: "Keep waiting",
+                      })
+                    : uiState === "offline"
+                      ? t("preparing_review_offline_primary", {
+                          ns: "meals",
+                          defaultValue: "Save draft",
+                        })
+                      : t("preparing_review_failed_primary", {
+                          ns: "meals",
+                          defaultValue: "Try again",
+                        })
+                }
+                onPress={
+                  uiState === "slow"
+                    ? handleKeepWaiting
+                    : uiState === "offline"
+                      ? handleSaveDraft
+                      : handleTryAgain
+                }
+                style={styles.primaryButton}
+              />
+            </View>
+          )
+        }
       />
     </Layout>
   );
 }
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    layout: {
+      paddingTop: 0,
+      paddingBottom: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+    previewImage: {
+      width: "100%",
+      height: "100%",
+    },
+    previewFallback: {
+      flex: 1,
+      backgroundColor: "#121512",
+    },
+    previewOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(18, 21, 18, 0.22)",
+    },
+    actions: {
+      gap: theme.spacing.sm,
+    },
+    secondaryButton: {
+      minHeight: 48,
+      borderRadius: 14,
+    },
+    primaryButton: {
+      minHeight: 54,
+      borderRadius: 14,
+    },
+  });

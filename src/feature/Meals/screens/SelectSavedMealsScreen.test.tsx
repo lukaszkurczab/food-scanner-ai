@@ -68,6 +68,12 @@ jest.mock("@/components", () => {
         { onPress, disabled, testID, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
+    TextButton: ({ label, onPress, disabled, testID }: ButtonProps) =>
+      createElement(
+        Pressable,
+        { onPress, disabled, testID, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
   };
 });
 
@@ -334,7 +340,7 @@ describe("SelectSavedMealScreen", () => {
 
     expect(mockSyncMyMeals).toHaveBeenCalledWith("user-1");
     expect(navigate).toHaveBeenCalledWith("AddMeal", { start: "ReviewMeal" });
-    expect(replace).toHaveBeenCalledWith("MealAddMethod", {
+    expect(navigate).toHaveBeenCalledWith("MealAddMethod", {
       selectionMode: "temporary",
     });
   });

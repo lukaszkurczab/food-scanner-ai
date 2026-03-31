@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 
-type AiCreditsBadgeTone = "accent" | "neutral";
+type AiCreditsBadgeTone = "accent" | "neutral" | "success";
 
 type AiCreditsBadgeProps = {
   text: string;
@@ -19,8 +19,17 @@ export function AiCreditsBadge({
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const containerStyle =
-    tone === "neutral" ? styles.neutralContainer : styles.accentContainer;
-  const textStyle = tone === "neutral" ? styles.neutralText : styles.accentText;
+    tone === "neutral"
+      ? styles.neutralContainer
+      : tone === "success"
+        ? styles.successContainer
+        : styles.accentContainer;
+  const textStyle =
+    tone === "neutral"
+      ? styles.neutralText
+      : tone === "success"
+        ? styles.successText
+        : styles.accentText;
 
   return (
     <View testID={testID} style={[styles.baseContainer, containerStyle]}>
@@ -46,6 +55,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       backgroundColor: theme.surfaceAlt,
       borderColor: theme.border,
     },
+    successContainer: {
+      backgroundColor: theme.success.surface,
+      borderColor: theme.success.main,
+    },
     baseText: {
       fontSize: theme.typography.size.caption,
       lineHeight: theme.typography.lineHeight.caption,
@@ -56,5 +69,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     neutralText: {
       color: theme.textSecondary,
+    },
+    successText: {
+      color: theme.success.text,
     },
   });
