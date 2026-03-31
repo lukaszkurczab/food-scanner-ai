@@ -1,0 +1,237 @@
+import { useMemo, type ReactNode } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import type { PressableProps } from "react-native";
+import { TextButton } from "@/components";
+import { useTheme } from "@/theme/useTheme";
+
+type MealAddPhotoScaffoldProps = {
+  topInset?: number;
+  previewHeight?: number;
+  preview: ReactNode;
+  previewOverlay?: ReactNode;
+  topAction?: ReactNode;
+  eyebrow: string;
+  title: string;
+  description: string;
+  accessory?: ReactNode;
+  content?: ReactNode;
+  footerNote?: string;
+  footerTone?: "default" | "warning";
+};
+
+type MealAddTextLinkProps = Pick<
+  PressableProps,
+  "onPress" | "disabled" | "testID" | "accessibilityRole"
+> & {
+  label: string;
+  tone?: "default" | "muted" | "link";
+  size?: "md" | "sm";
+};
+
+type MealAddStatusBannerProps = {
+  label: string;
+};
+
+export function MealAddPhotoScaffold({
+  topInset,
+  previewHeight,
+  preview,
+  previewOverlay,
+  topAction,
+  eyebrow,
+  title,
+  description,
+  accessory,
+  content,
+  footerNote,
+  footerTone = "default",
+}: MealAddPhotoScaffoldProps) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
+  return (
+    <View
+      style={[
+        styles.screen,
+        topInset !== undefined ? { paddingTop: topInset } : null,
+      ]}
+    >
+      <View
+        style={[
+          styles.previewWrap,
+          previewHeight ? { height: previewHeight } : null,
+        ]}
+      >
+        {preview}
+        {previewOverlay}
+        {topAction}
+      </View>
+
+      <View style={styles.sheet}>
+        <View style={styles.eyebrowRow}>
+          <Text style={styles.eyebrow}>{eyebrow}</Text>
+          {accessory}
+        </View>
+
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.description}>{description}</Text>
+
+        {content ? <View style={styles.content}>{content}</View> : null}
+
+        {footerNote ? (
+          <Text
+            style={[
+              styles.footerNote,
+              footerTone === "warning" ? styles.footerNoteWarning : null,
+            ]}
+          >
+            {footerNote}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+export function MealAddTextLink({
+  label,
+  onPress,
+  disabled = false,
+  testID,
+  accessibilityRole = "button",
+  tone = "link",
+}: MealAddTextLinkProps) {
+  return (
+    <TextButton
+      label={label}
+      onPress={onPress}
+      disabled={disabled}
+      testID={testID}
+      accessibilityRole={accessibilityRole}
+      tone={tone}
+    />
+  );
+}
+
+export function MealAddStatusBanner({ label }: MealAddStatusBannerProps) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStatusStyles(theme), [theme]);
+
+  return (
+    <View style={styles.banner}>
+      <View style={styles.dot} />
+      <Text style={styles.label}>{label}</Text>
+    </View>
+  );
+}
+
+const makeStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      paddingTop: 24,
+      paddingHorizontal: 10,
+      paddingBottom: 0,
+      gap: theme.spacing.sm,
+      backgroundColor: theme.surface,
+    },
+    previewWrap: {
+      height: 428,
+      borderRadius: theme.rounded.xxl,
+      overflow: "hidden",
+      backgroundColor: "#121512",
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      shadowColor: "#000000",
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
+    },
+    sheet: {
+      flex: 1,
+      borderRadius: theme.rounded.xxl,
+      paddingHorizontal: theme.spacing.xl,
+      paddingTop: 28,
+      paddingBottom: theme.spacing.xl,
+      backgroundColor: theme.surface,
+      shadowColor: "#000000",
+      shadowOpacity: 0.12,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: -4 },
+      elevation: 8,
+    },
+    eyebrowRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.md,
+    },
+    eyebrow: {
+      flexShrink: 1,
+      color: theme.primarySoft,
+      fontSize: theme.typography.size.caption,
+      lineHeight: 20,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+    },
+    title: {
+      marginTop: theme.spacing.xs,
+      color: theme.text,
+      fontSize: theme.typography.size.displayM,
+      lineHeight: 32,
+      fontFamily: theme.typography.fontFamily.bold,
+      letterSpacing: 0.1,
+    },
+    description: {
+      marginTop: 18,
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.regular,
+      letterSpacing: 0.2,
+    },
+    content: {
+      marginTop: theme.spacing.lg,
+      gap: theme.spacing.sm,
+    },
+    footerNote: {
+      marginTop: theme.spacing.xs,
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.regular,
+      textAlign: "center",
+    },
+    footerNoteWarning: {
+      color: theme.accentWarm,
+    },
+  });
+
+const makeStatusStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    banner: {
+      minHeight: 52,
+      borderRadius: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+      paddingHorizontal: theme.spacing.md,
+      backgroundColor: theme.success.surface,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.primary,
+    },
+    label: {
+      color: theme.text,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: 20,
+      fontFamily: theme.typography.fontFamily.medium,
+      textAlign: "center",
+    },
+  });

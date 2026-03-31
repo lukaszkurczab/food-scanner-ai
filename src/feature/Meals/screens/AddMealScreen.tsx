@@ -119,6 +119,11 @@ export default function AddMealScreen() {
     if (current.name === "CameraDefault" || current.name === "BarcodeScan") return;
 
     const onBackPress = () => {
+      if (current.name === "ReviewMeal") {
+        navigation.goBack();
+        return true;
+      }
+
       if (stack.length > 1) {
         goBack();
         return true;
@@ -132,7 +137,13 @@ export default function AddMealScreen() {
   }, [current.name, goBack, navigation, stack.length]);
 
   useEffect(() => {
-    if (current.name === "CameraDefault" || current.name === "BarcodeScan") return;
+    if (
+      current.name === "CameraDefault" ||
+      current.name === "BarcodeScan" ||
+      current.name === "ReviewMeal"
+    ) {
+      return;
+    }
 
     const sub = navigation.addListener("beforeRemove", (e) => {
       if (stack.length <= 1) return;

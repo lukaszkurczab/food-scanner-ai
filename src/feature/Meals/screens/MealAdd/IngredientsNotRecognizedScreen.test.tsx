@@ -49,6 +49,12 @@ jest.mock("@/components", () => {
         { onPress, disabled, testID, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
+    TextButton: ({ label, onPress, disabled, testID }: ButtonProps) =>
+      createElement(
+        Pressable,
+        { onPress, disabled, testID, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
   };
 });
 
@@ -57,6 +63,7 @@ const buildProps = (
 ) =>
   ({
     navigation: {
+      navigate: jest.fn<(screen: string, params?: unknown) => void>(),
       replace: jest.fn<(screen: string, params?: unknown) => void>(),
     } as unknown as MealAddScreenProps<"IngredientsNotRecognized">["navigation"],
     flow: {
@@ -130,8 +137,56 @@ describe("IngredientsNotRecognizedScreen", () => {
     fireEvent.press(getByText("Change add method"));
 
     expect(clearMeal).toHaveBeenCalledWith("user-1");
-    expect(props.navigation.replace).toHaveBeenCalledWith("MealAddMethod", {
+    expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
       selectionMode: "temporary",
     });
+  });
+
+  it("renders offline copy and still allows changing the method", () => {
+    const clearMeal = jest.fn();
+    mockUseMealDraftContext.mockReturnValue({ clearMeal });
+    const props = buildProps({
+      image: "file:///meal.jpg",
+      id: "meal-1",
+      reason: "offline",
+    });
+
+    const { getByText } = renderWithTheme(
+      <IngredientsNotRecognizedScreen {...props} />,
+    );
+
+    expect(getByText("You're offline")).toBeTruthy();
+    expect(
+      getByText(
+        "Reconnect to the internet and try again, or add ingredients manually.",
+      ),
+    ).toBeTruthy();
+
+    fireEvent.press(getByText("Change add method"));
+
+    expect(clearMeal).toHaveBeenCalledWith("user-1");
+    expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
+      selectionMode: "temporary",
+    });
+  });
+
+  it("renders timeout copy on the last attempt", () => {
+    const props = buildProps({
+      image: "file:///meal.jpg",
+      id: "meal-1",
+      attempt: 3,
+      reason: "timeout",
+    });
+
+    const { getByText, queryByText } = renderWithTheme(
+      <IngredientsNotRecognizedScreen {...props} />,
+    );
+
+    expect(getByText("AI analysis timed out")).toBeTruthy();
+    expect(
+      getByText("The analysis took too long. Please try again in a moment."),
+    ).toBeTruthy();
+    expect(queryByText("Retake photo (3/3)")).toBeNull();
+    expect(getByText("Change add method")).toBeTruthy();
   });
 });

@@ -21,21 +21,36 @@ export type MealAddScreenName =
   | "BarcodeProductNotFound"
   | "IngredientsNotRecognized";
 
+export type MealAddSimulatorCreditsState = "ok" | "low" | "none";
+
+export type MealAddSimulatorReviewState =
+  | "success"
+  | "slow"
+  | "failed"
+  | "offline";
+
+export type MealAddBarcodeCodeSource = "scan" | "manual";
+
 export type MealAddStepParams = {
   CameraDefault: {
     id?: string;
     skipDetection?: boolean;
     attempt?: number;
     showPremiumModal?: boolean;
+    simulatorCreditsState?: MealAddSimulatorCreditsState;
+    simulatorReviewState?: MealAddSimulatorReviewState;
   };
   BarcodeScan: {
     code?: string;
+    codeSource?: MealAddBarcodeCodeSource;
     showManualEntry?: boolean;
   };
   PreparingReviewPhoto: {
     image: string;
     id?: string;
     attempt?: number;
+    simulatorCreditsState?: MealAddSimulatorCreditsState;
+    simulatorReviewState?: MealAddSimulatorReviewState;
   };
   DescribeMeal: {
     name?: string;
@@ -58,6 +73,7 @@ export type MealAddStepParams = {
   EditMealDetails: Record<string, never>;
   BarcodeProductNotFound: {
     code?: string;
+    codeSource?: MealAddBarcodeCodeSource;
     attempt?: number;
   };
   IngredientsNotRecognized: {

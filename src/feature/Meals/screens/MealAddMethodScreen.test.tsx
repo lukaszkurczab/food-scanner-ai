@@ -207,4 +207,24 @@ describe("MealAddMethodScreen", () => {
     expect(handleDiscardDraft).toHaveBeenCalledTimes(1);
     expect(closeResumeModal).not.toHaveBeenCalled();
   });
+
+  it("dismisses the sheet when tapping the overlay", () => {
+    const navigation = {
+      replace: jest.fn(),
+      navigate: jest.fn(),
+      goBack: jest.fn(),
+    };
+    mockUseNavigation.mockReturnValue(navigation);
+    mockUseMealAddMethodState.mockReturnValue({
+      options: [],
+      handleOptionPress: jest.fn(),
+      showResumeModal: false,
+    });
+
+    const { getAllByRole } = renderWithTheme(<MealAddMethodScreen />);
+
+    fireEvent.press(getAllByRole("button")[0]);
+
+    expect(navigation.goBack).toHaveBeenCalledTimes(1);
+  });
 });

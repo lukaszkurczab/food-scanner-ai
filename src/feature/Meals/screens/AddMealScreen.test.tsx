@@ -50,6 +50,13 @@ jest.mock("../feature/MapMealAddScreens", () => {
           createElement(
             Pressable,
             {
+              onPress: () => props.flow.goTo("ReviewMeal"),
+            },
+            createElement(Text, null, "flow-go-to-no-params"),
+          ),
+          createElement(
+            Pressable,
+            {
               onPress: () => props.flow.replace("ReviewMeal", { replaced: true }),
             },
             createElement(Text, null, "flow-replace"),
@@ -159,6 +166,62 @@ describe("AddMealScreen", () => {
     expect(getByText("params:{}")).toBeTruthy();
   });
 
+  it("maps the DescribeMeal start to the text entry screen", () => {
+    mockUseRoute.mockReturnValue({
+      params: {
+        start: "DescribeMeal",
+      },
+    });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    expect(getByText("screen:DescribeMeal")).toBeTruthy();
+    expect(getByText("params:{}")).toBeTruthy();
+  });
+
+  it("falls back to CameraDefault for unknown start values", () => {
+    mockUseRoute.mockReturnValue({
+      params: {
+        start: "UnexpectedStep",
+        id: "meal-fallback",
+      },
+    });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    expect(getByText("screen:CameraDefault")).toBeTruthy();
+    expect(
+      getByText('params:{"id":"meal-fallback","skipDetection":false,"attempt":1}'),
+    ).toBeTruthy();
+  });
+
+  it("preserves a numeric attempt on unknown fallback starts", () => {
+    mockUseRoute.mockReturnValue({
+      params: {
+        start: "UnexpectedStep",
+        id: "meal-fallback",
+        attempt: 4,
+      },
+    });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    expect(
+      getByText('params:{"id":"meal-fallback","skipDetection":false,"attempt":4}'),
+    ).toBeTruthy();
+  });
+
+  it("defaults to CameraDefault when no route params are provided", () => {
+    mockUseRoute.mockReturnValue({ params: undefined });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    expect(getByText("screen:CameraDefault")).toBeTruthy();
+    expect(
+      getByText('params:{"skipDetection":false,"attempt":1}'),
+    ).toBeTruthy();
+  });
+
   it("maps the EditMealDetails start to the new editor screen", () => {
     const navigation = {
       goBack: jest.fn(),
@@ -223,5 +286,163 @@ describe("AddMealScreen", () => {
     });
     expect(handled).toBe(true);
     expect(navigation.goBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("delegates review back to navigation instead of popping to the previous add-meal step", () => {
+    const navigation = {
+      goBack: jest.fn(),
+      addListener: jest.fn(
+        (_eventName: string, listener: typeof beforeRemoveListener) => {
+          beforeRemoveListener = listener ?? undefined;
+          return jest.fn();
+        },
+      ),
+    };
+    mockUseNavigation.mockReturnValue(navigation);
+    mockUseRoute.mockReturnValue({ params: { start: "EditMealDetails" } });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    fireEvent.press(getByText("flow-replace"));
+    expect(getByText("screen:ReviewMeal")).toBeTruthy();
+
+    let handled = false;
+    act(() => {
+      handled = backHandlerListener?.() ?? false;
+    });
+
+    expect(handled).toBe(true);
+    expect(navigation.goBack).toHaveBeenCalledTimes(1);
+    expect(getByText("screen:ReviewMeal")).toBeTruthy();
+  });
+
+  it("pops stacked non-review steps on hardware back", () => {
+    const navigation = {
+      goBack: jest.fn(),
+      addListener: jest.fn(
+        (_eventName: string, listener: typeof beforeRemoveListener) => {
+          beforeRemoveListener = listener ?? undefined;
+          return jest.fn();
+        },
+      ),
+    };
+    mockUseNavigation.mockReturnValue(navigation);
+    mockUseRoute.mockReturnValue({ params: { start: "EditMealDetails" } });
+
+    const { getByText, queryByText } = renderWithTheme(<AddMealScreen />);
+
+    fireEvent.press(getByText("flow-go-to"));
+    expect(getByText("screen:IngredientsNotRecognized")).toBeTruthy();
+
+    let handled = false;
+    act(() => {
+      handled = backHandlerListener?.() ?? false;
+    });
+
+    expect(handled).toBe(true);
+    expect(queryByText("screen:IngredientsNotRecognized")).toBeNull();
+    expect(getByText("screen:EditMealDetails")).toBeTruthy();
+    expect(navigation.goBack).not.toHaveBeenCalled();
+  });
+
+  it("uses navigation.goBack on hardware back when a non-review step is alone on the stack", () => {
+    const navigation = {
+      goBack: jest.fn(),
+      addListener: jest.fn(
+        (_eventName: string, listener: typeof beforeRemoveListener) => {
+          beforeRemoveListener = listener ?? undefined;
+          return jest.fn();
+        },
+      ),
+    };
+    mockUseNavigation.mockReturnValue(navigation);
+    mockUseRoute.mockReturnValue({ params: { start: "DescribeMeal" } });
+
+    renderWithTheme(<AddMealScreen />);
+
+    let handled = false;
+    act(() => {
+      handled = backHandlerListener?.() ?? false;
+    });
+
+    expect(handled).toBe(true);
+    expect(navigation.goBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the current step when flow.goBack is called on a single-screen stack", () => {
+    mockUseRoute.mockReturnValue({ params: { start: "DescribeMeal" } });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    fireEvent.press(getByText("flow-go-back"));
+
+    expect(getByText("screen:DescribeMeal")).toBeTruthy();
+    expect(getByText("can-go-back:false")).toBeTruthy();
+  });
+
+  it("creates empty params when flow.goTo is called without params", () => {
+    mockUseRoute.mockReturnValue({ params: { start: "DescribeMeal" } });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    fireEvent.press(getByText("flow-go-to-no-params"));
+
+    expect(getByText("screen:ReviewMeal")).toBeTruthy();
+    expect(getByText("params:{}")).toBeTruthy();
+  });
+
+  it("ignores non-back beforeRemove actions for stacked non-review steps", () => {
+    const navigation = {
+      goBack: jest.fn(),
+      addListener: jest.fn(
+        (_eventName: string, listener: typeof beforeRemoveListener) => {
+          beforeRemoveListener = listener ?? undefined;
+          return jest.fn();
+        },
+      ),
+    };
+    mockUseNavigation.mockReturnValue(navigation);
+    mockUseRoute.mockReturnValue({ params: { start: "EditMealDetails" } });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    fireEvent.press(getByText("flow-go-to"));
+
+    const preventDefault = jest.fn();
+    act(() => {
+      beforeRemoveListener?.({
+        data: { action: { type: "NAVIGATE" } },
+        preventDefault,
+      });
+    });
+
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(getByText("screen:IngredientsNotRecognized")).toBeTruthy();
+  });
+
+  it("ignores beforeRemove when a non-review step is alone on the stack", () => {
+    const navigation = {
+      goBack: jest.fn(),
+      addListener: jest.fn(
+        (_eventName: string, listener: typeof beforeRemoveListener) => {
+          beforeRemoveListener = listener ?? undefined;
+          return jest.fn();
+        },
+      ),
+    };
+    mockUseNavigation.mockReturnValue(navigation);
+    mockUseRoute.mockReturnValue({ params: { start: "DescribeMeal" } });
+
+    renderWithTheme(<AddMealScreen />);
+
+    const preventDefault = jest.fn();
+    act(() => {
+      beforeRemoveListener?.({
+        data: { action: { type: "GO_BACK" } },
+        preventDefault,
+      });
+    });
+
+    expect(preventDefault).not.toHaveBeenCalled();
   });
 });
