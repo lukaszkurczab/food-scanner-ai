@@ -68,25 +68,31 @@ export function MealAddPhotoScaffold({
       </View>
 
       <View style={styles.sheet}>
-        <View style={styles.eyebrowRow}>
-          <Text style={styles.eyebrow}>{eyebrow}</Text>
-          {accessory}
+        <View style={styles.header}>
+          <View style={styles.eyebrowRow}>
+            <Text style={styles.eyebrow}>{eyebrow}</Text>
+            {accessory}
+          </View>
+
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.description}>{description}</Text>
         </View>
 
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.description}>{description}</Text>
+        {content || footerNote ? (
+          <View style={styles.bottomSection}>
+            {content ? <View style={styles.content}>{content}</View> : null}
 
-        {content ? <View style={styles.content}>{content}</View> : null}
-
-        {footerNote ? (
-          <Text
-            style={[
-              styles.footerNote,
-              footerTone === "warning" ? styles.footerNoteWarning : null,
-            ]}
-          >
-            {footerNote}
-          </Text>
+            {footerNote ? (
+              <Text
+                style={[
+                  styles.footerNote,
+                  footerTone === "warning" ? styles.footerNoteWarning : null,
+                ]}
+              >
+                {footerNote}
+              </Text>
+            ) : null}
+          </View>
         ) : null}
       </View>
     </View>
@@ -161,6 +167,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       shadowOffset: { width: 0, height: -4 },
       elevation: 8,
     },
+    header: {
+      gap: 0,
+    },
     eyebrowRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -192,12 +201,16 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.regular,
       letterSpacing: 0.2,
     },
+    bottomSection: {
+      flex: 1,
+      justifyContent: "flex-end",
+      paddingTop: theme.spacing.xl,
+    },
     content: {
-      marginTop: theme.spacing.lg,
       gap: theme.spacing.sm,
     },
     footerNote: {
-      marginTop: theme.spacing.xs,
+      marginTop: theme.spacing.md,
       color: theme.textTertiary,
       fontSize: theme.typography.size.caption,
       lineHeight: theme.typography.lineHeight.caption,
