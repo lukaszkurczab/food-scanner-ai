@@ -52,7 +52,7 @@ jest.mock("react-i18next", () => ({
         return options;
       }
       if (key === "meals:photoTitle") return "Photo";
-      if (key === "meals:textTitle") return "Text";
+      if (key === "meals:textTitle") return "Assistant";
       if (key === "meals:barcodeTitle") return "Barcode";
       if (key === "meals:savedTitle") return "Saved meals";
       if (key === "home:methodSelector") return `Method: ${options?.method}`;

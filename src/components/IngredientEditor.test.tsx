@@ -82,4 +82,36 @@ describe("IngredientEditor", () => {
     fireEvent.press(getByText("common:save_changes"));
     expect(onCommit).not.toHaveBeenCalled();
   });
+
+  it("supports the sheet variant actions for adding a new ingredient", () => {
+    const onCommit = jest.fn();
+    const onCancel = jest.fn();
+    const { getByText, queryByText } = renderWithTheme(
+      <IngredientEditor
+        initial={{
+          id: "ing-2",
+          name: "",
+          amount: 1,
+          unit: "g",
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          kcal: 0,
+        }}
+        variant="sheet"
+        submitLabel="meals:add_ingredient"
+        showDelete={false}
+        onCommit={onCommit}
+        onCancel={onCancel}
+        onDelete={() => undefined}
+      />,
+    );
+
+    fireEvent.press(getByText("common:cancel"));
+    fireEvent.press(getByText("meals:add_ingredient"));
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onCommit).toHaveBeenCalledTimes(1);
+    expect(queryByText("common:remove")).toBeNull();
+  });
 });

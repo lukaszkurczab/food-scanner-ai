@@ -9,6 +9,7 @@ export type RootStackParamList = {
           | "BarcodeScan"
           | "DescribeMeal"
           | "ReviewMeal"
+          | "ManualMealEntry"
           | "EditMealDetails";
         id?: string;
         skipDetection?: boolean;

@@ -36,7 +36,7 @@ type AddMealStart = NonNullable<
 >;
 
 type MethodOptionBase = {
-  key: "photo" | "text" | "barcode" | "saved";
+  key: "photo" | "text" | "manual" | "barcode" | "saved";
   icon: AppIconName;
   titleKey: string;
   descKey: string;
@@ -67,12 +67,22 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
   },
   {
     key: "text",
-    icon: "edit",
+    icon: "assistant",
     titleKey: "textTitle",
     descKey: "textDesc",
     screen: "AddMeal",
     params: {
       start: "DescribeMeal",
+    },
+  },
+  {
+    key: "manual",
+    icon: "edit",
+    titleKey: "manualTitle",
+    descKey: "manualDesc",
+    screen: "AddMeal",
+    params: {
+      start: "ManualMealEntry",
     },
   },
   {
@@ -160,6 +170,7 @@ function hasMeaningfulDraft(payload: unknown): boolean {
 function getInputMethodForOption(option: MethodOption): MealInputMethod | null {
   if (option.key === "photo") return "photo";
   if (option.key === "text") return "text";
+  if (option.key === "manual") return "manual";
   if (option.key === "barcode") return "barcode";
   if (option.key === "saved") return "saved";
   return null;

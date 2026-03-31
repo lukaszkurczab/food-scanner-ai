@@ -166,6 +166,19 @@ describe("AddMealScreen", () => {
     expect(getByText("params:{}")).toBeTruthy();
   });
 
+  it("maps the ManualMealEntry start to the dedicated manual screen", () => {
+    mockUseRoute.mockReturnValue({
+      params: {
+        start: "ManualMealEntry",
+      },
+    });
+
+    const { getByText } = renderWithTheme(<AddMealScreen />);
+
+    expect(getByText("screen:ManualMealEntry")).toBeTruthy();
+    expect(getByText("params:{}")).toBeTruthy();
+  });
+
   it("maps the DescribeMeal start to the text entry screen", () => {
     mockUseRoute.mockReturnValue({
       params: {

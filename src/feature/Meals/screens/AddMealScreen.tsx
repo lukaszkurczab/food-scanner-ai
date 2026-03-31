@@ -62,6 +62,10 @@ export default function AddMealScreen() {
       return { name: "ReviewMeal", params: {} };
     }
 
+    if (start === "ManualMealEntry") {
+      return { name: "ManualMealEntry", params: {} };
+    }
+
     if (start === "EditMealDetails") {
       return { name: "EditMealDetails", params: {} };
     }

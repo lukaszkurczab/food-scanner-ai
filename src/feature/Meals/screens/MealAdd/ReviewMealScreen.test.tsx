@@ -136,16 +136,6 @@ jest.mock("@/components", () => {
   };
 });
 
-jest.mock("@/components/MacroChip", () => ({
-  MacroChip: ({ kind, value }: { kind: string; value: number }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Text } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(Text, null, `${kind}:${value}`);
-  },
-}));
-
 const buildMeal = (overrides?: Partial<Meal>): Meal => ({
   userUid: "user-1",
   mealId: "meal-1",
@@ -241,12 +231,12 @@ describe("ReviewMealScreen", () => {
     jest.restoreAllMocks();
   });
 
-  it("routes to edit details and change photo from the new review screen", async () => {
+  it("routes to edit details from the review action block", async () => {
     const ctx = buildDraftContext();
     const testProps = buildProps();
     mockUseMealDraftContext.mockReturnValue(ctx);
 
-    const { getAllByText, getByText } = renderWithTheme(
+    const { getByText } = renderWithTheme(
       <ReviewMealScreen {...testProps.props} />,
     );
 
@@ -254,11 +244,23 @@ describe("ReviewMealScreen", () => {
       expect(mockGetInfoAsync).toHaveBeenCalledWith("file:///meal.jpg");
     });
 
-    fireEvent.press(getAllByText("Edit details")[0]);
-    fireEvent.press(getByText("meals:change_photo"));
+    fireEvent.press(getByText("Edit details"));
 
-    expect(testProps.flowGoTo).toHaveBeenNthCalledWith(1, "EditMealDetails", {});
-    expect(testProps.flowGoTo).toHaveBeenNthCalledWith(2, "CameraDefault", {
+    expect(testProps.flowGoTo).toHaveBeenCalledWith("EditMealDetails", {});
+  });
+
+  it("shows the add-photo slot when the meal has no photo", () => {
+    const ctx = buildDraftContext({ photoUrl: null });
+    const testProps = buildProps();
+    mockUseMealDraftContext.mockReturnValue(ctx);
+
+    const { getByText } = renderWithTheme(
+      <ReviewMealScreen {...testProps.props} />,
+    );
+
+    fireEvent.press(getByText("Add meal photo"));
+
+    expect(testProps.flowGoTo).toHaveBeenCalledWith("CameraDefault", {
       id: "meal-1",
       skipDetection: true,
     });
@@ -276,13 +278,30 @@ describe("ReviewMealScreen", () => {
       <ReviewMealScreen {...testProps.props} />,
     );
 
-    fireEvent.press(getByText("common:save"));
+    fireEvent.press(getByText("Save meal"));
 
     await waitFor(() => {
       expect(addMeal).toHaveBeenCalledTimes(1);
       expect(ctx.clearMeal).toHaveBeenCalledWith("user-1");
       expect(testProps.navigate).toHaveBeenCalledWith("Home");
     });
+  });
+
+  it("shows a quick-check note for low-confidence ai meals", () => {
+    const ctx = buildDraftContext({
+      source: "ai",
+      aiMeta: { confidence: 0.6 },
+    });
+    const testProps = buildProps();
+    mockUseMealDraftContext.mockReturnValue(ctx);
+
+    const { getByText } = renderWithTheme(
+      <ReviewMealScreen {...testProps.props} />,
+    );
+
+    expect(
+      getByText("If something looks off, edit details before saving."),
+    ).toBeTruthy();
   });
 
   it("shows the leave-flow modal on navigation back instead of returning to camera", async () => {

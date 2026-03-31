@@ -4,6 +4,7 @@ import {
   BackHandler,
   Image,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -13,15 +14,11 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import {
   Button,
-  Card,
   Checkbox,
   Layout,
   Modal,
   PhotoPreview,
-  TextButton,
 } from "@/components";
-import AppIcon from "@/components/AppIcon";
-import { MacroChip } from "@/components/MacroChip";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useUserContext } from "@contexts/UserContext";
@@ -32,7 +29,7 @@ import { autoMealName } from "@/utils/autoMealName";
 import type { Meal } from "@/types/meal";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 
-const IMAGE_HEIGHT = 248;
+const IMAGE_HEIGHT = 164;
 
 function isValidIsoDate(value?: string | null) {
   if (!value) return false;
@@ -44,6 +41,14 @@ function formatMealTime(value: Date, locale: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(value);
+}
+
+function formatIngredientValue(amount?: number, unit?: string) {
+  if (!Number.isFinite(amount)) return unit ?? "";
+  const value = Number.isInteger(amount ?? 0)
+    ? String(amount)
+    : (amount ?? 0).toFixed(1);
+  return `${value}${unit ? ` ${unit}` : ""}`.trim();
 }
 
 export default function ReviewMealScreen({
@@ -247,6 +252,18 @@ export default function ReviewMealScreen({
     userData?.uid,
   ]);
 
+  const mealMetaLabel = useMemo(() => {
+    return `${t(meal?.type || "other", { ns: "meals" })} • ${formatMealTime(
+      mealTime,
+      i18n.language || "en",
+    )}`;
+  }, [i18n.language, meal?.type, mealTime, t]);
+
+  const needsQuickCheck =
+    meal?.source === "ai" &&
+    typeof meal.aiMeta?.confidence === "number" &&
+    meal.aiMeta.confidence < 0.8;
+
   if (!meal || !uid) {
     return (
       <Layout showNavigation={false}>
@@ -297,199 +314,189 @@ export default function ReviewMealScreen({
   }
 
   return (
-    <Layout showNavigation={false}>
-      <View style={styles.headerBlock}>
-        <Text style={styles.eyebrow}>
-          {t("review_meal_eyebrow", {
-            ns: "meals",
-            defaultValue: "Review meal",
-          })}
-        </Text>
-        <Text style={styles.title}>{resolvedMealName}</Text>
-        <Text style={styles.subtitle}>
-          {t("review_meal_subtitle", {
-            ns: "meals",
-            defaultValue: "Check the summary, adjust details if needed, then save.",
-          })}
-        </Text>
-      </View>
-
-      {image ? (
-        <View style={styles.imageBlock}>
-          <View style={styles.imageWrapper}>
-            {checkingImage ? (
-              <ActivityIndicator size="large" color={theme.primary} />
-            ) : imageError ? (
-              <View style={styles.imageFallback}>
-                <AppIcon name="image" size={28} color={theme.textSecondary} />
+    <Layout showNavigation={false} disableScroll style={styles.layout}>
+      <View style={styles.screen}>
+        <ScrollView
+          style={styles.scrollArea}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {image && !imageError ? (
+            <View style={styles.heroBlock}>
+              <View style={styles.imageWrapper}>
+                {checkingImage ? (
+                  <ActivityIndicator size="large" color={theme.primary} />
+                ) : (
+                  <Pressable
+                    onPress={() => !saving && setPreviewVisible(true)}
+                    disabled={saving}
+                    style={styles.imagePressable}
+                    testID="review-meal-photo"
+                  >
+                    <Image
+                      key={image}
+                      source={{ uri: image }}
+                      style={styles.image}
+                      resizeMode="cover"
+                      onError={() => setImageError(true)}
+                    />
+                  </Pressable>
+                )}
               </View>
-            ) : (
-              <Pressable
-                onPress={() => !saving && setPreviewVisible(true)}
-                disabled={saving}
-                style={styles.imagePressable}
-              >
-                <Image
-                  key={image}
-                  source={{ uri: image }}
-                  style={styles.image}
-                  resizeMode="cover"
-                  onError={() => setImageError(true)}
-                />
-              </Pressable>
-            )}
-          </View>
+            </View>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              onPress={openCamera}
+              style={({ pressed }) => [
+                styles.addPhotoSlot,
+                pressed ? styles.pressed : null,
+              ]}
+              testID="review-meal-add-photo"
+            >
+              <View style={styles.addPhotoIconCircle}>
+                <Text style={styles.addPhotoPlus}>+</Text>
+              </View>
+              <View style={styles.addPhotoCopy}>
+                <Text style={styles.addPhotoTitle}>
+                  {t("review_meal_add_photo_title", {
+                    ns: "meals",
+                    defaultValue: "Add meal photo",
+                  })}
+                </Text>
+                <Text style={styles.addPhotoSubtitle}>
+                  {t("review_meal_add_photo_optional", {
+                    ns: "meals",
+                    defaultValue: "Optional",
+                  })}
+                </Text>
+              </View>
+            </Pressable>
+          )}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("change_photo", { ns: "meals" })}
-            onPress={openCamera}
-            style={({ pressed }) => [
-              styles.inlineAction,
-              pressed ? styles.inlineActionPressed : null,
-            ]}
-          >
-            <AppIcon name="camera" size={18} color={theme.primary} />
-            <Text style={styles.inlineActionLabel}>
-              {t("change_photo", { ns: "meals" })}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      <Card style={styles.summaryCard}>
-        <View style={styles.macroGrid}>
-          <MacroChip kind="kcal" value={nutrition.kcal} style={styles.macroChip} />
-          <MacroChip
-            kind="protein"
-            value={nutrition.protein}
-            style={styles.macroChip}
-          />
-          <MacroChip kind="carbs" value={nutrition.carbs} style={styles.macroChip} />
-          <MacroChip kind="fat" value={nutrition.fat} style={styles.macroChip} />
-        </View>
-      </Card>
-
-      <Card onPress={handleOpenEdit} style={styles.detailsCard}>
-        <View style={styles.detailsHeader}>
-          <Text style={styles.sectionTitle}>
-            {t("review_meal_details_title", {
-              ns: "meals",
-              defaultValue: "Meal details",
-            })}
-          </Text>
-          <View style={styles.editAffordance}>
-            <Text style={styles.editAffordanceLabel}>
-              {t("review_meal_edit_cta", {
-                ns: "meals",
-                defaultValue: "Edit details",
-              })}
-            </Text>
-            <AppIcon
-              name="chevron-right"
-              size={16}
-              color={theme.textSecondary}
-            />
-          </View>
-        </View>
-
-        <View style={styles.detailRows}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>
-              {t("review_meal_type_label", {
-                ns: "meals",
-                defaultValue: "Meal type",
-              })}
-            </Text>
-            <Text style={styles.detailValue}>{t(meal.type || "other", { ns: "meals" })}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>
-              {t("review_meal_time_label", {
-                ns: "meals",
-                defaultValue: "Time",
-              })}
-            </Text>
-            <Text style={styles.detailValue}>
-              {formatMealTime(mealTime, i18n.language || "en")}
-            </Text>
-          </View>
-        </View>
-      </Card>
-
-      <Card style={styles.ingredientsCard}>
-        <Text style={styles.sectionTitle}>
-          {t("review_meal_ingredients_title", {
-            ns: "meals",
-            defaultValue: "Ingredients",
-          })}
-        </Text>
-        <Text style={styles.ingredientsCount}>
-          {t("review_meal_ingredients_count", {
-            ns: "meals",
-            count: ingredientPreview.totalCount,
-          })}
-        </Text>
-        <View style={styles.ingredientPreviewList}>
-          {ingredientPreview.items.map((ingredient) => (
-            <View key={ingredient.id} style={styles.ingredientPreviewRow}>
-              <Text style={styles.ingredientPreviewName}>{ingredient.name}</Text>
-              <Text style={styles.ingredientPreviewAmount}>
-                {ingredient.amount.toFixed(0)}{ingredient.unit ?? "g"}
+          {needsQuickCheck ? (
+            <View style={styles.reviewNote}>
+              <View style={styles.reviewNoteDot} />
+              <Text style={styles.reviewNoteText}>
+                {t("review_meal_quick_check_note", {
+                  ns: "meals",
+                  defaultValue: "If something looks off, edit details before saving.",
+                })}
               </Text>
             </View>
-          ))}
-          {ingredientPreview.remainingCount > 0 ? (
-            <Text style={styles.ingredientMoreText}>
-              {t("review_meal_ingredients_more", {
-                ns: "meals",
-                count: ingredientPreview.remainingCount,
-                defaultValue: "+{{count}} more",
-              })}
-            </Text>
           ) : null}
+
+          <View style={styles.summaryBlock}>
+            <View style={styles.identityBlock}>
+              <Text style={styles.metaLabel}>{mealMetaLabel}</Text>
+              <Text style={styles.title}>{resolvedMealName}</Text>
+            </View>
+
+            <View style={styles.nutritionCard}>
+              <Text style={styles.kcalValue}>{`${nutrition.kcal} kcal`}</Text>
+              <View style={styles.macroStats}>
+                <View style={styles.macroStat}>
+                  <Text style={styles.macroStatLabel}>
+                    {t("protein", { ns: "meals", defaultValue: "Protein" }).toUpperCase()}
+                  </Text>
+                  <Text style={styles.macroStatValue}>{`${nutrition.protein}g`}</Text>
+                </View>
+                <View style={styles.macroStat}>
+                  <Text style={styles.macroStatLabel}>
+                    {t("carbs", { ns: "meals", defaultValue: "Carbs" }).toUpperCase()}
+                  </Text>
+                  <Text style={styles.macroStatValue}>{`${nutrition.carbs}g`}</Text>
+                </View>
+                <View style={styles.macroStat}>
+                  <Text style={styles.macroStatLabel}>
+                    {t("fat", { ns: "meals", defaultValue: "Fat" }).toUpperCase()}
+                  </Text>
+                  <Text style={styles.macroStatValue}>{`${nutrition.fat}g`}</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.itemsCard}>
+              {ingredientPreview.items.length > 0 ? (
+                <>
+                  {ingredientPreview.items.map((ingredient, index) => (
+                    <View key={ingredient.id} style={styles.itemRow}>
+                      <Text style={styles.itemName}>{ingredient.name}</Text>
+                      <Text style={styles.itemValue}>
+                        {formatIngredientValue(ingredient.amount, ingredient.unit)}
+                      </Text>
+                      {index < ingredientPreview.items.length - 1 ||
+                      ingredientPreview.remainingCount > 0 ? (
+                        <View style={styles.itemDivider} />
+                      ) : null}
+                    </View>
+                  ))}
+                  {ingredientPreview.remainingCount > 0 ? (
+                    <Text style={styles.ingredientMoreText}>
+                      {t("review_meal_ingredients_more", {
+                        ns: "meals",
+                        count: ingredientPreview.remainingCount,
+                        defaultValue: "+{{count}} more",
+                      })}
+                    </Text>
+                  ) : null}
+                </>
+              ) : (
+                <Text style={styles.emptyIngredientsText}>
+                  {t("review_meal_edit_no_ingredients_title", {
+                    ns: "meals",
+                    defaultValue: "No ingredients yet",
+                  })}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.preferenceRow}>
+            <Checkbox
+              checked={saveToMyMeals}
+              onChange={!saving ? setSaveToMyMeals : () => {}}
+              style={styles.checkboxSpacing}
+              disabled={saving}
+            />
+            <Text style={styles.checkboxLabel}>
+              {isFromSaved
+                ? t("update_in_my_meals", {
+                    ns: "meals",
+                    defaultValue: "Update in My Meals",
+                  })
+                : t("add_to_my_meals", { ns: "meals" })}
+            </Text>
+          </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <Button
+            variant="secondary"
+            label={t("review_meal_edit_cta", {
+              ns: "meals",
+              defaultValue: "Edit details",
+            })}
+            accessibilityLabel={t("review_meal_edit_cta", { ns: "meals" })}
+            onPress={handleOpenEdit}
+            disabled={saving}
+            style={styles.editButton}
+          />
+          <Button
+            label={t("review_meal_save_cta", {
+              ns: "meals",
+              defaultValue: "Save meal",
+            })}
+            onPress={() => {
+              void handleSave();
+            }}
+            loading={saving}
+            disabled={saving}
+            style={styles.saveButton}
+            testID="meal-result-save-button"
+          />
         </View>
-      </Card>
-
-      <View style={styles.rowCenter}>
-        <Checkbox
-          checked={saveToMyMeals}
-          onChange={!saving ? setSaveToMyMeals : () => {}}
-          style={styles.checkboxSpacing}
-          disabled={saving}
-        />
-        <Text style={styles.checkboxLabel}>
-          {isFromSaved
-            ? t("update_in_my_meals", {
-                ns: "meals",
-                defaultValue: "Update in My Meals",
-              })
-            : t("add_to_my_meals", { ns: "meals" })}
-        </Text>
-      </View>
-
-      <View style={styles.footer}>
-        <Button
-          label={t("save", { ns: "common" })}
-          onPress={() => {
-            void handleSave();
-          }}
-          loading={saving}
-          disabled={saving}
-        />
-        <TextButton
-          label={t("review_meal_edit_cta", {
-            ns: "meals",
-            defaultValue: "Edit details",
-          })}
-          accessibilityLabel={t("review_meal_edit_cta", { ns: "meals" })}
-          onPress={handleOpenEdit}
-        />
-        <TextButton
-          label={t("cancel", { ns: "common" })}
-          accessibilityLabel={t("cancel", { ns: "common" })}
-          onPress={() => setShowCancelModal(true)}
-        />
       </View>
 
       <Modal
@@ -513,44 +520,33 @@ export default function ReviewMealScreen({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    headerBlock: {
-      gap: theme.spacing.xs,
-      marginBottom: theme.spacing.md,
+    layout: {
+      paddingLeft: theme.spacing.screenPaddingWide,
+      paddingRight: theme.spacing.screenPaddingWide,
+      paddingBottom: 0,
     },
-    eyebrow: {
-      color: theme.primary,
-      fontSize: theme.typography.size.labelS,
-      lineHeight: theme.typography.lineHeight.labelS,
-      fontFamily: theme.typography.fontFamily.medium,
-      textTransform: "uppercase",
-      letterSpacing: 0.6,
+    screen: {
+      flex: 1,
     },
-    title: {
-      color: theme.text,
-      fontSize: theme.typography.size.title,
-      lineHeight: theme.typography.lineHeight.title,
-      fontFamily: theme.typography.fontFamily.bold,
+    scrollArea: {
+      flex: 1,
     },
-    subtitle: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
-      maxWidth: 360,
+    scrollContent: {
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.xxxl + 104,
+      gap: theme.spacing.md,
     },
-    imageBlock: {
-      marginBottom: theme.spacing.lg,
-      alignItems: "center",
+    heroBlock: {
+      gap: theme.spacing.sm,
     },
     imageWrapper: {
       width: "100%",
       height: IMAGE_HEIGHT,
-      borderRadius: theme.rounded.xl,
+      borderRadius: theme.rounded.xl + 2,
       overflow: "hidden",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.surfaceElevated,
-      borderWidth: 1,
-      borderColor: theme.borderSoft,
+      backgroundColor: theme.surfaceAlt,
     },
     imagePressable: {
       width: "100%",
@@ -561,118 +557,166 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       height: "100%",
       backgroundColor: theme.borderSoft,
     },
-    imageFallback: {
+    addPhotoSlot: {
+      minHeight: 78,
+      borderRadius: theme.rounded.xl + 2,
+      backgroundColor: theme.surfaceAlt,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+    },
+    addPhotoIconCircle: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
       alignItems: "center",
       justifyContent: "center",
     },
-    inlineAction: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: theme.spacing.xs,
-      marginTop: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-    },
-    inlineActionPressed: {
-      opacity: 0.72,
-    },
-    inlineActionLabel: {
+    addPhotoPlus: {
       color: theme.primary,
-      fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    summaryCard: {
-      marginBottom: theme.spacing.md,
-      padding: theme.spacing.md,
-    },
-    macroGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: theme.spacing.md,
-      justifyContent: "space-between",
-    },
-    macroChip: {
-      width: "47%",
-    },
-    detailsCard: {
-      marginBottom: theme.spacing.md,
-    },
-    detailsHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.md,
-    },
-    sectionTitle: {
-      color: theme.text,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
+      fontSize: 22,
+      lineHeight: 22,
       fontFamily: theme.typography.fontFamily.bold,
     },
-    editAffordance: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: theme.spacing.xs,
+    addPhotoCopy: {
+      gap: 2,
+      flex: 1,
     },
-    editAffordanceLabel: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    detailRows: {
-      gap: theme.spacing.sm,
-    },
-    detailRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: theme.spacing.sm,
-    },
-    detailLabel: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-    },
-    detailValue: {
+    addPhotoTitle: {
       color: theme.text,
       fontSize: theme.typography.size.bodyM,
       lineHeight: theme.typography.lineHeight.bodyM,
       fontFamily: theme.typography.fontFamily.medium,
-      textAlign: "right",
     },
-    ingredientsCard: {
-      marginBottom: theme.spacing.sm,
+    addPhotoSubtitle: {
+      color: theme.primary,
+      fontSize: 11,
+      lineHeight: 14,
+      fontFamily: theme.typography.fontFamily.medium,
     },
-    ingredientsCount: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      marginTop: theme.spacing.xs,
-      marginBottom: theme.spacing.sm,
-    },
-    ingredientPreviewList: {
-      gap: theme.spacing.sm,
-    },
-    ingredientPreviewRow: {
+    reviewNote: {
+      minHeight: 54,
+      borderRadius: theme.rounded.md,
+      backgroundColor: theme.warning.surface,
       flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: theme.spacing.sm,
+      alignItems: "flex-start",
+      gap: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
     },
-    ingredientPreviewName: {
+    reviewNoteDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.accentWarm,
+      marginTop: 6,
+    },
+    reviewNoteText: {
       flex: 1,
       color: theme.text,
-      fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
-    },
-    ingredientPreviewAmount: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
+      fontSize: 14,
+      lineHeight: 20,
       fontFamily: theme.typography.fontFamily.medium,
+    },
+    summaryBlock: {
+      gap: theme.spacing.md,
+    },
+    identityBlock: {
+      gap: theme.spacing.xs,
+    },
+    metaLabel: {
+      color: theme.primary,
+      fontSize: 15,
+      lineHeight: 22,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    title: {
+      color: theme.text,
+      fontSize: 26,
+      lineHeight: 32,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    nutritionCard: {
+      minHeight: 104,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.primary + "3d",
+      backgroundColor: theme.surface,
+      paddingHorizontal: 18,
+      paddingVertical: 22,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    kcalValue: {
+      color: theme.text,
+      fontSize: 28,
+      lineHeight: 34,
+      fontFamily: theme.typography.fontFamily.bold,
+    },
+    macroStats: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 18,
+    },
+    macroStat: {
+      alignItems: "center",
+      gap: 4,
+    },
+    macroStatLabel: {
+      color: theme.primary,
+      fontSize: 10,
+      lineHeight: 12,
+      fontFamily: theme.typography.fontFamily.medium,
+      letterSpacing: 0.3,
+    },
+    macroStatValue: {
+      color: theme.text,
+      fontSize: 16,
+      lineHeight: 22,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    itemsCard: {
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: theme.primary + "59",
+      backgroundColor: theme.surface,
+      padding: 18,
+      gap: 9,
+    },
+    itemRow: {
+      gap: theme.spacing.xs,
+    },
+    itemDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.border,
+      marginTop: theme.spacing.xs,
+    },
+    itemName: {
+      flex: 1,
+      color: theme.text,
+      fontSize: 16,
+      lineHeight: 20,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    itemValue: {
+      position: "absolute",
+      right: 0,
+      top: 0,
+      color: theme.textSecondary,
+      fontSize: 16,
+      lineHeight: 20,
+      fontFamily: theme.typography.fontFamily.medium,
+      textAlign: "right",
     },
     ingredientMoreText: {
       color: theme.textSecondary,
@@ -680,23 +724,45 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.medium,
     },
-    rowCenter: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: theme.spacing.md,
-    },
-    checkboxSpacing: {
-      marginRight: theme.spacing.sm,
-    },
-    checkboxLabel: {
-      flex: 1,
-      color: theme.text,
+    emptyIngredientsText: {
+      color: theme.textSecondary,
       fontSize: theme.typography.size.bodyM,
       lineHeight: theme.typography.lineHeight.bodyM,
     },
+    preferenceRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    checkboxSpacing: {
+      marginRight: 0,
+    },
+    checkboxLabel: {
+      flex: 1,
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+    },
     footer: {
-      gap: theme.spacing.xs,
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: theme.background,
+      paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing.sm,
+      gap: theme.spacing.sm,
+    },
+    editButton: {
+      minHeight: 48,
+      borderRadius: 14,
+    },
+    saveButton: {
+      minHeight: 54,
+      borderRadius: 14,
+    },
+    pressed: {
+      opacity: 0.82,
     },
     emptyWrap: {
       flex: 1,
