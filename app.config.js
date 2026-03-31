@@ -56,7 +56,7 @@ export default {
         {
           image: "./assets/splash.png",
           imageWidth: 180,
-          backgroundColor: "#FFFDF8",
+          backgroundColor: "#F7F2EA",
         },
       ],
       [

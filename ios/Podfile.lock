@@ -336,6 +336,8 @@ PODS:
     - ExpoModulesCore
   - ExpoSharing (13.1.5):
     - ExpoModulesCore
+  - ExpoSplashScreen (0.30.10):
+    - ExpoModulesCore
   - ExpoSQLite (16.0.10):
     - ExpoModulesCore
   - EXTaskManager (13.1.6):
@@ -408,8 +410,8 @@ PODS:
   - libwebp/sharpyuv (1.5.0)
   - libwebp/webp (1.5.0):
     - libwebp/sharpyuv
-  - PurchasesHybridCommon (17.41.0):
-    - RevenueCat (= 5.59.2)
+  - PurchasesHybridCommon (17.53.0):
+    - RevenueCat (= 5.66.0)
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion
@@ -2209,7 +2211,7 @@ PODS:
     - React-perflogger (= 0.79.5)
     - React-utils (= 0.79.5)
   - RecaptchaInterop (101.0.0)
-  - RevenueCat (5.59.2)
+  - RevenueCat (5.66.0)
   - RNCAsyncStorage (2.1.2):
     - DoubleConversion
     - glog
@@ -2292,8 +2294,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNPurchases (9.10.4):
-    - PurchasesHybridCommon (= 17.41.0)
+  - RNPurchases (9.15.0):
+    - PurchasesHybridCommon (= 17.53.0)
     - React-Core
   - RNReanimated (3.17.5):
     - DoubleConversion
@@ -2526,7 +2528,7 @@ PODS:
   - RNZipArchive/Core (7.0.2):
     - React-Core
     - SSZipArchive (~> 2.5.5)
-  - SDWebImage/Core (5.21.6)
+  - SDWebImage/Core (5.21.7)
   - SDWebImageWebPCoder (0.15.0):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
@@ -2570,6 +2572,7 @@ DEPENDENCIES:
   - ExpoPrint (from `../node_modules/expo-print/ios`)
   - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
   - ExpoSharing (from `../node_modules/expo-sharing/ios`)
+  - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSQLite (from `../node_modules/expo-sqlite/ios`)
   - EXTaskManager (from `../node_modules/expo-task-manager/ios`)
   - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
@@ -2741,6 +2744,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-secure-store/ios"
   ExpoSharing:
     :path: "../node_modules/expo-sharing/ios"
+  ExpoSplashScreen:
+    :path: "../node_modules/expo-splash-screen/ios"
   ExpoSQLite:
     :path: "../node_modules/expo-sqlite/ios"
   EXTaskManager:
@@ -2949,6 +2954,7 @@ SPEC CHECKSUMS:
   ExpoPrint: 187f43f5d16bc8db93fb6609707ed40b8e90d3a6
   ExpoSecureStore: 833b24a0d7feffef4505184910c058221066011e
   ExpoSharing: 04b346bdd7c8ea1fa87047ac7bba65c37bde4f51
+  ExpoSplashScreen: 6f9213be0c60f2756a2f8220c36f4b90c55e3dbd
   ExpoSQLite: 087db2057a7f1e9da38a8126f4388a324f9a4522
   EXTaskManager: 2b246319ee42b15142caa0b9a168d52979821700
   EXUpdatesInterface: 64f35449b8ef89ce08cdd8952a4d119b5de6821d
@@ -2967,7 +2973,7 @@ SPEC CHECKSUMS:
   GTMSessionFetcher: fc75fc972958dceedee61cb662ae1da7a83a91cf
   hermes-engine: f03b0e06d3882d71e67e45b073bb827da1a21aae
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
-  PurchasesHybridCommon: 0fc10b0328a4dca5c607f845130e59f7427f4b69
+  PurchasesHybridCommon: 53d966ac5c39df13c3c759289bb3ef3e2f9f1622
   RCT-Folly: 36fe2295e44b10d831836cc0d1daec5f8abcf809
   RCTDeprecation: 5f638f65935e273753b1f31a365db6a8d6dc53b5
   RCTRequired: 8b46a520ea9071e2bc47d474aa9ca31b4a935bd8
@@ -3036,19 +3042,19 @@ SPEC CHECKSUMS:
   ReactCodegen: 28eb66b3670b0f91cae893a4b3b34813c305c34f
   ReactCommon: 3dbed0a44e9e5d7b77b0f35983633aa5d33c9694
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
-  RevenueCat: f352b3661288080bd8bf30bbb96e331940e73c88
+  RevenueCat: a3cf721ad8b1b56a930d748a40342aba16c09bbb
   RNCAsyncStorage: e25fda4679876e5204c4c502d297757ec1f17ced
   RNDateTimePicker: 9d94d39bcece53d0dfdb64e18b409d9005529191
   RNDeviceInfo: 8b6fa8379062949dd79a009cf3d6b02a9c03ca59
   RNFBApp: d15dab17b5639fb7f95712d07c204912a534b8c6
   RNFBAuth: d671a6c27eac871a90c7fbc000e5236b070af055
   RNGestureHandler: 85b0463dbfed54eaba4360e31c0aa1a0fe83a6a6
-  RNPurchases: 5579fd0a7ec0bf5ac5c4317ac5b9577e9283edea
+  RNPurchases: 41ca969b51935260a9b874d1358535286d496d3b
   RNReanimated: 7b926938d4190114e5848b5b022d83dbc2c0fe2c
   RNScreens: d9d5d8a2a484bb4446968bfa00db991f1117db44
   RNSVG: 257f59c952e296c9c36035a8f49b61fda48e398a
   RNZipArchive: 421f5f056eddfe72f56ac4400608d202d2c53674
-  SDWebImage: 1bb6a1b84b6fe87b972a102bdc77dd589df33477
+  SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   SDWebImageWebPCoder: 0e06e365080397465cc73a7a9b472d8a3bd0f377
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   SSZipArchive: c69881e8ac5521f0e622291387add5f60f30f3c4
