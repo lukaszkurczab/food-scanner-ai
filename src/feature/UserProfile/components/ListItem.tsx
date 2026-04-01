@@ -34,10 +34,7 @@ export const ListItem: React.FC<ListItemProps> = ({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const isInactive = disabled || loading;
-  const labelStyle = useMemo(
-    () => ({ color: theme.text }),
-    [theme.text]
-  );
+  const labelStyle = useMemo(() => ({ color: theme.text }), [theme.text]);
 
   return (
     <Pressable
@@ -109,6 +106,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     chevron: {
       marginLeft: theme.spacing.sm + theme.spacing.xs,
+      transform: [{ rotate: "180deg" }],
     },
   });
 
