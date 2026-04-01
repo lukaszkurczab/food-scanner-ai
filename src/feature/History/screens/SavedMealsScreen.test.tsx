@@ -225,9 +225,7 @@ describe("SavedMealsScreen", () => {
     mockSyncMyMeals.mockResolvedValue(undefined);
     mockUuid.mockReset();
     mockUuid
-      .mockReturnValueOnce("base-draft-id")
       .mockReturnValueOnce("duplicated-meal-id")
-      .mockReturnValueOnce("base-edit-id")
       .mockReturnValueOnce("edited-meal-id");
     mockUseNetInfo.mockReturnValue({ isConnected: true });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
