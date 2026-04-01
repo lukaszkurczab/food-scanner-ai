@@ -1,0 +1,168 @@
+import type { ReactNode } from "react";
+import { fireEvent } from "@testing-library/react-native";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import DescribeMealScreen from "@/feature/Meals/screens/MealAdd/DescribeMealScreen";
+import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
+import { renderWithTheme } from "@/test-utils/renderWithTheme";
+
+type ButtonProps = {
+  label: string;
+  onPress?: () => void;
+  disabled?: boolean;
+  testID?: string;
+};
+
+type TextInputProps = {
+  label?: string;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+};
+
+const mockUseMealTextAiState = jest.fn();
+
+jest.mock("@/feature/Meals/hooks/useMealTextAiState", () => ({
+  useMealTextAiState: (params: unknown) => mockUseMealTextAiState(params),
+}));
+
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    i18n: { language: "pl" },
+    t: (key: string, options?: { ns?: string; defaultValue?: string }) =>
+      options?.defaultValue ?? (options?.ns ? `${options.ns}:${key}` : key),
+  }),
+}));
+
+jest.mock("@/components", () => {
+  const { createElement } =
+    jest.requireActual<typeof import("react")>("react");
+  const { Pressable, Text, View } =
+    jest.requireActual<typeof import("react-native")>("react-native");
+
+  return {
+    __esModule: true,
+    Layout: ({ children }: { children?: ReactNode }) =>
+      createElement(View, null, children),
+    Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
+      createElement(
+        Pressable,
+        { onPress, disabled, testID, accessibilityRole: "button" },
+        createElement(Text, null, label),
+      ),
+    ErrorBox: ({ message }: { message: string }) =>
+      createElement(Text, null, message),
+    Modal: () => null,
+    TextInput: ({ label, autoCapitalize }: TextInputProps) =>
+      createElement(
+        View,
+        null,
+        createElement(Text, null, label ?? ""),
+        createElement(
+          Text,
+          {
+            testID:
+              label === "meals:meal_name"
+                ? "describe-meal-name-autocap"
+                : "describe-meal-description-autocap",
+          },
+          autoCapitalize ?? "undefined",
+        ),
+      ),
+  };
+});
+
+jest.mock("@/components/AiCreditsBadge", () => ({
+  AiCreditsBadge: () => null,
+}));
+
+jest.mock("@/feature/Meals/components/MealAddPhotoScaffold", () => ({
+  MealAddPhotoScaffold: ({
+    preview,
+    content,
+  }: {
+    preview?: ReactNode;
+    content?: ReactNode;
+  }) => {
+    const { createElement } =
+      jest.requireActual<typeof import("react")>("react");
+    const { View } =
+      jest.requireActual<typeof import("react-native")>("react-native");
+
+    return createElement(View, null, preview, content);
+  },
+  MealAddTextLink: ({ label, onPress, disabled, testID }: ButtonProps) => {
+    const { createElement } =
+      jest.requireActual<typeof import("react")>("react");
+    const { Pressable, Text } =
+      jest.requireActual<typeof import("react-native")>("react-native");
+
+    return createElement(
+      Pressable,
+      { onPress, disabled, testID, accessibilityRole: "button" },
+      createElement(Text, null, label),
+    );
+  },
+}));
+
+describe("DescribeMealScreen", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseMealTextAiState.mockReturnValue({
+      name: "",
+      quickDescription: "",
+      loading: false,
+      showLimitModal: false,
+      creditsUsed: 0,
+      descriptionError: undefined,
+      submitError: undefined,
+      analyzeDisabled: false,
+      creditAllocation: 100,
+      onNameChange: jest.fn(),
+      onQuickDescriptionChange: jest.fn(),
+      onAnalyze: jest.fn(),
+      closeLimitModal: jest.fn(),
+      openPaywall: jest.fn(),
+    });
+  });
+
+  it("does not auto-capitalize the meal name input", () => {
+    const props = {
+      navigation: { navigate: jest.fn() } as never,
+      flow: {
+        goTo: jest.fn(),
+        replace: jest.fn(),
+        goBack: jest.fn(),
+        canGoBack: jest.fn(() => true),
+      } as unknown as MealAddScreenProps<"DescribeMeal">["flow"],
+      params: {},
+    } as MealAddScreenProps<"DescribeMeal">;
+
+    const { getByTestId } = renderWithTheme(<DescribeMealScreen {...props} />);
+
+    expect(getByTestId("describe-meal-name-autocap").props.children).toBe("none");
+  });
+
+  it("opens the temporary method chooser", () => {
+    const props = {
+      navigation: { navigate: jest.fn() } as never,
+      flow: {
+        goTo: jest.fn(),
+        replace: jest.fn(),
+        goBack: jest.fn(),
+        canGoBack: jest.fn(() => true),
+      } as unknown as MealAddScreenProps<"DescribeMeal">["flow"],
+      params: {},
+    } as MealAddScreenProps<"DescribeMeal">;
+
+    const { getByText } = renderWithTheme(<DescribeMealScreen {...props} />);
+
+    fireEvent.press(getByText("meals:change_method"));
+
+    expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
+      selectionMode: "temporary",
+      origin: "mealAddFlow",
+    });
+  });
+});

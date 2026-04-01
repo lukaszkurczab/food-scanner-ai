@@ -152,13 +152,7 @@ export default function BarcodeProductNotFoundScreen({
     } finally {
       setLookupLoading(false);
     }
-  }, [
-    flow,
-    lookupLoading,
-    manualCode,
-    persistBarcodeMeal,
-    t,
-  ]);
+  }, [flow, lookupLoading, manualCode, persistBarcodeMeal, t]);
 
   useEffect(() => {
     setManualCode(code ?? "");
@@ -260,7 +254,6 @@ export default function BarcodeProductNotFoundScreen({
                         "Numeric input only. Usually 8 to 13 digits.",
                     })}
                     error={manualError}
-                    autoCapitalize="none"
                   />
                   {lookupError ? <ErrorBox message={lookupError} /> : null}
                   <Button

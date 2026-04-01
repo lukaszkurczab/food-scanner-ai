@@ -69,7 +69,6 @@ export default function DescribeMealScreen({
                 placeholder={t("describe_meal_name_placeholder", {
                   ns: "meals",
                 })}
-                autoCapitalize="words"
                 autoCorrect={false}
                 spellCheck={false}
                 maxLength={80}

@@ -9,12 +9,7 @@ import {
 import { useTranslation } from "react-i18next";
 import NetInfo from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
-import {
-  BackTitleHeader,
-  TextInput,
-  ErrorBox,
-  Layout,
-} from "@/components";
+import { BackTitleHeader, TextInput, ErrorBox, Layout } from "@/components";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import AppIcon from "@/components/AppIcon";
 import { useUserContext } from "@contexts/UserContext";
@@ -107,10 +102,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
   );
 
   return (
-    <Layout
-      showNavigation={false}
-      disableScroll
-    >
+    <Layout showNavigation={false} disableScroll>
       <View style={styles.container}>
         <ScrollView
           style={styles.formScroll}
@@ -129,7 +121,6 @@ export default function ChangePasswordScreen({ navigation }: Props) {
           <TextInput
             label={t("profile:old_password")}
             value={oldPassword}
-            autoCapitalize="none"
             autoComplete="current-password"
             textContentType="password"
             placeholder={t("profile:enter_current_password")}
@@ -149,7 +140,6 @@ export default function ChangePasswordScreen({ navigation }: Props) {
           <TextInput
             label={t("profile:new_password")}
             value={newPassword}
-            autoCapitalize="none"
             autoComplete="new-password"
             textContentType="newPassword"
             placeholder={t("profile:enter_new_password")}
@@ -169,7 +159,6 @@ export default function ChangePasswordScreen({ navigation }: Props) {
           <TextInput
             label={t("profile:confirm_new_password")}
             value={confirmPassword}
-            autoCapitalize="none"
             autoComplete="new-password"
             textContentType="newPassword"
             placeholder={t("profile:repeat_new_password")}

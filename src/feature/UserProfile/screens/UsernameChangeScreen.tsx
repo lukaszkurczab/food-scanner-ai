@@ -3,12 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
-import {
-  BackTitleHeader,
-  TextInput,
-  Layout,
-  ErrorBox,
-} from "@/components";
+import { BackTitleHeader, TextInput, Layout, ErrorBox } from "@/components";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import {
   isUsernameAvailable,
@@ -149,16 +144,13 @@ export default function UsernameChangeScreen({ navigation }: Props) {
             }}
             onBlur={() => setTouched((t) => ({ ...t, username: true }))}
             placeholder={t("newUsernamePlaceholder", { ns: "profile" })}
-            autoCapitalize="none"
             autoCorrect={false}
             error={touched.username ? errors.username : undefined}
             disabled={loading}
             style={styles.input}
           />
 
-          <Text style={styles.label}>
-            {t("password", { ns: "profile" })}
-          </Text>
+          <Text style={styles.label}>{t("password", { ns: "profile" })}</Text>
           <TextInput
             value={password}
             onChangeText={(val) => {
@@ -179,7 +171,9 @@ export default function UsernameChangeScreen({ navigation }: Props) {
             label={t("confirm", { ns: "profile" })}
             onPress={onSubmit}
             primaryLoading={loading}
-            primaryDisabled={loading || !username || username.length < 3 || !password}
+            primaryDisabled={
+              loading || !username || username.length < 3 || !password
+            }
             secondaryLabel={t("cancel", { ns: "profile" })}
             secondaryOnPress={() => navigation.goBack()}
             secondaryDisabled={loading}

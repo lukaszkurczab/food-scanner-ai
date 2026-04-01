@@ -3,12 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
 import { useUserContext } from "@contexts/UserContext";
-import {
-  BackTitleHeader,
-  Layout,
-  TextInput,
-  ErrorBox,
-} from "@/components";
+import { BackTitleHeader, Layout, TextInput, ErrorBox } from "@/components";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -51,7 +46,7 @@ export default function ChangeEmailScreen({ navigation }: Props) {
   const [password, setPassword] = useState("");
   const [touched, setTouched] = useState({ email: false, password: false });
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
-    {}
+    {},
   );
   const [criticalError, setCriticalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -128,9 +123,7 @@ export default function ChangeEmailScreen({ navigation }: Props) {
             title={t("changeEmail", { ns: "profile" })}
             onBack={() => navigation.goBack()}
           />
-          <Text style={styles.label}>
-            {t("newEmail", { ns: "profile" })}
-          </Text>
+          <Text style={styles.label}>{t("newEmail", { ns: "profile" })}</Text>
           <TextInput
             value={email}
             onChangeText={(val) => {
@@ -139,7 +132,6 @@ export default function ChangeEmailScreen({ navigation }: Props) {
             }}
             onBlur={() => setTouched((t) => ({ ...t, email: true }))}
             placeholder={t("email", { ns: "login" })}
-            autoCapitalize="none"
             autoCorrect={false}
             keyboardType="email-address"
             error={touched.email ? errors.email : undefined}
@@ -147,9 +139,7 @@ export default function ChangeEmailScreen({ navigation }: Props) {
             style={styles.input}
           />
 
-          <Text style={styles.label}>
-            {t("password", { ns: "profile" })}
-          </Text>
+          <Text style={styles.label}>{t("password", { ns: "profile" })}</Text>
           <TextInput
             value={password}
             onChangeText={(val) => {

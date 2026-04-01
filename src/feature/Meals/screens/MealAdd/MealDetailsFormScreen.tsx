@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Button, Clock12h, Clock24h, Layout, TextInput } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import { IngredientEditor } from "@/components/IngredientEditor";
+import { MealAddTextLink } from "@/feature/Meals/components/MealAddPhotoScaffold";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -34,7 +35,10 @@ type Mode = "manual" | "review";
 type Props = {
   flow: MealAddFlowApi;
   navigation: {
-    navigate: (screen: "Home") => void;
+    navigate: (
+      screen: "Home" | "MealAddMethod",
+      params?: { selectionMode: "temporary"; origin: "mealAddFlow" },
+    ) => void;
   };
   mode: Mode;
 };
@@ -285,6 +289,13 @@ export function MealDetailsFormScreen({ flow, navigation, mode }: Props) {
     pickerDate,
     uid,
   ]);
+
+  const handleChangeMethod = useCallback(() => {
+    navigation.navigate("MealAddMethod", {
+      selectionMode: "temporary",
+      origin: "mealAddFlow",
+    });
+  }, [navigation]);
 
   const selectedAt = getMealDateOrNow(mealTimestamp);
 
@@ -578,6 +589,16 @@ export function MealDetailsFormScreen({ flow, navigation, mode }: Props) {
             disabled={isManualMode ? manualSubmitDisabled : false}
             testID={isManualMode ? "manual-meal-save-button" : undefined}
           />
+          {isManualMode ? (
+            <MealAddTextLink
+              label={t("change_method", {
+                ns: "meals",
+                defaultValue: "Change add method",
+              })}
+              onPress={handleChangeMethod}
+              testID="manual-change-method-button"
+            />
+          ) : null}
         </View>
       </View>
 
@@ -949,6 +970,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       bottom: 0,
       paddingTop: theme.spacing.md,
       paddingBottom: theme.spacing.sm,
+      gap: theme.spacing.xs,
       backgroundColor: theme.background,
     },
     sheetOverlay: {

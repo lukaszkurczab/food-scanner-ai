@@ -46,6 +46,12 @@ jest.mock("@/components", () => {
         { onPress, accessibilityRole: "button", disabled },
         createElement(Text, null, label),
       ),
+    TextButton: ({ label, onPress, disabled, testID }: ButtonProps & { testID?: string }) =>
+      createElement(
+        Pressable,
+        { onPress, accessibilityRole: "button", disabled, testID },
+        createElement(Text, null, label),
+      ),
     TextInput: ({
       value,
       onChangeText,
@@ -134,6 +140,27 @@ describe("ManualMealEntryScreen", () => {
         }),
       );
       expect(props.flow.replace).toHaveBeenCalledWith("ReviewMeal", {});
+    });
+  });
+
+  it("opens the method chooser from manual entry", () => {
+    const props = buildProps();
+
+    mockUseMealDraftContext.mockReturnValue({
+      meal: buildMeal(),
+      loadDraft: jest.fn(async () => undefined),
+      saveDraft: jest.fn(async () => undefined),
+      setMeal: jest.fn(),
+      setLastScreen: jest.fn(async () => undefined),
+    });
+
+    const { getByTestId } = renderWithTheme(<ManualMealEntryScreen {...props} />);
+
+    fireEvent.press(getByTestId("manual-change-method-button"));
+
+    expect(props.navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
+      selectionMode: "temporary",
+      origin: "mealAddFlow",
     });
   });
 });
