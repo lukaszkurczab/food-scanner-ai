@@ -149,11 +149,12 @@ export default function ResetPasswordScreen({ navigation }: Props) {
             if (submitError) setSubmitError(null);
           }}
           onBlur={handleBlur}
-          autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
           textContentType="emailAddress"
-          error={touched && emailValidationError ? emailValidationError : undefined}
+          error={
+            touched && emailValidationError ? emailValidationError : undefined
+          }
           disabled={loading || noInternet}
           accessibilityLabel={t("email")}
           returnKeyType="done"

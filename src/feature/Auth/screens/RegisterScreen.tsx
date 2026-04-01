@@ -181,7 +181,6 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         <TextInput
           label={t("username")}
           value={username}
-          autoCapitalize="none"
           autoComplete="username"
           textContentType="username"
           placeholder={t("enter_username")}
@@ -199,7 +198,6 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         <TextInput
           label={t("email", { ns: "login" })}
           value={email}
-          autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
           textContentType="emailAddress"
@@ -218,7 +216,6 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         <TextInput
           label={t("password", { ns: "login" })}
           value={password}
-          autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"
           placeholder={t("enter_password", { ns: "login" })}
@@ -238,7 +235,6 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
 
         <TextInput
           value={confirmPassword}
-          autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"
           placeholder={t("enter_confirm_password")}

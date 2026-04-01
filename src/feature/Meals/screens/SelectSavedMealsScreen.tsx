@@ -35,11 +35,7 @@ export default function SelectSavedMealScreen({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { uid } = useAuthContext();
-  const {
-    setMeal,
-    saveDraft,
-    setLastScreen,
-  } = useMealDraftContext();
+  const { setMeal, saveDraft, setLastScreen } = useMealDraftContext();
   const { t } = useTranslation(["meals", "common"]);
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
@@ -118,7 +114,6 @@ export default function SelectSavedMealScreen({
                 "saved_list_search_placeholder",
                 "Search saved meals",
               )}
-              autoCapitalize="none"
               autoCorrect={false}
               spellCheck={false}
               style={styles.searchInput}
@@ -149,10 +144,7 @@ export default function SelectSavedMealScreen({
                       )}
                 </Text>
                 <Button
-                  label={t(
-                    "saved_list_empty_cta",
-                    "Choose another method",
-                  )}
+                  label={t("saved_list_empty_cta", "Choose another method")}
                   variant="secondary"
                   onPress={handleStartOver}
                   style={styles.emptyPrimaryAction}
@@ -187,7 +179,6 @@ export default function SelectSavedMealScreen({
               "saved_list_search_placeholder",
               "Search saved meals",
             )}
-            autoCapitalize="none"
             autoCorrect={false}
             spellCheck={false}
             style={styles.searchInput}

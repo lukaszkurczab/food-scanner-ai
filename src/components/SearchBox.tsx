@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Pressable, type StyleProp, type ViewStyle } from "react-native";
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
-import { TextInput as AppTextInput } from "@/components/TextInput";
+import { TextInput } from "@/components";
 
 type Props = {
   value: string;
@@ -51,13 +51,12 @@ export const SearchBox: React.FC<Props> = ({
   };
 
   return (
-    <AppTextInput
+    <TextInput
       value={local}
       onChangeText={onTextChange}
       placeholder={placeholder ?? t("input.search")}
       returnKeyType="search"
       accessibilityLabel={t("input.search_accessibility")}
-      autoCapitalize="none"
       autoCorrect={false}
       spellCheck={false}
       left={<AppIcon name="search" size={20} />}

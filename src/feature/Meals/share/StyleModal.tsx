@@ -124,7 +124,6 @@ export function StyleModal({
                 placeholder={t("editor.color_placeholder_extended")}
                 value={input}
                 onChangeText={setInput}
-                autoCapitalize="none"
                 keyboardType="default"
                 maxLength={18}
               />

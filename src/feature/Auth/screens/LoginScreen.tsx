@@ -124,7 +124,6 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           onChangeText={setEmail}
           onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
           keyboardType="email-address"
-          autoCapitalize="none"
           autoComplete="email"
           textContentType="emailAddress"
           error={emailError}
@@ -142,7 +141,6 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
             onChangeText={setPassword}
             onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
             secureTextEntry={!showPassword}
-            autoCapitalize="none"
             autoComplete="password"
             textContentType="password"
             error={passwordError}

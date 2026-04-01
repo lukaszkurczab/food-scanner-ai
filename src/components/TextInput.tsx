@@ -224,7 +224,6 @@ export const TextInput = forwardRef<RNTextInput, Props>(
                 height: multiline ? undefined : "100%",
                 textAlignVertical: multiline ? "top" : "center",
                 includeFontPadding: false,
-                paddingVertical: multiline ? undefined : 0,
               },
               inputStyle,
             ]}
@@ -281,7 +280,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.input.text,
       fontSize: theme.typography.size.bodyL,
       fontFamily: theme.typography.fontFamily.regular,
-      lineHeight: theme.typography.lineHeight.bodyM,
       marginVertical: theme.spacing.xs,
     },
     rightLabel: {

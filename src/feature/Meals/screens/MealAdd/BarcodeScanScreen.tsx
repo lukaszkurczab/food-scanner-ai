@@ -230,14 +230,7 @@ export default function BarcodeScanScreen({
         setLookupLoading(false);
       }
     },
-    [
-      detectedCode,
-      flow,
-      lookupLoading,
-      persistBarcodeMeal,
-      codeSource,
-      tMeals,
-    ],
+    [detectedCode, flow, lookupLoading, persistBarcodeMeal, codeSource, tMeals],
   );
 
   const handleOpenManualEntry = useCallback(() => {
@@ -445,7 +438,6 @@ export default function BarcodeScanScreen({
                   defaultValue: "Numeric input only. Usually 8 to 13 digits.",
                 })}
                 error={manualError}
-                autoCapitalize="none"
               />
 
               <View style={styles.manualActions}>

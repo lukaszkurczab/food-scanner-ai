@@ -236,7 +236,6 @@ export default function UserProfileScreen({
             value={state.password}
             onChangeText={state.setPassword}
             secureTextEntry
-            autoCapitalize="none"
             autoCorrect={false}
             textContentType="password"
             accessibilityLabel={t("enterPassword")}
