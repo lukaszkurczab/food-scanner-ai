@@ -4,23 +4,23 @@ import { WeekdaySelector } from "@/components/WeekdaySelector";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 describe("WeekdaySelector", () => {
-  it("adds weekday when it is not selected", () => {
+  it("adds Monday when it is not selected, while keeping the stored weekday indices intact", () => {
     const onChange = jest.fn();
-    const { getByText } = renderWithTheme(
+    const { getByTestId } = renderWithTheme(
       <WeekdaySelector value={[0]} onChange={onChange} />,
     );
 
-    fireEvent.press(getByText("M"));
+    fireEvent.press(getByTestId("weekday-chip-1"));
     expect(onChange).toHaveBeenCalledWith([0, 1]);
   });
 
-  it("removes weekday when it is selected", () => {
+  it("removes Monday when it is selected", () => {
     const onChange = jest.fn();
-    const { getByText } = renderWithTheme(
+    const { getByTestId } = renderWithTheme(
       <WeekdaySelector value={[0, 1]} onChange={onChange} />,
     );
 
-    fireEvent.press(getByText("M"));
+    fireEvent.press(getByTestId("weekday-chip-1"));
     expect(onChange).toHaveBeenCalledWith([0]);
   });
 });

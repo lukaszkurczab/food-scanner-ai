@@ -1,42 +1,58 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { useAuthContext } from "@/context/AuthContext";
+import { useTheme } from "@/theme/useTheme";
 import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-} from "react-native";
-import {
-  BackTitleHeader,
-  Button,
-  Layout,
-  Card,
+  FormScreenShell,
+  LongTextInput,
   Modal,
+  SettingsRow,
+  SettingsSection,
   TextInput,
 } from "@/components";
-import { useTheme } from "@/theme/useTheme";
-import { useTranslation } from "react-i18next";
 import { WeekdaySelector } from "@/components/WeekdaySelector";
-import { useAuthContext } from "@/context/AuthContext";
+import { Clock12h, Clock24h } from "@/components";
+import { MealKindPickerSheet } from "@/feature/UserProfile/components/MealKindPickerSheet";
 import type { MealKind } from "@/types/notification";
+import type { RootStackParamList } from "@/navigation/navigate";
 import {
   useNavigation,
   useRoute,
   type RouteProp,
 } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import AppIcon from "@/components/AppIcon";
-import { Clock24h, Clock12h } from "@/components";
-import { Dropdown } from "@/components/Dropdown";
-import type { RootStackParamList } from "@/navigation/navigate";
 import { useNotificationFormState } from "@/feature/UserProfile/hooks/useNotificationFormState";
-import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 
 type NotificationFormNavigation = StackNavigationProp<
   RootStackParamList,
   "NotificationForm"
 >;
 type NotificationFormRoute = RouteProp<RootStackParamList, "NotificationForm">;
+
+function formatReminderTime(
+  hour: number,
+  minute: number,
+  locale: string | undefined,
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(new Date().setHours(hour, minute, 0, 0)));
+}
+
+function getWeekdayLabels(locale: string | undefined): string[] {
+  const formatter = new Intl.DateTimeFormat(locale, { weekday: "short" });
+
+  return [0, 1, 2, 3, 4, 5, 6].map((day) => {
+    const date = new Date(Date.UTC(2020, 0, 5 + day));
+    return formatter
+      .format(date)
+      .replace(/\./g, "")
+      .slice(0, 2)
+      .toUpperCase();
+  });
+}
 
 export default function NotificationFormScreen() {
   const theme = useTheme();
@@ -47,40 +63,13 @@ export default function NotificationFormScreen() {
   const nav = useNavigation<NotificationFormNavigation>();
   const route = useRoute<NotificationFormRoute>();
   const notifId: string | null = route.params?.id ?? null;
-  const screenTitle = notifId ? t("form.edit") : t("form.create");
-
-  const mealOptions: Array<{ label: string; value: MealKind | null }> = useMemo(
-    () => [
-      {
-        label: t("meals.any", "Any meal"),
-        value: null,
-      },
-      {
-        label: t("meals.breakfast", "Breakfast"),
-        value: "breakfast",
-      },
-      {
-        label: t("meals.lunch", "Lunch"),
-        value: "lunch",
-      },
-      {
-        label: t("meals.dinner", "Dinner"),
-        value: "dinner",
-      },
-      {
-        label: t("meals.snack", "Snack"),
-        value: "snack",
-      },
-    ],
-    [t],
-  );
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [mealKindSheetVisible, setMealKindSheetVisible] = useState(false);
+  const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
 
   const {
-    types,
     name,
     setName,
-    type,
-    setType,
     text,
     setText,
     time,
@@ -92,7 +81,6 @@ export default function NotificationFormScreen() {
     tmp,
     setTmp,
     prefers12h,
-    fmtTime,
     openTimePicker,
     closeTimePicker,
     confirmTime,
@@ -104,169 +92,179 @@ export default function NotificationFormScreen() {
     locale,
     nav,
     labels: {
-      defaultName: t("form.defaultName"),
-      deleteTitle: t("screen.deleteTitle"),
-      deleteMessage: t("screen.deleteMsg"),
-      cancel: t("form.cancel"),
-      delete: t("form.delete"),
+      defaultName: t("form.defaultName", {
+        defaultValue: "Meal reminder",
+      }),
     },
-    mealOptions,
+  });
+
+  const handleBack = () => {
+    if (nav.canGoBack()) {
+      nav.goBack();
+      return;
+    }
+
+    nav.navigate("Notifications");
+  };
+
+  const screenTitle = notifId
+    ? t("form.editTitle", {
+        defaultValue: "Edit reminder",
+      })
+    : t("form.createTitle", {
+        defaultValue: "Create reminder",
+      });
+
+  const selectedMealLabel = t(`meals.${mealKind}`, {
+    defaultValue: mealKind,
   });
 
   return (
-    <Layout>
-      <ScrollView contentContainerStyle={styles.content}>
-        <BackTitleHeader title={screenTitle} onBack={() => nav.goBack()} />
-
-        <View style={styles.section}>
-          <Text style={styles.label}>{t("form.name")}</Text>
+    <>
+      <FormScreenShell
+        title={screenTitle}
+        onBack={handleBack}
+        actionLabel={t("form.save", { defaultValue: "Save" })}
+        onActionPress={() => {
+          void onSave();
+        }}
+        secondaryActionLabel={
+          notifId ? t("form.delete", { defaultValue: "Delete" }) : undefined
+        }
+        secondaryActionPress={
+          notifId
+            ? () => {
+                setDeleteVisible(true);
+              }
+            : undefined
+        }
+        secondaryActionTone="destructive"
+      >
+        <View style={styles.content}>
           <TextInput
+            label={t("form.name", { defaultValue: "Name" })}
             value={name}
             onChangeText={setName}
-            placeholder={notifId ? t("form.edit") : t("form.create")}
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.label}>{t("form.type")}</Text>
-          <View style={styles.section}>
-            {types.map((opt) => {
-              const active = type === opt;
-              return (
-                <Text
-                  key={opt}
-                  onPress={() => setType(opt)}
-                  style={[styles.option, active && styles.optionActive]}
-                >
-                  {t(`type.${opt}`)}
-                </Text>
-              );
+            placeholder={t("form.defaultName", {
+              defaultValue: "Meal reminder",
             })}
-          </View>
-        </View>
+          />
 
-        <View style={styles.section}>
-          <Text style={styles.label}>{t("form.time")}</Text>
-          <Pressable onPress={openTimePicker}>
-            <Card variant="outlined">
-              <View style={styles.rowBetween}>
-                <Text style={styles.timeText}>
-                  {fmtTime.format(
-                    new Date(new Date().setHours(time.hour, time.minute, 0, 0)),
-                  )}
-                </Text>
-                <AppIcon name="schedule" size={24} color={theme.link} />
-              </View>
-            </Card>
-          </Pressable>
-
-          <Modal
-            visible={timeVisible}
-            title={t("form.time")}
-            primaryAction={{
-              label: t("form.save"),
-              onPress: confirmTime,
-            }}
-            secondaryAction={{
-              label: t("form.cancel"),
-              onPress: closeTimePicker,
-            }}
-            onClose={closeTimePicker}
+          <SettingsSection
+            title={t("form.scheduleTitle", {
+              defaultValue: "Schedule",
+            })}
           >
-            <View style={styles.modalContent}>
-              {prefers12h ? (
-                <Clock12h value={tmp} onChange={setTmp} />
-              ) : (
-                <Clock24h value={tmp} onChange={setTmp} />
-              )}
-            </View>
-          </Modal>
-        </View>
+            <SettingsRow
+              title={t("form.time", { defaultValue: "Time" })}
+              value={formatReminderTime(time.hour, time.minute, locale)}
+              onPress={openTimePicker}
+            />
+            <SettingsRow
+              title={t("form.mealFocusTitle", {
+                defaultValue: "Applies to",
+              })}
+              value={selectedMealLabel}
+              onPress={() => setMealKindSheetVisible(true)}
+              testID="notification-form-meal-kind-row"
+            />
+          </SettingsSection>
 
-        <View style={styles.section}>
-          <Text style={styles.label}>{t("form.days")}</Text>
-          <WeekdaySelector value={days} onChange={setDays} />
-        </View>
-
-        {type === "meal_reminder" ? (
-          <View style={styles.section}>
-            <Text style={styles.label}>{t("form.mealKind", "Meal kind")}</Text>
-            <Dropdown
-              value={mealKind}
-              options={mealOptions}
-              onChange={(value) => setMealKind(value)}
+          <View style={styles.daysSection}>
+            <Text style={styles.sectionLabel}>
+              {t("form.days", { defaultValue: "Days" })}
+            </Text>
+            <WeekdaySelector
+              value={days}
+              onChange={setDays}
+              labels={weekdayLabels}
             />
           </View>
-        ) : null}
 
-        <View style={styles.section}>
-          <Text style={styles.label}>{t("form.textOverride")}</Text>
-          <TextInput
+          <LongTextInput
+            label={t("form.textOverrideTitle", {
+              defaultValue: "Optional custom message",
+            })}
             value={text}
             onChangeText={setText}
-            placeholder=""
-            style={styles.input}
+            placeholder={t("form.textOverridePlaceholder", {
+              defaultValue: "Leave empty to use the standard reminder message.",
+            })}
+            maxLength={200}
           />
         </View>
+      </FormScreenShell>
 
-        {notifId ? (
-          <GlobalActionButtons
-            label={t("form.save")}
-            onPress={onSave}
-            secondaryLabel={t("form.delete")}
-            secondaryOnPress={onDelete}
-            secondaryTone="destructive"
-            layout="row"
-          />
-        ) : (
-          <View style={styles.actions}>
-            <Button label={t("form.save")} onPress={onSave} />
-          </View>
-        )}
-      </ScrollView>
-    </Layout>
+      <Modal
+        visible={timeVisible}
+        title={t("form.time", { defaultValue: "Time" })}
+        primaryAction={{
+          label: t("form.save", { defaultValue: "Save" }),
+          onPress: confirmTime,
+        }}
+        secondaryAction={{
+          label: t("form.cancel", { defaultValue: "Cancel" }),
+          onPress: closeTimePicker,
+        }}
+        onClose={closeTimePicker}
+      >
+        <View style={styles.modalContent}>
+          {prefers12h ? (
+            <Clock12h value={tmp} onChange={setTmp} />
+          ) : (
+            <Clock24h value={tmp} onChange={setTmp} />
+          )}
+        </View>
+      </Modal>
+
+      <Modal
+        visible={deleteVisible}
+        title={t("screen.deleteTitle", {
+          defaultValue: "Delete reminder",
+        })}
+        message={t("screen.deleteMsg", {
+          defaultValue: "Are you sure?",
+        })}
+        onClose={() => setDeleteVisible(false)}
+        primaryAction={{
+          label: t("form.delete", { defaultValue: "Delete" }),
+          tone: "destructive",
+          onPress: () => {
+            setDeleteVisible(false);
+            onDelete();
+          },
+        }}
+        secondaryAction={{
+          label: t("form.cancel", { defaultValue: "Cancel" }),
+          onPress: () => setDeleteVisible(false),
+        }}
+      />
+
+      <MealKindPickerSheet
+        visible={mealKindSheetVisible}
+        currentValue={mealKind}
+        onClose={() => setMealKindSheetVisible(false)}
+        onSelect={(value: MealKind) => setMealKind(value)}
+      />
+    </>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    content: { gap: theme.spacing.lg },
-    section: { gap: theme.spacing.sm },
-    label: {
-      color: theme.text,
-      fontFamily: theme.typography.fontFamily.medium,
+    content: {
+      gap: theme.spacing.sectionGap,
     },
-    input: {
-      marginTop: theme.spacing.xxs,
-    },
-    option: {
-      flex: 1,
-      textAlign: "center",
-      paddingVertical: theme.spacing.md,
-      borderWidth: 1,
-      borderColor: theme.border,
-      backgroundColor: theme.surfaceElevated,
-      color: theme.text,
-      borderRadius: theme.rounded.md,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    optionActive: {
-      borderColor: theme.primary,
-      backgroundColor: theme.primary,
-      color: theme.cta.primaryText,
-    },
-    rowBetween: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
+    daysSection: {
       gap: theme.spacing.sm,
     },
-    timeText: {
-      fontSize: theme.typography.size.title,
+    sectionLabel: {
       color: theme.text,
-      fontFamily: theme.typography.fontFamily.bold,
+      fontFamily: theme.typography.fontFamily.medium,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
     },
-    modalContent: { paddingTop: theme.spacing.sm },
-    actions: { gap: theme.spacing.md },
+    modalContent: {
+      paddingTop: theme.spacing.sm,
+    },
   });

@@ -4,6 +4,11 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type {
+  AiCreditsResponse,
+  AiCreditsStatus,
+} from "@/services/ai/contracts";
+import { post } from "@/services/core/apiClient";
+import type {
   MealAddFlowApi,
   MealAddStepParams,
 } from "@/feature/Meals/feature/MapMealAddScreens";
@@ -18,12 +23,14 @@ export function useMealTextAiState(params: {
 }) {
   const { t, flow, initialValues } = params;
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { credits, canAfford } = useAiCreditsContext();
+  const { credits, canAfford, refreshCredits, applyCreditsFromResponse } =
+    useAiCreditsContext();
 
   const [name, setName] = useState(initialValues?.name ?? "");
   const [quickDescription, setQuickDescription] = useState(
     initialValues?.quickDescription ?? "",
   );
+  const [loading, setLoading] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(
     Boolean(initialValues?.showLimitModal),
   );
@@ -51,7 +58,21 @@ export function useMealTextAiState(params: {
     initialValues?.submitError,
   ]);
 
-  const onAnalyze = useCallback(() => {
+  const reconcileCredits = useCallback(async (): Promise<AiCreditsStatus | null> => {
+    let syncedSnapshot: AiCreditsStatus | null = null;
+
+    try {
+      const syncedResponse = await post<AiCreditsResponse>("/ai/credits/sync-tier");
+      syncedSnapshot = applyCreditsFromResponse(syncedResponse);
+    } catch {
+      // Fall back to standard refresh when reconciliation endpoint is unavailable.
+    }
+
+    const refreshedSnapshot = await refreshCredits();
+    return refreshedSnapshot ?? syncedSnapshot ?? credits;
+  }, [applyCreditsFromResponse, credits, refreshCredits]);
+
+  const onAnalyze = useCallback(async () => {
     setDescriptionError(undefined);
     setSubmitError(undefined);
 
@@ -62,17 +83,46 @@ export function useMealTextAiState(params: {
       return;
     }
 
-    if (!canAfford("textMeal")) {
-      setShowLimitModal(true);
-      return;
-    }
+    setLoading(true);
+    try {
+      let resolvedCredits = credits;
 
-    flow.goTo("TextAnalyzing", {
-      name: name.trim(),
-      quickDescription: quickDescription.trim(),
-      retries,
-    });
-  }, [canAfford, flow, name, quickDescription, retries, t]);
+      if (resolvedCredits && canAfford("textMeal")) {
+        flow.goTo("TextAnalyzing", {
+          name: name.trim(),
+          quickDescription: quickDescription.trim(),
+          retries,
+        });
+        return;
+      }
+
+      resolvedCredits = await reconcileCredits();
+
+      if (
+        resolvedCredits &&
+        resolvedCredits.balance < resolvedCredits.costs.textMeal
+      ) {
+        setShowLimitModal(true);
+        return;
+      }
+
+      flow.goTo("TextAnalyzing", {
+        name: name.trim(),
+        quickDescription: quickDescription.trim(),
+        retries,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    canAfford,
+    credits,
+    flow,
+    name,
+    quickDescription,
+    reconcileCredits,
+    retries,
+  ]);
 
   const analyzeDisabled = useMemo(
     () => !quickDescription.trim(),
@@ -81,6 +131,10 @@ export function useMealTextAiState(params: {
 
   const creditAllocation = credits?.allocation ?? 0;
   const creditsUsed = Math.max(creditAllocation - (credits?.balance ?? 0), 0);
+  const textMealCost = credits?.costs.textMeal ?? 1;
+  const creditsBalance = credits?.balance ?? null;
+  const remainingCreditsAfterAnalyze =
+    creditsBalance === null ? null : Math.max(creditsBalance - textMealCost, 0);
 
   const onNameChange = useCallback((text: string) => {
     setName(text);
@@ -110,10 +164,13 @@ export function useMealTextAiState(params: {
   return {
     name,
     quickDescription,
-    loading: false,
+    loading,
     retries,
     showLimitModal,
     creditsUsed,
+    creditsBalance,
+    textMealCost,
+    remainingCreditsAfterAnalyze,
     descriptionError,
     submitError,
     analyzeDisabled,

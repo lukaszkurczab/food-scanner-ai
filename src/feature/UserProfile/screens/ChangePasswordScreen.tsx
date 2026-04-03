@@ -1,25 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
-import {
-  View,
-  Keyboard,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
-import { useTranslation } from "react-i18next";
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
-import { useTheme } from "@/theme/useTheme";
-import { BackTitleHeader, TextInput, ErrorBox, Layout } from "@/components";
-import { GlobalActionButtons } from "@/components/GlobalActionButtons";
-import AppIcon from "@/components/AppIcon";
-import { useUserContext } from "@contexts/UserContext";
+import { useTranslation } from "react-i18next";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
-
-type ChangePasswordNavigation = StackNavigationProp<RootStackParamList>;
-type Props = {
-  navigation: ChangePasswordNavigation;
-};
+import { useTheme } from "@/theme/useTheme";
+import { ErrorBox, FormScreenShell, TextInput } from "@/components";
+import AppIcon from "@/components/AppIcon";
+import { useUserContext } from "@/context/UserContext";
 
 function getErrorCode(err: unknown): string | null {
   if (!err || typeof err !== "object") return null;
@@ -27,7 +15,18 @@ function getErrorCode(err: unknown): string | null {
   return typeof code === "string" ? code : null;
 }
 
-export default function ChangePasswordScreen({ navigation }: Props) {
+type ChangePasswordNavigation = StackNavigationProp<
+  RootStackParamList,
+  "ChangePassword"
+>;
+
+type ChangePasswordScreenProps = {
+  navigation: ChangePasswordNavigation;
+};
+
+export default function ChangePasswordScreen({
+  navigation,
+}: ChangePasswordScreenProps) {
   const { t } = useTranslation(["profile", "common"]);
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -36,41 +35,48 @@ export default function ChangePasswordScreen({ navigation }: Props) {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showOld, setShowOld] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState({
     old: false,
-    new: false,
+    next: false,
     confirm: false,
   });
   const [error, setError] = useState<string | null>(null);
   const [noInternet, setNoInternet] = useState(false);
 
   useEffect(() => {
+    void NetInfo.fetch().then((state) => {
+      setNoInternet(!state.isConnected);
+    });
+
     const unsubscribe = NetInfo.addEventListener((state) => {
       setNoInternet(!state.isConnected);
     });
+
     return () => unsubscribe();
   }, []);
 
   const validate = () => {
-    if (!oldPassword) return t("profile:enter_current_password");
-    if (!newPassword) return t("profile:enter_new_password");
-    if (newPassword.length < 8)
-      return t("profile:password_min_length", { count: 8 });
-    if (newPassword !== confirmPassword)
-      return t("profile:passwords_do_not_match");
-    if (oldPassword === newPassword)
-      return t("profile:new_password_must_be_different");
+    if (!oldPassword) return t("enter_current_password");
+    if (!newPassword) return t("enter_new_password");
+    if (newPassword.length < 8) {
+      return t("password_min_length", { count: 8 });
+    }
+    if (newPassword !== confirmPassword) {
+      return t("passwords_do_not_match");
+    }
+    if (oldPassword === newPassword) {
+      return t("new_password_must_be_different");
+    }
     return null;
   };
 
   const handleSubmit = async () => {
-    setTouched({ old: true, new: true, confirm: true });
+    setTouched({ old: true, next: true, confirm: true });
     setError(null);
-    Keyboard.dismiss();
 
     const validationError = validate();
     if (validationError) {
@@ -84,124 +90,127 @@ export default function ChangePasswordScreen({ navigation }: Props) {
       navigation.goBack();
     } catch (err: unknown) {
       const code = getErrorCode(err);
-      let msg = t("common:default_error");
+      let message = t("default_error", { ns: "common" });
+
       if (code === "auth/wrong-password") {
-        msg = t("profile:invalid_current_password");
+        message = t("invalid_current_password");
       } else if (code === "auth/weak-password") {
-        msg = t("profile:weak_password");
+        message = t("weak_password");
       }
-      setError(msg);
+
+      setError(message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const renderEyeIcon = (show: boolean, toggle: () => void) => (
-    <TouchableOpacity onPress={toggle}>
-      <AppIcon name={show ? "eye-off" : "eye"} size={22} color={theme.text} />
-    </TouchableOpacity>
+  const renderVisibilityToggle = (isVisible: boolean, onPress: () => void) => (
+    <Pressable onPress={onPress} accessibilityRole="button">
+      <AppIcon
+        name={isVisible ? "eye-off" : "eye"}
+        size={20}
+        color={theme.textSecondary}
+      />
+    </Pressable>
   );
 
   return (
-    <Layout showNavigation={false} disableScroll>
-      <View style={styles.container}>
-        <ScrollView
-          style={styles.formScroll}
-          contentContainerStyle={styles.formContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <BackTitleHeader
-            title={t("profile:change_password")}
-            onBack={() => navigation.goBack()}
-          />
+    <FormScreenShell
+      title={t("change_password")}
+      intro={t("changePasswordIntro", {
+        defaultValue:
+          "Choose a new password for your account. You’ll need your current one to confirm.",
+      })}
+      onBack={() => navigation.goBack()}
+      actionLabel={t("save", { ns: "common" })}
+      onActionPress={() => {
+        void handleSubmit();
+      }}
+      actionLoading={loading}
+      actionDisabled={
+        loading ||
+        noInternet ||
+        !oldPassword ||
+        !newPassword ||
+        !confirmPassword
+      }
+      secondaryActionLabel={t("cancel")}
+      secondaryActionPress={() => navigation.goBack()}
+      secondaryActionDisabled={loading}
+    >
+      <View style={styles.content}>
+        {noInternet ? (
+          <ErrorBox message={t("no_internet", { ns: "common" })} />
+        ) : null}
+        {error ? <ErrorBox message={error} /> : null}
 
-          {noInternet && <ErrorBox message={t("common:no_internet")} />}
-          {error && <ErrorBox message={error} />}
-
-          <TextInput
-            label={t("profile:old_password")}
-            value={oldPassword}
-            autoComplete="current-password"
-            textContentType="password"
-            placeholder={t("profile:enter_current_password")}
-            secureTextEntry={!showOld}
-            onChangeText={setOldPassword}
-            onBlur={() => setTouched((t) => ({ ...t, old: true }))}
-            error={
-              touched.old && !oldPassword
-                ? t("profile:enter_current_password")
-                : undefined
-            }
-            icon={renderEyeIcon(showOld, () => setShowOld((v) => !v))}
-            iconPosition="right"
-            style={styles.input}
-          />
-
-          <TextInput
-            label={t("profile:new_password")}
-            value={newPassword}
-            autoComplete="new-password"
-            textContentType="newPassword"
-            placeholder={t("profile:enter_new_password")}
-            secureTextEntry={!showNew}
-            onChangeText={setNewPassword}
-            onBlur={() => setTouched((t) => ({ ...t, new: true }))}
-            error={
-              touched.new && !newPassword
-                ? t("profile:enter_new_password")
-                : undefined
-            }
-            icon={renderEyeIcon(showNew, () => setShowNew((v) => !v))}
-            iconPosition="right"
-            style={styles.input}
-          />
-
-          <TextInput
-            label={t("profile:confirm_new_password")}
-            value={confirmPassword}
-            autoComplete="new-password"
-            textContentType="newPassword"
-            placeholder={t("profile:repeat_new_password")}
-            secureTextEntry={!showConfirm}
-            onChangeText={setConfirmPassword}
-            onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
-            error={
-              touched.confirm && confirmPassword !== newPassword
-                ? t("profile:passwords_do_not_match")
-                : undefined
-            }
-            icon={renderEyeIcon(showConfirm, () => setShowConfirm((v) => !v))}
-            iconPosition="right"
-            style={styles.inputLarge}
-          />
-        </ScrollView>
-
-        <GlobalActionButtons
-          label={t("common:confirm")}
-          onPress={handleSubmit}
-          primaryDisabled={
-            loading ||
-            !oldPassword ||
-            !newPassword ||
-            !confirmPassword ||
-            noInternet
+        <TextInput
+          label={t("old_password")}
+          value={oldPassword}
+          onChangeText={setOldPassword}
+          onBlur={() => setTouched((current) => ({ ...current, old: true }))}
+          placeholder={t("enter_current_password")}
+          secureTextEntry={!showOldPassword}
+          autoCorrect={false}
+          autoComplete="current-password"
+          textContentType="password"
+          error={
+            touched.old && !oldPassword
+              ? t("enter_current_password")
+              : undefined
           }
-          primaryLoading={loading}
-          secondaryLabel={t("common:cancel")}
-          secondaryOnPress={() => navigation.goBack()}
-          containerStyle={styles.actions}
+          right={renderVisibilityToggle(showOldPassword, () =>
+            setShowOldPassword((current) => !current),
+          )}
+        />
+
+        <TextInput
+          label={t("new_password")}
+          value={newPassword}
+          onChangeText={setNewPassword}
+          onBlur={() => setTouched((current) => ({ ...current, next: true }))}
+          placeholder={t("enter_new_password")}
+          secureTextEntry={!showNewPassword}
+          autoCorrect={false}
+          autoComplete="new-password"
+          textContentType="newPassword"
+          error={
+            touched.next && !newPassword ? t("enter_new_password") : undefined
+          }
+          right={renderVisibilityToggle(showNewPassword, () =>
+            setShowNewPassword((current) => !current),
+          )}
+        />
+
+        <TextInput
+          label={t("confirm_new_password")}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          onBlur={() =>
+            setTouched((current) => ({ ...current, confirm: true }))
+          }
+          placeholder={t("repeat_new_password")}
+          secureTextEntry={!showConfirmPassword}
+          autoCorrect={false}
+          autoComplete="new-password"
+          textContentType="newPassword"
+          error={
+            touched.confirm && confirmPassword !== newPassword
+              ? t("passwords_do_not_match")
+              : undefined
+          }
+          right={renderVisibilityToggle(showConfirmPassword, () =>
+            setShowConfirmPassword((current) => !current),
+          )}
         />
       </View>
-    </Layout>
+    </FormScreenShell>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: { flex: 1 },
-    formScroll: { flex: 1 },
-    formContent: { paddingBottom: theme.spacing.sm },
-    input: { marginBottom: theme.spacing.lg },
-    inputLarge: { marginBottom: theme.spacing.xl },
-    actions: { marginTop: theme.spacing.sm },
+    content: {
+      gap: theme.spacing.sectionGap,
+    },
   });

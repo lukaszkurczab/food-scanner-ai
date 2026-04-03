@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { fireEvent } from "@testing-library/react-native";
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import ManageSubscriptionScreen from "@/feature/Subscription/screens/ManageSubscriptionScreen";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
@@ -42,8 +42,13 @@ jest.mock("@react-native-community/netinfo", () => ({
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string }) =>
-      options?.defaultValue ?? `profile:${key}`,
+    t: (
+      key: string,
+      options?: { defaultValue?: string; ns?: string },
+    ) => {
+      if (options?.defaultValue) return options.defaultValue;
+      return options?.ns ? `${options.ns}:${key}` : `profile:${key}`;
+    },
   }),
 }));
 
@@ -62,11 +67,6 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: ReactNode }) =>
       createElement(View, null, children),
-    BackTitleHeader: ({
-      title,
-    }: {
-      title: string;
-    }) => createElement(Text, null, `header:${title}`),
     FullScreenLoader: () => createElement(Text, null, "full-screen-loader"),
     Button: ({
       label,
@@ -82,6 +82,86 @@ jest.mock("@/components", () => {
         { onPress, disabled, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
+    FormScreenShell: ({
+      title,
+      intro,
+      onBack,
+      children,
+    }: {
+      title: string;
+      intro?: string;
+      onBack: () => void;
+      children?: ReactNode;
+    }) =>
+      createElement(
+        View,
+        null,
+        createElement(Text, null, `header:${title}`),
+        intro ? createElement(Text, null, intro) : null,
+        createElement(
+          Pressable,
+          { onPress: onBack, accessibilityRole: "button" },
+          createElement(Text, null, "Back"),
+        ),
+        children,
+      ),
+    InfoBlock: ({
+      title,
+      body,
+    }: {
+      title: string;
+      body: string;
+      tone?: string;
+      icon?: ReactNode;
+    }) =>
+      createElement(
+        View,
+        null,
+        createElement(Text, null, title),
+        createElement(Text, null, body),
+      ),
+    SettingsSection: ({
+      title,
+      footer,
+      children,
+    }: {
+      title?: string;
+      footer?: string;
+      children?: ReactNode;
+    }) =>
+      createElement(
+        View,
+        null,
+        title ? createElement(Text, null, title) : null,
+        children,
+        footer ? createElement(Text, null, footer) : null,
+      ),
+    SettingsRow: ({
+      title,
+      subtitle,
+      value,
+      onPress,
+    }: {
+      title: string;
+      subtitle?: string;
+      value?: string;
+      onPress?: () => void;
+    }) =>
+      onPress
+        ? createElement(
+            Pressable,
+            { onPress, accessibilityRole: "button" },
+            createElement(Text, null, title),
+            subtitle ? createElement(Text, null, subtitle) : null,
+            value ? createElement(Text, null, value) : null,
+          )
+        : createElement(
+            View,
+            null,
+            createElement(Text, null, title),
+            subtitle ? createElement(Text, null, subtitle) : null,
+            value ? createElement(Text, null, value) : null,
+          ),
   };
 });
 
@@ -104,17 +184,17 @@ jest.mock("@/feature/Subscription/components/PaywallModal", () => ({
           createElement(Text, null, `paywall:${priceText ?? ""}`),
           createElement(
             Pressable,
-            { onPress: onSubscribe },
+            { onPress: onSubscribe, accessibilityRole: "button" },
             createElement(Text, null, "subscribe-paywall"),
           ),
           createElement(
             Pressable,
-            { onPress: onRestore },
+            { onPress: onRestore, accessibilityRole: "button" },
             createElement(Text, null, "restore-paywall"),
           ),
           createElement(
             Pressable,
-            { onPress: onClose },
+            { onPress: onClose, accessibilityRole: "button" },
             createElement(Text, null, "close-paywall"),
           ),
         )
@@ -122,21 +202,36 @@ jest.mock("@/feature/Subscription/components/PaywallModal", () => ({
   },
 }));
 
-jest.mock("@/components/AiCreditsSummaryCard", () => ({
-  AiCreditsSummaryCard: ({
-    balance,
-    allocation,
-  }: {
-    balance: number | null;
-    allocation: number | null;
-  }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Text } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(Text, null, `credits:${balance ?? "-"}:${allocation ?? "-"}`);
-  },
-}));
+function makeManageState(overrides: Record<string, unknown> = {}) {
+  return {
+    busy: false,
+    busyAction: null,
+    paywallVisible: false,
+    termsUrl: "https://example.com/terms",
+    privacyUrl: "https://example.com/privacy",
+    refundUrl: "https://example.com/refund",
+    priceText: "$9.99",
+    state: "free_active",
+    showRenew: false,
+    showStart: true,
+    showManageInStore: true,
+    headerStatus: "Free",
+    isPremiumComputed: false,
+    billingAvailability: "ready",
+    actionFeedback: null,
+    tryOpenManage: jest.fn(),
+    tryRestore: jest.fn(),
+    trySubscribe: jest.fn(),
+    tryOpenRefundPolicy: jest.fn(),
+    openPaywall: jest.fn(),
+    closePaywall: jest.fn(),
+    toggleDevPremium: jest.fn(),
+    openTerms: jest.fn(),
+    openPrivacy: jest.fn(),
+    clearActionFeedback: jest.fn(),
+    ...overrides,
+  };
+}
 
 describe("ManageSubscriptionScreen", () => {
   const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
@@ -173,29 +268,7 @@ describe("ManageSubscriptionScreen", () => {
       setDevPremium: jest.fn(),
       refreshPremium: jest.fn(),
     });
-    mockUseManageSubscriptionState.mockReturnValue({
-      expanded: null,
-      busy: false,
-      paywallVisible: false,
-      termsUrl: null,
-      privacyUrl: null,
-      priceText: null,
-      showRenew: false,
-      showStart: false,
-      showManageInStore: false,
-      headerStatus: "",
-      isPremiumComputed: false,
-      toggleExpanded: jest.fn(),
-      tryOpenManage: jest.fn(),
-      tryRestore: jest.fn(),
-      trySubscribe: jest.fn(),
-      tryOpenRefundPolicy: jest.fn(),
-      openPaywall: jest.fn(),
-      closePaywall: jest.fn(),
-      toggleDevPremium: jest.fn(),
-      openTerms: jest.fn(),
-      openPrivacy: jest.fn(),
-    });
+    mockUseManageSubscriptionState.mockReturnValue(makeManageState());
 
     const { getByText } = renderWithTheme(
       <ManageSubscriptionScreen navigation={{ setOptions: jest.fn() } as never} />,
@@ -207,6 +280,8 @@ describe("ManageSubscriptionScreen", () => {
   it("shows offline fallback when subscription data is missing and device is offline", () => {
     const refreshPremium = jest.fn(async () => false);
     const navigation = {
+      canGoBack: jest.fn(() => false),
+      goBack: jest.fn(),
       navigate: jest.fn<(screen: string) => void>(),
       setOptions: jest.fn(),
     };
@@ -217,29 +292,7 @@ describe("ManageSubscriptionScreen", () => {
       setDevPremium: jest.fn(),
       refreshPremium,
     });
-    mockUseManageSubscriptionState.mockReturnValue({
-      expanded: null,
-      busy: false,
-      paywallVisible: false,
-      termsUrl: null,
-      privacyUrl: null,
-      priceText: null,
-      showRenew: false,
-      showStart: false,
-      showManageInStore: false,
-      headerStatus: "",
-      isPremiumComputed: false,
-      toggleExpanded: jest.fn(),
-      tryOpenManage: jest.fn(),
-      tryRestore: jest.fn(),
-      trySubscribe: jest.fn(),
-      tryOpenRefundPolicy: jest.fn(),
-      openPaywall: jest.fn(),
-      closePaywall: jest.fn(),
-      toggleDevPremium: jest.fn(),
-      openTerms: jest.fn(),
-      openPrivacy: jest.fn(),
-    });
+    mockUseManageSubscriptionState.mockReturnValue(makeManageState());
 
     const { getByText } = renderWithTheme(
       <ManageSubscriptionScreen navigation={navigation as never} />,
@@ -252,16 +305,19 @@ describe("ManageSubscriptionScreen", () => {
       ),
     ).toBeTruthy();
 
-    fireEvent.press(getByText("profile:common:retry"));
+    fireEvent.press(getByText("common:retry"));
     fireEvent.press(getByText("Back"));
 
     expect(refreshPremium).toHaveBeenCalledTimes(1);
     expect(navigation.navigate).toHaveBeenCalledWith("Profile");
   });
 
-  it("renders subscription actions, legal links and paywall controls", () => {
-    const navigation = { canGoBack: jest.fn(() => true), goBack: jest.fn() };
-    const toggleExpanded = jest.fn();
+  it("renders the launch-ready subscription sections and actions", () => {
+    const navigation = {
+      canGoBack: jest.fn(() => true),
+      goBack: jest.fn(),
+      navigate: jest.fn<(screen: string) => void>(),
+    };
     const tryOpenManage = jest.fn();
     const tryRestore = jest.fn();
     const trySubscribe = jest.fn();
@@ -269,61 +325,61 @@ describe("ManageSubscriptionScreen", () => {
     const openPaywall = jest.fn();
     const closePaywall = jest.fn();
     const toggleDevPremium = jest.fn();
-    const openTerms = jest.fn();
-    const openPrivacy = jest.fn();
+    const clearActionFeedback = jest.fn();
 
-    mockUseManageSubscriptionState.mockReturnValue({
-      expanded: "aiCredits800",
-      busy: false,
-      paywallVisible: true,
-      termsUrl: "https://example.com/terms",
-      privacyUrl: "https://example.com/privacy",
-      priceText: "$9.99",
-      showRenew: false,
-      showStart: true,
-      showManageInStore: true,
-      headerStatus: "Inactive",
-      isPremiumComputed: false,
-      toggleExpanded,
-      tryOpenManage,
-      tryRestore,
-      trySubscribe,
-      tryOpenRefundPolicy,
-      openPaywall,
-      closePaywall,
-      toggleDevPremium,
-      openTerms,
-      openPrivacy,
-    });
+    mockUseManageSubscriptionState.mockReturnValue(
+      makeManageState({
+        paywallVisible: true,
+        showManageInStore: true,
+        headerStatus: "Inactive",
+        tryOpenManage,
+        tryRestore,
+        trySubscribe,
+        tryOpenRefundPolicy,
+        openPaywall,
+        closePaywall,
+        toggleDevPremium,
+        clearActionFeedback,
+      }),
+    );
 
     const { getByText } = renderWithTheme(
       <ManageSubscriptionScreen navigation={navigation as never} />,
     );
 
-    fireEvent.press(getByText("profile:manageSubscription.benefit_aiCredits800"));
-    fireEvent.press(getByText("Restore Purchases"));
-    fireEvent.press(getByText("profile:manageSubscription.refundPolicy"));
-    fireEvent.press(getByText("Terms of Service"));
-    fireEvent.press(getByText("Privacy Policy"));
-    fireEvent.press(getByText("Manage subscription in store"));
+    expect(getByText("header:profile:manageSubscription.title")).toBeTruthy();
+    expect(
+      getByText(
+        "Review your current membership, AI Credits tier, and subscription actions.",
+      ),
+    ).toBeTruthy();
+    expect(getByText("Free plan")).toBeTruthy();
+    expect(getByText("Current membership")).toBeTruthy();
+    expect(getByText("AI Credits")).toBeTruthy();
+    expect(getByText("Premium benefits")).toBeTruthy();
+    expect(getByText("Subscription actions")).toBeTruthy();
+    expect(getByText("Inactive")).toBeTruthy();
+    expect(getByText("76")).toBeTruthy();
+    expect(getByText("800")).toBeTruthy();
+    expect(getByText("2026-05-14")).toBeTruthy();
+    expect(getByText("paywall:$9.99")).toBeTruthy();
+
     fireEvent.press(getByText("profile:manageSubscription.startSubscription"));
+    fireEvent.press(getByText("Manage subscription in store"));
+    fireEvent.press(getByText("Restore purchases"));
+    fireEvent.press(getByText("Legal & privacy"));
+    fireEvent.press(getByText("profile:manageSubscription.refundPolicy"));
     fireEvent.press(getByText("subscribe-paywall"));
     fireEvent.press(getByText("restore-paywall"));
     fireEvent.press(getByText("close-paywall"));
-    fireEvent.press(getByText("DEV: Enable Premium"));
+    fireEvent.press(getByText("DEV: Enable premium"));
 
-    expect(getByText("header:profile:manageSubscription.title")).toBeTruthy();
-    expect(getByText("Inactive")).toBeTruthy();
-    expect(getByText("credits:76:800")).toBeTruthy();
-    expect(getByText("profile:manageSubscription.benefitDesc_aiCredits800")).toBeTruthy();
-    expect(getByText("paywall:$9.99")).toBeTruthy();
-    expect(toggleExpanded).toHaveBeenCalledWith("aiCredits800");
-    expect(tryRestore).toHaveBeenCalledTimes(2);
-    expect(tryOpenRefundPolicy).toHaveBeenCalledTimes(1);
-    expect(openTerms).toHaveBeenCalledTimes(1);
-    expect(openPrivacy).toHaveBeenCalledTimes(1);
-    expect(tryOpenManage).toHaveBeenCalledTimes(1);
+    expect(clearActionFeedback).toHaveBeenCalledTimes(1);
     expect(openPaywall).toHaveBeenCalledTimes(1);
+    expect(tryOpenManage).toHaveBeenCalledTimes(1);
+    expect(tryRestore).toHaveBeenCalledTimes(2);
+    expect(navigation.navigate).toHaveBeenCalledWith("LegalPrivacyHub");
+    expect(tryOpenRefundPolicy).toHaveBeenCalledTimes(1);
     expect(trySubscribe).toHaveBeenCalledTimes(1);
     expect(closePaywall).toHaveBeenCalledTimes(1);
     expect(toggleDevPremium).toHaveBeenCalledTimes(1);

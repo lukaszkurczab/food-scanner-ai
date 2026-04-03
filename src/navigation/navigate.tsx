@@ -43,6 +43,11 @@ export type RootStackParamList = {
   Statistics: undefined;
   Privacy: undefined;
   ManageSubscription: undefined;
+  LegalPrivacyHub: undefined;
+  DataAiClarity: undefined;
+  HelpFeedback: undefined;
+  ContactSupport: undefined;
+  AppSettings: undefined;
   ChangePassword: undefined;
   SendFeedback: undefined;
   SelectSavedMeal: undefined;
@@ -51,8 +56,10 @@ export type RootStackParamList = {
   Register: undefined;
   SavedMeals: undefined;
   EditUserData: undefined;
+  DeleteAccount: undefined;
   ChangeEmail: undefined;
-  AvatarCamera: undefined;
+  ProfilePhotoPreview: undefined;
+  AvatarCamera: { returnDepth?: number } | undefined;
   HistoryList: undefined;
   Chat: undefined;
   Notifications: undefined;

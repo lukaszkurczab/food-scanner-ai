@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, ErrorBox, Layout, Modal, TextInput } from "@/components";
@@ -38,6 +38,9 @@ export default function DescribeMealScreen({
     loading,
     showLimitModal,
     creditsUsed,
+    creditsBalance,
+    textMealCost,
+    remainingCreditsAfterAnalyze,
     descriptionError,
     submitError,
     analyzeDisabled,
@@ -54,6 +57,49 @@ export default function DescribeMealScreen({
     initialValues: params,
   });
 
+  const creditsNote = useMemo(() => {
+    if (creditsBalance === null) {
+      return undefined;
+    }
+
+    if (creditsBalance < textMealCost) {
+      return t("text_ai_no_credits_note", {
+        ns: "meals",
+        cost: textMealCost,
+        defaultValue: "You need {{cost}} credit to continue.",
+      });
+    }
+
+    if (remainingCreditsAfterAnalyze === null) {
+      return undefined;
+    }
+
+    if (remainingCreditsAfterAnalyze <= 2) {
+      return t("text_ai_low_credits_note", {
+        ns: "meals",
+        count: remainingCreditsAfterAnalyze,
+        defaultValue: "Only {{count}} credits left after this analysis",
+      });
+    }
+
+    return t("text_ai_credits_remaining_note", {
+      ns: "meals",
+      count: remainingCreditsAfterAnalyze,
+      defaultValue: "✦ {{count}} credits remaining",
+    });
+  }, [
+    creditsBalance,
+    remainingCreditsAfterAnalyze,
+    t,
+    textMealCost,
+  ]);
+
+  const creditsNoteWarning =
+    creditsBalance !== null &&
+    (creditsBalance < textMealCost ||
+      (remainingCreditsAfterAnalyze !== null &&
+        remainingCreditsAfterAnalyze <= 2));
+
   return (
     <Layout showNavigation={false} disableScroll style={styles.layout}>
       <View style={styles.fill}>
@@ -69,6 +115,7 @@ export default function DescribeMealScreen({
                 placeholder={t("describe_meal_name_placeholder", {
                   ns: "meals",
                 })}
+                autoCapitalize="none"
                 autoCorrect={false}
                 spellCheck={false}
                 maxLength={80}
@@ -112,6 +159,16 @@ export default function DescribeMealScreen({
                 loading={loading}
                 style={styles.primaryButton}
               />
+              {creditsNote ? (
+                <Text
+                  style={[
+                    styles.inlineNote,
+                    creditsNoteWarning ? styles.inlineNoteWarning : null,
+                  ]}
+                >
+                  {creditsNote}
+                </Text>
+              ) : null}
               <MealAddTextLink
                 label={t("change_method", { ns: "meals" })}
                 onPress={() =>
@@ -178,5 +235,16 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     primaryButton: {
       minHeight: 48,
       borderRadius: theme.rounded.sm,
+    },
+    inlineNote: {
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
+      fontFamily: theme.typography.fontFamily.regular,
+      textAlign: "center",
+      marginTop: theme.spacing.xs,
+    },
+    inlineNoteWarning: {
+      color: theme.accentWarm,
     },
   });

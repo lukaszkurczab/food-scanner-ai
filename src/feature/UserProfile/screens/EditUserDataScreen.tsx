@@ -1,171 +1,83 @@
-import { useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Modal,
-  ActivityIndicator,
-} from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/theme/useTheme";
-import { BackTitleHeader, Layout } from "@/components";
-import ListItem from "../components/ListItem";
-import * as ImagePicker from "expo-image-picker";
-import { useUserContext } from "@contexts/UserContext";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { useTheme } from "@/theme/useTheme";
+import { FormScreenShell, SettingsRow, SettingsSection } from "@/components";
+import AppIcon from "@/components/AppIcon";
+import AvatarBadge from "@/components/AvatarBadge";
+import { useUserContext } from "@/context/UserContext";
 
 type EditUserDataNavigation = StackNavigationProp<
   RootStackParamList,
   "EditUserData"
 >;
 
-type ChangeUserDataScreenProps = {
+type EditUserDataScreenProps = {
   navigation: EditUserDataNavigation;
 };
 
-export default function ChangeUserDataScreen({
+const PASSWORD_MASK = "••••••••";
+
+export default function EditUserDataScreen({
   navigation,
-}: ChangeUserDataScreenProps) {
+}: EditUserDataScreenProps) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
-  const [photoModal, setPhotoModal] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const { setAvatar } = useUserContext();
+  const { userData } = useUserContext();
+
+  const avatarSrc = userData?.avatarLocalPath || userData?.avatarUrl || "";
 
   return (
-    <Layout>
-      <View style={styles.content}>
-        <BackTitleHeader
-          title={t("changeUserData")}
-          onBack={() => navigation.goBack()}
+    <FormScreenShell
+      title={t("profileDetailsTitle", { defaultValue: "Profile details" })}
+      intro={t("profileDetailsIntro", {
+        defaultValue: "Update how your account appears and how you sign in.",
+      })}
+      onBack={() => navigation.goBack()}
+    >
+      <SettingsSection
+        title={t("profileSectionTitle", { defaultValue: "Profile" })}
+      >
+        <SettingsRow
+          title={t("profilePhotoLabel", { defaultValue: "Profile photo" })}
+          testID="profile-details-photo-row"
+          leading={
+            <AvatarBadge
+              size={44}
+              uri={avatarSrc || undefined}
+              badges={[]}
+              fallbackIcon={
+                <AppIcon name="person" size={20} color={theme.textSecondary} />
+              }
+              accessibilityLabel={t("profilePicture")}
+            />
+          }
+          onPress={() => navigation.navigate("ProfilePhotoPreview")}
         />
+        <SettingsRow
+          title={t("usernameLabel", { defaultValue: "Username" })}
+          value={userData?.username ?? ""}
+          testID="profile-details-username-row"
+          onPress={() => navigation.navigate("UsernameChange")}
+        />
+      </SettingsSection>
 
-        <View style={styles.list}>
-          <ListItem
-            label={t("changeUserPhoto")}
-            onPress={() => setPhotoModal(true)}
-          />
-          <ListItem
-            label={t("changeUsername")}
-            onPress={() => navigation.navigate("UsernameChange")}
-          />
-          <ListItem
-            label={t("changeEmail")}
-            onPress={() => navigation.navigate("ChangeEmail")}
-          />
-          <ListItem
-            label={t("changePassword")}
-            onPress={() => navigation.navigate("ChangePassword")}
-          />
-        </View>
-        {isUploading && (
-          <View style={styles.uploadOverlay}>
-            <ActivityIndicator size="large" color={theme.primary} />
-          </View>
-        )}
-      </View>
-
-      <Modal visible={photoModal} transparent>
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setPhotoModal(false)}
-        >
-          <Pressable
-            style={[styles.modal, { backgroundColor: theme.surfaceElevated }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <Pressable
-              style={[
-                styles.modalButton,
-                { borderBottomWidth: 1, borderBottomColor: theme.border },
-              ]}
-              onPress={() => {
-                setPhotoModal(false);
-                navigation.navigate("AvatarCamera");
-              }}
-            >
-              <Text style={[styles.modalButtonText, { color: theme.text }]}>
-                {t("makePhoto")}
-              </Text>
-            </Pressable>
-            <Pressable
-              style={styles.modalButton}
-              disabled={isUploading}
-              onPress={async () => {
-                setPhotoModal(false);
-                const result = await ImagePicker.launchImageLibraryAsync({
-                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                  allowsEditing: true,
-                  quality: 0.7,
-                });
-                if (
-                  !result.canceled &&
-                  result.assets &&
-                  result.assets[0]?.uri
-                ) {
-                  setIsUploading(true);
-                  try {
-                    await setAvatar(result.assets[0].uri);
-                  } catch {
-                    // Keep current avatar if upload fails.
-                  }
-                  setIsUploading(false);
-                }
-              }}
-            >
-              <Text style={[styles.modalButtonText, { color: theme.text }]}>
-                {t("addFromGallery")}
-              </Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
-    </Layout>
+      <SettingsSection
+        title={t("securitySectionTitle", { defaultValue: "Security" })}
+      >
+        <SettingsRow
+          title={t("emailLabel", { defaultValue: "Email" })}
+          value={userData?.email ?? ""}
+          testID="profile-details-email-row"
+          onPress={() => navigation.navigate("ChangeEmail")}
+        />
+        <SettingsRow
+          title={t("passwordLabel", { defaultValue: "Password" })}
+          value={PASSWORD_MASK}
+          testID="profile-details-password-row"
+          onPress={() => navigation.navigate("ChangePassword")}
+        />
+      </SettingsSection>
+    </FormScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    justifyContent: "flex-start",
-    flex: 1,
-  },
-  list: {
-    borderRadius: 24,
-    backgroundColor: "transparent",
-    overflow: "hidden",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  modal: {
-    width: "100%",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 0,
-    margin: 0,
-    paddingBottom: 32,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.04)",
-  },
-  modalButton: {
-    paddingVertical: 18,
-    alignItems: "center",
-    width: "100%",
-  },
-  modalButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  uploadOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.08)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 99,
-  },
-});

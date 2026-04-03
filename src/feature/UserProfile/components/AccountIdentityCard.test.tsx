@@ -1,0 +1,38 @@
+import { Text } from "react-native";
+import { fireEvent } from "@testing-library/react-native";
+import { describe, expect, it, jest } from "@jest/globals";
+import { AccountIdentityCard } from "@/feature/UserProfile/components/AccountIdentityCard";
+import { renderWithTheme } from "@/test-utils/renderWithTheme";
+
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: ({ name }: { name: string }) => {
+    const { Text: MockText } = require("react-native");
+    return <MockText>{name}</MockText>;
+  },
+}));
+
+describe("AccountIdentityCard", () => {
+  it("renders avatar, status badge, and handles press", () => {
+    const onPress = jest.fn();
+    const { getByText, getByTestId } = renderWithTheme(
+      <AccountIdentityCard
+        avatar={<Text testID="avatar">avatar</Text>}
+        title="lukasz"
+        subtitle="name@example.com"
+        badge={<Text>Premium</Text>}
+        onPress={onPress}
+        testID="identity-card"
+      />,
+    );
+
+    expect(getByTestId("avatar")).toBeTruthy();
+    expect(getByText("lukasz")).toBeTruthy();
+    expect(getByText("name@example.com")).toBeTruthy();
+    expect(getByText("Premium")).toBeTruthy();
+    expect(getByText("chevron-right")).toBeTruthy();
+
+    fireEvent.press(getByTestId("identity-card"));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+});

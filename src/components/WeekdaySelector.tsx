@@ -5,18 +5,26 @@ import { useTheme } from "@/theme/useTheme";
 type Props = {
   value: number[];
   onChange: (next: number[]) => void;
+  labels?: string[];
 };
 
 const labels = ["S", "M", "T", "W", "T", "F", "S"];
+const displayOrder = [1, 2, 3, 4, 5, 6, 0];
 
-export const WeekdaySelector: React.FC<Props> = ({ value, onChange }) => {
+export const WeekdaySelector: React.FC<Props> = ({
+  value,
+  onChange,
+  labels: customLabels,
+}) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const weekdayLabels = customLabels ?? labels;
 
   return (
     <View style={styles.row}>
-      {labels.map((l, idx) => {
+      {displayOrder.map((idx) => {
         const active = value.includes(idx);
+        const label = weekdayLabels[idx] ?? labels[idx];
 
         return (
           <Pressable
@@ -31,6 +39,7 @@ export const WeekdaySelector: React.FC<Props> = ({ value, onChange }) => {
               styles.dayChipBase,
               active ? styles.dayChipActive : styles.dayChipIdle,
             ]}
+            testID={`weekday-chip-${idx}`}
           >
             <Text
               style={[
@@ -38,7 +47,7 @@ export const WeekdaySelector: React.FC<Props> = ({ value, onChange }) => {
                 active ? styles.dayLabelActive : styles.dayLabelIdle,
               ]}
             >
-              {l}
+              {label}
             </Text>
           </Pressable>
         );
@@ -51,13 +60,15 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     row: {
       flexDirection: "row",
-      gap: theme.spacing.sm,
+      alignItems: "stretch",
+      gap: theme.spacing.xxs,
     },
     dayChipBase: {
-      minWidth: 40,
+      flex: 1,
+      minWidth: 0,
       minHeight: 40,
       paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      paddingHorizontal: theme.spacing.xs,
       borderRadius: theme.rounded.md,
       borderWidth: 1,
       alignItems: "center",
@@ -75,6 +86,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.medium,
       fontSize: theme.typography.size.bodyS,
       lineHeight: theme.typography.lineHeight.bodyS,
+      textAlign: "center",
     },
     dayLabelActive: {
       color: theme.primaryStrong,

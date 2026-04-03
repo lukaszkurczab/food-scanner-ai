@@ -1,0 +1,77 @@
+appId: com.lkurczab.foodscannerai
+---
+- runFlow: login.yaml
+- tapOn:
+    id: tab-profile
+- assertVisible: "Account"
+
+- tapOn:
+    id: account-profile-details-row
+- assertVisible: "Profile details"
+
+- tapOn:
+    id: profile-details-photo-row
+- assertVisible: "Update profile photo"
+- back
+
+- tapOn:
+    id: profile-details-username-row
+- assertVisible: "Change username"
+- back
+
+- tapOn:
+    id: profile-details-email-row
+- assertVisible: "Change email"
+- back
+
+- tapOn:
+    id: profile-details-password-row
+- assertVisible: "Change password"
+- back
+- back
+
+- tapOn:
+    id: account-manage-subscription-row
+- assertVisible: "Manage subscription"
+- back
+
+- tapOn:
+    id: account-legal-privacy-row
+- assertVisible: "Legal & privacy"
+- tapOn:
+    id: legal-data-ai-row
+- assertVisible: "Data & AI clarity"
+- back
+- back
+
+- tapOn:
+    id: account-help-feedback-row
+- assertVisible: "Help & feedback"
+- tapOn:
+    id: help-contact-support-row
+- assertVisible: "Contact support"
+- back
+- tapOn:
+    id: help-send-feedback-row
+- assertVisible: "Send feedback"
+- back
+- back
+
+- tapOn:
+    id: account-app-settings-row
+- assertVisible: "App settings"
+- tapOn:
+    id: app-settings-notifications-row
+- assertVisible: "Notifications"
+- tapOn: "Create reminder"
+- assertVisible: "Create reminder"
+- back
+- back
+
+- scrollUntilVisible:
+    element:
+      id: account-delete-account-row
+    direction: DOWN
+- tapOn:
+    id: account-delete-account-row
+- assertVisible: "Delete account"

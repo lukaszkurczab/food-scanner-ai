@@ -1,28 +1,54 @@
 {
   "screen": {
     "title": "Powiadomienia",
+    "intro": "Zarządzaj przypomnieniami o posiłkach, dostępem do powiadomień oraz preferencjami powiadomień dostępnymi dziś w Fitaly.",
     "myReminders": "Moje przypomnienia",
+    "mealRemindersTitle": "Przypomnienia o posiłkach",
+    "mealRemindersFooter": "Twórz przypomnienia dla konkretnych posiłków albo wybierz Inne, jeśli przypomnienie ma być bardziej ogólne.",
+    "everyDay": "Codziennie",
+    "noMealRemindersTitle": "Nie masz jeszcze przypomnień o posiłkach",
+    "noMealRemindersBody": "Utwórz przypomnienie, aby otrzymywać cykliczny sygnał w wybranym czasie i dniach.",
     "smartReminderHint": "Smart Reminders mogą dopasować moment przypomnienia do Twojego dnia, ostatniego logowania i godzin ciszy.",
     "smartReminderDebugTitle": "QA Smart Reminder",
     "smartReminders": "Smart Reminders",
-    "addReminder": "Dodaj przypomnienie",
+    "preferenceTitle": "Preferencje powiadomień",
+    "addReminder": "Utwórz przypomnienie",
+    "permissionOnTitle": "Powiadomienia są włączone",
+    "permissionOnBody": "Fitaly może dostarczać przypomnienia i inne powiadomienia na tym urządzeniu.",
+    "permissionOffTitle": "Powiadomienia są wyłączone",
+    "permissionOffBody": "Włącz powiadomienia systemowe, aby otrzymywać przypomnienia o posiłkach i inne typy powiadomień na czas.",
+    "permissionCheckingTitle": "Sprawdzanie dostępu do powiadomień",
+    "permissionCheckingBody": "Fitaly nadal sprawdza, czy to urządzenie może odbierać powiadomienia.",
     "motivation": "Motywacja",
+    "motivationSubtitle": "Motywacyjne wiadomości korzystające z istniejącej ścieżki preferencji powiadomień.",
     "deleteTitle": "Usuń przypomnienie",
     "deleteMsg": "Na pewno?",
-    "stats": "Statystyki"
+    "stats": "Statystyki",
+    "statsSubtitle": "Cotygodniowe podsumowania oparte na aktualnie zapisanej preferencji.",
+    "loadingTitle": "Ładowanie przypomnień",
+    "loadingBody": "Ustawienia przypomnień są nadal ładowane z Twojego konta."
   },
   "form": {
     "name": "Nazwa",
     "edit": "Edytuj przypomnienie",
     "create": "Utwórz przypomnienie",
+    "editTitle": "Edytuj przypomnienie",
+    "createTitle": "Utwórz przypomnienie",
+    "scheduleTitle": "Harmonogram",
+    "mealFocusTitle": "Dotyczy",
+    "mealFocusIntro": "Wybierz, którego posiłku ma dotyczyć to przypomnienie.",
     "type": "Typ",
     "time": "Godzina",
     "save": "Zapisz",
     "cancel": "Anuluj",
     "days": "Dni",
     "textOverride": "Własna treść",
+    "textOverrideTitle": "Opcjonalna własna wiadomość",
+    "textOverridePlaceholder": "Pozostaw puste, aby użyć standardowej treści przypomnienia.",
+    "previewTitle": "Aktualna godzina",
+    "previewBody": "Twoje przypomnienie jest obecnie ustawione na {{time}}.",
     "delete": "Usuń",
-    "defaultName": "Przypomnienie",
+    "defaultName": "Przypomnienie o posiłku",
     "mealKind": "Posiłek",
     "kcalByHour": "Cel kcal do tej godziny",
     "kcalPlaceholder": "np. 1000"
@@ -33,11 +59,11 @@
     "day_fill": "Uzupełnienie dnia"
   },
   "meals": {
-    "any": "Dowolny posiłek",
     "breakfast": "Śniadanie",
     "lunch": "Obiad",
     "dinner": "Kolacja",
-    "snack": "Przekąska"
+    "snack": "Przekąska",
+    "other": "Inne"
   },
   "push": {
     "meal_reminder": {

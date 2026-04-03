@@ -5,9 +5,16 @@ import { useMealTextAiState } from "@/feature/Meals/hooks/useMealTextAiState";
 const mockUseNavigation = jest.fn();
 const mockUseAiCreditsContext = jest.fn();
 const mockCanAfford = jest.fn(() => true);
+const mockRefreshCredits = jest.fn<() => Promise<unknown>>();
+const mockApplyCreditsFromResponse = jest.fn<(value: unknown) => unknown>();
+const mockPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
 
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockUseNavigation(),
+}));
+
+jest.mock("@/services/core/apiClient", () => ({
+  post: (url: string, data?: unknown) => mockPost(url, data),
 }));
 
 jest.mock("@/context/AiCreditsContext", () => ({
@@ -22,6 +29,9 @@ describe("useMealTextAiState", () => {
       navigate: jest.fn(),
     });
     mockCanAfford.mockReturnValue(true);
+    mockRefreshCredits.mockResolvedValue(null);
+    mockApplyCreditsFromResponse.mockImplementation((value: unknown) => value);
+    mockPost.mockResolvedValue(null);
     mockUseAiCreditsContext.mockReturnValue({
       credits: {
         userId: "user-1",
@@ -33,12 +43,23 @@ describe("useMealTextAiState", () => {
         costs: { chat: 1, textMeal: 1, photo: 5 },
       },
       canAfford: mockCanAfford,
+      refreshCredits: mockRefreshCredits,
+      applyCreditsFromResponse: mockApplyCreditsFromResponse,
     });
   });
 
-  it("shows limit modal when user cannot afford text meal analysis", () => {
+  it("shows limit modal when user cannot afford text meal analysis", async () => {
     const flow = { goTo: jest.fn() };
     mockCanAfford.mockReturnValue(false);
+    mockRefreshCredits.mockResolvedValue({
+      userId: "user-1",
+      tier: "free",
+      balance: 0,
+      allocation: 100,
+      periodStartAt: "2026-03-01T00:00:00.000Z",
+      periodEndAt: "2026-04-01T00:00:00.000Z",
+      costs: { chat: 1, textMeal: 1, photo: 5 },
+    });
 
     const { result } = renderHook(() =>
       useMealTextAiState({
@@ -54,15 +75,15 @@ describe("useMealTextAiState", () => {
     act(() => {
       result.current.onQuickDescriptionChange("Chicken and rice with cucumber");
     });
-    act(() => {
-      result.current.onAnalyze();
+    await act(async () => {
+      await result.current.onAnalyze();
     });
 
     expect(result.current.showLimitModal).toBe(true);
     expect(flow.goTo).not.toHaveBeenCalled();
   });
 
-  it("routes valid text input to the analyzing step", () => {
+  it("routes valid text input to the analyzing step", async () => {
     const flow = { goTo: jest.fn() };
 
     const { result } = renderHook(() =>
@@ -79,8 +100,8 @@ describe("useMealTextAiState", () => {
     act(() => {
       result.current.onQuickDescriptionChange("Chicken and rice with cucumber");
     });
-    act(() => {
-      result.current.onAnalyze();
+    await act(async () => {
+      await result.current.onAnalyze();
     });
 
     expect(flow.goTo).toHaveBeenCalledWith("TextAnalyzing", {
@@ -119,5 +140,56 @@ describe("useMealTextAiState", () => {
     });
 
     expect(navigation.navigate).toHaveBeenCalledWith("ManageSubscription");
+  });
+
+  it("reconciles credits before blocking analysis when local snapshot says no credits", async () => {
+    const flow = { goTo: jest.fn() };
+    mockCanAfford.mockReturnValue(false);
+    mockPost.mockResolvedValue({
+      userId: "user-1",
+      tier: "free",
+      balance: 74,
+      allocation: 100,
+      periodStartAt: "2026-03-01T00:00:00.000Z",
+      periodEndAt: "2026-04-01T00:00:00.000Z",
+      costs: { chat: 1, textMeal: 1, photo: 5 },
+    });
+    mockApplyCreditsFromResponse.mockImplementation((value: unknown) => value);
+    mockRefreshCredits.mockResolvedValue({
+      userId: "user-1",
+      tier: "free",
+      balance: 74,
+      allocation: 100,
+      periodStartAt: "2026-03-01T00:00:00.000Z",
+      periodEndAt: "2026-04-01T00:00:00.000Z",
+      costs: { chat: 1, textMeal: 1, photo: 5 },
+    });
+
+    const { result } = renderHook(() =>
+      useMealTextAiState({
+        t: (key: string) => key,
+        language: "en",
+        flow,
+      }),
+    );
+
+    act(() => {
+      result.current.onNameChange("Chicken and rice");
+    });
+    act(() => {
+      result.current.onQuickDescriptionChange("Chicken and rice with cucumber");
+    });
+    await act(async () => {
+      await result.current.onAnalyze();
+    });
+
+    expect(mockPost).toHaveBeenCalledWith("/ai/credits/sync-tier", undefined);
+    expect(mockRefreshCredits).toHaveBeenCalled();
+    expect(flow.goTo).toHaveBeenCalledWith("TextAnalyzing", {
+      name: "Chicken and rice",
+      quickDescription: "Chicken and rice with cucumber",
+      retries: 0,
+    });
+    expect(result.current.showLimitModal).toBe(false);
   });
 });

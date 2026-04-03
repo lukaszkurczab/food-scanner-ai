@@ -1,16 +1,15 @@
-import { useState, useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
 import { useTheme } from "@/theme/useTheme";
-import { useUserContext } from "@contexts/UserContext";
-import { BackTitleHeader, TextInput, Layout, ErrorBox } from "@/components";
-import { GlobalActionButtons } from "@/components/GlobalActionButtons";
+import { ErrorBox, FormScreenShell, TextInput } from "@/components";
+import { useUserContext } from "@/context/UserContext";
 import {
   isUsernameAvailable,
   normalizeUsername,
 } from "@/services/user/usernameService";
-import type { StackNavigationProp } from "@react-navigation/stack";
-import type { RootStackParamList } from "@/navigation/navigate";
 
 function mapFirebaseErrorToKey(code: string): string {
   switch (code) {
@@ -24,15 +23,12 @@ function mapFirebaseErrorToKey(code: string): string {
       return "invalid_password";
     case "username/unavailable":
       return "usernameTaken";
+    case "username/invalid":
+      return "usernameTooShort";
     default:
-      return "invalid_password";
+      return "default_error";
   }
 }
-
-type UsernameChangeNavigation = StackNavigationProp<RootStackParamList>;
-type Props = {
-  navigation: UsernameChangeNavigation;
-};
 
 function getErrorCode(err: unknown): string | null {
   if (!err || typeof err !== "object") return null;
@@ -40,8 +36,19 @@ function getErrorCode(err: unknown): string | null {
   return typeof code === "string" ? code : null;
 }
 
-export default function UsernameChangeScreen({ navigation }: Props) {
-  const { t } = useTranslation(["profile", "login"]);
+type UsernameChangeNavigation = StackNavigationProp<
+  RootStackParamList,
+  "UsernameChange"
+>;
+
+type UsernameChangeScreenProps = {
+  navigation: UsernameChangeNavigation;
+};
+
+export default function UsernameChangeScreen({
+  navigation,
+}: UsernameChangeScreenProps) {
+  const { t } = useTranslation(["profile", "login", "common"]);
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { changeUsername, userData } = useUserContext();
@@ -55,23 +62,86 @@ export default function UsernameChangeScreen({ navigation }: Props) {
   }>({});
   const [criticalError, setCriticalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [availabilityHint, setAvailabilityHint] = useState<string | null>(null);
+  const availabilityRequestRef = useRef(0);
+
+  const runAvailabilityCheck = async (rawValue: string) => {
+    const candidate = normalizeUsername(rawValue);
+    if (!candidate || candidate.length < 3) {
+      setErrors((current) => ({ ...current, username: undefined }));
+      setAvailabilityHint(null);
+      return;
+    }
+
+    if (candidate === normalizeUsername(userData?.username || "")) {
+      setErrors((current) => ({
+        ...current,
+        username: t("usernameCurrentHelper", {
+          defaultValue: "This is already your current username.",
+        }),
+      }));
+      setAvailabilityHint(
+        t("usernameCurrentHelper", {
+          defaultValue: "This is already your current username.",
+        }),
+      );
+      return;
+    }
+
+    const requestId = availabilityRequestRef.current + 1;
+    availabilityRequestRef.current = requestId;
+    setCheckingAvailability(true);
+    setAvailabilityHint(null);
+
+    try {
+      const available = await isUsernameAvailable(candidate, userData?.uid);
+      if (availabilityRequestRef.current !== requestId) {
+        return;
+      }
+
+      if (available) {
+        setErrors((current) => ({ ...current, username: undefined }));
+        setAvailabilityHint(t("usernameAvailable"));
+      } else {
+        setErrors((current) => ({
+          ...current,
+          username: t("usernameTaken"),
+        }));
+      }
+    } catch {
+      if (availabilityRequestRef.current === requestId) {
+        setAvailabilityHint(null);
+      }
+    } finally {
+      if (availabilityRequestRef.current === requestId) {
+        setCheckingAvailability(false);
+      }
+    }
+  };
 
   const validate = async () => {
     const newErrors: { username?: string; password?: string } = {};
     const candidate = normalizeUsername(username);
 
     if (!candidate) {
-      newErrors.username = t("usernameRequired", { ns: "profile" });
+      newErrors.username = t("usernameRequired");
     } else if (candidate.length < 3) {
-      newErrors.username = t("usernameTooShort", { ns: "profile" });
+      newErrors.username = t("usernameTooShort");
+    } else if (candidate === normalizeUsername(userData?.username || "")) {
+      newErrors.username = t("usernameCurrentHelper", {
+        defaultValue: "This is already your current username.",
+      });
     } else {
       const available = await isUsernameAvailable(candidate, userData?.uid);
-      if (!available)
-        newErrors.username = t("usernameTaken", { ns: "profile" });
+      if (!available) {
+        newErrors.username = t("usernameTaken");
+      }
     }
 
-    if (!password)
-      newErrors.password = t("passwordRequired", { ns: "profile" });
+    if (!password) {
+      newErrors.password = t("passwordRequired");
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length ? newErrors : null;
@@ -91,112 +161,112 @@ export default function UsernameChangeScreen({ navigation }: Props) {
     try {
       await changeUsername(normalizeUsername(username), password);
       navigation.goBack();
-    } catch (e: unknown) {
-      let errKey = "login_failed";
-      const code = getErrorCode(e);
-      if (code) errKey = mapFirebaseErrorToKey(code);
+    } catch (error: unknown) {
+      const code = getErrorCode(error);
+      const errKey = code ? mapFirebaseErrorToKey(code) : "default_error";
 
       if (errKey === "invalid_password") {
-        setErrors((old) => ({
-          ...old,
+        setErrors((current) => ({
+          ...current,
           password: t("invalid_password", { ns: "login" }),
         }));
         setCriticalError(null);
-      } else if (errKey === "usernameTaken") {
-        setErrors((old) => ({
-          ...old,
-          username: t("usernameTaken", { ns: "profile" }),
+      } else if (errKey === "usernameTaken" || errKey === "usernameTooShort") {
+        setErrors((current) => ({
+          ...current,
+          username: t(errKey),
         }));
         setCriticalError(null);
+      } else if (errKey === "too_many_requests") {
+        setCriticalError(t("too_many_requests", { ns: "login" }));
       } else {
-        setCriticalError(t(errKey, { ns: "login" }));
+        setCriticalError(t("default_error", { ns: "common" }));
       }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
+  const usernameHelper =
+    touched.username && !errors.username
+      ? checkingAvailability
+        ? t("checkingUsername")
+        : availabilityHint
+      : undefined;
+
   return (
-    <Layout disableScroll>
-      <View style={styles.container}>
-        <ScrollView
-          style={styles.formScroll}
-          contentContainerStyle={styles.formContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {criticalError && (
-            <ErrorBox message={criticalError} style={styles.error} />
-          )}
+    <FormScreenShell
+      title={t("changeUsername")}
+      intro={t("changeUsernameIntro", {
+        defaultValue: "Choose the name shown across your account.",
+      })}
+      onBack={() => navigation.goBack()}
+      actionLabel={t("save", { ns: "common" })}
+      onActionPress={() => {
+        void onSubmit();
+      }}
+      actionLoading={loading}
+      actionDisabled={
+        loading ||
+        checkingAvailability ||
+        !username ||
+        !password ||
+        Boolean(errors.username) ||
+        Boolean(errors.password)
+      }
+      secondaryActionLabel={t("cancel")}
+      secondaryActionPress={() => navigation.goBack()}
+      secondaryActionDisabled={loading}
+    >
+      <View style={styles.content}>
+        {criticalError ? <ErrorBox message={criticalError} /> : null}
 
-          <BackTitleHeader
-            title={t("changeUsername", { ns: "profile" })}
-            onBack={() => navigation.goBack()}
-          />
+        <TextInput
+          label={t("newUsername")}
+          value={username}
+          onChangeText={(value) => {
+            setUsername(value);
+            setAvailabilityHint(null);
+            setErrors((current) => ({ ...current, username: undefined }));
+          }}
+          onBlur={() => {
+            setTouched((current) => ({ ...current, username: true }));
+            void runAvailabilityCheck(username);
+          }}
+          placeholder={t("newUsernamePlaceholder")}
+          autoCorrect={false}
+          autoCapitalize="none"
+          error={touched.username ? errors.username : undefined}
+          helperText={usernameHelper ?? undefined}
+          disabled={loading}
+        />
 
-          <Text style={styles.label}>
-            {t("newUsername", { ns: "profile" })}
-          </Text>
-          <TextInput
-            value={username}
-            onChangeText={(val) => {
-              setUsername(val);
-              setErrors((e) => ({ ...e, username: undefined }));
-            }}
-            onBlur={() => setTouched((t) => ({ ...t, username: true }))}
-            placeholder={t("newUsernamePlaceholder", { ns: "profile" })}
-            autoCorrect={false}
-            error={touched.username ? errors.username : undefined}
-            disabled={loading}
-            style={styles.input}
-          />
-
-          <Text style={styles.label}>{t("password", { ns: "profile" })}</Text>
-          <TextInput
-            value={password}
-            onChangeText={(val) => {
-              setPassword(val);
-              setErrors((e) => ({ ...e, password: undefined }));
-            }}
-            onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-            placeholder={t("passwordPlaceholder", { ns: "profile" })}
-            secureTextEntry
-            error={touched.password ? errors.password : undefined}
-            disabled={loading}
-            style={styles.inputLarge}
-          />
-        </ScrollView>
-
-        <View style={styles.actions}>
-          <GlobalActionButtons
-            label={t("confirm", { ns: "profile" })}
-            onPress={onSubmit}
-            primaryLoading={loading}
-            primaryDisabled={
-              loading || !username || username.length < 3 || !password
-            }
-            secondaryLabel={t("cancel", { ns: "profile" })}
-            secondaryOnPress={() => navigation.goBack()}
-            secondaryDisabled={loading}
-          />
-        </View>
+        <TextInput
+          label={t("password")}
+          value={password}
+          onChangeText={(value) => {
+            setPassword(value);
+            setErrors((current) => ({ ...current, password: undefined }));
+          }}
+          onBlur={() =>
+            setTouched((current) => ({ ...current, password: true }))
+          }
+          placeholder={t("passwordPlaceholder")}
+          secureTextEntry
+          autoCorrect={false}
+          textContentType="password"
+          autoComplete="current-password"
+          error={touched.password ? errors.password : undefined}
+          disabled={loading}
+        />
       </View>
-    </Layout>
+    </FormScreenShell>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: { flex: 1 },
-    formScroll: { flex: 1 },
-    formContent: { paddingBottom: theme.spacing.sm },
-    error: { marginBottom: theme.spacing.sm },
-    label: {
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-      marginBottom: theme.spacing.xs,
-      fontSize: theme.typography.size.bodyL,
+    content: {
+      gap: theme.spacing.screenPadding,
     },
-    input: { marginBottom: theme.spacing.md },
-    inputLarge: { marginBottom: theme.spacing.xl },
-    actions: { gap: theme.spacing.md, paddingTop: theme.spacing.sm },
   });

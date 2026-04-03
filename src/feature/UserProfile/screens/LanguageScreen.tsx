@@ -1,28 +1,17 @@
-import { useState, useMemo, useEffect } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  FlatList,
-} from "react-native";
-import { useTheme } from "@/theme/useTheme";
-import { BackTitleHeader, Layout, SearchBox } from "@/components";
-import AppIcon from "@/components/AppIcon";
+import { useEffect, useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useUserContext } from "@contexts/UserContext";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
-
-type Language = {
-  code: string;
-  label: string;
-};
-
-const LANGUAGES: Language[] = [
-  { code: "en", label: "English" },
-  { code: "pl", label: "Polski" },
-];
+import { useTheme } from "@/theme/useTheme";
+import { useUserContext } from "@contexts/UserContext";
+import {
+  FormScreenShell,
+  InfoBlock,
+  SettingsRow,
+  SettingsSection,
+} from "@/components";
+import AppIcon from "@/components/AppIcon";
 
 type LanguageNavigation = StackNavigationProp<RootStackParamList, "Language">;
 
@@ -30,13 +19,21 @@ type LanguageScreenProps = {
   navigation: LanguageNavigation;
 };
 
+type LanguageOption = {
+  code: string;
+  label: string;
+};
+
+const LANGUAGES: LanguageOption[] = [
+  { code: "en", label: "English" },
+  { code: "pl", label: "Polski" },
+];
+
 export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { t } = useTranslation();
+  const { t } = useTranslation("profile");
   const { language, changeLanguage } = useUserContext();
-
-  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(language || "en");
   const [saving, setSaving] = useState(false);
 
@@ -46,18 +43,21 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
     }
   }, [language, selected]);
 
-  const languages = useMemo(
-    () =>
-      LANGUAGES.filter((lang) =>
-        lang.label.toLowerCase().includes(search.toLowerCase())
-      ),
-    [search]
-  );
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigation.navigate("AppSettings");
+  };
 
   const handleSelect = async (code: string) => {
     if (code === selected || saving) return;
+
     setSelected(code);
     setSaving(true);
+
     try {
       await changeLanguage(code);
     } finally {
@@ -66,92 +66,67 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   };
 
   return (
-    <Layout disableScroll>
-      <View style={styles.flex}>
-        <BackTitleHeader
-          title={t("language", { ns: "profile", defaultValue: "Language" })}
-          onBack={() => navigation.goBack()}
+    <FormScreenShell
+      title={t("language", { defaultValue: "Language" })}
+      intro={t("languageScreenIntro", {
+        defaultValue:
+          "Choose the language used across your account and the rest of the app.",
+      })}
+      onBack={handleBack}
+    >
+      <View style={styles.content}>
+        <InfoBlock
+          title={t("languageInfoTitle", {
+            defaultValue: "App language",
+          })}
+          body={t("languageInfoBody", {
+            defaultValue:
+              "The selected language applies across Fitaly and updates after the change is saved.",
+          })}
+          tone="info"
+          icon={<AppIcon name="palette" size={18} color={theme.info.text} />}
         />
 
-        <SearchBox
-          placeholder={t("input.search", { defaultValue: "Search" })}
-          value={search}
-          onChange={setSearch}
-          debounceMs={0}
-          style={styles.searchInput}
-        />
-
-        <FlatList
-          data={languages}
-          keyExtractor={(item) => item.code}
-          renderItem={({ item }) => (
-            <Pressable
-              style={({ pressed }) => [
-                styles.languageRow,
-                {
-                  opacity: pressed || saving ? 0.7 : 1,
-                },
-                styles.rowCenter,
-                styles.rowGap8,
-              ]}
-              onPress={() => handleSelect(item.code)}
-              disabled={saving}
-              accessibilityRole="button"
-              accessibilityLabel={item.label}
-            >
-              <Text
-                style={[
-                  styles.languageLabel,
-                  selected === item.code && styles.languageLabelActive,
-                ]}
-              >
-                {item.label}
-              </Text>
-              {selected === item.code && (
-                <AppIcon
-                  name="check"
-                  size={20}
-                  color={theme.primary}
-                />
-              )}
-            </Pressable>
-          )}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-          keyboardShouldPersistTaps="handled"
-        />
+        <SettingsSection
+          title={t("languageOptionsTitle", {
+            defaultValue: "Available languages",
+          })}
+        >
+          {LANGUAGES.map((option) => (
+            <SettingsRow
+              key={option.code}
+              title={option.label}
+              subtitle={
+                selected === option.code
+                  ? t("languageCurrentLabel", {
+                      defaultValue: "Current language",
+                    })
+                  : undefined
+              }
+              onPress={() => {
+                void handleSelect(option.code);
+              }}
+              loading={saving && selected === option.code}
+              trailing={
+                selected === option.code ? (
+                  <AppIcon
+                    name="check"
+                    size={18}
+                    color={theme.primary}
+                  />
+                ) : undefined
+              }
+            />
+          ))}
+        </SettingsSection>
       </View>
-    </Layout>
+    </FormScreenShell>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    flex: { flex: 1 },
-    searchInput: {
-      marginBottom: theme.spacing.xs,
-      marginHorizontal: theme.spacing.sm,
-    },
-    languageRow: {
-      paddingVertical: theme.spacing.md,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.border,
-    },
-    rowCenter: { flexDirection: "row", alignItems: "center" },
-    rowGap8: { gap: theme.spacing.sm },
-    languageLabel: {
-      fontSize: theme.typography.size.title,
-      color: theme.text,
-      fontFamily: theme.typography.fontFamily.regular,
-      flex: 1,
-    },
-    languageLabelActive: {
-      color: theme.primary,
-      fontFamily: theme.typography.fontFamily.bold,
-    },
-    list: { marginTop: theme.spacing.lg },
-    listContent: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingBottom: theme.spacing.lg,
+    content: {
+      gap: theme.spacing.sectionGap,
     },
   });

@@ -2,14 +2,10 @@ import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { useUserProfileState } from "@/feature/UserProfile/hooks/useUserProfileState";
 
-const mockSetMode = jest.fn<(...args: unknown[]) => void>();
-const mockUpdateUser = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockDeleteUser = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockExportUserData = jest.fn<(...args: unknown[]) => Promise<string>>();
 const mockRetryProfileSync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockRefreshUser = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockEnsurePremiumBadges = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockSubscribeStreak = jest.fn<(...args: unknown[]) => () => void>();
+const mockAuthLogout = jest.fn<() => Promise<void>>();
 const mockUseAuthContext = jest.fn(() => ({ uid: "u1" }));
 const mockUseNetInfo = jest.fn(() => ({ isConnected: true }));
 
@@ -28,21 +24,11 @@ jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-jest.mock("@/theme/useTheme", () => ({
-  useTheme: () => ({
-    mode: "light",
-    setMode: (...args: unknown[]) => mockSetMode(...args),
-  }),
-}));
-
 jest.mock("@/context/UserContext", () => ({
   useUserContext: () => ({
     userData: mockUserData,
     loadingUser: mockLoadingUser,
     refreshUser: (...args: unknown[]) => mockRefreshUser(...args),
-    updateUser: (...args: unknown[]) => mockUpdateUser(...args),
-    deleteUser: (...args: unknown[]) => mockDeleteUser(...args),
-    exportUserData: (...args: unknown[]) => mockExportUserData(...args),
     syncState: "synced",
     retryingProfileSync: false,
     retryProfileSync: (...args: unknown[]) => mockRetryProfileSync(...args),
@@ -69,11 +55,7 @@ jest.mock("@/hooks/useBadges", () => ({
 }));
 
 jest.mock("@/feature/Auth/services/authService", () => ({
-  authLogout: jest.fn(async () => undefined),
-}));
-
-jest.mock("@/services/gamification/streakService", () => ({
-  subscribeStreak: (...args: unknown[]) => mockSubscribeStreak(...args),
+  authLogout: () => mockAuthLogout(),
 }));
 
 describe("feature/UserProfile/useUserProfileState", () => {
@@ -91,31 +73,21 @@ describe("feature/UserProfile/useUserProfileState", () => {
       language: "en",
     };
     mockLoadingUser = false;
-    mockUpdateUser.mockResolvedValue(undefined);
-    mockDeleteUser.mockResolvedValue(undefined);
-    mockExportUserData.mockResolvedValue("file:///tmp/export.pdf");
+    mockAuthLogout.mockResolvedValue(undefined);
     mockRetryProfileSync.mockResolvedValue(undefined);
     mockRefreshUser.mockResolvedValue(undefined);
     mockEnsurePremiumBadges.mockResolvedValue(undefined);
-    mockSubscribeStreak.mockImplementation((_uid, cb) => {
-      (cb as (state: { current: number }) => void)({ current: 2 });
-      return () => undefined;
-    });
   });
 
-  it("toggles theme locally without backend profile update", async () => {
+  it("logs out through the auth service", async () => {
     const navigation = { reset: jest.fn() } as never;
     const { result } = renderHook(() => useUserProfileState({ navigation }));
-    await waitFor(() => {
-      expect(mockSubscribeStreak).toHaveBeenCalledWith("u1", expect.any(Function));
+
+    await act(async () => {
+      await result.current.handleLogout();
     });
 
-    act(() => {
-      result.current.handleThemeToggle(true);
-    });
-
-    expect(mockSetMode).toHaveBeenCalledWith("dark");
-    expect(mockUpdateUser).not.toHaveBeenCalled();
+    expect(mockAuthLogout).toHaveBeenCalledTimes(1);
   });
 
   it("does not redirect to login when uid exists but profile is temporarily missing", async () => {

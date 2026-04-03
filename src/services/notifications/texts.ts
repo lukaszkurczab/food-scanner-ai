@@ -16,20 +16,20 @@ export function getNotificationText(
       return {
         title: t("push.meal_reminder.title_concise"),
         body: t("push.meal_reminder.body_concise", {
-          meal: data?.mealKindLabel ?? t("meals.any"),
+          meal: data?.mealKindLabel ?? t("meals.other"),
         }),
       };
     if (style === "detailed")
       return {
         title: t("push.meal_reminder.title"),
         body: t("push.meal_reminder.body_detailed", {
-          meal: data?.mealKindLabel ?? t("meals.any"),
+          meal: data?.mealKindLabel ?? t("meals.other"),
         }),
       };
     return {
       title: t("push.meal_reminder.title"),
       body: t("push.meal_reminder.body", {
-        meal: data?.mealKindLabel ?? t("meals.any"),
+        meal: data?.mealKindLabel ?? t("meals.other"),
       }),
     };
   }

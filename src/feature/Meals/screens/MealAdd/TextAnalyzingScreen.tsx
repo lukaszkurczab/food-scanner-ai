@@ -10,7 +10,11 @@ import { useUserContext } from "@contexts/UserContext";
 import type { Meal } from "@/types";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { extractIngredientsFromText } from "@/services/ai/textMealService";
-import type { AiTextMealPayload } from "@/services/ai/contracts";
+import type {
+  AiCreditsResponse,
+  AiCreditsStatus,
+  AiTextMealPayload,
+} from "@/services/ai/contracts";
 import { getErrorStatus } from "@/services/contracts/serviceError";
 import { getAiUxErrorType } from "@/services/ai/uxError";
 import { getMealAiMetaFromAiResponse } from "@/services/meals/mealMetadata";
@@ -19,6 +23,7 @@ import {
   MealAddPhotoScaffold,
   MealAddStatusBanner,
 } from "@/feature/Meals/components/MealAddPhotoScaffold";
+import { post } from "@/services/core/apiClient";
 import { useTheme } from "@/theme/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { v4 as uuidv4 } from "uuid";
@@ -93,6 +98,20 @@ export default function TextAnalyzingScreen({
       });
     };
 
+    const syncTierAndRefreshCredits = async (): Promise<AiCreditsStatus | null> => {
+      let syncedSnapshot: AiCreditsStatus | null = null;
+
+      try {
+        const syncedResponse = await post<AiCreditsResponse>("/ai/credits/sync-tier");
+        syncedSnapshot = applyCreditsFromResponse(syncedResponse);
+      } catch {
+        // Fall back to plain credits refresh if tier sync is unavailable.
+      }
+
+      const refreshedSnapshot = await refreshCredits();
+      return refreshedSnapshot ?? syncedSnapshot;
+    };
+
     const analyze = async () => {
       if (!uid) {
         replaceDescribeMeal({
@@ -110,13 +129,39 @@ export default function TextAnalyzingScreen({
           return;
         }
 
-        const result = await extractIngredientsFromText(
-          uid,
-          buildPayload(params),
-          {
+        const runAnalysis = () =>
+          extractIngredientsFromText(uid, buildPayload(params), {
             lang: language || "en",
-          },
-        );
+          });
+
+        let result: Awaited<ReturnType<typeof runAnalysis>> | undefined;
+        let analysisError: unknown = null;
+
+        try {
+          result = await runAnalysis();
+        } catch (error) {
+          analysisError = error;
+        }
+
+        if (analysisError && getErrorStatus(analysisError) === 402) {
+          const creditsSnapshot = await syncTierAndRefreshCredits();
+          const canRetry =
+            creditsSnapshot !== null &&
+            creditsSnapshot.balance >= creditsSnapshot.costs.textMeal;
+
+          if (canRetry) {
+            try {
+              result = await runAnalysis();
+              analysisError = null;
+            } catch (retryError) {
+              analysisError = retryError;
+            }
+          }
+        }
+
+        if (analysisError) {
+          throw analysisError;
+        }
 
         if (!result || result.ingredients.length === 0) {
           const retries = nextRetryCount(params.retries ?? 0);

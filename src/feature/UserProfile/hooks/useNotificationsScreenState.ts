@@ -14,20 +14,18 @@ import {
 export function useNotificationsScreenState(uid: string | null) {
   const {
     items,
+    loading,
     toggle,
     loadAllPrefs,
     setMotivationPrefs,
     setSmartRemindersPrefs,
     setStatsPrefs,
-    remove,
   } = useNotifications(uid);
 
   const [motivationEnabled, setMotivationEnabled] = useState(false);
   const [smartRemindersEnabled, setSmartRemindersEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
   const [systemAllowed, setSystemAllowed] = useState<boolean | null>(null);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [settingsCtaVisible, setSettingsCtaVisible] = useState(false);
   const autoDisabledRef = useRef(false);
 
@@ -88,6 +86,7 @@ export function useNotificationsScreenState(uid: string | null) {
     systemAllowed,
     uid,
     items,
+    loading,
     motivationEnabled,
     smartRemindersEnabled,
     statsEnabled,
@@ -202,35 +201,13 @@ export function useNotificationsScreenState(uid: string | null) {
     [requestSystemPermission, setStatsPrefs, systemAllowed, uid],
   );
 
-  const askDelete = useCallback((id: string) => {
-    setConfirmId(id);
-  }, []);
-
-  const cancelDelete = useCallback(() => {
-    if (!deleting) {
-      setConfirmId(null);
-    }
-  }, [deleting]);
-
-  const onConfirmDelete = useCallback(async () => {
-    if (!uid || !confirmId) return;
-    setDeleting(true);
-    try {
-      await remove(uid, confirmId);
-    } finally {
-      setDeleting(false);
-      setConfirmId(null);
-    }
-  }, [confirmId, remove, uid]);
-
   return {
     items,
+    loading,
     motivationEnabled,
     smartRemindersEnabled,
     statsEnabled,
     systemAllowed,
-    confirmId,
-    deleting,
     settingsCtaVisible,
     setSettingsCtaVisible,
     openSettings,
@@ -238,8 +215,5 @@ export function useNotificationsScreenState(uid: string | null) {
     onToggleSmartReminders,
     onToggleMotivation,
     onToggleStats,
-    askDelete,
-    cancelDelete,
-    onConfirmDelete,
   };
 }

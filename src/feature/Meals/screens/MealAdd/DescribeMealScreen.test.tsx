@@ -30,8 +30,23 @@ jest.mock("react-native-safe-area-context", () => ({
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     i18n: { language: "pl" },
-    t: (key: string, options?: { ns?: string; defaultValue?: string }) =>
-      options?.defaultValue ?? (options?.ns ? `${options.ns}:${key}` : key),
+    t: (
+      key: string,
+      options?: {
+        ns?: string;
+        defaultValue?: string;
+        count?: number;
+        cost?: number;
+      },
+    ) => {
+      if (options?.defaultValue) {
+        return options.defaultValue
+          .replace("{{count}}", String(options.count ?? ""))
+          .replace("{{cost}}", String(options.cost ?? ""));
+      }
+
+      return options?.ns ? `${options.ns}:${key}` : key;
+    },
   }),
 }));
 
@@ -115,6 +130,9 @@ describe("DescribeMealScreen", () => {
       loading: false,
       showLimitModal: false,
       creditsUsed: 0,
+      creditsBalance: 74,
+      textMealCost: 1,
+      remainingCreditsAfterAnalyze: 73,
       descriptionError: undefined,
       submitError: undefined,
       analyzeDisabled: false,
@@ -164,5 +182,22 @@ describe("DescribeMealScreen", () => {
       selectionMode: "temporary",
       origin: "mealAddFlow",
     });
+  });
+
+  it("shows remaining credits note for assistant analysis", () => {
+    const props = {
+      navigation: { navigate: jest.fn() } as never,
+      flow: {
+        goTo: jest.fn(),
+        replace: jest.fn(),
+        goBack: jest.fn(),
+        canGoBack: jest.fn(() => true),
+      } as unknown as MealAddScreenProps<"DescribeMeal">["flow"],
+      params: {},
+    } as MealAddScreenProps<"DescribeMeal">;
+
+    const { getByText } = renderWithTheme(<DescribeMealScreen {...props} />);
+
+    expect(getByText("✦ 73 credits remaining")).toBeTruthy();
   });
 });
