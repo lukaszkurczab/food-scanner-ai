@@ -139,6 +139,7 @@
   "review_meal_edit_title": "Popraw posiłek",
   "review_meal_edit_subtitle": "Zmień składniki, typ posiłku lub godzinę, a potem wróć do review.",
   "review_meal_edit_done": "Wróć do review",
+  "review_meal_change_photo_support": "Zastąp obecne zdjęcie posiłku.",
   "review_meal_edit_meal_basics": "Podstawy posiłku",
   "review_meal_edit_add_first_ingredient": "Dodaj pierwszy składnik",
   "review_meal_edit_add_ingredient": "Dodaj składnik",
@@ -217,6 +218,8 @@
     "sample_table": "Przykładowa tabela"
   },
   "back_to_saved": "Wróć do zapisanych",
+  "camera_back_to_edit": "Wróć do edycji",
+  "camera_back_to_meal": "Wróć do posiłku",
   "barcode_back_to_review": "Powrót do składników",
   "barcode_scan_eyebrow": "Skanuj kod",
   "barcode_scan_title": "Skanuj kod kreskowy",
