@@ -1,22 +1,23 @@
-import { useState, useMemo } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Pressable,
-  Alert,
-} from "react-native";
-import { useTheme } from "@/theme/useTheme";
-import { BackTitleHeader, Button, Layout, LongTextInput } from "@/components";
+import { useMemo, useState } from "react";
+import { Image, StyleSheet, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { useTranslation } from "react-i18next";
-import NetInfo from "@react-native-community/netinfo";
 import * as Device from "expo-device";
-import { sendFeedback } from "@/services/feedback/feedbackService";
-import { useAuthContext } from "@/context/AuthContext";
+import NetInfo from "@react-native-community/netinfo";
+import { useTranslation } from "react-i18next";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { useTheme } from "@/theme/useTheme";
+import {
+  Button,
+  FormScreenShell,
+  InfoBlock,
+  LongTextInput,
+  SettingsRow,
+  SettingsSection,
+} from "@/components";
+import AppIcon from "@/components/AppIcon";
+import { useAuthContext } from "@/context/AuthContext";
+import { sendFeedback } from "@/services/feedback/feedbackService";
 
 type SendFeedbackNavigation = StackNavigationProp<
   RootStackParamList,
@@ -27,45 +28,86 @@ type SendFeedbackScreenProps = {
   navigation: SendFeedbackNavigation;
 };
 
+type FeedbackStatus = {
+  tone: "warning" | "error";
+  title: string;
+  body: string;
+} | null;
+
 export default function SendFeedbackScreen({
   navigation,
 }: SendFeedbackScreenProps) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("profile");
+  const { firebaseUser: user } = useAuthContext();
   const [message, setMessage] = useState("");
   const [attachment, setAttachment] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState<FeedbackStatus>(null);
 
-  const { firebaseUser: user } = useAuthContext();
+  const trimmedMessage = message.trim();
+
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigation.navigate("HelpFeedback");
+  };
 
   const handlePickAttachment = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: false,
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets && result.assets[0]?.uri) {
-      setAttachment(result.assets[0].uri);
+    setStatus(null);
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        setAttachment(result.assets[0].uri);
+      }
+    } catch {
+      setStatus({
+        tone: "error",
+        title: t("feedbackAttachmentErrorTitle", {
+          defaultValue: "Couldn’t open your photo library",
+        }),
+        body: t("feedbackAttachmentErrorBody", {
+          defaultValue: "Please try again if you want to attach a screenshot.",
+        }),
+      });
     }
   };
 
   const handleSend = async () => {
-    const net = await NetInfo.fetch();
-    if (!net.isConnected) {
-      Alert.alert(
-        t("noInternet", { defaultValue: "No internet connection" }),
-        t("checkConnection", {
-          defaultValue: "Please check your connection and try again.",
-        })
-      );
+    if (!trimmedMessage) {
       return;
     }
+
+    setStatus(null);
+
+    const net = await NetInfo.fetch();
+    if (!net.isConnected) {
+      setStatus({
+        tone: "warning",
+        title: t("noInternet", { defaultValue: "No internet connection" }),
+        body: t("checkConnection", {
+          defaultValue: "Please check your connection and try again.",
+        }),
+      });
+      return;
+    }
+
     setSending(true);
+
     try {
       await sendFeedback({
-        message,
+        message: trimmedMessage,
         attachmentUri: attachment,
         userUid: user?.uid ?? null,
         email: user?.email ?? null,
@@ -79,164 +121,193 @@ export default function SendFeedbackScreen({
       setMessage("");
       setAttachment(null);
     } catch {
-      Alert.alert(
-        t("error", { defaultValue: "Error" }),
-        t("feedbackSendError", {
+      setStatus({
+        tone: "error",
+        title: t("error", { defaultValue: "Error" }),
+        body: t("feedbackSendError", {
           defaultValue: "Failed to send feedback. Try again later.",
-        })
-      );
+        }),
+      });
+    } finally {
+      setSending(false);
     }
-    setSending(false);
+  };
+
+  const resetFeedbackForm = () => {
+    setSent(false);
+    setStatus(null);
   };
 
   return (
-    <Layout>
-      <View style={styles.container}>
-        <BackTitleHeader
-          title={t("sendFeedback", { defaultValue: "Send us your feedback" })}
-          onBack={() => navigation.goBack()}
-        />
+    <FormScreenShell
+      title={t("sendFeedback", { defaultValue: "Send feedback" })}
+      intro={
+        sent
+          ? t("feedbackSentIntro", {
+              defaultValue:
+                "Your message has been sent through Fitaly’s in-app feedback channel.",
+            })
+          : t("feedbackScreenIntro", {
+              defaultValue:
+                "Use feedback for product ideas, suggestions, or bug reports you want to send from inside the app.",
+            })
+      }
+      onBack={handleBack}
+      actionLabel={
+        sent
+          ? t("feedbackDoneAction", {
+              defaultValue: "Back to help",
+            })
+          : t("send", { defaultValue: "Send" })
+      }
+      onActionPress={() => {
+        if (sent) {
+          handleBack();
+          return;
+        }
 
-        <View style={styles.content}>
-          {!sent ? (
-            <>
-              <Text style={styles.info}>
-                {t("feedbackDescription", {
-                  defaultValue:
-                    "Share your thoughts, suggestions, or issues. We appreciate every message!",
-                })}
-              </Text>
-
-              <LongTextInput
-                placeholder={t("feedbackPlaceholder", {
-                  defaultValue: "Type your message here...",
-                })}
-                value={message}
-                onChangeText={setMessage}
-                style={styles.textarea}
-                inputStyle={styles.textareaInput}
-                maxLength={500}
-              />
-
-              <Pressable onPress={handlePickAttachment} style={styles.addButton}>
-                <Text style={styles.addButtonText}>
-                  {t("addAttachment", { defaultValue: "Add attachment" })}
-                </Text>
-              </Pressable>
-              <Text style={styles.addDescription}>
-                {t("addAttachmentDescription", {
-                  defaultValue:
-                    "Optional: attach a screenshot to help us understand the issue",
-                })}
-              </Text>
-              {attachment && (
-                <View style={styles.attachment}>
-                  <Image
-                    source={{ uri: attachment }}
-                    style={styles.attachmentImage}
-                    onError={() => setAttachment(null)}
+        void handleSend();
+      }}
+      actionLoading={sending}
+      actionDisabled={sent ? false : !trimmedMessage || sending}
+      secondaryActionLabel={
+        sent
+          ? t("feedbackSendAnotherAction", {
+              defaultValue: "Send another message",
+            })
+          : undefined
+      }
+      secondaryActionPress={sent ? resetFeedbackForm : undefined}
+      secondaryActionDisabled={sending}
+    >
+      <View style={styles.content}>
+        {sent ? (
+          <InfoBlock
+            title={t("feedbackThankYou", {
+              defaultValue: "Thank you for your feedback!",
+            })}
+            body={t("feedbackThankYouBody", {
+              defaultValue:
+                "We’ve received your message. If you need a direct reply about an account or technical issue, use Contact support.",
+            })}
+            tone="success"
+            icon={<AppIcon name="check" size={18} color={theme.success.text} />}
+          />
+        ) : (
+          <>
+            {status ? (
+              <InfoBlock
+                title={status.title}
+                body={status.body}
+                tone={status.tone}
+                icon={
+                  <AppIcon
+                    name={status.tone === "warning" ? "info" : "close"}
+                    size={18}
+                    color={
+                      status.tone === "warning"
+                        ? theme.warning.text
+                        : theme.error.text
+                    }
                   />
-                  <Pressable onPress={() => setAttachment(null)} hitSlop={10}>
-                    <Text style={styles.removeText}>
-                      {t("removeAttachment", { defaultValue: "Remove" })}
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-
-              <Text style={styles.infoNote}>
-                {t("feedbackAppInfo", {
-                  defaultValue:
-                    "Your app version and device info will be sent automatically to help us improve Fitaly.",
-                })}
-              </Text>
-
-              <Button
-                label={t("send", { defaultValue: "Send" })}
-                style={styles.sendButton}
-                loading={sending}
-                disabled={!message || sending}
-                onPress={handleSend}
-                textStyle={styles.sendButtonText}
+                }
               />
-            </>
-          ) : (
-            <View style={styles.thankYou}>
-              <Text style={styles.thankYouText}>
-                {t("feedbackThankYou", {
-                  defaultValue: "Thank you for your feedback!",
-                })}
-              </Text>
-            </View>
-          )}
-        </View>
+            ) : null}
+
+            <LongTextInput
+              label={t("feedbackMessageLabel", {
+                defaultValue: "Message",
+              })}
+              placeholder={t("feedbackPlaceholder", {
+                defaultValue: "Type your message here...",
+              })}
+              value={message}
+              onChangeText={setMessage}
+              style={styles.textarea}
+              inputStyle={styles.textareaInput}
+              maxLength={500}
+            />
+
+            <SettingsSection
+              title={t("feedbackAttachmentSectionTitle", {
+                defaultValue: "Optional attachment",
+              })}
+              footer={t("feedbackAppInfo", {
+                defaultValue:
+                  "Your app version and device info will be sent automatically to help us improve Fitaly.",
+              })}
+            >
+              <SettingsRow
+                title={
+                  attachment
+                    ? t("feedbackReplaceAttachment", {
+                        defaultValue: "Replace attachment",
+                      })
+                    : t("addAttachment", {
+                        defaultValue: "Add attachment",
+                      })
+                }
+                onPress={() => {
+                  void handlePickAttachment();
+                }}
+                leading={
+                  <AppIcon
+                    name={attachment ? "image" : "add-photo"}
+                    size={18}
+                    color={theme.textSecondary}
+                  />
+                }
+              />
+            </SettingsSection>
+
+            {attachment ? (
+              <View style={styles.attachmentCard}>
+                <Image
+                  source={{ uri: attachment }}
+                  style={styles.attachmentImage}
+                  onError={() => setAttachment(null)}
+                />
+
+                <Button
+                  label={t("removeAttachment", { defaultValue: "Remove" })}
+                  variant="secondary"
+                  fullWidth={false}
+                  onPress={() => setAttachment(null)}
+                />
+              </View>
+            ) : null}
+          </>
+        )}
       </View>
-    </Layout>
+    </FormScreenShell>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: { flex: 1, justifyContent: "space-between" },
-    content: { flexGrow: 1, justifyContent: "center" },
-    info: {
-      marginBottom: theme.spacing.xxl,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: 22,
-      color: theme.textSecondary,
+    content: {
+      gap: theme.spacing.sectionGap,
     },
     textarea: {
-      marginBottom: theme.spacing.xl,
-      backgroundColor: "transparent",
+      marginBottom: 0,
     },
     textareaInput: {
-      minHeight: 200,
+      minHeight: 180,
       textAlignVertical: "top",
     },
-    addButton: {
-      marginTop: theme.spacing.xs,
-      marginBottom: theme.spacing.xs,
-    },
-    addButtonText: {
-      color: theme.primary,
-      fontSize: theme.typography.size.bodyL,
-      fontFamily: theme.typography.fontFamily.bold,
-    },
-    addDescription: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
-      marginBottom: theme.spacing.sm,
-    },
-    attachment: {
+    attachmentCard: {
+      gap: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      borderRadius: theme.rounded.lg,
+      backgroundColor: theme.surfaceElevated,
+      padding: theme.spacing.cardPadding,
       alignItems: "flex-start",
-      marginBottom: theme.spacing.sm,
     },
     attachmentImage: {
-      width: 80,
-      height: 80,
+      width: 120,
+      height: 120,
       borderRadius: theme.rounded.md,
-      marginTop: theme.spacing.xs,
-      marginBottom: theme.spacing.xs,
-    },
-    removeText: {
-      color: theme.error.text,
-      fontSize: theme.typography.size.bodyS,
-    },
-    infoNote: {
-      color: theme.text,
-      marginTop: theme.spacing.sm,
-      fontSize: theme.typography.size.bodyS,
-    },
-    sendButton: {
-      marginTop: theme.spacing.xxl,
-      minHeight: 58,
-    },
-    sendButtonText: { fontSize: theme.typography.size.title },
-    thankYou: { alignItems: "center", marginTop: theme.spacing.xxl },
-    thankYouText: {
-      color: theme.text,
-      fontSize: theme.typography.size.h1,
-      fontFamily: theme.typography.fontFamily.bold,
-      textAlign: "center",
+      backgroundColor: theme.surfaceAlt,
     },
   });

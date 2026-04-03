@@ -1,7 +1,7 @@
 export type NotificationType = "meal_reminder" | "calorie_goal" | "day_fill";
 export type MotivationMode = "minimal" | "full";
 export type AIStyle = "none" | "concise" | "friendly" | "detailed";
-export type MealKind = "breakfast" | "lunch" | "dinner" | "snack";
+export type MealKind = "breakfast" | "lunch" | "dinner" | "snack" | "other";
 
 export interface UserNotification {
   id: string;

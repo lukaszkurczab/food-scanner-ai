@@ -18,6 +18,7 @@ import OnboardingScreen from "@/feature/Onboarding/screens/OnboardingScreen";
 import LoadingScreen from "@/screens/LoadingScreen";
 import MealDetailsScreen from "@/feature/History/screens/MealDetailsScreen";
 import EditUserDataScreen from "@/feature/UserProfile/screens/EditUserDataScreen";
+import ProfilePhotoPreviewScreen from "@/feature/UserProfile/screens/ProfilePhotoPreviewScreen";
 import AvatarCameraScreen from "@/feature/UserProfile/screens/AvatarCameraScreen";
 import UsernameChangeScreen from "@/feature/UserProfile/screens/UsernameChangeScreen";
 import ChangeEmailScreen from "@/feature/UserProfile/screens/ChangeEmailScreen";
@@ -25,11 +26,17 @@ import ChangeEmailCheckMailboxScreen from "@/feature/UserProfile/screens/ChangeE
 import ChangePasswordScreen from "@/feature/UserProfile/screens/ChangePasswordScreen";
 import LanguageScreen from "@/feature/UserProfile/screens/LanguageScreen";
 import SendFeedbackScreen from "@/feature/UserProfile/screens/SendFeedbackScreen";
+import LegalPrivacyHubScreen from "@/feature/UserProfile/screens/LegalPrivacyHubScreen";
+import DataAiClarityScreen from "@/feature/UserProfile/screens/DataAiClarityScreen";
+import HelpFeedbackHubScreen from "@/feature/UserProfile/screens/HelpFeedbackHubScreen";
+import ContactSupportScreen from "@/feature/UserProfile/screens/ContactSupportScreen";
+import AppSettingsScreen from "@/feature/UserProfile/screens/AppSettingsScreen";
 import ManageSubscriptionScreen from "@/feature/Subscription/screens/ManageSubscriptionScreen";
 import SavedMealsScreen from "@/feature/History/screens/SavedMealsScreen";
 import SelectSavedMealScreen from "@/feature/Meals/screens/SelectSavedMealsScreen";
 import NotificationsScreen from "@/feature/UserProfile/screens/NotificationsScreen";
 import NotificationFormScreen from "@/feature/UserProfile/screens/NotificationFormScreen";
+import DeleteAccountScreen from "@/feature/UserProfile/screens/DeleteAccountScreen";
 import MealShareScreen from "@/feature/Meals/screens/MealShareScreen";
 import ChatScreen from "@/feature/AI/screens/ChatScreen";
 import SavedMealsCameraScreen from "@/feature/History/screens/SavedMealsCameraScreen";
@@ -58,12 +65,17 @@ function renderAppScreens() {
       <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="AvatarCamera" component={AvatarCameraScreen} />
+      <Stack.Screen
+        name="ProfilePhotoPreview"
+        component={ProfilePhotoPreviewScreen}
+      />
       <Stack.Screen name="HistoryList" component={HistoryListScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Statistics" component={StatisticsScreen} />
       <Stack.Screen name="Language" component={LanguageScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="EditUserData" component={EditUserDataScreen} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="MealDetails" component={MealDetailsScreen} />
       <Stack.Screen
         name="SelectSavedMeal"
@@ -82,6 +94,17 @@ function renderAppScreens() {
         name="ManageSubscription"
         component={ManageSubscriptionScreen}
       />
+      <Stack.Screen name="AppSettings" component={AppSettingsScreen} />
+      <Stack.Screen
+        name="LegalPrivacyHub"
+        component={LegalPrivacyHubScreen}
+      />
+      <Stack.Screen
+        name="DataAiClarity"
+        component={DataAiClarityScreen}
+      />
+      <Stack.Screen name="HelpFeedback" component={HelpFeedbackHubScreen} />
+      <Stack.Screen name="ContactSupport" component={ContactSupportScreen} />
       <Stack.Screen
         name="ChangePassword"
         component={ChangePasswordScreen}

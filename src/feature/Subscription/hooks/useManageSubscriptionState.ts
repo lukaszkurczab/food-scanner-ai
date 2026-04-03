@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import { Alert, Linking } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Linking } from "react-native";
 import Constants from "expo-constants";
 import { getTermsUrl } from "@/utils/legalUrls";
 import {
@@ -8,8 +8,27 @@ import {
   startOrRenewSubscription,
 } from "@/services/billing/purchase";
 import { resolvePurchaseErrorMessage } from "@/services/billing/purchaseErrorMessage";
+import {
+  initRevenueCat,
+  isBillingDisabled,
+  isRevenueCatConfigured,
+} from "@/services/billing/revenuecat";
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+export type SubscriptionBusyAction =
+  | "restore"
+  | "purchase"
+  | "manage"
+  | "dev"
+  | null;
+
+export type SubscriptionActionFeedback = {
+  tone: "success" | "warning" | "error";
+  title: string;
+  message: string;
+  source: Exclude<SubscriptionBusyAction, null>;
+} | null;
 
 export function useManageSubscriptionState(params: {
   uid: string | null | undefined;
@@ -22,6 +41,12 @@ export function useManageSubscriptionState(params: {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [busyAction, setBusyAction] = useState<SubscriptionBusyAction>(null);
+  const [actionFeedback, setActionFeedback] =
+    useState<SubscriptionActionFeedback>(null);
+  const [billingAvailability, setBillingAvailability] = useState<
+    "ready" | "disabled" | "not_ready"
+  >("not_ready");
 
   const extra = (Constants.expoConfig?.extra ?? {}) as {
     privacyUrl?: unknown;
@@ -61,7 +86,6 @@ export function useManageSubscriptionState(params: {
     defaultValue: "29,99 zł / month",
   });
 
-  const alertTitle = params.t("manageSubscription.title");
   const alertBillingUnavailable = params.t(
     "manageSubscription.billingUnavailable",
     {
@@ -69,105 +93,159 @@ export function useManageSubscriptionState(params: {
     },
   );
 
-  const requireAuthOrAlert = useCallback((): boolean => {
-    if (params.uid) return true;
-    Alert.alert(
-      alertTitle,
-      params.t("manageSubscription.signInRequired", {
-        defaultValue: "Please sign in to manage subscriptions.",
-      }),
+  useEffect(() => {
+    initRevenueCat();
+    setBillingAvailability(
+      isBillingDisabled()
+        ? "disabled"
+        : isRevenueCatConfigured()
+          ? "ready"
+          : "not_ready",
     );
-    return false;
-  }, [alertTitle, params]);
+  }, []);
+
+  const setFeedbackForError = useCallback(
+    (
+      source: Exclude<SubscriptionBusyAction, null>,
+      message: string,
+      title?: string,
+    ) => {
+      setActionFeedback({
+        tone: "error",
+        title:
+          title ??
+          params.t("manageSubscription.issueTitle", {
+            defaultValue: "Subscription issue",
+          }),
+        message,
+        source,
+      });
+    },
+    [params],
+  );
+
+  const requireAuthOrAlert = useCallback(
+    (source: Exclude<SubscriptionBusyAction, null>): boolean => {
+      if (params.uid) return true;
+      setFeedbackForError(
+        source,
+        params.t("manageSubscription.signInRequired", {
+          defaultValue: "Please sign in to manage subscriptions.",
+        }),
+      );
+      return false;
+    },
+    [params, setFeedbackForError],
+  );
 
   const tryOpenManage = useCallback(async () => {
     setBusy(true);
+    setBusyAction("manage");
     try {
       const ok = await openManageSubscriptions();
       if (!ok) {
-        Alert.alert(alertTitle, alertBillingUnavailable);
+        setFeedbackForError("manage", alertBillingUnavailable);
       }
     } finally {
       setBusy(false);
+      setBusyAction(null);
     }
-  }, [alertBillingUnavailable, alertTitle]);
+  }, [alertBillingUnavailable, setFeedbackForError]);
 
   const tryRestore = useCallback(async () => {
-    if (!requireAuthOrAlert()) return;
+    if (!requireAuthOrAlert("restore")) return;
     if (!params.uid) return;
 
     setBusy(true);
+    setBusyAction("restore");
     try {
       const res = await restorePurchases(params.uid);
       if (res.status === "success") {
         await params.refreshPremium();
-        Alert.alert(
-          alertTitle,
-          params.t("manageSubscription.restoreSuccess", {
+        setActionFeedback({
+          tone: "success",
+          title: params.t("manageSubscription.restoreSuccessTitle", {
+            defaultValue: "Restore complete",
+          }),
+          message: params.t("manageSubscription.restoreSuccess", {
             defaultValue: "Purchases restored.",
           }),
-        );
+          source: "restore",
+        });
       } else if (res.status === "cancelled") {
         return;
       } else {
         const fallback = params.t("manageSubscription.restoreFailed", {
           defaultValue: "Restore failed. Try again later.",
         });
-        Alert.alert(
-          alertTitle,
+        setFeedbackForError(
+          "restore",
           resolvePurchaseErrorMessage(params.t, res.errorCode, fallback),
+          params.t("manageSubscription.restoreFailedTitle", {
+            defaultValue: "Restore failed",
+          }),
         );
       }
     } finally {
       setBusy(false);
+      setBusyAction(null);
     }
   }, [
-    alertTitle,
     params,
     requireAuthOrAlert,
+    setFeedbackForError,
   ]);
 
   const trySubscribe = useCallback(async () => {
-    if (!requireAuthOrAlert()) return;
+    if (!requireAuthOrAlert("purchase")) return;
     if (!params.uid) return;
 
     setBusy(true);
+    setBusyAction("purchase");
     try {
       const res = await startOrRenewSubscription(params.uid);
       if (res.status === "success") {
         await params.refreshPremium();
         setPaywallVisible(false);
-        Alert.alert(
-          alertTitle,
-          params.t("manageSubscription.purchaseSuccess", {
+        setActionFeedback({
+          tone: "success",
+          title: params.t("manageSubscription.purchaseSuccessTitle", {
+            defaultValue: "Premium active",
+          }),
+          message: params.t("manageSubscription.purchaseSuccess", {
             defaultValue: "Subscription active.",
           }),
-        );
+          source: "purchase",
+        });
       } else if (res.status === "cancelled") {
         return;
       } else {
         const fallback = params.t("manageSubscription.purchaseFailed", {
           defaultValue: "Purchase failed.",
         });
-        Alert.alert(
-          alertTitle,
+        setFeedbackForError(
+          "purchase",
           resolvePurchaseErrorMessage(params.t, res.errorCode, fallback),
+          params.t("manageSubscription.purchaseFailedTitle", {
+            defaultValue: "Subscription unavailable",
+          }),
         );
       }
     } finally {
       setBusy(false);
+      setBusyAction(null);
     }
   }, [
-    alertTitle,
     params,
     requireAuthOrAlert,
+    setFeedbackForError,
   ]);
 
   const tryOpenRefundPolicy = useCallback(async () => {
     const url = refundUrl;
     if (!url || !(url.startsWith("http://") || url.startsWith("https://"))) {
-      Alert.alert(
-        alertTitle,
+      setFeedbackForError(
+        "manage",
         params.t("manageSubscription.refundLinkUnavailable", {
           defaultValue: "Refund policy link is unavailable.",
         }),
@@ -178,16 +256,17 @@ export function useManageSubscriptionState(params: {
     try {
       await Linking.openURL(url);
     } catch {
-      Alert.alert(
-        alertTitle,
+      setFeedbackForError(
+        "manage",
         params.t("manageSubscription.refundLinkUnavailable", {
           defaultValue: "Refund policy link is unavailable.",
         }),
       );
     }
-  }, [alertTitle, params, refundUrl]);
+  }, [params, refundUrl, setFeedbackForError]);
 
   const openPaywall = useCallback(() => {
+    setActionFeedback(null);
     setPaywallVisible(true);
   }, []);
 
@@ -200,7 +279,9 @@ export function useManageSubscriptionState(params: {
   }, []);
 
   const toggleDevPremium = useCallback(() => {
+    setBusyAction("dev");
     params.setDevPremium(!isPremiumComputed);
+    setBusyAction(null);
   }, [isPremiumComputed, params]);
 
   const openTerms = useCallback(async () => {
@@ -227,6 +308,9 @@ export function useManageSubscriptionState(params: {
     showManageInStore,
     headerStatus,
     isPremiumComputed,
+    billingAvailability,
+    busyAction,
+    actionFeedback,
     toggleExpanded,
     tryOpenManage,
     tryRestore,
@@ -237,5 +321,6 @@ export function useManageSubscriptionState(params: {
     toggleDevPremium,
     openTerms,
     openPrivacy,
+    clearActionFeedback: () => setActionFeedback(null),
   };
 }

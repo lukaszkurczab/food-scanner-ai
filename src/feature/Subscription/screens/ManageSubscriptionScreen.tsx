@@ -1,26 +1,25 @@
 import { useMemo } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator,
-  Platform,
-} from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { useTheme } from "@/theme/useTheme";
-import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
-import { BackTitleHeader, Button, FullScreenLoader, Layout } from "@/components";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "@/navigation/navigate";
+import { useTheme } from "@/theme/useTheme";
+import {
+  Button,
+  FormScreenShell,
+  FullScreenLoader,
+  InfoBlock,
+  Layout,
+  SettingsRow,
+  SettingsSection,
+} from "@/components";
+import AppIcon from "@/components/AppIcon";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { PaywallModal } from "@/feature/Subscription/components/PaywallModal";
 import { useManageSubscriptionState } from "@/feature/Subscription/hooks/useManageSubscriptionState";
-import type { StackNavigationProp } from "@react-navigation/stack";
-import type { RootStackParamList } from "@/navigation/navigate";
-import { AiCreditsSummaryCard } from "@/components/AiCreditsSummaryCard";
 
 const BENEFITS = [
   "aiCredits800",
@@ -40,40 +39,50 @@ type ManageSubscriptionScreenProps = {
   navigation: ManageSubscriptionNavigation;
 };
 
+function formatRenewalDate(value?: string | null): string {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return parsed.toISOString().slice(0, 10);
+}
+
+function getSummaryTone(
+  state: string,
+): "success" | "warning" | "neutral" {
+  if (state === "premium_active") return "success";
+  if (state === "premium_expired") return "warning";
+  return "neutral";
+}
+
 export default function ManageSubscriptionScreen({
   navigation,
 }: ManageSubscriptionScreenProps) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { t } = useTranslation("profile");
+  const { t } = useTranslation(["profile", "common"]);
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
   const { credits, loading: creditsLoading } = useAiCreditsContext();
   const { isPremium, subscription, setDevPremium, refreshPremium } =
     usePremiumContext();
-  const subscriptionStoreName =
-    Platform.OS === "ios"
-      ? t("manageSubscription.store.appStore", {
-          defaultValue: "App Store",
-        })
-      : t("manageSubscription.store.googlePlay", {
-          defaultValue: "Google Play",
-        });
 
   const {
-    expanded,
     busy,
+    busyAction,
     paywallVisible,
     termsUrl,
     privacyUrl,
+    refundUrl,
     priceText,
+    state,
     showRenew,
     showStart,
     showManageInStore,
     headerStatus,
     isPremiumComputed,
-    toggleExpanded,
+    billingAvailability,
+    actionFeedback,
     tryOpenManage,
     tryRestore,
     trySubscribe,
@@ -81,8 +90,7 @@ export default function ManageSubscriptionScreen({
     openPaywall,
     closePaywall,
     toggleDevPremium,
-    openTerms,
-    openPrivacy,
+    clearActionFeedback,
   } = useManageSubscriptionState({
     uid,
     subscriptionState: subscription?.state,
@@ -92,52 +100,57 @@ export default function ManageSubscriptionScreen({
     t,
   });
 
+  const summaryTitle =
+    state === "premium_active"
+      ? t("manageSubscription.summaryPremiumTitle", {
+          defaultValue: "Premium active",
+        })
+      : state === "premium_expired"
+        ? t("manageSubscription.summaryExpiredTitle", {
+            defaultValue: "Premium expired",
+          })
+        : t("manageSubscription.summaryFreeTitle", {
+            defaultValue: "Free plan",
+          });
+
+  const summaryBody =
+    state === "premium_active"
+      ? t("manageSubscription.summaryPremiumBody", {
+          defaultValue:
+            "Your account currently has access to premium features and the premium AI Credits tier.",
+        })
+      : state === "premium_expired"
+        ? t("manageSubscription.summaryExpiredBody", {
+            defaultValue:
+              "Your premium access is no longer active. You can renew when billing is available.",
+          })
+        : t("manageSubscription.summaryFreeBody", {
+            defaultValue:
+              "You’re currently on the free plan. Upgrade to unlock the premium AI Credits tier and additional account features.",
+          });
+
+  const primaryCtaLabel = showRenew
+    ? t("manageSubscription.renewSubscription")
+    : showStart
+      ? t("manageSubscription.startSubscription")
+      : null;
+
+  const billingStatusMessage =
+    billingAvailability === "disabled"
+      ? t("manageSubscription.billingUnavailable", {
+          defaultValue: "Billing is unavailable on this device.",
+        })
+      : billingAvailability === "not_ready"
+        ? t("common:billingErrors.billingNotReady", {
+            defaultValue:
+              "Billing is not ready yet. Please try again in a moment.",
+          })
+        : null;
+
   if (!subscription) {
     if (!isOnline) {
       return (
-        <Layout>
-          <View style={styles.emptyWrap}>
-            <Text style={styles.emptyTitle}>
-              {t("manageSubscription.unavailableTitle", {
-                defaultValue: "Subscription details unavailable",
-              })}
-            </Text>
-            <Text style={styles.emptyDescription}>
-              {t("manageSubscription.unavailableOfflineDesc", {
-                defaultValue:
-                  "You're offline and subscription details are not available locally yet.",
-              })}
-            </Text>
-            <Button
-              label={t("common:retry")}
-              onPress={() => {
-                void refreshPremium();
-              }}
-              style={styles.emptyAction}
-            />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => navigation.navigate("Profile")}
-            >
-              <Text style={styles.emptyBack}>
-                {t("common:back", { defaultValue: "Back" })}
-              </Text>
-            </Pressable>
-          </View>
-        </Layout>
-      );
-    }
-    return (
-      <Layout disableScroll>
-        <FullScreenLoader />
-      </Layout>
-    );
-  }
-
-  return (
-    <Layout>
-      <View style={styles.flex}>
-        <BackTitleHeader
+        <FormScreenShell
           title={t("manageSubscription.title")}
           onBack={() => {
             if (navigation.canGoBack()) {
@@ -146,323 +159,330 @@ export default function ManageSubscriptionScreen({
             }
             navigation.navigate("Profile");
           }}
-        />
+        >
+          <View style={styles.content}>
+            <InfoBlock
+              title={t("manageSubscription.unavailableTitle", {
+                defaultValue: "Subscription details unavailable",
+              })}
+              body={t("manageSubscription.unavailableOfflineDesc", {
+                defaultValue:
+                  "You're offline and subscription details are not available locally yet.",
+              })}
+              tone="warning"
+              icon={<AppIcon name="wifi-off" size={18} color={theme.warning.text} />}
+            />
 
-        <View style={styles.sectionSpacing}>
-          <Text style={styles.sectionLabel}>
-            {t("manageSubscription.yourSubscription")}
-          </Text>
-
-          <View
-            style={[
-              styles.rowBetween,
-              styles.rowBetweenSpacing,
-              busy && styles.busy,
-            ]}
-          >
-            <Text style={styles.statusText}>
-              {headerStatus}
-            </Text>
-            {busy && <ActivityIndicator size="small" color={theme.textSecondary} />}
+            <Button
+              label={t("retry", { ns: "common" })}
+              onPress={() => {
+                void refreshPremium();
+              }}
+            />
           </View>
-        </View>
+        </FormScreenShell>
+      );
+    }
 
-        <AiCreditsSummaryCard
-          balance={credits?.balance ?? null}
-          allocation={credits?.allocation ?? null}
-          tier={credits?.tier ?? null}
-          renewalAt={credits?.periodEndAt ?? null}
-          loading={creditsLoading}
-        />
+    return (
+      <Layout disableScroll showNavigation={false}>
+        <FullScreenLoader />
+      </Layout>
+    );
+  }
 
-        <View>
-          <Text style={styles.sectionLabel}>
-            {t("manageSubscription.premiumBenefits")}
-          </Text>
+  return (
+    <>
+      <FormScreenShell
+        title={t("manageSubscription.title")}
+        intro={t("manageSubscription.screenIntro", {
+          defaultValue:
+            "Review your current membership, AI Credits tier, and subscription actions.",
+        })}
+        onBack={() => {
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+            return;
+          }
+          navigation.navigate("Profile");
+        }}
+      >
+        <View style={styles.content}>
+          <InfoBlock
+            title={summaryTitle}
+            body={summaryBody}
+            tone={getSummaryTone(state)}
+            icon={
+              <AppIcon
+                name={isPremiumComputed ? "star" : "info"}
+                size={18}
+                color={
+                  state === "premium_active"
+                    ? theme.success.text
+                    : state === "premium_expired"
+                      ? theme.warning.text
+                      : theme.textSecondary
+                }
+              />
+            }
+          />
 
-          {BENEFITS.map((key) => (
-            <View
-              key={key}
-              style={styles.benefitItem}
-            >
-              <TouchableOpacity
-                style={styles.rowBetween}
-                onPress={() => toggleExpanded(key)}
-                activeOpacity={0.7}
-                disabled={busy}
-              >
-                <Text
-                  style={styles.benefitTitle}
-                >
-                  {t(`manageSubscription.benefit_${key}`)}
-                </Text>
+          {!isOnline ? (
+            <InfoBlock
+              title={t("manageSubscription.offlineTitle", {
+                defaultValue: "Offline",
+              })}
+              body={t("manageSubscription.offlineBody", {
+                defaultValue:
+                  "Subscription details shown here may be outdated until you reconnect.",
+              })}
+              tone="warning"
+              icon={<AppIcon name="wifi-off" size={18} color={theme.warning.text} />}
+            />
+          ) : null}
+
+          {billingStatusMessage && (showStart || showRenew) ? (
+            <InfoBlock
+              title={t("manageSubscription.billingStatusTitle", {
+                defaultValue: "Billing unavailable",
+              })}
+              body={billingStatusMessage}
+              tone="warning"
+              icon={<AppIcon name="info" size={18} color={theme.warning.text} />}
+            />
+          ) : null}
+
+          {actionFeedback ? (
+            <InfoBlock
+              title={actionFeedback.title}
+              body={actionFeedback.message}
+              tone={actionFeedback.tone}
+              icon={
                 <AppIcon
-                  name={expanded === key ? "chevron-up" : "chevron-down"}
-                  size={20}
-                  color={theme.textSecondary}
+                  name={
+                    actionFeedback.tone === "success"
+                      ? "check"
+                      : actionFeedback.tone === "warning"
+                        ? "info"
+                        : "close"
+                  }
+                  size={18}
+                  color={
+                    actionFeedback.tone === "success"
+                      ? theme.success.text
+                      : actionFeedback.tone === "warning"
+                        ? theme.warning.text
+                        : theme.error.text
+                  }
                 />
-              </TouchableOpacity>
+              }
+            />
+          ) : null}
 
-              {expanded === key && (
-                <Text
-                  style={styles.benefitDesc}
-                >
-                  {t(`manageSubscription.benefitDesc_${key}`)}
-                </Text>
-              )}
+          {primaryCtaLabel ? (
+            <View style={styles.primaryActionWrap}>
+              <Button
+                label={primaryCtaLabel}
+                onPress={() => {
+                  clearActionFeedback();
+                  openPaywall();
+                }}
+                disabled={busy || billingAvailability !== "ready"}
+              />
             </View>
-          ))}
+          ) : null}
 
-          <TouchableOpacity
-            style={[
-              styles.rowBetween,
-              styles.actionRow,
-              styles.actionRowTop,
-            ]}
-            onPress={tryRestore}
-            activeOpacity={0.7}
-            disabled={busy}
+          <SettingsSection
+            title={t("manageSubscription.currentMembershipTitle", {
+              defaultValue: "Current membership",
+            })}
           >
-            <Text style={styles.actionText}>
-              {t("manageSubscription.restorePurchases", {
-                defaultValue: "Restore Purchases",
-              })}
-            </Text>
-            <AppIcon name="refresh" size={20} color={theme.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.rowBetween, styles.actionRow]}
-            onPress={tryOpenRefundPolicy}
-            activeOpacity={0.7}
-            disabled={busy}
-          >
-            <Text style={styles.actionText}>
-              {t("manageSubscription.refundPolicy")}
-            </Text>
-            <AppIcon name="chevron-right" size={20} color={theme.textSecondary} />
-          </TouchableOpacity>
-
-          {!!termsUrl && !!privacyUrl && (
-            <View style={styles.legalSection}>
-              <Text
-                style={styles.legalText}
-              >
-                {t("manageSubscription.autorenewInfo", {
-                  storeName: subscriptionStoreName,
-                  defaultValue:
-                    "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. You can manage or cancel in your {{storeName}} account settings.",
+            <SettingsRow
+              title={t("manageSubscription.yourSubscription")}
+              value={headerStatus}
+            />
+            {showManageInStore ? (
+              <SettingsRow
+                title={t("manageSubscription.manageInStore", {
+                  defaultValue: "Manage subscription in store",
                 })}
-              </Text>
+                subtitle={t("manageSubscription.manageInStoreSubtitle", {
+                  defaultValue:
+                    "Open your store account settings to manage or cancel.",
+                })}
+                onPress={() => {
+                  void tryOpenManage();
+                }}
+                loading={busy && busyAction === "manage"}
+              />
+            ) : null}
+          </SettingsSection>
 
-              <View style={styles.legalLinks}>
-                <TouchableOpacity onPress={() => void openTerms()} activeOpacity={0.7} disabled={busy}>
-                  <Text
-                    style={styles.legalLink}
-                  >
-                    {t("termsOfService", { defaultValue: "Terms of Service" })}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => void openPrivacy()} activeOpacity={0.7} disabled={busy}>
-                  <Text
-                    style={styles.legalLink}
-                  >
-                    {t("privacyPolicy", { defaultValue: "Privacy Policy" })}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {showManageInStore && (
-          <TouchableOpacity
-            style={[
-              styles.rowBetween,
-              styles.actionRow,
-              styles.dividerTop,
-            ]}
-            onPress={tryOpenManage}
-            disabled={busy}
-            activeOpacity={0.7}
+          <SettingsSection
+            title={t("manageSubscription.aiCreditsSection", {
+              defaultValue: "AI Credits",
+            })}
           >
-            <Text style={styles.linkText}>
-              {t("manageSubscription.manageInStore", {
-                defaultValue: "Manage subscription in store",
+            <SettingsRow
+              title={t("manageSubscription.aiCreditsBalance", {
+                defaultValue: "Balance",
               })}
-            </Text>
-            <AppIcon
-              name="chevron-right"
-              size={20}
-              color={theme.primary}
+              value={creditsLoading ? "..." : `${credits?.balance ?? "-"}`}
             />
-          </TouchableOpacity>
-        )}
-
-        {(showRenew || showStart) && (
-          <TouchableOpacity
-            style={[
-              styles.rowBetween,
-              styles.actionRow,
-              styles.dividerTopCompact,
-            ]}
-            onPress={openPaywall}
-            disabled={busy}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.linkText}>
-              {showRenew
-                ? t("manageSubscription.renewSubscription")
-                : t("manageSubscription.startSubscription")}
-            </Text>
-            <AppIcon
-              name="chevron-right"
-              size={20}
-              color={theme.primary}
+            <SettingsRow
+              title={t("manageSubscription.aiCreditsAllocation", {
+                defaultValue: "Allocation",
+              })}
+              value={creditsLoading ? "..." : `${credits?.allocation ?? "-"}`}
             />
-          </TouchableOpacity>
-        )}
+            <SettingsRow
+              title={t("manageSubscription.aiCreditsTier", {
+                defaultValue: "Tier",
+              })}
+              value={
+                creditsLoading
+                  ? "..."
+                  : credits?.tier === "premium"
+                    ? t("manageSubscription.tierPremium", {
+                        defaultValue: "Premium",
+                      })
+                    : credits?.tier === "free"
+                      ? t("manageSubscription.tierFree", {
+                          defaultValue: "Free",
+                        })
+                      : "-"
+              }
+            />
+            <SettingsRow
+              title={t("manageSubscription.aiCreditsRenewalDate", {
+                defaultValue: "Renews on",
+              })}
+              value={
+                creditsLoading
+                  ? "..."
+                  : credits?.periodEndAt
+                    ? formatRenewalDate(credits.periodEndAt)
+                    : t("manageSubscription.aiCreditsRenewalUnknown", {
+                        defaultValue: "Unavailable",
+                      })
+              }
+            />
+          </SettingsSection>
 
-        <PaywallModal
-          visible={paywallVisible}
-          busy={busy}
-          priceText={priceText}
-          onClose={closePaywall}
-          onSubscribe={trySubscribe}
-          onRestore={tryRestore}
-          termsUrl={termsUrl}
-          privacyUrl={privacyUrl}
-        />
-
-        {__DEV__ && (
-          <TouchableOpacity
-            style={[
-              styles.rowBetween,
-              styles.actionRow,
-              styles.dividerTop,
-            ]}
-            onPress={toggleDevPremium}
-            activeOpacity={0.7}
-            disabled={busy}
+          <SettingsSection
+            title={t("manageSubscription.premiumBenefits", {
+              defaultValue: "Premium benefits",
+            })}
           >
-            <Text style={styles.devText}>
-              {`DEV: ${isPremiumComputed ? "Disable" : "Enable"} Premium`}
-            </Text>
-            <AppIcon name="settings" size={20} color={theme.textSecondary} />
-          </TouchableOpacity>
-        )}
-      </View>
-    </Layout>
+            {BENEFITS.map((key) => (
+              <SettingsRow
+                key={key}
+                title={t(`manageSubscription.benefit_${key}`)}
+                subtitle={t(`manageSubscription.benefitDesc_${key}`)}
+              />
+            ))}
+          </SettingsSection>
+
+          <SettingsSection
+            title={t("manageSubscription.actionsTitle", {
+              defaultValue: "Subscription actions",
+            })}
+          >
+            <SettingsRow
+              title={t("manageSubscription.restorePurchases", {
+                defaultValue: "Restore purchases",
+              })}
+              subtitle={t("manageSubscription.restoreSubtitle", {
+                defaultValue:
+                  "Restore access if you already purchased premium on this account.",
+              })}
+              onPress={() => {
+                void tryRestore();
+              }}
+              loading={busy && busyAction === "restore"}
+            />
+
+            <SettingsRow
+              title={t("legalPrivacySectionTitle", {
+                defaultValue: "Legal & privacy",
+              })}
+              subtitle={t("manageSubscription.legalHubSubtitle", {
+                defaultValue:
+                  "Privacy Policy, Terms of Service, and Data & AI clarity.",
+              })}
+              onPress={() => navigation.navigate("LegalPrivacyHub")}
+            />
+
+            {refundUrl ? (
+              <SettingsRow
+                title={t("manageSubscription.refundPolicy")}
+                subtitle={t("manageSubscription.refundSubtitle", {
+                  defaultValue: "Open the current store refund policy.",
+                })}
+                onPress={() => {
+                  void tryOpenRefundPolicy();
+                }}
+              />
+            ) : null}
+          </SettingsSection>
+
+          {__DEV__ ? (
+            <SettingsSection
+              title={t("manageSubscription.devSectionTitle", {
+                defaultValue: "Developer billing tools",
+              })}
+              footer={t("manageSubscription.devSectionFooter", {
+                defaultValue:
+                  "Visible in development only. This does not change production billing behavior.",
+              })}
+            >
+              <SettingsRow
+                title={
+                  isPremiumComputed
+                    ? t("manageSubscription.devDisablePremium", {
+                        defaultValue: "DEV: Disable premium",
+                      })
+                    : t("manageSubscription.devEnablePremium", {
+                        defaultValue: "DEV: Enable premium",
+                      })
+                }
+                subtitle={t("manageSubscription.devToggleSubtitle", {
+                  defaultValue:
+                    "Uses the existing dev-only billing override path.",
+                })}
+                onPress={() => {
+                  void toggleDevPremium();
+                }}
+              />
+            </SettingsSection>
+          ) : null}
+        </View>
+      </FormScreenShell>
+
+      <PaywallModal
+        visible={paywallVisible}
+        busy={busy}
+        priceText={priceText}
+        onClose={closePaywall}
+        onSubscribe={() => {
+          void trySubscribe();
+        }}
+        onRestore={() => {
+          void tryRestore();
+        }}
+        termsUrl={termsUrl}
+        privacyUrl={privacyUrl}
+      />
+    </>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    flex: { flex: 1 },
-    sectionSpacing: { marginBottom: theme.spacing.xl },
-    sectionLabel: {
-      fontSize: theme.typography.size.bodyM,
-      fontFamily: theme.typography.fontFamily.bold,
-      marginBottom: theme.spacing.sm,
-      color: theme.textSecondary,
-      opacity: 0.75,
+    content: {
+      gap: theme.spacing.sectionGap,
     },
-    rowBetween: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    rowBetweenSpacing: { marginBottom: theme.spacing.sm },
-    busy: { opacity: 0.6 },
-    statusText: {
-      fontSize: theme.typography.size.bodyM,
-      fontFamily: theme.typography.fontFamily.regular,
-      color: theme.text,
-    },
-    benefitItem: {
-      marginBottom: theme.spacing.sm,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.border,
-      paddingBottom: theme.spacing.sm,
-    },
-    benefitTitle: {
-      fontSize: theme.typography.size.bodyM,
-      fontFamily: theme.typography.fontFamily.medium,
-      color: theme.text,
-      flexShrink: 1,
-    },
-    benefitDesc: {
-      marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.bodyL,
-      opacity: 0.8,
-      color: theme.textSecondary,
-    },
-    actionRow: { paddingVertical: theme.spacing.sm },
-    actionRowTop: { marginTop: theme.spacing.xl },
-    actionText: {
-      fontSize: theme.typography.size.bodyM,
-      fontFamily: theme.typography.fontFamily.medium,
-      color: theme.text,
-    },
-    legalSection: { marginTop: theme.spacing.lg, gap: theme.spacing.sm },
-    legalText: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-    },
-    legalLinks: { flexDirection: "row", gap: theme.spacing.md },
-    legalLink: {
-      color: theme.primary,
-      fontSize: theme.typography.size.bodyS,
-      fontFamily: theme.typography.fontFamily.bold,
-    },
-    dividerTop: {
-      borderTopWidth: 1,
-      borderTopColor: theme.border,
-      marginTop: theme.spacing.xl,
-    },
-    dividerTopCompact: {
-      borderTopWidth: 1,
-      borderTopColor: theme.border,
-      marginTop: theme.spacing.md,
-    },
-    linkText: {
-      fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.bodyM,
-      color: theme.primary,
-    },
-    devText: {
-      fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.bodyM,
-      color: theme.text,
-    },
-    emptyWrap: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
+    primaryActionWrap: {
       gap: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.lg,
-    },
-    emptyTitle: {
-      color: theme.text,
-      fontSize: theme.typography.size.title,
-      fontFamily: theme.typography.fontFamily.semiBold,
-      textAlign: "center",
-    },
-    emptyDescription: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
-      textAlign: "center",
-      lineHeight: Math.round(theme.typography.size.bodyS * 1.5),
-    },
-    emptyAction: {
-      marginTop: theme.spacing.sm,
-      alignSelf: "stretch",
-    },
-    emptyBack: {
-      color: theme.primary,
-      fontFamily: theme.typography.fontFamily.medium,
-      textDecorationLine: "underline",
     },
   });

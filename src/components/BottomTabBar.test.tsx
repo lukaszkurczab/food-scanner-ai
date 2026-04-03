@@ -137,4 +137,16 @@ describe("BottomTabBar", () => {
     };
     expect(avatarProps.overrideColor).toBe("#C9A227");
   });
+
+  it("keeps the profile tab active across the final account launch routes", () => {
+    mockUseNavigationState.mockImplementation((selector) =>
+      selector(makeNavState("AppSettings")),
+    );
+
+    const { getByTestId } = renderWithTheme(<BottomTabBar />);
+
+    expect(
+      getByTestId("tab-profile").props.accessibilityState?.selected,
+    ).toBe(true);
+  });
 });

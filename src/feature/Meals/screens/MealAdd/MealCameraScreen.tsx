@@ -101,12 +101,14 @@ export default function MealCameraScreen({
           remainingAfterPhoto <= 2
         ? "low"
         : "ok";
+  const useSimulatorCreditPreview =
+    isSimulatorPreview && !skipDetection && credits === null;
   const cameraCreditsState =
-    isSimulatorPreview && !skipDetection
+    useSimulatorCreditPreview
       ? simulatorCreditsState
       : actualCreditsState;
   const previewRemainingAfterPhoto =
-    isSimulatorPreview && !skipDetection
+    useSimulatorCreditPreview
       ? cameraCreditsState === "ok"
         ? 74
         : cameraCreditsState === "low"

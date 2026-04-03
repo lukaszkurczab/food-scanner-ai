@@ -20,6 +20,7 @@ type AvatarCameraScreenProps = {
 
 export default function AvatarCameraScreen({
   onPhotoTaken,
+  route,
   navigation,
 }: AvatarCameraScreenProps) {
   const { t } = useTranslation(["common", "profile"]);
@@ -34,6 +35,7 @@ export default function AvatarCameraScreen({
   const [isUploading, setIsUploading] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [facing, setFacing] = useState<"back" | "front">("back");
+  const returnDepth = route.params?.returnDepth ?? 0;
   const topLeftActionStyle = useMemo(
     () => ({
       top: insets.top + theme.spacing.xs,
@@ -113,7 +115,13 @@ export default function AvatarCameraScreen({
           setIsUploading(true);
           try {
             await setAvatar(photoUri);
-            navigation.navigate("Profile");
+            if (returnDepth > 0 && navigation.canGoBack()) {
+              navigation.pop(returnDepth);
+            } else if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate("Profile");
+            }
           } catch (err) {
             console.log(err);
           } finally {

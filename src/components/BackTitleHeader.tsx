@@ -48,8 +48,7 @@ export function BackTitleHeader({
         onPress={onBack}
         accessibilityRole="button"
         accessibilityLabel={
-          backAccessibilityLabel ??
-          t("common:back", { defaultValue: "Back" })
+          backAccessibilityLabel ?? t("common:back", { defaultValue: "Back" })
         }
         testID={backButtonTestID}
         style={({ pressed }) => [
@@ -57,7 +56,7 @@ export function BackTitleHeader({
           pressed ? styles.iconButtonPressed : null,
         ]}
       >
-        <AppIcon name="arrow-left" size={20} color={theme.text} />
+        <AppIcon name="arrow-left" size={24} color={theme.text} />
       </Pressable>
 
       <Text
@@ -77,7 +76,9 @@ export function BackTitleHeader({
           testID={trailingAction.testID}
           style={({ pressed }) => [
             styles.iconButton,
-            pressed || trailingAction.disabled ? styles.iconButtonPressed : null,
+            pressed || trailingAction.disabled
+              ? styles.iconButtonPressed
+              : null,
           ]}
         >
           <AppIcon
@@ -100,11 +101,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     container: {
       flexDirection: "row",
       alignItems: "center",
-      minHeight: 76,
       marginHorizontal: -(theme.spacing.screenPadding + theme.spacing.sm),
       paddingHorizontal: theme.spacing.screenPaddingWide,
-      paddingVertical: theme.spacing.md,
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
       gap: theme.spacing.sm,
       backgroundColor: theme.background,
     },

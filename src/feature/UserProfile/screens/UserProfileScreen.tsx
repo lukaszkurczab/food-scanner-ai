@@ -1,24 +1,21 @@
 import { useMemo } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  ActivityIndicator,
-  Linking,
-  StyleSheet,
-} from "react-native";
-import AppIcon from "@/components/AppIcon";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/theme/useTheme";
-import { Button, ButtonToggle, Layout, TextInput } from "@/components";
-import SectionHeader from "../components/SectionHeader";
-import ListItem from "../components/ListItem";
-import AvatarBadge from "@/components/AvatarBadge";
-import { Modal } from "@/components/Modal";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { useTheme } from "@/theme/useTheme";
+import {
+  Button,
+  InfoBlock,
+  Layout,
+  SettingsRow,
+  SettingsSection,
+} from "@/components";
+import AppIcon from "@/components/AppIcon";
+import AvatarBadge from "@/components/AvatarBadge";
+import { usePremiumContext } from "@/context/PremiumContext";
+import { AccountIdentityCard } from "@/feature/UserProfile/components/AccountIdentityCard";
 import { useUserProfileState } from "@/feature/UserProfile/hooks/useUserProfileState";
-import { getTermsUrl } from "@/utils/legalUrls";
 
 type ProfileNavigation = StackNavigationProp<RootStackParamList, "Profile">;
 
@@ -32,8 +29,8 @@ export default function UserProfileScreen({
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-
   const state = useUserProfileState({ navigation });
+  const { isPremium } = usePremiumContext();
 
   if (state.loadingUser) {
     return (
@@ -72,300 +69,227 @@ export default function UserProfileScreen({
     );
   }
 
+  const planLabel = isPremium
+    ? t("manageSubscription.premium")
+    : t("manageSubscription.free");
   return (
     <Layout>
-      <View style={styles.header}>
-        <AvatarBadge
-          size={96}
-          uri={state.avatarSrc || undefined}
-          badges={state.safeBadges}
-          overrideColor={state.overrideColor}
-          overrideEmoji={state.overrideEmoji}
-          fallbackIcon={
-            <AppIcon name="person" size={52} color={theme.textSecondary} />
-          }
-          accessibilityLabel={t("profilePicture")}
-        />
-        <Text
-          style={styles.username}
-          accessibilityRole="header"
-          numberOfLines={1}
-        >
-          {state.userData.username}
-        </Text>
-        <Text style={styles.email} numberOfLines={1}>
-          {state.userData.email}
-        </Text>
-        <Text style={styles.streak}>🔥 {state.streak}</Text>
-        {state.syncState !== "synced" && (
-          <View style={styles.syncBanner}>
-            <View style={styles.syncBannerTextWrap}>
-              <Text style={styles.syncBannerTitle}>
-                {state.syncState === "pending"
-                  ? t("sync.pendingTitle")
-                  : t("sync.conflictTitle")}
-              </Text>
-              <Text style={styles.syncState}>
-                {state.syncState === "pending"
-                  ? t("sync.pending")
-                  : t("sync.conflict")}
-              </Text>
-            </View>
-            {state.syncState === "conflict" && (
-              <Pressable
-                onPress={() => {
-                  void state.retryProfileSync();
-                }}
-                disabled={state.retryingProfileSync}
-                style={
-                  state.retryingProfileSync
-                    ? styles.syncRetryDisabled
-                    : undefined
+      <View style={styles.content}>
+        <View style={styles.hero}>
+          <AccountIdentityCard
+            avatar={
+              <AvatarBadge
+                size={72}
+                uri={state.avatarSrc || undefined}
+                badges={state.safeBadges}
+                overrideColor={state.overrideColor}
+                overrideEmoji={state.overrideEmoji}
+                fallbackIcon={
+                  <AppIcon
+                    name="person"
+                    size={36}
+                    color={theme.textSecondary}
+                  />
                 }
-              >
-                {state.retryingProfileSync ? (
-                  <ActivityIndicator size="small" color={theme.warning.text} />
-                ) : (
-                  <Text style={styles.syncRetryLabel}>{t("sync.retry")}</Text>
-                )}
-              </Pressable>
-            )}
-          </View>
-        )}
-      </View>
-
-      <SectionHeader label={t("userSection")} />
-      <ListItem
-        label={t("changeUserData")}
-        onPress={() => navigation.navigate("EditUserData")}
-        accessibilityLabel={t("changeUserData")}
-      />
-      <ListItem
-        label={t("updateHealthSurvey")}
-        onPress={() => navigation.navigate("Onboarding", { mode: "refill" })}
-        accessibilityLabel={t("updateHealthSurvey")}
-      />
-      <ListItem
-        label={t("manageNotifications")}
-        onPress={() => navigation.navigate("Notifications")}
-        accessibilityLabel={t("manageNotifications")}
-      />
-      <ListItem
-        label={t("manageSubscription.title")}
-        onPress={() => navigation.navigate("ManageSubscription")}
-        accessibilityLabel={t("manageSubscription.title")}
-      />
-      <ListItem
-        label={t("downloadYourData")}
-        onPress={state.handleExportData}
-        accessibilityLabel={t("downloadYourData")}
-        style={styles.listItemSpacing}
-        disabled={state.exporting}
-        loading={state.exporting}
-      />
-
-      <SectionHeader label={t("settingsSection")} />
-      <View style={styles.toggleRow}>
-        <Text style={styles.toggleLabel} numberOfLines={1}>
-          {t("toggleDarkMode")}
-        </Text>
-        <ButtonToggle
-          value={state.darkTheme}
-          onToggle={state.handleThemeToggle}
-          accessibilityLabel={t("toggleDarkMode")}
-        />
-      </View>
-      <ListItem
-        label={t("language")}
-        onPress={() => navigation.navigate("Language")}
-        accessibilityLabel={t("language")}
-      />
-      <ListItem
-        label={t("termsOfService")}
-        onPress={() => {
-          const url = getTermsUrl();
-          if (url) void Linking.openURL(url);
-        }}
-        accessibilityLabel={t("termsOfService")}
-      />
-      <ListItem
-        label={t("privacyPolicy")}
-        onPress={() => navigation.navigate("Privacy")}
-        accessibilityLabel={t("privacyPolicy")}
-      />
-      <ListItem
-        label={t("sendFeedback")}
-        onPress={() => navigation.navigate("SendFeedback")}
-        accessibilityLabel={t("sendFeedback")}
-      />
-      <ListItem
-        label={t("logOut")}
-        onPress={state.handleLogout}
-        accessibilityLabel={t("logOut")}
-      />
-
-      <Pressable
-        style={styles.deleteAccount}
-        onPress={state.openDeleteModal}
-        accessibilityRole="button"
-        accessibilityLabel={t("deleteAccount")}
-      >
-        <Text style={styles.deleteText}>{t("deleteAccount")}</Text>
-      </Pressable>
-
-      <Text style={styles.version}>{t("appVersion")} 1.0.1</Text>
-
-      <Modal
-        visible={state.showDeleteModal}
-        title={t("deleteAccount")}
-        message={t("deleteAccountWarning")}
-        primaryAction={{
-          label: t("confirm"),
-          onPress: state.handleDeleteAccount,
-          tone: "destructive",
-        }}
-        secondaryAction={{
-          label: t("cancel"),
-          onPress: state.closeDeleteModal,
-        }}
-        onClose={state.closeDeleteModal}
-      >
-        <View style={styles.deleteModalContent}>
-          <TextInput
-            placeholder={t("enterPassword")}
-            value={state.password}
-            onChangeText={state.setPassword}
-            secureTextEntry
-            autoCorrect={false}
-            textContentType="password"
-            accessibilityLabel={t("enterPassword")}
+                accessibilityLabel={t("profilePicture")}
+              />
+            }
+            title={state.userData.username}
+            subtitle={state.userData.email}
+            badge={<Text style={styles.identityBadge}>{planLabel}</Text>}
+            onPress={() => navigation.navigate("EditUserData")}
           />
-        </View>
-      </Modal>
 
-      <Modal
-        visible={state.exportModalVisible}
-        title={state.exportModalTitle}
-        message={state.exportModalMessage}
-        primaryAction={{
-          label: t("confirm"),
-          onPress: state.closeExportModal,
-        }}
-        onClose={state.closeExportModal}
-      />
+          {state.syncState !== "synced" ? (
+            <View style={styles.syncStack}>
+              <InfoBlock
+                title={
+                  state.syncState === "pending"
+                    ? t("sync.pendingTitle")
+                    : t("sync.conflictTitle")
+                }
+                body={
+                  state.syncState === "pending"
+                    ? t("sync.pending")
+                    : t("sync.conflict")
+                }
+                tone={state.syncState === "pending" ? "info" : "warning"}
+                icon={
+                  <AppIcon
+                    name={state.syncState === "pending" ? "info" : "refresh"}
+                    size={18}
+                    color={
+                      state.syncState === "pending"
+                        ? theme.info.text
+                        : theme.warning.text
+                    }
+                  />
+                }
+              />
+
+              {state.syncState === "conflict" ? (
+                <Button
+                  label={t("sync.retry")}
+                  variant="secondary"
+                  fullWidth={false}
+                  loading={state.retryingProfileSync}
+                  onPress={() => {
+                    void state.retryProfileSync();
+                  }}
+                />
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+
+        <SettingsSection
+          title={t("profileSectionTitle", { defaultValue: "Profile" })}
+        >
+          <SettingsRow
+            title={t("profileDetailsLabel", {
+              defaultValue: "Profile details",
+            })}
+            testID="account-profile-details-row"
+            onPress={() => navigation.navigate("EditUserData")}
+          />
+          <SettingsRow
+            title={t("updateHealthSurvey")}
+            onPress={() =>
+              navigation.navigate("Onboarding", { mode: "refill" })
+            }
+          />
+        </SettingsSection>
+
+        <SettingsSection
+          title={t("membershipSectionTitle", { defaultValue: "Membership" })}
+        >
+          <SettingsRow
+            title={t("manageSubscription.title")}
+            testID="account-manage-subscription-row"
+            onPress={() => navigation.navigate("ManageSubscription")}
+          />
+        </SettingsSection>
+
+        <SettingsSection
+          title={t("legalPrivacySectionTitle", {
+            defaultValue: "Legal & privacy",
+          })}
+        >
+          <SettingsRow
+            title={t("legalPrivacyHubRowTitle", {
+              defaultValue: "Review legal documents",
+            })}
+            testID="account-legal-privacy-row"
+            onPress={() => navigation.navigate("LegalPrivacyHub")}
+          />
+        </SettingsSection>
+
+        <SettingsSection
+          title={t("helpFeedbackSectionTitle", {
+            defaultValue: "Help & feedback",
+          })}
+        >
+          <SettingsRow
+            title={t("helpFeedbackHubRowTitle", {
+              defaultValue: "Get help or send feedback",
+            })}
+            testID="account-help-feedback-row"
+            onPress={() => navigation.navigate("HelpFeedback")}
+          />
+        </SettingsSection>
+
+        <SettingsSection
+          title={t("appSettingsSectionTitle", { defaultValue: "App settings" })}
+        >
+          <SettingsRow
+            title={t("appSettingsHubRowTitle", {
+              defaultValue: "App settings",
+            })}
+            testID="account-app-settings-row"
+            onPress={() => navigation.navigate("AppSettings")}
+          />
+        </SettingsSection>
+
+        <SettingsSection
+          title={t("accountActionsSectionTitle", {
+            defaultValue: "Account actions",
+          })}
+        >
+          <SettingsRow
+            title={t("logOut")}
+            onPress={state.handleLogout}
+            showChevron={false}
+          />
+          <SettingsRow
+            title={t("deleteAccount")}
+            testID="account-delete-account-row"
+            onPress={() => navigation.navigate("DeleteAccount")}
+          />
+        </SettingsSection>
+
+        <Text style={styles.version}>{t("appVersion")} 1.0.1</Text>
+      </View>
     </Layout>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    header: {
-      alignItems: "center",
-      marginBottom: theme.spacing.xl,
+    content: {
+      gap: theme.spacing.sectionGap,
+      paddingBottom: theme.spacing.sectionGap,
     },
-    username: {
+    hero: {
+      gap: theme.spacing.lg,
+    },
+    screenTitle: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
       fontSize: theme.typography.size.h1,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.text,
-      marginBottom: theme.spacing.xs,
+      lineHeight: theme.typography.lineHeight.h1,
     },
-    email: {
-      fontSize: theme.typography.size.bodyL,
+    identityBadge: {
       color: theme.textSecondary,
-    },
-    streak: {
-      color: theme.textSecondary,
-      marginTop: theme.spacing.xs,
-      fontSize: theme.typography.size.bodyS,
-    },
-    syncState: {
+      fontFamily: theme.typography.fontFamily.medium,
       fontSize: theme.typography.size.caption,
-      color: theme.textSecondary,
+      lineHeight: theme.typography.lineHeight.caption,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
     },
-    syncBanner: {
-      marginTop: theme.spacing.sm,
-      borderWidth: 1,
-      borderColor: theme.border,
-      borderRadius: theme.rounded.md,
-      backgroundColor: theme.warning.surface,
-      paddingVertical: theme.spacing.xs + 2,
-      paddingHorizontal: theme.spacing.sm,
-      width: "100%",
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
+    syncStack: {
       gap: theme.spacing.sm,
-    },
-    syncBannerTextWrap: {
-      flex: 1,
-      gap: 2,
-    },
-    syncBannerTitle: {
-      fontSize: theme.typography.size.bodyS,
-      fontFamily: theme.typography.fontFamily.semiBold,
-      color: theme.warning.text,
-    },
-    syncRetryLabel: {
-      color: theme.warning.text,
-      fontFamily: theme.typography.fontFamily.semiBold,
-      fontSize: theme.typography.size.bodyS,
-      textDecorationLine: "underline",
-    },
-    syncRetryDisabled: {
-      opacity: 0.65,
-    },
-    listItemSpacing: { marginBottom: theme.spacing.xl },
-    toggleRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.border,
-      paddingVertical: theme.spacing.md,
-    },
-    toggleLabel: {
-      flex: 1,
-      color: theme.text,
-      fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.bodyM,
-    },
-    deleteAccount: {
-      alignItems: "center",
-      marginVertical: theme.spacing.xl,
-    },
-    deleteModalContent: {
-      gap: theme.spacing.sm,
-    },
-    deleteText: {
-      fontSize: theme.typography.size.title,
-      fontFamily: theme.typography.fontFamily.bold,
-      color: theme.error.text,
     },
     version: {
+      color: theme.textTertiary,
+      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.caption,
+      lineHeight: theme.typography.lineHeight.caption,
       textAlign: "center",
-      fontSize: theme.typography.size.bodyS,
-      color: theme.textSecondary,
+      paddingTop: theme.spacing.sm,
     },
     emptyStateWrap: {
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: theme.spacing.lg,
       gap: theme.spacing.sm,
+      paddingVertical: theme.spacing.display,
     },
     emptyStateTitle: {
       color: theme.text,
-      fontSize: theme.typography.size.title,
       fontFamily: theme.typography.fontFamily.semiBold,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
       textAlign: "center",
     },
     emptyStateDescription: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
+      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
       textAlign: "center",
-      lineHeight: Math.round(theme.typography.size.bodyS * 1.5),
+      maxWidth: 320,
     },
     emptyStateAction: {
       marginTop: theme.spacing.sm,
-      alignSelf: "stretch",
     },
   });

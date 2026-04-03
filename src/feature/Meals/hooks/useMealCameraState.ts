@@ -194,7 +194,12 @@ export function useMealCameraState({
     });
 
     if (isSimulatorPreview) {
-      if (!skipDetection && simulatorCreditsState === "none") {
+      const canUseSimulatorPreviewAi = credits
+        ? canUsePhotoAi
+        : simulatorCreditsState !== "none";
+
+      if (!skipDetection && !canUseSimulatorPreviewAi) {
+        setPremiumModal(true);
         return;
       }
 
