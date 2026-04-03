@@ -249,21 +249,18 @@ describe("ReviewMealScreen", () => {
     expect(testProps.flowGoTo).toHaveBeenCalledWith("EditMealDetails", {});
   });
 
-  it("shows the add-photo slot when the meal has no photo", () => {
+  it("does not show the add-photo slot when the meal has no photo", () => {
     const ctx = buildDraftContext({ photoUrl: null });
     const testProps = buildProps();
     mockUseMealDraftContext.mockReturnValue(ctx);
 
-    const { getByText } = renderWithTheme(
+    const { queryByText, queryByTestId } = renderWithTheme(
       <ReviewMealScreen {...testProps.props} />,
     );
 
-    fireEvent.press(getByText("Add meal photo"));
-
-    expect(testProps.flowGoTo).toHaveBeenCalledWith("CameraDefault", {
-      id: "meal-1",
-      skipDetection: true,
-    });
+    expect(queryByText("Add meal photo")).toBeNull();
+    expect(queryByTestId("review-meal-add-photo")).toBeNull();
+    expect(testProps.flowGoTo).not.toHaveBeenCalled();
   });
 
   it("saves the reviewed meal and navigates home", async () => {

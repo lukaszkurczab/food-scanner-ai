@@ -410,12 +410,8 @@ export function MealDetailsFormScreen({
               {reviewPhotoUri ? (
                 <Image source={{ uri: reviewPhotoUri }} style={styles.photoPreview} />
               ) : (
-                <View style={styles.photoPlaceholder}>
-                  <AppIcon
-                    name="add-photo"
-                    size={28}
-                    color={theme.textSecondary}
-                  />
+                <View style={styles.photoIconCircle}>
+                  <Text style={styles.photoPlus}>+</Text>
                 </View>
               )}
               <View style={styles.photoCopy}>
@@ -431,16 +427,20 @@ export function MealDetailsFormScreen({
                         defaultValue: "Add photo",
                       }))}
                 </Text>
-                <Text style={styles.photoDescription}>
+                <Text
+                  style={[
+                    styles.photoDescription,
+                    reviewPhotoUri ? styles.photoDescriptionMuted : null,
+                  ]}
+                >
                   {reviewPhotoUri
-                    ? t("review_meal_edit_photo_description", {
+                    ? t("review_meal_change_photo_support", {
                         ns: "meals",
                         defaultValue: "Replace the current meal photo.",
                       })
-                    : t("review_meal_edit_add_photo_description", {
+                    : t("review_meal_add_photo_optional", {
                         ns: "meals",
-                        defaultValue:
-                          "Add a meal photo to keep this entry complete.",
+                        defaultValue: "Optional",
                       })}
                 </Text>
               </View>
@@ -900,47 +900,57 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingBottom: theme.spacing.xxxl + 92,
     },
     photoCard: {
-      minHeight: 88,
-      borderRadius: theme.rounded.xl,
+      minHeight: 78,
+      borderRadius: theme.rounded.xl + 2,
       borderWidth: 1,
       borderColor: theme.borderSoft,
-      backgroundColor: theme.surface,
-      padding: theme.spacing.sm,
+      backgroundColor: theme.surfaceAlt,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
       flexDirection: "row",
       alignItems: "center",
       gap: theme.spacing.sm,
     },
     photoPreview: {
-      width: 72,
-      height: 72,
-      borderRadius: theme.rounded.lg,
-      backgroundColor: theme.backgroundSecondary,
+      width: 56,
+      height: 56,
+      borderRadius: theme.rounded.lg + 2,
+      backgroundColor: theme.borderSoft,
     },
-    photoPlaceholder: {
-      width: 72,
-      height: 72,
-      borderRadius: theme.rounded.lg,
+    photoIconCircle: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.backgroundSecondary,
+      backgroundColor: theme.surface,
       borderWidth: 1,
-      borderColor: theme.borderSoft,
-      borderStyle: "dashed",
+      borderColor: theme.border,
+    },
+    photoPlus: {
+      color: theme.primary,
+      fontSize: 22,
+      lineHeight: 22,
+      fontFamily: theme.typography.fontFamily.bold,
     },
     photoCopy: {
       flex: 1,
-      gap: 4,
+      gap: 2,
     },
     photoTitle: {
       color: theme.text,
       fontSize: theme.typography.size.bodyM,
-      lineHeight: 20,
-      fontFamily: theme.typography.fontFamily.semiBold,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      fontFamily: theme.typography.fontFamily.medium,
     },
     photoDescription: {
+      color: theme.primary,
+      fontSize: 11,
+      lineHeight: 14,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    photoDescriptionMuted: {
       color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: 18,
     },
     photoChevron: {
       opacity: 0.9,

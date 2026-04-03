@@ -137,6 +137,7 @@
   "review_meal_edit_title": "Adjust your meal",
   "review_meal_edit_subtitle": "Update ingredients, meal type or time, then go back to review.",
   "review_meal_edit_done": "Back to review",
+  "review_meal_change_photo_support": "Replace the current meal photo.",
   "review_meal_edit_meal_basics": "Meal basics",
   "review_meal_edit_add_first_ingredient": "Add first ingredient",
   "review_meal_edit_add_ingredient": "Add ingredient",
@@ -215,6 +216,8 @@
     "sample_table": "Sample table"
   },
   "back_to_saved": "Back to saved",
+  "camera_back_to_edit": "Back to edit",
+  "camera_back_to_meal": "Back to meal",
   "barcode_back_to_review": "Back to ingredients",
   "barcode_scan_eyebrow": "Scan barcode",
   "barcode_scan_title": "Scan barcode",

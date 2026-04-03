@@ -31,6 +31,11 @@ jest.mock("@contexts/MealDraftContext", () => ({
   useMealDraftContext: () => mockUseMealDraftContext(),
 }));
 
+jest.mock("@/components/AppIcon", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     i18n: { language: "en" },
@@ -149,6 +154,28 @@ describe("EditMealDetailsScreen", () => {
       expect(setMeal).toHaveBeenCalled();
       expect(saveDraft).toHaveBeenCalled();
       expect(props.flow.goBack).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("shows the photo action and opens camera default in skip-detection mode", () => {
+    const props = buildProps();
+
+    mockUseMealDraftContext.mockReturnValue({
+      meal: buildMeal({ photoUrl: null }),
+      loadDraft: jest.fn(async () => undefined),
+      saveDraft: jest.fn(async () => undefined),
+      setMeal: jest.fn(),
+      setLastScreen: jest.fn(async () => undefined),
+      clearMeal: jest.fn(),
+    });
+
+    const { getByText } = renderWithTheme(<EditMealDetailsScreen {...props} />);
+
+    fireEvent.press(getByText("Add photo"));
+
+    expect(props.flow.goTo).toHaveBeenCalledWith("CameraDefault", {
+      id: "meal-1",
+      skipDetection: true,
     });
   });
 });

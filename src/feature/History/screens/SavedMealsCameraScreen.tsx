@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useAuthContext } from "@/context/AuthContext";
-import { Layout, PhotoPreview, ScreenCornerNavButton } from "@/components";
+import { Button, Layout, PhotoPreview } from "@/components";
 import { getSampleMealUri } from "@/utils/devSamples";
 import { debugScope } from "@/utils/debug";
 import type { Meal } from "@/types/meal";
@@ -36,7 +36,7 @@ export default function SavedMealsCameraScreen({
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isTakingPhoto, setIsTakingPhoto] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "meals"]);
   const { uid } = useAuthContext();
   const route = useRoute<SavedMealsCameraRoute>();
   const mealFromRoute: Meal | undefined = route.params?.meal;
@@ -44,13 +44,24 @@ export default function SavedMealsCameraScreen({
   const returnTo = route.params?.returnTo || "MealDetails";
   const canLeaveRef = useRef(false);
   const { updateMeal } = useMeals(uid || "");
-  const topLeftActionStyle = useMemo(
-    () => ({
-      top: insets.top + theme.spacing.xs,
-      left: insets.left + theme.spacing.sm,
-    }),
-    [insets.left, insets.top, theme.spacing.sm, theme.spacing.xs],
+  const returnToOrigin = useMemo(
+    () => () => {
+      if (!mealFromRoute) return;
+      canLeaveRef.current = true;
+      navigation.replace(returnTo, { meal: mealFromRoute });
+    },
+    [mealFromRoute, navigation, returnTo],
   );
+  const returnLabel =
+    returnTo === "EditHistoryMealDetails"
+      ? t("camera_back_to_edit", {
+          ns: "meals",
+          defaultValue: "Back to edit",
+        })
+      : t("camera_back_to_meal", {
+          ns: "meals",
+          defaultValue: "Back to meal",
+        });
 
   useEffect(() => {
     const onBackPress = () => {
@@ -58,11 +69,13 @@ export default function SavedMealsCameraScreen({
         setPhotoUri(null);
         return true;
       }
-      return false;
+      if (!mealFromRoute) return false;
+      returnToOrigin();
+      return true;
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
     return () => sub.remove();
-  }, [photoUri]);
+  }, [mealFromRoute, photoUri, returnToOrigin]);
 
   useEffect(() => {
     const unsub = navigation.addListener("beforeRemove", (e) => {
@@ -82,10 +95,10 @@ export default function SavedMealsCameraScreen({
       }
       if (!mealFromRoute) return;
       e.preventDefault();
-      navigation.replace(returnTo, { meal: mealFromRoute });
+      returnToOrigin();
     });
     return unsub;
-  }, [navigation, photoUri, mealFromRoute, returnTo]);
+  }, [navigation, photoUri, mealFromRoute, returnToOrigin]);
 
   const handleTakePicture = async () => {
     log.log("takePicture start", { isCameraReady });
@@ -175,12 +188,6 @@ export default function SavedMealsCameraScreen({
             onCameraReady={() => setIsCameraReady(true)}
           />
           <View style={StyleSheet.absoluteFill}>
-            <ScreenCornerNavButton
-              icon="close"
-              onPress={() => navigation.goBack()}
-              accessibilityLabel={t("close", { defaultValue: "Close" })}
-              containerStyle={topLeftActionStyle}
-            />
             <View style={styles.shutterWrapper}>
               <Pressable
                 style={({ pressed }) => [
@@ -189,6 +196,19 @@ export default function SavedMealsCameraScreen({
                 ]}
                 onPress={handleTakePicture}
                 disabled={isTakingPhoto}
+              />
+            </View>
+            <View
+              style={[
+                styles.secondaryActionWrap,
+                { paddingBottom: Math.max(insets.bottom, theme.spacing.md) },
+              ]}
+            >
+              <Button
+                variant="secondary"
+                label={returnLabel}
+                onPress={returnToOrigin}
+                style={styles.secondaryActionButton}
               />
             </View>
             {typeof __DEV__ !== "undefined" && __DEV__ && (
@@ -251,11 +271,20 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     camera: { flex: 1 },
     shutterWrapper: {
       position: "absolute",
-      bottom: 48,
+      bottom: 104,
       left: 0,
       right: 0,
       alignItems: "center",
       justifyContent: "flex-end",
+    },
+    secondaryActionWrap: {
+      position: "absolute",
+      left: theme.spacing.lg,
+      right: theme.spacing.lg,
+      bottom: 0,
+    },
+    secondaryActionButton: {
+      width: "100%",
     },
     shutterButton: {
       borderColor: "white",

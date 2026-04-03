@@ -345,35 +345,7 @@ export default function ReviewMealScreen({
                 )}
               </View>
             </View>
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              onPress={openCamera}
-              style={({ pressed }) => [
-                styles.addPhotoSlot,
-                pressed ? styles.pressed : null,
-              ]}
-              testID="review-meal-add-photo"
-            >
-              <View style={styles.addPhotoIconCircle}>
-                <Text style={styles.addPhotoPlus}>+</Text>
-              </View>
-              <View style={styles.addPhotoCopy}>
-                <Text style={styles.addPhotoTitle}>
-                  {t("review_meal_add_photo_title", {
-                    ns: "meals",
-                    defaultValue: "Add meal photo",
-                  })}
-                </Text>
-                <Text style={styles.addPhotoSubtitle}>
-                  {t("review_meal_add_photo_optional", {
-                    ns: "meals",
-                    defaultValue: "Optional",
-                  })}
-                </Text>
-              </View>
-            </Pressable>
-          )}
+          ) : null}
 
           {needsQuickCheck ? (
             <View style={styles.reviewNote}>
@@ -556,50 +528,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       width: "100%",
       height: "100%",
       backgroundColor: theme.borderSoft,
-    },
-    addPhotoSlot: {
-      minHeight: 78,
-      borderRadius: theme.rounded.xl + 2,
-      backgroundColor: theme.surfaceAlt,
-      borderWidth: 1,
-      borderColor: theme.borderSoft,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-    },
-    addPhotoIconCircle: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      backgroundColor: theme.surface,
-      borderWidth: 1,
-      borderColor: theme.border,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    addPhotoPlus: {
-      color: theme.primary,
-      fontSize: 22,
-      lineHeight: 22,
-      fontFamily: theme.typography.fontFamily.bold,
-    },
-    addPhotoCopy: {
-      gap: 2,
-      flex: 1,
-    },
-    addPhotoTitle: {
-      color: theme.text,
-      fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    addPhotoSubtitle: {
-      color: theme.primary,
-      fontSize: 11,
-      lineHeight: 14,
-      fontFamily: theme.typography.fontFamily.medium,
     },
     reviewNote: {
       minHeight: 54,
