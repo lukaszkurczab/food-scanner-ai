@@ -6,6 +6,11 @@ import {
 } from "@/feature/History/services/historySectionsService";
 
 const TODAY_LABEL = "Today";
+const LABELS = {
+  todayLabel: TODAY_LABEL,
+  yesterdayLabel: "Yesterday",
+  locale: "en-US",
+};
 
 function makeMeal(overrides: Partial<Meal> = {}): Meal {
   return {
@@ -31,17 +36,17 @@ describe("historySectionsService", () => {
     addOrUpdateMealInSections(
       sections,
       makeMeal({ cloudId: "m1", mealId: "m1", timestamp: "2026-02-25T10:00:00.000Z" }),
-      TODAY_LABEL,
+      LABELS,
     );
     addOrUpdateMealInSections(
       sections,
       makeMeal({ cloudId: "m2", mealId: "m2", timestamp: "2026-02-25T12:00:00.000Z" }),
-      TODAY_LABEL,
+      LABELS,
     );
     addOrUpdateMealInSections(
       sections,
       makeMeal({ cloudId: "m3", mealId: "m3", timestamp: "2026-02-25T11:00:00.000Z" }),
-      TODAY_LABEL,
+      LABELS,
     );
 
     const section = sections.get("2026-02-25");
@@ -58,7 +63,7 @@ describe("historySectionsService", () => {
         makeMeal({ cloudId: "m2", mealId: "m2", timestamp: "2026-02-25T12:00:00.000Z" }),
         makeMeal({ cloudId: "m1", mealId: "m1", timestamp: "2026-02-25T10:00:00.000Z" }),
       ],
-      TODAY_LABEL,
+      LABELS,
     );
 
     addOrUpdateMealInSections(
@@ -69,7 +74,7 @@ describe("historySectionsService", () => {
         timestamp: "2026-02-25T10:00:00.000Z",
         name: "Updated name",
       }),
-      TODAY_LABEL,
+      LABELS,
     );
 
     const section = sections.get("2026-02-25");
@@ -83,7 +88,7 @@ describe("historySectionsService", () => {
         makeMeal({ cloudId: "m2", mealId: "m2", timestamp: "2026-02-25T12:00:00.000Z" }),
         makeMeal({ cloudId: "m1", mealId: "m1", timestamp: "2026-02-25T10:00:00.000Z" }),
       ],
-      TODAY_LABEL,
+      LABELS,
     );
 
     addOrUpdateMealInSections(
@@ -93,7 +98,7 @@ describe("historySectionsService", () => {
         mealId: "m1",
         timestamp: "2026-02-25T13:00:00.000Z",
       }),
-      TODAY_LABEL,
+      LABELS,
     );
 
     const section = sections.get("2026-02-25");

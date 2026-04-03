@@ -12,11 +12,11 @@ jest.mock("react-i18next", () => ({
 describe("FilterBadgeButton", () => {
   it("renders translated label and handles press", () => {
     const onPress = jest.fn();
-    const { getByText } = renderWithTheme(
+    const { getByLabelText } = renderWithTheme(
       <FilterBadgeButton onPress={onPress} />,
     );
 
-    fireEvent.press(getByText("translated:filters"));
+    fireEvent.press(getByLabelText("translated:filters"));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 

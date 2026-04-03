@@ -30,7 +30,7 @@ export function useHistoryListState(params: {
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
-  const { t } = useTranslation(["meals", "common"]);
+  const { t, i18n } = useTranslation(["history", "meals", "common"]);
   const [failedSyncCount, setFailedSyncCount] = useState(0);
   const [retryingFailedSync, setRetryingFailedSync] = useState(false);
 
@@ -61,6 +61,8 @@ export function useHistoryListState(params: {
     filters,
     accessWindowDays,
     todayLabel: t("common:today"),
+    yesterdayLabel: t("common:yesterday"),
+    locale: i18n.language,
     isOnline,
   });
 
@@ -146,6 +148,13 @@ export function useHistoryListState(params: {
     params.navigation.navigate("ManageSubscription");
   }, [params.navigation]);
 
+  const onLogFirstMeal = useCallback(() => {
+    params.navigation.navigate("MealAddMethod", {
+      selectionMode: "temporary",
+      origin: "mealAddFlow",
+    });
+  }, [params.navigation]);
+
   const emptyState = useMemo(() => {
     if (dataState === "ready" || dataState === "loading") return null;
 
@@ -163,12 +172,21 @@ export function useHistoryListState(params: {
           ? t("history.offlineEmpty", { ns: "meals" })
           : query
             ? t("meals:tryDifferentSearch")
-            : t("meals:tryChangeFilters");
+            : t("history.emptyDescription", {
+                ns: "history",
+                defaultValue:
+                  "Your meals will settle here, day by day, once you start logging.",
+              });
 
     const title =
       dataState === "error"
         ? t("history.errorTitle", { ns: "meals" })
-        : t("meals:noMealsFound");
+        : query
+          ? t("meals:noMealsFound")
+          : t("history.emptyTitle", {
+              ns: "history",
+              defaultValue: "No meals yet",
+            });
 
     return { title, description };
   }, [dataState, errorKind, query, t]);
@@ -204,6 +222,7 @@ export function useHistoryListState(params: {
     onMealPress,
     onUpgrade,
     emptyState,
+    onLogFirstMeal,
     deadLetterBanner,
     retryingFailedSync,
     retryFailedSyncOps,

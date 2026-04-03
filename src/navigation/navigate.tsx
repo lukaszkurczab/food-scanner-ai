@@ -67,15 +67,14 @@ export type RootStackParamList = {
   Loading: undefined;
   MealDetails: {
     meal: Meal;
-    edit?: boolean;
-    baseline?: Meal;
-    localPhotoUrl?: string | null;
   };
+  EditHistoryMealDetails: { meal: Meal };
   MealShare: { meal: Meal; returnTo: "MealDetails" };
   SavedMealsCamera:
     | {
         id?: string;
         meal?: Meal;
+        returnTo?: "MealDetails" | "EditHistoryMealDetails";
       }
     | undefined;
 };

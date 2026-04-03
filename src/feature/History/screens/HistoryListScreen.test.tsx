@@ -1,6 +1,5 @@
 import { fireEvent } from "@testing-library/react-native";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { ActivityIndicator } from "react-native";
 import HistoryListScreen from "@/feature/History/screens/HistoryListScreen";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
@@ -12,6 +11,18 @@ jest.mock("@/feature/History/hooks/useHistoryListState", () => ({
 
 jest.mock("@/services/meals/mealService", () => ({
   FREE_WINDOW_DAYS: 30,
+}));
+
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (
+      key: string,
+      options?: { ns?: string; defaultValue?: string; count?: number },
+    ) =>
+      options?.defaultValue ??
+      (typeof options?.count === "number" ? `${options.count} results` : key),
+    i18n: { language: "en" },
+  }),
 }));
 
 jest.mock("@/components", () => {
@@ -157,9 +168,11 @@ describe("HistoryListScreen", () => {
     mockUseHistoryListState
       .mockReturnValueOnce({
         dataState: "loading",
+        sections: [],
       })
       .mockReturnValueOnce({
         dataState: "error",
+        sections: [],
         showFilters: false,
         query: "salad",
         setQuery,
@@ -170,6 +183,7 @@ describe("HistoryListScreen", () => {
       })
       .mockReturnValueOnce({
         dataState: "offline-empty",
+        sections: [],
         showFilters: true,
         isPremium: false,
         onUpgrade,
@@ -178,7 +192,7 @@ describe("HistoryListScreen", () => {
     const loading = renderWithTheme(
       <HistoryListScreen navigation={{} as never} />,
     );
-    expect(loading.UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+    expect(loading.getByTestId("history-list-loading")).toBeTruthy();
 
     const empty = renderWithTheme(
       <HistoryListScreen navigation={{} as never} />,
@@ -213,6 +227,7 @@ describe("HistoryListScreen", () => {
       sections: [
         {
           title: "Today",
+          dateKey: "2026-02-10",
           totalKcal: 720,
           data: [
             { mealId: "meal-1", name: "Chicken bowl" },
@@ -247,12 +262,12 @@ describe("HistoryListScreen", () => {
     expect(screen.getByText("filter-badge:2")).toBeTruthy();
     expect(screen.getByText("Today")).toBeTruthy();
     expect(screen.getByText("720 kcal")).toBeTruthy();
-    expect(screen.getByText("meal:Chicken bowl")).toBeTruthy();
-    expect(screen.getByText("meal:Apple pie")).toBeTruthy();
-    expect(screen.getByText("loading-skeleton:56")).toBeTruthy();
+    expect(screen.getByText("Chicken bowl")).toBeTruthy();
+    expect(screen.getByText("Apple pie")).toBeTruthy();
+    expect(screen.getByText("loading-skeleton:88")).toBeTruthy();
 
     fireEvent.press(screen.getByText("filter-badge:2"));
-    fireEvent.press(screen.getByText("meal:Chicken bowl"));
+    fireEvent.press(screen.getByText("Chicken bowl"));
     fireEvent.press(screen.getByText("Retry now"));
 
     expect(toggleShowFilters).toHaveBeenCalledTimes(1);
@@ -268,7 +283,10 @@ describe("HistoryListScreen", () => {
   it("renders ready filters view", () => {
     mockUseHistoryListState.mockReturnValue({
       dataState: "ready",
+      sections: [],
       showFilters: true,
+      query: "",
+      filterCount: 0,
       isPremium: true,
       onUpgrade: jest.fn(),
     });

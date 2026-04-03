@@ -17,6 +17,7 @@ import CheckMailboxScreen from "@/feature/Auth/screens/CheckMailboxScreen";
 import OnboardingScreen from "@/feature/Onboarding/screens/OnboardingScreen";
 import LoadingScreen from "@/screens/LoadingScreen";
 import MealDetailsScreen from "@/feature/History/screens/MealDetailsScreen";
+import EditHistoryMealDetailsScreen from "@/feature/History/screens/EditHistoryMealDetailsScreen";
 import EditUserDataScreen from "@/feature/UserProfile/screens/EditUserDataScreen";
 import ProfilePhotoPreviewScreen from "@/feature/UserProfile/screens/ProfilePhotoPreviewScreen";
 import AvatarCameraScreen from "@/feature/UserProfile/screens/AvatarCameraScreen";
@@ -77,6 +78,10 @@ function renderAppScreens() {
       <Stack.Screen name="EditUserData" component={EditUserDataScreen} />
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="MealDetails" component={MealDetailsScreen} />
+      <Stack.Screen
+        name="EditHistoryMealDetails"
+        component={EditHistoryMealDetailsScreen}
+      />
       <Stack.Screen
         name="SelectSavedMeal"
         component={SelectSavedMealScreen}

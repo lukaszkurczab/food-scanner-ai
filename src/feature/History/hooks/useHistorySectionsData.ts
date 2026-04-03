@@ -29,6 +29,8 @@ export function useHistorySectionsData(params: {
   filters: Filters | null;
   accessWindowDays?: number;
   todayLabel: string;
+  yesterdayLabel: string;
+  locale?: string;
   isOnline: boolean;
 }) {
   const debouncedQuery = useDebouncedValue(params.query, 220);
@@ -80,7 +82,13 @@ export function useHistorySectionsData(params: {
         beforeISO: null,
         filters: localFilters,
       });
-      setSectionsMap(buildSectionsMap(page.items, params.todayLabel));
+      setSectionsMap(
+        buildSectionsMap(page.items, {
+          todayLabel: params.todayLabel,
+          yesterdayLabel: params.yesterdayLabel,
+          locale: params.locale,
+        }),
+      );
       setCursor(page.nextBefore);
       setHasMore(!!page.nextBefore && page.items.length === PAGE);
       setErrorKind(null);
@@ -89,7 +97,13 @@ export function useHistorySectionsData(params: {
     } finally {
       setLoading(false);
     }
-  }, [localFilters, params.todayLabel, params.uid]);
+  }, [
+    localFilters,
+    params.locale,
+    params.todayLabel,
+    params.uid,
+    params.yesterdayLabel,
+  ]);
 
   const requestPullChanges = useCallback(async (options?: { force?: boolean }) => {
     if (!params.uid) return;
@@ -163,7 +177,11 @@ export function useHistorySectionsData(params: {
 
       setSectionsMap((prev) => {
         const next = new Map(prev);
-        addOrUpdateMealInSections(next, meal, params.todayLabel);
+        addOrUpdateMealInSections(next, meal, {
+          todayLabel: params.todayLabel,
+          yesterdayLabel: params.yesterdayLabel,
+          locale: params.locale,
+        });
         return next;
       });
     });
@@ -182,7 +200,7 @@ export function useHistorySectionsData(params: {
     return () => {
       [up, del].forEach((unsub) => unsub && unsub());
     };
-  }, [params.todayLabel, params.uid]);
+  }, [params.locale, params.todayLabel, params.uid, params.yesterdayLabel]);
 
   const loadMore = useCallback(async () => {
     if (!params.uid || !hasMore || loadingMoreRef.current || !cursor) return;
@@ -198,7 +216,11 @@ export function useHistorySectionsData(params: {
       setSectionsMap((prev) => {
         const next = new Map(prev);
         for (const meal of page.items) {
-          addOrUpdateMealInSections(next, meal, params.todayLabel);
+          addOrUpdateMealInSections(next, meal, {
+            todayLabel: params.todayLabel,
+            yesterdayLabel: params.yesterdayLabel,
+            locale: params.locale,
+          });
         }
         return next;
       });
@@ -210,7 +232,15 @@ export function useHistorySectionsData(params: {
         loadingMoreRef.current = false;
       }, 50);
     }
-  }, [cursor, hasMore, localFilters, params.todayLabel, params.uid]);
+  }, [
+    cursor,
+    hasMore,
+    localFilters,
+    params.locale,
+    params.todayLabel,
+    params.uid,
+    params.yesterdayLabel,
+  ]);
 
   const onEndReached = useCallback(() => {
     if (!hasMore || loadingMoreRef.current) return;

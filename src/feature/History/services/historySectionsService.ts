@@ -18,16 +18,30 @@ const toDateKey = (date: Date): string =>
     date.getDate(),
   ).padStart(2, "0")}`;
 
-const toHeaderTitle = (date: Date, todayLabel: string): string => {
+const isSameDay = (left: Date, right: Date): boolean =>
+  left.getDate() === right.getDate() &&
+  left.getMonth() === right.getMonth() &&
+  left.getFullYear() === right.getFullYear();
+
+const toHeaderTitle = (params: {
+  date: Date;
+  todayLabel: string;
+  yesterdayLabel: string;
+  locale?: string;
+}): string => {
+  const { date, todayLabel, yesterdayLabel, locale } = params;
   const today = new Date();
-  const isToday =
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear();
-  if (isToday) return todayLabel;
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${day}.${month}`;
+  if (isSameDay(date, today)) return todayLabel;
+
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (isSameDay(date, yesterday)) return yesterdayLabel;
+
+  return new Intl.DateTimeFormat(locale || undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  }).format(date);
 };
 
 const mealKcal = (meal: Meal): number =>
@@ -95,11 +109,20 @@ function upsertMealByOrder(data: Meal[], meal: Meal): Meal[] {
 export function addOrUpdateMealInSections(
   sections: Map<string, DaySection>,
   meal: Meal,
-  todayLabel: string,
+  labels: {
+    todayLabel: string;
+    yesterdayLabel: string;
+    locale?: string;
+  },
 ): void {
   const date = toDate(meal.timestamp || meal.updatedAt || meal.createdAt);
   const dateKey = toDateKey(date);
-  const title = toHeaderTitle(date, todayLabel);
+  const title = toHeaderTitle({
+    date,
+    todayLabel: labels.todayLabel,
+    yesterdayLabel: labels.yesterdayLabel,
+    locale: labels.locale,
+  });
   const currentSection = sections.get(dateKey) ?? {
     title,
     dateKey,
@@ -141,10 +164,14 @@ export function removeMealFromSections(
 
 export function buildSectionsMap(
   meals: Meal[],
-  todayLabel: string,
+  labels: {
+    todayLabel: string;
+    yesterdayLabel: string;
+    locale?: string;
+  },
 ): Map<string, DaySection> {
   const sections = new Map<string, DaySection>();
-  for (const meal of meals) addOrUpdateMealInSections(sections, meal, todayLabel);
+  for (const meal of meals) addOrUpdateMealInSections(sections, meal, labels);
   return sections;
 }
 

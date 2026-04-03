@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { ActivityIndicator } from "react-native";
 import MealDetailsScreen from "@/feature/History/screens/MealDetailsScreen";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
-import type { Ingredient, Meal, Nutrients } from "@/types/meal";
+import type { Meal, Nutrients } from "@/types/meal";
 
 type ButtonProps = {
   label: string;
@@ -19,13 +19,6 @@ type ModalProps = {
   secondaryAction?: { label: string; onPress?: () => void };
 };
 
-type MealBoxProps = {
-  name: string;
-  type: string;
-  onNameChange?: (value: string) => void;
-  onTypeChange?: (value: Meal["type"]) => void;
-};
-
 const mockUseMealDetailsScreenState = jest.fn();
 const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
 
@@ -35,6 +28,7 @@ jest.mock("react-i18next", () => ({
       key: string,
       options?: { ns?: string; defaultValue?: string },
     ) => (options?.ns ? `${options.ns}:${key}` : options?.defaultValue ?? key),
+    i18n: { language: "en" },
   }),
 }));
 
@@ -90,67 +84,6 @@ jest.mock("@/components", () => {
         { onPress, disabled, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
-    MealBox: ({
-      name,
-      type,
-      onNameChange,
-      onTypeChange,
-    }: MealBoxProps) =>
-      createElement(
-        View,
-        null,
-        createElement(Text, null, `meal-box:${name}:${type}`),
-        onNameChange
-          ? createElement(
-              Pressable,
-              { onPress: () => onNameChange("Edited meal") },
-              createElement(Text, null, "edit-name"),
-            )
-          : null,
-        onTypeChange
-          ? createElement(
-              Pressable,
-              { onPress: () => onTypeChange("dinner") },
-              createElement(Text, null, "edit-type"),
-            )
-          : null,
-      ),
-    IngredientBox: ({
-      ingredient,
-      editable,
-      onSave,
-      onRemove,
-    }: {
-      ingredient: Ingredient;
-      editable: boolean;
-      onSave?: (ingredient: Ingredient) => void;
-      onRemove?: () => void;
-    }) =>
-      createElement(
-        View,
-        null,
-        createElement(Text, null, `ingredient:${ingredient.name}:${String(editable)}`),
-        onSave
-          ? createElement(
-              Pressable,
-              {
-                onPress: () =>
-                  onSave({
-                    ...ingredient,
-                    name: `${ingredient.name} updated`,
-                  }),
-              },
-              createElement(Text, null, `save-ingredient:${ingredient.name}`),
-            )
-          : null,
-        onRemove
-          ? createElement(
-              Pressable,
-              { onPress: onRemove },
-              createElement(Text, null, `remove-ingredient:${ingredient.name}`),
-            )
-          : null,
-      ),
     Modal: ({
       visible,
       message,
@@ -178,18 +111,6 @@ jest.mock("@/components", () => {
               : null,
           )
         : null,
-    ScreenCornerNavButton: ({
-      onPress,
-      accessibilityLabel,
-    }: {
-      onPress: () => void;
-      accessibilityLabel?: string;
-    }) =>
-      createElement(
-        Pressable,
-        { onPress, accessibilityLabel, accessibilityRole: "button" },
-        createElement(Text, null, `nav:${accessibilityLabel ?? ""}`),
-      ),
   };
 });
 
@@ -261,26 +182,12 @@ const buildState = (overrides?: Record<string, unknown>) => ({
   effectivePhotoUri: "file:///meal.jpg",
   onImageError: jest.fn(),
   goShare: jest.fn(),
-  handleAddPhoto: jest.fn(),
-  edit: false,
-  saving: false,
-  setName: jest.fn(),
-  setType: jest.fn(),
-  showIngredients: false,
-  toggleIngredients: jest.fn(),
-  updateIngredientAt: jest.fn(),
-  removeIngredientAt: jest.fn(),
   startEdit: jest.fn(),
-  handleSave: jest.fn(),
-  isDirty: false,
-  handleCancel: jest.fn(),
-  handleBack: jest.fn(),
-  showDiscardModal: false,
-  confirmDiscard: jest.fn(),
-  closeDiscardModal: jest.fn(),
-  showLeaveModal: false,
-  confirmLeave: jest.fn(),
-  closeLeaveModal: jest.fn(),
+  showDeleteModal: false,
+  deleting: false,
+  openDeleteModal: jest.fn(),
+  closeDeleteModal: jest.fn(),
+  confirmDelete: jest.fn(),
   reloadFromLocal: jest.fn(),
   ...overrides,
 });
@@ -306,6 +213,7 @@ describe("MealDetailsScreen", () => {
 
     expect(screen.getByText("meals:detailsUnavailable.title")).toBeTruthy();
     expect(screen.getByText("meals:detailsUnavailable.desc")).toBeTruthy();
+    expect(screen.queryByLabelText("common:back")).toBeNull();
     fireEvent.press(screen.getByText("common:retry"));
     expect(state.reloadFromLocal).toHaveBeenCalledTimes(1);
   });
@@ -330,10 +238,12 @@ describe("MealDetailsScreen", () => {
 
     const screen = renderWithTheme(<MealDetailsScreen />);
 
-    expect(screen.getByText("meal-box:Chicken bowl:lunch")).toBeTruthy();
+    expect(screen.getByText("Chicken bowl")).toBeTruthy();
     expect(screen.queryByText("fallback-image:file:///meal.jpg")).toBeNull();
     fireEvent.press(screen.getByText("meals:edit_meal"));
+    fireEvent.press(screen.getByText("history:delete_meal"));
     expect(state.startEdit).toHaveBeenCalledTimes(1);
+    expect(state.openDeleteModal).toHaveBeenCalledTimes(1);
   });
 
   it("renders the existing photo branch and forwards image actions", () => {
@@ -345,11 +255,10 @@ describe("MealDetailsScreen", () => {
     expect(screen.getByText("fallback-image:file:///meal.jpg")).toBeTruthy();
     fireEvent.press(screen.getByLabelText("common:share"));
     fireEvent.press(screen.getByText("image-error"));
-    fireEvent.press(screen.getByLabelText("common:back"));
 
     expect(state.goShare).toHaveBeenCalledTimes(1);
     expect(state.onImageError).toHaveBeenCalledTimes(1);
-    expect(state.handleBack).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText("common:back")).toBeNull();
   });
 
   it("renders the image loading branch", () => {
@@ -365,53 +274,16 @@ describe("MealDetailsScreen", () => {
     expect(screen.UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
   });
 
-  it("renders editable state, placeholder image and both confirmation modals", () => {
+  it("does not show the add photo action on the details view", () => {
     const state = buildState({
       effectivePhotoUri: null,
-      edit: true,
-      isDirty: true,
-      showIngredients: true,
-      showDiscardModal: true,
-      showLeaveModal: true,
+      showImageBlock: false,
     });
     mockUseMealDetailsScreenState.mockReturnValue(state);
 
     const screen = renderWithTheme(<MealDetailsScreen />);
 
-    expect(screen.getByLabelText("meals:add_photo")).toBeTruthy();
-    expect(screen.getByText("common:save_changes")).toBeTruthy();
-    expect(screen.getByText("ingredient:Chicken:true")).toBeTruthy();
-    expect(screen.getByText("meals:hide_ingredients")).toBeTruthy();
-    expect(screen.getByText("meals:discard_changes_message")).toBeTruthy();
-    expect(screen.getByText("meals:leave_without_saving_message")).toBeTruthy();
-
-    fireEvent.press(screen.getByLabelText("meals:add_photo"));
-    fireEvent.press(screen.getByText("edit-name"));
-    fireEvent.press(screen.getByText("edit-type"));
-    fireEvent.press(screen.getByText("meals:hide_ingredients"));
-    fireEvent.press(screen.getByText("save-ingredient:Chicken"));
-    fireEvent.press(screen.getByText("remove-ingredient:Chicken"));
-    fireEvent.press(screen.getByText("common:save_changes"));
-    fireEvent.press(screen.getByText("common:cancel"));
-    fireEvent.press(screen.getAllByText("common:discard")[0]);
-    fireEvent.press(screen.getAllByText("meals:continue_editing")[0]);
-    fireEvent.press(screen.getAllByText("common:leave")[0]);
-    fireEvent.press(screen.getAllByText("meals:continue_editing")[1]);
-
-    expect(state.handleAddPhoto).toHaveBeenCalledTimes(1);
-    expect(state.setName).toHaveBeenCalledWith("Edited meal");
-    expect(state.setType).toHaveBeenCalledWith("dinner");
-    expect(state.toggleIngredients).toHaveBeenCalledTimes(1);
-    expect(state.updateIngredientAt).toHaveBeenCalledWith(
-      0,
-      expect.objectContaining({ name: "Chicken updated" }),
-    );
-    expect(state.removeIngredientAt).toHaveBeenCalledWith(0);
-    expect(state.handleSave).toHaveBeenCalledTimes(1);
-    expect(state.handleCancel).toHaveBeenCalledTimes(1);
-    expect(state.confirmDiscard).toHaveBeenCalledTimes(1);
-    expect(state.closeDiscardModal).toHaveBeenCalledTimes(1);
-    expect(state.confirmLeave).toHaveBeenCalledTimes(1);
-    expect(state.closeLeaveModal).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Chicken")).toBeTruthy();
+    expect(screen.queryByLabelText("meals:add_photo")).toBeNull();
   });
 });

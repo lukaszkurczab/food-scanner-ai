@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Image,
   Modal as RNModal,
   Pressable,
   ScrollView,
@@ -41,6 +42,13 @@ type Props = {
     ) => void;
   };
   mode: Mode;
+  onReviewSubmit?: (meal: Meal) => Promise<void> | void;
+  reviewSubmitLabel?: string;
+  reviewFallbackLabel?: string;
+  onReviewFallback?: () => void;
+  reviewPhotoUri?: string | null;
+  reviewPhotoActionLabel?: string;
+  onReviewPhotoPress?: () => void;
 };
 
 function isValidIsoDate(value?: string | null) {
@@ -82,7 +90,18 @@ function getResumeTrackingScreen(mode: Mode): MealAddScreenName {
   return mode === "manual" ? "ManualMealEntry" : "EditMealDetails";
 }
 
-export function MealDetailsFormScreen({ flow, navigation, mode }: Props) {
+export function MealDetailsFormScreen({
+  flow,
+  navigation,
+  mode,
+  onReviewSubmit,
+  reviewSubmitLabel,
+  reviewFallbackLabel,
+  onReviewFallback,
+  reviewPhotoUri,
+  reviewPhotoActionLabel,
+  onReviewPhotoPress,
+}: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation(["meals", "common"]);
@@ -254,8 +273,18 @@ export function MealDetailsFormScreen({ flow, navigation, mode }: Props) {
     const trimmedName = mealName.trim();
 
     if (!isManualMode) {
-      await persistMealPatch({ name: trimmedName || null });
-      flow.goBack();
+      if (!meal) return;
+      const nextMeal: Meal = {
+        ...meal,
+        name: trimmedName || null,
+        updatedAt: new Date().toISOString(),
+      };
+      await persistMeal(nextMeal);
+      if (onReviewSubmit) {
+        await onReviewSubmit(nextMeal);
+      } else {
+        flow.goBack();
+      }
       return;
     }
 
@@ -284,9 +313,9 @@ export function MealDetailsFormScreen({ flow, navigation, mode }: Props) {
     isManualMode,
     meal,
     mealName,
-    persistMealPatch,
     persistMeal,
     pickerDate,
+    onReviewSubmit,
     uid,
   ]);
 
@@ -342,13 +371,16 @@ export function MealDetailsFormScreen({ flow, navigation, mode }: Props) {
             label={
               isManualMode
                 ? t("back_home", { ns: "meals" })
-                : t("review_meal_edit_done", {
+                : (reviewFallbackLabel ??
+                  t("review_meal_edit_done", {
                     ns: "meals",
                     defaultValue: "Back to review",
-                  })
+                  }))
             }
             onPress={() =>
-              isManualMode ? navigation.navigate("Home") : flow.goBack()
+              isManualMode
+                ? navigation.navigate("Home")
+                : (onReviewFallback ?? flow.goBack)()
             }
             style={styles.emptyAction}
           />
@@ -366,6 +398,61 @@ export function MealDetailsFormScreen({ flow, navigation, mode }: Props) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {!isManualMode && onReviewPhotoPress ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onReviewPhotoPress}
+              style={({ pressed }) => [
+                styles.photoCard,
+                pressed ? styles.selectionFieldPressed : null,
+              ]}
+            >
+              {reviewPhotoUri ? (
+                <Image source={{ uri: reviewPhotoUri }} style={styles.photoPreview} />
+              ) : (
+                <View style={styles.photoPlaceholder}>
+                  <AppIcon
+                    name="add-photo"
+                    size={28}
+                    color={theme.textSecondary}
+                  />
+                </View>
+              )}
+              <View style={styles.photoCopy}>
+                <Text style={styles.photoTitle}>
+                  {reviewPhotoUri
+                    ? t("change_photo", {
+                        ns: "meals",
+                        defaultValue: "Change photo",
+                      })
+                    : (reviewPhotoActionLabel ??
+                      t("add_photo", {
+                        ns: "meals",
+                        defaultValue: "Add photo",
+                      }))}
+                </Text>
+                <Text style={styles.photoDescription}>
+                  {reviewPhotoUri
+                    ? t("review_meal_edit_photo_description", {
+                        ns: "meals",
+                        defaultValue: "Replace the current meal photo.",
+                      })
+                    : t("review_meal_edit_add_photo_description", {
+                        ns: "meals",
+                        defaultValue:
+                          "Add a meal photo to keep this entry complete.",
+                      })}
+                </Text>
+              </View>
+              <AppIcon
+                name="chevron-right"
+                size={18}
+                color={theme.textSecondary}
+                style={styles.photoChevron}
+              />
+            </Pressable>
+          ) : null}
+
           <View style={styles.headerBlock}>
             <Text style={styles.title}>
               {isManualMode
@@ -578,10 +665,11 @@ export function MealDetailsFormScreen({ flow, navigation, mode }: Props) {
                     ns: "meals",
                     defaultValue: "Prepare review",
                   })
-                : t("review_meal_edit_done", {
+                : (reviewSubmitLabel ??
+                  t("review_meal_edit_done", {
                     ns: "meals",
                     defaultValue: "Back to review",
-                  })
+                  }))
             }
             onPress={() => {
               void handleSubmit();
@@ -810,6 +898,52 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.md,
       paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing.xxxl + 92,
+    },
+    photoCard: {
+      minHeight: 88,
+      borderRadius: theme.rounded.xl,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      backgroundColor: theme.surface,
+      padding: theme.spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    photoPreview: {
+      width: 72,
+      height: 72,
+      borderRadius: theme.rounded.lg,
+      backgroundColor: theme.backgroundSecondary,
+    },
+    photoPlaceholder: {
+      width: 72,
+      height: 72,
+      borderRadius: theme.rounded.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.backgroundSecondary,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      borderStyle: "dashed",
+    },
+    photoCopy: {
+      flex: 1,
+      gap: 4,
+    },
+    photoTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: 20,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    photoDescription: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: 18,
+    },
+    photoChevron: {
+      opacity: 0.9,
     },
     headerBlock: {
       marginBottom: theme.spacing.xs,
