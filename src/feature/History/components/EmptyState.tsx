@@ -2,26 +2,48 @@ import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import AppIcon from "@/components/AppIcon";
+import { Button } from "@/components/Button";
 
 type Props = {
   title: string;
+  eyebrow?: string;
   description?: string;
+  actionLabel?: string;
+  onAction?: () => void;
 };
 
-export const EmptyState: React.FC<Props> = ({ title, description }) => {
+export const EmptyState: React.FC<Props> = ({
+  title,
+  eyebrow,
+  description,
+  actionLabel,
+  onAction,
+}) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.card}>
       <View style={styles.iconBox}>
-        <AppIcon name="empty-meals" size={76} color={theme.textSecondary} />
+        <View style={styles.iconInner}>
+          <AppIcon name="empty-meals" size={30} color={theme.textTertiary} />
+        </View>
       </View>
 
+      {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
       <Text style={styles.title}>{title}</Text>
 
       {description ? (
         <Text style={styles.description}>{description}</Text>
+      ) : null}
+
+      {actionLabel && onAction ? (
+        <Button
+          label={actionLabel}
+          onPress={onAction}
+          fullWidth={false}
+          style={styles.action}
+        />
       ) : null}
     </View>
   );
@@ -29,35 +51,68 @@ export const EmptyState: React.FC<Props> = ({ title, description }) => {
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: {
+    card: {
       alignItems: "center",
-      padding: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.xl,
+      paddingVertical: theme.spacing.xxxl,
+      borderRadius: theme.rounded.xxl,
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      shadowColor: theme.shadow,
+      shadowOpacity: theme.isDark ? 0.18 : 0.08,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: theme.isDark ? 0 : 2,
     },
     iconBox: {
-      width: 140,
-      height: 140,
-      borderRadius: theme.rounded.md,
-      marginBottom: theme.spacing.md,
+      width: 88,
+      height: 88,
+      borderRadius: theme.rounded.full,
+      marginBottom: theme.spacing.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.background,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+    },
+    iconInner: {
+      width: 58,
+      height: 58,
+      borderRadius: theme.rounded.full,
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: theme.surfaceElevated,
       borderWidth: 1,
-      borderColor: theme.border,
+      borderColor: theme.borderSoft,
+    },
+    eyebrow: {
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.overline,
+      lineHeight: theme.typography.lineHeight.overline,
+      fontFamily: theme.typography.fontFamily.medium,
+      textAlign: "center",
+      marginBottom: theme.spacing.sm,
     },
     title: {
       color: theme.text,
-      fontSize: theme.typography.size.h2,
-      lineHeight: theme.typography.lineHeight.h2,
-      fontFamily: theme.typography.fontFamily.bold,
-      marginBottom: theme.spacing.xs,
+      fontSize: theme.typography.size.h1,
+      lineHeight: theme.typography.lineHeight.h1,
+      fontFamily: theme.typography.fontFamily.semiBold,
+      marginBottom: theme.spacing.sm,
       textAlign: "center",
     },
     description: {
       color: theme.textSecondary,
       textAlign: "center",
-      marginBottom: theme.spacing.md,
-      fontSize: theme.typography.size.bodyL,
-      lineHeight: theme.typography.lineHeight.bodyL,
+      marginBottom: theme.spacing.xl,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.regular,
+      maxWidth: 260,
+    },
+    action: {
+      minWidth: 200,
+      paddingHorizontal: theme.spacing.xl,
     },
   });

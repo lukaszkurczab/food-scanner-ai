@@ -41,6 +41,7 @@ export default function SavedMealsCameraScreen({
   const route = useRoute<SavedMealsCameraRoute>();
   const mealFromRoute: Meal | undefined = route.params?.meal;
   const mealId = route.params?.id || mealFromRoute?.mealId || uuidv4();
+  const returnTo = route.params?.returnTo || "MealDetails";
   const canLeaveRef = useRef(false);
   const { updateMeal } = useMeals(uid || "");
   const topLeftActionStyle = useMemo(
@@ -81,10 +82,10 @@ export default function SavedMealsCameraScreen({
       }
       if (!mealFromRoute) return;
       e.preventDefault();
-      navigation.replace("MealDetails", { meal: mealFromRoute, edit: true });
+      navigation.replace(returnTo, { meal: mealFromRoute });
     });
     return unsub;
-  }, [navigation, photoUri, mealFromRoute]);
+  }, [navigation, photoUri, mealFromRoute, returnTo]);
 
   const handleTakePicture = async () => {
     log.log("takePicture start", { isCameraReady });
@@ -118,11 +119,7 @@ export default function SavedMealsCameraScreen({
     };
     await updateMeal(updated);
     canLeaveRef.current = true;
-    navigation.replace("MealDetails", {
-      meal: updated,
-      edit: true,
-      baseline: mealFromRoute,
-    });
+    navigation.replace(returnTo, { meal: updated });
   };
 
   const handleRetake = () => setPhotoUri(null);

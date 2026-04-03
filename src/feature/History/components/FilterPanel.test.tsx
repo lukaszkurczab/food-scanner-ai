@@ -99,10 +99,55 @@ jest.mock("@/components/Calendar", () => ({
   },
 }));
 
+jest.mock("@/components/Modal", () => ({
+  Modal: ({
+    visible,
+    children,
+    primaryAction,
+    secondaryAction,
+    title,
+  }: {
+    visible: boolean;
+    children?: ReactNode;
+    title?: string;
+    primaryAction?: { label: string; onPress?: () => void };
+    secondaryAction?: { label: string; onPress?: () => void };
+  }) => {
+    const { createElement } =
+      jest.requireActual<typeof import("react")>("react");
+    const { Pressable, Text, View } =
+      jest.requireActual<typeof import("react-native")>("react-native");
+
+    if (!visible) return null;
+
+    return createElement(
+      View,
+      null,
+      title ? createElement(Text, null, title) : null,
+      children,
+      primaryAction
+        ? createElement(
+            Pressable,
+            { onPress: primaryAction.onPress },
+            createElement(Text, null, primaryAction.label),
+          )
+        : null,
+      secondaryAction
+        ? createElement(
+            Pressable,
+            { onPress: secondaryAction.onPress },
+            createElement(Text, null, secondaryAction.label),
+          )
+        : null,
+    );
+  },
+}));
+
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, options?: { ns?: string }) =>
       options?.ns ? `${options.ns}:${key}` : key,
+    i18n: { language: "en" },
   }),
 }));
 
@@ -115,46 +160,41 @@ describe("FilterPanel", () => {
     mockApplyFilters = jest.fn<(f: Filters) => void>();
     mockClearFilters = jest.fn<() => void>();
     mockUseFilters.mockReturnValue({
+      query: "",
       filters: null,
       applyFilters: mockApplyFilters,
       clearFilters: mockClearFilters,
+      setShowFilters: jest.fn(),
     });
   });
 
   it("shows empty state and clears filters from cancel action", () => {
     const { getByText } = renderWithTheme(<FilterPanel scope="history" />);
 
-    expect(getByText("history:noneSelected")).toBeTruthy();
-    fireEvent.press(getByText("history:actions.cancel"));
+    expect(getByText("history:sheetTitle")).toBeTruthy();
+    fireEvent.press(getByText("history:actions.reset"));
     expect(mockClearFilters).toHaveBeenCalledTimes(1);
   });
 
-  it("adds calorie filter and applies default range payload", () => {
+  it("applies calorie preset payload", () => {
     const { getByText } = renderWithTheme(<FilterPanel scope="history" />);
 
-    fireEvent.press(getByText("history:addFilter"));
-    fireEvent.press(getByText("history:filters.calories"));
-    fireEvent.press(getByText("history:actions.done"));
-
-    expect(getByText("range:history:filters.calories")).toBeTruthy();
-
-    fireEvent.press(getByText("history:actions.apply"));
+    fireEvent.press(getByText("history:presets.under300"));
+    fireEvent.press(getByText("history:actions.showResults"));
     expect(mockApplyFilters).toHaveBeenCalledWith({
-      calories: [0, 3000],
+      calories: [0, 300],
     });
   });
 
   it("normalizes date range when end date is earlier than start date", () => {
-    const { getByText } = renderWithTheme(<FilterPanel scope="history" />);
+    const { getAllByText, getByText } = renderWithTheme(
+      <FilterPanel scope="history" />,
+    );
 
-    fireEvent.press(getByText("history:addFilter"));
-    fireEvent.press(getByText("history:filters.date"));
-    fireEvent.press(getByText("history:actions.done"));
-
-    fireEvent.press(getByText("date-range-picker"));
+    fireEvent.press(getAllByText("history:presets.custom")[0]);
     fireEvent.press(getByText("calendar-pick"));
     fireEvent.press(getByText("history:actions.save"));
-    fireEvent.press(getByText("history:actions.apply"));
+    fireEvent.press(getByText("history:actions.showResults"));
 
     const payload = mockApplyFilters.mock.calls[0][0];
     const start = payload.dateRange?.start;

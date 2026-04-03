@@ -10,38 +10,70 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  Button,
-  Layout,
-  Card,
-  IngredientBox,
-  MealBox,
-  Modal,
-  ScreenCornerNavButton,
-} from "@/components";
+import { Button, Layout, Modal } from "@/components";
 import { FallbackImage } from "../components/FallbackImage";
 import AppIcon from "@/components/AppIcon";
-import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { useMealDetailsScreenState } from "@/feature/History/hooks/useMealDetailsScreenState";
-import { MealSyncBadge } from "@/components/MealSyncBadge";
+
+function isSameDay(left: Date, right: Date): boolean {
+  return (
+    left.getDate() === right.getDate() &&
+    left.getMonth() === right.getMonth() &&
+    left.getFullYear() === right.getFullYear()
+  );
+}
+
+function buildMealMeta(params: {
+  value?: string | null;
+  mealTypeLabel: string;
+  locale?: string;
+  todayLabel: string;
+}): string {
+  const { value, mealTypeLabel, locale, todayLabel } = params;
+  if (!value) return mealTypeLabel;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return mealTypeLabel;
+  }
+
+  const dayLabel = isSameDay(parsed, new Date())
+    ? todayLabel
+    : new Intl.DateTimeFormat(locale || undefined, {
+        month: "short",
+        day: "numeric",
+      }).format(parsed);
+  const timeLabel = new Intl.DateTimeFormat(locale || undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed);
+
+  return `${mealTypeLabel} · ${dayLabel}, ${timeLabel}`;
+}
+
+function formatIngredientAmount(
+  amount: number,
+  unit: string | undefined,
+  gramLabel: string,
+): string {
+  if (!Number.isFinite(amount)) return unit ? `0 ${unit}` : "0";
+  const value = Number.isInteger(amount) ? String(amount) : amount.toFixed(1);
+  if (!unit) return value;
+  return `${value} ${unit === "g" ? gramLabel : unit}`;
+}
 
 export default function MealDetailsScreen() {
   const theme = useTheme();
-  const { t } = useTranslation(["meals", "common"]);
+  const { t, i18n } = useTranslation(["meals", "common", "home", "history"]);
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const insets = useSafeAreaInsets();
-  const topLeftActionStyle = useMemo(
-    () => ({
-      top: insets.top + theme.spacing.xs,
-      left: insets.left + theme.spacing.sm,
-    }),
-    [insets.left, insets.top, theme.spacing.sm, theme.spacing.xs],
-  );
+  const state = useMealDetailsScreenState();
+
   const contentInsetsStyle = useMemo(
     () => ({
-      paddingTop: insets.top + theme.spacing.xs + 44 + theme.spacing.sm,
+      paddingTop: insets.top + theme.spacing.lg,
       paddingLeft: insets.left + theme.spacing.screenPadding,
       paddingRight: insets.right + theme.spacing.screenPadding,
       paddingBottom: theme.spacing.sectionGapLarge,
@@ -50,24 +82,34 @@ export default function MealDetailsScreen() {
       insets.left,
       insets.right,
       insets.top,
+      theme.spacing.lg,
       theme.spacing.screenPadding,
       theme.spacing.sectionGapLarge,
-      theme.spacing.sm,
-      theme.spacing.xs,
     ],
   );
 
-  const state = useMealDetailsScreenState();
+  const mealTypeLabel = state.draft
+    ? t(state.draft.type || "other", {
+        ns: "meals",
+        defaultValue: t("meal", { ns: "home", defaultValue: "Meal" }),
+      })
+    : t("meal", { ns: "home", defaultValue: "Meal" });
+
+  const mealMeta = buildMealMeta({
+    value: state.draft?.timestamp || state.draft?.createdAt,
+    mealTypeLabel,
+    locale: i18n?.language,
+    todayLabel: t("common:today"),
+  });
+
+  const macroTotal =
+    (state.nutrition?.protein || 0) +
+    (state.nutrition?.carbs || 0) +
+    (state.nutrition?.fat || 0);
 
   if (!state.draft || !state.nutrition) {
     return (
       <Layout showNavigation={false} style={styles.layout}>
-        <ScreenCornerNavButton
-          icon="back"
-          onPress={state.handleBack}
-          accessibilityLabel={t("back", { ns: "common", defaultValue: "Back" })}
-          containerStyle={topLeftActionStyle}
-        />
         <View style={[styles.emptyWrap, contentInsetsStyle]}>
           <Text style={styles.emptyTitle}>
             {t("detailsUnavailable.title", { ns: "meals" })}
@@ -89,16 +131,11 @@ export default function MealDetailsScreen() {
     );
   }
 
+  const ingredientCount = state.draft.ingredients.length;
+
   return (
     <Layout showNavigation={false} style={styles.layout}>
       <>
-        <ScreenCornerNavButton
-          icon="back"
-          onPress={state.handleBack}
-          accessibilityLabel={t("back", { ns: "common", defaultValue: "Back" })}
-          containerStyle={topLeftActionStyle}
-        />
-
         <View style={[styles.content, contentInsetsStyle]}>
           {state.showImageBlock ? (
             <View style={styles.imageSection}>
@@ -112,7 +149,7 @@ export default function MealDetailsScreen() {
                     <FallbackImage
                       uri={state.effectivePhotoUri}
                       width={"100%"}
-                      height={220}
+                      height={164}
                       borderRadius={theme.rounded.xl}
                       onError={state.onImageError}
                     />
@@ -126,166 +163,191 @@ export default function MealDetailsScreen() {
                         pressed ? styles.fabPressed : null,
                       ]}
                     >
-                      <AppIcon name="share" size={20} color={theme.text} />
+                      <AppIcon name="share" size={18} color={theme.surface} />
                     </Pressable>
                   </>
-                ) : (
-                  <Pressable
-                    onPress={state.handleAddPhoto}
-                    style={({ pressed }) => [
-                      styles.addPhoto,
-                      pressed ? styles.addPhotoPressed : null,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("add_photo", { ns: "meals" })}
-                  >
-                    <AppIcon
-                      name="add-photo"
-                      size={40}
-                      color={theme.textSecondary}
-                    />
-                    <Text style={styles.addPhotoLabel}>
-                      {t("add_photo", { ns: "meals" })}
-                    </Text>
-                  </Pressable>
-                )}
+                ) : null}
               </View>
             </View>
           ) : null}
 
-          <View style={styles.section}>
-            <MealBox
-              name={state.draft.name || ""}
-              type={state.draft.type}
-              nutrition={state.nutrition}
-              addedAt={state.draft.timestamp || state.draft.createdAt}
-              editable={state.edit && !state.saving}
-              onNameChange={state.edit ? state.setName : undefined}
-              onTypeChange={state.edit ? state.setType : undefined}
-            />
+          <View style={styles.heroCard}>
+            <Text style={styles.heroTitle}>
+              {state.draft.name || mealTypeLabel}
+            </Text>
+            <Text style={styles.heroMeta}>{mealMeta}</Text>
           </View>
 
-          <View style={styles.syncBadgeWrap}>
-            <MealSyncBadge
-              syncState={state.draft.syncState}
-              lastSyncedAt={state.draft.lastSyncedAt}
-            />
-          </View>
+          <View style={styles.nutritionCard}>
+            <Text style={styles.sectionEyebrow}>
+              {t("detailsNutritionTitle", {
+                ns: "history",
+                defaultValue: "Nutrition summary",
+              })}
+            </Text>
 
-          {!!state.draft.ingredients.length && (
-            <View style={styles.section}>
-              <Card variant="outlined" onPress={state.toggleIngredients}>
-                <Text style={styles.toggleText}>
-                  {state.showIngredients
-                    ? t("hide_ingredients", { ns: "meals" })
-                    : t("show_ingredients", { ns: "meals" })}
-                </Text>
-              </Card>
+            <View style={styles.kcalRow}>
+              <Text style={styles.kcalValue}>{state.nutrition.kcal}</Text>
+              <Text style={styles.kcalUnit}>{t("kcal", { ns: "common" })}</Text>
             </View>
-          )}
 
-          {state.showIngredients && (
-            <View style={styles.ingredientsList}>
+            <View style={styles.macroTrack}>
+              <View
+                style={[
+                  styles.macroSegment,
+                  styles.macroProtein,
+                  { flex: macroTotal > 0 ? state.nutrition.protein || 0 : 1 },
+                ]}
+              />
+              <View
+                style={[
+                  styles.macroSegment,
+                  styles.macroCarbs,
+                  { flex: macroTotal > 0 ? state.nutrition.carbs || 0 : 1 },
+                ]}
+              />
+              <View
+                style={[
+                  styles.macroSegment,
+                  styles.macroFat,
+                  { flex: macroTotal > 0 ? state.nutrition.fat || 0 : 1 },
+                ]}
+              />
+            </View>
+
+            <View style={styles.macroRow}>
+              <View style={styles.macroBlock}>
+                <Text style={[styles.macroValue, styles.proteinValue]}>
+                  {state.nutrition.protein}g
+                </Text>
+                <Text style={styles.macroLabel}>
+                  {t("protein", { ns: "common" })}
+                </Text>
+              </View>
+              <View style={[styles.macroBlock, styles.macroBlockCentered]}>
+                <Text style={[styles.macroValue, styles.carbsValue]}>
+                  {state.nutrition.carbs}g
+                </Text>
+                <Text style={styles.macroLabel}>
+                  {t("carbs", { ns: "common" })}
+                </Text>
+              </View>
+              <View style={[styles.macroBlock, styles.macroBlockRight]}>
+                <Text style={[styles.macroValue, styles.fatValue]}>
+                  {state.nutrition.fat}g
+                </Text>
+                <Text style={styles.macroLabel}>
+                  {t("fat", { ns: "common" })}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.ingredientsSection}>
+            <View style={styles.ingredientsHeader}>
+              <Text style={styles.ingredientsTitle}>
+                {t("detailsIngredientsTitle", {
+                  ns: "history",
+                  defaultValue: "Ingredients",
+                })}
+              </Text>
+              <View style={styles.itemsPill}>
+                <Text style={styles.itemsPillLabel}>
+                  {t("detailsItemsCount", {
+                    ns: "history",
+                    count: state.draft.ingredients.length,
+                    defaultValue: `${state.draft.ingredients.length} items`,
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.ingredientsCard}>
               {state.draft.ingredients.map((ingredient, idx) => (
-                <View
-                  key={ingredient.id || String(idx)}
-                  style={styles.ingredientItem}
-                >
-                  <IngredientBox
-                    ingredient={ingredient}
-                    editable={state.edit && !state.saving}
-                    onSave={(updated) =>
-                      state.edit && state.updateIngredientAt(idx, updated)
-                    }
-                    onRemove={() => state.edit && state.removeIngredientAt(idx)}
-                  />
+                <View key={ingredient.id || String(idx)}>
+                  <View style={styles.ingredientRow}>
+                    <Text numberOfLines={1} style={styles.ingredientName}>
+                      {ingredient.name}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.ingredientAmount}>
+                      {formatIngredientAmount(
+                        Number(ingredient.amount) || 0,
+                        ingredient.unit,
+                        t("gram", { ns: "common", defaultValue: "g" }),
+                      )}
+                    </Text>
+                  </View>
+                  {idx < ingredientCount - 1 ? (
+                    <View style={styles.ingredientDivider} />
+                  ) : null}
                 </View>
               ))}
             </View>
-          )}
+          </View>
 
           <View style={styles.actionsWrap}>
-            {!state.edit ? (
-              <Button
-                label={t("edit_meal", {
-                  ns: "meals",
-                  defaultValue: "Edit meal",
+            <Button
+              variant="secondary"
+              label={t("edit_meal", {
+                ns: "meals",
+                defaultValue: "Edit meal",
+              })}
+              onPress={() => {
+                void state.startEdit();
+              }}
+              style={styles.editButton}
+            />
+
+            <Pressable
+              onPress={state.openDeleteModal}
+              style={({ pressed }) => [
+                styles.deleteButton,
+                pressed ? styles.deleteButtonPressed : null,
+              ]}
+            >
+              <Text style={styles.deleteButtonLabel}>
+                {t("delete_meal", {
+                  ns: "history",
+                  defaultValue: "Delete meal",
                 })}
-                onPress={state.startEdit}
-              />
-            ) : (
-              <GlobalActionButtons
-                label={t("save_changes", { ns: "common" })}
-                onPress={state.handleSave}
-                loading={state.saving}
-                disabled={state.saving || !state.isDirty}
-                secondaryLabel={t("cancel", { ns: "common" })}
-                secondaryOnPress={state.handleCancel}
-                secondaryDisabled={state.saving}
-                secondaryTone="destructive"
-              />
-            )}
+              </Text>
+            </Pressable>
           </View>
         </View>
 
         <Modal
-          visible={state.showDiscardModal}
-          title={t("discard_changes_title", {
-            ns: "meals",
-            defaultValue: "Discard changes?",
+          visible={state.showDeleteModal}
+          title={t("deleteMealTitle", {
+            ns: "history",
+            defaultValue: "Delete meal?",
           })}
-          message={t("discard_changes_message", {
-            ns: "meals",
+          message={t("deleteMealMessage", {
+            ns: "history",
             defaultValue:
-              "You have unsaved edits. Do you really want to cancel and lose your changes?",
+              "This meal will be removed from your history. You can’t undo this action.",
           })}
           primaryAction={{
-            label: t("discard", {
+            label: t("delete", {
               ns: "common",
-              defaultValue: "Discard",
+              defaultValue: "Delete",
             }),
-            onPress: state.confirmDiscard,
+            onPress: () => {
+              void state.confirmDelete();
+            },
             tone: "destructive",
+            loading: state.deleting,
+            disabled: state.deleting,
           }}
           secondaryAction={{
-            label: t("continue_editing", {
-              ns: "meals",
-              defaultValue: "Continue editing",
-            }),
-            onPress: state.closeDiscardModal,
-            tone: "secondary",
-          }}
-          onClose={state.closeDiscardModal}
-        />
-
-        <Modal
-          visible={state.showLeaveModal}
-          title={t("leave_without_saving_title", {
-            ns: "meals",
-            defaultValue: "Leave without saving?",
-          })}
-          message={t("leave_without_saving_message", {
-            ns: "meals",
-            defaultValue:
-              "You have unsaved changes. Do you really want to go back and lose them?",
-          })}
-          primaryAction={{
-            label: t("leave", {
+            label: t("cancel", {
               ns: "common",
-              defaultValue: "Leave",
+              defaultValue: "Cancel",
             }),
-            onPress: state.confirmLeave,
-            tone: "destructive",
-          }}
-          secondaryAction={{
-            label: t("continue_editing", {
-              ns: "meals",
-              defaultValue: "Continue editing",
-            }),
-            onPress: state.closeLeaveModal,
+            onPress: state.closeDeleteModal,
             tone: "secondary",
+            disabled: state.deleting,
           }}
-          onClose={state.closeLeaveModal}
+          onClose={state.closeDeleteModal}
         />
       </>
     </Layout>
@@ -301,10 +363,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       backgroundColor: theme.background,
     },
     content: {
-      gap: theme.spacing.sectionGap,
-    },
-    section: {
-      gap: theme.spacing.sm,
+      gap: theme.spacing.md,
     },
     imageSection: {
       marginBottom: theme.spacing.xs,
@@ -313,80 +372,267 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       position: "relative",
       borderRadius: theme.rounded.xl,
       overflow: "hidden",
-      backgroundColor: theme.surfaceAlt,
+      backgroundColor: theme.backgroundSecondary,
     },
     imageLoaderWrap: {
       width: "100%",
-      height: 220,
+      height: 164,
       borderRadius: theme.rounded.xl,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.surfaceAlt,
-      borderWidth: 1,
-      borderColor: theme.borderSoft,
+      backgroundColor: theme.backgroundSecondary,
     },
     fab: {
       position: "absolute",
       right: theme.spacing.sm,
       bottom: theme.spacing.sm,
-      width: 44,
-      height: 44,
-      borderRadius: theme.rounded.full,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      backgroundColor: theme.surfaceElevated,
-      borderColor: theme.border,
-      shadowColor: theme.text,
-      shadowOpacity: theme.isDark ? 0.24 : 0.12,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 3,
+      backgroundColor: "rgba(30, 34, 30, 0.92)",
+      borderColor: theme.surface,
     },
     fabPressed: {
-      opacity: 0.88,
+      opacity: 0.84,
     },
-    addPhoto: {
-      width: "100%",
-      height: 220,
-      borderRadius: theme.rounded.xl,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1.5,
-      borderColor: theme.border,
-      backgroundColor: theme.surfaceElevated,
+    heroCard: {
+      borderRadius: 26,
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      paddingHorizontal: 18,
+      paddingVertical: theme.spacing.xl,
       gap: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.lg,
+      shadowColor: theme.shadow,
+      shadowOpacity: theme.isDark ? 0.18 : 0.05,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: theme.isDark ? 0 : 2,
     },
-    addPhotoPressed: {
-      opacity: 0.9,
-    },
-    addPhotoLabel: {
-      color: theme.textSecondary,
+    heroTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.h1,
+      lineHeight: theme.typography.lineHeight.h1,
       fontFamily: theme.typography.fontFamily.semiBold,
-      fontSize: theme.typography.size.labelL,
-      lineHeight: theme.typography.lineHeight.labelL,
+    },
+    heroMeta: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    sectionCard: {
+      borderRadius: theme.rounded.xl,
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      padding: theme.spacing.sm,
     },
     syncBadgeWrap: {
-      marginTop: -theme.spacing.sm,
+      marginTop: -theme.spacing.xs,
       alignItems: "flex-start",
     },
-    toggleText: {
+    nutritionCard: {
+      borderRadius: theme.rounded.xl,
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      padding: 18,
+      gap: theme.spacing.sm,
+      shadowColor: theme.shadow,
+      shadowOpacity: theme.isDark ? 0.18 : 0.05,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: theme.isDark ? 0 : 1,
+    },
+    sectionEyebrow: {
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.overline,
+      lineHeight: theme.typography.lineHeight.overline,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    kcalRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: theme.spacing.xxs,
+      paddingHorizontal: theme.spacing.xs,
+    },
+    kcalValue: {
+      color: theme.text,
+      fontSize: theme.typography.size.displayM,
+      lineHeight: theme.typography.lineHeight.displayM,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    kcalUnit: {
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.medium,
+      marginBottom: 2,
+    },
+    macroTrack: {
+      height: 8,
+      borderRadius: theme.rounded.full,
+      overflow: "hidden",
+      flexDirection: "row",
+      backgroundColor: theme.success.surface,
+    },
+    macroSegment: {
+      height: 8,
+      borderRadius: theme.rounded.full,
+    },
+    macroProtein: {
+      backgroundColor: theme.chart.protein,
+    },
+    macroCarbs: {
+      backgroundColor: theme.chart.carbs,
+    },
+    macroFat: {
+      backgroundColor: theme.chart.fat,
+    },
+    macroRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingHorizontal: theme.spacing.xs,
+    },
+    macroBlock: {
+      flex: 1,
+      gap: 2,
+    },
+    macroBlockCentered: {
+      alignItems: "center",
+    },
+    macroBlockRight: {
+      alignItems: "flex-end",
+    },
+    macroValue: {
+      fontSize: theme.typography.size.bodyM,
+      lineHeight: theme.typography.lineHeight.bodyM,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    proteinValue: {
+      color: theme.chart.protein,
+    },
+    carbsValue: {
+      color: theme.chart.carbs,
+    },
+    fatValue: {
+      color: theme.chart.fat,
+    },
+    macroLabel: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.overline,
+      lineHeight: theme.typography.lineHeight.overline,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    ingredientsSection: {
+      gap: theme.spacing.sm,
+    },
+    ingredientsHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    ingredientsTitle: {
+      color: theme.text,
+      fontSize: theme.typography.size.h2,
+      lineHeight: theme.typography.lineHeight.h2,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    itemsPill: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs - 2,
+      borderRadius: theme.rounded.full,
+      backgroundColor: theme.success.surface,
+    },
+    itemsPillLabel: {
+      color: theme.success.text,
+      fontSize: theme.typography.size.overline,
+      lineHeight: theme.typography.lineHeight.overline,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    ingredientsCard: {
+      borderRadius: 18,
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      paddingHorizontal: 18,
+      paddingVertical: theme.spacing.sm,
+    },
+    ingredientRow: {
+      minHeight: 46,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    ingredientName: {
+      flex: 1,
+      color: theme.text,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    ingredientAmount: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.medium,
+      textAlign: "right",
+    },
+    ingredientDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.divider,
+    },
+    ingredientsToggle: {
+      minHeight: 48,
+      borderRadius: theme.rounded.md,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      backgroundColor: theme.surface,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    ingredientsTogglePressed: {
+      opacity: 0.88,
+    },
+    ingredientsToggleLabel: {
+      color: theme.text,
       fontSize: theme.typography.size.bodyM,
       lineHeight: theme.typography.lineHeight.bodyM,
       fontFamily: theme.typography.fontFamily.medium,
-      color: theme.text,
       textAlign: "center",
     },
-    ingredientsList: {
+    ingredientsEditorList: {
       gap: theme.spacing.sm,
     },
-    ingredientItem: {
+    ingredientEditorItem: {
       marginBottom: 0,
     },
     actionsWrap: {
-      marginTop: theme.spacing.sm,
+      paddingTop: theme.spacing.xs,
       paddingBottom: theme.spacing.sm,
+      gap: theme.spacing.sm,
+    },
+    editButton: {
+      borderColor: "rgba(79, 104, 75, 0.32)",
+    },
+    deleteButton: {
+      minHeight: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    deleteButtonPressed: {
+      opacity: 0.76,
+    },
+    deleteButtonLabel: {
+      color: theme.error.text,
+      fontSize: theme.typography.size.bodyL,
+      lineHeight: theme.typography.lineHeight.bodyL,
+      fontFamily: theme.typography.fontFamily.bold,
     },
     emptyWrap: {
       flex: 1,
