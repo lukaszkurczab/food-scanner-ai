@@ -5,7 +5,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
   Keyboard,
   type StyleProp,
   type ViewStyle,
@@ -29,6 +28,9 @@ type LayoutProps = {
   showOfflineBanner?: boolean;
   keyboardAvoiding?: boolean;
 };
+
+const KEYBOARD_DISMISS_MODE: "none" | "interactive" | "on-drag" =
+  Platform.OS === "ios" ? "interactive" : "on-drag";
 
 export const Layout = ({
   children,
@@ -83,69 +85,68 @@ export const Layout = ({
   }, [shouldShowOffline]);
 
   const content = (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={[styles.root, { backgroundColor: theme.background }]}>
-        <View
-          style={[
-            styles.surface,
-            {
-              backgroundColor: theme.background,
-              paddingTop: insets.top + 16,
-              paddingBottom: bottomPadding,
-              paddingLeft: insets.left + 32,
-              paddingRight: insets.right + 32,
-            },
-            style,
-          ]}
-        >
-          <StatusBar
-            barStyle={theme.mode === "dark" ? "light-content" : "dark-content"}
-            backgroundColor={theme.background}
-          />
+    <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <View
+        style={[
+          styles.surface,
+          {
+            backgroundColor: theme.background,
+            paddingTop: insets.top + 16,
+            paddingBottom: bottomPadding,
+            paddingLeft: insets.left + 32,
+            paddingRight: insets.right + 32,
+          },
+          style,
+        ]}
+      >
+        <StatusBar
+          barStyle={theme.mode === "dark" ? "light-content" : "dark-content"}
+          backgroundColor={theme.background}
+        />
 
-          {shouldShowOffline && (
-            <View
-              pointerEvents="none"
-              onLayout={(event) => {
-                const nextHeight = event.nativeEvent.layout.height;
-                if (nextHeight !== offlineBannerHeight) {
-                  setOfflineBannerHeight(nextHeight);
-                }
-              }}
-              style={[
-                styles.offlineBannerWrap,
-                {
-                  top: insets.top + theme.spacing.sm,
-                  left: insets.left + theme.spacing.md,
-                  right: insets.right + theme.spacing.md,
-                },
-              ]}
-            >
-              <OfflineBanner compact style={styles.offlineBanner} />
-            </View>
-          )}
+        {shouldShowOffline && (
+          <View
+            pointerEvents="none"
+            onLayout={(event) => {
+              const nextHeight = event.nativeEvent.layout.height;
+              if (nextHeight !== offlineBannerHeight) {
+                setOfflineBannerHeight(nextHeight);
+              }
+            }}
+            style={[
+              styles.offlineBannerWrap,
+              {
+                top: insets.top + theme.spacing.sm,
+                left: insets.left + theme.spacing.md,
+                right: insets.right + theme.spacing.md,
+              },
+            ]}
+          >
+            <OfflineBanner compact style={styles.offlineBanner} />
+          </View>
+        )}
 
-          {disableScroll ? (
-            <View style={[styles.content, { paddingTop: contentTopPadding }]}>
-              {children}
-            </View>
-          ) : (
-            <ScrollView
-              style={styles.content}
-              contentContainerStyle={[
-                styles.scrollContent,
-                { paddingTop: contentTopPadding },
-              ]}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {children}
-            </ScrollView>
-          )}
-        </View>
-        {shouldShowTabBar && <BottomTabBar />}
+        {disableScroll ? (
+          <View style={[styles.content, { paddingTop: contentTopPadding }]}>
+            {children}
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingTop: contentTopPadding },
+            ]}
+            keyboardDismissMode={KEYBOARD_DISMISS_MODE}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {children}
+          </ScrollView>
+        )}
       </View>
-    </TouchableWithoutFeedback>
+      {shouldShowTabBar && <BottomTabBar />}
+    </View>
   );
 
   if (!keyboardAvoiding) {

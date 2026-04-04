@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   View,
+  Platform,
 } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNetInfo } from "@react-native-community/netinfo";
@@ -34,6 +35,8 @@ export default function SelectSavedMealScreen({
 }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
   const { uid } = useAuthContext();
   const { setMeal, saveDraft, setLastScreen } = useMealDraftContext();
   const { t } = useTranslation(["meals", "common"]);
@@ -190,6 +193,7 @@ export default function SelectSavedMealScreen({
           style={styles.list}
           data={pageItems}
           keyExtractor={keyExtractor}
+          keyboardDismissMode={keyboardDismissMode}
           refreshControl={
             <RefreshControl refreshing={loading} onRefresh={refresh} />
           }

@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   BackHandler,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -57,6 +58,8 @@ export default function ReviewMealScreen({
 }: MealAddScreenProps<"ReviewMeal">) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
   const { t, i18n } = useTranslation(["meals", "common"]);
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
@@ -319,6 +322,7 @@ export default function ReviewMealScreen({
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
+          keyboardDismissMode={keyboardDismissMode}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

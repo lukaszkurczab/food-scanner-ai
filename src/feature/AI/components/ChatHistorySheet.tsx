@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -74,6 +75,8 @@ export function ChatHistorySheet({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const [threads, setThreads] = useState<ChatThread[]>([]);
@@ -159,6 +162,7 @@ export function ChatHistorySheet({
             data={threads}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
+            keyboardDismissMode={keyboardDismissMode}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <ConversationHistoryRow

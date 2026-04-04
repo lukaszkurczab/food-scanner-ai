@@ -1,5 +1,12 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
-import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import { useStatisticsState } from "@/feature/Statistics/hooks/useStatisticsState";
 import { useMeals } from "@/hooks/useMeals";
@@ -20,7 +27,9 @@ jest.mock("@/feature/Statistics/utils/dateRange", () => ({
 
 const useMealsMock = useMeals as jest.MockedFunction<typeof useMeals>;
 const useStatsMock = useStats as jest.MockedFunction<typeof useStats>;
-const lastNDaysRangeMock = lastNDaysRange as jest.MockedFunction<typeof lastNDaysRange>;
+const lastNDaysRangeMock = lastNDaysRange as jest.MockedFunction<
+  typeof lastNDaysRange
+>;
 
 const makeMeal = (overrides: Partial<Meal>): Meal =>
   ({
@@ -147,7 +156,9 @@ describe("useStatisticsState", () => {
     });
 
     expect(result.current.metric).toBe("protein");
-    expect(result.current.selectedSeries.at(-1)).toBe(30);
+    expect(
+      result.current.selectedSeries[result.current.selectedSeries.length - 1],
+    ).toBe(30);
     expect(result.current.metricAverage).toBe(30);
   });
 

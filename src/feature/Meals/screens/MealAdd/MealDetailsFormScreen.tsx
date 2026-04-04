@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
   Modal as RNModal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -104,6 +105,8 @@ export function MealDetailsFormScreen({
 }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
   const { t, i18n } = useTranslation(["meals", "common"]);
   const { uid } = useAuthContext();
   const { meal, loadDraft, saveDraft, setMeal, setLastScreen } =
@@ -395,6 +398,7 @@ export function MealDetailsFormScreen({
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
+          keyboardDismissMode={keyboardDismissMode}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -845,6 +849,8 @@ export function MealDetailsFormScreen({
             </Text>
             {ingredientDraft ? (
               <ScrollView
+                keyboardDismissMode={keyboardDismissMode}
+                keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.ingredientEditorContent}
               >

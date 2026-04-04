@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
   Dimensions,
+  Platform,
   StyleProp,
   ViewStyle,
   StyleSheet,
@@ -54,6 +55,8 @@ export function Dropdown<T extends string>({
 }: Props<T>) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
 
   const [open, setOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<DropdownPosition | null>(null);
@@ -175,6 +178,8 @@ export function Dropdown<T extends string>({
             <View style={[styles.menu, menuPositionStyle]}>
               <ScrollView
                 nestedScrollEnabled
+                keyboardDismissMode={keyboardDismissMode}
+                keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.menuContent}
               >
