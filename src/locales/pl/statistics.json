@@ -1,9 +1,15 @@
 {
+  "title": "Statystyki",
+  "subtitle": "Sprawdź, jak zmienia się Twoje jedzenie w czasie",
   "pickRange": "Wybierz zakres dat",
   "ranges": {
     "7d": "7 dni",
     "30d": "30 dni",
     "custom": "Własny"
+  },
+  "customRange": {
+    "label": "Zakres własny",
+    "modalTitle": "Wybierz zakres dat"
   },
   "offline": "Brak połączenia z internetem. Niektóre statystyki mogą być niedostępne lub nieaktualne.",
   "offlineEmpty": {
@@ -11,34 +17,39 @@
     "desc": "Brak lokalnych danych statystyk. Połącz się z internetem, aby wczytać historię."
   },
   "empty": {
-    "title": "Brak danych",
-    "desc": "Dodaj swój pierwszy posiłek, aby zobaczyć statystyki i postępy.",
-    "cta": "Dodaj pierwszy posiłek"
+    "title": "Brak statystyk",
+    "desc": "Zaloguj kilka posiłków, aby zobaczyć tutaj trendy kalorii i makro.",
+    "foot": "Kilka wpisów odblokuje pierwszy trend."
   },
-  "progress": {
-    "title": "Postęp",
-    "descWithGoal": "Średnio dziennie w ciągu ostatnich {{days}} dni",
-    "descNoGoal": "Łączne spożycie w ciągu ostatnich {{days}} dni",
-    "totalInRange": "Łącznie {{kcal}} kcal w wybranym zakresie"
+  "emptyRange": {
+    "title": "Brak wpisów w tym zakresie",
+    "desc": "Wybierz inny zakres albo dodawaj dalej, by porównać później.",
+    "foot": "Zmień zakres, aby przywrócić trend."
   },
+  "trend": {
+    "title": "Trend",
+    "avgPerDay": "śr./dzień"
+  },
+  "dailyAveragesTitle": "Średnie dzienne",
+  "dailyAveragesSuffix": "śr. / dzień",
+  "macroBreakdownTitle": "Rozkład makro",
   "tiles": {
     "calories": "Kalorie",
     "protein": "Białko",
     "carbs": "Węglowodany",
     "fat": "Tłuszcz"
   },
-  "charts": {
-    "calories": "Kalorie",
+  "chips": {
+    "calories": "Kcal",
     "protein": "Białko",
-    "carbs": "Węglowodany",
-    "fat": "Tłuszcz",
-    "macroBreakdown": "Rozkład makroskładników"
+    "carbs": "Węgle",
+    "fat": "Tłuszcz"
   },
   "share": {
     "title": {
-      "day": "Postępy — 1 dzień",
-      "week": "Postępy — 7 dni",
-      "month": "Postępy — 30 dni"
+      "day": "Postępy - 1 dzień",
+      "week": "Postępy - 7 dni",
+      "month": "Postępy - 30 dni"
     },
     "range": {
       "day": "Dzień",
@@ -50,6 +61,12 @@
       "bar": "Słupkowy",
       "line": "Liniowy"
     }
+  },
+  "limitedHistory": {
+    "eyebrow": "Premium",
+    "title": "Odblokuj trendy długoterminowe",
+    "body": "Zobacz, jak wyglądają nawyki po {{days}}+ dniach.",
+    "cta": "Odblokuj Premium"
   },
   "limitedWindowTitle": "Dostęp do starszych danych wymaga Premium",
   "limitedWindowDesc": "Zakres został skrócony do ostatnich {{d}} dni.",

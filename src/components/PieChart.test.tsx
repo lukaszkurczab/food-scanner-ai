@@ -53,4 +53,19 @@ describe("PieChart", () => {
     expect(queryByText("A")).toBeNull();
     expect(queryByText("B")).toBeNull();
   });
+
+  it("hides legend when showLegend is false", () => {
+    const { queryByText } = renderWithTheme(
+      <PieChart
+        data={[
+          { value: 12, color: "#0f0", label: "Visible" },
+          { value: 8, color: "#00f", label: "Second" },
+        ]}
+        showLegend={false}
+      />,
+    );
+
+    expect(queryByText("Visible")).toBeNull();
+    expect(queryByText("Second")).toBeNull();
+  });
 });

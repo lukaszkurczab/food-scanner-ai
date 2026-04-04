@@ -11,6 +11,7 @@ type PieChartProps = {
   maxSize?: number;
   minSize?: number;
   legendWidth?: number;
+  showLegend?: boolean;
   gap?: number;
   strokeWidth?: number;
   fontSize?: number;
@@ -28,6 +29,7 @@ export const PieChart: React.FC<PieChartProps> = ({
   maxSize = 200,
   minSize = 100,
   legendWidth = 120,
+  showLegend = true,
   gap = 16,
   strokeWidth = 0,
   fontSize = 16,
@@ -41,12 +43,13 @@ export const PieChart: React.FC<PieChartProps> = ({
   const filtered = data.map((s) => ({ ...s, value: Number(s.value) || 0 }));
   const nonZero = filtered.filter((s) => s.value > 0);
   const total = filtered.reduce((s, d) => s + d.value, 0);
+  const hasLegend = showLegend && total > 0 && nonZero.length > 0;
   const EPS = 1e-6;
 
   const onLayout = (e: LayoutChangeEvent) =>
     setParentW(e.nativeEvent.layout.width);
 
-  const canRow = parentW > 0 && parentW >= minSize + legendWidth + gap;
+  const canRow = hasLegend && parentW > 0 && parentW >= minSize + legendWidth + gap;
   const chartSize = parentW
     ? Math.max(
         minSize,
@@ -109,7 +112,7 @@ export const PieChart: React.FC<PieChartProps> = ({
   };
 
   const Legend = () =>
-    total > 0 && nonZero.length > 0 ? (
+    hasLegend ? (
       <View style={[styles.legendContainer, legendContainerStyle]}>
         {nonZero.map((slice, i) => (
           <View key={i} style={styles.legendItem}>

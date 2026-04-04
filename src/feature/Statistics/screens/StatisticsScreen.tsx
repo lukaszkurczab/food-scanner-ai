@@ -1,23 +1,23 @@
 import { useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { useTheme } from "@/theme/useTheme";
-import { useUserContext } from "@contexts/UserContext";
-import { RangeTabs } from "../components/RangeTabs";
-import { MetricsGrid } from "../components/MetricsGrid";
-import { LineSection } from "../components/LineSection";
-import { MacroPieCard } from "../components/MacroPieCard";
-import { ProgressAveragesCard } from "../components/ProgressAveragesCard";
-import { Button, DateInput, Layout } from "@/components";
-import { useTranslation } from "react-i18next";
-import { usePremiumContext } from "@/context/PremiumContext";
-import { FREE_WINDOW_DAYS } from "@/services/meals/mealService";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { useTranslation } from "react-i18next";
+import { Layout, FullScreenLoader } from "@/components";
+import { usePremiumContext } from "@/context/PremiumContext";
+import { useUserContext } from "@contexts/UserContext";
+import { useTheme } from "@/theme/useTheme";
 import type { RootStackParamList } from "@/navigation/navigate";
-import {
-  useStatisticsState,
-  type RangeKey,
-} from "@/feature/Statistics/hooks/useStatisticsState";
+import { FREE_WINDOW_DAYS } from "@/services/meals/mealService";
+import { useStatisticsState } from "@/feature/Statistics/hooks/useStatisticsState";
+import type { RangeKey } from "@/feature/Statistics/types";
+import { StatisticsRangeSwitcher } from "@/feature/Statistics/components/StatisticsRangeSwitcher";
+import { StatisticsCustomRangeControl } from "@/feature/Statistics/components/StatisticsCustomRangeControl";
+import { StatisticsTrendCard } from "@/feature/Statistics/components/StatisticsTrendCard";
+import { StatisticsDailyAveragesSection } from "@/feature/Statistics/components/StatisticsDailyAveragesSection";
+import { StatisticsMacroBreakdownCard } from "@/feature/Statistics/components/StatisticsMacroBreakdownCard";
+import { StatisticsPremiumBanner } from "@/feature/Statistics/components/StatisticsPremiumBanner";
+import { StatisticsEmptyState } from "@/feature/Statistics/components/StatisticsEmptyState";
 
 type StatisticsNavigation = StackNavigationProp<RootStackParamList, "Statistics">;
 type Props = {
@@ -30,6 +30,7 @@ export default function StatisticsScreen({ navigation }: Props) {
   const { t } = useTranslation(["statistics", "common"]);
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
+
   const { userData } = useUserContext();
   const { isPremium } = usePremiumContext();
 
@@ -43,181 +44,115 @@ export default function StatisticsScreen({ navigation }: Props) {
     accessWindowDays,
   });
 
+  const showAnalytics = state.emptyKind === "none";
+
   return (
-    <Layout>
-      <View style={styles.header}>
-        <RangeTabs
+    <Layout disableScroll style={styles.layout} showOfflineBanner={showAnalytics}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{t("statistics:title")}</Text>
+          <Text style={styles.subtitle}>{t("statistics:subtitle")}</Text>
+        </View>
+
+        <StatisticsRangeSwitcher
+          active={state.active}
           options={[
             { key: "7d", label: t("statistics:ranges.7d") },
             { key: "30d", label: t("statistics:ranges.30d") },
             { key: "custom", label: t("statistics:ranges.custom") },
           ]}
-          active={state.active}
-          onChange={(key) => state.setActive(key as RangeKey)}
+          onChange={(next) => state.setActive(next as RangeKey)}
         />
-        {state.active === "custom" && (
-          <View style={styles.customRange}>
-            <DateInput
-              range={state.customRange}
-              onChange={state.setCustomRange}
-              allowSingleDay
-            />
-          </View>
-        )}
-      </View>
 
-      {!premiumActive && accessWindowDays && state.isWindowLimited && (
-        <View style={styles.banner}>
-          <Text style={styles.bannerTitle}>
-            {t(
-              "statistics:limitedWindowTitle",
-              "Dostęp do starszych danych wymaga Premium",
-            )}
-          </Text>
-          <Text style={styles.bannerText}>
-            {t("statistics:limitedWindowDesc", {
-              defaultValue: "Zakres został skrócony do ostatnich {{d}} dni.",
-              d: accessWindowDays,
-            })}
-          </Text>
-          <Button
-            label={t("statistics:upgrade", "Odblokuj Premium")}
-            onPress={() => navigation.navigate("ManageSubscription")}
-            style={styles.bannerCta}
-          />
-        </View>
-      )}
-
-      {state.loadingMeals ? (
-        <View style={styles.loadingBox}>
-          <ActivityIndicator color={theme.primary} />
-          <Text style={styles.loadingText}>
-            {t("common:loading")}
-          </Text>
-        </View>
-      ) : state.empty ? (
-        <View style={styles.emptyBox}>
-          <Text style={styles.emptyTitle}>
-            {isOnline
-              ? t("statistics:empty.title")
-              : t("statistics:offlineEmpty.title", "You're offline")}
-          </Text>
-          <Text style={styles.emptySubtitle}>
-            {isOnline
-              ? t("statistics:empty.desc")
-              : t(
-                  "statistics:offlineEmpty.desc",
-                  "No local stats data available. Reconnect to load your history.",
-                )}
-          </Text>
-          {isOnline ? (
-            <Button
-              label={t("statistics:empty.cta")}
-              onPress={() =>
-                navigation.navigate("MealAddMethod", {
-                  selectionMode: "temporary",
-                })
-              }
-              style={styles.emptyCta}
-            />
-          ) : null}
-        </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-        >
-          <ProgressAveragesCard
-            avgKcal={state.avgKcal}
-            caloriesSeries={state.kcalSeries}
-            dailyGoal={userData?.calorieTarget ?? null}
-            days={state.days}
-            totalKcal={state.totalKcal}
-          />
-
-          <MetricsGrid
-            values={{
-              kcal: state.avgKcal,
-              protein: state.avgProtein,
-              carbs: state.avgCarbs,
-              fat: state.avgFat,
+        {state.active === "custom" ? (
+          <StatisticsCustomRangeControl
+            range={state.customRange}
+            onApply={(range) => {
+              state.setCustomRange(range);
+              state.setActive("custom");
             }}
-            selected={state.metric}
-            onSelect={state.setMetric}
           />
+        ) : null}
 
-          {state.showLineSection && (
-            <LineSection
-              labels={state.labels}
-              data={state.selectedSeries}
-              metric={state.metric}
-            />
-          )}
+        <View style={styles.content}>
+          {state.loadingMeals ? (
+            <FullScreenLoader label={t("common:loading")} />
+          ) : showAnalytics ? (
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <StatisticsTrendCard
+                metric={state.metric}
+                metricAverage={state.metricAverage}
+                labels={state.labels}
+                series={state.selectedSeries}
+                onChangeMetric={state.setMetric}
+              />
 
-          {state.hasTotals && (
-            <MacroPieCard
-              protein={state.totals.protein ?? 0}
-              carbs={state.totals.carbs ?? 0}
-              fat={state.totals.fat ?? 0}
-            />
+              <StatisticsDailyAveragesSection
+                avgKcal={state.avgKcal}
+                avgProtein={state.avgProtein}
+                avgCarbs={state.avgCarbs}
+                avgFat={state.avgFat}
+              />
+
+              {state.hasTotals ? (
+                <StatisticsMacroBreakdownCard
+                  protein={state.totals.protein}
+                  carbs={state.totals.carbs}
+                  fat={state.totals.fat}
+                />
+              ) : null}
+
+              {!premiumActive && accessWindowDays && state.isWindowLimited ? (
+                <StatisticsPremiumBanner
+                  days={accessWindowDays}
+                  onPress={() => navigation.navigate("ManageSubscription")}
+                />
+              ) : null}
+            </ScrollView>
+          ) : (
+            <StatisticsEmptyState kind={state.emptyKind} isOffline={!isOnline} />
           )}
-        </ScrollView>
-      )}
+        </View>
+      </View>
     </Layout>
   );
 }
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    root: {
+    layout: {
+      paddingLeft: theme.spacing.screenPadding,
+      paddingRight: theme.spacing.screenPadding,
+    },
+    container: {
       flex: 1,
-      paddingBottom: 48,
     },
     header: {
-      paddingTop: theme.spacing.sm,
-      paddingBottom: theme.spacing.sm,
-    },
-    customRange: { marginTop: theme.spacing.sm },
-    banner: {
-      margin: theme.spacing.sm,
-      padding: theme.spacing.sm,
-      borderWidth: 1,
-      borderRadius: theme.rounded.sm,
-      backgroundColor: theme.overlay,
-      borderColor: theme.primary,
-    },
-    bannerTitle: {
-      color: theme.text,
-      fontFamily: theme.typography.fontFamily.bold,
-    },
-    bannerText: { color: theme.textSecondary, marginTop: theme.spacing.xs },
-    bannerCta: { marginTop: theme.spacing.sm, alignSelf: "flex-start" },
-    loadingBox: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    loadingText: { color: theme.textSecondary, marginTop: theme.spacing.sm },
-    emptyBox: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      gap: theme.spacing.sm,
-    },
-    emptyTitle: {
-      fontFamily: theme.typography.fontFamily.bold,
-      fontSize: theme.typography.size.bodyM,
-      textAlign: "center",
-      color: theme.text,
-    },
-    emptySubtitle: {
-      color: theme.textSecondary,
       marginTop: theme.spacing.xs,
-      textAlign: "center",
+      gap: theme.spacing.xxs,
+      marginBottom: theme.spacing.sm,
     },
-    emptyCta: { marginTop: theme.spacing.md, alignSelf: "stretch" },
-    scroll: {
+    title: {
+      color: theme.text,
+      fontFamily: theme.typography.fontFamily.bold,
+      fontSize: theme.typography.size.h1,
+      lineHeight: theme.typography.lineHeight.h1,
+    },
+    subtitle: {
+      color: theme.textSecondary,
+      fontFamily: theme.typography.fontFamily.regular,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+    },
+    content: {
+      flex: 1,
+      marginTop: theme.spacing.sm,
+    },
+    scrollContent: {
+      paddingBottom: theme.spacing.sm,
       gap: theme.spacing.md,
-      paddingBottom: 28,
     },
   });

@@ -11,10 +11,10 @@ describe("lastNDaysRange", () => {
     jest.useRealTimers();
   });
 
-  it("returns range ending at next local midnight and starting n days earlier", () => {
+  it("returns inclusive n-day range ending today at local midnight", () => {
     const { start, end } = lastNDaysRange(7);
 
-    expect(end.toISOString()).toBe(new Date(2026, 2, 11, 0, 0, 0, 0).toISOString());
+    expect(end.toISOString()).toBe(new Date(2026, 2, 10, 0, 0, 0, 0).toISOString());
     expect(start.toISOString()).toBe(
       new Date(2026, 2, 4, 0, 0, 0, 0).toISOString(),
     );

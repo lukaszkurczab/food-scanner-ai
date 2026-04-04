@@ -3,11 +3,7 @@ import { fireEvent } from "@testing-library/react-native";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import StatisticsScreen from "@/feature/Statistics/screens/StatisticsScreen";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
-
-type DateInputProps = {
-  range: { start: Date; end: Date };
-  onChange: (range: { start: Date; end: Date }) => void;
-};
+import type { DateRange } from "@/feature/Statistics/types";
 
 const mockUseUserContext = jest.fn();
 const mockUsePremiumContext = jest.fn();
@@ -36,80 +32,58 @@ jest.mock("@/services/meals/mealService", () => ({
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
+    i18n: { language: "en" },
     t: (
       key: string,
-      options?: { defaultValue?: string; d?: number } | string,
+      options?: { defaultValue?: string; days?: number } | string,
     ) =>
       typeof options === "string"
         ? options
         : options?.defaultValue ??
-          (typeof options?.d === "number" ? `${key}:${options.d}` : key),
+          (typeof options?.days === "number" ? `${key}:${options.days}` : key),
   }),
 }));
 
 jest.mock("@/components", () => {
-  const { createElement } =
-    jest.requireActual<typeof import("react")>("react");
-  const { Pressable, Text, View } =
-    jest.requireActual<typeof import("react-native")>("react-native");
+  const { createElement } = jest.requireActual<typeof import("react")>("react");
+  const { Text, View } = jest.requireActual<typeof import("react-native")>(
+    "react-native",
+  );
 
   return {
     __esModule: true,
-    Layout: ({ children }: { children?: ReactNode }) =>
-      createElement(View, null, children),
-    Button: ({
-      label,
-      onPress,
-    }: {
-      label: string;
-      onPress: () => void;
-    }) =>
-      createElement(
-        Pressable,
-        { onPress, accessibilityRole: "button" },
-        createElement(Text, null, label),
-      ),
-    DateInput: ({ range, onChange }: DateInputProps) =>
-      createElement(
-        Pressable,
-        {
-          onPress: () =>
-            onChange({
-              start: new Date("2026-01-01T00:00:00.000Z"),
-              end: new Date("2026-01-10T00:00:00.000Z"),
-            }),
-        },
-        createElement(
-          Text,
-          null,
-          `date-input:${range.start.toISOString()}:${range.end.toISOString()}`,
-        ),
-      ),
+    Layout: ({ children }: { children?: ReactNode }) => createElement(View, null, children),
+    FullScreenLoader: ({ label }: { label?: string }) =>
+      createElement(Text, null, `loader:${label ?? ""}`),
+    Calendar: () => null,
+    Modal: ({ children }: { children?: ReactNode }) => createElement(View, null, children),
+    PieChart: () => null,
   };
 });
 
-jest.mock("../components/RangeTabs", () => ({
-  RangeTabs: ({
+jest.mock("@/feature/Statistics/components/StatisticsRangeSwitcher", () => ({
+  StatisticsRangeSwitcher: ({
     options,
-    active,
     onChange,
   }: {
     options: Array<{ key: string; label: string }>;
-    active: string;
     onChange: (key: string) => void;
   }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Pressable, Text, View } =
-      jest.requireActual<typeof import("react-native")>("react-native");
+    const { createElement } = jest.requireActual<typeof import("react")>("react");
+    const { Pressable, Text, View } = jest.requireActual<typeof import("react-native")>(
+      "react-native",
+    );
+
     return createElement(
       View,
       null,
-      createElement(Text, null, `active-range:${active}`),
       ...options.map((option) =>
         createElement(
           Pressable,
-          { key: option.key, onPress: () => onChange(option.key) },
+          {
+            key: option.key,
+            onPress: () => onChange(option.key),
+          },
           createElement(Text, null, option.label),
         ),
       ),
@@ -117,60 +91,110 @@ jest.mock("../components/RangeTabs", () => ({
   },
 }));
 
-jest.mock("../components/MetricsGrid", () => ({
-  MetricsGrid: ({
-    selected,
-    onSelect,
+jest.mock("@/feature/Statistics/components/StatisticsCustomRangeControl", () => ({
+  StatisticsCustomRangeControl: ({
+    onApply,
   }: {
-    selected: string;
-    onSelect: (value: string) => void;
+    onApply: (range: DateRange) => void;
   }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Pressable, Text, View } =
-      jest.requireActual<typeof import("react-native")>("react-native");
+    const { createElement } = jest.requireActual<typeof import("react")>("react");
+    const { Pressable, Text } = jest.requireActual<typeof import("react-native")>(
+      "react-native",
+    );
+
     return createElement(
-      View,
-      null,
-      createElement(Text, null, `metric:${selected}`),
-      createElement(
-        Pressable,
-        { onPress: () => onSelect("protein") },
-        createElement(Text, null, "select-protein"),
-      ),
+      Pressable,
+      {
+        onPress: () =>
+          onApply({
+            start: new Date("2026-03-01T00:00:00.000Z"),
+            end: new Date("2026-03-10T00:00:00.000Z"),
+          }),
+      },
+      createElement(Text, null, "apply-custom-range"),
     );
   },
 }));
 
-jest.mock("../components/LineSection", () => ({
-  LineSection: ({ metric }: { metric: string }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Text } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(Text, null, `line-section:${metric}`);
+jest.mock("@/feature/Statistics/components/StatisticsTrendCard", () => ({
+  StatisticsTrendCard: () => {
+    const { createElement } = jest.requireActual<typeof import("react")>("react");
+    const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
+    return createElement(Text, null, "trend-card");
   },
 }));
 
-jest.mock("../components/MacroPieCard", () => ({
-  MacroPieCard: ({ protein }: { protein: number }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Text } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(Text, null, `macro-pie:${protein}`);
+jest.mock("@/feature/Statistics/components/StatisticsDailyAveragesSection", () => ({
+  StatisticsDailyAveragesSection: () => {
+    const { createElement } = jest.requireActual<typeof import("react")>("react");
+    const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
+    return createElement(Text, null, "daily-averages");
   },
 }));
 
-jest.mock("../components/ProgressAveragesCard", () => ({
-  ProgressAveragesCard: ({ avgKcal }: { avgKcal: number }) => {
-    const { createElement } =
-      jest.requireActual<typeof import("react")>("react");
-    const { Text } =
-      jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(Text, null, `progress-card:${avgKcal}`);
+jest.mock("@/feature/Statistics/components/StatisticsMacroBreakdownCard", () => ({
+  StatisticsMacroBreakdownCard: () => {
+    const { createElement } = jest.requireActual<typeof import("react")>("react");
+    const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
+    return createElement(Text, null, "macro-breakdown");
   },
 }));
+
+jest.mock("@/feature/Statistics/components/StatisticsPremiumBanner", () => ({
+  StatisticsPremiumBanner: ({ onPress }: { onPress: () => void }) => {
+    const { createElement } = jest.requireActual<typeof import("react")>("react");
+    const { Pressable, Text } = jest.requireActual<typeof import("react-native")>(
+      "react-native",
+    );
+
+    return createElement(
+      Pressable,
+      { onPress },
+      createElement(Text, null, "premium-banner"),
+    );
+  },
+}));
+
+jest.mock("@/feature/Statistics/components/StatisticsEmptyState", () => ({
+  StatisticsEmptyState: ({
+    kind,
+    isOffline,
+  }: {
+    kind: string;
+    isOffline: boolean;
+  }) => {
+    const { createElement } = jest.requireActual<typeof import("react")>("react");
+    const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
+    return createElement(Text, null, `empty:${kind}:${String(isOffline)}`);
+  },
+}));
+
+function makeAnalyticsState(overrides: Record<string, unknown> = {}) {
+  return {
+    active: "7d",
+    setActive: jest.fn(),
+    customRange: {
+      start: new Date("2026-03-01T00:00:00.000Z"),
+      end: new Date("2026-03-07T00:00:00.000Z"),
+    },
+    setCustomRange: jest.fn(),
+    metric: "kcal",
+    setMetric: jest.fn(),
+    loadingMeals: false,
+    emptyKind: "none",
+    labels: ["Mon", "Tue"],
+    selectedSeries: [1200, 1500],
+    metricAverage: 1400,
+    totals: { protein: 80, carbs: 150, fat: 50 },
+    hasTotals: true,
+    avgKcal: 1400,
+    avgProtein: 80,
+    avgCarbs: 150,
+    avgFat: 50,
+    isWindowLimited: false,
+    ...overrides,
+  };
+}
 
 describe("StatisticsScreen", () => {
   beforeEach(() => {
@@ -181,130 +205,68 @@ describe("StatisticsScreen", () => {
     mockUsePremiumContext.mockReturnValue({ isPremium: false });
   });
 
-  it("renders loading and empty states with their CTAs", () => {
+  it("renders loading state", () => {
     const navigation = { navigate: jest.fn() };
-    mockUseStatisticsState.mockReturnValue({
-      active: "7d",
-      setActive: jest.fn(),
-      customRange: {
-        start: new Date("2026-01-01T00:00:00.000Z"),
-        end: new Date("2026-01-07T00:00:00.000Z"),
-      },
-      setCustomRange: jest.fn(),
-      isWindowLimited: false,
-      loadingMeals: true,
-      empty: false,
-    });
-
-    const loading = renderWithTheme(
-      <StatisticsScreen navigation={navigation as never} />,
+    mockUseStatisticsState.mockReturnValue(
+      makeAnalyticsState({
+        loadingMeals: true,
+      }),
     );
-    expect(loading.getByText("common:loading")).toBeTruthy();
-
-    mockUseStatisticsState.mockReturnValue({
-      active: "7d",
-      setActive: jest.fn(),
-      customRange: {
-        start: new Date("2026-01-01T00:00:00.000Z"),
-        end: new Date("2026-01-07T00:00:00.000Z"),
-      },
-      setCustomRange: jest.fn(),
-      isWindowLimited: false,
-      loadingMeals: false,
-      empty: true,
-    });
-
-    const empty = renderWithTheme(
-      <StatisticsScreen navigation={navigation as never} />,
-    );
-    fireEvent.press(empty.getByText("statistics:empty.cta"));
-    expect(navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
-      selectionMode: "temporary",
-    });
-  });
-
-  it("renders premium banner, custom range controls and statistics cards", () => {
-    const navigation = { navigate: jest.fn() };
-    const setActive = jest.fn();
-    const setCustomRange = jest.fn();
-    const setMetric = jest.fn();
-    mockUseStatisticsState.mockReturnValue({
-      active: "custom",
-      setActive,
-      customRange: {
-        start: new Date("2026-01-01T00:00:00.000Z"),
-        end: new Date("2026-01-07T00:00:00.000Z"),
-      },
-      setCustomRange,
-      isWindowLimited: true,
-      loadingMeals: false,
-      empty: false,
-      avgKcal: 2100,
-      kcalSeries: [2000, 2200],
-      days: 7,
-      totalKcal: 14700,
-      avgProtein: 140,
-      avgCarbs: 180,
-      avgFat: 70,
-      metric: "kcal",
-      setMetric,
-      showLineSection: true,
-      labels: ["Mon", "Tue"],
-      selectedSeries: [2000, 2200],
-      hasTotals: true,
-      totals: { protein: 140, carbs: 180, fat: 70 },
-    });
 
     const { getByText } = renderWithTheme(
       <StatisticsScreen navigation={navigation as never} />,
     );
 
-    fireEvent.press(getByText("statistics:ranges.30d"));
-    fireEvent.press(
-      getByText(
-        "date-input:2026-01-01T00:00:00.000Z:2026-01-07T00:00:00.000Z",
-      ),
-    );
-    fireEvent.press(getByText("select-protein"));
-    fireEvent.press(getByText("Odblokuj Premium"));
-
-    expect(getByText("progress-card:2100")).toBeTruthy();
-    expect(getByText("line-section:kcal")).toBeTruthy();
-    expect(getByText("macro-pie:140")).toBeTruthy();
-    expect(setActive).toHaveBeenCalledWith("30d");
-    expect(setCustomRange).toHaveBeenCalledWith({
-      start: new Date("2026-01-01T00:00:00.000Z"),
-      end: new Date("2026-01-10T00:00:00.000Z"),
-    });
-    expect(setMetric).toHaveBeenCalledWith("protein");
-    expect(navigation.navigate).toHaveBeenCalledWith("ManageSubscription");
+    expect(getByText("loader:common:loading")).toBeTruthy();
   });
 
-  it("renders offline-empty copy when there is no local data and device is offline", () => {
+  it("renders analytics content and premium banner when limited", () => {
     const navigation = { navigate: jest.fn() };
-    mockUseNetInfo.mockReturnValue({ isConnected: false });
-    mockUseStatisticsState.mockReturnValue({
-      active: "7d",
-      setActive: jest.fn(),
-      customRange: {
-        start: new Date("2026-01-01T00:00:00.000Z"),
-        end: new Date("2026-01-07T00:00:00.000Z"),
-      },
-      setCustomRange: jest.fn(),
-      isWindowLimited: false,
-      loadingMeals: false,
-      empty: true,
-    });
+    const setActive = jest.fn();
+    const setCustomRange = jest.fn();
 
-    const { getByText, queryByText } = renderWithTheme(
+    mockUseStatisticsState.mockReturnValue(
+      makeAnalyticsState({
+        active: "custom",
+        setActive,
+        setCustomRange,
+        isWindowLimited: true,
+      }),
+    );
+
+    const { getByText } = renderWithTheme(
       <StatisticsScreen navigation={navigation as never} />,
     );
 
-    expect(getByText("You're offline")).toBeTruthy();
-    expect(
-      getByText("No local stats data available. Reconnect to load your history."),
-    ).toBeTruthy();
-    expect(queryByText("statistics:empty.cta")).toBeNull();
-    expect(navigation.navigate).not.toHaveBeenCalled();
+    expect(getByText("trend-card")).toBeTruthy();
+    expect(getByText("daily-averages")).toBeTruthy();
+    expect(getByText("macro-breakdown")).toBeTruthy();
+
+    fireEvent.press(getByText("statistics:ranges.30d"));
+    fireEvent.press(getByText("apply-custom-range"));
+    fireEvent.press(getByText("premium-banner"));
+
+    expect(setActive).toHaveBeenCalledWith("30d");
+    expect(setCustomRange).toHaveBeenCalledWith({
+      start: new Date("2026-03-01T00:00:00.000Z"),
+      end: new Date("2026-03-10T00:00:00.000Z"),
+    });
+    expect(navigation.navigate).toHaveBeenCalledWith("ManageSubscription");
+  });
+
+  it("renders offline no-history empty state", () => {
+    const navigation = { navigate: jest.fn() };
+    mockUseNetInfo.mockReturnValue({ isConnected: false });
+    mockUseStatisticsState.mockReturnValue(
+      makeAnalyticsState({
+        emptyKind: "no_history",
+      }),
+    );
+
+    const { getByText } = renderWithTheme(
+      <StatisticsScreen navigation={navigation as never} />,
+    );
+
+    expect(getByText("empty:no_history:true")).toBeTruthy();
   });
 });
