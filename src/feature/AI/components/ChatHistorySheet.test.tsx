@@ -1,5 +1,3 @@
-import React from "react";
-import { View } from "react-native";
 import { act, fireEvent } from "@testing-library/react-native";
 import {
   beforeEach,
@@ -8,15 +6,13 @@ import {
   it,
   jest,
 } from "@jest/globals";
-import { ChatHistorySheet } from "@/feature/AI/components/ChatHistorySheet";
-import { renderWithTheme } from "@/test-utils/renderWithTheme";
 import type { ChatThread } from "@/types";
+import { renderWithTheme } from "@/test-utils/renderWithTheme";
+import { ChatHistorySheet } from "@/feature/AI/components/ChatHistorySheet";
 
 const mockSubscribeToChatThreads = jest.fn();
-const mockUuid = jest.fn<() => string>();
 const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
-const mockDrawerContainer = View;
-const mockCreateElement = React.createElement;
+const mockUuid = jest.fn<() => string>();
 
 let onThreads: ((items: ChatThread[]) => void) | null = null;
 let onError: (() => void) | null = null;
@@ -33,29 +29,23 @@ jest.mock("@/services/ai/chatThreadRepository", () => ({
   },
 }));
 
-jest.mock("uuid", () => ({
-  v4: () => mockUuid(),
-}));
-
 jest.mock("@react-native-community/netinfo", () => ({
   useNetInfo: () => mockUseNetInfo(),
 }));
 
-jest.mock("@/components/Drawer", () => ({
-  Drawer: ({
-    open,
-    children,
-  }: {
-    open: boolean;
-    children: React.ReactNode;
-  }) =>
-    open ? mockCreateElement(mockDrawerContainer, null, children) : null,
+jest.mock("uuid", () => ({
+  v4: () => mockUuid(),
 }));
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => `translated:${key}`,
+    i18n: { language: "en" },
   }),
+}));
+
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
 describe("ChatHistorySheet", () => {
@@ -80,7 +70,7 @@ describe("ChatHistorySheet", () => {
       />,
     );
 
-    fireEvent.press(getByText("translated:new"));
+    fireEvent.press(getByText("translated:history.newChat"));
     expect(onSelectThread).toHaveBeenCalledWith("local-thread-uuid");
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -105,18 +95,18 @@ describe("ChatHistorySheet", () => {
         {
           id: "thread-2",
           userUid: "user-1",
-          title: "My Thread",
+          title: "Protein & goals",
           createdAt: 1,
-          updatedAt: 2,
-          lastMessage: "Last AI answer",
-          lastMessageAt: 2,
+          updatedAt: Date.now(),
+          lastMessage: "Breakfast swap or day review.",
+          lastMessageAt: Date.now(),
         },
       ]);
     });
 
-    const threadTitle = getByText("My Thread");
+    const threadTitle = getByText("Protein & goals");
     expect(threadTitle).toBeTruthy();
-    expect(getByText("Last AI answer")).toBeTruthy();
+    expect(getByText("Breakfast swap or day review.")).toBeTruthy();
 
     fireEvent.press(threadTitle);
     expect(onSelectThread).toHaveBeenCalledWith("thread-2");

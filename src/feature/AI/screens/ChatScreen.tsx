@@ -1,36 +1,27 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import {
-  View,
-  FlatList,
-  ActivityIndicator,
-  Pressable,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { useNetInfo } from "@react-native-community/netinfo";
+import { v4 as uuidv4 } from "uuid";
+import { Layout } from "@/components/Layout";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUserContext } from "@contexts/UserContext";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import { useMeals } from "@hooks/useMeals";
 import { useChatHistory } from "@/hooks/useChatHistory";
+import { pullChatChanges } from "@/services/offline/sync.engine";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import { useNetInfo } from "@react-native-community/netinfo";
-import { Bubble } from "../components/Bubble";
-import { InputBar } from "../components/InputBar";
-import { PaywallCard } from "../components/PaywallCard";
-import { TypingDots } from "../components/TypingDots";
-import { useMeals } from "@hooks/useMeals";
-import { EmptyState } from "../components/EmptyState";
-import { ChatHistorySheet } from "../components/ChatHistorySheet";
-import { IconButton } from "@/components/IconButton";
-import { AiCreditsBadge } from "@/components/AiCreditsBadge";
-import AppIcon from "@/components/AppIcon";
-import { v4 as uuidv4 } from "uuid";
-import { Layout } from "@components/Layout";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { FormData } from "@/types";
-import { pullChatChanges } from "@/services/offline/sync.engine";
+import { ChatHeader } from "../components/ChatHeader";
+import { ChatIntroCard } from "../components/ChatIntroCard";
+import { SuggestedStarterGrid } from "../components/SuggestedStarterGrid";
+import { ChatMessageList } from "../components/ChatMessageList";
+import { ChatComposer } from "../components/ChatComposer";
+import { ChatHistorySheet } from "../components/ChatHistorySheet";
+import { ChatStatusBanner } from "../components/ChatStatusBanner";
 
 const EMPTY_PROFILE: FormData = {
   unitsSystem: "metric",
@@ -48,14 +39,14 @@ const EMPTY_PROFILE: FormData = {
 export default function ChatScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { firebaseUser: user } = useAuthContext();
-  const theme = useTheme();
-  const { t } = useTranslation("chat");
-  const net = useNetInfo();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
-
-  const uid = user?.uid || "";
   const { userData } = useUserContext();
   const { credits } = useAiCreditsContext();
+  const net = useNetInfo();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { t } = useTranslation("chat");
+
+  const uid = user?.uid || "";
   const { meals } = useMeals(uid);
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -72,78 +63,64 @@ export default function ChatScreen() {
     failedSyncCount,
     retryingFailedSync,
     canSend,
-    creditAllocation,
     send,
     loadMore,
     retryFailedSyncOps,
   } = useChatHistory(uid, meals || [], userData ?? EMPTY_PROFILE, threadId);
 
-  const data = useMemo(
-    () => [...messages].sort((a, b) => b.createdAt - a.createdAt),
-    [messages],
-  );
-
+  const isOffline = net.isConnected === false;
+  const hasMessages = messages.length > 0;
   const limitReached = !canSend;
+  const composerDisabled = sending || limitReached || isOffline;
 
-  const handleSend = useCallback(
-    async (text: string) => {
-      if (!net.isConnected) return;
-      if (!canSend) return;
-      lastUserMessageRef.current = text;
-      const createdThreadId = await send(text);
-      if (createdThreadId) setThreadId(createdThreadId);
-    },
-    [net.isConnected, canSend, send],
-  );
-
-  const suggestions = useMemo(
+  const starters = useMemo(
     () => [
-      { label: t("empty.s1"), value: t("empty.v1") },
-      { label: t("empty.s2"), value: t("empty.v2") },
-      { label: t("empty.s3"), value: t("empty.v3") },
-      { label: t("empty.s4"), value: t("empty.v4") },
+      { label: t("empty.starters.week"), value: t("empty.values.week") },
+      {
+        label: t("empty.starters.protein"),
+        value: t("empty.values.protein"),
+      },
+      { label: t("empty.starters.dinner"), value: t("empty.values.dinner") },
+      { label: t("empty.starters.track"), value: t("empty.values.track") },
     ],
     [t],
   );
 
-  const footerText = useMemo(() => {
-    return t("credits.balanceOutOf", {
-      balance: credits?.balance ?? 0,
-      allocation: credits?.allocation ?? 0,
-    });
-  }, [credits?.allocation, credits?.balance, t]);
-
-  const offlineEmpty = net.isConnected === false;
-  const emptyTitle = offlineEmpty ? t("offline.title") : t("empty.title");
-  const emptySubtitle = offlineEmpty
-    ? t("offline.subtitle")
-    : t("empty.subtitle");
-  const emptySuggestions = offlineEmpty ? [] : suggestions;
-  const emptyFooterText = offlineEmpty ? undefined : footerText;
-
-  const emptyDisabled = sending || limitReached || !net.isConnected;
-
-  const retryEnabled =
-    !!lastUserMessageRef.current &&
-    !!net.isConnected &&
-    !sending &&
-    canSend &&
-    (sendErrorType === "offline" ||
-      sendErrorType === "timeout" ||
-      sendErrorType === "unavailable" ||
-      sendErrorType === "unknown");
-
   const helperText = useMemo(() => {
-    if (!net.isConnected) return t("offline.short");
-    if (limitReached) return t("limit.reachedShort");
-    if (sending) return t("sending", { defaultValue: "AI is thinking..." });
+    if (sending) return t("sending");
     if (sendErrorType === "offline") return t("errors.offline");
     if (sendErrorType === "timeout") return t("errors.timeout");
     if (sendErrorType === "unavailable") return t("errors.serviceUnavailable");
     if (sendErrorType === "auth") return t("errors.authRequired");
     if (sendErrorType === "unknown") return t("errors.fetchFailed");
     return undefined;
-  }, [limitReached, net.isConnected, sendErrorType, sending, t]);
+  }, [sendErrorType, sending, t]);
+
+  const retryEnabled =
+    Boolean(lastUserMessageRef.current) &&
+    !sending &&
+    canSend &&
+    !isOffline &&
+    (sendErrorType === "offline" ||
+      sendErrorType === "timeout" ||
+      sendErrorType === "unavailable" ||
+      sendErrorType === "unknown");
+
+  const composerPlaceholder = limitReached
+    ? t("composer.lockedCredits")
+    : isOffline
+      ? t("composer.lockedOffline")
+      : t("composer.placeholder");
+
+  const handleSend = useCallback(
+    async (text: string) => {
+      if (isOffline || !canSend) return;
+      lastUserMessageRef.current = text;
+      const createdThreadId = await send(text);
+      if (createdThreadId) setThreadId(createdThreadId);
+    },
+    [canSend, isOffline, send],
+  );
 
   const handleRetry = useCallback(() => {
     const last = lastUserMessageRef.current;
@@ -151,9 +128,31 @@ export default function ChatScreen() {
     void handleSend(last);
   }, [handleSend]);
 
-  const listContentStyle = useMemo(
-    () => [styles.listContent, limitReached ? styles.listContentLimit : null],
-    [limitReached, styles.listContent, styles.listContentLimit],
+  const emptyState = (
+    <View style={styles.emptyStateWrap}>
+      <ChatIntroCard
+        title={isOffline ? t("offline.title") : t("empty.title")}
+        subtitle={isOffline ? t("offline.subtitle") : t("empty.subtitle")}
+        creditsText={
+          isOffline
+            ? undefined
+            : t("empty.creditsLeft", {
+                count: credits?.balance ?? 0,
+              })
+        }
+      />
+
+      {!isOffline ? (
+        <SuggestedStarterGrid
+          title={t("empty.suggestedLabel")}
+          starters={starters}
+          disabled={composerDisabled}
+          onSelect={(value) => {
+            void handleSend(value);
+          }}
+        />
+      ) : null}
+    </View>
   );
 
   useFocusEffect(
@@ -167,119 +166,72 @@ export default function ChatScreen() {
   );
 
   return (
-    <Layout disableScroll style={styles.layout}>
-      <View style={styles.header}>
-        <IconButton
-          testID="chat-history-button"
-          icon={<AppIcon name="menu" />}
-          onPress={() => setHistoryOpen(true)}
-          variant="ghost"
-          size={40}
-          iconColor={theme.textSecondary}
-          accessibilityLabel={t("history.open")}
-        />
-        <AiCreditsBadge
-          text={t("credits.balanceShort", {
-            balance: credits?.balance ?? 0,
-          })}
-          tone={limitReached ? "neutral" : "accent"}
-        />
-      </View>
+    <Layout
+      disableScroll
+      showOfflineBanner={false}
+      style={styles.layout}
+      keyboardAvoiding={false}
+    >
+      <ChatHeader
+        title={t("header.title")}
+        subtitle={t("header.subtitle")}
+        onOpenHistory={() => setHistoryOpen(true)}
+        historyButtonLabel={t("history.open")}
+      />
 
-      {limitReached ? (
-        <View style={styles.stickyBanner} pointerEvents="box-none">
-          <PaywallCard
-            balance={credits?.balance ?? 0}
-            allocation={credits?.allocation ?? creditAllocation}
-            renewalAt={credits?.periodEndAt ?? null}
-            onUpgrade={() => navigation.navigate("ManageSubscription")}
-          />
-        </View>
+      {hasMessages && !isOffline && limitReached ? (
+        <ChatStatusBanner
+          variant="credits"
+          title={t("lock.creditsTitle")}
+          body={t("lock.creditsBody")}
+          actionLabel={t("lock.creditsAction")}
+          onActionPress={() => navigation.navigate("ManageSubscription")}
+        />
+      ) : null}
+
+      {hasMessages && isOffline ? (
+        <ChatStatusBanner
+          testID="offline-banner"
+          variant="offline"
+          title={t("lock.offlineTitle")}
+          body={t("lock.offlineBody")}
+        />
       ) : null}
 
       {failedSyncCount > 0 ? (
-        <View style={styles.deadLetterBanner}>
-          <View style={styles.deadLetterTextWrap}>
-            <Text style={styles.deadLetterTitle}>
-              {t("deadLetterTitle", { count: failedSyncCount })}
-            </Text>
-            <Text style={styles.deadLetterDescription}>
-              {t("deadLetterSubtitle")}
-            </Text>
-          </View>
-
-          <Pressable
-            onPress={() => {
-              void retryFailedSyncOps();
-            }}
-            disabled={retryingFailedSync}
-            style={
-              retryingFailedSync ? styles.deadLetterRetryDisabled : undefined
-            }
-          >
-            <Text style={styles.deadLetterRetryLabel}>
-              {retryingFailedSync ? "…" : t("deadLetterRetry")}
-            </Text>
-          </Pressable>
-        </View>
+        <ChatStatusBanner
+          variant="warning"
+          title={t("deadLetterTitle", { count: failedSyncCount })}
+          body={t("deadLetterSubtitle")}
+          actionLabel={t("deadLetterRetry")}
+          onActionPress={() => {
+            void retryFailedSyncOps();
+          }}
+          actionDisabled={retryingFailedSync}
+        />
       ) : null}
 
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={theme.primary} />
-        </View>
-      ) : (
-        <>
-          <FlatList
-            testID="chat-message-list"
-            style={styles.list}
-            inverted
-            data={data}
-            keyExtractor={(m) => m.id}
-            keyboardShouldPersistTaps="handled"
-            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-            renderItem={({ item }) => (
-              <View
-                testID={
-                  item.role === "user" ? "chat-message-user" : "chat-message-ai"
-                }
-              >
-                <Bubble
-                  role={item.role === "user" ? "user" : "ai"}
-                  text={item.content}
-                  timestamp={new Date(item.createdAt)}
-                />
-              </View>
-            )}
-            onEndReachedThreshold={0.4}
-            onEndReached={loadMore}
-            ListHeaderComponent={
-              !canSend ? <View /> : typing ? <TypingDots /> : null
-            }
-            ListEmptyComponent={
-              <EmptyState
-                title={emptyTitle}
-                subtitle={emptySubtitle}
-                suggestions={emptySuggestions}
-                disabled={emptyDisabled}
-                footerText={emptyFooterText}
-                onPick={handleSend}
-              />
-            }
-            contentContainerStyle={listContentStyle}
-          />
+      <View style={styles.body}>
+        <ChatMessageList
+          messages={messages}
+          typing={typing && !limitReached && !isOffline}
+          loading={loading}
+          emptyState={emptyState}
+          onLoadMore={loadMore}
+          dateLabel={t("conversation.todayLabel")}
+        />
+      </View>
 
-          <InputBar
-            placeholder={t("input.placeholder")}
-            disabled={sending || limitReached || !net.isConnected}
-            onSend={handleSend}
-            helperText={helperText}
-            helperActionLabel={retryEnabled ? t("retryLast") : undefined}
-            onHelperActionPress={retryEnabled ? handleRetry : undefined}
-            helperActionDisabled={!retryEnabled}
-          />
-        </>
-      )}
+      <ChatComposer
+        placeholder={composerPlaceholder}
+        sendLabel={t("input.send")}
+        disabled={composerDisabled}
+        onSend={handleSend}
+        helperText={helperText}
+        helperActionLabel={retryEnabled ? t("retryLast") : undefined}
+        onHelperActionPress={retryEnabled ? handleRetry : undefined}
+        helperActionDisabled={!retryEnabled}
+      />
 
       <ChatHistorySheet
         open={historyOpen}
@@ -298,86 +250,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingLeft: 0,
       paddingRight: 0,
     },
-    header: {
-      height: 44,
-      paddingHorizontal: theme.spacing.sm,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: theme.spacing.sm,
-    },
-    list: {
+    body: {
       flex: 1,
       minHeight: 0,
     },
-    center: {
+    emptyStateWrap: {
       flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    stickyBanner: {
-      position: "absolute",
-      top: theme.spacing.sm,
-      left: theme.spacing.sm,
-      right: theme.spacing.sm,
-      borderRadius: theme.rounded.md,
-      borderWidth: 1,
-      zIndex: 20,
-      elevation: 4,
-      backgroundColor: theme.surfaceElevated,
-      borderColor: theme.primary,
-      shadowColor: "#000000",
-      shadowOpacity: theme.isDark ? 0.2 : 0.08,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-    },
-    deadLetterBanner: {
-      borderWidth: 1,
-      borderColor: theme.warning.main,
-      borderRadius: theme.rounded.md,
-      backgroundColor: theme.warning.surface,
-      marginHorizontal: theme.spacing.sm,
-      marginBottom: theme.spacing.xs,
-      marginTop: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs + 2,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: theme.spacing.sm,
-    },
-    deadLetterTextWrap: {
-      flex: 1,
-      gap: 2,
-    },
-    deadLetterTitle: {
-      color: theme.warning.text,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.semiBold,
-    },
-    deadLetterDescription: {
-      color: theme.warning.text,
-      fontSize: theme.typography.size.caption,
-      lineHeight: theme.typography.lineHeight.caption,
-      fontFamily: theme.typography.fontFamily.regular,
-    },
-    deadLetterRetryLabel: {
-      color: theme.warning.text,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.semiBold,
-      textDecorationLine: "underline",
-    },
-    deadLetterRetryDisabled: {
-      opacity: 0.65,
-    },
-    listContent: {
-      paddingHorizontal: theme.spacing.md,
-      paddingTop: theme.spacing.sm,
-      paddingBottom: theme.spacing.md,
-    },
-    listContentLimit: {
-      paddingBottom: theme.spacing.md + theme.spacing.xl * 5,
+      paddingTop: theme.spacing.xxl,
+      gap: theme.spacing.xl,
     },
   });

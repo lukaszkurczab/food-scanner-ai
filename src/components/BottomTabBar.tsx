@@ -15,8 +15,12 @@ import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useTranslation } from "react-i18next";
 
-export const BOTTOM_TAB_BAR_BASE_HEIGHT = 88;
-export const BOTTOM_TAB_BAR_BOTTOM_OFFSET = 8;
+const TAB_BUTTON_SIZE = 56;
+const TAB_BAR_VERTICAL_PADDING = 12;
+
+export const BOTTOM_TAB_BAR_BASE_HEIGHT =
+  TAB_BUTTON_SIZE + TAB_BAR_VERTICAL_PADDING * 2;
+export const BOTTOM_TAB_BAR_BOTTOM_OFFSET = 0;
 
 type TabKey = "Home" | "Statistics" | "Chat" | "Profile";
 
