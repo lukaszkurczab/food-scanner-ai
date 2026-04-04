@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, ScrollView, Pressable, Text, StyleSheet } from "react-native";
+import {
+  View,
+  ScrollView,
+  Pressable,
+  Text,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Button, RangeSlider } from "@/components";
 import { DateRangePicker } from "@/components/DateRangePicker";
@@ -163,6 +170,8 @@ export const FilterPanel: React.FC<{
     clearFilters,
   } = useFilters(scope);
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
 
   const initialRange: Range = useMemo(() => {
     const today = new Date();
@@ -316,6 +325,8 @@ export const FilterPanel: React.FC<{
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode={keyboardDismissMode}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topSearchShell}>

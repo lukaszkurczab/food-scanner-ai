@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
   GlobalActionButtons,
@@ -52,6 +52,8 @@ export default function Step3Health({
   const { t } = useTranslation("onboarding");
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
 
   const hasChronicOther = (form.chronicDiseases ?? []).includes("other");
   const hasAllergyOther = (form.allergies ?? []).includes("other");
@@ -67,6 +69,7 @@ export default function Step3Health({
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode={keyboardDismissMode}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

@@ -1,5 +1,12 @@
 import { useMemo } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import type { ChatMessage } from "@/types";
 import { useTheme } from "@/theme/useTheme";
 import { ChatMessageBubble } from "./ChatMessageBubble";
@@ -23,6 +30,8 @@ export function ChatMessageList({
 }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
 
   const data = useMemo(
     () => [...messages].sort((a, b) => b.createdAt - a.createdAt),
@@ -44,6 +53,7 @@ export function ChatMessageList({
       inverted
       data={data}
       keyExtractor={(item) => item.id}
+      keyboardDismissMode={keyboardDismissMode}
       keyboardShouldPersistTaps="handled"
       maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
       onEndReachedThreshold={0.4}

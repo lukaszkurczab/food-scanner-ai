@@ -5,6 +5,7 @@ import {
   RefreshControl,
   StyleSheet,
   View,
+  Platform,
 } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNetInfo } from "@react-native-community/netinfo";
@@ -38,6 +39,8 @@ export default function SavedMealsScreen({
 }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
@@ -202,6 +205,8 @@ export default function SavedMealsScreen({
           <FlatList
             data={visibleItems}
             keyExtractor={keyExtractor}
+            keyboardDismissMode={keyboardDismissMode}
+            keyboardShouldPersistTaps="handled"
             refreshControl={
               <RefreshControl refreshing={loading} onRefresh={refresh} />
             }

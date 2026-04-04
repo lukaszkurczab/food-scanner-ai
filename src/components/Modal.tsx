@@ -60,6 +60,8 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
 
   const contentBottomPadding = contentPaddingBottom ?? 0;
 
@@ -142,6 +144,8 @@ export const Modal: React.FC<ModalProps> = ({
                     styles.scrollContent,
                     { paddingBottom: contentBottomPadding },
                   ]}
+                  keyboardDismissMode={keyboardDismissMode}
+                  keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
                 >
                   <View style={styles.contentStack}>

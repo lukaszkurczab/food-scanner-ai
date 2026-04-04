@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ViewStyle, StyleProp } from "react-native";
+import { View, ViewStyle, StyleProp, Platform } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { useTheme } from "@/theme/useTheme";
 
@@ -15,6 +15,8 @@ export const ScrollableBox: React.FC<Props> = ({
   contentContainerStyle,
 }) => {
   const theme = useTheme();
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
 
   return (
     <View
@@ -27,6 +29,7 @@ export const ScrollableBox: React.FC<Props> = ({
     >
       <ScrollView
         nestedScrollEnabled
+        keyboardDismissMode={keyboardDismissMode}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator
         bounces

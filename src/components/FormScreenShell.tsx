@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import {
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -74,6 +75,8 @@ export function FormScreenShell({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
   const hasActions = !!actionLabel || !!secondaryActionLabel;
 
   const actions = hasActions ? (
@@ -119,6 +122,7 @@ export function FormScreenShell({
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={[styles.scrollContent, contentStyle]}
+          keyboardDismissMode={keyboardDismissMode}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

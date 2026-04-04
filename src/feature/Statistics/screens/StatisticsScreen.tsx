@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useNetInfo } from "@react-native-community/netinfo";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useTranslation } from "react-i18next";
@@ -27,6 +27,8 @@ type Props = {
 export default function StatisticsScreen({ navigation }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
   const { t } = useTranslation(["statistics", "common"]);
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
@@ -80,6 +82,8 @@ export default function StatisticsScreen({ navigation }: Props) {
           ) : showAnalytics ? (
             <ScrollView
               contentContainerStyle={styles.scrollContent}
+              keyboardDismissMode={keyboardDismissMode}
+              keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
               <StatisticsTrendCard

@@ -8,6 +8,7 @@ import {
   Pressable,
   ActivityIndicator,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
@@ -210,6 +211,8 @@ export default function HistoryListScreen({
 }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
   const { t, i18n } = useTranslation(["history", "meals", "home", "common"]);
   const state = useHistoryListState({ navigation });
   const sections = useMemo(() => state.sections ?? [], [state.sections]);
@@ -373,6 +376,8 @@ export default function HistoryListScreen({
           data={state.dataState === "ready" ? sections : []}
           keyExtractor={keyExtractor}
           renderItem={renderSection}
+          keyboardDismissMode={keyboardDismissMode}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={state.loading}

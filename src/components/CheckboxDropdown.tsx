@@ -14,6 +14,7 @@ import {
   Modal,
   StyleSheet,
   Dimensions,
+  Platform,
   StyleProp,
   ViewStyle,
 } from "react-native";
@@ -65,6 +66,8 @@ export function CheckboxDropdown<T extends string | number>({
 }: CheckboxDropdownProps<T>) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
   const { t } = useTranslation("common");
 
   const [open, setOpen] = useState(false);
@@ -210,6 +213,7 @@ export function CheckboxDropdown<T extends string | number>({
               <ScrollView
                 nestedScrollEnabled
                 contentContainerStyle={styles.menuContent}
+                keyboardDismissMode={keyboardDismissMode}
                 keyboardShouldPersistTaps="handled"
               >
                 {options.map((item) => {

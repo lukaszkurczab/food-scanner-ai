@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Platform,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Dropdown } from "@/components/Dropdown";
 import { useTranslation } from "react-i18next";
@@ -45,6 +52,8 @@ export default function ChartEditorPanel({
 }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
+    Platform.OS === "ios" ? "interactive" : "on-drag";
   const { t } = useTranslation(["share", "common"]);
   const [colorTarget, setColorTarget] = useState<ColorTarget | null>(null);
   const [tempColor, setTempColor] = useState<string | null>(null);
@@ -569,6 +578,8 @@ export default function ChartEditorPanel({
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode={keyboardDismissMode}
+        keyboardShouldPersistTaps="handled"
       >
         {tab === "type" && renderTypeTab()}
         {tab === "text" && renderTextTab()}
