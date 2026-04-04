@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Pressable, type StyleProp, type ViewStyle } from "react-native";
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
-import { TextInput } from "@/components";
+import { TextInput } from "@/components/TextInput";
 
 type Props = {
   value: string;

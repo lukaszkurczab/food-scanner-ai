@@ -224,6 +224,7 @@ export const TextInput = forwardRef<RNTextInput, Props>(
                 height: multiline ? undefined : "100%",
                 textAlignVertical: multiline ? "top" : "center",
                 includeFontPadding: false,
+                paddingVertical: 0,
               },
               inputStyle,
             ]}
