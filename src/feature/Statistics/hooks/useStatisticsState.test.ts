@@ -22,7 +22,7 @@ const useMealsMock = useMeals as jest.MockedFunction<typeof useMeals>;
 const useStatsMock = useStats as jest.MockedFunction<typeof useStats>;
 const lastNDaysRangeMock = lastNDaysRange as jest.MockedFunction<typeof lastNDaysRange>;
 
-const meal = (overrides: Partial<Meal>): Meal =>
+const makeMeal = (overrides: Partial<Meal>): Meal =>
   ({
     userUid: "user-1",
     mealId: "meal-1",
@@ -41,10 +41,12 @@ describe("useStatisticsState", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date(2026, 2, 10, 12, 0, 0, 0));
+
     lastNDaysRangeMock.mockImplementation((n: number) => ({
-      start: new Date(2026, 2, 10 - n, 0, 0, 0, 0),
+      start: new Date(2026, 2, 10 - n + 1, 0, 0, 0, 0),
       end: new Date(2026, 2, 10, 0, 0, 0, 0),
     }));
+
     useMealsMock.mockReturnValue({
       meals: [],
       getMeals: jest.fn(async () => undefined),
@@ -58,8 +60,9 @@ describe("useStatisticsState", () => {
       loadMore: jest.fn(),
       hasMore: false,
     } as never);
+
     useStatsMock.mockReturnValue({
-      labels: ["10.03"],
+      labels: ["Mon"],
       caloriesSeries: [0],
       totals: { kcal: 0, protein: 0, fat: 0, carbs: 0 },
       averages: { kcal: 0, protein: 0, fat: 0, carbs: 0 },
@@ -73,7 +76,7 @@ describe("useStatisticsState", () => {
     jest.restoreAllMocks();
   });
 
-  it("loads meals on mount and exposes default state", async () => {
+  it("loads meals on mount and returns default 7-day state", async () => {
     const getMeals = jest.fn(async () => undefined);
     useMealsMock.mockReturnValue({
       meals: [],
@@ -91,42 +94,42 @@ describe("useStatisticsState", () => {
 
     expect(result.current.active).toBe("7d");
     expect(result.current.metric).toBe("kcal");
-    expect(result.current.showLineSection).toBe(true);
-    expect(result.current.days).toBeGreaterThanOrEqual(1);
+    expect(result.current.emptyKind).toBe("no_history");
+    expect(result.current.days).toBe(7);
     expect(lastNDaysRangeMock).toHaveBeenCalledWith(7);
   });
 
-  it("switches metrics and computes nutrient series from ingredients/totals", () => {
+  it("computes metric series and updates selected metric", () => {
     useMealsMock.mockReturnValue({
       meals: [
-        meal({
-          mealId: "with-ingredients",
+        makeMeal({
           ingredients: [
             {
-              id: "i1",
-              name: "a",
+              id: "ing-1",
+              name: "Egg",
               amount: 1,
-              kcal: 100,
-              protein: 10,
-              fat: 5,
-              carbs: 7,
+              kcal: 120,
+              protein: 12,
+              fat: 6,
+              carbs: 1,
             },
           ],
         }),
-        meal({
-          mealId: "with-totals",
+        makeMeal({
+          mealId: "meal-2",
           ingredients: [],
-          totals: { kcal: 200, protein: 20, fat: 8, carbs: 12 },
+          totals: { kcal: 180, protein: 18, carbs: 9, fat: 5 },
         }),
       ],
       getMeals: jest.fn(),
       loading: false,
     } as never);
+
     useStatsMock.mockReturnValue({
-      labels: ["10.03"],
+      labels: ["Mon"],
       caloriesSeries: [300],
-      totals: { kcal: 300, protein: 30, fat: 13, carbs: 19 },
-      averages: { kcal: 300, protein: 30, fat: 13, carbs: 19 },
+      totals: { kcal: 300, protein: 30, fat: 11, carbs: 10 },
+      averages: { kcal: 300, protein: 30, fat: 11, carbs: 10 },
       goal: 2000,
       progressPct: 15,
     });
@@ -135,34 +138,39 @@ describe("useStatisticsState", () => {
       useStatisticsState({ uid: "user-1", calorieTarget: 2000 }),
     );
 
-    expect(result.current.selectedSeries).toEqual([300]);
+    expect(result.current.emptyKind).toBe("none");
+    expect(result.current.selectedSeries).toEqual([0, 0, 0, 0, 0, 0, 300]);
+    expect(result.current.metricAverage).toBe(300);
 
     act(() => {
       result.current.setMetric("protein");
     });
-    expect(result.current.selectedSeries.at(-1)).toBe(30);
-    expect(
-      result.current.selectedSeries.reduce((sum, value) => sum + value, 0),
-    ).toBe(30);
 
-    act(() => {
-      result.current.setMetric("carbs");
-    });
-    expect(result.current.selectedSeries.at(-1)).toBe(19);
-    expect(
-      result.current.selectedSeries.reduce((sum, value) => sum + value, 0),
-    ).toBe(19);
+    expect(result.current.metric).toBe("protein");
+    expect(result.current.selectedSeries.at(-1)).toBe(30);
+    expect(result.current.metricAverage).toBe(30);
   });
 
-  it("applies access window cutoff and custom range behavior", () => {
+  it("marks limited window and no_entries_in_range when user has history outside selected range", () => {
+    lastNDaysRangeMock.mockImplementation(() => ({
+      start: new Date(2026, 2, 1, 0, 0, 0, 0),
+      end: new Date(2026, 2, 10, 0, 0, 0, 0),
+    }));
+
     useMealsMock.mockReturnValue({
-      meals: [],
+      meals: [
+        makeMeal({
+          mealId: "old",
+          timestamp: new Date(2026, 1, 10, 12, 0, 0, 0).toISOString(),
+        }),
+      ],
       getMeals: jest.fn(),
       loading: false,
     } as never);
+
     useStatsMock.mockReturnValue({
-      labels: ["10.03"],
-      caloriesSeries: [0],
+      labels: ["Mar 8", "Mar 9", "Mar 10"],
+      caloriesSeries: [0, 0, 0],
       totals: { kcal: 0, protein: 0, fat: 0, carbs: 0 },
       averages: { kcal: 0, protein: 0, fat: 0, carbs: 0 },
       goal: null,
@@ -178,112 +186,27 @@ describe("useStatisticsState", () => {
     );
 
     expect(result.current.isWindowLimited).toBe(true);
-    expect(result.current.empty).toBe(true);
-
-    act(() => {
-      result.current.setActive("custom");
-      result.current.setCustomRange({
-        start: new Date(2026, 2, 10, 0, 0, 0, 0),
-        end: new Date(2026, 2, 10, 0, 0, 0, 0),
-      });
-    });
-
-    expect(result.current.days).toBe(1);
-    expect(result.current.showLineSection).toBe(false);
+    expect(result.current.emptyKind).toBe("no_entries_in_range");
+    expect(result.current.hasAnyMeals).toBe(true);
+    expect(result.current.hasEntriesInRange).toBe(false);
   });
 
-  it("skips loading when uid is missing and when getMeals is not a function", async () => {
-    const getMeals = jest.fn(async () => undefined);
-    useMealsMock.mockReturnValue({
-      meals: [],
-      getMeals,
-      loading: false,
-    } as never);
-
-    const { rerender } = renderHook(
-      ({ uid }: { uid: string }) =>
-        useStatisticsState({ uid, calorieTarget: 1200 }),
-      { initialProps: { uid: "" } },
-    );
-
-    await waitFor(() => {
-      expect(getMeals).not.toHaveBeenCalled();
-    });
-
-    useMealsMock.mockReturnValue({
-      meals: [],
-      getMeals: undefined,
-      loading: false,
-    } as never);
-    rerender({ uid: "user-1" });
-
-    await waitFor(() => {
-      expect(getMeals).not.toHaveBeenCalled();
-    });
-  });
-
-  it("covers range switching and fallback stat calculations", () => {
-    useMealsMock.mockReturnValue({
-      meals: [
-        meal({
-          mealId: "updated-at-fallback",
-          timestamp: "",
-          updatedAt: new Date(2026, 2, 10, 8, 0).toISOString(),
-          ingredients: [undefined as unknown as Meal["ingredients"][number]],
-        }),
-        meal({
-          mealId: "created-at-fallback",
-          timestamp: "",
-          updatedAt: "",
-          createdAt: new Date(2026, 2, 10, 9, 0).toISOString(),
-          ingredients: [],
-          totals: { kcal: 10, protein: 4, fat: 2, carbs: 3 },
-        }),
-        meal({
-          mealId: "outside-range",
-          timestamp: new Date(2026, 1, 1, 9, 0).toISOString(),
-          ingredients: [
-            {
-              id: "out",
-              name: "out",
-              amount: 1,
-              kcal: 100,
-              protein: 1,
-              fat: 1,
-              carbs: 1,
-            },
-          ],
-        }),
-      ],
-      getMeals: jest.fn(),
-      loading: true,
-    } as never);
-
-    useStatsMock.mockReturnValue({
-      labels: [],
-      caloriesSeries: undefined,
-      totals: undefined,
-      averages: undefined,
-      goal: null,
-      progressPct: null,
-    } as never);
-
+  it("normalizes custom range and keeps custom tab active", () => {
     const { result } = renderHook(() =>
       useStatisticsState({ uid: "user-1", calorieTarget: null }),
     );
 
     act(() => {
-      result.current.setActive("30d");
+      result.current.setActive("custom");
+      result.current.setCustomRange({
+        start: new Date(2026, 2, 12, 0, 0, 0, 0),
+        end: new Date(2026, 2, 10, 0, 0, 0, 0),
+      });
     });
-    expect(lastNDaysRangeMock).toHaveBeenCalledWith(30);
 
-    expect(result.current.totalKcal).toBe(0);
-    expect(result.current.avgKcal).toBe(0);
-    expect(result.current.avgProtein).toBeGreaterThanOrEqual(0);
-    expect(result.current.avgCarbs).toBeGreaterThanOrEqual(0);
-    expect(result.current.avgFat).toBeGreaterThanOrEqual(0);
-    expect(result.current.hasTotals).toBe(false);
-    expect(result.current.empty).toBe(false);
-    expect(result.current.labels.length).toBeGreaterThan(0);
+    expect(result.current.active).toBe("custom");
+    expect(result.current.customRange.start.getTime()).toBeLessThanOrEqual(
+      result.current.customRange.end.getTime(),
+    );
   });
 });

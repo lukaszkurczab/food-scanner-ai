@@ -1,9 +1,15 @@
 {
-  "pickRange": "Choose date",
+  "title": "Statistics",
+  "subtitle": "See how your eating changes over time",
+  "pickRange": "Choose date range",
   "ranges": {
     "7d": "7 days",
     "30d": "30 days",
     "custom": "Custom"
+  },
+  "customRange": {
+    "label": "Custom range",
+    "modalTitle": "Select date range"
   },
   "offline": "You’re offline. Some stats may be unavailable or outdated.",
   "offlineEmpty": {
@@ -11,34 +17,39 @@
     "desc": "No local stats data available. Reconnect to load your history."
   },
   "empty": {
-    "title": "No data yet",
-    "desc": "Log your first meal to see your stats and progress.",
-    "cta": "Add first meal"
+    "title": "No stats yet",
+    "desc": "Log a few meals to reveal calorie and macro trends here.",
+    "foot": "A few logs unlock your first trend."
   },
-  "progress": {
-    "title": "Progress",
-    "descWithGoal": "Average per day in the last {{days}} days",
-    "descNoGoal": "Total intake in the last {{days}} days",
-    "totalInRange": "{{kcal}} kcal total in selected range"
+  "emptyRange": {
+    "title": "No entries in this range",
+    "desc": "Try another range or keep logging to compare later.",
+    "foot": "Switch ranges to restore the trend."
   },
+  "trend": {
+    "title": "Trend",
+    "avgPerDay": "avg/day"
+  },
+  "dailyAveragesTitle": "Daily averages",
+  "dailyAveragesSuffix": "avg / day",
+  "macroBreakdownTitle": "Macro breakdown",
   "tiles": {
     "calories": "Calories",
     "protein": "Protein",
     "carbs": "Carbs",
     "fat": "Fat"
   },
-  "charts": {
-    "calories": "Calories",
+  "chips": {
+    "calories": "Kcal",
     "protein": "Protein",
     "carbs": "Carbs",
-    "fat": "Fat",
-    "macroBreakdown": "Macro Breakdown"
+    "fat": "Fat"
   },
   "share": {
     "title": {
-      "day": "Progress — 1 day",
-      "week": "Progress — 7 days",
-      "month": "Progress — 30 days"
+      "day": "Progress - 1 day",
+      "week": "Progress - 7 days",
+      "month": "Progress - 30 days"
     },
     "range": {
       "day": "Day",
@@ -50,6 +61,12 @@
       "bar": "Bar",
       "line": "Line"
     }
+  },
+  "limitedHistory": {
+    "eyebrow": "Premium",
+    "title": "Unlock longer-term trends",
+    "body": "See how habits look after {{days}}+ days.",
+    "cta": "Unlock Premium"
   },
   "limitedWindowTitle": "Access to older data requires Premium",
   "limitedWindowDesc": "Range was limited to the last {{d}} days.",
