@@ -2,6 +2,7 @@ import { fireEvent, waitFor } from "@testing-library/react-native";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import AppSettingsScreen from "@/feature/UserProfile/screens/AppSettingsScreen";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
+import type { ReactNode } from "react";
 
 const mockChangeLanguage = jest.fn<(code: string) => Promise<void>>();
 
@@ -20,8 +21,8 @@ jest.mock("@/context/UserContext", () => ({
 }));
 
 jest.mock("@/components", () => {
-  const React = require("react");
-  const { Pressable, Text, View } = require("react-native");
+  const { Pressable, Text, View } =
+    jest.requireActual<typeof import("react-native")>("react-native");
 
   return {
     FormScreenShell: ({
@@ -29,7 +30,7 @@ jest.mock("@/components", () => {
       children,
     }: {
       title: string;
-      children: React.ReactNode;
+      children: ReactNode;
     }) => (
       <View>
         <Text>{title}</Text>
@@ -41,7 +42,7 @@ jest.mock("@/components", () => {
       children,
     }: {
       title?: string;
-      children: React.ReactNode;
+      children: ReactNode;
     }) => (
       <View>
         {title ? <Text>{title}</Text> : null}
@@ -61,7 +62,7 @@ jest.mock("@/components", () => {
       value?: string;
       onPress?: () => void;
       testID?: string;
-      trailing?: React.ReactNode;
+      trailing?: ReactNode;
     }) => (
       <Pressable onPress={onPress} testID={testID}>
         <Text>{title}</Text>
@@ -77,8 +78,9 @@ jest.mock("@/components", () => {
 jest.mock("@/components/AppIcon", () => ({
   __esModule: true,
   default: ({ name }: { name: string }) => {
-    const { Text: MockText } = require("react-native");
-    return <MockText>{name}</MockText>;
+    const { Text } =
+      jest.requireActual<typeof import("react-native")>("react-native");
+    return <Text>{name}</Text>;
   },
 }));
 

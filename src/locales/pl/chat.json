@@ -1,56 +1,96 @@
 {
   "typing": "…",
   "new": "Nowy czat",
-  "label": "Czaty",
+  "label": "Czat",
+  "header": {
+    "title": "Chat",
+    "subtitle": "Zapytaj o posiłki, żywienie albo kolejny krok."
+  },
+  "conversation": {
+    "todayLabel": "Dziś"
+  },
   "offline": {
     "title": "Brak internetu",
-    "subtitle": "Sprawdź połączenie i spróbuj ponownie.",
+    "subtitle": "Po odzyskaniu połączenia znów wyślesz wiadomości. Poprzednie wskazówki są dostępne.",
     "short": "Jesteś offline"
   },
   "input": {
-    "placeholder": "Zapytaj mnie",
+    "placeholder": "Zapytaj o cokolwiek...",
     "send": "Wyślij"
   },
+  "composer": {
+    "placeholder": "Zapytaj o cokolwiek...",
+    "lockedCredits": "Odblokuj wysyłanie",
+    "lockedOffline": "Wróć online, aby wysyłać"
+  },
+  "lock": {
+    "creditsTitle": "Odblokuj dalszą rozmowę",
+    "creditsBody": "Dotychczasowe wskazówki pozostają dostępne.",
+    "creditsAction": "Odblokuj",
+    "offlineTitle": "Jesteś offline",
+    "offlineBody": "Możesz czytać tę rozmowę. Wysyłanie wróci, gdy połączysz się z internetem."
+  },
   "limit": {
-    "upgradeCta": "Zobacz plany",
     "title": "Za mało AI Credits",
     "body": "Masz {{balance}} z {{allocation}} AI Credits. Następne odnowienie: {{renewalDate}}.",
     "button": "Odblokuj 800 AI Credits",
     "reached": "Za mało AI Credits",
-    "reachedShort": "Za mało AI Credits",
+    "reachedShort": "Odblokuj wysyłanie",
     "reachedTitle": "Za mało AI Credits",
+    "upgradeCta": "Zobacz plany",
     "photoRequired": "Potrzebujesz co najmniej {{cost}} AI Credits, aby analizować zdjęcie."
   },
   "empty": {
-    "title": "Zacznij rozmowę",
-    "subtitle": "Zapytaj o posiłki, makro lub co poprawić dziś w diecie.",
-    "s1": "Podsumuj mój dzień",
-    "v1": "Podsumuj moje posiłki z dzisiaj i podaj 3 konkretne rzeczy do poprawy.",
-    "s2": "Co poprawić?",
-    "v2": "Jakie są największe braki w mojej diecie na podstawie ostatnich posiłków?",
-    "s3": "Pomysł na kolację",
-    "v3": "Zaproponuj wysokobiałkową kolację dopasowaną do mnie.",
-    "s4": "Białko dziś",
-    "v4": "Ile białka zjadłem dziś na podstawie zapisanych posiłków?",
+    "title": "W czym mogę pomóc?",
+    "subtitle": "Otrzymasz wsparcie dotyczące posiłków, żywienia i kolejnych kroków.",
+    "creditsLeft": "Pozostało {{count}} kredytów",
+    "suggestedLabel": "PODPOWIEDZI STARTOWE",
+    "starters": {
+      "week": "Jak jadłem w tym tygodniu?",
+      "protein": "Jak wygląda moje białko?",
+      "dinner": "Pomóż zaplanować kolację",
+      "track": "Czy dziś trzymam plan?"
+    },
+    "values": {
+      "week": "Jak jadłem w tym tygodniu?",
+      "protein": "Jak wygląda mój bilans białka w tym tygodniu?",
+      "dinner": "Pomóż mi zaplanować kolację wysokobiałkową z tego, co już zapisuję.",
+      "track": "Czy dziś trzymam plan kalorii i białka?"
+    },
+    "s1": "Jak jadłem w tym tygodniu?",
+    "v1": "Jak jadłem w tym tygodniu?",
+    "s2": "Jak wygląda moje białko?",
+    "v2": "Jak wygląda mój bilans białka w tym tygodniu?",
+    "s3": "Pomóż zaplanować kolację",
+    "v3": "Pomóż mi zaplanować kolację wysokobiałkową z tego, co już zapisuję.",
+    "s4": "Czy dziś trzymam plan?",
+    "v4": "Czy dziś trzymam plan kalorii i białka?",
     "footerFree": "AI Credits: {{balance}}/{{allocation}}",
     "footerPremium": "AI Credits: {{balance}}/{{allocation}}"
   },
   "history": {
-    "open": "Otwórz historię czatu",
-    "emptyTitle": "Brak czatów",
-    "emptyDescription": "Rozpocznij nową rozmowę, aby zobaczyć historię konwersacji.",
-    "offlineEmpty": "Brak lokalnej historii czatu. Połącz się z internetem, aby pobrać czaty.",
-    "errorTitle": "Nie udało się wczytać czatów",
-    "refreshError": "Spróbuj ponownie, gdy połączenie będzie stabilne."
+    "open": "Otwórz rozmowy",
+    "title": "Rozmowy",
+    "subtitle": "Wróć do wątku albo rozpocznij nowy.",
+    "newChat": "+ Nowy czat",
+    "emptyTitle": "Brak rozmów",
+    "emptyDescription": "Rozpocznij nową rozmowę, aby zobaczyć historię wątków.",
+    "offlineEmpty": "Brak lokalnych rozmów. Połącz się z internetem, aby zsynchronizować historię.",
+    "errorTitle": "Nie udało się wczytać rozmów",
+    "refreshError": "Spróbuj ponownie, gdy połączenie będzie stabilne.",
+    "when": {
+      "today": "Dziś",
+      "yesterday": "Wczoraj"
+    }
   },
   "retryLast": "Ponów ostatnią wiadomość",
-  "deadLetterTitle": "{{count}} wiadomości czatu nie zsynchronizowano",
-  "deadLetterSubtitle": "Wiadomości są zapisane lokalnie. Możesz ponowić synchronizację teraz.",
+  "deadLetterTitle": "{{count}} wiadomości czeka na synchronizację",
+  "deadLetterSubtitle": "Wiadomości są bezpiecznie zapisane na tym urządzeniu. Ponów synchronizację.",
   "deadLetterRetry": "Ponów",
   "deadLetterRetryQueued": "{{count}} wiadomości dodano do ponownej synchronizacji.",
   "sending": "AI przygotowuje odpowiedź...",
   "errors": {
-    "fetchFailed": "Nie udało się pobrać odpowiedzi, spróbuj ponownie.",
+    "fetchFailed": "Nie udało się pobrać odpowiedzi. Spróbuj ponownie.",
     "offTopic": "Mogę odpowiadać tylko na pytania związane z żywieniem i dietą.",
     "offline": "Brak internetu. Połącz się ponownie i spróbuj jeszcze raz.",
     "timeout": "Przekroczono limit czasu żądania. Spróbuj ponownie.",

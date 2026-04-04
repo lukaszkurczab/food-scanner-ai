@@ -7,8 +7,9 @@ import { renderWithTheme } from "@/test-utils/renderWithTheme";
 jest.mock("@/components/AppIcon", () => ({
   __esModule: true,
   default: ({ name }: { name: string }) => {
-    const { Text: MockText } = require("react-native");
-    return <MockText>{name}</MockText>;
+    const { Text } =
+      jest.requireActual<typeof import("react-native")>("react-native");
+    return <Text>{name}</Text>;
   },
 }));
 
