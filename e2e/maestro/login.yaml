@@ -1,4 +1,4 @@
-appId: com.lkurczab.foodscannerai
+appId: com.lkurczab.fitaly
 env:
   E2E_EMAIL: e2e@example.com
   E2E_PASSWORD: password123

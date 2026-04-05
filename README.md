@@ -41,7 +41,7 @@ src/
 
 ## Requirements
 
-- Node.js 18+ (20 LTS recommended)
+- Node.js 22 LTS
 - npm
 - Expo CLI (`npx expo ...`)
 - For native builds:
@@ -139,6 +139,16 @@ These flags control v2 foundation surfaces introduced in the Foundation Sprint. 
 | `EXPO_PUBLIC_ENABLE_SMART_REMINDERS` | `SMART_REMINDERS_ENABLED` | Smart Reminders v1 decision fetch + mobile scheduling behavior |
 
 To enable for QA: set both the mobile flag (`true`) and the backend flag (`true`), then rebuild the app (Expo requires rebuild for `EXPO_PUBLIC_*` changes).
+
+### Production release checks
+
+`publish:android`, `publish:ios`, `build:android`, and `build:ios` run `scripts/check-launch-readiness.mjs` before EAS.
+
+The production check blocks release when:
+
+- `TERMS_URL` or `PRIVACY_URL` are missing/invalid
+- `eas.json` production Android artifact is not `app-bundle`
+- Firebase native config files do not match `com.lkurczab.fitaly` (`google-services.json`, `GoogleService-Info.plist`)
 
 ### v2 selective adoption
 

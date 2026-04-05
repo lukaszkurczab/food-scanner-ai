@@ -31,7 +31,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="fitaly"/>
-        <data android:scheme="exp+caloriai"/>
+        <data android:scheme="exp+fitaly"/>
       </intent-filter>
     </activity>
   </application>

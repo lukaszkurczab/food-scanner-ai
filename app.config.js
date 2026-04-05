@@ -15,7 +15,7 @@ export default {
   expo: {
     name: "Fitaly",
     scheme: "fitaly",
-    slug: "caloriai",
+    slug: "fitaly",
     owner: "lkurczab",
     version: "1.0.1",
     orientation: "portrait",
@@ -25,7 +25,7 @@ export default {
     icon: "./assets/icon.png",
     ios: {
       supportsTablet: false,
-      bundleIdentifier: "com.lkurczab.foodscannerai",
+      bundleIdentifier: "com.lkurczab.fitaly",
       googleServicesFile: iosGoogleServicesFile,
       icon: "./assets/appstore.png",
       infoPlist: {
@@ -42,13 +42,13 @@ export default {
         foregroundImage: "./assets/playstore.png",
         backgroundColor: "#FFFDF8",
       },
-      package: "com.lkurczab.foodscannerai",
+      package: "com.lkurczab.fitaly",
       googleServicesFile: androidGoogleServicesFile,
     },
     notification: {
       icon: "./assets/notification-icon.png",
-      color: "#4CAF50",
-      androidCollapsedTitle: "fitaly",
+      color: "#4F684B",
+      androidCollapsedTitle: "Fitaly",
     },
     plugins: [
       [
@@ -96,6 +96,7 @@ export default {
       forcePremium: (process.env.FORCE_PREMIUM || "").toLowerCase() === "true",
       termsUrl: process.env.TERMS_URL || "",
       privacyUrl: process.env.PRIVACY_URL || "",
+      buildProfile: process.env.EAS_BUILD_PROFILE || "",
       eas: { projectId: "6126cb31-0485-4b93-b30c-738b65882366" },
     },
   },

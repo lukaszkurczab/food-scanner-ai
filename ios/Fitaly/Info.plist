@@ -32,7 +32,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>fitaly</string>
-          <string>com.lkurczab.foodscannerai</string>
+          <string>com.lkurczab.fitaly</string>
         </array>
       </dict>
       <dict>
@@ -44,7 +44,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+caloriai</string>
+          <string>exp+fitaly</string>
         </array>
       </dict>
     </array>
