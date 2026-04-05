@@ -4,12 +4,11 @@ const iosGoogleServicesFile =
   process.env.GOOGLE_SERVICES_FILE_IOS || "./GoogleService-Info.plist";
 const androidGoogleServicesFile =
   process.env.GOOGLE_SERVICES_FILE_ANDROID || "./google-services.json";
-const railwayApiBaseUrl =
-  "https://food-scanner-ai-backend-production.up.railway.app";
-const isEasBuild = process.env.EAS_BUILD === "true";
-const localApiBaseUrl =
-  process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:8000";
-const resolvedApiBaseUrl = isEasBuild ? railwayApiBaseUrl : localApiBaseUrl;
+const configuredApiBaseUrl = (process.env.EXPO_PUBLIC_API_BASE_URL || "").trim();
+const isLocalDevelopmentRuntime = process.env.EAS_BUILD !== "true";
+const resolvedApiBaseUrl =
+  configuredApiBaseUrl ||
+  (isLocalDevelopmentRuntime ? "http://localhost:8000" : "");
 
 export default {
   expo: {
@@ -84,7 +83,7 @@ export default {
       enableBackendLogging:
         (process.env.EXPO_PUBLIC_ENABLE_BACKEND_LOGGING || "").toLowerCase() ===
         "true",
-      debugOcr: (process.env.DEBUG_OCR || "true").toLowerCase() === "true",
+      debugOcr: (process.env.DEBUG_OCR || "false").toLowerCase() === "true",
       e2e: (process.env.E2E || "").toLowerCase() === "true",
       e2eMockChatReply:
         process.env.E2E_MOCK_CHAT_REPLY ||
@@ -97,7 +96,9 @@ export default {
       termsUrl: process.env.TERMS_URL || "",
       privacyUrl: process.env.PRIVACY_URL || "",
       buildProfile: process.env.EAS_BUILD_PROFILE || "",
-      eas: { projectId: "6126cb31-0485-4b93-b30c-738b65882366" },
+      eas: {
+        projectId: "74cb0678-596b-4dc2-bec0-cb1e3a206caa",
+      },
     },
   },
 };

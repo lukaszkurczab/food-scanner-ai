@@ -160,7 +160,7 @@ Durign work with firebase check firebaseRules.md and if it is necessery suggerst
 
 ## Backend sync
 
-During tasks check if changes require other changes on backend part (food-scanner-ai-backend).
+During tasks check if changes require other changes on backend part (fitaly-backend).
 
 ### Cross-repo contract checklist
 

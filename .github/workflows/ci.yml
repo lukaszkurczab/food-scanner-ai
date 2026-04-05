@@ -28,6 +28,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate launch readiness configuration
+        run: node scripts/check-launch-readiness.mjs production android
+        env:
+          TERMS_URL: https://example.com/terms
+          PRIVACY_URL: https://example.com/privacy
+
       - name: Run lint
         run: npm run lint
 
@@ -49,7 +55,7 @@ jobs:
       - name: Checkout backend repo (canonical contract source)
         uses: actions/checkout@v5
         with:
-          repository: ${{ github.repository_owner }}/food-scanner-ai-backend
+          repository: ${{ github.repository_owner }}/fitaly-backend
           path: _backend
 
       - name: Verify contract sync
