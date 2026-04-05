@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
+import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
+import readinessLib from "./check-launch-readiness.lib.js";
 
 const TARGET_APP_ID = "com.lkurczab.fitaly";
-const PRODUCTION_PROFILE = "production";
+const { PRODUCTION_BUILD_PROFILE, validateEasApiBaseUrlProfiles } = readinessLib;
 
 const profile = (process.argv[2] ?? process.env.EAS_BUILD_PROFILE ?? "")
   .trim()
@@ -43,6 +45,12 @@ function checkEasAndroidBuildType() {
       `eas.json production android.buildType must be \"app-bundle\" (got: ${String(buildType)}).`,
     );
   }
+}
+
+function checkApiBaseUrlMapping() {
+  const eas = readJson("eas.json");
+  const mappingErrors = validateEasApiBaseUrlProfiles(eas);
+  errors.push(...mappingErrors);
 }
 
 function checkAndroidFirebaseConfig() {
@@ -91,7 +99,7 @@ function checkIosFirebaseConfig() {
   }
 }
 
-if (profile !== PRODUCTION_PROFILE) {
+if (profile !== PRODUCTION_BUILD_PROFILE) {
   console.log(
     `[launch-readiness] Skipped checks for profile "${profile || "unknown"}".`,
   );
@@ -100,6 +108,7 @@ if (profile !== PRODUCTION_PROFILE) {
 
 checkLegalUrls();
 checkEasAndroidBuildType();
+checkApiBaseUrlMapping();
 checkAndroidFirebaseConfig();
 checkIosFirebaseConfig();
 

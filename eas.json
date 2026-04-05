@@ -8,7 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://food-scanner-ai-backend-production.up.railway.app",
+        "EXPO_PUBLIC_API_BASE_URL": "https://fitaly-backend-staging.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
         "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true"
       }
@@ -17,7 +17,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://food-scanner-ai-backend-production.up.railway.app",
+        "EXPO_PUBLIC_API_BASE_URL": "https://fitaly-backend-staging.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
         "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true"
       }
@@ -25,7 +25,7 @@
     "internal": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://food-scanner-ai-backend-production.up.railway.app",
+        "EXPO_PUBLIC_API_BASE_URL": "https://fitaly-backend-staging.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
         "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true"
       },
@@ -40,7 +40,7 @@
       "distribution": "internal",
       "withoutCredentials": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://food-scanner-ai-backend-production.up.railway.app",
+        "EXPO_PUBLIC_API_BASE_URL": "https://fitaly-backend-staging.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
         "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true",
         "E2E": "true",
@@ -57,15 +57,28 @@
       "distribution": "store",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://food-scanner-ai-backend-production.up.railway.app",
+        "EXPO_PUBLIC_API_BASE_URL": "https://fitaly-backend-production.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
-        "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true"
+        "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true",
+        "DEBUG_OCR": "false"
       },
       "android": {
         "buildType": "app-bundle"
       },
       "ios": {
         "simulator": false
+      }
+    },
+    "production-apk": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://fitaly-backend-production.up.railway.app",
+        "EXPO_PUBLIC_API_VERSION": "v1",
+        "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true",
+        "DEBUG_OCR": "false"
+      },
+      "android": {
+        "buildType": "apk"
       }
     }
   },

@@ -27,11 +27,11 @@ BACKEND_CONTRACT_RELPATH="tests/contract_fixtures/smart_reminders_v1.contract.js
 # Resolve backend repo location
 if [[ -n "${BACKEND_REPO:-}" ]]; then
   BACKEND_ROOT="$BACKEND_REPO"
-elif [[ -d "$MOBILE_ROOT/../food-scanner-ai-backend" ]]; then
-  BACKEND_ROOT="$(cd "$MOBILE_ROOT/../food-scanner-ai-backend" && pwd)"
+elif [[ -d "$MOBILE_ROOT/../fitaly-backend" ]]; then
+  BACKEND_ROOT="$(cd "$MOBILE_ROOT/../fitaly-backend" && pwd)"
 else
   echo "ERROR: Cannot find backend repo."
-  echo "  Set BACKEND_REPO=/path/to/food-scanner-ai-backend"
+  echo "  Set BACKEND_REPO=/path/to/fitaly-backend"
   echo "  or place it as a sibling directory."
   exit 1
 fi
