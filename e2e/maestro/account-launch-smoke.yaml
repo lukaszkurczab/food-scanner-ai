@@ -1,4 +1,4 @@
-appId: com.lkurczab.foodscannerai
+appId: com.lkurczab.fitaly
 ---
 - runFlow: login.yaml
 - tapOn:

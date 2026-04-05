@@ -144,7 +144,7 @@ function main() {
 
   const filename =
     platform === "android"
-      ? `build-${subdirName}.apk`
+      ? `build-${subdirName}.${/prod/i.test(profile) ? "aab" : "apk"}`
       : `build-${subdirName}.ipa`;
   const outFile = path.join(outDir, filename);
 

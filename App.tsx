@@ -21,8 +21,7 @@ import { MealDraftProvider } from "@/context/MealDraftContext";
 import { PremiumProvider } from "@/context/PremiumContext";
 import { HistoryProvider } from "@/context/HistoryContext";
 import { AiCreditsProvider } from "@/context/AiCreditsContext";
-import { View, ActivityIndicator } from "react-native";
-import { Linking } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, Linking } from "react-native";
 import { useEffect, useRef } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useAppFonts } from "@hooks/useAppFonts";
@@ -47,11 +46,15 @@ import {
   setReminderRuntimeUid,
   stopReminderRuntime,
 } from "@/services/reminders/reminderRuntime";
+import { captureException } from "@/services/core/errorLogger";
+import { getLaunchReadinessIssue } from "@/services/release/launchReadiness";
 
 function Root() {
   const fontsLoaded = useAppFonts();
   const navigationTelemetryHandlerRef = useRef<(() => void) | null>(null);
+  const launchIssueLoggedRef = useRef(false);
   const { uid } = useAuthContext();
+  const launchReadinessIssue = getLaunchReadinessIssue();
 
   if (!navigationTelemetryHandlerRef.current) {
     navigationTelemetryHandlerRef.current = createNavigationTelemetryTracker({
@@ -60,6 +63,20 @@ function Root() {
   }
 
   useEffect(() => {
+    if (!launchReadinessIssue || launchIssueLoggedRef.current) {
+      return;
+    }
+    launchIssueLoggedRef.current = true;
+    captureException("launch_readiness_blocked", {
+      reason: launchReadinessIssue,
+    });
+  }, [launchReadinessIssue]);
+
+  useEffect(() => {
+    if (launchReadinessIssue) {
+      return;
+    }
+
     void (async () => {
       await initTelemetryClient();
       initNotificationTelemetry();
@@ -73,11 +90,14 @@ function Root() {
       stopTelemetryLifecycle();
       stopTelemetryClient();
     };
-  }, []);
+  }, [launchReadinessIssue]);
 
   useEffect(() => {
+    if (launchReadinessIssue) {
+      return;
+    }
     void setReminderRuntimeUid(uid);
-  }, [uid]);
+  }, [launchReadinessIssue, uid]);
 
   useEffect(() => {
     return () => {
@@ -86,6 +106,7 @@ function Root() {
   }, []);
 
   useEffect(() => {
+    if (launchReadinessIssue) return;
     if (!isE2EModeEnabled()) return;
 
     const handleUrl = (url: string) => {
@@ -107,11 +128,20 @@ function Root() {
     return () => {
       sub.remove();
     };
-  }, []);
+  }, [launchReadinessIssue]);
+
+  if (launchReadinessIssue) {
+    return (
+      <View style={styles.launchBlockedContainer}>
+        <Text style={styles.launchBlockedTitle}>Launch readiness blocked</Text>
+        <Text style={styles.launchBlockedMessage}>{launchReadinessIssue}</Text>
+      </View>
+    );
+  }
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -151,3 +181,26 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  launchBlockedContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    backgroundColor: "#FFFDF8",
+  },
+  launchBlockedTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#2F312B",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  launchBlockedMessage: {
+    fontSize: 16,
+    color: "#575B52",
+    textAlign: "center",
+  },
+});

@@ -1,4 +1,4 @@
-package com.lkurczab.foodscannerai
+package com.lkurczab.fitaly
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

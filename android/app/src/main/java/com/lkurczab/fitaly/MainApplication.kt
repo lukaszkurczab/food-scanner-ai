@@ -1,4 +1,4 @@
-package com.lkurczab.foodscannerai
+package com.lkurczab.fitaly
 
 import android.app.Application
 import android.content.res.Configuration
