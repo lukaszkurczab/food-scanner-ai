@@ -66,14 +66,14 @@
     "expo-secure-store": "~14.2.4",
     "expo-sharing": "~13.1.5",
     "expo-splash-screen": "~0.30.10",
-    "expo-sqlite": "~55.0.13",
+    "expo-sqlite": "~15.2.14",
     "expo-status-bar": "~2.2.3",
     "expo-task-manager": "~13.1.6",
     "i": "^0.3.7",
     "i18next": "^25.3.2",
     "react": "19.0.0",
     "react-i18next": "^15.6.0",
-    "react-native": "0.84.1",
+    "react-native": "0.79.6",
     "react-native-color-wheel": "^0.1.7",
     "react-native-device-info": "^14.0.4",
     "react-native-gesture-handler": "~2.24.0",
@@ -117,7 +117,9 @@
     "typescript": "5.8.3"
   },
   "overrides": {
-    "ajv": "8.18.0",
+    "expo-dev-launcher": {
+      "ajv": "8.18.0"
+    },
     "fast-xml-parser": "5.5.10"
   },
   "expo": {
