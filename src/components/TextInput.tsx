@@ -275,6 +275,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.sm,
       paddingHorizontal: theme.spacing.sm,
       justifyContent: "center",
+      paddingVertical: theme.spacing.xxs,
     },
     input: {
       flex: 1,
