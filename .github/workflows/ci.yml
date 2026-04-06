@@ -46,6 +46,10 @@ jobs:
       - name: Run typecheck
         run: npm run typecheck
 
+      - name: Security scan (npm audit)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
+
       - name: Run tests
         run: npm test
 

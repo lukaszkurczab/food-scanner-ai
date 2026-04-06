@@ -36,6 +36,8 @@ All checks are mandatory. Any failed line item means **No-Go**.
   - Firebase credentials source:
     - `GOOGLE_APPLICATION_CREDENTIALS`, or
     - `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`
+- Latest Firestore backup is available and monthly restore drill is documented:
+  - backend runbook: `../fitaly-backend/docs/firestore-backup-restore.md`
 - Android release artifact is AAB.
 - **RC artifact confirmation:** `targetSdk >= 35` must be explicitly confirmed from build output before store submission.
 
