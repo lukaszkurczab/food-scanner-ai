@@ -93,7 +93,7 @@
     "@babel/core": "7.26.10",
     "@react-native-community/cli": "^18.0.0",
     "@testing-library/react-native": "^13.3.3",
-    "@types/date-fns": "^2.5.3",
+    "@types/date-fns": "^2.6.3",
     "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.20",
     "@types/lodash.debounce": "^4.0.9",
