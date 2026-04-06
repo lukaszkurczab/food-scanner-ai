@@ -1,5 +1,7 @@
 # Fitaly (`fitaly`)
 
+This repository is proprietary and is not licensed for public use, redistribution, or modification.
+
 An Expo/React Native mobile app for scanning meals (photo, text, barcode), analyzing nutrition values, tracking history and statistics, and supporting premium features.
 
 AI execution is backend-managed: the app calls backend AI endpoints and does not execute OpenAI requests directly on the client.
@@ -224,7 +226,13 @@ npm run e2e:offline-error
 ## Operator docs
 
 - [Launch Runbook](./docs/launch-runbook.md) — Go/No-Go checklist, rollback matrix, kill-switch and incident flow
+- Backend Ops Monitoring Runbook: `../fitaly-backend/docs/ops-monitoring-runbook.md` — production health/latency thresholds and incident triage
+- Backend Compliance Ops Runbook: `../fitaly-backend/docs/compliance-ops-runbook.md` — data export/delete flow, retention cadence and privacy incident process
 - [Coach Insights v1 Semantics](./docs/coach-insights-v1.md) — mobile contract handling, empty-state modes, telemetry rules
 - [Coach Insights v1 Rollout](./docs/coach-insights-v1-rollout.md) — preconditions, verification, rollback behavior
 - Smart Reminders v1 Semantics — see backend companion docs in `fitaly-backend/docs/smart-reminders-v1.md`
 - Smart Reminders v1 Rollout — see backend companion docs in `fitaly-backend/docs/smart-reminders-v1-rollout.md`
+
+## License
+
+This repository is distributed under a proprietary, all-rights-reserved license. See [LICENSE](./LICENSE).

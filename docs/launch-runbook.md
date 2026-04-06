@@ -38,6 +38,13 @@ All checks are mandatory. Any failed line item means **No-Go**.
     - `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`
 - Latest Firestore backup is available and monthly restore drill is documented:
   - backend runbook: `../fitaly-backend/docs/firestore-backup-restore.md`
+- Compliance operations are validated for current release:
+  - data export endpoint `GET /api/v1/users/me/export` verified on smoke
+  - data delete endpoint `POST /api/v1/users/me/delete` verified on smoke
+  - compliance runbook reviewed: `../fitaly-backend/docs/compliance-ops-runbook.md`
+- Ops monitoring baseline is active and owned:
+  - workflow: `../fitaly-backend/.github/workflows/ops-monitoring.yml`
+  - thresholds/runbook: `../fitaly-backend/docs/ops-monitoring-runbook.md`
 - Android release artifact is AAB.
 - **RC artifact confirmation:** `targetSdk >= 35` must be explicitly confirmed from build output before store submission.
 
