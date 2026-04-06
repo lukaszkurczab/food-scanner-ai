@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   npm-audit:
-    name: npm audit (prod deps, high+)
+    name: npm audit (prod deps, moderate+)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -28,4 +28,4 @@ jobs:
         run: npm ci
 
       - name: Run npm audit
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit --omit=dev --audit-level=moderate
