@@ -147,7 +147,7 @@ To enable for QA: set both the mobile flag (`true`) and the backend flag (`true`
 The production check blocks release when:
 
 - `TERMS_URL` or `PRIVACY_URL` are missing/invalid
-- `eas.json` API base URL mapping does not match required staging/production split
+- `eas.json` API base URL mapping does not match required dev(smoke)/production split
 - `eas.json` production Android artifact is not `app-bundle`
 - Firebase native config files do not match `com.lkurczab.fitaly` (`google-services.json`, `GoogleService-Info.plist`)
 

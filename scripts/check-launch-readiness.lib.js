@@ -5,8 +5,8 @@ const REQUIRED_NON_PROD_BUILD_PROFILES = [
   "e2e-test",
 ];
 const PRODUCTION_BUILD_PROFILE = "production";
-const EXPECTED_STAGING_API_BASE_URL =
-  "https://fitaly-backend-staging.up.railway.app";
+const EXPECTED_DEV_API_BASE_URL =
+  "https://fitaly-backend-smoke.up.railway.app";
 const EXPECTED_PRODUCTION_API_BASE_URL =
   "https://fitaly-backend-production.up.railway.app";
 
@@ -63,9 +63,9 @@ function validateEasApiBaseUrlProfiles(easConfig) {
         `eas.json build.${profileName}.env.EXPO_PUBLIC_API_BASE_URL must be an https URL (got: ${value}).`,
       );
     }
-    if (value !== EXPECTED_STAGING_API_BASE_URL) {
+    if (value !== EXPECTED_DEV_API_BASE_URL) {
       errors.push(
-        `eas.json build.${profileName}.env.EXPO_PUBLIC_API_BASE_URL must equal ${EXPECTED_STAGING_API_BASE_URL} (got: ${value}).`,
+        `eas.json build.${profileName}.env.EXPO_PUBLIC_API_BASE_URL must equal ${EXPECTED_DEV_API_BASE_URL} (got: ${value}).`,
       );
     }
     if (value.toLowerCase().includes("food-scanner")) {
@@ -112,7 +112,7 @@ function validateEasApiBaseUrlProfiles(easConfig) {
 module.exports = {
   REQUIRED_NON_PROD_BUILD_PROFILES,
   PRODUCTION_BUILD_PROFILE,
-  EXPECTED_STAGING_API_BASE_URL,
+  EXPECTED_DEV_API_BASE_URL,
   EXPECTED_PRODUCTION_API_BASE_URL,
   isHttpsUrl,
   isLocalhostUrl,
