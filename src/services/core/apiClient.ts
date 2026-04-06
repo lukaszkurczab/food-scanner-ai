@@ -8,6 +8,8 @@ import { readPublicEnv } from "@/services/core/publicEnv";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const API_CLIENT_SOURCE = "ApiClient";
+const MAX_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 1_000;
 
 export type RequestMethod = "GET" | "POST";
 
@@ -50,7 +52,11 @@ function buildRequestUrl(path: string): string {
   return `${getApiBaseUrl()}${versionedPath}`;
 }
 
-async function getAuthToken(): Promise<string | null> {
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getAuthToken(forceRefresh = false): Promise<string | null> {
   const auth = getAuth(getApp());
   const currentUser = auth.currentUser;
 
@@ -58,7 +64,7 @@ async function getAuthToken(): Promise<string | null> {
     return null;
   }
 
-  return currentUser.getIdToken();
+  return currentUser.getIdToken(forceRefresh);
 }
 
 async function getAuthorizationHeader(): Promise<Record<string, string>> {
@@ -238,19 +244,53 @@ export async function request<T = unknown>(
 ): Promise<T> {
   const fullUrl = buildRequestUrl(url);
   const timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT_MS;
-  const authHeader = await getAuthorizationHeader();
+  const body = method === "POST" ? JSON.stringify(data) : undefined;
 
-  return performRequest<T>({
-    url: fullUrl,
-    method,
-    timeoutMs,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...authHeader,
-    },
-    body: method === "POST" ? JSON.stringify(data) : undefined,
-  });
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const authHeader = await getAuthorizationHeader();
+      return await performRequest<T>({
+        url: fullUrl,
+        method,
+        timeoutMs,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...authHeader,
+        },
+        body,
+      });
+    } catch (error) {
+      lastError = error;
+      const apiError = error as Partial<ApiClientError>;
+
+      // On first 401: force-refresh the Firebase token and retry once.
+      // getIdToken(true) refreshes the cached token so the next
+      // getAuthorizationHeader() call picks up the new value automatically.
+      if (apiError?.status === 401 && attempt === 0) {
+        try {
+          await getAuthToken(/* forceRefresh= */ true);
+        } catch {
+          // If the refresh itself fails there is nothing more we can do.
+          break;
+        }
+        continue;
+      }
+
+      // Retry transient errors (5xx, 429, network timeout) with
+      // exponential back-off: 1 s, 2 s.
+      if (apiError?.retryable === true && attempt < MAX_RETRIES) {
+        await sleep(RETRY_BASE_DELAY_MS * 2 ** attempt);
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  throw lastError;
 }
 
 export async function upload<T = unknown>(

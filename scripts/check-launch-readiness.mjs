@@ -99,6 +99,44 @@ function checkIosFirebaseConfig() {
   }
 }
 
+function checkProductionEasFlags() {
+  const eas = readJson("eas.json");
+  const prodEnv = eas?.build?.production?.env ?? {};
+
+  if (String(prodEnv.EXPO_PUBLIC_ENABLE_BACKEND_LOGGING).toLowerCase() === "true") {
+    errors.push(
+      "eas.json production env: EXPO_PUBLIC_ENABLE_BACKEND_LOGGING must not be \"true\" in production (privacy risk).",
+    );
+  }
+  if (String(prodEnv.DEBUG_OCR).toLowerCase() === "true") {
+    errors.push(
+      "eas.json production env: DEBUG_OCR must not be \"true\" in production.",
+    );
+  }
+}
+
+function checkProductionRuntimeFlags() {
+  if (String(process.env.FORCE_PREMIUM ?? "").toLowerCase() === "true") {
+    errors.push("FORCE_PREMIUM must not be \"true\" in a production build.");
+  }
+  if (String(process.env.DISABLE_BILLING ?? "").toLowerCase() === "true") {
+    errors.push("DISABLE_BILLING must not be \"true\" in a production build.");
+  }
+}
+
+function checkRevenueCatKeys() {
+  if (platform === "android" || !platform) {
+    if (!process.env.RC_ANDROID_API_KEY) {
+      errors.push("RC_ANDROID_API_KEY is not set — RevenueCat billing will not work on Android.");
+    }
+  }
+  if (platform === "ios" || !platform) {
+    if (!process.env.RC_IOS_API_KEY) {
+      errors.push("RC_IOS_API_KEY is not set — RevenueCat billing will not work on iOS.");
+    }
+  }
+}
+
 if (profile !== PRODUCTION_BUILD_PROFILE) {
   console.log(
     `[launch-readiness] Skipped checks for profile "${profile || "unknown"}".`,
@@ -111,6 +149,9 @@ checkEasAndroidBuildType();
 checkApiBaseUrlMapping();
 checkAndroidFirebaseConfig();
 checkIosFirebaseConfig();
+checkProductionEasFlags();
+checkProductionRuntimeFlags();
+checkRevenueCatKeys();
 
 if (errors.length > 0) {
   console.error(

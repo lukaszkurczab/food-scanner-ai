@@ -2,6 +2,10 @@
   "name": "fitaly",
   "version": "1.0.1",
   "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
   "main": "index.ts",
   "scripts": {
     "dev": "npx expo start --dev-client",
