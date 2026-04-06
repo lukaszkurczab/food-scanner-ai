@@ -75,7 +75,7 @@ export function initRevenueCat() {
     billingDisabled: disabled,
     iosKeyLen: iosKey?.length ?? 0,
     androidKeyLen: androidKey?.length ?? 0,
-    selectedKeyMasked: maskKey(apiKey || ""),
+    hasSelectedKey: !!apiKey,
   });
 
   Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR);

@@ -59,12 +59,14 @@ jobs:
         env:
           TERMS_URL: https://example.com/terms
           PRIVACY_URL: https://example.com/privacy
+          RC_ANDROID_API_KEY: ${{ secrets.RC_ANDROID_API_KEY }}
 
       - name: Validate launch readiness config (ios)
         run: npm run check:launch-readiness:ios
         env:
           TERMS_URL: https://example.com/terms
           PRIVACY_URL: https://example.com/privacy
+          RC_IOS_API_KEY: ${{ secrets.RC_IOS_API_KEY }}
 
       - name: Run lint
         run: npm run lint

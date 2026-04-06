@@ -40,9 +40,13 @@ async function exists(p) {
   }
 }
 
+function redactUrl(url) {
+  return url.replace(/([?&]key=)[^&]*/g, "$1[REDACTED]");
+}
+
 async function fetchJSON(url) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status} ${url}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${redactUrl(url)}`);
   return res.json();
 }
 
