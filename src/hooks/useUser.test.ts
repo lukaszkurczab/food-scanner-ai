@@ -746,9 +746,7 @@ describe("useUser", () => {
     });
 
     await act(async () => {
-      await result.current.sendUserToCloud();
       await result.current.syncUserProfile();
-      await result.current.markUserAsSynced();
       await result.current.changeLanguage("it");
     });
 

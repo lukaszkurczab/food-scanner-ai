@@ -547,15 +547,7 @@ export function useUser(uid: string) {
     }
   }, [retryingProfileSync, uid, refreshProfileSyncState]);
 
-  const sendUserToCloud = useCallback(async () => {
-    await fetchUserFromCloud();
-  }, [fetchUserFromCloud]);
-
   const syncUserProfile = useCallback(async () => {
-    await fetchUserFromCloud();
-  }, [fetchUserFromCloud]);
-
-  const markUserAsSynced = useCallback(async () => {
     await fetchUserFromCloud();
   }, [fetchUserFromCloud]);
 
@@ -695,9 +687,7 @@ export function useUser(uid: string) {
       getUserProfile,
       fetchUserFromCloud,
       updateUserProfile,
-      sendUserToCloud,
       syncUserProfile,
-      markUserAsSynced,
       retryProfileSync,
       deleteUser,
       setAvatar,
@@ -716,9 +706,7 @@ export function useUser(uid: string) {
       getUserProfile,
       fetchUserFromCloud,
       updateUserProfile,
-      sendUserToCloud,
       syncUserProfile,
-      markUserAsSynced,
       retryProfileSync,
       deleteUser,
       setAvatar,

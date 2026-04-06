@@ -56,10 +56,6 @@ export async function fetchUserFromCloud(uid: string): Promise<UserData | null> 
   return data ? parseUserData(data) : null;
 }
 
-export async function syncUserProfile(): Promise<void> {
-  return;
-}
-
 export async function updateUserLanguageInFirestore(uid: string, language: string) {
   await mergeUserProfileRemote(uid, { language });
 }
