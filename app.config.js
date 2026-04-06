@@ -8,7 +8,7 @@ const configuredApiBaseUrl = (process.env.EXPO_PUBLIC_API_BASE_URL || "").trim()
 const isLocalDevelopmentRuntime = process.env.EAS_BUILD !== "true";
 const resolvedApiBaseUrl =
   configuredApiBaseUrl ||
-  (isLocalDevelopmentRuntime ? "http://localhost:8000" : "");
+  (isLocalDevelopmentRuntime ? "http://localhost:8000/" : "");
 
 export default {
   expo: {

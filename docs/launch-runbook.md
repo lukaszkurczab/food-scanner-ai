@@ -27,7 +27,7 @@ All checks are mandatory. Any failed line item means **No-Go**.
   - `account-launch-smoke.yaml`
 - `TERMS_URL` and `PRIVACY_URL` are valid HTTPS URLs and resolve publicly.
 - `EXPO_PUBLIC_API_BASE_URL` mapping is correct:
-  - `development/preview/internal/e2e-test` -> `https://fitaly-backend-staging.up.railway.app`
+  - `development/preview/internal/e2e-test` -> `https://fitaly-backend-smoke.up.railway.app`
   - `production` -> `https://fitaly-backend-production.up.railway.app`
 - Backend production env is complete:
   - explicit `CORS_ORIGINS` (no wildcard `*`)

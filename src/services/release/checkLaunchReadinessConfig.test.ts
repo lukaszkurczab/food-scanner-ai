@@ -7,11 +7,11 @@ type EasConfig = {
 
 const {
   EXPECTED_PRODUCTION_API_BASE_URL,
-  EXPECTED_STAGING_API_BASE_URL,
+  EXPECTED_DEV_API_BASE_URL,
   validateEasApiBaseUrlProfiles,
 } = readinessLib as {
   EXPECTED_PRODUCTION_API_BASE_URL: string;
-  EXPECTED_STAGING_API_BASE_URL: string;
+  EXPECTED_DEV_API_BASE_URL: string;
   validateEasApiBaseUrlProfiles: (config: EasConfig) => string[];
 };
 
@@ -19,10 +19,10 @@ function createConfig(
   overrides?: Partial<Record<"development" | "preview" | "internal" | "e2e-test" | "production", string>>,
 ): EasConfig {
   const defaultValueByProfile = {
-    development: EXPECTED_STAGING_API_BASE_URL,
-    preview: EXPECTED_STAGING_API_BASE_URL,
-    internal: EXPECTED_STAGING_API_BASE_URL,
-    "e2e-test": EXPECTED_STAGING_API_BASE_URL,
+    development: EXPECTED_DEV_API_BASE_URL,
+    preview: EXPECTED_DEV_API_BASE_URL,
+    internal: EXPECTED_DEV_API_BASE_URL,
+    "e2e-test": EXPECTED_DEV_API_BASE_URL,
     production: EXPECTED_PRODUCTION_API_BASE_URL,
   };
 
@@ -45,7 +45,7 @@ function createConfig(
 }
 
 describe("check-launch-readiness eas api mapping", () => {
-  it("passes for expected staging and production mapping", () => {
+  it("passes for expected dev and production mapping", () => {
     const config = createConfig();
     expect(validateEasApiBaseUrlProfiles(config)).toHaveLength(0);
   });
@@ -68,7 +68,7 @@ describe("check-launch-readiness eas api mapping", () => {
 
   it("fails when profile URL is not https", () => {
     const config = createConfig({
-      internal: "http://fitaly-backend-staging.up.railway.app",
+      internal: "http://fitaly-backend-smoke.up.railway.app",
     });
     const errors = validateEasApiBaseUrlProfiles(config);
     expect(errors.join("\n")).toContain("build.internal.env.EXPO_PUBLIC_API_BASE_URL must be an https URL");
