@@ -2,7 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 import readinessLib from "../../../scripts/check-launch-readiness.lib.js";
 
 type EasConfig = {
-  build: Record<string, { env?: Record<string, string> }>;
+  build: Record<string, { env?: Record<string, string>; extends?: string }>;
 };
 
 const {
@@ -16,9 +16,10 @@ const {
 };
 
 function createConfig(
-  overrides?: Partial<Record<"development" | "preview" | "internal" | "e2e-test" | "production", string>>,
+  overrides?: Partial<Record<"smoke" | "development" | "preview" | "internal" | "e2e-test" | "production", string>>,
 ): EasConfig {
   const defaultValueByProfile = {
+    smoke: EXPECTED_DEV_API_BASE_URL,
     development: EXPECTED_DEV_API_BASE_URL,
     preview: EXPECTED_DEV_API_BASE_URL,
     internal: EXPECTED_DEV_API_BASE_URL,
@@ -27,7 +28,7 @@ function createConfig(
   };
 
   const merged: Record<
-    "development" | "preview" | "internal" | "e2e-test" | "production",
+    "smoke" | "development" | "preview" | "internal" | "e2e-test" | "production",
     string
   > = {
     ...defaultValueByProfile,
@@ -35,6 +36,7 @@ function createConfig(
   };
   return {
     build: {
+      smoke: { env: { EXPO_PUBLIC_API_BASE_URL: merged.smoke } },
       development: { env: { EXPO_PUBLIC_API_BASE_URL: merged.development } },
       preview: { env: { EXPO_PUBLIC_API_BASE_URL: merged.preview } },
       internal: { env: { EXPO_PUBLIC_API_BASE_URL: merged.internal } },
@@ -47,6 +49,23 @@ function createConfig(
 describe("check-launch-readiness eas api mapping", () => {
   it("passes for expected dev and production mapping", () => {
     const config = createConfig();
+    expect(validateEasApiBaseUrlProfiles(config)).toHaveLength(0);
+  });
+
+  it("passes when non-production profiles inherit env via eas profile extends", () => {
+    const config: EasConfig = {
+      build: {
+        smoke: { env: { EXPO_PUBLIC_API_BASE_URL: EXPECTED_DEV_API_BASE_URL } },
+        development: { extends: "smoke" },
+        preview: { extends: "smoke" },
+        internal: { extends: "smoke" },
+        "e2e-test": { extends: "smoke" },
+        production: {
+          env: { EXPO_PUBLIC_API_BASE_URL: EXPECTED_PRODUCTION_API_BASE_URL },
+        },
+      },
+    };
+
     expect(validateEasApiBaseUrlProfiles(config)).toHaveLength(0);
   });
 

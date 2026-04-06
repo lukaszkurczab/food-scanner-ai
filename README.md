@@ -56,7 +56,11 @@ src/
 npm install
 ```
 
-2. Create a `.env` file in the project root (template below).
+2. Create local env from template:
+
+```bash
+cp .env.example .env
+```
 
 3. Run the app:
 
@@ -94,11 +98,12 @@ npm run test -- src/hooks/__tests__/useMeals.test.ts
 File: `.env`
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL=
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/
 EXPO_PUBLIC_API_VERSION=v1
 EXPO_PUBLIC_ENABLE_BACKEND_LOGGING=true
 EXPO_PUBLIC_ENABLE_TELEMETRY=false
 EXPO_PUBLIC_ENABLE_V2_STATE=false
+EXPO_PUBLIC_ENABLE_SMART_REMINDERS=false
 RC_IOS_API_KEY=
 RC_ANDROID_API_KEY=
 TERMS_URL=
@@ -114,6 +119,10 @@ GOOGLE_FONTS_KEY=
 Description:
 
 - `EXPO_PUBLIC_API_BASE_URL` - base URL of the backend API used for AI, logging, and other server-managed features.
+- `EXPO_PUBLIC_API_BASE_URL` environment mapping:
+  - local dev: `http://localhost:8000/`
+  - dev/smoke builds (`smoke`, `development`, `preview`, `internal`, `e2e-test`): `https://fitaly-backend-smoke.up.railway.app`
+  - production builds: `https://fitaly-backend-production.up.railway.app`
 - `EXPO_PUBLIC_API_VERSION` - backend API version prefix used by the app.
 - `EXPO_PUBLIC_ENABLE_BACKEND_LOGGING` - enables forwarding selected client errors to the backend logging endpoint.
 - `EXPO_PUBLIC_ENABLE_TELEMETRY` - enables mobile telemetry batching and P0 event emission. **Also requires backend `TELEMETRY_ENABLED=true`.**
@@ -143,6 +152,11 @@ To enable for QA: set both the mobile flag (`true`) and the backend flag (`true`
 ### Production release checks
 
 `publish:android`, `publish:ios`, `build:android`, and `build:ios` run `scripts/check-launch-readiness.mjs` before EAS.
+
+Useful commands:
+
+- `npm run build:android:smoke` / `npm run build:ios:smoke` - local EAS build against smoke backend profile.
+- `npm run eas:android:smoke` / `npm run eas:ios:smoke` - cloud EAS build with explicit `smoke` profile.
 
 The production check blocks release when:
 

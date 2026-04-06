@@ -27,7 +27,7 @@ All checks are mandatory. Any failed line item means **No-Go**.
   - `account-launch-smoke.yaml`
 - `TERMS_URL` and `PRIVACY_URL` are valid HTTPS URLs and resolve publicly.
 - `EXPO_PUBLIC_API_BASE_URL` mapping is correct:
-  - `development/preview/internal/e2e-test` -> `https://fitaly-backend-smoke.up.railway.app`
+  - `smoke/development/preview/internal/e2e-test` -> `https://fitaly-backend-smoke.up.railway.app`
   - `production` -> `https://fitaly-backend-production.up.railway.app`
 - Backend production env is complete:
   - explicit `CORS_ORIGINS` (no wildcard `*`)
@@ -41,7 +41,7 @@ All checks are mandatory. Any failed line item means **No-Go**.
 
 ## Release Steps (RC -> Public)
 
-1. Build RC with `internal` profile.
+1. Build RC with `smoke` (or `internal`) profile.
 2. Run smoke E2E gate workflow (`E2E Smoke Gate`) and archive results.
 3. Execute manual sanity check on both platforms.
 4. Build production artifacts (`publish:android`, `publish:ios`).
