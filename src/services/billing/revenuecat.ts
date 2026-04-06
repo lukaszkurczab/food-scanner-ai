@@ -29,11 +29,6 @@ function getExtra() {
   } as RevenueCatExtra;
 }
 
-function maskKey(k: string) {
-  if (!k) return "(empty)";
-  return `${k.slice(0, 4)}***${k.slice(-4)}`;
-}
-
 export function isBillingDisabled(): boolean {
   const extra = getExtra();
   if (__DEV__) return !!extra.disableBilling || !Device.isDevice;
