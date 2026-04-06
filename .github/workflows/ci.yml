@@ -28,8 +28,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate launch readiness configuration
-        run: node scripts/check-launch-readiness.mjs production android
+      - name: Validate launch readiness config (android)
+        run: npm run check:launch-readiness:android
+        env:
+          TERMS_URL: https://example.com/terms
+          PRIVACY_URL: https://example.com/privacy
+
+      - name: Validate launch readiness config (ios)
+        run: npm run check:launch-readiness:ios
         env:
           TERMS_URL: https://example.com/terms
           PRIVACY_URL: https://example.com/privacy

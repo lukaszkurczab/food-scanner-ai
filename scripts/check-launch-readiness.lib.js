@@ -1,4 +1,5 @@
 const REQUIRED_NON_PROD_BUILD_PROFILES = [
+  "smoke",
   "development",
   "preview",
   "internal",
@@ -36,10 +37,35 @@ function isLocalhostUrl(value) {
   }
 }
 
-function getProfileEnv(easConfig, profileName) {
+function getProfileEnv(easConfig, profileName, seenProfiles = new Set()) {
   const profile = easConfig?.build?.[profileName];
-  const env = profile?.env;
-  return env && typeof env === "object" ? env : {};
+  if (!profile || typeof profile !== "object") {
+    return {};
+  }
+
+  const normalizedProfileName = normalizeString(profileName);
+  if (normalizedProfileName) {
+    if (seenProfiles.has(normalizedProfileName)) {
+      return {};
+    }
+    seenProfiles.add(normalizedProfileName);
+  }
+
+  const parentProfileName = normalizeString(profile.extends);
+  const inheritedEnv = parentProfileName
+    ? getProfileEnv(easConfig, parentProfileName, seenProfiles)
+    : {};
+  const ownEnv =
+    profile?.env && typeof profile.env === "object" ? profile.env : {};
+
+  if (normalizedProfileName) {
+    seenProfiles.delete(normalizedProfileName);
+  }
+
+  return {
+    ...inheritedEnv,
+    ...ownEnv,
+  };
 }
 
 function getApiBaseUrlForProfile(easConfig, profileName) {
