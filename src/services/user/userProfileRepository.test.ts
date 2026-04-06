@@ -27,6 +27,65 @@ describe("services/user/userProfileRepository", () => {
     jest.restoreAllMocks();
   });
 
+  it("returns null when backend returns no profile", async () => {
+    mockGet.mockResolvedValue({ profile: null });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { fetchUserProfileRemote } = require("@/services/user/userProfileRepository");
+
+    await expect(fetchUserProfileRemote("u1")).resolves.toBeNull();
+  });
+
+  it("returns cached profile immediately without fetching", async () => {
+    mockGet.mockResolvedValue({ profile: { uid: "u1", username: "neo" } });
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const repo = require("@/services/user/userProfileRepository");
+
+    // Populate cache via a fetch first
+    await repo.fetchUserProfileRemote("u1");
+    mockGet.mockClear();
+
+    const received: unknown[] = [];
+    repo.subscribeToUserProfile({ uid: "u1", onData: (d: unknown) => received.push(d) });
+
+    expect(received).toHaveLength(1);
+    expect(received[0]).toMatchObject({ uid: "u1", username: "neo" });
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it("calls onData(null) when cache holds null for the uid", async () => {
+    mockGet.mockResolvedValue({ profile: null });
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const repo = require("@/services/user/userProfileRepository");
+
+    // Cache null explicitly
+    await repo.fetchUserProfileRemote("u-null");
+    mockGet.mockClear();
+
+    const received: unknown[] = [];
+    repo.subscribeToUserProfile({ uid: "u-null", onData: (d: unknown) => received.push(d) });
+
+    expect(received).toEqual([null]);
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it("skips cache update in uploadUserAvatarRemote when profile is not cached", async () => {
+    mockUpload.mockResolvedValue({
+      avatarUrl: "https://cdn/avatar.jpg",
+      avatarlastSyncedAt: "2026-03-03T12:00:00.000Z",
+    });
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { uploadUserAvatarRemote } = require("@/services/user/userProfileRepository");
+
+    // uid "u-unknown" has no cache entry — should not throw
+    const result = await uploadUserAvatarRemote("u-unknown", "file:///avatar.jpg");
+
+    expect(result).toEqual({
+      avatarUrl: "https://cdn/avatar.jpg",
+      avatarlastSyncedAt: "2026-03-03T12:00:00.000Z",
+    });
+  });
+
   it("fetches current user profile from backend-owned endpoint", async () => {
     mockGet.mockResolvedValue({
       profile: { uid: "u1", username: "neo", language: "pl" },

@@ -7,11 +7,14 @@ import {
   jest,
 } from "@jest/globals";
 import type { Meal } from "@/types/meal";
+import * as FileSystem from "expo-file-system";
 import {
   deleteMealInFirestore,
   getMealsPageFiltered,
+  restoreMissingMealPhotos,
   subscribeMeals,
 } from "@/services/meals/mealService";
+import { ensureLocalMealPhoto, localPhotoPath } from "@/services/meals/mealService.images";
 
 const mockGetMealsPageLocal = jest.fn<(...args: unknown[]) => Promise<Meal[]>>();
 const mockGetMealsPageLocalFiltered = jest.fn<
@@ -97,6 +100,10 @@ describe("services/mealService", () => {
     mockFetchMealsPageRemote.mockResolvedValue({ items: [], nextCursor: null });
     mockMarkMealDeletedRemote.mockResolvedValue(undefined);
     mockOn.mockReturnValue(jest.fn());
+    jest.mocked(FileSystem.getInfoAsync).mockResolvedValue({ exists: false } as ReturnType<typeof FileSystem.getInfoAsync> extends Promise<infer T> ? T : never);
+    jest.mocked(FileSystem.makeDirectoryAsync).mockResolvedValue(undefined);
+    jest.mocked(localPhotoPath).mockReturnValue("file:///docs/meals/u1/cloud-1.jpg");
+    jest.mocked(ensureLocalMealPhoto).mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -201,6 +208,149 @@ describe("services/mealService", () => {
     expect(unsubscribe1).toHaveBeenCalled();
     expect(unsubscribe2).toHaveBeenCalled();
     expect(unsubscribe3).toHaveBeenCalled();
+  });
+
+  it("clampDateRange: accessWindowDays=0 does not clamp — returns filters unchanged", async () => {
+    const dateRange = {
+      start: new Date("2026-01-01T00:00:00.000Z"),
+      end: new Date("2026-03-03T23:59:59.000Z"),
+    };
+    mockGetMealsPageLocalFiltered.mockResolvedValueOnce({ items: [], nextBefore: null });
+
+    await getMealsPageFiltered("u1", {
+      limit: 10,
+      cursor: null,
+      filters: { dateRange },
+      accessWindowDays: 0,
+    });
+
+    expect(mockGetMealsPageLocalFiltered).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({
+        filters: expect.objectContaining({ dateRange }),
+      }),
+    );
+  });
+
+  it("clampDateRange: no accessWindowDays passes filters through unchanged", async () => {
+    const dateRange = {
+      start: new Date("2026-01-01T00:00:00.000Z"),
+      end: new Date("2026-03-03T23:59:59.000Z"),
+    };
+    mockGetMealsPageLocalFiltered.mockResolvedValueOnce({ items: [], nextBefore: null });
+
+    await getMealsPageFiltered("u1", {
+      limit: 10,
+      cursor: null,
+      filters: { dateRange },
+    });
+
+    expect(mockGetMealsPageLocalFiltered).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({
+        filters: expect.objectContaining({ dateRange }),
+      }),
+    );
+  });
+
+  it("clampDateRange: returns epoch range when clamped start exceeds clamped end", async () => {
+    // input.end (2026-01-01) is before the 3-day window start (2026-03-01)
+    // → after clamping: start = 2026-03-01, end = 2026-01-01 → start > end → epoch
+    mockGetMealsPageLocalFiltered.mockResolvedValueOnce({ items: [], nextBefore: null });
+
+    await getMealsPageFiltered("u1", {
+      limit: 10,
+      cursor: null,
+      filters: {
+        dateRange: {
+          start: new Date("2025-12-01T00:00:00.000Z"),
+          end: new Date("2026-01-01T00:00:00.000Z"),
+        },
+      },
+      accessWindowDays: 3,
+    });
+
+    expect(mockGetMealsPageLocalFiltered).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({
+        filters: expect.objectContaining({
+          dateRange: { start: new Date(0), end: new Date(0) },
+        }),
+      }),
+    );
+  });
+
+  it("subscribeMeals: cb not called after unsubscribe even if publish is in flight", async () => {
+    let capturedPublish: (() => void) | null = null;
+    mockOn.mockImplementation((_event: unknown, cb: unknown) => {
+      capturedPublish = cb as () => void;
+      return jest.fn();
+    });
+
+    // Delay the local fetch so publish is in-flight when we unsubscribe
+    let resolveLocal!: (v: Meal[]) => void;
+    mockGetMealsPageLocal.mockReturnValue(new Promise((r) => { resolveLocal = r; }));
+
+    const cb = jest.fn();
+    const unsubscribe = subscribeMeals("u1", cb);
+
+    // Unsubscribe before the initial publish resolves
+    unsubscribe();
+    resolveLocal([baseMeal()]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(cb).not.toHaveBeenCalled();
+
+    // Also test event-triggered publish after unsubscribe
+    if (capturedPublish) {
+      mockGetMealsPageLocal.mockResolvedValueOnce([baseMeal()]);
+      capturedPublish();
+      await Promise.resolve();
+      expect(cb).not.toHaveBeenCalled();
+    }
+  });
+
+  it("restoreMissingMealPhotos: returns empty record for empty meals array", async () => {
+    const result = await restoreMissingMealPhotos("u1", []);
+    expect(result).toEqual({});
+    expect(FileSystem.getInfoAsync).not.toHaveBeenCalled();
+  });
+
+  it("restoreMissingMealPhotos: returns empty record for falsy uid", async () => {
+    const result = await restoreMissingMealPhotos("", [baseMeal()]);
+    expect(result).toEqual({});
+  });
+
+  it("restoreMissingMealPhotos: adds local path when photo already exists on disk", async () => {
+    jest.mocked(FileSystem.getInfoAsync)
+      .mockResolvedValueOnce({ exists: false } as ReturnType<typeof FileSystem.getInfoAsync> extends Promise<infer T> ? T : never) // ensureDir check
+      .mockResolvedValueOnce({ exists: true } as ReturnType<typeof FileSystem.getInfoAsync> extends Promise<infer T> ? T : never); // photo exists
+
+    jest.mocked(localPhotoPath).mockReturnValue("file:///docs/meals/u1/cloud-1.jpg");
+
+    const result = await restoreMissingMealPhotos("u1", [baseMeal()]);
+
+    expect(result).toEqual({ "cloud-1": "file:///docs/meals/u1/cloud-1.jpg" });
+    expect(ensureLocalMealPhoto).not.toHaveBeenCalled();
+  });
+
+  it("restoreMissingMealPhotos: adds path from ensureLocalMealPhoto when photo missing", async () => {
+    jest.mocked(FileSystem.getInfoAsync).mockResolvedValue({ exists: false } as ReturnType<typeof FileSystem.getInfoAsync> extends Promise<infer T> ? T : never);
+    jest.mocked(ensureLocalMealPhoto).mockResolvedValueOnce("file:///docs/meals/u1/cloud-1.jpg");
+
+    const result = await restoreMissingMealPhotos("u1", [baseMeal()]);
+
+    expect(result).toEqual({ "cloud-1": "file:///docs/meals/u1/cloud-1.jpg" });
+  });
+
+  it("restoreMissingMealPhotos: omits meal when ensureLocalMealPhoto returns null", async () => {
+    jest.mocked(FileSystem.getInfoAsync).mockResolvedValue({ exists: false } as ReturnType<typeof FileSystem.getInfoAsync> extends Promise<infer T> ? T : never);
+    jest.mocked(ensureLocalMealPhoto).mockResolvedValueOnce(null);
+
+    const result = await restoreMissingMealPhotos("u1", [baseMeal()]);
+
+    expect(result).toEqual({});
   });
 
   it("marks meals as deleted through repository helper", async () => {

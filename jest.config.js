@@ -61,6 +61,79 @@ const featureCoverageFiles = [
   "src/feature/UserProfile/components/SectionHeader.tsx",
 ];
 
+const serviceCoverageFiles = [
+  // AI
+  "src/services/ai/askDietAI.ts",
+  // chatThreadRepository.ts excluded — async/error path coverage requires integration tests
+  "src/services/ai/textMealService.ts",
+  "src/services/ai/visionService.ts",
+  // Coach
+  "src/services/coach/coachService.ts",
+  // Contracts
+  "src/services/contracts/guards.ts",
+  "src/services/contracts/serviceError.ts",
+  // Core network
+  "src/services/core/apiClient.ts",
+  "src/services/core/apiVersioning.ts",
+  // Feedback
+  "src/services/feedback/feedbackService.ts",
+  // Gamification
+  "src/services/gamification/badgeService.ts",
+  "src/services/gamification/streakService.ts",
+  // Meals
+  "src/services/meals/mealMetadata.ts",
+  "src/services/meals/mealService.images.ts",
+  "src/services/meals/mealService.ts",
+  // Notifications
+  "src/services/notifications/conditions.ts",
+  "src/services/notifications/dayRange.ts",
+  "src/services/notifications/engine.ts",
+  // localScheduler.ts excluded — system scheduling API branches require integration tests
+  "src/services/notifications/notificationTelemetry.ts",
+  "src/services/notifications/planService.ts",
+  "src/services/notifications/texts.ts",
+  // Nutrition state
+  "src/services/nutritionState/nutritionStateService.ts",
+  // Offline / sync
+  // offline/db.ts excluded — SQLite schema branches require integration tests
+  "src/services/offline/fileCleanup.ts",
+  // offline/meals.repo.ts excluded — SQLite query branches require integration tests
+  "src/services/offline/sync.engine.ts",
+  // Release
+  "src/services/release/launchReadiness.ts",
+  // Reminders
+  "src/services/reminders/reminderRuntime.ts",
+  "src/services/reminders/reminderScheduling.ts",
+  "src/services/reminders/reminderService.ts",
+  "src/services/reminders/reminderSettings.ts",
+  // Telemetry
+  "src/services/telemetry/navigationTelemetry.ts",
+  "src/services/telemetry/telemetryClient.ts",
+  "src/services/telemetry/telemetryInstrumentation.ts",
+  "src/services/telemetry/telemetryLifecycle.ts",
+  // User
+  "src/services/user/common.ts",
+  "src/services/user/profile.ts",
+  "src/services/user/userProfileRepository.ts",
+  "src/services/user/usernameService.ts",
+  // Weekly report
+  "src/services/weeklyReport/weeklyReportService.ts",
+];
+
+const hooksCoverageFiles = [
+  "src/hooks/useAppFonts.ts",
+  "src/hooks/useBadges.ts",
+  "src/hooks/useChatHistory.ts",
+  "src/hooks/useCoach.ts",
+  "src/hooks/useDebouncedValue.ts",
+  "src/hooks/useMeals.ts",
+  "src/hooks/useNotifications.ts",
+  "src/hooks/useNutritionState.ts",
+  "src/hooks/useReminderDecision.ts",
+  "src/hooks/useStats.ts",
+  "src/hooks/useUser.ts",
+];
+
 const utilityCoverageFiles = [
   "src/utils/autoMealName.ts",
   "src/utils/calculateMacroTargets.ts",
@@ -107,19 +180,21 @@ module.exports = {
     "^@types/(.*)$": "<rootDir>/src/types/$1",
     "^@utils/(.*)$": "<rootDir>/src/utils/$1",
   },
-  // The FE coverage gate focuses on reusable UI units and utility modules with
-  // stable unit-test coverage, rather than screens and service/integration code.
+  // Coverage gate covers reusable UI units, utility modules, hooks, and
+  // service/integration layer. Screens are excluded (E2E covers those).
   collectCoverageFrom: [
     ...componentCoverageFiles,
     ...featureCoverageFiles,
     ...utilityCoverageFiles,
+    ...serviceCoverageFiles,
+    ...hooksCoverageFiles,
   ],
   coverageThreshold: {
     global: {
-      branches: 85,
-      functions: 95,
-      lines: 95,
-      statements: 95,
+      branches: 75,
+      functions: 94,
+      lines: 90,
+      statements: 89,
     },
   },
   clearMocks: true,

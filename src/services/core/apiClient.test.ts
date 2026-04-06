@@ -140,7 +140,9 @@ describe("apiClient", () => {
 
     const pending = get("/health", { timeout: 5 });
     const captured = pending.catch((error: unknown) => error);
-    await jest.advanceTimersByTimeAsync(10);
+    // Advance through all retry attempts:
+    // attempt 0: 5ms timeout → sleep(1000ms) → attempt 1: 5ms timeout → sleep(2000ms) → attempt 2: 5ms timeout → throws
+    await jest.advanceTimersByTimeAsync(3100);
 
     await expect(captured).resolves.toMatchObject({
       code: "api/timeout",

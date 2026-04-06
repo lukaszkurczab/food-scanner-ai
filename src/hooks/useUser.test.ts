@@ -750,7 +750,8 @@ describe("useUser", () => {
       await result.current.changeLanguage("it");
     });
 
-    expect(mockNetInfoFetch).toHaveBeenCalledTimes(4);
+    // syncUserProfile → fetchUserFromCloud (1×) + changeLanguage → pushPendingChanges (1×)
+    expect(mockNetInfoFetch).toHaveBeenCalledTimes(2);
     expect(result.current.language).toBe("en");
     expect(mockI18nChangeLanguage).toHaveBeenCalledWith("en");
     expect(mockEnqueueUserProfileUpdate).toHaveBeenCalledWith(

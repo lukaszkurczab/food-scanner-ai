@@ -97,6 +97,78 @@ describe("notificationTelemetry", () => {
     mockTrackNotificationScheduled.mockResolvedValue(undefined);
   });
 
+  it("resolveNotificationTelemetryContext returns null context for non-record data", () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { resolveNotificationTelemetryContext } = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
+
+    expect(resolveNotificationTelemetryContext(null)).toEqual({ notificationType: null, origin: null });
+    expect(resolveNotificationTelemetryContext("string")).toEqual({ notificationType: null, origin: null });
+    expect(resolveNotificationTelemetryContext(42)).toEqual({ notificationType: null, origin: null });
+  });
+
+  it("resolveNotificationTelemetryContext uses system_notifications when only sys field present", () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { resolveNotificationTelemetryContext } = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
+
+    expect(resolveNotificationTelemetryContext({ sys: "weekly_summary" })).toEqual({
+      notificationType: "weekly_summary",
+      origin: "system_notifications",
+    });
+  });
+
+  it("resolveNotificationTelemetryContext uses user_notifications when only notifId present", () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { resolveNotificationTelemetryContext } = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
+
+    expect(resolveNotificationTelemetryContext({ notifId: "notif-123" })).toEqual({
+      notificationType: null,
+      origin: "user_notifications",
+    });
+  });
+
+  it("resolveNotificationTelemetryContext returns null context when record has no recognized fields", () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { resolveNotificationTelemetryContext } = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
+
+    expect(resolveNotificationTelemetryContext({ foo: "bar" })).toEqual({
+      notificationType: null,
+      origin: null,
+    });
+  });
+
+  it("second initNotificationTelemetry call is a no-op — listeners registered only once", () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const service = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
+
+    service.initNotificationTelemetry();
+    service.initNotificationTelemetry();
+
+    // If init ran twice, addNotificationReceivedListener would be called twice
+    // We verify by checking the subscription.remove counts after stop
+    service.stopNotificationTelemetry();
+    expect(mockReceivedSubscription.remove).toHaveBeenCalledTimes(1);
+  });
+
+  it("stopNotificationTelemetry is safe to call when not initialized", () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const service = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
+
+    // Never called init — subscriptions are null; should not throw
+    expect(() => service.stopNotificationTelemetry()).not.toThrow();
+    expect(mockReceivedSubscription.remove).not.toHaveBeenCalled();
+  });
+
+  it("safeTrack swallows telemetry errors and logs a warning", async () => {
+    mockTrackNotificationScheduled.mockRejectedValueOnce(new Error("network"));
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const service = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
+
+    await expect(
+      service.emitNotificationScheduledTelemetry({ notificationType: "t", origin: "o" }),
+    ).resolves.toBeUndefined();
+    expect(mockWarn).toHaveBeenCalled();
+  });
+
   it("tracks notification fired and opened events from Expo listeners", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const service = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
