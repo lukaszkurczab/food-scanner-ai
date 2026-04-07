@@ -11,6 +11,8 @@ on:
         options:
           - ios
           - android
+  schedule:
+    - cron: "0 3 * * *"
 
 permissions:
   contents: read
@@ -22,7 +24,7 @@ jobs:
     timeout-minutes: 40
 
     env:
-      E2E_PLATFORM: ${{ inputs.platform }}
+      E2E_PLATFORM: ${{ inputs.platform || 'ios' }}
 
     steps:
       - name: Checkout repository
