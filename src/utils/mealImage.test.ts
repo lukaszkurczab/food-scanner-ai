@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import type { Meal } from "@/types/meal";
-import { getMealImage } from "@/utils/mealImage";
+import { getMealImage, pickMealPhotoUri } from "@/utils/mealImage";
 import * as FileSystem from "expo-file-system";
 import { ensureLocalMealPhoto } from "@/services/meals/mealService.images";
 
@@ -122,5 +122,27 @@ describe("getMealImage", () => {
       imageId: null,
       photoUrl: null,
     });
+  });
+});
+
+describe("pickMealPhotoUri", () => {
+  it("prefers a local URI even when localPhotoUrl points to a stale remote image", () => {
+    const meal = createMeal({
+      localPhotoUrl: "https://remote.example.com/old.jpg",
+      photoLocalPath: null,
+      photoUrl: "file:///fresh-photo.jpg",
+    });
+
+    expect(pickMealPhotoUri(meal)).toBe("file:///fresh-photo.jpg");
+  });
+
+  it("falls back to available remote URI when no local URI exists", () => {
+    const meal = createMeal({
+      localPhotoUrl: "https://remote.example.com/old.jpg",
+      photoLocalPath: null,
+      photoUrl: "https://remote.example.com/new.jpg",
+    });
+
+    expect(pickMealPhotoUri(meal)).toBe("https://remote.example.com/new.jpg");
   });
 });

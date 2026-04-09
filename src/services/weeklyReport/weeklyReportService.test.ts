@@ -102,13 +102,14 @@ describe("weeklyReportService", () => {
     expect(result).toBe("2026-03-20");
   });
 
-  it("returns disabled fallback and skips endpoint when feature flag is off", async () => {
+  it("does not gate weekly report fetch behind mobile feature flags", async () => {
     mockReadPublicEnv.mockImplementation((name: string) => {
       if (name === "EXPO_PUBLIC_ENABLE_WEEKLY_REPORTS") {
         return "false";
       }
       return undefined;
     });
+    mockGet.mockResolvedValue(createPayload());
 
     const service =
       jest.requireActual("@/services/weeklyReport/weeklyReportService") as typeof import("@/services/weeklyReport/weeklyReportService");
@@ -117,11 +118,11 @@ describe("weeklyReportService", () => {
       weekEnd: "2026-03-15",
     });
 
-    expect(result.enabled).toBe(false);
-    expect(result.source).toBe("disabled");
-    expect(result.status).toBe("disabled");
-    expect(result.report.status).toBe("not_available");
-    expect(mockGet).not.toHaveBeenCalled();
+    expect(result.enabled).toBe(true);
+    expect(result.source).toBe("remote");
+    expect(result.status).toBe("live_success");
+    expect(result.report.status).toBe("ready");
+    expect(mockGet).toHaveBeenCalledTimes(1);
   });
 
   it("supports insufficient-data payloads", async () => {
@@ -165,5 +166,75 @@ describe("weeklyReportService", () => {
     expect(result.error).toEqual(
       expect.objectContaining({ code: "weekly-report/invalid-contract-payload" }),
     );
+  });
+
+  it("returns no-user fallback without calling the endpoint when uid is missing", async () => {
+    const service =
+      jest.requireActual("@/services/weeklyReport/weeklyReportService") as typeof import("@/services/weeklyReport/weeklyReportService");
+
+    const result = await service.getWeeklyReport(null, {
+      weekEnd: "2026-03-15",
+    });
+
+    expect(result.source).toBe("fallback");
+    expect(result.status).toBe("no_user");
+    expect(result.enabled).toBe(true);
+    expect(result.report.status).toBe("not_available");
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it("treats non-object payload as invalid contract", async () => {
+    mockGet.mockResolvedValue("invalid-payload");
+    const service =
+      jest.requireActual("@/services/weeklyReport/weeklyReportService") as typeof import("@/services/weeklyReport/weeklyReportService");
+
+    const result = await service.getWeeklyReport("user-1", {
+      weekEnd: "2026-03-15",
+    });
+
+    expect(result.status).toBe("invalid_payload");
+    expect(result.report.status).toBe("not_available");
+  });
+
+  it("treats malformed period and oversized priorities as invalid contract", async () => {
+    mockGet.mockResolvedValue({
+      ...createPayload(),
+      period: null,
+      priorities: [
+        ...createPayload().priorities,
+        { type: "maintain_consistency", text: "x", reasonCodes: ["x"] },
+        { type: "maintain_consistency", text: "y", reasonCodes: ["y"] },
+      ],
+    });
+    const service =
+      jest.requireActual("@/services/weeklyReport/weeklyReportService") as typeof import("@/services/weeklyReport/weeklyReportService");
+
+    const result = await service.getWeeklyReport("user-1", {
+      weekEnd: "2026-03-15",
+    });
+
+    expect(result.status).toBe("invalid_payload");
+    expect(result.report.status).toBe("not_available");
+  });
+
+  it("treats non-string reasonCodes entries as invalid contract", async () => {
+    mockGet.mockResolvedValue({
+      ...createPayload(),
+      insights: [
+        {
+          ...createPayload().insights[0],
+          reasonCodes: ["ok", 123],
+        },
+      ],
+    });
+    const service =
+      jest.requireActual("@/services/weeklyReport/weeklyReportService") as typeof import("@/services/weeklyReport/weeklyReportService");
+
+    const result = await service.getWeeklyReport("user-1", {
+      weekEnd: "2026-03-15",
+    });
+
+    expect(result.status).toBe("invalid_payload");
+    expect(result.report.status).toBe("not_available");
   });
 });

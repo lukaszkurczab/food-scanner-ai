@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+
+import fs from "node:fs";
+import path from "node:path";
+
+const outputPath = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve("release-evidence.md");
+const exportSummaryPath = (process.env.EXPORT_SUMMARY_PATH || "").trim();
+const exportSummary = exportSummaryPath ? JSON.parse(fs.readFileSync(exportSummaryPath, "utf8")) : null;
+
+function value(name, fallback = "not provided") {
+  const raw = process.env[name];
+  return typeof raw === "string" && raw.trim() ? raw.trim() : fallback;
+}
+
+function bullet(label, content) {
+  return `- ${label}: ${content}`;
+}
+
+const lines = [
+  "# Release Evidence",
+  "",
+  bullet("Generated at", value("EVIDENCE_GENERATED_AT", new Date().toISOString())),
+  bullet("Mobile commit SHA", value("MOBILE_SHA", "unknown")),
+  bullet("Backend commit SHA", value("BACKEND_SHA", "unknown")),
+  bullet("Mobile CI", value("MOBILE_CI_STATUS", "unknown")),
+  bullet("Backend CI", value("BACKEND_CI_STATUS", "unknown")),
+  bullet("Smoke E2E", value("SMOKE_E2E_STATUS", "unknown")),
+  bullet("Smoke export", value("SMOKE_EXPORT_STATUS", "unknown")),
+  bullet("Android targetSdk check", value("TARGET_SDK_STATUS", "unknown")),
+  bullet("Android AAB check", value("AAB_STATUS", "unknown")),
+  bullet("Latest Firestore backup", value("BACKUP_RUN_URL", "missing")),
+  bullet("Latest restore drill", value("RESTORE_RUN_URL", "missing")),
+  bullet("Delete smoke evidence", value("DELETE_EVIDENCE_URL", "pending manual attachment")),
+  bullet("Delete smoke note", value("DELETE_EVIDENCE_NOTE", "pending manual attachment")),
+  "",
+  "## Smoke Export Summary",
+];
+
+if (exportSummary) {
+  lines.push(
+    bullet("Checked at", exportSummary.checkedAt || "unknown"),
+    bullet("Smoke API", exportSummary.smokeApiBaseUrl || "unknown"),
+    bullet("Smoke user", exportSummary.smokeUserEmail || exportSummary.smokeUserId || "unknown"),
+    bullet("Meals count", String(exportSummary.counts?.meals ?? "unknown")),
+    bullet("Saved meals count", String(exportSummary.counts?.myMeals ?? "unknown")),
+    bullet("Chat messages count", String(exportSummary.counts?.chatMessages ?? "unknown")),
+    bullet("Notifications count", String(exportSummary.counts?.notifications ?? "unknown")),
+    bullet("Feedback count", String(exportSummary.counts?.feedback ?? "unknown")),
+  );
+} else {
+  lines.push("- Smoke export summary was not generated.");
+}
+
+lines.push(
+  "",
+  "## Manual Follow-ups",
+  "- Attach the disposable smoke delete log before approving the `production` environment.",
+  "- Confirm GitHub `production` environment has a required reviewer configured in repository settings.",
+  "- Confirm Sentry production alerts for backend 5xx spike and mobile crash/session drop route to Discord.",
+  "",
+);
+
+fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+fs.writeFileSync(outputPath, `${lines.join("\n")}\n`, "utf8");
+process.stdout.write(`${outputPath}\n`);

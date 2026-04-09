@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  ReactNode,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Meal, Ingredient, MealType } from "@/types/meal";
 import { v4 as uuidv4 } from "uuid";
@@ -64,10 +71,11 @@ export const MealDraftProvider = ({ children }: Props) => {
   const [meal, setMealState] = useState<Meal | null>(null);
   const [isDraft, setIsDraft] = useState(false);
   const [lastScreen, setLastScreenState] = useState<string | null>(null);
+  const mealRef = useRef<Meal | null>(null);
 
   const saveDraft = useCallback(
     async (userUid: string, draftOverride?: Meal | null) => {
-      const draftToSave = draftOverride ?? meal;
+      const draftToSave = draftOverride ?? mealRef.current;
       if (draftToSave) {
         await AsyncStorage.setItem(
           getDraftKey(userUid),
@@ -76,21 +84,25 @@ export const MealDraftProvider = ({ children }: Props) => {
         setIsDraft(true);
       }
     },
-    [meal],
+    [],
   );
 
   const loadDraft = useCallback(async (userUid: string) => {
     const raw = await AsyncStorage.getItem(getDraftKey(userUid));
     if (!raw) {
+      mealRef.current = null;
       setMealState(null);
       setIsDraft(false);
       return;
     }
 
     try {
-      setMealState(JSON.parse(raw));
+      const parsed = JSON.parse(raw) as Meal;
+      mealRef.current = parsed;
+      setMealState(parsed);
       setIsDraft(true);
     } catch {
+      mealRef.current = null;
       setMealState(null);
       setIsDraft(false);
       setLastScreenState(null);
@@ -106,6 +118,7 @@ export const MealDraftProvider = ({ children }: Props) => {
   const removeDraft = useCallback(
     async (userUid: string) => {
       await AsyncStorage.removeItem(getDraftKey(userUid));
+      mealRef.current = null;
       setMealState(null);
       setIsDraft(false);
       await clearLastScreen(userUid);
@@ -153,57 +166,78 @@ export const MealDraftProvider = ({ children }: Props) => {
     setLastScreenState(normalized || null);
   }, []);
 
-  const setMeal = (meal: Meal) => setMealState(meal);
+  const setMeal = useCallback((meal: Meal) => {
+    mealRef.current = meal;
+    setMealState(meal);
+  }, []);
 
   const updateMeal = (patch: Partial<Meal>) => {
     setMealState((prev) =>
-      prev ? { ...prev, ...patch, updatedAt: new Date().toISOString() } : null,
+      {
+        const next = prev
+          ? { ...prev, ...patch, updatedAt: new Date().toISOString() }
+          : null;
+        mealRef.current = next;
+        return next;
+      },
     );
   };
 
   const addIngredient = (ingredient: Ingredient) => {
     setMealState((prev) =>
-      prev
-        ? {
-            ...prev,
-            ingredients: [
-              ...(prev.ingredients ?? []),
-              { ...ingredient, id: ingredient.id || uuidv4() },
-            ],
-            updatedAt: new Date().toISOString(),
-          }
-        : null,
+      {
+        const next = prev
+          ? {
+              ...prev,
+              ingredients: [
+                ...(prev.ingredients ?? []),
+                { ...ingredient, id: ingredient.id || uuidv4() },
+              ],
+              updatedAt: new Date().toISOString(),
+            }
+          : null;
+        mealRef.current = next;
+        return next;
+      },
     );
   };
 
   const removeIngredient = (index: number) => {
     setMealState((prev) =>
-      prev
-        ? {
-            ...prev,
-            ingredients: (prev.ingredients ?? []).filter((_, i) => i !== index),
-            updatedAt: new Date().toISOString(),
-          }
-        : null,
+      {
+        const next = prev
+          ? {
+              ...prev,
+              ingredients: (prev.ingredients ?? []).filter((_, i) => i !== index),
+              updatedAt: new Date().toISOString(),
+            }
+          : null;
+        mealRef.current = next;
+        return next;
+      },
     );
   };
 
   const updateIngredient = (index: number, ingredient: Ingredient) => {
     setMealState((prev) =>
-      prev
-        ? {
-            ...prev,
-            ingredients: (prev.ingredients ?? []).map((ing, i) =>
-              i === index
-                ? {
-                  ...ingredient,
-                    id: ing.id || ingredient.id || uuidv4(),
-                  }
-                : ing,
-            ),
-            updatedAt: new Date().toISOString(),
-          }
-        : null,
+      {
+        const next = prev
+          ? {
+              ...prev,
+              ingredients: (prev.ingredients ?? []).map((ing, i) =>
+                i === index
+                  ? {
+                      ...ingredient,
+                      id: ing.id || ingredient.id || uuidv4(),
+                    }
+                  : ing,
+              ),
+              updatedAt: new Date().toISOString(),
+            }
+          : null;
+        mealRef.current = next;
+        return next;
+      },
     );
   };
 
@@ -214,30 +248,40 @@ export const MealDraftProvider = ({ children }: Props) => {
 
   const addTag = (tag: string) => {
     setMealState((prev) =>
-      prev && tag
-        ? {
-            ...prev,
-            tags: prev.tags ? [...prev.tags, tag] : [tag],
-            updatedAt: new Date().toISOString(),
-          }
-        : prev,
+      {
+        const next =
+          prev && tag
+            ? {
+                ...prev,
+                tags: prev.tags ? [...prev.tags, tag] : [tag],
+                updatedAt: new Date().toISOString(),
+              }
+            : prev;
+        mealRef.current = next;
+        return next;
+      },
     );
   };
 
   const removeTag = (tag: string) => {
     setMealState((prev) =>
-      prev
-        ? {
-            ...prev,
-            tags: prev.tags?.filter((t) => t !== tag) || [],
-            updatedAt: new Date().toISOString(),
-          }
-        : prev,
+      {
+        const next = prev
+          ? {
+              ...prev,
+              tags: prev.tags?.filter((t) => t !== tag) || [],
+              updatedAt: new Date().toISOString(),
+            }
+          : prev;
+        mealRef.current = next;
+        return next;
+      },
     );
   };
 
   const clearMeal = useCallback(
     (userUid: string) => {
+      mealRef.current = null;
       setMealState(null);
       void removeDraft(userUid);
     },

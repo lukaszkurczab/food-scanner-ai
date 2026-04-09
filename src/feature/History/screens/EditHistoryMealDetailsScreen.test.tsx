@@ -180,4 +180,48 @@ describe("EditHistoryMealDetailsScreen", () => {
       returnTo: "EditHistoryMealDetails",
     });
   });
+
+  it("does not re-seed draft on rerender when route meal version is unchanged", async () => {
+    const navigation = {
+      goBack: jest.fn<() => void>(),
+      replace: jest.fn<(screen: string, params?: unknown) => void>(),
+    };
+    const stableRouteMeal = buildMeal({
+      updatedAt: "2026-01-10T12:00:00.000Z",
+    });
+    const setMeal = jest.fn<(meal: Meal) => void>();
+    const saveDraft = jest.fn<(uid: string, draft?: Meal | null) => Promise<void>>(
+      async (_uid: string, _draft?: Meal | null) => undefined,
+    );
+    const setLastScreen = jest.fn<(uid: string, screen: string) => Promise<void>>(
+      async (_uid: string, _screen: string) => undefined,
+    );
+
+    mockUseRoute.mockImplementation(() => ({
+      params: { meal: { ...stableRouteMeal } },
+    }));
+    mockUseMeals.mockReturnValue({ updateMeal: jest.fn(async () => undefined) });
+    mockUseMealDraftContext.mockReturnValue({
+      meal: stableRouteMeal,
+      setMeal,
+      saveDraft,
+      setLastScreen,
+    });
+
+    const view = renderWithTheme(
+      <EditHistoryMealDetailsScreen navigation={navigation as never} />,
+    );
+
+    await waitFor(() => {
+      expect(setMeal).toHaveBeenCalledTimes(1);
+    });
+
+    view.rerender(<EditHistoryMealDetailsScreen navigation={navigation as never} />);
+
+    await waitFor(() => {
+      expect(setMeal).toHaveBeenCalledTimes(1);
+      expect(saveDraft).toHaveBeenCalledTimes(1);
+      expect(setLastScreen).toHaveBeenCalledTimes(1);
+    });
+  });
 });

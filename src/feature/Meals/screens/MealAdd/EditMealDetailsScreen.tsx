@@ -1,14 +1,14 @@
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { MealDetailsFormScreen } from "./MealDetailsFormScreen";
+import { pickMealPhotoUri } from "@/utils/mealImage";
 
 export default function EditMealDetailsScreen({
   navigation,
   flow,
 }: MealAddScreenProps<"EditMealDetails">) {
   const { meal } = useMealDraftContext();
-  const reviewPhotoUri =
-    meal?.localPhotoUrl ?? meal?.photoLocalPath ?? meal?.photoUrl ?? null;
+  const reviewPhotoUri = pickMealPhotoUri(meal);
 
   return (
     <MealDetailsFormScreen

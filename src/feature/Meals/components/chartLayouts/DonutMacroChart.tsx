@@ -1,5 +1,10 @@
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { useTheme } from "@/theme/useTheme";
+import {
+  OverlayMacroLegendItem,
+  withAlpha,
+} from "../overlayPrimitives";
 
 type PieDatum = {
   value: number;
@@ -15,12 +20,13 @@ type Props = {
   innerRadiusRatio?: number;
   textColor?: string;
   fontFamily?: string;
+  fontWeight?: "300" | "500" | "700" | "normal" | "bold";
   backgroundColor?: string;
 };
 
-const SIZE = 180;
+const SIZE = 134;
 const OUTER_RADIUS = SIZE / 2;
-const MIN_SHARE = 0.05;
+const MIN_SHARE = 0.08;
 
 const degToRad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -92,7 +98,9 @@ export default function DonutMacroChart({
   innerRadiusRatio,
   textColor,
   fontFamily,
+  fontWeight = "700",
 }: Props) {
+  const theme = useTheme();
   const safeData: PieDatum[] = (data || []).map((d) => ({
     ...d,
     value: Math.max(0, d.value),
@@ -105,13 +113,8 @@ export default function DonutMacroChart({
     return (
       <View style={styles.wrap}>
         {showKcalLabel && (
-          <Text
-            style={[
-              styles.kcalText,
-              { color: textColor || "#000", fontFamily },
-            ]}
-          >
-            {kcal} kcal
+          <Text style={[styles.kcalText, { color: textColor || theme.text, fontFamily }]}>
+            {Math.round(kcal)} kcal
           </Text>
         )}
       </View>
@@ -122,8 +125,8 @@ export default function DonutMacroChart({
   const shares = normalizeShares(values);
 
   const ratioRaw =
-    typeof innerRadiusRatio === "number" ? innerRadiusRatio : 0.64;
-  const ratio = Math.min(Math.max(ratioRaw, 0.5), 0.8);
+    typeof innerRadiusRatio === "number" ? innerRadiusRatio : 0.7;
+  const ratio = Math.min(Math.max(ratioRaw, 0.62), 0.84);
   const innerR = OUTER_RADIUS * ratio;
 
   let currentAngle = -90;
@@ -156,20 +159,27 @@ export default function DonutMacroChart({
 
   const textStyleBig = [
     styles.kcalBig,
-    { color: textColor || "#000", fontFamily },
+    { color: textColor || theme.text, fontFamily, fontWeight },
   ];
   const textStyleSmall = [
     styles.kcalSmall,
-    { color: textColor || "#000", fontFamily },
-  ];
-  const legendTextStyle = [
-    styles.legendText,
-    { color: textColor || "#000", fontFamily },
+    {
+      color: withAlpha(textColor || theme.text, 0.72),
+      fontFamily: fontFamily ?? theme.typography.fontFamily.medium,
+    },
   ];
 
   return (
     <View style={styles.wrap}>
       <View style={styles.chartContainer}>
+        <View
+          style={[
+            styles.ringTrack,
+            {
+              borderColor: withAlpha(theme.borderSoft, theme.isDark ? 0.58 : 0.4),
+            },
+          ]}
+        />
         <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {slices}
         </Svg>
@@ -183,12 +193,22 @@ export default function DonutMacroChart({
 
       {showLegend && (
         <View style={styles.legendRow}>
-          {safeData.map((d) => (
+          {safeData.map((d, index) => (
             <View key={d.label} style={styles.legendItem}>
-              <View style={[styles.dot, { backgroundColor: d.color }]} />
-              <Text style={legendTextStyle}>
-                {d.label}: {Math.round(d.value)} g
-              </Text>
+              <OverlayMacroLegendItem
+                label={String(d.label).charAt(0).toUpperCase()}
+                value={d.value}
+                color={d.color}
+                textColor={textColor || theme.text}
+                fontFamily={fontFamily}
+                fontWeight={fontWeight}
+                compact
+                align="center"
+                markerMode="none"
+                labelColor={d.color}
+                valueColor={withAlpha(textColor || theme.text, 0.72)}
+                style={index > 0 ? styles.legendItemShift : undefined}
+              />
             </View>
           ))}
         </View>
@@ -199,7 +219,7 @@ export default function DonutMacroChart({
 
 const styles = StyleSheet.create({
   wrap: {
-    width: 220,
+    width: "100%",
     alignItems: "center",
   },
   chartContainer: {
@@ -208,44 +228,45 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  ringTrack: {
+    position: "absolute",
+    width: SIZE,
+    height: SIZE,
+    borderRadius: OUTER_RADIUS,
+    borderWidth: 1,
+  },
   centerLabel: {
     position: "absolute",
     alignItems: "center",
     justifyContent: "center",
   },
   kcalBig: {
-    fontSize: 18,
+    fontSize: 20,
+    lineHeight: 24,
     fontWeight: "700",
   },
   kcalSmall: {
     fontSize: 11,
-    opacity: 0.7,
+    lineHeight: 14,
   },
   kcalText: {
     marginTop: 6,
     fontSize: 16,
+    lineHeight: 20,
     fontWeight: "700",
   },
   legendRow: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 6,
+    gap: 3,
+    marginTop: 8,
     flexWrap: "wrap",
     justifyContent: "center",
   },
   legendItem: {
-    flexDirection: "row",
+    minWidth: 50,
     alignItems: "center",
-    marginHorizontal: 4,
-    marginVertical: 2,
   },
-  legendText: {
-    fontSize: 11,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 4,
+  legendItemShift: {
+    marginLeft: 3,
   },
 });

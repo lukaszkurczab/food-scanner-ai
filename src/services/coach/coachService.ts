@@ -8,7 +8,6 @@ import {
   asString,
   isRecord,
 } from "@/services/contracts/guards";
-import { readPublicEnv } from "@/services/core/publicEnv";
 import { debugScope } from "@/utils/debug";
 import {
   getCoachInsightValidUntil,
@@ -36,10 +35,6 @@ export const COACH_STORAGE_KEY_PREFIX = "coach:last:v1";
 
 const memoryCacheByKey = new Map<string, CoachResponse>();
 const inFlightByKey = new Map<string, { promise: Promise<CoachResult> }>();
-
-function isCoachEnabled(): boolean {
-  return readPublicEnv("EXPO_PUBLIC_ENABLE_V2_STATE") === "true";
-}
 
 function toDayKey(date: Date): string {
   const year = date.getFullYear();
@@ -385,17 +380,6 @@ export async function getCoach(
 ): Promise<CoachResult> {
   const dayKey = normalizeDayKey(options?.dayKey);
   const fallbackCoach = createFallbackCoachResponse(dayKey);
-
-  if (!isCoachEnabled()) {
-    return buildCoachResult({
-      coach: fallbackCoach,
-      source: "disabled",
-      status: "disabled",
-      enabled: false,
-      isStale: true,
-      error: null,
-    });
-  }
 
   if (!uid) {
     return buildCoachResult({

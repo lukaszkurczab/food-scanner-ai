@@ -26,6 +26,6 @@ describe("MacroSummaryCard", () => {
     );
 
     expect(getByText("510 kcal")).toBeTruthy();
-    expect(queryByText("P 30 g • C 40 g • F 20 g")).toBeNull();
+    expect(queryByText("30g")).toBeNull();
   });
 });

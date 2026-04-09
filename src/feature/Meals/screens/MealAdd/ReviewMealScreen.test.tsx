@@ -284,6 +284,32 @@ describe("ReviewMealScreen", () => {
     });
   });
 
+  it("saves meal and opens share composer from review entry", async () => {
+    const addMeal = jest.fn(async () => undefined);
+    const ctx = buildDraftContext();
+    const testProps = buildProps();
+
+    mockUseMealDraftContext.mockReturnValue(ctx);
+    mockUseMeals.mockReturnValue({ addMeal, meals: [] });
+
+    const { getByText } = renderWithTheme(
+      <ReviewMealScreen {...testProps.props} />,
+    );
+
+    fireEvent.press(getByText("Save and share"));
+
+    await waitFor(() => {
+      expect(addMeal).toHaveBeenCalledTimes(1);
+      expect(ctx.clearMeal).toHaveBeenCalledWith("user-1");
+      expect(testProps.navigate).toHaveBeenCalledWith(
+        "MealShare",
+        expect.objectContaining({
+          returnTo: "ReviewMeal",
+        }),
+      );
+    });
+  });
+
   it("shows a quick-check note for low-confidence ai meals", () => {
     const ctx = buildDraftContext({
       source: "ai",

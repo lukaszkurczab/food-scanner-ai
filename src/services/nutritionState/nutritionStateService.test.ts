@@ -92,12 +92,32 @@ describe("nutritionStateService", () => {
     );
   });
 
-  it("returns a stable disabled fallback and does not call the endpoint when the feature flag is off", async () => {
+  it("does not gate nutrition state fetch behind mobile feature flags", async () => {
     mockReadPublicEnv.mockImplementation((name: string) => {
       if (name === "EXPO_PUBLIC_ENABLE_V2_STATE") {
         return "false";
       }
       return undefined;
+    });
+    mockGet.mockResolvedValue({
+      computedAt: "2026-03-18T10:00:00Z",
+      dayKey: "2026-03-18",
+      targets: { kcal: 2000, protein: 120, carbs: null, fat: null },
+      consumed: { kcal: 1200, protein: 80, carbs: 100, fat: 40 },
+      remaining: { kcal: 800, protein: 40, carbs: null, fat: null },
+      quality: { mealsLogged: 2, missingNutritionMeals: 0, dataCompletenessScore: 1 },
+      habits: { available: false },
+      streak: { available: true, current: 4, lastDate: "2026-03-18" },
+      ai: {
+        available: true,
+        tier: "free",
+        balance: 90,
+        allocation: 100,
+        usedThisPeriod: 10,
+        periodStartAt: "2026-03-01T00:00:00Z",
+        periodEndAt: "2026-04-01T00:00:00Z",
+        costs: { chat: 1, textMeal: 1, photo: 5 },
+      },
     });
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -107,10 +127,10 @@ describe("nutritionStateService", () => {
       dayKey: "2026-03-18",
     });
 
-    expect(result.enabled).toBe(false);
-    expect(result.source).toBe("disabled");
+    expect(result.enabled).toBe(true);
+    expect(result.source).toBe("remote");
     expect(result.state.dayKey).toBe("2026-03-18");
-    expect(mockGet).not.toHaveBeenCalled();
+    expect(mockGet).toHaveBeenCalledTimes(1);
   });
 
   it("uses the in-memory cache for repeated reads of the same user and day", async () => {

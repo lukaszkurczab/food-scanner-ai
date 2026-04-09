@@ -300,18 +300,47 @@ export async function upload<T = unknown>(
 ): Promise<T> {
   const fullUrl = buildRequestUrl(url);
   const timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT_MS;
-  const authHeader = await getAuthorizationHeader();
+  let lastError: unknown;
 
-  return performRequest<T>({
-    url: fullUrl,
-    method: "POST",
-    timeoutMs,
-    headers: {
-      Accept: "application/json",
-      ...authHeader,
-    },
-    body: data,
-  });
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const authHeader = await getAuthorizationHeader();
+      return await performRequest<T>({
+        url: fullUrl,
+        method: "POST",
+        timeoutMs,
+        headers: {
+          Accept: "application/json",
+          ...authHeader,
+        },
+        body: data,
+      });
+    } catch (error) {
+      lastError = error;
+      const apiError = error as Partial<ApiClientError>;
+
+      // On first 401: force-refresh the Firebase token and retry once.
+      if (apiError?.status === 401 && attempt === 0) {
+        try {
+          await getAuthToken(/* forceRefresh= */ true);
+        } catch {
+          break;
+        }
+        continue;
+      }
+
+      // Retry transient errors (5xx, 429, network timeout) with
+      // exponential back-off: 1 s, 2 s.
+      if (apiError?.retryable === true && attempt < MAX_RETRIES) {
+        await sleep(RETRY_BASE_DELAY_MS * 2 ** attempt);
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  throw lastError;
 }
 
 export function get<T = unknown>(

@@ -88,14 +88,14 @@ describe("useCoach", () => {
     expect(result.current.coach.topInsight).toBeNull();
   });
 
-  it("exposes disabled service fallback when coach endpoint is gated off", async () => {
+  it("exposes service fallback when coach endpoint is unavailable", async () => {
     mockGetCoach.mockResolvedValue({
       coach: createFallbackCoachResponse("2026-03-18"),
-      source: "disabled",
-      status: "disabled",
-      enabled: false,
+      source: "fallback",
+      status: "service_unavailable",
+      enabled: true,
       isStale: true,
-      error: null,
+      error: new Error("backend down"),
     });
 
     const { result } = renderHook(() =>
@@ -106,9 +106,9 @@ describe("useCoach", () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.enabled).toBe(false);
-    expect(result.current.source).toBe("disabled");
-    expect(result.current.status).toBe("disabled");
+    expect(result.current.enabled).toBe(true);
+    expect(result.current.source).toBe("fallback");
+    expect(result.current.status).toBe("service_unavailable");
   });
 
   it("keeps coach fallback stable on failure and supports explicit refresh", async () => {

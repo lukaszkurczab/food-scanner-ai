@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
 import "dotenv/config";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import readinessLib from "./check-launch-readiness.lib.js";
 
 const TARGET_APP_ID = "com.lkurczab.fitaly";
+const MIN_ANDROID_TARGET_SDK = 35;
 const { PRODUCTION_BUILD_PROFILE, validateEasApiBaseUrlProfiles } = readinessLib;
 
 const profile = (process.argv[2] ?? process.env.EAS_BUILD_PROFILE ?? "")
@@ -43,6 +46,61 @@ function checkEasAndroidBuildType() {
   if (buildType !== "app-bundle") {
     errors.push(
       `eas.json production android.buildType must be \"app-bundle\" (got: ${String(buildType)}).`,
+    );
+  }
+}
+
+function checkAndroidTargetSdk() {
+  if (platform && platform !== "android") {
+    return;
+  }
+
+  const androidDir = path.join(rootDir, "android");
+  const gradleUserHome = path.join(
+    os.tmpdir(),
+    "fitaly-gradle-launch-readiness",
+  );
+  fs.mkdirSync(gradleUserHome, { recursive: true });
+
+  let propertiesOutput = "";
+  try {
+    propertiesOutput = execFileSync("./gradlew", ["-q", ":app:properties"], {
+      cwd: androidDir,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        GRADLE_USER_HOME: gradleUserHome,
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch (error) {
+    const stderr = String(error?.stderr || error?.message || "").trim();
+    errors.push(
+      `Unable to resolve Android targetSdkVersion via Gradle. Ensure Java/Gradle are available. ${stderr}`,
+    );
+    return;
+  }
+
+  const targetSdkMatch = propertiesOutput.match(
+    /(?:^|\n)\s*targetSdkVersion:\s*(\d+)/,
+  );
+
+  if (!targetSdkMatch) {
+    errors.push(
+      "Unable to parse Android targetSdkVersion from ./android/gradlew :app:properties output.",
+    );
+    return;
+  }
+
+  const targetSdkVersion = Number.parseInt(targetSdkMatch[1], 10);
+  if (Number.isNaN(targetSdkVersion)) {
+    errors.push("Android targetSdkVersion is not a valid integer.");
+    return;
+  }
+
+  if (targetSdkVersion < MIN_ANDROID_TARGET_SDK) {
+    errors.push(
+      `Android targetSdkVersion must be >= ${MIN_ANDROID_TARGET_SDK} (got: ${targetSdkVersion}).`,
     );
   }
 }
@@ -146,6 +204,7 @@ if (profile !== PRODUCTION_BUILD_PROFILE) {
 
 checkLegalUrls();
 checkEasAndroidBuildType();
+checkAndroidTargetSdk();
 checkApiBaseUrlMapping();
 checkAndroidFirebaseConfig();
 checkIosFirebaseConfig();

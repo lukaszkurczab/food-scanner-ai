@@ -89,13 +89,13 @@ describe("useNutritionState", () => {
     expect(result.current.isStale).toBe(true);
   });
 
-  it("exposes service fallback state when the endpoint is disabled", async () => {
+  it("exposes service fallback state when the endpoint is unavailable", async () => {
     mockGetNutritionState.mockResolvedValue({
       state: createFallbackNutritionState("2026-03-18"),
-      source: "disabled",
-      enabled: false,
+      source: "fallback",
+      enabled: true,
       isStale: true,
-      error: null,
+      error: new Error("backend down"),
     });
 
     const { result } = renderHook(() =>
@@ -106,8 +106,8 @@ describe("useNutritionState", () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.enabled).toBe(false);
-    expect(result.current.source).toBe("disabled");
+    expect(result.current.enabled).toBe(true);
+    expect(result.current.source).toBe("fallback");
   });
 
   it("keeps the UI stable on failure fallback and supports explicit refresh", async () => {

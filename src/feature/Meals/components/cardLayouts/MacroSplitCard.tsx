@@ -1,5 +1,10 @@
 import { View, Text, StyleSheet } from "react-native";
 import type { MacroCardProps } from "../CardOverlay";
+import {
+  OverlayKcalBlock,
+  OverlayMacroChip,
+  withAlpha,
+} from "../overlayPrimitives";
 
 export default function MacroSplitCard({
   protein,
@@ -7,8 +12,8 @@ export default function MacroSplitCard({
   carbs,
   kcal,
   textColor,
-  bgColor,
   macroColors,
+  macroSoftColors,
   showKcal,
   showMacros,
   fontFamily,
@@ -16,14 +21,55 @@ export default function MacroSplitCard({
 }: MacroCardProps) {
   const effectiveFontFamily = fontFamily ?? undefined;
   const effectiveFontWeight = fontWeight ?? "500";
+  const macroRows = [
+    {
+      key: "protein",
+      short: "P",
+      label: "Protein",
+      value: protein,
+      color: macroColors.protein,
+      softColor: macroSoftColors?.protein ?? macroColors.protein,
+    },
+    {
+      key: "carbs",
+      short: "C",
+      label: "Carbs",
+      value: carbs,
+      color: macroColors.carbs,
+      softColor: macroSoftColors?.carbs ?? macroColors.carbs,
+    },
+    {
+      key: "fat",
+      short: "F",
+      label: "Fat",
+      value: fat,
+      color: macroColors.fat,
+      softColor: macroSoftColors?.fat ?? macroColors.fat,
+    },
+  ];
+
+  if (!showKcal && !showMacros) {
+    return null;
+  }
 
   return (
-    <View style={[styles.card, { backgroundColor: bgColor }]}>
+    <View style={styles.card}>
       <View style={styles.left}>
         {showKcal && (
+          <OverlayKcalBlock
+            kcal={kcal}
+            textColor={textColor}
+            fontFamily={effectiveFontFamily}
+            fontWeight={effectiveFontWeight}
+            align="left"
+            tone="title"
+            subtitle="Meal summary"
+          />
+        )}
+        {!showKcal ? (
           <Text
             style={[
-              styles.kcal,
+              styles.label,
               {
                 color: textColor,
                 fontFamily: effectiveFontFamily,
@@ -31,12 +77,51 @@ export default function MacroSplitCard({
               },
             ]}
           >
-            {kcal} kcal
+            Meal summary
           </Text>
-        )}
+        ) : null}
+        {showKcal ? (
+          <Text
+            style={[
+              styles.hint,
+              {
+                color: withAlpha(textColor, 0.68),
+                fontFamily: effectiveFontFamily,
+                fontWeight: effectiveFontWeight,
+              },
+            ]}
+          >
+            Balanced macros
+          </Text>
+        ) : null}
+      </View>
+      {showMacros && (
+        <>
+          <View style={[styles.divider, { backgroundColor: withAlpha(textColor, 0.22) }]} />
+          <View style={styles.right}>
+            {macroRows.map((row) => (
+              <OverlayMacroChip
+                key={row.key}
+                label={row.short}
+                value={row.value}
+                color={row.color}
+                textColor={textColor}
+                fontFamily={effectiveFontFamily}
+                fontWeight={effectiveFontWeight}
+                compact
+                markerMode="none"
+                backgroundColor={row.softColor}
+                borderColor={withAlpha(row.color, 0.5)}
+                style={styles.rowCard}
+              />
+            ))}
+          </View>
+        </>
+      )}
+      {!showMacros ? (
         <Text
           style={[
-            styles.label,
+            styles.sideHint,
             {
               color: textColor,
               fontFamily: effectiveFontFamily,
@@ -44,62 +129,9 @@ export default function MacroSplitCard({
             },
           ]}
         >
-          Today&apos;s meal
+          protein {protein}g • carbs {carbs}g • fat {fat}g
         </Text>
-      </View>
-      {showMacros && (
-        <View style={styles.right}>
-          <View style={styles.row}>
-            <View
-              style={[styles.dot, { backgroundColor: macroColors.protein }]}
-            />
-            <Text
-              style={[
-                styles.text,
-                {
-                  color: textColor,
-                  fontFamily: effectiveFontFamily,
-                  fontWeight: effectiveFontWeight,
-                },
-              ]}
-            >
-              Protein {protein} g
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <View
-              style={[styles.dot, { backgroundColor: macroColors.carbs }]}
-            />
-            <Text
-              style={[
-                styles.text,
-                {
-                  color: textColor,
-                  fontFamily: effectiveFontFamily,
-                  fontWeight: effectiveFontWeight,
-                },
-              ]}
-            >
-              Carbs {carbs} g
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <View style={[styles.dot, { backgroundColor: macroColors.fat }]} />
-            <Text
-              style={[
-                styles.text,
-                {
-                  color: textColor,
-                  fontFamily: effectiveFontFamily,
-                  fontWeight: effectiveFontWeight,
-                },
-              ]}
-            >
-              Fat {fat} g
-            </Text>
-          </View>
-        </View>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -107,15 +139,44 @@ export default function MacroSplitCard({
 const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
-    borderRadius: 18,
-    padding: 10,
-    minWidth: 220,
+    alignItems: "stretch",
+    justifyContent: "space-between",
+    minHeight: 92,
+    gap: 12,
   },
-  left: { flex: 1, justifyContent: "center" },
-  right: { flex: 1, justifyContent: "center", gap: 4 },
-  kcal: { fontSize: 18, fontWeight: "700" },
-  label: { fontSize: 12, marginTop: 2 },
-  row: { flexDirection: "row", alignItems: "center" },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
-  text: { fontSize: 12 },
+  left: {
+    flex: 1.05,
+    justifyContent: "center",
+    paddingVertical: 1,
+  },
+  divider: {
+    width: 1,
+    opacity: 1,
+    marginVertical: 4,
+  },
+  right: {
+    flex: 0.95,
+    justifyContent: "center",
+    gap: 5,
+  },
+  rowCard: {
+    borderRadius: 10,
+  },
+  label: {
+    fontSize: 12,
+    lineHeight: 16,
+    opacity: 0.82,
+  },
+  hint: {
+    marginTop: 4,
+    fontSize: 11,
+    lineHeight: 13,
+  },
+  sideHint: {
+    alignSelf: "center",
+    fontSize: 11,
+    lineHeight: 14,
+    textTransform: "lowercase",
+    opacity: 0.78,
+  },
 });

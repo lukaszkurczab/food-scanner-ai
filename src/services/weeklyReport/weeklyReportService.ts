@@ -5,7 +5,6 @@ import {
   asString,
   isRecord,
 } from "@/services/contracts/guards";
-import { readPublicEnv } from "@/services/core/publicEnv";
 import { debugScope } from "@/utils/debug";
 import {
   isWeeklyReportDayKey,
@@ -26,10 +25,6 @@ import type {
 const log = debugScope("WeeklyReportService");
 const WEEKLY_REPORT_ENDPOINT = withV2("/users/me/reports/weekly");
 const WEEKLY_REPORT_SERVICE_SOURCE = "WeeklyReportService";
-
-export function isWeeklyReportsEnabled(): boolean {
-  return readPublicEnv("EXPO_PUBLIC_ENABLE_WEEKLY_REPORTS") === "true";
-}
 
 function toDayKey(date: Date): string {
   const year = date.getUTCFullYear();
@@ -222,16 +217,6 @@ export async function getWeeklyReport(
   options?: { weekEnd?: string | null },
 ): Promise<WeeklyReportResult> {
   const weekEnd = normalizeWeekEnd(options?.weekEnd);
-
-  if (!isWeeklyReportsEnabled()) {
-    return buildWeeklyReportResult({
-      report: createFallbackWeeklyReport(weekEnd),
-      source: "disabled",
-      status: "disabled",
-      enabled: false,
-      error: null,
-    });
-  }
 
   if (!uid) {
     return buildWeeklyReportResult({

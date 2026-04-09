@@ -5,6 +5,7 @@ import AddPhotoIcon from "@assets/icons/add-photo.svg";
 import AddIcon from "@assets/icons/add.svg";
 import ArrowIcon from "@assets/icons/arrow.svg";
 import AssistantIcon from "@assets/icons/assistant.svg";
+import CardIcon from "@assets/icons/card.svg";
 import CalendarIcon from "@assets/icons/calendar.svg";
 import CameraIcon from "@assets/icons/camera.svg";
 import ChatIcon from "@assets/icons/chat.svg";
@@ -47,6 +48,7 @@ import SortIcon from "@assets/icons/sort.svg";
 import SparklesIcon from "@assets/icons/sparkles.svg";
 import StarIcon from "@assets/icons/star.svg";
 import StatsIcon from "@assets/icons/stats.svg";
+import TextIcon from "@assets/icons/text.svg";
 import TrendUpIcon from "@assets/icons/trend-up.svg";
 import WeeklyRaportIcon from "@assets/icons/weekly-raport.svg";
 import WifiOffIcon from "@assets/icons/wifi-off.svg";
@@ -58,6 +60,7 @@ const ICONS = {
   add: AddIcon,
   arrow: ArrowIcon,
   assistant: AssistantIcon,
+  card: CardIcon,
   calendar: CalendarIcon,
   camera: CameraIcon,
   chat: ChatIcon,
@@ -100,6 +103,7 @@ const ICONS = {
   sparkles: SparklesIcon,
   star: StarIcon,
   stats: StatsIcon,
+  text: TextIcon,
   "trend-up": TrendUpIcon,
   "weekly-raport": WeeklyRaportIcon,
   "wifi-off": WifiOffIcon,

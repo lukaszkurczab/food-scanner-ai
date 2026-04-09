@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import type { MacroCardProps } from "../CardOverlay";
+import { OverlayKcalBlock, withAlpha } from "../overlayPrimitives";
 
 export default function MacroVerticalStackCard({
   protein,
@@ -7,7 +8,6 @@ export default function MacroVerticalStackCard({
   carbs,
   kcal,
   textColor,
-  bgColor,
   macroColors,
   showKcal,
   showMacros,
@@ -23,30 +23,43 @@ export default function MacroVerticalStackCard({
     { label: "Fat", value: fat, color: macroColors.fat },
   ];
 
+  if (!showKcal && !showMacros) {
+    return null;
+  }
+
   return (
-    <View style={[styles.card, { backgroundColor: bgColor }]}>
+    <View style={styles.card}>
       {showKcal && (
-        <Text
-          style={[
-            styles.kcal,
-            {
-              color: textColor,
-              fontFamily: effectiveFontFamily,
-              fontWeight: effectiveFontWeight,
-            },
-          ]}
-        >
-          {kcal} kcal
-        </Text>
+        <OverlayKcalBlock
+          kcal={kcal}
+          textColor={textColor}
+          fontFamily={effectiveFontFamily}
+          fontWeight={effectiveFontWeight}
+          align="left"
+          tone="title"
+          subtitle="Meal"
+        />
       )}
       {showMacros && (
-        <View style={styles.list}>
+        <View style={[styles.list, showKcal ? styles.listWithKcal : null]}>
           {rows.map((r) => (
             <View key={r.label} style={styles.row}>
-              <View style={[styles.marker, { backgroundColor: r.color }]} />
+              <View style={[styles.marker, { backgroundColor: withAlpha(r.color, 0.62) }]} />
               <Text
                 style={[
-                  styles.rowText,
+                  styles.rowLabel,
+                  {
+                    color: withAlpha(textColor, 0.78),
+                    fontFamily: effectiveFontFamily,
+                    fontWeight: effectiveFontWeight,
+                  },
+                ]}
+              >
+                {r.label}
+              </Text>
+              <Text
+                style={[
+                  styles.rowValue,
                   {
                     color: textColor,
                     fontFamily: effectiveFontFamily,
@@ -54,7 +67,7 @@ export default function MacroVerticalStackCard({
                   },
                 ]}
               >
-                {r.label} {r.value} g
+                {Math.round(r.value)}g
               </Text>
             </View>
           ))}
@@ -66,14 +79,15 @@ export default function MacroVerticalStackCard({
 
 const styles = StyleSheet.create({
   card: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 16,
-    minWidth: 180,
+    alignItems: "stretch",
+    minWidth: 120,
   },
-  kcal: { fontSize: 16, fontWeight: "700", marginBottom: 6 },
-  list: { gap: 4 },
+  list: { gap: 5 },
+  listWithKcal: {
+    marginTop: 8,
+  },
   row: { flexDirection: "row", alignItems: "center" },
-  marker: { width: 4, height: 14, borderRadius: 2, marginRight: 6 },
-  rowText: { fontSize: 12 },
+  marker: { width: 3, height: 11, borderRadius: 2, marginRight: 7 },
+  rowLabel: { fontSize: 12, lineHeight: 15, flex: 1 },
+  rowValue: { fontSize: 12, lineHeight: 15, fontWeight: "700" },
 });

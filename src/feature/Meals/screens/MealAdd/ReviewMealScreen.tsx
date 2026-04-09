@@ -19,6 +19,7 @@ import {
   Layout,
   Modal,
   PhotoPreview,
+  TextButton,
 } from "@/components";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -217,14 +218,19 @@ export default function ReviewMealScreen({
     navigation.navigate("Home");
   }, [clearMeal, navigation, uid]);
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (openShareComposer: boolean) => {
     if (!meal || !userData?.uid || saving || !uid) return;
 
     setSaving(true);
     const nowIso = new Date().toISOString();
+    const stableMealId =
+      meal.mealId || meal.cloudId || `meal-${Date.now().toString(36)}`;
+    const stableCloudId =
+      meal.cloudId || meal.mealId || `cloud-${Date.now().toString(36)}`;
     const nextMeal: Meal = {
       ...meal,
-      cloudId: meal.cloudId,
+      mealId: stableMealId,
+      cloudId: stableCloudId,
       userUid: uid,
       name: resolvedMealName,
       type: meal.type || "other",
@@ -238,6 +244,13 @@ export default function ReviewMealScreen({
     try {
       await addMeal(nextMeal, { alsoSaveToMyMeals: saveToMyMeals });
       clearMeal(uid);
+      if (openShareComposer && nextMeal.photoUrl) {
+        navigation.navigate("MealShare", {
+          meal: nextMeal,
+          returnTo: "ReviewMeal",
+        });
+        return;
+      }
       navigation.navigate("Home");
     } catch {
       setSaving(false);
@@ -465,13 +478,31 @@ export default function ReviewMealScreen({
               defaultValue: "Save meal",
             })}
             onPress={() => {
-              void handleSave();
+              void handleSave(false);
             }}
             loading={saving}
             disabled={saving}
             style={styles.saveButton}
             testID="meal-result-save-button"
           />
+          {!!image ? (
+            <TextButton
+              label={t("review_meal_save_share_cta", {
+                ns: "meals",
+                defaultValue: "Save and share",
+              })}
+              tone="link"
+              onPress={() => {
+                void handleSave(true);
+              }}
+              disabled={saving}
+              style={styles.shareAfterSaveButton}
+              accessibilityLabel={t("review_meal_save_share_cta", {
+                ns: "meals",
+                defaultValue: "Save and share",
+              })}
+            />
+          ) : null}
         </View>
       </View>
 
@@ -692,6 +723,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     saveButton: {
       minHeight: 54,
       borderRadius: 14,
+    },
+    shareAfterSaveButton: {
+      alignSelf: "center",
+      marginTop: -2,
     },
     pressed: {
       opacity: 0.82,

@@ -1,239 +1,1031 @@
-import { useMemo, useRef, useState } from "react";
-import { View, StyleSheet, useWindowDimensions, Pressable } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import ViewShot, { captureRef } from "react-native-view-shot";
+import * as MediaLibrary from "expo-media-library";
+import * as ImagePicker from "expo-image-picker";
 import * as Sharing from "expo-sharing";
 import type { RootStackParamList } from "@/navigation/navigate";
-import { Button, ScreenCornerNavButton } from "@/components";
+import { Layout } from "@/components/Layout";
 import AppIcon from "@/components/AppIcon";
-import ShareCanvas from "@feature/Meals/share/ShareCanvas";
-import ShareEditorPanel, {
-  ShareEditorMode,
-  type ShareEditorPanelOptions,
-} from "@feature/Meals/share/ShareEditorPanel";
-import { defaultShareOptions } from "../share/defaultShareOptions";
 import { useTranslation } from "react-i18next";
-import type { ElementId } from "@feature/Meals/share/DraggableItem";
-import { Layout } from "@components/Layout";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { emit } from "@/services/core/events";
+import { track } from "@/services/telemetry/telemetryClient";
+import ShareComposerCanvas from "@/feature/Meals/shareComposer/ShareComposerCanvas";
+import ShareComposerDock from "@/feature/Meals/shareComposer/ShareComposerDock";
+import {
+  createAdditionalTextLayer,
+  createCompositionForPreset,
+  createDefaultAdditionalPhotoLayer,
+  createDefaultChartLayer,
+  getPresetTemplate,
+} from "@/feature/Meals/shareComposer/presets";
+import type {
+  ActiveLayerEditorKind,
+  ShareCardVariant,
+  ShareChartVariant,
+  ShareCompositionState,
+  ShareExportState,
+  ShareLayerId,
+  ShareMealContext,
+  ShareNutrition,
+  SharePresetId,
+  ShareTextLayerState,
+  TransformState,
+} from "@/feature/Meals/shareComposer/types";
 
 type ScreenRoute = RouteProp<RootStackParamList, "MealShare">;
 type MealShareNavigation = StackNavigationProp<RootStackParamList, "MealShare">;
+
+const CANVAS_RATIO = 506 / 333;
+const CANVAS_MIN_WIDTH = 280;
+const CANVAS_MAX_WIDTH = 360;
+const DEFAULT_PRESET: SharePresetId = "quickClassic";
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function resolveMealContext(input: ScreenRoute["params"]["returnTo"]): ShareMealContext {
+  if (input === "MealDetails") {
+    return "meal_details";
+  }
+  if (input === "ReviewMeal") {
+    return "review_meal";
+  }
+  return "unknown";
+}
 
 export default function MealShareScreen() {
   const theme = useTheme();
   const navigation = useNavigation<MealShareNavigation>();
   const route = useRoute<ScreenRoute>();
-  const { t } = useTranslation(["share", "common"]);
+  const { t } = useTranslation(["share", "common", "meals"]);
   const { meal } = route.params;
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const shotRef = useRef<View>(null);
 
-  const nutrition = meal.totals ?? { kcal: 0, protein: 0, fat: 0, carbs: 0 };
+  const mealPhotoUri =
+    meal.localPhotoUrl || meal.photoLocalPath || meal.photoUrl || "";
+  const hasSavedMealIdentity = Boolean(meal.cloudId || meal.mealId);
+  const isEntryValid = hasSavedMealIdentity && mealPhotoUri.trim().length > 0;
 
-  const [opts, setOpts] = useState<ShareEditorPanelOptions>(() => {
-    const defaultKcalText = `${Math.round(nutrition.kcal || 0)} kcal`;
-    return {
-      ...defaultShareOptions,
-      titleText: meal.name || "",
-      kcalText: defaultKcalText,
-      customText: defaultShareOptions.customText ?? "",
-      textFontFamilyKey: "Inter",
-      textFontWeight: "500",
-      textFontFamily: "Inter-500",
-    };
-  });
+  const mealTitle = useMemo(() => {
+    return (
+      meal.name?.trim() ||
+      t("meal", { ns: "meals", defaultValue: "Meal" })
+    );
+  }, [meal.name, t]);
 
-  const [panelMode, setPanelMode] = useState<ShareEditorMode | null>(null);
-  const [uiHidden, setUiHidden] = useState(false);
-  const [selectedId, setSelectedId] = useState<ElementId | null>("title");
-
-  const { canvasWidth, canvasHeight } = useMemo(() => {
-    const aspectW = 9;
-    const aspectH = 16;
-    const targetRatio = aspectW / aspectH;
-    const screenRatio = screenWidth / screenHeight;
-
-    let w: number;
-    let h: number;
-
-    if (screenRatio > targetRatio) {
-      h = screenHeight;
-      w = Math.round(screenHeight * targetRatio);
-    } else {
-      w = screenWidth;
-      h = Math.round(screenWidth * (aspectH / aspectW));
+  const nutrition: ShareNutrition = useMemo(() => {
+    if (meal.totals) {
+      return {
+        kcal: Math.round(meal.totals.kcal || 0),
+        protein: Math.round(meal.totals.protein || 0),
+        carbs: Math.round(meal.totals.carbs || 0),
+        fat: Math.round(meal.totals.fat || 0),
+      };
     }
 
-    return { canvasWidth: w, canvasHeight: h };
-  }, [screenWidth, screenHeight]);
+    const sums = (meal.ingredients || []).reduce(
+      (acc, ingredient) => ({
+        kcal: acc.kcal + (Number(ingredient.kcal) || 0),
+        protein: acc.protein + (Number(ingredient.protein) || 0),
+        carbs: acc.carbs + (Number(ingredient.carbs) || 0),
+        fat: acc.fat + (Number(ingredient.fat) || 0),
+      }),
+      { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+    );
 
-  const share = async () => {
-    if (!shotRef.current) return;
-    setUiHidden(true);
-    const uri = await captureRef(shotRef, {
+    return {
+      kcal: Math.round(sums.kcal),
+      protein: Math.round(sums.protein),
+      carbs: Math.round(sums.carbs),
+      fat: Math.round(sums.fat),
+    };
+  }, [meal.ingredients, meal.totals]);
+
+  const [mode, setMode] = useState<"quick" | "customize">("quick");
+  const [selectedPreset, setSelectedPreset] =
+    useState<SharePresetId>(DEFAULT_PRESET);
+  const [composition, setComposition] = useState<ShareCompositionState>(() =>
+    createCompositionForPreset({
+      presetId: DEFAULT_PRESET,
+      titleText: mealTitle,
+    }),
+  );
+  const [selectedLayerId, setSelectedLayerId] = useState<ShareLayerId | null>(
+    null,
+  );
+  const [activeEditorKind, setActiveEditorKind] =
+    useState<ActiveLayerEditorKind>("quickPresets");
+  const [exportState, setExportState] = useState<ShareExportState>({
+    action: null,
+    error: null,
+  });
+  const [completed, setCompleted] = useState(false);
+
+  const mealContext = useMemo(
+    () => resolveMealContext(route.params.returnTo),
+    [route.params.returnTo],
+  );
+
+  const canvasWidth = useMemo(() => {
+    const available = screenWidth - theme.spacing.md * 2;
+    return clamp(available, CANVAS_MIN_WIDTH, CANVAS_MAX_WIDTH);
+  }, [screenWidth, theme.spacing.md]);
+
+  const canvasHeight = useMemo(
+    () => Math.round(canvasWidth * CANVAS_RATIO),
+    [canvasWidth],
+  );
+
+  const trackShareEvent = useCallback(
+    (name: string, params: Record<string, unknown> = {}) => {
+      return track(name, {
+        template_id: selectedPreset,
+        meal_context: mealContext,
+        mode,
+        text_count: composition.textLayers.length,
+        additional_photo_used: Boolean(composition.additionalPhoto),
+        ...params,
+      });
+    },
+    [
+      composition.additionalPhoto,
+      composition.textLayers.length,
+      mealContext,
+      mode,
+      selectedPreset,
+    ],
+  );
+
+  useEffect(() => {
+    if (!isEntryValid) return;
+    void trackShareEvent("screen_viewed.share");
+  }, [isEntryValid, trackShareEvent]);
+
+  useEffect(() => {
+    if (mode === "quick") {
+      setActiveEditorKind("quickPresets");
+      return;
+    }
+
+    if (!selectedLayerId) {
+      setActiveEditorKind("none");
+      return;
+    }
+
+    if (selectedLayerId === "additionalPhoto") {
+      setActiveEditorKind("additionalPhoto");
+      return;
+    }
+
+    if (selectedLayerId === "chartWidget") {
+      setActiveEditorKind("chart");
+      return;
+    }
+
+    if (selectedLayerId === "cardWidget") {
+      setActiveEditorKind("card");
+      return;
+    }
+
+    if (selectedLayerId.startsWith("text:")) {
+      setActiveEditorKind("text");
+      return;
+    }
+
+    setActiveEditorKind("none");
+  }, [mode, selectedLayerId]);
+
+  const handleClose = useCallback(() => {
+    if (isEntryValid && !completed) {
+      void trackShareEvent("interaction.share.abandoned");
+    }
+
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    navigation.navigate("Home");
+  }, [completed, isEntryValid, navigation, trackShareEvent]);
+
+  const handleSwitchMode = useCallback(
+    (nextMode: "quick" | "customize") => {
+      if (nextMode === mode) return;
+      setMode(nextMode);
+      setExportState((prev) => ({ ...prev, error: null }));
+      void trackShareEvent("interaction.share.mode_changed", {
+        mode: nextMode,
+      });
+
+      if (nextMode === "quick") {
+        setSelectedLayerId(null);
+        return;
+      }
+
+      if (selectedLayerId) return;
+      setSelectedLayerId(composition.widgets.card ? "cardWidget" : null);
+    },
+    [composition.widgets.card, mode, selectedLayerId, trackShareEvent],
+  );
+
+  const handlePresetSelect = useCallback(
+    (presetId: SharePresetId) => {
+      setSelectedPreset(presetId);
+      setComposition(
+        createCompositionForPreset({
+          presetId,
+          titleText: mealTitle,
+        }),
+      );
+      setSelectedLayerId(mode === "customize" ? "cardWidget" : null);
+      setExportState((prev) => ({ ...prev, error: null }));
+
+      void trackShareEvent("interaction.share.template_selected", {
+        template_id: presetId,
+      });
+    },
+    [mealTitle, mode, trackShareEvent],
+  );
+
+  const handleTransformChange = useCallback(
+    (layerId: ShareLayerId, next: TransformState) => {
+      setComposition((prev) => {
+        const normalized: TransformState =
+          layerId === "mealPhoto"
+            ? {
+                xRatio: clamp(next.xRatio, 0.38, 0.62),
+                yRatio: clamp(next.yRatio, 0.38, 0.62),
+                scale: clamp(next.scale, 1, 2.4),
+                rotation: clamp(next.rotation, -Math.PI, Math.PI),
+              }
+            : {
+                xRatio: clamp(next.xRatio, 0.02, 0.98),
+                yRatio: clamp(next.yRatio, 0.02, 0.98),
+                scale: clamp(next.scale, 0.36, 3.2),
+                rotation: clamp(next.rotation, -Math.PI, Math.PI),
+              };
+
+        if (layerId === "mealPhoto") {
+          return {
+            ...prev,
+            mealPhoto: {
+              ...prev.mealPhoto,
+              transform: normalized,
+            },
+          };
+        }
+
+        if (layerId === "additionalPhoto" && prev.additionalPhoto) {
+          return {
+            ...prev,
+            additionalPhoto: {
+              ...prev.additionalPhoto,
+              transform: normalized,
+            },
+          };
+        }
+
+        if (layerId === "chartWidget" && prev.widgets.chart) {
+          return {
+            ...prev,
+            widgets: {
+              ...prev.widgets,
+              chart: {
+                ...prev.widgets.chart,
+                transform: normalized,
+              },
+            },
+          };
+        }
+
+        if (layerId === "cardWidget" && prev.widgets.card) {
+          return {
+            ...prev,
+            widgets: {
+              ...prev.widgets,
+              card: {
+                ...prev.widgets.card,
+                transform: normalized,
+              },
+            },
+          };
+        }
+
+        if (layerId.startsWith("text:")) {
+          return {
+            ...prev,
+            textLayers: prev.textLayers.map((layer) =>
+              layer.id === layerId
+                ? {
+                    ...layer,
+                    transform: normalized,
+                  }
+                : layer,
+            ),
+          };
+        }
+
+        return prev;
+      });
+    },
+    [],
+  );
+
+  const handleCanvasBackgroundPress = useCallback(() => {
+    if (mode !== "customize") return;
+    setSelectedLayerId(null);
+  }, [mode]);
+
+  const handleTextChange = useCallback(
+    (id: string, text: string) => {
+      setComposition((prev) => ({
+        ...prev,
+        textLayers: prev.textLayers.map((layer) =>
+          layer.id === id ? { ...layer, text } : layer,
+        ),
+      }));
+      void trackShareEvent("interaction.share.text_edited");
+    },
+    [trackShareEvent],
+  );
+
+  const handleTextStyleChange = useCallback(
+    (
+      id: string,
+      patch: Partial<
+        Pick<ShareTextLayerState, "bold" | "italic" | "underline" | "color">
+      >,
+    ) => {
+      setComposition((prev) => ({
+        ...prev,
+        textLayers: prev.textLayers.map((layer) =>
+          layer.id === id ? { ...layer, ...patch } : layer,
+        ),
+      }));
+    },
+    [],
+  );
+
+  const handleAddTextLayer = useCallback(() => {
+    const next = createAdditionalTextLayer();
+    setComposition((prev) => ({
+      ...prev,
+      textLayers: [...prev.textLayers, next],
+    }));
+    setSelectedLayerId(next.id);
+    void trackShareEvent("interaction.share.text_added");
+  }, [trackShareEvent]);
+
+  const handleEnsureChartLayer = useCallback(() => {
+    setComposition((prev) => {
+      if (prev.widgets.chart) {
+        return prev;
+      }
+      return {
+        ...prev,
+        widgets: {
+          ...prev.widgets,
+          chart: createDefaultChartLayer(),
+        },
+      };
+    });
+    setSelectedLayerId("chartWidget");
+    void trackShareEvent("interaction.share.widget_added", {
+      widget_type: "chart",
+    });
+  }, [trackShareEvent]);
+
+  const handleEnsureCardLayer = useCallback(() => {
+    setComposition((prev) => {
+      if (prev.widgets.card) {
+        return prev;
+      }
+      const preset = getPresetTemplate(selectedPreset);
+      return {
+        ...prev,
+        widgets: {
+          ...prev.widgets,
+          card: {
+            id: "cardWidget",
+            variant: preset.cardVariant,
+            transform: { ...preset.cardTransform },
+          },
+        },
+      };
+    });
+    setSelectedLayerId("cardWidget");
+    void trackShareEvent("interaction.share.widget_added", {
+      widget_type: "card",
+    });
+  }, [selectedPreset, trackShareEvent]);
+
+  const handleChartVariantChange = useCallback(
+    (variant: ShareChartVariant) => {
+      setComposition((prev) => {
+        const current = prev.widgets.chart || createDefaultChartLayer();
+        return {
+          ...prev,
+          widgets: {
+            ...prev.widgets,
+            chart: {
+              ...current,
+              variant,
+            },
+          },
+        };
+      });
+      setSelectedLayerId("chartWidget");
+      void trackShareEvent("interaction.share.widget_changed", {
+        widget_type: "chart",
+      });
+    },
+    [trackShareEvent],
+  );
+
+  const handleChartStyleChange = useCallback(
+    (patch: Partial<Pick<NonNullable<ShareCompositionState["widgets"]["chart"]>, "textColor" | "backgroundColor">>) => {
+      setComposition((prev) => {
+        const current = prev.widgets.chart || createDefaultChartLayer();
+        return {
+          ...prev,
+          widgets: {
+            ...prev.widgets,
+            chart: {
+              ...current,
+              ...patch,
+            },
+          },
+        };
+      });
+      setSelectedLayerId("chartWidget");
+      void trackShareEvent("interaction.share.widget_changed", {
+        widget_type: "chart",
+      });
+    },
+    [trackShareEvent],
+  );
+
+  const handleCardVariantChange = useCallback(
+    (variant: ShareCardVariant) => {
+      setComposition((prev) => {
+        if (!prev.widgets.card) {
+          const preset = getPresetTemplate(selectedPreset);
+          return {
+            ...prev,
+            widgets: {
+              ...prev.widgets,
+              card: {
+                id: "cardWidget",
+                variant,
+                transform: { ...preset.cardTransform },
+              },
+            },
+          };
+        }
+        return {
+          ...prev,
+          widgets: {
+            ...prev.widgets,
+            card: {
+              ...prev.widgets.card,
+              variant,
+            },
+          },
+        };
+      });
+      setSelectedLayerId("cardWidget");
+      void trackShareEvent("interaction.share.widget_changed", {
+        widget_type: "card",
+      });
+    },
+    [selectedPreset, trackShareEvent],
+  );
+
+  const handleCardStyleChange = useCallback(
+    (patch: Partial<Pick<NonNullable<ShareCompositionState["widgets"]["card"]>, "textColor" | "backgroundColor">>) => {
+      setComposition((prev) => {
+        if (!prev.widgets.card) {
+          const preset = getPresetTemplate(selectedPreset);
+          return {
+            ...prev,
+            widgets: {
+              ...prev.widgets,
+              card: {
+                id: "cardWidget",
+                variant: preset.cardVariant,
+                transform: { ...preset.cardTransform },
+                ...patch,
+              },
+            },
+          };
+        }
+        return {
+          ...prev,
+          widgets: {
+            ...prev.widgets,
+            card: {
+              ...prev.widgets.card,
+              ...patch,
+            },
+          },
+        };
+      });
+      setSelectedLayerId("cardWidget");
+      void trackShareEvent("interaction.share.widget_changed", {
+        widget_type: "card",
+      });
+    },
+    [selectedPreset, trackShareEvent],
+  );
+
+  const handleAdditionalPhotoTreatmentChange = useCallback(
+    (treatment: NonNullable<ShareCompositionState["additionalPhoto"]>["treatment"]) => {
+      setComposition((prev) => {
+        if (!prev.additionalPhoto) return prev;
+        return {
+          ...prev,
+          additionalPhoto: {
+            ...prev.additionalPhoto,
+            treatment,
+          },
+        };
+      });
+    },
+    [],
+  );
+
+  const handleAddOrReplaceAdditionalPhoto = useCallback(async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.9,
+      });
+
+      if (result.canceled || !result.assets?.[0]?.uri) {
+        return;
+      }
+
+      const nextLayer = createDefaultAdditionalPhotoLayer(result.assets[0].uri);
+      setComposition((prev) => ({ ...prev, additionalPhoto: nextLayer }));
+      setSelectedLayerId("additionalPhoto");
+      setExportState((prev) => ({ ...prev, error: null }));
+      void trackShareEvent("interaction.share.additional_photo_added");
+    } catch {
+      setExportState({
+        action: null,
+        error: t("share_photo_picker_failed", {
+          ns: "share",
+          defaultValue: "Could not open photo library. Try again.",
+        }),
+      });
+    }
+  }, [t, trackShareEvent]);
+
+  const handleRemoveSelectedLayer = useCallback(() => {
+    if (!selectedLayerId || selectedLayerId === "mealPhoto" || selectedLayerId === "text:title") {
+      return;
+    }
+
+    setComposition((prev) => {
+      if (selectedLayerId === "additionalPhoto") {
+        return {
+          ...prev,
+          additionalPhoto: null,
+        };
+      }
+      if (selectedLayerId === "chartWidget") {
+        return {
+          ...prev,
+          widgets: {
+            ...prev.widgets,
+            chart: null,
+          },
+        };
+      }
+      if (selectedLayerId === "cardWidget") {
+        return {
+          ...prev,
+          widgets: {
+            ...prev.widgets,
+            card: null,
+          },
+        };
+      }
+      if (selectedLayerId.startsWith("text:")) {
+        return {
+          ...prev,
+          textLayers: prev.textLayers.filter((layer) => layer.id !== selectedLayerId),
+        };
+      }
+      return prev;
+    });
+
+    if (selectedLayerId === "additionalPhoto") {
+      void trackShareEvent("interaction.share.additional_photo_removed");
+    }
+    if (selectedLayerId === "chartWidget" || selectedLayerId === "cardWidget") {
+      void trackShareEvent("interaction.share.widget_removed", {
+        widget_type: selectedLayerId === "chartWidget" ? "chart" : "card",
+      });
+    }
+    setSelectedLayerId(null);
+  }, [selectedLayerId, trackShareEvent]);
+
+  const handleResetComposition = useCallback(() => {
+    setComposition(
+      createCompositionForPreset({
+        presetId: selectedPreset,
+        titleText: mealTitle,
+      }),
+    );
+    setSelectedLayerId(mode === "customize" ? "cardWidget" : null);
+    void trackShareEvent("interaction.share.reset_used");
+  }, [mealTitle, mode, selectedPreset, trackShareEvent]);
+
+  const captureCanvasUri = useCallback(async () => {
+    if (!shotRef.current) {
+      throw new Error("capture_ref_missing");
+    }
+    return captureRef(shotRef, {
       format: "png",
       quality: 1,
       width: Math.round(canvasWidth),
       height: Math.round(canvasHeight),
       result: "tmpfile",
     });
-    setUiHidden(false);
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri);
-    }
-  };
+  }, [canvasHeight, canvasWidth]);
 
-  const openMode = (m: ShareEditorMode) =>
-    setPanelMode((prev) => (prev === m ? null : m));
+  const performExport = useCallback(
+    async (destination: "gallery" | "share_sheet") => {
+      const action = destination === "gallery" ? "save_to_gallery" : "share";
+      setExportState({ action, error: null });
+      try {
+        const assetUri = await captureCanvasUri();
 
-  const handleSelectElement = (id: ElementId) => {
-    setSelectedId(id);
-  };
+        if (destination === "gallery") {
+          const permission = await MediaLibrary.requestPermissionsAsync();
+          if (!permission.granted) {
+            throw new Error("gallery_permission_denied");
+          }
+          await MediaLibrary.createAssetAsync(assetUri);
+          emit("ui:toast", {
+            text: t("share_saved_to_gallery", {
+              ns: "share",
+              defaultValue: "Saved to gallery.",
+            }),
+          });
+          void trackShareEvent("interaction.share.saved_to_gallery", {
+            destination_type: destination,
+          });
+        } else {
+          const canShare = await Sharing.isAvailableAsync();
+          if (!canShare) {
+            throw new Error("share_unavailable");
+          }
+          await Sharing.shareAsync(assetUri);
+        }
 
-  const handleTapElement = (id: ElementId) => {
-    setSelectedId(id);
+        setCompleted(true);
+        setExportState({ action: null, error: null });
+        void trackShareEvent("interaction.share.exported", {
+          destination_type: destination,
+          export_result: "success",
+        });
+        void trackShareEvent("interaction.share.completed", {
+          destination_type: destination,
+        });
+      } catch (error) {
+        const message =
+          destination === "gallery"
+            ? t("share_save_failed", {
+                ns: "share",
+                defaultValue: "Could not save to gallery. Please try again.",
+              })
+            : t("share_export_failed", {
+                ns: "share",
+                defaultValue: "Could not share this image. Please try again.",
+              });
 
-    if (id === "chart") {
-      setPanelMode("chart");
-      return;
-    }
+        setExportState({ action: null, error: message });
+        void trackShareEvent("interaction.share.exported", {
+          destination_type: destination,
+          export_result: "failed",
+        });
 
-    if (id === "macros") {
-      setPanelMode("card");
-      return;
-    }
+        if (String(error).includes("permission")) {
+          emit("ui:toast", {
+            text: t("share_permission_required", {
+              ns: "share",
+              defaultValue: "Gallery permission is required.",
+            }),
+          });
+        }
+      }
+    },
+    [captureCanvasUri, t, trackShareEvent],
+  );
 
-    setPanelMode("text");
-  };
+  const handleSaveToGallery = useCallback(() => {
+    void performExport("gallery");
+  }, [performExport]);
 
-  const handleClose = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
-    navigation.navigate("SavedMeals");
-  };
+  const handleShare = useCallback(() => {
+    void performExport("share_sheet");
+  }, [performExport]);
+
+  if (!isEntryValid) {
+    return (
+      <Layout
+        showNavigation={false}
+        disableScroll
+        style={{
+          paddingTop: insets.top + theme.spacing.xs,
+          paddingBottom: theme.spacing.md,
+          paddingLeft: theme.spacing.md,
+          paddingRight: theme.spacing.md,
+        }}
+      >
+        <View style={styles.invalidContainer}>
+          <Pressable
+            onPress={handleClose}
+            accessibilityRole="button"
+            accessibilityLabel={t("common:close", { defaultValue: "Close" })}
+            style={styles.invalidClose}
+          >
+            <AppIcon name="close" size={14} color={theme.primaryStrong} />
+          </Pressable>
+          <Text style={[styles.invalidTitle, { color: theme.text }]}>
+            {t("share_unavailable_title", {
+              ns: "share",
+              defaultValue: "Share unavailable",
+            })}
+          </Text>
+          <Text style={[styles.invalidDescription, { color: theme.textSecondary }]}>
+            {t("share_unavailable_description", {
+              ns: "share",
+              defaultValue:
+                "This meal needs to be saved and include a source photo before sharing.",
+            })}
+          </Text>
+          <Pressable
+            onPress={handleClose}
+            accessibilityRole="button"
+            style={[
+              styles.invalidButton,
+              {
+                backgroundColor: theme.primary,
+              },
+            ]}
+          >
+            <Text style={styles.invalidButtonText}>
+              {t("common:close", { defaultValue: "Close" })}
+            </Text>
+          </Pressable>
+        </View>
+      </Layout>
+    );
+  }
 
   return (
-    <Layout showNavigation={false} style={styles.root}>
-      <ScreenCornerNavButton
-        icon="close"
-        onPress={handleClose}
-        accessibilityLabel={t("common:close", { defaultValue: "Close" })}
-        containerStyle={styles.topLeftAction}
-      />
-
-      <ViewShot
-        ref={shotRef}
-        style={[
-          styles.shareCanvas,
-          { width: canvasWidth - 18, height: canvasHeight - 32 },
-        ]}
+    <Layout
+      showNavigation={false}
+      disableScroll
+      style={{
+        paddingTop: insets.top + theme.spacing.xs,
+        paddingBottom: theme.spacing.md,
+        paddingLeft: theme.spacing.md,
+        paddingRight: theme.spacing.md,
+      }}
       >
-        <ShareCanvas
-          width={canvasWidth - 18}
-          height={canvasHeight - 32}
-          photoUri={meal.photoUrl || null}
-          title={meal.name || ""}
-          kcal={nutrition.kcal}
-          protein={nutrition.protein}
-          fat={nutrition.fat}
-          carbs={nutrition.carbs}
-          options={opts}
-          onChange={setOpts}
-          uiHidden={uiHidden}
-          selectedId={selectedId}
-          onSelectElement={handleSelectElement}
-          onTapTextElement={handleTapElement}
+        <View style={styles.screen}>
+          <Pressable
+            onPress={handleClose}
+            accessibilityRole="button"
+            accessibilityLabel={t("common:close", { defaultValue: "Close" })}
+            style={[styles.closeButtonFloating, { borderColor: theme.border }]}
+          >
+            <AppIcon name="close" size={14} color={theme.primaryStrong} />
+          </Pressable>
+
+        <View style={[styles.modeSwitch, { borderColor: theme.border }]}>
+          <Pressable
+            onPress={() => handleSwitchMode("quick")}
+            style={[
+              styles.modeSwitchChip,
+              mode === "quick"
+                ? { backgroundColor: theme.primary, borderColor: theme.primary }
+                : { backgroundColor: "#FBF8F2", borderColor: theme.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.modeSwitchLabel,
+                {
+                  color: mode === "quick" ? "#FBF8F2" : "#7A6D5E",
+                },
+              ]}
+            >
+              Quick
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleSwitchMode("customize")}
+            style={[
+              styles.modeSwitchChip,
+              mode === "customize"
+                ? { backgroundColor: theme.primary, borderColor: theme.primary }
+                : { backgroundColor: "#FBF8F2", borderColor: theme.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.modeSwitchLabel,
+                {
+                  color: mode === "customize" ? "#FBF8F2" : "#7A6D5E",
+                },
+              ]}
+            >
+              Customize
+            </Text>
+          </Pressable>
+        </View>
+
+        <View
+          style={[
+            styles.canvasFrame,
+            {
+              width: canvasWidth,
+              height: canvasHeight,
+              borderColor: theme.borderSoft,
+            },
+          ]}
+        >
+          <ViewShot ref={shotRef} style={styles.canvasWrap}>
+            <ShareComposerCanvas
+              width={canvasWidth}
+              height={canvasHeight}
+              mealPhotoUri={mealPhotoUri}
+              nutrition={nutrition}
+              composition={composition}
+              mode={mode}
+              selectedLayerId={selectedLayerId}
+              onSelectLayer={(layerId) => {
+                if (mode !== "customize") return;
+                if (layerId === "mealPhoto") {
+                  setSelectedLayerId(null);
+                  return;
+                }
+                setSelectedLayerId(layerId);
+              }}
+              onTextChange={handleTextChange}
+              onTransformChange={handleTransformChange}
+              onBackgroundPress={handleCanvasBackgroundPress}
+            />
+          </ViewShot>
+        </View>
+
+        <ShareComposerDock
+          width={canvasWidth}
+          mode={mode}
+          selectedPreset={selectedPreset}
+          activeEditorKind={activeEditorKind}
+          selectedLayerId={selectedLayerId}
+          composition={composition}
+          mealPhotoUri={mealPhotoUri}
+          exportState={exportState}
+          onPresetSelect={handlePresetSelect}
+          onSaveToGallery={handleSaveToGallery}
+          onShare={handleShare}
+          onRemoveSelectedLayer={handleRemoveSelectedLayer}
+          onResetComposition={handleResetComposition}
+          onTextStyleChange={handleTextStyleChange}
+          onChartVariantChange={handleChartVariantChange}
+          onChartStyleChange={handleChartStyleChange}
+          onCardVariantChange={handleCardVariantChange}
+          onCardStyleChange={handleCardStyleChange}
+          onAdditionalPhotoTreatmentChange={handleAdditionalPhotoTreatmentChange}
+          onAddTextLayer={handleAddTextLayer}
+          onEnsureChartLayer={handleEnsureChartLayer}
+          onEnsureCardLayer={handleEnsureCardLayer}
+          onAddOrReplaceAdditionalPhoto={handleAddOrReplaceAdditionalPhoto}
         />
-      </ViewShot>
-
-      {!uiHidden && (
-        <>
-          <View style={[styles.rightBar, { top: 24 }]}>
-            <Pressable
-              onPress={() => openMode("options")}
-              style={[
-                styles.iconBtn,
-                {
-                  backgroundColor: theme.surfaceElevated,
-                  borderColor: theme.border,
-                },
-              ]}
-              hitSlop={8}
-            >
-              <AppIcon name="add" size={22} color={theme.text} />
-            </Pressable>
-            <Pressable
-              onPress={() => openMode("background")}
-              style={[
-                styles.iconBtn,
-                {
-                  backgroundColor: theme.surfaceElevated,
-                  borderColor: theme.border,
-                },
-              ]}
-              hitSlop={8}
-            >
-              <AppIcon name="palette" size={22} color={theme.text} />
-            </Pressable>
-          </View>
-        </>
-      )}
-
-      <View style={styles.shareBtnWrap}>
-        <Button label={t("share")} onPress={share} />
       </View>
-
-      <ShareEditorPanel
-        visible={!!panelMode && !uiHidden}
-        mode={panelMode}
-        options={opts}
-        selectedId={selectedId}
-        onChange={setOpts}
-        onClose={() => setPanelMode(null)}
-        onTapTextElement={handleTapElement}
-        draggable
-        areaW={canvasWidth - 18}
-        areaH={canvasHeight - 32}
-      />
     </Layout>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    paddingLeft: 8,
-    paddingRight: 8,
-  },
-  rightBar: {
-    position: "absolute",
-    right: 12,
+  screen: {
+    flex: 1,
+    alignItems: "center",
     gap: 8,
-    zIndex: 20,
+    position: "relative",
   },
-  topLeftAction: {
+  closeButtonFloating: {
     position: "absolute",
-    left: 12,
-    top: 24,
-    zIndex: 20,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    top: 0,
+    left: 4,
+    zIndex: 5,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#FBF8F2",
   },
-  shareBtnWrap: {
+  modeSwitch: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 2,
+    flexDirection: "row",
+    gap: 3,
+    backgroundColor: "#FBF8F2",
+  },
+  modeSwitchChip: {
+    minHeight: 24,
+    minWidth: 67,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
     alignItems: "center",
-    zIndex: 10,
-    marginTop: 12,
+    justifyContent: "center",
   },
-  shareCanvas: {
-    alignSelf: "center",
+  modeSwitchLabel: {
+    fontSize: 11,
+    lineHeight: 12,
+    fontFamily: "Inter-Medium",
+  },
+  canvasFrame: {
+    borderRadius: 31,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  canvasWrap: {
+    flex: 1,
+    borderRadius: 30,
+    overflow: "hidden",
+  },
+  invalidContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+  },
+  invalidClose: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E0D7C7",
+    backgroundColor: "#FBF8F2",
+  },
+  invalidTitle: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontFamily: "Inter-Bold",
+    textAlign: "center",
+  },
+  invalidDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: "Inter-Medium",
+    textAlign: "center",
+    maxWidth: 290,
+  },
+  invalidButton: {
+    minHeight: 40,
+    borderRadius: 20,
+    minWidth: 144,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+    marginTop: 8,
+  },
+  invalidButtonText: {
+    color: "#FBF8F2",
+    fontFamily: "Inter-SemiBold",
+    fontSize: 12,
+    lineHeight: 14,
   },
 });

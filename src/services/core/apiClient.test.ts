@@ -126,6 +126,38 @@ describe("apiClient", () => {
     expect(fetchMock.mock.calls[0][1].headers).not.toHaveProperty("Content-Type");
   });
 
+  it("retries multipart uploads for transient server failures", async () => {
+    jest.useFakeTimers();
+    const getIdToken = jest.fn().mockResolvedValue("token-456");
+    mockGetAuth.mockReturnValue({
+      currentUser: { getIdToken },
+    });
+
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => JSON.stringify({ detail: "Database error" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ ok: true }),
+      });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const formData = new FormData();
+    formData.append("file", "payload");
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { upload } = require("@/services/core/apiClient");
+
+    const pending = upload("/users/me/meals/photo", formData);
+    await jest.advanceTimersByTimeAsync(1000);
+    await expect(pending).resolves.toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("returns api/timeout when request exceeds timeout", async () => {
     jest.useFakeTimers();
     mockGetAuth.mockReturnValue({

@@ -214,6 +214,16 @@ describe("SavedMealsCameraScreen", () => {
     };
 
     mockUseMeals.mockReturnValue({ updateMeal });
+    mockUseRoute.mockReturnValue({
+      params: {
+        meal: buildMeal({
+          localPhotoUrl: "https://remote.example.com/old.jpg",
+          photoLocalPath: null,
+          photoUrl: "https://remote.example.com/old.jpg",
+        }),
+        returnTo: "EditHistoryMealDetails",
+      },
+    });
 
     const screen = renderWithTheme(
       <SavedMealsCameraScreen navigation={navigation as never} />,
@@ -232,6 +242,8 @@ describe("SavedMealsCameraScreen", () => {
         expect.objectContaining({
           mealId: "meal-1",
           photoUrl: "file:///new-photo.jpg",
+          localPhotoUrl: "file:///new-photo.jpg",
+          photoLocalPath: "file:///new-photo.jpg",
         }),
       );
       expect(navigation.replace).toHaveBeenCalledWith(
@@ -240,6 +252,8 @@ describe("SavedMealsCameraScreen", () => {
           meal: expect.objectContaining({
             mealId: "meal-1",
             photoUrl: "file:///new-photo.jpg",
+            localPhotoUrl: "file:///new-photo.jpg",
+            photoLocalPath: "file:///new-photo.jpg",
           }),
         },
       );

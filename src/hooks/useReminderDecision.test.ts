@@ -76,13 +76,13 @@ describe("useReminderDecision", () => {
     expect(result.current.status).toBe("no_user");
   });
 
-  it("exposes disabled service fallback when reminder endpoint is gated off", async () => {
+  it("exposes fallback state when reminder endpoint is unavailable", async () => {
     mockGetReminderDecision.mockResolvedValue({
       decision: null,
-      source: "disabled",
-      status: "disabled",
-      enabled: false,
-      error: null,
+      source: "fallback",
+      status: "service_unavailable",
+      enabled: true,
+      error: new Error("backend down"),
     });
 
     const { result } = renderHook(() =>
@@ -94,9 +94,9 @@ describe("useReminderDecision", () => {
     });
 
     expect(result.current.decision).toBeNull();
-    expect(result.current.enabled).toBe(false);
-    expect(result.current.source).toBe("disabled");
-    expect(result.current.status).toBe("disabled");
+    expect(result.current.enabled).toBe(true);
+    expect(result.current.source).toBe("fallback");
+    expect(result.current.status).toBe("service_unavailable");
   });
 
   it("supports explicit refresh and replaces the current decision", async () => {

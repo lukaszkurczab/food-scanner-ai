@@ -24,9 +24,12 @@ describe("MacroSplitCard", () => {
     const { getByText } = renderWithTheme(<MacroSplitCard {...baseProps} />);
 
     expect(getByText("510 kcal")).toBeTruthy();
-    expect(getByText("Today's meal")).toBeTruthy();
-    expect(getByText("Protein 30 g")).toBeTruthy();
-    expect(getByText("Carbs 40 g")).toBeTruthy();
-    expect(getByText("Fat 20 g")).toBeTruthy();
+    expect(getByText("Meal summary")).toBeTruthy();
+    expect(getByText("P")).toBeTruthy();
+    expect(getByText("C")).toBeTruthy();
+    expect(getByText("F")).toBeTruthy();
+    expect(getByText("30g")).toBeTruthy();
+    expect(getByText("40g")).toBeTruthy();
+    expect(getByText("20g")).toBeTruthy();
   });
 });

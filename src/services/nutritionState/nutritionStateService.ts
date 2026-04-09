@@ -7,7 +7,6 @@ import {
   asString,
   isRecord,
 } from "@/services/contracts/guards";
-import { readPublicEnv } from "@/services/core/publicEnv";
 import { debugScope } from "@/utils/debug";
 import type {
   NutritionAiCosts,
@@ -43,10 +42,6 @@ const inFlightByKey = new Map<
   string,
   { promise: Promise<NutritionStateResult> }
 >();
-
-function isNutritionStateEnabled(): boolean {
-  return readPublicEnv("EXPO_PUBLIC_ENABLE_V2_STATE") === "true";
-}
 
 function toDayKey(date: Date): string {
   const year = date.getFullYear();
@@ -616,16 +611,6 @@ export async function getNutritionState(
 ): Promise<NutritionStateResult> {
   const dayKey = normalizeDayKey(options?.dayKey);
   const fallbackState = createFallbackNutritionState(dayKey);
-
-  if (!isNutritionStateEnabled()) {
-    return {
-      state: fallbackState,
-      source: "disabled",
-      enabled: false,
-      isStale: true,
-      error: null,
-    };
-  }
 
   if (!uid) {
     return {

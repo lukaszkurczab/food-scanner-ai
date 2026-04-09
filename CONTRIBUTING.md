@@ -33,6 +33,8 @@ For a local backend, set `EXPO_PUBLIC_API_BASE_URL=http://localhost:8000` in `.e
 npm run lint          # ESLint
 npm run typecheck     # TypeScript
 npm test              # Jest unit tests
+npm run test:targeted -- --coverage --runTestsByPath src/services/release/checkLaunchReadinessConfig.test.ts \
+  --collectCoverageFrom=scripts/check-launch-readiness.lib.js
 npm run check:launch-readiness:android   # production config gate
 npm run check:launch-readiness:ios
 ```
@@ -71,6 +73,9 @@ Before tagging a release build:
 - [ ] Version bumped in `package.json` and `app.config.js`
 - [ ] `npm run check:launch-readiness:android` passes locally with production env
 - [ ] `npm run check:launch-readiness:ios` passes locally with production env
+- [ ] `Release Candidate` workflow is green and `release-evidence` artifact is attached
 - [ ] E2E Maestro flows pass on a real device or EAS build
+- [ ] Smoke export check passes for the disposable smoke account
+- [ ] Disposable smoke delete evidence is attached before approving the `production` environment
 - [ ] `EXPO_PUBLIC_ENABLE_BACKEND_LOGGING` is `false` in `eas.json` production profile
 - [ ] RC keys set as EAS Secrets (`eas secret:list` to verify)

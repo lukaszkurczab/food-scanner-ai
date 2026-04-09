@@ -1,6 +1,13 @@
 name: E2E Smoke Gate
 
 on:
+  workflow_call:
+    inputs:
+      platform:
+        description: "Target platform for Maestro smoke tests"
+        required: false
+        default: ios
+        type: string
   workflow_dispatch:
     inputs:
       platform:
@@ -24,7 +31,7 @@ jobs:
     timeout-minutes: 40
 
     env:
-      E2E_PLATFORM: ${{ inputs.platform || 'ios' }}
+      E2E_PLATFORM: ${{ inputs.platform || github.event.inputs.platform || 'ios' }}
 
     steps:
       - name: Checkout repository
@@ -44,3 +51,22 @@ jobs:
 
       - name: Run account launch smoke flow
         run: bash scripts/run-e2e-local.sh e2e/maestro/account-launch-smoke.yaml
+
+  notify-on-failure:
+    name: Notify Discord on failure
+    if: ${{ failure() }}
+    needs:
+      - smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Notify Discord
+        env:
+          OPS_ALERT_DISCORD_WEBHOOK_URL: ${{ secrets.OPS_ALERT_DISCORD_WEBHOOK_URL }}
+          WORKFLOW_ENVIRONMENT: smoke
+          WORKFLOW_NAME: E2E Smoke Gate
+          WORKFLOW_OWNER: mobile-oncall
+          WORKFLOW_STATUS: failure
+        run: bash scripts/notify-ops-discord.sh

@@ -69,7 +69,7 @@ export type RootStackParamList = {
     meal: Meal;
   };
   EditHistoryMealDetails: { meal: Meal };
-  MealShare: { meal: Meal; returnTo: "MealDetails" };
+  MealShare: { meal: Meal; returnTo: "MealDetails" | "ReviewMeal" };
   SavedMealsCamera:
     | {
         id?: string;

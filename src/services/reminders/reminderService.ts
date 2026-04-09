@@ -2,7 +2,6 @@ import { get } from "@/services/core/apiClient";
 import { withV2 } from "@/services/core/apiVersioning";
 import { createServiceError } from "@/services/contracts/serviceError";
 import { isRecord } from "@/services/contracts/guards";
-import { readPublicEnv } from "@/services/core/publicEnv";
 import { trackSmartReminderDecisionFailed } from "@/services/telemetry/telemetryInstrumentation";
 import { debugScope } from "@/utils/debug";
 import {
@@ -32,7 +31,7 @@ const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const UTC_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
 export function isSmartRemindersEnabled(): boolean {
-  return readPublicEnv("EXPO_PUBLIC_ENABLE_SMART_REMINDERS") === "true";
+  return true;
 }
 
 function toDayKey(date: Date): string {
@@ -307,15 +306,6 @@ export async function getReminderDecision(
   options?: { dayKey?: string | null },
 ): Promise<ReminderDecisionResult> {
   const dayKey = normalizeDayKey(options?.dayKey);
-
-  if (!isSmartRemindersEnabled()) {
-    return buildFallbackResult({
-      source: "disabled",
-      status: "disabled",
-      enabled: false,
-      error: null,
-    });
-  }
 
   if (!uid) {
     return buildFallbackResult({

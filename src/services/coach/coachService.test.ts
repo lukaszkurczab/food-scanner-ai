@@ -112,24 +112,25 @@ describe("coachService", () => {
     );
   });
 
-  it("returns a disabled fallback and skips the endpoint when v2 state is off", async () => {
+  it("does not gate coach fetch behind mobile feature flags", async () => {
     mockReadPublicEnv.mockImplementation((name: string) => {
       if (name === "EXPO_PUBLIC_ENABLE_V2_STATE") {
         return "false";
       }
       return undefined;
     });
+    mockGet.mockResolvedValue(createHealthyPayload());
 
     const service =
       jest.requireActual("@/services/coach/coachService") as typeof import("@/services/coach/coachService");
 
     const result = await service.getCoach("user-1", { dayKey: "2026-03-18" });
 
-    expect(result.enabled).toBe(false);
-    expect(result.source).toBe("disabled");
-    expect(result.status).toBe("disabled");
+    expect(result.enabled).toBe(true);
+    expect(result.source).toBe("remote");
+    expect(result.status).toBe("live_success");
     expect(result.coach.dayKey).toBe("2026-03-18");
-    expect(mockGet).not.toHaveBeenCalled();
+    expect(mockGet).toHaveBeenCalledTimes(1);
   });
 
   it("uses in-memory cache for repeated reads of the same user and day", async () => {

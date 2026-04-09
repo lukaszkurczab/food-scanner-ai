@@ -1,5 +1,10 @@
 import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { useTheme } from "@/theme/useTheme";
+import {
+  OverlayKcalBlock,
+  withAlpha,
+} from "../overlayPrimitives";
 
 type Props = {
   protein: number;
@@ -19,12 +24,9 @@ type Props = {
   showKcalLabel?: boolean;
   textColor?: string;
   fontFamily?: string;
+  fontWeight?: "300" | "500" | "700" | "normal" | "bold";
   backgroundColor?: string;
 };
-
-const DEFAULT_PROTEIN = "#2196F3";
-const DEFAULT_CARBS = "#81C784";
-const DEFAULT_FAT = "#C6A025";
 
 export default function MacroBarMini({
   protein,
@@ -36,7 +38,9 @@ export default function MacroBarMini({
   showKcalLabel = true,
   textColor,
   fontFamily,
+  fontWeight,
 }: Props) {
+  const theme = useTheme();
   const items = useMemo(
     () => [
       { key: "protein", label: "P", value: Math.max(0, protein) },
@@ -48,33 +52,54 @@ export default function MacroBarMini({
 
   const maxVal = Math.max(1, ...items.map((i) => i.value));
 
-  const kcalStyle = [styles.kcal, { color: textColor || "#000", fontFamily }];
-
   const labelStyle = [
     styles.barLabel,
-    { color: textColor || "#000", fontFamily },
+    {
+      color: withAlpha(textColor || theme.text, 0.76),
+      fontFamily: fontFamily ?? theme.typography.fontFamily.medium,
+      fontWeight: fontWeight ?? "500",
+    },
   ];
 
   const colors = {
-    protein:
-      chartMacroColors?.protein || macroColor?.protein || DEFAULT_PROTEIN,
-    carbs: chartMacroColors?.carbs || macroColor?.carbs || DEFAULT_CARBS,
-    fat: chartMacroColors?.fat || macroColor?.fat || DEFAULT_FAT,
+    protein: chartMacroColors?.protein || macroColor?.protein || theme.macro.protein,
+    carbs: chartMacroColors?.carbs || macroColor?.carbs || theme.macro.carbs,
+    fat: chartMacroColors?.fat || macroColor?.fat || theme.macro.fat,
   };
 
   return (
     <View style={styles.wrap}>
-      {showKcalLabel && <Text style={kcalStyle}>{kcal} kcal</Text>}
+      {showKcalLabel && (
+        <OverlayKcalBlock
+          kcal={kcal}
+          textColor={textColor || theme.text}
+          fontFamily={fontFamily}
+          fontWeight={fontWeight ?? "700"}
+          align="center"
+          tone="title"
+        />
+      )}
       <View style={styles.chartRow}>
         {items.map((item) => (
           <View key={item.key} style={styles.barCol}>
-            <View style={styles.barTrack}>
+            <View
+              style={[
+                styles.barTrack,
+                {
+                  backgroundColor: withAlpha(theme.overlay, theme.isDark ? 0.5 : 0.16),
+                  borderColor: withAlpha(theme.borderSoft, theme.isDark ? 0.56 : 0.32),
+                },
+              ]}
+            >
               <View
                 style={[
                   styles.barFill,
                   {
                     backgroundColor: colors[item.key as keyof typeof colors],
-                    height: `${(item.value / maxVal) * 100}%`,
+                    height:
+                      item.value <= 0
+                        ? 0
+                        : `${Math.max((item.value / maxVal) * 100, 16)}%`,
                   },
                 ]}
               />
@@ -89,40 +114,38 @@ export default function MacroBarMini({
 
 const styles = StyleSheet.create({
   wrap: {
-    width: 220,
+    width: "100%",
     alignItems: "center",
-  },
-  kcal: {
-    fontWeight: "700",
-    marginBottom: 4,
-    fontSize: 16,
   },
   chartRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    justifyContent: "space-between",
-    width: 180,
+    justifyContent: "center",
+    width: "100%",
+    minHeight: 94,
+    gap: 8,
+    marginTop: 8,
   },
   barCol: {
     alignItems: "center",
-    flex: 1,
-    marginHorizontal: 4,
+    width: 42,
   },
   barTrack: {
-    width: 22,
-    height: 80,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    width: 24,
+    height: 74,
+    borderRadius: 12,
+    borderWidth: 1,
     overflow: "hidden",
     justifyContent: "flex-end",
   },
   barFill: {
     width: "100%",
-    borderRadius: 999,
+    borderTopLeftRadius: 9,
+    borderTopRightRadius: 9,
   },
   barLabel: {
-    marginTop: 4,
+    marginTop: 6,
     fontSize: 11,
-    fontWeight: "500",
+    lineHeight: 14,
   },
 });

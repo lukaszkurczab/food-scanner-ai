@@ -5,6 +5,19 @@ import type { Meal } from "@/types/meal";
 const isLocalUri = (value?: string | null) =>
   !!value && (value.startsWith("file://") || value.startsWith("content://"));
 
+export function pickMealPhotoUri(meal?: Meal | null): string | null {
+  if (!meal) return null;
+
+  const localCandidate = [
+    meal.photoUrl,
+    meal.photoLocalPath,
+    meal.localPhotoUrl,
+  ].find(isLocalUri);
+  if (localCandidate) return localCandidate;
+
+  return meal.photoUrl ?? meal.localPhotoUrl ?? meal.photoLocalPath ?? null;
+}
+
 async function firstExistingLocalUri(meal: Meal): Promise<string | null> {
   const candidates = [meal.localPhotoUrl, meal.photoLocalPath, meal.photoUrl].filter(
     isLocalUri

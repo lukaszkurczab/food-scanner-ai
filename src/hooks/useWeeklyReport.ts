@@ -3,7 +3,6 @@ import {
   createFallbackWeeklyReport,
   getCurrentWeeklyReportWeekEnd,
   getWeeklyReport,
-  isWeeklyReportsEnabled,
 } from "@/services/weeklyReport/weeklyReportService";
 import type {
   WeeklyReport,
@@ -37,18 +36,13 @@ export function useWeeklyReport({
   active = true,
 }: UseWeeklyReportParams): UseWeeklyReportResult {
   const resolvedWeekEnd = resolveWeekEnd(weekEnd);
-  const featureEnabled = isWeeklyReportsEnabled();
   const [report, setReport] = useState<WeeklyReport>(() =>
     createFallbackWeeklyReport(resolvedWeekEnd),
   );
-  const [loading, setLoading] = useState<boolean>(!!uid && active && featureEnabled);
-  const [enabled, setEnabled] = useState<boolean>(featureEnabled);
-  const [source, setSource] = useState<WeeklyReportSource>(
-    featureEnabled ? "fallback" : "disabled",
-  );
-  const [status, setStatus] = useState<WeeklyReportResultStatus>(
-    featureEnabled ? "no_user" : "disabled",
-  );
+  const [loading, setLoading] = useState<boolean>(!!uid && active);
+  const [enabled, setEnabled] = useState<boolean>(true);
+  const [source, setSource] = useState<WeeklyReportSource>("fallback");
+  const [status, setStatus] = useState<WeeklyReportResultStatus>("no_user");
   const [error, setError] = useState<unknown | null>(null);
 
   const applyResult = useCallback((result: {
@@ -71,9 +65,9 @@ export function useWeeklyReport({
     if (!active) {
       setReport(createFallbackWeeklyReport(resolvedWeekEnd));
       setLoading(false);
-      setEnabled(featureEnabled);
-      setSource(featureEnabled ? "fallback" : "disabled");
-      setStatus(featureEnabled ? "no_user" : "disabled");
+      setEnabled(true);
+      setSource("fallback");
+      setStatus("no_user");
       setError(null);
       return () => {
         mounted = false;
@@ -92,7 +86,7 @@ export function useWeeklyReport({
     return () => {
       mounted = false;
     };
-  }, [active, applyResult, featureEnabled, resolvedWeekEnd, uid]);
+  }, [active, applyResult, resolvedWeekEnd, uid]);
 
   const refresh = useCallback(async () => {
     const result = await getWeeklyReport(uid, { weekEnd: resolvedWeekEnd });

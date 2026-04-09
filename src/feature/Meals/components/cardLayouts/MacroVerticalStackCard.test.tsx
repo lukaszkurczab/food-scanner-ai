@@ -26,8 +26,11 @@ describe("MacroVerticalStackCard", () => {
     );
 
     expect(getByText("510 kcal")).toBeTruthy();
-    expect(getByText("Protein 30 g")).toBeTruthy();
-    expect(getByText("Carbs 40 g")).toBeTruthy();
-    expect(getByText("Fat 20 g")).toBeTruthy();
+    expect(getByText("Protein")).toBeTruthy();
+    expect(getByText("Carbs")).toBeTruthy();
+    expect(getByText("Fat")).toBeTruthy();
+    expect(getByText("30g")).toBeTruthy();
+    expect(getByText("40g")).toBeTruthy();
+    expect(getByText("20g")).toBeTruthy();
   });
 });

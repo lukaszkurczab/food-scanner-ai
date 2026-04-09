@@ -17,6 +17,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const log = debugScope("Screen:SavedMealsCamera");
 
+function isLocalUri(value?: string | null): value is string {
+  return (
+    typeof value === "string" &&
+    (value.startsWith("file://") || value.startsWith("content://"))
+  );
+}
+
 type SavedMealsCameraNavigation = StackNavigationProp<
   RootStackParamList,
   "SavedMealsCamera"
@@ -124,10 +131,13 @@ export default function SavedMealsCameraScreen({
   const handleAccept = async (optimizedUri?: string) => {
     const finalUri = optimizedUri || photoUri;
     if (!finalUri || !mealFromRoute) return;
+    const localPhotoUri = isLocalUri(finalUri) ? finalUri : null;
     const updated: Meal = {
       ...mealFromRoute,
       mealId,
       photoUrl: finalUri,
+      photoLocalPath: localPhotoUri,
+      localPhotoUrl: localPhotoUri,
       updatedAt: new Date().toISOString(),
     };
     await updateMeal(updated);

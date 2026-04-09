@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useTranslation } from "react-i18next";
@@ -9,6 +9,7 @@ import { MealDetailsFormScreen } from "@/feature/Meals/screens/MealAdd/MealDetai
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import type { MealAddFlowApi } from "@/feature/Meals/feature/MapMealAddScreens";
 import type { Meal } from "@/types/meal";
+import { pickMealPhotoUri } from "@/utils/mealImage";
 
 type EditHistoryMealDetailsNavigation = StackNavigationProp<
   RootStackParamList,
@@ -29,9 +30,20 @@ export default function EditHistoryMealDetailsScreen({
   const { uid } = useAuthContext();
   const { updateMeal } = useMeals(uid || "");
   const { meal, saveDraft, setLastScreen, setMeal } = useMealDraftContext();
+  const seededMealVersionRef = useRef<string | null>(null);
 
   useEffect(() => {
     const nextMeal = route.params.meal;
+    const nextMealVersion = [
+      nextMeal.cloudId ?? "",
+      nextMeal.mealId ?? "",
+      nextMeal.updatedAt ?? "",
+    ].join("|");
+    if (seededMealVersionRef.current === nextMealVersion) {
+      return;
+    }
+    seededMealVersionRef.current = nextMealVersion;
+
     setMeal(nextMeal);
     if (!uid) return;
     void saveDraft(uid, nextMeal);
@@ -58,8 +70,7 @@ export default function EditHistoryMealDetailsScreen({
     [navigation, updateMeal],
   );
 
-  const reviewPhotoUri =
-    meal?.localPhotoUrl ?? meal?.photoLocalPath ?? meal?.photoUrl ?? null;
+  const reviewPhotoUri = pickMealPhotoUri(meal);
 
   return (
     <MealDetailsFormScreen

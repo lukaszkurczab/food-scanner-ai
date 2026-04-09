@@ -1,5 +1,10 @@
 import { View, Text, StyleSheet } from "react-native";
-import Svg, { Path, Circle } from "react-native-svg";
+import Svg, { Circle, Line, Path } from "react-native-svg";
+import { useTheme } from "@/theme/useTheme";
+import {
+  OverlayKcalBlock,
+  withAlpha,
+} from "../overlayPrimitives";
 
 type PieDatum = {
   value: number;
@@ -14,38 +19,36 @@ type Props = {
   showLegend?: boolean;
   textColor?: string;
   fontFamily?: string;
+  fontWeight?: "300" | "500" | "700" | "normal" | "bold";
   backgroundColor?: string;
 };
 
-const SIZE = 180;
-const PADDING = 8;
-const MIN_RADIUS = 3;
+const SIZE = 140;
+const CENTER = SIZE / 2;
+const CHART_PADDING = 16;
+const LEVELS = 3;
+const MIN_RADIUS_RATIO = 0.34;
+const MAX_RADIUS = CENTER - CHART_PADDING;
 
 const degToRad = (deg: number) => (deg * Math.PI) / 180;
 
-function buildSectorPath(
+function buildPolarSlicePath(
   cx: number,
   cy: number,
   radius: number,
   startAngleDeg: number,
   endAngleDeg: number
 ): string {
-  const startRad = degToRad(startAngleDeg);
-  const endRad = degToRad(endAngleDeg);
+  const startAngle = degToRad(startAngleDeg);
+  const endAngle = degToRad(endAngleDeg);
 
-  const x1 = cx + radius * Math.cos(startRad);
-  const y1 = cy + radius * Math.sin(startRad);
-  const x2 = cx + radius * Math.cos(endRad);
-  const y2 = cy + radius * Math.sin(endRad);
-
+  const x1 = cx + radius * Math.cos(startAngle);
+  const y1 = cy + radius * Math.sin(startAngle);
+  const x2 = cx + radius * Math.cos(endAngle);
+  const y2 = cy + radius * Math.sin(endAngle);
   const largeArcFlag = endAngleDeg - startAngleDeg > 180 ? 1 : 0;
 
-  return [
-    `M ${cx} ${cy}`,
-    `L ${x1} ${y1}`,
-    `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-    "Z",
-  ].join(" ");
+  return [`M ${cx} ${cy}`, `L ${x1} ${y1}`, `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`, "Z"].join(" ");
 }
 
 export default function MacroPolarAreaChart({
@@ -55,112 +58,162 @@ export default function MacroPolarAreaChart({
   showLegend = true,
   textColor,
   fontFamily,
+  fontWeight = "700",
 }: Props) {
-  const cx = SIZE / 2;
-  const cy = SIZE / 2;
-  const maxRadius = SIZE / 2 - PADDING;
-
-  if (!data || data.length === 0) {
-    return (
-      <View style={styles.wrap}>
-        {showKcalLabel && (
-          <Text
-            style={[styles.kcal, { color: textColor || "#000", fontFamily }]}
-          >
-            {kcal} kcal
-          </Text>
-        )}
-      </View>
-    );
-  }
-
-  const sanitized = data.map((d) => ({
-    ...d,
-    value: Math.max(0, d.value),
+  const theme = useTheme();
+  const safeData = (data || []).map((item) => ({
+    ...item,
+    value: Math.max(0, item.value),
   }));
 
-  const hasPositive = sanitized.some((d) => d.value > 0);
-  const normalized = hasPositive
-    ? sanitized
-    : sanitized.map((d) => ({ ...d, value: 1 }));
-
-  const maxVal = Math.max(1, ...normalized.map((d) => d.value));
-
-  const n = normalized.length;
-  const angleStep = 360 / n;
-  const baseAngle = -90;
-
-  const kcalStyle = [styles.kcal, { color: textColor || "#000", fontFamily }];
-
-  const legendTextStyle = [
-    styles.legendText,
-    { color: textColor || "#000", fontFamily },
-  ];
+  const hasData = safeData.length > 0;
+  const hasPositive = safeData.some((item) => item.value > 0);
+  const normalized = hasData
+    ? hasPositive
+      ? safeData
+      : safeData.map((item) => ({ ...item, value: 1 }))
+    : [];
+  const maxValue = Math.max(1, ...normalized.map((item) => item.value));
+  const angleStep = normalized.length > 0 ? 360 / normalized.length : 120;
+  const startAngle = -90;
+  const guideRadii = Array.from(
+    { length: LEVELS },
+    (_, index) => (MAX_RADIUS / LEVELS) * (index + 1)
+  );
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.chartContainer}>
-        <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-          {n === 1 ? (
-            <Circle
-              cx={cx}
-              cy={cy}
-              r={Math.max(
-                MIN_RADIUS,
-                (normalized[0].value / maxVal) * maxRadius
-              )}
-              fill={normalized[0].color}
-            />
-          ) : (
-            normalized.map((d, index) => {
-              const startAngle = baseAngle + index * angleStep;
-              const endAngle = startAngle + angleStep;
-              const ratio = d.value / maxVal;
+      {hasData ? (
+        <View style={styles.chartContainer}>
+          <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+            {guideRadii.map((radius, index) => (
+              <Circle
+                key={`grid-${index}`}
+                cx={CENTER}
+                cy={CENTER}
+                r={radius}
+                stroke={withAlpha(theme.borderSoft, theme.isDark ? 0.3 : 0.2)}
+                strokeWidth={1}
+                fill="none"
+              />
+            ))}
 
-              let radius = hasPositive ? maxRadius * ratio : maxRadius;
-              if (d.value > 0) {
-                radius = Math.max(MIN_RADIUS, radius);
-              }
-
-              if (radius <= 0) return null;
-
-              const path = buildSectorPath(
-                cx,
-                cy,
+            {normalized.map((item, index) => {
+              const ratio = item.value / maxValue;
+              const radius =
+                MAX_RADIUS *
+                (MIN_RADIUS_RATIO + (1 - MIN_RADIUS_RATIO) * ratio);
+              const sliceStart = startAngle + index * angleStep;
+              const sliceEnd = sliceStart + angleStep;
+              const path = buildPolarSlicePath(
+                CENTER,
+                CENTER,
                 radius,
-                startAngle,
-                endAngle
+                sliceStart,
+                sliceEnd
               );
 
               return (
-                <Path key={`${d.label}-${index}`} d={path} fill={d.color} />
+                <Path
+                  key={`${item.label}-${index}`}
+                  d={path}
+                  fill={withAlpha(item.color, theme.isDark ? 0.38 : 0.26)}
+                  stroke={withAlpha(item.color, 0.84)}
+                  strokeWidth={1.2}
+                />
               );
-            })
-          )}
-        </Svg>
-      </View>
+            })}
 
-      {showKcalLabel && <Text style={kcalStyle}>{kcal} kcal</Text>}
+            {normalized.map((_, index) => {
+              const angleRad = degToRad(startAngle + index * angleStep);
+              const axisX = CENTER + MAX_RADIUS * Math.cos(angleRad);
+              const axisY = CENTER + MAX_RADIUS * Math.sin(angleRad);
 
-      {showLegend && (
+              return (
+                <Line
+                  key={`axis-${index}`}
+                  x1={CENTER}
+                  y1={CENTER}
+                  x2={axisX}
+                  y2={axisY}
+                  stroke={withAlpha(theme.borderSoft, theme.isDark ? 0.36 : 0.22)}
+                  strokeWidth={1}
+                />
+              );
+            })}
+
+            <Circle
+              cx={CENTER}
+              cy={CENTER}
+              r={8}
+              fill={withAlpha(theme.surfaceElevated, theme.isDark ? 0.82 : 0.92)}
+              stroke={withAlpha(theme.borderSoft, theme.isDark ? 0.54 : 0.36)}
+              strokeWidth={1}
+            />
+          </Svg>
+        </View>
+      ) : null}
+
+      {showKcalLabel ? (
+        <OverlayKcalBlock
+          kcal={kcal}
+          textColor={textColor || theme.text}
+          fontFamily={fontFamily}
+          fontWeight={fontWeight}
+          align="center"
+          tone="compact"
+        />
+      ) : null}
+
+      {showLegend && hasData ? (
         <View style={styles.legendRow}>
-          {sanitized.map((d) => (
-            <View key={d.label} style={styles.legendItem}>
-              <View style={[styles.dot, { backgroundColor: d.color }]} />
-              <Text style={legendTextStyle}>
-                {d.label}: {Math.round(d.value)} g
+          {safeData.map((item, index) => (
+            <View key={item.label} style={styles.legendItem}>
+              <Text
+                style={[
+                  styles.legendLabel,
+                  {
+                    color: item.color,
+                    fontFamily: fontFamily ?? theme.typography.fontFamily.medium,
+                    fontWeight: fontWeight ?? "500",
+                  },
+                ]}
+              >
+                {String(item.label).charAt(0).toUpperCase()}
               </Text>
+              <Text
+                style={[
+                  styles.legendValue,
+                  {
+                    color: withAlpha(textColor || theme.text, 0.74),
+                    fontFamily: fontFamily ?? theme.typography.fontFamily.medium,
+                    fontWeight: fontWeight ?? "500",
+                  },
+                ]}
+              >
+                {Math.round(item.value)}g
+              </Text>
+              {index < safeData.length - 1 ? (
+                <Text
+                  style={[
+                    styles.legendSeparator,
+                    { color: withAlpha(textColor || theme.text, 0.38) },
+                  ]}
+                >
+                  •
+                </Text>
+              ) : null}
             </View>
           ))}
         </View>
-      )}
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    width: 220,
+    width: "100%",
     alignItems: "center",
   },
   chartContainer: {
@@ -168,32 +221,35 @@ const styles = StyleSheet.create({
     height: SIZE,
     alignItems: "center",
     justifyContent: "center",
-  },
-  kcal: {
-    marginTop: 6,
-    fontSize: 16,
-    fontWeight: "700",
+    marginBottom: 3,
   },
   legendRow: {
-    flexDirection: "row",
-    gap: 8,
     marginTop: 6,
-    flexWrap: "wrap",
+    width: "100%",
+    flexDirection: "row",
     justifyContent: "center",
+    alignItems: "center",
+    gap: 1,
   },
   legendItem: {
     flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 4,
-    marginVertical: 2,
+    alignItems: "baseline",
+    gap: 3,
   },
-  legendText: {
+  legendLabel: {
     fontSize: 11,
+    lineHeight: 13,
+    includeFontPadding: false,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 4,
+  legendValue: {
+    fontSize: 10,
+    lineHeight: 12,
+    includeFontPadding: false,
+  },
+  legendSeparator: {
+    marginLeft: 4,
+    fontSize: 10,
+    lineHeight: 12,
+    includeFontPadding: false,
   },
 });

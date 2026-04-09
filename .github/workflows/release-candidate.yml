@@ -1,0 +1,251 @@
+name: Release Candidate
+
+on:
+  push:
+    branches:
+      - release/**
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Target platform for smoke E2E"
+        required: true
+        default: ios
+        type: choice
+        options:
+          - ios
+          - android
+      delete_evidence_url:
+        description: "URL to the manual disposable smoke delete log"
+        required: false
+        default: ""
+      delete_evidence_note:
+        description: "Short note for the manual delete evidence"
+        required: false
+        default: ""
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  mobile-ci:
+    name: Mobile CI
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  backend-ci:
+    name: Backend CI
+    uses: lukaszkurczab/fitaly-backend/.github/workflows/ci.yml@main
+
+  smoke-e2e:
+    name: Smoke E2E
+    uses: ./.github/workflows/e2e-smoke-gate.yml
+    with:
+      platform: ${{ inputs.platform || 'ios' }}
+    secrets: inherit
+
+  smoke-export:
+    name: Smoke export verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify smoke export endpoint
+        env:
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+          SMOKE_EXPORT_TEST_EMAIL: ${{ secrets.SMOKE_EXPORT_TEST_EMAIL }}
+          SMOKE_EXPORT_TEST_PASSWORD: ${{ secrets.SMOKE_EXPORT_TEST_PASSWORD }}
+          SMOKE_API_BASE_URL: https://fitaly-backend-smoke.up.railway.app
+        run: node scripts/verify-smoke-export.mjs artifacts/smoke-export-summary.json
+
+      - name: Upload smoke export summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-export-summary
+          path: artifacts/smoke-export-summary.json
+
+  ops-evidence:
+    name: Fetch backup and restore evidence
+    runs-on: ubuntu-latest
+    outputs:
+      backup_run_url: ${{ steps.backup-run.outputs.url }}
+      restore_run_url: ${{ steps.restore-run.outputs.url }}
+      backend_sha: ${{ steps.backend-ref.outputs.sha }}
+    steps:
+      - name: Fetch backend main SHA
+        id: backend-ref
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const response = await github.rest.repos.getBranch({
+              owner,
+              repo: 'fitaly-backend',
+              branch: 'main',
+            });
+            core.setOutput('sha', response.data.commit.sha);
+
+      - name: Find latest successful Firestore backup run
+        id: backup-run
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: 'fitaly-backend',
+              workflow_id: 'firestore-backup.yml',
+              branch: 'main',
+              per_page: 20,
+              status: 'completed',
+            });
+            const run = response.data.workflow_runs.find((candidate) => candidate.conclusion === 'success');
+            if (!run) {
+              core.setFailed('No successful Firestore backup run found on fitaly-backend/main.');
+              return;
+            }
+            core.setOutput('url', run.html_url);
+            core.setOutput('id', String(run.id));
+
+      - name: Find latest successful Firestore restore drill run
+        id: restore-run
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: 'fitaly-backend',
+              workflow_id: 'firestore-restore-drill.yml',
+              branch: 'main',
+              per_page: 20,
+              status: 'completed',
+            });
+            const run = response.data.workflow_runs.find((candidate) => candidate.conclusion === 'success');
+            if (!run) {
+              core.setFailed('No successful Firestore restore drill run found on fitaly-backend/main.');
+              return;
+            }
+            core.setOutput('url', run.html_url);
+            core.setOutput('id', String(run.id));
+
+  delete-evidence:
+    name: Validate manual delete evidence
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.validate.outputs.url }}
+      note: ${{ steps.validate.outputs.note }}
+    steps:
+      - name: Validate evidence input
+        id: validate
+        env:
+          DELETE_EVIDENCE_URL: ${{ inputs.delete_evidence_url }}
+          DELETE_EVIDENCE_NOTE: ${{ inputs.delete_evidence_note }}
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            if [[ -z "${DELETE_EVIDENCE_URL}" ]]; then
+              echo "Manual delete evidence URL is required for workflow_dispatch release approvals." >&2
+              exit 1
+            fi
+            echo "url=${DELETE_EVIDENCE_URL}" >> "$GITHUB_OUTPUT"
+            echo "note=${DELETE_EVIDENCE_NOTE:-Disposable smoke user deleted manually.}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "url=" >> "$GITHUB_OUTPUT"
+          echo "note=Pending manual delete evidence attachment before production approval." >> "$GITHUB_OUTPUT"
+
+  release-evidence:
+    name: Build release evidence artifact
+    runs-on: ubuntu-latest
+    needs:
+      - mobile-ci
+      - backend-ci
+      - smoke-e2e
+      - smoke-export
+      - ops-evidence
+      - delete-evidence
+    outputs:
+      artifact_name: release-evidence
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Download smoke export summary
+        uses: actions/download-artifact@v4
+        with:
+          name: smoke-export-summary
+          path: artifacts
+
+      - name: Render release evidence markdown
+        env:
+          EXPORT_SUMMARY_PATH: artifacts/smoke-export-summary.json
+          EVIDENCE_GENERATED_AT: ${{ github.run_id }} / ${{ github.run_attempt }} / ${{ github.event_name }}
+          MOBILE_SHA: ${{ github.sha }}
+          BACKEND_SHA: ${{ needs.ops-evidence.outputs.backend_sha }}
+          MOBILE_CI_STATUS: passed
+          BACKEND_CI_STATUS: passed
+          SMOKE_E2E_STATUS: passed
+          SMOKE_EXPORT_STATUS: passed
+          TARGET_SDK_STATUS: passed via launch-readiness gate
+          AAB_STATUS: passed via launch-readiness gate
+          BACKUP_RUN_URL: ${{ needs.ops-evidence.outputs.backup_run_url }}
+          RESTORE_RUN_URL: ${{ needs.ops-evidence.outputs.restore_run_url }}
+          DELETE_EVIDENCE_URL: ${{ needs.delete-evidence.outputs.url }}
+          DELETE_EVIDENCE_NOTE: ${{ needs.delete-evidence.outputs.note }}
+        run: node scripts/render-release-evidence.mjs artifacts/release-evidence.md
+
+      - name: Upload release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence
+          path: artifacts/release-evidence.md
+
+  production-readiness-gate:
+    name: Production readiness approval
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    needs:
+      - release-evidence
+    environment:
+      name: production
+    steps:
+      - name: Confirm release candidate package
+        run: |
+          echo "Release evidence artifact: release-evidence"
+          echo "Environment approval is now required before public rollout."
+
+  notify-on-failure:
+    name: Notify Discord on failure
+    if: ${{ failure() }}
+    needs:
+      - mobile-ci
+      - backend-ci
+      - smoke-e2e
+      - smoke-export
+      - ops-evidence
+      - delete-evidence
+      - release-evidence
+      - production-readiness-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Notify Discord
+        env:
+          OPS_ALERT_DISCORD_WEBHOOK_URL: ${{ secrets.OPS_ALERT_DISCORD_WEBHOOK_URL }}
+          WORKFLOW_ENVIRONMENT: production
+          WORKFLOW_NAME: Release Candidate
+          WORKFLOW_OWNER: engineering-lead
+          WORKFLOW_STATUS: failure
+        run: bash scripts/notify-ops-discord.sh

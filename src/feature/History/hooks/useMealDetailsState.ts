@@ -208,6 +208,10 @@ export function useMealDetailsState(params: {
 
   const goShare = useCallback(() => {
     if (!draft) return;
+    const photoUri =
+      draft.localPhotoUrl || draft.photoLocalPath || draft.photoUrl || "";
+    const hasIdentity = Boolean(draft.cloudId || draft.mealId);
+    if (!hasIdentity || !photoUri) return;
     navigation.navigate("MealShare", { meal: draft, returnTo: "MealDetails" });
   }, [draft, navigation]);
 

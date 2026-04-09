@@ -1,5 +1,9 @@
 import { View, Text, StyleSheet } from "react-native";
 import type { MacroCardProps } from "../CardOverlay";
+import {
+  OverlayKcalBlock,
+  OverlayMacroLegendItem,
+} from "../overlayPrimitives";
 
 export default function MacroSummaryCard({
   protein,
@@ -7,7 +11,6 @@ export default function MacroSummaryCard({
   carbs,
   kcal,
   textColor,
-  bgColor,
   macroColors,
   showKcal,
   showMacros,
@@ -17,12 +20,50 @@ export default function MacroSummaryCard({
   const effectiveFontFamily = fontFamily ?? undefined;
   const effectiveFontWeight = fontWeight ?? "500";
 
+  const macroItems = [
+    { key: "protein", label: "P", value: protein, color: macroColors.protein },
+    { key: "carbs", label: "C", value: carbs, color: macroColors.carbs },
+    { key: "fat", label: "F", value: fat, color: macroColors.fat },
+  ];
+
+  if (!showKcal && !showMacros) {
+    return null;
+  }
+
   return (
-    <View style={[styles.card, { backgroundColor: bgColor }]}>
+    <View style={styles.card}>
       {showKcal && (
+        <OverlayKcalBlock
+          kcal={kcal}
+          textColor={textColor}
+          fontFamily={effectiveFontFamily}
+          fontWeight={effectiveFontWeight}
+          align="center"
+          tone="hero"
+        />
+      )}
+      {showMacros && (
+        <View style={[styles.row, showKcal ? styles.rowWithKcal : null]}>
+          {macroItems.map((item) => (
+            <OverlayMacroLegendItem
+              key={item.key}
+              label={item.label}
+              value={item.value}
+              color={item.color}
+              textColor={textColor}
+              fontFamily={effectiveFontFamily}
+              fontWeight={effectiveFontWeight}
+              align="center"
+              compact
+              style={styles.macroItem}
+            />
+          ))}
+        </View>
+      )}
+      {!showMacros && showKcal ? (
         <Text
           style={[
-            styles.kcal,
+            styles.subtitle,
             {
               color: textColor,
               fontFamily: effectiveFontFamily,
@@ -30,52 +71,36 @@ export default function MacroSummaryCard({
             },
           ]}
         >
-          {kcal} kcal
+          Meal summary
         </Text>
-      )}
-      {showMacros && (
-        <>
-          <Text
-            style={[
-              styles.row,
-              {
-                color: textColor,
-                fontFamily: effectiveFontFamily,
-                fontWeight: effectiveFontWeight,
-              },
-            ]}
-          >
-            P {protein} g • C {carbs} g • F {fat} g
-          </Text>
-          <View style={styles.dotsRow}>
-            <View
-              style={[styles.dot, { backgroundColor: macroColors.protein }]}
-            />
-            <View
-              style={[styles.dot, { backgroundColor: macroColors.carbs }]}
-            />
-            <View style={[styles.dot, { backgroundColor: macroColors.fat }]} />
-          </View>
-        </>
-      )}
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 16,
     alignItems: "center",
-    minWidth: 180,
+    justifyContent: "center",
   },
-  kcal: { fontSize: 20, fontWeight: "700" },
-  row: { marginTop: 4, fontSize: 12 },
-  dotsRow: {
+  row: {
     flexDirection: "row",
-    gap: 6,
-    marginTop: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    gap: 8,
   },
-  dot: { width: 8, height: 8, borderRadius: 4 },
+  rowWithKcal: {
+    marginTop: 8,
+  },
+  macroItem: {
+    flex: 1,
+    minWidth: 48,
+  },
+  subtitle: {
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 16,
+    opacity: 0.72,
+  },
 });

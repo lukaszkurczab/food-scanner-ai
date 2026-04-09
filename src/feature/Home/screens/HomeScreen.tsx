@@ -162,7 +162,6 @@ export default function HomeScreen({ navigation }: Props) {
   const hasCanonicalNutritionState =
     nutritionStateEnabled &&
     nutritionState.dayKey === selectedDayKey &&
-    nutritionStateSource !== "disabled" &&
     nutritionStateSource !== "fallback";
 
   const legacyMacros = useMemo(() => calculateTotalNutrients(dayMeals), [dayMeals]);

@@ -898,12 +898,17 @@ export async function processImageUploads(uid: string): Promise<void> {
     } catch (e: unknown) {
       fail++;
       const err = toSyncError(e);
-      upLog.error("upload:fail", {
+      const payload = {
         image_id: row.image_id,
         code: err.code,
         message: err.message,
         retryable: err.retryable,
-      });
+      };
+      if (err.retryable) {
+        upLog.warn("upload:retryable_fail", payload);
+      } else {
+        upLog.error("upload:fail", payload);
+      }
     }
   }
 

@@ -13,6 +13,11 @@ export type ElementId =
   | "macros"
   | "photo"
   | "chart"
+  | "mealPhoto"
+  | "additionalPhoto"
+  | "chartWidget"
+  | "cardWidget"
+  | `text:${string}`
   | `custom:${string}`
   | "editor-panel";
 
@@ -29,6 +34,7 @@ type Props = {
   selected?: boolean;
   onSelect?: (id: ElementId) => void;
   onTap?: () => void;
+  onDoubleTap?: (id: ElementId) => void;
   onUpdate?: (
     xRatio: number,
     yRatio: number,
@@ -37,6 +43,8 @@ type Props = {
   ) => void;
   children: React.ReactNode;
   style?: ViewStyle;
+  layerZIndex?: number;
+  selectedZIndex?: number;
 
   enablePan?: boolean;
   enablePinch?: boolean;
@@ -57,9 +65,12 @@ export default function DraggableItem({
   selected = false,
   onSelect,
   onTap,
+  onDoubleTap,
   onUpdate,
   children,
   style,
+  layerZIndex = 0,
+  selectedZIndex = 50,
   enablePan = true,
   enablePinch = true,
   enableRotate = true,
@@ -195,6 +206,7 @@ export default function DraggableItem({
 
   const tap = Gesture.Tap()
     .enabled(enableTap)
+    .numberOfTaps(1)
     .maxDuration(250)
     .maxDistance(10)
     .onEnd((_e, success) => {
@@ -203,7 +215,20 @@ export default function DraggableItem({
       if (onTap) runOnJS(onTap)();
     });
 
-  const gesture = Gesture.Simultaneous(pan, pinch, rotate, tap);
+  const doubleTap = Gesture.Tap()
+    .enabled(enableTap && Boolean(onDoubleTap))
+    .numberOfTaps(2)
+    .maxDuration(250)
+    .maxDelay(250)
+    .maxDistance(10)
+    .onEnd((_e, success) => {
+      if (!success) return;
+      if (onSelect) runOnJS(onSelect)(id);
+      if (onDoubleTap) runOnJS(onDoubleTap)(id);
+    });
+
+  const tapGesture = onDoubleTap ? Gesture.Exclusive(doubleTap, tap) : tap;
+  const gesture = Gesture.Simultaneous(pan, pinch, rotate, tapGesture);
 
   const styleOuter = useAnimatedStyle(() => {
     const xr = Math.min(Math.max(xRatio.value, 0), 1);
@@ -236,7 +261,7 @@ export default function DraggableItem({
             h: e.nativeEvent.layout.height,
           })
         }
-        style={[styleOuter, selected ? { zIndex: 50 } : null]}
+        style={[styleOuter, { zIndex: selected ? selectedZIndex : layerZIndex }]}
       >
         <Animated.View style={[styleInner, style]}>{children}</Animated.View>
       </Animated.View>

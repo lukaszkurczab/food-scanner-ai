@@ -44,7 +44,6 @@ export type CustomTextItem = {
 export type CardVariant =
   | "macroSummaryCard"
   | "macroVerticalStackCard"
-  | "macroBadgeCard"
   | "macroSplitCard"
   | "macroTagStripCard";
 
@@ -53,7 +52,6 @@ export type ChartVariant =
   | "macroDonut"
   | "macroBarMini"
   | "macroPolarArea"
-  | "macroRadar"
   | "macroGauge";
 
 export type ShareOptions = {

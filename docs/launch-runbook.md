@@ -14,6 +14,20 @@ This runbook is the operational source of truth for release candidates and publi
 - Backend runtime/config gate: Backend Engineer
 - Store metadata/compliance: Product + Ops
 - Incident commander (Day0-Day7): Engineering Lead
+- Day0-Day7 mobile owner: Mobile Engineer
+- Day0-Day7 backend owner: Backend Engineer
+- Primary incident channel: Discord `launch-ops`
+- ACK SLA (Day0-Day7): `<= 15 minutes` for production alerts
+
+## Operational Dashboards
+
+- Release workflow board: `https://github.com/lukaszkurczab/fitaly/actions/workflows/release-candidate.yml`
+- Backend monitoring workflow board: `https://github.com/lukaszkurczab/fitaly-backend/actions/workflows/ops-monitoring.yml`
+- Firestore backup workflow board: `https://github.com/lukaszkurczab/fitaly-backend/actions/workflows/firestore-backup.yml`
+- Firestore restore drill workflow board: `https://github.com/lukaszkurczab/fitaly-backend/actions/workflows/firestore-restore-drill.yml`
+- Railway production service dashboard: `https://railway.app/project/<project-id>/service/<service-id>`
+- Sentry backend production dashboard: `https://sentry.io/organizations/<org-slug>/projects/<backend-project-slug>/`
+- Sentry mobile production dashboard: `https://sentry.io/organizations/<org-slug>/projects/<mobile-project-slug>/`
 
 ## Go/No-Go Checklist
 
@@ -22,7 +36,8 @@ All checks are mandatory. Any failed line item means **No-Go**.
 - Mobile CI passes (`lint`, `typecheck`, tests, launch-readiness config gate).
 - Backend CI passes (`ruff`, `pyright`, `pytest`).
 - Cross-repo contract sync job is green.
-- RC smoke E2E passes on prepared runner:
+- `Release Candidate` workflow is green and produced `release-evidence`.
+- RC smoke E2E passes on prepared runner via `E2E Smoke Gate`:
   - `foundation-smoke.yaml`
   - `account-launch-smoke.yaml`
 - `TERMS_URL` and `PRIVACY_URL` are valid HTTPS URLs and resolve publicly.
@@ -36,26 +51,29 @@ All checks are mandatory. Any failed line item means **No-Go**.
   - Firebase credentials source:
     - `GOOGLE_APPLICATION_CREDENTIALS`, or
     - `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`
-- Latest Firestore backup is available and monthly restore drill is documented:
-  - backend runbook: `../fitaly-backend/docs/firestore-backup-restore.md`
+- Latest Firestore backup is available as the most recent successful `firestore-backup.yml` run artifact.
+- Monthly restore drill is documented as the most recent successful `firestore-restore-drill.yml` run artifact.
 - Compliance operations are validated for current release:
-  - data export endpoint `GET /api/v1/users/me/export` verified on smoke
-  - data delete endpoint `POST /api/v1/users/me/delete` verified on smoke
+  - data export endpoint `GET /api/v1/users/me/export` verified by workflow on smoke
+  - data delete endpoint `POST /api/v1/users/me/delete` verified manually on a disposable smoke account, with evidence attached to `release-evidence`
   - compliance runbook reviewed: `../fitaly-backend/docs/compliance-ops-runbook.md`
 - Ops monitoring baseline is active and owned:
   - workflow: `../fitaly-backend/.github/workflows/ops-monitoring.yml`
   - thresholds/runbook: `../fitaly-backend/docs/ops-monitoring-runbook.md`
+  - Discord alert webhook configured as `OPS_ALERT_DISCORD_WEBHOOK_URL`
 - Android release artifact is AAB.
-- **RC artifact confirmation:** `targetSdk >= 35` must be explicitly confirmed from build output before store submission.
+- `production` GitHub environment has a required reviewer configured before rollout approval.
 
 ## Release Steps (RC -> Public)
 
 1. Build RC with `smoke` (or `internal`) profile.
-2. Run smoke E2E gate workflow (`E2E Smoke Gate`) and archive results.
-3. Execute manual sanity check on both platforms.
-4. Build production artifacts (`publish:android`, `publish:ios`).
-5. Upload to store tracks with phased rollout.
-6. Monitor Day0-Day7 metrics and incident channels.
+2. Run `Release Candidate` workflow and provide disposable smoke delete evidence URL if this is a production approval run.
+3. Review `release-evidence` artifact and confirm backup + restore drill links are present.
+4. Approve the `production` GitHub environment.
+5. Execute manual sanity check on both platforms.
+6. Build production artifacts (`publish:android`, `publish:ios`).
+7. Upload to store tracks with phased rollout.
+8. Monitor Day0-Day7 metrics and Discord `launch-ops`.
 
 ## Rollback Matrix
 
@@ -80,9 +98,10 @@ All checks are mandatory. Any failed line item means **No-Go**.
 
 ## Incident Flow (Day0-Day7)
 
-1. Open incident channel and assign incident commander.
+1. Acknowledge alert in Discord `launch-ops` within 15 minutes and assign incident commander.
 2. Freeze new releases.
 3. Capture scope and affected versions (mobile + backend).
-4. Apply relevant kill-switch or rollback.
-5. Validate mitigation on staging and production health checks.
-6. Publish post-incident summary with remediation tasks.
+4. Check Railway and Sentry dashboards from this runbook before choosing mitigation.
+5. Apply relevant kill-switch or rollback.
+6. Validate mitigation on staging and production health checks.
+7. Publish post-incident summary with remediation tasks.
