@@ -62,5 +62,50 @@
       "light": "Light"
     }
   },
-  "share": "Share"
+  "share": "Share",
+  "dock": {
+    "presets": "Presets",
+    "active_layer": "Active layer",
+    "remove": "Remove",
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "text_color": "Text color",
+    "background": "Background",
+    "background_color": "Background color",
+    "done": "Done",
+    "custom": "Custom",
+    "type": "Type",
+    "text": "Text",
+    "editing_text": "Editing text",
+    "editing_chart": "Editing chart",
+    "editing_card": "Editing card",
+    "editing_photo": "Editing photo",
+    "editing_meal_photo": "Editing meal photo",
+    "add_element": "Add element",
+    "chart_polar": "Polar",
+    "chart_pie": "Pie",
+    "chart_donut": "Donut",
+    "chart_gauge": "Gauge",
+    "chart_bar": "Bar",
+    "card_split": "Split",
+    "card_summary": "Summary",
+    "card_strip": "Strip",
+    "card_vertical": "Vertical",
+    "photo_plain": "Plain",
+    "photo_shadow": "Shadow",
+    "photo_frame": "Frame",
+    "photo_pill": "Pill",
+    "utility_text": "Text",
+    "utility_chart": "Chart",
+    "utility_card": "Card",
+    "utility_photo": "Photo",
+    "utility_reset": "Reset",
+    "save_to_gallery": "Save to gallery"
+  },
+  "cardLabels": {
+    "meal_summary": "Meal summary",
+    "balanced_macros": "Balanced macros",
+    "high_protein": "High protein"
+  }
 }

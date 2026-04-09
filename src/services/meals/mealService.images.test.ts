@@ -10,7 +10,7 @@ const mockGetInfoAsync = jest.fn<(...args: unknown[]) => Promise<{ exists: boole
 const mockMakeDirectoryAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockCopyAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockDeleteAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockDownloadAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockDownloadAsync = jest.fn<(...args: unknown[]) => Promise<{ status: number }>>();
 const mockUpload = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockUuid = jest.fn<() => string>();
@@ -48,7 +48,7 @@ jest.mock("uuid", () => ({
 
 describe("services/mealService.images", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     mockNetInfoFetch.mockResolvedValue({ isConnected: true });
     mockManipulateAsync
       .mockResolvedValueOnce({ uri: "file:///cloud.jpg" })
@@ -57,7 +57,7 @@ describe("services/mealService.images", () => {
     mockMakeDirectoryAsync.mockResolvedValue();
     mockCopyAsync.mockResolvedValue();
     mockDeleteAsync.mockResolvedValue();
-    mockDownloadAsync.mockResolvedValue();
+    mockDownloadAsync.mockResolvedValue({ status: 200 });
     mockUpload.mockResolvedValue({
       imageId: "image-1",
       photoUrl: "https://cdn/meal.jpg",
@@ -125,6 +125,67 @@ describe("services/mealService.images", () => {
       "https://cdn/meal.jpg",
       "file:///docs/meals/user-1/meal-1.jpg",
     );
+    expect(result).toBe("file:///docs/meals/user-1/meal-1.jpg");
+  });
+
+  it("falls back to fresh API URL when stored photoUrl returns HTTP error", async () => {
+    // Use distinct IDs to avoid collision with CLOUD_URL_CACHE populated by other tests.
+    mockGetInfoAsync
+      .mockResolvedValueOnce({ exists: true })  // ensureDirFor dir check
+      .mockResolvedValueOnce({ exists: false }) // target file not cached
+      .mockResolvedValueOnce({ exists: true });  // target file after fresh-URL download
+
+    mockDownloadAsync
+      .mockResolvedValueOnce({ status: 403 }) // stale signed URL → HTTP error
+      .mockResolvedValueOnce({ status: 200 }); // fresh URL from API → success
+
+    mockGet.mockResolvedValue({
+      imageId: "image-2",
+      photoUrl: "https://cdn/fresh.jpg",
+    });
+
+    const result = await ensureLocalMealPhoto({
+      uid: "user-1",
+      cloudId: "meal-2",
+      imageId: "image-2",
+      photoUrl: "https://cdn/stale-signed.jpg",
+    });
+
+    expect(mockDownloadAsync).toHaveBeenNthCalledWith(
+      1,
+      "https://cdn/stale-signed.jpg",
+      "file:///docs/meals/user-1/meal-2.jpg",
+    );
+    expect(mockGet).toHaveBeenCalledWith(
+      "/users/me/meals/photo-url?mealId=meal-2&imageId=image-2",
+    );
+    expect(mockDownloadAsync).toHaveBeenNthCalledWith(
+      2,
+      "https://cdn/fresh.jpg",
+      "file:///docs/meals/user-1/meal-2.jpg",
+    );
+    expect(result).toBe("file:///docs/meals/user-1/meal-2.jpg");
+  });
+
+  it("uses stored photoUrl directly when it returns HTTP 200", async () => {
+    mockGetInfoAsync
+      .mockResolvedValueOnce({ exists: true })  // ensureDirFor
+      .mockResolvedValueOnce({ exists: false }) // file not cached
+      .mockResolvedValueOnce({ exists: true });  // after successful download
+
+    const result = await ensureLocalMealPhoto({
+      uid: "user-1",
+      cloudId: "meal-1",
+      imageId: "image-1",
+      photoUrl: "https://cdn/photo.jpg",
+    });
+
+    expect(mockDownloadAsync).toHaveBeenCalledTimes(1);
+    expect(mockDownloadAsync).toHaveBeenCalledWith(
+      "https://cdn/photo.jpg",
+      "file:///docs/meals/user-1/meal-1.jpg",
+    );
+    expect(mockGet).not.toHaveBeenCalled();
     expect(result).toBe("file:///docs/meals/user-1/meal-1.jpg");
   });
 });

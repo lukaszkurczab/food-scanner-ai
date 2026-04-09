@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import ColorPicker, { HueSlider, OpacitySlider, Panel1 } from "reanimated-color-picker";
 import AppIcon from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
@@ -269,20 +270,20 @@ function FlowActionButton({
   );
 }
 
-function editorTitle(kind: ActiveLayerEditorKind) {
+function editorTitle(kind: ActiveLayerEditorKind, t: (key: string) => string) {
   switch (kind) {
     case "text":
-      return "Editing text";
+      return t("dock.editing_text");
     case "chart":
-      return "Editing chart";
+      return t("dock.editing_chart");
     case "card":
-      return "Editing card";
+      return t("dock.editing_card");
     case "additionalPhoto":
-      return "Editing photo";
+      return t("dock.editing_photo");
     case "mealPhoto":
-      return "Editing meal photo";
+      return t("dock.editing_meal_photo");
     default:
-      return "Add element";
+      return t("dock.add_element");
   }
 }
 
@@ -319,6 +320,7 @@ export default function ShareComposerDock({
   onAddOrReplaceAdditionalPhoto,
 }: ShareComposerDockProps) {
   const theme = useTheme();
+  const { t } = useTranslation("share");
   const stylesWithTheme = useMemo(() => makeStyles(theme), [theme]);
   const hasEditorOptions = activeEditorKind !== "none";
   const [isTextColorPanelOpen, setIsTextColorPanelOpen] = useState(false);
@@ -468,7 +470,7 @@ export default function ShareComposerDock({
       <View style={stylesWithTheme.contentSlot}>
         {mode === "quick" ? (
           <View style={stylesWithTheme.quickPanel}>
-            <Text style={stylesWithTheme.sectionLabel}>Presets</Text>
+            <Text style={stylesWithTheme.sectionLabel}>{t("dock.presets")}</Text>
             <View style={stylesWithTheme.presetRow}>
               {QUICK_PRESET_OPTIONS.map((preset) => (
                 <PresetThumb
@@ -490,14 +492,14 @@ export default function ShareComposerDock({
           >
             <View style={stylesWithTheme.activeLayerHeader}>
               <View>
-                <Text style={stylesWithTheme.metaLabel}>Active layer</Text>
+                <Text style={stylesWithTheme.metaLabel}>{t("dock.active_layer")}</Text>
                 <Text style={stylesWithTheme.activeLayerTitle}>
-                  {editorTitle(activeEditorKind)}
+                  {editorTitle(activeEditorKind, t)}
                 </Text>
               </View>
               {showRemove ? (
                 <Pressable onPress={onRemoveSelectedLayer} style={stylesWithTheme.localAction}>
-                  <Text style={stylesWithTheme.localActionLabel}>Remove</Text>
+                  <Text style={stylesWithTheme.localActionLabel}>{t("dock.remove")}</Text>
                 </Pressable>
               ) : null}
             </View>
@@ -514,7 +516,7 @@ export default function ShareComposerDock({
                     {!isTextColorPanelOpen ? (
                       <>
                         <DockChip
-                          label="Bold"
+                          label={t("dock.bold")}
                           active={selectedTextLayer.bold}
                           onPress={() =>
                             onTextStyleChange(selectedTextLayer.id, {
@@ -523,7 +525,7 @@ export default function ShareComposerDock({
                           }
                         />
                         <DockChip
-                          label="Italic"
+                          label={t("dock.italic")}
                           active={selectedTextLayer.italic}
                           onPress={() =>
                             onTextStyleChange(selectedTextLayer.id, {
@@ -532,7 +534,7 @@ export default function ShareComposerDock({
                           }
                         />
                         <DockChip
-                          label="Underline"
+                          label={t("dock.underline")}
                           active={selectedTextLayer.underline}
                           onPress={() =>
                             onTextStyleChange(selectedTextLayer.id, {
@@ -544,7 +546,7 @@ export default function ShareComposerDock({
                     ) : null}
                     {!isTextColorPanelOpen ? (
                       <DockChip
-                        label="Text color"
+                        label={t("dock.text_color")}
                         active={false}
                         onPress={() => {
                           setIsTextColorPanelOpen(true);
@@ -554,7 +556,7 @@ export default function ShareComposerDock({
                     ) : (
                       <>
                         <DockChip
-                          label="Done"
+                          label={t("dock.done")}
                           active={false}
                           onPress={() => {
                             setIsTextColorPanelOpen(false);
@@ -573,7 +575,7 @@ export default function ShareComposerDock({
                           />
                         ))}
                         <DockChip
-                          label="Custom"
+                          label={t("dock.custom")}
                           active={!usesPresetTextColor}
                           onPress={() => setCustomColorTarget("text")}
                         />
@@ -587,7 +589,7 @@ export default function ShareComposerDock({
                     {!chartEditorMode ? (
                       <>
                         <DockChip
-                          label="Type"
+                          label={t("dock.type")}
                           active={false}
                           onPress={() => {
                             setChartEditorMode("type");
@@ -595,7 +597,7 @@ export default function ShareComposerDock({
                           }}
                         />
                         <DockChip
-                          label="Text"
+                          label={t("dock.text")}
                           active={false}
                           onPress={() => {
                             setChartEditorMode("text");
@@ -603,7 +605,7 @@ export default function ShareComposerDock({
                           }}
                         />
                         <DockChip
-                          label="Background"
+                          label={t("dock.background")}
                           active={false}
                           onPress={() => {
                             setChartEditorMode("background");
@@ -615,7 +617,7 @@ export default function ShareComposerDock({
 
                     {chartEditorMode ? (
                       <DockChip
-                        label="Done"
+                        label={t("dock.done")}
                         active={false}
                         onPress={() => {
                           setChartEditorMode(null);
@@ -627,27 +629,27 @@ export default function ShareComposerDock({
                     {chartEditorMode === "type" ? (
                       <>
                         <DockChip
-                          label="Polar"
+                          label={t("dock.chart_polar")}
                           active={composition.widgets.chart?.variant === "macroPolarArea"}
                           onPress={() => onChartVariantChange("macroPolarArea")}
                         />
                         <DockChip
-                          label="Pie"
+                          label={t("dock.chart_pie")}
                           active={composition.widgets.chart?.variant === "macroPie"}
                           onPress={() => onChartVariantChange("macroPie")}
                         />
                         <DockChip
-                          label="Donut"
+                          label={t("dock.chart_donut")}
                           active={composition.widgets.chart?.variant === "macroDonut"}
                           onPress={() => onChartVariantChange("macroDonut")}
                         />
                         <DockChip
-                          label="Gauge"
+                          label={t("dock.chart_gauge")}
                           active={composition.widgets.chart?.variant === "macroGauge"}
                           onPress={() => onChartVariantChange("macroGauge")}
                         />
                         <DockChip
-                          label="Bar"
+                          label={t("dock.chart_bar")}
                           active={composition.widgets.chart?.variant === "macroBarMini"}
                           onPress={() => onChartVariantChange("macroBarMini")}
                         />
@@ -668,7 +670,7 @@ export default function ShareComposerDock({
                           />
                         ))}
                         <DockChip
-                          label="Custom"
+                          label={t("dock.custom")}
                           active={!usesPresetChartTextColor}
                           onPress={() => setCustomColorTarget("chartText")}
                         />
@@ -689,7 +691,7 @@ export default function ShareComposerDock({
                           />
                         ))}
                         <DockChip
-                          label="Custom"
+                          label={t("dock.custom")}
                           active={!usesPresetChartBackgroundColor}
                           onPress={() => setCustomColorTarget("chartBackground")}
                         />
@@ -703,7 +705,7 @@ export default function ShareComposerDock({
                     {!cardEditorMode ? (
                       <>
                         <DockChip
-                          label="Type"
+                          label={t("dock.type")}
                           active={false}
                           onPress={() => {
                             setCardEditorMode("type");
@@ -711,7 +713,7 @@ export default function ShareComposerDock({
                           }}
                         />
                         <DockChip
-                          label="Text"
+                          label={t("dock.text")}
                           active={false}
                           onPress={() => {
                             setCardEditorMode("text");
@@ -719,7 +721,7 @@ export default function ShareComposerDock({
                           }}
                         />
                         <DockChip
-                          label="Background"
+                          label={t("dock.background")}
                           active={false}
                           onPress={() => {
                             setCardEditorMode("background");
@@ -731,7 +733,7 @@ export default function ShareComposerDock({
 
                     {cardEditorMode ? (
                       <DockChip
-                        label="Done"
+                        label={t("dock.done")}
                         active={false}
                         onPress={() => {
                           setCardEditorMode(null);
@@ -743,22 +745,22 @@ export default function ShareComposerDock({
                     {cardEditorMode === "type" ? (
                       <>
                         <DockChip
-                          label="Split"
+                          label={t("dock.card_split")}
                           active={composition.widgets.card?.variant === "macroSplitCard"}
                           onPress={() => onCardVariantChange("macroSplitCard")}
                         />
                         <DockChip
-                          label="Summary"
+                          label={t("dock.card_summary")}
                           active={composition.widgets.card?.variant === "macroSummaryCard"}
                           onPress={() => onCardVariantChange("macroSummaryCard")}
                         />
                         <DockChip
-                          label="Strip"
+                          label={t("dock.card_strip")}
                           active={composition.widgets.card?.variant === "macroTagStripCard"}
                           onPress={() => onCardVariantChange("macroTagStripCard")}
                         />
                         <DockChip
-                          label="Vertical"
+                          label={t("dock.card_vertical")}
                           active={composition.widgets.card?.variant === "macroVerticalStackCard"}
                           onPress={() => onCardVariantChange("macroVerticalStackCard")}
                         />
@@ -779,7 +781,7 @@ export default function ShareComposerDock({
                           />
                         ))}
                         <DockChip
-                          label="Custom"
+                          label={t("dock.custom")}
                           active={!usesPresetCardTextColor}
                           onPress={() => setCustomColorTarget("cardText")}
                         />
@@ -800,7 +802,7 @@ export default function ShareComposerDock({
                           />
                         ))}
                         <DockChip
-                          label="Custom"
+                          label={t("dock.custom")}
                           active={!usesPresetCardBackgroundColor}
                           onPress={() => setCustomColorTarget("cardBackground")}
                         />
@@ -812,22 +814,22 @@ export default function ShareComposerDock({
                 {activeEditorKind === "additionalPhoto" ? (
                   <>
                     <DockChip
-                      label="Plain"
+                      label={t("dock.photo_plain")}
                       active={composition.additionalPhoto?.treatment === "plain"}
                       onPress={() => onAdditionalPhotoTreatmentChange("plain")}
                     />
                     <DockChip
-                      label="Shadow"
+                      label={t("dock.photo_shadow")}
                       active={composition.additionalPhoto?.treatment === "shadow"}
                       onPress={() => onAdditionalPhotoTreatmentChange("shadow")}
                     />
                     <DockChip
-                      label="Frame"
+                      label={t("dock.photo_frame")}
                       active={composition.additionalPhoto?.treatment === "frame"}
                       onPress={() => onAdditionalPhotoTreatmentChange("frame")}
                     />
                     <DockChip
-                      label="Pill"
+                      label={t("dock.photo_pill")}
                       active={composition.additionalPhoto?.treatment === "pill"}
                       onPress={() => onAdditionalPhotoTreatmentChange("pill")}
                     />
@@ -840,26 +842,26 @@ export default function ShareComposerDock({
               <View style={stylesWithTheme.utilityRow}>
                 <Pressable onPress={onAddTextLayer} style={stylesWithTheme.utilityAction}>
                   <AppIcon name="text" size={16} color={theme.textSecondary} />
-                  <Text style={stylesWithTheme.utilityActionLabel}>Text</Text>
+                  <Text style={stylesWithTheme.utilityActionLabel}>{t("dock.utility_text")}</Text>
                 </Pressable>
                 <Pressable onPress={onEnsureChartLayer} style={stylesWithTheme.utilityAction}>
                   <AppIcon name="stats" size={16} color={theme.textSecondary} />
-                  <Text style={stylesWithTheme.utilityActionLabel}>Chart</Text>
+                  <Text style={stylesWithTheme.utilityActionLabel}>{t("dock.utility_chart")}</Text>
                 </Pressable>
                 <Pressable onPress={onEnsureCardLayer} style={stylesWithTheme.utilityAction}>
                   <AppIcon name="card" size={16} color={theme.textSecondary} />
-                  <Text style={stylesWithTheme.utilityActionLabel}>Card</Text>
+                  <Text style={stylesWithTheme.utilityActionLabel}>{t("dock.utility_card")}</Text>
                 </Pressable>
                 <Pressable
                   onPress={onAddOrReplaceAdditionalPhoto}
                   style={stylesWithTheme.utilityAction}
                 >
                   <AppIcon name="add-photo" size={16} color={theme.textSecondary} />
-                  <Text style={stylesWithTheme.utilityActionLabel}>Photo</Text>
+                  <Text style={stylesWithTheme.utilityActionLabel}>{t("dock.utility_photo")}</Text>
                 </Pressable>
                 <Pressable onPress={onResetComposition} style={stylesWithTheme.utilityAction}>
                   <AppIcon name="refresh" size={16} color={theme.textSecondary} />
-                  <Text style={stylesWithTheme.utilityActionLabel}>Reset</Text>
+                  <Text style={stylesWithTheme.utilityActionLabel}>{t("dock.utility_reset")}</Text>
                 </Pressable>
               </View>
             ) : null}
@@ -877,13 +879,13 @@ export default function ShareComposerDock({
 
       <View style={stylesWithTheme.flowFooter}>
         <FlowActionButton
-          label="Save to gallery"
+          label={t("dock.save_to_gallery")}
           primary={false}
           loading={isSaving}
           onPress={onSaveToGallery}
         />
         <FlowActionButton
-          label="Share"
+          label={t("share")}
           primary
           loading={isSharing}
           onPress={onShare}
@@ -904,13 +906,13 @@ export default function ShareComposerDock({
           <View style={stylesWithTheme.colorPickerSheet}>
             <View style={stylesWithTheme.colorPickerHeader}>
               <Text style={stylesWithTheme.colorPickerTitle}>
-                {isBackgroundCustomTarget ? "Background color" : "Text color"}
+                {isBackgroundCustomTarget ? t("dock.background_color") : t("dock.text_color")}
               </Text>
               <Pressable
                 onPress={() => setCustomColorTarget(null)}
                 style={stylesWithTheme.colorPickerDone}
               >
-                <Text style={stylesWithTheme.colorPickerDoneLabel}>Done</Text>
+                <Text style={stylesWithTheme.colorPickerDoneLabel}>{t("dock.done")}</Text>
               </Pressable>
             </View>
 

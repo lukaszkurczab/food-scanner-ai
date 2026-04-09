@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { MacroCardProps } from "../CardOverlay";
 import {
   OverlayKcalBlock,
@@ -19,29 +20,30 @@ export default function MacroSplitCard({
   fontFamily,
   fontWeight,
 }: MacroCardProps) {
+  const { t } = useTranslation(["meals", "share"]);
   const effectiveFontFamily = fontFamily ?? undefined;
   const effectiveFontWeight = fontWeight ?? "500";
   const macroRows = [
     {
       key: "protein",
-      short: "P",
-      label: "Protein",
+      short: t("meals:protein_short"),
+      label: t("meals:protein"),
       value: protein,
       color: macroColors.protein,
       softColor: macroSoftColors?.protein ?? macroColors.protein,
     },
     {
       key: "carbs",
-      short: "C",
-      label: "Carbs",
+      short: t("meals:carbs_short"),
+      label: t("meals:carbs"),
       value: carbs,
       color: macroColors.carbs,
       softColor: macroSoftColors?.carbs ?? macroColors.carbs,
     },
     {
       key: "fat",
-      short: "F",
-      label: "Fat",
+      short: t("meals:fat_short"),
+      label: t("meals:fat"),
       value: fat,
       color: macroColors.fat,
       softColor: macroSoftColors?.fat ?? macroColors.fat,
@@ -63,7 +65,7 @@ export default function MacroSplitCard({
             fontWeight={effectiveFontWeight}
             align="left"
             tone="title"
-            subtitle="Meal summary"
+            subtitle={t("share:cardLabels.meal_summary")}
           />
         )}
         {!showKcal ? (
@@ -77,7 +79,7 @@ export default function MacroSplitCard({
               },
             ]}
           >
-            Meal summary
+            {t("share:cardLabels.meal_summary")}
           </Text>
         ) : null}
         {showKcal ? (
@@ -91,7 +93,7 @@ export default function MacroSplitCard({
               },
             ]}
           >
-            Balanced macros
+            {t("share:cardLabels.balanced_macros")}
           </Text>
         ) : null}
       </View>
@@ -129,7 +131,7 @@ export default function MacroSplitCard({
             },
           ]}
         >
-          protein {protein}g • carbs {carbs}g • fat {fat}g
+          {t("meals:protein_short")} {protein}g • {t("meals:carbs_short")} {carbs}g • {t("meals:fat_short")} {fat}g
         </Text>
       ) : null}
     </View>

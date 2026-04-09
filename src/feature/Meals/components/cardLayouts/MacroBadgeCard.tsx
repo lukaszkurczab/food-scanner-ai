@@ -1,12 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { MacroCardProps } from "../CardOverlay";
-
-function getLabel(protein: number, carbs: number, fat: number) {
-  const total = Math.max(1, protein + carbs + fat);
-  const pShare = protein / total;
-  if (pShare >= 0.3) return "High protein";
-  return "Balanced macros";
-}
 
 export default function MacroBadgeCard({
   protein,
@@ -20,10 +14,15 @@ export default function MacroBadgeCard({
   fontFamily,
   fontWeight,
 }: MacroCardProps) {
+  const { t } = useTranslation(["meals", "share"]);
   const effectiveFontFamily = fontFamily ?? undefined;
   const effectiveFontWeight = fontWeight ?? "700";
 
-  const label = getLabel(protein, carbs, fat);
+  const total = Math.max(1, protein + carbs + fat);
+  const pShare = protein / total;
+  const label = pShare >= 0.3
+    ? t("share:cardLabels.high_protein")
+    : t("share:cardLabels.balanced_macros");
 
   return (
     <View style={styles.wrap}>
@@ -66,7 +65,7 @@ export default function MacroBadgeCard({
             },
           ]}
         >
-          P {protein} g • C {carbs} g • F {fat} g
+          {t("meals:protein_short")} {protein} g • {t("meals:carbs_short")} {carbs} g • {t("meals:fat_short")} {fat} g
         </Text>
       )}
     </View>

@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { afterAll, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import WeeklyReportScreen from "@/feature/Home/screens/WeeklyReportScreen";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 const mockUseAuthContext = jest.fn();
 const mockUseWeeklyReport = jest.fn();
+const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
 
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
@@ -12,6 +13,12 @@ jest.mock("@/context/AuthContext", () => ({
 
 jest.mock("@/hooks/useWeeklyReport", () => ({
   useWeeklyReport: (params: unknown) => mockUseWeeklyReport(params),
+}));
+
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    i18n: { language: "en" },
+  }),
 }));
 
 jest.mock("@/components", () => {
@@ -24,29 +31,33 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: ReactNode }) =>
       createElement(View, null, children),
-    BackTitleHeader: ({
-      title,
-      onBack,
+    Button: ({
+      label,
+      onPress,
+      children,
     }: {
-      title: string;
-      onBack: () => void;
+      label?: string;
+      onPress?: () => void;
+      children?: ReactNode;
     }) =>
       createElement(
-        View,
-        null,
-        createElement(Text, null, title),
-        createElement(
-          Pressable,
-          { onPress: onBack },
-          createElement(Text, null, "back"),
-        ),
+        Pressable,
+        { onPress },
+        createElement(Text, null, label ?? children),
       ),
+    AppIcon: ({ name }: { name: string }) =>
+      createElement(Text, null, `icon:${name}`),
   };
 });
 
 describe("WeeklyReportScreen", () => {
   beforeEach(() => {
+    (globalThis as { __DEV__?: boolean }).__DEV__ = false;
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
+  });
+
+  afterAll(() => {
+    (globalThis as { __DEV__?: boolean }).__DEV__ = originalDev;
   });
 
   it("renders loading state", () => {
@@ -66,36 +77,41 @@ describe("WeeklyReportScreen", () => {
       refresh: jest.fn(),
     });
 
-    const navigation = { goBack: jest.fn() };
+    const navigation = { goBack: jest.fn(), navigate: jest.fn() };
     const { getByText } = renderWithTheme(
       <WeeklyReportScreen navigation={navigation as never} />,
     );
 
-    expect(getByText("Loading weekly report")).toBeTruthy();
-    expect(getByText("Checking the latest closed week.")).toBeTruthy();
+    expect(getByText("Weekly report")).toBeTruthy();
+    expect(getByText("Composing your weekly reflection")).toBeTruthy();
+    expect(
+      getByText(
+        "Reading the closed week first, then shaping one carry-forward for next week.",
+      ),
+    ).toBeTruthy();
   });
 
-  it("renders ready state", () => {
+  it("renders ready state with synthesis hierarchy", () => {
     mockUseWeeklyReport.mockReturnValue({
       report: {
         status: "ready",
         period: { startDay: "2026-03-09", endDay: "2026-03-15" },
-        summary: "Logging stayed steady across the week.",
+        summary: "Weekday rhythm carried most of the week.",
         insights: [
           {
             type: "consistency",
             importance: "high",
             tone: "positive",
-            title: "You stayed consistent on most days",
-            body: "You had valid logging on 6 of 7 days, which made the week readable.",
-            reasonCodes: ["valid_logged_days_7_high"],
+            title: "Weekday meals stayed steadier",
+            body: "Lunch and dinner held steadier Monday to Friday.",
+            reasonCodes: ["weekday_rhythm_held"],
           },
         ],
         priorities: [
           {
-            type: "maintain_consistency",
-            text: "Keep the same logging rhythm on most days.",
-            reasonCodes: ["maintain_best_pattern"],
+            type: "reduce_weekend_drift",
+            text: "Move the first weekend meal earlier.",
+            reasonCodes: ["protect_first_weekend_meal"],
           },
         ],
       },
@@ -107,15 +123,15 @@ describe("WeeklyReportScreen", () => {
       refresh: jest.fn(),
     });
 
-    const navigation = { goBack: jest.fn() };
+    const navigation = { goBack: jest.fn(), navigate: jest.fn() };
     const { getByText } = renderWithTheme(
       <WeeklyReportScreen navigation={navigation as never} />,
     );
 
-    expect(getByText("Weekly report")).toBeTruthy();
-    expect(getByText("What mattered most")).toBeTruthy();
-    expect(getByText("You stayed consistent on most days")).toBeTruthy();
-    expect(getByText("Next week priorities")).toBeTruthy();
+    expect(getByText("Closed week")).toBeTruthy();
+    expect(getByText("Weekday rhythm carried most of the week.")).toBeTruthy();
+    expect(getByText("Signals behind it")).toBeTruthy();
+    expect(getByText("Carry into next week")).toBeTruthy();
   });
 
   it("renders insufficient-data state", () => {
@@ -123,7 +139,7 @@ describe("WeeklyReportScreen", () => {
       report: {
         status: "insufficient_data",
         period: { startDay: "2026-03-09", endDay: "2026-03-15" },
-        summary: "Log a few complete days to unlock a weekly report.",
+        summary: null,
         insights: [],
         priorities: [],
       },
@@ -135,15 +151,16 @@ describe("WeeklyReportScreen", () => {
       refresh: jest.fn(),
     });
 
-    const navigation = { goBack: jest.fn() };
+    const navigation = { goBack: jest.fn(), navigate: jest.fn() };
     const { getByText } = renderWithTheme(
       <WeeklyReportScreen navigation={navigation as never} />,
     );
 
-    expect(getByText("Not enough data yet")).toBeTruthy();
     expect(
-      getByText("Log a few more complete days and this weekly report will unlock."),
+      getByText("This closed week does not have enough signal yet"),
     ).toBeTruthy();
+    expect(getByText("Back to Home")).toBeTruthy();
+    expect(getByText("This is normal. Nothing is failing here.")).toBeTruthy();
   });
 
   it("renders unavailable state", () => {
@@ -163,14 +180,15 @@ describe("WeeklyReportScreen", () => {
       refresh: jest.fn(),
     });
 
-    const navigation = { goBack: jest.fn() };
+    const navigation = { goBack: jest.fn(), navigate: jest.fn() };
     const { getByText } = renderWithTheme(
       <WeeklyReportScreen navigation={navigation as never} />,
     );
 
-    expect(getByText("Weekly report unavailable")).toBeTruthy();
     expect(
-      getByText("This surface is not ready right now. Try again later."),
+      getByText("Your weekly reflection isn't ready right now"),
     ).toBeTruthy();
+    expect(getByText("Try again")).toBeTruthy();
+    expect(getByText("Back")).toBeTruthy();
   });
 });

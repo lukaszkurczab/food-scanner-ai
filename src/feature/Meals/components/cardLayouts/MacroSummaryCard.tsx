@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { MacroCardProps } from "../CardOverlay";
 import {
   OverlayKcalBlock,
@@ -17,13 +18,14 @@ export default function MacroSummaryCard({
   fontFamily,
   fontWeight,
 }: MacroCardProps) {
+  const { t } = useTranslation(["meals", "share"]);
   const effectiveFontFamily = fontFamily ?? undefined;
   const effectiveFontWeight = fontWeight ?? "500";
 
   const macroItems = [
-    { key: "protein", label: "P", value: protein, color: macroColors.protein },
-    { key: "carbs", label: "C", value: carbs, color: macroColors.carbs },
-    { key: "fat", label: "F", value: fat, color: macroColors.fat },
+    { key: "protein", label: t("meals:protein_short"), value: protein, color: macroColors.protein },
+    { key: "carbs", label: t("meals:carbs_short"), value: carbs, color: macroColors.carbs },
+    { key: "fat", label: t("meals:fat_short"), value: fat, color: macroColors.fat },
   ];
 
   if (!showKcal && !showMacros) {
@@ -71,7 +73,7 @@ export default function MacroSummaryCard({
             },
           ]}
         >
-          Meal summary
+          {t("share:cardLabels.meal_summary")}
         </Text>
       ) : null}
     </View>

@@ -62,5 +62,50 @@
       "light": "Lekka"
     }
   },
-  "share": "Udostępnij"
+  "share": "Udostępnij",
+  "dock": {
+    "presets": "Presety",
+    "active_layer": "Aktywna warstwa",
+    "remove": "Usuń",
+    "bold": "Pogrubienie",
+    "italic": "Kursywa",
+    "underline": "Podkreślenie",
+    "text_color": "Kolor tekstu",
+    "background": "Tło",
+    "background_color": "Kolor tła",
+    "done": "Gotowe",
+    "custom": "Własny",
+    "type": "Typ",
+    "text": "Tekst",
+    "editing_text": "Edycja tekstu",
+    "editing_chart": "Edycja wykresu",
+    "editing_card": "Edycja karty",
+    "editing_photo": "Edycja zdjęcia",
+    "editing_meal_photo": "Edycja zdjęcia posiłku",
+    "add_element": "Dodaj element",
+    "chart_polar": "Polarny",
+    "chart_pie": "Kołowy",
+    "chart_donut": "Pierścieniowy",
+    "chart_gauge": "Wskaźnikowy",
+    "chart_bar": "Słupkowy",
+    "card_split": "Dzielony",
+    "card_summary": "Podsumowanie",
+    "card_strip": "Pasek",
+    "card_vertical": "Pionowy",
+    "photo_plain": "Zwykłe",
+    "photo_shadow": "Cień",
+    "photo_frame": "Ramka",
+    "photo_pill": "Kapsula",
+    "utility_text": "Tekst",
+    "utility_chart": "Wykres",
+    "utility_card": "Karta",
+    "utility_photo": "Zdjęcie",
+    "utility_reset": "Resetuj",
+    "save_to_gallery": "Zapisz do galerii"
+  },
+  "cardLabels": {
+    "meal_summary": "Podsumowanie posiłku",
+    "balanced_macros": "Zrównoważone makro",
+    "high_protein": "Wysokobiałkowe"
+  }
 }

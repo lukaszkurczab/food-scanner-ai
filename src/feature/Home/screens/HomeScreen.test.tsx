@@ -5,7 +5,7 @@ import {
   View as mockView,
 } from "react-native";
 import { fireEvent, waitFor } from "@testing-library/react-native";
-import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { afterAll, afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import HomeScreen from "@/feature/Home/screens/HomeScreen";
 import { createFallbackNutritionState } from "@/services/nutritionState/nutritionStateService";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
@@ -17,6 +17,8 @@ const mockUseNutritionState = jest.fn();
 const mockUseUserContext = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockUseMealAddMethodState = jest.fn();
+const mockUseWeeklyReport = jest.fn();
+const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
 
 jest.mock("@/hooks/useMeals", () => ({
   useMeals: (uid: string | null | undefined) => mockUseMeals(uid),
@@ -37,6 +39,10 @@ jest.mock("@/context/AuthContext", () => ({
 
 jest.mock("@/feature/Meals/hooks/useMealAddMethodState", () => ({
   useMealAddMethodState: (params: unknown) => mockUseMealAddMethodState(params),
+}));
+
+jest.mock("@/hooks/useWeeklyReport", () => ({
+  useWeeklyReport: (params: unknown) => mockUseWeeklyReport(params),
 }));
 
 jest.mock("react-i18next", () => ({
@@ -196,6 +202,26 @@ jest.mock("../components/TodaysMealsList", () => ({
     mockReact.createElement(mockText, null, `meals:${meals.length}`),
 }));
 
+jest.mock("../components/WeeklyReportCard", () => ({
+  __esModule: true,
+  default: ({
+    loading,
+    onPress,
+  }: {
+    loading: boolean;
+    onPress: () => void;
+  }) =>
+    mockReact.createElement(
+      mockPressable,
+      { onPress },
+      mockReact.createElement(
+        mockText,
+        null,
+        loading ? "weekly-report-card:loading" : "weekly-report-card:ready",
+      ),
+    ),
+}));
+
 type NavigationMock = {
   navigate: jest.Mock;
 };
@@ -225,6 +251,7 @@ function createMeal(overrides: Record<string, unknown> = {}) {
 
 describe("HomeScreen", () => {
   beforeEach(() => {
+    (globalThis as { __DEV__?: boolean }).__DEV__ = false;
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-03-18T08:00:00.000Z"));
     jest.clearAllMocks();
@@ -262,10 +289,29 @@ describe("HomeScreen", () => {
       enabled: false,
       source: "disabled",
     });
+    mockUseWeeklyReport.mockReturnValue({
+      report: {
+        status: "ready",
+        period: { startDay: "2026-03-09", endDay: "2026-03-15" },
+        summary: "Weekday rhythm carried most of the week.",
+        insights: [],
+        priorities: [],
+      },
+      loading: false,
+      enabled: true,
+      source: "remote",
+      status: "live_success",
+      error: null,
+      refresh: jest.fn(),
+    });
   });
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  afterAll(() => {
+    (globalThis as { __DEV__?: boolean }).__DEV__ = originalDev;
   });
 
   it("renders the empty today state and starts the preferred method from the hero CTA", async () => {
@@ -294,6 +340,7 @@ describe("HomeScreen", () => {
     expect(
       getByText("Start with your first meal and the rest of today will build from there."),
     ).toBeTruthy();
+    expect(getByText("weekly-report-card:ready")).toBeTruthy();
     expect(queryByText("meals:1")).toBeNull();
 
     fireEvent.press(getByText("Log breakfast"));
@@ -307,6 +354,9 @@ describe("HomeScreen", () => {
     expect(navigation.navigate).toHaveBeenCalledWith("MealAddMethod", {
       selectionMode: "persistDefault",
     });
+
+    fireEvent.press(getByText("weekly-report-card:ready"));
+    expect(navigation.navigate).toHaveBeenCalledWith("WeeklyReport");
   });
 
   it("renders the in-progress today state with subtle progress and meals list", () => {

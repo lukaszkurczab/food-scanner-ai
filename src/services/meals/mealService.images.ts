@@ -130,6 +130,20 @@ async function getMealPhotoUrl(args: {
   return url;
 }
 
+async function tryDownloadTo(url: string, target: string): Promise<boolean> {
+  try {
+    const result = await FileSystem.downloadAsync(url, target);
+    if (result.status >= 200 && result.status < 300) {
+      const ok = await FileSystem.getInfoAsync(target);
+      return ok.exists;
+    }
+    await FileSystem.deleteAsync(target, { idempotent: true });
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export async function ensureLocalMealPhoto(args: {
   uid: string;
   cloudId?: string | null;
@@ -146,28 +160,18 @@ export async function ensureLocalMealPhoto(args: {
   const info = await FileSystem.getInfoAsync(target);
   if (info.exists) return target;
 
-  let remoteUrl: string | null = null;
-
   if (photoUrl && /^https?:\/\//i.test(photoUrl)) {
-    remoteUrl = photoUrl;
-  } else if (cloudId || imageId) {
+    if (await tryDownloadTo(photoUrl, target)) return target;
+  }
+
+  if (cloudId || imageId) {
     try {
-      remoteUrl = await getMealPhotoUrl({
-        mealId: cloudId,
-        imageId,
-      });
+      const freshUrl = await getMealPhotoUrl({ mealId: cloudId, imageId });
+      if (freshUrl && (await tryDownloadTo(freshUrl, target))) return target;
     } catch {
-      remoteUrl = null;
+      // ignore
     }
   }
 
-  if (!remoteUrl) return null;
-
-  try {
-    await FileSystem.downloadAsync(remoteUrl, target);
-    const ok = await FileSystem.getInfoAsync(target);
-    return ok.exists ? target : null;
-  } catch {
-    return null;
-  }
+  return null;
 }

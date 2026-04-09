@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Layout, Modal } from "@/components";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -7,12 +7,14 @@ import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@/hooks/useMeals";
 import { useNutritionState } from "@/hooks/useNutritionState";
+import { useWeeklyReport } from "@/hooks/useWeeklyReport";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import { calculateMacroTargets } from "@/utils/calculateMacroTargets";
 import WeekStrip, { type WeekDayItem } from "@/components/WeekStrip";
 import { MacroTargetsRow } from "../components/MacroTargetsRow";
 import { TodaysMealsList } from "../components/TodaysMealsList";
 import HomeHeroCard from "../components/HomeHeroCard";
+import WeeklyReportCard from "../components/WeeklyReportCard";
 import type { Meal } from "@/types/meal";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -21,6 +23,11 @@ import type {
 } from "@/services/nutritionState/nutritionStateTypes";
 import type { MacroTargets } from "@/utils/calculateMacroTargets";
 import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
+import { createMockWeeklyReportResult } from "@/services/weeklyReport/weeklyReportMocks";
+
+function isWeeklyReportDevPreview(): boolean {
+  return typeof __DEV__ !== "undefined" && __DEV__;
+}
 
 function startEndOfLocalDay(date: Date) {
   const start = new Date(date);
@@ -134,7 +141,12 @@ export default function HomeScreen({ navigation }: Props) {
   const { t, i18n } = useTranslation(["home", "common", "meals"]);
   const { userData } = useUserContext();
   const { uid } = useAuthContext();
+  const weeklyReportDevPreview = isWeeklyReportDevPreview();
   const { meals, getMeals } = useMeals(uid);
+  const liveWeeklyReport = useWeeklyReport({
+    uid,
+    active: !weeklyReportDevPreview,
+  });
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const last7Days = useMemo(buildLast7Days, []);
   const selectedDayKey = useMemo(
@@ -147,6 +159,13 @@ export default function HomeScreen({ navigation }: Props) {
     navigation,
     replaceOnStart: false,
   });
+  const weeklyReport = weeklyReportDevPreview
+    ? {
+        ...createMockWeeklyReportResult("ready"),
+        loading: false,
+        refresh: async () => createMockWeeklyReportResult("ready").report,
+      }
+    : liveWeeklyReport;
 
   useEffect(() => {
     if (!uid) return;
@@ -386,12 +405,27 @@ export default function HomeScreen({ navigation }: Props) {
           <Text style={styles.supportCopy}>{heroModel.supportCopy}</Text>
         ) : null}
 
+        <WeeklyReportCard
+          loading={weeklyReport.loading}
+          report={weeklyReport.report}
+          onPress={() => navigation.navigate("WeeklyReport")}
+        />
+
         {mealCount > 0 ? (
           <TodaysMealsList
             meals={dayMeals}
             onOpenMeal={(meal) => navigation.navigate("MealDetails", { meal })}
           />
         ) : null}
+
+        <Pressable
+          onPress={() => navigation.navigate("HistoryList")}
+          style={({ pressed }) => [styles.historyLink, pressed && styles.historyLinkPressed]}
+        >
+          <Text style={styles.historyLinkText}>
+            {t("home:viewHistory", "See full history")} →
+          </Text>
+        </Pressable>
       </View>
 
       <Modal
@@ -432,5 +466,18 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.regular,
       textAlign: "left",
       paddingHorizontal: theme.spacing.sm,
+    },
+    historyLink: {
+      alignItems: "center",
+      paddingVertical: theme.spacing.sm,
+    },
+    historyLinkPressed: {
+      opacity: 0.6,
+    },
+    historyLinkText: {
+      color: theme.textTertiary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.regular,
     },
   });
