@@ -9,10 +9,17 @@ import { post } from "@/services/core/apiClient";
 import { handleAiError } from "@/services/ai/handleAiError";
 import { logWarning } from "@/services/core/errorLogger";
 
+const _inFlight = new Set<string>();
+
 export type TextMealAnalyzeResult = {
   ingredients: Ingredient[];
   credits: AiTextMealAnalyzeResponse;
 };
+
+function safeNumber(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 function hasNonZeroNutrition(ingredient: Ingredient): boolean {
   return (
@@ -30,7 +37,13 @@ export async function extractIngredientsFromText(
 ): Promise<TextMealAnalyzeResult | null> {
   if (!uid) return null;
 
+  // Prevent duplicate concurrent calls for the same user
+  if (_inFlight.has(uid)) {
+    return null;
+  }
+
   const lang = opts?.lang || "en";
+  _inFlight.add(uid);
 
   try {
     const response = await post<AiTextMealAnalyzeResponse>("/ai/text-meal/analyze", {
@@ -41,13 +54,13 @@ export async function extractIngredientsFromText(
     const mappedIngredients = response.ingredients.map(
       (ingredient): Ingredient => ({
         id: uuidv4(),
-        name: ingredient.name,
-        amount: ingredient.amount,
+        name: ingredient.name ?? "",
+        amount: safeNumber(ingredient.amount),
         unit: ingredient.unit ?? "g",
-        protein: ingredient.protein,
-        fat: ingredient.fat,
-        carbs: ingredient.carbs,
-        kcal: ingredient.kcal,
+        protein: safeNumber(ingredient.protein),
+        fat: safeNumber(ingredient.fat),
+        carbs: safeNumber(ingredient.carbs),
+        kcal: safeNumber(ingredient.kcal),
       }),
     );
 
@@ -74,5 +87,7 @@ export async function extractIngredientsFromText(
       { userUid: uid, lang },
       { action: "return-null" },
     );
+  } finally {
+    _inFlight.delete(uid);
   }
 }

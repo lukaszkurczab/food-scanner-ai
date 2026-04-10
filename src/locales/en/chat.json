@@ -92,6 +92,7 @@
   "errors": {
     "fetchFailed": "Could not fetch a response. Please try again.",
     "offTopic": "I can only answer questions related to nutrition and diet.",
+    "rateLimited": "You're sending messages too quickly. Please wait a moment.",
     "offline": "You're offline. Reconnect and try again.",
     "timeout": "The request timed out. Please retry.",
     "serviceUnavailable": "AI is temporarily unavailable. Please try again shortly.",

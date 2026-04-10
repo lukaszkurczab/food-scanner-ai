@@ -15,6 +15,7 @@ jest.mock("expo-file-system", () => ({
   cacheDirectory: "file:///cache/",
   documentDirectory: "file:///docs/",
   copyAsync: jest.fn(),
+  getInfoAsync: jest.fn(),
   makeDirectoryAsync: jest.fn(),
 }));
 
@@ -23,6 +24,9 @@ const manipulateAsyncMock = ImageManipulator.manipulateAsync as jest.MockedFunct
 >;
 const copyAsyncMock = FileSystem.copyAsync as jest.MockedFunction<
   typeof FileSystem.copyAsync
+>;
+const getInfoAsyncMock = FileSystem.getInfoAsync as jest.MockedFunction<
+  typeof FileSystem.getInfoAsync
 >;
 const makeDirectoryAsyncMock = FileSystem.makeDirectoryAsync as jest.MockedFunction<
   typeof FileSystem.makeDirectoryAsync
@@ -33,6 +37,7 @@ describe("convertToJpegAndResize", () => {
     jest.restoreAllMocks();
     manipulateAsyncMock.mockReset();
     copyAsyncMock.mockReset();
+    getInfoAsyncMock.mockReset();
     makeDirectoryAsyncMock.mockReset();
   });
 
@@ -139,5 +144,147 @@ describe("convertToJpegAndResize", () => {
       from: "file:///tmp/default.jpg",
       to: "file:///docs/users/user-2/images/img-777.jpg",
     });
+  });
+
+  it("does not run fallback compression when output is already under maxBytes", async () => {
+    jest
+      .spyOn(Image, "getSize")
+      .mockImplementation((_uri, success) =>
+        (success as (w: number, h: number) => void)(2000, 1000),
+      );
+    manipulateAsyncMock.mockResolvedValue({ uri: "file:///tmp/initial.jpg" } as never);
+    getInfoAsyncMock.mockResolvedValue({
+      exists: true,
+      size: 900_000,
+    } as never);
+
+    await expect(
+      convertToJpegAndResize(
+        "file:///tmp/input.jpg",
+        1600,
+        1600,
+        undefined,
+        undefined,
+        1_000_000,
+      ),
+    ).resolves.toBe("file:///tmp/initial.jpg");
+
+    expect(manipulateAsyncMock).toHaveBeenCalledTimes(1);
+    expect(manipulateAsyncMock).toHaveBeenNthCalledWith(
+      1,
+      "file:///tmp/input.jpg",
+      [{ resize: { width: 1600, height: 800 } }],
+      { compress: 0.75, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    expect(getInfoAsyncMock).toHaveBeenCalledTimes(1);
+    expect(getInfoAsyncMock).toHaveBeenCalledWith("file:///tmp/initial.jpg", { size: true });
+  });
+
+  it("tries fallback compression steps in order when output exceeds maxBytes", async () => {
+    jest
+      .spyOn(Image, "getSize")
+      .mockImplementation((_uri, success) =>
+        (success as (w: number, h: number) => void)(4000, 2000),
+      );
+    manipulateAsyncMock
+      .mockResolvedValueOnce({ uri: "file:///tmp/step-0.jpg" } as never)
+      .mockResolvedValueOnce({ uri: "file:///tmp/step-1.jpg" } as never)
+      .mockResolvedValueOnce({ uri: "file:///tmp/step-2.jpg" } as never)
+      .mockResolvedValueOnce({ uri: "file:///tmp/step-3.jpg" } as never);
+    getInfoAsyncMock
+      .mockResolvedValueOnce({ exists: true, size: 5_000_000 } as never)
+      .mockResolvedValueOnce({ exists: true, size: 4_000_000 } as never)
+      .mockResolvedValueOnce({ exists: true, size: 3_000_000 } as never)
+      .mockResolvedValueOnce({ exists: true, size: 2_000_000 } as never);
+
+    await expect(
+      convertToJpegAndResize(
+        "file:///tmp/input.jpg",
+        1600,
+        1600,
+        undefined,
+        undefined,
+        2_500_000,
+      ),
+    ).resolves.toBe("file:///tmp/step-3.jpg");
+
+    expect(manipulateAsyncMock).toHaveBeenCalledTimes(4);
+    expect(manipulateAsyncMock).toHaveBeenNthCalledWith(
+      1,
+      "file:///tmp/input.jpg",
+      [{ resize: { width: 1600, height: 800 } }],
+      { compress: 0.75, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    expect(manipulateAsyncMock).toHaveBeenNthCalledWith(
+      2,
+      "file:///tmp/input.jpg",
+      [{ resize: { width: 1600, height: 800 } }],
+      { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    expect(manipulateAsyncMock).toHaveBeenNthCalledWith(
+      3,
+      "file:///tmp/input.jpg",
+      [{ resize: { width: 1600, height: 800 } }],
+      { compress: 0.4, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    expect(manipulateAsyncMock).toHaveBeenNthCalledWith(
+      4,
+      "file:///tmp/input.jpg",
+      [{ resize: { width: 1200, height: 600 } }],
+      { compress: 0.4, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    expect(getInfoAsyncMock).toHaveBeenCalledTimes(4);
+    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(1, "file:///tmp/step-0.jpg", {
+      size: true,
+    });
+    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(2, "file:///tmp/step-1.jpg", {
+      size: true,
+    });
+    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(3, "file:///tmp/step-2.jpg", {
+      size: true,
+    });
+    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(4, "file:///tmp/step-3.jpg", {
+      size: true,
+    });
+  });
+
+  it("returns best available image when all fallback outputs still exceed maxBytes", async () => {
+    jest
+      .spyOn(Image, "getSize")
+      .mockImplementation((_uri, success) =>
+        (success as (w: number, h: number) => void)(6000, 3000),
+      );
+    manipulateAsyncMock
+      .mockResolvedValueOnce({ uri: "file:///tmp/step-0.jpg" } as never)
+      .mockResolvedValueOnce({ uri: "file:///tmp/step-1.jpg" } as never)
+      .mockResolvedValueOnce({ uri: "file:///tmp/step-2.jpg" } as never)
+      .mockResolvedValueOnce({ uri: "file:///tmp/step-3.jpg" } as never)
+      .mockResolvedValueOnce({ uri: "file:///tmp/step-4.jpg" } as never);
+    getInfoAsyncMock
+      .mockResolvedValueOnce({ exists: true, size: 8_000_000 } as never)
+      .mockResolvedValueOnce({ exists: true, size: 7_000_000 } as never)
+      .mockResolvedValueOnce({ exists: true, size: 6_000_000 } as never)
+      .mockResolvedValueOnce({ exists: true, size: 5_000_000 } as never)
+      .mockResolvedValueOnce({ exists: true, size: 4_000_000 } as never);
+
+    await expect(
+      convertToJpegAndResize(
+        "file:///tmp/input.jpg",
+        1600,
+        1600,
+        undefined,
+        undefined,
+        2_500_000,
+      ),
+    ).resolves.toBe("file:///tmp/step-4.jpg");
+
+    expect(manipulateAsyncMock).toHaveBeenCalledTimes(5);
+    expect(manipulateAsyncMock).toHaveBeenNthCalledWith(
+      5,
+      "file:///tmp/input.jpg",
+      [{ resize: { width: 800, height: 400 } }],
+      { compress: 0.25, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    expect(getInfoAsyncMock).toHaveBeenCalledTimes(5);
   });
 });

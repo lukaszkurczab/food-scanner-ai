@@ -1,6 +1,7 @@
 import { getApp } from "@react-native-firebase/app";
 import { getAuth } from "@react-native-firebase/auth";
 import Constants from "expo-constants";
+import { v4 as uuidv4 } from "uuid";
 import { createServiceError } from "@/services/contracts/serviceError";
 import { asString, isRecord } from "@/services/contracts/guards";
 import { withVersion } from "@/services/core/apiVersioning";
@@ -12,7 +13,7 @@ const API_CLIENT_SOURCE = "ApiClient";
 const MAX_RETRIES = 2;
 const RETRY_BASE_DELAY_MS = 1_000;
 
-export type RequestMethod = "GET" | "POST";
+export type RequestMethod = "GET" | "POST" | "DELETE";
 
 export type RequestOptions = {
   timeout?: number;
@@ -332,6 +333,8 @@ export async function request<T = unknown>(
   const fullUrl = buildRequestUrl(url);
   const timeoutMs = normalizeTimeoutMs(options?.timeout);
   const body = method === "POST" ? JSON.stringify(data) : undefined;
+  // Keep the same key for all retry attempts in one logical request.
+  const idempotencyKey = method === "POST" ? uuidv4() : undefined;
 
   return withRetry(async () => {
     const authHeader = await getAuthorizationHeader();
@@ -343,6 +346,7 @@ export async function request<T = unknown>(
         Accept: "application/json",
         "Content-Type": "application/json",
         ...authHeader,
+        ...(idempotencyKey ? { "X-Idempotency-Key": idempotencyKey } : {}),
       },
       body,
     });

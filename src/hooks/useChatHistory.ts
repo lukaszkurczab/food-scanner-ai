@@ -342,6 +342,13 @@ export function useChatHistory(
           );
           void trackAiChatResult("gateway_reject");
           setSendErrorType(null);
+        } else if (status === 429) {
+          aiText = i18next.t(
+            "chat:errors.rateLimited",
+            "You're sending messages too quickly. Please wait a moment.",
+          );
+          void trackAiChatResult("rate_limited");
+          setSendErrorType(null);
         } else if (errorType === "offline") {
           aiText = i18next.t(
             "chat:errors.offline",

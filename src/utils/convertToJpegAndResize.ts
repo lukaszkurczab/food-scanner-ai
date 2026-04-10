@@ -13,6 +13,15 @@ type EnhanceOpts = {
   threshold?: number;
 };
 
+// Compression steps tried in order when output exceeds maxBytes.
+// Each entry is [quality, dimensionScale] where scale applies to maxWidth/maxHeight.
+const COMPRESSION_FALLBACKS: Array<[number, number]> = [
+  [0.6, 1.0],
+  [0.4, 1.0],
+  [0.4, 0.75],
+  [0.25, 0.5],
+];
+
 function buildTargetPath({
   userUid,
   fileId,
@@ -32,12 +41,22 @@ async function ensureDir(path: string) {
   }
 }
 
+async function getFileBytes(uri: string): Promise<number> {
+  try {
+    const info = await FileSystem.getInfoAsync(uri, { size: true });
+    return info.exists ? info.size ?? 0 : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function convertToJpegAndResize(
   uri: string,
   maxWidth = 1600,
   maxHeight = 1600,
   opts?: TargetOpts,
-  enhance?: EnhanceOpts
+  enhance?: EnhanceOpts,
+  maxBytes?: number,
 ): Promise<string> {
   void enhance;
   let srcUri = uri;
@@ -58,31 +77,52 @@ export async function convertToJpegAndResize(
     Image.getSize(srcUri, (w, h) => resolve({ width: w, height: h }), reject);
   });
 
-  let newWidth = width;
-  let newHeight = height;
-  if (width > maxWidth || height > maxHeight) {
-    const widthRatio = maxWidth / width;
-    const heightRatio = maxHeight / height;
-    const ratio = Math.min(widthRatio, heightRatio);
-    newWidth = Math.round(width * ratio);
-    newHeight = Math.round(height * ratio);
+  function resolveTargetDimensions(
+    dimScale: number,
+  ): { newWidth: number; newHeight: number } {
+    const scaledMaxW = Math.max(1, Math.round(maxWidth * dimScale));
+    const scaledMaxH = Math.max(1, Math.round(maxHeight * dimScale));
+    let newWidth = width;
+    let newHeight = height;
+    if (width > scaledMaxW || height > scaledMaxH) {
+      const ratio = Math.min(scaledMaxW / width, scaledMaxH / height);
+      newWidth = Math.round(width * ratio);
+      newHeight = Math.round(height * ratio);
+    }
+    return { newWidth, newHeight };
   }
 
-  const actions: ImageManipulator.Action[] = [
-    { resize: { width: newWidth, height: newHeight } },
-  ];
+  async function compressOnce(quality: number, dimScale: number): Promise<string> {
+    const { newWidth, newHeight } = resolveTargetDimensions(dimScale);
+    const actions: ImageManipulator.Action[] = [
+      { resize: { width: newWidth, height: newHeight } },
+    ];
+    const result = await ImageManipulator.manipulateAsync(srcUri, actions, {
+      compress: quality,
+      format: ImageManipulator.SaveFormat.JPEG,
+    });
+    return result.uri;
+  }
 
-  const first = await ImageManipulator.manipulateAsync(srcUri, actions, {
-    compress: 0.75,
-    format: ImageManipulator.SaveFormat.JPEG,
-  });
+  let resultUri = await compressOnce(0.75, 1.0);
 
-  const finalUri = first.uri;
+  if (maxBytes !== undefined && maxBytes > 0) {
+    const initialSize = await getFileBytes(resultUri);
+    if (initialSize > maxBytes) {
+      for (const [quality, dimScale] of COMPRESSION_FALLBACKS) {
+        resultUri = await compressOnce(quality, dimScale);
+        const size = await getFileBytes(resultUri);
+        if (size <= maxBytes) {
+          break;
+        }
+      }
+    }
+  }
 
-  if (!opts) return finalUri;
+  if (!opts) return resultUri;
 
   const target = buildTargetPath(opts);
   await ensureDir(target);
-  await FileSystem.copyAsync({ from: finalUri, to: target });
+  await FileSystem.copyAsync({ from: resultUri, to: target });
   return target;
 }

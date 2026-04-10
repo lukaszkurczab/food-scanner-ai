@@ -15,6 +15,8 @@ import type { AiPhotoAnalyzeResponse } from "@/services/ai/contracts";
 
 const log = debugScope("Vision");
 const AI_UNAVAILABLE_CODE = "ai/unavailable";
+const _inFlight = new Set<string>();
+const MAX_JPEG_BYTES = 2_500_000; // 2.5 MB -> base64 ~3.3 MB, safely under 4 MB limit
 
 type VisionOpts = {
   lang?: string;
@@ -25,6 +27,11 @@ export type VisionAnalyzeResult = {
   credits: AiPhotoAnalyzeResponse;
 };
 
+function safeNumber(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 function normalizeBackendVisionPayload(
   payload: AiPhotoAnalyzeResponse,
 ): Ingredient[] | null {
@@ -34,13 +41,13 @@ function normalizeBackendVisionPayload(
 
   return payload.ingredients.map((ingredient) => ({
     id: uuidv4(),
-    name: ingredient.name,
-    amount: ingredient.amount,
+    name: ingredient.name ?? "",
+    amount: safeNumber(ingredient.amount),
     unit: ingredient.unit ?? "g",
-    protein: ingredient.protein,
-    fat: ingredient.fat,
-    carbs: ingredient.carbs,
-    kcal: ingredient.kcal,
+    protein: safeNumber(ingredient.protein),
+    fat: safeNumber(ingredient.fat),
+    carbs: safeNumber(ingredient.carbs),
+    kcal: safeNumber(ingredient.kcal),
   }));
 }
 
@@ -69,6 +76,12 @@ export async function detectIngredientsWithVision(
 ): Promise<VisionAnalyzeResult | null> {
   const userLang = (opts?.lang || "pl").toLowerCase();
 
+  // Prevent duplicate concurrent calls for the same user
+  if (_inFlight.has(userUid)) {
+    log.warn("blocked Vision call: already in flight for user");
+    return null;
+  }
+
   const net = await NetInfo.fetch();
   if (!net.isConnected) {
     log.warn("blocked Vision call: offline");
@@ -79,12 +92,20 @@ export async function detectIngredientsWithVision(
     });
   }
 
+  _inFlight.add(userUid);
   try {
-    const jpegUri = await convertToJpegAndResize(imageUri, 512, 512, {
-      userUid,
-      fileId: `vision-${Date.now()}`,
-      dir: "tmp",
-    });
+    const jpegUri = await convertToJpegAndResize(
+      imageUri,
+      512,
+      512,
+      {
+        userUid,
+        fileId: `vision-${Date.now()}`,
+        dir: "tmp",
+      },
+      undefined,
+      MAX_JPEG_BYTES,
+    );
     const imageBase64 = await uriToBase64(jpegUri);
 
     return await detectIngredientsWithBackend(userUid, imageBase64, userLang);
@@ -109,5 +130,7 @@ export async function detectIngredientsWithVision(
       { userUid, lang: userLang },
       { action: "wrap-unavailable" },
     );
+  } finally {
+    _inFlight.delete(userUid);
   }
 }
