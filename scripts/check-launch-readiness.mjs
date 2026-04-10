@@ -195,6 +195,15 @@ function checkRevenueCatKeys() {
   }
 }
 
+function checkSentryDsn() {
+  const sentryDsn = (process.env.SENTRY_DSN ?? "").trim();
+  if (!sentryDsn) {
+    console.warn(
+      "[launch-readiness] WARNING: SENTRY_DSN is not set — production crashes will not be tracked.",
+    );
+  }
+}
+
 if (profile !== PRODUCTION_BUILD_PROFILE) {
   console.log(
     `[launch-readiness] Skipped checks for profile "${profile || "unknown"}".`,
@@ -211,6 +220,7 @@ checkIosFirebaseConfig();
 checkProductionEasFlags();
 checkProductionRuntimeFlags();
 checkRevenueCatKeys();
+checkSentryDsn();
 
 if (errors.length > 0) {
   console.error(

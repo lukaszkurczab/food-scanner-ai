@@ -79,6 +79,10 @@ export default {
       "expo-notifications",
       "expo-task-manager",
       "expo-background-task",
+      [
+        "@sentry/react-native/expo",
+        { organization: "fitaly", project: "fitaly-mobile" },
+      ],
     ],
     extra: {
       apiBaseUrl: resolvedApiBaseUrl,
@@ -98,6 +102,8 @@ export default {
       forcePremium: (process.env.FORCE_PREMIUM || "").toLowerCase() === "true",
       termsUrl: process.env.TERMS_URL || "",
       privacyUrl: process.env.PRIVACY_URL || "",
+      sentryDsn: process.env.SENTRY_DSN || "",
+      sentryEnvironment: process.env.SENTRY_ENVIRONMENT || "development",
       buildProfile: process.env.EAS_BUILD_PROFILE || "",
       eas: {
         projectId: "74cb0678-596b-4dc2-bec0-cb1e3a206caa",

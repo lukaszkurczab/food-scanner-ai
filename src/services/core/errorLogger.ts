@@ -1,6 +1,8 @@
+import * as Sentry from "@sentry/react-native";
 import * as apiClient from "@/services/core/apiClient";
 import { readPublicEnv } from "@/services/core/publicEnv";
 
+type ExtraContext = Record<string, unknown>;
 type LogContext = unknown;
 type LogError = unknown;
 
@@ -13,6 +15,27 @@ function isBackendLoggingEnabled(): boolean {
 
 function getErrorStack(error?: LogError): string | undefined {
   return error instanceof Error ? error.stack : undefined;
+}
+
+function toExtraContext(
+  context?: LogContext,
+  error?: LogError,
+): ExtraContext | undefined {
+  const extra: ExtraContext = {};
+
+  if (context !== undefined) {
+    if (context && typeof context === "object" && !Array.isArray(context)) {
+      Object.assign(extra, context as Record<string, unknown>);
+    } else {
+      extra.context = context;
+    }
+  }
+
+  if (error !== undefined && !(error instanceof Error)) {
+    extra.originalError = error;
+  }
+
+  return Object.keys(extra).length > 0 ? extra : undefined;
 }
 
 function sendToBackend(message: string, context?: LogContext, error?: LogError) {
@@ -60,6 +83,13 @@ export function captureException(
   context?: LogContext,
   error?: LogError
 ) {
-  console.error(message, context, error);
+  const err = error instanceof Error ? error : new Error(message);
+  Sentry.captureException(err, {
+    extra: toExtraContext(context, error),
+  });
   sendToBackend(message, context, error);
+}
+
+export function captureMessage(message: string, extra?: ExtraContext): void {
+  Sentry.captureMessage(message, { extra });
 }

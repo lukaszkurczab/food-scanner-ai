@@ -1,6 +1,8 @@
 import "@/i18n";
 import "@/FirebaseConfig";
 import "react-native-get-random-values";
+import * as Sentry from "@sentry/react-native";
+import Constants from "expo-constants";
 
 import { initRevenueCat } from "@/feature/Subscription";
 
@@ -48,6 +50,24 @@ import {
 } from "@/services/reminders/reminderRuntime";
 import { captureException } from "@/services/core/errorLogger";
 import { getLaunchReadinessIssue } from "@/services/release/launchReadiness";
+
+const extra = Constants.expoConfig?.extra as Record<string, unknown> | undefined;
+const sentryDsn = typeof extra?.sentryDsn === "string" ? extra.sentryDsn : "";
+const sentryEnvironment =
+  typeof extra?.sentryEnvironment === "string"
+    ? extra.sentryEnvironment
+    : "development";
+
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: sentryEnvironment,
+    enableNative: true,
+    tracesSampleRate: sentryEnvironment === "production" ? 0.05 : 0.0,
+    attachStacktrace: true,
+    debug: sentryEnvironment !== "production",
+  });
+}
 
 function Root() {
   const fontsLoaded = useAppFonts();
@@ -174,13 +194,15 @@ function Root() {
   );
 }
 
-export default function App() {
+function App() {
   return (
     <AuthProvider>
       <Root />
     </AuthProvider>
   );
 }
+
+export default Sentry.wrap(App);
 
 const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },

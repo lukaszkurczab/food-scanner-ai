@@ -1,11 +1,24 @@
 import type { Meal } from "@/types/meal";
 
-export function resolveMealConflict(local: Meal, remote: Meal): Meal {
-  const localUpdated = new Date(local.updatedAt || "1970-01-01").getTime();
-  const remoteUpdated = new Date(remote.updatedAt || "1970-01-01").getTime();
+export type ConflictResolutionResult = {
+  resolved: Meal;
+  discarded: Meal;
+  isAmbiguous: boolean;
+};
 
-  if (remoteUpdated > localUpdated) {
-    return { ...remote };
+const AMBIGUOUS_WINDOW_MS = 5 * 60 * 1000;
+
+export function resolveMealConflict(
+  local: Meal,
+  remote: Meal,
+): ConflictResolutionResult {
+  const localTs = new Date(local.updatedAt || "1970-01-01").getTime();
+  const remoteTs = new Date(remote.updatedAt || "1970-01-01").getTime();
+  const delta = Math.abs(localTs - remoteTs);
+  const isAmbiguous = delta < AMBIGUOUS_WINDOW_MS;
+
+  if (remoteTs > localTs) {
+    return { resolved: { ...remote }, discarded: { ...local }, isAmbiguous };
   }
-  return { ...local };
+  return { resolved: { ...local }, discarded: { ...remote }, isAmbiguous };
 }

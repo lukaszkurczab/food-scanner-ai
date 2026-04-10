@@ -16,6 +16,7 @@ Versioning follows the app version in `app.config.js` / `package.json`.
 
 ### Changed
 - Gunicorn worker count increased from 2 to 4 in backend Procfile (tracked here for cross-repo visibility)
+- Added Sentry React Native SDK; set `SENTRY_DSN` and `SENTRY_ENVIRONMENT` as EAS secrets for smoke and production profiles
 
 ### Fixed
 - CI `cross-repo contract sync` step now resolves to correct backend repo (`fitaly-backend`)

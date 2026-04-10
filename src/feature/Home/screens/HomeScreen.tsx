@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Layout, Modal } from "@/components";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import { useUserContext } from "@/context/UserContext";
+import { useUserProfileContext } from "@/context/UserProfileContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@/hooks/useMeals";
 import { useNutritionState } from "@/hooks/useNutritionState";
@@ -139,7 +139,7 @@ export default function HomeScreen({ navigation }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation(["home", "common", "meals"]);
-  const { userData } = useUserContext();
+  const { userData } = useUserProfileContext();
   const { uid } = useAuthContext();
   const weeklyReportDevPreview = isWeeklyReportDevPreview();
   const { meals, getMeals } = useMeals(uid);

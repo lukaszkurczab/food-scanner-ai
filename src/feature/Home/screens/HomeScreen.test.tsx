@@ -14,7 +14,7 @@ const mockReact = React;
 
 const mockUseMeals = jest.fn();
 const mockUseNutritionState = jest.fn();
-const mockUseUserContext = jest.fn();
+const mockUseUserProfileContext = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockUseMealAddMethodState = jest.fn();
 const mockUseWeeklyReport = jest.fn();
@@ -29,8 +29,8 @@ jest.mock("@/hooks/useNutritionState", () => ({
     mockUseNutritionState(params),
 }));
 
-jest.mock("@/context/UserContext", () => ({
-  useUserContext: () => mockUseUserContext(),
+jest.mock("@/context/UserProfileContext", () => ({
+  useUserProfileContext: () => mockUseUserProfileContext(),
 }));
 
 jest.mock("@/context/AuthContext", () => ({
@@ -256,7 +256,7 @@ describe("HomeScreen", () => {
     jest.setSystemTime(new Date("2026-03-18T08:00:00.000Z"));
     jest.clearAllMocks();
 
-    mockUseUserContext.mockReturnValue({
+    mockUseUserProfileContext.mockReturnValue({
       userData: {
         username: "Anna",
         surveyComplited: true,

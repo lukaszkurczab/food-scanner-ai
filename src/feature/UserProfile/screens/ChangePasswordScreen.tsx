@@ -7,7 +7,7 @@ import type { RootStackParamList } from "@/navigation/navigate";
 import { useTheme } from "@/theme/useTheme";
 import { ErrorBox, FormScreenShell, TextInput } from "@/components";
 import AppIcon from "@/components/AppIcon";
-import { useUserContext } from "@/context/UserContext";
+import { useUserAccountContext } from "@/context/UserAccountContext";
 
 function getErrorCode(err: unknown): string | null {
   if (!err || typeof err !== "object") return null;
@@ -30,7 +30,7 @@ export default function ChangePasswordScreen({
   const { t } = useTranslation(["profile", "common"]);
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { changePassword } = useUserContext();
+  const { changePassword } = useUserAccountContext();
 
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useTheme } from "@/theme/useTheme";
-import { useUserContext } from "@contexts/UserContext";
+import { useAppSettingsContext } from "@/context/AppSettingsContext";
 import {
   FormScreenShell,
   InfoBlock,
@@ -33,7 +33,7 @@ export default function LanguageScreen({ navigation }: LanguageScreenProps) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation("profile");
-  const { language, changeLanguage } = useUserContext();
+  const { language, changeLanguage } = useAppSettingsContext();
   const [selected, setSelected] = useState(language || "en");
   const [saving, setSaving] = useState(false);
 

@@ -83,6 +83,7 @@
   "user_not_found": "Nie znaleziono użytkownika",
   "barcode_loader_title": "Wyszukiwanie produktu...",
   "barcode_loader_subtext": "Pobieranie danych produktu z bazy.",
+  "sync_conflict_resolved": "Posiłek został zaktualizowany na innym urządzeniu. Zachowaliśmy nowszą wersję.",
   "billingErrors": {
     "billingUnavailable": "Rozliczenia są niedostępne na tym urządzeniu.",
     "billingNotReady": "Płatności nie są jeszcze gotowe. Spróbuj ponownie za chwilę.",

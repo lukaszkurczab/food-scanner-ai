@@ -9,7 +9,8 @@
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://fitaly-backend-smoke.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
-        "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true"
+        "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "true",
+        "SENTRY_ENVIRONMENT": "smoke"
       }
     },
     "development": {
@@ -57,7 +58,8 @@
         "EXPO_PUBLIC_API_BASE_URL": "https://fitaly-backend-production.up.railway.app",
         "EXPO_PUBLIC_API_VERSION": "v1",
         "EXPO_PUBLIC_ENABLE_BACKEND_LOGGING": "false",
-        "DEBUG_OCR": "false"
+        "DEBUG_OCR": "false",
+        "SENTRY_ENVIRONMENT": "production"
       },
       "android": {
         "buildType": "app-bundle"

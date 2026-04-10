@@ -5,7 +5,8 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useTheme } from "@/theme/useTheme";
 import { ErrorBox, FormScreenShell, TextInput } from "@/components";
-import { useUserContext } from "@/context/UserContext";
+import { useUserAccountContext } from "@/context/UserAccountContext";
+import { useUserProfileContext } from "@/context/UserProfileContext";
 import {
   isUsernameAvailable,
   normalizeUsername,
@@ -51,7 +52,8 @@ export default function UsernameChangeScreen({
   const { t } = useTranslation(["profile", "login", "common"]);
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { changeUsername, userData } = useUserContext();
+  const { changeUsername } = useUserAccountContext();
+  const { userData } = useUserProfileContext();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

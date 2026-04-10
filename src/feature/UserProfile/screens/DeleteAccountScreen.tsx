@@ -11,7 +11,7 @@ import {
   TextInput,
 } from "@/components";
 import AppIcon from "@/components/AppIcon";
-import { useUserContext } from "@/context/UserContext";
+import { useUserAccountContext } from "@/context/UserAccountContext";
 
 type DeleteAccountNavigation = StackNavigationProp<
   RootStackParamList,
@@ -28,7 +28,7 @@ export default function DeleteAccountScreen({
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { deleteUser } = useUserContext();
+  const { deleteUser } = useUserAccountContext();
   const [password, setPassword] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);

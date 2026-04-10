@@ -83,6 +83,7 @@
   "user_not_found": "User not found",
   "barcode_loader_title": "Looking up product...",
   "barcode_loader_subtext": "Fetching product data from the database.",
+  "sync_conflict_resolved": "A meal was updated on another device. We kept the most recent version.",
   "billingErrors": {
     "billingUnavailable": "Billing is unavailable on this device.",
     "billingNotReady": "Billing is not ready yet. Please try again in a moment.",

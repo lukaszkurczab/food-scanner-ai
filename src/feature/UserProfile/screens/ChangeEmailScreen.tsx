@@ -6,7 +6,8 @@ import type { RootStackParamList } from "@/navigation/navigate";
 import { useTheme } from "@/theme/useTheme";
 import { ErrorBox, FormScreenShell, InfoBlock, TextInput } from "@/components";
 import AppIcon from "@/components/AppIcon";
-import { useUserContext } from "@/context/UserContext";
+import { useUserAccountContext } from "@/context/UserAccountContext";
+import { useUserProfileContext } from "@/context/UserProfileContext";
 
 function mapFirebaseErrorToKey(code: string): string {
   switch (code) {
@@ -46,7 +47,8 @@ export default function ChangeEmailScreen({
   const { t } = useTranslation(["profile", "login", "common"]);
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { changeEmail, userData } = useUserContext();
+  const { changeEmail } = useUserAccountContext();
+  const { userData } = useUserProfileContext();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

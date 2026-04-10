@@ -1,0 +1,143 @@
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+} from "react";
+import { useAuthContext } from "./AuthContext";
+import { useUser } from "@hooks/useUser";
+import type { UserData } from "@/types";
+import { runMigrations } from "@/services/offline/db";
+import { startSyncLoop, stopSyncLoop } from "@/services/offline/sync.engine";
+import { cleanupTransientOfflineAssets } from "@/services/offline/fileCleanup";
+import { emit, on } from "@/services/core/events";
+import { track } from "@/services/telemetry/telemetryClient";
+
+export type UserProfileContextType = {
+  userData: UserData | null;
+  loadingUser: boolean;
+  syncState: "synced" | "pending" | "conflict";
+  retryingProfileSync: boolean;
+  refreshUser: () => Promise<UserData | null>;
+  getUserData: () => Promise<UserData | null>;
+  updateUser: (data: Partial<UserData>) => Promise<void>;
+  retryProfileSync: () => Promise<void>;
+  syncUserProfile: () => Promise<void>;
+  setAvatar: (photoUri: string) => Promise<void>;
+};
+
+const UserProfileContext = createContext<UserProfileContextType>({
+  userData: null,
+  loadingUser: true,
+  syncState: "pending",
+  retryingProfileSync: false,
+  refreshUser: async () => null,
+  getUserData: async () => null,
+  updateUser: async () => {},
+  retryProfileSync: async () => {},
+  syncUserProfile: async () => {},
+  setAvatar: async () => {},
+});
+
+export const UserProfileProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const { firebaseUser: authUser } = useAuthContext();
+  const uid = authUser?.uid || "";
+
+  const {
+    userData,
+    loading: loadingUser,
+    syncState,
+    retryingProfileSync,
+    getUserProfile,
+    fetchUserFromCloud,
+    updateUserProfile,
+    retryProfileSync,
+    syncUserProfile,
+    setAvatar,
+  } = useUser(uid);
+
+  const refreshUser = useCallback(async () => {
+    return fetchUserFromCloud();
+  }, [fetchUserFromCloud]);
+
+  useEffect(() => {
+    try {
+      runMigrations();
+    } catch {
+      // Migration bootstrap is best-effort.
+    }
+    void cleanupTransientOfflineAssets();
+  }, []);
+
+  useEffect(() => {
+    if (!uid) {
+      stopSyncLoop();
+      return;
+    }
+
+    startSyncLoop(uid);
+    return () => {
+      stopSyncLoop();
+    };
+  }, [uid]);
+
+  useEffect(() => {
+    const unsub = on<{ uid?: string; cloudId?: string | null }>(
+      "meal:conflict:ambiguous",
+      (event) => {
+        if (!uid || event?.uid !== uid) return;
+        emit("ui:toast", {
+          key: "sync_conflict_resolved",
+          ns: "common",
+        });
+        void track("sync.meal_conflict_resolved", {
+          isAmbiguous: true,
+          cloudId: event.cloudId ?? null,
+        });
+      },
+    );
+    return () => {
+      unsub();
+    };
+  }, [uid]);
+
+  const value = useMemo<UserProfileContextType>(
+    () => ({
+      userData,
+      loadingUser,
+      syncState,
+      retryingProfileSync,
+      refreshUser,
+      getUserData: getUserProfile,
+      updateUser: updateUserProfile,
+      retryProfileSync,
+      syncUserProfile,
+      setAvatar,
+    }),
+    [
+      userData,
+      loadingUser,
+      syncState,
+      retryingProfileSync,
+      refreshUser,
+      getUserProfile,
+      updateUserProfile,
+      retryProfileSync,
+      syncUserProfile,
+      setAvatar,
+    ]
+  );
+
+  return (
+    <UserProfileContext.Provider value={value}>
+      {children}
+    </UserProfileContext.Provider>
+  );
+};
+
+export const useUserProfileContext = () => useContext(UserProfileContext);

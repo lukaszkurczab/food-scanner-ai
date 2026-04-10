@@ -13,6 +13,7 @@ import {
   onAuthStateChanged,
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
+import * as Sentry from "@sentry/react-native";
 
 type AuthContextType = {
   firebaseUser: FirebaseAuthTypes.User | null;
@@ -42,6 +43,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const auth = getAuth(app);
     const unsub = onAuthStateChanged(auth, (user) => {
       setFirebaseUser(user);
+      if (user) {
+        Sentry.setUser({ id: user.uid });
+      } else {
+        Sentry.setUser(null);
+      }
       setLoading(false);
     });
     return unsub;
