@@ -22,6 +22,8 @@ export function useSelectSavedMealsState(params: {
   onNavigateReview: () => void;
   onStartOver: () => void;
 }) {
+  const { uid, syncSavedMeals, setMeal, saveDraft, setLastScreen, onNavigateReview, onStartOver } = params;
+
   const [queryText, setQueryText] = useState("");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Meal[]>([]);
@@ -36,7 +38,7 @@ export function useSelectSavedMealsState(params: {
   }, [limit]);
 
   useEffect(() => {
-    if (!params.uid) {
+    if (!uid) {
       setItems([]);
       setLoading(false);
       setLimit(STEP);
@@ -44,7 +46,7 @@ export function useSelectSavedMealsState(params: {
     }
 
     const unsub = subscribeToMyMealsOrderedByName({
-      uid: params.uid,
+      uid,
       onData: (data) => {
         setItems(data);
         setLoading(false);
@@ -55,11 +57,11 @@ export function useSelectSavedMealsState(params: {
     return () => {
       if (typeof unsub === "function") unsub();
     };
-  }, [params.uid]);
+  }, [uid]);
 
   const refresh = useCallback(async () => {
-    await params.syncSavedMeals();
-  }, [params.syncSavedMeals]);
+    await syncSavedMeals();
+  }, [syncSavedMeals]);
 
   const visibleAll = useMemo(() => {
     const queryTextNormalized = normalizeText(queryText);
@@ -121,28 +123,28 @@ export function useSelectSavedMealsState(params: {
   );
 
   const handleAddMeal = useCallback(async (picked: Meal) => {
-    if (!params.uid) return;
+    if (!uid) return;
 
     const next = buildSavedMealDraft({
       picked,
-      uid: params.uid,
+      uid,
     });
 
-    params.setMeal(next);
-    await params.saveDraft(params.uid, next);
-    await params.setLastScreen(params.uid, "ReviewMeal");
-    params.onNavigateReview();
+    setMeal(next);
+    await saveDraft(uid, next);
+    await setLastScreen(uid, "ReviewMeal");
+    onNavigateReview();
   }, [
-    params.onNavigateReview,
-    params.saveDraft,
-    params.setLastScreen,
-    params.setMeal,
-    params.uid,
+    onNavigateReview,
+    saveDraft,
+    setLastScreen,
+    setMeal,
+    uid,
   ]);
 
   const handleStartOver = useCallback(() => {
-    params.onStartOver();
-  }, [params.onStartOver]);
+    onStartOver();
+  }, [onStartOver]);
 
   const keyExtractor = useCallback(
     (item: Meal) => item.cloudId || item.mealId,

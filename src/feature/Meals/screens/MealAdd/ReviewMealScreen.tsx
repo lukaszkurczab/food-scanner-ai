@@ -485,7 +485,7 @@ export default function ReviewMealScreen({
             style={styles.saveButton}
             testID="meal-result-save-button"
           />
-          {!!image ? (
+          {image ? (
             <TextButton
               label={t("review_meal_save_share_cta", {
                 ns: "meals",

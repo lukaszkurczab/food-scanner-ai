@@ -4,7 +4,9 @@ const iosGoogleServicesFile =
   process.env.GOOGLE_SERVICES_FILE_IOS || "./GoogleService-Info.plist";
 const androidGoogleServicesFile =
   process.env.GOOGLE_SERVICES_FILE_ANDROID || "./google-services.json";
-const configuredApiBaseUrl = (process.env.EXPO_PUBLIC_API_BASE_URL || "").trim();
+const configuredApiBaseUrl = (
+  process.env.EXPO_PUBLIC_API_BASE_URL || ""
+).trim();
 const isLocalDevelopmentRuntime = process.env.EAS_BUILD !== "true";
 const resolvedApiBaseUrl =
   configuredApiBaseUrl ||
@@ -24,7 +26,8 @@ export default {
     icon: "./assets/icon.png",
     ios: {
       supportsTablet: false,
-      bundleIdentifier: "com.lkurczab.fitaly",
+      //can't be changed due to app store rules, see https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+      bundleIdentifier: "com.lkurczab.foodscannerai",
       googleServicesFile: iosGoogleServicesFile,
       icon: "./assets/appstore.png",
       infoPlist: {

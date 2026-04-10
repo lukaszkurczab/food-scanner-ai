@@ -122,6 +122,7 @@ export function useMealTextAiState(params: {
     quickDescription,
     reconcileCredits,
     retries,
+    t,
   ]);
 
   const analyzeDisabled = useMemo(

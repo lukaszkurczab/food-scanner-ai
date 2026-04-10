@@ -462,13 +462,17 @@ export default function WeeklyReportScreen({ navigation }: Props) {
   });
   const [refreshing, setRefreshing] = useState(false);
 
-  const weeklyReport = weeklyReportDevPreview
-    ? {
-        ...createMockWeeklyReportResult("ready"),
-        loading: false,
-        refresh: async () => createMockWeeklyReportResult("ready").report,
-      }
-    : liveWeeklyReport;
+  const weeklyReport = useMemo(
+    () =>
+      weeklyReportDevPreview
+        ? {
+            ...createMockWeeklyReportResult("ready"),
+            loading: false,
+            refresh: async () => createMockWeeklyReportResult("ready").report,
+          }
+        : liveWeeklyReport,
+    [weeklyReportDevPreview, liveWeeklyReport],
+  );
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;
