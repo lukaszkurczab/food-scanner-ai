@@ -1,7 +1,26 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it, jest } from "@jest/globals";
 import MacroSplitCard from "@/feature/Meals/components/cardLayouts/MacroSplitCard";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 import type { MacroCardProps } from "@/feature/Meals/components/CardOverlay";
+
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      (
+        {
+          "share:cardLabels.meal_summary": "Meal summary",
+          "share:cardLabels.balanced_macros": "Balanced macros",
+          "share:cardLabels.high_protein": "High protein",
+          "meals:protein_short": "P",
+          "meals:carbs_short": "C",
+          "meals:fat_short": "F",
+          "meals:protein": "Protein",
+          "meals:carbs": "Carbs",
+          "meals:fat": "Fat",
+        } as Record<string, string>
+      )[key] ?? key,
+  }),
+}));
 
 const baseProps: MacroCardProps = {
   protein: 30,
@@ -31,5 +50,13 @@ describe("MacroSplitCard", () => {
     expect(getByText("30g")).toBeTruthy();
     expect(getByText("40g")).toBeTruthy();
     expect(getByText("20g")).toBeTruthy();
+  });
+
+  it("renders nothing when both kcal and macros are hidden", () => {
+    const { toJSON } = renderWithTheme(
+      <MacroSplitCard {...baseProps} showKcal={false} showMacros={false} />,
+    );
+
+    expect(toJSON()).toBeNull();
   });
 });

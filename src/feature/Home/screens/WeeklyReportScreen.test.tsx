@@ -16,9 +16,45 @@ jest.mock("@/hooks/useWeeklyReport", () => ({
 }));
 
 jest.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    i18n: { language: "en" },
-  }),
+  useTranslation: () => {
+    const translations: Record<string, string> = {
+      "weeklyReport.screenTitle": "Weekly report",
+      "weeklyReport.closedWeekPill": "Closed week",
+      "weeklyReport.temporarilyUnavailablePill": "Temporarily unavailable",
+      "weeklyReport.reflectionReadyFallback": "Your weekly reflection is ready.",
+      "weeklyReport.signalsBehindIt": "Signals behind it",
+      "weeklyReport.carryForwardTitle": "Carry into next week",
+      "weeklyReport.carryForwardBody":
+        "Keep it light. Guard the first weekend meal and let the weekday rhythm hold.",
+      "weeklyReport.loadingTitle": "Composing your weekly reflection",
+      "weeklyReport.loadingBody":
+        "Reading the closed week first, then shaping one carry-forward for next week.",
+      "weeklyReport.loadingHelperNote":
+        "This stays concise: one reflection, a short signal read, and one carry-forward.",
+      "weeklyReport.signalMeterLabel": "Closed week signal",
+      "weeklyReport.signalMeterCaption":
+        "A fuller week usually unlocks the reflection.",
+      "weeklyReport.insufficientTitle":
+        "This closed week does not have enough signal yet",
+      "weeklyReport.insufficientBody":
+        "That can happen when only part of the week is captured. Once the closed week has a fuller shape, this summary usually unlocks on its own.",
+      "weeklyReport.insufficientFootnote": "This is normal. Nothing is failing here.",
+      "weeklyReport.backToHome": "Back to Home",
+      "weeklyReport.unavailableTitle": "Your weekly reflection isn't ready right now",
+      "weeklyReport.unavailableBody":
+        "The closed week is there, but this summary is taking a little longer to finish.",
+      "weeklyReport.unavailableFootnote":
+        "The rest of Home stays available while this catches up.",
+      "weeklyReport.tryAgain": "Try again",
+      "weeklyReport.back": "Back",
+      "weeklyReport.accessibilityRefresh": "Refresh weekly report",
+    };
+
+    return {
+      i18n: { language: "en" },
+      t: (key: string) => translations[key] ?? key,
+    };
+  },
 }));
 
 jest.mock("@/components", () => {
