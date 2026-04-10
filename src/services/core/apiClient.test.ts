@@ -182,4 +182,45 @@ describe("apiClient", () => {
       retryable: true,
     });
   });
+
+  it("rejects insecure non-local API base URLs", async () => {
+    mockGetAuth.mockReturnValue({
+      currentUser: null,
+    });
+    mockReadPublicEnv.mockImplementation((key: string) => {
+      if (key === "EXPO_PUBLIC_API_BASE_URL") {
+        return "http://api.example.com";
+      }
+      if (key === "EXPO_PUBLIC_API_VERSION") {
+        return "v1";
+      }
+      return undefined;
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { get } = require("@/services/core/apiClient");
+    await expect(get("/health")).rejects.toMatchObject({
+      code: "api/misconfigured",
+      source: "ApiClient",
+    });
+  });
+
+  it("returns raw text for non-json responses", async () => {
+    mockGetAuth.mockReturnValue({
+      currentUser: null,
+    });
+
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      headers: {
+        get: () => "text/plain",
+      },
+      text: async () => "pong",
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { get } = require("@/services/core/apiClient");
+    await expect(get("/health")).resolves.toBe("pong");
+  });
 });

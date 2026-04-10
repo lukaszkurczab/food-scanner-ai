@@ -364,6 +364,16 @@ export async function getMealByCloudIdLocal(
   return row ? rowToMeal(row) : null;
 }
 
+export async function getPendingMealsLocal(uid: string): Promise<Meal[]> {
+  const db = getDB();
+  const rows = db.getAllSync(
+    `SELECT * FROM meals
+     WHERE user_uid=? AND sync_state != 'synced' AND deleted=0`,
+    [uid]
+  ) as MealRow[];
+  return rows.map(rowToMeal);
+}
+
 export async function getMealsPageLocalByUpdated(
   uid: string,
   limit: number,

@@ -1,6 +1,6 @@
 import type { UserData } from "@/types";
 
-const EDITABLE_PROFILE_FIELDS = new Set<keyof UserData>([
+const EDITABLE_REMOTE_PROFILE_FIELDS = new Set<keyof UserData>([
   "unitsSystem",
   "age",
   "sex",
@@ -26,8 +26,16 @@ const EDITABLE_PROFILE_FIELDS = new Set<keyof UserData>([
   "calorieTarget",
 ]);
 
-export function sanitizeUserProfilePatch(
+const EDITABLE_LOCAL_PROFILE_FIELDS = new Set<keyof UserData>([
+  ...EDITABLE_REMOTE_PROFILE_FIELDS,
+  "darkTheme",
+  "language",
+  "username",
+]);
+
+function sanitizeWithAllowedFields(
   payload: Partial<UserData>,
+  allowedFields: ReadonlySet<keyof UserData>,
 ): Partial<UserData> {
   const patch: Partial<UserData> = {};
   const mutablePatch = patch as Record<
@@ -38,7 +46,7 @@ export function sanitizeUserProfilePatch(
   for (const [key, value] of Object.entries(payload) as Array<
     [keyof UserData, UserData[keyof UserData]]
   >) {
-    if (!EDITABLE_PROFILE_FIELDS.has(key)) {
+    if (!allowedFields.has(key)) {
       continue;
     }
     if (value === undefined) {
@@ -48,4 +56,16 @@ export function sanitizeUserProfilePatch(
   }
 
   return patch;
+}
+
+export function sanitizeUserProfilePatch(
+  payload: Partial<UserData>,
+): Partial<UserData> {
+  return sanitizeWithAllowedFields(payload, EDITABLE_REMOTE_PROFILE_FIELDS);
+}
+
+export function sanitizeUserProfileLocalPatch(
+  payload: Partial<UserData>,
+): Partial<UserData> {
+  return sanitizeWithAllowedFields(payload, EDITABLE_LOCAL_PROFILE_FIELDS);
 }

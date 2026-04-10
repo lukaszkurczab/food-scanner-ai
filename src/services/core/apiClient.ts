@@ -7,6 +7,7 @@ import { withVersion } from "@/services/core/apiVersioning";
 import { readPublicEnv } from "@/services/core/publicEnv";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+const MAX_TIMEOUT_MS = 120_000;
 const API_CLIENT_SOURCE = "ApiClient";
 const MAX_RETRIES = 2;
 const RETRY_BASE_DELAY_MS = 1_000;
@@ -44,7 +45,39 @@ function getApiBaseUrl(): string {
     });
   }
 
-  return baseUrl.replace(/\/+$/, "");
+  let parsed: URL;
+  try {
+    parsed = new URL(baseUrl);
+  } catch (error) {
+    throw createServiceError({
+      code: "api/misconfigured",
+      source: API_CLIENT_SOURCE,
+      retryable: false,
+      message: "Invalid API base URL",
+      cause: error,
+    });
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const isDevHost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "10.0.2.2" ||
+    hostname.startsWith("10.") ||
+    hostname.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
+
+  if (parsed.protocol !== "https:" && !isDevHost) {
+    throw createServiceError({
+      code: "api/misconfigured",
+      source: API_CLIENT_SOURCE,
+      retryable: false,
+      message: "API base URL must use HTTPS outside local development hosts",
+    });
+  }
+
+  return parsed.toString().replace(/\/+$/, "");
 }
 
 function buildRequestUrl(path: string): string {
@@ -80,9 +113,18 @@ async function parseJsonResponse(response: Response): Promise<unknown> {
     return null;
   }
 
+  const contentType = response.headers?.get?.("content-type")?.toLowerCase() || "";
+  const isJsonContentType =
+    contentType.includes("application/json") || contentType.includes("+json");
+
   try {
     return JSON.parse(rawBody);
   } catch (error) {
+    // Some endpoints may return non-JSON payloads (e.g. text/plain) even on success.
+    if (!isJsonContentType) {
+      return rawBody;
+    }
+
     throw createServiceError({
       code: "api/invalid-json",
       source: API_CLIENT_SOURCE,
@@ -91,6 +133,13 @@ async function parseJsonResponse(response: Response): Promise<unknown> {
       cause: error,
     });
   }
+}
+
+function normalizeTimeoutMs(timeout: number | undefined): number {
+  if (!Number.isFinite(timeout)) return DEFAULT_TIMEOUT_MS;
+  const normalized = Math.floor(Number(timeout));
+  if (normalized <= 0) return DEFAULT_TIMEOUT_MS;
+  return Math.min(normalized, MAX_TIMEOUT_MS);
 }
 
 function readErrorMessage(payload: unknown, fallback: string): string {
@@ -236,32 +285,14 @@ async function performRequest<T = unknown>({
   }
 }
 
-export async function request<T = unknown>(
-  method: RequestMethod,
-  url: string,
-  data?: unknown,
-  options?: RequestOptions
+async function withRetry<T>(
+  executor: (attempt: number) => Promise<T>
 ): Promise<T> {
-  const fullUrl = buildRequestUrl(url);
-  const timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT_MS;
-  const body = method === "POST" ? JSON.stringify(data) : undefined;
-
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const authHeader = await getAuthorizationHeader();
-      return await performRequest<T>({
-        url: fullUrl,
-        method,
-        timeoutMs,
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          ...authHeader,
-        },
-        body,
-      });
+      return await executor(attempt);
     } catch (error) {
       lastError = error;
       const apiError = error as Partial<ApiClientError>;
@@ -273,7 +304,6 @@ export async function request<T = unknown>(
         try {
           await getAuthToken(/* forceRefresh= */ true);
         } catch {
-          // If the refresh itself fails there is nothing more we can do.
           break;
         }
         continue;
@@ -293,54 +323,53 @@ export async function request<T = unknown>(
   throw lastError;
 }
 
+export async function request<T = unknown>(
+  method: RequestMethod,
+  url: string,
+  data?: unknown,
+  options?: RequestOptions
+): Promise<T> {
+  const fullUrl = buildRequestUrl(url);
+  const timeoutMs = normalizeTimeoutMs(options?.timeout);
+  const body = method === "POST" ? JSON.stringify(data) : undefined;
+
+  return withRetry(async () => {
+    const authHeader = await getAuthorizationHeader();
+    return performRequest<T>({
+      url: fullUrl,
+      method,
+      timeoutMs,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...authHeader,
+      },
+      body,
+    });
+  });
+}
+
 export async function upload<T = unknown>(
   url: string,
   data: FormData,
   options?: RequestOptions,
 ): Promise<T> {
   const fullUrl = buildRequestUrl(url);
-  const timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT_MS;
-  let lastError: unknown;
+  const timeoutMs = normalizeTimeoutMs(options?.timeout);
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const authHeader = await getAuthorizationHeader();
-      return await performRequest<T>({
-        url: fullUrl,
-        method: "POST",
-        timeoutMs,
-        headers: {
-          Accept: "application/json",
-          ...authHeader,
-        },
-        body: data,
-      });
-    } catch (error) {
-      lastError = error;
-      const apiError = error as Partial<ApiClientError>;
-
-      // On first 401: force-refresh the Firebase token and retry once.
-      if (apiError?.status === 401 && attempt === 0) {
-        try {
-          await getAuthToken(/* forceRefresh= */ true);
-        } catch {
-          break;
-        }
-        continue;
-      }
-
-      // Retry transient errors (5xx, 429, network timeout) with
-      // exponential back-off: 1 s, 2 s.
-      if (apiError?.retryable === true && attempt < MAX_RETRIES) {
-        await sleep(RETRY_BASE_DELAY_MS * 2 ** attempt);
-        continue;
-      }
-
-      break;
-    }
-  }
-
-  throw lastError;
+  return withRetry(async () => {
+    const authHeader = await getAuthorizationHeader();
+    return performRequest<T>({
+      url: fullUrl,
+      method: "POST",
+      timeoutMs,
+      headers: {
+        Accept: "application/json",
+        ...authHeader,
+      },
+      body: data,
+    });
+  });
 }
 
 export function get<T = unknown>(

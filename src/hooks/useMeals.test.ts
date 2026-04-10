@@ -57,6 +57,7 @@ jest.mock("@/services/offline/meals.repo", () => ({
   upsertMealLocal: (meal: Meal) => mockUpsertMealLocal(meal),
   markDeletedLocal: (cloudId: string, now: string) =>
     mockMarkDeletedLocal(cloudId, now),
+  getPendingMealsLocal: () => Promise.resolve([]),
 }));
 
 jest.mock("@/services/offline/myMeals.repo", () => ({

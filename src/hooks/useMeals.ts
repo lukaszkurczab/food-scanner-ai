@@ -6,6 +6,7 @@ import {
   getMealsPageLocal,
   upsertMealLocal,
   markDeletedLocal,
+  getPendingMealsLocal,
 } from "@/services/offline/meals.repo";
 import { upsertMyMealLocal } from "@/services/offline/myMeals.repo";
 import {
@@ -43,6 +44,26 @@ function computeTotals(meal: Pick<Meal, "ingredients">) {
   };
 }
 
+function mealIdentity(meal: Meal): string {
+  return meal.cloudId || meal.mealId || `${meal.timestamp}:${meal.name || ""}`;
+}
+
+function withDerivedMealFields(meal: Meal, fallbackIso: string): Meal {
+  const timestamp = meal.timestamp ?? fallbackIso;
+  const timingMetadata = deriveMealTimingMetadata(timestamp);
+  return {
+    ...meal,
+    timestamp,
+    dayKey: meal.dayKey ?? formatStreakDate(new Date(timestamp)),
+    loggedAtLocalMin: meal.loggedAtLocalMin ?? timingMetadata.loggedAtLocalMin,
+    tzOffsetMin: meal.tzOffsetMin ?? timingMetadata.tzOffsetMin,
+    totals: computeTotals(meal),
+    inputMethod:
+      meal.inputMethod ??
+      (meal.source === "manual" || meal.source === null ? "manual" : null),
+  };
+}
+
 function isLocalUri(u?: string | null): u is string {
   if (!u || typeof u !== "string") return false;
   return u.startsWith("file://") || u.startsWith("content://");
@@ -63,6 +84,9 @@ export function useMeals(userUid: string | null) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const beforeRef = useRef<string | null>(null);
+  const activeUidRef = useRef<string | null>(userUid);
+  const firstPageRequestIdRef = useRef(0);
+  const nextPageInFlightRef = useRef(false);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncInFlightRef = useRef(false);
   const syncRequestedRef = useRef(false);
@@ -144,6 +168,10 @@ export function useMeals(userUid: string | null) {
   );
 
   useEffect(() => {
+    activeUidRef.current = userUid;
+    firstPageRequestIdRef.current += 1;
+    beforeRef.current = null;
+    nextPageInFlightRef.current = false;
     if (syncTimerRef.current) {
       clearTimeout(syncTimerRef.current);
       syncTimerRef.current = null;
@@ -163,6 +191,12 @@ export function useMeals(userUid: string | null) {
   );
 
   const loadFirstPage = useCallback(async () => {
+    const requestUid = userUid;
+    const requestId = ++firstPageRequestIdRef.current;
+
+    const isStale = () =>
+      firstPageRequestIdRef.current !== requestId || activeUidRef.current !== requestUid;
+
     if (!userUid) {
       setMeals([]);
       setLoading(false);
@@ -170,36 +204,55 @@ export function useMeals(userUid: string | null) {
       return;
     }
     setLoading(true);
-    const page = await getMealsPageLocal(userUid, PAGE_LIMIT, undefined);
-    setMeals(page);
-    beforeRef.current = page.length
-      ? String(page[page.length - 1].timestamp)
-      : null;
-    setLoading(false);
+    try {
+      const page = await getMealsPageLocal(userUid, PAGE_LIMIT, undefined);
+      if (isStale()) return;
+      setMeals(page);
+      beforeRef.current = page.length
+        ? String(page[page.length - 1].timestamp)
+        : null;
+    } catch (error: unknown) {
+      if (isStale()) return;
+      log.warn("loadFirstPage failed", error);
+      setMeals([]);
+      beforeRef.current = null;
+    } finally {
+      if (!isStale()) {
+        setLoading(false);
+      }
+    }
   }, [userUid]);
 
   const loadNextPage = useCallback(async () => {
-    if (!userUid || !beforeRef.current) return;
-    const page = await getMealsPageLocal(
-      userUid,
-      PAGE_LIMIT,
-      beforeRef.current,
-    );
-    if (!page.length) {
-      beforeRef.current = null;
-      return;
+    if (!userUid || !beforeRef.current || nextPageInFlightRef.current) return;
+    const requestUid = userUid;
+    const beforeCursor = beforeRef.current;
+    nextPageInFlightRef.current = true;
+    try {
+      const page = await getMealsPageLocal(userUid, PAGE_LIMIT, beforeCursor);
+      if (activeUidRef.current !== requestUid) return;
+      if (!page.length) {
+        beforeRef.current = null;
+        return;
+      }
+      setMeals((prev) => {
+        const existing = new Set(prev.map(mealIdentity));
+        const deduped = page.filter((meal) => !existing.has(mealIdentity(meal)));
+        return [...prev, ...deduped];
+      });
+      beforeRef.current = String(page[page.length - 1].timestamp);
+    } finally {
+      nextPageInFlightRef.current = false;
     }
-    setMeals((prev) => [...prev, ...page]);
-    beforeRef.current = String(page[page.length - 1].timestamp);
   }, [userUid]);
-
-  useEffect(() => {
-    void loadFirstPage();
-  }, [loadFirstPage]);
 
   const getMeals = useCallback(async () => {
     await loadFirstPage();
   }, [loadFirstPage]);
+
+  useEffect(() => {
+    void getMeals();
+  }, [getMeals]);
 
   const addMeal = useCallback(
     async (
@@ -210,11 +263,9 @@ export function useMeals(userUid: string | null) {
       const now = new Date().toISOString();
       const cloudId = meal.cloudId ?? uuidv4();
       const mealId = meal.mealId ?? uuidv4();
-      const totals = computeTotals(meal);
       const timestamp = meal.timestamp ?? now;
-      const timingMetadata = deriveMealTimingMetadata(timestamp);
 
-      const base: Meal = {
+      const base = withDerivedMealFields({
         ...meal,
         userUid,
         cloudId,
@@ -224,15 +275,8 @@ export function useMeals(userUid: string | null) {
         syncState: "pending",
         deleted: false,
         source: meal.source ?? "manual",
-        inputMethod:
-          meal.inputMethod ??
-          (meal.source === "manual" || meal.source === null ? "manual" : null),
         timestamp,
-        dayKey: meal.dayKey ?? formatStreakDate(new Date(timestamp)),
-        loggedAtLocalMin: meal.loggedAtLocalMin ?? timingMetadata.loggedAtLocalMin,
-        tzOffsetMin: meal.tzOffsetMin ?? timingMetadata.tzOffsetMin,
-        totals,
-      };
+      }, now);
 
       const maybeUri = meal.photoUrl;
       if (isLocalUri(maybeUri)) {
@@ -261,11 +305,10 @@ export function useMeals(userUid: string | null) {
       }
 
       scheduleQueuedSync("add");
-
-      await loadFirstPage();
+      setMeals((prev) => [base, ...prev].slice(0, PAGE_LIMIT));
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
     },
-    [userUid, loadFirstPage, scheduleQueuedSync],
+    [userUid, scheduleQueuedSync],
   );
 
   const updateMeal = useCallback(
@@ -294,24 +337,15 @@ export function useMeals(userUid: string | null) {
 
       const now = new Date().toISOString();
       const cloudId = meal.cloudId ?? uuidv4();
-      const totals = computeTotals(meal);
       const timestamp = meal.timestamp ?? now;
-      const timingMetadata = deriveMealTimingMetadata(timestamp);
 
-      const payload: Meal = {
+      const payload = withDerivedMealFields({
         ...meal,
         cloudId,
         updatedAt: now,
         syncState: "pending",
-        inputMethod:
-          meal.inputMethod ??
-          (meal.source === "manual" || meal.source === null ? "manual" : null),
-        totals,
         timestamp,
-        dayKey: meal.dayKey ?? formatStreakDate(new Date(timestamp)),
-        loggedAtLocalMin: meal.loggedAtLocalMin ?? timingMetadata.loggedAtLocalMin,
-        tzOffsetMin: meal.tzOffsetMin ?? timingMetadata.tzOffsetMin,
-      };
+      }, now);
 
       const maybeUri = meal.photoUrl;
       if (isLocalUri(maybeUri)) {
@@ -330,10 +364,11 @@ export function useMeals(userUid: string | null) {
       await enqueueUpsert(userUid, payload);
 
       scheduleQueuedSync("update");
-
-      await loadFirstPage();
+      setMeals((prev) =>
+        prev.map((m) => (m.cloudId === payload.cloudId ? payload : m)),
+      );
     },
-    [userUid, loadFirstPage, scheduleQueuedSync],
+    [userUid, scheduleQueuedSync],
   );
 
   const deleteMeal = useCallback(
@@ -360,9 +395,8 @@ export function useMeals(userUid: string | null) {
       const now = new Date().toISOString();
       const newCloudId = uuidv4();
       const newMealId = uuidv4();
-      const totals = computeTotals(original);
 
-      const copy: Meal = {
+      const copy = withDerivedMealFields({
         ...original,
         userUid,
         cloudId: newCloudId,
@@ -372,8 +406,7 @@ export function useMeals(userUid: string | null) {
         updatedAt: now,
         syncState: "pending",
         deleted: false,
-        totals,
-      };
+      }, now);
 
       await upsertMealLocal(copy);
       emit("meal:added", { uid: userUid, meal: copy });
@@ -381,11 +414,10 @@ export function useMeals(userUid: string | null) {
       await enqueueUpsert(userUid, copy);
 
       scheduleQueuedSync("duplicate");
-
-      await loadFirstPage();
+      setMeals((prev) => [copy, ...prev].slice(0, PAGE_LIMIT));
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
     },
-    [userUid, loadFirstPage, scheduleQueuedSync],
+    [userUid, scheduleQueuedSync],
   );
 
   const syncMeals = useCallback(async () => {
@@ -394,8 +426,9 @@ export function useMeals(userUid: string | null) {
     await flushQueuedSync();
   }, [flushQueuedSync, userUid]);
   const getUnsyncedMeals = useCallback(async () => {
-    return [] as Meal[];
-  }, []);
+    if (!userUid) return [] as Meal[];
+    return getPendingMealsLocal(userUid);
+  }, [userUid]);
 
   return useMemo(
     () => ({

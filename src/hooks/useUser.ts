@@ -27,7 +27,10 @@ import {
   retryDeadLetterOps,
 } from "@/services/offline/queue.repo";
 import { pushQueue } from "@/services/offline/sync.engine";
-import { sanitizeUserProfilePatch } from "@/services/user/profilePatch";
+import {
+  sanitizeUserProfileLocalPatch,
+  sanitizeUserProfilePatch,
+} from "@/services/user/profilePatch";
 import i18n from "@/i18n";
 import type { QueueKind } from "@/services/offline/queue.repo";
 
@@ -52,11 +55,24 @@ function avatarCachePath(uid: string): string {
 
 async function cacheAvatarFromRemote(
   uid: string,
-  avatarUrl: string
+  avatarUrl: string,
+  signal?: AbortSignal
 ): Promise<string> {
+  const createAbortError = () => {
+    const error = new Error("Avatar hydration aborted");
+    error.name = "AbortError";
+    return error;
+  };
+  const throwIfAborted = () => {
+    if (signal?.aborted) {
+      throw createAbortError();
+    }
+  };
   const targetPath = avatarCachePath(uid);
   const tmpPath = `${targetPath}.tmp`;
   const dirPath = targetPath.slice(0, targetPath.lastIndexOf("/") + 1);
+
+  throwIfAborted();
 
   const dirInfo = await FileSystem.getInfoAsync(dirPath);
   if (!dirInfo.exists) {
@@ -72,9 +88,21 @@ async function cacheAvatarFromRemote(
     // Ignore stale tmp cleanup failures.
   }
 
+  let downloadResumable: ReturnType<typeof FileSystem.createDownloadResumable> | null =
+    null;
+  const onAbort = () => {
+    if (!downloadResumable) return;
+    void downloadResumable.pauseAsync().catch(() => {
+      // Ignore pause failures while cancelling stale hydration.
+    });
+  };
+  signal?.addEventListener("abort", onAbort);
+
   try {
-    const dl = FileSystem.createDownloadResumable(avatarUrl, tmpPath);
-    const result = await dl.downloadAsync();
+    throwIfAborted();
+    downloadResumable = FileSystem.createDownloadResumable(avatarUrl, tmpPath);
+    const result = await downloadResumable.downloadAsync();
+    throwIfAborted();
     const ok = !!result && result.status >= 200 && result.status < 300;
     if (!ok) {
       throw new Error("Avatar download failed");
@@ -89,6 +117,7 @@ async function cacheAvatarFromRemote(
       // Ignore stale target cleanup failures.
     }
 
+    throwIfAborted();
     await FileSystem.moveAsync({ from: tmpPath, to: targetPath });
     return targetPath;
   } catch (error) {
@@ -101,6 +130,8 @@ async function cacheAvatarFromRemote(
       // Ignore tmp cleanup failures on failed download.
     }
     throw error;
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
   }
 }
 
@@ -119,6 +150,80 @@ async function resolveExistingAvatarPath(
   return "";
 }
 
+const profileCacheLocks = new Map<string, Promise<void>>();
+
+async function withProfileCacheLock<T>(
+  uid: string,
+  task: () => Promise<T>
+): Promise<T> {
+  const previous = profileCacheLocks.get(uid) ?? Promise.resolve();
+  let release: () => void = () => {};
+  const next = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  profileCacheLocks.set(uid, next);
+
+  await previous.catch(() => {});
+  try {
+    return await task();
+  } finally {
+    release();
+    if (profileCacheLocks.get(uid) === next) {
+      profileCacheLocks.delete(uid);
+    }
+  }
+}
+
+function profileCacheKey(uid: string): string {
+  return `user:profile:${uid}`;
+}
+
+async function readProfileCache(uid: string): Promise<UserData | null> {
+  try {
+    const cached = await AsyncStorage.getItem(profileCacheKey(uid));
+    if (!cached) return null;
+    return JSON.parse(cached) as UserData;
+  } catch {
+    return null;
+  }
+}
+
+async function writeProfileCache(uid: string, profile: UserData): Promise<void> {
+  try {
+    await AsyncStorage.setItem(profileCacheKey(uid), JSON.stringify(profile));
+  } catch {
+    // Ignore cache write failures for profile mirror.
+  }
+}
+
+async function mergeProfileCache(
+  uid: string,
+  patch: Record<string, unknown>
+): Promise<void> {
+  return withProfileCacheLock(uid, async () => {
+    const cacheKey = profileCacheKey(uid);
+    let parsedCurrent: Record<string, unknown> = {};
+
+    try {
+      const current = await AsyncStorage.getItem(cacheKey);
+      if (current) {
+        try {
+          parsedCurrent = JSON.parse(current) as Record<string, unknown>;
+        } catch {
+          parsedCurrent = {};
+        }
+      }
+
+      await AsyncStorage.setItem(
+        cacheKey,
+        JSON.stringify({ ...parsedCurrent, ...patch })
+      );
+    } catch {
+      // Ignore cache write failures for profile mirror.
+    }
+  });
+}
+
 export function useUser(uid: string) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,18 +238,32 @@ export function useUser(uid: string) {
   const userDataRef = useRef<UserData | null>(null);
   const avatarHydrationUrlRef = useRef<string>("");
   const latestAvatarRequestUrlRef = useRef<string>("");
+  const avatarHydrationAbortControllerRef = useRef<AbortController | null>(null);
   const currentUidRef = useRef(uid);
   const lastSeenAvatarUrlRef = useRef<string>("");
 
   useEffect(() => {
-    currentUidRef.current = uid;
-    if (!uid) {
+    const uidChanged = currentUidRef.current !== uid;
+    if (uidChanged) {
+      avatarHydrationAbortControllerRef.current?.abort();
+      avatarHydrationAbortControllerRef.current = null;
       avatarHydrationUrlRef.current = "";
       latestAvatarRequestUrlRef.current = "";
       lastSeenAvatarUrlRef.current = "";
+    }
+
+    currentUidRef.current = uid;
+    if (!uid) {
       setSyncState("synced");
     }
   }, [uid]);
+
+  useEffect(() => {
+    return () => {
+      avatarHydrationAbortControllerRef.current?.abort();
+      avatarHydrationAbortControllerRef.current = null;
+    };
+  }, []);
 
   const refreshProfileSyncState = useCallback(async () => {
     if (!uid) {
@@ -162,19 +281,32 @@ export function useUser(uid: string) {
   const hydrateAvatarFromRemote = useCallback(
     async ({
       avatarUrl,
-      cacheKey,
     }: {
       avatarUrl: string | null | undefined;
-      cacheKey: string;
     }) => {
       const requestUid = uid;
       if (!requestUid || !avatarUrl || !/^https?:\/\//i.test(avatarUrl)) return;
-      if (avatarHydrationUrlRef.current === avatarUrl) return;
+      if (
+        avatarHydrationUrlRef.current === avatarUrl &&
+        avatarHydrationAbortControllerRef.current &&
+        !avatarHydrationAbortControllerRef.current.signal.aborted
+      ) {
+        return;
+      }
+
+      avatarHydrationAbortControllerRef.current?.abort();
+      const controller = new AbortController();
+      avatarHydrationAbortControllerRef.current = controller;
 
       latestAvatarRequestUrlRef.current = avatarUrl;
       avatarHydrationUrlRef.current = avatarUrl;
       try {
-        const localPath = await cacheAvatarFromRemote(requestUid, avatarUrl);
+        const localPath = await cacheAvatarFromRemote(
+          requestUid,
+          avatarUrl,
+          controller.signal
+        );
+        if (controller.signal.aborted) return;
         const existingPath = await resolveExistingAvatarPath(localPath);
         if (!existingPath) return;
         if (currentUidRef.current !== requestUid) return;
@@ -187,24 +319,17 @@ export function useUser(uid: string) {
             : prev
         );
 
-        try {
-          const current = await AsyncStorage.getItem(cacheKey);
-          if (currentUidRef.current !== requestUid) return;
-          if (latestAvatarRequestUrlRef.current !== avatarUrl) return;
-          const parsedCurrent = current
-            ? (JSON.parse(current) as Record<string, unknown>)
-            : {};
-          await AsyncStorage.setItem(
-            cacheKey,
-            JSON.stringify({ ...parsedCurrent, avatarLocalPath: existingPath })
-          );
-        } catch {
-          // Ignore cache mirror failures for avatar hydration.
+        if (currentUidRef.current !== requestUid) return;
+        if (latestAvatarRequestUrlRef.current !== avatarUrl) return;
+        await mergeProfileCache(requestUid, { avatarLocalPath: existingPath });
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
         }
-      } catch {
         // Keep fallback rendering when remote hydration fails.
       } finally {
-        if (avatarHydrationUrlRef.current === avatarUrl) {
+        if (avatarHydrationAbortControllerRef.current === controller) {
+          avatarHydrationAbortControllerRef.current = null;
           avatarHydrationUrlRef.current = "";
         }
       }
@@ -216,11 +341,9 @@ export function useUser(uid: string) {
     ({
       avatarUrl,
       avatarLocalPath,
-      cacheKey,
     }: {
       avatarUrl?: string;
       avatarLocalPath: string;
-      cacheKey: string;
     }) => {
       const nextUrl = avatarUrl || "";
       const prevUrl = lastSeenAvatarUrlRef.current;
@@ -231,7 +354,6 @@ export function useUser(uid: string) {
       if (nextUrl && (!avatarLocalPath || urlChanged)) {
         void hydrateAvatarFromRemote({
           avatarUrl: nextUrl,
-          cacheKey,
         });
       }
     },
@@ -253,13 +375,10 @@ export function useUser(uid: string) {
       return;
     }
 
-    const cacheKey = `user:profile:${uid}`;
-
     (async () => {
       try {
-        const cached = await AsyncStorage.getItem(cacheKey);
-        if (cached) {
-          const parsed = JSON.parse(cached) as UserData;
+        const parsed = await readProfileCache(uid);
+        if (parsed) {
           const avatarLocalPath = await resolveExistingAvatarPath(
             parsed.avatarLocalPath
           );
@@ -271,12 +390,9 @@ export function useUser(uid: string) {
           maybeHydrateAvatar({
             avatarUrl: normalized.avatarUrl,
             avatarLocalPath,
-            cacheKey,
           });
           if ((parsed.avatarLocalPath || "") !== avatarLocalPath) {
-            AsyncStorage.setItem(cacheKey, JSON.stringify(normalized)).catch(
-              () => {}
-            );
+            void writeProfileCache(uid, normalized);
           }
         }
       } catch {
@@ -306,11 +422,8 @@ export function useUser(uid: string) {
         maybeHydrateAvatar({
           avatarUrl: normalized.avatarUrl,
           avatarLocalPath,
-          cacheKey,
         });
-        AsyncStorage.setItem(cacheKey, JSON.stringify(normalized)).catch(
-          () => {}
-        );
+        void writeProfileCache(uid, normalized);
       })();
       },
     });
@@ -330,12 +443,10 @@ export function useUser(uid: string) {
 
   const fetchUserFromCloud = useCallback(async () => {
     if (!uid) return null;
-    const cacheKey = `user:profile:${uid}`;
     const readCached = async () => {
       try {
-        const cached = await AsyncStorage.getItem(cacheKey);
-        if (!cached) return null;
-        const parsed = JSON.parse(cached) as UserData;
+        const parsed = await readProfileCache(uid);
+        if (!parsed) return null;
         const avatarLocalPath = await resolveExistingAvatarPath(
           avatarLocalPathRef.current,
           parsed.avatarLocalPath
@@ -347,7 +458,6 @@ export function useUser(uid: string) {
         maybeHydrateAvatar({
           avatarUrl: normalized.avatarUrl,
           avatarLocalPath,
-          cacheKey,
         });
         return normalized;
       } catch {
@@ -373,9 +483,8 @@ export function useUser(uid: string) {
       maybeHydrateAvatar({
         avatarUrl: normalized.avatarUrl,
         avatarLocalPath,
-        cacheKey,
       });
-      AsyncStorage.setItem(cacheKey, JSON.stringify(normalized)).catch(() => {});
+      void writeProfileCache(uid, normalized);
       return normalized;
     } catch {
       return (await readCached()) || userDataRef.current;
@@ -393,36 +502,22 @@ export function useUser(uid: string) {
   const updateUserProfile = useCallback(
     async (patch: Partial<UserData>) => {
       if (!uid) return;
+      const localPatch = sanitizeUserProfileLocalPatch(patch);
       const payload = sanitizeUserProfilePatch(patch);
       assertNoUndefined(payload, "updateUserProfile payload");
 
       setUserData((prev) =>
-        prev ? { ...prev, ...patch } : ({ uid, ...patch } as UserData)
+        prev ? { ...prev, ...localPatch } : ({ uid, ...localPatch } as UserData)
       );
-      if (patch.language) {
-        const nextLanguage = normalizeLanguageCode(patch.language);
+      if (localPatch.language) {
+        const nextLanguage = normalizeLanguageCode(localPatch.language);
         setLanguage(nextLanguage);
         i18n.changeLanguage(nextLanguage).catch(() => {
           // Ignore language persistence errors from i18n detector.
         });
       }
 
-      try {
-        const current = await AsyncStorage.getItem(`user:profile:${uid}`);
-        const parsedCurrent = current
-          ? (JSON.parse(current) as Record<string, unknown>)
-          : {};
-        const merged = {
-          ...parsedCurrent,
-          ...patch,
-        };
-        await AsyncStorage.setItem(
-          `user:profile:${uid}`,
-          JSON.stringify(merged)
-        );
-      } catch {
-        // Ignore cache write failures for profile mirror.
-      }
+      await mergeProfileCache(uid, localPatch as Record<string, unknown>);
 
       if (Object.keys(payload).length === 0) return;
       await enqueueUserProfileUpdate(uid, payload, {
@@ -440,18 +535,7 @@ export function useUser(uid: string) {
         prev ? { ...prev, ...patch } : ({ uid, ...patch } as UserData)
       );
 
-      try {
-        const current = await AsyncStorage.getItem(`user:profile:${uid}`);
-        const parsedCurrent = current
-          ? (JSON.parse(current) as Record<string, unknown>)
-          : {};
-        await AsyncStorage.setItem(
-          `user:profile:${uid}`,
-          JSON.stringify({ ...parsedCurrent, ...patch })
-        );
-      } catch {
-        // Ignore cache write failures for profile mirror.
-      }
+      await mergeProfileCache(uid, patch as Record<string, unknown>);
     },
     [uid]
   );
@@ -620,30 +704,39 @@ export function useUser(uid: string) {
     const mm = String(now.getMonth() + 1).padStart(2, "0");
     const dd = String(now.getDate()).padStart(2, "0");
     const filename = `fitaly_user_data_${yyyy}-${mm}-${dd}.pdf`;
-
-    if (Platform.OS === "android" && FileSystem.StorageAccessFramework) {
-      try {
-        const perm =
-          await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-        if (perm.granted && perm.directoryUri) {
-          const fileUri =
-            await FileSystem.StorageAccessFramework.createFileAsync(
-              perm.directoryUri,
-              filename,
-              "application/pdf"
-            );
-          const pdfBase64 = await FileSystem.readAsStringAsync(tmpPdf, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          await FileSystem.writeAsStringAsync(fileUri, pdfBase64, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          await Sharing.shareAsync(fileUri, {
-            mimeType: "application/pdf",
-            dialogTitle: "Fitaly – PDF",
-          });
-          return fileUri;
-        } else {
+    try {
+      if (Platform.OS === "android" && FileSystem.StorageAccessFramework) {
+        try {
+          const perm =
+            await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+          if (perm.granted && perm.directoryUri) {
+            const fileUri =
+              await FileSystem.StorageAccessFramework.createFileAsync(
+                perm.directoryUri,
+                filename,
+                "application/pdf"
+              );
+            const pdfBase64 = await FileSystem.readAsStringAsync(tmpPdf, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            await FileSystem.writeAsStringAsync(fileUri, pdfBase64, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            await Sharing.shareAsync(fileUri, {
+              mimeType: "application/pdf",
+              dialogTitle: "Fitaly – PDF",
+            });
+            return fileUri;
+          } else {
+            const fallback = FileSystem.documentDirectory! + filename;
+            await FileSystem.copyAsync({ from: tmpPdf, to: fallback });
+            await Sharing.shareAsync(fallback, {
+              mimeType: "application/pdf",
+              dialogTitle: "Fitaly – PDF",
+            });
+            return fallback;
+          }
+        } catch {
           const fallback = FileSystem.documentDirectory! + filename;
           await FileSystem.copyAsync({ from: tmpPdf, to: fallback });
           await Sharing.shareAsync(fallback, {
@@ -652,23 +745,19 @@ export function useUser(uid: string) {
           });
           return fallback;
         }
-      } catch {
-        const fallback = FileSystem.documentDirectory! + filename;
-        await FileSystem.copyAsync({ from: tmpPdf, to: fallback });
-        await Sharing.shareAsync(fallback, {
+      } else {
+        const dest = FileSystem.documentDirectory! + filename;
+        await FileSystem.copyAsync({ from: tmpPdf, to: dest });
+        await Sharing.shareAsync(dest, {
           mimeType: "application/pdf",
           dialogTitle: "Fitaly – PDF",
         });
-        return fallback;
+        return dest;
       }
-    } else {
-      const dest = FileSystem.documentDirectory! + filename;
-      await FileSystem.copyAsync({ from: tmpPdf, to: dest });
-      await Sharing.shareAsync(dest, {
-        mimeType: "application/pdf",
-        dialogTitle: "Fitaly – PDF",
+    } finally {
+      FileSystem.deleteAsync(tmpPdf, { idempotent: true }).catch(() => {
+        // Ignore tmp cleanup failures for export flow.
       });
-      return dest;
     }
   }, [uid]);
 

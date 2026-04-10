@@ -6,7 +6,12 @@ import {
   jest,
 } from "@jest/globals";
 
-import { authLogout, authRegister } from "@/feature/Auth/services/authService";
+import {
+  authLogin,
+  authLogout,
+  authRegister,
+  authSendPasswordReset,
+} from "@/feature/Auth/services/authService";
 
 const mockGetAuth = jest.fn<(...args: unknown[]) => unknown>();
 const mockCreateUserWithEmailAndPassword = jest.fn<
@@ -16,6 +21,10 @@ const mockClaimUsername = jest.fn<(...args: unknown[]) => Promise<string>>();
 const mockCreateInitialUserProfile = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockDelete = jest.fn<() => Promise<void>>();
 const mockSignOut = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockSignInWithEmailAndPassword = jest.fn<
+  (...args: unknown[]) => Promise<{ user: { uid: string } }>
+>();
+const mockSendPasswordResetEmail = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockGetAllKeys = jest.fn<() => Promise<string[]>>();
 const mockMultiRemove = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockStopSyncLoop = jest.fn<() => void>();
@@ -34,8 +43,10 @@ jest.mock("@react-native-firebase/app", () => ({
 jest.mock("@react-native-firebase/auth", () => ({
   getAuth: (...args: unknown[]) => mockGetAuth(...args),
   signOut: (...args: unknown[]) => mockSignOut(...args),
-  signInWithEmailAndPassword: jest.fn(),
-  sendPasswordResetEmail: jest.fn(),
+  signInWithEmailAndPassword: (...args: unknown[]) =>
+    mockSignInWithEmailAndPassword(...args),
+  sendPasswordResetEmail: (...args: unknown[]) =>
+    mockSendPasswordResetEmail(...args),
   createUserWithEmailAndPassword: (...args: unknown[]) =>
     mockCreateUserWithEmailAndPassword(...args),
 }));
@@ -96,6 +107,10 @@ describe("authService", () => {
     mockGetAuth.mockReturnValue({ app: "auth", currentUser: { uid: "user-1" } });
     mockDelete.mockResolvedValue(undefined);
     mockSignOut.mockResolvedValue(undefined);
+    mockSignInWithEmailAndPassword.mockResolvedValue({
+      user: { uid: "user-1" },
+    });
+    mockSendPasswordResetEmail.mockResolvedValue(undefined);
     mockGetAllKeys.mockResolvedValue([]);
     mockMultiRemove.mockResolvedValue(undefined);
     mockStopSyncLoop.mockReset();
@@ -123,6 +138,28 @@ describe("authService", () => {
     expect(mockClaimUsername).toHaveBeenCalledWith("Neo", "user-1");
     expect(mockCreateInitialUserProfile).toHaveBeenCalledWith(user, "Neo", "pl");
     expect(user.uid).toBe("user-1");
+  });
+
+  it("normalizes auth input emails and username before calling providers", async () => {
+    await authLogin("  USER@Example.COM ", "Strong1!");
+    await authSendPasswordReset("  USER@Example.COM ");
+    await authRegister("  USER@Example.COM ", "Strong1!", "  Neo  ");
+
+    expect(mockSignInWithEmailAndPassword).toHaveBeenCalledWith(
+      expect.anything(),
+      "user@example.com",
+      "Strong1!",
+    );
+    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      "user@example.com",
+    );
+    expect(mockCreateUserWithEmailAndPassword).toHaveBeenCalledWith(
+      expect.anything(),
+      "user@example.com",
+      "Strong1!",
+    );
+    expect(mockClaimUsername).toHaveBeenCalledWith("Neo", "user-1");
   });
 
   it("normalizes region language and falls back to en for unsupported values", async () => {
@@ -178,5 +215,16 @@ describe("authService", () => {
       "notif:sys:ids:user-1:stats",
       "premium_status:anon",
     ]);
+  });
+
+  it("still runs local cleanup when signOut fails", async () => {
+    mockSignOut.mockRejectedValueOnce(new Error("signout-failed"));
+
+    await expect(authLogout()).rejects.toThrow("signout-failed");
+
+    expect(mockStopSyncLoop).toHaveBeenCalled();
+    expect(mockCancelAllReminderScheduling).toHaveBeenCalledWith("user-1");
+    expect(mockResetOfflineStorage).toHaveBeenCalled();
+    expect(mockCleanupUserOfflineAssets).toHaveBeenCalledWith("user-1");
   });
 });

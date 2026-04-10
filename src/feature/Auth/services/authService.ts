@@ -8,7 +8,8 @@ import {
   createUserWithEmailAndPassword,
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
-import { claimUsername } from "@/services/user/usernameService";
+import { claimUsername, releaseUsername } from "@/services/user/usernameService";
+import { logError } from "@/services/core/errorLogger";
 import { cancelAllReminderScheduling } from "@/services/reminders/reminderScheduling";
 import { createInitialUserProfile } from "@/services/user/userService";
 import { stopSyncLoop } from "@/services/offline/sync.engine";
@@ -21,6 +22,14 @@ function resolveInitialLanguage(language: string | undefined): "en" | "pl" {
   if (normalized === "pl" || normalized.startsWith("pl-")) return "pl";
   if (normalized === "en" || normalized.startsWith("en-")) return "en";
   return "en";
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function normalizeUsername(username: string): string {
+  return username.trim();
 }
 
 function shouldClearUserScopedKey(key: string, uid: string): boolean {
@@ -50,31 +59,53 @@ async function clearScopedAsyncStorage(uid: string | null): Promise<void> {
 
 export async function authLogin(email: string, password: string) {
   const auth = getAuth(getApp());
-  const cred = await signInWithEmailAndPassword(auth, email, password);
+  const cred = await signInWithEmailAndPassword(
+    auth,
+    normalizeEmail(email),
+    password
+  );
   return cred.user;
 }
 
 export async function authSendPasswordReset(email: string) {
   const auth = getAuth(getApp());
-  await sendPasswordResetEmail(auth, email);
+  await sendPasswordResetEmail(auth, normalizeEmail(email));
 }
 
 export async function authLogout(): Promise<void> {
   const auth = getAuth(getApp());
   const uid = auth.currentUser?.uid ?? null;
+  let signOutError: unknown = null;
 
-  await signOut(auth);
+  try {
+    await signOut(auth);
+  } catch (error) {
+    signOutError = error;
+  }
+
   stopSyncLoop();
   if (uid) {
-    await cancelAllReminderScheduling(uid);
+    try {
+      await cancelAllReminderScheduling(uid);
+    } catch {
+      // Reminder cleanup is best-effort on logout.
+    }
   }
   try {
     resetOfflineStorage();
   } catch {
     // Offline reset is best-effort.
   }
-  await cleanupUserOfflineAssets(uid);
+  try {
+    await cleanupUserOfflineAssets(uid);
+  } catch {
+    // Filesystem cleanup is best-effort.
+  }
   await clearScopedAsyncStorage(uid);
+
+  if (signOutError) {
+    throw signOutError;
+  }
 }
 
 export async function authRegister(
@@ -83,20 +114,39 @@ export async function authRegister(
   username: string
 ): Promise<FirebaseAuthTypes.User> {
   const auth = getAuth(getApp());
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedUsername = normalizeUsername(username);
+  const cred = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
 
+  let usernameClaimed = false;
   try {
-    await claimUsername(username, cred.user.uid);
+    await claimUsername(normalizedUsername, cred.user.uid);
+    usernameClaimed = true;
     const initialLanguage = resolveInitialLanguage(
       i18n.resolvedLanguage ?? i18n.language,
     );
-    await createInitialUserProfile(cred.user, username, initialLanguage);
+    await createInitialUserProfile(cred.user, normalizedUsername, initialLanguage);
     return cred.user;
   } catch (e) {
+    if (usernameClaimed) {
+      try {
+        await releaseUsername();
+      } catch (releaseError) {
+        logError(
+          "authRegister: failed to release username after profile creation failure",
+          { uid: cred.user.uid, username: normalizedUsername },
+          releaseError,
+        );
+      }
+    }
     try {
       await cred.user.delete();
-    } catch {
-      // Best-effort rollback if profile creation fails.
+    } catch (deleteError) {
+      logError(
+        "authRegister: failed to delete Firebase user during rollback — zombie user requires manual cleanup",
+        { uid: cred.user.uid },
+        deleteError,
+      );
     }
     throw e;
   }

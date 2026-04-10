@@ -642,7 +642,7 @@ describe("offline sync.engine", () => {
 
     await pullChatChanges("user-1");
 
-    expect(mockGet).toHaveBeenNthCalledWith(1, "/users/me/chat/threads?limit=20");
+    expect(mockGet).toHaveBeenNthCalledWith(1, "/users/me/chat/threads?limit=100");
     expect(mockGet).toHaveBeenNthCalledWith(
       2,
       "/users/me/chat/threads/thread-1/messages?limit=50",
@@ -699,5 +699,75 @@ describe("offline sync.engine", () => {
     expect(mockUpsertChatThreadLocal).not.toHaveBeenCalled();
     expect(mockGet).toHaveBeenCalledTimes(1);
     expect(mockSetItem).toHaveBeenCalledWith("sync:last_pull_chat:user-1", "2000");
+  });
+
+  it("paginates chat threads when backend returns nextBeforeUpdatedAt cursor", async () => {
+    mockGetItem.mockImplementation((key: unknown) =>
+      Promise.resolve(key === "sync:last_pull_chat:user-1" ? "1200" : null),
+    );
+    mockGetChatThreadByIdLocal.mockResolvedValue(null);
+    mockGet
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "thread-1",
+            title: "First page",
+            createdAt: 1000,
+            updatedAt: 1900,
+            lastMessage: "hello 1",
+            lastMessageAt: 1900,
+          },
+        ],
+        nextBeforeUpdatedAt: 1800,
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "msg-1",
+            role: "assistant",
+            content: "hello 1",
+            createdAt: 1900,
+            lastSyncedAt: 1900,
+            deleted: false,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "thread-2",
+            title: "Second page",
+            createdAt: 1100,
+            updatedAt: 1700,
+            lastMessage: "hello 2",
+            lastMessageAt: 1700,
+          },
+        ],
+        nextBeforeUpdatedAt: null,
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "msg-2",
+            role: "assistant",
+            content: "hello 2",
+            createdAt: 1700,
+            lastSyncedAt: 1700,
+            deleted: false,
+          },
+        ],
+      });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { pullChatChanges } = require("@/services/offline/sync.engine");
+
+    await pullChatChanges("user-1");
+
+    expect(mockGet).toHaveBeenCalledWith("/users/me/chat/threads?limit=100");
+    expect(mockGet).toHaveBeenCalledWith(
+      "/users/me/chat/threads?limit=100&beforeUpdatedAt=1800",
+    );
+    expect(mockUpsertChatThreadLocal).toHaveBeenCalledTimes(2);
+    expect(mockSetItem).toHaveBeenCalledWith("sync:last_pull_chat:user-1", "1900");
   });
 });

@@ -179,9 +179,35 @@ jest.mock("@/services/core/events", () => ({
 jest.mock("@/services/user/profilePatch", () => ({
   sanitizeUserProfilePatch: (patch: Partial<UserData>) => {
     const next = { ...patch };
+    delete next.uid;
+    delete next.username;
+    delete next.email;
+    delete next.plan;
+    delete next.createdAt;
+    delete next.lastLogin;
+    delete next.syncState;
+    delete next.lastSyncedAt;
+    delete next.avatarUrl;
+    delete next.avatarlastSyncedAt;
     delete next.language;
     delete next.darkTheme;
     delete next.avatarLocalPath;
+    return Object.fromEntries(
+      Object.entries(next).filter(([, value]) => value !== undefined),
+    );
+  },
+  sanitizeUserProfileLocalPatch: (patch: Partial<UserData>) => {
+    const next = { ...patch };
+    delete next.uid;
+    delete next.email;
+    delete next.plan;
+    delete next.createdAt;
+    delete next.lastLogin;
+    delete next.syncState;
+    delete next.lastSyncedAt;
+    delete next.avatarUrl;
+    delete next.avatarLocalPath;
+    delete next.avatarlastSyncedAt;
     return Object.fromEntries(
       Object.entries(next).filter(([, value]) => value !== undefined),
     );
@@ -590,6 +616,69 @@ describe("useUser", () => {
     );
     expect(mockPushQueue).toHaveBeenCalledWith("u1");
     expect(result.current.userData?.age).toBe("31");
+  });
+
+  it("sanitizes local profile patch and blocks protected fields from overriding cache/state", async () => {
+    const cachedProfile = createUser({
+      avatarUrl: "https://cdn.safe/avatar.jpg",
+      avatarlastSyncedAt: "2026-03-10T10:00:00.000Z",
+      createdAt: 1,
+    });
+    mockAsyncStorageGetItem.mockImplementation((key: unknown) =>
+      Promise.resolve(
+        key === "user:profile:u1" ? JSON.stringify(cachedProfile) : null,
+      ),
+    );
+
+    const { result } = renderHook(() => useUser("u1"));
+
+    await act(async () => {
+      emitSnapshot(cachedProfile);
+    });
+
+    mockAsyncStorageSetItem.mockClear();
+
+    await act(async () => {
+      await result.current.updateUserProfile({
+        uid: "attacker",
+        username: "neo-2",
+        age: "33",
+        avatarUrl: "https://evil.example/avatar.jpg",
+        avatarlastSyncedAt: "9999-01-01T00:00:00.000Z",
+        createdAt: 999999,
+      });
+    });
+
+    expect(result.current.userData).toEqual(
+      expect.objectContaining({
+        uid: "u1",
+        username: "neo-2",
+        age: "33",
+        createdAt: 1,
+        avatarUrl: "https://cdn.safe/avatar.jpg",
+        avatarlastSyncedAt: "2026-03-10T10:00:00.000Z",
+      }),
+    );
+    expect(mockEnqueueUserProfileUpdate).toHaveBeenCalledWith(
+      "u1",
+      { age: "33" },
+      expect.objectContaining({
+        updatedAt: expect.any(String),
+      }),
+    );
+
+    const lastCacheWrite = mockAsyncStorageSetItem.mock.calls.at(-1) as
+      | [string, string]
+      | undefined;
+    expect(lastCacheWrite).toBeDefined();
+    expect(lastCacheWrite?.[0]).toBe("user:profile:u1");
+    const parsed = JSON.parse(lastCacheWrite?.[1] ?? "{}") as Partial<UserData>;
+    expect(parsed.uid).toBe("u1");
+    expect(parsed.createdAt).toBe(1);
+    expect(parsed.avatarUrl).toBe("https://cdn.safe/avatar.jpg");
+    expect(parsed.avatarlastSyncedAt).toBe("2026-03-10T10:00:00.000Z");
+    expect(parsed.age).toBe("33");
+    expect(parsed.username).toBe("neo-2");
   });
 
   it("queues profile update while offline without immediate push", async () => {

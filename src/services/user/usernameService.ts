@@ -1,4 +1,4 @@
-import { get, post } from "@/services/core/apiClient";
+import { get, post, request } from "@/services/core/apiClient";
 import {
   createServiceError,
   getErrorStatus,
@@ -25,6 +25,10 @@ export async function isUsernameAvailable(
   );
 
   return response.available;
+}
+
+export async function releaseUsername(): Promise<void> {
+  await request("DELETE", "/users/me/username");
 }
 
 export async function claimUsername(

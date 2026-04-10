@@ -57,10 +57,14 @@ const log = Sync;
 const PULL_PAGE_SIZE = 100;
 const PUSH_BATCH_SIZE = 25;
 const LOOP_INTERVAL_MS = 5 * 60 * 1000;
+const CHAT_THREADS_PAGE_SIZE = 100;
 
 let loopTimer: ReturnType<typeof setInterval> | null = null;
 let netUnsub: null | (() => void) = null;
 let running = false;
+let loopRunToken = 0;
+let activeLoopUid: string | null = null;
+const uidSyncLocks = new Map<string, Promise<void>>();
 
 type MealPayload = Partial<Meal> & { cloudId?: string | null; mealId?: string | null };
 type ChatThreadApiItem = {
@@ -73,6 +77,8 @@ type ChatThreadApiItem = {
 };
 type ChatThreadsPageApiResponse = {
   items?: ChatThreadApiItem[];
+  nextBeforeUpdatedAt?: number | null;
+  nextCursor?: string | null;
 };
 type ChatMessageApiItem = {
   id: string;
@@ -110,6 +116,25 @@ function toSyncError(error: unknown) {
 function toMealPayload(payload: unknown): MealPayload | null {
   if (!payload || typeof payload !== "object") return null;
   return payload as MealPayload;
+}
+
+async function withUidSyncLock<T>(uid: string, task: () => Promise<T>): Promise<T> {
+  const previous = uidSyncLocks.get(uid) ?? Promise.resolve();
+  let release: () => void = () => {};
+  const next = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  uidSyncLocks.set(uid, next);
+
+  await previous.catch(() => {});
+  try {
+    return await task();
+  } finally {
+    release();
+    if (uidSyncLocks.get(uid) === next) {
+      uidSyncLocks.delete(uid);
+    }
+  }
 }
 
 function toMealSource(value: string | null): Meal["source"] {
@@ -209,11 +234,16 @@ function toChatThreadRole(
 export function startSyncLoop(uid: string) {
   if (!uid) return;
   stopSyncLoop();
+  activeLoopUid = uid;
+  const runToken = ++loopRunToken;
+  const isStale = () => runToken !== loopRunToken || activeLoopUid !== uid;
 
   const run = async () => {
+    if (isStale()) return;
     const loopLog = log.child("loop");
     loopLog.log("run:start", { uid });
     const net = await NetInfo.fetch();
+    if (isStale()) return;
     loopLog.log("net:state", { isConnected: net.isConnected });
     if (!net.isConnected) {
       loopLog.log("skip:offline");
@@ -225,10 +255,15 @@ export function startSyncLoop(uid: string) {
     }
     running = true;
     try {
+      if (isStale()) return;
       await processImageUploads(uid);
+      if (isStale()) return;
       await pushQueue(uid);
+      if (isStale()) return;
       await pullChanges(uid);
+      if (isStale()) return;
       await pullMyMealChanges(uid);
+      if (isStale()) return;
       await pullChatChanges(uid);
       loopLog.log("run:done");
     } catch (e: unknown) {
@@ -258,6 +293,8 @@ export function startSyncLoop(uid: string) {
 }
 
 export function stopSyncLoop() {
+  loopRunToken += 1;
+  activeLoopUid = null;
   if (loopTimer) {
     clearInterval(loopTimer);
     loopTimer = null;
@@ -268,27 +305,36 @@ export function stopSyncLoop() {
     netUnsub = null;
     log.log("net:unsubscribed");
   }
+  running = false;
+}
+
+export function getSyncStatus(): { running: boolean; hasTimer: boolean } {
+  return {
+    running,
+    hasTimer: loopTimer !== null,
+  };
 }
 
 export async function pushQueue(uid: string): Promise<void> {
-  const pushLog = log.child("push");
-  const net = await NetInfo.fetch();
-  pushLog.log("start", { uid, isConnected: net.isConnected });
-  if (!net.isConnected) {
-    pushLog.log("skip:offline");
-    return;
-  }
-  pushLog.time("exec");
-  let processed = 0;
+  return withUidSyncLock(uid, async () => {
+    const pushLog = log.child("push");
+    const net = await NetInfo.fetch();
+    pushLog.log("start", { uid, isConnected: net.isConnected });
+    if (!net.isConnected) {
+      pushLog.log("skip:offline");
+      return;
+    }
+    pushLog.time("exec");
+    let processed = 0;
 
-  for (;;) {
-    const batch = await nextBatch(PUSH_BATCH_SIZE, uid);
-    pushLog.log("batch:next", { size: batch.length });
-    if (batch.length === 0) break;
+    for (;;) {
+      const batch = await nextBatch(PUSH_BATCH_SIZE, uid);
+      pushLog.log("batch:next", { size: batch.length });
+      if (batch.length === 0) break;
 
-    for (const op of batch) {
-      pushLog.log("op:start", { id: op.id, kind: op.kind });
-      try {
+      for (const op of batch) {
+        pushLog.log("op:start", { id: op.id, kind: op.kind });
+        try {
         if (op.kind === "upsert") {
           const payload = toMealPayload(op.payload);
           const id = payload?.cloudId || payload?.mealId;
@@ -477,7 +523,7 @@ export async function pushQueue(uid: string): Promise<void> {
           }
 
           await post(
-            `/users/me/chat/threads/${payload.threadId}/messages`,
+            `/users/me/chat/threads/${encodeURIComponent(payload.threadId)}/messages`,
             {
               messageId: payload.messageId,
               role: payload.role,
@@ -506,212 +552,239 @@ export async function pushQueue(uid: string): Promise<void> {
           pushLog.warn("unknown_op", op.kind);
         }
 
-        await markDone(op.id);
-        processed++;
-        pushLog.log("op:done", { id: op.id });
-      } catch (e: unknown) {
-        const err = toSyncError(e);
-        const nextAttempts = op.attempts + 1;
-        pushLog.error("op:fail", {
-          id: op.id,
-          code: err.code,
-          message: err.message,
-          retryable: err.retryable,
-        });
-        if (nextAttempts >= MAX_QUEUE_ATTEMPTS) {
-          await moveToDeadLetter(op, nextAttempts, {
+          await markDone(op.id);
+          processed++;
+          pushLog.log("op:done", { id: op.id });
+        } catch (e: unknown) {
+          const err = toSyncError(e);
+          const nextAttempts = op.attempts + 1;
+          pushLog.error("op:fail", {
+            id: op.id,
             code: err.code,
             message: err.message,
+            retryable: err.retryable,
           });
-          pushLog.warn("op:dead_letter", {
-            id: op.id,
-            kind: op.kind,
-            attempts: nextAttempts,
-          });
-          emit("sync:op:dead", {
-            uid,
-            opId: op.id,
-            cloudId: op.cloud_id,
-            kind: op.kind,
-            attempts: nextAttempts,
-            code: err.code,
-          });
-        } else {
-          await bumpAttempts(op.id);
-          pushLog.log("op:bump_attempts", { id: op.id, attempts: nextAttempts });
-        }
-        if (op.kind === "upsert") {
-          await setMealSyncStateLocal({
-            uid,
-            cloudId: op.cloud_id,
-            syncState: nextAttempts >= MAX_QUEUE_ATTEMPTS ? "failed" : "pending",
-            updatedAt: op.updated_at,
-          });
-        }
-        if (op.kind === "upsert_mymeal") {
-          await setMyMealSyncStateLocal({
-            uid,
-            cloudId: op.cloud_id,
-            syncState: nextAttempts >= MAX_QUEUE_ATTEMPTS ? "failed" : "pending",
-            updatedAt: op.updated_at,
-          });
-        }
-        if (op.kind === "persist_chat_message") {
-          emit("chat:failed", { uid, opId: op.id });
-        } else if (op.kind === "update_user_profile") {
-          emit("user:profile:failed", {
-            uid,
-            opId: op.id,
-            dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
-          });
-        } else if (op.kind === "upload_user_avatar") {
-          emit("user:avatar:failed", {
-            uid,
-            opId: op.id,
-            dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
-          });
-        } else {
-          emit("meal:failed", {
-            uid,
-            opId: op.id,
-            cloudId: op.cloud_id,
-            dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
-          });
+          if (nextAttempts >= MAX_QUEUE_ATTEMPTS) {
+            await moveToDeadLetter(op, nextAttempts, {
+              code: err.code,
+              message: err.message,
+            });
+            pushLog.warn("op:dead_letter", {
+              id: op.id,
+              kind: op.kind,
+              attempts: nextAttempts,
+            });
+            emit("sync:op:dead", {
+              uid,
+              opId: op.id,
+              cloudId: op.cloud_id,
+              kind: op.kind,
+              attempts: nextAttempts,
+              code: err.code,
+            });
+          } else {
+            await bumpAttempts(op.id);
+            pushLog.log("op:bump_attempts", { id: op.id, attempts: nextAttempts });
+          }
+          if (op.kind === "upsert") {
+            await setMealSyncStateLocal({
+              uid,
+              cloudId: op.cloud_id,
+              syncState: nextAttempts >= MAX_QUEUE_ATTEMPTS ? "failed" : "pending",
+              updatedAt: op.updated_at,
+            });
+          }
+          if (op.kind === "upsert_mymeal") {
+            await setMyMealSyncStateLocal({
+              uid,
+              cloudId: op.cloud_id,
+              syncState: nextAttempts >= MAX_QUEUE_ATTEMPTS ? "failed" : "pending",
+              updatedAt: op.updated_at,
+            });
+          }
+          if (op.kind === "persist_chat_message") {
+            emit("chat:failed", { uid, opId: op.id });
+          } else if (op.kind === "update_user_profile") {
+            emit("user:profile:failed", {
+              uid,
+              opId: op.id,
+              dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
+            });
+          } else if (op.kind === "upload_user_avatar") {
+            emit("user:avatar:failed", {
+              uid,
+              opId: op.id,
+              dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
+            });
+          } else {
+            emit("meal:failed", {
+              uid,
+              opId: op.id,
+              cloudId: op.cloud_id,
+              dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
+            });
+          }
         }
       }
+
+      if (batch.length < PUSH_BATCH_SIZE) break;
     }
 
-    if (batch.length < PUSH_BATCH_SIZE) break;
-  }
+    pushLog.timeEnd("exec");
+    pushLog.log("done", { processed });
+  });
+}
 
-  pushLog.timeEnd("exec");
-  pushLog.log("done", { processed });
+type CursorPage<T> = {
+  items: T[];
+  nextCursor: string | null;
+};
+
+async function forEachCursorPage<T>(params: {
+  initialCursor: string | null;
+  fetchPage: (cursor: string | null) => Promise<CursorPage<T>>;
+  onPageItems: (items: T[]) => Promise<void>;
+}): Promise<void> {
+  let cursor = params.initialCursor;
+
+  for (;;) {
+    const page = await params.fetchPage(cursor);
+    if (!page.items.length) break;
+    await params.onPageItems(page.items);
+
+    cursor = page.nextCursor || cursor;
+    if (!page.nextCursor) break;
+  }
 }
 
 export async function pullChanges(uid: string): Promise<void> {
-  const pullLog = log.child("pull");
-  const net = await NetInfo.fetch();
-  pullLog.log("start", { uid, isConnected: net.isConnected });
-  if (!net.isConnected) {
-    pullLog.log("skip:offline");
-    return;
-  }
-
-  pullLog.time("exec");
-
-  const last = (await getLastPullTs(uid)) || "1970-01-01T00:00:00.000Z";
-  let cursor: string | null = last;
-  let latestCursor = last;
-  let total = 0;
-  pullLog.log("since", { last });
-
-  for (;;) {
-    const page = await fetchMealChangesRemote({
-      uid,
-      pageSize: PULL_PAGE_SIZE,
-      cursor,
-    });
-    pullLog.log("page", { size: page.items.length });
-    if (!page.items.length) break;
-
-    for (const meal of page.items) {
-      try {
-        const localMeal = meal.cloudId
-          ? await getMealByCloudIdLocal(uid, meal.cloudId)
-          : null;
-        const resolved = localMeal ? resolveMealConflict(localMeal, meal) : meal;
-        await upsertMealLocal(resolved);
-        emit("meal:synced", {
-          uid,
-          cloudId: resolved.cloudId ?? meal.cloudId,
-          updatedAt: resolved.updatedAt,
-        });
-        total++;
-        latestCursor = buildMealUpdatedCursor(meal);
-        pullLog.log("local_upsert:ok", {
-          id: meal.cloudId,
-          updatedAt: meal.updatedAt,
-        });
-      } catch (e: unknown) {
-        const err = toSyncError(e);
-        pullLog.error("local_upsert:fail", {
-          id: meal.cloudId,
-          code: err.code,
-          message: err.message,
-          retryable: err.retryable,
-        });
-      }
+  return withUidSyncLock(uid, async () => {
+    const pullLog = log.child("pull");
+    const net = await NetInfo.fetch();
+    pullLog.log("start", { uid, isConnected: net.isConnected });
+    if (!net.isConnected) {
+      pullLog.log("skip:offline");
+      return;
     }
 
-    cursor = page.nextCursor || latestCursor;
-    if (!page.nextCursor) break;
-  }
+    pullLog.time("exec");
 
-  if (latestCursor !== last) {
-    await setLastPullTs(uid, latestCursor);
-    pullLog.log("set_last_ts", { latestCursor });
-  }
-  pullLog.timeEnd("exec");
-  pullLog.log("done", { items: total, last_ts: latestCursor });
+    const last = (await getLastPullTs(uid)) || "1970-01-01T00:00:00.000Z";
+    let latestCursor = last;
+    let total = 0;
+    pullLog.log("since", { last });
+
+    await forEachCursorPage({
+      initialCursor: last,
+      fetchPage: async (cursor) => {
+        const page = await fetchMealChangesRemote({
+          uid,
+          pageSize: PULL_PAGE_SIZE,
+          cursor,
+        });
+        pullLog.log("page", { size: page.items.length });
+        return { items: page.items, nextCursor: page.nextCursor };
+      },
+      onPageItems: async (items) => {
+        for (const meal of items) {
+          try {
+            const localMeal = meal.cloudId
+              ? await getMealByCloudIdLocal(uid, meal.cloudId)
+              : null;
+            const resolved = localMeal ? resolveMealConflict(localMeal, meal) : meal;
+            await upsertMealLocal(resolved);
+            emit("meal:synced", {
+              uid,
+              cloudId: resolved.cloudId ?? meal.cloudId,
+              updatedAt: resolved.updatedAt,
+            });
+            total++;
+            latestCursor = buildMealUpdatedCursor(meal);
+            pullLog.log("local_upsert:ok", {
+              id: meal.cloudId,
+              updatedAt: meal.updatedAt,
+            });
+          } catch (e: unknown) {
+            const err = toSyncError(e);
+            pullLog.error("local_upsert:fail", {
+              id: meal.cloudId,
+              code: err.code,
+              message: err.message,
+              retryable: err.retryable,
+            });
+          }
+        }
+      },
+    });
+
+    if (latestCursor !== last) {
+      await setLastPullTs(uid, latestCursor);
+      pullLog.log("set_last_ts", { latestCursor });
+    }
+    pullLog.timeEnd("exec");
+    pullLog.log("done", { items: total, last_ts: latestCursor });
+  });
 }
 
 export async function pullMyMealChanges(uid: string): Promise<void> {
-  const pullLog = log.child("pull:mymeals");
-  const net = await NetInfo.fetch();
-  pullLog.log("start", { uid, isConnected: net.isConnected });
-  if (!net.isConnected) {
-    pullLog.log("skip:offline");
-    return;
-  }
-
-  const last = (await getLastMyMealsPullTs(uid)) || "1970-01-01T00:00:00.000Z";
-  let cursor: string | null = last;
-  let latestCursor = last;
-  let total = 0;
-
-  for (;;) {
-    const page = await fetchMyMealChangesRemote({
-      uid,
-      pageSize: PULL_PAGE_SIZE,
-      cursor,
-    });
-    pullLog.log("page", { size: page.items.length });
-    if (!page.items.length) break;
-
-    for (const meal of page.items) {
-      try {
-        await upsertMyMealLocal({
-          ...meal,
-          source: "saved",
-          photoLocalPath: meal.photoLocalPath ?? null,
-        });
-        emit("mymeal:synced", {
-          uid,
-          cloudId: meal.cloudId,
-          updatedAt: meal.updatedAt,
-        });
-        total++;
-        latestCursor = buildMyMealUpdatedCursor(meal);
-      } catch (e: unknown) {
-        const err = toSyncError(e);
-        pullLog.error("local_upsert:fail", {
-          id: meal.cloudId,
-          code: err.code,
-          message: err.message,
-          retryable: err.retryable,
-        });
-      }
+  return withUidSyncLock(uid, async () => {
+    const pullLog = log.child("pull:mymeals");
+    const net = await NetInfo.fetch();
+    pullLog.log("start", { uid, isConnected: net.isConnected });
+    if (!net.isConnected) {
+      pullLog.log("skip:offline");
+      return;
     }
 
-    cursor = page.nextCursor || latestCursor;
-    if (!page.nextCursor) break;
-  }
+    const last = (await getLastMyMealsPullTs(uid)) || "1970-01-01T00:00:00.000Z";
+    let latestCursor = last;
+    let total = 0;
 
-  if (latestCursor !== last) {
-    await setLastMyMealsPullTs(uid, latestCursor);
-    pullLog.log("set_last_ts", { latestCursor });
-  }
-  pullLog.log("done", { items: total, last_ts: latestCursor });
+    await forEachCursorPage({
+      initialCursor: last,
+      fetchPage: async (cursor) => {
+        const page = await fetchMyMealChangesRemote({
+          uid,
+          pageSize: PULL_PAGE_SIZE,
+          cursor,
+        });
+        pullLog.log("page", { size: page.items.length });
+        return { items: page.items, nextCursor: page.nextCursor };
+      },
+      onPageItems: async (items) => {
+        for (const meal of items) {
+          try {
+            await upsertMyMealLocal({
+              ...meal,
+              source: "saved",
+              photoLocalPath: meal.photoLocalPath ?? null,
+            });
+            emit("mymeal:synced", {
+              uid,
+              cloudId: meal.cloudId,
+              updatedAt: meal.updatedAt,
+            });
+            total++;
+            latestCursor = buildMyMealUpdatedCursor(meal);
+          } catch (e: unknown) {
+            const err = toSyncError(e);
+            pullLog.error("local_upsert:fail", {
+              id: meal.cloudId,
+              code: err.code,
+              message: err.message,
+              retryable: err.retryable,
+            });
+          }
+        }
+      },
+    });
+
+    if (latestCursor !== last) {
+      await setLastMyMealsPullTs(uid, latestCursor);
+      pullLog.log("set_last_ts", { latestCursor });
+    }
+    pullLog.log("done", { items: total, last_ts: latestCursor });
+  });
 }
 
 async function pullChatThreadMessages(params: {
@@ -736,111 +809,156 @@ async function pullChatThreadMessages(params: {
 }
 
 export async function pullChatChanges(uid: string): Promise<void> {
-  const pullLog = log.child("pull:chat");
-  const net = await NetInfo.fetch();
-  pullLog.log("start", { uid, isConnected: net.isConnected });
-  if (!net.isConnected) {
-    pullLog.log("skip:offline");
-    return;
-  }
-
-  const lastPullTs = await getLastChatPullTs(uid);
-  let newestPullTs = lastPullTs;
-  let syncedThreads = 0;
-  let syncedMessages = 0;
-
-  try {
-    const response = await get<ChatThreadsPageApiResponse>(
-      "/users/me/chat/threads?limit=20"
-    );
-    const items = Array.isArray(response?.items) ? response.items : [];
-    pullLog.log("threads:page", { size: items.length, lastPullTs });
-
-    for (const item of items) {
-      const normalizedThread = toChatThread(uid, item);
-      if (!normalizedThread.id) continue;
-      newestPullTs = Math.max(newestPullTs, normalizedThread.updatedAt);
-
-      const localThread = await getChatThreadByIdLocal(uid, normalizedThread.id);
-      const localIsNewer =
-        !!localThread && localThread.updatedAt > normalizedThread.updatedAt;
-      if (!localIsNewer) {
-        await upsertChatThreadLocal(normalizedThread);
-        syncedThreads++;
-      }
-
-      const remoteLastMessageAt = normalizedThread.lastMessageAt ?? 0;
-      const localLastMessageAt = localThread?.lastMessageAt ?? 0;
-      const shouldSyncMessages =
-        !localIsNewer &&
-        (!localThread ||
-          normalizedThread.updatedAt >= localThread.updatedAt ||
-          remoteLastMessageAt > localLastMessageAt ||
-          normalizedThread.updatedAt >= lastPullTs);
-
-      if (!shouldSyncMessages) continue;
-
-      try {
-        syncedMessages += await pullChatThreadMessages({
-          uid,
-          threadId: normalizedThread.id,
-          limitCount: 50,
-        });
-      } catch (error: unknown) {
-        const err = toSyncError(error);
-        pullLog.error("thread_messages:fail", {
-          threadId: normalizedThread.id,
-          code: err.code,
-          message: err.message,
-          retryable: err.retryable,
-        });
-      }
+  return withUidSyncLock(uid, async () => {
+    const pullLog = log.child("pull:chat");
+    const net = await NetInfo.fetch();
+    pullLog.log("start", { uid, isConnected: net.isConnected });
+    if (!net.isConnected) {
+      pullLog.log("skip:offline");
+      return;
     }
 
-    if (newestPullTs > lastPullTs) {
-      await setLastChatPullTs(uid, newestPullTs);
-      pullLog.log("set_last_ts", { newestPullTs });
+    const lastPullTs = await getLastChatPullTs(uid);
+    let newestPullTs = lastPullTs;
+    let syncedThreads = 0;
+    let syncedMessages = 0;
+    let beforeUpdatedAtCursor: number | null = null;
+    let opaqueCursor: string | null = null;
+
+    try {
+      for (;;) {
+        const query = [`limit=${CHAT_THREADS_PAGE_SIZE}`];
+        if (beforeUpdatedAtCursor != null) {
+          query.push(
+            `beforeUpdatedAt=${encodeURIComponent(String(beforeUpdatedAtCursor))}`
+          );
+        }
+        if (opaqueCursor) {
+          query.push(`cursor=${encodeURIComponent(opaqueCursor)}`);
+        }
+
+        const response = await get<ChatThreadsPageApiResponse>(
+          `/users/me/chat/threads?${query.join("&")}`
+        );
+        const items = Array.isArray(response?.items) ? response.items : [];
+        pullLog.log("threads:page", { size: items.length, lastPullTs });
+        if (!items.length) break;
+
+        for (const item of items) {
+          const normalizedThread = toChatThread(uid, item);
+          if (!normalizedThread.id) continue;
+          newestPullTs = Math.max(newestPullTs, normalizedThread.updatedAt);
+
+          const localThread = await getChatThreadByIdLocal(uid, normalizedThread.id);
+          const localIsNewer =
+            !!localThread && localThread.updatedAt > normalizedThread.updatedAt;
+          if (!localIsNewer) {
+            await upsertChatThreadLocal(normalizedThread);
+            syncedThreads++;
+          }
+
+          const remoteLastMessageAt = normalizedThread.lastMessageAt ?? 0;
+          const localLastMessageAt = localThread?.lastMessageAt ?? 0;
+          const shouldSyncMessages =
+            !localIsNewer &&
+            (!localThread ||
+              normalizedThread.updatedAt >= localThread.updatedAt ||
+              remoteLastMessageAt > localLastMessageAt ||
+              normalizedThread.updatedAt >= lastPullTs);
+
+          if (!shouldSyncMessages) continue;
+
+          try {
+            syncedMessages += await pullChatThreadMessages({
+              uid,
+              threadId: normalizedThread.id,
+              limitCount: 50,
+            });
+          } catch (error: unknown) {
+            const err = toSyncError(error);
+            pullLog.error("thread_messages:fail", {
+              threadId: normalizedThread.id,
+              code: err.code,
+              message: err.message,
+              retryable: err.retryable,
+            });
+          }
+        }
+
+        const nextBeforeUpdatedAt =
+          typeof response?.nextBeforeUpdatedAt === "number" &&
+          Number.isFinite(response.nextBeforeUpdatedAt)
+            ? response.nextBeforeUpdatedAt
+            : null;
+        const nextCursor =
+          typeof response?.nextCursor === "string" &&
+          response.nextCursor.trim().length > 0
+            ? response.nextCursor
+            : null;
+
+        if (nextCursor) {
+          if (nextCursor === opaqueCursor) break;
+          opaqueCursor = nextCursor;
+          beforeUpdatedAtCursor = null;
+          continue;
+        }
+
+        if (nextBeforeUpdatedAt != null) {
+          if (nextBeforeUpdatedAt === beforeUpdatedAtCursor) break;
+          beforeUpdatedAtCursor = nextBeforeUpdatedAt;
+          opaqueCursor = null;
+          continue;
+        }
+
+        break;
+      }
+
+      if (newestPullTs > lastPullTs) {
+        await setLastChatPullTs(uid, newestPullTs);
+        pullLog.log("set_last_ts", { newestPullTs });
+      }
+      pullLog.log("done", {
+        threads: syncedThreads,
+        messages: syncedMessages,
+        lastPullTs: newestPullTs,
+      });
+    } catch (error: unknown) {
+      const err = toSyncError(error);
+      pullLog.error("threads:fail", {
+        code: err.code,
+        message: err.message,
+        retryable: err.retryable,
+      });
+      throw err;
     }
-    pullLog.log("done", {
-      threads: syncedThreads,
-      messages: syncedMessages,
-      lastPullTs: newestPullTs,
-    });
-  } catch (error: unknown) {
-    const err = toSyncError(error);
-    pullLog.error("threads:fail", {
-      code: err.code,
-      message: err.message,
-      retryable: err.retryable,
-    });
-    throw err;
-  }
+  });
 }
 
 export async function processImageUploads(uid: string): Promise<void> {
-  const upLog = log.child("upload");
-  const net = await NetInfo.fetch();
-  upLog.log("start", { uid, isConnected: net.isConnected });
-  if (!net.isConnected) {
-    upLog.log("skip:offline");
-    return;
-  }
+  return withUidSyncLock(uid, async () => {
+    const upLog = log.child("upload");
+    const net = await NetInfo.fetch();
+    upLog.log("start", { uid, isConnected: net.isConnected });
+    if (!net.isConnected) {
+      upLog.log("skip:offline");
+      return;
+    }
 
-  upLog.time("exec");
-  const pending = await getPendingUploads(uid);
-  upLog.log("pending", { count: pending.length });
-  if (!pending.length) {
-    upLog.timeEnd("exec");
-    upLog.log("none");
-    return;
-  }
+    upLog.time("exec");
+    const pending = await getPendingUploads(uid);
+    upLog.log("pending", { count: pending.length });
+    if (!pending.length) {
+      upLog.timeEnd("exec");
+      upLog.log("none");
+      return;
+    }
 
-  const sql = getDB();
-  let ok = 0;
-  let fail = 0;
+    const sql = getDB();
+    let ok = 0;
+    let fail = 0;
 
-  for (const row of pending) {
-    try {
+    for (const row of pending) {
+      try {
       upLog.log("process", {
         image_id: row.image_id,
         local_path: row.local_path,
@@ -894,26 +1012,27 @@ export async function processImageUploads(uid: string): Promise<void> {
         await enqueueUpsert(uid, normalized);
         upLog.log("meal_enqueued", m.cloud_id);
       }
-      ok++;
-    } catch (e: unknown) {
-      fail++;
-      const err = toSyncError(e);
-      const payload = {
-        image_id: row.image_id,
-        code: err.code,
-        message: err.message,
-        retryable: err.retryable,
-      };
-      if (err.retryable) {
-        upLog.warn("upload:retryable_fail", payload);
-      } else {
-        upLog.error("upload:fail", payload);
+        ok++;
+      } catch (e: unknown) {
+        fail++;
+        const err = toSyncError(e);
+        const payload = {
+          image_id: row.image_id,
+          code: err.code,
+          message: err.message,
+          retryable: err.retryable,
+        };
+        if (err.retryable) {
+          upLog.warn("upload:retryable_fail", payload);
+        } else {
+          upLog.error("upload:fail", payload);
+        }
       }
     }
-  }
 
-  upLog.timeEnd("exec");
-  upLog.log("done", { ok, fail, pending: pending.length });
+    upLog.timeEnd("exec");
+    upLog.log("done", { ok, fail, pending: pending.length });
+  });
 }
 
 function safeParseJSON(s: unknown) {
