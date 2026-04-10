@@ -176,28 +176,34 @@ export const BottomTabBar: React.FC = () => {
               accessibilityState={{ selected: isActive }}
             >
               {isProfile ? (
-                <AvatarBadge
-                  size={34}
-                  uri={avatarSrc || undefined}
-                  badges={safeBadges}
-                  overrideColor={isActive ? theme.primary : borderColor}
-                  overrideEmoji={undefined}
-                  fallbackIcon={
-                    <AppIcon
-                      name="person"
-                      size={20}
-                      color={isActive ? theme.primary : theme.textSecondary}
-                    />
-                  }
-                  accessibilityLabel={t("tabs.profile_accessibility")}
-                />
+                <View style={styles.tabInner}>
+                  <AvatarBadge
+                    size={34}
+                    uri={avatarSrc || undefined}
+                    badges={safeBadges}
+                    overrideColor={isActive ? theme.primary : borderColor}
+                    overrideEmoji={undefined}
+                    fallbackIcon={
+                      <AppIcon
+                        name="person"
+                        size={20}
+                        color={isActive ? theme.primary : theme.textSecondary}
+                      />
+                    }
+                    accessibilityLabel={t("tabs.profile_accessibility")}
+                  />
+                  <View style={[styles.indicator, isActive && styles.indicatorActive]} />
+                </View>
               ) : (
-                <AppIcon
-                  name={tab.icon}
-                  size={28}
-                  color={isActive ? theme.primary : theme.textSecondary}
-                  style={styles.iconCentered}
-                />
+                <View style={styles.tabInner}>
+                  <AppIcon
+                    name={tab.icon}
+                    size={26}
+                    color={isActive ? theme.primary : theme.textSecondary}
+                    style={styles.iconCentered}
+                  />
+                  <View style={[styles.indicator, isActive && styles.indicatorActive]} />
+                </View>
               )}
             </Pressable>
           );
@@ -249,6 +255,19 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     iconCentered: {
       alignSelf: "center",
+    },
+    tabInner: {
+      alignItems: "center",
+      gap: 4,
+    },
+    indicator: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: "transparent",
+    },
+    indicatorActive: {
+      backgroundColor: theme.primary,
     },
   });
 

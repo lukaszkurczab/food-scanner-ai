@@ -110,6 +110,11 @@ export default function CoachInsightCard({
 
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={
+          expanded
+            ? t("coachInsight.hideWhy", "Hide why")
+            : t("coachInsight.showWhy", "Why this insight")
+        }
         onPress={handleExpandToggle}
         style={({ pressed }) => [
           styles.expander,

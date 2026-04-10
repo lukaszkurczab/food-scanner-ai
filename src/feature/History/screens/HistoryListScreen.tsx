@@ -76,6 +76,7 @@ const HistoryMealRowComponent = ({
     <Pressable
       onPress={() => onPress(meal)}
       accessibilityRole="button"
+      accessibilityLabel={`${meal.name || fallbackMealName}, ${meta}, ${getMealKcal(meal)} ${kcalLabel}`}
       style={({ pressed }) => [
         styles.mealRow,
         pressed ? styles.mealRowPressed : null,
@@ -186,6 +187,8 @@ const DeadLetterBannerComponent = ({
         <Pressable
           onPress={onRetry}
           disabled={retrying}
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
           style={({ pressed }) => [
             styles.deadLetterRetry,
             retrying ? styles.deadLetterRetryDisabled : null,

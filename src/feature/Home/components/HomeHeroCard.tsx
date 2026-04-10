@@ -80,6 +80,7 @@ export function HomeHeroCard({
         {methodLabel && onPressMethodSelector ? (
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel={methodLabel}
             onPress={onPressMethodSelector}
             style={({ pressed }) => [
               styles.methodSelector,

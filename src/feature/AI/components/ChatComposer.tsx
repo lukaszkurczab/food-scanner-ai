@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+
+const MAX_CHARS = 4000;
 import AppIcon from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
 
@@ -50,7 +52,7 @@ export function ChatComposer({
           editable={!disabled}
           textAlignVertical="center"
           multiline
-          maxLength={1200}
+          maxLength={MAX_CHARS}
           onSubmitEditing={handleSend}
         />
 
@@ -75,6 +77,17 @@ export function ChatComposer({
         </Pressable>
       </View>
 
+      {value.length > MAX_CHARS - 400 && (
+        <Text
+          style={[
+            styles.charCounter,
+            value.length >= MAX_CHARS && styles.charCounterLimit,
+          ]}
+        >
+          {value.length}/{MAX_CHARS}
+        </Text>
+      )}
+
       {helperText ? (
         <View style={styles.helperRow}>
           <Text style={styles.helperText}>{helperText}</Text>
@@ -84,6 +97,8 @@ export function ChatComposer({
               testID="chat-helper-action"
               onPress={onHelperActionPress}
               disabled={helperActionDisabled}
+              accessibilityRole="button"
+              accessibilityLabel={helperActionLabel}
               style={({ pressed }) => [
                 helperActionDisabled ? styles.helperActionDisabled : null,
                 pressed && !helperActionDisabled ? styles.helperActionPressed : null,
@@ -171,5 +186,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     helperActionPressed: {
       opacity: 0.72,
+    },
+    charCounter: {
+      fontSize: theme.typography.size.bodyS,
+      color: theme.textTertiary,
+      alignSelf: "flex-end",
+      paddingRight: theme.spacing.xs,
+    },
+    charCounterLimit: {
+      color: theme.status.negative,
     },
   });

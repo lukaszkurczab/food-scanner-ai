@@ -39,6 +39,7 @@ export function ResumeDraftSheet({
         accessibilityRole="button"
         onPress={onClose}
         style={styles.scrim}
+        accessibilityLabel={t("close", { ns: "common", defaultValue: "Close" })}
       />
 
       <View style={styles.sheet}>

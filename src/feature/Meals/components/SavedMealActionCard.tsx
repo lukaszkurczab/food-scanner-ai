@@ -55,6 +55,7 @@ export function SavedMealActionCard({
 
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={`${t("saved_list_add", "Add")} ${meal.name || t("meal", { ns: "home", defaultValue: "Meal" })}`}
         onPress={() => onAdd(meal)}
         style={({ pressed }) => [
           styles.addButton,

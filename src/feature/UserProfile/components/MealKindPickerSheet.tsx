@@ -66,7 +66,14 @@ export function MealKindPickerSheet({
       onRequestClose={onClose}
     >
       <View style={styles.root}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Pressable
+          style={styles.backdrop}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel={t("closeMealKindPicker", {
+            defaultValue: "Close meal picker",
+          })}
+        />
 
         <View
           style={[

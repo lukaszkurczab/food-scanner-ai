@@ -406,6 +406,10 @@ export default function BarcodeScanScreen({
             <Pressable
               style={styles.manualBackdrop}
               onPress={dismissManualEntry}
+              accessibilityRole="button"
+              accessibilityLabel={tMeals("barcode_scan_close_sheet", {
+                defaultValue: "Close manual code entry",
+              })}
             />
 
             <View style={styles.manualSheet}>

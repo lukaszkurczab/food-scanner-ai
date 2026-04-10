@@ -97,6 +97,8 @@ function DockChip({ label, active, onPress, compact = false }: DockChipProps) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => [
         styles.chip,
         compact ? styles.chipCompact : null,
@@ -124,6 +126,12 @@ function DockChip({ label, active, onPress, compact = false }: DockChipProps) {
   );
 }
 
+function presetAccessibilityLabel(presetId: SharePresetId) {
+  if (presetId === "quickSidebar") return "Sidebar preset";
+  if (presetId === "quickFooter") return "Footer preset";
+  return "Top card preset";
+}
+
 function PresetThumb({
   presetId,
   mealPhotoUri,
@@ -145,6 +153,8 @@ function PresetThumb({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={presetAccessibilityLabel(presetId)}
       style={({ pressed }) => [
         styles.presetThumb,
         {
@@ -241,6 +251,7 @@ function FlowActionButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={loading ? undefined : onPress}
       style={({ pressed }) => [
         styles.flowButton,
@@ -498,7 +509,12 @@ export default function ShareComposerDock({
                 </Text>
               </View>
               {showRemove ? (
-                <Pressable onPress={onRemoveSelectedLayer} style={stylesWithTheme.localAction}>
+                <Pressable
+                  onPress={onRemoveSelectedLayer}
+                  style={stylesWithTheme.localAction}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("dock.remove")}
+                >
                   <Text style={stylesWithTheme.localActionLabel}>{t("dock.remove")}</Text>
                 </Pressable>
               ) : null}
@@ -840,26 +856,48 @@ export default function ShareComposerDock({
 
             {activeEditorKind === "none" ? (
               <View style={stylesWithTheme.utilityRow}>
-                <Pressable onPress={onAddTextLayer} style={stylesWithTheme.utilityAction}>
+                <Pressable
+                  onPress={onAddTextLayer}
+                  style={stylesWithTheme.utilityAction}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("dock.utility_text")}
+                >
                   <AppIcon name="text" size={16} color={theme.textSecondary} />
                   <Text style={stylesWithTheme.utilityActionLabel}>{t("dock.utility_text")}</Text>
                 </Pressable>
-                <Pressable onPress={onEnsureChartLayer} style={stylesWithTheme.utilityAction}>
+                <Pressable
+                  onPress={onEnsureChartLayer}
+                  style={stylesWithTheme.utilityAction}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("dock.utility_chart")}
+                >
                   <AppIcon name="stats" size={16} color={theme.textSecondary} />
                   <Text style={stylesWithTheme.utilityActionLabel}>{t("dock.utility_chart")}</Text>
                 </Pressable>
-                <Pressable onPress={onEnsureCardLayer} style={stylesWithTheme.utilityAction}>
+                <Pressable
+                  onPress={onEnsureCardLayer}
+                  style={stylesWithTheme.utilityAction}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("dock.utility_card")}
+                >
                   <AppIcon name="card" size={16} color={theme.textSecondary} />
                   <Text style={stylesWithTheme.utilityActionLabel}>{t("dock.utility_card")}</Text>
                 </Pressable>
                 <Pressable
                   onPress={onAddOrReplaceAdditionalPhoto}
                   style={stylesWithTheme.utilityAction}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("dock.utility_photo")}
                 >
                   <AppIcon name="add-photo" size={16} color={theme.textSecondary} />
                   <Text style={stylesWithTheme.utilityActionLabel}>{t("dock.utility_photo")}</Text>
                 </Pressable>
-                <Pressable onPress={onResetComposition} style={stylesWithTheme.utilityAction}>
+                <Pressable
+                  onPress={onResetComposition}
+                  style={stylesWithTheme.utilityAction}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("dock.utility_reset")}
+                >
                   <AppIcon name="refresh" size={16} color={theme.textSecondary} />
                   <Text style={stylesWithTheme.utilityActionLabel}>{t("dock.utility_reset")}</Text>
                 </Pressable>
@@ -902,6 +940,10 @@ export default function ShareComposerDock({
           <Pressable
             style={stylesWithTheme.colorPickerBackdrop}
             onPress={() => setCustomColorTarget(null)}
+            accessibilityRole="button"
+            accessibilityLabel={t("dock.close_color_picker", {
+              defaultValue: "Close color picker",
+            })}
           />
           <View style={stylesWithTheme.colorPickerSheet}>
             <View style={stylesWithTheme.colorPickerHeader}>
@@ -911,6 +953,8 @@ export default function ShareComposerDock({
               <Pressable
                 onPress={() => setCustomColorTarget(null)}
                 style={stylesWithTheme.colorPickerDone}
+                accessibilityRole="button"
+                accessibilityLabel={t("dock.done")}
               >
                 <Text style={stylesWithTheme.colorPickerDoneLabel}>{t("dock.done")}</Text>
               </Pressable>

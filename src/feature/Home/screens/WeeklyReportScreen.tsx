@@ -543,7 +543,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     headerButton: {
       width: 36,
       height: 36,
-      borderRadius: 18,
+      borderRadius: theme.rounded.full,
       borderWidth: 1,
       borderColor: theme.borderSoft,
       backgroundColor: theme.surface,
@@ -569,7 +569,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingBottom: theme.spacing.sectionGap,
     },
     heroCard: {
-      borderRadius: 30,
+      borderRadius: theme.rounded.xxl,
       paddingHorizontal: 18,
       paddingTop: 16,
       paddingBottom: 18,
@@ -608,7 +608,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     heroHeadline: {
       color: theme.text,
-      fontSize: 24,
+      fontSize: theme.typography.size.h1,
       lineHeight: 29,
       fontFamily: theme.typography.fontFamily.bold,
     },
@@ -644,7 +644,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     signalDot: {
       width: 8,
       height: 8,
-      borderRadius: 999,
+      borderRadius: theme.rounded.full,
       marginTop: 6,
     },
     signalTextWrap: {
@@ -659,7 +659,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     signalBody: {
       color: theme.textSecondary,
-      fontSize: 13,
+      fontSize: theme.typography.size.bodyS,
       lineHeight: 18,
       fontFamily: theme.typography.fontFamily.regular,
     },
@@ -678,13 +678,13 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     carryTitle: {
       color: theme.text,
-      fontSize: 17,
+      fontSize: theme.typography.size.title,
       lineHeight: 21,
       fontFamily: theme.typography.fontFamily.bold,
     },
     carryBody: {
       color: theme.textSecondary,
-      fontSize: 13,
+      fontSize: theme.typography.size.bodyS,
       lineHeight: 18,
       fontFamily: theme.typography.fontFamily.regular,
     },
@@ -700,7 +700,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     priorityBadge: {
       width: 20,
       height: 20,
-      borderRadius: 10,
+      borderRadius: theme.rounded.sm,
       backgroundColor: theme.primary,
       alignItems: "center",
       justifyContent: "center",
@@ -736,7 +736,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     loadingRingWrap: {
       width: 44,
       height: 44,
-      borderRadius: 18,
+      borderRadius: theme.rounded.full,
       backgroundColor: theme.success.surface,
       alignItems: "center",
       justifyContent: "center",
@@ -744,7 +744,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     loadingRing: {
       width: 18,
       height: 18,
-      borderRadius: 9,
+      borderRadius: theme.rounded.xs,
       borderWidth: 2,
       borderColor: theme.primary,
     },
@@ -753,7 +753,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       top: 8,
       width: 6,
       height: 6,
-      borderRadius: 3,
+      borderRadius: theme.rounded.xs,
       backgroundColor: theme.primary,
     },
     loadingTitle: {
@@ -812,7 +812,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontFamily: theme.typography.fontFamily.regular,
     },
     stateCard: {
-      borderRadius: 30,
+      borderRadius: theme.rounded.xxl,
       borderWidth: 1,
       borderColor: theme.borderSoft,
       backgroundColor: theme.surface,
@@ -825,7 +825,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       alignSelf: "center",
       width: 72,
       height: 72,
-      borderRadius: 24,
+      borderRadius: theme.rounded.xl,
       backgroundColor: theme.success.surface,
       alignItems: "center",
       justifyContent: "center",
@@ -833,7 +833,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     stateIncompleteIcon: {
       color: theme.primary,
-      fontSize: 28,
+      fontSize: theme.typography.size.displayM,
       lineHeight: 32,
       fontFamily: theme.typography.fontFamily.medium,
     },
@@ -870,7 +870,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     signalMeterDot: {
       width: 10,
       height: 10,
-      borderRadius: 5,
+      borderRadius: theme.rounded.xs,
       backgroundColor: theme.border,
       opacity: 0.65,
     },
@@ -898,7 +898,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     unavailableIconWrap: {
       width: 72,
       height: 72,
-      borderRadius: 24,
+      borderRadius: theme.rounded.xl,
       backgroundColor: theme.backgroundSecondary,
       alignItems: "center",
       justifyContent: "center",
@@ -924,12 +924,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     primaryButton: {
       minHeight: 46,
-      borderRadius: 22,
+      borderRadius: theme.rounded.xl,
       marginTop: 4,
     },
     secondaryButton: {
       minHeight: 46,
-      borderRadius: 22,
+      borderRadius: theme.rounded.xl,
       marginTop: 2,
     },
     textButton: {

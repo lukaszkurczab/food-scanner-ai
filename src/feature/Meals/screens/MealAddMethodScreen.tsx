@@ -39,6 +39,7 @@ const MealAddMethodScreen = () => {
     <View style={styles.overlay}>
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={t("close", { ns: "common", defaultValue: "Close" })}
         onPress={() => navigation.goBack()}
         style={styles.dismissArea}
       />
@@ -57,6 +58,7 @@ const MealAddMethodScreen = () => {
             <Pressable
               key={option.key}
               accessibilityRole="button"
+              accessibilityLabel={t(option.titleKey)}
               onPress={() => {
                 void trackMealAddMethodSelected(option.key);
                 void state.handleOptionPress(option);

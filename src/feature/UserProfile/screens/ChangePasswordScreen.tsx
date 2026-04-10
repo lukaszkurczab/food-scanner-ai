@@ -105,7 +105,15 @@ export default function ChangePasswordScreen({
   };
 
   const renderVisibilityToggle = (isVisible: boolean, onPress: () => void) => (
-    <Pressable onPress={onPress} accessibilityRole="button">
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={
+        isVisible
+          ? t("hide_password", { ns: "common", defaultValue: "Hide password" })
+          : t("show_password", { ns: "common", defaultValue: "Show password" })
+      }
+    >
       <AppIcon
         name={isVisible ? "eye-off" : "eye"}
         size={20}

@@ -68,6 +68,10 @@ export const PaywallModal: React.FC<Props> = ({
             disabled={busy}
             activeOpacity={0.7}
             style={styles.restoreButton}
+            accessibilityRole="button"
+            accessibilityLabel={t("manageSubscription.restorePurchases", {
+              defaultValue: "Restore Purchases",
+            })}
           >
             <Text style={styles.linkText}>
               {t("manageSubscription.restorePurchases", {
@@ -97,6 +101,8 @@ export const PaywallModal: React.FC<Props> = ({
                 onPress={() => Linking.openURL(termsUrl)}
                 activeOpacity={0.7}
                 disabled={busy}
+                accessibilityRole="button"
+                accessibilityLabel={t("termsOfService", { defaultValue: "Terms of Service" })}
               >
                 <Text style={styles.linkText}>
                   {t("termsOfService", { defaultValue: "Terms of Service" })}
@@ -107,6 +113,8 @@ export const PaywallModal: React.FC<Props> = ({
                 onPress={() => Linking.openURL(privacyUrl)}
                 activeOpacity={0.7}
                 disabled={busy}
+                accessibilityRole="button"
+                accessibilityLabel={t("privacyPolicy", { defaultValue: "Privacy Policy" })}
               >
                 <Text style={styles.linkText}>
                   {t("privacyPolicy", { defaultValue: "Privacy Policy" })}

@@ -132,7 +132,14 @@ export function ChatHistorySheet({
       onRequestClose={onClose}
     >
       <View style={styles.modalRoot}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Pressable
+          style={styles.backdrop}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel={t("history.closeSheet", {
+            defaultValue: "Close chat history",
+          })}
+        />
 
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 8) }]}>
           <View style={styles.dragHandle} />

@@ -22,6 +22,7 @@ export function StatisticsRangeSwitcher({ active, onChange, options }: Props) {
           <Pressable
             key={option.key}
             accessibilityRole="button"
+            accessibilityLabel={option.label}
             onPress={() => onChange(option.key)}
             style={({ pressed }) => [
               styles.tab,

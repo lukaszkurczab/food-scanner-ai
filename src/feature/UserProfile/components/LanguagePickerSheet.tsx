@@ -67,7 +67,14 @@ export function LanguagePickerSheet({
       onRequestClose={onClose}
     >
       <View style={styles.root}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Pressable
+          style={styles.backdrop}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel={t("closeLanguagePicker", {
+            defaultValue: "Close language picker",
+          })}
+        />
 
         <View
           style={[

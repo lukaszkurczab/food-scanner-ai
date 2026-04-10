@@ -87,6 +87,7 @@ export default function SelectSavedMealScreen({
         accessibilityRole="button"
         onPress={handleStartOver}
         style={styles.footerLink}
+        accessibilityLabel={t("meals:change_method", "Change add method")}
       >
         <Text style={styles.footerLinkLabel}>
           {t("meals:change_method", "Change add method")}

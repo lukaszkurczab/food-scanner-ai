@@ -27,6 +27,7 @@ export function StatisticsPremiumBanner({ onPress, days }: Props) {
 
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={t("statistics:limitedHistory.cta")}
           onPress={onPress}
           style={({ pressed }) => [
             styles.ctaButton,

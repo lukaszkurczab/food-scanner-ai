@@ -137,6 +137,8 @@ function ChipButton({ label, selected = false, onPress }: ChipButtonProps) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => [
         styles.chipButton,
         selected ? styles.chipButtonSelected : styles.chipButtonDefault,
@@ -298,7 +300,16 @@ export const FilterPanel: React.FC<{
       }
 
       return (
-        <Pressable key={key} onPress={() => removeFilter(key)} style={styles.summaryChip}>
+        <Pressable
+          key={key}
+          onPress={() => removeFilter(key)}
+          accessibilityRole="button"
+          accessibilityLabel={t("history:actions.removeFilter", {
+            defaultValue: `Remove ${label} filter`,
+            label,
+          })}
+          style={styles.summaryChip}
+        >
           <Text style={styles.summaryChipLabel}>{label}</Text>
           <Text style={styles.summaryChipIcon}>×</Text>
         </Pressable>
@@ -346,7 +357,11 @@ export const FilterPanel: React.FC<{
             <Text style={styles.sheetTitle}>
               {t("history:sheetTitle", "Filters")}
             </Text>
-            <Pressable onPress={clear}>
+            <Pressable
+              onPress={clear}
+              accessibilityRole="button"
+              accessibilityLabel={t("history:actions.reset", "Reset")}
+            >
               <Text style={styles.resetLabel}>
                 {t("history:actions.reset", "Reset")}
               </Text>
@@ -500,7 +515,12 @@ export const FilterPanel: React.FC<{
             </View>
           ) : null}
 
-          <Pressable style={styles.moreFiltersRow} onPress={() => setOpenPicker(true)}>
+          <Pressable
+            style={styles.moreFiltersRow}
+            onPress={() => setOpenPicker(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t("history:actions.moreFilters", "More filters")}
+          >
             <Text style={styles.moreFiltersLabel}>
               {t("history:actions.moreFilters", "More filters")}
             </Text>
@@ -541,6 +561,18 @@ export const FilterPanel: React.FC<{
                   styles.modalRow,
                   selected ? styles.modalRowSelected : styles.modalRowDefault,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  selected
+                    ? t("history:actions.removeFilter", {
+                        defaultValue: `Remove ${label} filter`,
+                        label,
+                      })
+                    : t("history:actions.addFilter", {
+                        defaultValue: `Add ${label} filter`,
+                        label,
+                      })
+                }
               >
                 <Text style={styles.modalRowLabel}>{label}</Text>
                 <Text

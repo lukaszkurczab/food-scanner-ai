@@ -64,6 +64,7 @@ export function StatisticsCustomRangeControl({ range, onApply }: Props) {
     <>
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={`${t("statistics:customRange.label")}: ${rangeSummary}`}
         onPress={openModal}
         style={({ pressed }) => [styles.trigger, pressed ? styles.triggerPressed : null]}
         testID="statistics-custom-range-trigger"

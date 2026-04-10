@@ -300,6 +300,11 @@ export default function MealDetailsScreen() {
 
             <Pressable
               onPress={state.openDeleteModal}
+              accessibilityRole="button"
+              accessibilityLabel={t("delete_meal", {
+                ns: "history",
+                defaultValue: "Delete meal",
+              })}
               style={({ pressed }) => [
                 styles.deleteButton,
                 pressed ? styles.deleteButtonPressed : null,

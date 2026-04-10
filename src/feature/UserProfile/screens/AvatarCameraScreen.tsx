@@ -94,6 +94,8 @@ export default function AvatarCameraScreen({
           <Pressable
             onPress={blocked ? () => Linking.openSettings() : requestPermission}
             style={styles.permissionButton}
+            accessibilityRole="button"
+            accessibilityLabel={t("common:continue", { defaultValue: "Continue" })}
           >
             <Text style={styles.permissionButtonText}>
               {t("common:continue", { defaultValue: "Continue" })}
@@ -163,6 +165,10 @@ export default function AvatarCameraScreen({
               ]}
               onPress={handleTakePicture}
               disabled={isTakingPhoto}
+              accessibilityRole="button"
+              accessibilityLabel={t("common:camera_take_photo", {
+                defaultValue: "Take photo",
+              })}
             />
             <Pressable
               style={({ pressed }) => [
@@ -172,6 +178,7 @@ export default function AvatarCameraScreen({
               onPress={() =>
                 setFacing((f) => (f === "back" ? "front" : "back"))
               }
+              accessibilityRole="button"
               accessibilityLabel={t("common:switch_camera") || "Switch camera"}
             >
               <AppIcon name="flip-camera" size={26} color={theme.cta.primaryText} />

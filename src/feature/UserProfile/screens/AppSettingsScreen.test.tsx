@@ -64,7 +64,12 @@ jest.mock("@/components", () => {
       testID?: string;
       trailing?: ReactNode;
     }) => (
-      <Pressable onPress={onPress} testID={testID}>
+      <Pressable
+        onPress={onPress}
+        testID={testID}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+      >
         <Text>{title}</Text>
         {subtitle ? <Text>{subtitle}</Text> : null}
         {value ? <Text>{value}</Text> : null}

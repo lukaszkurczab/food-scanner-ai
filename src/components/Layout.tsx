@@ -91,10 +91,10 @@ export const Layout = ({
           styles.surface,
           {
             backgroundColor: theme.background,
-            paddingTop: insets.top + 16,
+            paddingTop: insets.top + theme.spacing.md,
             paddingBottom: bottomPadding,
-            paddingLeft: insets.left + 32,
-            paddingRight: insets.right + 32,
+            paddingLeft: insets.left + theme.spacing.screenPadding,
+            paddingRight: insets.right + theme.spacing.screenPadding,
           },
           style,
         ]}

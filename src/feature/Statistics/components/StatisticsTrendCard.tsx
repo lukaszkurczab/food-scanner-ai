@@ -89,6 +89,7 @@ export function StatisticsTrendCard({
             <Pressable
               key={metricKey}
               accessibilityRole="button"
+              accessibilityLabel={metricChipText[metricKey]}
               onPress={() => onChangeMetric(metricKey)}
               style={({ pressed }) => [
                 styles.metricPill,

@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Animated, Text, StyleSheet, Dimensions } from "react-native";
 import { useTheme } from "@/theme/useTheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 let showToast: ((msg: string) => void) | null = null;
 
 export function ToastContainer() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-50)).current;
   const messageRef = useRef("");
@@ -60,6 +62,7 @@ export function ToastContainer() {
       style={[
         styles.container,
         {
+          top: insets.top + 16,
           opacity,
           transform: [{ translateY }],
           backgroundColor: theme.surfaceElevated,
@@ -83,7 +86,6 @@ export const Toast = {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 60,
     alignSelf: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,

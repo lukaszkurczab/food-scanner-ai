@@ -176,6 +176,8 @@ export default function MealCameraScreen({
           <Pressable
             onPress={blocked ? () => Linking.openSettings() : requestPermission}
             style={styles.permissionButton}
+            accessibilityRole="button"
+            accessibilityLabel={tCommon("continue")}
           >
             <Text style={styles.permissionButtonLabel}>
               {tCommon("continue")}

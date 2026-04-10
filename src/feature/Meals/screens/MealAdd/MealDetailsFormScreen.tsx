@@ -405,6 +405,18 @@ export function MealDetailsFormScreen({
           {!isManualMode && onReviewPhotoPress ? (
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={
+                reviewPhotoUri
+                  ? t("change_photo", {
+                      ns: "meals",
+                      defaultValue: "Change photo",
+                    })
+                  : (reviewPhotoActionLabel ??
+                    t("add_photo", {
+                      ns: "meals",
+                      defaultValue: "Add photo",
+                    }))
+              }
               onPress={onReviewPhotoPress}
               style={({ pressed }) => [
                 styles.photoCard,
@@ -500,6 +512,10 @@ export function MealDetailsFormScreen({
             <View style={styles.fieldRow}>
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel={t("review_meal_type_label", {
+                  ns: "meals",
+                  defaultValue: "Meal type",
+                })}
                 onPress={handleOpenTypePicker}
                 style={({ pressed }) => [
                   styles.selectionField,
@@ -525,6 +541,10 @@ export function MealDetailsFormScreen({
 
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel={t("review_meal_time_label", {
+                  ns: "meals",
+                  defaultValue: "Time",
+                })}
                 onPress={handleOpenTimePicker}
                 style={({ pressed }) => [
                   styles.selectionField,
@@ -579,6 +599,10 @@ export function MealDetailsFormScreen({
                   <Pressable
                     key={ingredient.id || `ingredient-${index}`}
                     accessibilityRole="button"
+                    accessibilityLabel={`${t("edit_ingredient", {
+                      ns: "meals",
+                      defaultValue: "Edit ingredient",
+                    })}: ${ingredient.name}`}
                     onPress={() => handleOpenIngredientEditor(index)}
                     style={({ pressed }) => [
                       styles.ingredientRow,
@@ -625,6 +649,16 @@ export function MealDetailsFormScreen({
 
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={t(
+                ingredients.length > 0
+                  ? "add_ingredient"
+                  : "review_meal_edit_add_first_ingredient",
+                {
+                  ns: "meals",
+                  defaultValue:
+                    ingredients.length > 0 ? "Add ingredient" : "Add first ingredient",
+                },
+              )}
               onPress={() => handleOpenIngredientEditor(null)}
               style={({ pressed }) => [
                 styles.addIngredientAction,
@@ -704,6 +738,11 @@ export function MealDetailsFormScreen({
           <Pressable
             style={styles.sheetBackdrop}
             onPress={handleCloseTypePicker}
+            accessibilityRole="button"
+            accessibilityLabel={t("close_type_picker", {
+              ns: "meals",
+              defaultValue: "Close meal type picker",
+            })}
           />
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
@@ -720,6 +759,7 @@ export function MealDetailsFormScreen({
                   <Pressable
                     key={option.value}
                     accessibilityRole="button"
+                    accessibilityLabel={t(option.labelKey, { ns: "meals" })}
                     onPress={() => setTypeDraft(option.value)}
                     style={({ pressed }) => [
                       styles.sheetOption,
@@ -776,6 +816,11 @@ export function MealDetailsFormScreen({
           <Pressable
             style={styles.sheetBackdrop}
             onPress={handleCloseTimePicker}
+            accessibilityRole="button"
+            accessibilityLabel={t("close_time_picker", {
+              ns: "meals",
+              defaultValue: "Close meal time picker",
+            })}
           />
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
@@ -830,6 +875,11 @@ export function MealDetailsFormScreen({
           <Pressable
             style={styles.sheetBackdrop}
             onPress={handleCloseIngredientEditor}
+            accessibilityRole="button"
+            accessibilityLabel={t("close_ingredient_editor", {
+              ns: "meals",
+              defaultValue: "Close ingredient editor",
+            })}
           />
           <View style={[styles.sheet, styles.ingredientSheet]}>
             <View style={styles.sheetHandle} />

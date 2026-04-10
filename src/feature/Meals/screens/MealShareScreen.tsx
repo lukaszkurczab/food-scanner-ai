@@ -784,6 +784,7 @@ export default function MealShareScreen() {
           <Pressable
             onPress={handleClose}
             accessibilityRole="button"
+            accessibilityLabel={t("common:close", { defaultValue: "Close" })}
             style={[
               styles.invalidButton,
               {
@@ -824,6 +825,11 @@ export default function MealShareScreen() {
         <View style={[styles.modeSwitch, { borderColor: theme.border }]}>
           <Pressable
             onPress={() => handleSwitchMode("quick")}
+            accessibilityRole="button"
+            accessibilityLabel={t("share_mode_quick", {
+              ns: "share",
+              defaultValue: "Quick mode",
+            })}
             style={[
               styles.modeSwitchChip,
               mode === "quick"
@@ -844,6 +850,11 @@ export default function MealShareScreen() {
           </Pressable>
           <Pressable
             onPress={() => handleSwitchMode("customize")}
+            accessibilityRole="button"
+            accessibilityLabel={t("share_mode_customize", {
+              ns: "share",
+              defaultValue: "Customize mode",
+            })}
             style={[
               styles.modeSwitchChip,
               mode === "customize"

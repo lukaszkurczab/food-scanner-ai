@@ -165,6 +165,8 @@ export default function SavedMealsCameraScreen({
           <Pressable
             onPress={requestPermission}
             style={styles.permissionButton}
+            accessibilityRole="button"
+            accessibilityLabel={t("continue", { defaultValue: "Continue" })}
           >
             <Text style={styles.permissionButtonLabel}>{t("continue")}</Text>
           </Pressable>
@@ -206,6 +208,10 @@ export default function SavedMealsCameraScreen({
                 ]}
                 onPress={handleTakePicture}
                 disabled={isTakingPhoto}
+                accessibilityRole="button"
+                accessibilityLabel={t("camera_take_photo", {
+                  defaultValue: "Take photo",
+                })}
               />
             </View>
             <View
@@ -229,6 +235,8 @@ export default function SavedMealsCameraScreen({
                     setPhotoUri(uri);
                   }}
                   style={styles.devBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("dev.sample_meal", { ns: "meals" })}
                 >
                   <Text style={styles.devBtnText}>
                     {t("dev.sample_meal", { ns: "meals" })}

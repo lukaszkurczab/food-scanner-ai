@@ -67,6 +67,7 @@ export default function WeeklyReportCard({ loading, report, onPress }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={t("weeklyReport.openCta")}
       onPress={onPress}
       style={({ pressed }) => [styles.container, pressed ? styles.pressed : null]}
       testID="weekly-report-card"

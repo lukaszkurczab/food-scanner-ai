@@ -350,6 +350,11 @@ export default function ReviewMealScreen({
                     disabled={saving}
                     style={styles.imagePressable}
                     testID="review-meal-photo"
+                    accessibilityRole="button"
+                    accessibilityLabel={t("review_meal_photo_preview", {
+                      ns: "meals",
+                      defaultValue: "Review meal photo",
+                    })}
                   >
                     <Image
                       key={image}

@@ -41,6 +41,8 @@ export const TodaysMealsList = ({ meals, onOpenMeal }: Props) => {
           <Pressable
             key={meal.cloudId || meal.mealId || `${meal.name}-${meal.timestamp}`}
             onPress={onOpenMeal ? () => onOpenMeal(meal) : undefined}
+            accessibilityRole="button"
+            accessibilityLabel={`${meal.name || t("meal")}, ${numberFormatter.format(Math.max(0, Math.round(kcal)))} kcal`}
             style={({ pressed }) => [
               styles.row,
               !isLast ? styles.rowDivider : null,

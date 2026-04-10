@@ -420,6 +420,8 @@ export default function HomeScreen({ navigation }: Props) {
 
         <Pressable
           onPress={() => navigation.navigate("HistoryList")}
+          accessibilityRole="button"
+          accessibilityLabel={t("home:viewHistory", "See full history")}
           style={({ pressed }) => [styles.historyLink, pressed && styles.historyLinkPressed]}
         >
           <Text style={styles.historyLinkText}>
