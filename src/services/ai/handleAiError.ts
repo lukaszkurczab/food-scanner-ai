@@ -10,7 +10,7 @@ export type UnknownErrorStrategy =
   | { action: "return-null" }
   | { action: "wrap-unavailable" };
 
-type AiErrorSource = "askDietAI" | "textMealService" | "VisionService";
+type AiErrorSource = "textMealService" | "VisionService";
 
 type SourceMeta = {
   contractSource: string;
@@ -18,10 +18,6 @@ type SourceMeta = {
 };
 
 const SOURCE_META: Record<AiErrorSource, SourceMeta> = {
-  askDietAI: {
-    contractSource: "AskDietAI",
-    failureMessage: "[askDietAI] backend AI request failed",
-  },
   textMealService: {
     contractSource: "TextMealService",
     failureMessage: "[textMealService] backend text analysis failed",

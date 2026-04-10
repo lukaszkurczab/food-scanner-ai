@@ -6,7 +6,6 @@ const mockPieChart = jest.fn<(props: unknown) => null>(() => null);
 const mockDonutChart = jest.fn<(props: unknown) => null>(() => null);
 const mockBarMini = jest.fn<(props: unknown) => null>(() => null);
 const mockPolarAreaChart = jest.fn<(props: unknown) => null>(() => null);
-const mockRadarChart = jest.fn<(props: unknown) => null>(() => null);
 const mockGaugeChart = jest.fn<(props: unknown) => null>(() => null);
 
 jest.mock("./chartLayouts/MacroPieChart", () => ({
@@ -24,10 +23,6 @@ jest.mock("./chartLayouts/MacroBarMini", () => ({
 jest.mock("./chartLayouts/MacroPolarAreaChart", () => ({
   __esModule: true,
   default: (props: unknown) => mockPolarAreaChart(props),
-}));
-jest.mock("./chartLayouts/MacroRadarChart", () => ({
-  __esModule: true,
-  default: (props: unknown) => mockRadarChart(props),
 }));
 jest.mock("./chartLayouts/GaugeMacroChart", () => ({
   __esModule: true,
@@ -53,7 +48,6 @@ describe("ChartOverlay", () => {
     mockDonutChart.mockClear();
     mockBarMini.mockClear();
     mockPolarAreaChart.mockClear();
-    mockRadarChart.mockClear();
     mockGaugeChart.mockClear();
   });
 

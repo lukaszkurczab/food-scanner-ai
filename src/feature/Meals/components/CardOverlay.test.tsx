@@ -4,7 +4,6 @@ import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 const mockSummaryCard = jest.fn<(props: unknown) => null>(() => null);
 const mockVerticalStackCard = jest.fn<(props: unknown) => null>(() => null);
-const mockBadgeCard = jest.fn<(props: unknown) => null>(() => null);
 const mockSplitCard = jest.fn<(props: unknown) => null>(() => null);
 const mockTagStripCard = jest.fn<(props: unknown) => null>(() => null);
 
@@ -15,10 +14,6 @@ jest.mock("./cardLayouts/MacroSummaryCard", () => ({
 jest.mock("./cardLayouts/MacroVerticalStackCard", () => ({
   __esModule: true,
   default: (props: unknown) => mockVerticalStackCard(props),
-}));
-jest.mock("./cardLayouts/MacroBadgeCard", () => ({
-  __esModule: true,
-  default: (props: unknown) => mockBadgeCard(props),
 }));
 jest.mock("./cardLayouts/MacroSplitCard", () => ({
   __esModule: true,
@@ -33,7 +28,6 @@ describe("CardOverlay", () => {
   beforeEach(() => {
     mockSummaryCard.mockClear();
     mockVerticalStackCard.mockClear();
-    mockBadgeCard.mockClear();
     mockSplitCard.mockClear();
     mockTagStripCard.mockClear();
   });
