@@ -82,11 +82,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingHorizontal: theme.spacing.md,
     },
     sizeMd: {
-      minHeight: 44,
+      minHeight: 48,
       paddingVertical: theme.spacing.xs,
     },
     sizeSm: {
-      minHeight: 32,
+      minHeight: 48,
       paddingVertical: theme.spacing.xs,
     },
     pressed: {

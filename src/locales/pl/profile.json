@@ -265,8 +265,12 @@
   "exportSavedPathHint": "Zapisano w: {{path}}",
   "paywall": {
     "title": "Premium na miesiąc",
+    "hero_title": "Odblokuj Fitaly Premium",
+    "hero_subtitle": "Wszystko, czego potrzebujesz do osiągnięcia celów",
     "priceLabel": "Cena",
     "priceText": "14,99 zł  / miesiąc",
+    "savings_badge": "OSZCZĘDŹ 40%",
+    "social_proof": "Zaufało nam ponad 10 000 użytkowników",
     "subscribe": "Subskrybuj",
     "disclaimer": "Opłata zostanie pobrana z Twojego konta w momencie potwierdzenia zakupu. Subskrypcja odnawia się automatycznie, chyba że zostanie anulowana co najmniej 24 godziny przed końcem bieżącego okresu. Opłata za odnowienie zostanie pobrana w ciągu 24 godzin przed końcem bieżącego okresu. Subskrypcjami możesz zarządzać w ustawieniach konta {{storeName}}."
   }

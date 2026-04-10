@@ -152,7 +152,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: theme.spacing.sm,
     },
     chipOption: {
-      minHeight: 44,
+      minHeight: 48,
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
       borderRadius: theme.rounded.full,

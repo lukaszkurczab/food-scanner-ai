@@ -237,6 +237,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginLeft: theme.spacing.xs,
       width: 32,
       height: 32,
+      minHeight: 48,
       borderRadius: theme.rounded.full,
       alignItems: "center",
       justifyContent: "center",
@@ -266,7 +267,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
       width: "100%",
-      minHeight: 44,
+      minHeight: 48,
     },
     dropdownIcon: {
       marginRight: theme.spacing.sm,

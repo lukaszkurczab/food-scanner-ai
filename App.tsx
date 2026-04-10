@@ -50,6 +50,7 @@ import {
 } from "@/services/reminders/reminderRuntime";
 import { captureException } from "@/services/core/errorLogger";
 import { getLaunchReadinessIssue } from "@/services/release/launchReadiness";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 const extra = Constants.expoConfig?.extra as Record<string, unknown> | undefined;
 const sentryDsn = typeof extra?.sentryDsn === "string" ? extra.sentryDsn : "";
@@ -196,9 +197,11 @@ function Root() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Root />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <Root />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 

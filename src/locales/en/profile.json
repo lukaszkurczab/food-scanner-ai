@@ -264,8 +264,12 @@
   "exportSavedPathHint": "Saved to: {{path}}",
   "paywall": {
     "title": "Premium monthly",
+    "hero_title": "Unlock Fitaly Premium",
+    "hero_subtitle": "Everything you need to reach your goals",
     "priceLabel": "Price",
     "priceText": "14.99 zł  / month",
+    "savings_badge": "SAVE 40%",
+    "social_proof": "Trusted by 10,000+ users",
     "subscribe": "Subscribe",
     "disclaimer": "Payment will be charged to your account at confirmation of purchase. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel subscriptions in your {{storeName}} account settings."
   },
