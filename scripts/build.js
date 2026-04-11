@@ -148,8 +148,9 @@ function main() {
       : `build-${subdirName}.ipa`;
   const outFile = path.join(outDir, filename);
 
+  const easCliVersion = "18.6.0";
   const easArgs = [
-    "eas",
+    `eas-cli@${easCliVersion}`,
     "build",
     "--platform",
     platform,

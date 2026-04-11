@@ -133,6 +133,11 @@ Description:
 - `DEBUG_OCR` - OCR debug flag (`true`/`false`). Keep `false` for production.
 - `DISABLE_BILLING` - disables billing in dev (`true`/`false`).
 - `FORCE_PREMIUM` - premium testing flag (`true`/`false`).
+- `SENTRY_ORG` - Sentry organization slug used for source map upload.
+- `SENTRY_PROJECT` - Sentry project slug used for source map upload.
+- `SENTRY_ENVIRONMENT` - Sentry environment tag (`smoke`, `production`, etc.).
+- `SENTRY_DSN` - app runtime DSN for crash/error reporting from the device.
+- `SENTRY_AUTH_TOKEN` - build-time auth token used by `sentry-cli` for source map upload.
 - `GOOGLE_FONTS_KEY` - used only by `npm run fonts:download`.
 
 ### Production release checks

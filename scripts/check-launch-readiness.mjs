@@ -197,11 +197,23 @@ function checkRevenueCatKeys() {
 
 function checkSentryDsn() {
   const sentryDsn = (process.env.SENTRY_DSN ?? "").trim();
-  if (!sentryDsn) {
-    console.warn(
-      "[launch-readiness] WARNING: SENTRY_DSN is not set — production crashes will not be tracked.",
+  if (sentryDsn) return;
+
+  const assumeEasSecrets =
+    String(process.env.READINESS_ASSUME_EAS_SECRETS ?? "")
+      .trim()
+      .toLowerCase() === "true";
+
+  if (assumeEasSecrets) {
+    console.log(
+      "[launch-readiness] SENTRY_DSN is not set locally. Assuming EAS secrets provide SENTRY_DSN for cloud build.",
     );
+    return;
   }
+
+  console.warn(
+    "[launch-readiness] WARNING: SENTRY_DSN is not set — production crashes will not be tracked.",
+  );
 }
 
 if (profile !== PRODUCTION_BUILD_PROFILE) {

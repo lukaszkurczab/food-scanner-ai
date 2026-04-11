@@ -7,6 +7,8 @@ const androidGoogleServicesFile =
 const configuredApiBaseUrl = (
   process.env.EXPO_PUBLIC_API_BASE_URL || ""
 ).trim();
+const sentryOrganization = (process.env.SENTRY_ORG || "lukaszkurczab").trim();
+const sentryProject = (process.env.SENTRY_PROJECT || "fitaly-frontend").trim();
 const isLocalDevelopmentRuntime = process.env.EAS_BUILD !== "true";
 const resolvedApiBaseUrl =
   configuredApiBaseUrl ||
@@ -81,7 +83,7 @@ export default {
       "expo-background-task",
       [
         "@sentry/react-native/expo",
-        { organization: "fitaly", project: "fitaly-mobile" },
+        { organization: sentryOrganization, project: sentryProject },
       ],
     ],
     extra: {
@@ -104,6 +106,8 @@ export default {
       privacyUrl: process.env.PRIVACY_URL || "",
       sentryDsn: process.env.SENTRY_DSN || "",
       sentryEnvironment: process.env.SENTRY_ENVIRONMENT || "development",
+      sentryOrganization,
+      sentryProject,
       buildProfile: process.env.EAS_BUILD_PROFILE || "",
       eas: {
         projectId: "74cb0678-596b-4dc2-bec0-cb1e3a206caa",
