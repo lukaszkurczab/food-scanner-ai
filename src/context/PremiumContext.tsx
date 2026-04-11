@@ -20,6 +20,7 @@ import {
   rcLogOut,
   rcSetAttributes,
 } from "@/services/billing/revenuecat";
+import { logWarning } from "@/services/core/errorLogger";
 
 type PremiumContextType = {
   isPremium: boolean | null;
@@ -93,7 +94,8 @@ export const PremiumProvider = ({
       }
       setSubscriptionFromPremium(premium);
       return premium;
-    } catch {
+    } catch (error) {
+      logWarning("premium status check failed", null, error);
       const cached = await readCachedPremiumStatus(premiumKey);
       if (cached !== null) {
         setSubscriptionFromPremium(cached);
@@ -108,7 +110,8 @@ export const PremiumProvider = ({
     if (uid) {
       try {
         await post("/ai/credits/sync-tier");
-      } catch {
+      } catch (error) {
+        logWarning("ai credits tier sync failed", null, error);
         // Keep local premium status and fallback to normal credits refresh.
       }
     }
@@ -166,7 +169,10 @@ export const PremiumProvider = ({
       }
       await AsyncStorage
         .multiSet(entries)
-        .catch(() => undefined);
+        .catch((error) => {
+          logWarning("premium dev flag save failed", null, error);
+          return undefined;
+        });
       setSubscriptionFromPremium(enabled);
       await refreshPremium();
     },

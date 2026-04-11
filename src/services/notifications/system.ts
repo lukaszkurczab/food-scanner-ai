@@ -10,6 +10,7 @@ import {
 import { emitNotificationScheduledTelemetry } from "@/services/notifications/notificationTelemetry";
 import { fetchNotificationPrefs } from "@/services/notifications/notificationsRepository";
 import { parseStoredIds } from "@/services/notifications/storageUtils";
+import { logWarning } from "@/services/core/errorLogger";
 
 type QuietHours = { startHour: number; endHour: number };
 
@@ -34,7 +35,8 @@ async function getStoredIds(uid: string, key: string): Promise<string[]> {
   try {
     const raw = await AsyncStorage.getItem(sysKey(uid, key));
     return parseStoredIds(raw);
-  } catch {
+  } catch (error) {
+    logWarning("system notification ids read failed", { uid, key }, error);
     return [];
   }
 }
@@ -42,7 +44,8 @@ async function getStoredIds(uid: string, key: string): Promise<string[]> {
 async function storeIds(uid: string, key: string, ids: string[]) {
   try {
     await AsyncStorage.setItem(sysKey(uid, key), JSON.stringify(ids));
-  } catch {
+  } catch (error) {
+    logWarning("system notification ids write failed", { uid, key }, error);
     // Ignore cache write failures for notification ids.
   }
 }
@@ -52,7 +55,8 @@ async function cancelStored(uid: string, key: string) {
   for (const id of ids) {
     try {
       await Notifications.cancelScheduledNotificationAsync(id);
-    } catch {
+    } catch (error) {
+      logWarning("system notification cancel failed", { uid, key, id }, error);
       // Ignore cancellation failures for stale ids.
     }
   }
@@ -122,7 +126,8 @@ async function readCachedEnabled(key: string): Promise<boolean | null> {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return typeof parsed?.enabled === "boolean" ? parsed.enabled : null;
-  } catch {
+  } catch (error) {
+    logWarning("system notification pref cache read failed", { key }, error);
     return null;
   }
 }
@@ -133,11 +138,17 @@ async function getPrefs(uid: string) {
     const response = await fetchNotificationPrefs(uid);
     raw = response;
     await AsyncStorage.setItem(prefsCacheKey(uid), JSON.stringify(response));
-  } catch {
+  } catch (error) {
+    logWarning("system notification prefs fetch failed", { uid }, error);
     try {
       const cached = await AsyncStorage.getItem(prefsCacheKey(uid));
       raw = cached ? JSON.parse(cached) : null;
-    } catch {
+    } catch (cacheError) {
+      logWarning(
+        "system notification prefs cache parse failed",
+        { uid },
+        cacheError,
+      );
       raw = null;
     }
   }
@@ -185,7 +196,8 @@ async function gatePlanned(uid: string, key: string) {
   try {
     const raw = await AsyncStorage.getItem(plannedKey(uid, key));
     plannedUntil = asNumber(raw ? JSON.parse(raw) : null) ?? 0;
-  } catch {
+  } catch (error) {
+    logWarning("system notification planned gate read failed", { uid, key }, error);
     plannedUntil = 0;
   }
 

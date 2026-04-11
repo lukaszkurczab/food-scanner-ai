@@ -43,6 +43,7 @@ import ChatScreen from "@/feature/AI/screens/ChatScreen";
 import SavedMealsCameraScreen from "@/feature/History/screens/SavedMealsCameraScreen";
 import AddMealScreen from "@feature/Meals/screens/AddMealScreen";
 import { isE2EModeEnabled } from "@/services/e2e/config";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -160,16 +161,18 @@ export default function AppNavigator() {
   }
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        gestureEnabled: true,
-        animation: disableAnimations ? "none" : "default",
-      }}
-    >
-      {isAuthenticated ? renderAppScreens() : renderAuthScreens()}
-      {renderSharedScreens()}
-    </Stack.Navigator>
+    <ErrorBoundary>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          gestureEnabled: true,
+          animation: disableAnimations ? "none" : "default",
+        }}
+      >
+        {isAuthenticated ? renderAppScreens() : renderAuthScreens()}
+        {renderSharedScreens()}
+      </Stack.Navigator>
+    </ErrorBoundary>
   );
 }
 

@@ -17,6 +17,7 @@ import {
   type AiCreditsResponse,
   type AiCreditsStatus,
 } from "@/services/ai/contracts";
+import { logWarning } from "@/services/core/errorLogger";
 
 type AiCreditsContextValue = {
   credits: AiCreditsStatus | null;
@@ -70,7 +71,10 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
     if (uid) {
       AsyncStorage
         .setItem(creditsStorageKey(uid), JSON.stringify(parsed))
-        .catch(() => undefined);
+        .catch((error) => {
+          logWarning("ai credits cache write failed", null, error);
+          return undefined;
+        });
     }
     return parsed;
   }, [uid, updateCredits]);
@@ -89,9 +93,13 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
       updateCredits(parsed);
       await AsyncStorage
         .setItem(creditsStorageKey(uid), JSON.stringify(parsed))
-        .catch(() => undefined);
+        .catch((error) => {
+          logWarning("ai credits cache write failed", null, error);
+          return undefined;
+        });
       return parsed;
-    } catch {
+    } catch (error) {
+      logWarning("ai credits refresh failed", null, error);
       return null;
     } finally {
       setLoading(false);
@@ -122,7 +130,8 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
         if (!cached || cancelled) return;
         const parsed = parseCreditsFromResponse(JSON.parse(cached));
         if (parsed) updateCredits(parsed);
-      } catch {
+      } catch (error) {
+        logWarning("ai credits cache restore failed", null, error);
         // Ignore malformed local cache for credits snapshot.
       }
     })();

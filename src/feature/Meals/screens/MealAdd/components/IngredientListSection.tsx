@@ -1,0 +1,216 @@
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import AppIcon from "@/components/AppIcon";
+import { useTheme } from "@/theme/useTheme";
+import type { Ingredient } from "@/types/meal";
+
+type IngredientListSectionProps = {
+  isManualMode: boolean;
+  ingredients: Ingredient[];
+  onOpenIngredientEditor: (index: number | null) => void;
+};
+
+function formatIngredientAmount(value: number) {
+  if (!Number.isFinite(value)) return "0";
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+export default function IngredientListSection({
+  isManualMode,
+  ingredients,
+  onOpenIngredientEditor,
+}: IngredientListSectionProps) {
+  const theme = useTheme();
+  const { t } = useTranslation("meals");
+  const styles = createStyles(theme);
+
+  return (
+    <View style={styles.sectionBlock}>
+      <View style={styles.ingredientsHeader}>
+        <Text style={styles.ingredientsTitle}>
+          {t("review_meal_ingredients_title", {
+            defaultValue: "Ingredients",
+          })}
+        </Text>
+        <Text style={styles.ingredientsSubtitle}>
+          {isManualMode
+            ? t("manual_entry_ingredients_subtitle", {
+                defaultValue: "Ingredients are optional. Add what you know.",
+              })
+            : t("review_meal_edit_ingredients_subtitle", {
+                defaultValue: "Edit items and amounts. Totals update below.",
+              })}
+        </Text>
+      </View>
+
+      {ingredients.length > 0 ? (
+        <View style={styles.ingredientsList}>
+          {ingredients.map((ingredient, index) => (
+            <Pressable
+              key={ingredient.id || `ingredient-${index}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${t("edit_ingredient", {
+                defaultValue: "Edit ingredient",
+              })}: ${ingredient.name}`}
+              onPress={() => onOpenIngredientEditor(index)}
+              style={({ pressed }) => [
+                styles.ingredientRow,
+                pressed ? styles.selectionFieldPressed : null,
+              ]}
+            >
+              <Text style={styles.ingredientName}>{ingredient.name}</Text>
+              <View style={styles.ingredientMeta}>
+                <Text style={styles.ingredientAmount}>
+                  {`${formatIngredientAmount(ingredient.amount)}${ingredient.unit ?? "g"}`}
+                </Text>
+                <AppIcon name="chevron-right" size={18} color={theme.textSecondary} />
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.emptyIngredientsCard}>
+          <Text style={styles.emptyIngredientsTitle}>
+            {t("review_meal_edit_no_ingredients_title", {
+              defaultValue: "No ingredients yet",
+            })}
+          </Text>
+          <Text style={styles.emptyIngredientsDescription}>
+            {isManualMode
+              ? t("manual_entry_no_ingredients_description", {
+                  defaultValue: "Add the main ingredients for a better estimate.",
+                })
+              : t("review_meal_edit_no_ingredients_description", {
+                  defaultValue: "Add ingredients if you want to refine nutrition.",
+                })}
+          </Text>
+        </View>
+      )}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t(
+          ingredients.length > 0
+            ? "add_ingredient"
+            : "review_meal_edit_add_first_ingredient",
+          {
+            defaultValue:
+              ingredients.length > 0 ? "Add ingredient" : "Add first ingredient",
+          },
+        )}
+        onPress={() => onOpenIngredientEditor(null)}
+        style={({ pressed }) => [
+          styles.addIngredientAction,
+          pressed ? styles.selectionFieldPressed : null,
+        ]}
+      >
+        <Text style={styles.addIngredientPlus}>+</Text>
+        <Text style={styles.addIngredientLabel}>
+          {t(
+            ingredients.length > 0
+              ? "add_ingredient"
+              : "review_meal_edit_add_first_ingredient",
+            {
+              defaultValue:
+                ingredients.length > 0 ? "Add ingredient" : "Add first ingredient",
+            },
+          )}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const createStyles = (theme: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    sectionBlock: {
+      gap: theme.spacing.sm,
+    },
+    ingredientsHeader: {
+      gap: 3,
+    },
+    ingredientsTitle: {
+      color: theme.text,
+      fontSize: 16,
+      lineHeight: 22,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    ingredientsSubtitle: {
+      color: theme.textSecondary,
+      fontSize: 13,
+      lineHeight: 18,
+      maxWidth: 280,
+    },
+    ingredientsList: {
+      gap: theme.spacing.xs,
+    },
+    ingredientRow: {
+      minHeight: 42,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.borderSoft,
+      backgroundColor: theme.background,
+      paddingHorizontal: theme.spacing.sm + 2,
+      paddingVertical: theme.spacing.sm - 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    selectionFieldPressed: {
+      opacity: 0.72,
+    },
+    ingredientName: {
+      flex: 1,
+      color: theme.text,
+      fontSize: 15,
+      lineHeight: 20,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    ingredientMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+    },
+    ingredientAmount: {
+      color: theme.textSecondary,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    emptyIngredientsCard: {
+      borderRadius: theme.rounded.lg,
+      backgroundColor: theme.background,
+      padding: theme.spacing.md,
+      gap: theme.spacing.xxs,
+    },
+    emptyIngredientsTitle: {
+      color: theme.text,
+      fontSize: 16,
+      lineHeight: 22,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+    emptyIngredientsDescription: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+    },
+    addIngredientAction: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.xs,
+      alignSelf: "flex-start",
+      minHeight: 24,
+    },
+    addIngredientPlus: {
+      color: theme.primary,
+      fontSize: 18,
+      lineHeight: 20,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    addIngredientLabel: {
+      color: theme.primary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: 20,
+      fontFamily: theme.typography.fontFamily.semiBold,
+    },
+  });

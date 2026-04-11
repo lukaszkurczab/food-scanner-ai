@@ -12,7 +12,7 @@ export const useAppFonts = () => {
   });
 
   if (fontsError) {
-    console.error("[fonts] load error, fallback to system fonts", fontsError);
+    if (__DEV__) console.error("[fonts] load error, fallback to system fonts", fontsError);
     return true;
   }
 

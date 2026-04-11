@@ -14,6 +14,7 @@ import {
   cancelAllForNotif,
   notificationScheduleKey,
 } from "@/services/notifications/localScheduler";
+import { logWarning } from "@/services/core/errorLogger";
 
 type BoolPrefs = { enabled: boolean };
 
@@ -42,7 +43,8 @@ function parseCachedBoolPrefs(cached: string | null): BoolPrefs | null {
   try {
     const parsed = JSON.parse(cached) as Partial<BoolPrefs>;
     return { enabled: !!parsed.enabled };
-  } catch {
+  } catch (error) {
+    logWarning("notification pref cache parse failed", null, error);
     return null;
   }
 }
@@ -70,7 +72,8 @@ async function loadPref(
     const cached = await AsyncStorage.getItem(cacheKey(uid, config));
     const parsed = parseCachedBoolPrefs(cached);
     if (parsed) return parsed;
-  } catch {
+  } catch (error) {
+    logWarning("notification pref cache read failed", null, error);
     // Ignore malformed local cache fallback.
   }
   return { enabled: config.defaultValue };
@@ -87,7 +90,8 @@ async function savePref(
       cacheKey(uid, config),
       JSON.stringify({ enabled }),
     );
-  } catch {
+  } catch (error) {
+    logWarning("notification prefs update failed", null, error);
     await AsyncStorage.setItem(
       cacheKey(uid, config),
       JSON.stringify({ enabled }),
@@ -102,7 +106,8 @@ export function useNotifications(uid: string | null) {
   const reconcileNotifications = useCallback(async (uidLocal: string) => {
     try {
       await reconcileAll(uidLocal);
-    } catch {
+    } catch (error) {
+      logWarning("notification reconcile failed", null, error);
       // Keep reminder CRUD independent from local scheduling failures.
     }
   }, []);
@@ -120,7 +125,8 @@ export function useNotifications(uid: string | null) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed)) setItems(parsed as UserNotification[]);
         }
-      } catch {
+      } catch (error) {
+        logWarning("notification list cache read failed", null, error);
         // Ignore malformed cache and continue with fresh data.
       }
       setLoading(false);
@@ -130,9 +136,9 @@ export function useNotifications(uid: string | null) {
       uid,
       onData: (arr) => {
         setItems(arr);
-        AsyncStorage.setItem(`notif:list:${uid}`, JSON.stringify(arr)).catch(
-          () => {},
-        );
+        AsyncStorage.setItem(`notif:list:${uid}`, JSON.stringify(arr)).catch((error) => {
+          logWarning("notification list cache write failed", null, error);
+        });
         setLoading(false);
       },
     });
@@ -197,7 +203,8 @@ export function useNotifications(uid: string | null) {
       null;
     try {
       prefsData = await fetchNotificationPrefs(uidLocal);
-    } catch {
+    } catch (error) {
+      logWarning("notification prefs fetch failed", null, error);
       // Fall through — loadPref will use cached values.
     }
 

@@ -6,6 +6,7 @@ import type {
 } from "@/types/notification";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { logError } from "@/services/core/errorLogger";
 
 const DEFAULT_DAYS = [1, 2, 3, 4, 5, 6, 0];
 const DEFAULT_REMINDER_TIME = { hour: 12, minute: 0 };
@@ -120,7 +121,7 @@ export function useNotificationFormState(params: {
         ? update(params.uid, params.notifId, payload)
         : create(params.uid, payload));
     } catch (error) {
-      console.error("Error saving notification:", error);
+      logError("save notification failed", null, error);
     }
 
     if (params.nav.canGoBack()) {

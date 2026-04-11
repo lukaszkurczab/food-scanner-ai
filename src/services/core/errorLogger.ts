@@ -60,7 +60,7 @@ function sendToBackend(message: string, context?: LogContext, error?: LogError) 
 }
 
 export function logInfo(message: string, context?: LogContext, error?: LogError) {
-  console.log(message, context, error);
+  if (__DEV__) console.log(message, context, error);
   sendToBackend(message, context, error);
 }
 
@@ -69,12 +69,12 @@ export function logWarning(
   context?: LogContext,
   error?: LogError
 ) {
-  console.warn(message, context, error);
+  if (__DEV__) console.warn(message, context, error);
   sendToBackend(message, context, error);
 }
 
 export function logError(message: string, context?: LogContext, error?: LogError) {
-  console.error(message, context, error);
+  if (__DEV__) console.error(message, context, error);
   sendToBackend(message, context, error);
 }
 

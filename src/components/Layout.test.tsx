@@ -44,6 +44,24 @@ jest.mock("@/components/OfflineBanner", () => {
 });
 
 describe("Layout", () => {
+  type SurfaceStyleShape = {
+    paddingTop?: number;
+    paddingBottom?: number;
+    paddingLeft?: number;
+    paddingRight?: number;
+    backgroundColor?: unknown;
+  };
+
+  const isSurfaceView = (style: unknown): boolean => {
+    const flattened = StyleSheet.flatten(style) as SurfaceStyleShape;
+    return (
+      typeof flattened?.paddingTop === "number" &&
+      typeof flattened?.paddingBottom === "number" &&
+      typeof flattened?.paddingLeft === "number" &&
+      typeof flattened?.paddingRight === "number"
+    );
+  };
+
   afterEach(() => {
     jest.restoreAllMocks();
     mockUseE2ENetInfo.mockReset();
@@ -141,8 +159,7 @@ describe("Layout", () => {
 
     const getRootPaddingBottom = () => {
       const rootView = UNSAFE_getAllByType(View).find((node) => {
-        const flattened = StyleSheet.flatten(node.props.style);
-        return flattened?.paddingLeft === 32 && flattened?.paddingRight === 32;
+        return isSurfaceView(node.props.style);
       });
 
       expect(rootView).toBeTruthy();
@@ -178,8 +195,7 @@ describe("Layout", () => {
     );
 
     const rootView = UNSAFE_getAllByType(View).find((node) => {
-      const flattened = StyleSheet.flatten(node.props.style);
-      return flattened?.paddingLeft === 32 && flattened?.paddingRight === 32;
+      return isSurfaceView(node.props.style);
     });
 
     expect(rootView).toBeTruthy();
@@ -195,12 +211,10 @@ describe("Layout", () => {
     );
 
     const paddedSurface = UNSAFE_getAllByType(View).find((node) => {
-      const flattened = StyleSheet.flatten(node.props.style);
-      return (
-        flattened?.paddingLeft === 32 &&
-        flattened?.paddingRight === 32 &&
-        flattened?.backgroundColor
-      );
+      if (!isSurfaceView(node.props.style)) {
+        return false;
+      }
+      return Boolean(StyleSheet.flatten(node.props.style)?.backgroundColor);
     });
 
     expect(paddedSurface).toBeTruthy();

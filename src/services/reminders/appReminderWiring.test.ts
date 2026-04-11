@@ -1,7 +1,6 @@
 import React from "react";
 import { describe, expect, it, jest, beforeEach } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
-import App from "../../../App";
 
 const mockInitReminderRuntime = jest.fn<() => Promise<void>>();
 const mockSetReminderRuntimeUid =
@@ -154,6 +153,29 @@ jest.mock("@/services/telemetry/telemetryLifecycle", () => ({
 jest.mock("@/services/telemetry/navigationTelemetry", () => ({
   createNavigationTelemetryTracker: jest.fn(() => jest.fn()),
 }));
+
+jest.mock("@/services/release/launchReadiness", () => ({
+  getLaunchReadinessIssue: jest.fn(() => null),
+}));
+
+jest.mock("@/services/core/envValidation", () => ({
+  warnMissingEnv: jest.fn(),
+}));
+
+jest.mock("react-native-safe-area-context", () => {
+  const ReactActual = jest.requireActual("react") as typeof import("react");
+
+  return {
+    SafeAreaProvider: ({ children }: { children: React.ReactNode }) =>
+      ReactActual.createElement(ReactActual.Fragment, null, children),
+    useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+  };
+});
+
+const AppModule = jest.requireActual<typeof import("../../../App")>(
+  "../../../App",
+);
+const App = AppModule.default as React.ComponentType;
 
 describe("App.tsx → Smart Reminders runtime wiring", () => {
   beforeEach(() => {

@@ -49,6 +49,7 @@ import {
   stopReminderRuntime,
 } from "@/services/reminders/reminderRuntime";
 import { captureException } from "@/services/core/errorLogger";
+import { warnMissingEnv } from "@/services/core/envValidation";
 import { getLaunchReadinessIssue } from "@/services/release/launchReadiness";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -82,6 +83,10 @@ function Root() {
       getCurrentRouteName: getCurrentRouteNameSafe,
     });
   }
+
+  useEffect(() => {
+    warnMissingEnv();
+  }, []);
 
   useEffect(() => {
     if (!launchReadinessIssue || launchIssueLoggedRef.current) {

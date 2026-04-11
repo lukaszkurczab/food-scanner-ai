@@ -1,8 +1,42 @@
 import * as SQLite from "expo-sqlite";
+import { runMigrations as runMigrationRunner } from "./migrationRunner";
 
 const DB_NAME = "fitaly.db";
 
 let db: SQLite.SQLiteDatabase | null = null;
+let migrationRunnerPromise: Promise<void> | null = null;
+
+type AsyncMigrationDatabase = SQLite.SQLiteDatabase & {
+  execAsync: (sql: string) => Promise<void>;
+  getFirstAsync: <T>(
+    sql: string,
+    params?: unknown[],
+  ) => Promise<T | null>;
+  runAsync: (sql: string, params?: unknown[]) => Promise<unknown>;
+  withTransactionAsync: (fn: () => Promise<void>) => Promise<void>;
+};
+
+function supportsAsyncMigrations(
+  database: SQLite.SQLiteDatabase,
+): database is AsyncMigrationDatabase {
+  const candidate = database as Partial<AsyncMigrationDatabase>;
+  return (
+    typeof candidate.execAsync === "function" &&
+    typeof candidate.getFirstAsync === "function" &&
+    typeof candidate.runAsync === "function" &&
+    typeof candidate.withTransactionAsync === "function"
+  );
+}
+
+function ensureMigrationRunner(): Promise<void> {
+  if (!migrationRunnerPromise) {
+    const database = getDB();
+    migrationRunnerPromise = supportsAsyncMigrations(database)
+      ? runMigrationRunner(database)
+      : Promise.resolve();
+  }
+  return migrationRunnerPromise;
+}
 
 export function getDB(): SQLite.SQLiteDatabase {
   if (!db) {
@@ -11,6 +45,12 @@ export function getDB(): SQLite.SQLiteDatabase {
     db.execSync(`PRAGMA foreign_keys = ON;`);
   }
   return db;
+}
+
+export async function getDb(): Promise<SQLite.SQLiteDatabase> {
+  const database = getDB();
+  await ensureMigrationRunner();
+  return database;
 }
 
 function getUserVersion(d: SQLite.SQLiteDatabase): number {
@@ -546,6 +586,8 @@ export function runMigrations() {
       throw e;
     }
   }
+
+  void ensureMigrationRunner().catch(() => undefined);
 }
 
 export function resetOfflineStorage() {

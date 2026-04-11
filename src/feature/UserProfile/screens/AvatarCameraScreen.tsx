@@ -9,6 +9,7 @@ import AppIcon from "@/components/AppIcon";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { logError, logWarning } from "@/services/core/errorLogger";
 
 const SHUTTER = 72;
 const SWITCH = 50;
@@ -54,7 +55,7 @@ export default function AvatarCameraScreen({
         onPhotoTaken?.(photo.uri);
       }
     } catch (err) {
-      console.error("Error taking picture:", err);
+      logError("take picture failed", null, err);
     } finally {
       setIsTakingPhoto(false);
     }
@@ -125,7 +126,7 @@ export default function AvatarCameraScreen({
               navigation.navigate("Profile");
             }
           } catch (err) {
-            console.log(err);
+            logWarning("avatar camera error", null, err);
           } finally {
             setIsUploading(false);
           }

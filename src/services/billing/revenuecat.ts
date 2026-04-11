@@ -36,7 +36,7 @@ export function isBillingDisabled(): boolean {
 }
 
 function log(...args: unknown[]) {
-  console.log("[RC]", ...args);
+  if (__DEV__) console.log("[RC]", ...args);
 }
 
 function getErrorMeta(err: unknown) {

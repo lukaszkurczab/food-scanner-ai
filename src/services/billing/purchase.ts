@@ -34,7 +34,7 @@ type PurchaseErrorMeta = {
 };
 
 function log(...args: unknown[]) {
-  console.log("[IAP]", ...args);
+  if (__DEV__) console.log("[IAP]", ...args);
 }
 
 function errToObj(e: unknown): PurchaseErrorMeta {
