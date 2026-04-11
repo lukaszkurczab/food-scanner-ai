@@ -18,6 +18,7 @@ import { StatisticsDailyAveragesSection } from "@/feature/Statistics/components/
 import { StatisticsMacroBreakdownCard } from "@/feature/Statistics/components/StatisticsMacroBreakdownCard";
 import { StatisticsPremiumBanner } from "@/feature/Statistics/components/StatisticsPremiumBanner";
 import { StatisticsEmptyState } from "@/feature/Statistics/components/StatisticsEmptyState";
+import { endOfDay, getAccessWindowStartDate } from "@/utils/accessWindow";
 
 type StatisticsNavigation = StackNavigationProp<RootStackParamList, "Statistics">;
 type Props = {
@@ -39,6 +40,8 @@ export default function StatisticsScreen({ navigation }: Props) {
   const uid = userData?.uid || "";
   const premiumActive = isPremium === true;
   const accessWindowDays = premiumActive ? undefined : FREE_WINDOW_DAYS;
+  const minCustomRangeDate = getAccessWindowStartDate(accessWindowDays);
+  const maxCustomRangeDate = endOfDay(new Date());
 
   const state = useStatisticsState({
     uid,
@@ -73,6 +76,8 @@ export default function StatisticsScreen({ navigation }: Props) {
               state.setCustomRange(range);
               state.setActive("custom");
             }}
+            minDate={minCustomRangeDate}
+            maxDate={maxCustomRangeDate}
           />
         ) : null}
 

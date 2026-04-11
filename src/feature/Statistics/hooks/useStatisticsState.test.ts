@@ -220,4 +220,48 @@ describe("useStatisticsState", () => {
       result.current.customRange.end.getTime(),
     );
   });
+
+  it("clamps free custom range to the access window", () => {
+    const { result } = renderHook(() =>
+      useStatisticsState({
+        uid: "user-1",
+        calorieTarget: null,
+        accessWindowDays: 30,
+      }),
+    );
+
+    act(() => {
+      result.current.setActive("custom");
+      result.current.setCustomRange({
+        start: new Date(2026, 0, 1, 0, 0, 0, 0),
+        end: new Date(2026, 0, 15, 0, 0, 0, 0),
+      });
+    });
+
+    expect(result.current.customRange.start.getFullYear()).toBe(2026);
+    expect(result.current.customRange.start.getMonth()).toBe(1);
+    expect(result.current.customRange.start.getDate()).toBe(9);
+    expect(result.current.customRange.end.getFullYear()).toBe(2026);
+    expect(result.current.customRange.end.getMonth()).toBe(1);
+    expect(result.current.customRange.end.getDate()).toBe(9);
+  });
+
+  it("keeps premium custom range unchanged", () => {
+    const { result } = renderHook(() =>
+      useStatisticsState({ uid: "user-1", calorieTarget: null }),
+    );
+
+    act(() => {
+      result.current.setActive("custom");
+      result.current.setCustomRange({
+        start: new Date(2026, 0, 1, 0, 0, 0, 0),
+        end: new Date(2026, 0, 15, 0, 0, 0, 0),
+      });
+    });
+
+    expect(result.current.customRange.start.getMonth()).toBe(0);
+    expect(result.current.customRange.start.getDate()).toBe(1);
+    expect(result.current.customRange.end.getMonth()).toBe(0);
+    expect(result.current.customRange.end.getDate()).toBe(15);
+  });
 });

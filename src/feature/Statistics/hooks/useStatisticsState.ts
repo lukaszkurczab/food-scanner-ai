@@ -9,26 +9,26 @@ import type {
   RangeKey,
   StatisticsEmptyKind,
 } from "@/feature/Statistics/types";
+import { clampDateRangeToAccessWindow, endOfDay, startOfDay } from "@/utils/accessWindow";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-const startOfDay = (date: Date) => {
-  const normalized = new Date(date);
-  normalized.setHours(0, 0, 0, 0);
-  return normalized;
-};
-
-const endOfDay = (date: Date) => {
-  const normalized = new Date(date);
-  normalized.setHours(23, 59, 59, 999);
-  return normalized;
-};
 
 const normalizeRange = (range: DateRange): DateRange => {
   const start = startOfDay(range.start);
   const end = startOfDay(range.end);
   if (start <= end) return { start, end };
   return { start: end, end: start };
+};
+
+const clampRangeForAccessWindow = (
+  range: DateRange,
+  accessWindowDays?: number,
+): DateRange => {
+  const clamped = clampDateRangeToAccessWindow(range, accessWindowDays);
+  return {
+    start: startOfDay(clamped.start),
+    end: startOfDay(clamped.end),
+  };
 };
 
 const getMealTimestamp = (meal: Meal): Date | null => {
@@ -96,7 +96,7 @@ export function useStatisticsState(params: {
   const [metric, setMetric] = useState<MetricKey>("kcal");
 
   const setCustomRange = (range: DateRange) => {
-    setCustomRangeState(normalizeRange(range));
+    setCustomRangeState(clampRangeForAccessWindow(range, params.accessWindowDays));
   };
 
   useEffect(() => {
@@ -104,11 +104,21 @@ export function useStatisticsState(params: {
     void getMeals();
   }, [getMeals, params.uid]);
 
-  const selectedRange = useMemo<DateRange>(() => {
+  useEffect(() => {
+    setCustomRangeState((prev) =>
+      clampRangeForAccessWindow(prev, params.accessWindowDays),
+    );
+  }, [params.accessWindowDays]);
+
+  const requestedRange = useMemo<DateRange>(() => {
     if (active === "7d") return buildRecentRange(7);
     if (active === "30d") return buildRecentRange(30);
     return normalizeRange(customRange);
   }, [active, customRange]);
+
+  const selectedRange = useMemo<DateRange>(() => {
+    return clampRangeForAccessWindow(requestedRange, params.accessWindowDays);
+  }, [params.accessWindowDays, requestedRange]);
 
   const effectiveRange = useMemo<DateRange>(() => {
     const today = startOfDay(new Date());
@@ -297,6 +307,6 @@ export function useStatisticsState(params: {
     metricAverage: metricAverageByKey[metric],
     isWindowLimited:
       !!params.accessWindowDays &&
-      selectedRange.start.getTime() < effectiveRange.start.getTime(),
+      requestedRange.start.getTime() < effectiveRange.start.getTime(),
   };
 }

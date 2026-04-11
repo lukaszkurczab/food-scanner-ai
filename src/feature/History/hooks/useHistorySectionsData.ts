@@ -17,11 +17,30 @@ import {
   filterSectionsByQuery,
   removeMealFromSections,
 } from "@/feature/History/services/historySectionsService";
+import { resolveDateRangeWithinAccessWindow } from "@/utils/accessWindow";
 
 const PAGE = 20;
 const PULL_THROTTLE_MS = 30_000;
 
 export type HistoryErrorKind = "load" | "sync" | null;
+
+function getMealTimestamp(meal: { timestamp?: unknown; updatedAt?: unknown; createdAt?: unknown }) {
+  const raw = meal.timestamp ?? meal.updatedAt ?? meal.createdAt;
+  const parsed = new Date(raw as string | number | Date);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function isMealInDateRange(
+  meal: { timestamp?: unknown; updatedAt?: unknown; createdAt?: unknown },
+  dateRange?: { start: Date; end: Date },
+) {
+  if (!dateRange) return true;
+  const timestamp = getMealTimestamp(meal);
+  if (!timestamp) return false;
+  const ts = timestamp.getTime();
+  return ts >= dateRange.start.getTime() && ts <= dateRange.end.getTime();
+}
 
 export function useHistorySectionsData(params: {
   uid: string | null | undefined;
@@ -50,20 +69,26 @@ export function useHistorySectionsData(params: {
   const lastPullRequestedAtRef = useRef(0);
 
   const localFilters: LocalHistoryFilters | undefined = useMemo(() => {
-    if (!params.filters) return undefined;
-    return {
-      calories: params.filters.calories,
-      protein: params.filters.protein,
-      carbs: params.filters.carbs,
-      fat: params.filters.fat,
-      dateRange: params.filters.dateRange
+    const dateRange = resolveDateRangeWithinAccessWindow(
+      params.filters?.dateRange
         ? {
             start: new Date(params.filters.dateRange.start),
             end: new Date(params.filters.dateRange.end),
           }
         : undefined,
+      params.accessWindowDays,
+    );
+
+    if (!params.filters && !dateRange) return undefined;
+
+    return {
+      calories: params.filters?.calories,
+      protein: params.filters?.protein,
+      carbs: params.filters?.carbs,
+      fat: params.filters?.fat,
+      dateRange,
     };
-  }, [params.filters]);
+  }, [params.accessWindowDays, params.filters]);
 
   const resetAndLoadLocal = useCallback(async () => {
     if (!params.uid) {
@@ -175,6 +200,15 @@ export function useHistorySectionsData(params: {
       const meal = await getMealByCloudIdLocal(uid, id);
       if (!meal || meal.deleted) return;
 
+      if (!isMealInDateRange(meal, localFilters?.dateRange)) {
+        setSectionsMap((prev) => {
+          const next = new Map(prev);
+          removeMealFromSections(next, id);
+          return next;
+        });
+        return;
+      }
+
       setSectionsMap((prev) => {
         const next = new Map(prev);
         addOrUpdateMealInSections(next, meal, {
@@ -200,7 +234,13 @@ export function useHistorySectionsData(params: {
     return () => {
       [up, del].forEach((unsub) => unsub && unsub());
     };
-  }, [params.locale, params.todayLabel, params.uid, params.yesterdayLabel]);
+  }, [
+    localFilters?.dateRange,
+    params.locale,
+    params.todayLabel,
+    params.uid,
+    params.yesterdayLabel,
+  ]);
 
   const loadMore = useCallback(async () => {
     if (!params.uid || !hasMore || loadingMoreRef.current || !cursor) return;

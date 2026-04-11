@@ -451,6 +451,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       alignItems: "center",
       gap: theme.spacing.sm,
+      overflow: "visible",
     },
     searchBox: {
       flex: 1,

@@ -5,16 +5,13 @@ import { Calendar, Modal } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
 import type { DateRange } from "@/feature/Statistics/types";
+import { startOfDay } from "@/utils/accessWindow";
 
 type Props = {
   range: DateRange;
   onApply: (range: DateRange) => void;
-};
-
-const startOfDay = (date: Date) => {
-  const normalized = new Date(date);
-  normalized.setHours(0, 0, 0, 0);
-  return normalized;
+  minDate?: Date;
+  maxDate?: Date;
 };
 
 const normalizeRange = (range: DateRange): DateRange => {
@@ -24,7 +21,40 @@ const normalizeRange = (range: DateRange): DateRange => {
   return { start: end, end: start };
 };
 
-export function StatisticsCustomRangeControl({ range, onApply }: Props) {
+const clampRangeToBounds = (
+  range: DateRange,
+  minDate?: Date,
+  maxDate?: Date,
+): DateRange => {
+  const normalized = normalizeRange(range);
+  let start = normalized.start;
+  let end = normalized.end;
+
+  if (minDate) {
+    const normalizedMinDate = startOfDay(minDate);
+    if (start < normalizedMinDate) start = normalizedMinDate;
+    if (end < normalizedMinDate) end = normalizedMinDate;
+  }
+
+  if (maxDate) {
+    const normalizedMaxDate = startOfDay(maxDate);
+    if (start > normalizedMaxDate) start = normalizedMaxDate;
+    if (end > normalizedMaxDate) end = normalizedMaxDate;
+  }
+
+  if (start > end) {
+    end = start;
+  }
+
+  return { start, end };
+};
+
+export function StatisticsCustomRangeControl({
+  range,
+  onApply,
+  minDate,
+  maxDate,
+}: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation(["statistics", "common"]);
@@ -45,18 +75,18 @@ export function StatisticsCustomRangeControl({ range, onApply }: Props) {
   const rangeSummary = `${formatter.format(range.start)} - ${formatter.format(range.end)}`;
 
   const openModal = () => {
-    setDraftRange(range);
+    setDraftRange(clampRangeToBounds(range, minDate, maxDate));
     setFocus("start");
     setVisible(true);
   };
 
   const closeModal = () => {
     setVisible(false);
-    setDraftRange(range);
+    setDraftRange(clampRangeToBounds(range, minDate, maxDate));
   };
 
   const applyRange = () => {
-    onApply(normalizeRange(draftRange));
+    onApply(clampRangeToBounds(draftRange, minDate, maxDate));
     setVisible(false);
   };
 
@@ -102,7 +132,8 @@ export function StatisticsCustomRangeControl({ range, onApply }: Props) {
             onToggleFocus={() =>
               setFocus((current) => (current === "start" ? "end" : "start"))
             }
-            maxDate={new Date()}
+            minDate={minDate}
+            maxDate={maxDate}
           />
         </View>
       </Modal>

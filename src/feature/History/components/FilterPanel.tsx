@@ -14,6 +14,14 @@ import { Calendar } from "@/components/Calendar";
 import { Modal } from "@/components/Modal";
 import { useTranslation } from "react-i18next";
 import { Filters, FilterScope, useFilters } from "@/context/HistoryContext";
+import {
+  clampDateRangeToAccessWindow,
+  endOfDay,
+  getAccessWindowStartDate,
+  normalizeDateRange,
+  resolveDateRangeWithinAccessWindow,
+  startOfDay,
+} from "@/utils/accessWindow";
 
 type Range = { start: Date; end: Date };
 type FilterKey = "calories" | "protein" | "carbs" | "fat" | "date";
@@ -27,41 +35,12 @@ const DEFAULTS = {
   fat: [0, 100] as [number, number],
 };
 
-function startOfDay(value: Date): Date {
-  const next = new Date(value);
-  next.setHours(0, 0, 0, 0);
-  return next;
-}
-
-function endOfDay(value: Date): Date {
-  const next = new Date(value);
-  next.setHours(23, 59, 59, 999);
-  return next;
-}
-
 function isSameRange(
   left: { start: Date; end: Date },
   right: { start: Date; end: Date },
 ): boolean {
   return +startOfDay(left.start) === +startOfDay(right.start) &&
     +endOfDay(left.end) === +endOfDay(right.end);
-}
-
-function freeWindowStart(
-  today: Date,
-  windowDays?: number,
-  isPremium?: boolean,
-) {
-  if (!windowDays || isPremium) {
-    const x = new Date(today);
-    x.setMonth(x.getMonth() - 1);
-    return x;
-  }
-
-  const c = new Date(today);
-  c.setDate(today.getDate() - (windowDays - 1));
-  c.setHours(0, 0, 0, 0);
-  return c;
 }
 
 function resolveDatePreset(range: Range): DatePreset {
@@ -165,6 +144,7 @@ export const FilterPanel: React.FC<{
 }> = ({ scope, isPremium = false, windowDays }) => {
   const theme = useTheme();
   const { t, i18n } = useTranslation(["history", "common"]);
+  const accessWindowDays = isPremium ? undefined : windowDays;
   const {
     query,
     filters: ctxFilters,
@@ -174,20 +154,17 @@ export const FilterPanel: React.FC<{
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const keyboardDismissMode: "none" | "interactive" | "on-drag" =
     Platform.OS === "ios" ? "interactive" : "on-drag";
+  const maxSelectableDate = endOfDay(new Date());
+  const minSelectableDate = getAccessWindowStartDate(accessWindowDays);
+  const clampDateRange = (range: Range) =>
+    clampDateRangeToAccessWindow(range, accessWindowDays);
 
   const initialRange: Range = useMemo(() => {
-    const today = new Date();
-
-    if (ctxFilters?.dateRange) {
-      return {
-        start: new Date(ctxFilters.dateRange.start),
-        end: new Date(ctxFilters.dateRange.end),
-      };
-    }
-
-    const start = freeWindowStart(today, windowDays, isPremium);
-    return { start, end: today };
-  }, [ctxFilters, windowDays, isPremium]);
+    return (
+      resolveDateRangeWithinAccessWindow(ctxFilters?.dateRange, accessWindowDays) ??
+      normalizeDateRange({ start: new Date(), end: new Date() })
+    );
+  }, [accessWindowDays, ctxFilters?.dateRange]);
 
   const [calories, setCalories] = useState<[number, number]>(
     (ctxFilters?.calories as [number, number]) ?? DEFAULTS.calories,
@@ -210,6 +187,11 @@ export const FilterPanel: React.FC<{
   const [openPicker, setOpenPicker] = useState(false);
 
   useEffect(() => {
+    setDateRange(initialRange);
+    setLocalRange(initialRange);
+  }, [initialRange]);
+
+  useEffect(() => {
     const nextActive: FilterKey[] = [];
     if (ctxFilters?.calories) nextActive.push("calories");
     if (ctxFilters?.protein) nextActive.push("protein");
@@ -226,17 +208,13 @@ export const FilterPanel: React.FC<{
     setActive((prev) => prev.filter((value) => value !== key));
 
   const openCalendarModal = () => {
-    setLocalRange(dateRange);
+    setLocalRange(clampDateRange(dateRange));
     setFocus("start");
     setOpenCalendar(true);
   };
 
   const applyCalendar = () => {
-    const start =
-      +localRange.start <= +localRange.end ? localRange.start : localRange.end;
-    const end =
-      +localRange.start <= +localRange.end ? localRange.end : localRange.start;
-    setDateRange({ start, end });
+    setDateRange(clampDateRange(localRange));
     addFilter("date");
     setOpenCalendar(false);
   };
@@ -247,7 +225,7 @@ export const FilterPanel: React.FC<{
     if (active.includes("protein")) payload.protein = protein;
     if (active.includes("carbs")) payload.carbs = carbs;
     if (active.includes("fat")) payload.fat = fat;
-    if (active.includes("date")) payload.dateRange = dateRange;
+    if (active.includes("date")) payload.dateRange = clampDateRange(dateRange);
     return payload;
   };
 
@@ -321,6 +299,9 @@ export const FilterPanel: React.FC<{
   const selectedDatePreset = active.includes("date")
     ? resolveDatePreset(dateRange)
     : null;
+  const monthPresetRange = rangeForDatePreset("month");
+  const showMonthPreset =
+    !minSelectableDate || monthPresetRange.start.getTime() >= minSelectableDate.getTime();
   const selectedCaloriePreset = active.includes("calories")
     ? resolveCaloriePreset(calories)
     : null;
@@ -377,7 +358,7 @@ export const FilterPanel: React.FC<{
                 label={t("history:presets.today", "Today")}
                 selected={selectedDatePreset === "today"}
                 onPress={() => {
-                  setDateRange(rangeForDatePreset("today"));
+                  setDateRange(clampDateRange(rangeForDatePreset("today")));
                   addFilter("date");
                 }}
               />
@@ -385,18 +366,20 @@ export const FilterPanel: React.FC<{
                 label={t("history:presets.last7", "Last 7 days")}
                 selected={selectedDatePreset === "last7"}
                 onPress={() => {
-                  setDateRange(rangeForDatePreset("last7"));
+                  setDateRange(clampDateRange(rangeForDatePreset("last7")));
                   addFilter("date");
                 }}
               />
-              <ChipButton
-                label={t("history:presets.month", "This month")}
-                selected={selectedDatePreset === "month"}
-                onPress={() => {
-                  setDateRange(rangeForDatePreset("month"));
-                  addFilter("date");
-                }}
-              />
+              {showMonthPreset ? (
+                <ChipButton
+                  label={t("history:presets.month", "This month")}
+                  selected={selectedDatePreset === "month"}
+                  onPress={() => {
+                    setDateRange(clampDateRange(rangeForDatePreset("month")));
+                    addFilter("date");
+                  }}
+                />
+              ) : null}
               <ChipButton
                 label={t("history:presets.custom", "Custom")}
                 selected={selectedDatePreset === "custom"}
@@ -611,6 +594,8 @@ export const FilterPanel: React.FC<{
             onToggleFocus={() =>
               setFocus((value) => (value === "start" ? "end" : "start"))
             }
+            minDate={minSelectableDate}
+            maxDate={maxSelectableDate}
           />
           <Text style={styles.calendarHint}>
             {t("history:customDateHint", "Choose a start and end date, then save.")}

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { fireEvent } from "@testing-library/react-native";
-import { describe, expect, it, jest, beforeEach } from "@jest/globals";
+import { describe, expect, it, jest, beforeEach, afterEach } from "@jest/globals";
 import { FilterPanel } from "@/feature/History/components/FilterPanel";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
@@ -156,6 +156,8 @@ describe("FilterPanel", () => {
   let mockClearFilters: ReturnType<typeof jest.fn<() => void>>;
 
   beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-03-10T09:00:00.000Z"));
     mockRangeSlider.mockClear();
     mockApplyFilters = jest.fn<(f: Filters) => void>();
     mockClearFilters = jest.fn<() => void>();
@@ -166,6 +168,10 @@ describe("FilterPanel", () => {
       clearFilters: mockClearFilters,
       setShowFilters: jest.fn(),
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("shows empty state and clears filters from cancel action", () => {
@@ -204,5 +210,49 @@ describe("FilterPanel", () => {
     expect(end).toBeTruthy();
     expect(start!.getDate()).toBe(19);
     expect(end!.getDate()).toBe(20);
+  });
+
+  it("clamps custom date range to the free 30-day window", () => {
+    const { getAllByText, getByText } = renderWithTheme(
+      <FilterPanel scope="history" isPremium={false} windowDays={30} />,
+    );
+
+    fireEvent.press(getAllByText("history:presets.custom")[0]);
+    fireEvent.press(getByText("calendar-pick"));
+    fireEvent.press(getByText("history:actions.save"));
+    fireEvent.press(getByText("history:actions.showResults"));
+
+    const payload = mockApplyFilters.mock.calls[0][0];
+    const start = payload.dateRange?.start;
+    const end = payload.dateRange?.end;
+
+    expect(start?.getFullYear()).toBe(2026);
+    expect(start?.getMonth()).toBe(1);
+    expect(start?.getDate()).toBe(9);
+    expect(start?.getHours()).toBe(0);
+    expect(start?.getMinutes()).toBe(0);
+    expect(end?.getFullYear()).toBe(2026);
+    expect(end?.getMonth()).toBe(1);
+    expect(end?.getDate()).toBe(9);
+    expect(end?.getHours()).toBe(23);
+    expect(end?.getMinutes()).toBe(59);
+  });
+
+  it("keeps premium custom date range unchanged", () => {
+    const { getAllByText, getByText } = renderWithTheme(
+      <FilterPanel scope="history" isPremium windowDays={30} />,
+    );
+
+    fireEvent.press(getAllByText("history:presets.custom")[0]);
+    fireEvent.press(getByText("calendar-pick"));
+    fireEvent.press(getByText("history:actions.save"));
+    fireEvent.press(getByText("history:actions.showResults"));
+
+    const payload = mockApplyFilters.mock.calls[0][0];
+    const start = payload.dateRange?.start;
+    const end = payload.dateRange?.end;
+
+    expect(start?.getDate()).toBe(19);
+    expect(end?.getDate()).toBe(20);
   });
 });

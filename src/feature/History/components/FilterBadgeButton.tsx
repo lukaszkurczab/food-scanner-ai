@@ -16,35 +16,42 @@ export const FilterBadgeButton: React.FC<Props> = ({
   const hasActive = activeCount > 0;
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.btn, pressed ? styles.btnPressed : null]}
-      accessibilityRole="button"
-      accessibilityLabel={t("filters")}
-    >
-      <AppIcon name="filter" size={18} color={theme.textTertiary} />
+    <View style={styles.root} testID="history-filter-button-root">
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.btn, pressed ? styles.btnPressed : null]}
+        accessibilityRole="button"
+        accessibilityLabel={t("filters")}
+      >
+        <AppIcon name="filter" size={18} color={theme.textTertiary} />
+      </Pressable>
 
       {hasActive ? (
-        <View style={styles.badge}>
+        <View pointerEvents="none" style={styles.badge} testID="history-filter-badge">
           <Text style={styles.badgeLabel}>{activeCount}</Text>
         </View>
       ) : null}
-    </Pressable>
+    </View>
   );
 };
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    root: {
+      width: 44,
+      height: 44,
+      position: "relative",
+      overflow: "visible",
+    },
     btn: {
       alignItems: "center",
       justifyContent: "center",
-      width: 44,
-      height: 44,
+      width: "100%",
+      height: "100%",
       borderRadius: theme.rounded.md,
       borderWidth: 1,
       backgroundColor: theme.surface,
       borderColor: theme.borderSoft,
-      position: "relative",
       shadowColor: theme.shadow,
       shadowOpacity: theme.isDark ? 0.14 : 0.05,
       shadowRadius: 14,
@@ -60,10 +67,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: 10,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.xxs + 1,
       position: "absolute",
-      top: -6,
-      right: -4,
+      top: -(theme.spacing.xxs + 1),
+      right: -(theme.spacing.xxs + 1),
       backgroundColor: theme.primary,
     },
     badgeLabel: {

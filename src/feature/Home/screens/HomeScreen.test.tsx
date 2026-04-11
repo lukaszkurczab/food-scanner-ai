@@ -16,6 +16,7 @@ const mockUseMeals = jest.fn();
 const mockUseNutritionState = jest.fn();
 const mockUseUserProfileContext = jest.fn();
 const mockUseAuthContext = jest.fn();
+const mockUsePremiumContext = jest.fn();
 const mockUseMealAddMethodState = jest.fn();
 const mockUseWeeklyReport = jest.fn();
 const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
@@ -35,6 +36,10 @@ jest.mock("@/context/UserProfileContext", () => ({
 
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
+}));
+
+jest.mock("@/context/PremiumContext", () => ({
+  usePremiumContext: () => mockUsePremiumContext(),
 }));
 
 jest.mock("@/feature/Meals/hooks/useMealAddMethodState", () => ({
@@ -266,6 +271,7 @@ describe("HomeScreen", () => {
       },
     });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
+    mockUsePremiumContext.mockReturnValue({ isPremium: true });
     mockUseMeals.mockReturnValue({
       meals: [],
       getMeals: jest.fn(),
@@ -374,6 +380,18 @@ describe("HomeScreen", () => {
     expect(getByText("hero-progress:0.25")).toBeTruthy();
     expect(getByText("macro-targets:125/65/225;consumed:25/15/45")).toBeTruthy();
     expect(getByText("meals:1")).toBeTruthy();
+  });
+
+  it("hides weekly report card for free users", () => {
+    mockUsePremiumContext.mockReturnValue({ isPremium: false });
+
+    const navigation = createNavigation();
+    const { queryByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    expect(queryByText("weekly-report-card:ready")).toBeNull();
+    expect(queryByText("weekly-report-card:loading")).toBeNull();
   });
 
   it("switches to the past incomplete state for a previous day and requests the correct dayKey", async () => {

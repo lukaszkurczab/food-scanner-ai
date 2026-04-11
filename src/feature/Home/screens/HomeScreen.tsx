@@ -5,6 +5,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { useUserProfileContext } from "@/context/UserProfileContext";
 import { useAuthContext } from "@/context/AuthContext";
+import { usePremiumContext } from "@/context/PremiumContext";
 import { useMeals } from "@/hooks/useMeals";
 import { useNutritionState } from "@/hooks/useNutritionState";
 import { useWeeklyReport } from "@/hooks/useWeeklyReport";
@@ -141,11 +142,13 @@ export default function HomeScreen({ navigation }: Props) {
   const { t, i18n } = useTranslation(["home", "common", "meals"]);
   const { userData } = useUserProfileContext();
   const { uid } = useAuthContext();
+  const { isPremium } = usePremiumContext();
+  const canAccessWeeklyReport = isPremium === true;
   const weeklyReportDevPreview = isWeeklyReportDevPreview();
   const { meals, getMeals } = useMeals(uid);
   const liveWeeklyReport = useWeeklyReport({
     uid,
-    active: !weeklyReportDevPreview,
+    active: canAccessWeeklyReport && !weeklyReportDevPreview,
   });
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const last7Days = useMemo(buildLast7Days, []);
@@ -405,11 +408,13 @@ export default function HomeScreen({ navigation }: Props) {
           <Text style={styles.supportCopy}>{heroModel.supportCopy}</Text>
         ) : null}
 
-        <WeeklyReportCard
-          loading={weeklyReport.loading}
-          report={weeklyReport.report}
-          onPress={() => navigation.navigate("WeeklyReport")}
-        />
+        {canAccessWeeklyReport ? (
+          <WeeklyReportCard
+            loading={weeklyReport.loading}
+            report={weeklyReport.report}
+            onPress={() => navigation.navigate("WeeklyReport")}
+          />
+        ) : null}
 
         {mealCount > 0 ? (
           <TodaysMealsList

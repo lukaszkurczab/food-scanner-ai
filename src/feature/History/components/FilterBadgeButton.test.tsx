@@ -5,29 +5,31 @@ import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => `translated:${key}`,
+    t: (key: string) => key,
   }),
 }));
 
 describe("FilterBadgeButton", () => {
-  it("renders translated label and handles press", () => {
+  it("renders active badge for positive count and supports 2-digit values", () => {
     const onPress = jest.fn();
-    const { getByLabelText } = renderWithTheme(
-      <FilterBadgeButton onPress={onPress} />,
+    const { getByText, getByTestId, getByLabelText } = renderWithTheme(
+      <FilterBadgeButton activeCount={12} onPress={onPress} />,
     );
 
-    fireEvent.press(getByLabelText("translated:filters"));
+    expect(getByText("12")).toBeTruthy();
+    expect(getByTestId("history-filter-badge")).toHaveStyle({ minWidth: 20 });
+    fireEvent.press(getByLabelText("filters"));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it("renders badge only when activeCount is greater than zero", () => {
-    const { queryByText, rerender } = renderWithTheme(
-      <FilterBadgeButton onPress={() => undefined} activeCount={0} />,
+  it("uses a non-clipping badge container and hides badge for zero", () => {
+    const { getByTestId, queryByTestId } = renderWithTheme(
+      <FilterBadgeButton activeCount={0} onPress={jest.fn()} />,
     );
 
-    expect(queryByText("2")).toBeNull();
-
-    rerender(<FilterBadgeButton onPress={() => undefined} activeCount={2} />);
-    expect(queryByText("2")).toBeTruthy();
+    expect(getByTestId("history-filter-button-root")).toHaveStyle({
+      overflow: "visible",
+    });
+    expect(queryByTestId("history-filter-badge")).toBeNull();
   });
 });
