@@ -122,6 +122,7 @@ describe("services/ai/chatThreadRepository", () => {
       syncState: "synced",
       lastSyncedAt: 100,
     });
+    expect(mockGet).not.toHaveBeenCalled();
     expect(mockEnqueueChatMessagePersist).not.toHaveBeenCalled();
   });
 

@@ -39,6 +39,7 @@ let mockChatHistoryState: {
   canSend: boolean;
   creditAllocation: number;
   send: (value: string) => Promise<string | null>;
+  retryLastSend: () => Promise<string | null>;
   cancelInFlightSend: () => void;
   loadMore: () => void;
   retryFailedSyncOps: () => Promise<void>;
@@ -115,7 +116,8 @@ describe("ChatScreen", () => {
       retryingFailedSync: false,
       canSend: true,
       creditAllocation: 100,
-      send: async () => null,
+      send: jest.fn(async () => null),
+      retryLastSend: jest.fn(async () => null),
       cancelInFlightSend: () => undefined,
       loadMore: () => undefined,
       retryFailedSyncOps: async () => undefined,
@@ -165,5 +167,18 @@ describe("ChatScreen", () => {
     expect(screen.getByText("lock.offlineBody")).toBeTruthy();
     expect(screen.getByPlaceholderText("composer.lockedOffline")).toBeTruthy();
     expect(screen.getByTestId("chat-input").props.editable).toBe(false);
+  });
+
+  it("retries the failed assistant reply without reusing composer text flow", () => {
+    mockChatHistoryState.messages = baseMessages;
+    mockChatHistoryState.sendErrorType = "timeout";
+
+    const screen = renderWithTheme(<ChatScreen />);
+
+    fireEvent.changeText(screen.getByTestId("chat-input"), "new question");
+    fireEvent.press(screen.getByText("retryLast"));
+
+    expect(mockChatHistoryState.retryLastSend).toHaveBeenCalledTimes(1);
+    expect(mockChatHistoryState.send).not.toHaveBeenCalled();
   });
 });

@@ -36,6 +36,13 @@ type AiHistoryItem = {
   text: string;
 };
 
+type RetryableSendContext = {
+  threadId: string;
+  userMessageId: string;
+  content: string;
+  createdAt: number;
+};
+
 const GATEWAY_REJECT_REASONS = new Set(["OFF_TOPIC", "ML_OFF_TOPIC", "TOO_SHORT"]);
 const CHAT_DEAD_LETTER_KINDS: QueueKind[] = ["persist_chat_message"];
 
@@ -125,6 +132,23 @@ function getGatewayRejectReason(error: unknown): string | null {
   );
 }
 
+function buildRetryableAiHistory(
+  messages: ChatMessage[],
+  nextUserMessage: string,
+  includeCurrentUser: boolean,
+): AiHistoryItem[] {
+  const history = messages.slice(0, 10).map((message) => ({
+    from: message.role === "user" ? "user" : "ai",
+    text: message.content,
+  }));
+
+  if (!includeCurrentUser) {
+    return history;
+  }
+
+  return [...history, { from: "user", text: nextUserMessage }];
+}
+
 export function useChatHistory(
   userUid: string,
   meals: Meal[],
@@ -154,6 +178,7 @@ export function useChatHistory(
   const sendInFlightRef = useRef(false);
   const activeSendRequestIdRef = useRef<string | null>(null);
   const sendAbortControllerRef = useRef<AbortController | null>(null);
+  const retryableSendRef = useRef<RetryableSendContext | null>(null);
   const isMountedRef = useRef(true);
 
   const isLocalThread = threadId.startsWith("local-");
@@ -267,8 +292,11 @@ export function useChatHistory(
     setHasMore(!!page.nextCursor);
   }, [canReadThread, hasMore, pageSize, threadId, userUid]);
 
-  const send = useCallback(
-    async (text: string): Promise<string | null> => {
+  const sendInternal = useCallback(
+    async (
+      text: string,
+      retryContext?: RetryableSendContext | null,
+    ): Promise<string | null> => {
       const trimmed = text.trim();
       if (!trimmed || !canSend || sending || sendInFlightRef.current) return null;
 
@@ -287,57 +315,61 @@ export function useChatHistory(
       setTyping(true);
       setSendErrorType(null);
 
-      const now = Date.now();
-      const createdThreadId = isLocalThread ? uuidv4() : threadId;
-      const userMsgId = uuidv4();
+      const isRetryAttempt = !!retryContext;
+      const now = retryContext?.createdAt ?? Date.now();
+      const createdThreadId = retryContext?.threadId ?? (isLocalThread ? uuidv4() : threadId);
+      const userMsgId = retryContext?.userMessageId ?? uuidv4();
       const aiMsgId = uuidv4();
       const isRequestActive = () => activeSendRequestIdRef.current === requestId;
 
-      const optimisticUser: ChatMessage = {
-        id: userMsgId,
-        userUid,
-        role: "user",
-        content: trimmed,
-        createdAt: now,
-        lastSyncedAt: now,
-        syncState: "synced",
-        deleted: false,
-        cloudId: userMsgId,
-      };
-
-      setMessages((prev) => upsertSortedMessage(prev, optimisticUser));
-
-      try {
-        await persistUserChatMessage({
+      if (!isRetryAttempt) {
+        retryableSendRef.current = null;
+        const optimisticUser: ChatMessage = {
+          id: userMsgId,
           userUid,
-          threadId: createdThreadId,
-          messageId: userMsgId,
+          role: "user",
           content: trimmed,
           createdAt: now,
-          title: isLocalThread
-            ? trimmed.length > 42
-              ? trimmed.slice(0, 42).trim() + "…"
-              : trimmed
-            : undefined,
-        });
+          lastSyncedAt: now,
+          syncState: "pending",
+          deleted: false,
+          cloudId: userMsgId,
+        };
+
+        setMessages((prev) => upsertSortedMessage(prev, optimisticUser));
+      }
+
+      try {
+        if (!isRetryAttempt) {
+          await persistUserChatMessage({
+            userUid,
+            threadId: createdThreadId,
+            messageId: userMsgId,
+            content: trimmed,
+            createdAt: now,
+            title: isLocalThread
+              ? trimmed.length > 42
+                ? trimmed.slice(0, 42).trim() + "…"
+                : trimmed
+              : undefined,
+          });
+        }
 
         let askFailed = false;
         let assistantReply: string | null = null;
         try {
           if (!isRequestActive()) return null;
 
-          const historyForAi: AiHistoryItem[] = messages.slice(0, 10).map((m) => ({
-            from: m.role === "user" ? "user" : "ai",
-            text: m.content,
-          }));
+          const historyForAi = buildRetryableAiHistory(
+            messages,
+            trimmed,
+            !isRetryAttempt,
+          );
           const aiResponse = await post<AiAskBackendResponse>(
             "/ai/ask",
             {
               message: trimmed,
-              context: buildAiContext(meals, profile, [
-                ...historyForAi,
-                { from: "user", text: trimmed },
-              ]),
+              context: buildAiContext(meals, profile, historyForAi),
             },
             {
               signal: askAbortController.signal,
@@ -403,13 +435,28 @@ export function useChatHistory(
             { userUid, threadId },
             error,
           );
+          retryableSendRef.current = {
+            threadId: createdThreadId,
+            userMessageId: userMsgId,
+            content: trimmed,
+            createdAt: now,
+          };
           askFailed = true;
         }
 
         if (!assistantReply || askFailed) {
-          return isLocalThread ? createdThreadId : null;
+          if (!askFailed) {
+            retryableSendRef.current = {
+              threadId: createdThreadId,
+              userMessageId: userMsgId,
+              content: trimmed,
+              createdAt: now,
+            };
+          }
+          return isLocalThread && !isRetryAttempt ? createdThreadId : null;
         }
         if (!isRequestActive()) return null;
+        retryableSendRef.current = null;
 
         const now2 = Date.now();
 
@@ -435,7 +482,7 @@ export function useChatHistory(
           createdAt: now2,
         });
 
-        if (isLocalThread) return createdThreadId;
+        if (isLocalThread && !isRetryAttempt) return createdThreadId;
         return null;
       } finally {
         if (
@@ -467,6 +514,17 @@ export function useChatHistory(
       refreshCredits,
     ],
   );
+
+  const send = useCallback(
+    async (text: string): Promise<string | null> => sendInternal(text, null),
+    [sendInternal],
+  );
+
+  const retryLastSend = useCallback(async (): Promise<string | null> => {
+    const retryContext = retryableSendRef.current;
+    if (!retryContext) return null;
+    return sendInternal(retryContext.content, retryContext);
+  }, [sendInternal]);
 
   const retryFailedSyncOps = useCallback(async () => {
     if (!userUid || retryingFailedSync) return;
@@ -513,6 +571,7 @@ export function useChatHistory(
     retryingFailedSync,
     loadMore,
     send,
+    retryLastSend,
     cancelInFlightSend,
     retryFailedSyncOps,
   };

@@ -13,15 +13,6 @@ import {
 import { enqueueChatMessagePersist } from "@/services/offline/queue.repo";
 import { pullChatChanges } from "@/services/offline/sync.engine";
 
-type ChatThreadApiItem = {
-  id: string;
-  title: string;
-  createdAt: number;
-  updatedAt: number;
-  lastMessage?: string | null;
-  lastMessageAt?: number | null;
-};
-
 type ChatMessageApiItem = {
   id: string;
   role: "user" | "assistant" | "system";
@@ -29,11 +20,6 @@ type ChatMessageApiItem = {
   createdAt: number;
   lastSyncedAt: number;
   deleted?: boolean;
-};
-
-type ChatThreadsPageApiResponse = {
-  items: ChatThreadApiItem[];
-  nextBeforeUpdatedAt: number | null;
 };
 
 type ChatMessagesPageApiResponse = {
@@ -63,19 +49,6 @@ function requestChatPull(userUid: string): Promise<void> {
   return task;
 }
 
-function toChatThread(userUid: string, item: ChatThreadApiItem): ChatThread {
-  return {
-    id: item.id,
-    userUid,
-    title: item.title || "",
-    createdAt: Number(item.createdAt || 0),
-    updatedAt: Number(item.updatedAt || 0),
-    lastMessage: item.lastMessage || undefined,
-    lastMessageAt:
-      item.lastMessageAt == null ? undefined : Number(item.lastMessageAt),
-  };
-}
-
 function toChatMessage(userUid: string, item: ChatMessageApiItem): ChatMessage {
   return {
     id: item.id,
@@ -88,14 +61,6 @@ function toChatMessage(userUid: string, item: ChatMessageApiItem): ChatMessage {
     deleted: !!item.deleted,
     cloudId: item.id,
   };
-}
-
-async function syncThreadsFromBackend(userUid: string): Promise<void> {
-  const response = await get<ChatThreadsPageApiResponse>("/users/me/chat/threads");
-
-  for (const item of response.items) {
-    await upsertChatThreadLocal(toChatThread(userUid, item));
-  }
 }
 
 async function syncMessagesFromBackend(params: {
@@ -285,7 +250,6 @@ export async function persistUserChatMessage(params: {
       syncState: "synced",
       lastSyncedAt: params.createdAt,
     });
-    await syncThreadsFromBackend(params.userUid);
   } catch (error) {
     await enqueueChatMessagePersist(params.userUid, {
       threadId: params.threadId,
@@ -369,7 +333,6 @@ export async function persistAssistantChatMessage(params: {
       syncState: "synced",
       lastSyncedAt: params.createdAt,
     });
-    await syncThreadsFromBackend(params.userUid);
   } catch (error) {
     await enqueueChatMessagePersist(params.userUid, {
       threadId: params.threadId,

@@ -51,7 +51,6 @@ export default function ChatScreen() {
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [threadId, setThreadId] = useState<string>(() => `local-${uuidv4()}`);
-  const lastUserMessageRef = useRef<string | null>(null);
   const lastChatPullRef = useRef<number>(0);
 
   const {
@@ -64,6 +63,7 @@ export default function ChatScreen() {
     retryingFailedSync,
     canSend,
     send,
+    retryLastSend,
     cancelInFlightSend,
     loadMore,
     retryFailedSyncOps,
@@ -98,7 +98,6 @@ export default function ChatScreen() {
   }, [sendErrorType, sending, t]);
 
   const retryEnabled =
-    Boolean(lastUserMessageRef.current) &&
     !sending &&
     canSend &&
     !isOffline &&
@@ -116,7 +115,6 @@ export default function ChatScreen() {
   const handleSend = useCallback(
     async (text: string) => {
       if (isOffline || !canSend) return;
-      lastUserMessageRef.current = text;
       const createdThreadId = await send(text);
       if (createdThreadId) setThreadId(createdThreadId);
     },
@@ -124,10 +122,8 @@ export default function ChatScreen() {
   );
 
   const handleRetry = useCallback(() => {
-    const last = lastUserMessageRef.current;
-    if (!last) return;
-    void handleSend(last);
-  }, [handleSend]);
+    void retryLastSend();
+  }, [retryLastSend]);
 
   const emptyState = (
     <View style={styles.emptyStateWrap}>

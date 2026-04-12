@@ -33,10 +33,7 @@ export function ChatMessageList({
   const keyboardDismissMode: "none" | "interactive" | "on-drag" =
     Platform.OS === "ios" ? "interactive" : "on-drag";
 
-  const data = useMemo(
-    () => [...messages].sort((a, b) => b.createdAt - a.createdAt),
-    [messages],
-  );
+  const data = messages;
 
   if (loading) {
     return (

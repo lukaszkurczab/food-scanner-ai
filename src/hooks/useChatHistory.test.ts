@@ -355,6 +355,49 @@ describe("useChatHistory", () => {
     expect(mockPersistUserChatMessage).toHaveBeenCalledTimes(1);
   }, 10_000);
 
+  it("retries the failed assistant reply without persisting a duplicate user message", async () => {
+    mockApiPost
+      .mockRejectedValueOnce(Object.assign(new Error("timeout"), { status: 504 }))
+      .mockResolvedValueOnce({
+        reply: "Recovered response",
+        userId: "user-1",
+        tier: "free",
+        balance: 19,
+        allocation: 100,
+        periodStartAt: "2026-03-01T00:00:00.000Z",
+        periodEndAt: "2026-04-01T00:00:00.000Z",
+        costs: { chat: 1, textMeal: 1, photo: 5 },
+      });
+    mockUuid
+      .mockReturnValueOnce("request-1")
+      .mockReturnValueOnce("thread-created")
+      .mockReturnValueOnce("user-msg")
+      .mockReturnValueOnce("ai-msg-1")
+      .mockReturnValueOnce("request-2")
+      .mockReturnValueOnce("ai-msg-2");
+
+    const { result } = await renderChatHistoryHook();
+
+    await act(async () => {
+      await result.current.send("hello");
+    });
+
+    await act(async () => {
+      await result.current.retryLastSend();
+    });
+
+    expect(mockPersistUserChatMessage).toHaveBeenCalledTimes(1);
+    expect(mockApiPost).toHaveBeenCalledTimes(2);
+    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
+    expect(mockPersistAssistantChatMessage).toHaveBeenCalledWith({
+      userUid: "user-1",
+      threadId: "thread-created",
+      messageId: "ai-msg-2",
+      content: "Recovered response",
+      createdAt: expect.any(Number),
+    });
+  });
+
   it("cancels in-flight send and does not persist assistant fallback on abort", async () => {
     let rejectPost: ((reason?: unknown) => void) | null = null;
     const pendingPost = new Promise((_, reject) => {
