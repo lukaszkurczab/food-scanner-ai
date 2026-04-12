@@ -39,6 +39,27 @@ function toSyncError(error: unknown) {
   });
 }
 
+async function runLoopStep(
+  loopLog: typeof log,
+  phase: string,
+  task: () => Promise<void>,
+): Promise<boolean> {
+  try {
+    await task();
+    loopLog.log("phase:done", { phase });
+    return true;
+  } catch (error) {
+    const err = toSyncError(error);
+    loopLog.error("phase:error", {
+      phase,
+      code: err.code,
+      message: err.message,
+      retryable: err.retryable,
+    });
+    return false;
+  }
+}
+
 async function withUidSyncLock<T>(uid: string, task: () => Promise<T>): Promise<T> {
   const previous = uidSyncLocks.get(uid) ?? Promise.resolve();
   let release: () => void = () => {};
@@ -81,15 +102,21 @@ export function startSyncLoop(uid: string) {
     running = true;
     try {
       if (isStale()) return;
-      await processImageUploadsStrategy(uid);
+      await runLoopStep(loopLog, "images", () => processImageUploadsStrategy(uid));
       if (isStale()) return;
-      await pushQueue(uid);
+      await runLoopStep(loopLog, "push", () => pushQueue(uid));
       if (isStale()) return;
-      await mealsStrategy.pull(uid);
+      await runLoopStep(loopLog, "meals", async () => {
+        await mealsStrategy.pull(uid);
+      });
       if (isStale()) return;
-      await myMealsStrategy.pull(uid);
+      await runLoopStep(loopLog, "myMeals", async () => {
+        await myMealsStrategy.pull(uid);
+      });
       if (isStale()) return;
-      await chatStrategy.pull(uid);
+      await runLoopStep(loopLog, "chat", async () => {
+        await chatStrategy.pull(uid);
+      });
       loopLog.log("run:done");
     } catch (e: unknown) {
       const err = toSyncError(e);

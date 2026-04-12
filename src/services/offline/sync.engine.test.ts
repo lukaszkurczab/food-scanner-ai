@@ -121,6 +121,40 @@ describe("offline sync.engine integration", () => {
     stopSyncLoop();
   });
 
+  it("continues later sync phases when an earlier phase fails", async () => {
+    const order: string[] = [];
+    mockAddEventListener.mockReturnValue(jest.fn());
+    mockProcessImageUploads.mockImplementation(async () => {
+      order.push("images");
+      throw new Error("upload failed");
+    });
+    mockRunPushQueue.mockImplementation(async () => {
+      order.push("push");
+    });
+    mockMealsPull.mockImplementation(async () => {
+      order.push("meals");
+      return 1;
+    });
+    mockMyMealsPull.mockImplementation(async () => {
+      order.push("myMeals");
+      return 1;
+    });
+    mockChatPull.mockImplementation(async () => {
+      order.push("chat");
+      return 1;
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { startSyncLoop, stopSyncLoop } = require("@/services/offline/sync.engine");
+
+    startSyncLoop("user-1");
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(order).toEqual(["images", "push", "meals", "myMeals", "chat"]);
+    stopSyncLoop();
+  });
+
   it("serializes pushQueue calls per uid using the internal lock", async () => {
     let releaseFirst!: () => void;
     const firstCall = new Promise<void>((resolve) => {

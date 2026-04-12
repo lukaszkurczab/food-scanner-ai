@@ -20,7 +20,13 @@ import { MealDraftProvider } from "@/context/MealDraftContext";
 import { PremiumProvider } from "@/context/PremiumContext";
 import { HistoryProvider } from "@/context/HistoryContext";
 import { AiCreditsProvider } from "@/context/AiCreditsContext";
-import { View, ActivityIndicator, StyleSheet, Text, Linking } from "react-native";
+import {
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  Linking,
+} from "react-native";
 import { useEffect, useRef } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { useAppFonts } from "@hooks/useAppFonts";
@@ -122,16 +128,23 @@ function Root() {
     // RevenueCat setup is moved to runtime effect to avoid extra module-evaluation work on cold start.
     initRevenueCat();
 
-    void (async () => {
-      await initTelemetryClient();
-      initNotificationTelemetry();
-      await Promise.all([
-        initTelemetryLifecycle(),
-        initReminderRuntime(),
-      ]);
-    })();
+    let cancelled = false;
+    const bootTask = setTimeout(() => {
+      void (async () => {
+        if (cancelled) return;
+        await initTelemetryClient();
+        if (cancelled) return;
+        initNotificationTelemetry();
+        await Promise.all([
+          initTelemetryLifecycle(),
+          initReminderRuntime(),
+        ]);
+      })();
+    }, 0);
 
     return () => {
+      cancelled = true;
+      clearTimeout(bootTask);
       stopReminderRuntime();
       stopNotificationTelemetry();
       stopTelemetryLifecycle();

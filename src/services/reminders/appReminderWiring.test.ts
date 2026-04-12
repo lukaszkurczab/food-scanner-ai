@@ -1,5 +1,5 @@
 import React from "react";
-import { describe, expect, it, jest, beforeEach } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
 
 const mockInitReminderRuntime = jest.fn<() => Promise<void>>();
@@ -188,7 +188,21 @@ describe("App.tsx → Smart Reminders runtime wiring", () => {
     jest.clearAllMocks();
     mockInitReminderRuntime.mockResolvedValue(undefined);
     mockSetReminderRuntimeUid.mockResolvedValue(undefined);
+    jest.useFakeTimers();
   });
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
+
+  async function flushDeferredBootstrap() {
+    await act(async () => {
+      jest.runAllTimers();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
 
   it("calls initReminderRuntime on app bootstrap", async () => {
     let renderer: TestRenderer.ReactTestRenderer;
@@ -196,6 +210,7 @@ describe("App.tsx → Smart Reminders runtime wiring", () => {
     await act(async () => {
       renderer = TestRenderer.create(React.createElement(App));
     });
+    await flushDeferredBootstrap();
 
     expect(mockInitReminderRuntime).toHaveBeenCalledTimes(1);
 
@@ -212,6 +227,7 @@ describe("App.tsx → Smart Reminders runtime wiring", () => {
     await act(async () => {
       renderer = TestRenderer.create(React.createElement(App));
     });
+    await flushDeferredBootstrap();
 
     expect(mockSetReminderRuntimeUid).toHaveBeenCalledWith(null);
     mockSetReminderRuntimeUid.mockClear();
@@ -235,6 +251,7 @@ describe("App.tsx → Smart Reminders runtime wiring", () => {
     await act(async () => {
       renderer = TestRenderer.create(React.createElement(App));
     });
+    await flushDeferredBootstrap();
 
     mockStopReminderRuntime.mockClear();
 
@@ -243,5 +260,17 @@ describe("App.tsx → Smart Reminders runtime wiring", () => {
     });
 
     expect(mockStopReminderRuntime).toHaveBeenCalledTimes(1);
+  });
+
+  it("defers bootstrap work until after initial interactions", async () => {
+    await act(async () => {
+      TestRenderer.create(React.createElement(App));
+    });
+
+    expect(mockInitReminderRuntime).not.toHaveBeenCalled();
+
+    await flushDeferredBootstrap();
+
+    expect(mockInitReminderRuntime).toHaveBeenCalledTimes(1);
   });
 });
