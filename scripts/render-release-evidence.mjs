@@ -84,12 +84,12 @@ if (flowSummary) {
 lines.push(
   "",
   "## Manual Follow-ups",
-  "- Attach the disposable smoke delete log before approving the `production` environment.",
+  "- Attach the disposable smoke delete log before final release approval.",
   "- Attach paywall screenshot + purchase/restore smoke note for visible offer.",
   "- Attach fake-PII logging evidence and Sentry data-scrubbing/retention screenshots.",
   "- Attach compliance packet link (retention matrix, processor list, DPA/SCC status, export/delete trail).",
   "- Attach rollback rehearsal note with candidate version/build identifiers.",
-  "- Confirm GitHub `production` environment has a required reviewer configured in repository settings.",
+  "- Review any missing manual evidence explicitly as the release owner before rollout.",
   "- Confirm Sentry production alerts for backend 5xx spike and mobile crash/session drop route to Discord.",
   "",
 );

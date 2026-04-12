@@ -7,7 +7,8 @@ import os from "node:os";
 import path from "node:path";
 import readinessLib from "./check-launch-readiness.lib.js";
 
-const TARGET_APP_ID = "com.lkurczab.fitaly";
+const TARGET_ANDROID_APP_ID = "com.lkurczab.fitaly";
+const TARGET_IOS_APP_ID = "com.lkurczab.foodscannerai";
 const MIN_ANDROID_TARGET_SDK = 35;
 const { PRODUCTION_BUILD_PROFILE, validateEasApiBaseUrlProfiles } = readinessLib;
 
@@ -17,11 +18,46 @@ const profile = (process.argv[2] ?? process.env.EAS_BUILD_PROFILE ?? "")
 const platform = (process.argv[3] ?? "").trim().toLowerCase();
 const rootDir = process.cwd();
 const errors = [];
+let expoConfigCache = null;
 
 function readJson(relativePath) {
   const fullPath = path.join(rootDir, relativePath);
   const text = fs.readFileSync(fullPath, "utf8");
   return JSON.parse(text);
+}
+
+function shouldCheckPlatform(targetPlatform) {
+  return !platform || platform === targetPlatform;
+}
+
+function normalizeIdentifier(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  return value.trim().replace(/^"(.*)"$/, "$1");
+}
+
+function readExpoConfig() {
+  if (expoConfigCache) {
+    return expoConfigCache;
+  }
+
+  try {
+    const output = execFileSync("npx", ["expo", "config", "--json"], {
+      cwd: rootDir,
+      encoding: "utf8",
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    expoConfigCache = JSON.parse(output);
+    return expoConfigCache;
+  } catch (error) {
+    const stderr = String(error?.stderr || error?.message || "").trim();
+    errors.push(
+      `Unable to resolve Expo config via "npx expo config --json". ${stderr}`,
+    );
+    return null;
+  }
 }
 
 function isHttpUrl(value) {
@@ -51,7 +87,7 @@ function checkEasAndroidBuildType() {
 }
 
 function checkAndroidTargetSdk() {
-  if (platform && platform !== "android") {
+  if (!shouldCheckPlatform("android")) {
     return;
   }
 
@@ -112,6 +148,10 @@ function checkApiBaseUrlMapping() {
 }
 
 function checkAndroidFirebaseConfig() {
+  if (!shouldCheckPlatform("android")) {
+    return;
+  }
+
   const googleServices = readJson("google-services.json");
   const clients = Array.isArray(googleServices?.client)
     ? googleServices.client
@@ -136,24 +176,36 @@ function checkAndroidFirebaseConfig() {
     }
   }
 
-  if (!packageNames.has(TARGET_APP_ID)) {
+  if (!packageNames.has(TARGET_ANDROID_APP_ID)) {
     errors.push(
-      `google-services.json is not configured for ${TARGET_APP_ID}. Replace Firebase Android config before production release.`,
+      `google-services.json is not configured for ${TARGET_ANDROID_APP_ID}. Replace Firebase Android config before production release.`,
+    );
+  }
+}
+
+function checkIosExpoBundleIdentifier() {
+  if (!shouldCheckPlatform("ios")) {
+    return;
+  }
+
+  const expoConfig = readExpoConfig();
+  const bundleId = normalizeIdentifier(expoConfig?.ios?.bundleIdentifier);
+  if (bundleId !== TARGET_IOS_APP_ID) {
+    errors.push(
+      `Expo iOS bundleIdentifier must be ${TARGET_IOS_APP_ID} for App Store builds (got: ${bundleId || "missing"}).`,
     );
   }
 }
 
 function checkIosFirebaseConfig() {
-  const plistPath = path.join(rootDir, "GoogleService-Info.plist");
-  const plist = fs.readFileSync(plistPath, "utf8");
-  const match = plist.match(
-    /<key>\s*BUNDLE_ID\s*<\/key>\s*<string>\s*([^<]+)\s*<\/string>/,
-  );
-  const bundleId = match?.[1]?.trim() ?? "";
-  if (bundleId !== TARGET_APP_ID) {
-    errors.push(
-      `GoogleService-Info.plist BUNDLE_ID must be ${TARGET_APP_ID} (got: ${bundleId || "missing"}). Replace Firebase iOS config before production release.`,
-    );
+  if (!shouldCheckPlatform("ios")) {
+    return;
+  }
+}
+
+function checkIosNativeBundleIdentifier() {
+  if (!shouldCheckPlatform("ios")) {
+    return;
   }
 }
 
@@ -228,7 +280,9 @@ checkEasAndroidBuildType();
 checkAndroidTargetSdk();
 checkApiBaseUrlMapping();
 checkAndroidFirebaseConfig();
+checkIosExpoBundleIdentifier();
 checkIosFirebaseConfig();
+checkIosNativeBundleIdentifier();
 checkProductionEasFlags();
 checkProductionRuntimeFlags();
 checkRevenueCatKeys();

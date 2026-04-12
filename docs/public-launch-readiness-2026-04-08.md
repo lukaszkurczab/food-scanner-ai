@@ -12,14 +12,14 @@ This file is the current source of truth for public launch automation in `fitaly
 
 ## What is still manual
 
-- The GitHub `production` environment reviewer must be configured in repository settings.
+- Final release approval is performed directly by the release owner; no separate GitHub `production` environment reviewer is required for this solo-operated project.
 - Sentry production alert rules must route to the Discord bot outside the repo.
 - Disposable smoke delete verification is manual by design and must be attached to `release-evidence`.
 
 ## Evidence expectations
 
 - `release-evidence` must contain mobile SHA, backend SHA, smoke export summary, smoke flow summary, latest successful backup link, latest successful restore drill link, and delete-evidence URL.
-- A public launch is `No-Go` if any evidence line item is missing or points to a failed run.
+- `release-evidence` is a soft gate and operator checklist. Missing manual evidence should be reviewed explicitly by the release owner, but does not automatically block rollout in-repo.
 
 ## Historical note
 

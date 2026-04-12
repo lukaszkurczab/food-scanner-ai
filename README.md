@@ -148,7 +148,7 @@ Useful commands:
 
 - `npm run build:android:smoke` / `npm run build:ios:smoke` - local EAS build against smoke backend profile.
 - `npm run eas:android:smoke` / `npm run eas:ios:smoke` - cloud EAS build with explicit `smoke` profile.
-- `Release Candidate` GitHub workflow - public launch gate that reruns mobile/backend CI, smoke E2E, smoke export verification, and assembles `release-evidence.md` before the `production` environment approval.
+- `Release Candidate` GitHub workflow - public launch gate that reruns mobile/backend CI, smoke E2E, smoke export verification, and assembles `release-evidence.md` before final release approval.
 
 Local build helper note:
 
@@ -161,7 +161,16 @@ The production check blocks release when:
 - `eas.json` API base URL mapping does not match required dev(smoke)/production split
 - `eas.json` production Android artifact is not `app-bundle`
 - Android `targetSdkVersion` is below `35`
-- Firebase native config files do not match `com.lkurczab.fitaly` (`google-services.json`, `GoogleService-Info.plist`)
+- Android Firebase config does not match `com.lkurczab.fitaly` (`google-services.json`)
+- App Store iOS build-time `ios.bundleIdentifier` is not set to `com.lkurczab.foodscannerai`
+
+iOS production/App Store exception:
+
+- The App Store listing is tied to the legacy iOS bundle identifier `com.lkurczab.foodscannerai`.
+- For that reason, App Store iOS builds must keep `ios.bundleIdentifier = com.lkurczab.foodscannerai`.
+- Do not treat Android/package naming (`com.lkurczab.fitaly`) as the source of truth for App Store iOS releases.
+- Native iOS project files and Firebase plist may differ from the App Store build-time identifier; that divergence is an accepted long-term project convention.
+- When reviewing iOS release readiness, treat this as an intentional permanent exception, not a rename candidate.
 
 GitHub release and alerting workflows expect these repository secrets:
 

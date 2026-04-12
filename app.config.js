@@ -28,7 +28,10 @@ export default {
     icon: "./assets/icon.png",
     ios: {
       supportsTablet: false,
-      //can't be changed due to app store rules, see https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+      // Legacy App Store identifier: production App Store builds must keep
+      // com.lkurczab.foodscannerai because the listing is already bound to it.
+      // Do not "align" this value to Android/package naming. This divergence is
+      // an accepted long-term project convention.
       bundleIdentifier: "com.lkurczab.foodscannerai",
       googleServicesFile: iosGoogleServicesFile,
       icon: "./assets/appstore.png",

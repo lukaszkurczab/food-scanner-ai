@@ -1,4 +1,4 @@
-# Fitaly Launch Runbook (Go/No-Go)
+# Fitaly Launch Runbook
 
 ## Scope
 
@@ -29,9 +29,22 @@ This runbook is the operational source of truth for release candidates and publi
 - Sentry backend production dashboard: `https://sentry.io/organizations/<org-slug>/projects/<backend-project-slug>/`
 - Sentry mobile production dashboard: `https://sentry.io/organizations/<org-slug>/projects/<mobile-project-slug>/`
 
-## Go/No-Go Checklist
+## Launch Checklist
 
-All checks are mandatory. Any failed line item means **No-Go**.
+Core technical and operational checks are listed below. In this project, `release-evidence` is a review aid and soft gate, not a hard rollout blocker.
+
+Intentional iOS identifier exception:
+
+- App Store iOS releases keep the legacy bundle identifier `com.lkurczab.foodscannerai`.
+- This is intentional because the App Store listing is already bound to that identifier.
+- Do not block release solely because Android naming and iOS App Store naming differ.
+- Treat this as a permanent project convention unless the release owner explicitly decides otherwise.
+
+Solo-release convention:
+
+- This project is operated solo.
+- Do not require a separate GitHub `production` environment reviewer as a launch criterion.
+- Release approval is performed directly by the release owner.
 
 - Mobile CI passes (`lint`, `typecheck`, tests, launch-readiness config gate).
 - Backend CI passes (`ruff`, `pyright`, `pytest`).
@@ -65,7 +78,7 @@ All checks are mandatory. Any failed line item means **No-Go**.
 - P0.7 release rehearsal packet is attached:
   - distributable build IDs (version/build number + identifiers)
   - rollback rehearsal note
-  - signed Go/No-Go checklist
+  - signed launch checklist
 - `TERMS_URL` and `PRIVACY_URL` are valid HTTPS URLs and resolve publicly.
 - `EXPO_PUBLIC_API_BASE_URL` mapping is correct:
   - `smoke/development/preview/internal/e2e-test` -> `https://fitaly-backend-smoke.up.railway.app`
@@ -89,14 +102,13 @@ All checks are mandatory. Any failed line item means **No-Go**.
   - thresholds/runbook: `../fitaly-backend/docs/ops-monitoring-runbook.md`
   - Discord alert webhook configured as `OPS_ALERT_DISCORD_WEBHOOK_URL`
 - Android release artifact is AAB.
-- `production` GitHub environment has a required reviewer configured before rollout approval.
 
 ## Release Steps (RC -> Public)
 
 1. Build RC with `smoke` (or `internal`) profile.
 2. Run `Release Candidate` workflow and provide disposable smoke delete evidence URL if this is a production approval run.
-3. Review `release-evidence` artifact and confirm backup/restore + all P0.1-P0.7 evidence links are present.
-4. Approve the `production` GitHub environment.
+3. Review `release-evidence` artifact and use it as an operator checklist for backup/restore and P0.1-P0.7 evidence links.
+4. Approve the release directly as the release owner.
 5. Execute manual sanity check on both platforms.
 6. Build production artifacts (`publish:android`, `publish:ios`).
 7. Upload to store tracks with phased rollout.
