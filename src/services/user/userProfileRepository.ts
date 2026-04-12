@@ -8,6 +8,12 @@ type AvatarUploadResponse = {
   avatarlastSyncedAt: string;
 };
 
+type UserOnboardingResponse = {
+  username: string;
+  profile: UserData;
+  updated: boolean;
+};
+
 const profileCache = new Map<string, UserData | null>();
 
 function emitUserProfile(uid: string, data: UserData | null) {
@@ -87,5 +93,18 @@ export async function uploadUserAvatarRemote(
       avatarLocalPath: "",
     });
   }
+  return response;
+}
+
+export async function initializeUserOnboardingRemote(
+  uid: string,
+  payload: {
+    username: string;
+    language?: string | null;
+  },
+): Promise<UserOnboardingResponse> {
+  void uid;
+  const response = await post<UserOnboardingResponse>("/users/me/onboarding", payload);
+  emitUserProfile(uid, response.profile);
   return response;
 }

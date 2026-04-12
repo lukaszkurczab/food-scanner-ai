@@ -8,10 +8,9 @@ import {
   createUserWithEmailAndPassword,
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
-import { claimUsername, releaseUsername } from "@/services/user/usernameService";
 import { logError } from "@/services/core/errorLogger";
 import { cancelAllReminderScheduling } from "@/services/reminders/reminderScheduling";
-import { createInitialUserProfile } from "@/services/user/userService";
+import { initializeUserOnboardingProfile } from "@/services/user/userService";
 import { stopSyncLoop } from "@/services/offline/sync.engine";
 import { resetOfflineStorage } from "@/services/offline/db";
 import { cleanupUserOfflineAssets } from "@/services/offline/fileCleanup";
@@ -29,7 +28,7 @@ function normalizeEmail(email: string): string {
 }
 
 function normalizeUsername(username: string): string {
-  return username.trim();
+  return username.trim().toLowerCase();
 }
 
 function shouldClearUserScopedKey(key: string, uid: string): boolean {
@@ -118,27 +117,17 @@ export async function authRegister(
   const normalizedUsername = normalizeUsername(username);
   const cred = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
 
-  let usernameClaimed = false;
   try {
-    await claimUsername(normalizedUsername, cred.user.uid);
-    usernameClaimed = true;
     const initialLanguage = resolveInitialLanguage(
       i18n.resolvedLanguage ?? i18n.language,
     );
-    await createInitialUserProfile(cred.user, normalizedUsername, initialLanguage);
+    await initializeUserOnboardingProfile(
+      cred.user,
+      normalizedUsername,
+      initialLanguage,
+    );
     return cred.user;
   } catch (e) {
-    if (usernameClaimed) {
-      try {
-        await releaseUsername();
-      } catch (releaseError) {
-        logError(
-          "authRegister: failed to release username after profile creation failure",
-          { uid: cred.user.uid, username: normalizedUsername },
-          releaseError,
-        );
-      }
-    }
     try {
       await cred.user.delete();
     } catch (deleteError) {

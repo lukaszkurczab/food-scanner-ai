@@ -3,6 +3,7 @@ import "@/FirebaseConfig";
 import "react-native-get-random-values";
 import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
+import * as Device from "expo-device";
 
 import { initRevenueCat } from "@/feature/Subscription";
 
@@ -48,6 +49,7 @@ import {
   setReminderRuntimeUid,
   stopReminderRuntime,
 } from "@/services/reminders/reminderRuntime";
+import { sanitizeSentryEvent } from "@/services/core/loggingPrivacy";
 import { captureException } from "@/services/core/errorLogger";
 import { warnMissingEnv } from "@/services/core/envValidation";
 import { getLaunchReadinessIssue } from "@/services/release/launchReadiness";
@@ -59,15 +61,32 @@ const sentryEnvironment =
   typeof extra?.sentryEnvironment === "string"
     ? extra.sentryEnvironment
     : "development";
+const isPhysicalDevice = Device.isDevice === true;
+const shouldDisableSentryReplay = !isPhysicalDevice;
+const shouldEnableSentryDebug = sentryEnvironment !== "production" && isPhysicalDevice;
 
 if (sentryDsn) {
   Sentry.init({
     dsn: sentryDsn,
     environment: sentryEnvironment,
     enableNative: true,
+    sendDefaultPii: false,
     tracesSampleRate: sentryEnvironment === "production" ? 0.05 : 0.0,
     attachStacktrace: true,
-    debug: sentryEnvironment !== "production",
+    debug: shouldEnableSentryDebug,
+    beforeSend: (event) => sanitizeSentryEvent(event),
+    ...(shouldDisableSentryReplay
+      ? {
+          replaysSessionSampleRate: 0,
+          replaysOnErrorSampleRate: 0,
+        }
+      : {}),
+    integrations: (defaultIntegrations) =>
+      defaultIntegrations.filter(
+        (integration) =>
+          integration.name !== "ExpoUpdatesListener" &&
+          (!shouldDisableSentryReplay || integration.name !== "MobileReplay"),
+      ),
   });
 }
 

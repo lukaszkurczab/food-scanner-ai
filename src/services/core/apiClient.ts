@@ -17,6 +17,7 @@ export type RequestMethod = "GET" | "POST" | "DELETE";
 
 export type RequestOptions = {
   timeout?: number;
+  signal?: AbortSignal;
 };
 
 export type ApiClientError = Error & {
@@ -191,6 +192,7 @@ type PerformRequestParams = {
   timeoutMs: number;
   headers: Record<string, string>;
   body?: BodyInit;
+  signal?: AbortSignal;
 };
 
 function createTimeoutPromise(params: {
@@ -199,9 +201,11 @@ function createTimeoutPromise(params: {
   url: string;
   method: RequestMethod;
   onTimeoutId: (timeoutId: ReturnType<typeof setTimeout>) => void;
+  onTimeout: () => void;
 }): Promise<never> {
   return new Promise((_, reject) => {
     const timeoutId = setTimeout(() => {
+      params.onTimeout();
       params.controller.abort();
       reject(
         createApiClientError({
@@ -224,11 +228,29 @@ async function performRequest<T = unknown>({
   timeoutMs,
   headers,
   body,
+  signal,
 }: PerformRequestParams): Promise<T> {
+  if (signal?.aborted) {
+    throw createApiClientError({
+      code: "api/aborted",
+      message: "Request was aborted",
+      retryable: false,
+      url,
+      method,
+    });
+  }
+
   const controller = new AbortController();
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let timedOut = false;
+  let abortedByCaller = false;
+  const onCallerAbort = () => {
+    abortedByCaller = true;
+    controller.abort();
+  };
 
   try {
+    signal?.addEventListener("abort", onCallerAbort);
     const responsePromise = fetch(url, {
       method,
       headers,
@@ -245,6 +267,9 @@ async function performRequest<T = unknown>({
         method,
         onTimeoutId: (nextTimeoutId) => {
           timeoutId = nextTimeoutId;
+        },
+        onTimeout: () => {
+          timedOut = true;
         },
       }),
     ]);
@@ -268,6 +293,28 @@ async function performRequest<T = unknown>({
     return payload as T;
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
+      if (timedOut) {
+        throw createApiClientError({
+          code: "api/timeout",
+          message: `Request timed out after ${timeoutMs}ms`,
+          retryable: true,
+          url,
+          method,
+          cause: error,
+        });
+      }
+
+      if (abortedByCaller || signal?.aborted) {
+        throw createApiClientError({
+          code: "api/aborted",
+          message: "Request was aborted",
+          retryable: false,
+          url,
+          method,
+          cause: error,
+        });
+      }
+
       throw createApiClientError({
         code: "api/timeout",
         message: `Request timed out after ${timeoutMs}ms`,
@@ -283,6 +330,7 @@ async function performRequest<T = unknown>({
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
+    signal?.removeEventListener("abort", onCallerAbort);
   }
 }
 
@@ -349,6 +397,7 @@ export async function request<T = unknown>(
         ...(idempotencyKey ? { "X-Idempotency-Key": idempotencyKey } : {}),
       },
       body,
+      signal: options?.signal,
     });
   });
 }
@@ -372,6 +421,7 @@ export async function upload<T = unknown>(
         ...authHeader,
       },
       body: data,
+      signal: options?.signal,
     });
   });
 }

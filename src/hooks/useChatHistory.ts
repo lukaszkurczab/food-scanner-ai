@@ -8,7 +8,7 @@ import { post } from "@/services/core/apiClient";
 import { emit, on } from "@/services/core/events";
 import { asString, isRecord } from "@/services/contracts/guards";
 import type { AiAskBackendResponse } from "@/services/ai/contracts";
-import { getErrorStatus } from "@/services/contracts/serviceError";
+import { getErrorStatus, isServiceError } from "@/services/contracts/serviceError";
 import { captureException } from "@/services/core/errorLogger";
 import { getAiUxErrorType, type AiUxErrorType } from "@/services/ai/uxError";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
@@ -151,6 +151,10 @@ export function useChatHistory(
   const [retryingFailedSync, setRetryingFailedSync] = useState(false);
 
   const lastDocRef = useRef<ChatMessageCursor>(null);
+  const sendInFlightRef = useRef(false);
+  const activeSendRequestIdRef = useRef<string | null>(null);
+  const sendAbortControllerRef = useRef<AbortController | null>(null);
+  const isMountedRef = useRef(true);
 
   const isLocalThread = threadId.startsWith("local-");
   const canReadThread = !!userUid && !!threadId && !isLocalThread;
@@ -160,6 +164,28 @@ export function useChatHistory(
   const creditsUsed = Math.max(creditAllocation - creditBalance, 0);
   const canSend = canAfford("chat");
   const loading = messagesLoading;
+
+  const cancelInFlightSend = useCallback(() => {
+    activeSendRequestIdRef.current = null;
+    sendInFlightRef.current = false;
+    sendAbortControllerRef.current?.abort();
+    sendAbortControllerRef.current = null;
+    if (!isMountedRef.current) {
+      return;
+    }
+    setTyping(false);
+    setSending(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      activeSendRequestIdRef.current = null;
+      sendInFlightRef.current = false;
+      sendAbortControllerRef.current?.abort();
+      sendAbortControllerRef.current = null;
+    };
+  }, []);
 
   const refreshFailedSyncCount = useCallback(async () => {
     if (!userUid) {
@@ -244,12 +270,18 @@ export function useChatHistory(
   const send = useCallback(
     async (text: string): Promise<string | null> => {
       const trimmed = text.trim();
-      if (!trimmed || !canSend || sending) return null;
+      if (!trimmed || !canSend || sending || sendInFlightRef.current) return null;
 
       const net = await NetInfo.fetch();
       if (!net.isConnected) return null;
       if (!userUid) return null;
       void trackAiChatSend(trimmed);
+
+      const requestId = uuidv4();
+      activeSendRequestIdRef.current = requestId;
+      sendInFlightRef.current = true;
+      const askAbortController = new AbortController();
+      sendAbortControllerRef.current = askAbortController;
 
       setSending(true);
       setTyping(true);
@@ -259,6 +291,7 @@ export function useChatHistory(
       const createdThreadId = isLocalThread ? uuidv4() : threadId;
       const userMsgId = uuidv4();
       const aiMsgId = uuidv4();
+      const isRequestActive = () => activeSendRequestIdRef.current === requestId;
 
       const optimisticUser: ChatMessage = {
         id: userMsgId,
@@ -274,158 +307,149 @@ export function useChatHistory(
 
       setMessages((prev) => upsertSortedMessage(prev, optimisticUser));
 
-      await persistUserChatMessage({
-        userUid,
-        threadId: createdThreadId,
-        messageId: userMsgId,
-        content: trimmed,
-        createdAt: now,
-        title: isLocalThread
-          ? trimmed.length > 42
-            ? trimmed.slice(0, 42).trim() + "…"
-            : trimmed
-          : undefined,
-      });
-
-      let aiText = "";
-      let askFailed = false;
       try {
-        const historyForAi: AiHistoryItem[] = messages.slice(0, 10).map((m) => ({
-          from: m.role === "user" ? "user" : "ai",
-          text: m.content,
-        }));
-        const aiResponse = await post<AiAskBackendResponse>("/ai/ask", {
-          message: trimmed,
-          context: buildAiContext(meals, profile, [
-            ...historyForAi,
-            { from: "user", text: trimmed },
-          ]),
+        await persistUserChatMessage({
+          userUid,
+          threadId: createdThreadId,
+          messageId: userMsgId,
+          content: trimmed,
+          createdAt: now,
+          title: isLocalThread
+            ? trimmed.length > 42
+              ? trimmed.slice(0, 42).trim() + "…"
+              : trimmed
+            : undefined,
         });
-        aiText = aiResponse.reply?.trim()
-          ? aiResponse.reply
-          : i18next.t(
-              "chat:errors.emptyResponse",
-              "I couldn't generate a useful response. Please try again.",
-            );
-        void trackAiChatResult("success");
-        if (!aiResponse.reply?.trim()) {
-          setSendErrorType("unknown");
-        }
-        applyCreditsFromResponse(aiResponse);
-      } catch (error) {
-        const status = getErrorStatus(error);
-        const gatewayReason = getGatewayRejectReason(error);
-        const errorType = getAiUxErrorType(error);
-        if (status === 402) {
-          const refreshed = await refreshCredits();
-          const refreshedLimit = refreshed?.allocation ?? creditAllocation;
-          const refreshedUsed = refreshed
-            ? Math.max(refreshedLimit - refreshed.balance, 0)
-            : creditsUsed;
-          aiText = i18next.t(
-            "limit.reachedShort",
+
+        let askFailed = false;
+        let assistantReply: string | null = null;
+        try {
+          if (!isRequestActive()) return null;
+
+          const historyForAi: AiHistoryItem[] = messages.slice(0, 10).map((m) => ({
+            from: m.role === "user" ? "user" : "ai",
+            text: m.content,
+          }));
+          const aiResponse = await post<AiAskBackendResponse>(
+            "/ai/ask",
             {
-              ns: "chat",
-              used: refreshedUsed,
-              limit: refreshedLimit,
+              message: trimmed,
+              context: buildAiContext(meals, profile, [
+                ...historyForAi,
+                { from: "user", text: trimmed },
+              ]),
+            },
+            {
+              signal: askAbortController.signal,
             },
           );
-          void trackAiChatResult("payment_required");
-          setSendErrorType(null);
-        } else if (
-          gatewayReason !== null &&
-          GATEWAY_REJECT_REASONS.has(gatewayReason)
-        ) {
-          aiText = i18next.t(
-            "chat:errors.offTopic",
-            "Moge odpowiadac tylko na pytania o zywienie i diete.",
+
+          if (!isRequestActive()) return null;
+
+          assistantReply = aiResponse.reply?.trim() ? aiResponse.reply : null;
+          if (assistantReply) {
+            void trackAiChatResult("success");
+          } else {
+            void trackAiChatResult("error");
+            setSendErrorType("unknown");
+          }
+          applyCreditsFromResponse(aiResponse);
+        } catch (error) {
+          if (isServiceError(error) && error.code === "api/aborted") {
+            return null;
+          }
+          if (!isRequestActive()) return null;
+
+          const status = getErrorStatus(error);
+          const gatewayReason = getGatewayRejectReason(error);
+          const errorType = getAiUxErrorType(error);
+          if (status === 402) {
+            const refreshed = await refreshCredits();
+            const refreshedLimit = refreshed?.allocation ?? creditAllocation;
+            const refreshedUsed = refreshed
+              ? Math.max(refreshedLimit - refreshed.balance, 0)
+              : creditsUsed;
+            void refreshedUsed;
+            void trackAiChatResult("payment_required");
+            setSendErrorType(null);
+          } else if (
+            gatewayReason !== null &&
+            GATEWAY_REJECT_REASONS.has(gatewayReason)
+          ) {
+            void trackAiChatResult("gateway_reject");
+            setSendErrorType(null);
+          } else if (status === 429) {
+            void trackAiChatResult("rate_limited");
+            setSendErrorType(null);
+          } else if (errorType === "offline") {
+            void trackAiChatResult("offline");
+            setSendErrorType("offline");
+          } else if (errorType === "timeout") {
+            void trackAiChatResult("timeout");
+            setSendErrorType("timeout");
+          } else if (errorType === "unavailable") {
+            void trackAiChatResult("unavailable");
+            setSendErrorType("unavailable");
+          } else if (errorType === "auth") {
+            void trackAiChatResult("auth");
+            setSendErrorType("auth");
+          } else {
+            void trackAiChatResult("error");
+            setSendErrorType("unknown");
+          }
+          captureException(
+            "[useChatHistory.send] failed to send AI chat message",
+            { userUid, threadId },
+            error,
           );
-          void trackAiChatResult("gateway_reject");
-          setSendErrorType(null);
-        } else if (status === 429) {
-          aiText = i18next.t(
-            "chat:errors.rateLimited",
-            "You're sending messages too quickly. Please wait a moment.",
-          );
-          void trackAiChatResult("rate_limited");
-          setSendErrorType(null);
-        } else if (errorType === "offline") {
-          aiText = i18next.t(
-            "chat:errors.offline",
-            "You're offline. Reconnect and try again.",
-          );
-          void trackAiChatResult("offline");
-          setSendErrorType("offline");
-        } else if (errorType === "timeout") {
-          aiText = i18next.t(
-            "chat:errors.timeout",
-            "The request timed out. Please retry.",
-          );
-          void trackAiChatResult("timeout");
-          setSendErrorType("timeout");
-        } else if (errorType === "unavailable") {
-          aiText = i18next.t(
-            "chat:errors.serviceUnavailable",
-            "AI is temporarily unavailable. Please try again shortly.",
-          );
-          void trackAiChatResult("unavailable");
-          setSendErrorType("unavailable");
-        } else if (errorType === "auth") {
-          aiText = i18next.t(
-            "chat:errors.authRequired",
-            "Please sign in again to continue.",
-          );
-          void trackAiChatResult("auth");
-          setSendErrorType("auth");
-        } else {
-          aiText = i18next.t(
-            "chat:errors.fetchFailed",
-            "Could not fetch a response. Please try again.",
-          );
-          void trackAiChatResult("error");
-          setSendErrorType("unknown");
+          askFailed = true;
         }
-        captureException(
-          "[useChatHistory.send] failed to send AI chat message",
-          { userUid, threadId, message: trimmed },
-          error,
-        );
-        askFailed = true;
-        setTyping(false);
-        setSending(false);
+
+        if (!assistantReply || askFailed) {
+          return isLocalThread ? createdThreadId : null;
+        }
+        if (!isRequestActive()) return null;
+
+        const now2 = Date.now();
+
+        const optimisticAi: ChatMessage = {
+          id: aiMsgId,
+          userUid,
+          role: "assistant",
+          content: assistantReply,
+          createdAt: now2,
+          lastSyncedAt: now2,
+          syncState: "synced",
+          deleted: false,
+          cloudId: aiMsgId,
+        };
+
+        setMessages((prev) => upsertSortedMessage(prev, optimisticAi));
+
+        await persistAssistantChatMessage({
+          userUid,
+          threadId: createdThreadId,
+          messageId: aiMsgId,
+          content: assistantReply,
+          createdAt: now2,
+        });
+
+        if (isLocalThread) return createdThreadId;
+        return null;
+      } finally {
+        if (
+          isMountedRef.current &&
+          activeSendRequestIdRef.current === requestId
+        ) {
+          activeSendRequestIdRef.current = null;
+          sendInFlightRef.current = false;
+          if (sendAbortControllerRef.current === askAbortController) {
+            sendAbortControllerRef.current = null;
+          }
+          setTyping(false);
+          setSending(false);
+        }
       }
-
-      const now2 = Date.now();
-
-      const optimisticAi: ChatMessage = {
-        id: aiMsgId,
-        userUid,
-        role: "assistant",
-        content: aiText,
-        createdAt: now2,
-        lastSyncedAt: now2,
-        syncState: "synced",
-        deleted: false,
-        cloudId: aiMsgId,
-      };
-
-      setMessages((prev) => upsertSortedMessage(prev, optimisticAi));
-
-      await persistAssistantChatMessage({
-        userUid,
-        threadId: createdThreadId,
-        messageId: aiMsgId,
-        content: aiText,
-        createdAt: now2,
-      });
-
-      if (!askFailed) {
-        setTyping(false);
-        setSending(false);
-      }
-
-      if (isLocalThread) return createdThreadId;
-      return null;
     },
     [
       canSend,
@@ -488,6 +512,7 @@ export function useChatHistory(
     retryingFailedSync,
     loadMore,
     send,
+    cancelInFlightSend,
     retryFailedSyncOps,
   };
 }

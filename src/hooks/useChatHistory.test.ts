@@ -13,7 +13,9 @@ import { useChatHistory } from "@/hooks/useChatHistory";
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
 const mockUuid = jest.fn<() => string>();
 const mockI18nT = jest.fn<(key: string, options?: unknown) => string>();
-const mockApiPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
+const mockApiPost = jest.fn<
+  (url: string, data?: unknown, options?: unknown) => Promise<unknown>
+>();
 const mockCaptureException = jest.fn<
   (message: string, context?: unknown, error?: unknown) => void
 >();
@@ -72,7 +74,8 @@ jest.mock("i18next", () => ({
 }));
 
 jest.mock("@/services/core/apiClient", () => ({
-  post: (url: string, data?: unknown) => mockApiPost(url, data),
+  post: (url: string, data?: unknown, options?: unknown) =>
+    mockApiPost(url, data, options),
 }));
 
 jest.mock("@/services/core/errorLogger", () => ({
@@ -230,6 +233,7 @@ describe("useChatHistory", () => {
 
   it("applies inline credits from successful /ai/ask responses", async () => {
     mockUuid
+      .mockReturnValueOnce("request-1")
       .mockReturnValueOnce("thread-created")
       .mockReturnValueOnce("user-msg")
       .mockReturnValueOnce("ai-msg");
@@ -242,7 +246,10 @@ describe("useChatHistory", () => {
     });
 
     expect(createdThreadId).toBe("thread-created");
-    expect(mockApiPost).toHaveBeenCalledWith("/ai/ask", {
+    expect(mockApiPost).toHaveBeenCalledTimes(1);
+    const call = mockApiPost.mock.calls[0];
+    expect(call?.[0]).toBe("/ai/ask");
+    expect(call?.[1]).toEqual({
       message: "hello",
       context: {
         actionType: "chat",
@@ -252,6 +259,9 @@ describe("useChatHistory", () => {
         language: "en",
       },
     });
+    expect(call?.[2]).toEqual(
+      expect.objectContaining({ signal: expect.any(Object) }),
+    );
     expect(mockTrackAiChatSend).toHaveBeenCalledWith("hello");
     expect(mockTrackAiChatResult).toHaveBeenCalledWith("success");
     expect(mockApplyCreditsFromResponse).toHaveBeenCalledWith(
@@ -277,11 +287,7 @@ describe("useChatHistory", () => {
     expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
     expect(mockTrackAiChatSend).toHaveBeenCalledWith("hello");
     expect(mockTrackAiChatResult).toHaveBeenCalledWith("payment_required");
-    expect(mockPersistAssistantChatMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        content: "limit.reachedShort",
-      }),
-    );
+    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
   });
 
   it("does not refresh credits on gateway reject responses", async () => {
@@ -299,11 +305,77 @@ describe("useChatHistory", () => {
     expect(mockRefreshCredits).not.toHaveBeenCalled();
     expect(mockTrackAiChatSend).toHaveBeenCalledWith("Flaga Boliwii");
     expect(mockTrackAiChatResult).toHaveBeenCalledWith("gateway_reject");
-    expect(mockPersistAssistantChatMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        content: "Moge odpowiadac tylko na pytania o zywienie i diete.",
-      }),
-    );
+    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
+  });
+
+  it("deduplicates double-tap send intents while request is in flight", async () => {
+    let resolvePost: ((value: unknown) => void) | null = null;
+    const pendingPost = new Promise((resolve) => {
+      resolvePost = resolve;
+    });
+    mockApiPost.mockReturnValueOnce(pendingPost);
+
+    const { result } = await renderChatHistoryHook();
+
+    let firstPromise: Promise<string | null> | null = null;
+    let secondResult: string | null = "sentinel";
+    await act(async () => {
+      firstPromise = result.current.send("hello");
+    });
+    await act(async () => {
+      secondResult = await result.current.send("hello");
+    });
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledTimes(1);
+    });
+
+    const resolveInFlightPost = resolvePost;
+    if (!resolveInFlightPost || !firstPromise) {
+      throw new Error("Expected in-flight /ai/ask call before resolving test promise.");
+    }
+
+    (resolveInFlightPost as (value: unknown) => void)({
+      reply: "AI response",
+      userId: "user-1",
+      tier: "free",
+      balance: 19,
+      allocation: 100,
+      periodStartAt: "2026-03-01T00:00:00.000Z",
+      periodEndAt: "2026-04-01T00:00:00.000Z",
+      costs: { chat: 1, textMeal: 1, photo: 5 },
+    });
+
+    await act(async () => {
+      await firstPromise;
+    });
+
+    expect(secondResult).toBeNull();
+    expect(mockApiPost).toHaveBeenCalledTimes(1);
+    expect(mockPersistUserChatMessage).toHaveBeenCalledTimes(1);
+  }, 10_000);
+
+  it("cancels in-flight send and does not persist assistant fallback on abort", async () => {
+    let rejectPost: ((reason?: unknown) => void) | null = null;
+    const pendingPost = new Promise((_, reject) => {
+      rejectPost = reject;
+    });
+    mockApiPost.mockReturnValueOnce(pendingPost);
+
+    const { result } = await renderChatHistoryHook();
+
+    await act(async () => {
+      const pendingSend = result.current.send("hello");
+      result.current.cancelInFlightSend();
+      rejectPost?.({
+        code: "api/aborted",
+        source: "ApiClient",
+        retryable: false,
+      });
+      await pendingSend;
+    });
+
+    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
   });
 
   it("maps incoming snapshots and loads next pages", async () => {

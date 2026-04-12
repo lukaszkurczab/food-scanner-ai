@@ -40,6 +40,29 @@ All checks are mandatory. Any failed line item means **No-Go**.
 - RC smoke E2E passes on prepared runner via `E2E Smoke Gate`:
   - `foundation-smoke.yaml`
   - `account-launch-smoke.yaml`
+- P0.1 chat integrity evidence is green:
+  - automated hook tests cover timeout/offline/429/navigate-away/double-tap
+  - weak-network manual chat smoke evidence is attached
+- P0.2 onboarding is backend-owned and contract-safe:
+  - `POST /api/v1/users/me/onboarding` contract test is green
+  - forced-failure signup rollback note is attached
+- P0.3 weekly report premium boundary is backend-true:
+  - free-user direct API verification returns `403 WEEKLY_REPORT_PREMIUM_REQUIRED`
+- P0.4 paywall is truthful to real purchase flow:
+  - only purchasable offer is visible
+  - purchase/restore smoke note is attached for that offer
+- P0.5 privacy-safe logging and Sentry hardening evidence is attached:
+  - fake-PII payload does not appear in backend logs or Sentry event payload
+  - Sentry data-scrubbing and retention screenshots are linked
+- P0.6 compliance packet is attached:
+  - telemetry retention policy snapshot
+  - processor matrix
+  - DPA/SCC status snapshot
+  - export/delete/store-disclosure evidence links
+- P0.7 release rehearsal packet is attached:
+  - distributable build IDs (version/build number + identifiers)
+  - rollback rehearsal note
+  - signed Go/No-Go checklist
 - `TERMS_URL` and `PRIVACY_URL` are valid HTTPS URLs and resolve publicly.
 - `EXPO_PUBLIC_API_BASE_URL` mapping is correct:
   - `smoke/development/preview/internal/e2e-test` -> `https://fitaly-backend-smoke.up.railway.app`
@@ -68,7 +91,7 @@ All checks are mandatory. Any failed line item means **No-Go**.
 
 1. Build RC with `smoke` (or `internal`) profile.
 2. Run `Release Candidate` workflow and provide disposable smoke delete evidence URL if this is a production approval run.
-3. Review `release-evidence` artifact and confirm backup + restore drill links are present.
+3. Review `release-evidence` artifact and confirm backup/restore + all P0.1-P0.7 evidence links are present.
 4. Approve the `production` GitHub environment.
 5. Execute manual sanity check on both platforms.
 6. Build production artifacts (`publish:android`, `publish:ios`).

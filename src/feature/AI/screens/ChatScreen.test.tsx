@@ -39,6 +39,7 @@ let mockChatHistoryState: {
   canSend: boolean;
   creditAllocation: number;
   send: (value: string) => Promise<string | null>;
+  cancelInFlightSend: () => void;
   loadMore: () => void;
   retryFailedSyncOps: () => Promise<void>;
 };
@@ -115,6 +116,7 @@ describe("ChatScreen", () => {
       canSend: true,
       creditAllocation: 100,
       send: async () => null,
+      cancelInFlightSend: () => undefined,
       loadMore: () => undefined,
       retryFailedSyncOps: async () => undefined,
     };

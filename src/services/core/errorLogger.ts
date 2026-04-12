@@ -1,6 +1,11 @@
 import * as Sentry from "@sentry/react-native";
 import * as apiClient from "@/services/core/apiClient";
 import { readPublicEnv } from "@/services/core/publicEnv";
+import {
+  sanitizeErrorStack,
+  sanitizeLogContext,
+  sanitizeLogMessage,
+} from "@/services/core/loggingPrivacy";
 
 type ExtraContext = Record<string, unknown>;
 type LogContext = unknown;
@@ -13,29 +18,14 @@ function isBackendLoggingEnabled(): boolean {
   return readPublicEnv("EXPO_PUBLIC_ENABLE_BACKEND_LOGGING") === "true";
 }
 
-function getErrorStack(error?: LogError): string | undefined {
-  return error instanceof Error ? error.stack : undefined;
-}
-
 function toExtraContext(
   context?: LogContext,
-  error?: LogError,
 ): ExtraContext | undefined {
-  const extra: ExtraContext = {};
-
-  if (context !== undefined) {
-    if (context && typeof context === "object" && !Array.isArray(context)) {
-      Object.assign(extra, context as Record<string, unknown>);
-    } else {
-      extra.context = context;
-    }
+  const sanitized = sanitizeLogContext(context);
+  if (!sanitized) {
+    return undefined;
   }
-
-  if (error !== undefined && !(error instanceof Error)) {
-    extra.originalError = error;
-  }
-
-  return Object.keys(extra).length > 0 ? extra : undefined;
+  return sanitized;
 }
 
 function sendToBackend(message: string, context?: LogContext, error?: LogError) {
@@ -43,13 +33,17 @@ function sendToBackend(message: string, context?: LogContext, error?: LogError) 
     return;
   }
 
+  const sanitizedMessage = sanitizeLogMessage(message);
+  const sanitizedContext = sanitizeLogContext(context);
+  const sanitizedStack = sanitizeErrorStack(error);
+
   try {
     void apiClient
       .post(LOGS_ENDPOINT, {
         source: LOG_SOURCE,
-        message,
-        stack: getErrorStack(error),
-        context,
+        message: sanitizedMessage,
+        stack: sanitizedStack,
+        context: sanitizedContext,
       })
       .catch(() => {
         // Logger failures must never cascade into app errors.
@@ -83,11 +77,12 @@ export function captureException(
   context?: LogContext,
   error?: LogError
 ) {
-  const err = error instanceof Error ? error : new Error(message);
+  const sanitizedMessage = sanitizeLogMessage(message);
+  const err = error instanceof Error ? error : new Error(sanitizedMessage);
   Sentry.captureException(err, {
-    extra: toExtraContext(context, error),
+    extra: toExtraContext(context),
   });
-  sendToBackend(message, context, error);
+  sendToBackend(sanitizedMessage, context, error);
 }
 
 export function captureMessage(message: string, extra?: ExtraContext): void {

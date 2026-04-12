@@ -84,20 +84,6 @@ export const PaywallModal: React.FC<Props> = ({
           </Text>
           <Text style={styles.planPrice}>{priceText}</Text>
         </View>
-
-        <View style={[styles.planCard, styles.planCardAnnual]}>
-          <View style={styles.savingsBadge}>
-            <Text style={styles.savingsBadgeText}>
-              {t("paywall.savings_badge", { defaultValue: "SAVE 40%" })}
-            </Text>
-          </View>
-          <Text style={styles.planLabel}>
-            {t("manageSubscription.plan_yearly", { defaultValue: "yearly" })}
-          </Text>
-          <Text style={styles.planPrice}>
-            {t("paywall.priceLabel", { defaultValue: "Price" })}
-          </Text>
-        </View>
       </View>
 
       <View style={styles.footer}>
@@ -240,8 +226,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
     },
     planSelector: {
-      flexDirection: "row",
-      gap: theme.spacing.sm,
       marginTop: theme.spacing.md,
       marginBottom: theme.spacing.md,
     },
@@ -260,9 +244,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderColor: theme.primary,
       backgroundColor: theme.surface,
     },
-    planCardAnnual: {
-      position: "relative",
-    },
     planLabel: {
       color: theme.text,
       fontSize: theme.typography.size.bodyS,
@@ -270,23 +251,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       textAlign: "center",
     },
     planPrice: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.caption,
-      fontFamily: theme.typography.fontFamily.semiBold,
-      textAlign: "center",
-    },
-    savingsBadge: {
-      position: "absolute",
-      top: -10,
-      right: 12,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 2,
-      borderRadius: theme.rounded.full,
-      backgroundColor: theme.status.positive,
-    },
-    savingsBadgeText: {
-      fontSize: theme.typography.size.caption,
-      color: "#fff",
+      color: theme.text,
+      fontSize: theme.typography.size.bodyL,
       fontFamily: theme.typography.fontFamily.semiBold,
     },
     socialProof: {

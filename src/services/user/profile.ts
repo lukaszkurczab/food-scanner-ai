@@ -16,6 +16,7 @@ import { createServiceError } from "@/services/contracts/serviceError";
 import { claimUsername } from "@/services/user/usernameService";
 import {
   fetchUserProfileRemote,
+  initializeUserOnboardingRemote,
   mergeUserProfileRemote,
   uploadUserAvatarRemote,
 } from "@/services/user/userProfileRepository";
@@ -190,4 +191,16 @@ export async function createInitialUserProfile(
   };
 
   await mergeUserProfileRemote(uid, profile);
+}
+
+export async function initializeUserOnboardingProfile(
+  user: FirebaseAuthTypes.User,
+  username: string,
+  initialLanguage?: string | null,
+) {
+  const normalizedLanguage = normalizeInitialLanguage(initialLanguage);
+  await initializeUserOnboardingRemote(user.uid, {
+    username: username.trim(),
+    language: normalizedLanguage,
+  });
 }

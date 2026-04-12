@@ -64,6 +64,7 @@ export default function ChatScreen() {
     retryingFailedSync,
     canSend,
     send,
+    cancelInFlightSend,
     loadMore,
     retryFailedSyncOps,
   } = useChatHistory(uid, meals || [], userData ?? EMPTY_PROFILE, threadId);
@@ -153,6 +154,14 @@ export default function ChatScreen() {
         />
       ) : null}
     </View>
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        cancelInFlightSend();
+      };
+    }, [cancelInFlightSend]),
   );
 
   useFocusEffect(

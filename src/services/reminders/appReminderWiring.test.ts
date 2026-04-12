@@ -32,6 +32,11 @@ jest.mock("@/feature/Subscription", () => ({
   initRevenueCat: jest.fn(),
 }));
 
+jest.mock("expo-device", () => ({
+  __esModule: true,
+  isDevice: false,
+}));
+
 jest.mock("@hooks/useAppFonts", () => ({
   useAppFonts: () => true,
 }));

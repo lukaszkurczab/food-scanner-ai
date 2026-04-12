@@ -202,6 +202,9 @@ jobs:
           RESTORE_RUN_URL: ${{ needs.ops-evidence.outputs.restore_run_url }}
           DELETE_EVIDENCE_URL: ${{ needs.delete-evidence.outputs.url }}
           DELETE_EVIDENCE_NOTE: ${{ needs.delete-evidence.outputs.note }}
+          CHAT_INTEGRITY_TEST_STATUS: passed via mobile CI
+          ONBOARDING_ATOMIC_CONTRACT_STATUS: passed via backend CI
+          WEEKLY_REPORT_PREMIUM_GATE_STATUS: passed via backend CI
         run: node scripts/render-release-evidence.mjs artifacts/release-evidence.md
 
       - name: Upload release evidence

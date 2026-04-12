@@ -47,7 +47,6 @@ describe("PaywallModal", () => {
     );
 
     expect(getByText("Premium Monthly")).toBeTruthy();
-    expect(getByText("Price")).toBeTruthy();
     expect(getByText("$9.99 / month")).toBeTruthy();
     expect(getByText("translated:manageSubscription.premiumBenefits")).toBeTruthy();
 

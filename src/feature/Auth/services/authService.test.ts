@@ -17,8 +17,9 @@ const mockGetAuth = jest.fn<(...args: unknown[]) => unknown>();
 const mockCreateUserWithEmailAndPassword = jest.fn<
   (...args: unknown[]) => Promise<{ user: { uid: string; email: string; delete: () => Promise<void> } }>
 >();
-const mockClaimUsername = jest.fn<(...args: unknown[]) => Promise<string>>();
-const mockCreateInitialUserProfile = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockInitializeUserOnboardingProfile = jest.fn<
+  (...args: unknown[]) => Promise<void>
+>();
 const mockDelete = jest.fn<() => Promise<void>>();
 const mockSignOut = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockSignInWithEmailAndPassword = jest.fn<
@@ -79,13 +80,9 @@ jest.mock("@/services/reminders/reminderScheduling", () => ({
     mockCancelAllReminderScheduling(uid),
 }));
 
-jest.mock("@/services/user/usernameService", () => ({
-  claimUsername: (...args: unknown[]) => mockClaimUsername(...args),
-}));
-
 jest.mock("@/services/user/userService", () => ({
-  createInitialUserProfile: (...args: unknown[]) =>
-    mockCreateInitialUserProfile(...args),
+  initializeUserOnboardingProfile: (...args: unknown[]) =>
+    mockInitializeUserOnboardingProfile(...args),
 }));
 
 jest.mock("@/i18n", () => ({
@@ -126,17 +123,19 @@ describe("authService", () => {
         delete: mockDelete,
       },
     });
-    mockClaimUsername.mockResolvedValue("neo");
-    mockCreateInitialUserProfile.mockResolvedValue(undefined);
+    mockInitializeUserOnboardingProfile.mockResolvedValue(undefined);
   });
 
-  it("claims backend username before creating initial profile", async () => {
+  it("runs backend-owned onboarding profile initialization after auth user creation", async () => {
     mockI18n.resolvedLanguage = "pl";
     const user = await authRegister("user@example.com", "Strong1!", "Neo");
 
     expect(mockCreateUserWithEmailAndPassword).toHaveBeenCalled();
-    expect(mockClaimUsername).toHaveBeenCalledWith("Neo", "user-1");
-    expect(mockCreateInitialUserProfile).toHaveBeenCalledWith(user, "Neo", "pl");
+    expect(mockInitializeUserOnboardingProfile).toHaveBeenCalledWith(
+      user,
+      "neo",
+      "pl",
+    );
     expect(user.uid).toBe("user-1");
   });
 
@@ -159,30 +158,36 @@ describe("authService", () => {
       "user@example.com",
       "Strong1!",
     );
-    expect(mockClaimUsername).toHaveBeenCalledWith("Neo", "user-1");
+    expect(mockInitializeUserOnboardingProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ uid: "user-1" }),
+      "neo",
+      "en",
+    );
   });
 
   it("normalizes region language and falls back to en for unsupported values", async () => {
     mockI18n.resolvedLanguage = "pl-PL";
     await authRegister("user@example.com", "Strong1!", "Neo");
-    expect(mockCreateInitialUserProfile).toHaveBeenLastCalledWith(
+    expect(mockInitializeUserOnboardingProfile).toHaveBeenLastCalledWith(
       expect.objectContaining({ uid: "user-1" }),
-      "Neo",
+      "neo",
       "pl",
     );
 
     mockI18n.resolvedLanguage = "";
     mockI18n.language = "de-DE";
     await authRegister("user@example.com", "Strong1!", "Neo");
-    expect(mockCreateInitialUserProfile).toHaveBeenLastCalledWith(
+    expect(mockInitializeUserOnboardingProfile).toHaveBeenLastCalledWith(
       expect.objectContaining({ uid: "user-1" }),
-      "Neo",
+      "neo",
       "en",
     );
   });
 
-  it("rolls back auth user when backend username claim fails", async () => {
-    mockClaimUsername.mockRejectedValue({ code: "username/unavailable" });
+  it("rolls back auth user when backend onboarding fails", async () => {
+    mockInitializeUserOnboardingProfile.mockRejectedValue({
+      code: "username/unavailable",
+    });
 
     await expect(
       authRegister("user@example.com", "Strong1!", "Neo"),
@@ -191,7 +196,7 @@ describe("authService", () => {
     });
 
     expect(mockDelete).toHaveBeenCalled();
-    expect(mockCreateInitialUserProfile).not.toHaveBeenCalled();
+    expect(mockInitializeUserOnboardingProfile).toHaveBeenCalled();
   });
 
   it("cleans local offline state and scoped storage on logout", async () => {

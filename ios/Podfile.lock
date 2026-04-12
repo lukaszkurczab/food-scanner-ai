@@ -2262,7 +2262,7 @@ PODS:
     - Yoga
   - RNDeviceInfo (14.1.1):
     - React-Core
-  - RNFBApp (23.8.8):
+  - RNFBApp (24.0.0):
     - DoubleConversion
     - Firebase/CoreOnly (= 12.10.0)
     - glog
@@ -2287,7 +2287,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNFBAuth (23.8.8):
+  - RNFBAuth (24.0.0):
     - DoubleConversion
     - Firebase/Auth (= 12.10.0)
     - glog
@@ -2516,7 +2516,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNSentry (6.14.0):
+  - RNSentry (8.7.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2539,7 +2539,7 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - Sentry/HybridSDK (= 8.50.2)
+    - Sentry (= 9.8.0)
     - Yoga
   - RNSVG (15.11.2):
     - DoubleConversion
@@ -2601,7 +2601,9 @@ PODS:
   - SDWebImageWebPCoder (0.15.0):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
-  - Sentry/HybridSDK (8.50.2)
+  - Sentry (9.8.0):
+    - Sentry/Core (= 9.8.0)
+  - Sentry/Core (9.8.0)
   - SocketRocket (0.7.1)
   - SSZipArchive (2.5.5)
   - UMAppLoader (5.1.3)
@@ -3120,18 +3122,18 @@ SPEC CHECKSUMS:
   RNCAsyncStorage: faf86846c58994b6b8aab074a4914eb1796c2a9f
   RNDateTimePicker: 9d94d39bcece53d0dfdb64e18b409d9005529191
   RNDeviceInfo: 8b6fa8379062949dd79a009cf3d6b02a9c03ca59
-  RNFBApp: 1db5df33bbb7f08a7bc738f409fd5bec4d70bb6a
-  RNFBAuth: b3bbd221700d22dccadf48ddcad490c7bbdc1c90
+  RNFBApp: cdb0faf068cfb0ee9a5d64c8077083b035cbe09c
+  RNFBAuth: 318ba39fea6c44300862085cafedf1acff1634d5
   RNGestureHandler: 85b0463dbfed54eaba4360e31c0aa1a0fe83a6a6
   RNPurchases: 41ca969b51935260a9b874d1358535286d496d3b
   RNReanimated: 7b926938d4190114e5848b5b022d83dbc2c0fe2c
   RNScreens: d9d5d8a2a484bb4446968bfa00db991f1117db44
-  RNSentry: 262fe7fc57a3b459c5b0948e6c7eb4d936e06618
+  RNSentry: e49aba4278dbd8e7ed7dfe26de52681e56ef1cf1
   RNSVG: 257f59c952e296c9c36035a8f49b61fda48e398a
   RNZipArchive: 421f5f056eddfe72f56ac4400608d202d2c53674
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   SDWebImageWebPCoder: 0e06e365080397465cc73a7a9b472d8a3bd0f377
-  Sentry: d95f5f3b32d01324b3e27d3c52747005302cc026
+  Sentry: 88746bf877eff714bc45315a39ad1d1efea2cdda
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   SSZipArchive: c69881e8ac5521f0e622291387add5f60f30f3c4
   UMAppLoader: 55159b69750129faa7a51c493cb8ea55a7b64eb9

@@ -183,6 +183,38 @@ describe("apiClient", () => {
     });
   });
 
+  it("returns api/aborted when caller aborts via AbortSignal", async () => {
+    mockGetAuth.mockReturnValue({
+      currentUser: null,
+    });
+
+    const fetchMock = jest.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      return new Promise((_, reject) => {
+        const signal = init?.signal as AbortSignal | undefined;
+        signal?.addEventListener("abort", () => {
+          const abortError = new Error("aborted");
+          abortError.name = "AbortError";
+          reject(abortError);
+        });
+      });
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { get } = require("@/services/core/apiClient");
+
+    const controller = new AbortController();
+    const pending = get("/health", { signal: controller.signal });
+    controller.abort();
+
+    await expect(pending).rejects.toMatchObject({
+      code: "api/aborted",
+      source: "ApiClient",
+      retryable: false,
+    });
+    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(1);
+  });
+
   it("rejects insecure non-local API base URLs", async () => {
     mockGetAuth.mockReturnValue({
       currentUser: null,
