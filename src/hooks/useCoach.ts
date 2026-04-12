@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { on } from "@/services/core/events";
 import {
   createFallbackCoachResponse,
@@ -51,6 +51,14 @@ export function useCoach({
   const [status, setStatus] = useState<CoachResultStatus>("no_user");
   const [isStale, setIsStale] = useState<boolean>(true);
   const [error, setError] = useState<unknown | null>(null);
+  const requestIdRef = useRef(0);
+  const requestScopeKey = `${uid ?? ""}:${resolvedDayKey}`;
+  const requestScopeKeyRef = useRef(requestScopeKey);
+
+  useEffect(() => {
+    requestScopeKeyRef.current = requestScopeKey;
+    requestIdRef.current += 1;
+  }, [requestScopeKey]);
 
   const applyResult = useCallback((result: {
     coach: CoachResponse;
@@ -85,9 +93,15 @@ export function useCoach({
     }
 
     setLoading(true);
+    const requestId = ++requestIdRef.current;
+    const requestScope = requestScopeKey;
 
     void getCoach(uid, { dayKey: resolvedDayKey }).then((result) => {
-      if (!active) {
+      if (
+        !active ||
+        requestIdRef.current !== requestId ||
+        requestScopeKeyRef.current !== requestScope
+      ) {
         return;
       }
 
@@ -98,7 +112,7 @@ export function useCoach({
     return () => {
       active = false;
     };
-  }, [applyResult, uid, resolvedDayKey]);
+  }, [applyResult, requestScopeKey, uid, resolvedDayKey]);
 
   useEffect(() => {
     if (!uid) {
@@ -114,9 +128,15 @@ export function useCoach({
 
       setLoading(true);
       void (async () => {
+        const requestId = ++requestIdRef.current;
+        const requestScope = requestScopeKey;
         await invalidateCoachCache(uid, { dayKey: resolvedDayKey });
         const result = await refreshCoach(uid, { dayKey: resolvedDayKey });
-        if (!active) {
+        if (
+          !active ||
+          requestIdRef.current !== requestId ||
+          requestScopeKeyRef.current !== requestScope
+        ) {
           return;
         }
         applyResult(result);
@@ -134,14 +154,21 @@ export function useCoach({
       active = false;
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  }, [applyResult, resolvedDayKey, uid]);
+  }, [applyResult, requestScopeKey, resolvedDayKey, uid]);
 
   const refresh = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    const requestScope = requestScopeKey;
     const result = await refreshCoach(uid, { dayKey: resolvedDayKey });
-    applyResult(result);
-    setLoading(false);
+    if (
+      requestIdRef.current === requestId &&
+      requestScopeKeyRef.current === requestScope
+    ) {
+      applyResult(result);
+      setLoading(false);
+    }
     return result.coach;
-  }, [applyResult, uid, resolvedDayKey]);
+  }, [applyResult, requestScopeKey, uid, resolvedDayKey]);
 
   return {
     coach,

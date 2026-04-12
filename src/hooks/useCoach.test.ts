@@ -15,6 +15,16 @@ const mockInvalidateCoachCache = jest.fn<
   (uid: string | null | undefined, options?: { dayKey?: string | null }) => Promise<void>
 >();
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
+}
+
 jest.mock("@/services/coach/coachService", () => {
   const actual =
     jest.requireActual("@/services/coach/coachService") as typeof import("@/services/coach/coachService");
@@ -263,5 +273,90 @@ describe("useCoach", () => {
     await waitFor(() => {
       expect(result.current.coach.topInsight?.type).toBe("under_logging");
     });
+  });
+
+  it("ignores stale coach loads after day changes", async () => {
+    const firstCoach = createFallbackCoachResponse("2026-03-18");
+    firstCoach.meta.available = true;
+    firstCoach.topInsight = {
+      id: "stale",
+      type: "under_logging",
+      priority: 100,
+      title: "Stale",
+      body: "Stale result",
+      actionLabel: "Log next meal",
+      actionType: "log_next_meal",
+      reasonCodes: ["stale"],
+      source: "rules",
+      validUntil: "2026-03-18T23:59:59Z",
+      confidence: 0.6,
+      isPositive: false,
+    };
+    firstCoach.insights = [firstCoach.topInsight];
+
+    const secondCoach = createFallbackCoachResponse("2026-03-19");
+    secondCoach.meta.available = true;
+    secondCoach.topInsight = {
+      id: "fresh",
+      type: "stable",
+      priority: 50,
+      title: "Fresh",
+      body: "Fresh result",
+      actionLabel: null,
+      actionType: "none",
+      reasonCodes: ["fresh"],
+      source: "rules",
+      validUntil: "2026-03-19T23:59:59Z",
+      confidence: 0.9,
+      isPositive: true,
+    };
+    secondCoach.insights = [secondCoach.topInsight];
+
+    const firstRequest = deferred<CoachResult>();
+    const secondRequest = deferred<CoachResult>();
+    mockGetCoach
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockReturnValueOnce(secondRequest.promise);
+
+    const { result, rerender } = renderHook(
+      ({ dayKey }: { dayKey: string }) => useCoach({ uid: "user-1", dayKey }),
+      {
+        initialProps: { dayKey: "2026-03-18" },
+      },
+    );
+
+    rerender({ dayKey: "2026-03-19" });
+
+    await act(async () => {
+      secondRequest.resolve({
+        coach: secondCoach,
+        source: "remote",
+        status: "live_success",
+        enabled: true,
+        isStale: false,
+        error: null,
+      });
+      await secondRequest.promise;
+    });
+
+    await waitFor(() => {
+      expect(result.current.coach.dayKey).toBe("2026-03-19");
+      expect(result.current.coach.topInsight?.title).toBe("Fresh");
+    });
+
+    await act(async () => {
+      firstRequest.resolve({
+        coach: firstCoach,
+        source: "remote",
+        status: "live_success",
+        enabled: true,
+        isStale: false,
+        error: null,
+      });
+      await firstRequest.promise;
+    });
+
+    expect(result.current.coach.dayKey).toBe("2026-03-19");
+    expect(result.current.coach.topInsight?.title).toBe("Fresh");
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createFallbackWeeklyReport,
   getCurrentWeeklyReportWeekEnd,
@@ -44,6 +44,14 @@ export function useWeeklyReport({
   const [source, setSource] = useState<WeeklyReportSource>("fallback");
   const [status, setStatus] = useState<WeeklyReportResultStatus>("no_user");
   const [error, setError] = useState<unknown | null>(null);
+  const requestIdRef = useRef(0);
+  const requestScopeKey = `${uid ?? ""}:${resolvedWeekEnd}:${active ? "active" : "inactive"}`;
+  const requestScopeKeyRef = useRef(requestScopeKey);
+
+  useEffect(() => {
+    requestScopeKeyRef.current = requestScopeKey;
+    requestIdRef.current += 1;
+  }, [requestScopeKey]);
 
   const applyResult = useCallback((result: {
     report: WeeklyReport;
@@ -75,8 +83,14 @@ export function useWeeklyReport({
     }
 
     setLoading(true);
+    const requestId = ++requestIdRef.current;
+    const requestScope = requestScopeKey;
     void getWeeklyReport(uid, { weekEnd: resolvedWeekEnd }).then((result) => {
-      if (!mounted) {
+      if (
+        !mounted ||
+        requestIdRef.current !== requestId ||
+        requestScopeKeyRef.current !== requestScope
+      ) {
         return;
       }
       applyResult(result);
@@ -89,11 +103,18 @@ export function useWeeklyReport({
   }, [active, applyResult, resolvedWeekEnd, uid]);
 
   const refresh = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    const requestScope = requestScopeKey;
     const result = await getWeeklyReport(uid, { weekEnd: resolvedWeekEnd });
-    applyResult(result);
-    setLoading(false);
+    if (
+      requestIdRef.current === requestId &&
+      requestScopeKeyRef.current === requestScope
+    ) {
+      applyResult(result);
+      setLoading(false);
+    }
     return result.report;
-  }, [applyResult, resolvedWeekEnd, uid]);
+  }, [applyResult, requestScopeKey, resolvedWeekEnd, uid]);
 
   return {
     report,
