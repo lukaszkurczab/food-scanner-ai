@@ -67,6 +67,8 @@ export function useHistorySectionsData(params: {
   const pullInFlightRef = useRef(false);
   const pullPendingRef = useRef(false);
   const lastPullRequestedAtRef = useRef(0);
+  const firstPageRequestIdRef = useRef(0);
+  const loadMoreRequestIdRef = useRef(0);
 
   const localFilters: LocalHistoryFilters | undefined = useMemo(() => {
     const dateRange = resolveDateRangeWithinAccessWindow(
@@ -90,7 +92,38 @@ export function useHistorySectionsData(params: {
     };
   }, [params.accessWindowDays, params.filters]);
 
+  const requestScopeKey = useMemo(
+    () =>
+      JSON.stringify({
+        uid: params.uid,
+        localFilters,
+        todayLabel: params.todayLabel,
+        yesterdayLabel: params.yesterdayLabel,
+        locale: params.locale,
+      }),
+    [
+      localFilters,
+      params.locale,
+      params.todayLabel,
+      params.uid,
+      params.yesterdayLabel,
+    ],
+  );
+  const requestScopeKeyRef = useRef(requestScopeKey);
+
+  useEffect(() => {
+    requestScopeKeyRef.current = requestScopeKey;
+    loadMoreRequestIdRef.current += 1;
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
+  }, [requestScopeKey]);
+
   const resetAndLoadLocal = useCallback(async () => {
+    const requestScope = requestScopeKey;
+    const requestId = ++firstPageRequestIdRef.current;
+    const isStale = () =>
+      firstPageRequestIdRef.current !== requestId || requestScopeKeyRef.current !== requestScope;
+
     if (!params.uid) {
       setSectionsMap(new Map());
       setCursor(null);
@@ -107,6 +140,7 @@ export function useHistorySectionsData(params: {
         beforeISO: null,
         filters: localFilters,
       });
+      if (isStale()) return;
       setSectionsMap(
         buildSectionsMap(page.items, {
           todayLabel: params.todayLabel,
@@ -118,9 +152,12 @@ export function useHistorySectionsData(params: {
       setHasMore(!!page.nextBefore && page.items.length === PAGE);
       setErrorKind(null);
     } catch {
+      if (isStale()) return;
       setErrorKind("load");
     } finally {
-      setLoading(false);
+      if (!isStale()) {
+        setLoading(false);
+      }
     }
   }, [
     localFilters,
@@ -128,10 +165,13 @@ export function useHistorySectionsData(params: {
     params.todayLabel,
     params.uid,
     params.yesterdayLabel,
+    requestScopeKey,
   ]);
 
   const requestPullChanges = useCallback(async (options?: { force?: boolean }) => {
     if (!params.uid) return;
+    const requestScope = requestScopeKeyRef.current;
+    const isStale = () => requestScopeKeyRef.current !== requestScope;
     if (pullInFlightRef.current) {
       pullPendingRef.current = true;
       return;
@@ -145,9 +185,13 @@ export function useHistorySectionsData(params: {
     pullInFlightRef.current = true;
     try {
       await pullChanges(params.uid);
-      setErrorKind(null);
+      if (!isStale()) {
+        setErrorKind(null);
+      }
     } catch {
-      setErrorKind("sync");
+      if (!isStale()) {
+        setErrorKind("sync");
+      }
     } finally {
       pullInFlightRef.current = false;
       if (pullPendingRef.current) {
@@ -245,6 +289,11 @@ export function useHistorySectionsData(params: {
   const loadMore = useCallback(async () => {
     if (!params.uid || !hasMore || loadingMoreRef.current || !cursor) return;
 
+    const requestScope = requestScopeKey;
+    const requestId = ++loadMoreRequestIdRef.current;
+    const isStale = () =>
+      loadMoreRequestIdRef.current !== requestId || requestScopeKeyRef.current !== requestScope;
+
     loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
@@ -253,6 +302,7 @@ export function useHistorySectionsData(params: {
         beforeISO: cursor,
         filters: localFilters,
       });
+      if (isStale()) return;
       setSectionsMap((prev) => {
         const next = new Map(prev);
         for (const meal of page.items) {
@@ -267,10 +317,14 @@ export function useHistorySectionsData(params: {
       setCursor(page.nextBefore);
       setHasMore(!!page.nextBefore && page.items.length === PAGE);
     } finally {
-      setLoadingMore(false);
-      setTimeout(() => {
-        loadingMoreRef.current = false;
-      }, 50);
+      if (!isStale()) {
+        setLoadingMore(false);
+        setTimeout(() => {
+          if (!isStale()) {
+            loadingMoreRef.current = false;
+          }
+        }, 50);
+      }
     }
   }, [
     cursor,
@@ -280,6 +334,7 @@ export function useHistorySectionsData(params: {
     params.todayLabel,
     params.uid,
     params.yesterdayLabel,
+    requestScopeKey,
   ]);
 
   const onEndReached = useCallback(() => {

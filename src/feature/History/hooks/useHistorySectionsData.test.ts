@@ -7,12 +7,15 @@ import {
   jest,
 } from "@jest/globals";
 import { useHistorySectionsData } from "@/feature/History/hooks/useHistorySectionsData";
+import type { Meal } from "@/types/meal";
 
 const mockGetMealsPageLocalFiltered = jest.fn();
 const mockGetMealByCloudIdLocal = jest.fn();
 const mockPullChanges = jest.fn();
 const mockOn = jest.fn();
 const mockResolveDataViewState = jest.fn();
+const mockBuildSectionsMap = jest.fn();
+const mockFilterSectionsByQuery = jest.fn();
 
 let focusEffectCallback: (() => void) | undefined;
 
@@ -45,12 +48,36 @@ jest.mock("@/services/core/events", () => ({
 }));
 
 jest.mock("@/feature/History/services/historySectionsService", () => ({
-  buildSectionsMap: () => new Map(),
-  filterSectionsByQuery: ({ sectionsMap }: { sectionsMap: Map<string, unknown> }) =>
-    Array.from(sectionsMap.values()),
+  buildSectionsMap: (...args: unknown[]) => mockBuildSectionsMap(...args),
+  filterSectionsByQuery: (...args: unknown[]) => mockFilterSectionsByQuery(...args),
   addOrUpdateMealInSections: jest.fn(),
   removeMealFromSections: jest.fn(),
 }));
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
+}
+
+const buildMeal = (overrides: Partial<Meal> = {}): Meal => ({
+  userUid: "user-1",
+  mealId: overrides.mealId ?? "meal-1",
+  cloudId: overrides.cloudId ?? overrides.mealId ?? "meal-1",
+  timestamp: overrides.timestamp ?? "2026-04-12T10:00:00.000Z",
+  type: overrides.type ?? "breakfast",
+  name: overrides.name ?? "Meal",
+  ingredients: overrides.ingredients ?? [],
+  createdAt: overrides.createdAt ?? "2026-04-12T10:00:00.000Z",
+  updatedAt: overrides.updatedAt ?? "2026-04-12T10:00:00.000Z",
+  syncState: overrides.syncState ?? "synced",
+  source: overrides.source ?? "manual",
+  ...overrides,
+});
 
 describe("useHistorySectionsData", () => {
   beforeEach(() => {
@@ -67,6 +94,18 @@ describe("useHistorySectionsData", () => {
     mockPullChanges.mockResolvedValue(undefined);
     mockOn.mockReturnValue(() => undefined);
     mockResolveDataViewState.mockReturnValue("empty");
+    mockBuildSectionsMap.mockImplementation((items: Meal[]) => {
+      const sections = items.map((item) => ({
+        key: item.cloudId || item.mealId,
+        title: item.name,
+        data: [item],
+      }));
+      return new Map(sections.map((section) => [section.key, section]));
+    });
+    mockFilterSectionsByQuery.mockImplementation(
+      ({ sectionsMap }: { sectionsMap: Map<string, unknown> }) =>
+        Array.from(sectionsMap.values()),
+    );
   });
 
   afterEach(() => {
@@ -108,5 +147,58 @@ describe("useHistorySectionsData", () => {
     });
 
     expect(mockPullChanges).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores stale local loads after filters change", async () => {
+    const firstLoad = deferred<{ items: Meal[]; nextBefore: string | null }>();
+    const secondLoad = deferred<{ items: Meal[]; nextBefore: string | null }>();
+
+    mockGetMealsPageLocalFiltered
+      .mockReturnValueOnce(firstLoad.promise)
+      .mockReturnValueOnce(secondLoad.promise);
+
+    const { result, rerender } = renderHook(
+      ({ filters }: { filters: { calories: [number, number] } | null }) =>
+        useHistorySectionsData({
+          uid: "user-1",
+          query: "",
+          filters,
+          todayLabel: "Today",
+          yesterdayLabel: "Yesterday",
+          locale: "en",
+          isOnline: true,
+        }),
+      {
+        initialProps: { filters: null },
+      },
+    );
+
+    rerender({ filters: { calories: [100, 300] } });
+
+    await act(async () => {
+      secondLoad.resolve({
+        items: [buildMeal({ mealId: "meal-2", name: "Fresh filter result" })],
+        nextBefore: null,
+      });
+      await secondLoad.promise;
+    });
+
+    await waitFor(() => {
+      expect(result.current.sections).toEqual([
+        expect.objectContaining({ title: "Fresh filter result" }),
+      ]);
+    });
+
+    await act(async () => {
+      firstLoad.resolve({
+        items: [buildMeal({ mealId: "meal-1", name: "Stale result" })],
+        nextBefore: null,
+      });
+      await firstLoad.promise;
+    });
+
+    expect(result.current.sections).toEqual([
+      expect.objectContaining({ title: "Fresh filter result" }),
+    ]);
   });
 });
