@@ -69,10 +69,11 @@ describe("useSelectSavedMealsState", () => {
   });
 
   it("subscribes to repository data and keeps list sorted by name", async () => {
+    const syncSavedMeals = jest.fn(async () => undefined);
     const { result, unmount } = renderHook(() =>
       useSelectSavedMealsState({
         uid: "user-1",
-        syncSavedMeals: jest.fn(async () => undefined),
+        syncSavedMeals,
         setMeal: jest.fn(),
         saveDraft: jest.fn<
           (uid: string, draftOverride?: Meal | null) => Promise<void>
@@ -88,6 +89,7 @@ describe("useSelectSavedMealsState", () => {
         expect.objectContaining({ uid: "user-1" }),
       );
     });
+    expect(syncSavedMeals).toHaveBeenCalledTimes(1);
 
     act(() => {
       emitRepoData?.([
@@ -165,5 +167,26 @@ describe("useSelectSavedMealsState", () => {
       result.current.handleStartOver();
     });
     expect(onStartOver).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not trigger background sync when uid is missing", async () => {
+    const syncSavedMeals = jest.fn(async () => undefined);
+
+    renderHook(() =>
+      useSelectSavedMealsState({
+        uid: null,
+        syncSavedMeals,
+        setMeal: jest.fn(),
+        saveDraft: jest.fn<
+          (uid: string, draftOverride?: Meal | null) => Promise<void>
+        >(async () => undefined),
+        setLastScreen: jest.fn(async () => undefined),
+        onNavigateReview: jest.fn(),
+        onStartOver: jest.fn(),
+      }),
+    );
+
+    await Promise.resolve();
+    expect(syncSavedMeals).not.toHaveBeenCalled();
   });
 });

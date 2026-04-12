@@ -32,6 +32,7 @@ export function useSelectSavedMealsState(params: {
   const loadingMoreRef = useRef(false);
   const limitRef = useRef(limit);
   const visibleCountRef = useRef(0);
+  const refreshInFlightRef = useRef(false);
 
   useEffect(() => {
     limitRef.current = limit;
@@ -42,6 +43,7 @@ export function useSelectSavedMealsState(params: {
       setItems([]);
       setLoading(false);
       setLimit(STEP);
+      refreshInFlightRef.current = false;
       return;
     }
 
@@ -55,12 +57,39 @@ export function useSelectSavedMealsState(params: {
     });
 
     return () => {
+      refreshInFlightRef.current = false;
       if (typeof unsub === "function") unsub();
     };
   }, [uid]);
 
+  useEffect(() => {
+    if (!uid || refreshInFlightRef.current) return;
+
+    let active = true;
+    refreshInFlightRef.current = true;
+    void syncSavedMeals()
+      .catch(() => {
+        // Background refresh is best-effort; local cache still renders.
+      })
+      .finally(() => {
+        if (active) {
+          refreshInFlightRef.current = false;
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [syncSavedMeals, uid]);
+
   const refresh = useCallback(async () => {
-    await syncSavedMeals();
+    if (refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
+    try {
+      await syncSavedMeals();
+    } finally {
+      refreshInFlightRef.current = false;
+    }
   }, [syncSavedMeals]);
 
   const visibleAll = useMemo(() => {

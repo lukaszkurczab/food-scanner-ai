@@ -142,6 +142,7 @@ export function useSavedMealsData(params: {
   const hasMoreRef = useRef(hasMore);
   const lastDocRef = useRef(lastDoc);
   const visibleCountRef = useRef(0);
+  const refreshInFlightRef = useRef(false);
 
   useEffect(() => {
     if (!params.uid) {
@@ -155,6 +156,7 @@ export function useSavedMealsData(params: {
 
     setLoading(true);
     setValidating(true);
+    refreshInFlightRef.current = false;
     const unsub = subscribeSavedMealsFirstPage({
       uid: params.uid,
       pageSize: PAGE_SIZE,
@@ -174,9 +176,41 @@ export function useSavedMealsData(params: {
     });
 
     return () => {
+      refreshInFlightRef.current = false;
       if (typeof unsub === "function") unsub();
     };
   }, [params.uid]);
+
+  useEffect(() => {
+    if (!params.uid || !params.isOnline) {
+      setValidating(false);
+      return;
+    }
+    if (refreshInFlightRef.current) {
+      return;
+    }
+
+    let active = true;
+    refreshInFlightRef.current = true;
+    setValidating(true);
+
+    void syncSavedMeals()
+      .catch(() => {
+        if (active) {
+          setErrorKind((current) => current ?? "refresh");
+        }
+      })
+      .finally(() => {
+        refreshInFlightRef.current = false;
+        if (active) {
+          setValidating(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [params.isOnline, params.uid, syncSavedMeals]);
 
   const loadMore = useCallback(async () => {
     if (!params.uid || !hasMore || loadingMoreRef.current || !lastDoc) return;
@@ -204,11 +238,19 @@ export function useSavedMealsData(params: {
   }, [hasMore, lastDoc, params.uid]);
 
   const refresh = useCallback(async () => {
+    if (refreshInFlightRef.current) {
+      return;
+    }
+    refreshInFlightRef.current = true;
+    setValidating(true);
     try {
       await syncSavedMeals();
       setErrorKind(null);
     } catch {
       setErrorKind("refresh");
+    } finally {
+      refreshInFlightRef.current = false;
+      setValidating(false);
     }
   }, [syncSavedMeals]);
 
