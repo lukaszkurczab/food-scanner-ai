@@ -18,6 +18,7 @@ import {
   trackNotificationOpened,
   trackNotificationScheduled,
   trackOnboardingOptionSelected,
+  trackPremiumStateEvaluated,
   trackSmartReminderDecisionFailed,
   trackSmartReminderNoop,
   trackSmartReminderScheduled,
@@ -117,6 +118,24 @@ describe("telemetryInstrumentation", () => {
       surface: "chat",
       success: false,
       resultStatus: "gateway_reject",
+    });
+  });
+
+  it("maps premium state evaluation telemetry to the backend allowlist", async () => {
+    await trackPremiumStateEvaluated({
+      source: "customer_info",
+      premium: true,
+      cacheState: "hit_false",
+      mismatch: true,
+      creditsTier: "free",
+    });
+
+    expect(mockTrack).toHaveBeenCalledWith("premium_state_evaluated", {
+      source: "customer_info",
+      premium: true,
+      cacheState: "hit_false",
+      mismatch: true,
+      creditsTier: "free",
     });
   });
 

@@ -40,6 +40,9 @@ All checks are mandatory. Any failed line item means **No-Go**.
 - RC smoke E2E passes on prepared runner via `E2E Smoke Gate`:
   - `foundation-smoke.yaml`
   - `account-launch-smoke.yaml`
+- RC smoke flow-contract verification passes:
+  - `GET /api/v1/ai/credits` returns valid contract payload
+  - `GET /api/v2/users/me/reports/weekly` returns expected free-user denial (`403 WEEKLY_REPORT_PREMIUM_REQUIRED`) on smoke
 - P0.1 chat integrity evidence is green:
   - automated hook tests cover timeout/offline/429/navigate-away/double-tap
   - weak-network manual chat smoke evidence is attached
@@ -78,6 +81,7 @@ All checks are mandatory. Any failed line item means **No-Go**.
 - Monthly restore drill is documented as the most recent successful `firestore-restore-drill.yml` run artifact.
 - Compliance operations are validated for current release:
   - data export endpoint `GET /api/v1/users/me/export` verified by workflow on smoke
+  - AI credits + weekly report flow contracts verified by workflow on smoke
   - data delete endpoint `POST /api/v1/users/me/delete` verified manually on a disposable smoke account, with evidence attached to `release-evidence`
   - compliance runbook reviewed: `../fitaly-backend/docs/compliance-ops-runbook.md`
 - Ops monitoring baseline is active and owned:

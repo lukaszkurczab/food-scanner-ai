@@ -75,6 +75,39 @@ jobs:
           name: smoke-export-summary
           path: artifacts/smoke-export-summary.json
 
+  smoke-flow-contracts:
+    name: Smoke flow contract verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify smoke premium/report flow contracts
+        env:
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+          SMOKE_EXPORT_TEST_EMAIL: ${{ secrets.SMOKE_EXPORT_TEST_EMAIL }}
+          SMOKE_EXPORT_TEST_PASSWORD: ${{ secrets.SMOKE_EXPORT_TEST_PASSWORD }}
+          SMOKE_API_BASE_URL: https://fitaly-backend-smoke.up.railway.app
+          MAX_FLOW_LATENCY_MS: "5000"
+          WEEKLY_EXPECTED_STATUS: "403"
+        run: node scripts/verify-smoke-flow-contracts.mjs artifacts/smoke-flow-summary.json
+
+      - name: Upload smoke flow summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-flow-summary
+          path: artifacts/smoke-flow-summary.json
+
   ops-evidence:
     name: Fetch backup and restore evidence
     runs-on: ubuntu-latest
@@ -172,6 +205,7 @@ jobs:
       - backend-ci
       - smoke-e2e
       - smoke-export
+      - smoke-flow-contracts
       - ops-evidence
       - delete-evidence
     outputs:
@@ -186,9 +220,16 @@ jobs:
           name: smoke-export-summary
           path: artifacts
 
+      - name: Download smoke flow summary
+        uses: actions/download-artifact@v4
+        with:
+          name: smoke-flow-summary
+          path: artifacts
+
       - name: Render release evidence markdown
         env:
           EXPORT_SUMMARY_PATH: artifacts/smoke-export-summary.json
+          FLOW_SUMMARY_PATH: artifacts/smoke-flow-summary.json
           EVIDENCE_GENERATED_AT: ${{ github.run_id }} / ${{ github.run_attempt }} / ${{ github.event_name }}
           MOBILE_SHA: ${{ github.sha }}
           BACKEND_SHA: ${{ needs.ops-evidence.outputs.backend_sha }}
@@ -196,6 +237,7 @@ jobs:
           BACKEND_CI_STATUS: passed
           SMOKE_E2E_STATUS: passed
           SMOKE_EXPORT_STATUS: passed
+          SMOKE_FLOW_CONTRACT_STATUS: passed
           TARGET_SDK_STATUS: passed via launch-readiness gate
           AAB_STATUS: passed via launch-readiness gate
           BACKUP_RUN_URL: ${{ needs.ops-evidence.outputs.backup_run_url }}
@@ -235,6 +277,7 @@ jobs:
       - backend-ci
       - smoke-e2e
       - smoke-export
+      - smoke-flow-contracts
       - ops-evidence
       - delete-evidence
       - release-evidence

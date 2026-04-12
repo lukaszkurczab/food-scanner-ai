@@ -71,6 +71,22 @@ type OnboardingOptionField =
   | "aiStyle"
   | "aiFocus";
 
+type PremiumStateSource =
+  | "logged_out"
+  | "billing_disabled"
+  | "revenuecat_unconfigured"
+  | "customer_info"
+  | "cache_fallback"
+  | "sync_validation";
+
+type PremiumCacheState =
+  | "not_applicable"
+  | "hit_true"
+  | "hit_false"
+  | "miss";
+
+type PremiumCreditsTier = "free" | "premium" | "unknown";
+
 export function normalizeTelemetryScreenName(routeName: string): string {
   const normalized = routeName
     .trim()
@@ -287,6 +303,22 @@ export function trackAiChatResult(resultStatus: string): Promise<void> {
     surface: "chat",
     success: resultStatus === "success",
     resultStatus,
+  });
+}
+
+export function trackPremiumStateEvaluated(input: {
+  source: PremiumStateSource;
+  premium: boolean;
+  cacheState: PremiumCacheState;
+  mismatch?: boolean;
+  creditsTier?: PremiumCreditsTier;
+}): Promise<void> {
+  return track("premium_state_evaluated", {
+    source: input.source,
+    premium: input.premium,
+    cacheState: input.cacheState,
+    ...(typeof input.mismatch === "boolean" ? { mismatch: input.mismatch } : {}),
+    ...(input.creditsTier ? { creditsTier: input.creditsTier } : {}),
   });
 }
 

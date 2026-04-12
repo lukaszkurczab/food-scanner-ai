@@ -6,7 +6,7 @@ This file is the current source of truth for public launch automation in `fitaly
 
 - Mobile CI is callable as a reusable workflow and remains the release config gate.
 - `E2E Smoke Gate` is reusable and scheduled nightly.
-- `Release Candidate` reruns mobile CI, backend CI, smoke E2E, smoke export verification, and produces `release-evidence.md`.
+- `Release Candidate` reruns mobile CI, backend CI, smoke E2E, smoke export verification, smoke flow-contract verification (`ai/credits` + weekly report gate), and produces `release-evidence.md`.
 - Production Android readiness now blocks if `targetSdkVersion < 35`.
 - Workflow failures for security, smoke E2E, release candidate, backend monitoring, and backup/restore notify Discord via `OPS_ALERT_DISCORD_WEBHOOK_URL`.
 
@@ -18,7 +18,7 @@ This file is the current source of truth for public launch automation in `fitaly
 
 ## Evidence expectations
 
-- `release-evidence` must contain mobile SHA, backend SHA, smoke export summary, latest successful backup link, latest successful restore drill link, and delete-evidence URL.
+- `release-evidence` must contain mobile SHA, backend SHA, smoke export summary, smoke flow summary, latest successful backup link, latest successful restore drill link, and delete-evidence URL.
 - A public launch is `No-Go` if any evidence line item is missing or points to a failed run.
 
 ## Historical note

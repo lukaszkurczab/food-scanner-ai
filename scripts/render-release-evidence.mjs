@@ -6,6 +6,8 @@ import path from "node:path";
 const outputPath = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve("release-evidence.md");
 const exportSummaryPath = (process.env.EXPORT_SUMMARY_PATH || "").trim();
 const exportSummary = exportSummaryPath ? JSON.parse(fs.readFileSync(exportSummaryPath, "utf8")) : null;
+const flowSummaryPath = (process.env.FLOW_SUMMARY_PATH || "").trim();
+const flowSummary = flowSummaryPath ? JSON.parse(fs.readFileSync(flowSummaryPath, "utf8")) : null;
 
 function value(name, fallback = "not provided") {
   const raw = process.env[name];
@@ -26,6 +28,7 @@ const lines = [
   bullet("Backend CI", value("BACKEND_CI_STATUS", "unknown")),
   bullet("Smoke E2E", value("SMOKE_E2E_STATUS", "unknown")),
   bullet("Smoke export", value("SMOKE_EXPORT_STATUS", "unknown")),
+  bullet("Smoke flow contracts", value("SMOKE_FLOW_CONTRACT_STATUS", "unknown")),
   bullet("Android targetSdk check", value("TARGET_SDK_STATUS", "unknown")),
   bullet("Android AAB check", value("AAB_STATUS", "unknown")),
   bullet("Latest Firestore backup", value("BACKUP_RUN_URL", "missing")),
@@ -57,6 +60,25 @@ if (exportSummary) {
   );
 } else {
   lines.push("- Smoke export summary was not generated.");
+}
+
+if (flowSummary) {
+  lines.push("", "## Smoke Flow Contract Summary");
+  lines.push(
+    bullet("Checked at", flowSummary.checkedAt || "unknown"),
+    bullet("Smoke API", flowSummary.smokeApiBaseUrl || "unknown"),
+    bullet("Smoke user", flowSummary.smokeUserEmail || flowSummary.smokeUserId || "unknown"),
+  );
+  for (const check of flowSummary.checks || []) {
+    lines.push(
+      bullet(
+        `Check ${check.name || "unknown"}`,
+        `status=${check.status ?? "unknown"}, latency=${check.latencyMs ?? "unknown"}ms`,
+      ),
+    );
+  }
+} else {
+  lines.push("", "## Smoke Flow Contract Summary", "- Smoke flow summary was not generated.");
 }
 
 lines.push(
