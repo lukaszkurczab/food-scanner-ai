@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Layout, Modal } from "@/components";
 import { useTheme } from "@/theme/useTheme";
@@ -145,7 +145,7 @@ export default function HomeScreen({ navigation }: Props) {
   const { isPremium } = usePremiumContext();
   const canAccessWeeklyReport = isPremium === true;
   const weeklyReportDevPreview = isWeeklyReportDevPreview();
-  const { meals, getMeals } = useMeals(uid);
+  const { meals } = useMeals(uid);
   const liveWeeklyReport = useWeeklyReport({
     uid,
     active: canAccessWeeklyReport && !weeklyReportDevPreview,
@@ -169,11 +169,6 @@ export default function HomeScreen({ navigation }: Props) {
         refresh: async () => createMockWeeklyReportResult("ready").report,
       }
     : liveWeeklyReport;
-
-  useEffect(() => {
-    if (!uid) return;
-    getMeals();
-  }, [getMeals, uid]);
 
   const isToday = selectedDate.toDateString() === new Date().toDateString();
   const dayMeals = useMemo(

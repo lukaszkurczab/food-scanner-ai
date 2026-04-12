@@ -85,7 +85,7 @@ describe("useStatisticsState", () => {
     jest.restoreAllMocks();
   });
 
-  it("loads meals on mount and returns default 7-day state", async () => {
+  it("relies on useMeals as the canonical loader and returns default 7-day state", async () => {
     const getMeals = jest.fn(async () => undefined);
     useMealsMock.mockReturnValue({
       meals: [],
@@ -98,9 +98,10 @@ describe("useStatisticsState", () => {
     );
 
     await waitFor(() => {
-      expect(getMeals).toHaveBeenCalledTimes(1);
+      expect(result.current.days).toBe(7);
     });
 
+    expect(getMeals).not.toHaveBeenCalled();
     expect(result.current.active).toBe("7d");
     expect(result.current.metric).toBe("kcal");
     expect(result.current.emptyKind).toBe("no_history");

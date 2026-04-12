@@ -382,6 +382,23 @@ describe("HomeScreen", () => {
     expect(getByText("meals:1")).toBeTruthy();
   });
 
+  it("does not trigger an extra meals reload from the screen layer", async () => {
+    const getMeals = jest.fn();
+    mockUseMeals.mockReturnValue({
+      meals: [createMeal()],
+      getMeals,
+    });
+
+    const navigation = createNavigation();
+    renderWithTheme(<HomeScreen navigation={navigation as never} />);
+
+    await waitFor(() => {
+      expect(mockUseMeals).toHaveBeenCalledWith("user-1");
+    });
+
+    expect(getMeals).not.toHaveBeenCalled();
+  });
+
   it("hides weekly report card for free users", () => {
     mockUsePremiumContext.mockReturnValue({ isPremium: false });
 

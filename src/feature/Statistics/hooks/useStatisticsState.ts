@@ -87,7 +87,7 @@ export function useStatisticsState(params: {
   calorieTarget: number | null;
   accessWindowDays?: number;
 }) {
-  const { meals, getMeals, loading: loadingMeals } = useMeals(params.uid);
+  const { meals, loading: loadingMeals } = useMeals(params.uid);
 
   const [active, setActive] = useState<RangeKey>("7d");
   const [customRange, setCustomRangeState] = useState<DateRange>(() =>
@@ -98,11 +98,6 @@ export function useStatisticsState(params: {
   const setCustomRange = (range: DateRange) => {
     setCustomRangeState(clampRangeForAccessWindow(range, params.accessWindowDays));
   };
-
-  useEffect(() => {
-    if (!params.uid || typeof getMeals !== "function") return;
-    void getMeals();
-  }, [getMeals, params.uid]);
 
   useEffect(() => {
     setCustomRangeState((prev) =>
