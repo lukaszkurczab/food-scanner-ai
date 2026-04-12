@@ -48,6 +48,7 @@ export default function SelectSavedMealScreen({
     queryText,
     setQueryText,
     loading,
+    refreshing,
     pageItems,
     refresh,
     handleAddMeal,
@@ -196,7 +197,7 @@ export default function SelectSavedMealScreen({
           keyExtractor={keyExtractor}
           keyboardDismissMode={keyboardDismissMode}
           refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={refresh} />
+            <RefreshControl refreshing={refreshing} onRefresh={refresh} />
           }
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}

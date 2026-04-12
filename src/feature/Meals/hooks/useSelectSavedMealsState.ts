@@ -26,6 +26,7 @@ export function useSelectSavedMealsState(params: {
 
   const [queryText, setQueryText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [items, setItems] = useState<Meal[]>([]);
   const [limit, setLimit] = useState(STEP);
 
@@ -42,6 +43,7 @@ export function useSelectSavedMealsState(params: {
     if (!uid) {
       setItems([]);
       setLoading(false);
+      setRefreshing(false);
       setLimit(STEP);
       refreshInFlightRef.current = false;
       return;
@@ -85,10 +87,12 @@ export function useSelectSavedMealsState(params: {
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
+    setRefreshing(true);
     try {
       await syncSavedMeals();
     } finally {
       refreshInFlightRef.current = false;
+      setRefreshing(false);
     }
   }, [syncSavedMeals]);
 
@@ -185,6 +189,7 @@ export function useSelectSavedMealsState(params: {
     queryText,
     setQueryText,
     loading,
+    refreshing,
     pageItems,
     refresh,
     handleAddMeal,

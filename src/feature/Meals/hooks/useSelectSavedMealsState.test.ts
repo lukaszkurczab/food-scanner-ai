@@ -189,4 +189,56 @@ describe("useSelectSavedMealsState", () => {
     await Promise.resolve();
     expect(syncSavedMeals).not.toHaveBeenCalled();
   });
+
+  it("tracks manual refresh separately from initial loading", async () => {
+    let resolveSync: (() => void) | null = null;
+    const syncSavedMeals = jest
+      .fn(async () => undefined)
+      .mockImplementationOnce(async () => undefined)
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveSync = resolve;
+          }),
+      );
+
+    const { result } = renderHook(() =>
+      useSelectSavedMealsState({
+        uid: "user-1",
+        syncSavedMeals,
+        setMeal: jest.fn(),
+        saveDraft: jest.fn<
+          (uid: string, draftOverride?: Meal | null) => Promise<void>
+        >(async () => undefined),
+        setLastScreen: jest.fn(async () => undefined),
+        onNavigateReview: jest.fn(),
+        onStartOver: jest.fn(),
+      }),
+    );
+
+    act(() => {
+      emitRepoData?.([meal()]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(syncSavedMeals).toHaveBeenCalledTimes(1);
+
+    let pendingRefresh: Promise<void>;
+    await act(async () => {
+      pendingRefresh = result.current.refresh();
+    });
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(true);
+    });
+
+    resolveSync?.();
+    await act(async () => {
+      await pendingRefresh;
+    });
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false);
+    });
+  });
 });

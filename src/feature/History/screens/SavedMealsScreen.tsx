@@ -66,6 +66,7 @@ export default function SavedMealsScreen({
     loading,
     loadingMore,
     validating,
+    refreshing,
     errorKind,
     dataState,
     visibleItems,
@@ -208,7 +209,7 @@ export default function SavedMealsScreen({
             keyboardDismissMode={keyboardDismissMode}
             keyboardShouldPersistTaps="handled"
             refreshControl={
-              <RefreshControl refreshing={loading} onRefresh={refresh} />
+              <RefreshControl refreshing={refreshing} onRefresh={refresh} />
             }
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}

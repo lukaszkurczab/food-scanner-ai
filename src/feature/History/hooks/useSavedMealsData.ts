@@ -136,6 +136,7 @@ export function useSavedMealsData(params: {
   const [lastDoc, setLastDoc] = useState<SavedMealsCursor>(null);
   const [hasMore, setHasMore] = useState(true);
   const [validating, setValidating] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [errorKind, setErrorKind] = useState<SavedMealsErrorKind>(null);
 
   const loadingMoreRef = useRef(false);
@@ -150,6 +151,7 @@ export function useSavedMealsData(params: {
       setLastDoc(null);
       setHasMore(false);
       setLoading(false);
+      setRefreshing(false);
       setErrorKind(null);
       return;
     }
@@ -242,6 +244,7 @@ export function useSavedMealsData(params: {
       return;
     }
     refreshInFlightRef.current = true;
+    setRefreshing(true);
     setValidating(true);
     try {
       await syncSavedMeals();
@@ -250,6 +253,7 @@ export function useSavedMealsData(params: {
       setErrorKind("refresh");
     } finally {
       refreshInFlightRef.current = false;
+      setRefreshing(false);
       setValidating(false);
     }
   }, [syncSavedMeals]);
@@ -323,6 +327,7 @@ export function useSavedMealsData(params: {
     loading,
     loadingMore,
     validating,
+    refreshing,
     errorKind,
     dataState,
     visibleItems,

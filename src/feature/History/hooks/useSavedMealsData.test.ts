@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import {
   beforeEach,
   describe,
@@ -84,5 +84,52 @@ describe("useSavedMealsData", () => {
 
     await Promise.resolve();
     expect(syncSavedMeals).not.toHaveBeenCalled();
+  });
+
+  it("tracks explicit refresh separately from initial loading", async () => {
+    let resolveSync: (() => void) | null = null;
+    const syncSavedMeals = jest
+      .fn(async () => undefined)
+      .mockImplementationOnce(async () => undefined)
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveSync = resolve;
+          }),
+      );
+
+    const { result } = renderHook(() =>
+      useSavedMealsData({
+        uid: "user-1",
+        query: "",
+        filters: null,
+        isOnline: true,
+        syncSavedMeals,
+      }),
+    );
+
+    await act(async () => {
+      await emitFirstPage?.({ items: [], lastDoc: null, hasMore: false });
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    let pendingRefresh: Promise<void>;
+    await act(async () => {
+      pendingRefresh = result.current.refresh();
+    });
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(true);
+    });
+
+    resolveSync?.();
+    await act(async () => {
+      await pendingRefresh;
+    });
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false);
+    });
   });
 });
