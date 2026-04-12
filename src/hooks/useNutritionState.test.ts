@@ -18,6 +18,16 @@ const mockInvalidateNutritionStateCache = jest.fn<
   (uid: string | null | undefined, options?: { dayKey?: string | null }) => Promise<void>
 >();
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
+}
+
 jest.mock("@/services/nutritionState/nutritionStateService", () => {
   const actual =
     jest.requireActual("@/services/nutritionState/nutritionStateService") as typeof import("@/services/nutritionState/nutritionStateService");
@@ -201,5 +211,57 @@ describe("useNutritionState", () => {
     await waitFor(() => {
       expect(result.current.state.quality.mealsLogged).toBe(2);
     });
+  });
+
+  it("ignores stale nutrition state loads after day changes", async () => {
+    const firstState = createFallbackNutritionState("2026-03-18");
+    firstState.quality.mealsLogged = 1;
+    const secondState = createFallbackNutritionState("2026-03-19");
+    secondState.quality.mealsLogged = 4;
+
+    const firstRequest = deferred<NutritionStateResult>();
+    const secondRequest = deferred<NutritionStateResult>();
+    mockGetNutritionState
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockReturnValueOnce(secondRequest.promise);
+
+    const { result, rerender } = renderHook(
+      ({ dayKey }: { dayKey: string }) => useNutritionState({ uid: "user-1", dayKey }),
+      {
+        initialProps: { dayKey: "2026-03-18" },
+      },
+    );
+
+    rerender({ dayKey: "2026-03-19" });
+
+    await act(async () => {
+      secondRequest.resolve({
+        state: secondState,
+        source: "remote",
+        enabled: true,
+        isStale: false,
+        error: null,
+      });
+      await secondRequest.promise;
+    });
+
+    await waitFor(() => {
+      expect(result.current.state.dayKey).toBe("2026-03-19");
+      expect(result.current.state.quality.mealsLogged).toBe(4);
+    });
+
+    await act(async () => {
+      firstRequest.resolve({
+        state: firstState,
+        source: "remote",
+        enabled: true,
+        isStale: false,
+        error: null,
+      });
+      await firstRequest.promise;
+    });
+
+    expect(result.current.state.dayKey).toBe("2026-03-19");
+    expect(result.current.state.quality.mealsLogged).toBe(4);
   });
 });

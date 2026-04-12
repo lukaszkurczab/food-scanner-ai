@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getCurrentReminderDecisionDayKey,
   getReminderDecision,
@@ -50,6 +50,14 @@ export function useReminderDecision({
   const [state, setState] = useState<ReminderDecisionState>(
     () => ({ ...INITIAL_STATE, loading: !!uid }),
   );
+  const requestIdRef = useRef(0);
+  const requestScopeKey = `${uid ?? ""}:${resolvedDayKey}:${fetchEnabled ? "enabled" : "disabled"}`;
+  const requestScopeKeyRef = useRef(requestScopeKey);
+
+  useEffect(() => {
+    requestScopeKeyRef.current = requestScopeKey;
+    requestIdRef.current += 1;
+  }, [requestScopeKey]);
 
   useEffect(() => {
     let active = true;
@@ -62,9 +70,15 @@ export function useReminderDecision({
     }
 
     setState((prev) => ({ ...prev, loading: true }));
+    const requestId = ++requestIdRef.current;
+    const requestScope = requestScopeKey;
 
     void getReminderDecision(uid, { dayKey: resolvedDayKey }).then((result) => {
-      if (!active) {
+      if (
+        !active ||
+        requestIdRef.current !== requestId ||
+        requestScopeKeyRef.current !== requestScope
+      ) {
         return;
       }
 
@@ -81,20 +95,27 @@ export function useReminderDecision({
     return () => {
       active = false;
     };
-  }, [fetchEnabled, resolvedDayKey, uid]);
+  }, [fetchEnabled, requestScopeKey, resolvedDayKey, uid]);
 
   const refresh = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    const requestScope = requestScopeKey;
     const result = await getReminderDecision(uid, { dayKey: resolvedDayKey });
-    setState({
-      decision: result.decision,
-      loading: false,
-      enabled: result.enabled,
-      source: result.source,
-      status: result.status,
-      error: result.error,
-    });
+    if (
+      requestIdRef.current === requestId &&
+      requestScopeKeyRef.current === requestScope
+    ) {
+      setState({
+        decision: result.decision,
+        loading: false,
+        enabled: result.enabled,
+        source: result.source,
+        status: result.status,
+        error: result.error,
+      });
+    }
     return result.decision;
-  }, [resolvedDayKey, uid]);
+  }, [requestScopeKey, resolvedDayKey, uid]);
 
   return {
     ...state,

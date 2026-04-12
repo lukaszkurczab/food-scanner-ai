@@ -10,6 +10,16 @@ const mockGetReminderDecision = jest.fn<
   ) => Promise<ReminderDecisionResult>
 >();
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
+}
+
 jest.mock("@/services/reminders/reminderService", () => {
   return {
     getCurrentReminderDecisionDayKey: () => "2026-03-18",
@@ -149,5 +159,71 @@ describe("useReminderDecision", () => {
     });
     expect(result.current.source).toBe("remote");
     expect(result.current.status).toBe("live_success");
+  });
+
+  it("ignores stale reminder decisions after day changes", async () => {
+    const firstRequest = deferred<ReminderDecisionResult>();
+    const secondRequest = deferred<ReminderDecisionResult>();
+    mockGetReminderDecision
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockReturnValueOnce(secondRequest.promise);
+
+    const { result, rerender } = renderHook(
+      ({ dayKey }: { dayKey: string }) =>
+        useReminderDecision({ uid: "user-1", dayKey }),
+      {
+        initialProps: { dayKey: "2026-03-18" },
+      },
+    );
+
+    rerender({ dayKey: "2026-03-19" });
+
+    await act(async () => {
+      secondRequest.resolve({
+        decision: {
+          dayKey: "2026-03-19",
+          computedAt: "2026-03-19T12:05:00Z",
+          decision: "suppress",
+          kind: null,
+          reasonCodes: ["fresh"],
+          scheduledAtUtc: null,
+          confidence: 1,
+          validUntil: "2026-03-19T22:00:00Z",
+        },
+        source: "remote",
+        status: "live_success",
+        enabled: true,
+        error: null,
+      });
+      await secondRequest.promise;
+    });
+
+    await waitFor(() => {
+      expect(result.current.decision?.dayKey).toBe("2026-03-19");
+      expect(result.current.decision?.reasonCodes).toEqual(["fresh"]);
+    });
+
+    await act(async () => {
+      firstRequest.resolve({
+        decision: {
+          dayKey: "2026-03-18",
+          computedAt: "2026-03-18T12:05:00Z",
+          decision: "send",
+          kind: "log_next_meal",
+          reasonCodes: ["stale"],
+          scheduledAtUtc: "2026-03-18T18:30:00Z",
+          confidence: 0.7,
+          validUntil: "2026-03-18T19:30:00Z",
+        },
+        source: "remote",
+        status: "live_success",
+        enabled: true,
+        error: null,
+      });
+      await firstRequest.promise;
+    });
+
+    expect(result.current.decision?.dayKey).toBe("2026-03-19");
+    expect(result.current.decision?.reasonCodes).toEqual(["fresh"]);
   });
 });
