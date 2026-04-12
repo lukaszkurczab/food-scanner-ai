@@ -1,5 +1,9 @@
 import { describe, expect, it } from "@jest/globals";
-import { getLaunchReadinessIssueFromExtra } from "@/services/release/launchReadiness";
+import Constants from "expo-constants";
+import {
+  getLaunchReadinessIssue,
+  getLaunchReadinessIssueFromExtra,
+} from "@/services/release/launchReadiness";
 
 describe("launchReadiness", () => {
   it("does not block non-production builds", () => {
@@ -38,5 +42,25 @@ describe("launchReadiness", () => {
         privacyUrl: "https://example.com/privacy",
       }),
     ).toBeNull();
+  });
+
+  it("reads values from expo constants in getLaunchReadinessIssue", () => {
+    const originalExtra = Constants.expoConfig?.extra;
+
+    Constants.expoConfig = {
+      ...(Constants.expoConfig ?? {}),
+      extra: {
+        buildProfile: "production",
+        termsUrl: "https://example.com/terms",
+        privacyUrl: "https://example.com/privacy",
+      },
+    };
+
+    expect(getLaunchReadinessIssue()).toBeNull();
+
+    Constants.expoConfig = {
+      ...(Constants.expoConfig ?? {}),
+      extra: originalExtra ?? {},
+    };
   });
 });
