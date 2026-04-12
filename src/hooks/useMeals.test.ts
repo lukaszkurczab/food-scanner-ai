@@ -31,6 +31,7 @@ const mockRefreshStreakFromBackend = jest.fn<
   (uid: string, options?: { refreshBadges?: boolean }) => Promise<void>
 >();
 const mockEmit = jest.fn<(event: string, payload: Record<string, unknown>) => void>();
+const mockOn = jest.fn();
 const mockPushQueue = jest.fn<(uid: string) => Promise<void>>();
 const mockPullChanges = jest.fn<(uid: string) => Promise<void>>();
 const mockUpsertMyMealWithPhoto = jest.fn<
@@ -41,6 +42,10 @@ const mockDebugWarn = jest.fn();
 const mockTrackMealAdded = jest.fn<(meal: Meal) => Promise<void>>();
 const mockTrackMealUpdated = jest.fn<(meal: Meal) => Promise<void>>();
 const mockTrackMealDeleted = jest.fn<(meal?: Meal | null) => Promise<void>>();
+const mockEventHandlers = new Map<
+  string,
+  Set<(payload?: Record<string, unknown>) => void>
+>();
 
 jest.mock("uuid", () => ({
   v4: () => mockUuid(),
@@ -93,8 +98,27 @@ jest.mock("@/services/gamification/streakService", () => ({
 }));
 
 jest.mock("@/services/core/events", () => ({
-  emit: (event: string, payload: Record<string, unknown>) =>
-    mockEmit(event, payload),
+  emit: (event: string, payload: Record<string, unknown>) => {
+    mockEmit(event, payload);
+    const handlers = mockEventHandlers.get(event);
+    if (handlers) {
+      for (const handler of handlers) {
+        handler(payload);
+      }
+    }
+  },
+  on: (event: string, handler: (payload?: Record<string, unknown>) => void) => {
+    mockOn(event, handler);
+    const handlers = mockEventHandlers.get(event) ?? new Set();
+    handlers.add(handler);
+    mockEventHandlers.set(event, handlers);
+    return () => {
+      handlers.delete(handler);
+      if (handlers.size === 0) {
+        mockEventHandlers.delete(event);
+      }
+    };
+  },
 }));
 
 jest.mock("@/services/offline/sync.engine", () => ({
@@ -181,6 +205,7 @@ describe("useMeals", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useRealTimers();
+    mockEventHandlers.clear();
 
     mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
     mockNetInfoFetch.mockResolvedValue({ isConnected: true });
@@ -222,6 +247,28 @@ describe("useMeals", () => {
 
     expect(result.current.meals).toEqual(firstPage);
     expect(mockGetMealsPageLocal).toHaveBeenCalledWith("user-1", 50, undefined);
+    expect(mockPullChanges).toHaveBeenCalledWith("user-1");
+  });
+
+  it("reloads visible meals when a synced meal event arrives", async () => {
+    mockGetMealsPageLocal
+      .mockResolvedValueOnce([baseMeal({ cloudId: "c1", name: "Old meal" })])
+      .mockResolvedValueOnce([baseMeal({ cloudId: "c2", name: "Fresh meal" })]);
+
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    act(() => {
+      const handlers = mockEventHandlers.get("meal:synced");
+      handlers?.forEach((handler) => handler({ uid: "user-1" }));
+    });
+
+    await waitFor(() => {
+      expect(result.current.meals[0]?.cloudId).toBe("c2");
+    });
   });
 
   it("clears data when user is missing and keeps pagination inactive", async () => {
@@ -699,6 +746,7 @@ describe("useMeals", () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
+    mockPullChanges.mockClear();
 
     let firstSyncPromise: Promise<void> | null = null;
     await act(async () => {

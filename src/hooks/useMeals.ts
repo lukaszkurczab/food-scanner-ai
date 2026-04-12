@@ -17,7 +17,7 @@ import {
 import { insertOrUpdateImage } from "@/services/offline/images.repo";
 import { reconcileAll } from "@/services/notifications/engine";
 import { debugScope } from "@/utils/debug";
-import { emit } from "@/services/core/events";
+import { emit, on } from "@/services/core/events";
 import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/meals/myMealService";
 import { deriveMealTimingMetadata } from "@/services/meals/mealMetadata";
@@ -91,6 +91,9 @@ export function useMeals(userUid: string | null) {
   const syncInFlightRef = useRef(false);
   const syncRequestedRef = useRef(false);
   const lastOfflineToastAtRef = useRef(0);
+  const reloadInFlightRef = useRef(false);
+  const reloadRequestedRef = useRef(false);
+  const remoteRefreshInFlightRef = useRef(false);
 
   const emitOfflineQueuedToast = useCallback(() => {
     const now = Date.now();
@@ -190,9 +193,10 @@ export function useMeals(userUid: string | null) {
     [],
   );
 
-  const loadFirstPage = useCallback(async () => {
+  const loadFirstPage = useCallback(async (options?: { silent?: boolean }) => {
     const requestUid = userUid;
     const requestId = ++firstPageRequestIdRef.current;
+    const silent = options?.silent === true;
 
     const isStale = () =>
       firstPageRequestIdRef.current !== requestId || activeUidRef.current !== requestUid;
@@ -203,7 +207,9 @@ export function useMeals(userUid: string | null) {
       beforeRef.current = null;
       return;
     }
-    setLoading(true);
+    if (!silent) {
+      setLoading(true);
+    }
     try {
       const page = await getMealsPageLocal(userUid, PAGE_LIMIT, undefined);
       if (isStale()) return;
@@ -222,6 +228,24 @@ export function useMeals(userUid: string | null) {
       }
     }
   }, [userUid]);
+
+  const reloadFirstPage = useCallback(async () => {
+    if (reloadInFlightRef.current) {
+      reloadRequestedRef.current = true;
+      return;
+    }
+
+    reloadInFlightRef.current = true;
+    try {
+      await loadFirstPage({ silent: true });
+    } finally {
+      reloadInFlightRef.current = false;
+      if (reloadRequestedRef.current) {
+        reloadRequestedRef.current = false;
+        void reloadFirstPage();
+      }
+    }
+  }, [loadFirstPage]);
 
   const loadNextPage = useCallback(async () => {
     if (!userUid || !beforeRef.current || nextPageInFlightRef.current) return;
@@ -253,6 +277,52 @@ export function useMeals(userUid: string | null) {
   useEffect(() => {
     void getMeals();
   }, [getMeals]);
+
+  useEffect(() => {
+    if (!userUid) {
+      remoteRefreshInFlightRef.current = false;
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      const net = await NetInfo.fetch();
+      if (cancelled || !net.isConnected || remoteRefreshInFlightRef.current) {
+        return;
+      }
+
+      remoteRefreshInFlightRef.current = true;
+      try {
+        await pullChanges(userUid);
+      } catch (error: unknown) {
+        log.warn("background pull failed", error);
+      } finally {
+        remoteRefreshInFlightRef.current = false;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      remoteRefreshInFlightRef.current = false;
+    };
+  }, [userUid]);
+
+  useEffect(() => {
+    if (!userUid) return;
+
+    const unsubs = [
+      on<{ uid?: string }>("meal:synced", (event) => {
+        const eventUid = typeof event?.uid === "string" ? event.uid : userUid;
+        if (eventUid !== userUid) return;
+        void reloadFirstPage();
+      }),
+    ];
+
+    return () => {
+      for (const unsub of unsubs) unsub();
+    };
+  }, [reloadFirstPage, userUid]);
 
   const addMeal = useCallback(
     async (
