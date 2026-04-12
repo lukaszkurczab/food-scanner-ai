@@ -111,6 +111,9 @@ describe("services/ai/chatThreadRepository", () => {
         createdAt: 100,
         title: "First chat",
       },
+      {
+        retryMode: "idempotent",
+      },
     );
     expect(mockSetChatMessageSyncState).toHaveBeenCalledWith({
       userUid: "user-1",

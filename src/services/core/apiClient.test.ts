@@ -126,7 +126,7 @@ describe("apiClient", () => {
     expect(fetchMock.mock.calls[0][1].headers).not.toHaveProperty("Content-Type");
   });
 
-  it("retries multipart uploads for transient server failures", async () => {
+  it("does not retry multipart uploads for transient server failures by default", async () => {
     jest.useFakeTimers();
     const getIdToken = jest.fn().mockResolvedValue("token-456");
     mockGetAuth.mockReturnValue({
@@ -152,10 +152,101 @@ describe("apiClient", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { upload } = require("@/services/core/apiClient");
 
-    const pending = upload("/users/me/meals/photo", formData);
+    await expect(upload("/users/me/meals/photo", formData)).rejects.toMatchObject({
+      code: "api/http-error",
+      status: 500,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries multipart uploads only when explicitly marked idempotent", async () => {
+    jest.useFakeTimers();
+    const getIdToken = jest.fn().mockResolvedValue("token-456");
+    mockGetAuth.mockReturnValue({
+      currentUser: { getIdToken },
+    });
+
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => JSON.stringify({ detail: "Database error" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ ok: true }),
+      });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const formData = new FormData();
+    formData.append("file", "payload");
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { upload } = require("@/services/core/apiClient");
+
+    const pending = upload("/users/me/chat-safe-upload", formData, {
+      retryMode: "idempotent",
+    });
     await jest.advanceTimersByTimeAsync(1000);
     await expect(pending).resolves.toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry POST requests for transient server failures by default", async () => {
+    jest.useFakeTimers();
+    mockGetAuth.mockReturnValue({
+      currentUser: null,
+    });
+
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => JSON.stringify({ detail: "Database error" }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { post } = require("@/services/core/apiClient");
+
+    await expect(post("/users/me/delete", { confirmed: true })).rejects.toMatchObject({
+      code: "api/http-error",
+      status: 500,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries idempotent POST requests and reuses one idempotency key", async () => {
+    jest.useFakeTimers();
+    mockGetAuth.mockReturnValue({
+      currentUser: null,
+    });
+
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => JSON.stringify({ detail: "temporary failure" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ ok: true }),
+      });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { post } = require("@/services/core/apiClient");
+
+    const pending = post("/ai/ask", { message: "hello" }, { retryMode: "idempotent" });
+    await jest.advanceTimersByTimeAsync(1000);
+    await expect(pending).resolves.toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    const firstHeaders = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    const secondHeaders = fetchMock.mock.calls[1]?.[1]?.headers as Record<string, string>;
+    expect(firstHeaders["X-Idempotency-Key"]).toBeTruthy();
+    expect(secondHeaders["X-Idempotency-Key"]).toBe(firstHeaders["X-Idempotency-Key"]);
   });
 
   it("returns api/timeout when request exceeds timeout", async () => {

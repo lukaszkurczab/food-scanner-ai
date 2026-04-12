@@ -249,7 +249,7 @@ describe("telemetryClient", () => {
           }),
         ],
       }),
-      { timeout: 15_000 },
+      { timeout: 15_000, retryMode: "idempotent" },
     );
   });
 });

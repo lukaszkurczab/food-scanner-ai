@@ -61,6 +61,8 @@ async function detectIngredientsWithBackend(
   const response = await post<AiPhotoAnalyzeResponse>("/ai/photo/analyze", {
     imageBase64,
     lang: userLang,
+  }, {
+    retryMode: "idempotent",
   });
 
   return {

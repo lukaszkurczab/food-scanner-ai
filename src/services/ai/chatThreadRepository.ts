@@ -274,6 +274,9 @@ export async function persistUserChatMessage(params: {
         createdAt: params.createdAt,
         title: params.title,
       },
+      {
+        retryMode: "idempotent",
+      },
     );
     await setChatMessageSyncState({
       userUid: params.userUid,
@@ -354,6 +357,9 @@ export async function persistAssistantChatMessage(params: {
         role: "assistant",
         content: params.content,
         createdAt: params.createdAt,
+      },
+      {
+        retryMode: "idempotent",
       },
     );
     await setChatMessageSyncState({

@@ -49,6 +49,8 @@ export async function extractIngredientsFromText(
     const response = await post<AiTextMealAnalyzeResponse>("/ai/text-meal/analyze", {
       payload,
       lang,
+    }, {
+      retryMode: "idempotent",
     });
 
     const mappedIngredients = response.ingredients.map(

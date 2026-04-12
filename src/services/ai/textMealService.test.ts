@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
-const mockPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
+const mockPost = jest.fn<
+  (url: string, data?: unknown, options?: unknown) => Promise<unknown>
+>();
 
 jest.mock("@/services/core/apiClient", () => ({
-  post: (url: string, data?: unknown) => mockPost(url, data),
+  post: (url: string, data?: unknown, options?: unknown) =>
+    mockPost(url, data, options),
 }));
 
 jest.mock("@/services/core/errorLogger", () => ({
@@ -61,6 +64,8 @@ describe("textMealService", () => {
         notes: null,
       },
       lang: "pl",
+    }, {
+      retryMode: "idempotent",
     });
     expect(result?.ingredients).toHaveLength(1);
     expect(result?.ingredients[0]).toMatchObject({

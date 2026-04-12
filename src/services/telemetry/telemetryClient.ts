@@ -377,6 +377,7 @@ export async function flush(): Promise<void> {
       try {
         await apiClient.post(TELEMETRY_ENDPOINT, buildBatchPayload(batch), {
           timeout: 15_000,
+          retryMode: "idempotent",
         });
         dropBatch(batch);
         resetRetryState();

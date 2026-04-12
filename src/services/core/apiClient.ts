@@ -14,10 +14,12 @@ const MAX_RETRIES = 2;
 const RETRY_BASE_DELAY_MS = 1_000;
 
 export type RequestMethod = "GET" | "POST" | "DELETE";
+export type RetryMode = "none" | "idempotent";
 
 export type RequestOptions = {
   timeout?: number;
   signal?: AbortSignal;
+  retryMode?: RetryMode;
 };
 
 export type ApiClientError = Error & {
@@ -335,9 +337,11 @@ async function performRequest<T = unknown>({
 }
 
 async function withRetry<T>(
-  executor: (attempt: number) => Promise<T>
+  executor: (attempt: number) => Promise<T>,
+  options?: { retryMode?: RetryMode },
 ): Promise<T> {
   let lastError: unknown;
+  const retryMode = options?.retryMode ?? "idempotent";
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -360,7 +364,11 @@ async function withRetry<T>(
 
       // Retry transient errors (5xx, 429, network timeout) with
       // exponential back-off: 1 s, 2 s.
-      if (apiError?.retryable === true && attempt < MAX_RETRIES) {
+      if (
+        retryMode === "idempotent" &&
+        apiError?.retryable === true &&
+        attempt < MAX_RETRIES
+      ) {
         await sleep(RETRY_BASE_DELAY_MS * 2 ** attempt);
         continue;
       }
@@ -383,6 +391,7 @@ export async function request<T = unknown>(
   const body = method === "POST" ? JSON.stringify(data) : undefined;
   // Keep the same key for all retry attempts in one logical request.
   const idempotencyKey = method === "POST" ? uuidv4() : undefined;
+  const retryMode = options?.retryMode ?? (method === "GET" ? "idempotent" : "none");
 
   return withRetry(async () => {
     const authHeader = await getAuthorizationHeader();
@@ -399,7 +408,7 @@ export async function request<T = unknown>(
       body,
       signal: options?.signal,
     });
-  });
+  }, { retryMode });
 }
 
 export async function upload<T = unknown>(
@@ -409,6 +418,7 @@ export async function upload<T = unknown>(
 ): Promise<T> {
   const fullUrl = buildRequestUrl(url);
   const timeoutMs = normalizeTimeoutMs(options?.timeout);
+  const retryMode = options?.retryMode ?? "none";
 
   return withRetry(async () => {
     const authHeader = await getAuthorizationHeader();
@@ -423,7 +433,7 @@ export async function upload<T = unknown>(
       body: data,
       signal: options?.signal,
     });
-  });
+  }, { retryMode });
 }
 
 export function get<T = unknown>(

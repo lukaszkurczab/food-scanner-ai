@@ -341,6 +341,7 @@ export function useChatHistory(
             },
             {
               signal: askAbortController.signal,
+              retryMode: "idempotent",
             },
           );
 

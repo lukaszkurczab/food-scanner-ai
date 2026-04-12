@@ -19,7 +19,9 @@ const mockConvertToJpegAndResize = jest.fn<
     options?: Record<string, unknown>,
   ) => Promise<string>
 >();
-const mockPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
+const mockPost = jest.fn<
+  (url: string, data?: unknown, options?: unknown) => Promise<unknown>
+>();
 const mockLogError = jest.fn();
 const mockUuid = jest.fn<() => string>();
 
@@ -44,7 +46,8 @@ jest.mock("@/utils/convertToJpegAndResize", () => ({
 }));
 
 jest.mock("@/services/core/apiClient", () => ({
-  post: (url: string, data?: unknown) => mockPost(url, data),
+  post: (url: string, data?: unknown, options?: unknown) =>
+    mockPost(url, data, options),
 }));
 
 jest.mock("@/services/core/errorLogger", () => ({
@@ -110,6 +113,8 @@ describe("visionService", () => {
     expect(mockPost).toHaveBeenCalledWith("/ai/photo/analyze", {
       imageBase64: "base64-image",
       lang: "en",
+    }, {
+      retryMode: "idempotent",
     });
     expect(result).toMatchObject({
       ingredients: [
