@@ -18,6 +18,36 @@ type MyMealDoc = Meal & {
 
 const isLocalPhoto = (uri?: string | null) =>
   !!uri && (uri.startsWith("file:") || uri.startsWith("content:"));
+const myMealSyncTasks = new Map<string, Promise<void>>();
+const myMealSyncPending = new Set<string>();
+
+async function runMyMealSync(uid: string): Promise<void> {
+  for (;;) {
+    myMealSyncPending.delete(uid);
+    await pushQueue(uid);
+    await pullMyMealChanges(uid);
+    if (!myMealSyncPending.has(uid)) {
+      return;
+    }
+  }
+}
+
+async function requestMyMealSync(uid: string): Promise<void> {
+  const existing = myMealSyncTasks.get(uid);
+  if (existing) {
+    myMealSyncPending.add(uid);
+    return existing;
+  }
+
+  const task = runMyMealSync(uid).finally(() => {
+    if (myMealSyncTasks.get(uid) === task) {
+      myMealSyncTasks.delete(uid);
+    }
+    myMealSyncPending.delete(uid);
+  });
+  myMealSyncTasks.set(uid, task);
+  return task;
+}
 
 export async function upsertMyMealLocal(
   userUid: string,
@@ -70,8 +100,7 @@ export async function upsertMyMealWithPhoto(
 
   const net = await NetInfo.fetch();
   if (net.isConnected) {
-    await pushQueue(userUid);
-    await pullMyMealChanges(userUid);
+    await requestMyMealSync(userUid);
   }
 }
 
@@ -85,13 +114,11 @@ export async function deleteMyMeal(
 
   const net = await NetInfo.fetch();
   if (net.isConnected) {
-    await pushQueue(userUid);
-    await pullMyMealChanges(userUid);
+    await requestMyMealSync(userUid);
   }
 }
 
 export async function syncMyMeals(userUid?: string | null): Promise<void> {
   if (!userUid) return;
-  await pushQueue(userUid);
-  await pullMyMealChanges(userUid);
+  await requestMyMealSync(userUid);
 }
