@@ -136,11 +136,11 @@ export function useHistorySectionsData(params: {
       pullPendingRef.current = true;
       return;
     }
+    const now = Date.now();
     if (!options?.force) {
-      const now = Date.now();
       if (now - lastPullRequestedAtRef.current < PULL_THROTTLE_MS) return;
-      lastPullRequestedAtRef.current = now;
     }
+    lastPullRequestedAtRef.current = now;
 
     pullInFlightRef.current = true;
     try {
