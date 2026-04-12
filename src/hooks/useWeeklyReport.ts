@@ -100,7 +100,7 @@ export function useWeeklyReport({
     return () => {
       mounted = false;
     };
-  }, [active, applyResult, resolvedWeekEnd, uid]);
+  }, [active, applyResult, requestScopeKey, resolvedWeekEnd, uid]);
 
   const refresh = useCallback(async () => {
     const requestId = ++requestIdRef.current;

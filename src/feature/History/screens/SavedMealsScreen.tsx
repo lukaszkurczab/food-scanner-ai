@@ -65,7 +65,6 @@ export default function SavedMealsScreen({
 
   const {
     pageSize,
-    loading,
     loadingMore,
     validating,
     refreshing,
