@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   FlatList,
   Pressable,
@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
@@ -27,6 +28,7 @@ type SelectSavedMealNavigation = StackNavigationProp<
   RootStackParamList,
   "SelectSavedMeal"
 >;
+const FOCUS_REFRESH_THROTTLE_MS = 30_000;
 
 export default function SelectSavedMealScreen({
   navigation,
@@ -70,6 +72,25 @@ export default function SelectSavedMealScreen({
         origin: "mealAddFlow",
       }),
   });
+  const firstFocusRef = useRef(true);
+  const lastFocusRefreshAtRef = useRef(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocusRef.current) {
+        firstFocusRef.current = false;
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastFocusRefreshAtRef.current < FOCUS_REFRESH_THROTTLE_MS) {
+        return;
+      }
+
+      lastFocusRefreshAtRef.current = now;
+      void refresh();
+    }, [refresh]),
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: Meal }) => {

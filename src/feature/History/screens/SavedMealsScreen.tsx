@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -8,6 +8,7 @@ import {
   Platform,
 } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import {
@@ -31,6 +32,7 @@ import type { RootStackParamList } from "@/navigation/navigate";
 import { buildSavedMealDraft } from "@/feature/Meals/utils/buildSavedMealDraft";
 
 type SavedMealsNavigation = StackNavigationProp<RootStackParamList, "SavedMeals">;
+const FOCUS_REFRESH_THROTTLE_MS = 30_000;
 
 export default function SavedMealsScreen({
   navigation,
@@ -81,6 +83,25 @@ export default function SavedMealsScreen({
     isOnline,
     syncSavedMeals: () => syncMyMeals(uid),
   });
+  const firstFocusRef = useRef(true);
+  const lastFocusRefreshAtRef = useRef(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocusRef.current) {
+        firstFocusRef.current = false;
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastFocusRefreshAtRef.current < FOCUS_REFRESH_THROTTLE_MS) {
+        return;
+      }
+
+      lastFocusRefreshAtRef.current = now;
+      void refresh();
+    }, [refresh]),
+  );
 
   const onDuplicate = useCallback(
     async (meal: Meal) => {

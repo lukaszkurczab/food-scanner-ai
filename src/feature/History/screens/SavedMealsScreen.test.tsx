@@ -15,9 +15,16 @@ const mockUuid = jest.fn();
 const mockSyncMyMeals = jest.fn<
   (uid: string | null | undefined) => Promise<void>
 >();
+let savedMealsFocusEffect: (() => void) | undefined;
 
 jest.mock("@react-native-community/netinfo", () => ({
   useNetInfo: () => mockUseNetInfo(),
+}));
+
+jest.mock("@react-navigation/native", () => ({
+  useFocusEffect: (callback: () => void) => {
+    savedMealsFocusEffect = callback;
+  },
 }));
 
 jest.mock("@/context/AuthContext", () => ({
@@ -221,6 +228,7 @@ const buildMeal = (overrides?: Partial<Meal>): Meal => ({
 
 describe("SavedMealsScreen", () => {
   beforeEach(() => {
+    savedMealsFocusEffect = undefined;
     mockSyncMyMeals.mockReset();
     mockSyncMyMeals.mockResolvedValue(undefined);
     mockUuid.mockReset();
@@ -279,6 +287,35 @@ describe("SavedMealsScreen", () => {
 
     await params.syncSavedMeals();
     expect(mockSyncMyMeals).toHaveBeenCalledWith("user-1");
+  });
+
+  it("refreshes on later focus but skips the initial mount focus", async () => {
+    jest.spyOn(Date, "now").mockReturnValue(32_000);
+    const refresh = jest.fn(async () => undefined);
+    mockUseSavedMealsData.mockReturnValue({
+      pageSize: 20,
+      loading: false,
+      loadingMore: false,
+      validating: false,
+      refreshing: false,
+      errorKind: null,
+      dataState: "ready",
+      visibleItems: [],
+      refresh,
+      onDelete: jest.fn(),
+      onViewableItemsChanged: { current: jest.fn() },
+      viewabilityConfig: {},
+    });
+
+    renderWithTheme(<SavedMealsScreen navigation={{ navigate: jest.fn() } as never} />);
+
+    savedMealsFocusEffect?.();
+    expect(refresh).not.toHaveBeenCalled();
+
+    savedMealsFocusEffect?.();
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    jest.restoreAllMocks();
   });
 
   it("renders loading and non-ready states", () => {

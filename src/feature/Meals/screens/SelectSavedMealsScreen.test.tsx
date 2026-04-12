@@ -16,6 +16,7 @@ const mockUseMealDraftContext = jest.fn();
 const mockUseSelectSavedMealsState = jest.fn();
 const mockSyncMyMeals = jest.fn();
 const mockUseNetInfo = jest.fn();
+let selectSavedMealsFocusEffect: (() => void) | undefined;
 
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
@@ -32,6 +33,12 @@ jest.mock("@/feature/Meals/hooks/useSelectSavedMealsState", () => ({
 
 jest.mock("@/services/meals/myMealService", () => ({
   syncMyMeals: (uid: string | null) => mockSyncMyMeals(uid),
+}));
+
+jest.mock("@react-navigation/native", () => ({
+  useFocusEffect: (callback: () => void) => {
+    selectSavedMealsFocusEffect = callback;
+  },
 }));
 
 jest.mock("@react-native-community/netinfo", () => ({
@@ -152,6 +159,7 @@ const buildMeal = (overrides?: Partial<Meal>): Meal => ({
 
 describe("SelectSavedMealScreen", () => {
   beforeEach(() => {
+    selectSavedMealsFocusEffect = undefined;
     mockSyncMyMeals.mockReset();
     mockUseNetInfo.mockReturnValue({ isConnected: true });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
@@ -301,5 +309,36 @@ describe("SelectSavedMealScreen", () => {
       selectionMode: "temporary",
       origin: "mealAddFlow",
     });
+  });
+
+  it("refreshes on later focus but skips the initial mount focus", () => {
+    jest.spyOn(Date, "now").mockReturnValue(32_000);
+    const refresh = jest.fn(async () => undefined);
+    mockUseSelectSavedMealsState.mockReturnValue({
+      step: 20,
+      queryText: "",
+      setQueryText: jest.fn(),
+      loading: false,
+      refreshing: false,
+      pageItems: [],
+      refresh,
+      handleAddMeal: jest.fn(),
+      handleStartOver: jest.fn(),
+      keyExtractor: jest.fn(),
+      onViewableItemsChanged: { current: jest.fn() },
+      viewabilityConfig: {},
+    });
+
+    renderWithTheme(
+      <SelectSavedMealScreen navigation={{} as never} />,
+    );
+
+    selectSavedMealsFocusEffect?.();
+    expect(refresh).not.toHaveBeenCalled();
+
+    selectSavedMealsFocusEffect?.();
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    jest.restoreAllMocks();
   });
 });
