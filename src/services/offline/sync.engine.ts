@@ -22,6 +22,7 @@ let running = false;
 let loopRunToken = 0;
 let activeLoopUid: string | null = null;
 const uidSyncLocks = new Map<string, Promise<void>>();
+const inFlightPulls = new Map<string, Promise<void>>();
 
 const pushStrategies: SyncStrategy[] = [
   mealsStrategy,
@@ -75,6 +76,10 @@ async function withUidSyncLock<T>(uid: string, task: () => Promise<T>): Promise<
     release();
     if (uidSyncLocks.get(uid) === next) uidSyncLocks.delete(uid);
   }
+}
+
+function createPullKey(uid: string, scope: string): string {
+  return `${uid}:${scope}`;
 }
 
 export function startSyncLoop(uid: string) {
@@ -169,22 +174,39 @@ export async function pushQueue(uid: string): Promise<void> {
   });
 }
 
-async function pullWithLock(uid: string, strategy: SyncStrategy): Promise<void> {
-  return withUidSyncLock(uid, async () => {
+async function pullWithLock(
+  uid: string,
+  scope: string,
+  strategy: SyncStrategy,
+): Promise<void> {
+  const key = createPullKey(uid, scope);
+  const existing = inFlightPulls.get(key);
+  if (existing) {
+    return existing;
+  }
+
+  const task = withUidSyncLock(uid, async () => {
     await strategy.pull(uid);
+  }).finally(() => {
+    if (inFlightPulls.get(key) === task) {
+      inFlightPulls.delete(key);
+    }
   });
+
+  inFlightPulls.set(key, task);
+  return task;
 }
 
 export async function pullChanges(uid: string): Promise<void> {
-  return pullWithLock(uid, mealsStrategy);
+  return pullWithLock(uid, "meals", mealsStrategy);
 }
 
 export async function pullMyMealChanges(uid: string): Promise<void> {
-  return pullWithLock(uid, myMealsStrategy);
+  return pullWithLock(uid, "myMeals", myMealsStrategy);
 }
 
 export async function pullChatChanges(uid: string): Promise<void> {
-  return pullWithLock(uid, chatStrategy);
+  return pullWithLock(uid, "chat", chatStrategy);
 }
 
 export async function processImageUploads(uid: string): Promise<void> {

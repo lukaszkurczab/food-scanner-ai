@@ -179,4 +179,32 @@ describe("offline sync.engine integration", () => {
 
     expect(mockRunPushQueue).toHaveBeenCalledTimes(2);
   });
+
+  it("coalesces duplicate chat pull requests for the same uid", async () => {
+    let releasePull!: () => void;
+    const firstPull = new Promise<number>((resolve) => {
+      releasePull = () => resolve(1);
+    });
+    mockChatPull
+      .mockImplementationOnce(() => firstPull)
+      .mockImplementationOnce(async () => 1);
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { pullChatChanges } = require("@/services/offline/sync.engine");
+
+    const p1 = pullChatChanges("user-1");
+    const p2 = pullChatChanges("user-1");
+
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(mockChatPull).toHaveBeenCalledTimes(1);
+
+    releasePull();
+    await p1;
+    await p2;
+
+    expect(mockChatPull).toHaveBeenCalledTimes(1);
+
+    await pullChatChanges("user-1");
+    expect(mockChatPull).toHaveBeenCalledTimes(2);
+  });
 });
