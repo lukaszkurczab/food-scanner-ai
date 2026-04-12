@@ -161,6 +161,15 @@ function main() {
     outFile,
   ];
 
+  // Local artifact builds should not depend on Sentry auth being valid.
+  // Override with SENTRY_DISABLE_AUTO_UPLOAD=false if you want to test upload.
+  if (typeof process.env.SENTRY_DISABLE_AUTO_UPLOAD === "undefined") {
+    process.env.SENTRY_DISABLE_AUTO_UPLOAD = "true";
+    console.log(
+      "→ SENTRY_DISABLE_AUTO_UPLOAD not set; defaulting to true for local build.",
+    );
+  }
+
   run("npx", easArgs);
 
   const ciMode = isCiMode();

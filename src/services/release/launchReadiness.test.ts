@@ -45,10 +45,13 @@ describe("launchReadiness", () => {
   });
 
   it("reads values from expo constants in getLaunchReadinessIssue", () => {
-    const originalExtra = Constants.expoConfig?.extra;
+    const originalExpoConfig = Constants.expoConfig;
+    const originalExtra = originalExpoConfig?.extra;
 
     Constants.expoConfig = {
-      ...(Constants.expoConfig ?? {}),
+      ...(originalExpoConfig ?? {}),
+      name: originalExpoConfig?.name ?? "Fitaly",
+      slug: originalExpoConfig?.slug ?? "fitaly",
       extra: {
         buildProfile: "production",
         termsUrl: "https://example.com/terms",
@@ -59,7 +62,9 @@ describe("launchReadiness", () => {
     expect(getLaunchReadinessIssue()).toBeNull();
 
     Constants.expoConfig = {
-      ...(Constants.expoConfig ?? {}),
+      ...(originalExpoConfig ?? {}),
+      name: originalExpoConfig?.name ?? "Fitaly",
+      slug: originalExpoConfig?.slug ?? "fitaly",
       extra: originalExtra ?? {},
     };
   });

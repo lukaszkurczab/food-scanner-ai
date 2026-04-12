@@ -150,6 +150,11 @@ Useful commands:
 - `npm run eas:android:smoke` / `npm run eas:ios:smoke` - cloud EAS build with explicit `smoke` profile.
 - `Release Candidate` GitHub workflow - public launch gate that reruns mobile/backend CI, smoke E2E, smoke export verification, and assembles `release-evidence.md` before the `production` environment approval.
 
+Local build helper note:
+
+- `scripts/build.js` defaults `SENTRY_DISABLE_AUTO_UPLOAD=true` so local builds do not fail on Sentry source-map upload auth.
+- To force source-map upload during local builds, run with `SENTRY_DISABLE_AUTO_UPLOAD=false` and a valid `SENTRY_AUTH_TOKEN`.
+
 The production check blocks release when:
 
 - `TERMS_URL` or `PRIVACY_URL` are missing/invalid
