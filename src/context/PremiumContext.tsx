@@ -22,6 +22,11 @@ import {
   rcLogOut,
   rcSetAttributes,
 } from "@/services/billing/revenuecat";
+import {
+  isPremiumSubscriptionState,
+  mapPremiumToSubscription,
+  resolveSubscriptionFromRevenueCat,
+} from "@/services/billing/subscriptionStateMachine";
 import { logWarning } from "@/services/core/errorLogger";
 import { trackPremiumStateEvaluated } from "@/services/telemetry/telemetryInstrumentation";
 
@@ -31,10 +36,6 @@ type PremiumContextType = {
   setDevPremium: (enabled: boolean) => Promise<void>;
   refreshPremium: () => Promise<boolean>;
 };
-
-function mapToSubscription(premium: boolean): Subscription {
-  return premium ? { state: "premium_active" } : { state: "free_active" };
-}
 
 type PremiumCacheState = "not_applicable" | "hit_true" | "hit_false" | "miss";
 
@@ -76,11 +77,28 @@ export const PremiumProvider = ({
   const isPremiumRef = useRef<boolean | null>(null);
   const lastActiveRefreshAtRef = useRef(0);
 
-  const setSubscriptionFromPremium = useCallback((premium: boolean) => {
+  const setSubscriptionState = useCallback((next: Subscription) => {
+    const premium = isPremiumSubscriptionState(next.state);
     isPremiumRef.current = premium;
     setIsPremium(premium);
-    setSubscription(mapToSubscription(premium));
+    setSubscription(next);
   }, []);
+
+  const setSubscriptionFromPremium = useCallback((premium: boolean) => {
+    setSubscriptionState(mapPremiumToSubscription(premium));
+  }, [setSubscriptionState]);
+
+  const setSubscriptionFromRevenueCat = useCallback((input: {
+    customerInfo: unknown;
+    fallbackPremium: boolean;
+  }): boolean => {
+    const resolved = resolveSubscriptionFromRevenueCat({
+      customerInfo: input.customerInfo,
+      fallbackPremium: input.fallbackPremium,
+    });
+    setSubscriptionState(resolved);
+    return isPremiumSubscriptionState(resolved.state);
+  }, [setSubscriptionState]);
 
   const checkPremiumStatus = useCallback(async (): Promise<boolean> => {
     if (!uid) {
@@ -121,11 +139,13 @@ export const PremiumProvider = ({
 
     try {
       const info = await Purchases.getCustomerInfo();
-      const premium = !!info.entitlements.active["premium"];
+      const premium = setSubscriptionFromRevenueCat({
+        customerInfo: info,
+        fallbackPremium: cachedBefore ?? false,
+      });
       if (premiumKey) {
         await AsyncStorage.setItem(premiumKey, premium ? "true" : "false");
       }
-      setSubscriptionFromPremium(premium);
       void trackPremiumStateEvaluated({
         source: "customer_info",
         premium,
@@ -152,7 +172,12 @@ export const PremiumProvider = ({
       });
       return false;
     }
-  }, [premiumKey, setSubscriptionFromPremium, uid]);
+  }, [
+    premiumKey,
+    setSubscriptionFromPremium,
+    setSubscriptionFromRevenueCat,
+    uid,
+  ]);
 
   const syncTierAndRefreshCredits = useCallback(async (): Promise<void> => {
     let syncTierFailed = false;

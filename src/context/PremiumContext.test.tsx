@@ -69,12 +69,18 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe("PremiumContext", () => {
+  type AsyncStorageMock = {
+    getItem: jest.MockedFunction<(key: string) => Promise<string | null>>;
+    setItem: jest.MockedFunction<
+      (key: string, value: string) => Promise<void>
+    >;
+    multiSet: jest.MockedFunction<
+      (entries: [string, string][]) => Promise<void>
+    >;
+  };
+
   const asyncStorage = (
-    jest.requireMock("@react-native-async-storage/async-storage") as {
-      getItem: jest.Mock;
-      setItem: jest.Mock;
-      multiSet: jest.Mock;
-    }
+    jest.requireMock("@react-native-async-storage/async-storage") as AsyncStorageMock
   );
 
   beforeEach(() => {

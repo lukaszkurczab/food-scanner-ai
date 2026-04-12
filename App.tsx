@@ -5,10 +5,6 @@ import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 
-import { initRevenueCat } from "@/feature/Subscription";
-
-initRevenueCat();
-
 import { ThemeController } from "@/theme/ThemeController";
 import AppNavigator from "@/navigation/AppNavigator";
 import { NavigationContainer } from "@react-navigation/native";
@@ -54,6 +50,7 @@ import { captureException } from "@/services/core/errorLogger";
 import { warnMissingEnv } from "@/services/core/envValidation";
 import { getLaunchReadinessIssue } from "@/services/release/launchReadiness";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { initRevenueCat } from "@/feature/Subscription";
 
 const extra = Constants.expoConfig?.extra as Record<string, unknown> | undefined;
 const sentryDsn = typeof extra?.sentryDsn === "string" ? extra.sentryDsn : "";
@@ -122,11 +119,16 @@ function Root() {
       return;
     }
 
+    // RevenueCat setup is moved to runtime effect to avoid extra module-evaluation work on cold start.
+    initRevenueCat();
+
     void (async () => {
       await initTelemetryClient();
       initNotificationTelemetry();
-      await initTelemetryLifecycle();
-      await initReminderRuntime();
+      await Promise.all([
+        initTelemetryLifecycle(),
+        initReminderRuntime(),
+      ]);
     })();
 
     return () => {

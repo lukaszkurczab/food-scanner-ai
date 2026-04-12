@@ -49,8 +49,16 @@ function formatRenewalDate(value?: string | null): string {
 function getSummaryTone(
   state: string,
 ): "success" | "warning" | "neutral" {
-  if (state === "premium_active") return "success";
-  if (state === "premium_expired") return "warning";
+  if (state === "premium_active" || state === "premium_trial") return "success";
+  if (
+    state === "premium_expired"
+    || state === "premium_grace"
+    || state === "premium_pending_downgrade"
+    || state === "premium_paused"
+    || state === "premium_refunded"
+  ) {
+    return "warning";
+  }
   return "neutral";
 }
 
@@ -101,33 +109,78 @@ export default function ManageSubscriptionScreen({
   });
 
   const summaryTitle =
-    state === "premium_active"
-      ? t("manageSubscription.summaryPremiumTitle", {
-          defaultValue: "Premium active",
+    state === "premium_trial"
+      ? t("manageSubscription.summaryTrialTitle", {
+          defaultValue: "Premium trial active",
         })
-      : state === "premium_expired"
-        ? t("manageSubscription.summaryExpiredTitle", {
-            defaultValue: "Premium expired",
+      : state === "premium_grace"
+        ? t("manageSubscription.summaryGraceTitle", {
+            defaultValue: "Premium in grace period",
           })
-        : t("manageSubscription.summaryFreeTitle", {
-            defaultValue: "Free plan",
-          });
+        : state === "premium_pending_downgrade"
+          ? t("manageSubscription.summaryPendingDowngradeTitle", {
+              defaultValue: "Premium ending soon",
+            })
+          : state === "premium_paused"
+            ? t("manageSubscription.summaryPausedTitle", {
+                defaultValue: "Premium paused",
+              })
+            : state === "premium_refunded"
+              ? t("manageSubscription.summaryRefundedTitle", {
+                  defaultValue: "Premium refunded",
+                })
+              : state === "premium_active"
+                ? t("manageSubscription.summaryPremiumTitle", {
+                    defaultValue: "Premium active",
+                  })
+                : state === "premium_expired"
+                  ? t("manageSubscription.summaryExpiredTitle", {
+                      defaultValue: "Premium expired",
+                    })
+                  : t("manageSubscription.summaryFreeTitle", {
+                      defaultValue: "Free plan",
+                    });
 
   const summaryBody =
-    state === "premium_active"
-      ? t("manageSubscription.summaryPremiumBody", {
+    state === "premium_trial"
+      ? t("manageSubscription.summaryTrialBody", {
           defaultValue:
-            "Your account currently has access to premium features and the premium AI Credits tier.",
+            "Your trial is active. Premium features and premium AI Credits are currently available.",
         })
-      : state === "premium_expired"
-        ? t("manageSubscription.summaryExpiredBody", {
+      : state === "premium_grace"
+        ? t("manageSubscription.summaryGraceBody", {
             defaultValue:
-              "Your premium access is no longer active. You can renew when billing is available.",
+              "Premium is active, but billing needs attention. Update payment details to avoid interruption.",
           })
-        : t("manageSubscription.summaryFreeBody", {
-            defaultValue:
-              "You’re currently on the free plan. Upgrade to unlock the premium AI Credits tier and additional account features.",
-          });
+        : state === "premium_pending_downgrade"
+          ? t("manageSubscription.summaryPendingDowngradeBody", {
+              defaultValue:
+                "Premium remains active for now, but it is scheduled to end at the close of the current period.",
+            })
+          : state === "premium_paused"
+            ? t("manageSubscription.summaryPausedBody", {
+                defaultValue:
+                  "Premium is currently paused due to a billing issue. Restore billing to reactivate full access.",
+              })
+            : state === "premium_refunded"
+              ? t("manageSubscription.summaryRefundedBody", {
+                  defaultValue:
+                    "A recent premium purchase appears refunded. Start a new subscription to restore premium access.",
+                })
+              : state === "premium_active"
+                ? t("manageSubscription.summaryPremiumBody", {
+                    defaultValue:
+                      "Your account currently has access to premium features and the premium AI Credits tier.",
+                  })
+                : state === "premium_expired"
+                  ? t("manageSubscription.summaryExpiredBody", {
+                      defaultValue:
+                        "Your premium access is no longer active. You can renew when billing is available.",
+                    })
+                  : t("manageSubscription.summaryFreeBody", {
+                      defaultValue:
+                        "You’re currently on the free plan. Upgrade to unlock the premium AI Credits tier and additional account features.",
+                    });
 
   const primaryCtaLabel = showRenew
     ? t("manageSubscription.renewSubscription")
@@ -216,15 +269,20 @@ export default function ManageSubscriptionScreen({
               <AppIcon
                 name={isPremiumComputed ? "star" : "info"}
                 size={18}
-                color={
-                  state === "premium_active"
-                    ? theme.success.text
+                  color={
+                    state === "premium_active"
+                    || state === "premium_trial"
+                      ? theme.success.text
                     : state === "premium_expired"
+                      || state === "premium_grace"
+                      || state === "premium_pending_downgrade"
+                      || state === "premium_paused"
+                      || state === "premium_refunded"
                       ? theme.warning.text
                       : theme.textSecondary
-                }
-              />
-            }
+                  }
+                />
+              }
           />
 
           {!isOnline ? (

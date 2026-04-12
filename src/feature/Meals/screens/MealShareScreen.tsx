@@ -36,34 +36,25 @@ import type {
   ShareCompositionState,
   ShareExportState,
   ShareLayerId,
-  ShareMealContext,
   ShareNutrition,
   SharePresetId,
   ShareTextLayerState,
   TransformState,
 } from "@/feature/Meals/shareComposer/types";
+import {
+  CANVAS_MAX_WIDTH,
+  CANVAS_MIN_WIDTH,
+  CANVAS_RATIO,
+  clamp,
+  resolveMealContext,
+  resolveMealTitle,
+  resolveShareNutrition,
+} from "@/feature/Meals/screens/MealShareScreen.helpers";
 
 type ScreenRoute = RouteProp<RootStackParamList, "MealShare">;
 type MealShareNavigation = StackNavigationProp<RootStackParamList, "MealShare">;
 
-const CANVAS_RATIO = 506 / 333;
-const CANVAS_MIN_WIDTH = 280;
-const CANVAS_MAX_WIDTH = 360;
 const DEFAULT_PRESET: SharePresetId = "quickClassic";
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function resolveMealContext(input: ScreenRoute["params"]["returnTo"]): ShareMealContext {
-  if (input === "MealDetails") {
-    return "meal_details";
-  }
-  if (input === "ReviewMeal") {
-    return "review_meal";
-  }
-  return "unknown";
-}
 
 export default function MealShareScreen() {
   const theme = useTheme();
@@ -80,40 +71,19 @@ export default function MealShareScreen() {
   const hasSavedMealIdentity = Boolean(meal.cloudId || meal.mealId);
   const isEntryValid = hasSavedMealIdentity && mealPhotoUri.trim().length > 0;
 
-  const mealTitle = useMemo(() => {
-    return (
-      meal.name?.trim() ||
-      t("meal", { ns: "meals", defaultValue: "Meal" })
-    );
-  }, [meal.name, t]);
-
-  const nutrition: ShareNutrition = useMemo(() => {
-    if (meal.totals) {
-      return {
-        kcal: Math.round(meal.totals.kcal || 0),
-        protein: Math.round(meal.totals.protein || 0),
-        carbs: Math.round(meal.totals.carbs || 0),
-        fat: Math.round(meal.totals.fat || 0),
-      };
-    }
-
-    const sums = (meal.ingredients || []).reduce(
-      (acc, ingredient) => ({
-        kcal: acc.kcal + (Number(ingredient.kcal) || 0),
-        protein: acc.protein + (Number(ingredient.protein) || 0),
-        carbs: acc.carbs + (Number(ingredient.carbs) || 0),
-        fat: acc.fat + (Number(ingredient.fat) || 0),
+  const mealTitle = useMemo(
+    () =>
+      resolveMealTitle({
+        meal,
+        fallback: t("meal", { ns: "meals", defaultValue: "Meal" }),
       }),
-      { kcal: 0, protein: 0, carbs: 0, fat: 0 },
-    );
+    [meal, t],
+  );
 
-    return {
-      kcal: Math.round(sums.kcal),
-      protein: Math.round(sums.protein),
-      carbs: Math.round(sums.carbs),
-      fat: Math.round(sums.fat),
-    };
-  }, [meal.ingredients, meal.totals]);
+  const nutrition: ShareNutrition = useMemo(
+    () => resolveShareNutrition(meal),
+    [meal],
+  );
 
   const [mode, setMode] = useState<"quick" | "customize">("quick");
   const [selectedPreset, setSelectedPreset] =

@@ -13,6 +13,8 @@ import {
   isBillingDisabled,
   isRevenueCatConfigured,
 } from "@/services/billing/revenuecat";
+import { isPremiumSubscriptionState } from "@/services/billing/subscriptionStateMachine";
+import type { SubscriptionState } from "@/types/subscription";
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -29,6 +31,44 @@ export type SubscriptionActionFeedback = {
   message: string;
   source: Exclude<SubscriptionBusyAction, null>;
 } | null;
+
+const PREMIUM_ACCESS_STATES = new Set<SubscriptionState>([
+  "premium_active",
+  "premium_trial",
+  "premium_grace",
+  "premium_pending_downgrade",
+]);
+
+const PREMIUM_RECOVERY_STATES = new Set<SubscriptionState>([
+  "premium_expired",
+  "premium_paused",
+  "premium_refunded",
+]);
+
+function normalizeSubscriptionState(input: {
+  rawState: string;
+  isPremiumHint: boolean;
+}): SubscriptionState {
+  const knownStates: SubscriptionState[] = [
+    "premium_active",
+    "premium_trial",
+    "premium_grace",
+    "premium_pending_downgrade",
+    "premium_paused",
+    "premium_refunded",
+    "premium_expired",
+    "free_active",
+    "free_expired",
+  ];
+  const raw = input.rawState as SubscriptionState;
+  if (knownStates.includes(raw)) {
+    return raw;
+  }
+  if (input.isPremiumHint) {
+    return "premium_active";
+  }
+  return input.rawState.startsWith("premium_") ? "premium_expired" : "free_active";
+}
 
 export function useManageSubscriptionState(params: {
   uid: string | null | undefined;
@@ -60,27 +100,44 @@ export function useManageSubscriptionState(params: {
     return typeof url === "string" ? url.trim() : "";
   }, [params]);
 
-  const baseState = params.subscriptionState || "free_active";
-  const isPremiumByState = baseState.startsWith("premium");
-  const isPremiumComputed = !!(params.isPremium ?? isPremiumByState);
-  const state = isPremiumComputed
-    ? "premium_active"
-    : baseState === "premium_expired"
-      ? "premium_expired"
-      : baseState === "free_expired"
-        ? "free_expired"
-        : "free_active";
+  const baseState = (params.subscriptionState || "free_active").trim();
+  const isPremiumByState = isPremiumSubscriptionState(baseState);
+  const isPremiumComputed = Boolean(params.isPremium ?? isPremiumByState);
+  const state = normalizeSubscriptionState({
+    rawState: baseState,
+    isPremiumHint: isPremiumComputed,
+  });
 
-  const showManageInStore = state === "premium_active";
-  const showRenew = state === "premium_expired";
-  const showStart = state === "free_active" || state === "free_expired";
+  const showManageInStore = PREMIUM_ACCESS_STATES.has(state);
+  const showRenew = PREMIUM_RECOVERY_STATES.has(state);
+  const showStart = !showManageInStore && !showRenew;
 
   const headerStatus =
-    state === "premium_active"
-      ? params.t("manageSubscription.premium")
-      : state === "premium_expired"
-        ? `${params.t("manageSubscription.premium")} (${params.t("expired", { defaultValue: "expired" })})`
-        : params.t("manageSubscription.free");
+    state === "premium_trial"
+      ? params.t("manageSubscription.premiumTrial", {
+          defaultValue: "Premium (trial)",
+        })
+      : state === "premium_grace"
+        ? params.t("manageSubscription.premiumGrace", {
+            defaultValue: "Premium (grace period)",
+          })
+        : state === "premium_pending_downgrade"
+          ? params.t("manageSubscription.premiumPendingDowngrade", {
+              defaultValue: "Premium (ending soon)",
+            })
+          : state === "premium_paused"
+            ? params.t("manageSubscription.premiumPaused", {
+                defaultValue: "Premium (paused)",
+              })
+            : state === "premium_refunded"
+              ? params.t("manageSubscription.premiumRefunded", {
+                  defaultValue: "Premium (refunded)",
+                })
+              : state === "premium_expired"
+                ? `${params.t("manageSubscription.premium")} (${params.t("expired", { defaultValue: "expired" })})`
+                : state === "premium_active"
+                  ? params.t("manageSubscription.premium")
+                  : params.t("manageSubscription.free");
 
   const priceText = params.t("paywall.priceText", {
     defaultValue: "29,99 zł / month",
