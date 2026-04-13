@@ -69,7 +69,7 @@ describe("useSelectSavedMealsState", () => {
   });
 
   it("subscribes to repository data and keeps list sorted by name", async () => {
-    const syncSavedMeals = jest.fn(async () => undefined);
+    const syncSavedMeals = jest.fn<() => Promise<void>>(async () => undefined);
     const { result, unmount } = renderHook(() =>
       useSelectSavedMealsState({
         uid: "user-1",
@@ -170,7 +170,7 @@ describe("useSelectSavedMealsState", () => {
   });
 
   it("does not trigger background sync when uid is missing", async () => {
-    const syncSavedMeals = jest.fn(async () => undefined);
+    const syncSavedMeals = jest.fn<() => Promise<void>>(async () => undefined);
 
     renderHook(() =>
       useSelectSavedMealsState({
@@ -191,14 +191,14 @@ describe("useSelectSavedMealsState", () => {
   });
 
   it("tracks manual refresh separately from initial loading", async () => {
-    let resolveSync: (() => void) | null = null;
+    let resolveSync: (() => void) | undefined;
     const syncSavedMeals = jest
-      .fn(async () => undefined)
+      .fn<() => Promise<void>>(async () => undefined)
       .mockImplementationOnce(async () => undefined)
       .mockImplementationOnce(
         () =>
           new Promise<void>((resolve) => {
-            resolveSync = resolve;
+            resolveSync = () => resolve();
           }),
       );
 

@@ -137,10 +137,14 @@ function buildRetryableAiHistory(
   nextUserMessage: string,
   includeCurrentUser: boolean,
 ): AiHistoryItem[] {
-  const history = messages.slice(0, 10).map((message) => ({
-    from: message.role === "user" ? "user" : "ai",
-    text: message.content,
-  }));
+  const history: AiHistoryItem[] = messages
+    .slice(0, 10)
+    .map(
+      (message): AiHistoryItem => ({
+        from: message.role === "user" ? "user" : "ai",
+        text: message.content,
+      }),
+    );
 
   if (!includeCurrentUser) {
     return history;

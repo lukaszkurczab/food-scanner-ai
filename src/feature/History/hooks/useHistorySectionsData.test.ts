@@ -7,15 +7,49 @@ import {
   jest,
 } from "@jest/globals";
 import { useHistorySectionsData } from "@/feature/History/hooks/useHistorySectionsData";
+import type { DaySection } from "@/feature/History/types/daySection";
+import type { LocalHistoryFilters } from "@/services/offline/meals.repo";
+import type { DataViewState } from "@/types/dataViewState";
 import type { Meal } from "@/types/meal";
 
-const mockGetMealsPageLocalFiltered = jest.fn();
-const mockGetMealByCloudIdLocal = jest.fn();
-const mockPullChanges = jest.fn();
-const mockOn = jest.fn();
-const mockResolveDataViewState = jest.fn();
-const mockBuildSectionsMap = jest.fn();
-const mockFilterSectionsByQuery = jest.fn();
+const mockGetMealsPageLocalFiltered = jest.fn<
+  (
+    uid: string,
+    options: {
+      limit: number;
+      beforeISO?: string | null;
+      filters?: LocalHistoryFilters;
+    },
+  ) => Promise<{ items: Meal[]; nextBefore: string | null }>
+>();
+const mockGetMealByCloudIdLocal = jest.fn<
+  (uid: string, cloudId: string) => Promise<Meal | null>
+>();
+const mockPullChanges = jest.fn<(uid: string) => Promise<void>>();
+const mockOn = jest.fn<
+  (eventName: string, handler: (event?: unknown) => void) => () => void
+>();
+const mockResolveDataViewState = jest.fn<
+  (params: {
+    isLoading: boolean;
+    hasData: boolean;
+    isOnline: boolean;
+    hasError: boolean;
+  }) => DataViewState
+>();
+const mockBuildSectionsMap = jest.fn<
+  (
+    items: Meal[],
+    labels: {
+      todayLabel: string;
+      yesterdayLabel: string;
+      locale?: string;
+    },
+  ) => Map<string, DaySection>
+>();
+const mockFilterSectionsByQuery = jest.fn<
+  (params: { sectionsMap: Map<string, DaySection>; query: string }) => DaySection[]
+>();
 
 let focusEffectCallback: (() => void) | undefined;
 
@@ -30,26 +64,49 @@ jest.mock("@/hooks/useDebouncedValue", () => ({
 }));
 
 jest.mock("@/types/dataViewState", () => ({
-  resolveDataViewState: (params: unknown) => mockResolveDataViewState(params),
+  resolveDataViewState: (params: {
+    isLoading: boolean;
+    hasData: boolean;
+    isOnline: boolean;
+    hasError: boolean;
+  }) => mockResolveDataViewState(params),
 }));
 
 jest.mock("@/services/offline/meals.repo", () => ({
-  getMealsPageLocalFiltered: (...args: unknown[]) =>
-    mockGetMealsPageLocalFiltered(...args),
-  getMealByCloudIdLocal: (...args: unknown[]) => mockGetMealByCloudIdLocal(...args),
+  getMealsPageLocalFiltered: (
+    uid: string,
+    options: {
+      limit: number;
+      beforeISO?: string | null;
+      filters?: LocalHistoryFilters;
+    },
+  ) => mockGetMealsPageLocalFiltered(uid, options),
+  getMealByCloudIdLocal: (uid: string, cloudId: string) =>
+    mockGetMealByCloudIdLocal(uid, cloudId),
 }));
 
 jest.mock("@/services/offline/sync.engine", () => ({
-  pullChanges: (...args: unknown[]) => mockPullChanges(...args),
+  pullChanges: (uid: string) => mockPullChanges(uid),
 }));
 
 jest.mock("@/services/core/events", () => ({
-  on: (...args: unknown[]) => mockOn(...args),
+  on: (eventName: string, handler: (event?: unknown) => void) =>
+    mockOn(eventName, handler),
 }));
 
 jest.mock("@/feature/History/services/historySectionsService", () => ({
-  buildSectionsMap: (...args: unknown[]) => mockBuildSectionsMap(...args),
-  filterSectionsByQuery: (...args: unknown[]) => mockFilterSectionsByQuery(...args),
+  buildSectionsMap: (
+    items: Meal[],
+    labels: {
+      todayLabel: string;
+      yesterdayLabel: string;
+      locale?: string;
+    },
+  ) => mockBuildSectionsMap(items, labels),
+  filterSectionsByQuery: (params: {
+    sectionsMap: Map<string, DaySection>;
+    query: string;
+  }) => mockFilterSectionsByQuery(params),
   addOrUpdateMealInSections: jest.fn(),
   removeMealFromSections: jest.fn(),
 }));
@@ -95,15 +152,16 @@ describe("useHistorySectionsData", () => {
     mockOn.mockReturnValue(() => undefined);
     mockResolveDataViewState.mockReturnValue("empty");
     mockBuildSectionsMap.mockImplementation((items: Meal[]) => {
-      const sections = items.map((item) => ({
-        key: item.cloudId || item.mealId,
-        title: item.name,
+      const sections: DaySection[] = items.map((item) => ({
+        dateKey: item.cloudId || item.mealId,
+        title: item.name || "",
+        totalKcal: 0,
         data: [item],
       }));
-      return new Map(sections.map((section) => [section.key, section]));
+      return new Map(sections.map((section) => [section.dateKey, section]));
     });
     mockFilterSectionsByQuery.mockImplementation(
-      ({ sectionsMap }: { sectionsMap: Map<string, unknown> }) =>
+      ({ sectionsMap }: { sectionsMap: Map<string, DaySection> }) =>
         Array.from(sectionsMap.values()),
     );
   });

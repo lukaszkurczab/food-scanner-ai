@@ -7,35 +7,78 @@ import {
   jest,
 } from "@jest/globals";
 import { useSavedMealsData } from "@/feature/History/hooks/useSavedMealsData";
-import type { Meal } from "@/types/meal";
+import type { SavedMealsPage } from "@/feature/History/services/savedMealsService";
+import type { DataViewState } from "@/types/dataViewState";
 
-const mockSubscribeSavedMealsFirstPage = jest.fn();
-const mockFetchSavedMealsPage = jest.fn();
-const mockDeleteSavedMeal = jest.fn();
-const mockResolveDataViewState = jest.fn();
+const mockSubscribeSavedMealsFirstPage = jest.fn<
+  (params: {
+    uid: string;
+    pageSize: number;
+    onData: (page: SavedMealsPage) => void | Promise<void>;
+    onError: () => void;
+  }) => () => void
+>();
+const mockFetchSavedMealsPage = jest.fn<
+  (params: {
+    uid: string;
+    pageSize: number;
+    lastDoc: Exclude<SavedMealsPage["lastDoc"], null>;
+  }) => Promise<SavedMealsPage>
+>();
+const mockDeleteSavedMeal = jest.fn<
+  (params: {
+    uid: string;
+    cloudId: string;
+    isOnline: boolean;
+    nowISO?: string;
+  }) => Promise<"deleted" | "queued">
+>();
+const mockResolveDataViewState = jest.fn<
+  (params: {
+    isLoading: boolean;
+    hasData: boolean;
+    isOnline: boolean;
+    hasError: boolean;
+  }) => DataViewState
+>();
 
-let emitFirstPage:
-  | ((page: { items: Meal[]; lastDoc: string | null; hasMore: boolean }) => void)
-  | null = null;
+let emitFirstPage: ((page: SavedMealsPage) => void | Promise<void>) | null = null;
 
 jest.mock("@/hooks/useDebouncedValue", () => ({
   useDebouncedValue: <T,>(value: T) => value,
 }));
 
 jest.mock("@/types/dataViewState", () => ({
-  resolveDataViewState: (params: unknown) => mockResolveDataViewState(params),
+  resolveDataViewState: (params: {
+    isLoading: boolean;
+    hasData: boolean;
+    isOnline: boolean;
+    hasError: boolean;
+  }) => mockResolveDataViewState(params),
 }));
 
 jest.mock("@/feature/History/services/savedMealsService", () => ({
   subscribeSavedMealsFirstPage: (params: {
-    onData: (page: { items: Meal[]; lastDoc: string | null; hasMore: boolean }) => void;
+    uid: string;
+    pageSize: number;
+    onData: (page: SavedMealsPage) => void | Promise<void>;
+    onError: () => void;
   }) => {
     mockSubscribeSavedMealsFirstPage(params);
     emitFirstPage = params.onData;
     return jest.fn();
   },
-  fetchSavedMealsPage: (params: unknown) => mockFetchSavedMealsPage(params),
-  deleteSavedMeal: (params: unknown) => mockDeleteSavedMeal(params),
+  fetchSavedMealsPage: (params: {
+    uid: string;
+    pageSize: number;
+    lastDoc: Exclude<SavedMealsPage["lastDoc"], null>;
+  }) => mockFetchSavedMealsPage(params),
+  deleteSavedMeal: (params: {
+    uid: string;
+    cloudId: string;
+    isOnline: boolean;
+    nowISO?: string;
+  }) => mockDeleteSavedMeal(params),
 }));
 
 describe("useSavedMealsData", () => {
@@ -52,7 +95,7 @@ describe("useSavedMealsData", () => {
   });
 
   it("starts a background sync on mount when online", async () => {
-    const syncSavedMeals = jest.fn(async () => undefined);
+    const syncSavedMeals = jest.fn<() => Promise<void>>(async () => undefined);
 
     renderHook(() =>
       useSavedMealsData({
@@ -70,7 +113,7 @@ describe("useSavedMealsData", () => {
   });
 
   it("does not start background sync on mount when offline", async () => {
-    const syncSavedMeals = jest.fn(async () => undefined);
+    const syncSavedMeals = jest.fn<() => Promise<void>>(async () => undefined);
 
     renderHook(() =>
       useSavedMealsData({
@@ -87,14 +130,14 @@ describe("useSavedMealsData", () => {
   });
 
   it("tracks explicit refresh separately from initial loading", async () => {
-    let resolveSync: (() => void) | null = null;
+    let resolveSync: (() => void) | undefined;
     const syncSavedMeals = jest
-      .fn(async () => undefined)
+      .fn<() => Promise<void>>(async () => undefined)
       .mockImplementationOnce(async () => undefined)
       .mockImplementationOnce(
         () =>
           new Promise<void>((resolve) => {
-            resolveSync = resolve;
+            resolveSync = () => resolve();
           }),
       );
 

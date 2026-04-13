@@ -185,7 +185,7 @@ describe("useReminderDecision", () => {
           computedAt: "2026-03-19T12:05:00Z",
           decision: "suppress",
           kind: null,
-          reasonCodes: ["fresh"],
+          reasonCodes: ["recent_activity_detected"],
           scheduledAtUtc: null,
           confidence: 1,
           validUntil: "2026-03-19T22:00:00Z",
@@ -200,7 +200,9 @@ describe("useReminderDecision", () => {
 
     await waitFor(() => {
       expect(result.current.decision?.dayKey).toBe("2026-03-19");
-      expect(result.current.decision?.reasonCodes).toEqual(["fresh"]);
+      expect(result.current.decision?.reasonCodes).toEqual([
+        "recent_activity_detected",
+      ]);
     });
 
     await act(async () => {
@@ -210,7 +212,7 @@ describe("useReminderDecision", () => {
           computedAt: "2026-03-18T12:05:00Z",
           decision: "send",
           kind: "log_next_meal",
-          reasonCodes: ["stale"],
+          reasonCodes: ["preferred_window_open"],
           scheduledAtUtc: "2026-03-18T18:30:00Z",
           confidence: 0.7,
           validUntil: "2026-03-18T19:30:00Z",
@@ -224,6 +226,8 @@ describe("useReminderDecision", () => {
     });
 
     expect(result.current.decision?.dayKey).toBe("2026-03-19");
-    expect(result.current.decision?.reasonCodes).toEqual(["fresh"]);
+    expect(result.current.decision?.reasonCodes).toEqual([
+      "recent_activity_detected",
+    ]);
   });
 });

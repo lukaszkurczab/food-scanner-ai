@@ -7,38 +7,46 @@ import {
 } from "@jest/globals";
 import type { Meal } from "@/types/meal";
 
-const mockNetInfoFetch = jest.fn();
-const mockEmit = jest.fn();
-const mockEnqueueMyMealDelete = jest.fn();
-const mockEnqueueMyMealUpsert = jest.fn();
-const mockMarkDeletedMyMealLocal = jest.fn();
-const mockUpsertMyMealLocalRepo = jest.fn();
-const mockPullMyMealChanges = jest.fn();
-const mockPushQueue = jest.fn();
+const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
+const mockEmit = jest.fn<(eventName: string, payload?: unknown) => void>();
+const mockEnqueueMyMealDelete = jest.fn<
+  (uid: string, cloudId: string, deletedAtISO: string) => Promise<void>
+>();
+const mockEnqueueMyMealUpsert = jest.fn<
+  (uid: string, meal: Meal) => Promise<void>
+>();
+const mockMarkDeletedMyMealLocal = jest.fn<
+  (cloudId: string, deletedAtISO: string) => Promise<void>
+>();
+const mockUpsertMyMealLocalRepo = jest.fn<(meal: Meal) => Promise<void>>();
+const mockPullMyMealChanges = jest.fn<(uid: string) => Promise<void>>();
+const mockPushQueue = jest.fn<(uid: string) => Promise<void>>();
 
 jest.mock("@react-native-community/netinfo", () => ({
   __esModule: true,
-  default: { fetch: (...args: unknown[]) => mockNetInfoFetch(...args) },
+  default: { fetch: () => mockNetInfoFetch() },
 }));
 
 jest.mock("@/services/core/events", () => ({
-  emit: (...args: unknown[]) => mockEmit(...args),
+  emit: (eventName: string, payload?: unknown) => mockEmit(eventName, payload),
 }));
 
 jest.mock("@/services/offline/queue.repo", () => ({
-  enqueueMyMealDelete: (...args: unknown[]) => mockEnqueueMyMealDelete(...args),
-  enqueueMyMealUpsert: (...args: unknown[]) => mockEnqueueMyMealUpsert(...args),
+  enqueueMyMealDelete: (uid: string, cloudId: string, deletedAtISO: string) =>
+    mockEnqueueMyMealDelete(uid, cloudId, deletedAtISO),
+  enqueueMyMealUpsert: (uid: string, meal: Meal) =>
+    mockEnqueueMyMealUpsert(uid, meal),
 }));
 
 jest.mock("@/services/offline/myMeals.repo", () => ({
-  markDeletedMyMealLocal: (...args: unknown[]) =>
-    mockMarkDeletedMyMealLocal(...args),
-  upsertMyMealLocal: (...args: unknown[]) => mockUpsertMyMealLocalRepo(...args),
+  markDeletedMyMealLocal: (cloudId: string, deletedAtISO: string) =>
+    mockMarkDeletedMyMealLocal(cloudId, deletedAtISO),
+  upsertMyMealLocal: (meal: Meal) => mockUpsertMyMealLocalRepo(meal),
 }));
 
 jest.mock("@/services/offline/sync.engine", () => ({
-  pullMyMealChanges: (...args: unknown[]) => mockPullMyMealChanges(...args),
-  pushQueue: (...args: unknown[]) => mockPushQueue(...args),
+  pullMyMealChanges: (uid: string) => mockPullMyMealChanges(uid),
+  pushQueue: (uid: string) => mockPushQueue(uid),
 }));
 
 const baseMeal = (overrides: Partial<Meal> = {}): Meal =>
