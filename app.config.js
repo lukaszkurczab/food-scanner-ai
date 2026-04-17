@@ -52,11 +52,6 @@ export default {
       package: "com.lkurczab.fitaly",
       googleServicesFile: androidGoogleServicesFile,
     },
-    notification: {
-      icon: "./assets/notification-icon.png",
-      color: "#4F684B",
-      androidCollapsedTitle: "Fitaly",
-    },
     plugins: [
       [
         "expo-splash-screen",
@@ -81,13 +76,20 @@ export default {
       "expo-font",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/notification-icon.png",
+          color: "#4F684B",
+        },
+      ],
       "expo-task-manager",
       "expo-background-task",
       [
         "@sentry/react-native/expo",
         { organization: sentryOrganization, project: sentryProject },
       ],
+      "./plugins/with-rnfb-non-modular-headers.js",
     ],
     extra: {
       apiBaseUrl: resolvedApiBaseUrl,
