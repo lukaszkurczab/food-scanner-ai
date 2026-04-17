@@ -72,6 +72,10 @@ function profileCacheKey(uid: string): string {
   return `user:profile:${uid}`;
 }
 
+function avatarCachePath(uid: string): string {
+  return `${FileSystem.documentDirectory}users/${uid}/images/avatar.jpg`;
+}
+
 async function readProfileCache(uid: string): Promise<UserData | null> {
   try {
     const cached = await AsyncStorage.getItem(profileCacheKey(uid));
@@ -197,8 +201,14 @@ export function useUserProfile(uid: string): UseUserProfileResult {
       try {
         const parsed = await readProfileCache(uid);
         if (!parsed) return null;
+        const currentAvatarLocalPath =
+          userDataRef.current?.uid === uid
+            ? userDataRef.current.avatarLocalPath
+            : undefined;
         const avatarLocalPath = await resolveExistingAvatarPath(
-          parsed.avatarLocalPath
+          parsed.avatarLocalPath,
+          currentAvatarLocalPath,
+          avatarCachePath(uid)
         );
         const normalized = { ...parsed, avatarLocalPath };
         setUserData(normalized);
@@ -220,8 +230,14 @@ export function useUserProfile(uid: string): UseUserProfileResult {
     try {
       const data = await fetchUserProfileRemote(uid);
       if (!data) return (await readCached()) || null;
+      const currentAvatarLocalPath =
+        userDataRef.current?.uid === uid
+          ? userDataRef.current.avatarLocalPath
+          : undefined;
       const avatarLocalPath = await resolveExistingAvatarPath(
-        data.avatarLocalPath
+        data.avatarLocalPath,
+        currentAvatarLocalPath,
+        avatarCachePath(uid)
       );
       const normalized = { ...data, avatarLocalPath };
       setUserData(normalized);
@@ -329,8 +345,14 @@ export function useUserProfile(uid: string): UseUserProfileResult {
       try {
         const parsed = await readProfileCache(uid);
         if (parsed) {
+          const currentAvatarLocalPath =
+            userDataRef.current?.uid === uid
+              ? userDataRef.current.avatarLocalPath
+              : undefined;
           const avatarLocalPath = await resolveExistingAvatarPath(
-            parsed.avatarLocalPath
+            parsed.avatarLocalPath,
+            currentAvatarLocalPath,
+            avatarCachePath(uid)
           );
           const normalized = { ...parsed, avatarLocalPath };
           if (cancelled) return;
@@ -356,8 +378,14 @@ export function useUserProfile(uid: string): UseUserProfileResult {
           return;
         }
         void (async () => {
+          const currentAvatarLocalPath =
+            userDataRef.current?.uid === uid
+              ? userDataRef.current.avatarLocalPath
+              : undefined;
           const avatarLocalPath = await resolveExistingAvatarPath(
-            data.avatarLocalPath
+            data.avatarLocalPath,
+            currentAvatarLocalPath,
+            avatarCachePath(uid)
           );
           const normalized = { ...data, avatarLocalPath };
           if (cancelled) return;

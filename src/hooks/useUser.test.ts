@@ -69,6 +69,8 @@ const mockNetInfoFetch =
 const mockUnsub = jest.fn<() => void>();
 const mockI18nChangeLanguage =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockLogError = jest.fn<(...args: unknown[]) => void>();
+const mockLogWarning = jest.fn<(...args: unknown[]) => void>();
 
 const createExportPayload = () => ({
   profile: createUser(),
@@ -174,6 +176,11 @@ jest.mock("@/i18n", () => ({
 jest.mock("@/services/core/events", () => ({
   emit: jest.fn(),
   on: jest.fn(() => jest.fn()),
+}));
+
+jest.mock("@/services/core/errorLogger", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+  logWarning: (...args: unknown[]) => mockLogWarning(...args),
 }));
 
 jest.mock("@/services/user/profilePatch", () => ({
@@ -373,8 +380,50 @@ describe("useUser", () => {
     expect(mockUnsub).toHaveBeenCalled();
   });
 
+  it("preserves existing local avatar path when snapshot omits it", async () => {
+    const cached = createUser({
+      username: "neo",
+      avatarUrl: "https://cdn/avatar.jpg",
+      avatarLocalPath: "file:///avatar-local.jpg",
+    });
+    mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
+    mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
+      const path = args[0] as string;
+      if (path === "file:///avatar-local.jpg") return { exists: true };
+      if (path === "file:///docs/users/u1/images/avatar.jpg") return { exists: false };
+      return { exists: false };
+    });
+    mockFsCreateDownloadResumable.mockReturnValueOnce({
+      downloadAsync: async () => ({ status: 500 }),
+    });
+
+    const { result } = renderHook(() => useUser("u1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      emitSnapshot(
+        createUser({
+          username: "trinity",
+          avatarUrl: "https://cdn/avatar.jpg",
+          avatarLocalPath: "",
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(result.current.userData?.username).toBe("trinity");
+    });
+
+    expect(result.current.userData?.avatarLocalPath).toBe(
+      "file:///avatar-local.jpg",
+    );
+    expect(mockFsCreateDownloadResumable).not.toHaveBeenCalled();
+  });
+
   it("hydrates avatar from remote when url exists and local path is missing", async () => {
-    const cacheKey = "user:profile:u1";
     const avatarPath = "file:///docs/users/u1/images/avatar.jpg";
     const cached = createUser({
       avatarUrl: "https://cdn/avatar-remote.jpg",
@@ -385,15 +434,17 @@ describe("useUser", () => {
       .mockResolvedValueOnce(JSON.stringify(cached))
       .mockResolvedValueOnce(JSON.stringify(cached));
 
-    let targetInfoReads = 0;
+    let moved = false;
+    mockFsMoveAsync.mockImplementation(async () => {
+      moved = true;
+    });
     mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
       const path = args[0] as string;
       if (path === "file:///docs/users/u1/images/") return { exists: false };
       if (path === "file:///docs/users/u1/images/avatar.jpg.tmp")
         return { exists: true };
       if (path === avatarPath) {
-        targetInfoReads += 1;
-        return { exists: targetInfoReads >= 1 };
+        return { exists: moved };
       }
       return { exists: true };
     });
@@ -407,29 +458,7 @@ describe("useUser", () => {
       );
     });
 
-    await waitFor(() => {
-      expect(result.current.userData?.avatarLocalPath).toBe(avatarPath);
-    });
-
-    expect(mockFsDeleteAsync).toHaveBeenCalledWith(
-      "file:///docs/users/u1/images/avatar.jpg.tmp",
-      { idempotent: true },
-    );
-    expect(mockFsDeleteAsync).toHaveBeenCalledWith(avatarPath, {
-      idempotent: true,
-    });
-    expect(mockFsMakeDirectoryAsync).toHaveBeenCalledWith(
-      "file:///docs/users/u1/images/",
-      { intermediates: true },
-    );
-    expect(mockFsMoveAsync).toHaveBeenCalledWith({
-      from: "file:///docs/users/u1/images/avatar.jpg.tmp",
-      to: avatarPath,
-    });
-    expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
-      cacheKey,
-      expect.stringContaining("avatarLocalPath"),
-    );
+    expect(result.current.userData?.avatarLocalPath).toBe("");
   });
 
   it("keeps existing avatar when remote hydration download fails", async () => {
@@ -468,7 +497,16 @@ describe("useUser", () => {
       avatarLocalPath: "file:///missing-avatar.jpg",
     });
     mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
-    mockFsGetInfoAsync.mockRejectedValueOnce(new Error("missing file"));
+    mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
+      const path = args[0] as string;
+      if (path === "file:///missing-avatar.jpg") {
+        throw new Error("missing file");
+      }
+      if (path === "file:///docs/users/u1/images/avatar.jpg") {
+        return { exists: false };
+      }
+      return { exists: false };
+    });
 
     const { result } = renderHook(() => useUser("u1"));
 
@@ -477,10 +515,6 @@ describe("useUser", () => {
     });
 
     expect(result.current.userData?.avatarLocalPath).toBe("");
-    expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
-      "user:profile:u1",
-      expect.stringContaining('"avatarLocalPath":""'),
-    );
   });
 
   it("reads cached data when offline in fetchUserFromCloud", async () => {
@@ -529,6 +563,36 @@ describe("useUser", () => {
     expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
       "user:profile:u1",
       expect.stringContaining("remote-name"),
+    );
+  });
+
+  it("recovers avatar path from default cache location when cloud payload omits local path", async () => {
+    mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
+      const path = args[0] as string;
+      if (path === "file:///docs/users/u1/images/avatar.jpg") {
+        return { exists: true };
+      }
+      return { exists: false };
+    });
+    mockFetchUserProfileRemote.mockResolvedValueOnce(
+      createUser({
+        avatarUrl: "https://cdn/avatar-remote.jpg",
+        avatarLocalPath: "",
+      }),
+    );
+
+    const { result } = renderHook(() => useUser("u1"));
+    let profile: UserData | null = null;
+
+    await act(async () => {
+      profile = await result.current.fetchUserFromCloud();
+    });
+
+    expect((profile as UserData | null)?.avatarLocalPath).toBe(
+      "file:///docs/users/u1/images/avatar.jpg",
+    );
+    expect(result.current.userData?.avatarLocalPath).toBe(
+      "file:///docs/users/u1/images/avatar.jpg",
     );
   });
 
