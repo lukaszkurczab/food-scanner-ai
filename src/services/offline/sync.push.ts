@@ -1,6 +1,7 @@
 import NetInfo from "@react-native-community/netinfo";
 import { Sync } from "@/utils/debug";
 import { emit } from "@/services/core/events";
+import { isOfflineNetState } from "@/services/core/networkState";
 import { normalizeServiceError } from "@/services/contracts/serviceError";
 import {
   nextBatch,
@@ -31,7 +32,7 @@ export async function runPushQueue(
   const pushLog = log.child("push");
   const net = await NetInfo.fetch();
   pushLog.log("start", { uid, isConnected: net.isConnected });
-  if (!net.isConnected) {
+  if (isOfflineNetState(net)) {
     pushLog.log("skip:offline");
     return;
   }

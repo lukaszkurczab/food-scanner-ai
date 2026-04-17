@@ -253,7 +253,7 @@ describe("useChatHistory", () => {
       message: "hello",
       context: {
         actionType: "chat",
-        meals: mealsFixture,
+        mealsSummary: "none",
         profile: profileFixture,
         history: [{ from: "user", text: "hello" }],
         language: "en",

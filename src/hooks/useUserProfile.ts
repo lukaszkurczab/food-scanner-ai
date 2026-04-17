@@ -6,6 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import * as FileSystem from "expo-file-system";
 import { emit, on } from "@/services/core/events";
+import { isOfflineNetState } from "@/services/core/networkState";
 import {
   fetchUserProfileRemote,
   subscribeToUserProfile,
@@ -213,7 +214,7 @@ export function useUserProfile(uid: string): UseUserProfileResult {
     };
 
     const net = await NetInfo.fetch();
-    if (!net.isConnected) {
+    if (isOfflineNetState(net)) {
       return (await readCached()) || userDataRef.current;
     }
     try {
@@ -240,7 +241,7 @@ export function useUserProfile(uid: string): UseUserProfileResult {
   const pushPendingChanges = useCallback(async () => {
     setSyncState("pending");
     const net = await NetInfo.fetch();
-    if (!net.isConnected) return;
+    if (isOfflineNetState(net)) return;
     await pushQueue(uid);
     await refreshProfileSyncState();
   }, [uid, refreshProfileSyncState]);
@@ -297,7 +298,7 @@ export function useUserProfile(uid: string): UseUserProfileResult {
         setSyncState("pending");
       }
       const net = await NetInfo.fetch();
-      if (retried > 0 && net.isConnected) {
+      if (retried > 0 && !isOfflineNetState(net)) {
         await pushQueue(uid);
       }
       await refreshProfileSyncState();

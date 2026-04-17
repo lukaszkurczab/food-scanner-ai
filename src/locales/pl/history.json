@@ -40,12 +40,14 @@
   },
   "actions": {
     "apply": "Zastosuj filtry",
+    "addFilter": "Dodaj filtr {{label}}",
     "showResults": "Pokaż wyniki",
     "clear": "Wyczyść",
     "cancel": "Anuluj",
     "choose": "Wybierz filtry",
     "done": "Gotowe",
     "reset": "Resetuj wybór",
+    "removeFilter": "Usuń filtr {{label}}",
     "selectDateRange": "Wybierz zakres dat",
     "save": "Zapisz",
     "moreFilters": "Więcej filtrów"

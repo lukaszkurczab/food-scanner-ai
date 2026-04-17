@@ -42,7 +42,7 @@ describe("FormScreenShell", () => {
     expect(getByText("Update the address linked to your account.")).toBeTruthy();
     expect(getByText("Email field")).toBeTruthy();
 
-    fireEvent.press(getByText("arrow-left"));
+    fireEvent.press(getByText("arrow"));
     fireEvent.press(getByText("Save"));
 
     expect(onBack).toHaveBeenCalledTimes(1);

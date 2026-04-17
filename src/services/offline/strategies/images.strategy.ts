@@ -1,6 +1,7 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { Meal } from "@/types/meal";
 import { Sync } from "@/utils/debug";
+import { isOfflineNetState } from "@/services/core/networkState";
 import { normalizeServiceError } from "@/services/contracts/serviceError";
 import { processAndUpload } from "@/services/meals/mealService.images";
 import { getPendingUploads, markUploaded } from "../images.repo";
@@ -59,7 +60,7 @@ export async function processImageUploads(uid: string): Promise<void> {
   const upLog = log.child("upload");
   const net = await NetInfo.fetch();
   upLog.log("start", { uid, isConnected: net.isConnected });
-  if (!net.isConnected) {
+  if (isOfflineNetState(net)) {
     upLog.log("skip:offline");
     return;
   }

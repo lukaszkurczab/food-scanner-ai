@@ -1,5 +1,6 @@
 import NetInfo from "@react-native-community/netinfo";
 import { Sync } from "@/utils/debug";
+import { isOfflineNetState } from "@/services/core/networkState";
 import { normalizeServiceError } from "@/services/contracts/serviceError";
 import type { SyncStrategy } from "./sync.strategy";
 import { runPushQueue } from "./sync.push";
@@ -96,7 +97,7 @@ export function startSyncLoop(uid: string) {
     const net = await NetInfo.fetch();
     if (isStale()) return;
     loopLog.log("net:state", { isConnected: net.isConnected });
-    if (!net.isConnected) {
+    if (isOfflineNetState(net)) {
       loopLog.log("skip:offline");
       return;
     }
@@ -138,7 +139,7 @@ export function startSyncLoop(uid: string) {
   loopTimer = setInterval(run, LOOP_INTERVAL_MS);
   netUnsub = NetInfo.addEventListener((state) => {
     log.log("net:event", { isConnected: state.isConnected });
-    if (state.isConnected) {
+    if (!isOfflineNetState(state)) {
       log.log("net:online→run");
       void run();
     }

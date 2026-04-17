@@ -1,9 +1,11 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { v4 as uuidv4 } from "uuid";
+import { Button, Modal } from "@/components";
 import { Layout } from "@/components/Layout";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUserContext } from "@contexts/UserContext";
@@ -22,6 +24,7 @@ import { ChatMessageList } from "../components/ChatMessageList";
 import { ChatComposer } from "../components/ChatComposer";
 import { ChatHistorySheet } from "../components/ChatHistorySheet";
 import { ChatStatusBanner } from "../components/ChatStatusBanner";
+import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
 
 const EMPTY_PROFILE: FormData = {
   unitsSystem: "metric",
@@ -36,21 +39,27 @@ const EMPTY_PROFILE: FormData = {
   calorieTarget: 0,
 };
 
+function getChatLegalAckKey(uid: string): string {
+  return `chat_legal_ack:${uid}`;
+}
+
 export default function ChatScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { firebaseUser: user } = useAuthContext();
-  const { userData } = useUserContext();
+  const { userData, loadingUser } = useUserContext();
   const { credits } = useAiCreditsContext();
   const net = useNetInfo();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { t } = useTranslation("chat");
+  const { t, i18n } = useTranslation("chat");
 
   const uid = user?.uid || "";
   const { meals } = useMeals(uid);
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [threadId, setThreadId] = useState<string>(() => `local-${uuidv4()}`);
+  const [legalAckVisible, setLegalAckVisible] = useState(false);
+  const [legalAckLoading, setLegalAckLoading] = useState(true);
   const lastChatPullRef = useRef<number>(0);
 
   const {
@@ -72,7 +81,101 @@ export default function ChatScreen() {
   const isOffline = net.isConnected === false;
   const hasMessages = messages.length > 0;
   const limitReached = !canSend;
-  const composerDisabled = sending || limitReached || isOffline;
+  const renewalDateLabel = formatLocalDateTime(credits?.periodEndAt, {
+    locale: i18n?.language,
+  });
+  const legalGateActive = legalAckLoading || legalAckVisible;
+  const profileReadyForAi = !loadingUser;
+  const composerDisabled =
+    sending || limitReached || isOffline || legalGateActive || !profileReadyForAi;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLegalAck() {
+      if (!uid) {
+        if (!cancelled) {
+          setLegalAckVisible(false);
+          setLegalAckLoading(false);
+        }
+        return;
+      }
+
+      setLegalAckLoading(true);
+
+      try {
+        const stored = await AsyncStorage.getItem(getChatLegalAckKey(uid));
+        if (!cancelled) {
+          setLegalAckVisible(stored !== "accepted");
+        }
+      } catch {
+        if (!cancelled) {
+          setLegalAckVisible(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setLegalAckLoading(false);
+        }
+      }
+    }
+
+    void loadLegalAck();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uid]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      async function refreshLegalAckOnFocus() {
+        if (!uid) return;
+        setLegalAckLoading(true);
+        try {
+          const stored = await AsyncStorage.getItem(getChatLegalAckKey(uid));
+          if (active) {
+            setLegalAckVisible(stored !== "accepted");
+          }
+        } catch {
+          if (active) {
+            setLegalAckVisible(true);
+          }
+        } finally {
+          if (active) {
+            setLegalAckLoading(false);
+          }
+        }
+      }
+
+      void refreshLegalAckOnFocus();
+
+      return () => {
+        active = false;
+      };
+    }, [uid]),
+  );
+
+  const openLegalDetails = useCallback(() => {
+    setLegalAckVisible(false);
+    navigation.navigate("DataAiClarity");
+  }, [navigation]);
+
+  const openLegalPrivacyHub = useCallback(() => {
+    setLegalAckVisible(false);
+    navigation.navigate("LegalPrivacyHub");
+  }, [navigation]);
+
+  const acknowledgeLegal = useCallback(async () => {
+    if (!uid) {
+      setLegalAckVisible(false);
+      return;
+    }
+
+    await AsyncStorage.setItem(getChatLegalAckKey(uid), "accepted");
+    setLegalAckVisible(false);
+  }, [uid]);
 
   const starters = useMemo(
     () => [
@@ -101,6 +204,7 @@ export default function ChatScreen() {
     !sending &&
     canSend &&
     !isOffline &&
+    !legalGateActive &&
     (sendErrorType === "offline" ||
       sendErrorType === "timeout" ||
       sendErrorType === "unavailable" ||
@@ -110,15 +214,17 @@ export default function ChatScreen() {
     ? t("composer.lockedCredits")
     : isOffline
       ? t("composer.lockedOffline")
-      : t("composer.placeholder");
+      : legalGateActive
+        ? t("legal.composerLocked")
+        : t("composer.placeholder");
 
   const handleSend = useCallback(
     async (text: string) => {
-      if (isOffline || !canSend) return;
+      if (isOffline || !canSend || legalGateActive || !profileReadyForAi) return;
       const createdThreadId = await send(text);
       if (createdThreadId) setThreadId(createdThreadId);
     },
-    [canSend, isOffline, send],
+    [canSend, isOffline, legalGateActive, profileReadyForAi, send],
   );
 
   const handleRetry = useCallback(() => {
@@ -175,12 +281,15 @@ export default function ChatScreen() {
       disableScroll
       showOfflineBanner={false}
       style={styles.layout}
-      keyboardAvoiding={false}
+      keyboardAvoiding
     >
       <ChatHeader
         title={t("header.title")}
         subtitle={t("header.subtitle")}
-        onOpenHistory={() => setHistoryOpen(true)}
+        onOpenHistory={() => {
+          if (legalGateActive) return;
+          setHistoryOpen(true);
+        }}
         historyButtonLabel={t("history.open")}
       />
 
@@ -188,7 +297,15 @@ export default function ChatScreen() {
         <ChatStatusBanner
           variant="credits"
           title={t("lock.creditsTitle")}
-          body={t("lock.creditsBody")}
+          body={t("limit.body", {
+            balance: credits?.balance ?? 0,
+            allocation: credits?.allocation ?? 0,
+            renewalDate:
+              renewalDateLabel ??
+              t("credits.renewalUnknown", {
+                defaultValue: "Unavailable",
+              }),
+          })}
           actionLabel={t("lock.creditsAction")}
           onActionPress={() => navigation.navigate("ManageSubscription")}
         />
@@ -245,6 +362,34 @@ export default function ChatScreen() {
         activeThreadId={threadId}
         onSelectThread={(id) => setThreadId(id)}
       />
+
+      <Modal
+        visible={legalAckVisible}
+        title={t("legal.title")}
+        primaryAction={{
+          label: t("legal.accept"),
+          onPress: () => {
+            void acknowledgeLegal();
+          },
+        }}
+        secondaryAction={{
+          label: t("legal.learnMore"),
+          onPress: openLegalDetails,
+          tone: "secondary",
+        }}
+        closeOnBackdropPress={false}
+      >
+        <View style={styles.legalCopy}>
+          <Text style={styles.legalParagraph}>{t("legal.informational")}</Text>
+          <Text style={styles.legalParagraph}>{t("legal.medical")}</Text>
+          <Button
+            label={t("legal.privacy")}
+            variant="ghost"
+            onPress={openLegalPrivacyHub}
+            fullWidth={false}
+          />
+        </View>
+      </Modal>
     </Layout>
   );
 }
@@ -263,5 +408,14 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
       paddingTop: theme.spacing.xxl,
       gap: theme.spacing.xl,
+    },
+    legalCopy: {
+      gap: theme.spacing.md,
+    },
+    legalParagraph: {
+      color: theme.textSecondary,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
+      fontFamily: theme.typography.fontFamily.regular,
     },
   });

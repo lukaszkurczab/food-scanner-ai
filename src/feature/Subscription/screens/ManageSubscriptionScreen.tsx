@@ -20,6 +20,7 @@ import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { PaywallModal } from "@/feature/Subscription/components/PaywallModal";
 import { useManageSubscriptionState } from "@/feature/Subscription/hooks/useManageSubscriptionState";
+import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
 
 const BENEFITS = [
   "aiCredits800",
@@ -38,13 +39,6 @@ type ManageSubscriptionNavigation = StackNavigationProp<
 type ManageSubscriptionScreenProps = {
   navigation: ManageSubscriptionNavigation;
 };
-
-function formatRenewalDate(value?: string | null): string {
-  if (!value) return "-";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "-";
-  return parsed.toISOString().slice(0, 10);
-}
 
 function getSummaryTone(
   state: string,
@@ -67,7 +61,7 @@ export default function ManageSubscriptionScreen({
 }: ManageSubscriptionScreenProps) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { t } = useTranslation(["profile", "common"]);
+  const { t, i18n } = useTranslation(["profile", "common"]);
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
@@ -419,7 +413,11 @@ export default function ManageSubscriptionScreen({
                 creditsLoading
                   ? "..."
                   : credits?.periodEndAt
-                    ? formatRenewalDate(credits.periodEndAt)
+                    ? (formatLocalDateTime(credits.periodEndAt, {
+                        locale: i18n?.language,
+                      }) ?? t("manageSubscription.aiCreditsRenewalUnknown", {
+                        defaultValue: "Unavailable",
+                      }))
                     : t("manageSubscription.aiCreditsRenewalUnknown", {
                         defaultValue: "Unavailable",
                       })

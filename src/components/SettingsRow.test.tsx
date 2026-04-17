@@ -31,7 +31,7 @@ describe("SettingsRow", () => {
     expect(getByText("Current email address")).toBeTruthy();
     expect(getByText("name@example.com")).toBeTruthy();
     expect(getByTestId("leading")).toBeTruthy();
-    expect(getByText("chevron-right")).toBeTruthy();
+    expect(getByText("chevron")).toBeTruthy();
 
     fireEvent.press(getByTestId("settings-row"));
     expect(onPress).toHaveBeenCalledTimes(1);
@@ -42,6 +42,6 @@ describe("SettingsRow", () => {
       <SettingsRow title="Membership" value="Premium" />,
     );
 
-    expect(queryByText("chevron-right")).toBeNull();
+    expect(queryByText("chevron")).toBeNull();
   });
 });

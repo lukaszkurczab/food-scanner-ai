@@ -332,7 +332,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       alignItems: "center",
       alignSelf: "center",
-      padding: theme.spacing.md,
+      paddingHorizontal: theme.spacing.sm + theme.spacing.xs,
+      paddingVertical: theme.spacing.sm,
       borderRadius: theme.rounded.lg,
       borderWidth: 1,
       borderColor: theme.border,
@@ -383,7 +384,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs + 2,
       gap: theme.spacing.sm,
     },
     metaWrap: {

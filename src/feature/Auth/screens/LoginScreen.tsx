@@ -9,6 +9,7 @@ import AppIcon from "@/components/AppIcon";
 import { useAuthContext } from "@/context/AuthContext";
 import { useLogin } from "@/feature/Auth/hooks/useLogin";
 import { AuthScreenLayout } from "@/feature/Auth/components/AuthScreenLayout";
+import { isOfflineNetState } from "@/services/core/networkState";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -43,7 +44,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
-      setInternetError(!state.isConnected);
+      setInternetError(isOfflineNetState(state));
     });
     return () => unsubscribe();
   }, []);

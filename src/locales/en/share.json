@@ -63,6 +63,12 @@
     }
   },
   "share": "Share",
+  "share_photo_picker_failed": "Could not open photo library. Try again.",
+  "share_export_failed": "Could not share this image. Please try again.",
+  "share_unavailable_title": "Share unavailable",
+  "share_unavailable_description": "This meal needs to be saved and include a source photo before sharing.",
+  "share_mode_quick": "Quick mode",
+  "share_mode_customize": "Customize mode",
   "dock": {
     "presets": "Presets",
     "active_layer": "Active layer",

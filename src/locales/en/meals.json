@@ -1,5 +1,6 @@
 {
   "title": "Add meal",
+  "meal": "Meal",
   "subtitle": "Choose how to add your meal",
   "photoTitle": "Photo",
   "photoDesc": "Snap your plate",
@@ -147,6 +148,9 @@
   "review_meal_edit_ingredient_nutrition": "Nutrition values",
   "review_meal_edit_remove_ingredient": "Remove ingredient",
   "review_meal_time_sheet_hint": "Adjust the meal time, then apply.",
+  "close_ingredient_editor": "Close ingredient editor",
+  "close_time_picker": "Close meal time picker",
+  "close_type_picker": "Close meal type picker",
   "analyze": "Analyze",
   "calories": "Calories",
   "protein": "Protein",

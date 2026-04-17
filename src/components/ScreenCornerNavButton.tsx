@@ -1,6 +1,6 @@
 import type { StyleProp, ViewStyle } from "react-native";
 import { Pressable, StyleSheet } from "react-native";
-import AppIcon from "@/components/AppIcon";
+import AppIcon, { type AppIconName } from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
 
 type CornerIcon = "back" | "close";
@@ -14,9 +14,12 @@ type Props = {
   testID?: string;
 };
 
-const iconMap: Record<CornerIcon, "arrow-left" | "close"> = {
-  back: "arrow-left",
-  close: "close",
+const iconMap: Record<
+  CornerIcon,
+  { name: AppIconName; rotation?: `${number}deg` }
+> = {
+  back: { name: "arrow" },
+  close: { name: "close" },
 };
 
 export function ScreenCornerNavButton({
@@ -28,6 +31,7 @@ export function ScreenCornerNavButton({
   testID,
 }: Props) {
   const theme = useTheme();
+  const resolvedIcon = iconMap[icon];
 
   return (
     <Pressable
@@ -51,7 +55,8 @@ export function ScreenCornerNavButton({
       ]}
     >
       <AppIcon
-        name={iconMap[icon]}
+        name={resolvedIcon.name}
+        rotation={resolvedIcon.rotation}
         size={20}
         color={disabled ? theme.textTertiary : theme.text}
       />

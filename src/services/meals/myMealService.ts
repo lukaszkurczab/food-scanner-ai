@@ -1,6 +1,7 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { Meal } from "@/types/meal";
 import { emit } from "@/services/core/events";
+import { isOfflineNetState } from "@/services/core/networkState";
 import {
   enqueueMyMealDelete,
   enqueueMyMealUpsert,
@@ -99,7 +100,7 @@ export async function upsertMyMealWithPhoto(
   emit("mymeal:updated", { uid: userUid, cloudId: docId });
 
   const net = await NetInfo.fetch();
-  if (net.isConnected) {
+  if (!isOfflineNetState(net)) {
     await requestMyMealSync(userUid);
   }
 }
@@ -113,7 +114,7 @@ export async function deleteMyMeal(
   await enqueueMyMealDelete(userUid, cloudId, now);
 
   const net = await NetInfo.fetch();
-  if (net.isConnected) {
+  if (!isOfflineNetState(net)) {
     await requestMyMealSync(userUid);
   }
 }

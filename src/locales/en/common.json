@@ -57,6 +57,8 @@
   "gram": "g",
   "loading": "Loading…",
   "back": "Back",
+  "show_password": "Show password",
+  "hide_password": "Hide password",
   "save": "Save",
   "share": "Share",
   "barcode_hint": "Place the code within the frame",

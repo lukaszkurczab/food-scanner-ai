@@ -18,6 +18,7 @@ import { insertOrUpdateImage } from "@/services/offline/images.repo";
 import { reconcileAll } from "@/services/notifications/engine";
 import { debugScope } from "@/utils/debug";
 import { emit, on } from "@/services/core/events";
+import { isOfflineNetState } from "@/services/core/networkState";
 import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/meals/myMealService";
 import { deriveMealTimingMetadata } from "@/services/meals/mealMetadata";
@@ -148,7 +149,7 @@ export function useMeals(userUid: string | null) {
       syncRequestedRef.current = true;
       void (async () => {
         const net = await NetInfo.fetch();
-        if (!net.isConnected) {
+        if (isOfflineNetState(net)) {
           emitOfflineQueuedToast();
           return;
         }
@@ -288,7 +289,11 @@ export function useMeals(userUid: string | null) {
 
     void (async () => {
       const net = await NetInfo.fetch();
-      if (cancelled || !net.isConnected || remoteRefreshInFlightRef.current) {
+      if (
+        cancelled ||
+        isOfflineNetState(net) ||
+        remoteRefreshInFlightRef.current
+      ) {
         return;
       }
 

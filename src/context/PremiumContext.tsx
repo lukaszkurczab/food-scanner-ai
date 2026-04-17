@@ -23,7 +23,7 @@ import {
   rcSetAttributes,
 } from "@/services/billing/revenuecat";
 import {
-  isPremiumSubscriptionState,
+  hasPremiumAccess,
   mapPremiumToSubscription,
   resolveSubscriptionFromRevenueCat,
 } from "@/services/billing/subscriptionStateMachine";
@@ -78,7 +78,7 @@ export const PremiumProvider = ({
   const lastActiveRefreshAtRef = useRef(0);
 
   const setSubscriptionState = useCallback((next: Subscription) => {
-    const premium = isPremiumSubscriptionState(next.state);
+    const premium = hasPremiumAccess(next.state);
     isPremiumRef.current = premium;
     setIsPremium(premium);
     setSubscription(next);
@@ -97,7 +97,7 @@ export const PremiumProvider = ({
       fallbackPremium: input.fallbackPremium,
     });
     setSubscriptionState(resolved);
-    return isPremiumSubscriptionState(resolved.state);
+    return hasPremiumAccess(resolved.state);
   }, [setSubscriptionState]);
 
   const checkPremiumStatus = useCallback(async (): Promise<boolean> => {

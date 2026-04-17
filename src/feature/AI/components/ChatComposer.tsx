@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 const MAX_CHARS = 4000;
 import AppIcon from "@/components/AppIcon";
+import { TextInput } from "@/components/TextInput";
 import { useTheme } from "@/theme/useTheme";
 
 type Props = {
@@ -29,6 +30,7 @@ export function ChatComposer({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const [value, setValue] = useState("");
+  const hasHelperText = Boolean(helperText);
 
   const canSend = !disabled && value.trim().length > 0;
 
@@ -47,10 +49,7 @@ export function ChatComposer({
           value={value}
           onChangeText={setValue}
           placeholder={placeholder}
-          placeholderTextColor={theme.textTertiary}
-          style={styles.input}
           editable={!disabled}
-          textAlignVertical="center"
           multiline
           maxLength={MAX_CHARS}
           onSubmitEditing={handleSend}
@@ -70,7 +69,7 @@ export function ChatComposer({
         >
           <AppIcon
             name="arrow"
-            size={16}
+            size={24}
             rotation="90deg"
             color={!canSend ? theme.disabled.text : theme.textInverse}
           />
@@ -88,27 +87,34 @@ export function ChatComposer({
         </Text>
       )}
 
-      {helperText ? (
-        <View style={styles.helperRow}>
-          <Text style={styles.helperText}>{helperText}</Text>
+      <View style={styles.helperRow}>
+        <Text
+          style={[
+            styles.helperText,
+            !hasHelperText ? styles.helperTextPlaceholder : null,
+          ]}
+        >
+          {helperText ?? " "}
+        </Text>
 
-          {helperActionLabel && onHelperActionPress ? (
-            <Pressable
-              testID="chat-helper-action"
-              onPress={onHelperActionPress}
-              disabled={helperActionDisabled}
-              accessibilityRole="button"
-              accessibilityLabel={helperActionLabel}
-              style={({ pressed }) => [
-                helperActionDisabled ? styles.helperActionDisabled : null,
-                pressed && !helperActionDisabled ? styles.helperActionPressed : null,
-              ]}
-            >
-              <Text style={styles.helperActionLabel}>{helperActionLabel}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : null}
+        {helperActionLabel && onHelperActionPress ? (
+          <Pressable
+            testID="chat-helper-action"
+            onPress={onHelperActionPress}
+            disabled={helperActionDisabled}
+            accessibilityRole="button"
+            accessibilityLabel={helperActionLabel}
+            style={({ pressed }) => [
+              helperActionDisabled ? styles.helperActionDisabled : null,
+              pressed && !helperActionDisabled
+                ? styles.helperActionPressed
+                : null,
+            ]}
+          >
+            <Text style={styles.helperActionLabel}>{helperActionLabel}</Text>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -116,9 +122,7 @@ export function ChatComposer({
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     wrap: {
-      borderTopWidth: 1,
-      borderTopColor: theme.borderSoft,
-      backgroundColor: theme.surfaceElevated,
+      backgroundColor: "transparent",
       paddingHorizontal: theme.spacing.md,
       paddingTop: theme.spacing.sm,
       paddingBottom: 0,
@@ -128,21 +132,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       alignItems: "center",
       gap: theme.spacing.xs,
-    },
-    input: {
-      flex: 1,
-      minHeight: 48,
-      maxHeight: 128,
-      borderRadius: theme.rounded.full,
-      borderWidth: 1,
-      borderColor: theme.borderSoft,
-      backgroundColor: theme.surfaceAlt,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      color: theme.text,
-      fontSize: theme.typography.size.bodyM,
-      lineHeight: theme.typography.lineHeight.bodyM,
-      fontFamily: theme.typography.fontFamily.regular,
+      backgroundColor: "transparent",
     },
     sendButton: {
       width: 44,
@@ -165,7 +155,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       alignItems: "center",
       gap: theme.spacing.sm,
-      minHeight: 20,
     },
     helperText: {
       flex: 1,
@@ -173,6 +162,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontSize: theme.typography.size.caption,
       lineHeight: theme.typography.lineHeight.caption,
       fontFamily: theme.typography.fontFamily.regular,
+    },
+    helperTextPlaceholder: {
+      opacity: 0,
     },
     helperActionLabel: {
       color: theme.link,

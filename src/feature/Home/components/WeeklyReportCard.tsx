@@ -105,7 +105,6 @@ export default function WeeklyReportCard({ loading, report, onPress }: Props) {
         </Text>
       </View>
 
-      <Text style={styles.cta}>{t("weeklyReport.openCta")}</Text>
     </Pressable>
   );
 }
@@ -178,12 +177,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       fontSize: theme.typography.size.bodyS,
       lineHeight: 20,
       fontFamily: theme.typography.fontFamily.regular,
-    },
-    cta: {
-      color: theme.primary,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.semiBold,
-      paddingHorizontal: theme.spacing.xs,
     },
   });

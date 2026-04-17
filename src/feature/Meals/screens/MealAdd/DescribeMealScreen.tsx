@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, ErrorBox, Layout, Modal, TextInput } from "@/components";
@@ -44,6 +44,7 @@ export default function DescribeMealScreen({
     descriptionError,
     submitError,
     analyzeDisabled,
+    analysisState,
     creditAllocation,
     onNameChange,
     onQuickDescriptionChange,
@@ -52,7 +53,7 @@ export default function DescribeMealScreen({
     openPaywall,
   } = useMealTextAiState({
     t,
-    language: i18n.language,
+    language: i18n?.language,
     flow,
     initialValues: params,
   });
@@ -99,10 +100,11 @@ export default function DescribeMealScreen({
     (creditsBalance < textMealCost ||
       (remainingCreditsAfterAnalyze !== null &&
         remainingCreditsAfterAnalyze <= 2));
+  const showUpgradeLink = analysisState === "insufficient_credits";
 
   return (
     <Layout showNavigation={false} disableScroll style={styles.layout}>
-      <View style={styles.fill}>
+      <Pressable style={styles.fill} onPress={Keyboard.dismiss}>
         <MealAddPhotoScaffold
           topInset={previewTopInset}
           previewHeight={TEXT_PREVIEW_HEIGHT}
@@ -169,6 +171,13 @@ export default function DescribeMealScreen({
                   {creditsNote}
                 </Text>
               ) : null}
+              {showUpgradeLink ? (
+                <MealAddTextLink
+                  label={t("limit.upgradeCta", { ns: "chat" })}
+                  onPress={openPaywall}
+                  disabled={loading}
+                />
+              ) : null}
               <MealAddTextLink
                 label={t("change_method", { ns: "meals" })}
                 onPress={() =>
@@ -182,7 +191,7 @@ export default function DescribeMealScreen({
             </>
           }
         />
-      </View>
+      </Pressable>
 
       <Modal
         visible={showLimitModal}

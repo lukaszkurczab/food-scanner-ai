@@ -40,12 +40,14 @@
   },
   "actions": {
     "apply": "Apply filters",
+    "addFilter": "Add {{label}} filter",
     "showResults": "Show results",
     "clear": "Clear",
     "cancel": "Cancel",
     "choose": "Choose filters",
     "done": "Done",
     "reset": "Reset selection",
+    "removeFilter": "Remove {{label}} filter",
     "selectDateRange": "Select date range",
     "save": "Save",
     "moreFilters": "More filters"

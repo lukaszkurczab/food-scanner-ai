@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import { StyleSheet, View } from "react-native";
 import { Layout, TextInput, Toast } from "@/components";
@@ -24,6 +24,7 @@ import {
   MealAddStatusBanner,
 } from "@/feature/Meals/components/MealAddPhotoScaffold";
 import { post } from "@/services/core/apiClient";
+import { isOfflineNetState } from "@/services/core/networkState";
 import { useTheme } from "@/theme/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { v4 as uuidv4 } from "uuid";
@@ -74,6 +75,13 @@ export default function TextAnalyzingScreen({
   const { language } = useUserContext();
   const { meal, saveDraft, setLastScreen, setMeal } = useMealDraftContext();
   const { applyCreditsFromResponse, refreshCredits } = useAiCreditsContext();
+  const mealRef = useRef(meal);
+  const startedForKeyRef = useRef<string | null>(null);
+  const trimmedName = params.name.trim();
+  const trimmedDescription = params.quickDescription.trim();
+  const retries = params.retries ?? 0;
+  const analysisLang = language || "en";
+  const analysisKey = params.analysisRequestId;
   const previewTopInset = useMemo(
     () =>
       Math.max(
@@ -84,6 +92,15 @@ export default function TextAnalyzingScreen({
   );
 
   useEffect(() => {
+    mealRef.current = meal;
+  }, [meal]);
+
+  useEffect(() => {
+    if (startedForKeyRef.current === analysisKey) {
+      return;
+    }
+    startedForKeyRef.current = analysisKey;
+
     let cancelled = false;
 
     const replaceDescribeMeal = (
@@ -93,7 +110,7 @@ export default function TextAnalyzingScreen({
       flow.replace("DescribeMeal", {
         name: params.name,
         quickDescription: params.quickDescription,
-        retries: params.retries ?? 0,
+        retries,
         ...patch,
       });
     };
@@ -122,7 +139,7 @@ export default function TextAnalyzingScreen({
 
       try {
         const net = await NetInfo.fetch();
-        if (!net.isConnected) {
+        if (isOfflineNetState(net)) {
           replaceDescribeMeal({
             submitError: t("text_ai_error_offline"),
           });
@@ -131,7 +148,7 @@ export default function TextAnalyzingScreen({
 
         const runAnalysis = () =>
           extractIngredientsFromText(uid, buildPayload(params), {
-            lang: language || "en",
+            lang: analysisLang,
           });
 
         let result: Awaited<ReturnType<typeof runAnalysis>> | undefined;
@@ -164,10 +181,10 @@ export default function TextAnalyzingScreen({
         }
 
         if (!result || result.ingredients.length === 0) {
-          const retries = nextRetryCount(params.retries ?? 0);
+          const retriesCount = nextRetryCount(retries);
           Toast.show(t("not_recognized_title"));
           replaceDescribeMeal({
-            retries,
+            retries: retriesCount,
             submitError: t("text_ai_not_recognized_retry"),
           });
           return;
@@ -175,17 +192,18 @@ export default function TextAnalyzingScreen({
 
         applyCreditsFromResponse(result.credits);
         const aiMeta = getMealAiMetaFromAiResponse(result.credits);
-        const baseMeal = meal ?? buildInitialMeal(uid);
+        const baseMeal = mealRef.current ?? buildInitialMeal(uid);
 
-        if (!meal) {
+        if (!mealRef.current) {
           setMeal(baseMeal);
+          mealRef.current = baseMeal;
           await saveDraft(uid, baseMeal);
         }
 
         const nextMeal: Meal = {
           ...baseMeal,
-          name: params.name.trim() || baseMeal.name,
-          notes: params.quickDescription.trim() || baseMeal.notes || null,
+          name: trimmedName || baseMeal.name,
+          notes: trimmedDescription || baseMeal.notes || null,
           ingredients: result.ingredients,
           source: "ai",
           inputMethod: "text",
@@ -235,10 +253,10 @@ export default function TextAnalyzingScreen({
           return;
         }
 
-        const retries = nextRetryCount(params.retries ?? 0);
+        const retriesCount = nextRetryCount(retries);
         Toast.show(t("text_ai_analyze_failed"));
         replaceDescribeMeal({
-          retries,
+          retries: retriesCount,
           submitError: t("text_ai_analyze_failed"),
         });
       }
@@ -251,15 +269,18 @@ export default function TextAnalyzingScreen({
     };
   }, [
     applyCreditsFromResponse,
+    analysisKey,
+    analysisLang,
     flow,
-    language,
-    meal,
     params,
+    retries,
     refreshCredits,
     saveDraft,
     setLastScreen,
     setMeal,
     t,
+    trimmedDescription,
+    trimmedName,
     uid,
   ]);
 

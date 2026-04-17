@@ -15,6 +15,7 @@ import { Button, TextInput, LinkText, ErrorBox } from "@/components";
 import { validateEmail } from "@/utils/validation";
 import { authSendPasswordReset } from "@/feature/Auth/services/authService";
 import { AuthScreenLayout } from "@/feature/Auth/components/AuthScreenLayout";
+import { isOfflineNetState } from "@/services/core/networkState";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 
@@ -51,13 +52,13 @@ export default function ResetPasswordScreen({ navigation }: Props) {
   useEffect(() => {
     const check = async () => {
       const net = await NetInfo.fetch();
-      setNoInternet(!net.isConnected);
+      setNoInternet(isOfflineNetState(net));
     };
 
     check();
 
     const unsub = NetInfo.addEventListener((state) => {
-      setNoInternet(!state.isConnected);
+      setNoInternet(isOfflineNetState(state));
     });
 
     return () => unsub();

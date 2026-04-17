@@ -86,10 +86,10 @@ export default function MealBasicsSection({
               <Text style={styles.selectionValue}>{mealTypeLabel}</Text>
             </View>
             <AppIcon
-              name="chevron-right"
+              name="chevron"
+              rotation="-90deg"
               size={18}
               color={theme.textSecondary}
-              style={{ transform: [{ rotate: "-90deg" }] }}
             />
           </Pressable>
 
@@ -113,10 +113,10 @@ export default function MealBasicsSection({
               <Text style={styles.selectionValue}>{mealTimeLabel}</Text>
             </View>
             <AppIcon
-              name="chevron-right"
+              name="chevron"
+              rotation="-90deg"
               size={18}
               color={theme.textSecondary}
-              style={{ transform: [{ rotate: "-90deg" }] }}
             />
           </Pressable>
         </View>

@@ -3,6 +3,7 @@ import type { ChatMessage, ChatThread } from "@/types";
 import { get, post } from "@/services/core/apiClient";
 import { captureException } from "@/services/core/errorLogger";
 import { on } from "@/services/core/events";
+import { isOfflineNetState } from "@/services/core/networkState";
 import {
   getChatMessagesPageLocal,
   getChatThreadsLocal,
@@ -119,7 +120,7 @@ export function subscribeToChatThreadMessages(params: {
   void (async () => {
     try {
       const net = await NetInfo.fetch();
-      if (!net.isConnected) return;
+      if (isOfflineNetState(net)) return;
       await requestChatPull(params.userUid);
       await publish();
     } catch (error) {
@@ -149,7 +150,7 @@ export async function fetchChatThreadMessagesPage(params: {
   if (page.items.length < params.pageSize) {
     try {
       const net = await NetInfo.fetch();
-      if (net.isConnected) {
+      if (!isOfflineNetState(net)) {
         await syncMessagesFromBackend({
           userUid: params.userUid,
           threadId: params.threadId,
@@ -219,7 +220,7 @@ export async function persistUserChatMessage(params: {
 
   try {
     const net = await NetInfo.fetch();
-    if (!net.isConnected) {
+    if (isOfflineNetState(net)) {
       await enqueueChatMessagePersist(params.userUid, {
         threadId: params.threadId,
         messageId: params.messageId,
@@ -304,7 +305,7 @@ export async function persistAssistantChatMessage(params: {
 
   try {
     const net = await NetInfo.fetch();
-    if (!net.isConnected) {
+    if (isOfflineNetState(net)) {
       await enqueueChatMessagePersist(params.userUid, {
         threadId: params.threadId,
         messageId: params.messageId,
@@ -375,7 +376,7 @@ export function subscribeToChatThreads(params: {
   void (async () => {
     try {
       const net = await NetInfo.fetch();
-      if (!net.isConnected) return;
+      if (isOfflineNetState(net)) return;
       await requestChatPull(params.userUid);
       await publish();
     } catch (error) {

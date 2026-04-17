@@ -3,6 +3,7 @@ import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
 import { v4 as uuidv4 } from "uuid";
 import { get, upload } from "@/services/core/apiClient";
+import { isOfflineNetState } from "@/services/core/networkState";
 import { createServiceError } from "@/services/contracts/serviceError";
 
 const CLOUD_MAX = 1280;
@@ -70,7 +71,7 @@ export async function processAndUpload(
   localUri: string
 ): Promise<UploadedImage> {
   const net = await NetInfo.fetch();
-  if (!net.isConnected) {
+  if (isOfflineNetState(net)) {
     throw createServiceError({
       code: "net/offline",
       source: "MealImageService",

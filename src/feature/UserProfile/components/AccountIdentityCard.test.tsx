@@ -31,7 +31,7 @@ describe("AccountIdentityCard", () => {
     expect(getByText("lukasz")).toBeTruthy();
     expect(getByText("name@example.com")).toBeTruthy();
     expect(getByText("Premium")).toBeTruthy();
-    expect(getByText("chevron-right")).toBeTruthy();
+    expect(getByText("chevron")).toBeTruthy();
 
     fireEvent.press(getByTestId("identity-card"));
     expect(onPress).toHaveBeenCalledTimes(1);

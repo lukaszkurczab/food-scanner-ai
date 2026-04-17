@@ -97,10 +97,10 @@ export function HomeHeroCard({
             </Text>
             <View style={styles.methodChevronWrap}>
               <AppIcon
-                name="chevron-right"
+                name="chevron"
+                rotation="-90deg"
                 size={24}
                 color={theme.textTertiary}
-                style={{ transform: [{ rotate: "-90deg" }] }}
               />
             </View>
           </Pressable>

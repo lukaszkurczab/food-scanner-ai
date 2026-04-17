@@ -40,6 +40,11 @@ jest.mock("@react-native-community/netinfo", () => ({
   useNetInfo: () => mockUseNetInfo(),
 }));
 
+jest.mock("@/utils/formatLocalDateTime", () => ({
+  formatLocalDateTime: (value?: string | null) =>
+    value ? "14.05.2026, 12:00" : null,
+}));
+
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (
@@ -361,7 +366,7 @@ describe("ManageSubscriptionScreen", () => {
     expect(getByText("Inactive")).toBeTruthy();
     expect(getByText("76")).toBeTruthy();
     expect(getByText("800")).toBeTruthy();
-    expect(getByText("2026-05-14")).toBeTruthy();
+    expect(getByText("14.05.2026, 12:00")).toBeTruthy();
     expect(getByText("paywall:$9.99")).toBeTruthy();
 
     fireEvent.press(getByText("profile:manageSubscription.startSubscription"));

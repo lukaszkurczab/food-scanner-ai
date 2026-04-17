@@ -36,7 +36,10 @@ function getMealKcal(meal: Meal): number {
   );
 }
 
-function formatMealTime(value: string | null | undefined, locale?: string): string | null {
+function formatMealTime(
+  value: string | null | undefined,
+  locale?: string,
+): string | null {
   if (!value) return null;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
@@ -68,9 +71,13 @@ const HistoryMealRowComponent = ({
 }: HistoryMealRowProps) => {
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const timeLabel =
-    formatMealTime(meal.timestamp || meal.updatedAt || meal.createdAt, locale) ||
-    null;
-  const meta = timeLabel ? `${mealTypeLabel(meal)} · ${timeLabel}` : mealTypeLabel(meal);
+    formatMealTime(
+      meal.timestamp || meal.updatedAt || meal.createdAt,
+      locale,
+    ) || null;
+  const meta = timeLabel
+    ? `${mealTypeLabel(meal)} · ${timeLabel}`
+    : mealTypeLabel(meal);
 
   return (
     <Pressable
@@ -257,7 +264,14 @@ export default function HistoryListScreen({
         theme={theme}
       />
     ),
-    [i18n?.language, mealTypeLabel, state.kcalLabel, state.onMealPress, t, theme],
+    [
+      i18n?.language,
+      mealTypeLabel,
+      state.kcalLabel,
+      state.onMealPress,
+      t,
+      theme,
+    ],
   );
 
   const keyExtractor = useCallback((item: DaySection) => item.dateKey, []);
@@ -513,10 +527,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       elevation: theme.isDark ? 0 : 1,
     },
     mealRow: {
-      minHeight: 84,
-      borderRadius: theme.rounded.md,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.md,
+      borderRadius: theme.rounded.sm,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",

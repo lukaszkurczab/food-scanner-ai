@@ -41,13 +41,13 @@ export function useUserProfileState(params: {
   }, [params.navigation, uid]);
 
   const safeBadges = useMemo(
-    () => (Array.isArray(badges) ? badges : []),
-    [badges],
+    () => {
+      const resolvedBadges = Array.isArray(badges) ? badges : [];
+      if (isPremium === true) return resolvedBadges;
+      return resolvedBadges.filter((badge) => badge.type !== "premium");
+    },
+    [badges, isPremium],
   );
-
-  const hasPremiumBadge = safeBadges.some((badge) => badge.type === "premium");
-  const overrideColor = isPremium && !hasPremiumBadge ? "#C9A227" : undefined;
-  const overrideEmoji = isPremium && !hasPremiumBadge ? "⭐" : undefined;
 
   const avatarSrc = userData?.avatarLocalPath || userData?.avatarUrl || "";
 
@@ -72,8 +72,8 @@ export function useUserProfileState(params: {
     retryingProfileSync,
     avatarSrc,
     safeBadges,
-    overrideColor,
-    overrideEmoji,
+    overrideColor: undefined,
+    overrideEmoji: undefined,
     handleLogout,
     handleRetryProfileLoad,
   };

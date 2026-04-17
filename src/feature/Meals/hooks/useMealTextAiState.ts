@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { v4 as uuidv4 } from "uuid";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type {
@@ -41,6 +42,7 @@ export function useMealTextAiState(params: {
   const [submitError, setSubmitError] = useState<string | undefined>(
     initialValues?.submitError,
   );
+  const textMealCost = credits?.costs.textMeal ?? 1;
 
   useEffect(() => {
     setName(initialValues?.name ?? "");
@@ -85,14 +87,17 @@ export function useMealTextAiState(params: {
 
     setLoading(true);
     try {
+      const analysisRequestId = uuidv4();
+      const textAnalyzingParams = {
+        analysisRequestId,
+        name: name.trim(),
+        quickDescription: quickDescription.trim(),
+        retries,
+      } as const;
       let resolvedCredits = credits;
 
       if (resolvedCredits && canAfford("textMeal")) {
-        flow.goTo("TextAnalyzing", {
-          name: name.trim(),
-          quickDescription: quickDescription.trim(),
-          retries,
-        });
+        flow.goTo("TextAnalyzing", textAnalyzingParams);
         return;
       }
 
@@ -106,11 +111,7 @@ export function useMealTextAiState(params: {
         return;
       }
 
-      flow.goTo("TextAnalyzing", {
-        name: name.trim(),
-        quickDescription: quickDescription.trim(),
-        retries,
-      });
+      flow.goTo("TextAnalyzing", textAnalyzingParams);
     } finally {
       setLoading(false);
     }
@@ -125,14 +126,25 @@ export function useMealTextAiState(params: {
     t,
   ]);
 
-  const analyzeDisabled = useMemo(
-    () => !quickDescription.trim(),
-    [quickDescription],
-  );
+  const analysisState = useMemo<
+    "missing_description" | "credits_unverified" | "insufficient_credits" | "ready"
+  >(() => {
+    if (!quickDescription.trim()) {
+      return "missing_description";
+    }
+    if (!credits) {
+      return "credits_unverified";
+    }
+    if (credits.balance < textMealCost) {
+      return "insufficient_credits";
+    }
+    return "ready";
+  }, [credits, quickDescription, textMealCost]);
+
+  const analyzeDisabled = analysisState !== "ready";
 
   const creditAllocation = credits?.allocation ?? 0;
   const creditsUsed = Math.max(creditAllocation - (credits?.balance ?? 0), 0);
-  const textMealCost = credits?.costs.textMeal ?? 1;
   const creditsBalance = credits?.balance ?? null;
   const remainingCreditsAfterAnalyze =
     creditsBalance === null ? null : Math.max(creditsBalance - textMealCost, 0);
@@ -175,6 +187,7 @@ export function useMealTextAiState(params: {
     descriptionError,
     submitError,
     analyzeDisabled,
+    analysisState,
     creditAllocation,
     onNameChange,
     onQuickDescriptionChange,

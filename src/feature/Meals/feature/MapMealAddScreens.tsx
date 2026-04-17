@@ -63,6 +63,7 @@ export type MealAddStepParams = {
     showLimitModal?: boolean;
   };
   TextAnalyzing: {
+    analysisRequestId: string;
     name: string;
     quickDescription: string;
     retries?: number;

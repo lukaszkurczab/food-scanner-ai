@@ -56,10 +56,11 @@ function formatIngredientAmount(
   unit: string | undefined,
   gramLabel: string,
 ): string {
-  if (!Number.isFinite(amount)) return unit ? `0 ${unit}` : "0";
+  const resolvedUnit = typeof unit === "string" && unit.trim() ? unit.trim() : "g";
+  const displayUnit = resolvedUnit === "g" ? gramLabel : resolvedUnit;
+  if (!Number.isFinite(amount)) return `0 ${displayUnit}`;
   const value = Number.isInteger(amount) ? String(amount) : amount.toFixed(1);
-  if (!unit) return value;
-  return `${value} ${unit === "g" ? gramLabel : unit}`;
+  return `${value} ${displayUnit}`;
 }
 
 export default function MealDetailsScreen() {

@@ -111,18 +111,7 @@ const ICONS = {
 
 type BaseIconName = keyof typeof ICONS;
 
-const ROTATED_ICONS = {
-  "arrow-left": { icon: "arrow" },
-  "chevron-left": { icon: "chevron" },
-  "chevron-right": { icon: "chevron", rotation: "180deg" },
-  "chevron-up": { icon: "chevron", rotation: "90deg" },
-  "chevron-down": { icon: "chevron", rotation: "-90deg" },
-} as const satisfies Record<
-  string,
-  { icon: BaseIconName; rotation?: `${number}deg` }
->;
-
-export type AppIconName = BaseIconName | keyof typeof ROTATED_ICONS;
+export type AppIconName = BaseIconName;
 
 type AppIconProps = {
   name: AppIconName;
@@ -136,10 +125,6 @@ type AppIconProps = {
 
 const DEFAULT_COLOR = "#2D2D3A";
 
-function isBaseIconName(name: AppIconName): name is BaseIconName {
-  return name in ICONS;
-}
-
 export function AppIcon({
   name,
   size = 24,
@@ -147,10 +132,9 @@ export function AppIcon({
   style,
   testID,
   accessibilityLabel,
-  rotation = "0deg",
+  rotation,
 }: AppIconProps) {
-  const resolved = isBaseIconName(name) ? { icon: name } : ROTATED_ICONS[name];
-  const Icon = ICONS[resolved.icon];
+  const Icon = ICONS[name];
 
   return (
     <View

@@ -42,10 +42,10 @@ export function AccountIdentityCard({
     accessory ??
     ((showChevron ?? isPressable) ? (
       <AppIcon
-        name="chevron-right"
+        name="chevron"
+        rotation="180deg"
         size={24}
         color={disabled ? theme.textTertiary : theme.textSecondary}
-        style={{ transform: [{ rotate: "180deg" }] }}
       />
     ) : null);
 

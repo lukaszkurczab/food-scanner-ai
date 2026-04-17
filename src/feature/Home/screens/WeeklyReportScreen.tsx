@@ -87,7 +87,7 @@ function WeeklyReportHeader({
   return (
     <View style={styles.header}>
       <HeaderButton
-        icon={<AppIcon name="arrow-left" size={18} color={theme.text} />}
+        icon={<AppIcon name="arrow" size={18} color={theme.text} />}
         onPress={onBack}
         accessibilityLabel={t("weeklyReport.back")}
       />

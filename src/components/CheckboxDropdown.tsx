@@ -187,10 +187,11 @@ export function CheckboxDropdown<T extends string | number>({
         </Text>
 
         <AppIcon
-          name="chevron-down"
+          name="chevron"
+          rotation={open ? "90deg" : "-90deg"}
           size={20}
           color={theme.textSecondary}
-          style={[styles.fieldIcon, open ? styles.fieldIconOpen : null]}
+          style={styles.fieldIcon}
         />
       </Pressable>
 

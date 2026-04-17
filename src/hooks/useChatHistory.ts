@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { Meal, FormData, ChatMessage } from "@/types";
 import { post } from "@/services/core/apiClient";
 import { emit, on } from "@/services/core/events";
+import { isOfflineNetState } from "@/services/core/networkState";
 import { asString, isRecord } from "@/services/contracts/guards";
 import type { AiAskBackendResponse } from "@/services/ai/contracts";
 import { getErrorStatus, isServiceError } from "@/services/contracts/serviceError";
@@ -51,10 +52,29 @@ function buildAiContext(
   profile: FormData,
   history: AiHistoryItem[],
 ) {
+  const mealPreview = meals
+    .slice(0, 5)
+    .map((meal) => {
+      const timestamp =
+        typeof meal.timestamp === "string" && meal.timestamp.trim().length > 0
+          ? meal.timestamp
+          : meal.createdAt;
+      const dateKey =
+        typeof timestamp === "string" && timestamp.length >= 10
+          ? timestamp.slice(0, 10)
+          : "unknown";
+      const name =
+        (typeof meal.name === "string" && meal.name.trim().length > 0
+          ? meal.name.trim()
+          : meal.type) || "meal";
+      return `${dateKey}:${name}`;
+    })
+    .join(",");
+
   return {
-    meals: meals.slice(0, 5),
     profile,
     history,
+    mealsSummary: meals.length > 0 ? `${meals.length}|${mealPreview}` : "none",
     language: i18next.language || "en",
     actionType: "chat",
   };
@@ -139,6 +159,7 @@ function buildRetryableAiHistory(
 ): AiHistoryItem[] {
   const history: AiHistoryItem[] = messages
     .slice(0, 10)
+    .reverse()
     .map(
       (message): AiHistoryItem => ({
         from: message.role === "user" ? "user" : "ai",
@@ -305,7 +326,7 @@ export function useChatHistory(
       if (!trimmed || !canSend || sending || sendInFlightRef.current) return null;
 
       const net = await NetInfo.fetch();
-      if (!net.isConnected) return null;
+      if (isOfflineNetState(net)) return null;
       if (!userUid) return null;
       void trackAiChatSend(trimmed);
 
@@ -547,7 +568,7 @@ export function useChatHistory(
         });
       }
       const net = await NetInfo.fetch();
-      if (retried > 0 && net.isConnected) {
+      if (retried > 0 && !isOfflineNetState(net)) {
         await pushQueue(userUid);
         await refreshFailedSyncCount();
       }

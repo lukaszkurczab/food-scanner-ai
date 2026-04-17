@@ -123,6 +123,15 @@ export function isPremiumSubscriptionState(state: SubscriptionState | string): b
   return state.startsWith("premium_");
 }
 
+export function hasPremiumAccess(state: SubscriptionState | string): boolean {
+  return (
+    state === "premium_active"
+    || state === "premium_trial"
+    || state === "premium_grace"
+    || state === "premium_pending_downgrade"
+  );
+}
+
 export function mapPremiumToSubscription(premium: boolean): Subscription {
   return premium ? { state: "premium_active" } : { state: "free_active" };
 }

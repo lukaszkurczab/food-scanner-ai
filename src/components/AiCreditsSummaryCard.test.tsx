@@ -9,6 +9,11 @@ jest.mock("react-i18next", () => ({
   }),
 }));
 
+jest.mock("@/utils/formatLocalDateTime", () => ({
+  formatLocalDateTime: (value?: string | null) =>
+    value ? "14.05.2026, 12:00" : null,
+}));
+
 describe("AiCreditsSummaryCard", () => {
   it("renders balance, allocation, tier and renewal date", () => {
     const { getByText } = renderWithTheme(
@@ -24,7 +29,7 @@ describe("AiCreditsSummaryCard", () => {
     expect(getByText("76")).toBeTruthy();
     expect(getByText("800")).toBeTruthy();
     expect(getByText("Premium")).toBeTruthy();
-    expect(getByText("2026-05-14")).toBeTruthy();
+    expect(getByText("14.05.2026, 12:00")).toBeTruthy();
   });
 
   it("renders placeholders while loading", () => {

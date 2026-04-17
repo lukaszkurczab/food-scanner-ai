@@ -63,6 +63,12 @@
     }
   },
   "share": "Udostępnij",
+  "share_photo_picker_failed": "Nie udało się otworzyć galerii. Spróbuj ponownie.",
+  "share_export_failed": "Nie udało się udostępnić tego obrazu. Spróbuj ponownie.",
+  "share_unavailable_title": "Udostępnianie niedostępne",
+  "share_unavailable_description": "Ten posiłek musi być zapisany i zawierać zdjęcie źródłowe, zanim będzie można go udostępnić.",
+  "share_mode_quick": "Tryb szybki",
+  "share_mode_customize": "Tryb edycji",
   "dock": {
     "presets": "Presety",
     "active_layer": "Aktywna warstwa",

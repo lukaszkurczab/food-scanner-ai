@@ -8,6 +8,7 @@ import { useTheme } from "@/theme/useTheme";
 import { ErrorBox, FormScreenShell, TextInput } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import { useUserAccountContext } from "@/context/UserAccountContext";
+import { isOfflineNetState } from "@/services/core/networkState";
 
 function getErrorCode(err: unknown): string | null {
   if (!err || typeof err !== "object") return null;
@@ -49,11 +50,11 @@ export default function ChangePasswordScreen({
 
   useEffect(() => {
     void NetInfo.fetch().then((state) => {
-      setNoInternet(!state.isConnected);
+      setNoInternet(isOfflineNetState(state));
     });
 
     const unsubscribe = NetInfo.addEventListener((state) => {
-      setNoInternet(!state.isConnected);
+      setNoInternet(isOfflineNetState(state));
     });
 
     return () => unsubscribe();

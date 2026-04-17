@@ -16,6 +16,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useRegister } from "@/feature/Auth/hooks/useRegister";
 import { getTermsUrl } from "@/utils/legalUrls";
 import { AuthScreenLayout } from "@/feature/Auth/components/AuthScreenLayout";
+import { isOfflineNetState } from "@/services/core/networkState";
 import {
   validateRegisterEmail,
   validateRegisterPassword,
@@ -57,7 +58,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
 
   React.useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
-      setIsConnected(state.isConnected === true);
+      setIsConnected(!isOfflineNetState(state));
     });
     return () => unsubscribe();
   }, []);

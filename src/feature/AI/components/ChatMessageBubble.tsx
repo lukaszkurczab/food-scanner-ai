@@ -105,7 +105,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     row: {
       width: "100%",
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
       flexDirection: "row",
     },
     rowUser: {

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/theme/useTheme";
+import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
 
 type AiCreditsSummaryCardProps = {
   balance: number | null;
@@ -10,13 +11,6 @@ type AiCreditsSummaryCardProps = {
   renewalAt?: string | null;
   loading?: boolean;
 };
-
-function formatRenewalDate(value?: string | null): string | null {
-  if (!value) return null;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString().slice(0, 10);
-}
 
 export function AiCreditsSummaryCard({
   balance,
@@ -27,9 +21,11 @@ export function AiCreditsSummaryCard({
 }: AiCreditsSummaryCardProps) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { t } = useTranslation("profile");
+  const { t, i18n } = useTranslation("profile");
 
-  const renewalDate = formatRenewalDate(renewalAt);
+  const renewalDate = formatLocalDateTime(renewalAt, {
+    locale: i18n?.language,
+  });
   const tierLabel =
     tier === "premium"
       ? t("manageSubscription.tierPremium", { defaultValue: "Premium" })

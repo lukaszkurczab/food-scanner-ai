@@ -3,7 +3,7 @@
   "new": "Nowy czat",
   "label": "Czat",
   "header": {
-    "title": "Chat",
+    "title": "Czat",
     "subtitle": "Zapytaj o posiłki, żywienie albo kolejny krok."
   },
   "conversation": {
@@ -96,7 +96,8 @@
     "timeout": "Przekroczono limit czasu żądania. Spróbuj ponownie.",
     "serviceUnavailable": "Usługa AI jest chwilowo niedostępna. Spróbuj za moment.",
     "authRequired": "Zaloguj się ponownie, aby kontynuować.",
-    "emptyResponse": "Nie udało się wygenerować odpowiedzi. Spróbuj ponownie."
+    "emptyResponse": "Nie udało się wygenerować odpowiedzi. Spróbuj ponownie.",
+    "rateLimited": "Wysyłasz wiadomości zbyt szybko. Poczekaj chwilę."
   },
   "paywall": {
     "autorenew": "Opłata zostanie pobrana z Twojego konta w momencie potwierdzenia zakupu. Subskrypcja odnawia się automatycznie, chyba że zostanie anulowana co najmniej 24 godziny przed końcem bieżącego okresu. Opłata za odnowienie zostanie pobrana w ciągu 24 godzin przed końcem bieżącego okresu. Subskrypcjami możesz zarządzać w ustawieniach konta {{storeName}}.",
@@ -112,5 +113,14 @@
     "costSingle": "1 AI Credit",
     "costMultiple": "{{count}} AI Credits",
     "renewalUnknown": "Brak danych"
+  },
+  "legal": {
+    "title": "Zanim wejdziesz do chatu AI",
+    "informational": "Ten chat ma charakter informacyjny. Może pomagać w pytaniach o dietę, żywienie, jedzenie i planowanie posiłków.",
+    "medical": "To nie zastępuje porady lekarskiej ani indywidualnej konsultacji medycznej.",
+    "accept": "Rozumiem i akceptuję",
+    "learnMore": "Dane i AI w praktyce",
+    "privacy": "Prawo i prywatność",
+    "composerLocked": "Zaakceptuj zasady, aby wysyłać"
   }
 }

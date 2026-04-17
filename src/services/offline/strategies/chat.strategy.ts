@@ -2,6 +2,7 @@ import NetInfo from "@react-native-community/netinfo";
 import type { ChatMessage, ChatThread } from "@/types";
 import { Sync } from "@/utils/debug";
 import { get } from "@/services/core/apiClient";
+import { isOfflineNetState } from "@/services/core/networkState";
 import { normalizeServiceError } from "@/services/contracts/serviceError";
 import {
   getChatThreadByIdLocal,
@@ -112,7 +113,7 @@ export const chatStrategy: SyncStrategy = {
     const pullLog = log.child("pull:chat");
     const net = await NetInfo.fetch();
     pullLog.log("start", { uid, isConnected: net.isConnected });
-    if (!net.isConnected) {
+    if (isOfflineNetState(net)) {
       pullLog.log("skip:offline");
       return 0;
     }

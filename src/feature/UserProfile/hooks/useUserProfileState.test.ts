@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { useUserProfileState } from "@/feature/UserProfile/hooks/useUserProfileState";
+import type { Badge } from "@/types/badge";
 
 const mockRetryProfileSync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockRefreshUser = jest.fn<(...args: unknown[]) => Promise<void>>();
@@ -8,6 +9,8 @@ const mockEnsurePremiumBadges = jest.fn<(...args: unknown[]) => Promise<void>>()
 const mockAuthLogout = jest.fn<() => Promise<void>>();
 const mockUseAuthContext = jest.fn(() => ({ uid: "u1" }));
 const mockUseNetInfo = jest.fn(() => ({ isConnected: true }));
+let mockIsPremium: boolean | null = false;
+let mockBadges: Badge[] = [];
 
 let mockUserData: Record<string, unknown> | null = {
   uid: "u1",
@@ -44,12 +47,12 @@ jest.mock("@react-native-community/netinfo", () => ({
 }));
 
 jest.mock("@/context/PremiumContext", () => ({
-  usePremiumContext: () => ({ isPremium: false }),
+  usePremiumContext: () => ({ isPremium: mockIsPremium }),
 }));
 
 jest.mock("@/hooks/useBadges", () => ({
   useBadges: () => ({
-    badges: [],
+    badges: mockBadges,
     ensurePremiumBadges: (...args: unknown[]) => mockEnsurePremiumBadges(...args),
   }),
 }));
@@ -77,6 +80,8 @@ describe("feature/UserProfile/useUserProfileState", () => {
     mockRetryProfileSync.mockResolvedValue(undefined);
     mockRefreshUser.mockResolvedValue(undefined);
     mockEnsurePremiumBadges.mockResolvedValue(undefined);
+    mockIsPremium = false;
+    mockBadges = [];
   });
 
   it("logs out through the auth service", async () => {
@@ -125,5 +130,67 @@ describe("feature/UserProfile/useUserProfileState", () => {
     });
 
     expect(mockRefreshUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("hides premium badges when account is not premium", () => {
+    mockIsPremium = false;
+    mockBadges = [
+      {
+        id: "premium_start",
+        type: "premium",
+        label: "Premium started",
+        milestone: "start",
+        icon: "⭐",
+        color: "#F7A541",
+        unlockedAt: 1,
+      },
+      {
+        id: "streak_7",
+        type: "streak",
+        label: "Streak 7",
+        milestone: 7,
+        icon: "🔥",
+        color: "#00AA88",
+        unlockedAt: 2,
+      },
+    ];
+    const navigation = { reset: jest.fn() };
+    const { result } = renderHook(() =>
+      useUserProfileState({ navigation: navigation as never }),
+    );
+
+    expect(result.current.safeBadges).toEqual([
+      expect.objectContaining({ id: "streak_7", type: "streak" }),
+    ]);
+  });
+
+  it("keeps premium badges when account is premium", () => {
+    mockIsPremium = true;
+    mockBadges = [
+      {
+        id: "premium_start",
+        type: "premium",
+        label: "Premium started",
+        milestone: "start",
+        icon: "⭐",
+        color: "#F7A541",
+        unlockedAt: 1,
+      },
+      {
+        id: "streak_7",
+        type: "streak",
+        label: "Streak 7",
+        milestone: 7,
+        icon: "🔥",
+        color: "#00AA88",
+        unlockedAt: 2,
+      },
+    ];
+    const navigation = { reset: jest.fn() };
+    const { result } = renderHook(() =>
+      useUserProfileState({ navigation: navigation as never }),
+    );
+
+    expect(result.current.safeBadges).toEqual(mockBadges);
   });
 });

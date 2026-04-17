@@ -71,7 +71,8 @@ export default function MealPhotoSection({
         </Text>
       </View>
       <AppIcon
-        name="chevron-right"
+        name="chevron"
+        rotation="180deg"
         size={18}
         color={theme.textSecondary}
         style={styles.photoChevron}

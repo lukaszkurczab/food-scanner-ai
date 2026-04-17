@@ -18,6 +18,7 @@ import {
 import AppIcon from "@/components/AppIcon";
 import { useAuthContext } from "@/context/AuthContext";
 import { sendFeedback } from "@/services/feedback/feedbackService";
+import { isOfflineNetState } from "@/services/core/networkState";
 
 type SendFeedbackNavigation = StackNavigationProp<
   RootStackParamList,
@@ -92,7 +93,7 @@ export default function SendFeedbackScreen({
     setStatus(null);
 
     const net = await NetInfo.fetch();
-    if (!net.isConnected) {
+    if (isOfflineNetState(net)) {
       setStatus({
         tone: "warning",
         title: t("noInternet", { defaultValue: "No internet connection" }),

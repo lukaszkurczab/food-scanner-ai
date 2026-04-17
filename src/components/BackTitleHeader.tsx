@@ -56,7 +56,7 @@ export function BackTitleHeader({
           pressed ? styles.iconButtonPressed : null,
         ]}
       >
-        <AppIcon name="arrow-left" size={24} color={theme.text} />
+        <AppIcon name="arrow" size={24} color={theme.text} />
       </Pressable>
 
       <Text

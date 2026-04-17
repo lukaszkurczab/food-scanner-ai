@@ -63,7 +63,12 @@ export default function IngredientListSection({
                 <Text style={styles.ingredientAmount}>
                   {`${formatIngredientAmount(ingredient.amount)}${ingredient.unit ?? "g"}`}
                 </Text>
-                <AppIcon name="chevron-right" size={18} color={theme.textSecondary} />
+                <AppIcon
+                  name="chevron"
+                  rotation="180deg"
+                  size={18}
+                  color={theme.textSecondary}
+                />
               </View>
             </Pressable>
           ))}
@@ -78,10 +83,12 @@ export default function IngredientListSection({
           <Text style={styles.emptyIngredientsDescription}>
             {isManualMode
               ? t("manual_entry_no_ingredients_description", {
-                  defaultValue: "Add the main ingredients for a better estimate.",
+                  defaultValue:
+                    "Add the main ingredients for a better estimate.",
                 })
               : t("review_meal_edit_no_ingredients_description", {
-                  defaultValue: "Add ingredients if you want to refine nutrition.",
+                  defaultValue:
+                    "Add ingredients if you want to refine nutrition.",
                 })}
           </Text>
         </View>
@@ -95,7 +102,9 @@ export default function IngredientListSection({
             : "review_meal_edit_add_first_ingredient",
           {
             defaultValue:
-              ingredients.length > 0 ? "Add ingredient" : "Add first ingredient",
+              ingredients.length > 0
+                ? "Add ingredient"
+                : "Add first ingredient",
           },
         )}
         onPress={() => onOpenIngredientEditor(null)}
@@ -112,7 +121,9 @@ export default function IngredientListSection({
               : "review_meal_edit_add_first_ingredient",
             {
               defaultValue:
-                ingredients.length > 0 ? "Add ingredient" : "Add first ingredient",
+                ingredients.length > 0
+                  ? "Add ingredient"
+                  : "Add first ingredient",
             },
           )}
         </Text>

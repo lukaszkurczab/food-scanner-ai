@@ -186,6 +186,7 @@ describe("TextAnalyzingScreen", () => {
         canGoBack: jest.fn(() => true),
       } as unknown as MealAddScreenProps<"TextAnalyzing">["flow"],
       params: {
+        analysisRequestId: "req-1",
         name: "Kawa z mlekiem",
         quickDescription: "duza kawa z mlekiem 2%",
         retries: 0,
@@ -232,5 +233,70 @@ describe("TextAnalyzingScreen", () => {
     expect(mockExtractIngredientsFromText).toHaveBeenCalledTimes(2);
     expect(applyCreditsFromResponse).toHaveBeenCalledWith(creditsSnapshot);
     expect(setLastScreen).toHaveBeenCalledWith("user-1", "AddMeal");
+  });
+
+  it("runs text analysis once for the same payload across rerenders", async () => {
+    const applyCreditsFromResponse = jest.fn((value: unknown) => value);
+    const refreshCredits = jest.fn(async () => creditsSnapshot);
+    const saveDraft = jest.fn(async (_uid: string, _meal?: Meal | null) => undefined);
+    const setLastScreen = jest.fn(async (_uid: string, _screen: string) => undefined);
+    let currentMeal: Meal | null = null;
+    const setMeal = jest.fn((nextMeal: Meal) => {
+      currentMeal = nextMeal;
+    });
+    const props = {
+      navigation: { navigate: jest.fn() } as never,
+      flow: {
+        goTo: jest.fn(),
+        replace: jest.fn(),
+        goBack: jest.fn(),
+        canGoBack: jest.fn(() => true),
+      } as unknown as MealAddScreenProps<"TextAnalyzing">["flow"],
+      params: {
+        analysisRequestId: "req-2",
+        name: "Kawa",
+        quickDescription: "Kawa z mlekiem i miodem - 300ml",
+        retries: 0,
+      },
+    } as MealAddScreenProps<"TextAnalyzing">;
+
+    mockUseAiCreditsContext.mockReturnValue({
+      applyCreditsFromResponse,
+      refreshCredits,
+    });
+    mockUseMealDraftContext.mockImplementation(() => ({
+      meal: currentMeal,
+      saveDraft,
+      setLastScreen,
+      setMeal,
+    }));
+    mockExtractIngredientsFromText.mockResolvedValue({
+      ingredients: [
+        {
+          id: "ing-1",
+          name: "Kawa z mlekiem i miodem",
+          amount: 300,
+          unit: "ml",
+          protein: 4,
+          fat: 4,
+          carbs: 20,
+          kcal: 140,
+        },
+      ],
+      credits: creditsSnapshot,
+    });
+
+    const view = renderWithTheme(<TextAnalyzingScreen {...props} />);
+
+    await waitFor(() => {
+      expect(props.flow.replace).toHaveBeenCalledWith("ReviewMeal", {});
+    });
+    expect(mockExtractIngredientsFromText).toHaveBeenCalledTimes(1);
+
+    view.rerender(<TextAnalyzingScreen {...props} />);
+
+    await waitFor(() => {
+      expect(mockExtractIngredientsFromText).toHaveBeenCalledTimes(1);
+    });
   });
 });

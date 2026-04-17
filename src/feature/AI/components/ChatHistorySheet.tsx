@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useNetInfo } from "@react-native-community/netinfo";
@@ -75,6 +76,7 @@ export function ChatHistorySheet({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { height: windowHeight } = useWindowDimensions();
   const keyboardDismissMode: "none" | "interactive" | "on-drag" =
     Platform.OS === "ios" ? "interactive" : "on-drag";
   const netInfo = useNetInfo();
@@ -141,7 +143,15 @@ export function ChatHistorySheet({
           })}
         />
 
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+        <View
+          style={[
+            styles.sheet,
+            {
+              paddingBottom: Math.max(insets.bottom, 8),
+              maxHeight: windowHeight - insets.top - theme.spacing.sm,
+            },
+          ]}
+        >
           <View style={styles.dragHandle} />
 
           <View style={styles.headerRow}>
@@ -166,6 +176,7 @@ export function ChatHistorySheet({
           <View style={styles.headerDivider} />
 
           <FlatList
+            style={styles.list}
             data={threads}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
@@ -229,6 +240,11 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       minHeight: "62%",
       paddingHorizontal: theme.spacing.md,
       paddingTop: theme.spacing.sm,
+      flexShrink: 1,
+    },
+    list: {
+      flex: 1,
+      minHeight: 0,
     },
     dragHandle: {
       width: 48,
@@ -285,6 +301,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: theme.spacing.md,
     },
     listContent: {
+      flexGrow: 1,
       paddingBottom: theme.spacing.xl,
     },
     rowGap: {

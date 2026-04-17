@@ -104,11 +104,71 @@ describe("useMealTextAiState", () => {
       await result.current.onAnalyze();
     });
 
-    expect(flow.goTo).toHaveBeenCalledWith("TextAnalyzing", {
-      name: "Chicken and rice",
-      quickDescription: "Chicken and rice with cucumber",
-      retries: 0,
+    expect(flow.goTo).toHaveBeenCalledWith(
+      "TextAnalyzing",
+      expect.objectContaining({
+        analysisRequestId: expect.any(String),
+        name: "Chicken and rice",
+        quickDescription: "Chicken and rice with cucumber",
+        retries: 0,
+      }),
+    );
+  });
+
+  it("disables analyze when credits are not verified yet", () => {
+    mockUseAiCreditsContext.mockReturnValue({
+      credits: null,
+      canAfford: mockCanAfford,
+      refreshCredits: mockRefreshCredits,
+      applyCreditsFromResponse: mockApplyCreditsFromResponse,
     });
+
+    const { result } = renderHook(() =>
+      useMealTextAiState({
+        t: (key: string) => key,
+        language: "en",
+        flow: { goTo: jest.fn() },
+      }),
+    );
+
+    act(() => {
+      result.current.onQuickDescriptionChange("Chicken and rice with cucumber");
+    });
+
+    expect(result.current.analysisState).toBe("credits_unverified");
+    expect(result.current.analyzeDisabled).toBe(true);
+  });
+
+  it("disables analyze when current credits are already insufficient", () => {
+    mockUseAiCreditsContext.mockReturnValue({
+      credits: {
+        userId: "user-1",
+        tier: "free",
+        balance: 0,
+        allocation: 100,
+        periodStartAt: "2026-03-01T00:00:00.000Z",
+        periodEndAt: "2026-04-01T00:00:00.000Z",
+        costs: { chat: 1, textMeal: 1, photo: 5 },
+      },
+      canAfford: mockCanAfford,
+      refreshCredits: mockRefreshCredits,
+      applyCreditsFromResponse: mockApplyCreditsFromResponse,
+    });
+
+    const { result } = renderHook(() =>
+      useMealTextAiState({
+        t: (key: string) => key,
+        language: "en",
+        flow: { goTo: jest.fn() },
+      }),
+    );
+
+    act(() => {
+      result.current.onQuickDescriptionChange("Chicken and rice with cucumber");
+    });
+
+    expect(result.current.analysisState).toBe("insufficient_credits");
+    expect(result.current.analyzeDisabled).toBe(true);
   });
 
   it("restores initial values and opens paywall from the limit modal", () => {
@@ -185,11 +245,15 @@ describe("useMealTextAiState", () => {
 
     expect(mockPost).toHaveBeenCalledWith("/ai/credits/sync-tier", undefined);
     expect(mockRefreshCredits).toHaveBeenCalled();
-    expect(flow.goTo).toHaveBeenCalledWith("TextAnalyzing", {
-      name: "Chicken and rice",
-      quickDescription: "Chicken and rice with cucumber",
-      retries: 0,
-    });
+    expect(flow.goTo).toHaveBeenCalledWith(
+      "TextAnalyzing",
+      expect.objectContaining({
+        analysisRequestId: expect.any(String),
+        name: "Chicken and rice",
+        quickDescription: "Chicken and rice with cucumber",
+        retries: 0,
+      }),
+    );
     expect(result.current.showLimitModal).toBe(false);
   });
 });

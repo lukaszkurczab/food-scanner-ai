@@ -32,13 +32,6 @@ export type SubscriptionActionFeedback = {
   source: Exclude<SubscriptionBusyAction, null>;
 } | null;
 
-const PREMIUM_ACCESS_STATES = new Set<SubscriptionState>([
-  "premium_active",
-  "premium_trial",
-  "premium_grace",
-  "premium_pending_downgrade",
-]);
-
 const PREMIUM_RECOVERY_STATES = new Set<SubscriptionState>([
   "premium_expired",
   "premium_paused",
@@ -108,7 +101,11 @@ export function useManageSubscriptionState(params: {
     isPremiumHint: isPremiumComputed,
   });
 
-  const showManageInStore = PREMIUM_ACCESS_STATES.has(state);
+  const showManageInStore =
+    state === "premium_active"
+    || state === "premium_trial"
+    || state === "premium_grace"
+    || state === "premium_pending_downgrade";
   const showRenew = PREMIUM_RECOVERY_STATES.has(state);
   const showStart = !showManageInStore && !showRenew;
 

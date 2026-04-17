@@ -2,6 +2,7 @@ import NetInfo from "@react-native-community/netinfo";
 import type { Meal } from "@/types/meal";
 import { Sync } from "@/utils/debug";
 import { emit } from "@/services/core/events";
+import { isOfflineNetState } from "@/services/core/networkState";
 import {
   buildMyMealUpdatedCursor,
   fetchMyMealChangesRemote,
@@ -95,7 +96,7 @@ export const myMealsStrategy: SyncStrategy = {
     const pullLog = log.child("pull:mymeals");
     const net = await NetInfo.fetch();
     pullLog.log("start", { uid, isConnected: net.isConnected });
-    if (!net.isConnected) {
+    if (isOfflineNetState(net)) {
       pullLog.log("skip:offline");
       return 0;
     }

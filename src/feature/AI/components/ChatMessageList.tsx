@@ -52,7 +52,6 @@ export function ChatMessageList({
       keyExtractor={(item) => item.id}
       keyboardDismissMode={keyboardDismissMode}
       keyboardShouldPersistTaps="handled"
-      maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
       onEndReachedThreshold={0.4}
       onEndReached={onLoadMore}
       renderItem={({ item }) => (
@@ -93,8 +92,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     listContent: {
       paddingHorizontal: theme.spacing.md,
-      paddingTop: theme.spacing.xl,
-      paddingBottom: theme.spacing.sm,
+      // For inverted lists, paddingTop is rendered near the composer.
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.xl,
     },
     listContentEmpty: {
       flexGrow: 1,

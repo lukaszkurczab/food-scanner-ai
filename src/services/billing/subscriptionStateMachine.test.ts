@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import {
+  hasPremiumAccess,
   isPremiumSubscriptionState,
   mapPremiumToSubscription,
   resolveSubscriptionFromRevenueCat,
@@ -139,5 +140,16 @@ describe("subscriptionStateMachine", () => {
     expect(isPremiumSubscriptionState("premium_trial")).toBe(true);
     expect(isPremiumSubscriptionState("premium_refunded")).toBe(true);
     expect(isPremiumSubscriptionState("free_active")).toBe(false);
+  });
+
+  it("grants premium access only to active premium states", () => {
+    expect(hasPremiumAccess("premium_active")).toBe(true);
+    expect(hasPremiumAccess("premium_trial")).toBe(true);
+    expect(hasPremiumAccess("premium_grace")).toBe(true);
+    expect(hasPremiumAccess("premium_pending_downgrade")).toBe(true);
+    expect(hasPremiumAccess("premium_expired")).toBe(false);
+    expect(hasPremiumAccess("premium_paused")).toBe(false);
+    expect(hasPremiumAccess("premium_refunded")).toBe(false);
+    expect(hasPremiumAccess("free_active")).toBe(false);
   });
 });

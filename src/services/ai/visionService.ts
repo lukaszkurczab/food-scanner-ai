@@ -12,6 +12,7 @@ import {
 import { post } from "@/services/core/apiClient";
 import { handleAiError } from "@/services/ai/handleAiError";
 import type { AiPhotoAnalyzeResponse } from "@/services/ai/contracts";
+import { isOfflineNetState } from "@/services/core/networkState";
 
 const log = debugScope("Vision");
 const AI_UNAVAILABLE_CODE = "ai/unavailable";
@@ -85,7 +86,7 @@ export async function detectIngredientsWithVision(
   }
 
   const net = await NetInfo.fetch();
-  if (!net.isConnected) {
+  if (isOfflineNetState(net)) {
     log.warn("blocked Vision call: offline");
     throw createServiceError({
       code: "offline",
