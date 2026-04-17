@@ -29,11 +29,22 @@ export function Drawer({ open, onClose, width, children }: Props) {
   const x = useRef(new Animated.Value(-w)).current;
 
   useEffect(() => {
-    Animated.timing(x, {
+    // Keep tests deterministic: avoid async native animation scheduling in Jest.
+    if (process.env.NODE_ENV === "test") {
+      x.setValue(open ? 0 : -w);
+      return;
+    }
+
+    const animation = Animated.timing(x, {
       toValue: open ? 0 : -w,
       duration: 220,
       useNativeDriver: true,
-    }).start();
+    });
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
   }, [open, w, x]);
 
   return (
