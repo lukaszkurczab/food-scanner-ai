@@ -8,7 +8,7 @@ import path from "node:path";
 import readinessLib from "./check-launch-readiness.lib.js";
 
 const TARGET_ANDROID_APP_ID = "com.lkurczab.fitaly";
-const TARGET_IOS_APP_ID = "com.lkurczab.fitaly";
+const TARGET_IOS_APP_ID = "com.lkurczab.foodscannerai";
 const MIN_ANDROID_TARGET_SDK = 35;
 const { PRODUCTION_BUILD_PROFILE, validateEasApiBaseUrlProfiles } =
   readinessLib;
