@@ -4,7 +4,7 @@ import type { UserData } from "@/types";
 import { assertNoUndefined } from "@/utils/findUndefined";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { emit, on } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
 import {

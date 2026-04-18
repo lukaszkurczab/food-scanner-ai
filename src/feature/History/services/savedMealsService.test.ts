@@ -34,7 +34,7 @@ let emitFirstPage:
     }) => void)
   | null = null;
 
-jest.mock("expo-file-system", () => ({
+jest.mock("expo-file-system/legacy", () => ({
   getInfoAsync: (path: string) => mockGetInfoAsync(path),
 }));
 

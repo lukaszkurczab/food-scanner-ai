@@ -127,7 +127,7 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   },
 }));
 
-jest.mock("expo-file-system", () => ({
+jest.mock("expo-file-system/legacy", () => ({
   documentDirectory: "file:///docs/",
   getInfoAsync: (...args: unknown[]) => mockFsGetInfoAsync(...args),
   makeDirectoryAsync: (...args: unknown[]) => mockFsMakeDirectoryAsync(...args),

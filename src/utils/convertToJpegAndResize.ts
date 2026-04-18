@@ -1,5 +1,5 @@
 import * as ImageManipulator from "expo-image-manipulator";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { Image } from "react-native";
 
 type TargetOpts = {
@@ -43,7 +43,7 @@ async function ensureDir(path: string) {
 
 async function getFileBytes(uri: string): Promise<number> {
   try {
-    const info = await FileSystem.getInfoAsync(uri, { size: true });
+    const info = await FileSystem.getInfoAsync(uri);
     return info.exists ? info.size ?? 0 : 0;
   } catch {
     return 0;

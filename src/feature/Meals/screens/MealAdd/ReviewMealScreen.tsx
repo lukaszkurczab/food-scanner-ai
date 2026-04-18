@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import {

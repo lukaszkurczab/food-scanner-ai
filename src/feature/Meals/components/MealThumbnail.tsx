@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { useTheme } from "@/theme/useTheme";
 import type { Meal } from "@/types/meal";
 import { FallbackImage } from "@/feature/History/components/FallbackImage";

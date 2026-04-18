@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { UserData } from "@/types";
 import { savePhotoLocally } from "@utils/savePhotoLocally";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { enqueueUserAvatarUpload } from "@/services/offline/queue.repo";
 import { on } from "@/services/core/events";
 import { logError, logWarning } from "@/services/core/errorLogger";
@@ -54,7 +54,7 @@ async function cacheAvatarFromRemote(
     null;
   const onAbort = () => {
     if (!downloadResumable) return;
-    void downloadResumable.pauseAsync().catch((error) => {
+    void downloadResumable.pauseAsync().catch((error: unknown) => {
       logWarning("avatar download pause failed", null, error);
     });
   };

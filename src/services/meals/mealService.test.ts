@@ -7,7 +7,7 @@ import {
   jest,
 } from "@jest/globals";
 import type { Meal } from "@/types/meal";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import {
   deleteMealInFirestore,
   getMealsPageFiltered,
@@ -61,7 +61,7 @@ jest.mock("@/services/core/events", () => ({
     mockEmit(event, payload),
 }));
 
-jest.mock("expo-file-system", () => ({
+jest.mock("expo-file-system/legacy", () => ({
   documentDirectory: "file:///docs/",
   getInfoAsync: jest.fn(),
   makeDirectoryAsync: jest.fn(),

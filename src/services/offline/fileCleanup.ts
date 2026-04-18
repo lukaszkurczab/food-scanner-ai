@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 
 function buildUserDir(base: string, segment: string, uid: string): string {
   const normalizedBase = base.endsWith("/") ? base : `${base}/`;

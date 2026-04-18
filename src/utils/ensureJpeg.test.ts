@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import * as ImageManipulator from "expo-image-manipulator";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { convertToJpeg } from "@/utils/ensureJpeg";
 
 jest.mock("expo-image-manipulator", () => ({
@@ -10,7 +10,7 @@ jest.mock("expo-image-manipulator", () => ({
   },
 }));
 
-jest.mock("expo-file-system", () => ({
+jest.mock("expo-file-system/legacy", () => ({
   documentDirectory: "file:///docs/",
   makeDirectoryAsync: jest.fn(),
   copyAsync: jest.fn(),

@@ -11,12 +11,8 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   runOnJS,
-  useAnimatedGestureHandler,
 } from "react-native-reanimated";
-import {
-  PanGestureHandler,
-  PanGestureHandlerGestureEvent,
-} from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useTheme } from "@/theme/useTheme";
 
 type RangeSliderProps = {
@@ -28,8 +24,6 @@ type RangeSliderProps = {
   onChange: (next: [number, number]) => void;
   disabled?: boolean;
 };
-
-type Ctx = { startX: number };
 
 const THUMB_RADIUS = 12;
 
@@ -50,6 +44,8 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
 
   const leftX = useSharedValue(0);
   const rightX = useSharedValue(0);
+  const leftStartX = useSharedValue(0);
+  const rightStartX = useSharedValue(0);
 
   useEffect(() => {
     if (!trackW) return;
@@ -94,17 +90,15 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     return v;
   };
 
-  const onLeftGesture = useAnimatedGestureHandler<
-    PanGestureHandlerGestureEvent,
-    Ctx
-  >({
-    onStart: (_, ctx) => {
-      ctx.startX = leftX.value;
-    },
-    onActive: (e, ctx) => {
+  const onLeftGesture = Gesture.Pan()
+    .enabled(!disabled)
+    .onBegin(() => {
+      leftStartX.value = leftX.value;
+    })
+    .onUpdate((e) => {
       if (disabled) return;
 
-      let x = ctx.startX + e.translationX;
+      let x = leftStartX.value + e.translationX;
       if (x < 0) x = 0;
       if (x > rightX.value) x = rightX.value;
 
@@ -113,20 +107,17 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
       const lVal = calcVal(x, min, max, step, trackWAnim.value);
       const rVal = calcVal(rightX.value, min, max, step, trackWAnim.value);
       runOnJS(onChange)([lVal, rVal]);
-    },
-  });
+    });
 
-  const onRightGesture = useAnimatedGestureHandler<
-    PanGestureHandlerGestureEvent,
-    Ctx
-  >({
-    onStart: (_, ctx) => {
-      ctx.startX = rightX.value;
-    },
-    onActive: (e, ctx) => {
+  const onRightGesture = Gesture.Pan()
+    .enabled(!disabled)
+    .onBegin(() => {
+      rightStartX.value = rightX.value;
+    })
+    .onUpdate((e) => {
       if (disabled) return;
 
-      let x = ctx.startX + e.translationX;
+      let x = rightStartX.value + e.translationX;
       if (x < leftX.value) x = leftX.value;
       if (x > trackWAnim.value) x = trackWAnim.value;
 
@@ -135,8 +126,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
       const lVal = calcVal(leftX.value, min, max, step, trackWAnim.value);
       const rVal = calcVal(x, min, max, step, trackWAnim.value);
       runOnJS(onChange)([lVal, rVal]);
-    },
-  });
+    });
 
   const onTrackPress = (evt: { nativeEvent: { locationX: number } }) => {
     if (disabled || !trackW) return;
@@ -204,7 +194,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
         <Animated.View style={[styles.fill, fillStyle]} />
 
         <View style={styles.overlay}>
-          <PanGestureHandler enabled={!disabled} onGestureEvent={onLeftGesture}>
+          <GestureDetector gesture={onLeftGesture}>
             <Animated.View
               style={[
                 styles.thumb,
@@ -212,12 +202,9 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
                 disabled && styles.thumbDisabled,
               ]}
             />
-          </PanGestureHandler>
+          </GestureDetector>
 
-          <PanGestureHandler
-            enabled={!disabled}
-            onGestureEvent={onRightGesture}
-          >
+          <GestureDetector gesture={onRightGesture}>
             <Animated.View
               style={[
                 styles.thumb,
@@ -225,7 +212,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
                 disabled && styles.thumbDisabled,
               ]}
             />
-          </PanGestureHandler>
+          </GestureDetector>
         </View>
       </Pressable>
 

@@ -11,6 +11,13 @@ import {
   cancelAllReminderScheduling,
 } from "@/services/reminders/reminderScheduling";
 
+function isNotificationPermissionGranted(
+  permission: Notifications.NotificationPermissionsStatus,
+): boolean {
+  const maybeGranted = permission as { granted?: boolean; status?: string };
+  return maybeGranted.granted === true || maybeGranted.status === "granted";
+}
+
 export function useNotificationsScreenState(uid: string | null) {
   const {
     items,
@@ -41,11 +48,12 @@ export function useNotificationsScreenState(uid: string | null) {
       setSmartRemindersEnabled(!!smartReminders.enabled);
       setStatsEnabled(!!stats.enabled);
       const perm = await Notifications.getPermissionsAsync();
-      setSystemAllowed(!!perm.granted);
-      if (perm.granted && Platform.OS === "android") {
+      const isGranted = isNotificationPermissionGranted(perm);
+      setSystemAllowed(isGranted);
+      if (isGranted && Platform.OS === "android") {
         await ensureAndroidChannel();
       }
-      if (perm.granted) {
+      if (isGranted) {
         await reconcileAll(uid);
       }
     })();
@@ -99,7 +107,7 @@ export function useNotificationsScreenState(uid: string | null) {
   const requestSystemPermission = useCallback(async (): Promise<boolean> => {
     try {
       const res = await Notifications.requestPermissionsAsync();
-      const granted = !!res.granted;
+      const granted = isNotificationPermissionGranted(res);
       setSystemAllowed(granted);
       if (granted && Platform.OS === "android") {
         await ensureAndroidChannel();

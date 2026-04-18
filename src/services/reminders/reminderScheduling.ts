@@ -91,6 +91,13 @@ function resolveScheduledDate(
   return when;
 }
 
+function isNotificationPermissionGranted(
+  permission: Notifications.NotificationPermissionsStatus,
+): boolean {
+  const maybeGranted = permission as { granted?: boolean; status?: string };
+  return maybeGranted.granted === true || maybeGranted.status === "granted";
+}
+
 function getLocalMinuteOfDay(date: Date): number {
   return date.getHours() * 60 + date.getMinutes();
 }
@@ -219,7 +226,7 @@ export async function reconcileReminderScheduling(
   }
 
   const permission = await Notifications.getPermissionsAsync();
-  if (!permission.granted) {
+  if (!isNotificationPermissionGranted(permission)) {
     await clearAndCancel(localKey);
     emitSmartReminderTelemetry(
       trackSmartReminderScheduleFailed({

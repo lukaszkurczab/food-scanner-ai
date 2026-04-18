@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import { getMealImage, pickMealPhotoUri } from "@/utils/mealImage";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { ensureLocalMealPhoto } from "@/services/meals/mealService.images";
 
-jest.mock("expo-file-system", () => ({
+jest.mock("expo-file-system/legacy", () => ({
   getInfoAsync: jest.fn(),
 }));
 

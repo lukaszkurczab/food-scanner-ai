@@ -5,12 +5,8 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   runOnJS,
-  useAnimatedGestureHandler,
 } from "react-native-reanimated";
-import {
-  PanGestureHandler,
-  PanGestureHandlerGestureEvent,
-} from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useTheme } from "@/theme/useTheme";
 
 type SliderProps = {
@@ -21,8 +17,6 @@ type SliderProps = {
   step?: number;
   disabled?: boolean;
 };
-
-type ContextType = { startX: number };
 
 const THUMB_SIZE = 24;
 const THUMB_RADIUS = THUMB_SIZE / 2;
@@ -42,6 +36,7 @@ export function Slider({
   const [trackWidth, setTrackWidth] = useState(1);
   const trackWidthAnim = useSharedValue(1);
   const thumbX = useSharedValue(0);
+  const gestureStartX = useSharedValue(0);
 
   useEffect(() => {
     if (!trackWidth) return;
@@ -58,17 +53,15 @@ export function Slider({
     width: thumbX.value,
   }));
 
-  const gestureHandler = useAnimatedGestureHandler<
-    PanGestureHandlerGestureEvent,
-    ContextType
-  >({
-    onStart: (_, ctx) => {
-      ctx.startX = thumbX.value;
-    },
-    onActive: (event, ctx) => {
+  const gesture = Gesture.Pan()
+    .enabled(!disabled)
+    .onBegin(() => {
+      gestureStartX.value = thumbX.value;
+    })
+    .onUpdate((event) => {
       if (disabled) return;
 
-      let x = ctx.startX + event.translationX;
+      let x = gestureStartX.value + event.translationX;
       x = Math.max(0, Math.min(trackWidthAnim.value, x));
       thumbX.value = x;
 
@@ -80,8 +73,7 @@ export function Slider({
       val = Math.max(minimumValue, Math.min(maximumValue, val));
 
       runOnJS(onValueChange)(val);
-    },
-  });
+    });
 
   const handleTrackPress = (evt: { nativeEvent: { locationX: number } }) => {
     if (disabled || !trackWidth) return;
@@ -119,10 +111,7 @@ export function Slider({
         <Animated.View style={[styles.filled, fillStyle]} />
 
         <View style={styles.trackOverlay}>
-          <PanGestureHandler
-            enabled={!disabled}
-            onGestureEvent={gestureHandler}
-          >
+          <GestureDetector gesture={gesture}>
             <Animated.View
               style={[
                 styles.thumb,
@@ -131,7 +120,7 @@ export function Slider({
               ]}
               pointerEvents={disabled ? "none" : "auto"}
             />
-          </PanGestureHandler>
+          </GestureDetector>
         </View>
       </Pressable>
     </View>

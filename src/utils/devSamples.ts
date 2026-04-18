@@ -1,5 +1,5 @@
 import { Asset } from "expo-asset";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const SAMPLE_MEAL = require("../../assets/sampleMeal.jpg");

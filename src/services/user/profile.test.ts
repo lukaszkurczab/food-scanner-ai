@@ -61,7 +61,7 @@ jest.mock("@react-native-firebase/auth", () => ({
   updatePassword: jest.fn(),
 }));
 
-jest.mock("expo-file-system", () => ({
+jest.mock("expo-file-system/legacy", () => ({
   documentDirectory: "file:///docs/",
   createDownloadResumable: jest.fn(),
   writeAsStringAsync: jest.fn(),
