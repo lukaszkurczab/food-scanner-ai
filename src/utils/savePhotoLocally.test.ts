@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "@/services/core/fileSystem";
 import { deletePhotoLocally, savePhotoLocally } from "@/utils/savePhotoLocally";
 
-jest.mock("expo-file-system/legacy", () => ({
+jest.mock("@/services/core/fileSystem", () => ({
   documentDirectory: "file:///docs/",
   getInfoAsync: jest.fn(),
   makeDirectoryAsync: jest.fn(),

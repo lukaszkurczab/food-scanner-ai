@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { Asset } from "expo-asset";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "@/services/core/fileSystem";
 import { getSampleMealUri, getSampleTableUri } from "@/utils/devSamples";
 
 jest.mock("expo-asset", () => ({
@@ -9,7 +9,7 @@ jest.mock("expo-asset", () => ({
   },
 }));
 
-jest.mock("expo-file-system/legacy", () => ({
+jest.mock("@/services/core/fileSystem", () => ({
   cacheDirectory: "file:///cache/",
   copyAsync: jest.fn(),
 }));

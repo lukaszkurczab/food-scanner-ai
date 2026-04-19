@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "@/services/core/fileSystem";
 
 type SaveArgs = {
   userUid: string;

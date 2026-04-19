@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackHandler } from "react-native";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "@/services/core/fileSystem";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import type { Meal } from "@/types/meal";
 import type { RootStackParamList } from "@/navigation/navigate";

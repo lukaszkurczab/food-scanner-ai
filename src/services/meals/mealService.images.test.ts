@@ -27,7 +27,7 @@ jest.mock("expo-image-manipulator", () => ({
   SaveFormat: { JPEG: "jpeg" },
 }));
 
-jest.mock("expo-file-system/legacy", () => ({
+jest.mock("@/services/core/fileSystem", () => ({
   documentDirectory: "file:///docs/",
   cacheDirectory: "file:///cache/",
   getInfoAsync: (...args: unknown[]) => mockGetInfoAsync(...args),

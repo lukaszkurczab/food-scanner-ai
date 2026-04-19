@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "@/services/core/fileSystem";
 import { uriToBase64 } from "@/utils/uriToBase64";
 
-jest.mock("expo-file-system/legacy", () => ({
+jest.mock("@/services/core/fileSystem", () => ({
   cacheDirectory: "file:///cache/",
   copyAsync: jest.fn(),
   readAsStringAsync: jest.fn(),

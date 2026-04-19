@@ -31,7 +31,7 @@ const mockUseMeals = jest.fn();
 const mockGetInfoAsync = jest.fn<(uri: string) => Promise<{ exists: boolean }>>();
 const mockBackHandlerAddEventListener = jest.fn();
 
-jest.mock("expo-file-system/legacy", () => ({
+jest.mock("@/services/core/fileSystem", () => ({
   getInfoAsync: (uri: string) => mockGetInfoAsync(uri),
 }));
 

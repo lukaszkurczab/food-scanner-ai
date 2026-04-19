@@ -1,5 +1,6 @@
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
+import type { ReactTestInstance } from "react-test-renderer";
 import { Calendar } from "@/components/Calendar";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
@@ -13,14 +14,7 @@ const START = new Date(2026, 0, 10);
 const END = new Date(2026, 0, 10);
 
 const findDayCells = (root: {
-  findAll: (
-    predicate: (node: {
-      props: {
-        accessibilityRole?: unknown;
-        accessibilityLabel?: unknown;
-      };
-    }) => boolean,
-  ) => Array<{ props: { disabled?: unknown } }>;
+  findAll: (predicate: (node: ReactTestInstance) => boolean) => ReactTestInstance[];
 }) =>
   root.findAll(
     (node) =>

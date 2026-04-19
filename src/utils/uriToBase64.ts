@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "@/services/core/fileSystem";
 
 export async function uriToBase64(uri: string): Promise<string> {
   let src = uri;

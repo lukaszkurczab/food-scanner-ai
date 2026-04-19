@@ -13,7 +13,7 @@ import { FallbackImage } from "../feature/History/components/FallbackImage";
 import { MacroChip } from "@/components/MacroChip";
 import type { Meal } from "@/types/meal";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "@/services/core/fileSystem";
 import { useTranslation } from "react-i18next";
 import AppIcon from "@/components/AppIcon";
 import { ensureLocalMealPhoto } from "@/services/meals/mealService.images";

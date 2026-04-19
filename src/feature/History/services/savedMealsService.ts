@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "@/services/core/fileSystem";
 import type { Meal, MealType } from "@/types/meal";
 import { emit } from "@/services/core/events";
 import {

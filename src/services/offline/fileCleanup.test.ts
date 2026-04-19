@@ -8,7 +8,7 @@ const mockDeleteAsync = jest.fn<
   (path: string, options?: { idempotent?: boolean }) => Promise<void>
 >();
 
-jest.mock("expo-file-system/legacy", () => ({
+jest.mock("@/services/core/fileSystem", () => ({
   documentDirectory: "file:///docs/",
   cacheDirectory: "file:///cache/",
   deleteAsync: (...args: [string, { idempotent?: boolean }?]) =>

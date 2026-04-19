@@ -46,7 +46,7 @@ jest.mock("@/utils/calculateTotalNutrients", () => ({
   }),
 }));
 
-jest.mock("expo-file-system/legacy", () => ({
+jest.mock("@/services/core/fileSystem", () => ({
   getInfoAsync: (uri: string) => mockGetInfoAsync(uri),
 }));
 

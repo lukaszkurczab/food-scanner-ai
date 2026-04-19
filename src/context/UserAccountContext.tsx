@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo } from "react";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "@/services/core/fileSystem";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";

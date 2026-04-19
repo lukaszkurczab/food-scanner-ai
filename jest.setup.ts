@@ -43,14 +43,26 @@ jest.mock("expo-file-system", () => ({
   downloadAsync: jest.fn(async () => ({ uri: "file:///mock-download.jpg" })),
 }));
 
-jest.mock("expo-file-system/legacy", () => ({
+jest.mock("@/services/core/fileSystem", () => ({
   __esModule: true,
   documentDirectory: "file:///mock-documents/",
   cacheDirectory: "file:///mock-cache/",
+  EncodingType: {
+    UTF8: "utf8",
+    Base64: "base64",
+  },
   getInfoAsync: jest.fn(async () => ({ exists: true })),
   makeDirectoryAsync: jest.fn(async () => undefined),
   copyAsync: jest.fn(async () => undefined),
+  moveAsync: jest.fn(async () => undefined),
+  deleteAsync: jest.fn(async () => undefined),
+  writeAsStringAsync: jest.fn(async () => undefined),
   downloadAsync: jest.fn(async () => ({ uri: "file:///mock-download.jpg" })),
+  createDownloadResumable: jest.fn(() => ({
+    downloadAsync: jest.fn(async () => ({ uri: "file:///mock-download.jpg", status: 200 })),
+    pauseAsync: jest.fn(async () => undefined),
+  })),
+  StorageAccessFramework: null,
   readAsStringAsync: jest.fn(async () => ""),
 }));
 
