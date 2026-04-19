@@ -56,6 +56,7 @@ export function Drawer({ open, onClose, width, children }: Props) {
     >
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <Pressable
+          testID="drawer-backdrop"
           style={[
             styles.backdrop,
             { backgroundColor: theme.background ?? "rgba(0,0,0,0.45)" },

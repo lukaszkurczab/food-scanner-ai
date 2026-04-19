@@ -103,6 +103,7 @@ export function Slider({
   return (
     <View style={styles.container}>
       <Pressable
+        accessibilityRole="button"
         style={[styles.track, disabled && styles.trackDisabled]}
         onPress={handleTrackPress}
         onLayout={onTrackLayout}

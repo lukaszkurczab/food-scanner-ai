@@ -1,4 +1,4 @@
-import { Pressable, Text } from "react-native";
+import { Text } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import { Drawer } from "@/components/Drawer";
@@ -31,13 +31,13 @@ describe("Drawer", () => {
 
   it("calls onClose when backdrop is pressed", () => {
     const onClose = jest.fn();
-    const { UNSAFE_getAllByType } = renderWithTheme(
+    const { getByTestId } = renderWithTheme(
       <Drawer open onClose={onClose}>
         <Text>drawer-content</Text>
       </Drawer>,
     );
 
-    const backdrop = UNSAFE_getAllByType(Pressable)[0];
+    const backdrop = getByTestId("drawer-backdrop");
     fireEvent.press(backdrop);
     expect(onClose).toHaveBeenCalledTimes(1);
   });

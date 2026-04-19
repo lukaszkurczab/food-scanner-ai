@@ -186,6 +186,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
       </View>
 
       <Pressable
+        accessibilityRole="button"
         onLayout={onTrackLayout}
         onPress={onTrackPress}
         disabled={disabled}

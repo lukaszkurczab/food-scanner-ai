@@ -1,4 +1,3 @@
-import { Pressable } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import { DateRangePicker } from "@/components/DateRangePicker";
@@ -36,7 +35,7 @@ describe("DateRangePicker", () => {
   });
 
   it("applies pressed styles to the picker field", () => {
-    const { UNSAFE_getByType } = renderWithTheme(
+    const { UNSAFE_root } = renderWithTheme(
       <DateRangePicker
         startDate={new Date(2026, 0, 5)}
         endDate={new Date(2026, 0, 10)}
@@ -44,7 +43,13 @@ describe("DateRangePicker", () => {
       />,
     );
 
-    const pressedStyles = UNSAFE_getByType(Pressable).props.style({
+    const pickerField = UNSAFE_root.find(
+      (node) =>
+        node.props.accessibilityRole === "button" &&
+        node.props.accessibilityLabel === "translated:dateRange.set" &&
+        typeof node.props.style === "function",
+    );
+    const pressedStyles = pickerField.props.style({
       pressed: true,
     });
 

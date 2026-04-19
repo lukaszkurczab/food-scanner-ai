@@ -1,4 +1,3 @@
-import { Pressable } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import WeekStrip from "@/components/WeekStrip";
@@ -70,14 +69,19 @@ describe("WeekStrip", () => {
 
   it("applies pressed styles for day cells", () => {
     const days = [{ date: new Date(2026, 0, 1), label: "M", isToday: false }];
-    const { UNSAFE_getAllByType } = renderWithTheme(
+    const { UNSAFE_root } = renderWithTheme(
       <WeekStrip
         days={days}
         selectedDate={days[0].date}
         onSelect={() => undefined}
       />,
     );
-    const [dayPressable] = UNSAFE_getAllByType(Pressable);
+    const dayPressable = UNSAFE_root.find(
+      (node) =>
+        node.props.accessibilityRole === "button" &&
+        node.props.accessibilityLabel === "M 01" &&
+        typeof node.props.style === "function",
+    );
 
     const dayStyles = dayPressable.props.style({ pressed: true });
 

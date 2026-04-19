@@ -166,6 +166,7 @@ module.exports = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   testMatch: ["<rootDir>/src/**/*.test.ts?(x)"],
   moduleNameMapper: {
+    "^uuid$": require.resolve("uuid"),
     "^expo/virtual/env$": "<rootDir>/src/test-utils/expoVirtualEnvMock.ts",
     "\\.svg$": "<rootDir>/src/test-utils/svgMock.tsx",
     "^@/(.*)$": "<rootDir>/src/$1",

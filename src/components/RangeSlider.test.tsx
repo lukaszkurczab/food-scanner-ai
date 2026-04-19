@@ -1,12 +1,21 @@
 import type { ReactNode } from "react";
-import { Pressable } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import { RangeSlider } from "@/components/RangeSlider";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 jest.mock("react-native-gesture-handler", () => ({
-  PanGestureHandler: ({ children }: { children?: ReactNode }) => {
+  Gesture: {
+    Pan: () => {
+      const chain = {
+        enabled: () => chain,
+        onBegin: () => chain,
+        onUpdate: () => chain,
+      };
+      return chain;
+    },
+  },
+  GestureDetector: ({ children }: { children?: ReactNode }) => {
     const { createElement } =
       jest.requireActual<typeof import("react")>("react");
     const { View } =
@@ -44,7 +53,7 @@ jest.mock("react-native-reanimated", () => {
 describe("RangeSlider", () => {
   it("renders labels and updates nearest bound on track press", () => {
     const onChange = jest.fn();
-    const { getByText, UNSAFE_getAllByType } = renderWithTheme(
+    const { getByRole, getByText } = renderWithTheme(
       <RangeSlider
         label="macro-range"
         min={0}
@@ -60,7 +69,7 @@ describe("RangeSlider", () => {
     expect(getByText("0")).toBeTruthy();
     expect(getByText("100")).toBeTruthy();
 
-    const track = UNSAFE_getAllByType(Pressable)[0];
+    const track = getByRole("button");
     fireEvent(track, "layout", { nativeEvent: { layout: { width: 100 } } });
     fireEvent.press(track, { nativeEvent: { locationX: 25 } });
 
@@ -69,7 +78,7 @@ describe("RangeSlider", () => {
 
   it("does not emit changes when disabled", () => {
     const onChange = jest.fn();
-    const { UNSAFE_getAllByType } = renderWithTheme(
+    const { getByRole } = renderWithTheme(
       <RangeSlider
         min={0}
         max={100}
@@ -79,7 +88,7 @@ describe("RangeSlider", () => {
       />,
     );
 
-    const track = UNSAFE_getAllByType(Pressable)[0];
+    const track = getByRole("button");
     fireEvent(track, "layout", { nativeEvent: { layout: { width: 100 } } });
     fireEvent.press(track, { nativeEvent: { locationX: 60 } });
 

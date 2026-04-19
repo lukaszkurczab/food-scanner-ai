@@ -177,7 +177,7 @@ describe("convertToJpegAndResize", () => {
       { compress: 0.75, format: ImageManipulator.SaveFormat.JPEG },
     );
     expect(getInfoAsyncMock).toHaveBeenCalledTimes(1);
-    expect(getInfoAsyncMock).toHaveBeenCalledWith("file:///tmp/initial.jpg", { size: true });
+    expect(getInfoAsyncMock).toHaveBeenCalledWith("file:///tmp/initial.jpg");
   });
 
   it("tries fallback compression steps in order when output exceeds maxBytes", async () => {
@@ -234,18 +234,10 @@ describe("convertToJpegAndResize", () => {
       { compress: 0.4, format: ImageManipulator.SaveFormat.JPEG },
     );
     expect(getInfoAsyncMock).toHaveBeenCalledTimes(4);
-    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(1, "file:///tmp/step-0.jpg", {
-      size: true,
-    });
-    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(2, "file:///tmp/step-1.jpg", {
-      size: true,
-    });
-    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(3, "file:///tmp/step-2.jpg", {
-      size: true,
-    });
-    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(4, "file:///tmp/step-3.jpg", {
-      size: true,
-    });
+    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(1, "file:///tmp/step-0.jpg");
+    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(2, "file:///tmp/step-1.jpg");
+    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(3, "file:///tmp/step-2.jpg");
+    expect(getInfoAsyncMock).toHaveBeenNthCalledWith(4, "file:///tmp/step-3.jpg");
   });
 
   it("returns best available image when all fallback outputs still exceed maxBytes", async () => {

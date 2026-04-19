@@ -43,6 +43,17 @@ jest.mock("expo-file-system", () => ({
   downloadAsync: jest.fn(async () => ({ uri: "file:///mock-download.jpg" })),
 }));
 
+jest.mock("expo-file-system/legacy", () => ({
+  __esModule: true,
+  documentDirectory: "file:///mock-documents/",
+  cacheDirectory: "file:///mock-cache/",
+  getInfoAsync: jest.fn(async () => ({ exists: true })),
+  makeDirectoryAsync: jest.fn(async () => undefined),
+  copyAsync: jest.fn(async () => undefined),
+  downloadAsync: jest.fn(async () => ({ uri: "file:///mock-download.jpg" })),
+  readAsStringAsync: jest.fn(async () => ""),
+}));
+
 jest.mock("@react-native-firebase/app", () => ({
   __esModule: true,
   getApp: jest.fn(() => ({ name: "mock-app" })),

@@ -1,4 +1,3 @@
-import { Pressable } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import { Calendar } from "@/components/Calendar";
@@ -13,11 +12,27 @@ jest.mock("react-i18next", () => ({
 const START = new Date(2026, 0, 10);
 const END = new Date(2026, 0, 10);
 
+const findDayCells = (root: {
+  findAll: (
+    predicate: (node: {
+      props: {
+        accessibilityRole?: unknown;
+        accessibilityLabel?: unknown;
+      };
+    }) => boolean,
+  ) => Array<{ props: { disabled?: unknown } }>;
+}) =>
+  root.findAll(
+    (node) =>
+      node.props.accessibilityRole === "button" &&
+      node.props.accessibilityLabel === undefined,
+  );
+
 describe("Calendar", () => {
   it("calls range handlers in range mode", () => {
     const onChangeRange = jest.fn();
     const onToggleFocus = jest.fn();
-    const { UNSAFE_getAllByType } = renderWithTheme(
+    const { UNSAFE_root } = renderWithTheme(
       <Calendar
         startDate={START}
         endDate={END}
@@ -27,9 +42,8 @@ describe("Calendar", () => {
       />,
     );
 
-    const pressables = UNSAFE_getAllByType(Pressable);
-    const cells = pressables.slice(2);
-    const firstEnabled = cells.find((node) => !node.props.disabled);
+    const cells = findDayCells(UNSAFE_root);
+    const firstEnabled = cells.find((node) => !Boolean(node.props.disabled));
     if (!firstEnabled) throw new Error("Expected at least one enabled day cell");
 
     fireEvent.press(firstEnabled);
@@ -45,7 +59,7 @@ describe("Calendar", () => {
   it("calls single picker callback in single mode", () => {
     const onPickSingle = jest.fn();
     const onChangeRange = jest.fn();
-    const { UNSAFE_getAllByType } = renderWithTheme(
+    const { UNSAFE_root } = renderWithTheme(
       <Calendar
         startDate={START}
         endDate={END}
@@ -56,9 +70,8 @@ describe("Calendar", () => {
       />,
     );
 
-    const pressables = UNSAFE_getAllByType(Pressable);
-    const cells = pressables.slice(2);
-    const firstEnabled = cells.find((node) => !node.props.disabled);
+    const cells = findDayCells(UNSAFE_root);
+    const firstEnabled = cells.find((node) => !Boolean(node.props.disabled));
     if (!firstEnabled) throw new Error("Expected at least one enabled day cell");
 
     fireEvent.press(firstEnabled);
@@ -70,7 +83,7 @@ describe("Calendar", () => {
 
   it("does not emit range updates when all visible days are disabled", () => {
     const onChangeRange = jest.fn();
-    const { UNSAFE_getAllByType } = renderWithTheme(
+    const { UNSAFE_root } = renderWithTheme(
       <Calendar
         startDate={START}
         endDate={END}
@@ -81,8 +94,7 @@ describe("Calendar", () => {
       />,
     );
 
-    const pressables = UNSAFE_getAllByType(Pressable);
-    const cells = pressables.slice(2);
+    const cells = findDayCells(UNSAFE_root);
     fireEvent.press(cells[0]);
 
     expect(onChangeRange).not.toHaveBeenCalled();

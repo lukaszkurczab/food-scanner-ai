@@ -1,12 +1,21 @@
 import type { ReactNode } from "react";
-import { Pressable } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import { Slider } from "@/components/Slider";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 jest.mock("react-native-gesture-handler", () => ({
-  PanGestureHandler: ({ children }: { children?: ReactNode }) => {
+  Gesture: {
+    Pan: () => {
+      const chain = {
+        enabled: () => chain,
+        onBegin: () => chain,
+        onUpdate: () => chain,
+      };
+      return chain;
+    },
+  },
+  GestureDetector: ({ children }: { children?: ReactNode }) => {
     const { createElement } =
       jest.requireActual<typeof import("react")>("react");
     const { View } =
@@ -44,7 +53,7 @@ jest.mock("react-native-reanimated", () => {
 describe("Slider", () => {
   it("updates value from track press", () => {
     const onValueChange = jest.fn();
-    const { UNSAFE_getAllByType } = renderWithTheme(
+    const { getByRole } = renderWithTheme(
       <Slider
         value={20}
         minimumValue={0}
@@ -54,7 +63,7 @@ describe("Slider", () => {
       />,
     );
 
-    const track = UNSAFE_getAllByType(Pressable)[0];
+    const track = getByRole("button");
     fireEvent(track, "layout", { nativeEvent: { layout: { width: 100 } } });
     fireEvent.press(track, { nativeEvent: { locationX: 25 } });
 
@@ -63,7 +72,7 @@ describe("Slider", () => {
 
   it("does not emit updates when disabled", () => {
     const onValueChange = jest.fn();
-    const { UNSAFE_getAllByType } = renderWithTheme(
+    const { getByRole } = renderWithTheme(
       <Slider
         value={20}
         minimumValue={0}
@@ -73,7 +82,7 @@ describe("Slider", () => {
       />,
     );
 
-    const track = UNSAFE_getAllByType(Pressable)[0];
+    const track = getByRole("button");
     fireEvent(track, "layout", { nativeEvent: { layout: { width: 100 } } });
     fireEvent.press(track, { nativeEvent: { locationX: 60 } });
 

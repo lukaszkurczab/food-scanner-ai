@@ -1,4 +1,3 @@
-import { Pressable } from "react-native";
 import { fireEvent } from "@testing-library/react-native";
 import { describe, expect, it, jest } from "@jest/globals";
 import { ScreenCornerNavButton } from "@/components/ScreenCornerNavButton";
@@ -37,7 +36,7 @@ describe("ScreenCornerNavButton", () => {
   });
 
   it("exposes disabled accessibility state and pressed styles", () => {
-    const { getByTestId, UNSAFE_getByType } = renderWithTheme(
+    const { UNSAFE_root, getByTestId } = renderWithTheme(
       <ScreenCornerNavButton
         icon="close"
         onPress={() => undefined}
@@ -47,7 +46,13 @@ describe("ScreenCornerNavButton", () => {
     );
 
     const button = getByTestId("screen-corner-button");
-    const pressedStyles = UNSAFE_getByType(Pressable).props.style({
+    const buttonPressable = UNSAFE_root.find(
+      (node) =>
+        node.props.accessibilityRole === "button" &&
+        node.props.accessibilityLabel === "close-camera" &&
+        typeof node.props.style === "function",
+    );
+    const pressedStyles = buttonPressable.props.style({
       pressed: true,
     });
 

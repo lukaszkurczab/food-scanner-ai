@@ -175,13 +175,23 @@ export const Calendar: React.FC<Props> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={handlePrev} style={styles.navBtn}>
+        <Pressable
+          onPress={handlePrev}
+          accessibilityRole="button"
+          accessibilityLabel="calendar-prev-month"
+          style={styles.navBtn}
+        >
           <Text style={styles.navText}>‹</Text>
         </Pressable>
 
         <Text style={styles.monthText}>{fmtMonth.format(monthStart)}</Text>
 
-        <Pressable onPress={handleNext} style={styles.navBtn}>
+        <Pressable
+          onPress={handleNext}
+          accessibilityRole="button"
+          accessibilityLabel="calendar-next-month"
+          style={styles.navBtn}
+        >
           <Text style={styles.navText}>›</Text>
         </Pressable>
       </View>
@@ -219,6 +229,7 @@ export const Calendar: React.FC<Props> = ({
               <Pressable
                 key={i}
                 onPress={() => !disabled && select(c.date)}
+                accessibilityRole="button"
                 disabled={disabled}
                 style={[
                   styles.cell,
