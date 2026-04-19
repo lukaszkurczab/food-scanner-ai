@@ -1,6 +1,13 @@
 import { BackHandler } from "react-native";
 import { act, fireEvent, waitFor } from "@testing-library/react-native";
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
 import SavedMealsCameraScreen from "@/feature/History/screens/SavedMealsCameraScreen";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 import type { Meal } from "@/types/meal";
@@ -29,7 +36,8 @@ jest.mock("@/utils/devSamples", () => ({
 
 jest.mock("expo-camera", () => {
   const React = jest.requireActual<typeof import("react")>("react");
-  const { View } = jest.requireActual<typeof import("react-native")>("react-native");
+  const { View } =
+    jest.requireActual<typeof import("react-native")>("react-native");
 
   return {
     CameraView: React.forwardRef(function MockCameraView(
@@ -64,10 +72,8 @@ jest.mock("react-native-safe-area-context", () => ({
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (
-      key: string,
-      options?: { ns?: string; defaultValue?: string },
-    ) => options?.defaultValue ?? (options?.ns ? `${options.ns}:${key}` : key),
+    t: (key: string, options?: { ns?: string; defaultValue?: string }) =>
+      options?.defaultValue ?? (options?.ns ? `${options.ns}:${key}` : key),
   }),
 }));
 
@@ -80,13 +86,7 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: React.ReactNode }) =>
       React.createElement(View, null, children),
-    Button: ({
-      label,
-      onPress,
-    }: {
-      label: string;
-      onPress: () => void;
-    }) =>
+    Button: ({ label, onPress }: { label: string; onPress: () => void }) =>
       React.createElement(
         Pressable,
         { onPress, accessibilityRole: "button" },
@@ -135,14 +135,13 @@ const buildMeal = (overrides?: Partial<Meal>): Meal => ({
 
 describe("SavedMealsCameraScreen", () => {
   beforeEach(() => {
-    jest
-      .spyOn(BackHandler, "addEventListener")
-      .mockImplementation(
-        ((_eventName: string, _listener: () => boolean) => {
-          mockBackHandlerAddEventListener(_listener);
-          return { remove: jest.fn() };
-        }) as typeof BackHandler.addEventListener,
-      );
+    jest.spyOn(BackHandler, "addEventListener").mockImplementation(((
+      _eventName: string,
+      _listener: () => boolean,
+    ) => {
+      mockBackHandlerAddEventListener(_listener);
+      return { remove: jest.fn() };
+    }) as typeof BackHandler.addEventListener);
 
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUseRoute.mockReturnValue({
@@ -187,7 +186,9 @@ describe("SavedMealsCameraScreen", () => {
       addListener: jest.fn(() => jest.fn()),
     };
 
-    renderWithTheme(<SavedMealsCameraScreen navigation={navigation as never} />);
+    renderWithTheme(
+      <SavedMealsCameraScreen navigation={navigation as never} />,
+    );
 
     const listener = mockBackHandlerAddEventListener.mock.calls[0]?.[0] as
       | (() => boolean)

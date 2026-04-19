@@ -1,5 +1,12 @@
 import { act, renderHook } from "@testing-library/react-native";
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import { useMealCameraState } from "@/feature/Meals/hooks/useMealCameraState";
 import { getSampleMealUri } from "@/utils/devSamples";

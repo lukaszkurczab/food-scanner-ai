@@ -4,6 +4,16 @@ const mockPost = jest.fn<
   (url: string, data?: unknown, options?: unknown) => Promise<unknown>
 >();
 
+jest.mock("uuid", () => {
+  let counter = 0;
+  return {
+    v4: jest.fn(() => {
+      counter += 1;
+      return `00000000-0000-4000-8000-${counter.toString(16).padStart(12, "0")}`;
+    }),
+  };
+});
+
 jest.mock("@/services/core/apiClient", () => ({
   post: (url: string, data?: unknown, options?: unknown) =>
     mockPost(url, data, options),

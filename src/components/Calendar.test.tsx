@@ -14,7 +14,9 @@ const START = new Date(2026, 0, 10);
 const END = new Date(2026, 0, 10);
 
 const findDayCells = (root: {
-  findAll: (predicate: (node: ReactTestInstance) => boolean) => ReactTestInstance[];
+  findAll: (
+    predicate: (node: ReactTestInstance) => boolean,
+  ) => ReactTestInstance[];
 }) =>
   root.findAll(
     (node) =>
@@ -37,8 +39,9 @@ describe("Calendar", () => {
     );
 
     const cells = findDayCells(UNSAFE_root);
-    const firstEnabled = cells.find((node) => !Boolean(node.props.disabled));
-    if (!firstEnabled) throw new Error("Expected at least one enabled day cell");
+    const firstEnabled = cells.find((node) => !node.props.disabled);
+    if (!firstEnabled)
+      throw new Error("Expected at least one enabled day cell");
 
     fireEvent.press(firstEnabled);
 
@@ -65,8 +68,9 @@ describe("Calendar", () => {
     );
 
     const cells = findDayCells(UNSAFE_root);
-    const firstEnabled = cells.find((node) => !Boolean(node.props.disabled));
-    if (!firstEnabled) throw new Error("Expected at least one enabled day cell");
+    const firstEnabled = cells.find((node) => !node.props.disabled);
+    if (!firstEnabled)
+      throw new Error("Expected at least one enabled day cell");
 
     fireEvent.press(firstEnabled);
 
