@@ -114,8 +114,32 @@ export type AiBackendCreditsMeta = AiCreditsStatus & {
   warnings?: string[] | null;
 };
 
+export type AiScopeDecision =
+  | "ALLOW_APP"
+  | "ALLOW_USER_DATA"
+  | "ALLOW_NUTRITION"
+  | "DENY_OTHER";
+
+export type AiAskUsage = {
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+  totalTokens?: number | null;
+};
+
+export type AiAskContextStats = {
+  usedSummary: boolean;
+  historyTurns: number;
+  truncated: boolean;
+  scopeDecision: AiScopeDecision;
+};
+
 export type AiAskBackendResponse = AiBackendCreditsMeta & {
   reply: string;
+  threadId: string;
+  assistantMessageId: string;
+  usage: AiAskUsage;
+  contextStats: AiAskContextStats;
+  scopeDecision: AiScopeDecision;
 };
 
 export type AiAskE2EResponse = {

@@ -18,7 +18,7 @@ import {
   retryDeadLetterOps,
   type QueueKind,
 } from "@/services/offline/queue.repo";
-import { pushQueue } from "@/services/offline/sync.engine";
+import { pullChatChanges, pushQueue } from "@/services/offline/sync.engine";
 import {
   trackAiChatResult,
   trackAiChatSend,
@@ -32,10 +32,6 @@ import {
 } from "@/services/ai/chatThreadRepository";
 
 type Options = { pageSize?: number };
-type AiHistoryItem = {
-  from: "user" | "ai";
-  text: string;
-};
 
 type RetryableSendContext = {
   threadId: string;
@@ -46,39 +42,6 @@ type RetryableSendContext = {
 
 const GATEWAY_REJECT_REASONS = new Set(["OFF_TOPIC", "ML_OFF_TOPIC", "TOO_SHORT"]);
 const CHAT_DEAD_LETTER_KINDS: QueueKind[] = ["persist_chat_message"];
-
-function buildAiContext(
-  meals: Meal[],
-  profile: FormData,
-  history: AiHistoryItem[],
-) {
-  const mealPreview = meals
-    .slice(0, 5)
-    .map((meal) => {
-      const timestamp =
-        typeof meal.timestamp === "string" && meal.timestamp.trim().length > 0
-          ? meal.timestamp
-          : meal.createdAt;
-      const dateKey =
-        typeof timestamp === "string" && timestamp.length >= 10
-          ? timestamp.slice(0, 10)
-          : "unknown";
-      const name =
-        (typeof meal.name === "string" && meal.name.trim().length > 0
-          ? meal.name.trim()
-          : meal.type) || "meal";
-      return `${dateKey}:${name}`;
-    })
-    .join(",");
-
-  return {
-    profile,
-    history,
-    mealsSummary: meals.length > 0 ? `${meals.length}|${mealPreview}` : "none",
-    language: i18next.language || "en",
-    actionType: "chat",
-  };
-}
 
 function findInsertIndexDesc(messages: ChatMessage[], createdAt: number): number {
   let left = 0;
@@ -152,27 +115,6 @@ function getGatewayRejectReason(error: unknown): string | null {
   );
 }
 
-function buildRetryableAiHistory(
-  messages: ChatMessage[],
-  nextUserMessage: string,
-  includeCurrentUser: boolean,
-): AiHistoryItem[] {
-  const history: AiHistoryItem[] = messages
-    .slice(0, 10)
-    .reverse()
-    .map(
-      (message): AiHistoryItem => ({
-        from: message.role === "user" ? "user" : "ai",
-        text: message.content,
-      }),
-    );
-
-  if (!includeCurrentUser) {
-    return history;
-  }
-
-  return [...history, { from: "user", text: nextUserMessage }];
-}
 
 export function useChatHistory(
   userUid: string,
@@ -181,6 +123,8 @@ export function useChatHistory(
   threadId: string,
   opts: Options = {},
 ) {
+  void meals;
+  void profile;
   const {
     credits,
     loading: creditsLoading,
@@ -377,24 +321,22 @@ export function useChatHistory(
                 ? trimmed.slice(0, 42).trim() + "…"
                 : trimmed
               : undefined,
+            syncToBackend: false,
           });
         }
 
         let askFailed = false;
         let assistantReply: string | null = null;
+        let assistantMessageIdFromServer: string | null = null;
         try {
           if (!isRequestActive()) return null;
-
-          const historyForAi = buildRetryableAiHistory(
-            messages,
-            trimmed,
-            !isRetryAttempt,
-          );
           const aiResponse = await post<AiAskBackendResponse>(
             "/ai/ask",
             {
+              threadId: createdThreadId,
+              clientMessageId: userMsgId,
               message: trimmed,
-              context: buildAiContext(meals, profile, historyForAi),
+              language: i18next.language === "pl" ? "pl" : "en",
             },
             {
               signal: askAbortController.signal,
@@ -405,6 +347,11 @@ export function useChatHistory(
           if (!isRequestActive()) return null;
 
           assistantReply = aiResponse.reply?.trim() ? aiResponse.reply : null;
+          assistantMessageIdFromServer =
+            typeof aiResponse.assistantMessageId === "string" &&
+            aiResponse.assistantMessageId.trim().length > 0
+              ? aiResponse.assistantMessageId
+              : null;
           if (assistantReply) {
             void trackAiChatResult("success");
           } else {
@@ -484,9 +431,10 @@ export function useChatHistory(
         retryableSendRef.current = null;
 
         const now2 = Date.now();
+        const assistantMessageId = assistantMessageIdFromServer ?? aiMsgId;
 
         const optimisticAi: ChatMessage = {
-          id: aiMsgId,
+          id: assistantMessageId,
           userUid,
           role: "assistant",
           content: assistantReply,
@@ -494,7 +442,7 @@ export function useChatHistory(
           lastSyncedAt: now2,
           syncState: "synced",
           deleted: false,
-          cloudId: aiMsgId,
+          cloudId: assistantMessageId,
         };
 
         setMessages((prev) => upsertSortedMessage(prev, optimisticAi));
@@ -502,10 +450,12 @@ export function useChatHistory(
         await persistAssistantChatMessage({
           userUid,
           threadId: createdThreadId,
-          messageId: aiMsgId,
+          messageId: assistantMessageId,
           content: assistantReply,
           createdAt: now2,
+          syncToBackend: false,
         });
+        void pullChatChanges(userUid).catch(() => {});
 
         if (isLocalThread && !isRetryAttempt) return createdThreadId;
         return null;
@@ -530,9 +480,6 @@ export function useChatHistory(
       isLocalThread,
       threadId,
       userUid,
-      meals,
-      profile,
-      messages,
       creditAllocation,
       creditsUsed,
       applyCreditsFromResponse,
