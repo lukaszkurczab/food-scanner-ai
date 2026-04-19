@@ -193,7 +193,9 @@ export async function persistUserChatMessage(params: {
   content: string;
   createdAt: number;
   title?: string;
+  syncToBackend?: boolean;
 }): Promise<void> {
+  const syncToBackend = params.syncToBackend !== false;
   const thread: ChatThread = {
     id: params.threadId,
     userUid: params.userUid,
@@ -210,13 +212,14 @@ export async function persistUserChatMessage(params: {
     content: params.content,
     createdAt: params.createdAt,
     lastSyncedAt: params.createdAt,
-    syncState: "pending",
+    syncState: syncToBackend ? "pending" : "synced",
     deleted: false,
     cloudId: params.messageId,
   };
 
   await upsertChatThreadLocal(thread);
   await upsertChatMessageLocal({ threadId: params.threadId, message });
+  if (!syncToBackend) return;
 
   try {
     const net = await NetInfo.fetch();
@@ -278,7 +281,9 @@ export async function persistAssistantChatMessage(params: {
   messageId: string;
   content: string;
   createdAt: number;
+  syncToBackend?: boolean;
 }): Promise<void> {
+  const syncToBackend = params.syncToBackend !== false;
   const message: ChatMessage = {
     id: params.messageId,
     userUid: params.userUid,
@@ -286,7 +291,7 @@ export async function persistAssistantChatMessage(params: {
     content: params.content,
     createdAt: params.createdAt,
     lastSyncedAt: params.createdAt,
-    syncState: "pending",
+    syncState: syncToBackend ? "pending" : "synced",
     deleted: false,
     cloudId: params.messageId,
   };
@@ -302,6 +307,7 @@ export async function persistAssistantChatMessage(params: {
 
   await upsertChatThreadLocal(thread);
   await upsertChatMessageLocal({ threadId: params.threadId, message });
+  if (!syncToBackend) return;
 
   try {
     const net = await NetInfo.fetch();

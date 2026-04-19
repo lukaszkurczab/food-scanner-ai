@@ -36,6 +36,7 @@ const mockPersistAssistantChatMessage = jest.fn<
 const mockGetDeadLetterCount = jest.fn<(uid: string, options?: unknown) => Promise<number>>();
 const mockRetryDeadLetterOps = jest.fn<(params: unknown) => Promise<number>>();
 const mockPushQueue = jest.fn<(uid: string) => Promise<void>>();
+const mockPullChatChanges = jest.fn<(uid: string) => Promise<void>>();
 const mockTrackAiChatSend = jest.fn<(message: string) => Promise<void>>();
 const mockTrackAiChatResult = jest.fn<(status: string) => Promise<void>>();
 
@@ -111,6 +112,7 @@ jest.mock("@/services/offline/queue.repo", () => ({
 
 jest.mock("@/services/offline/sync.engine", () => ({
   pushQueue: (uid: string) => mockPushQueue(uid),
+  pullChatChanges: (uid: string) => mockPullChatChanges(uid),
 }));
 
 jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
@@ -178,6 +180,16 @@ describe("useChatHistory", () => {
     });
     mockApiPost.mockResolvedValue({
       reply: "AI response",
+      threadId: "thread-created",
+      assistantMessageId: "assistant-msg",
+      usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
+      contextStats: {
+        usedSummary: false,
+        historyTurns: 1,
+        truncated: false,
+        scopeDecision: "ALLOW_NUTRITION",
+      },
+      scopeDecision: "ALLOW_NUTRITION",
       userId: "user-1",
       tier: "free",
       balance: 19,
@@ -195,6 +207,7 @@ describe("useChatHistory", () => {
     mockGetDeadLetterCount.mockResolvedValue(0);
     mockRetryDeadLetterOps.mockResolvedValue(0);
     mockPushQueue.mockResolvedValue();
+    mockPullChatChanges.mockResolvedValue();
     mockTrackAiChatSend.mockResolvedValue();
     mockTrackAiChatResult.mockResolvedValue();
     mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
@@ -250,14 +263,10 @@ describe("useChatHistory", () => {
     const call = mockApiPost.mock.calls[0];
     expect(call?.[0]).toBe("/ai/ask");
     expect(call?.[1]).toEqual({
+      threadId: "thread-created",
+      clientMessageId: "user-msg",
       message: "hello",
-      context: {
-        actionType: "chat",
-        mealsSummary: "none",
-        profile: profileFixture,
-        history: [{ from: "user", text: "hello" }],
-        language: "en",
-      },
+      language: "en",
     });
     expect(call?.[2]).toEqual(
       expect.objectContaining({ signal: expect.any(Object) }),
@@ -337,6 +346,16 @@ describe("useChatHistory", () => {
 
     (resolveInFlightPost as (value: unknown) => void)({
       reply: "AI response",
+      threadId: "thread-created",
+      assistantMessageId: "assistant-msg",
+      usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
+      contextStats: {
+        usedSummary: false,
+        historyTurns: 1,
+        truncated: false,
+        scopeDecision: "ALLOW_NUTRITION",
+      },
+      scopeDecision: "ALLOW_NUTRITION",
       userId: "user-1",
       tier: "free",
       balance: 19,
@@ -360,6 +379,15 @@ describe("useChatHistory", () => {
       .mockRejectedValueOnce(Object.assign(new Error("timeout"), { status: 504 }))
       .mockResolvedValueOnce({
         reply: "Recovered response",
+        threadId: "thread-created",
+        usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
+        contextStats: {
+          usedSummary: false,
+          historyTurns: 1,
+          truncated: false,
+          scopeDecision: "ALLOW_NUTRITION",
+        },
+        scopeDecision: "ALLOW_NUTRITION",
         userId: "user-1",
         tier: "free",
         balance: 19,
@@ -395,6 +423,7 @@ describe("useChatHistory", () => {
       messageId: "ai-msg-2",
       content: "Recovered response",
       createdAt: expect.any(Number),
+      syncToBackend: false,
     });
   });
 
