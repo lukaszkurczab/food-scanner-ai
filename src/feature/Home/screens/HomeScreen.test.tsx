@@ -7,13 +7,11 @@ import {
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { afterAll, afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import HomeScreen from "@/feature/Home/screens/HomeScreen";
-import { createFallbackNutritionState } from "@/services/nutritionState/nutritionStateService";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 const mockReact = React;
 
 const mockUseMeals = jest.fn();
-const mockUseNutritionState = jest.fn();
 const mockUseUserProfileContext = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockUsePremiumContext = jest.fn();
@@ -23,11 +21,6 @@ const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
 
 jest.mock("@/hooks/useMeals", () => ({
   useMeals: (uid: string | null | undefined) => mockUseMeals(uid),
-}));
-
-jest.mock("@/hooks/useNutritionState", () => ({
-  useNutritionState: (params: { uid: string | null | undefined; dayKey?: string | null }) =>
-    mockUseNutritionState(params),
 }));
 
 jest.mock("@/context/UserProfileContext", () => ({
@@ -288,13 +281,6 @@ describe("HomeScreen", () => {
       handleDiscardDraft: jest.fn(async () => undefined),
       closeResumeModal: jest.fn(),
     });
-
-    const fallbackState = createFallbackNutritionState("2026-03-18");
-    mockUseNutritionState.mockReturnValue({
-      state: fallbackState,
-      enabled: false,
-      source: "disabled",
-    });
     mockUseWeeklyReport.mockReturnValue({
       report: {
         status: "ready",
@@ -411,7 +397,7 @@ describe("HomeScreen", () => {
     expect(queryByText("weekly-report-card:loading")).toBeNull();
   });
 
-  it("switches to the past incomplete state for a previous day and requests the correct dayKey", async () => {
+  it("shows the past empty state for a previous day without entries", () => {
     const navigation = createNavigation();
     const { getByText } = renderWithTheme(
       <HomeScreen navigation={navigation as never} />,
@@ -419,38 +405,70 @@ describe("HomeScreen", () => {
 
     fireEvent.press(getByText("pick-2026-03-17"));
 
-    await waitFor(() => {
-      expect(mockUseNutritionState).toHaveBeenLastCalledWith({
-        uid: "user-1",
-        dayKey: "2026-03-17",
-      });
-    });
-
     expect(getByText("Add a missed meal")).toBeTruthy();
     expect(getByText("You missed a meal log")).toBeTruthy();
     expect(getByText("You can still fill in what was missing.")).toBeTruthy();
   });
 
-  it("renders the completed state and routes the CTA to review flow instead of add flow", () => {
+  it("keeps past days with entries in in-progress state and never shows missing-entry copy", () => {
     mockUseMeals.mockReturnValue({
-      meals: [createMeal()],
+      meals: [
+        createMeal({
+          mealId: "meal-past",
+          timestamp: new Date("2026-03-17T10:00:00.000Z").getTime(),
+          createdAt: "2026-03-17T10:00:00.000Z",
+          updatedAt: "2026-03-17T10:00:00.000Z",
+          totals: { kcal: 700, protein: 40, fat: 20, carbs: 75 },
+        }),
+      ],
       getMeals: jest.fn(),
     });
 
-    const remoteState = createFallbackNutritionState("2026-03-18");
-    remoteState.targets.kcal = 2000;
-    remoteState.targets.protein = 150;
-    remoteState.targets.fat = 70;
-    remoteState.targets.carbs = 180;
-    remoteState.consumed.kcal = 2100;
-    remoteState.consumed.protein = 152;
-    remoteState.consumed.fat = 68;
-    remoteState.consumed.carbs = 243;
+    const navigation = createNavigation();
+    const { getByText, queryByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
 
-    mockUseNutritionState.mockReturnValue({
-      state: remoteState,
-      enabled: true,
-      source: "remote",
+    fireEvent.press(getByText("pick-2026-03-17"));
+
+    expect(getByText("Add a missed meal")).toBeTruthy();
+    expect(getByText("hero-progress:0.35")).toBeTruthy();
+    expect(getByText("meals:1")).toBeTruthy();
+    expect(queryByText("You missed a meal log")).toBeNull();
+    expect(queryByText("You can still fill in what was missing.")).toBeNull();
+  });
+
+  it("updates meals list and progress consistently after a meal is added", () => {
+    const mealsState: { meals: ReturnType<typeof createMeal>[] } = { meals: [] };
+    mockUseMeals.mockImplementation(() => ({
+      meals: mealsState.meals,
+      getMeals: jest.fn(),
+    }));
+
+    const navigation = createNavigation();
+    const { getByText, queryByText, rerender } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    expect(queryByText("meals:1")).toBeNull();
+    expect(queryByText("hero-progress:0.25")).toBeNull();
+
+    mealsState.meals = [createMeal()];
+    rerender(<HomeScreen navigation={navigation as never} />);
+
+    expect(getByText("meals:1")).toBeTruthy();
+    expect(getByText("hero-progress:0.25")).toBeTruthy();
+    expect(queryByText("hero-progress:0.00")).toBeNull();
+  });
+
+  it("renders the completed state and routes the CTA to review flow instead of add flow", () => {
+    mockUseMeals.mockReturnValue({
+      meals: [
+        createMeal({
+          totals: { kcal: 2100, protein: 152, fat: 68, carbs: 243 },
+        }),
+      ],
+      getMeals: jest.fn(),
     });
 
     const navigation = createNavigation();

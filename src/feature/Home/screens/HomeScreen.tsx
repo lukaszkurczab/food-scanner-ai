@@ -7,7 +7,6 @@ import { useUserProfileContext } from "@/context/UserProfileContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
 import { useMeals } from "@/hooks/useMeals";
-import { useNutritionState } from "@/hooks/useNutritionState";
 import { useWeeklyReport } from "@/hooks/useWeeklyReport";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import { calculateMacroTargets } from "@/utils/calculateMacroTargets";
@@ -19,10 +18,6 @@ import WeeklyReportCard from "../components/WeeklyReportCard";
 import type { Meal } from "@/types/meal";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
-import type {
-  NutritionTargets,
-} from "@/services/nutritionState/nutritionStateTypes";
-import type { MacroTargets } from "@/utils/calculateMacroTargets";
 import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
 import { createMockWeeklyReportResult } from "@/services/weeklyReport/weeklyReportMocks";
 
@@ -76,40 +71,6 @@ function buildLast7Days(): WeekDayItem[] {
   });
 }
 
-function toLocalDayKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function hasTargetValue(value: number | null): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0;
-}
-
-function toMacroTargets(targets: NutritionTargets): MacroTargets | null {
-  if (
-    !hasTargetValue(targets.protein) &&
-    !hasTargetValue(targets.carbs) &&
-    !hasTargetValue(targets.fat)
-  ) {
-    return null;
-  }
-
-  const proteinGrams = targets.protein ?? 0;
-  const carbsGrams = targets.carbs ?? 0;
-  const fatGrams = targets.fat ?? 0;
-
-  return {
-    proteinGrams,
-    carbsGrams,
-    fatGrams,
-    proteinKcal: Math.round(proteinGrams * 4),
-    carbsKcal: Math.round(carbsGrams * 4),
-    fatKcal: Math.round(fatGrams * 9),
-  };
-}
-
 function clampProgress(value: number): number {
   return Math.max(0, Math.min(value, 1));
 }
@@ -152,12 +113,6 @@ export default function HomeScreen({ navigation }: Props) {
   });
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const last7Days = useMemo(buildLast7Days, []);
-  const selectedDayKey = useMemo(
-    () => toLocalDayKey(selectedDate),
-    [selectedDate],
-  );
-  const { state: nutritionState, enabled: nutritionStateEnabled, source: nutritionStateSource } =
-    useNutritionState({ uid, dayKey: selectedDayKey });
   const mealAddEntry = useMealAddMethodState({
     navigation,
     replaceOnStart: false,
@@ -176,22 +131,12 @@ export default function HomeScreen({ navigation }: Props) {
     [meals, selectedDate],
   );
   const mealCount = dayMeals.length;
-  const hasCanonicalNutritionState =
-    nutritionStateEnabled &&
-    nutritionState.dayKey === selectedDayKey &&
-    nutritionStateSource !== "fallback";
-
-  const legacyMacros = useMemo(() => calculateTotalNutrients(dayMeals), [dayMeals]);
-  const consumed = hasCanonicalNutritionState
-    ? nutritionState.consumed
-    : legacyMacros;
+  const consumed = useMemo(() => calculateTotalNutrients(dayMeals), [dayMeals]);
   const totalCalories = consumed.kcal;
 
-  const goalCalories = hasCanonicalNutritionState
-    ? (nutritionState.targets.kcal ?? userData?.calorieTarget ?? 0)
-    : (userData?.calorieTarget ?? 0);
+  const goalCalories = userData?.calorieTarget ?? 0;
 
-  const fallbackMacroTargets = useMemo(
+  const macroTargets = useMemo(
     () =>
       userData?.calorieTarget && userData.calorieTarget > 0
         ? calculateMacroTargets({
@@ -202,14 +147,6 @@ export default function HomeScreen({ navigation }: Props) {
         : null,
     [userData?.calorieTarget, userData?.goal, userData?.preferences],
   );
-  const macroTargets = useMemo(() => {
-    if (!hasCanonicalNutritionState) {
-      return fallbackMacroTargets;
-    }
-
-    const stateTargets = toMacroTargets(nutritionState.targets);
-    return stateTargets ?? fallbackMacroTargets;
-  }, [fallbackMacroTargets, hasCanonicalNutritionState, nutritionState.targets]);
 
   const numberFormatter = useMemo(
     () => new Intl.NumberFormat(i18n.language || undefined),
@@ -239,9 +176,10 @@ export default function HomeScreen({ navigation }: Props) {
     return `${consumedLabel} kcal`;
   }, [goalCalories, numberFormatter, totalCalories]);
 
-  const isCompletedDay = goalCalories > 0 && totalCalories >= goalCalories && mealCount > 0;
-  const isPastIncompleteDay = !isToday && !isCompletedDay;
-  const isTodayEmpty = isToday && mealCount === 0 && !isCompletedDay;
+  const isCompletedDay = mealCount > 0 && goalCalories > 0 && totalCalories >= goalCalories;
+  const isEmptyDay = mealCount === 0;
+  const isPastEmptyDay = !isToday && isEmptyDay;
+  const isTodayEmpty = isToday && isEmptyDay;
 
   const selectedMethodName = t(`meals:${mealAddEntry.preferredOption.titleKey}`);
   const methodSelectorLabel = t("home:methodSelector", {
@@ -271,7 +209,7 @@ export default function HomeScreen({ navigation }: Props) {
       };
     }
 
-    if (isPastIncompleteDay) {
+    if (isPastEmptyDay) {
       return {
         title: fullDateFormatter.format(selectedDate),
         meta: t(
@@ -283,13 +221,10 @@ export default function HomeScreen({ navigation }: Props) {
         supportText: null,
         showMethodSelector: true,
         progress: null,
-        supportCopy:
-          mealCount === 0
-            ? t(
-                "home:hero.pastIncomplete.supportCopy",
-                "You can still fill in what was missing.",
-              )
-            : null,
+        supportCopy: t(
+          "home:hero.pastIncomplete.supportCopy",
+          "You can still fill in what was missing.",
+        ),
       };
     }
 
@@ -328,9 +263,11 @@ export default function HomeScreen({ navigation }: Props) {
     }
 
     return {
-      title: greeting,
+      title: isToday ? greeting : fullDateFormatter.format(selectedDate),
       meta: `${getMealCountLabel(t, mealCount)} · ${kcalProgressLabel}`,
-      ctaLabel: t("home:hero.todayInProgress.cta", "Log next meal"),
+      ctaLabel: isToday
+        ? t("home:hero.todayInProgress.cta", "Log next meal")
+        : t("home:hero.pastIncomplete.cta", "Add a missed meal"),
       tone: "default" as const,
       supportText: null,
       showMethodSelector: true,
@@ -343,8 +280,9 @@ export default function HomeScreen({ navigation }: Props) {
     fullDateFormatter,
     goalCalories,
     isCompletedDay,
-    isPastIncompleteDay,
+    isPastEmptyDay,
     isTodayEmpty,
+    isToday,
     kcalProgressLabel,
     mealCount,
     selectedDate,
