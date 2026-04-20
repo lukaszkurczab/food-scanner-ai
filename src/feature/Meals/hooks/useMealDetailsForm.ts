@@ -75,6 +75,7 @@ export function useMealDetailsForm({
   const isManualMode = mode === "manual";
 
   const [mealName, setMealName] = useState(meal?.name ?? "");
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [typePickerVisible, setTypePickerVisible] = useState(false);
   const [typeDraft, setTypeDraft] = useState<MealType>(meal?.type ?? "other");
   const [timePickerVisible, setTimePickerVisible] = useState(false);
@@ -85,6 +86,10 @@ export function useMealDetailsForm({
   useEffect(() => {
     setMealName(meal?.name ?? "");
   }, [meal?.name]);
+
+  useEffect(() => {
+    setHasPendingChanges(false);
+  }, [meal?.mealId, mode]);
 
   useEffect(() => {
     setTypeDraft(meal?.type ?? "other");
@@ -134,6 +139,11 @@ export function useMealDetailsForm({
     await persistMealPatch({ name: mealName.trim() || null });
   }, [mealName, persistMealPatch]);
 
+  const handleMealNameChange = useCallback((value: string) => {
+    setMealName(value);
+    setHasPendingChanges(true);
+  }, []);
+
   const handleOpenTypePicker = useCallback(() => {
     setTypeDraft(meal?.type ?? "other");
     setTypePickerVisible(true);
@@ -147,6 +157,7 @@ export function useMealDetailsForm({
   const handleApplyType = useCallback(
     async (nextType: MealType) => {
       await persistMealPatch({ type: nextType });
+      setHasPendingChanges(true);
       setTypePickerVisible(false);
     },
     [persistMealPatch],
@@ -168,6 +179,7 @@ export function useMealDetailsForm({
     nextTimestamp.setHours(pickerDate.getHours(), pickerDate.getMinutes(), 0, 0);
 
     await persistMealPatch({ timestamp: nextTimestamp.toISOString() });
+    setHasPendingChanges(true);
     setTimePickerVisible(false);
   }, [mealTimestamp, persistMealPatch, pickerDate]);
 
@@ -202,6 +214,7 @@ export function useMealDetailsForm({
         ingredients: nextIngredients,
         updatedAt: new Date().toISOString(),
       });
+      setHasPendingChanges(true);
       handleCloseIngredientEditor();
     },
     [editingIngredientIndex, handleCloseIngredientEditor, meal, persistMeal],
@@ -217,6 +230,7 @@ export function useMealDetailsForm({
       ),
       updatedAt: new Date().toISOString(),
     });
+    setHasPendingChanges(true);
     handleCloseIngredientEditor();
   }, [editingIngredientIndex, handleCloseIngredientEditor, meal, persistMeal]);
 
@@ -236,6 +250,7 @@ export function useMealDetailsForm({
       } else {
         flow.goBack();
       }
+      setHasPendingChanges(false);
       return;
     }
 
@@ -258,6 +273,7 @@ export function useMealDetailsForm({
     };
 
     await persistMeal(nextMeal);
+    setHasPendingChanges(false);
     flow.replace("ReviewMeal", {});
   }, [
     flow,
@@ -300,7 +316,7 @@ export function useMealDetailsForm({
     isManualMode,
     keyboardDismissMode,
     mealName,
-    setMealName,
+    setMealName: handleMealNameChange,
     typePickerVisible,
     setTypePickerVisible,
     typeDraft,
@@ -329,5 +345,6 @@ export function useMealDetailsForm({
     handleDeleteIngredient,
     handleSubmit,
     handleChangeMethod,
+    hasPendingChanges,
   };
 }

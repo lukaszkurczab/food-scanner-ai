@@ -120,14 +120,13 @@ export default function AddMealScreen() {
   const current = stack[stack.length - 1];
 
   useEffect(() => {
-    if (current.name === "CameraDefault" || current.name === "BarcodeScan") return;
+    const usesParentHardwareBack =
+      current.name === "TextAnalyzing" ||
+      current.name === "PreparingReviewPhoto" ||
+      current.name === "IngredientsNotRecognized";
+    if (!usesParentHardwareBack) return;
 
     const onBackPress = () => {
-      if (current.name === "ReviewMeal") {
-        navigation.goBack();
-        return true;
-      }
-
       if (stack.length > 1) {
         goBack();
         return true;
@@ -141,13 +140,11 @@ export default function AddMealScreen() {
   }, [current.name, goBack, navigation, stack.length]);
 
   useEffect(() => {
-    if (
-      current.name === "CameraDefault" ||
-      current.name === "BarcodeScan" ||
-      current.name === "ReviewMeal"
-    ) {
-      return;
-    }
+    const usesParentBeforeRemove =
+      current.name === "TextAnalyzing" ||
+      current.name === "PreparingReviewPhoto" ||
+      current.name === "IngredientsNotRecognized";
+    if (!usesParentBeforeRemove) return;
 
     const sub = navigation.addListener("beforeRemove", (e) => {
       if (stack.length <= 1) return;

@@ -64,7 +64,7 @@ export default function IngredientsNotRecognizedScreen({
   };
 
   return (
-    <Layout>
+    <Layout showNavigation={false}>
       <View style={styles.container}>
         {image && !imgError ? (
           <Image

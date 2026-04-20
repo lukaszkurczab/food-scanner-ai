@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  BackHandler,
   Image,
   Platform,
   Pressable,
@@ -17,9 +16,10 @@ import {
   Button,
   Checkbox,
   Layout,
-  Modal,
   PhotoPreview,
+  ScreenCornerNavButton,
   TextButton,
+  UnsavedChangesModal,
 } from "@/components";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -30,6 +30,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { autoMealName } from "@/utils/autoMealName";
 import type { Meal } from "@/types/meal";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 
 const IMAGE_HEIGHT = 164;
 
@@ -66,12 +67,12 @@ export default function ReviewMealScreen({
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
   const { userData } = useUserContext();
-  const { addMeal, createSavedMealTemplate, updateSavedMealTemplate } = useMeals(uid ?? null);
+  const { addMeal, createSavedMealTemplate, updateSavedMealTemplate } =
+    useMeals(uid ?? null);
   const { meal, clearMeal, loadDraft, saveDraft, setLastScreen, setPhotoUrl } =
     useMealDraftContext();
 
   const [saving, setSaving] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [checkingImage, setCheckingImage] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -97,50 +98,29 @@ export default function ReviewMealScreen({
     setImageError(false);
   }, [image]);
 
-  useEffect(() => {
-    const sub = navigation.addListener("beforeRemove", (e) => {
-      const actionType = e.data.action.type;
-      const isBackAction =
-        actionType === "GO_BACK" ||
-        actionType === "POP" ||
-        actionType === "POP_TO_TOP";
-
-      if (!isBackAction) return;
-
-      e.preventDefault();
-
-      if (previewVisible) {
-        setPreviewVisible(false);
+  const guard = useUnsavedChangesGuard({
+    navigation,
+    hasUnsavedChanges: Boolean(uid && meal) && !saving,
+    onDiscard: () => {
+      if (!uid) return;
+      clearMeal(uid);
+    },
+    onExit: () => {
+      if (navigation.canGoBack()) {
+        navigation.goBack();
         return;
       }
-
-      if (!showCancelModal) {
-        setShowCancelModal(true);
-      }
-    });
-
-    return sub;
-  }, [navigation, previewVisible, showCancelModal]);
-
-  useEffect(() => {
-    const onBackPress = () => {
+      navigation.navigate("Home");
+    },
+    onBeforeExitAttempt: () => {
       if (previewVisible) {
         setPreviewVisible(false);
         return true;
       }
 
-      if (showCancelModal) {
-        setShowCancelModal(false);
-        return true;
-      }
-
-      setShowCancelModal(true);
-      return true;
-    };
-
-    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
-    return () => sub.remove();
-  }, [previewVisible, showCancelModal]);
+      return false;
+    },
+  });
 
   useEffect(() => {
     const photoUrl = meal?.photoUrl;
@@ -184,7 +164,9 @@ export default function ReviewMealScreen({
 
   const mealTime = useMemo(
     () =>
-      isValidIsoDate(meal?.timestamp) ? new Date(meal?.timestamp as string) : new Date(),
+      isValidIsoDate(meal?.timestamp)
+        ? new Date(meal?.timestamp as string)
+        : new Date(),
     [meal?.timestamp],
   );
 
@@ -214,75 +196,70 @@ export default function ReviewMealScreen({
     flow.goTo("EditMealDetails", {});
   }, [flow]);
 
-  const handleCancelConfirm = useCallback(() => {
-    if (!uid) return;
-    setShowCancelModal(false);
-    clearMeal(uid);
-    navigation.navigate("Home");
-  }, [clearMeal, navigation, uid]);
+  const handleSave = useCallback(
+    async (openShareComposer: boolean) => {
+      if (!meal || !userData?.uid || saving || !uid) return;
 
-  const handleSave = useCallback(async (openShareComposer: boolean) => {
-    if (!meal || !userData?.uid || saving || !uid) return;
-
-    setSaving(true);
-    const nowIso = new Date().toISOString();
-    const stableMealId =
-      meal.mealId || meal.cloudId || `meal-${Date.now().toString(36)}`;
-    const stableCloudId =
-      isFromSaved
+      setSaving(true);
+      const nowIso = new Date().toISOString();
+      const stableMealId =
+        meal.mealId || meal.cloudId || `meal-${Date.now().toString(36)}`;
+      const stableCloudId = isFromSaved
         ? meal.mealId || `cloud-${Date.now().toString(36)}`
-        : (meal.cloudId || meal.mealId || `cloud-${Date.now().toString(36)}`);
-    const nextMeal: Meal = {
-      ...meal,
-      mealId: stableMealId,
-      cloudId: stableCloudId,
-      userUid: uid,
-      name: resolvedMealName,
-      type: meal.type || "other",
-      timestamp: mealTime.toISOString(),
-      createdAt: meal.createdAt || nowIso,
-      updatedAt: nowIso,
-      syncState: "pending",
-      source: meal.source ?? "manual",
-    };
+        : meal.cloudId || meal.mealId || `cloud-${Date.now().toString(36)}`;
+      const nextMeal: Meal = {
+        ...meal,
+        mealId: stableMealId,
+        cloudId: stableCloudId,
+        userUid: uid,
+        name: resolvedMealName,
+        type: meal.type || "other",
+        timestamp: mealTime.toISOString(),
+        createdAt: meal.createdAt || nowIso,
+        updatedAt: nowIso,
+        syncState: "pending",
+        source: meal.source ?? "manual",
+      };
 
-    try {
-      await addMeal(nextMeal);
-      if (saveToMyMeals) {
-        if (isFromSaved && savedTemplateId) {
-          await updateSavedMealTemplate(savedTemplateId, nextMeal);
-        } else if (!isFromSaved) {
-          await createSavedMealTemplate(nextMeal);
+      try {
+        await addMeal(nextMeal);
+        if (saveToMyMeals) {
+          if (isFromSaved && savedTemplateId) {
+            await updateSavedMealTemplate(savedTemplateId, nextMeal);
+          } else if (!isFromSaved) {
+            await createSavedMealTemplate(nextMeal);
+          }
         }
+        clearMeal(uid);
+        if (openShareComposer && nextMeal.photoUrl) {
+          navigation.navigate("MealShare", {
+            meal: nextMeal,
+            returnTo: "ReviewMeal",
+          });
+          return;
+        }
+        navigation.navigate("Home");
+      } catch {
+        setSaving(false);
       }
-      clearMeal(uid);
-      if (openShareComposer && nextMeal.photoUrl) {
-        navigation.navigate("MealShare", {
-          meal: nextMeal,
-          returnTo: "ReviewMeal",
-        });
-        return;
-      }
-      navigation.navigate("Home");
-    } catch {
-      setSaving(false);
-    }
-  }, [
-    addMeal,
-    createSavedMealTemplate,
-    clearMeal,
-    isFromSaved,
-    meal,
-    mealTime,
-    navigation,
-    resolvedMealName,
-    savedTemplateId,
-    saveToMyMeals,
-    saving,
-    uid,
-    updateSavedMealTemplate,
-    userData?.uid,
-  ]);
+    },
+    [
+      addMeal,
+      createSavedMealTemplate,
+      clearMeal,
+      isFromSaved,
+      meal,
+      mealTime,
+      navigation,
+      resolvedMealName,
+      savedTemplateId,
+      saveToMyMeals,
+      saving,
+      uid,
+      updateSavedMealTemplate,
+      userData?.uid,
+    ],
+  );
 
   const mealMetaLabel = useMemo(() => {
     return `${t(meal?.type || "other", { ns: "meals" })} • ${formatMealTime(
@@ -347,6 +324,14 @@ export default function ReviewMealScreen({
 
   return (
     <Layout showNavigation={false} disableScroll style={styles.layout}>
+      <ScreenCornerNavButton
+        icon="close"
+        onPress={guard.requestExit}
+        accessibilityLabel={t("close", { ns: "common", defaultValue: "Close" })}
+        containerStyle={styles.screenCornerNavButton}
+        testID="review-meal-close"
+      />
+
       <View style={styles.screen}>
         <ScrollView
           style={styles.scrollArea}
@@ -391,7 +376,8 @@ export default function ReviewMealScreen({
               <Text style={styles.reviewNoteText}>
                 {t("review_meal_quick_check_note", {
                   ns: "meals",
-                  defaultValue: "If something looks off, edit details before saving.",
+                  defaultValue:
+                    "If something looks off, edit details before saving.",
                 })}
               </Text>
             </View>
@@ -408,21 +394,36 @@ export default function ReviewMealScreen({
               <View style={styles.macroStats}>
                 <View style={styles.macroStat}>
                   <Text style={styles.macroStatLabel}>
-                    {t("protein", { ns: "meals", defaultValue: "Protein" }).toUpperCase()}
+                    {t("protein", {
+                      ns: "meals",
+                      defaultValue: "Protein",
+                    }).toUpperCase()}
                   </Text>
-                  <Text style={styles.macroStatValue}>{`${nutrition.protein}g`}</Text>
+                  <Text
+                    style={styles.macroStatValue}
+                  >{`${nutrition.protein}g`}</Text>
                 </View>
                 <View style={styles.macroStat}>
                   <Text style={styles.macroStatLabel}>
-                    {t("carbs", { ns: "meals", defaultValue: "Carbs" }).toUpperCase()}
+                    {t("carbs", {
+                      ns: "meals",
+                      defaultValue: "Carbs",
+                    }).toUpperCase()}
                   </Text>
-                  <Text style={styles.macroStatValue}>{`${nutrition.carbs}g`}</Text>
+                  <Text
+                    style={styles.macroStatValue}
+                  >{`${nutrition.carbs}g`}</Text>
                 </View>
                 <View style={styles.macroStat}>
                   <Text style={styles.macroStatLabel}>
-                    {t("fat", { ns: "meals", defaultValue: "Fat" }).toUpperCase()}
+                    {t("fat", {
+                      ns: "meals",
+                      defaultValue: "Fat",
+                    }).toUpperCase()}
                   </Text>
-                  <Text style={styles.macroStatValue}>{`${nutrition.fat}g`}</Text>
+                  <Text
+                    style={styles.macroStatValue}
+                  >{`${nutrition.fat}g`}</Text>
                 </View>
               </View>
             </View>
@@ -434,7 +435,10 @@ export default function ReviewMealScreen({
                     <View key={ingredient.id} style={styles.itemRow}>
                       <Text style={styles.itemName}>{ingredient.name}</Text>
                       <Text style={styles.itemValue}>
-                        {formatIngredientValue(ingredient.amount, ingredient.unit)}
+                        {formatIngredientValue(
+                          ingredient.amount,
+                          ingredient.unit,
+                        )}
                       </Text>
                       {index < ingredientPreview.items.length - 1 ||
                       ingredientPreview.remainingCount > 0 ? (
@@ -527,20 +531,14 @@ export default function ReviewMealScreen({
         </View>
       </View>
 
-      <Modal
-        visible={showCancelModal}
+      <UnsavedChangesModal
+        visible={guard.confirmVisible}
         title={t("confirm_exit_title", { ns: "meals" })}
         message={t("confirm_exit_message", { ns: "meals" })}
-        primaryAction={{
-          label: t("leave", { ns: "common" }),
-          onPress: handleCancelConfirm,
-          tone: "destructive",
-        }}
-        secondaryAction={{
-          label: t("cancel", { ns: "common" }),
-          onPress: () => setShowCancelModal(false),
-        }}
-        onClose={() => setShowCancelModal(false)}
+        discardLabel={t("leave", { ns: "common" })}
+        continueEditingLabel={t("cancel", { ns: "common" })}
+        onDiscard={guard.confirmExit}
+        onContinueEditing={guard.cancelExit}
       />
     </Layout>
   );
@@ -560,7 +558,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
     },
     scrollContent: {
-      paddingTop: theme.spacing.sm,
+      paddingTop: theme.spacing.xxxl,
       paddingBottom: theme.spacing.xxxl + 104,
       gap: theme.spacing.md,
     },
@@ -774,5 +772,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     emptyAction: {
       alignSelf: "stretch",
+    },
+    screenCornerNavButton: {
+      top: 0,
     },
   });

@@ -51,7 +51,6 @@ const MealAddMethodScreen = () => {
         ]}
       >
         <View style={styles.handle} />
-        <Text style={styles.title}>{t("title", "Add meal")}</Text>
 
         <View style={styles.optionsWrap}>
           {state.options.map((option) => (
@@ -70,11 +69,7 @@ const MealAddMethodScreen = () => {
               testID={`meal-add-option-${option.key}`}
             >
               <View style={styles.optionIconBox}>
-                <AppIcon
-                  name={option.icon}
-                  size={19}
-                  color={theme.primary}
-                />
+                <AppIcon name={option.icon} size={19} color={theme.primary} />
               </View>
 
               <View style={styles.optionContent}>
@@ -137,13 +132,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderRadius: theme.rounded.full,
       backgroundColor: theme.border,
       alignSelf: "center",
-    },
-    title: {
-      color: theme.text,
-      fontSize: theme.typography.size.title,
-      lineHeight: theme.typography.lineHeight.title,
-      fontFamily: theme.typography.fontFamily.semiBold,
-      textAlign: "center",
     },
     optionsWrap: {
       gap: theme.spacing.xs,

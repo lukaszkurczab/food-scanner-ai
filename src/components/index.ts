@@ -10,6 +10,7 @@ export * from "./InfoBlock";
 export * from "./FormScreenShell";
 export * from "./GlobalActionButtons";
 export * from "./Modal";
+export * from "./UnsavedChangesModal";
 export * from "./Slider";
 export * from "./TextInput";
 export * from "./NumberInput";

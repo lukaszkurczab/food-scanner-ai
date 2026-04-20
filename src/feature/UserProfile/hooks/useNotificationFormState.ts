@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNotifications } from "@/hooks/useNotifications";
 import type {
   MealKind,
@@ -47,6 +47,7 @@ export function useNotificationFormState(params: {
     date.setHours(time.hour, time.minute, 0, 0);
     return date;
   });
+  const initialSnapshotRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (existing) {
@@ -60,10 +61,34 @@ export function useNotificationFormState(params: {
   }, [existing]);
 
   useEffect(() => {
+    initialSnapshotRef.current = null;
+  }, [params.notifId]);
+
+  useEffect(() => {
     const date = new Date();
     date.setHours(time.hour, time.minute, 0, 0);
     setTmp(date);
   }, [time.hour, time.minute]);
+
+  const snapshot = useMemo(
+    () =>
+      JSON.stringify({
+        name: name.trim(),
+        text: text.trim(),
+        timeHour: time.hour,
+        timeMinute: time.minute,
+        days: [...days].sort((left, right) => left - right),
+        enabled,
+        mealKind,
+      }),
+    [days, enabled, mealKind, name, text, time.hour, time.minute],
+  );
+
+  useEffect(() => {
+    if (initialSnapshotRef.current === null) {
+      initialSnapshotRef.current = snapshot;
+    }
+  }, [snapshot]);
 
   const prefers12h = useMemo(() => {
     try {
@@ -158,6 +183,10 @@ export function useNotificationFormState(params: {
     });
   }, [params.nav, params.notifId, params.uid, remove]);
 
+  const hasUnsavedChanges =
+    initialSnapshotRef.current !== null &&
+    snapshot !== initialSnapshotRef.current;
+
   return {
     name,
     setName,
@@ -181,5 +210,6 @@ export function useNotificationFormState(params: {
     confirmTime,
     onSave,
     onDelete,
+    hasUnsavedChanges,
   };
 }

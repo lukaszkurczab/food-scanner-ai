@@ -67,6 +67,18 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: ReactNode }) =>
       createElement(View, null, children),
+    ScreenCornerNavButton: ({
+      onPress,
+      accessibilityLabel,
+    }: {
+      onPress: () => void;
+      accessibilityLabel: string;
+    }) =>
+      createElement(
+        Pressable,
+        { onPress, accessibilityRole: "button", accessibilityLabel },
+        createElement(Text, null, "close-button"),
+      ),
     FullScreenLoader: () => createElement(Text, null, "full-screen-loader"),
     Button: ({ label, onPress, disabled }: ButtonProps) =>
       createElement(

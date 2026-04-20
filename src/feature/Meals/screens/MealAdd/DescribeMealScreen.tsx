@@ -2,7 +2,15 @@ import { useMemo } from "react";
 import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, ErrorBox, Layout, Modal, TextInput } from "@/components";
+import {
+  Button,
+  ErrorBox,
+  Layout,
+  Modal,
+  ScreenCornerNavButton,
+  TextInput,
+  UnsavedChangesModal,
+} from "@/components";
 import { AiCreditsBadge } from "@/components/AiCreditsBadge";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useMealTextAiState } from "@/feature/Meals/hooks/useMealTextAiState";
@@ -11,6 +19,7 @@ import {
   MealAddTextLink,
 } from "@/feature/Meals/components/MealAddPhotoScaffold";
 import { useTheme } from "@/theme/useTheme";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 
 const TEXT_PREVIEW_HEIGHT = 441;
 
@@ -88,12 +97,7 @@ export default function DescribeMealScreen({
       count: remainingCreditsAfterAnalyze,
       defaultValue: "✦ {{count}} credits remaining",
     });
-  }, [
-    creditsBalance,
-    remainingCreditsAfterAnalyze,
-    t,
-    textMealCost,
-  ]);
+  }, [creditsBalance, remainingCreditsAfterAnalyze, t, textMealCost]);
 
   const creditsNoteWarning =
     creditsBalance !== null &&
@@ -101,117 +105,169 @@ export default function DescribeMealScreen({
       (remainingCreditsAfterAnalyze !== null &&
         remainingCreditsAfterAnalyze <= 2));
   const showUpgradeLink = analysisState === "insufficient_credits";
+  const canStepBack = flow.canGoBack();
+  const hasUnsavedChanges =
+    name.trim().length > 0 || quickDescription.trim().length > 0;
+
+  const guard = useUnsavedChangesGuard({
+    navigation,
+    hasUnsavedChanges,
+    onExit: () => {
+      if (canStepBack) {
+        flow.goBack();
+        return;
+      }
+
+      navigation.goBack();
+    },
+  });
 
   return (
-    <Layout showNavigation={false} disableScroll style={styles.layout}>
-      <Pressable style={styles.fill} onPress={Keyboard.dismiss}>
-        <MealAddPhotoScaffold
-          topInset={previewTopInset}
-          previewHeight={TEXT_PREVIEW_HEIGHT}
-          preview={
-            <View style={styles.preview}>
-              <TextInput
-                label={t("meal_name", { ns: "meals" })}
-                value={name}
-                onChangeText={onNameChange}
-                placeholder={t("describe_meal_name_placeholder", {
-                  ns: "meals",
+    <>
+      <Layout showNavigation={false} disableScroll style={styles.layout}>
+        <Pressable style={styles.fill} onPress={Keyboard.dismiss}>
+          <MealAddPhotoScaffold
+            topInset={previewTopInset}
+            previewHeight={TEXT_PREVIEW_HEIGHT}
+            preview={
+              <View style={styles.preview}>
+                <TextInput
+                  label={t("meal_name", { ns: "meals" })}
+                  value={name}
+                  onChangeText={onNameChange}
+                  placeholder={t("describe_meal_name_placeholder", {
+                    ns: "meals",
+                  })}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  spellCheck={false}
+                  maxLength={80}
+                />
+                <TextInput
+                  label={t("describe_meal_quick_description_label", {
+                    ns: "meals",
+                  })}
+                  value={quickDescription}
+                  onChangeText={onQuickDescriptionChange}
+                  placeholder={t(
+                    "describe_meal_quick_description_placeholder",
+                    {
+                      ns: "meals",
+                    },
+                  )}
+                  multiline
+                  numberOfLines={10}
+                  autoCapitalize="sentences"
+                  autoCorrect={false}
+                  spellCheck={false}
+                  maxLength={300}
+                />
+              </View>
+            }
+            topAction={
+              <ScreenCornerNavButton
+                icon={canStepBack ? "back" : "close"}
+                onPress={guard.requestExit}
+                accessibilityLabel={t(canStepBack ? "back" : "close", {
+                  ns: "common",
+                  defaultValue: canStepBack ? "Back" : "Close",
                 })}
-                autoCapitalize="none"
-                autoCorrect={false}
-                spellCheck={false}
-                maxLength={80}
+                containerStyle={styles.screenCornerNavStyle}
               />
-              <TextInput
-                label={t("describe_meal_quick_description_label", {
-                  ns: "meals",
-                })}
-                value={quickDescription}
-                onChangeText={onQuickDescriptionChange}
-                placeholder={t("describe_meal_quick_description_placeholder", {
-                  ns: "meals",
-                })}
-                multiline
-                numberOfLines={10}
-                autoCapitalize="sentences"
-                autoCorrect={false}
-                spellCheck={false}
-                maxLength={300}
+            }
+            eyebrow={t("describe_meal_sheet_overline", { ns: "meals" })}
+            title={t("describe_meal_sheet_title", { ns: "meals" })}
+            description={t("describe_meal_sheet_subtitle", { ns: "meals" })}
+            accessory={
+              <AiCreditsBadge
+                text={`✦ ${String(t("credits.costSingle", { ns: "chat" }))}`}
+                tone="success"
               />
-            </View>
-          }
-          eyebrow={t("describe_meal_sheet_overline", { ns: "meals" })}
-          title={t("describe_meal_sheet_title", { ns: "meals" })}
-          description={t("describe_meal_sheet_subtitle", { ns: "meals" })}
-          accessory={
-            <AiCreditsBadge
-              text={`✦ ${String(t("credits.costSingle", { ns: "chat" }))}`}
-              tone="success"
-            />
-          }
-          content={
-            <>
-              {descriptionError || submitError ? (
-                <ErrorBox message={descriptionError ?? submitError ?? ""} />
-              ) : null}
-              <Button
-                label={t("describe_meal_primary_cta", { ns: "meals" })}
-                onPress={onAnalyze}
-                disabled={analyzeDisabled}
-                loading={loading}
-                style={styles.primaryButton}
-              />
-              {creditsNote ? (
-                <Text
-                  style={[
-                    styles.inlineNote,
-                    creditsNoteWarning ? styles.inlineNoteWarning : null,
-                  ]}
-                >
-                  {creditsNote}
-                </Text>
-              ) : null}
-              {showUpgradeLink ? (
+            }
+            content={
+              <>
+                {descriptionError || submitError ? (
+                  <ErrorBox message={descriptionError ?? submitError ?? ""} />
+                ) : null}
+                <Button
+                  label={t("describe_meal_primary_cta", { ns: "meals" })}
+                  onPress={onAnalyze}
+                  disabled={analyzeDisabled}
+                  loading={loading}
+                  style={styles.primaryButton}
+                />
+                {creditsNote ? (
+                  <Text
+                    style={[
+                      styles.inlineNote,
+                      creditsNoteWarning ? styles.inlineNoteWarning : null,
+                    ]}
+                  >
+                    {creditsNote}
+                  </Text>
+                ) : null}
+                {showUpgradeLink ? (
+                  <MealAddTextLink
+                    label={t("limit.upgradeCta", { ns: "chat" })}
+                    onPress={openPaywall}
+                    disabled={loading}
+                  />
+                ) : null}
                 <MealAddTextLink
-                  label={t("limit.upgradeCta", { ns: "chat" })}
-                  onPress={openPaywall}
+                  label={t("change_method", { ns: "meals" })}
+                  onPress={() =>
+                    navigation.navigate("MealAddMethod", {
+                      selectionMode: "temporary",
+                      origin: "mealAddFlow",
+                    })
+                  }
                   disabled={loading}
                 />
-              ) : null}
-              <MealAddTextLink
-                label={t("change_method", { ns: "meals" })}
-                onPress={() =>
-                  navigation.navigate("MealAddMethod", {
-                    selectionMode: "temporary",
-                    origin: "mealAddFlow",
-                  })
-                }
-                disabled={loading}
-              />
-            </>
-          }
-        />
-      </Pressable>
+              </>
+            }
+          />
+        </Pressable>
 
-      <Modal
-        visible={showLimitModal}
-        title={t("limit.reachedTitle", { ns: "chat" })}
-        message={t("limit.reachedShort", {
-          ns: "chat",
-          used: creditsUsed,
-          limit: creditAllocation,
+        <Modal
+          visible={showLimitModal}
+          title={t("limit.reachedTitle", { ns: "chat" })}
+          message={t("limit.reachedShort", {
+            ns: "chat",
+            used: creditsUsed,
+            limit: creditAllocation,
+          })}
+          primaryAction={{
+            label: t("limit.upgradeCta", { ns: "chat" }),
+            onPress: openPaywall,
+          }}
+          secondaryAction={{
+            label: t("cancel", { ns: "common" }),
+            onPress: closeLimitModal,
+          }}
+          onClose={closeLimitModal}
+        />
+      </Layout>
+
+      <UnsavedChangesModal
+        visible={guard.confirmVisible}
+        title={t("discard_changes_title", {
+          ns: "meals",
+          defaultValue: "Discard changes?",
         })}
-        primaryAction={{
-          label: t("limit.upgradeCta", { ns: "chat" }),
-          onPress: openPaywall,
-        }}
-        secondaryAction={{
-          label: t("cancel", { ns: "common" }),
-          onPress: closeLimitModal,
-        }}
-        onClose={closeLimitModal}
+        message={t("discard_changes_message", {
+          ns: "meals",
+          defaultValue:
+            "You have unsaved changes. Do you want to discard them?",
+        })}
+        discardLabel={t("discard", { ns: "common", defaultValue: "Discard" })}
+        continueEditingLabel={t("continue_editing", {
+          ns: "common",
+          defaultValue: "Continue editing",
+        })}
+        onDiscard={guard.confirmExit}
+        onContinueEditing={guard.cancelExit}
       />
-    </Layout>
+    </>
   );
 }
 
@@ -255,5 +311,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     inlineNoteWarning: {
       color: theme.accentWarm,
+    },
+    screenCornerNavStyle: {
+      top: 0,
     },
   });

@@ -10,7 +10,7 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, Layout, Modal } from "@/components";
+import { BackTitleHeader, Button, Layout, Modal } from "@/components";
 import { FallbackImage } from "../components/FallbackImage";
 import AppIcon from "@/components/AppIcon";
 import { useMealDetailsScreenState } from "@/feature/History/hooks/useMealDetailsScreenState";
@@ -56,7 +56,8 @@ function formatIngredientAmount(
   unit: string | undefined,
   gramLabel: string,
 ): string {
-  const resolvedUnit = typeof unit === "string" && unit.trim() ? unit.trim() : "g";
+  const resolvedUnit =
+    typeof unit === "string" && unit.trim() ? unit.trim() : "g";
   const displayUnit = resolvedUnit === "g" ? gramLabel : resolvedUnit;
   if (!Number.isFinite(amount)) return `0 ${displayUnit}`;
   const value = Number.isInteger(amount) ? String(amount) : amount.toFixed(1);
@@ -111,6 +112,11 @@ export default function MealDetailsScreen() {
   if (!state.draft || !state.nutrition) {
     return (
       <Layout showNavigation={false} style={styles.layout}>
+        <BackTitleHeader
+          title={t("navText", { ns: "history" })}
+          onBack={state.handleBack}
+          titleSize="h2"
+        />
         <View style={[styles.emptyWrap, contentInsetsStyle]}>
           <Text style={styles.emptyTitle}>
             {t("detailsUnavailable.title", { ns: "meals" })}
@@ -138,6 +144,12 @@ export default function MealDetailsScreen() {
     <Layout showNavigation={false} style={styles.layout}>
       <>
         <View style={[styles.content, contentInsetsStyle]}>
+          <BackTitleHeader
+            title={t("navText", { ns: "history" })}
+            onBack={state.handleBack}
+            titleSize="h2"
+            style={{ marginBottom: 0 }}
+          />
           {state.showImageBlock ? (
             <View style={styles.imageSection}>
               <View style={styles.imageWrap}>
@@ -244,47 +256,49 @@ export default function MealDetailsScreen() {
             </View>
           </View>
 
-          <View style={styles.ingredientsSection}>
-            <View style={styles.ingredientsHeader}>
-              <Text style={styles.ingredientsTitle}>
-                {t("detailsIngredientsTitle", {
-                  ns: "history",
-                  defaultValue: "Ingredients",
-                })}
-              </Text>
-              <View style={styles.itemsPill}>
-                <Text style={styles.itemsPillLabel}>
-                  {t("detailsItemsCount", {
+          {ingredientCount > 0 && (
+            <View style={styles.ingredientsSection}>
+              <View style={styles.ingredientsHeader}>
+                <Text style={styles.ingredientsTitle}>
+                  {t("detailsIngredientsTitle", {
                     ns: "history",
-                    count: state.draft.ingredients.length,
-                    defaultValue: `${state.draft.ingredients.length} items`,
+                    defaultValue: "Ingredients",
                   })}
                 </Text>
+                <View style={styles.itemsPill}>
+                  <Text style={styles.itemsPillLabel}>
+                    {t("detailsItemsCount", {
+                      ns: "history",
+                      count: state.draft.ingredients.length,
+                      defaultValue: `${state.draft.ingredients.length} items`,
+                    })}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.ingredientsCard}>
+                {state.draft.ingredients.map((ingredient, idx) => (
+                  <View key={ingredient.id || String(idx)}>
+                    <View style={styles.ingredientRow}>
+                      <Text numberOfLines={1} style={styles.ingredientName}>
+                        {ingredient.name}
+                      </Text>
+                      <Text numberOfLines={1} style={styles.ingredientAmount}>
+                        {formatIngredientAmount(
+                          Number(ingredient.amount) || 0,
+                          ingredient.unit,
+                          t("gram", { ns: "common", defaultValue: "g" }),
+                        )}
+                      </Text>
+                    </View>
+                    {idx < ingredientCount - 1 ? (
+                      <View style={styles.ingredientDivider} />
+                    ) : null}
+                  </View>
+                ))}
               </View>
             </View>
-
-            <View style={styles.ingredientsCard}>
-              {state.draft.ingredients.map((ingredient, idx) => (
-                <View key={ingredient.id || String(idx)}>
-                  <View style={styles.ingredientRow}>
-                    <Text numberOfLines={1} style={styles.ingredientName}>
-                      {ingredient.name}
-                    </Text>
-                    <Text numberOfLines={1} style={styles.ingredientAmount}>
-                      {formatIngredientAmount(
-                        Number(ingredient.amount) || 0,
-                        ingredient.unit,
-                        t("gram", { ns: "common", defaultValue: "g" }),
-                      )}
-                    </Text>
-                  </View>
-                  {idx < ingredientCount - 1 ? (
-                    <View style={styles.ingredientDivider} />
-                  ) : null}
-                </View>
-              ))}
-            </View>
-          </View>
+          )}
 
           <View style={styles.actionsWrap}>
             <Button

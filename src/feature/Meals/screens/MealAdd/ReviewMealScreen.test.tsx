@@ -23,6 +23,14 @@ type ModalProps = {
   secondaryAction?: { label: string; onPress?: () => void };
 };
 
+type UnsavedChangesModalProps = {
+  visible: boolean;
+  discardLabel: string;
+  continueEditingLabel: string;
+  onDiscard: () => void;
+  onContinueEditing: () => void;
+};
+
 const mockUseAuthContext = jest.fn();
 const mockUseMealDraftContext = jest.fn();
 const mockUseUserContext = jest.fn();
@@ -101,6 +109,12 @@ jest.mock("@/components", () => {
         { onPress, disabled, accessibilityRole: "button" },
         createElement(Text, null, label),
       ),
+    ScreenCornerNavButton: ({ onPress }: { onPress: () => void }) =>
+      createElement(
+        Pressable,
+        { onPress, accessibilityRole: "button" },
+        createElement(Text, null, "close-button"),
+      ),
     Checkbox: ({ checked, onChange }: CheckboxProps) =>
       createElement(
         Pressable,
@@ -130,6 +144,29 @@ jest.mock("@/components", () => {
                   createElement(Text, null, secondaryAction.label),
                 )
               : null,
+          )
+        : null,
+    UnsavedChangesModal: ({
+      visible,
+      discardLabel,
+      continueEditingLabel,
+      onDiscard,
+      onContinueEditing,
+    }: UnsavedChangesModalProps) =>
+      visible
+        ? createElement(
+            View,
+            null,
+            createElement(
+              Pressable,
+              { onPress: onDiscard, accessibilityRole: "button" },
+              createElement(Text, null, discardLabel),
+            ),
+            createElement(
+              Pressable,
+              { onPress: onContinueEditing, accessibilityRole: "button" },
+              createElement(Text, null, continueEditingLabel),
+            ),
           )
         : null,
     PhotoPreview: () => createElement(Text, null, "photo-preview"),
@@ -187,6 +224,9 @@ const buildProps = () => {
     props: {
       navigation: {
         navigate,
+        goBack: jest.fn(),
+        canGoBack: jest.fn(() => true),
+        dispatch: jest.fn(),
         addListener: jest.fn(
           (_eventName: string, listener: typeof beforeRemoveListener) => {
             beforeRemoveListener = listener ?? undefined;
@@ -429,7 +469,9 @@ describe("ReviewMealScreen", () => {
 
     fireEvent.press(getByText("common:leave"));
     expect(ctx.clearMeal).toHaveBeenCalledWith("user-1");
-    expect(testProps.navigate).toHaveBeenCalledWith("Home");
+    expect(testProps.props.navigation.dispatch).toHaveBeenCalledWith({
+      type: "GO_BACK",
+    });
     expect(mockBackHandlerAddEventListener).toHaveBeenCalled();
   });
 });

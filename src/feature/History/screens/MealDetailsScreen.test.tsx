@@ -64,6 +64,18 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: React.ReactNode }) =>
       createElement(View, null, children),
+    ScreenCornerNavButton: ({
+      onPress,
+      accessibilityLabel,
+    }: {
+      onPress: () => void;
+      accessibilityLabel: string;
+    }) =>
+      createElement(
+        Pressable,
+        { onPress, accessibilityRole: "button", accessibilityLabel },
+        createElement(Text, null, "back-button"),
+      ),
     Card: ({
       children,
       onPress,
@@ -189,6 +201,7 @@ const buildState = (overrides?: Record<string, unknown>) => ({
   closeDeleteModal: jest.fn(),
   confirmDelete: jest.fn(),
   reloadFromLocal: jest.fn(),
+  handleBack: jest.fn(),
   ...overrides,
 });
 
@@ -213,7 +226,8 @@ describe("MealDetailsScreen", () => {
 
     expect(screen.getByText("meals:detailsUnavailable.title")).toBeTruthy();
     expect(screen.getByText("meals:detailsUnavailable.desc")).toBeTruthy();
-    expect(screen.queryByLabelText("common:back")).toBeNull();
+    fireEvent.press(screen.getByLabelText("common:back"));
+    expect(state.handleBack).toHaveBeenCalledTimes(1);
     fireEvent.press(screen.getByText("common:retry"));
     expect(state.reloadFromLocal).toHaveBeenCalledTimes(1);
   });
@@ -255,10 +269,11 @@ describe("MealDetailsScreen", () => {
     expect(screen.getByText("fallback-image:file:///meal.jpg")).toBeTruthy();
     fireEvent.press(screen.getByLabelText("common:share"));
     fireEvent.press(screen.getByText("image-error"));
+    fireEvent.press(screen.getByLabelText("common:back"));
 
     expect(state.goShare).toHaveBeenCalledTimes(1);
     expect(state.onImageError).toHaveBeenCalledTimes(1);
-    expect(screen.queryByLabelText("common:back")).toBeNull();
+    expect(state.handleBack).toHaveBeenCalledTimes(1);
   });
 
   it("renders the image loading branch", () => {

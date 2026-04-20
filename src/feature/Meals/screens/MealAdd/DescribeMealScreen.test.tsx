@@ -60,6 +60,12 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: ReactNode }) =>
       createElement(View, null, children),
+    ScreenCornerNavButton: ({ onPress }: { onPress: () => void }) =>
+      createElement(
+        Pressable,
+        { onPress, accessibilityRole: "button" },
+        createElement(Text, null, "screen-corner-button"),
+      ),
     Button: ({ label, onPress, disabled, testID }: ButtonProps) =>
       createElement(
         Pressable,
@@ -69,6 +75,7 @@ jest.mock("@/components", () => {
     ErrorBox: ({ message }: { message: string }) =>
       createElement(Text, null, message),
     Modal: () => null,
+    UnsavedChangesModal: () => null,
     TextInput: ({ label, autoCapitalize }: TextInputProps) =>
       createElement(
         View,
@@ -147,7 +154,13 @@ describe("DescribeMealScreen", () => {
 
   it("does not auto-capitalize the meal name input", () => {
     const props = {
-      navigation: { navigate: jest.fn() } as never,
+      navigation: {
+        navigate: jest.fn(),
+        goBack: jest.fn(),
+        canGoBack: jest.fn(() => true),
+        addListener: jest.fn(() => jest.fn()),
+        dispatch: jest.fn(),
+      } as never,
       flow: {
         goTo: jest.fn(),
         replace: jest.fn(),
@@ -164,7 +177,13 @@ describe("DescribeMealScreen", () => {
 
   it("opens the temporary method chooser", () => {
     const props = {
-      navigation: { navigate: jest.fn() } as never,
+      navigation: {
+        navigate: jest.fn(),
+        goBack: jest.fn(),
+        canGoBack: jest.fn(() => true),
+        addListener: jest.fn(() => jest.fn()),
+        dispatch: jest.fn(),
+      } as never,
       flow: {
         goTo: jest.fn(),
         replace: jest.fn(),
@@ -186,7 +205,13 @@ describe("DescribeMealScreen", () => {
 
   it("shows remaining credits note for assistant analysis", () => {
     const props = {
-      navigation: { navigate: jest.fn() } as never,
+      navigation: {
+        navigate: jest.fn(),
+        goBack: jest.fn(),
+        canGoBack: jest.fn(() => true),
+        addListener: jest.fn(() => jest.fn()),
+        dispatch: jest.fn(),
+      } as never,
       flow: {
         goTo: jest.fn(),
         replace: jest.fn(),

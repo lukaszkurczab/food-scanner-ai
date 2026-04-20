@@ -7,9 +7,8 @@ import { renderWithTheme } from "@/test-utils/renderWithTheme";
 const mockUseNavigation = jest.fn();
 const mockUseRoute = jest.fn();
 const mockUseMealAddMethodState = jest.fn();
-const mockTrackMealAddMethodSelected = jest.fn<
-  (optionKey: string) => Promise<void>
->();
+const mockTrackMealAddMethodSelected =
+  jest.fn<(optionKey: string) => Promise<void>>();
 
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockUseNavigation(),
@@ -80,8 +79,7 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 
 jest.mock("@/components", () => {
-  const { createElement } =
-    jest.requireActual<typeof import("react")>("react");
+  const { createElement } = jest.requireActual<typeof import("react")>("react");
   const { View } =
     jest.requireActual<typeof import("react-native")>("react-native");
 
@@ -119,9 +117,8 @@ describe("MealAddMethodScreen", () => {
         descKey: "barcodeDesc",
       },
     ] as const;
-    const handleOptionPress = jest.fn<
-      (option: (typeof options)[number]) => Promise<void>
-    >();
+    const handleOptionPress =
+      jest.fn<(option: (typeof options)[number]) => Promise<void>>();
     handleOptionPress.mockResolvedValue(undefined);
     mockUseMealAddMethodState.mockReturnValue({
       options,
@@ -131,7 +128,6 @@ describe("MealAddMethodScreen", () => {
 
     const { getByTestId, getByText } = renderWithTheme(<MealAddMethodScreen />);
 
-    expect(getByText("meals:title")).toBeTruthy();
     expect(getByText("meals:photoTitle")).toBeTruthy();
     expect(getByText("meals:barcodeTitle")).toBeTruthy();
 

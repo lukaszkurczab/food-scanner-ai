@@ -441,16 +441,20 @@ describe("MealCameraScreen", () => {
     expect(queryByText("Take photo")).toBeNull();
   });
 
-  it("does not render the top-left close button on the entry camera screen", () => {
+  it("renders the top-left close button on the entry camera screen", () => {
     const props = buildProps();
     props.flow.canGoBack = jest.fn(() => false) as never;
     mockUseMealCameraState.mockReturnValue(buildHookState());
 
-    const { queryByText } = renderWithTheme(<MealCameraScreen {...props} />);
+    const { getByText, queryByText } = renderWithTheme(
+      <MealCameraScreen {...props} />,
+    );
 
-    expect(queryByText("close:Close")).toBeNull();
+    fireEvent.press(getByText("close:Close"));
+
+    expect(queryByText("close:Close")).toBeTruthy();
     expect(queryByText("back:Back")).toBeNull();
-    expect(props.navigation.goBack).not.toHaveBeenCalled();
+    expect(props.navigation.goBack).toHaveBeenCalledTimes(1);
   });
 
   it("forwards the camera ready callback to the hook state", () => {

@@ -275,10 +275,10 @@ describe("AddMealScreen", () => {
     });
     expect(handled).toBe(true);
     expect(getByText("screen:ReviewMeal")).toBeTruthy();
-    expect(navigation.goBack).toHaveBeenCalledTimes(1);
+    expect(navigation.goBack).not.toHaveBeenCalled();
   });
 
-  it("falls back to navigation.goBack when there is no stacked step", () => {
+  it("does not install parent hardware handling for review step", () => {
     const navigation = {
       goBack: jest.fn(),
       addListener: jest.fn(
@@ -297,11 +297,11 @@ describe("AddMealScreen", () => {
     act(() => {
       handled = backHandlerListener?.() ?? false;
     });
-    expect(handled).toBe(true);
-    expect(navigation.goBack).toHaveBeenCalledTimes(1);
+    expect(handled).toBe(false);
+    expect(navigation.goBack).not.toHaveBeenCalled();
   });
 
-  it("delegates review back to navigation instead of popping to the previous add-meal step", () => {
+  it("keeps review hardware handling delegated to the child screen", () => {
     const navigation = {
       goBack: jest.fn(),
       addListener: jest.fn(
@@ -324,8 +324,8 @@ describe("AddMealScreen", () => {
       handled = backHandlerListener?.() ?? false;
     });
 
-    expect(handled).toBe(true);
-    expect(navigation.goBack).toHaveBeenCalledTimes(1);
+    expect(handled).toBe(false);
+    expect(navigation.goBack).not.toHaveBeenCalled();
     expect(getByText("screen:ReviewMeal")).toBeTruthy();
   });
 
@@ -358,7 +358,7 @@ describe("AddMealScreen", () => {
     expect(navigation.goBack).not.toHaveBeenCalled();
   });
 
-  it("uses navigation.goBack on hardware back when a non-review step is alone on the stack", () => {
+  it("does not install parent hardware handling for describe step", () => {
     const navigation = {
       goBack: jest.fn(),
       addListener: jest.fn(
@@ -378,8 +378,8 @@ describe("AddMealScreen", () => {
       handled = backHandlerListener?.() ?? false;
     });
 
-    expect(handled).toBe(true);
-    expect(navigation.goBack).toHaveBeenCalledTimes(1);
+    expect(handled).toBe(false);
+    expect(navigation.goBack).not.toHaveBeenCalled();
   });
 
   it("keeps the current step when flow.goBack is called on a single-screen stack", () => {

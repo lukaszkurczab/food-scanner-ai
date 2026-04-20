@@ -52,20 +52,28 @@ export function BackTitleHeader({
         }
         testID={backButtonTestID}
         style={({ pressed }) => [
-          styles.iconButton,
+          styles.buttonWrapper,
           pressed ? styles.iconButtonPressed : null,
         ]}
       >
-        <AppIcon name="arrow" size={24} color={theme.text} />
-      </Pressable>
+        <AppIcon
+          name="arrow"
+          size={24}
+          style={styles.iconButton}
+          color={theme.text}
+        />
 
-      <Text
-        style={[styles.title, titleSize === "h2" ? styles.titleCompact : null]}
-        accessibilityRole="header"
-        numberOfLines={1}
-      >
-        {title}
-      </Text>
+        <Text
+          style={[
+            styles.title,
+            titleSize === "h2" ? styles.titleCompact : null,
+          ]}
+          accessibilityRole="header"
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
+      </Pressable>
 
       {trailingAction ? (
         <Pressable
@@ -75,7 +83,7 @@ export function BackTitleHeader({
           accessibilityLabel={trailingAction.accessibilityLabel}
           testID={trailingAction.testID}
           style={({ pressed }) => [
-            styles.iconButton,
+            styles.buttonWrapper,
             pressed || trailingAction.disabled
               ? styles.iconButtonPressed
               : null,
@@ -84,6 +92,7 @@ export function BackTitleHeader({
           <AppIcon
             name={trailingAction.icon}
             size={20}
+            style={styles.iconButton}
             color={
               trailingAction.disabled ? theme.textTertiary : theme.textSecondary
             }
@@ -98,13 +107,18 @@ export function BackTitleHeader({
 
 const makeStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
+    buttonWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: theme.rounded.md,
+    },
     container: {
       flexDirection: "row",
       alignItems: "center",
       marginHorizontal: -(theme.spacing.screenPadding + theme.spacing.sm),
       paddingHorizontal: theme.spacing.screenPaddingWide,
       marginBottom: theme.spacing.md,
-      gap: theme.spacing.sm,
       backgroundColor: theme.background,
     },
     iconButton: {

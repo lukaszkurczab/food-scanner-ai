@@ -54,6 +54,12 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: unknown }) =>
       createElement(View, null, children as never),
+    ScreenCornerNavButton: ({ onPress }: { onPress: () => void }) =>
+      createElement(
+        Pressable,
+        { onPress, accessibilityRole: "button" },
+        createElement(Text, null, "screen-corner-button"),
+      ),
     Card: ({ children }: { children?: unknown }) =>
       createElement(View, null, children as never),
     Button: ({ label, onPress }: ButtonProps) =>
@@ -80,6 +86,35 @@ jest.mock("@/components", () => {
     Calendar: () => createElement(View, null, "calendar"),
     Clock12h: () => createElement(View, null, "clock-12h"),
     Clock24h: () => createElement(View, null, "clock-24h"),
+    UnsavedChangesModal: ({
+      visible,
+      onDiscard,
+      onContinueEditing,
+      discardLabel,
+      continueEditingLabel,
+    }: {
+      visible: boolean;
+      onDiscard: () => void;
+      onContinueEditing: () => void;
+      discardLabel: string;
+      continueEditingLabel: string;
+    }) =>
+      visible
+        ? createElement(
+            View,
+            null,
+            createElement(
+              Pressable,
+              { onPress: onDiscard },
+              createElement(Text, null, discardLabel),
+            ),
+            createElement(
+              Pressable,
+              { onPress: onContinueEditing },
+              createElement(Text, null, continueEditingLabel),
+            ),
+          )
+        : null,
   };
 });
 
@@ -111,7 +146,13 @@ const buildMeal = (overrides?: Partial<Meal>): Meal => ({
 
 const buildProps = () =>
   ({
-    navigation: {} as never,
+    navigation: {
+      navigate: jest.fn(),
+      goBack: jest.fn(),
+      canGoBack: jest.fn(() => true),
+      addListener: jest.fn(() => jest.fn()),
+      dispatch: jest.fn(),
+    } as never,
     flow: {
       goTo: jest.fn(),
       replace: jest.fn(),

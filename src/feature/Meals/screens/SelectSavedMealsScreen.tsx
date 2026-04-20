@@ -15,7 +15,13 @@ import { useTheme } from "@/theme/useTheme";
 import { useAuthContext } from "@/context/AuthContext";
 import type { Meal } from "@/types/meal";
 import { EmptyState } from "../components/EmptyState";
-import { Button, FullScreenLoader, Layout, TextInput } from "@/components";
+import {
+  Button,
+  FullScreenLoader,
+  Layout,
+  ScreenCornerNavButton,
+  TextInput,
+} from "@/components";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useTranslation } from "react-i18next";
 import { useSelectSavedMealsState } from "@/feature/Meals/hooks/useSelectSavedMealsState";
@@ -119,6 +125,15 @@ export default function SelectSavedMealScreen({
     [handleStartOver, styles, t],
   );
 
+  const handleExit = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigation.navigate("Home");
+  }, [navigation]);
+
   if (loading) {
     return (
       <Layout disableScroll showNavigation={false}>
@@ -196,6 +211,12 @@ export default function SelectSavedMealScreen({
 
   return (
     <Layout disableScroll showNavigation={false} style={styles.layout}>
+      <ScreenCornerNavButton
+        icon="close"
+        onPress={handleExit}
+        accessibilityLabel={t("common:close", { defaultValue: "Close" })}
+      />
+
       <View style={styles.screen}>
         <View style={styles.searchWrap}>
           <TextInput
@@ -249,8 +270,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       marginBottom: 12,
     },
     searchWrap: {
-      paddingTop: 18,
+      paddingTop: theme.spacing.xs,
       paddingBottom: 18,
+      paddingRight: theme.spacing.display,
     },
     searchInput: {
       width: "100%",

@@ -45,8 +45,8 @@ export function ScreenCornerNavButton({
       style={({ pressed }) => [
         styles.button,
         {
-          top: theme.spacing.md,
-          left: theme.spacing.md,
+          top: theme.spacing.xs,
+          right: 0,
           backgroundColor:
             disabled || pressed ? theme.surfaceAlt : theme.surfaceElevated,
           borderColor: theme.border,
@@ -68,9 +68,9 @@ const styles = StyleSheet.create({
   button: {
     position: "absolute",
     zIndex: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,

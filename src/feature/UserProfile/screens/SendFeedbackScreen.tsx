@@ -14,11 +14,13 @@ import {
   LongTextInput,
   SettingsRow,
   SettingsSection,
+  UnsavedChangesModal,
 } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import { useAuthContext } from "@/context/AuthContext";
 import { sendFeedback } from "@/services/feedback/feedbackService";
 import { isOfflineNetState } from "@/services/core/networkState";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 
 type SendFeedbackNavigation = StackNavigationProp<
   RootStackParamList,
@@ -40,7 +42,7 @@ export default function SendFeedbackScreen({
 }: SendFeedbackScreenProps) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { t } = useTranslation("profile");
+  const { t } = useTranslation(["profile", "common"]);
   const { firebaseUser: user } = useAuthContext();
   const [message, setMessage] = useState("");
   const [attachment, setAttachment] = useState<string | null>(null);
@@ -49,6 +51,7 @@ export default function SendFeedbackScreen({
   const [status, setStatus] = useState<FeedbackStatus>(null);
 
   const trimmedMessage = message.trim();
+  const hasUnsavedChanges = !sent && (trimmedMessage.length > 0 || !!attachment);
 
   const handleBack = () => {
     if (navigation.canGoBack()) {
@@ -58,6 +61,12 @@ export default function SendFeedbackScreen({
 
     navigation.navigate("HelpFeedback");
   };
+
+  const guard = useUnsavedChangesGuard({
+    navigation,
+    hasUnsavedChanges,
+    onExit: handleBack,
+  });
 
   const handlePickAttachment = async () => {
     setStatus(null);
@@ -140,147 +149,161 @@ export default function SendFeedbackScreen({
   };
 
   return (
-    <FormScreenShell
-      title={t("sendFeedback", { defaultValue: "Send feedback" })}
-      intro={
-        sent
-          ? t("feedbackSentIntro", {
-              defaultValue:
-                "Your message has been sent through Fitaly’s in-app feedback channel.",
-            })
-          : t("feedbackScreenIntro", {
-              defaultValue:
-                "Use feedback for product ideas, suggestions, or bug reports you want to send from inside the app.",
-            })
-      }
-      onBack={handleBack}
-      actionLabel={
-        sent
-          ? t("feedbackDoneAction", {
-              defaultValue: "Back to help",
-            })
-          : t("send", { defaultValue: "Send" })
-      }
-      onActionPress={() => {
-        if (sent) {
-          handleBack();
-          return;
-        }
-
-        void handleSend();
-      }}
-      actionLoading={sending}
-      actionDisabled={sent ? false : !trimmedMessage || sending}
-      secondaryActionLabel={
-        sent
-          ? t("feedbackSendAnotherAction", {
-              defaultValue: "Send another message",
-            })
-          : undefined
-      }
-      secondaryActionPress={sent ? resetFeedbackForm : undefined}
-      secondaryActionDisabled={sending}
-    >
-      <View style={styles.content}>
-        {sent ? (
-          <InfoBlock
-            title={t("feedbackThankYou", {
-              defaultValue: "Thank you for your feedback!",
-            })}
-            body={t("feedbackThankYouBody", {
-              defaultValue:
-                "We’ve received your message. If you need a direct reply about an account or technical issue, use Contact support.",
-            })}
-            tone="success"
-            icon={<AppIcon name="check" size={18} color={theme.success.text} />}
-          />
-        ) : (
-          <>
-            {status ? (
-              <InfoBlock
-                title={status.title}
-                body={status.body}
-                tone={status.tone}
-                icon={
-                  <AppIcon
-                    name={status.tone === "warning" ? "info" : "close"}
-                    size={18}
-                    color={
-                      status.tone === "warning"
-                        ? theme.warning.text
-                        : theme.error.text
-                    }
-                  />
-                }
-              />
-            ) : null}
-
-            <LongTextInput
-              label={t("feedbackMessageLabel", {
-                defaultValue: "Message",
-              })}
-              placeholder={t("feedbackPlaceholder", {
-                defaultValue: "Type your message here...",
-              })}
-              value={message}
-              onChangeText={setMessage}
-              style={styles.textarea}
-              inputStyle={styles.textareaInput}
-              maxLength={500}
-            />
-
-            <SettingsSection
-              title={t("feedbackAttachmentSectionTitle", {
-                defaultValue: "Optional attachment",
-              })}
-              footer={t("feedbackAppInfo", {
+    <>
+      <FormScreenShell
+        title={t("sendFeedback", { defaultValue: "Send feedback" })}
+        intro={
+          sent
+            ? t("feedbackSentIntro", {
                 defaultValue:
-                  "Your app version and device info will be sent automatically to help us improve Fitaly.",
+                  "Your message has been sent through Fitaly’s in-app feedback channel.",
+              })
+            : t("feedbackScreenIntro", {
+                defaultValue:
+                  "Use feedback for product ideas, suggestions, or bug reports you want to send from inside the app.",
+              })
+        }
+        onBack={guard.requestExit}
+        actionLabel={
+          sent
+            ? t("feedbackDoneAction", {
+                defaultValue: "Back to help",
+              })
+            : t("send", { defaultValue: "Send" })
+        }
+        onActionPress={() => {
+          if (sent) {
+            handleBack();
+            return;
+          }
+
+          void handleSend();
+        }}
+        actionLoading={sending}
+        actionDisabled={sent ? false : !trimmedMessage || sending}
+        secondaryActionLabel={
+          sent
+            ? t("feedbackSendAnotherAction", {
+                defaultValue: "Send another message",
+              })
+            : undefined
+        }
+        secondaryActionPress={sent ? resetFeedbackForm : undefined}
+        secondaryActionDisabled={sending}
+      >
+        <View style={styles.content}>
+          {sent ? (
+            <InfoBlock
+              title={t("feedbackThankYou", {
+                defaultValue: "Thank you for your feedback!",
               })}
-            >
-              <SettingsRow
-                title={
-                  attachment
-                    ? t("feedbackReplaceAttachment", {
-                        defaultValue: "Replace attachment",
-                      })
-                    : t("addAttachment", {
-                        defaultValue: "Add attachment",
-                      })
-                }
-                onPress={() => {
-                  void handlePickAttachment();
-                }}
-                leading={
-                  <AppIcon
-                    name={attachment ? "image" : "add-photo"}
-                    size={18}
-                    color={theme.textSecondary}
-                  />
-                }
+              body={t("feedbackThankYouBody", {
+                defaultValue:
+                  "We’ve received your message. If you need a direct reply about an account or technical issue, use Contact support.",
+              })}
+              tone="success"
+              icon={
+                <AppIcon name="check" size={18} color={theme.success.text} />
+              }
+            />
+          ) : (
+            <>
+              {status ? (
+                <InfoBlock
+                  title={status.title}
+                  body={status.body}
+                  tone={status.tone}
+                  icon={
+                    <AppIcon
+                      name={status.tone === "warning" ? "info" : "close"}
+                      size={18}
+                      color={
+                        status.tone === "warning"
+                          ? theme.warning.text
+                          : theme.error.text
+                      }
+                    />
+                  }
+                />
+              ) : null}
+
+              <LongTextInput
+                label={t("feedbackMessageLabel", {
+                  defaultValue: "Message",
+                })}
+                placeholder={t("feedbackPlaceholder", {
+                  defaultValue: "Type your message here...",
+                })}
+                value={message}
+                onChangeText={setMessage}
+                style={styles.textarea}
+                inputStyle={styles.textareaInput}
+                maxLength={500}
               />
-            </SettingsSection>
 
-            {attachment ? (
-              <View style={styles.attachmentCard}>
-                <Image
-                  source={{ uri: attachment }}
-                  style={styles.attachmentImage}
-                  onError={() => setAttachment(null)}
+              <SettingsSection
+                title={t("feedbackAttachmentSectionTitle", {
+                  defaultValue: "Optional attachment",
+                })}
+                footer={t("feedbackAppInfo", {
+                  defaultValue:
+                    "Your app version and device info will be sent automatically to help us improve Fitaly.",
+                })}
+              >
+                <SettingsRow
+                  title={
+                    attachment
+                      ? t("feedbackReplaceAttachment", {
+                          defaultValue: "Replace attachment",
+                        })
+                      : t("addAttachment", {
+                          defaultValue: "Add attachment",
+                        })
+                  }
+                  onPress={() => {
+                    void handlePickAttachment();
+                  }}
+                  leading={
+                    <AppIcon
+                      name={attachment ? "image" : "add-photo"}
+                      size={18}
+                      color={theme.textSecondary}
+                    />
+                  }
                 />
+              </SettingsSection>
 
-                <Button
-                  label={t("removeAttachment", { defaultValue: "Remove" })}
-                  variant="secondary"
-                  fullWidth={false}
-                  onPress={() => setAttachment(null)}
-                />
-              </View>
-            ) : null}
-          </>
-        )}
-      </View>
-    </FormScreenShell>
+              {attachment ? (
+                <View style={styles.attachmentCard}>
+                  <Image
+                    source={{ uri: attachment }}
+                    style={styles.attachmentImage}
+                    onError={() => setAttachment(null)}
+                  />
+
+                  <Button
+                    label={t("removeAttachment", { defaultValue: "Remove" })}
+                    variant="secondary"
+                    fullWidth={false}
+                    onPress={() => setAttachment(null)}
+                  />
+                </View>
+              ) : null}
+            </>
+          )}
+        </View>
+      </FormScreenShell>
+
+      <UnsavedChangesModal
+        visible={guard.confirmVisible}
+        title={t("unsaved_changes_title", { ns: "common" })}
+        message={t("unsaved_changes_message", { ns: "common" })}
+        discardLabel={t("discard", { ns: "common" })}
+        continueEditingLabel={t("continue_editing", { ns: "common" })}
+        onDiscard={guard.confirmExit}
+        onContinueEditing={guard.cancelExit}
+      />
+    </>
   );
 }
 

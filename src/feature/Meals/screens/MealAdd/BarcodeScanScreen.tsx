@@ -76,13 +76,7 @@ export default function BarcodeScanScreen({
     () => ["ean13", "ean8", "upc_a", "upc_e", "code128", "qr"],
     [],
   );
-  const topLeftActionStyle = useMemo(
-    () => ({
-      top: insets.top + theme.spacing.xs,
-      left: insets.left + theme.spacing.sm,
-    }),
-    [insets.left, insets.top, theme.spacing.sm, theme.spacing.xs],
-  );
+
   const previewTopInset = useMemo(
     () =>
       Math.max(
@@ -344,14 +338,14 @@ export default function BarcodeScanScreen({
             </MealAddBarcodePreview>
           }
           topAction={
-            canStepBack ? (
-              <ScreenCornerNavButton
-                icon="back"
-                onPress={handleExit}
-                accessibilityLabel={tCommon("back", { defaultValue: "Back" })}
-                containerStyle={topLeftActionStyle}
-              />
-            ) : undefined
+            <ScreenCornerNavButton
+              icon={canStepBack ? "back" : "close"}
+              onPress={handleExit}
+              accessibilityLabel={tCommon(canStepBack ? "back" : "close", {
+                defaultValue: canStepBack ? "Back" : "Close",
+              })}
+              containerStyle={styles.screenCornerNavStyle}
+            />
           }
           eyebrow={tMeals("barcode_scan_eyebrow", {
             defaultValue: "Barcode",
@@ -487,6 +481,9 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     camera: {
       flex: 1,
+    },
+    screenCornerNavStyle: {
+      top: 0,
     },
     permissionWrap: {
       flex: 1,

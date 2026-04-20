@@ -39,15 +39,12 @@ export default function MealCameraScreen({
     typeof __DEV__ !== "undefined" && __DEV__ && !Device.isDevice;
   const simulatorCreditsState = params.simulatorCreditsState ?? "ok";
 
-  const topLeftActionStyle = useMemo(
-    () => ({
-      top: insets.top + theme.spacing.xs,
-      left: insets.left + theme.spacing.sm,
-    }),
-    [insets.left, insets.top, theme.spacing.sm, theme.spacing.xs],
-  );
   const previewTopInset = useMemo(
-    () => Math.max(theme.spacing.xxl, Math.round(insets.top * 0.65) + theme.spacing.xs),
+    () =>
+      Math.max(
+        theme.spacing.xxl,
+        Math.round(insets.top * 0.65) + theme.spacing.xs,
+      ),
     [insets.top, theme.spacing.xs, theme.spacing.xxl],
   );
 
@@ -103,18 +100,16 @@ export default function MealCameraScreen({
         : "ok";
   const useSimulatorCreditPreview =
     isSimulatorPreview && !skipDetection && credits === null;
-  const cameraCreditsState =
-    useSimulatorCreditPreview
-      ? simulatorCreditsState
-      : actualCreditsState;
-  const previewRemainingAfterPhoto =
-    useSimulatorCreditPreview
-      ? cameraCreditsState === "ok"
-        ? 74
-        : cameraCreditsState === "low"
-          ? 2
-          : 0
-      : remainingAfterPhoto;
+  const cameraCreditsState = useSimulatorCreditPreview
+    ? simulatorCreditsState
+    : actualCreditsState;
+  const previewRemainingAfterPhoto = useSimulatorCreditPreview
+    ? cameraCreditsState === "ok"
+      ? 74
+      : cameraCreditsState === "low"
+        ? 2
+        : 0
+    : remainingAfterPhoto;
   const showNoCreditsState = !skipDetection && cameraCreditsState === "none";
   const isLowCredits = !skipDetection && cameraCreditsState === "low";
 
@@ -127,14 +122,16 @@ export default function MealCameraScreen({
       });
   const description = showNoCreditsState
     ? tMeals("camera_no_credits_subtitle", {
-        defaultValue: "You need 1 credit to continue. Choose another path below.",
+        defaultValue:
+          "You need 1 credit to continue. Choose another path below.",
       })
     : skipDetection
       ? tMeals("camera_replace_subtitle", {
           defaultValue: "Take a new photo to update the current draft.",
         })
       : tMeals("camera_default_subtitle", {
-          defaultValue: "Center the full meal in the frame. One photo is enough to start.",
+          defaultValue:
+            "Center the full meal in the frame. One photo is enough to start.",
         });
   const footerNote = showNoCreditsState
     ? tMeals("camera_no_credits_note", {
@@ -215,14 +212,14 @@ export default function MealCameraScreen({
             />
           }
           topAction={
-            canStepBack ? (
-              <ScreenCornerNavButton
-                icon="back"
-                onPress={handleTopLeftPress}
-                accessibilityLabel={tCommon("back", { defaultValue: "Back" })}
-                containerStyle={topLeftActionStyle}
-              />
-            ) : undefined
+            <ScreenCornerNavButton
+              icon={canStepBack ? "back" : "close"}
+              onPress={handleTopLeftPress}
+              accessibilityLabel={tCommon(canStepBack ? "back" : "close", {
+                defaultValue: canStepBack ? "Back" : "Close",
+              })}
+              containerStyle={styles.screenCornerNavStyle}
+            />
           }
           eyebrow={tMeals("camera_default_label", {
             defaultValue: "Photo",
@@ -356,5 +353,8 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     inlineNoteWarning: {
       color: theme.accentWarm,
+    },
+    screenCornerNavStyle: {
+      top: 0,
     },
   });

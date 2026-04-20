@@ -10,6 +10,7 @@ import {
   SettingsRow,
   SettingsSection,
   TextInput,
+  UnsavedChangesModal,
 } from "@/components";
 import { WeekdaySelector } from "@/components/WeekdaySelector";
 import { Clock12h, Clock24h } from "@/components";
@@ -23,6 +24,7 @@ import {
 } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNotificationFormState } from "@/feature/UserProfile/hooks/useNotificationFormState";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 
 type NotificationFormNavigation = StackNavigationProp<
   RootStackParamList,
@@ -57,7 +59,7 @@ function getWeekdayLabels(locale: string | undefined): string[] {
 export default function NotificationFormScreen() {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { t, i18n } = useTranslation("notifications");
+  const { t, i18n } = useTranslation(["notifications", "common"]);
   const locale = i18n.language || undefined;
   const { uid } = useAuthContext();
   const nav = useNavigation<NotificationFormNavigation>();
@@ -86,6 +88,7 @@ export default function NotificationFormScreen() {
     confirmTime,
     onSave,
     onDelete,
+    hasUnsavedChanges,
   } = useNotificationFormState({
     uid,
     notifId,
@@ -107,6 +110,30 @@ export default function NotificationFormScreen() {
     nav.navigate("Notifications");
   };
 
+  const guard = useUnsavedChangesGuard({
+    navigation: nav,
+    hasUnsavedChanges,
+    onExit: handleBack,
+    onBeforeExitAttempt: () => {
+      if (deleteVisible) {
+        setDeleteVisible(false);
+        return true;
+      }
+
+      if (timeVisible) {
+        closeTimePicker();
+        return true;
+      }
+
+      if (mealKindSheetVisible) {
+        setMealKindSheetVisible(false);
+        return true;
+      }
+
+      return false;
+    },
+  });
+
   const screenTitle = notifId
     ? t("form.editTitle", {
         defaultValue: "Edit reminder",
@@ -123,7 +150,7 @@ export default function NotificationFormScreen() {
     <>
       <FormScreenShell
         title={screenTitle}
-        onBack={handleBack}
+        onBack={guard.requestExit}
         actionLabel={t("form.save", { defaultValue: "Save" })}
         onActionPress={() => {
           void onSave();
@@ -245,6 +272,16 @@ export default function NotificationFormScreen() {
         currentValue={mealKind}
         onClose={() => setMealKindSheetVisible(false)}
         onSelect={(value: MealKind) => setMealKind(value)}
+      />
+
+      <UnsavedChangesModal
+        visible={guard.confirmVisible}
+        title={t("unsaved_changes_title", { ns: "common" })}
+        message={t("unsaved_changes_message", { ns: "common" })}
+        discardLabel={t("discard", { ns: "common" })}
+        continueEditingLabel={t("continue_editing", { ns: "common" })}
+        onDiscard={guard.confirmExit}
+        onContinueEditing={guard.cancelExit}
       />
     </>
   );
