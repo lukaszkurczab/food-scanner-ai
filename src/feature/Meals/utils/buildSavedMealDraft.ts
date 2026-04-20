@@ -12,10 +12,12 @@ export function buildSavedMealDraft(params: {
   const now = new Date().toISOString();
   const timestamp = picked.timestamp || now;
   const timing = deriveMealTimingMetadata(timestamp);
+  const savedMealRefId = picked.cloudId || picked.mealId || null;
 
   return {
     mealId,
     cloudId: undefined,
+    savedMealRefId,
     userUid: uid,
     name: picked.name ?? null,
     photoLocalPath: picked.photoLocalPath ?? picked.localPhotoUrl ?? null,

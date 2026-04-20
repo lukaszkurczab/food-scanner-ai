@@ -321,7 +321,7 @@ describe("useMeals", () => {
     expect(mockGetMealsPageLocal).toHaveBeenCalledTimes(3);
   });
 
-  it("adds a meal, computes totals, queues sync and optionally saves to my meals", async () => {
+  it("adds a meal, computes totals, updates local feed and queues sync", async () => {
     jest.useFakeTimers();
     mockGetMealsPageLocal.mockResolvedValue([]);
     mockUuid.mockReturnValueOnce("cloud-new").mockReturnValueOnce("meal-new");
@@ -355,7 +355,6 @@ describe("useMeals", () => {
             warnings: ["partial_totals"],
           },
         },
-        { alsoSaveToMyMeals: true },
       );
     });
 
@@ -386,18 +385,11 @@ describe("useMeals", () => {
         source: "manual",
       }),
     );
-    expect(mockUpsertMyMealLocal).toHaveBeenCalledWith(
+    expect(result.current.meals[0]).toEqual(
       expect.objectContaining({
-        cloudId: "meal-new",
-        source: "saved",
-        inputMethod: "manual",
-      }),
-    );
-    expect(mockEnqueueMyMealUpsert).toHaveBeenCalledWith(
-      "user-1",
-      expect.objectContaining({
-        cloudId: "meal-new",
-        source: "saved",
+        cloudId: "cloud-new",
+        mealId: "meal-new",
+        name: "New meal",
       }),
     );
     expect(mockEmit).toHaveBeenCalledWith("meal:added", expect.any(Object));
@@ -437,6 +429,77 @@ describe("useMeals", () => {
     });
 
     expect(mockUpsertMealLocal).not.toHaveBeenCalled();
+  });
+
+  it("logs from saved template without updating my meals template by default", async () => {
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.addMeal({
+        userUid: "user-1",
+        mealId: "draft-meal-id",
+        savedMealRefId: "saved-template-1",
+        timestamp: "2026-03-15T12:00:00.000Z",
+        type: "lunch",
+        name: "Saved draft",
+        ingredients: [],
+        createdAt: "2026-03-15T12:00:00.000Z",
+        syncState: "synced",
+        source: "saved",
+      });
+    });
+
+    expect(mockUpsertMealLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mealId: "draft-meal-id",
+        cloudId: expect.any(String),
+        source: "saved",
+      }),
+    );
+    expect(mockUpsertMyMealWithPhoto).not.toHaveBeenCalled();
+    expect(result.current.meals[0]).toEqual(
+      expect.objectContaining({
+        mealId: "draft-meal-id",
+        source: "saved",
+      }),
+    );
+  });
+
+  it("updates an existing saved template by id without creating a duplicate", async () => {
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.updateSavedMealTemplate(
+        "saved-template-42",
+        baseMeal({
+          mealId: "logged-meal-1",
+          cloudId: "logged-meal-1",
+          source: "saved",
+          savedMealRefId: "saved-template-42",
+          photoUrl: "file://template-update.jpg",
+        }),
+      );
+    });
+
+    expect(mockUpsertMyMealWithPhoto).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({
+        mealId: "saved-template-42",
+        cloudId: "saved-template-42",
+        source: "saved",
+      }),
+      "file://template-update.jpg",
+    );
+    expect(mockUpsertMealLocal).not.toHaveBeenCalled();
+    expect(mockEnqueueUpsert).not.toHaveBeenCalled();
   });
 
   it("shows offline queued toast once while timer is already scheduled", async () => {

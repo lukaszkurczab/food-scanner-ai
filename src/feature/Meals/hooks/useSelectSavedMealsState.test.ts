@@ -148,6 +148,7 @@ describe("useSelectSavedMealsState", () => {
       expect.objectContaining({
         mealId: "uuid-new",
         cloudId: undefined,
+        savedMealRefId: "meal-1",
         source: "saved",
         inputMethod: "saved",
         name: "Chicken pasta",

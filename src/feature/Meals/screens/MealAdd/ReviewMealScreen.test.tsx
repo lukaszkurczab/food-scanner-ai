@@ -223,6 +223,8 @@ describe("ReviewMealScreen", () => {
     mockUseUserContext.mockReturnValue({ userData: { uid: "user-1" } });
     mockUseMeals.mockReturnValue({
       addMeal: jest.fn(async () => undefined),
+      createSavedMealTemplate: jest.fn(async () => undefined),
+      updateSavedMealTemplate: jest.fn(async () => undefined),
       meals: [],
     });
   });
@@ -269,7 +271,12 @@ describe("ReviewMealScreen", () => {
     const testProps = buildProps();
 
     mockUseMealDraftContext.mockReturnValue(ctx);
-    mockUseMeals.mockReturnValue({ addMeal, meals: [] });
+    mockUseMeals.mockReturnValue({
+      addMeal,
+      createSavedMealTemplate: jest.fn(async () => undefined),
+      updateSavedMealTemplate: jest.fn(async () => undefined),
+      meals: [],
+    });
 
     const { getByText } = renderWithTheme(
       <ReviewMealScreen {...testProps.props} />,
@@ -290,7 +297,12 @@ describe("ReviewMealScreen", () => {
     const testProps = buildProps();
 
     mockUseMealDraftContext.mockReturnValue(ctx);
-    mockUseMeals.mockReturnValue({ addMeal, meals: [] });
+    mockUseMeals.mockReturnValue({
+      addMeal,
+      createSavedMealTemplate: jest.fn(async () => undefined),
+      updateSavedMealTemplate: jest.fn(async () => undefined),
+      meals: [],
+    });
 
     const { getByText } = renderWithTheme(
       <ReviewMealScreen {...testProps.props} />,
@@ -325,6 +337,72 @@ describe("ReviewMealScreen", () => {
     expect(
       getByText("If something looks off, edit details before saving."),
     ).toBeTruthy();
+  });
+
+  it("logs from saved meal without updating template when checkbox is unchecked", async () => {
+    const addMeal = jest.fn(async () => undefined);
+    const createSavedMealTemplate = jest.fn(async () => undefined);
+    const updateSavedMealTemplate = jest.fn(async () => undefined);
+    const ctx = buildDraftContext({
+      source: "saved",
+      savedMealRefId: "saved-template-1",
+    });
+    const testProps = buildProps();
+    mockUseMealDraftContext.mockReturnValue(ctx);
+    mockUseMeals.mockReturnValue({
+      addMeal,
+      createSavedMealTemplate,
+      updateSavedMealTemplate,
+      meals: [],
+    });
+
+    const { getByText } = renderWithTheme(<ReviewMealScreen {...testProps.props} />);
+
+    fireEvent.press(getByText("Save meal"));
+
+    await waitFor(() => {
+      expect(addMeal).toHaveBeenCalledTimes(1);
+      expect(updateSavedMealTemplate).not.toHaveBeenCalled();
+      expect(createSavedMealTemplate).not.toHaveBeenCalled();
+      expect(testProps.navigate).toHaveBeenCalledWith("Home");
+    });
+  });
+
+  it("updates existing saved template when checkbox is checked", async () => {
+    const addMeal = jest.fn(async () => undefined);
+    const createSavedMealTemplate = jest.fn(async () => undefined);
+    const updateSavedMealTemplate = jest.fn(async () => undefined);
+    const ctx = buildDraftContext({
+      source: "saved",
+      savedMealRefId: "saved-template-42",
+    });
+    const testProps = buildProps();
+    mockUseMealDraftContext.mockReturnValue(ctx);
+    mockUseMeals.mockReturnValue({
+      addMeal,
+      createSavedMealTemplate,
+      updateSavedMealTemplate,
+      meals: [],
+    });
+
+    const { getByTestId, getByText } = renderWithTheme(
+      <ReviewMealScreen {...testProps.props} />,
+    );
+
+    fireEvent.press(getByTestId("save-to-my-meals-checkbox"));
+    fireEvent.press(getByText("Save meal"));
+
+    await waitFor(() => {
+      expect(addMeal).toHaveBeenCalledTimes(1);
+      expect(updateSavedMealTemplate).toHaveBeenCalledWith(
+        "saved-template-42",
+        expect.objectContaining({
+          source: "saved",
+        }),
+      );
+      expect(createSavedMealTemplate).not.toHaveBeenCalled();
+      expect(testProps.navigate).toHaveBeenCalledWith("Home");
+    });
   });
 
   it("shows the leave-flow modal on navigation back instead of returning to camera", async () => {

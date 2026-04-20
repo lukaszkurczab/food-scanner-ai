@@ -8,11 +8,9 @@ import {
   markDeletedLocal,
   getPendingMealsLocal,
 } from "@/services/offline/meals.repo";
-import { upsertMyMealLocal } from "@/services/offline/myMeals.repo";
 import {
   enqueueUpsert,
   enqueueDelete,
-  enqueueMyMealUpsert,
 } from "@/services/offline/queue.repo";
 import { insertOrUpdateImage } from "@/services/offline/images.repo";
 import { reconcileAll } from "@/services/notifications/engine";
@@ -63,6 +61,11 @@ function withDerivedMealFields(meal: Meal, fallbackIso: string): Meal {
       meal.inputMethod ??
       (meal.source === "manual" || meal.source === null ? "manual" : null),
   };
+}
+
+function omitDraftOnlyFields(meal: Meal): Meal {
+  const { savedMealRefId: _savedMealRefId, ...persistable } = meal;
+  return persistable;
 }
 
 function isLocalUri(u?: string | null): u is string {
@@ -330,30 +333,28 @@ export function useMeals(userUid: string | null) {
   }, [reloadFirstPage, userUid]);
 
   const addMeal = useCallback(
-    async (
-      meal: Omit<Meal, "updatedAt" | "deleted">,
-      _opts?: { alsoSaveToMyMeals?: boolean },
-    ) => {
+    async (meal: Omit<Meal, "updatedAt" | "deleted">) => {
       if (!userUid) return;
       const now = new Date().toISOString();
-      const cloudId = meal.cloudId ?? uuidv4();
-      const mealId = meal.mealId ?? uuidv4();
+      const persistableMeal = omitDraftOnlyFields(meal as Meal);
+      const cloudId = persistableMeal.cloudId ?? uuidv4();
+      const mealId = persistableMeal.mealId ?? uuidv4();
       const timestamp = meal.timestamp ?? now;
 
       const base = withDerivedMealFields({
-        ...meal,
+        ...persistableMeal,
         userUid,
         cloudId,
         mealId,
-        createdAt: meal.createdAt ?? now,
+        createdAt: persistableMeal.createdAt ?? now,
         updatedAt: now,
         syncState: "pending",
         deleted: false,
-        source: meal.source ?? "manual",
+        source: persistableMeal.source ?? "manual",
         timestamp,
       }, now);
 
-      const maybeUri = meal.photoUrl;
+      const maybeUri = persistableMeal.photoUrl;
       if (isLocalUri(maybeUri)) {
         base.photoLocalPath = maybeUri;
         await insertOrUpdateImage(
@@ -368,16 +369,6 @@ export function useMeals(userUid: string | null) {
       emit("meal:added", { uid: userUid, meal: base });
       void trackMealAdded(base);
       await enqueueUpsert(userUid, base);
-      if (_opts?.alsoSaveToMyMeals) {
-        const saved: Meal = {
-          ...base,
-          mealId: base.mealId,
-          cloudId: base.mealId,
-          source: "saved",
-        };
-        await upsertMyMealLocal(saved);
-        await enqueueMyMealUpsert(userUid, saved);
-      }
 
       scheduleQueuedSync("add");
       setMeals((prev) => [base, ...prev].slice(0, PAGE_LIMIT));
@@ -386,18 +377,64 @@ export function useMeals(userUid: string | null) {
     [userUid, scheduleQueuedSync],
   );
 
+  const createSavedMealTemplate = useCallback(
+    async (meal: Meal) => {
+      if (!userUid) return;
+      const now = new Date().toISOString();
+      const persistableMeal = omitDraftOnlyFields(meal);
+      const docId = persistableMeal.mealId || persistableMeal.cloudId || uuidv4();
+      const localPhoto = isLocalUri(persistableMeal.photoUrl)
+        ? persistableMeal.photoUrl
+        : null;
+      const toSave: Meal = {
+        ...persistableMeal,
+        userUid,
+        mealId: docId,
+        cloudId: docId,
+        source: "saved",
+        inputMethod: "saved",
+        updatedAt: now,
+      };
+      await upsertMyMealWithPhoto(userUid, toSave, localPhoto);
+    },
+    [userUid],
+  );
+
+  const updateSavedMealTemplate = useCallback(
+    async (templateId: string, meal: Meal) => {
+      if (!userUid || !templateId) return;
+      const now = new Date().toISOString();
+      const persistableMeal = omitDraftOnlyFields(meal);
+      const localPhoto = isLocalUri(persistableMeal.photoUrl)
+        ? persistableMeal.photoUrl
+        : null;
+      const toSave: Meal = {
+        ...persistableMeal,
+        userUid,
+        mealId: templateId,
+        cloudId: templateId,
+        source: "saved",
+        inputMethod: "saved",
+        updatedAt: now,
+      };
+      await upsertMyMealWithPhoto(userUid, toSave, localPhoto);
+    },
+    [userUid],
+  );
+
   const updateMeal = useCallback(
     async (meal: Meal) => {
       if (!userUid) return;
+      const persistableMeal = omitDraftOnlyFields(meal);
 
-      if (meal.source === "saved") {
+      if (persistableMeal.source === "saved") {
         const now = new Date().toISOString();
-        const docId = meal.mealId || meal.cloudId || uuidv4();
-        const localPhoto = isLocalUri(meal.photoUrl)
-          ? (meal.photoUrl as string)
+        const docId = persistableMeal.mealId || persistableMeal.cloudId || uuidv4();
+        const localPhoto = isLocalUri(persistableMeal.photoUrl)
+          ? (persistableMeal.photoUrl as string)
           : null;
         const toSave: Meal = {
-          ...meal,
+          ...persistableMeal,
           userUid,
           mealId: docId,
           cloudId: docId,
@@ -411,18 +448,18 @@ export function useMeals(userUid: string | null) {
       }
 
       const now = new Date().toISOString();
-      const cloudId = meal.cloudId ?? uuidv4();
-      const timestamp = meal.timestamp ?? now;
+      const cloudId = persistableMeal.cloudId ?? uuidv4();
+      const timestamp = persistableMeal.timestamp ?? now;
 
       const payload = withDerivedMealFields({
-        ...meal,
+        ...persistableMeal,
         cloudId,
         updatedAt: now,
         syncState: "pending",
         timestamp,
       }, now);
 
-      const maybeUri = meal.photoUrl;
+      const maybeUri = persistableMeal.photoUrl;
       if (isLocalUri(maybeUri)) {
         payload.photoLocalPath = maybeUri;
         await insertOrUpdateImage(
@@ -512,6 +549,8 @@ export function useMeals(userUid: string | null) {
       getMeals,
       loadNextPage,
       addMeal,
+      createSavedMealTemplate,
+      updateSavedMealTemplate,
       updateMeal,
       deleteMeal,
       duplicateMeal,
@@ -524,6 +563,8 @@ export function useMeals(userUid: string | null) {
       getMeals,
       loadNextPage,
       addMeal,
+      createSavedMealTemplate,
+      updateSavedMealTemplate,
       updateMeal,
       deleteMeal,
       duplicateMeal,

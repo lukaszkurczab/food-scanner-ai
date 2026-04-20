@@ -66,7 +66,7 @@ export default function ReviewMealScreen({
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
   const { userData } = useUserContext();
-  const { addMeal } = useMeals(uid ?? null);
+  const { addMeal, createSavedMealTemplate, updateSavedMealTemplate } = useMeals(uid ?? null);
   const { meal, clearMeal, loadDraft, saveDraft, setLastScreen, setPhotoUrl } =
     useMealDraftContext();
 
@@ -75,14 +75,17 @@ export default function ReviewMealScreen({
   const [previewVisible, setPreviewVisible] = useState(false);
   const [checkingImage, setCheckingImage] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [saveToMyMeals, setSaveToMyMeals] = useState(meal?.source === "saved");
+  const [saveToMyMeals, setSaveToMyMeals] = useState(false);
 
   const image = meal?.photoUrl ?? null;
   const isFromSaved = meal?.source === "saved";
+  const savedTemplateId = isFromSaved
+    ? (meal?.savedMealRefId ?? meal?.cloudId ?? null)
+    : null;
 
   useEffect(() => {
-    setSaveToMyMeals(isFromSaved);
-  }, [isFromSaved]);
+    setSaveToMyMeals(false);
+  }, [isFromSaved, meal?.mealId, savedTemplateId]);
 
   useEffect(() => {
     if (uid) {
@@ -226,7 +229,9 @@ export default function ReviewMealScreen({
     const stableMealId =
       meal.mealId || meal.cloudId || `meal-${Date.now().toString(36)}`;
     const stableCloudId =
-      meal.cloudId || meal.mealId || `cloud-${Date.now().toString(36)}`;
+      isFromSaved
+        ? meal.mealId || `cloud-${Date.now().toString(36)}`
+        : (meal.cloudId || meal.mealId || `cloud-${Date.now().toString(36)}`);
     const nextMeal: Meal = {
       ...meal,
       mealId: stableMealId,
@@ -242,7 +247,14 @@ export default function ReviewMealScreen({
     };
 
     try {
-      await addMeal(nextMeal, { alsoSaveToMyMeals: saveToMyMeals });
+      await addMeal(nextMeal);
+      if (saveToMyMeals) {
+        if (isFromSaved && savedTemplateId) {
+          await updateSavedMealTemplate(savedTemplateId, nextMeal);
+        } else if (!isFromSaved) {
+          await createSavedMealTemplate(nextMeal);
+        }
+      }
       clearMeal(uid);
       if (openShareComposer && nextMeal.photoUrl) {
         navigation.navigate("MealShare", {
@@ -257,14 +269,18 @@ export default function ReviewMealScreen({
     }
   }, [
     addMeal,
+    createSavedMealTemplate,
     clearMeal,
+    isFromSaved,
     meal,
     mealTime,
     navigation,
     resolvedMealName,
+    savedTemplateId,
     saveToMyMeals,
     saving,
     uid,
+    updateSavedMealTemplate,
     userData?.uid,
   ]);
 

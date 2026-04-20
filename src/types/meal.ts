@@ -37,6 +37,7 @@ export type Nutrients = {
 export interface Meal {
   userUid: string;
   mealId: string;
+  savedMealRefId?: string | null;
   timestamp: string;
   dayKey?: string | null;
   loggedAtLocalMin?: number | null;

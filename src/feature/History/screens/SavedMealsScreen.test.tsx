@@ -476,6 +476,7 @@ describe("SavedMealsScreen", () => {
         expect.objectContaining({
           mealId: "duplicated-meal-id",
           cloudId: undefined,
+          savedMealRefId: "cloud-1",
           source: "saved",
           name: "Pasta bake",
           photoUrl: "https://example.com/pasta.jpg",
@@ -489,6 +490,7 @@ describe("SavedMealsScreen", () => {
         expect.objectContaining({
           mealId: "duplicated-meal-id",
           cloudId: undefined,
+          savedMealRefId: "cloud-1",
           source: "saved",
         }),
       );
@@ -501,6 +503,7 @@ describe("SavedMealsScreen", () => {
         expect.objectContaining({
           mealId: "edited-meal-id",
           cloudId: undefined,
+          savedMealRefId: "cloud-1",
           source: "saved",
           name: "Pasta bake",
           photoUrl: "https://example.com/pasta.jpg",
@@ -514,6 +517,7 @@ describe("SavedMealsScreen", () => {
         expect.objectContaining({
           mealId: "edited-meal-id",
           cloudId: undefined,
+          savedMealRefId: "cloud-1",
           source: "saved",
         }),
       );
