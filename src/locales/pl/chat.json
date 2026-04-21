@@ -118,9 +118,11 @@
     "title": "Zanim wejdziesz do chatu AI",
     "informational": "Ten chat ma charakter informacyjny. Może pomagać w pytaniach o dietę, żywienie, jedzenie i planowanie posiłków.",
     "medical": "To nie zastępuje porady lekarskiej ani indywidualnej konsultacji medycznej.",
-    "accept": "Rozumiem i akceptuję",
+    "accept": "Akceptuję",
+    "moreInfo": "Więcej informacji znajdziesz tutaj:",
     "learnMore": "Dane i AI w praktyce",
     "privacy": "Prawo i prywatność",
-    "composerLocked": "Zaakceptuj zasady, aby wysyłać"
+    "composerLocked": "Zaakceptuj zasady, aby wysyłać",
+    "back": "Wróć"
   }
 }

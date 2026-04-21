@@ -87,7 +87,11 @@ export default function ChatScreen() {
   const legalGateActive = legalAckLoading || legalAckVisible;
   const profileReadyForAi = !loadingUser;
   const composerDisabled =
-    sending || limitReached || isOffline || legalGateActive || !profileReadyForAi;
+    sending ||
+    limitReached ||
+    isOffline ||
+    legalGateActive ||
+    !profileReadyForAi;
 
   useEffect(() => {
     let cancelled = false;
@@ -220,7 +224,8 @@ export default function ChatScreen() {
 
   const handleSend = useCallback(
     async (text: string) => {
-      if (isOffline || !canSend || legalGateActive || !profileReadyForAi) return;
+      if (isOffline || !canSend || legalGateActive || !profileReadyForAi)
+        return;
       const createdThreadId = await send(text);
       if (createdThreadId) setThreadId(createdThreadId);
     },
@@ -230,6 +235,12 @@ export default function ChatScreen() {
   const handleRetry = useCallback(() => {
     void retryLastSend();
   }, [retryLastSend]);
+
+  const handleBack = useCallback(() => {
+    return () => {
+      navigation.goBack();
+    };
+  }, [navigation]);
 
   const emptyState = (
     <View style={styles.emptyStateWrap}>
@@ -373,8 +384,8 @@ export default function ChatScreen() {
           },
         }}
         secondaryAction={{
-          label: t("legal.learnMore"),
-          onPress: openLegalDetails,
+          label: t("legal.back"),
+          onPress: handleBack(),
           tone: "secondary",
         }}
         closeOnBackdropPress={false}
@@ -382,12 +393,23 @@ export default function ChatScreen() {
         <View style={styles.legalCopy}>
           <Text style={styles.legalParagraph}>{t("legal.informational")}</Text>
           <Text style={styles.legalParagraph}>{t("legal.medical")}</Text>
-          <Button
-            label={t("legal.privacy")}
-            variant="ghost"
-            onPress={openLegalPrivacyHub}
-            fullWidth={false}
-          />
+          <View>
+            <Text style={styles.legalParagraph}>{t("legal.moreInfo")}</Text>
+            <Button
+              label={t("legal.privacy")}
+              variant="ghost"
+              onPress={openLegalPrivacyHub}
+              fullWidth={false}
+              style={styles.legalButton}
+            />
+            <Button
+              label={t("legal.learnMore")}
+              variant="ghost"
+              onPress={openLegalDetails}
+              fullWidth={false}
+              style={styles.legalButton}
+            />
+          </View>
         </View>
       </Modal>
     </Layout>
@@ -408,6 +430,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
       paddingTop: theme.spacing.xxl,
       gap: theme.spacing.xl,
+    },
+    legalButton: {
+      alignSelf: "flex-start",
+      minHeight: 0,
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: 0,
     },
     legalCopy: {
       gap: theme.spacing.md,

@@ -118,9 +118,11 @@
     "title": "Before you use AI chat",
     "informational": "This chat is informational only. It can help with diet, nutrition, food, and meal-planning questions.",
     "medical": "It does not replace medical advice or an individual consultation with a clinician.",
-    "accept": "I understand and accept",
+    "accept": "Accept",
+    "moreInfo": "For more information, see:",
     "learnMore": "Data & AI clarity",
     "privacy": "Legal & privacy",
-    "composerLocked": "Accept the notice to send"
+    "composerLocked": "Accept the notice to send",
+    "back": "Go back"
   }
 }
