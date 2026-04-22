@@ -102,5 +102,10 @@
   },
   "protein": "Protein",
   "carbs": "Carbs",
-  "fat": "Fat"
+  "fat": "Fat",
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "The app encountered an unexpected error.",
+    "restart": "Restart"
+  }
 }

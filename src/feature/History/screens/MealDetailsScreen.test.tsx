@@ -64,6 +64,23 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: React.ReactNode }) =>
       createElement(View, null, children),
+    BackTitleHeader: ({
+      onBack,
+      title,
+    }: {
+      onBack: () => void;
+      title: string;
+    }) =>
+      createElement(
+        View,
+        null,
+        createElement(
+          Pressable,
+          { onPress: onBack, accessibilityRole: "button", accessibilityLabel: "common:back" },
+          createElement(Text, null, "back-button"),
+        ),
+        createElement(Text, null, title),
+      ),
     ScreenCornerNavButton: ({
       onPress,
       accessibilityLabel,
@@ -300,5 +317,18 @@ describe("MealDetailsScreen", () => {
 
     expect(screen.getByText("Chicken")).toBeTruthy();
     expect(screen.queryByLabelText("meals:add_photo")).toBeNull();
+  });
+
+  it("renders delete modal actions and forwards confirm/cancel", () => {
+    const state = buildState({ showDeleteModal: true });
+    mockUseMealDetailsScreenState.mockReturnValue(state);
+
+    const screen = renderWithTheme(<MealDetailsScreen />);
+
+    fireEvent.press(screen.getByText("common:delete"));
+    fireEvent.press(screen.getByText("common:cancel"));
+
+    expect(state.confirmDelete).toHaveBeenCalledTimes(1);
+    expect(state.closeDeleteModal).toHaveBeenCalledTimes(1);
   });
 });

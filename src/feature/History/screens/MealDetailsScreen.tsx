@@ -93,9 +93,9 @@ export default function MealDetailsScreen() {
   const mealTypeLabel = state.draft
     ? t(state.draft.type || "other", {
         ns: "meals",
-        defaultValue: t("meal", { ns: "home", defaultValue: "Meal" }),
+        defaultValue: t("meal", { ns: "home" }),
       })
-    : t("meal", { ns: "home", defaultValue: "Meal" });
+    : t("meal", { ns: "home" });
 
   const mealMeta = buildMealMeta({
     value: state.draft?.timestamp || state.draft?.createdAt,
@@ -195,7 +195,6 @@ export default function MealDetailsScreen() {
             <Text style={styles.sectionEyebrow}>
               {t("detailsNutritionTitle", {
                 ns: "history",
-                defaultValue: "Nutrition summary",
               })}
             </Text>
 
@@ -262,7 +261,6 @@ export default function MealDetailsScreen() {
                 <Text style={styles.ingredientsTitle}>
                   {t("detailsIngredientsTitle", {
                     ns: "history",
-                    defaultValue: "Ingredients",
                   })}
                 </Text>
                 <View style={styles.itemsPill}>
@@ -270,7 +268,6 @@ export default function MealDetailsScreen() {
                     {t("detailsItemsCount", {
                       ns: "history",
                       count: state.draft.ingredients.length,
-                      defaultValue: `${state.draft.ingredients.length} items`,
                     })}
                   </Text>
                 </View>
@@ -287,7 +284,7 @@ export default function MealDetailsScreen() {
                         {formatIngredientAmount(
                           Number(ingredient.amount) || 0,
                           ingredient.unit,
-                          t("gram", { ns: "common", defaultValue: "g" }),
+                          t("gram", { ns: "common" }),
                         )}
                       </Text>
                     </View>
@@ -305,7 +302,6 @@ export default function MealDetailsScreen() {
               variant="secondary"
               label={t("edit_meal", {
                 ns: "meals",
-                defaultValue: "Edit meal",
               })}
               onPress={() => {
                 void state.startEdit();
@@ -318,7 +314,6 @@ export default function MealDetailsScreen() {
               accessibilityRole="button"
               accessibilityLabel={t("delete_meal", {
                 ns: "history",
-                defaultValue: "Delete meal",
               })}
               style={({ pressed }) => [
                 styles.deleteButton,
@@ -328,7 +323,6 @@ export default function MealDetailsScreen() {
               <Text style={styles.deleteButtonLabel}>
                 {t("delete_meal", {
                   ns: "history",
-                  defaultValue: "Delete meal",
                 })}
               </Text>
             </Pressable>
@@ -339,17 +333,13 @@ export default function MealDetailsScreen() {
           visible={state.showDeleteModal}
           title={t("deleteMealTitle", {
             ns: "history",
-            defaultValue: "Delete meal?",
           })}
           message={t("deleteMealMessage", {
             ns: "history",
-            defaultValue:
-              "This meal will be removed from your history. You can’t undo this action.",
           })}
           primaryAction={{
             label: t("delete", {
               ns: "common",
-              defaultValue: "Delete",
             }),
             onPress: () => {
               void state.confirmDelete();
@@ -361,7 +351,6 @@ export default function MealDetailsScreen() {
           secondaryAction={{
             label: t("cancel", {
               ns: "common",
-              defaultValue: "Cancel",
             }),
             onPress: state.closeDeleteModal,
             tone: "secondary",

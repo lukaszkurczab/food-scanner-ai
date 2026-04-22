@@ -1,6 +1,6 @@
 {
   "title": "Statystyki",
-  "subtitle": "Sprawdź, jak zmienia się Twoje jedzenie w czasie",
+  "subtitle": "Sprawdź, jak zmieniają się Twoje nawyki żywieniowe",
   "pickRange": "Wybierz zakres dat",
   "ranges": {
     "7d": "7 dni",
@@ -40,7 +40,7 @@
     "fat": "Tłuszcz"
   },
   "chips": {
-    "calories": "Kcal",
+    "calories": "kcal",
     "protein": "Białko",
     "carbs": "Węgle",
     "fat": "Tłuszcz"
@@ -65,10 +65,10 @@
   "limitedHistory": {
     "eyebrow": "Premium",
     "title": "Odblokuj trendy długoterminowe",
-    "body": "Zobacz, jak wyglądają nawyki po {{days}}+ dniach.",
+    "body": "Zobacz, jak wyglądają nawyki po ponad {{days}} dniach.",
     "cta": "Odblokuj Premium"
   },
   "limitedWindowTitle": "Dostęp do starszych danych wymaga Premium",
-  "limitedWindowDesc": "Zakres został skrócony do ostatnich {{d}} dni.",
+  "limitedWindowDesc": "Zakres ograniczono do ostatnich {{d}} dni.",
   "upgrade": "Odblokuj Premium"
 }

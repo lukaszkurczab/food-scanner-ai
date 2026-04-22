@@ -85,10 +85,7 @@ function getMealCountLabel(
   t: (key: string, options?: Record<string, unknown>) => string,
   count: number,
 ): string {
-  return t("home:mealCount", {
-    count,
-    defaultValue: count === 1 ? "1 meal" : `${count} meals`,
-  });
+  return t("home:mealCount", { count });
 }
 
 type HomeNavigation = StackNavigationProp<RootStackParamList, "Home">;
@@ -184,7 +181,6 @@ export default function HomeScreen({ navigation }: Props) {
   const selectedMethodName = t(`meals:${mealAddEntry.preferredOption.titleKey}`);
   const methodSelectorLabel = t("home:methodSelector", {
     method: selectedMethodName,
-    defaultValue: `Method: ${selectedMethodName}`,
   });
 
   const heroModel = useMemo(() => {
@@ -193,16 +189,12 @@ export default function HomeScreen({ navigation }: Props) {
         title: displayName
           ? t("home:hero.completed.title", {
               name: displayName,
-              defaultValue: `Goal reached, ${displayName}`,
             })
-          : "Goal reached",
+          : t("home:hero.completed.titleGeneric"),
         meta: `${kcalProgressLabel} · ${getMealCountLabel(t, mealCount)}`,
-        ctaLabel: t("home:hero.completed.cta", "Review your day"),
+        ctaLabel: t("home:hero.completed.cta"),
         tone: "success" as const,
-        supportText: t(
-          "home:hero.completed.support",
-          "See your full breakdown for today",
-        ),
+        supportText: t("home:hero.completed.support"),
         showMethodSelector: false,
         progress: null,
         supportCopy: null,
@@ -212,53 +204,31 @@ export default function HomeScreen({ navigation }: Props) {
     if (isPastEmptyDay) {
       return {
         title: fullDateFormatter.format(selectedDate),
-        meta: t(
-          "home:hero.pastIncomplete.meta",
-          "You missed a meal log",
-        ),
-        ctaLabel: t("home:hero.pastIncomplete.cta", "Add a missed meal"),
+        meta: t("home:hero.pastIncomplete.meta"),
+        ctaLabel: t("home:hero.pastIncomplete.cta"),
         tone: "default" as const,
         supportText: null,
         showMethodSelector: true,
         progress: null,
-        supportCopy: t(
-          "home:hero.pastIncomplete.supportCopy",
-          "You can still fill in what was missing.",
-        ),
+        supportCopy: t("home:hero.pastIncomplete.supportCopy"),
       };
     }
 
     const greetingKey = getGreetingKey(new Date().getHours());
     const greeting = displayName
-      ? t(`home:hero.greeting.${greetingKey}`, {
-          name: displayName,
-          defaultValue: `${
-            greetingKey === "morning"
-              ? "Good morning"
-              : greetingKey === "afternoon"
-                ? "Good afternoon"
-                : "Good evening"
-          }, ${displayName}`,
-        })
-      : greetingKey === "morning"
-        ? "Good morning"
-        : greetingKey === "afternoon"
-          ? "Good afternoon"
-          : "Good evening";
+      ? t(`home:hero.greeting.${greetingKey}`, { name: displayName })
+      : t(`home:hero.greetingGeneric.${greetingKey}`);
 
     if (isTodayEmpty) {
       return {
         title: greeting,
         meta: fullDateFormatter.format(selectedDate),
-        ctaLabel: t("home:hero.todayEmpty.cta", "Log breakfast"),
+        ctaLabel: t("home:hero.todayEmpty.cta"),
         tone: "default" as const,
         supportText: null,
         showMethodSelector: true,
         progress: null,
-        supportCopy: t(
-          "home:hero.todayEmpty.supportCopy",
-          "Start with your first meal and the rest of today will build from there.",
-        ),
+        supportCopy: t("home:hero.todayEmpty.supportCopy"),
       };
     }
 
@@ -266,8 +236,8 @@ export default function HomeScreen({ navigation }: Props) {
       title: isToday ? greeting : fullDateFormatter.format(selectedDate),
       meta: `${getMealCountLabel(t, mealCount)} · ${kcalProgressLabel}`,
       ctaLabel: isToday
-        ? t("home:hero.todayInProgress.cta", "Log next meal")
-        : t("home:hero.pastIncomplete.cta", "Add a missed meal"),
+        ? t("home:hero.todayInProgress.cta")
+        : t("home:hero.pastIncomplete.cta"),
       tone: "default" as const,
       supportText: null,
       showMethodSelector: true,
@@ -359,11 +329,11 @@ export default function HomeScreen({ navigation }: Props) {
         <Pressable
           onPress={() => navigation.navigate("HistoryList")}
           accessibilityRole="button"
-          accessibilityLabel={t("home:viewHistory", "See full history")}
+          accessibilityLabel={t("home:viewHistory")}
           style={({ pressed }) => [styles.historyLink, pressed && styles.historyLinkPressed]}
         >
           <Text style={styles.historyLinkText}>
-            {t("home:viewHistory", "See full history")} →
+            {t("home:viewHistory")} →
           </Text>
         </Pressable>
       </View>

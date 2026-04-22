@@ -74,7 +74,6 @@ export default function ChangeEmailScreen({
       (userData?.email || "").trim().toLowerCase()
     ) {
       newErrors.email = t("changeEmailSameAddress", {
-        defaultValue: "Use a different email address.",
       });
     }
 
@@ -133,8 +132,6 @@ export default function ChangeEmailScreen({
     <FormScreenShell
       title={t("changeEmail")}
       intro={t("changeEmailIntro", {
-        defaultValue:
-          "Enter the new email address you want to use for your account.",
       })}
       onBack={() => navigation.goBack()}
       actionLabel={t("continue", { ns: "common" })}
@@ -195,7 +192,6 @@ export default function ChangeEmailScreen({
 
         <InfoBlock
           title={t("changeEmailSecurityTitle", {
-            defaultValue: "Verify your new email",
           })}
           body={t("emailChangeSecurityNote")}
           tone="neutral"

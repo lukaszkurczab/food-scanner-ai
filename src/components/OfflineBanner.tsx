@@ -27,14 +27,12 @@ export const OfflineBanner: React.FC<Props> = ({
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["chat", "common"]);
 
-  const resolvedTitle =
-    title ?? t("offline.title", { ns: "chat", defaultValue: "Offline mode" });
+  const resolvedTitle = title ?? t("offline.title", { ns: "chat" });
 
   const resolvedSubtitle =
     subtitle ??
     t("offline.subtitle", {
       ns: "chat",
-      defaultValue: "Showing local data.",
     });
 
   return (

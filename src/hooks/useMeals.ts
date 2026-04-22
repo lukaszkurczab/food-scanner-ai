@@ -87,6 +87,7 @@ function triggerReconcile(uid?: string | null) {
 export function useMeals(userUid: string | null) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
+  const hookInstanceIdRef = useRef(`useMeals-${Math.random().toString(36).slice(2)}`);
   const beforeRef = useRef<string | null>(null);
   const activeUidRef = useRef<string | null>(userUid);
   const firstPageRequestIdRef = useRef(0);
@@ -325,6 +326,12 @@ export function useMeals(userUid: string | null) {
         if (eventUid !== userUid) return;
         void reloadFirstPage();
       }),
+      on<{ uid?: string; sourceHookId?: string }>("meal:deleted", (event) => {
+        const eventUid = typeof event?.uid === "string" ? event.uid : userUid;
+        if (eventUid !== userUid) return;
+        if (event?.sourceHookId === hookInstanceIdRef.current) return;
+        void reloadFirstPage();
+      }),
     ];
 
     return () => {
@@ -490,7 +497,11 @@ export function useMeals(userUid: string | null) {
         meals.find((meal) => (meal.cloudId || "") === mealCloudId) || null;
       const now = new Date().toISOString();
       await markDeletedLocal(mealCloudId, now);
-      emit("meal:deleted", { uid: userUid, cloudId: mealCloudId });
+      emit("meal:deleted", {
+        uid: userUid,
+        cloudId: mealCloudId,
+        sourceHookId: hookInstanceIdRef.current,
+      });
       void trackMealDeleted(existingMeal);
       await enqueueDelete(userUid, mealCloudId, now);
 

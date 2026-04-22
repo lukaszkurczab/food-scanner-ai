@@ -287,5 +287,13 @@
     "desc": "We couldn't load this meal draft right now. Try again.",
     "offlineDesc": "You're offline and this meal draft is not available locally.",
     "authDesc": "Your session expired. Sign in again to continue."
-  }
+  },
+  "review_meal_ingredients_count_few": "{{count}} ingredients",
+  "review_meal_ingredients_count_many": "{{count}} ingredients",
+  "review_meal_edit_screen_title": "Edit meal details",
+  "review_meal_edit_ingredients_subtitle": "Review ingredients and adjust anything that looks off.",
+  "review_meal_edit_no_ingredients_title": "No ingredients yet",
+  "review_meal_edit_no_ingredients_description": "Add ingredients to make this summary more complete.",
+  "review_meal_photo_preview": "Meal photo preview",
+  "review_meal_save_share_cta": "Save and share"
 }

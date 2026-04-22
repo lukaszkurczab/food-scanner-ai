@@ -174,8 +174,6 @@ export function useHistoryListState(params: {
             ? t("meals:tryDifferentSearch")
             : t("history.emptyDescription", {
                 ns: "history",
-                defaultValue:
-                  "Your meals will settle here, day by day, once you start logging.",
               });
 
     const title =
@@ -185,7 +183,6 @@ export function useHistoryListState(params: {
           ? t("meals:noMealsFound")
           : t("history.emptyTitle", {
               ns: "history",
-              defaultValue: "No meals yet",
             });
 
     return { title, description };

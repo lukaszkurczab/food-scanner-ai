@@ -14,6 +14,7 @@ import { IconButton } from "@/components/IconButton";
 import AppIcon from "@/components/AppIcon";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView";
+import { useTranslation } from "react-i18next";
 
 const WINDOW_HEIGHT = Dimensions.get("window").height;
 const MODAL_MAX_WIDTH = 500;
@@ -60,6 +61,7 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { t } = useTranslation("common");
 
   const contentBottomPadding = contentPaddingBottom ?? 0;
 
@@ -125,7 +127,7 @@ export const Modal: React.FC<ModalProps> = ({
                     onPress={onClose}
                     size={32}
                     iconColor={theme.textSecondary}
-                    accessibilityLabel="Close"
+                    accessibilityLabel={t("close")}
                   />
                 </View>
               ) : null}

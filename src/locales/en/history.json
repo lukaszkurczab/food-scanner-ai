@@ -59,5 +59,9 @@
   },
   "weekStrip": {
     "open_history": "Open history calendar"
-  }
+  },
+  "resultsCount_few": "{{count}} results",
+  "resultsCount_many": "{{count}} results",
+  "detailsItemsCount_few": "{{count}} items",
+  "detailsItemsCount_many": "{{count}} items"
 }

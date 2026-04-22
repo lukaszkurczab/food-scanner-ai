@@ -80,12 +80,10 @@ export default function UsernameChangeScreen({
       setErrors((current) => ({
         ...current,
         username: t("usernameCurrentHelper", {
-          defaultValue: "This is already your current username.",
         }),
       }));
       setAvailabilityHint(
         t("usernameCurrentHelper", {
-          defaultValue: "This is already your current username.",
         }),
       );
       return;
@@ -132,7 +130,6 @@ export default function UsernameChangeScreen({
       newErrors.username = t("usernameTooShort");
     } else if (candidate === normalizeUsername(userData?.username || "")) {
       newErrors.username = t("usernameCurrentHelper", {
-        defaultValue: "This is already your current username.",
       });
     } else {
       const available = await isUsernameAvailable(candidate, userData?.uid);
@@ -200,7 +197,6 @@ export default function UsernameChangeScreen({
     <FormScreenShell
       title={t("changeUsername")}
       intro={t("changeUsernameIntro", {
-        defaultValue: "Choose the name shown across your account.",
       })}
       onBack={() => navigation.goBack()}
       actionLabel={t("save", { ns: "common" })}

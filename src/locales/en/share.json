@@ -113,5 +113,8 @@
     "meal_summary": "Meal summary",
     "balanced_macros": "Balanced macros",
     "high_protein": "High protein"
-  }
+  },
+  "share_save_failed": "Could not save to gallery. Please try again.",
+  "share_saved_to_gallery": "Saved to gallery.",
+  "share_permission_required": "Gallery permission is required."
 }

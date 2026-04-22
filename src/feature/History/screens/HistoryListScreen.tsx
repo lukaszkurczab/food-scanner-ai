@@ -247,7 +247,7 @@ export default function HistoryListScreen({
     (meal: Meal) =>
       t(meal.type || "other", {
         ns: "meals",
-        defaultValue: t("meal", { ns: "home", defaultValue: "Meal" }),
+        defaultValue: t("meal", { ns: "home" }),
       }),
     [t],
   );
@@ -258,7 +258,7 @@ export default function HistoryListScreen({
         section={item}
         locale={i18n?.language}
         kcalLabel={state.kcalLabel}
-        fallbackMealName={t("meal", { ns: "home", defaultValue: "Meal" })}
+        fallbackMealName={t("meal", { ns: "home" })}
         onMealPress={state.onMealPress}
         mealTypeLabel={mealTypeLabel}
         theme={theme}
@@ -291,16 +291,10 @@ export default function HistoryListScreen({
 
       <View style={styles.heroBlock}>
         <Text style={styles.heroTitle}>
-          {t("screenTitle", {
-            ns: "history",
-            defaultValue: "History",
-          })}
+          {t("screenTitle", { ns: "history" })}
         </Text>
         <Text style={styles.heroSubtitle}>
-          {t("screenSubtitle", {
-            ns: "history",
-            defaultValue: "A quiet record of your recent meals",
-          })}
+          {t("screenSubtitle", { ns: "history" })}
         </Text>
       </View>
 
@@ -310,7 +304,6 @@ export default function HistoryListScreen({
           onChange={state.setQuery}
           placeholder={t("searchPlaceholder", {
             ns: "history",
-            defaultValue: "Search meals...",
           })}
           style={styles.searchBox}
         />
@@ -326,7 +319,6 @@ export default function HistoryListScreen({
             {t("resultsCount", {
               ns: "history",
               count: totalResults,
-              defaultValue: `${totalResults} results`,
             })}
           </Text>
         </View>
@@ -342,7 +334,6 @@ export default function HistoryListScreen({
             query.trim().length === 0 && state.dataState === "empty"
               ? t("emptyEyebrow", {
                   ns: "history",
-                  defaultValue: "A calm archive starts with the first meal",
                 })
               : undefined
           }
@@ -352,7 +343,6 @@ export default function HistoryListScreen({
             state.dataState === "empty" && query.trim().length === 0
               ? t("emptyAction", {
                   ns: "history",
-                  defaultValue: "Log your first meal",
                 })
               : undefined
           }

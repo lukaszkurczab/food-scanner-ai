@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import * as Sentry from "@sentry/react-native";
 import { baseColors } from "@theme/colors";
 import AppIcon from "@/components/AppIcon";
+import { withTranslation, type WithTranslation } from "react-i18next";
 
 type ErrorBoundaryProps = {
   children: React.ReactNode;
@@ -25,8 +26,8 @@ const Colors = {
   },
 };
 
-class ErrorBoundary extends React.Component<
-  ErrorBoundaryProps,
+class ErrorBoundaryBase extends React.Component<
+  ErrorBoundaryProps & WithTranslation,
   ErrorBoundaryState
 > {
   public state: ErrorBoundaryState = {
@@ -60,17 +61,19 @@ class ErrorBoundary extends React.Component<
     return (
       <View style={styles.container}>
         <AppIcon name="info" size={48} color={Colors.accent.error} />
-        <Text style={styles.title}>Something went wrong</Text>
+        <Text style={styles.title}>{this.props.t("common:errorBoundary.title")}</Text>
         <Text style={styles.description}>
-          The app encountered an unexpected error.
+          {this.props.t("common:errorBoundary.description")}
         </Text>
         <Pressable onPress={this.handleRestart} style={styles.button}>
-          <Text style={styles.buttonText}>Restart</Text>
+          <Text style={styles.buttonText}>{this.props.t("common:errorBoundary.restart")}</Text>
         </Pressable>
       </View>
     );
   }
 }
+
+const ErrorBoundary = withTranslation()(ErrorBoundaryBase);
 
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,

@@ -40,20 +40,12 @@ export function MealSyncBadge({ syncState, lastSyncedAt }: Props) {
   const tone = toneForSyncState(syncState);
   const syncedAt = formatLastSyncedAt(lastSyncedAt);
 
-  const label = t(labelKeyForSyncState(syncState), {
-    defaultValue:
-      syncState === "synced"
-        ? "Synced"
-        : syncState === "pending"
-          ? "Pending"
-          : "Failed",
-  });
+  const label = t(labelKeyForSyncState(syncState));
 
   const displayLabel =
     syncState === "synced" && syncedAt
       ? t("history.syncSyncedAt", {
-          time: syncedAt,
-          defaultValue: `Synced ${syncedAt}`,
+        time: syncedAt,
         })
       : label;
 

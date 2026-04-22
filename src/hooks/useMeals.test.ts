@@ -271,6 +271,30 @@ describe("useMeals", () => {
     });
   });
 
+  it("reloads visible meals when another useMeals instance emits meal deleted", async () => {
+    mockGetMealsPageLocal
+      .mockResolvedValueOnce([baseMeal({ cloudId: "c1", name: "Old meal" })])
+      .mockResolvedValueOnce([]);
+
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.meals.map((meal) => meal.cloudId)).toEqual(["c1"]);
+    });
+
+    act(() => {
+      const handlers = mockEventHandlers.get("meal:deleted");
+      handlers?.forEach((handler) =>
+        handler({ uid: "user-1", cloudId: "c1", sourceHookId: "other-instance" }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(result.current.meals).toEqual([]);
+    });
+  });
+
   it("clears data when user is missing and keeps pagination inactive", async () => {
     const { result } = renderHook(() => useMeals(null));
 
@@ -670,10 +694,13 @@ describe("useMeals", () => {
       expect.any(String),
     );
     expect(result.current.meals.map((m) => m.cloudId)).toEqual(["keep-me", undefined]);
-    expect(mockEmit).toHaveBeenCalledWith("meal:deleted", {
-      uid: "user-1",
-      cloudId: "delete-me",
-    });
+    expect(mockEmit).toHaveBeenCalledWith(
+      "meal:deleted",
+      expect.objectContaining({
+        uid: "user-1",
+        cloudId: "delete-me",
+      }),
+    );
     expect(mockTrackMealDeleted).toHaveBeenCalledWith(
       expect.objectContaining({
         cloudId: "delete-me",

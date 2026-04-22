@@ -43,7 +43,7 @@
   "empty": {
     "title": "W czym mogę pomóc?",
     "subtitle": "Otrzymasz wsparcie dotyczące posiłków, żywienia i kolejnych kroków.",
-    "creditsLeft": "Pozostało {{count}} kredytów",
+    "creditsLeft": "Pozostało {{count}} kredytów AI",
     "suggestedLabel": "PODPOWIEDZI STARTOWE",
     "starters": {
       "week": "Jak jadłem w tym tygodniu?",
@@ -71,7 +71,7 @@
   "history": {
     "open": "Otwórz rozmowy",
     "title": "Rozmowy",
-    "subtitle": "Wróć do wątku albo rozpocznij nowy.",
+    "subtitle": "Wróć do rozmowy albo rozpocznij nową.",
     "newChat": "+ Nowy czat",
     "emptyTitle": "Brak rozmów",
     "emptyDescription": "Rozpocznij nową rozmowę, aby zobaczyć historię wątków.",
@@ -106,21 +106,21 @@
     "privacy": "Prywatność"
   },
   "credits": {
-    "name": "AI Credits",
-    "balanceShort": "AI Credits: {{balance}}",
-    "balanceOutOf": "AI Credits: {{balance}}/{{allocation}}",
+    "name": "Kredyty AI",
+    "balanceShort": "Kredyty AI: {{balance}}",
+    "balanceOutOf": "Kredyty AI: {{balance}}/{{allocation}}",
     "costZero": "0 AI Credits",
-    "costSingle": "1 AI Credit",
-    "costMultiple": "{{count}} AI Credits",
+    "costSingle": "1 kredyt AI",
+    "costMultiple": "{{count}} kredytów AI",
     "renewalUnknown": "Brak danych"
   },
   "legal": {
-    "title": "Zanim zaczniemy rozmowę z AI",
-    "informational": "Ten chat daje ogólne wsparcie w tematach diety, żywienia i planowania posiłków.",
+    "title": "Zanim uruchomisz czat AI",
+    "informational": "Ten czat daje ogólne wsparcie w tematach diety, żywienia i planowania posiłków.",
     "medical": "Nie zastępuje porady lekarskiej ani indywidualnej konsultacji medycznej.",
     "accept": "Akceptuję",
     "moreInfo": "Sprawdź krótkie wyjaśnienia:",
-    "learnMore": "Jak działa Dane i AI",
+    "learnMore": "Jak działają dane i AI",
     "privacy": "Prawo i prywatność",
     "composerLocked": "Zaakceptuj zasady, aby odblokować czat",
     "back": "Wróć"

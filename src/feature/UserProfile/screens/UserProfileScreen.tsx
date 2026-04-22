@@ -142,13 +142,9 @@ export default function UserProfileScreen({
           ) : null}
         </View>
 
-        <SettingsSection
-          title={t("profileSectionTitle", { defaultValue: "Profile" })}
-        >
+        <SettingsSection title={t("profileSectionTitle")}>
           <SettingsRow
-            title={t("profileDetailsLabel", {
-              defaultValue: "Profile details",
-            })}
+            title={t("profileDetailsLabel")}
             testID="account-profile-details-row"
             onPress={() => navigation.navigate("EditUserData")}
           />
@@ -160,9 +156,7 @@ export default function UserProfileScreen({
           />
         </SettingsSection>
 
-        <SettingsSection
-          title={t("membershipSectionTitle", { defaultValue: "Membership" })}
-        >
+        <SettingsSection title={t("membershipSectionTitle")}>
           <SettingsRow
             title={t("manageSubscription.title")}
             testID="account-manage-subscription-row"
@@ -170,51 +164,31 @@ export default function UserProfileScreen({
           />
         </SettingsSection>
 
-        <SettingsSection
-          title={t("legalPrivacySectionTitle", {
-            defaultValue: "Legal & privacy",
-          })}
-        >
+        <SettingsSection title={t("legalPrivacySectionTitle")}>
           <SettingsRow
-            title={t("legalPrivacyHubRowTitle", {
-              defaultValue: "Review legal documents",
-            })}
+            title={t("legalPrivacyHubRowTitle")}
             testID="account-legal-privacy-row"
             onPress={() => navigation.navigate("LegalPrivacyHub")}
           />
         </SettingsSection>
 
-        <SettingsSection
-          title={t("helpFeedbackSectionTitle", {
-            defaultValue: "Help & feedback",
-          })}
-        >
+        <SettingsSection title={t("helpFeedbackSectionTitle")}>
           <SettingsRow
-            title={t("helpFeedbackHubRowTitle", {
-              defaultValue: "Get help or send feedback",
-            })}
+            title={t("helpFeedbackHubRowTitle")}
             testID="account-help-feedback-row"
             onPress={() => navigation.navigate("HelpFeedback")}
           />
         </SettingsSection>
 
-        <SettingsSection
-          title={t("appSettingsSectionTitle", { defaultValue: "App settings" })}
-        >
+        <SettingsSection title={t("appSettingsSectionTitle")}>
           <SettingsRow
-            title={t("appSettingsHubRowTitle", {
-              defaultValue: "App settings",
-            })}
+            title={t("appSettingsHubRowTitle")}
             testID="account-app-settings-row"
             onPress={() => navigation.navigate("AppSettings")}
           />
         </SettingsSection>
 
-        <SettingsSection
-          title={t("accountActionsSectionTitle", {
-            defaultValue: "Account actions",
-          })}
-        >
+        <SettingsSection title={t("accountActionsSectionTitle")}>
           <SettingsRow
             title={t("logOut")}
             onPress={state.handleLogout}

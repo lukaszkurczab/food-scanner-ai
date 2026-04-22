@@ -8,7 +8,6 @@
   "todaysMeals": "Dzisiejsze posiłki",
   "meal": "Posiłek",
   "weeklyProgress": "Postęp tygodniowy",
-
   "totalToday": "Razem dzisiaj",
   "noGoalSet": "Brak celu dziennego",
   "setDailyGoal": "Ustaw cel dzienny",
@@ -37,10 +36,15 @@
     "completed": {
       "title": "Cel osiągnięty, {{name}}",
       "cta": "Przejrzyj swój dzień",
-      "support": "Zobacz pełne podsumowanie dzisiejszego dnia"
+      "support": "Zobacz pełne podsumowanie dzisiejszego dnia",
+      "titleGeneric": "Cel osiągnięty"
+    },
+    "greetingGeneric": {
+      "morning": "Dzień dobry",
+      "afternoon": "Dzień dobry",
+      "evening": "Dobry wieczór"
     }
   },
-
   "emptyDay": {
     "title": "Brak posiłków tego dnia",
     "subtitle_today": "Dodaj pierwszy posiłek, aby rozpocząć zapis dnia.",
@@ -51,12 +55,12 @@
       "no_data": {
         "title": "Na dziś nie ma jeszcze wpisów",
         "body": "Zacznij od kolejnego posiłku, a tutaj pojawi się wyraźniejszy obraz dnia.",
-        "whyBody": "Na dziś nie ma jeszcze wystarczającej liczby wpisów, więc nie ma osobnego insightu do pokazania."
+        "whyBody": "Na dziś nie ma jeszcze wystarczającej liczby wpisów, więc nie ma osobnej wskazówki do pokazania."
       },
       "insufficient_data": {
         "title": "Na razie sygnał jest za słaby",
-        "body": "Ostatnich danych jest jeszcze zbyt mało, żeby pokazać wiarygodny insight. Pomoże kilka pełniejszych wpisów.",
-        "whyBody": "Są już pewne ostatnie dane, ale nadal za mało regularnych i pełnych wpisów, żeby wygenerować wiarygodny insight."
+        "body": "Ostatnich danych jest jeszcze zbyt mało, żeby pokazać wiarygodną wskazówkę. Pomoże kilka pełniejszych wpisów.",
+        "whyBody": "Są już pewne ostatnie dane, ale nadal za mało regularnych i pełnych wpisów, by wygenerować wiarygodną wskazówkę."
       }
     },
     "addMeal": "Dodaj posiłek",
@@ -70,9 +74,9 @@
     "temporarilyUnavailablePill": "Chwilowo niedostępny",
     "needsMoreSignalPill": "Potrzeba więcej danych",
     "unavailablePill": "Niedostępny",
-    "preparingPill": "Przygotowuję",
+    "preparingPill": "W przygotowaniu",
     "reflectionReadyFallback": "Twój raport tygodniowy jest gotowy.",
-    "signalsBehindIt": "Sygnały za nią",
+    "signalsBehindIt": "Sygnały, które na to wpłynęły",
     "carryForwardTitle": "Przenieś do kolejnego tygodnia",
     "carryForwardBody": "Zachowaj lekkość. Zadbaj o pierwszy posiłek weekendu i pozwól, by rytm tygodnia trwał.",
     "loadingTitle": "Przygotowujemy Twój raport tygodniowy",
@@ -84,7 +88,7 @@
     "insufficientTitle": "Ten tydzień nie ma jeszcze wystarczającej liczby danych",
     "insufficientBody": "Tak się dzieje, gdy zapisany jest tylko fragment tygodnia. Gdy wpisów będzie więcej, raport zwykle odblokuje się sam.",
     "insufficientFootnote": "To normalne. Nic tu nie zawodzi.",
-    "backToHome": "Wróć do Strony głównej",
+    "backToHome": "Wróć do strony głównej",
     "unavailableTitle": "Twój raport tygodniowy nie jest jeszcze gotowy",
     "unavailableBody": "Raport jest jeszcze przygotowywany. Spróbuj ponownie za chwilę.",
     "unavailableFootnote": "Reszta Strony głównej pozostaje dostępna, podczas gdy to się aktualizuje.",
@@ -98,46 +102,46 @@
     "cardBodyUnavailable": "Spróbuj ponownie za chwilę."
   },
   "coachInsight": {
-    "defaultEyebrow": "Insight coacha",
+    "defaultEyebrow": "Wskazówka od coacha",
     "positiveEyebrow": "Dobra passa",
     "showWhy": "Dlaczego to widzę?",
     "hideWhy": "Ukryj wyjaśnienie",
     "whyTitle": "Dlaczego to widzę?",
     "cta": {
       "log_next_meal": "Dodaj kolejny posiłek",
-      "open_chat": "Otwórz chat",
+      "open_chat": "Otwórz czat",
       "review_history": "Przejrzyj historię"
     },
     "items": {
       "under_logging": {
         "title": "Ostatnio logujesz mniej",
         "body": "W ostatnich dniach było mniej pełnych wpisów. Dodanie kolejnego posiłku da wyraźniejszy obraz.",
-        "whyBody": "Ten insight opiera się na recent consistency logowania i na tym, ile ostatnich dni miało dość danych do sensownej interpretacji."
+        "whyBody": "Ta wskazówka opiera się na regularności ostatnich wpisów i na tym, ile dni miało wystarczająco danych do sensownej oceny."
       },
       "high_unknown_meal_details": {
         "title": "Część posiłków jest niepełna",
-        "body": "Kilka ostatnich posiłków nie ma pełnych danych odżywczych. Dokładniejsze wpisy poprawią jakość insightów.",
-        "whyBody": "Ten insight opiera się na ostatnich posiłkach, w których brakowało danych odżywczych albo były one niepełne."
+        "body": "Kilka ostatnich posiłków nie ma pełnych danych odżywczych. Dokładniejsze wpisy poprawią jakość wskazówek.",
+        "whyBody": "Ta wskazówka opiera się na ostatnich posiłkach, w których brakowało danych odżywczych albo były one niepełne."
       },
       "low_protein_consistency": {
         "title": "Białko ostatnio wypada słabiej",
         "body": "W ostatnich dniach częściej brakowało domknięcia celu białka. Warto przyjrzeć się kilku kolejnym posiłkom.",
-        "whyBody": "Ten insight opiera się na ostatnim pokryciu celu białka w zalogowanych posiłkach."
+        "whyBody": "Ta wskazówka opiera się na ostatnim pokryciu celu białka w zalogowanych posiłkach."
       },
       "calorie_under_target": {
         "title": "Częściej kończysz poniżej celu",
         "body": "W ostatnich dniach częściej kończyłeś dzień poniżej celu kalorii. Warto sprawdzić, czy to było zamierzone.",
-        "whyBody": "Ten insight opiera się na tym, jak często ostatnie zalogowane dni kończyły się poniżej celu kalorii."
+        "whyBody": "Ta wskazówka opiera się na tym, jak często ostatnie zalogowane dni kończyły się poniżej celu kalorii."
       },
       "positive_momentum": {
         "title": "Logowanie wygląda stabilniej",
         "body": "Ostatnie wpisy są bardziej regularne i pełniejsze. Z czasem daje to wyraźniejszy obraz.",
-        "whyBody": "Ten insight opiera się na poprawie regularności logowania i kompletności posiłków w ostatnich dniach."
+        "whyBody": "Ta wskazówka opiera się na poprawie regularności logowania i kompletności posiłków w ostatnich dniach."
       },
       "stable": {
         "title": "Nie widać jednego głównego wzorca",
-        "body": "Na ten moment nie widać jednego wyraźnego problemu. Możesz przejrzeć historię albo wejść głębiej w chat.",
-        "whyBody": "Ten insight pojawia się, gdy ostatnie dane nie pokazują jednego dominującego problemu ani mocnego pozytywnego sygnału."
+        "body": "Na ten moment nie widać jednego wyraźnego problemu. Możesz przejrzeć historię albo wejść głębiej w czacie.",
+        "whyBody": "Ta wskazówka pojawia się, gdy ostatnie dane nie pokazują jednego dominującego problemu ani mocnego pozytywnego sygnału."
       }
     }
   }

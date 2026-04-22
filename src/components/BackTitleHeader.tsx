@@ -47,9 +47,7 @@ export function BackTitleHeader({
       <Pressable
         onPress={onBack}
         accessibilityRole="button"
-        accessibilityLabel={
-          backAccessibilityLabel ?? t("common:back", { defaultValue: "Back" })
-        }
+        accessibilityLabel={backAccessibilityLabel ?? t("common:back")}
         testID={backButtonTestID}
         style={({ pressed }) => [
           styles.buttonWrapper,

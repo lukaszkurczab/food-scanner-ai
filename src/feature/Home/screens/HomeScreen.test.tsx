@@ -63,6 +63,27 @@ jest.mock("react-i18next", () => ({
       if (key === "home:mealCount") {
         return options?.count === 1 ? "1 meal" : `${options?.count ?? 0} meals`;
       }
+      if (key === "home:hero.greeting.morning") return `Good morning, ${options?.name}`;
+      if (key === "home:hero.greeting.afternoon") return `Good afternoon, ${options?.name}`;
+      if (key === "home:hero.greeting.evening") return `Good evening, ${options?.name}`;
+      if (key === "home:hero.greetingGeneric.morning") return "Good morning";
+      if (key === "home:hero.greetingGeneric.afternoon") return "Good afternoon";
+      if (key === "home:hero.greetingGeneric.evening") return "Good evening";
+      if (key === "home:hero.todayEmpty.cta") return "Log breakfast";
+      if (key === "home:hero.todayEmpty.supportCopy") {
+        return "Start with your first meal and the rest of today will build from there.";
+      }
+      if (key === "home:hero.todayInProgress.cta") return "Log next meal";
+      if (key === "home:hero.pastIncomplete.meta") return "You missed a meal log";
+      if (key === "home:hero.pastIncomplete.cta") return "Add a missed meal";
+      if (key === "home:hero.pastIncomplete.supportCopy") {
+        return "You can still fill in what was missing.";
+      }
+      if (key === "home:hero.completed.title") return `Goal reached, ${options?.name}`;
+      if (key === "home:hero.completed.titleGeneric") return "Goal reached";
+      if (key === "home:hero.completed.cta") return "Review your day";
+      if (key === "home:hero.completed.support") return "See your full breakdown for today";
+      if (key === "home:viewHistory") return "See full history";
       return options?.defaultValue ?? key;
     },
   }),

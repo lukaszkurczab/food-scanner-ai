@@ -113,5 +113,8 @@
     "meal_summary": "Podsumowanie posiłku",
     "balanced_macros": "Zrównoważone makro",
     "high_protein": "Wysokobiałkowe"
-  }
+  },
+  "share_save_failed": "Nie udało się zapisać obrazu w galerii. Spróbuj ponownie.",
+  "share_saved_to_gallery": "Zapisano w galerii.",
+  "share_permission_required": "Wymagane jest uprawnienie do galerii."
 }

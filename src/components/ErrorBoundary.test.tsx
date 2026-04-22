@@ -5,6 +5,27 @@ import { Pressable, Text } from "react-native";
 import * as Sentry from "@sentry/react-native";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
+jest.mock("react-i18next", () => ({
+  withTranslation: () => (Component: React.ComponentType<Record<string, unknown>>) => {
+    const WrappedWithTranslation = (props: Record<string, unknown>) => (
+      <Component
+        {...props}
+        t={(key: string) => {
+          if (key === "common:errorBoundary.title") return "Something went wrong";
+          if (key === "common:errorBoundary.description") {
+            return "The app encountered an unexpected error.";
+          }
+          if (key === "common:errorBoundary.restart") return "Restart";
+          return key;
+        }}
+      />
+    );
+
+    WrappedWithTranslation.displayName = "WrappedWithTranslation";
+    return WrappedWithTranslation;
+  },
+}));
+
 const captureExceptionMock = Sentry.captureException as jest.Mock;
 
 function ThrowError({ error }: { error: Error }): React.ReactElement {

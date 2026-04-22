@@ -1,7 +1,7 @@
 {
   "screen": {
     "title": "Powiadomienia",
-    "intro": "Zarządzaj przypomnieniami o posiłkach, dostępem do powiadomień oraz preferencjami powiadomień dostępnymi dziś w Fitaly.",
+    "intro": "Zarządzaj przypomnieniami o posiłkach, dostępem do powiadomień i preferencjami powiadomień w Fitaly.",
     "myReminders": "Moje przypomnienia",
     "mealRemindersTitle": "Przypomnienia o posiłkach",
     "mealRemindersFooter": "Twórz przypomnienia dla konkretnych posiłków albo wybierz Inne, jeśli przypomnienie ma być bardziej ogólne.",
@@ -9,7 +9,7 @@
     "noMealRemindersTitle": "Nie masz jeszcze przypomnień o posiłkach",
     "noMealRemindersBody": "Utwórz przypomnienie, aby otrzymywać cykliczny sygnał w wybranym czasie i dniach.",
     "smartReminderHint": "Inteligentne przypomnienia mogą dopasować moment przypomnienia do Twojego dnia, ostatniego logowania i godzin ciszy.",
-    "smartReminderDebugTitle": "QA inteligentnych przypomnień",
+    "smartReminderDebugTitle": "Diagnostyka inteligentnych przypomnień",
     "smartReminders": "Inteligentne przypomnienia",
     "preferenceTitle": "Preferencje powiadomień",
     "addReminder": "Utwórz przypomnienie",
@@ -20,13 +20,13 @@
     "permissionCheckingTitle": "Sprawdzanie dostępu do powiadomień",
     "permissionCheckingBody": "Fitaly nadal sprawdza, czy to urządzenie może odbierać powiadomienia.",
     "motivation": "Motywacja",
-    "motivationSubtitle": "Motywacyjne wiadomości korzystające z istniejącej ścieżki preferencji powiadomień.",
+    "motivationSubtitle": "Krótkie przypomnienia wspierające, oparte na Twoich ustawieniach powiadomień.",
     "deleteTitle": "Usuń przypomnienie",
     "deleteMsg": "Na pewno?",
     "stats": "Statystyki",
-    "statsSubtitle": "Cotygodniowe podsumowania oparte na aktualnie zapisanej preferencji.",
+    "statsSubtitle": "Cotygodniowe podsumowania wysyłane na podstawie aktualnych ustawień.",
     "loadingTitle": "Ładowanie przypomnień",
-    "loadingBody": "Ustawienia przypomnień są nadal ładowane z Twojego konta."
+    "loadingBody": "Wczytujemy ustawienia przypomnień z Twojego konta."
   },
   "form": {
     "name": "Nazwa",

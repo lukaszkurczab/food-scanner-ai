@@ -8,6 +8,12 @@ jest.mock("@/components/AppIcon", () => ({
   default: () => null,
 }));
 
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
 describe("Modal", () => {
   it("renders title/message and handles action presses", () => {
     const onPrimaryPress = jest.fn();
@@ -42,7 +48,7 @@ describe("Modal", () => {
       />,
     );
 
-    fireEvent.press(getByLabelText("Close"));
+    fireEvent.press(getByLabelText("close"));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

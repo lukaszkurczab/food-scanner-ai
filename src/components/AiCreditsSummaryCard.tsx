@@ -28,33 +28,27 @@ export function AiCreditsSummaryCard({
   });
   const tierLabel =
     tier === "premium"
-      ? t("manageSubscription.tierPremium", { defaultValue: "Premium" })
+      ? t("manageSubscription.tierPremium")
       : tier === "free"
-        ? t("manageSubscription.tierFree", { defaultValue: "Free" })
+        ? t("manageSubscription.tierFree")
         : "-";
 
   return (
     <View style={styles.card}>
       <Text style={styles.title}>
-        {t("manageSubscription.aiCreditsSection", {
-          defaultValue: "AI Credits",
-        })}
+        {t("manageSubscription.aiCreditsSection")}
       </Text>
 
       <View style={styles.row}>
         <Text style={styles.label}>
-          {t("manageSubscription.aiCreditsBalance", {
-            defaultValue: "Balance",
-          })}
+          {t("manageSubscription.aiCreditsBalance")}
         </Text>
         <Text style={styles.value}>{loading ? "..." : (balance ?? "-")}</Text>
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>
-          {t("manageSubscription.aiCreditsAllocation", {
-            defaultValue: "Allocation",
-          })}
+          {t("manageSubscription.aiCreditsAllocation")}
         </Text>
         <Text style={styles.value}>
           {loading ? "..." : (allocation ?? "-")}
@@ -63,24 +57,20 @@ export function AiCreditsSummaryCard({
 
       <View style={styles.row}>
         <Text style={styles.label}>
-          {t("manageSubscription.aiCreditsTier", { defaultValue: "Tier" })}
+          {t("manageSubscription.aiCreditsTier")}
         </Text>
         <Text style={styles.value}>{loading ? "..." : tierLabel}</Text>
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>
-          {t("manageSubscription.aiCreditsRenewalDate", {
-            defaultValue: "Renews on",
-          })}
+          {t("manageSubscription.aiCreditsRenewalDate")}
         </Text>
         <Text style={styles.value}>
           {loading
             ? "..."
             : (renewalDate ??
-              t("manageSubscription.aiCreditsRenewalUnknown", {
-                defaultValue: "Unavailable",
-              }))}
+              t("manageSubscription.aiCreditsRenewalUnknown"))}
         </Text>
       </View>
     </View>

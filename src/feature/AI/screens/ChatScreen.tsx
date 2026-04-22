@@ -309,9 +309,7 @@ export default function ChatScreen() {
             allocation: credits?.allocation ?? 0,
             renewalDate:
               renewalDateLabel ??
-              t("credits.renewalUnknown", {
-                defaultValue: "Unavailable",
-              }),
+              t("credits.renewalUnknown"),
           })}
           actionLabel={t("lock.creditsAction")}
           onActionPress={() => navigation.navigate("ManageSubscription")}

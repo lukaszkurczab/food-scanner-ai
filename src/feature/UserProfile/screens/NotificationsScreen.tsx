@@ -134,37 +134,22 @@ export default function NotificationsScreen({
   const permissionBlock =
     systemAllowed === false ? (
       <InfoBlock
-        title={t("screen.permissionOffTitle", {
-          defaultValue: "Notifications are off",
-        })}
-        body={t("screen.permissionOffBody", {
-          defaultValue:
-            "Turn on system notifications to receive meal reminders and other notification types on time.",
-        })}
+        title={t("screen.permissionOffTitle")}
+        body={t("screen.permissionOffBody")}
         tone="warning"
         icon={<AppIcon name="wifi-off" size={18} color={theme.warning.text} />}
       />
     ) : systemAllowed === true ? (
       <InfoBlock
-        title={t("screen.permissionOnTitle", {
-          defaultValue: "Notifications are on",
-        })}
-        body={t("screen.permissionOnBody", {
-          defaultValue:
-            "Fitaly can deliver reminders and other notifications on this device.",
-        })}
+        title={t("screen.permissionOnTitle")}
+        body={t("screen.permissionOnBody")}
         tone="success"
         icon={<AppIcon name="check" size={18} color={theme.success.text} />}
       />
     ) : (
       <InfoBlock
-        title={t("screen.permissionCheckingTitle", {
-          defaultValue: "Checking notification access",
-        })}
-        body={t("screen.permissionCheckingBody", {
-          defaultValue:
-            "Fitaly is still checking whether this device can receive notifications.",
-        })}
+        title={t("screen.permissionCheckingTitle")}
+        body={t("screen.permissionCheckingBody")}
         tone="neutral"
         icon={<AppIcon name="info" size={18} color={theme.textSecondary} />}
       />
@@ -174,14 +159,9 @@ export default function NotificationsScreen({
     <>
       <FormScreenShell
         title={t("screen.title")}
-        intro={t("screen.intro", {
-          defaultValue:
-            "Manage meal reminders, notification access, and the notification preferences available in Fitaly today.",
-        })}
+        intro={t("screen.intro")}
         onBack={handleBack}
-        actionLabel={t("screen.addReminder", {
-          defaultValue: "Create reminder",
-        })}
+        actionLabel={t("screen.addReminder")}
         onActionPress={() => navigation.navigate("NotificationForm", { id: null })}
       >
         <View style={styles.content}>
@@ -189,9 +169,7 @@ export default function NotificationsScreen({
 
           {systemAllowed === false ? (
             <Button
-              label={t("permissions.openSettings", {
-                defaultValue: "Open Settings",
-              })}
+              label={t("permissions.openSettings")}
               variant="secondary"
               fullWidth={false}
               onPress={() => {
@@ -201,13 +179,8 @@ export default function NotificationsScreen({
           ) : null}
 
           <SettingsSection
-            title={t("screen.mealRemindersTitle", {
-              defaultValue: "Meal reminders",
-            })}
-            footer={t("screen.mealRemindersFooter", {
-              defaultValue:
-                "Create reminders for specific meals or use Other when the reminder should stay more general.",
-            })}
+            title={t("screen.mealRemindersTitle")}
+            footer={t("screen.mealRemindersFooter")}
           >
             {mealReminders.length > 0 ? (
               mealReminders.map((item) => (
@@ -220,9 +193,7 @@ export default function NotificationsScreen({
                     t(`meals.${item.mealKind ?? "other"}`, {
                       defaultValue: item.mealKind ?? "other",
                     }),
-                    t("screen.everyDay", {
-                      defaultValue: "Every day",
-                    }),
+                    t("screen.everyDay"),
                   )}
                   onPress={() =>
                     navigation.navigate("NotificationForm", { id: item.id })
@@ -239,30 +210,16 @@ export default function NotificationsScreen({
               ))
             ) : (
               <SettingsRow
-                title={t("screen.noMealRemindersTitle", {
-                  defaultValue: "No meal reminders yet",
-                })}
-                subtitle={t("screen.noMealRemindersBody", {
-                  defaultValue:
-                    "Create a reminder to get a recurring prompt at the time and days you choose.",
-                })}
+                title={t("screen.noMealRemindersTitle")}
+                subtitle={t("screen.noMealRemindersBody")}
               />
             )}
           </SettingsSection>
 
-          <SettingsSection
-            title={t("screen.preferenceTitle", {
-              defaultValue: "Notification preferences",
-            })}
-          >
+          <SettingsSection title={t("screen.preferenceTitle")}>
             <SettingsRow
-              title={t("screen.smartReminders", {
-                defaultValue: "Smart reminders",
-              })}
-              subtitle={t("screen.smartReminderHint", {
-                defaultValue:
-                  "Smart reminders can adjust timing to your day, recent logging and quiet hours.",
-              })}
+              title={t("screen.smartReminders")}
+              subtitle={t("screen.smartReminderHint")}
               trailing={
                 <ButtonToggle
                   value={smartRemindersEnabled}
@@ -273,13 +230,8 @@ export default function NotificationsScreen({
               }
             />
             <SettingsRow
-              title={t("screen.motivation", {
-                defaultValue: "Motivation",
-              })}
-              subtitle={t("screen.motivationSubtitle", {
-                defaultValue:
-                  "Encouragement nudges that use your existing notification preference path.",
-              })}
+              title={t("screen.motivation")}
+              subtitle={t("screen.motivationSubtitle")}
               trailing={
                 <ButtonToggle
                   value={motivationEnabled}
@@ -290,13 +242,8 @@ export default function NotificationsScreen({
               }
             />
             <SettingsRow
-              title={t("screen.stats", {
-                defaultValue: "Stats",
-              })}
-              subtitle={t("screen.statsSubtitle", {
-                defaultValue:
-                  "Weekly summary notifications based on the current stored preference.",
-              })}
+              title={t("screen.stats")}
+              subtitle={t("screen.statsSubtitle")}
               trailing={
                 <ButtonToggle
                   value={statsEnabled}
@@ -309,11 +256,7 @@ export default function NotificationsScreen({
           </SettingsSection>
 
           {__DEV__ ? (
-            <SettingsSection
-              title={t("screen.smartReminderDebugTitle", {
-                defaultValue: "Smart Reminder QA",
-              })}
-            >
+            <SettingsSection title={t("screen.smartReminderDebugTitle")}>
               {smartReminderQaRows.map((row) => (
                 <SettingsRow
                   key={row.label}
@@ -326,13 +269,8 @@ export default function NotificationsScreen({
 
           {loading ? (
             <InfoBlock
-              title={t("screen.loadingTitle", {
-                defaultValue: "Loading reminders",
-              })}
-              body={t("screen.loadingBody", {
-                defaultValue:
-                  "Reminder settings are still loading from your account.",
-              })}
+              title={t("screen.loadingTitle")}
+              body={t("screen.loadingBody")}
               tone="neutral"
             />
           ) : null}
@@ -341,25 +279,16 @@ export default function NotificationsScreen({
 
       <Modal
         visible={settingsCtaVisible}
-        title={t("permissions.title", {
-          defaultValue: "Enable notifications",
-        })}
-        message={t("permissions.message", {
-          defaultValue:
-            "Notifications are disabled. You can enable them in Settings.",
-        })}
+        title={t("permissions.title")}
+        message={t("permissions.message")}
         onClose={() => setSettingsCtaVisible(false)}
         primaryAction={{
-          label: t("permissions.openSettings", {
-            defaultValue: "Open Settings",
-          }),
+          label: t("permissions.openSettings"),
           onPress: openSettings,
           testID: "open-settings",
         }}
         secondaryAction={{
-          label: t("permissions.notNow", {
-            defaultValue: "Not now",
-          }),
+          label: t("permissions.notNow"),
           onPress: () => setSettingsCtaVisible(false),
           testID: "not-now",
         }}
