@@ -5,6 +5,7 @@ import * as Device from "expo-device";
 import { v4 as uuidv4 } from "uuid";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { getSampleMealUri } from "@/utils/devSamples";
+import { normalizeImageOrientation } from "@/utils/normalizeImageOrientation";
 import { debugScope } from "@/utils/debug";
 import { useAuthContext } from "@/context/AuthContext";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
@@ -222,7 +223,8 @@ export function useMealCameraState({
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
       if (photo?.uri) {
-        setPhotoUri(photo.uri);
+        const normalizedUri = await normalizeImageOrientation(photo.uri);
+        setPhotoUri(normalizedUri);
       }
     } finally {
       setIsTakingPhoto(false);

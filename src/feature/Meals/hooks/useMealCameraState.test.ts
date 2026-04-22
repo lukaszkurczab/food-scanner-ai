@@ -16,6 +16,7 @@ const mockUseAuthContext = jest.fn();
 const mockUseAiCreditsContext = jest.fn();
 const mockCanAfford = jest.fn(() => true);
 const mockDevice = { isDevice: true };
+const mockNormalizeImageOrientation = jest.fn<(uri: string) => Promise<string>>();
 
 jest.mock("expo-camera", () => ({
   CameraView: () => null,
@@ -38,6 +39,10 @@ jest.mock("@/context/AiCreditsContext", () => ({
 
 jest.mock("@/utils/devSamples", () => ({
   getSampleMealUri: jest.fn(),
+}));
+
+jest.mock("@/utils/normalizeImageOrientation", () => ({
+  normalizeImageOrientation: (uri: string) => mockNormalizeImageOrientation(uri),
 }));
 
 const baseMeal = (): Meal => ({
@@ -65,6 +70,7 @@ describe("useMealCameraState", () => {
     (globalThis as { __DEV__?: boolean }).__DEV__ = false;
     mockDevice.isDevice = true;
     mockCanAfford.mockReturnValue(true);
+    mockNormalizeImageOrientation.mockImplementation(async (uri: string) => uri);
 
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUseAiCreditsContext.mockReturnValue({
@@ -213,6 +219,120 @@ describe("useMealCameraState", () => {
     });
 
     expect(result.current.premiumModal).toBe(true);
+  });
+
+  it("normalizes captured photo URI before preview and accept flow", async () => {
+    const updateMeal = jest.fn();
+    const saveDraft = jest.fn<
+      (uid: string, draftOverride?: Meal | null) => Promise<void>
+    >(async () => undefined);
+    const flow = {
+      goTo: jest.fn(),
+      replace: jest.fn(),
+      goBack: jest.fn(),
+      canGoBack: jest.fn(() => false),
+    };
+    const navigation = {
+      addListener: jest.fn(() => () => undefined),
+      navigate: jest.fn(),
+    };
+    const takePictureAsync = jest.fn(async () => ({ uri: "file:///raw.jpg" }));
+
+    mockUseMealDraftContext.mockReturnValue({
+      meal: baseMeal(),
+      setMeal: jest.fn(),
+      updateMeal,
+      setLastScreen: jest.fn(async () => undefined),
+      saveDraft,
+    });
+    mockNormalizeImageOrientation.mockResolvedValue("file:///normalized.jpg");
+
+    const { result } = renderHook(() =>
+      useMealCameraState({
+        navigation: navigation as never,
+        flow: flow as never,
+        params: {},
+      }),
+    );
+
+    act(() => {
+      result.current.setIsCameraReady(true);
+      result.current.cameraRef.current = {
+        takePictureAsync,
+      } as unknown as (typeof result.current.cameraRef)["current"];
+    });
+
+    await act(async () => {
+      await result.current.handleTakePicture();
+    });
+
+    expect(takePictureAsync).toHaveBeenCalledWith({ quality: 0.7 });
+    expect(mockNormalizeImageOrientation).toHaveBeenCalledWith(
+      "file:///raw.jpg",
+    );
+    expect(result.current.photoUri).toBe("file:///normalized.jpg");
+
+    await act(async () => {
+      await result.current.handleAccept();
+    });
+
+    expect(updateMeal).toHaveBeenCalledWith(
+      expect.objectContaining({ photoUrl: "file:///normalized.jpg" }),
+    );
+    expect(flow.goTo).toHaveBeenCalledWith("PreparingReviewPhoto", {
+      image: "file:///normalized.jpg",
+      id: "meal-1",
+      attempt: 1,
+    });
+  });
+
+  it("clears preview photo on retake after capture", async () => {
+    const flow = {
+      goTo: jest.fn(),
+      replace: jest.fn(),
+      goBack: jest.fn(),
+      canGoBack: jest.fn(() => false),
+    };
+    const navigation = {
+      addListener: jest.fn(() => () => undefined),
+      navigate: jest.fn(),
+    };
+    const takePictureAsync = jest.fn(
+      async () => ({ uri: "file:///captured-photo.jpg" }),
+    );
+
+    mockUseMealDraftContext.mockReturnValue({
+      meal: baseMeal(),
+      setMeal: jest.fn(),
+      updateMeal: jest.fn(),
+      setLastScreen: jest.fn(async () => undefined),
+      saveDraft: jest.fn(async () => undefined),
+    });
+
+    const { result } = renderHook(() =>
+      useMealCameraState({
+        navigation: navigation as never,
+        flow: flow as never,
+        params: {},
+      }),
+    );
+
+    act(() => {
+      result.current.setIsCameraReady(true);
+      result.current.cameraRef.current = {
+        takePictureAsync,
+      } as unknown as (typeof result.current.cameraRef)["current"];
+    });
+
+    await act(async () => {
+      await result.current.handleTakePicture();
+    });
+    expect(result.current.photoUri).toBe("file:///captured-photo.jpg");
+
+    act(() => {
+      result.current.handleRetake();
+    });
+    expect(result.current.photoUri).toBeNull();
   });
 
   it("uses the mocked sample photo on simulator and skips confirmation", async () => {
