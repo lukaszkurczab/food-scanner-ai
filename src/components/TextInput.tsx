@@ -42,7 +42,10 @@ type Props = {
   autoCorrect?: boolean;
   spellCheck?: boolean;
   returnKeyType?: TextInputProps["returnKeyType"];
-  onSubmitEditing?: () => void;
+  onSubmitEditing?: TextInputProps["onSubmitEditing"];
+  onContentSizeChange?: TextInputProps["onContentSizeChange"];
+  scrollEnabled?: boolean;
+  inputMaxHeight?: number;
   rightLabel?: string;
   maxLength?: number;
   testID?: string;
@@ -96,6 +99,9 @@ export const TextInput = forwardRef<RNTextInput, Props>(
       spellCheck,
       returnKeyType,
       onSubmitEditing,
+      onContentSizeChange,
+      scrollEnabled,
+      inputMaxHeight,
       onEndEditing,
       rightLabel,
       maxLength = 128,
@@ -114,6 +120,7 @@ export const TextInput = forwardRef<RNTextInput, Props>(
     const inputMinHeight = multiline
       ? numberOfLines * theme.typography.lineHeight.bodyM
       : theme.typography.lineHeight.bodyM;
+    const multilineInputMinHeight = inputMinHeight - theme.spacing.sm * 2;
 
     const borderColor = hasError
       ? theme.input.borderError
@@ -214,13 +221,16 @@ export const TextInput = forwardRef<RNTextInput, Props>(
             accessibilityLabel={accessibilityLabel}
             returnKeyType={returnKeyType}
             onSubmitEditing={onSubmitEditing}
+            onContentSizeChange={onContentSizeChange}
+            scrollEnabled={scrollEnabled}
             maxLength={maxLength}
             style={[
               styles.input,
               {
                 minHeight: multiline
-                  ? inputMinHeight - theme.spacing.sm * 2
+                  ? multilineInputMinHeight
                   : undefined,
+                maxHeight: multiline ? inputMaxHeight : undefined,
                 height: multiline ? undefined : "100%",
                 textAlignVertical: multiline ? "top" : "center",
                 includeFontPadding: false,

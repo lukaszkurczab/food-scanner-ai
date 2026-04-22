@@ -1,5 +1,6 @@
-import { fireEvent, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, waitFor } from "@testing-library/react-native";
 import {
+  afterEach,
   beforeEach,
   describe,
   expect,
@@ -12,10 +13,12 @@ import { renderWithTheme } from "@/test-utils/renderWithTheme";
 import ChatScreen from "@/feature/AI/screens/ChatScreen";
 
 const mockNavigate = jest.fn();
+const mockGoBack = jest.fn();
 const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
-const mockPullChatChanges = jest.fn();
+const mockPullChatChanges = jest.fn<(uid: string) => Promise<void>>();
 const mockAsyncStorageGetItem = jest.fn<(key: string) => Promise<string | null>>();
 const mockAsyncStorageSetItem = jest.fn<(key: string, value: string) => Promise<void>>();
+const focusEffectCallbacks: Array<() => void | (() => void)> = [];
 
 const baseMessages: ChatMessage[] = [
   {
@@ -48,8 +51,10 @@ let mockChatHistoryState: {
 };
 
 jest.mock("@react-navigation/native", () => ({
-  useNavigation: () => ({ navigate: mockNavigate }),
-  useFocusEffect: () => undefined,
+  useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
+  useFocusEffect: (callback: () => void | (() => void)) => {
+    focusEffectCallbacks.push(callback);
+  },
 }));
 
 jest.mock("@react-native-community/netinfo", () => ({
@@ -73,11 +78,19 @@ jest.mock("@/components/Layout", () => ({
 }));
 
 jest.mock("@/components", () => ({
-  Button: ({ label, onPress }: { label: string; onPress: () => void }) => {
+  Button: ({
+    label,
+    onPress,
+    testID,
+  }: {
+    label: string;
+    onPress: () => void;
+    testID?: string;
+  }) => {
     const { Pressable, Text } =
       jest.requireActual<typeof import("react-native")>("react-native");
     return (
-      <Pressable onPress={onPress}>
+      <Pressable onPress={onPress} testID={testID}>
         <Text>{label}</Text>
       </Pressable>
     );
@@ -92,8 +105,8 @@ jest.mock("@/components", () => ({
     visible: boolean;
     title?: string;
     children?: ReactNode;
-    primaryAction?: { label: string; onPress?: () => void };
-    secondaryAction?: { label: string; onPress?: () => void };
+    primaryAction?: { label: string; onPress?: () => void; testID?: string };
+    secondaryAction?: { label: string; onPress?: () => void; testID?: string };
   }) => {
     const { Pressable, Text, View } =
       jest.requireActual<typeof import("react-native")>("react-native");
@@ -103,12 +116,15 @@ jest.mock("@/components", () => ({
         {title ? <Text>{title}</Text> : null}
         {children}
         {primaryAction ? (
-          <Pressable onPress={primaryAction.onPress}>
+          <Pressable onPress={primaryAction.onPress} testID={primaryAction.testID}>
             <Text>{primaryAction.label}</Text>
           </Pressable>
         ) : null}
         {secondaryAction ? (
-          <Pressable onPress={secondaryAction.onPress}>
+          <Pressable
+            onPress={secondaryAction.onPress}
+            testID={secondaryAction.testID}
+          >
             <Text>{secondaryAction.label}</Text>
           </Pressable>
         ) : null}
@@ -144,12 +160,13 @@ jest.mock("@/hooks/useChatHistory", () => ({
 }));
 
 jest.mock("@/services/offline/sync.engine", () => ({
-  pullChatChanges: (...args: unknown[]) => mockPullChatChanges(...args),
+  pullChatChanges: (uid: string) => mockPullChatChanges(uid),
 }));
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
+    i18n: { language: "en" },
   }),
 }));
 
@@ -157,10 +174,43 @@ jest.mock("@/feature/AI/components/ChatHistorySheet", () => ({
   ChatHistorySheet: () => null,
 }));
 
+jest.mock("../components/ChatMessageList", () => ({
+  ChatMessageList: ({
+    messages,
+    emptyState,
+  }: {
+    messages: Array<{ id: string; content: string }>;
+    emptyState: ReactNode;
+  }) => {
+    const { View, Text } =
+      jest.requireActual<typeof import("react-native")>("react-native");
+
+    if (messages.length === 0) {
+      return <View>{emptyState}</View>;
+    }
+
+    return (
+      <View>
+        {messages.map((message) => (
+          <Text key={message.id}>{message.content}</Text>
+        ))}
+      </View>
+    );
+  },
+}));
+
 describe("ChatScreen", () => {
+  const runFocusEffects = () => {
+    focusEffectCallbacks.forEach((callback) => {
+      callback();
+    });
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
+    focusEffectCallbacks.length = 0;
     mockUseNetInfo.mockReturnValue({ isConnected: true });
+    mockPullChatChanges.mockResolvedValue(undefined);
     mockAsyncStorageGetItem.mockResolvedValue("accepted");
     mockAsyncStorageSetItem.mockResolvedValue();
     mockChatHistoryState = {
@@ -181,6 +231,12 @@ describe("ChatScreen", () => {
     };
   });
 
+  afterEach(async () => {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  });
+
   it("renders empty online state with intro and suggested starters", async () => {
     const screen = renderWithTheme(<ChatScreen />);
 
@@ -191,36 +247,101 @@ describe("ChatScreen", () => {
     expect(await screen.findByPlaceholderText("composer.placeholder")).toBeTruthy();
   });
 
-  it("shows a blocking legal modal until the user accepts it", async () => {
+  it("shows legal modal hierarchy and blocks the composer until acceptance", async () => {
     mockAsyncStorageGetItem.mockResolvedValue(null);
 
     const screen = renderWithTheme(<ChatScreen />);
 
     expect(await screen.findByText("legal.title")).toBeTruthy();
+    expect(screen.getByTestId("chat-legal-info")).toBeTruthy();
+    expect(screen.getByTestId("chat-legal-links")).toBeTruthy();
+    expect(screen.getByTestId("chat-legal-back")).toBeTruthy();
+    expect(screen.getByTestId("chat-legal-accept")).toBeTruthy();
     expect(screen.getByText("legal.informational")).toBeTruthy();
+    expect(screen.getByText("legal.medical")).toBeTruthy();
     expect(screen.getByPlaceholderText("legal.composerLocked")).toBeTruthy();
-
-    fireEvent.press(screen.getByText("legal.accept"));
-
-    expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
-      "chat_legal_ack:user-1",
-      "accepted",
-    );
+    expect(screen.getByTestId("chat-input").props.editable).toBe(false);
   });
 
-  it("hides legal modal before navigating to data & ai clarity details", async () => {
+  it("accepts legal consent, persists it, and unlocks the composer", async () => {
     mockAsyncStorageGetItem.mockResolvedValue(null);
 
     const screen = renderWithTheme(<ChatScreen />);
 
     expect(await screen.findByText("legal.title")).toBeTruthy();
 
-    fireEvent.press(screen.getByText("legal.learnMore"));
+    fireEvent.press(screen.getByTestId("chat-legal-accept"));
 
-    expect(mockNavigate).toHaveBeenCalledWith("DataAiClarity");
+    await waitFor(() => {
+      expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
+        "chat_legal_ack:user-1",
+        "accepted",
+      );
+    });
+
     await waitFor(() => {
       expect(screen.queryByText("legal.title")).toBeNull();
     });
+    expect(screen.getByPlaceholderText("composer.placeholder")).toBeTruthy();
+    expect(screen.getByTestId("chat-input").props.editable).toBe(true);
+  });
+
+  it("goes back when legal back action is pressed", async () => {
+    mockAsyncStorageGetItem.mockResolvedValue(null);
+
+    const screen = renderWithTheme(<ChatScreen />);
+    expect(await screen.findByText("legal.title")).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId("chat-legal-back"));
+
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens legal privacy hub link from modal", async () => {
+    mockAsyncStorageGetItem.mockResolvedValue(null);
+
+    const screen = renderWithTheme(<ChatScreen />);
+    expect(await screen.findByText("legal.title")).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId("chat-legal-link-privacy"));
+
+    expect(mockNavigate).toHaveBeenCalledWith("LegalPrivacyHub");
+    expect(screen.getByText("legal.title")).toBeTruthy();
+    expect(screen.getByPlaceholderText("legal.composerLocked")).toBeTruthy();
+  });
+
+  it("opens data & ai clarity link from modal", async () => {
+    mockAsyncStorageGetItem.mockResolvedValue(null);
+
+    const screen = renderWithTheme(<ChatScreen />);
+
+    expect(await screen.findByText("legal.title")).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId("chat-legal-link-data-ai"));
+
+    expect(mockNavigate).toHaveBeenCalledWith("DataAiClarity");
+    expect(screen.getByText("legal.title")).toBeTruthy();
+    expect(screen.getByPlaceholderText("legal.composerLocked")).toBeTruthy();
+  });
+
+  it("keeps legal flow stable after returning from info screens", async () => {
+    mockAsyncStorageGetItem.mockResolvedValue(null);
+
+    const screen = renderWithTheme(<ChatScreen />);
+
+    expect(await screen.findByText("legal.title")).toBeTruthy();
+    fireEvent.press(screen.getByTestId("chat-legal-link-data-ai"));
+    expect(mockNavigate).toHaveBeenCalledWith("DataAiClarity");
+
+    await act(async () => {
+      runFocusEffects();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("legal.title")).toBeTruthy();
+    });
+    expect(screen.getByPlaceholderText("legal.composerLocked")).toBeTruthy();
+    expect(screen.getByTestId("chat-input").props.editable).toBe(false);
   });
 
   it("renders normal conversation state", () => {

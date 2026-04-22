@@ -10,6 +10,7 @@ import {
 import type { ChatMessage } from "@/types";
 import { useTheme } from "@/theme/useTheme";
 import { ChatMessageBubble } from "./ChatMessageBubble";
+import { ChatTypingIndicator } from "./ChatTypingIndicator";
 
 type Props = {
   messages: ChatMessage[];
@@ -18,6 +19,7 @@ type Props = {
   emptyState: React.ReactElement;
   onLoadMore: () => void;
   dateLabel: string;
+  typingLabel: string;
 };
 
 export function ChatMessageList({
@@ -27,6 +29,7 @@ export function ChatMessageList({
   emptyState,
   onLoadMore,
   dateLabel,
+  typingLabel,
 }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -65,11 +68,7 @@ export function ChatMessageList({
         </View>
       )}
       ListHeaderComponent={
-        typing ? (
-          <View style={styles.typingBubble}>
-            <Text style={styles.typingText}>...</Text>
-          </View>
-        ) : null
+        typing ? <ChatTypingIndicator label={typingLabel} /> : null
       }
       ListFooterComponent={
         data.length > 0 ? (
@@ -100,22 +99,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flexGrow: 1,
       paddingHorizontal: theme.spacing.md,
       paddingBottom: theme.spacing.md,
-    },
-    typingBubble: {
-      alignSelf: "flex-start",
-      marginBottom: theme.spacing.md,
-      backgroundColor: theme.surfaceElevated,
-      borderWidth: 1,
-      borderColor: theme.borderSoft,
-      borderRadius: theme.rounded.lg,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-    },
-    typingText: {
-      color: theme.textSecondary,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.medium,
     },
     dateStamp: {
       alignSelf: "center",

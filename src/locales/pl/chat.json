@@ -1,5 +1,5 @@
 {
-  "typing": "…",
+  "typingIndicator": "AI przygotowuje odpowiedź",
   "new": "Nowy czat",
   "label": "Czat",
   "header": {
@@ -115,14 +115,14 @@
     "renewalUnknown": "Brak danych"
   },
   "legal": {
-    "title": "Zanim wejdziesz do chatu AI",
-    "informational": "Ten chat ma charakter informacyjny. Może pomagać w pytaniach o dietę, żywienie, jedzenie i planowanie posiłków.",
-    "medical": "To nie zastępuje porady lekarskiej ani indywidualnej konsultacji medycznej.",
+    "title": "Zanim zaczniemy rozmowę z AI",
+    "informational": "Ten chat daje ogólne wsparcie w tematach diety, żywienia i planowania posiłków.",
+    "medical": "Nie zastępuje porady lekarskiej ani indywidualnej konsultacji medycznej.",
     "accept": "Akceptuję",
-    "moreInfo": "Więcej informacji znajdziesz tutaj:",
-    "learnMore": "Dane i AI w praktyce",
+    "moreInfo": "Sprawdź krótkie wyjaśnienia:",
+    "learnMore": "Jak działa Dane i AI",
     "privacy": "Prawo i prywatność",
-    "composerLocked": "Zaakceptuj zasady, aby wysyłać",
+    "composerLocked": "Zaakceptuj zasady, aby odblokować czat",
     "back": "Wróć"
   }
 }

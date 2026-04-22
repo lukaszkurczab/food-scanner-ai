@@ -1,10 +1,19 @@
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-
-const MAX_CHARS = 4000;
+import {
+  NativeSyntheticEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInputContentSizeChangeEventData,
+  View,
+} from "react-native";
 import AppIcon from "@/components/AppIcon";
 import { TextInput } from "@/components/TextInput";
 import { useTheme } from "@/theme/useTheme";
+
+const MAX_CHARS = 4000;
+const MIN_COMPOSER_LINES = 2;
+const MAX_COMPOSER_LINES = 6;
 
 type Props = {
   placeholder: string;
@@ -30,16 +39,37 @@ export function ChatComposer({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const [value, setValue] = useState("");
+  const lineHeight = theme.typography.lineHeight.bodyM;
+  const minInputHeight = lineHeight * MIN_COMPOSER_LINES;
+  const maxInputHeight = lineHeight * MAX_COMPOSER_LINES;
+  const [contentHeight, setContentHeight] = useState(minInputHeight);
   const hasHelperText = Boolean(helperText);
 
   const canSend = !disabled && value.trim().length > 0;
+  const resolvedInputHeight = Math.min(
+    maxInputHeight,
+    Math.max(minInputHeight, contentHeight),
+  );
+  const inputScrollEnabled = contentHeight > maxInputHeight;
 
   const handleSend = useCallback(() => {
     const trimmed = value.trim();
     if (!trimmed || !canSend) return;
     onSend(trimmed);
     setValue("");
-  }, [canSend, onSend, value]);
+    setContentHeight(minInputHeight);
+  }, [canSend, minInputHeight, onSend, value]);
+
+  const handleContentSizeChange = useCallback(
+    (
+      event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>,
+    ) => {
+      const nextHeight = event.nativeEvent.contentSize.height;
+      if (!Number.isFinite(nextHeight)) return;
+      setContentHeight(nextHeight);
+    },
+    [],
+  );
 
   return (
     <View style={styles.wrap}>
@@ -51,6 +81,11 @@ export function ChatComposer({
           placeholder={placeholder}
           editable={!disabled}
           multiline
+          numberOfLines={MIN_COMPOSER_LINES}
+          inputMaxHeight={maxInputHeight}
+          inputStyle={{ height: resolvedInputHeight }}
+          onContentSizeChange={handleContentSizeChange}
+          scrollEnabled={inputScrollEnabled}
           maxLength={MAX_CHARS}
           onSubmitEditing={handleSend}
         />
@@ -130,7 +165,7 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     row: {
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-end",
       gap: theme.spacing.xs,
       backgroundColor: "transparent",
     },

@@ -1,5 +1,5 @@
 {
-  "typing": "…",
+  "typingIndicator": "AI is preparing a response",
   "new": "New chat",
   "label": "Chat",
   "header": {
@@ -115,14 +115,14 @@
     "renewalUnknown": "Unavailable"
   },
   "legal": {
-    "title": "Before you use AI chat",
-    "informational": "This chat is informational only. It can help with diet, nutrition, food, and meal-planning questions.",
-    "medical": "It does not replace medical advice or an individual consultation with a clinician.",
+    "title": "Before we start your AI chat",
+    "informational": "This chat offers general support with diet, nutrition, and meal planning.",
+    "medical": "It does not replace medical advice or a one-to-one consultation with a clinician.",
     "accept": "Accept",
-    "moreInfo": "For more information, see:",
-    "learnMore": "Data & AI clarity",
+    "moreInfo": "You can quickly review:",
+    "learnMore": "How Data & AI works",
     "privacy": "Legal & privacy",
-    "composerLocked": "Accept the notice to send",
+    "composerLocked": "Accept the notice to unlock chat",
     "back": "Go back"
   }
 }

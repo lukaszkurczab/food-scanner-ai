@@ -162,12 +162,10 @@ export default function ChatScreen() {
   );
 
   const openLegalDetails = useCallback(() => {
-    setLegalAckVisible(false);
     navigation.navigate("DataAiClarity");
   }, [navigation]);
 
   const openLegalPrivacyHub = useCallback(() => {
-    setLegalAckVisible(false);
     navigation.navigate("LegalPrivacyHub");
   }, [navigation]);
 
@@ -237,9 +235,7 @@ export default function ChatScreen() {
   }, [retryLastSend]);
 
   const handleBack = useCallback(() => {
-    return () => {
-      navigation.goBack();
-    };
+    navigation.goBack();
   }, [navigation]);
 
   const emptyState = (
@@ -352,6 +348,7 @@ export default function ChatScreen() {
           emptyState={emptyState}
           onLoadMore={loadMore}
           dateLabel={t("conversation.todayLabel")}
+          typingLabel={t("typingIndicator")}
         />
       </View>
 
@@ -377,25 +374,31 @@ export default function ChatScreen() {
       <Modal
         visible={legalAckVisible}
         title={t("legal.title")}
+        secondaryAction={{
+          label: t("legal.back"),
+          onPress: handleBack,
+          tone: "secondary",
+          testID: "chat-legal-back",
+        }}
         primaryAction={{
           label: t("legal.accept"),
           onPress: () => {
             void acknowledgeLegal();
           },
-        }}
-        secondaryAction={{
-          label: t("legal.back"),
-          onPress: handleBack(),
-          tone: "secondary",
+          testID: "chat-legal-accept",
         }}
         closeOnBackdropPress={false}
       >
         <View style={styles.legalCopy}>
-          <Text style={styles.legalParagraph}>{t("legal.informational")}</Text>
-          <Text style={styles.legalParagraph}>{t("legal.medical")}</Text>
-          <View>
+          <View testID="chat-legal-info" style={styles.legalInfo}>
+            <Text style={styles.legalParagraph}>{t("legal.informational")}</Text>
+            <Text style={styles.legalParagraph}>{t("legal.medical")}</Text>
+          </View>
+
+          <View testID="chat-legal-links" style={styles.legalLinks}>
             <Text style={styles.legalParagraph}>{t("legal.moreInfo")}</Text>
             <Button
+              testID="chat-legal-link-privacy"
               label={t("legal.privacy")}
               variant="ghost"
               onPress={openLegalPrivacyHub}
@@ -403,6 +406,7 @@ export default function ChatScreen() {
               style={styles.legalButton}
             />
             <Button
+              testID="chat-legal-link-data-ai"
               label={t("legal.learnMore")}
               variant="ghost"
               onPress={openLegalDetails}
@@ -440,10 +444,16 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     legalCopy: {
       gap: theme.spacing.md,
     },
+    legalInfo: {
+      gap: theme.spacing.sm,
+    },
     legalParagraph: {
       color: theme.textSecondary,
       fontSize: theme.typography.size.bodyS,
       lineHeight: theme.typography.lineHeight.bodyS,
       fontFamily: theme.typography.fontFamily.regular,
+    },
+    legalLinks: {
+      gap: theme.spacing.xs,
     },
   });
