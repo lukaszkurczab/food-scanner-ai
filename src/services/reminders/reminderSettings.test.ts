@@ -27,6 +27,8 @@ describe("reminderSettings", () => {
       { label: "decision", value: "send" },
       { label: "dayKey", value: "2026-03-20" },
       { label: "kind", value: "log_next_meal" },
+      { label: "computedAt", value: "2026-03-20T18:00:00Z" },
+      { label: "validUntil", value: "2026-03-20T19:30:00Z" },
       {
         label: "reasonCodes",
         value: "preferred_window_open, day_partially_logged",

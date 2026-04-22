@@ -27,6 +27,8 @@ function formatDecision(decision: ReminderDecision | null): ReminderQaRow[] {
   return [
     { label: "decision", value: decision.decision },
     { label: "kind", value: decision.kind ?? "n/a" },
+    { label: "computedAt", value: decision.computedAt },
+    { label: "validUntil", value: decision.validUntil },
     { label: "reasonCodes", value: decision.reasonCodes.join(", ") || "n/a" },
     {
       label: "schedule",

@@ -79,9 +79,16 @@ jest.mock("@react-native-firebase/auth", () => ({
 jest.mock("expo-constants", () => ({
   __esModule: true,
   default: {
+    appOwnership: "standalone",
+    executionEnvironment: "standalone",
     expoConfig: { extra: {} },
     manifest: { extra: {} },
   },
+}));
+
+jest.mock("expo-device", () => ({
+  __esModule: true,
+  isDevice: true,
 }));
 
 jest.mock("@sentry/react-native", () => ({

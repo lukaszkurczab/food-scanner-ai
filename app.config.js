@@ -49,6 +49,7 @@ export default {
         foregroundImage: "./assets/playstore.png",
         backgroundColor: "#FFFDF8",
       },
+      permissions: ["POST_NOTIFICATIONS"],
       package: "com.lkurczab.fitaly",
       googleServicesFile: androidGoogleServicesFile,
     },
@@ -79,6 +80,7 @@ export default {
       [
         "expo-notifications",
         {
+          defaultChannel: "default",
           icon: "./assets/notification-icon.png",
           color: "#4F684B",
         },

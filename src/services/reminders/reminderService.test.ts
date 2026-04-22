@@ -152,14 +152,13 @@ describe("reminderService", () => {
     expect(result).toBe(expected);
   });
 
-  it("does not gate reminder decision fetch behind mobile feature flags", async () => {
+  it("returns disabled state and skips the endpoint when smart reminders are globally disabled", async () => {
     mockReadPublicEnv.mockImplementation((name: string) => {
       if (name === "EXPO_PUBLIC_ENABLE_SMART_REMINDERS") {
         return "false";
       }
       return undefined;
     });
-    mockGet.mockResolvedValue(createHealthySendPayload());
 
     const service = jest.requireActual(
       "@/services/reminders/reminderService",
@@ -169,11 +168,11 @@ describe("reminderService", () => {
       dayKey: "2026-03-18",
     });
 
-    expect(result.enabled).toBe(true);
-    expect(result.source).toBe("remote");
-    expect(result.status).toBe("live_success");
-    expect(result.decision?.decision).toBe("send");
-    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(result.enabled).toBe(false);
+    expect(result.source).toBe("disabled");
+    expect(result.status).toBe("disabled");
+    expect(result.decision).toBeNull();
+    expect(mockGet).not.toHaveBeenCalled();
   });
 
   it("returns a no-user fallback and skips the endpoint when uid is missing", async () => {

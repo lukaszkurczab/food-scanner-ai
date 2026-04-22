@@ -31,7 +31,6 @@ Legend:
 | Screen/Flow | Affordance | Guard | Confirm | Notes |
 | --- | --- | --- | --- | --- |
 | `MealAddMethod` sheet | explicit `close` button + backdrop | n/a | no | Explicit close affordance added. |
-| `NotificationForm` sub-modals (`time`, `meal kind`, `delete`) | explicit back + modal controls | yes (shared hook) | yes | Exit closes open modal/sheet first, then discard confirm. |
 
 ## Profile / Settings / Forms
 | Screen | Affordance | Guard | Confirm | Notes |
@@ -41,7 +40,6 @@ Legend:
 | `ChangePassword` | `back` (FormScreenShell) | yes (shared hook) | yes | Unsaved form values protected. |
 | `DeleteAccount` | `back` (FormScreenShell) | yes (shared hook) | yes | Unsaved password input protected. |
 | `SendFeedback` | `back` (FormScreenShell) | yes (shared hook) | yes | Unsent message/attachment protected. |
-| `NotificationForm` | `back` (FormScreenShell) | yes (shared hook) | yes | Unsaved reminder edits protected. |
 | Other profile hubs/read-only screens | explicit back via FormScreenShell | n/a | no | No unsaved editable state. |
 
 ## Other Non-Tab Full-Screen Screens

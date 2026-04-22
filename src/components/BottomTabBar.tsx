@@ -48,7 +48,6 @@ function getActiveTab(routeName?: keyof RootStackParamList): TabKey | null {
       "SendFeedback",
       "ManageSubscription",
       "Notifications",
-      "NotificationForm",
     ].includes(routeName)
   ) {
     return "Profile";

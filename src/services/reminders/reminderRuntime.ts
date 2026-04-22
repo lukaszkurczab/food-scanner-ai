@@ -1,7 +1,9 @@
 import { AppState, type AppStateStatus } from "react-native";
 import {
   cancelAllReminderScheduling,
+  getLastReminderReconcileSnapshot,
   reconcileReminderScheduling,
+  type ReminderSchedulingResult,
 } from "@/services/reminders/reminderScheduling";
 import { debugScope } from "@/utils/debug";
 
@@ -22,6 +24,7 @@ let appStateSubscription: RemovableSubscription | null = null;
 let reconcileInFlight = false;
 let pendingRun: { reason: ReminderRuntimeReason; force: boolean } | null = null;
 let lastReconcileStartedAt = 0;
+let lastReconcileResult: ReminderSchedulingResult | null = null;
 
 function isForeground(state: AppStateStatus): boolean {
   return state === "active";
@@ -76,7 +79,17 @@ async function runReconcile(
 
   try {
     log.log("run smart reminder reconcile", { uid, reason });
-    await reconcileReminderScheduling(uid);
+    const reconcileResult = await reconcileReminderScheduling(uid);
+    lastReconcileResult = reconcileResult;
+    log.log("smart reminder reconcile result", {
+      uid,
+      reason,
+      outcome: reconcileResult.outcome,
+      schedulingReason: reconcileResult.reason,
+      decisionStatus: reconcileResult.result.status,
+      decisionSource: reconcileResult.result.source,
+      decisionType: reconcileResult.result.decision?.decision ?? null,
+    });
   } catch (error) {
     log.warn("smart reminder reconcile failed", { uid, reason, error });
   } finally {
@@ -154,6 +167,25 @@ export function stopReminderRuntime(): void {
   reconcileInFlight = false;
   pendingRun = null;
   lastReconcileStartedAt = 0;
+  lastReconcileResult = null;
+}
+
+export function getReminderRuntimeDiagnostics(): {
+  currentUid: string | null;
+  initialized: boolean;
+  currentAppState: AppStateStatus;
+  inFlight: boolean;
+  lastResult: ReminderSchedulingResult | null;
+  lastSnapshot: ReturnType<typeof getLastReminderReconcileSnapshot>;
+} {
+  return {
+    currentUid,
+    initialized,
+    currentAppState,
+    inFlight: reconcileInFlight,
+    lastResult: lastReconcileResult,
+    lastSnapshot: getLastReminderReconcileSnapshot(),
+  };
 }
 
 export function __resetReminderRuntimeForTests(): void {

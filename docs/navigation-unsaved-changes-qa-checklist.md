@@ -3,7 +3,7 @@
 ## Scope
 - Add Meal flow (`Camera`, `Barcode`, `Describe`, `TextAnalyzing`, `PreparingReview`, `Review`, `Manual/Edit details`)
 - Edit/detail flows (`MealDetails`, `EditHistoryMealDetails`)
-- Profile/settings forms (`Change Email`, `Username`, `Password`, `Delete Account`, `Notification Form`, `Send Feedback`)
+- Profile/settings forms (`Change Email`, `Username`, `Password`, `Delete Account`, `Send Feedback`)
 - Full-screen pickers/selectors (`SelectSavedMeal`, `MealAddMethod` sheet)
 
 ## 1) iOS swipe back
@@ -25,13 +25,7 @@
 - With no unsaved changes: verify immediate exit behavior.
 - With unsaved changes: verify confirm modal before exit.
 
-## 4) Modal/sheet close behavior
-- On `NotificationForm`, open time picker / meal kind sheet / delete modal.
-- Trigger back/exit gesture.
-- Verify open modal/sheet closes first (without discard dialog).
-- Trigger back/exit again with unsaved form data; verify discard-confirm appears.
-
-## 5) Draft loss vs preservation
+## 4) Draft loss vs preservation
 - In Add Meal: make draft changes, trigger exit, choose `Continue editing`, verify draft state remains.
 - Trigger exit again, choose discard/leave, verify draft is discarded and flow exits.
 - Save meal path: verify successful save still exits without discard modal.

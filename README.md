@@ -192,6 +192,7 @@ The mobile app uses v2 endpoints selectively:
 - **NutritionState**: The Home screen fetches from `GET /api/v2/users/me/state?day=YYYY-MM-DD` with local fallback caching. If the backend is unreachable, the consumer falls back to locally-computed state.
 - **Smart Reminders**: The app fetches `GET /api/v2/users/me/reminders/decision?day=YYYY-MM-DD`, schedules only `decision="send"`, and cancels on `suppress`, `noop`, invalid payload, or failure. Mobile schedules from canonical backend `scheduledAtUtc`, not reconstructed local clock fields. Device notification permission stays a mobile execution concern, not part of the backend reminder decision contract.
 - **Smart Reminders scope**: Smart Reminders v1 currently depend on NutritionState, habit signals already surfaced through state, existing reminder preferences, and current-time evaluation context. Coach Insights v1 remain a separate surface and are not a runtime input to reminder decisions in v1.
+- **Legacy residue policy**: Mobile no longer exposes legacy meal/day reminder forms as a production path. Notifications settings now drive a single canonical runtime (smart reminders + local scheduling + system prefs).
 
 All other features (meals, AI chat, photo analysis, subscriptions) continue to use v1 endpoints.
 
@@ -251,12 +252,13 @@ npm run e2e:offline-error
 
 - [Public Launch Readiness 2026-04-08](./docs/public-launch-readiness-2026-04-08.md) — current source of truth for what is automated vs manual for public launch; supersedes older external audit notes
 - [Launch Runbook](./docs/launch-runbook.md) — Go/No-Go checklist, rollback matrix, kill-switch and incident flow
+- [Canonical Notifications Release Hardening](./docs/notifications-canonical-release-hardening.md) — environment matrix, diagnostics panel, real-device smoke plan, interpretation checklist
 - Backend Ops Monitoring Runbook: `../fitaly-backend/docs/ops-monitoring-runbook.md` — production health/latency thresholds and incident triage
 - Backend Compliance Ops Runbook: `../fitaly-backend/docs/compliance-ops-runbook.md` — data export/delete flow, retention cadence and privacy incident process
 - [Coach Insights v1 Semantics](./docs/coach-insights-v1.md) — mobile contract handling, empty-state modes, telemetry rules
 - [Coach Insights v1 Rollout](./docs/coach-insights-v1-rollout.md) — preconditions, verification, rollback behavior
-- Smart Reminders v1 Semantics — see backend companion docs in `fitaly-backend/docs/smart-reminders-v1.md`
-- Smart Reminders v1 Rollout — see backend companion docs in `fitaly-backend/docs/smart-reminders-v1-rollout.md`
+- [Smart Reminders v1 Rollout (archival)](./docs/smart-reminders-v1-rollout.md) — historical rollout notes and migration context
+- [Notifications Legacy Sunset Note](./docs/notifications-legacy-sunset-note.md) — what was removed vs retained as compatibility-only
 
 ## License
 

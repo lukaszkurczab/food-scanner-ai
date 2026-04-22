@@ -1,7 +1,34 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const mockReconcileReminderScheduling = jest.fn<
-  (uid: string) => Promise<void>
+  (uid: string) => Promise<{
+    outcome: "scheduled" | "cancelled" | "skipped";
+    reason:
+      | "scheduled"
+      | "decision_disabled"
+      | "decision_no_user"
+      | "decision_service_unavailable"
+      | "decision_invalid_payload"
+      | "decision_suppress"
+      | "decision_noop"
+      | "permission_unavailable"
+      | "channel_unavailable"
+      | "invalid_time"
+      | "schedule_error";
+    localKey: string | null;
+    result: {
+      decision: null;
+      source: "remote" | "fallback" | "disabled";
+      status:
+        | "live_success"
+        | "invalid_payload"
+        | "disabled"
+        | "service_unavailable"
+        | "no_user";
+      enabled: boolean;
+      error: unknown | null;
+    };
+  }>
 >();
 const mockCancelAllReminderScheduling = jest.fn<
   (uid: string) => Promise<void>
@@ -12,6 +39,21 @@ let mockAppStateChangeListener:
   | null = null;
 
 const mockAppStateSubscription = { remove: jest.fn() };
+
+function defaultSchedulingResult() {
+  return {
+    outcome: "cancelled" as const,
+    reason: "decision_noop" as const,
+    localKey: "user-1:smart-reminder:2026-03-18",
+    result: {
+      decision: null,
+      source: "remote" as const,
+      status: "live_success" as const,
+      enabled: true,
+      error: null,
+    },
+  };
+}
 
 jest.mock("@/services/reminders/reminderScheduling", () => ({
   reconcileReminderScheduling: (uid: string) =>
@@ -59,7 +101,7 @@ describe("reminderRuntime", () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     mockAppStateChangeListener = null;
-    mockReconcileReminderScheduling.mockResolvedValue(undefined);
+    mockReconcileReminderScheduling.mockResolvedValue(defaultSchedulingResult());
     mockCancelAllReminderScheduling.mockResolvedValue(undefined);
   });
 
@@ -162,12 +204,12 @@ describe("reminderRuntime", () => {
     let resolveFirstRun: (() => void) | null = null;
     mockReconcileReminderScheduling.mockImplementation(
       (uid: string) =>
-        new Promise<void>((resolve) => {
+        new Promise<ReturnType<typeof defaultSchedulingResult>>((resolve) => {
           if (uid === "user-1" && !resolveFirstRun) {
-            resolveFirstRun = resolve;
+            resolveFirstRun = () => resolve(defaultSchedulingResult());
             return;
           }
-          resolve();
+          resolve(defaultSchedulingResult());
         }),
     );
 

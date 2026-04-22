@@ -27,8 +27,22 @@ const mockGetReminderDecision =
 const mockScheduleOneShotAt =
   jest.fn<(when: Date, content: unknown, localKey: string) => Promise<void>>();
 const mockCancelAllForNotif = jest.fn<(localKey: string) => Promise<void>>();
+const mockListStoredNotificationIdsByPrefix = jest.fn<
+  (
+    localKeyPrefix: string,
+  ) => Promise<Array<{ localKey: string; ids: string[] }>>
+>();
 const mockNotificationScheduleKey =
   jest.fn<(uid: string, id: string) => string>();
+const mockEnsureAndroidChannel = jest.fn<
+  () => Promise<{
+    platform: "android" | "non-android";
+    channelId: string;
+    ensured: boolean;
+    exists: boolean | null;
+    errorMessage: string | null;
+  }>
+>();
 const mockGetPermissionsAsync = jest.fn<() => Promise<{ granted: boolean }>>();
 const mockGetNotificationText = jest.fn();
 
@@ -44,6 +58,7 @@ let mockAppStateChangeListener:
 const mockAppStateSubscription = { remove: jest.fn() };
 
 jest.mock("react-native", () => ({
+  Platform: { OS: "ios" },
   AppState: {
     currentState: "active",
     addEventListener: (
@@ -88,8 +103,11 @@ jest.mock("@/services/notifications/localScheduler", () => ({
   scheduleOneShotAt: (when: Date, content: unknown, localKey: string) =>
     mockScheduleOneShotAt(when, content, localKey),
   cancelAllForNotif: (localKey: string) => mockCancelAllForNotif(localKey),
+  listStoredNotificationIdsByPrefix: (localKeyPrefix: string) =>
+    mockListStoredNotificationIdsByPrefix(localKeyPrefix),
   notificationScheduleKey: (uid: string, id: string) =>
     mockNotificationScheduleKey(uid, id),
+  ensureAndroidChannel: () => mockEnsureAndroidChannel(),
 }));
 
 jest.mock("@/services/notifications/texts", () => ({
@@ -238,8 +256,38 @@ describe("Smart Reminders v1 — runtime integration", () => {
       ...asyncStorageState.keys(),
     ]);
     mockGetPermissionsAsync.mockResolvedValue({ granted: true });
+    mockEnsureAndroidChannel.mockResolvedValue({
+      platform: "non-android",
+      channelId: "default",
+      ensured: false,
+      exists: null,
+      errorMessage: null,
+    });
     mockScheduleOneShotAt.mockResolvedValue(undefined);
     mockCancelAllForNotif.mockResolvedValue(undefined);
+    mockListStoredNotificationIdsByPrefix.mockImplementation(
+      async (localKeyPrefix) => {
+        const storagePrefix = `notif:ids:${localKeyPrefix}`;
+        return [...asyncStorageState.entries()]
+          .filter(([storageKey]) => storageKey.startsWith(storagePrefix))
+          .map(([storageKey, raw]) => {
+            let ids: string[] = [];
+            try {
+              const parsed = JSON.parse(raw);
+              ids = Array.isArray(parsed)
+                ? parsed.filter((value): value is string => typeof value === "string")
+                : [];
+            } catch {
+              ids = [];
+            }
+
+            return {
+              localKey: storageKey.slice("notif:ids:".length),
+              ids,
+            };
+          });
+      },
+    );
     mockNotificationScheduleKey.mockImplementation((uid, id) => `${uid}:${id}`);
     mockGetNotificationText.mockReturnValue({
       title: "Log your meal",
@@ -514,11 +562,6 @@ describe("Smart Reminders v1 — runtime integration", () => {
 
     const secondRun = reminderRuntime.setReminderRuntimeUid("user-2");
     await Promise.resolve();
-
-    expect(mockCancelAllForNotif).toHaveBeenCalledWith(
-      "user-1:smart-reminder:2026-03-18",
-    );
-
     const cancelCountBeforeFinish = mockCancelAllForNotif.mock.calls.length;
 
     const finish = resolveFirstReconcile as unknown;
@@ -531,6 +574,9 @@ describe("Smart Reminders v1 — runtime integration", () => {
     const cancelCountAfterFinish = mockCancelAllForNotif.mock.calls.length;
     expect(cancelCountAfterFinish).toBeGreaterThanOrEqual(
       cancelCountBeforeFinish,
+    );
+    expect(mockCancelAllForNotif).toHaveBeenCalledWith(
+      "user-1:smart-reminder:2026-03-18",
     );
 
     expect(mockGetReminderDecision).toHaveBeenCalledWith(

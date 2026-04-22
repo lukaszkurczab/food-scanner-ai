@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { authRegister } from "@/feature/Auth/services/authService";
 import { isUsernameAvailable } from "@/services/user/usernameService";
-import { createDefaultKeepLoggingNotification } from "@/services/notifications/notificationsRepository";
 import {
   validateRegisterEmail,
   validateRegisterPassword,
@@ -65,7 +64,6 @@ export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
         return;
       }
       const user = await authRegister(email.trim(), password, username.trim());
-      await createDefaultKeepLoggingNotification(user.uid);
       setUser(user);
     } catch (error: unknown) {
       const code = getErrorCode(error);

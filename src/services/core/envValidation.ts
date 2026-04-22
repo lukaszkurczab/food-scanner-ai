@@ -9,6 +9,7 @@ export const REQUIRED_ENV_VARS = {
 export const OPTIONAL_ENV_VARS = {
   EXPO_PUBLIC_ENABLE_BACKEND_LOGGING: "Enable backend error logging",
   EXPO_PUBLIC_ENABLE_TELEMETRY: "Enable telemetry",
+  EXPO_PUBLIC_ENABLE_SMART_REMINDERS: "Enable smart reminders canonical surface",
 } as const;
 
 function hasValue(value: string | undefined): boolean {

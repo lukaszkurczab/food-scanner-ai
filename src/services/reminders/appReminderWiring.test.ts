@@ -141,6 +141,10 @@ jest.mock("@/services/notifications/notificationTelemetry", () => ({
   stopNotificationTelemetry: jest.fn(),
 }));
 
+jest.mock("@/services/notifications/notificationPresentationPolicy", () => ({
+  initNotificationPresentationPolicy: jest.fn(),
+}));
+
 jest.mock("@/services/telemetry/telemetryClient", () => ({
   initTelemetryClient: jest
     .fn<() => Promise<void>>()

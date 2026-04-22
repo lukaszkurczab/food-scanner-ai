@@ -90,7 +90,6 @@ const serviceCoverageFiles = [
   "src/services/notifications/engine.ts",
   // localScheduler.ts excluded — system scheduling API branches require integration tests
   "src/services/notifications/notificationTelemetry.ts",
-  "src/services/notifications/planService.ts",
   "src/services/notifications/texts.ts",
   // Nutrition state
   "src/services/nutritionState/nutritionStateService.ts",

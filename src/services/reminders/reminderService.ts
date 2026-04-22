@@ -2,6 +2,7 @@ import { get } from "@/services/core/apiClient";
 import { withV2 } from "@/services/core/apiVersioning";
 import { createServiceError } from "@/services/contracts/serviceError";
 import { isRecord } from "@/services/contracts/guards";
+import { readPublicEnv } from "@/services/core/publicEnv";
 import { trackSmartReminderDecisionFailed } from "@/services/telemetry/telemetryInstrumentation";
 import { debugScope } from "@/utils/debug";
 import {
@@ -31,7 +32,11 @@ const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const UTC_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
 export function isSmartRemindersEnabled(): boolean {
-  return true;
+  const raw = readPublicEnv("EXPO_PUBLIC_ENABLE_SMART_REMINDERS");
+  if (typeof raw !== "string" || !raw.trim()) {
+    return true;
+  }
+  return raw.trim().toLowerCase() === "true";
 }
 
 function toDayKey(date: Date): string {
@@ -306,12 +311,22 @@ export async function getReminderDecision(
   options?: { dayKey?: string | null },
 ): Promise<ReminderDecisionResult> {
   const dayKey = normalizeDayKey(options?.dayKey);
+  const enabled = isSmartRemindersEnabled();
+
+  if (!enabled) {
+    return buildFallbackResult({
+      source: "disabled",
+      status: "disabled",
+      enabled: false,
+      error: null,
+    });
+  }
 
   if (!uid) {
     return buildFallbackResult({
       source: "fallback",
       status: "no_user",
-      enabled: true,
+      enabled,
       error: null,
     });
   }
@@ -335,7 +350,7 @@ export async function getReminderDecision(
       decision: normalized,
       source: "remote",
       status: "live_success",
-      enabled: true,
+      enabled,
       error: null,
     });
   } catch (error) {
@@ -353,7 +368,7 @@ export async function getReminderDecision(
     return buildFallbackResult({
       source: "fallback",
       status: isInvalidPayload ? "invalid_payload" : "service_unavailable",
-      enabled: true,
+      enabled,
       error,
     });
   }

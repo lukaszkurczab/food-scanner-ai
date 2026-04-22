@@ -36,7 +36,6 @@ import ManageSubscriptionScreen from "@/feature/Subscription/screens/ManageSubsc
 import SavedMealsScreen from "@/feature/History/screens/SavedMealsScreen";
 import SelectSavedMealScreen from "@/feature/Meals/screens/SelectSavedMealsScreen";
 import NotificationsScreen from "@/feature/UserProfile/screens/NotificationsScreen";
-import NotificationFormScreen from "@/feature/UserProfile/screens/NotificationFormScreen";
 import DeleteAccountScreen from "@/feature/UserProfile/screens/DeleteAccountScreen";
 import MealShareScreen from "@/feature/Meals/screens/MealShareScreen";
 import ChatScreen from "@/feature/AI/screens/ChatScreen";
@@ -130,10 +129,6 @@ function renderAppScreens() {
         component={SavedMealsCameraScreen}
       />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
-      <Stack.Screen
-        name="NotificationForm"
-        component={NotificationFormScreen}
-      />
       <Stack.Screen name="MealShare" component={MealShareScreen} />
     </>
   );

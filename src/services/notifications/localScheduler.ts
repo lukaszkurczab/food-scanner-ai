@@ -7,6 +7,20 @@ import { parseStoredIds } from "@/services/notifications/storageUtils";
 
 const KEY_PREFIX = "notif:ids:";
 const USER_NOTIFICATION_ORIGIN = "user_notifications";
+const ANDROID_CHANNEL_ID = "default";
+
+export type AndroidChannelEnsureResult = {
+  platform: "android" | "non-android";
+  channelId: string;
+  ensured: boolean;
+  exists: boolean | null;
+  errorMessage: string | null;
+};
+
+export type StoredNotificationIdsEntry = {
+  localKey: string;
+  ids: string[];
+};
 
 function key(localKey: string) {
   return KEY_PREFIX + localKey;
@@ -76,9 +90,38 @@ export async function cancelAllForNotif(localKey: string) {
   await AsyncStorage.setItem(key(localKey), JSON.stringify([]));
 }
 
-export async function ensureAndroidChannel() {
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
+export async function listStoredNotificationIdsByPrefix(
+  localKeyPrefix: string,
+): Promise<StoredNotificationIdsEntry[]> {
+  const keys = await AsyncStorage.getAllKeys();
+  const storagePrefix = key(localKeyPrefix);
+  const matching = keys.filter((storageKey) => storageKey.startsWith(storagePrefix));
+  const entries: StoredNotificationIdsEntry[] = [];
+
+  for (const storageKey of matching) {
+    const raw = await AsyncStorage.getItem(storageKey);
+    entries.push({
+      localKey: storageKey.slice(KEY_PREFIX.length),
+      ids: parseStoredIds(raw),
+    });
+  }
+
+  return entries;
+}
+
+export async function ensureAndroidChannel(): Promise<AndroidChannelEnsureResult> {
+  if (Platform.OS !== "android") {
+    return {
+      platform: "non-android",
+      channelId: ANDROID_CHANNEL_ID,
+      ensured: false,
+      exists: null,
+      errorMessage: null,
+    };
+  }
+
+  try {
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
       name: "General",
       description: "General notifications",
       importance: Notifications.AndroidImportance.HIGH,
@@ -89,6 +132,37 @@ export async function ensureAndroidChannel() {
       enableLights: false,
       showBadge: true,
     });
+    let exists: boolean | null = true;
+    const getChannel = (
+      Notifications as unknown as {
+        getNotificationChannelAsync?: (
+          channelId: string,
+        ) => Promise<unknown>;
+      }
+    ).getNotificationChannelAsync;
+    if (typeof getChannel === "function") {
+      try {
+        const channel = await getChannel(ANDROID_CHANNEL_ID);
+        exists = !!channel;
+      } catch {
+        exists = null;
+      }
+    }
+    return {
+      platform: "android",
+      channelId: ANDROID_CHANNEL_ID,
+      ensured: true,
+      exists,
+      errorMessage: null,
+    };
+  } catch (error) {
+    return {
+      platform: "android",
+      channelId: ANDROID_CHANNEL_ID,
+      ensured: false,
+      exists: null,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -102,6 +176,8 @@ export async function scheduleDailyAt(
   content: Notifications.NotificationContentInput,
   localKey: string
 ) {
+  // Non-canonical helper kept for legacy surfaces. Smart reminders use one-shot scheduling only.
+  await ensureAndroidChannel();
   const contentWithTelemetry = buildTelemetryContent(content);
   const id = await Notifications.scheduleNotificationAsync({
     content: contentWithTelemetry,
@@ -111,7 +187,7 @@ export async function scheduleDailyAt(
         hour,
         minute,
         repeats: true,
-        channelId: "default",
+        channelId: ANDROID_CHANNEL_ID,
       },
       ios: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -165,6 +241,7 @@ export async function scheduleMealReminder(
   title: string,
   body: string
 ) {
+  // Non-canonical helper kept for legacy surfaces. Smart reminders use one-shot scheduling only.
   const contentWithTelemetry = buildTelemetryContent({
     title,
     body,
@@ -189,6 +266,7 @@ export async function scheduleMealReminder(
       });
     }
   } else {
+    await ensureAndroidChannel();
     const id = await Notifications.scheduleNotificationAsync({
       content: contentWithTelemetry,
       trigger: {
@@ -196,7 +274,7 @@ export async function scheduleMealReminder(
         hour: n.time.hour,
         minute: n.time.minute,
         repeats: true,
-        channelId: "default",
+        channelId: ANDROID_CHANNEL_ID,
       } as Notifications.NotificationTriggerInput,
     });
     await storeId(n.id, id);
@@ -212,6 +290,7 @@ export async function scheduleOneShotAt(
   content: Notifications.NotificationContentInput,
   localKey: string
 ) {
+  await ensureAndroidChannel();
   const contentWithTelemetry = buildTelemetryContent(content);
   const id = await Notifications.scheduleNotificationAsync({
     content: contentWithTelemetry,
@@ -219,7 +298,7 @@ export async function scheduleOneShotAt(
       android: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: when,
-        channelId: "default",
+        channelId: ANDROID_CHANNEL_ID,
       },
       ios: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,

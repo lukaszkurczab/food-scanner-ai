@@ -10,9 +10,6 @@ import { useRegister } from "@/feature/Auth/hooks/useRegister";
 
 const mockAuthRegister = jest.fn<(...args: unknown[]) => Promise<{ uid: string }>>();
 const mockIsUsernameAvailable = jest.fn<(...args: unknown[]) => Promise<boolean>>();
-const mockCreateDefaultKeepLoggingNotification = jest.fn<
-  (...args: unknown[]) => Promise<void>
->();
 const mockSetUser = jest.fn<(user: { uid: string }) => void>();
 
 jest.mock("@/feature/Auth/services/authService", () => ({
@@ -23,17 +20,11 @@ jest.mock("@/services/user/usernameService", () => ({
   isUsernameAvailable: (...args: unknown[]) => mockIsUsernameAvailable(...args),
 }));
 
-jest.mock("@/services/notifications/notificationsRepository", () => ({
-  createDefaultKeepLoggingNotification: (...args: unknown[]) =>
-    mockCreateDefaultKeepLoggingNotification(...args),
-}));
-
 describe("useRegister", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockAuthRegister.mockResolvedValue({ uid: "user-1" });
     mockIsUsernameAvailable.mockResolvedValue(true);
-    mockCreateDefaultKeepLoggingNotification.mockResolvedValue(undefined);
   });
 
   it("validates input locally before hitting services", async () => {
@@ -60,7 +51,7 @@ describe("useRegister", () => {
     expect(mockAuthRegister).not.toHaveBeenCalled();
   });
 
-  it("registers user and seeds default notification through services", async () => {
+  it("registers user and persists auth state", async () => {
     const { result } = renderHook(() => useRegister(mockSetUser as never));
 
     await act(async () => {
@@ -82,9 +73,6 @@ describe("useRegister", () => {
       "Strong1!",
       "neo",
     );
-    expect(mockCreateDefaultKeepLoggingNotification).toHaveBeenCalledWith(
-      "user-1",
-    );
     expect(mockSetUser).toHaveBeenCalledWith({ uid: "user-1" });
     expect(result.current.errors).toEqual({});
   });
@@ -105,7 +93,6 @@ describe("useRegister", () => {
 
     expect(result.current.errors).toEqual({ username: "username_taken" });
     expect(mockAuthRegister).not.toHaveBeenCalled();
-    expect(mockCreateDefaultKeepLoggingNotification).not.toHaveBeenCalled();
     expect(mockSetUser).not.toHaveBeenCalled();
   });
 
@@ -124,7 +111,6 @@ describe("useRegister", () => {
     });
 
     expect(result.current.errors).toEqual({ username: "username_taken" });
-    expect(mockCreateDefaultKeepLoggingNotification).not.toHaveBeenCalled();
     expect(mockSetUser).not.toHaveBeenCalled();
   });
 });

@@ -6,6 +6,7 @@ import {
   trackNotificationOpened,
   trackNotificationScheduled,
 } from "@/services/telemetry/telemetryInstrumentation";
+import { getNotificationPresentationPolicyDiagnostics } from "@/services/notifications/notificationPresentationPolicy";
 import { debugScope } from "@/utils/debug";
 
 const log = debugScope("Notifications:Telemetry");
@@ -81,6 +82,10 @@ async function safeTrack(
 export async function emitNotificationScheduledTelemetry(
   context: NotificationTelemetryContext,
 ): Promise<void> {
+  log.log("notification lifecycle:scheduled", {
+    notificationType: context.notificationType ?? null,
+    origin: context.origin ?? null,
+  });
   await safeTrack(
     trackNotificationScheduled(context),
     "notification_scheduled",
@@ -95,15 +100,26 @@ function handleNotificationReceived(notification: Notifications.Notification): v
   const context = resolveNotificationTelemetryContext(
     notification.request.content.data,
   );
+  const foreground = currentAppState === "active";
+  const presentationDiagnostics = getNotificationPresentationPolicyDiagnostics();
+  log.log("notification lifecycle:delivered_to_app", {
+    ...context,
+    foreground,
+    foregroundPolicyInitialized: presentationDiagnostics.initialized,
+    foregroundShowsBanner:
+      presentationDiagnostics.foregroundBehavior.shouldShowBanner,
+    foregroundShowsList:
+      presentationDiagnostics.foregroundBehavior.shouldShowList,
+  });
   void safeTrack(
     trackNotificationFired({
       ...context,
-      foreground: currentAppState === "active",
+      foreground,
     }),
     "notification_fired",
     {
       ...context,
-      foreground: currentAppState === "active",
+      foreground,
     },
   );
 }
@@ -113,6 +129,11 @@ function handleNotificationResponse(
 ): void {
   const rawData = response.notification.request.content.data;
   const context = resolveNotificationTelemetryContext(rawData);
+  log.log("notification lifecycle:opened", {
+    ...context,
+    actionIdentifier: response.actionIdentifier,
+    openedFromBackground: currentAppState !== "active",
+  });
   void safeTrack(
     trackNotificationOpened({
       ...context,

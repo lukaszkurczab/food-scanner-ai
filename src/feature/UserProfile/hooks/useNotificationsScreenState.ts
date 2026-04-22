@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Linking, Platform } from "react-native";
+import { AppState, Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { useNotifications } from "@/hooks/useNotifications";
 import { reconcileAll } from "@/services/notifications/engine";
 import { ensureAndroidChannel } from "@/services/notifications/localScheduler";
-import {
-  cancelSystemNotifications,
-} from "@/services/notifications/system";
-import {
-  cancelAllReminderScheduling,
-} from "@/services/reminders/reminderScheduling";
+import { markNotificationPermissionRequested } from "@/services/notifications/notificationDiagnostics";
+import { cancelSystemNotifications } from "@/services/notifications/system";
+import { cancelAllReminderScheduling } from "@/services/reminders/reminderScheduling";
 
 function isNotificationPermissionGranted(
   permission: Notifications.NotificationPermissionsStatus,
@@ -18,11 +15,16 @@ function isNotificationPermissionGranted(
   return maybeGranted.granted === true || maybeGranted.status === "granted";
 }
 
+function errorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+  return "notification_preferences_sync_failed";
+}
+
 export function useNotificationsScreenState(uid: string | null) {
   const {
-    items,
     loading,
-    toggle,
     loadAllPrefs,
     setMotivationPrefs,
     setSmartRemindersPrefs,
@@ -34,77 +36,113 @@ export function useNotificationsScreenState(uid: string | null) {
   const [statsEnabled, setStatsEnabled] = useState(false);
   const [systemAllowed, setSystemAllowed] = useState<boolean | null>(null);
   const [settingsCtaVisible, setSettingsCtaVisible] = useState(false);
+  const [lastSyncError, setLastSyncError] = useState<string | null>(null);
+  const [lastPrefsSyncStatus, setLastPrefsSyncStatus] = useState<
+    "idle" | "success" | "failed"
+  >("idle");
+  const [lastPrefsSyncAt, setLastPrefsSyncAt] = useState<string | null>(null);
   const autoDisabledRef = useRef(false);
 
-  useEffect(() => {
-    autoDisabledRef.current = false;
-  }, [uid]);
-
-  useEffect(() => {
-    if (!uid) return;
-    (async () => {
-      const { motivation, smartReminders, stats } = await loadAllPrefs(uid);
-      setMotivationEnabled(!!motivation.enabled);
-      setSmartRemindersEnabled(!!smartReminders.enabled);
-      setStatsEnabled(!!stats.enabled);
+  const refreshPermissionStatus = useCallback(async (): Promise<boolean> => {
+    try {
       const perm = await Notifications.getPermissionsAsync();
       const isGranted = isNotificationPermissionGranted(perm);
       setSystemAllowed(isGranted);
       if (isGranted && Platform.OS === "android") {
         await ensureAndroidChannel();
       }
+      return isGranted;
+    } catch {
+      setSystemAllowed(false);
+      return false;
+    }
+  }, []);
+
+  useEffect(() => {
+    autoDisabledRef.current = false;
+    setLastSyncError(null);
+    setLastPrefsSyncStatus("idle");
+    setLastPrefsSyncAt(null);
+  }, [uid]);
+
+  useEffect(() => {
+    if (!uid) {
+      setSystemAllowed(null);
+      return;
+    }
+
+    (async () => {
+      const { motivation, smartReminders, stats } = await loadAllPrefs(uid);
+      setMotivationEnabled(!!motivation.enabled);
+      setSmartRemindersEnabled(!!smartReminders.enabled);
+      setStatsEnabled(!!stats.enabled);
+
+      const isGranted = await refreshPermissionStatus();
       if (isGranted) {
         await reconcileAll(uid);
       }
     })();
-  }, [uid, loadAllPrefs]);
+  }, [uid, loadAllPrefs, refreshPermissionStatus]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void refreshPermissionStatus();
+      }
+    });
+    return () => {
+      sub.remove();
+    };
+  }, [refreshPermissionStatus]);
 
   useEffect(() => {
     (async () => {
       if (!uid) return;
-      if (systemAllowed === false && !autoDisabledRef.current) {
-        autoDisabledRef.current = true;
-        try {
-          if (motivationEnabled) {
-            setMotivationEnabled(false);
-            await setMotivationPrefs(uid, false);
-          }
-          if (smartRemindersEnabled) {
-            setSmartRemindersEnabled(false);
-            await setSmartRemindersPrefs(uid, false);
-          }
-          if (statsEnabled) {
-            setStatsEnabled(false);
-            await setStatsPrefs(uid, false);
-          }
-          for (const item of items) {
-            if (item.enabled) {
-              await toggle(uid, item.id, false);
-            }
-          }
-          await cancelSystemNotifications(uid, "motivation_dont_give_up");
-          await cancelSystemNotifications(uid, "stats_weekly_summary");
-          await cancelAllReminderScheduling(uid);
-        } catch {
-          // Keep local toggles unchanged if sync fails.
+      if (systemAllowed !== false || autoDisabledRef.current) {
+        return;
+      }
+
+      autoDisabledRef.current = true;
+
+      try {
+        if (motivationEnabled) {
+          await setMotivationPrefs(uid, false);
+          setMotivationEnabled(false);
         }
+        if (smartRemindersEnabled) {
+          await setSmartRemindersPrefs(uid, false);
+          setSmartRemindersEnabled(false);
+        }
+        if (statsEnabled) {
+          await setStatsPrefs(uid, false);
+          setStatsEnabled(false);
+        }
+        setLastSyncError(null);
+        setLastPrefsSyncStatus("success");
+        setLastPrefsSyncAt(new Date().toISOString());
+      } catch (error) {
+        setLastSyncError(errorMessage(error));
+        setLastPrefsSyncStatus("failed");
+        setLastPrefsSyncAt(new Date().toISOString());
+      } finally {
+        await cancelSystemNotifications(uid, "motivation_dont_give_up");
+        await cancelSystemNotifications(uid, "stats_weekly_summary");
+        await cancelAllReminderScheduling(uid);
       }
     })();
   }, [
     systemAllowed,
     uid,
-    items,
-    loading,
     motivationEnabled,
     smartRemindersEnabled,
     statsEnabled,
     setMotivationPrefs,
     setSmartRemindersPrefs,
     setStatsPrefs,
-    toggle,
   ]);
 
   const requestSystemPermission = useCallback(async (): Promise<boolean> => {
+    await markNotificationPermissionRequested();
     try {
       const res = await Notifications.requestPermissionsAsync();
       const granted = isNotificationPermissionGranted(res);
@@ -117,6 +155,7 @@ export function useNotificationsScreenState(uid: string | null) {
       }
       return granted;
     } catch {
+      setSystemAllowed(false);
       return false;
     }
   }, []);
@@ -130,33 +169,27 @@ export function useNotificationsScreenState(uid: string | null) {
     }
   }, []);
 
-  const onToggleReminder = useCallback(
-    async (id: string, enabled: boolean) => {
-      if (!uid) return;
-      if (enabled && systemAllowed === false) {
-        const allowed = await requestSystemPermission();
-        if (!allowed) return;
-      }
-      await toggle(uid, id, enabled);
-    },
-    [requestSystemPermission, systemAllowed, toggle, uid],
-  );
-
   const onToggleSmartReminders = useCallback(
     async (enabled: boolean) => {
       if (!uid) return;
-      if (enabled && systemAllowed === false) {
+      if (enabled && systemAllowed !== true) {
         const allowed = await requestSystemPermission();
         if (!allowed) return;
       }
 
+      const previous = smartRemindersEnabled;
       setSmartRemindersEnabled(enabled);
-      await setSmartRemindersPrefs(uid, enabled);
 
-      if (systemAllowed === false) {
-        if (!enabled) {
-          await cancelAllReminderScheduling(uid);
-        }
+      try {
+        await setSmartRemindersPrefs(uid, enabled);
+        setLastSyncError(null);
+        setLastPrefsSyncStatus("success");
+        setLastPrefsSyncAt(new Date().toISOString());
+      } catch (error) {
+        setSmartRemindersEnabled(previous);
+        setLastSyncError(errorMessage(error));
+        setLastPrefsSyncStatus("failed");
+        setLastPrefsSyncAt(new Date().toISOString());
         return;
       }
 
@@ -166,19 +199,38 @@ export function useNotificationsScreenState(uid: string | null) {
         await cancelAllReminderScheduling(uid);
       }
     },
-    [requestSystemPermission, setSmartRemindersPrefs, systemAllowed, uid],
+    [
+      requestSystemPermission,
+      setSmartRemindersPrefs,
+      smartRemindersEnabled,
+      systemAllowed,
+      uid,
+    ],
   );
 
   const onToggleMotivation = useCallback(
     async (enabled: boolean) => {
       if (!uid) return;
-      if (enabled && systemAllowed === false) {
+      if (enabled && systemAllowed !== true) {
         const allowed = await requestSystemPermission();
         if (!allowed) return;
       }
 
+      const previous = motivationEnabled;
       setMotivationEnabled(enabled);
-      await setMotivationPrefs(uid, enabled);
+
+      try {
+        await setMotivationPrefs(uid, enabled);
+        setLastSyncError(null);
+        setLastPrefsSyncStatus("success");
+        setLastPrefsSyncAt(new Date().toISOString());
+      } catch (error) {
+        setMotivationEnabled(previous);
+        setLastSyncError(errorMessage(error));
+        setLastPrefsSyncStatus("failed");
+        setLastPrefsSyncAt(new Date().toISOString());
+        return;
+      }
 
       if (enabled) {
         await reconcileAll(uid);
@@ -186,19 +238,38 @@ export function useNotificationsScreenState(uid: string | null) {
         await cancelSystemNotifications(uid, "motivation_dont_give_up");
       }
     },
-    [requestSystemPermission, setMotivationPrefs, systemAllowed, uid],
+    [
+      motivationEnabled,
+      requestSystemPermission,
+      setMotivationPrefs,
+      systemAllowed,
+      uid,
+    ],
   );
 
   const onToggleStats = useCallback(
     async (enabled: boolean) => {
       if (!uid) return;
-      if (enabled && systemAllowed === false) {
+      if (enabled && systemAllowed !== true) {
         const allowed = await requestSystemPermission();
         if (!allowed) return;
       }
 
+      const previous = statsEnabled;
       setStatsEnabled(enabled);
-      await setStatsPrefs(uid, enabled);
+
+      try {
+        await setStatsPrefs(uid, enabled);
+        setLastSyncError(null);
+        setLastPrefsSyncStatus("success");
+        setLastPrefsSyncAt(new Date().toISOString());
+      } catch (error) {
+        setStatsEnabled(previous);
+        setLastSyncError(errorMessage(error));
+        setLastPrefsSyncStatus("failed");
+        setLastPrefsSyncAt(new Date().toISOString());
+        return;
+      }
 
       if (enabled) {
         await reconcileAll(uid);
@@ -206,20 +277,21 @@ export function useNotificationsScreenState(uid: string | null) {
         await cancelSystemNotifications(uid, "stats_weekly_summary");
       }
     },
-    [requestSystemPermission, setStatsPrefs, systemAllowed, uid],
+    [statsEnabled, requestSystemPermission, setStatsPrefs, systemAllowed, uid],
   );
 
   return {
-    items,
     loading,
     motivationEnabled,
     smartRemindersEnabled,
     statsEnabled,
     systemAllowed,
     settingsCtaVisible,
+    lastSyncError,
+    lastPrefsSyncStatus,
+    lastPrefsSyncAt,
     setSettingsCtaVisible,
     openSettings,
-    onToggleReminder,
     onToggleSmartReminders,
     onToggleMotivation,
     onToggleStats,

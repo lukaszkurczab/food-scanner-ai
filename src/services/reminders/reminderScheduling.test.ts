@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import type { ReminderDecisionResult } from "@/services/reminders/reminderTypes";
-import type { AIStyle, MealKind, NotificationType } from "@/types/notification";
 
 const asyncStorageState = new Map<string, string>();
 const mockGetItem = jest.fn<(key: string) => Promise<string | null>>();
@@ -15,7 +14,21 @@ const mockGetReminderDecision = jest.fn<
 >();
 const mockScheduleOneShotAt = jest.fn<(when: Date, content: unknown, localKey: string) => Promise<void>>();
 const mockCancelAllForNotif = jest.fn<(localKey: string) => Promise<void>>();
+const mockListStoredNotificationIdsByPrefix = jest.fn<
+  (
+    localKeyPrefix: string,
+  ) => Promise<Array<{ localKey: string; ids: string[] }>>
+>();
 const mockNotificationScheduleKey = jest.fn<(uid: string, id: string) => string>();
+const mockEnsureAndroidChannel = jest.fn<
+  () => Promise<{
+    platform: "android" | "non-android";
+    channelId: string;
+    ensured: boolean;
+    exists: boolean | null;
+    errorMessage: string | null;
+  }>
+>();
 const mockGetNotificationText = jest.fn();
 const mockDebugLog = jest.fn();
 const mockDebugWarn = jest.fn();
@@ -25,6 +38,11 @@ const mockTrackSmartReminderScheduleFailed = jest.fn<() => Promise<void>>();
 const mockTrackSmartReminderScheduled = jest.fn<() => Promise<void>>();
 const mockTrackSmartReminderSuppressed = jest.fn<() => Promise<void>>();
 const mockGetPermissionsAsync = jest.fn<() => Promise<{ granted: boolean }>>();
+const mockPlatform = { OS: "ios" as "ios" | "android" };
+
+jest.mock("react-native", () => ({
+  Platform: mockPlatform,
+}));
 
 jest.mock("expo-notifications", () => ({
   getPermissionsAsync: () => mockGetPermissionsAsync(),
@@ -59,8 +77,11 @@ jest.mock("@/services/notifications/localScheduler", () => ({
   scheduleOneShotAt: (when: Date, content: unknown, localKey: string) =>
     mockScheduleOneShotAt(when, content, localKey),
   cancelAllForNotif: (localKey: string) => mockCancelAllForNotif(localKey),
+  listStoredNotificationIdsByPrefix: (localKeyPrefix: string) =>
+    mockListStoredNotificationIdsByPrefix(localKeyPrefix),
   notificationScheduleKey: (uid: string, id: string) =>
     mockNotificationScheduleKey(uid, id),
+  ensureAndroidChannel: () => mockEnsureAndroidChannel(),
 }));
 
 jest.mock("@/services/notifications/texts", () => ({
@@ -111,6 +132,7 @@ jest.mock("@/utils/debug", () => ({
 describe("reminderScheduling", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPlatform.OS = "ios";
     asyncStorageState.clear();
     mockGetItem.mockImplementation(async (key) => asyncStorageState.get(key) ?? null);
     mockSetItem.mockImplementation(async (key, value) => {
@@ -121,8 +143,38 @@ describe("reminderScheduling", () => {
     });
     mockGetAllKeys.mockResolvedValue([]);
     mockGetPermissionsAsync.mockResolvedValue({ granted: true });
+    mockEnsureAndroidChannel.mockResolvedValue({
+      platform: "non-android",
+      channelId: "default",
+      ensured: false,
+      exists: null,
+      errorMessage: null,
+    });
     mockScheduleOneShotAt.mockResolvedValue(undefined);
     mockCancelAllForNotif.mockResolvedValue(undefined);
+    mockListStoredNotificationIdsByPrefix.mockImplementation(
+      async (localKeyPrefix) => {
+        const storagePrefix = `notif:ids:${localKeyPrefix}`;
+        return [...asyncStorageState.entries()]
+          .filter(([storageKey]) => storageKey.startsWith(storagePrefix))
+          .map(([storageKey, raw]) => {
+            let ids: string[] = [];
+            try {
+              const parsed = JSON.parse(raw);
+              ids = Array.isArray(parsed)
+                ? parsed.filter((value): value is string => typeof value === "string")
+                : [];
+            } catch {
+              ids = [];
+            }
+
+            return {
+              localKey: storageKey.slice("notif:ids:".length),
+              ids,
+            };
+          });
+      },
+    );
     mockNotificationScheduleKey.mockImplementation((uid, id) => `${uid}:${id}`);
     mockGetNotificationText.mockReturnValue({
       title: "Title",
@@ -339,6 +391,50 @@ describe("reminderScheduling", () => {
     expect(mockTrackSmartReminderScheduleFailed).toHaveBeenCalled();
   });
 
+  it("does not schedule on Android when notification channel cannot be ensured", async () => {
+    mockPlatform.OS = "android";
+    mockGetPermissionsAsync.mockResolvedValue({ granted: true });
+    mockEnsureAndroidChannel.mockResolvedValue({
+      platform: "android",
+      channelId: "default",
+      ensured: false,
+      exists: false,
+      errorMessage: "channel setup failed",
+    });
+    mockGetReminderDecision.mockResolvedValue({
+      decision: {
+        dayKey: "2026-03-18",
+        computedAt: "2026-03-18T12:00:00Z",
+        decision: "send",
+        kind: "log_next_meal",
+        reasonCodes: [
+          "habit_window_match",
+          "day_partially_logged",
+          "logging_usually_happens_now",
+        ],
+        scheduledAtUtc: "2026-03-18T18:30:00Z",
+        confidence: 0.84,
+        validUntil: "2026-03-18T19:30:00Z",
+      },
+      source: "remote",
+      status: "live_success",
+      enabled: true,
+      error: null,
+    });
+
+    const service =
+      jest.requireActual("@/services/reminders/reminderScheduling") as typeof import("@/services/reminders/reminderScheduling");
+
+    const result = await service.reconcileReminderScheduling("user-1", {
+      dayKey: "2026-03-18",
+    });
+
+    expect(result.outcome).toBe("cancelled");
+    expect(result.reason).toBe("channel_unavailable");
+    expect(mockScheduleOneShotAt).not.toHaveBeenCalled();
+    expect(mockTrackSmartReminderScheduleFailed).toHaveBeenCalled();
+  });
+
   it("maps complete_day reminders onto the existing day_fill notification type", async () => {
     const now = new Date("2026-03-18T18:00:00.000Z");
 
@@ -426,12 +522,19 @@ describe("reminderScheduling", () => {
   });
 
   it("cancels all stored smart reminder keys for the previous user", async () => {
-    mockGetAllKeys.mockResolvedValue([
+    asyncStorageState.set(
       "notif:ids:user-1:smart-reminder:2026-03-18",
+      JSON.stringify(["notif-user-1-18"]),
+    );
+    asyncStorageState.set(
       "notif:ids:user-1:smart-reminder:2026-03-19",
-      "notif:ids:user-1:goal",
+      JSON.stringify(["notif-user-1-19"]),
+    );
+    asyncStorageState.set("notif:ids:user-1:goal", JSON.stringify(["goal-id"]));
+    asyncStorageState.set(
       "notif:ids:user-2:smart-reminder:2026-03-18",
-    ]);
+      JSON.stringify(["notif-user-2-18"]),
+    );
 
     const service =
       jest.requireActual("@/services/reminders/reminderScheduling") as typeof import("@/services/reminders/reminderScheduling");
@@ -483,90 +586,5 @@ describe("reminderScheduling", () => {
     expect(result.outcome).toBe("cancelled");
     expect(mockTrackSmartReminderScheduleFailed).toHaveBeenCalled();
     expect(mockTrackSmartReminderScheduled).not.toHaveBeenCalled();
-  });
-});
-
-describe("notifications engine integration", () => {
-  const mockGetNotificationPlan = jest.fn<
-    (uid: string) => Promise<{
-      aiStyle: AIStyle;
-      plans: Array<{
-        id: string;
-        type: NotificationType;
-        enabled: boolean;
-        text: string | null;
-        time: { hour: number; minute: number };
-        days: number[];
-        mealKind: MealKind | null;
-        shouldSchedule: boolean;
-        missingKcal: number | null;
-      }>;
-    }>
-  >();
-  const mockEnsureAndroidChannel = jest.fn<() => Promise<void>>();
-  const mockLocalCancelAllForNotif = jest.fn<(id: string) => Promise<void>>();
-  const mockLocalScheduleDailyAt = jest.fn<(...args: unknown[]) => Promise<void>>();
-  const mockLocalScheduleOneShotAt = jest.fn<(...args: unknown[]) => Promise<void>>();
-  const mockLocalNotificationScheduleKey = jest.fn<(uid: string, id: string) => string>();
-  const mockLocalNextOccurrenceForDays = jest.fn<(...args: unknown[]) => Date | null>();
-  const mockTexts = jest.fn();
-
-  beforeEach(() => {
-    jest.resetModules();
-    asyncStorageState.clear();
-    mockEnsureAndroidChannel.mockResolvedValue(undefined);
-    mockGetNotificationPlan.mockResolvedValue({ aiStyle: "friendly", plans: [] });
-    mockLocalCancelAllForNotif.mockResolvedValue(undefined);
-    mockLocalScheduleDailyAt.mockResolvedValue(undefined);
-    mockLocalScheduleOneShotAt.mockResolvedValue(undefined);
-    mockLocalNotificationScheduleKey.mockImplementation((uid, id) => `${uid}:${id}`);
-    mockLocalNextOccurrenceForDays.mockReturnValue(new Date("2026-03-03T18:00:00.000Z"));
-    mockTexts.mockReturnValue({ title: "Title", body: "Body" });
-    mockRunSystemNotifications.mockResolvedValue(undefined);
-    mockGetItem.mockImplementation(async (key) => asyncStorageState.get(key) ?? null);
-    mockSetItem.mockImplementation(async (key, value) => {
-      asyncStorageState.set(key, value);
-    });
-    mockRemoveItem.mockImplementation(async (key) => {
-      asyncStorageState.delete(key);
-    });
-
-    jest.doMock("@/services/notifications/planService", () => ({
-      getNotificationPlan: (uid: string) => mockGetNotificationPlan(uid),
-    }));
-    jest.doMock("@/services/notifications/localScheduler", () => ({
-      ensureAndroidChannel: () => mockEnsureAndroidChannel(),
-      scheduleDailyAt: (...args: unknown[]) => mockLocalScheduleDailyAt(...args),
-      scheduleOneShotAt: (...args: unknown[]) => mockLocalScheduleOneShotAt(...args),
-      cancelAllForNotif: (id: string) => mockLocalCancelAllForNotif(id),
-      notificationScheduleKey: (uid: string, id: string) =>
-        mockLocalNotificationScheduleKey(uid, id),
-      nextOccurrenceForDays: (...args: unknown[]) => mockLocalNextOccurrenceForDays(...args),
-    }));
-    jest.doMock("@/services/notifications/texts", () => ({
-      getNotificationText: (...args: unknown[]) => mockTexts(...args),
-    }));
-    jest.doMock("@/i18n", () => ({
-      __esModule: true,
-      default: {
-        language: "pl",
-        t: (key: string) => key,
-      },
-    }));
-    jest.doMock("@/services/notifications/system", () => ({
-      runSystemNotifications: (uid: string) => mockRunSystemNotifications(uid),
-    }));
-    jest.doMock("@/services/reminders/reminderService", () => ({
-      isSmartRemindersEnabled: () => true,
-    }));
-  });
-
-  it("reconcileAll also runs system notifications so smart reminders enter the scheduling flow", async () => {
-    const engine =
-      jest.requireActual("@/services/notifications/engine") as typeof import("@/services/notifications/engine");
-
-    await engine.reconcileAll("user-1");
-
-    expect(mockRunSystemNotifications).toHaveBeenCalledWith("user-1");
   });
 });

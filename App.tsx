@@ -37,6 +37,7 @@ import {
   initNotificationTelemetry,
   stopNotificationTelemetry,
 } from "@/services/notifications/notificationTelemetry";
+import { initNotificationPresentationPolicy } from "@/services/notifications/notificationPresentationPolicy";
 import {
   initTelemetryClient,
   stopTelemetryClient,
@@ -134,6 +135,7 @@ function Root() {
         if (cancelled) return;
         await initTelemetryClient();
         if (cancelled) return;
+        initNotificationPresentationPolicy();
         initNotificationTelemetry();
         await Promise.all([
           initTelemetryLifecycle(),

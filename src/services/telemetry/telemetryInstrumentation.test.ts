@@ -61,9 +61,7 @@ describe("telemetryInstrumentation", () => {
     expect(normalizeTelemetryScreenName("LegalPrivacyHub")).toBe(
       "legal_privacy_hub",
     );
-    expect(normalizeTelemetryScreenName("NotificationForm")).toBe(
-      "notification_form",
-    );
+    expect(normalizeTelemetryScreenName("Notifications")).toBe("notifications");
   });
 
   it("maps meal add methods and screen views to privacy-safe props", async () => {
