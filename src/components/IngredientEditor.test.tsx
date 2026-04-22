@@ -114,4 +114,62 @@ describe("IngredientEditor", () => {
     expect(onCommit).toHaveBeenCalledTimes(1);
     expect(queryByText("common:remove")).toBeNull();
   });
+
+  it("shows unit only once in sheet variant and removes fake unit affordance", () => {
+    const { getAllByText, queryByDisplayValue, queryByText } = renderWithTheme(
+      <IngredientEditor
+        initial={{
+          id: "ing-3",
+          name: "Milk",
+          amount: 250,
+          unit: "ml",
+          protein: 8,
+          carbs: 12,
+          fat: 5,
+          kcal: 140,
+        }}
+        variant="sheet"
+        onCommit={() => undefined}
+        onCancel={() => undefined}
+        onDelete={() => undefined}
+      />,
+    );
+
+    expect(getAllByText("ml")).toHaveLength(1);
+    expect(queryByText("meals:review_meal_edit_ingredient_unit")).toBeNull();
+    expect(queryByDisplayValue("ml")).toBeNull();
+    expect(queryByText("›")).toBeNull();
+  });
+
+  it("keeps unit read-only in sheet variant commit flow", () => {
+    const onCommit = jest.fn();
+    const { getByDisplayValue, getByText } = renderWithTheme(
+      <IngredientEditor
+        initial={{
+          id: "ing-4",
+          name: "Olive oil",
+          amount: 77,
+          unit: "ml",
+          protein: 0,
+          carbs: 0,
+          fat: 100,
+          kcal: 884,
+        }}
+        variant="sheet"
+        onCommit={onCommit}
+        onCancel={() => undefined}
+        onDelete={() => undefined}
+      />,
+    );
+
+    fireEvent.changeText(getByDisplayValue("77"), "150.5");
+    fireEvent.press(getByText("common:save_changes"));
+
+    expect(onCommit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 150.5,
+        unit: "ml",
+      }),
+    );
+  });
 });

@@ -256,45 +256,28 @@ export const IngredientEditor: React.FC<Props> = ({
         ) : null}
 
         {isSheetVariant ? (
-          <View style={styles.row}>
-            <View style={styles.fieldColumn}>
-              <NumberInput
-                style={styles.sheetFieldContainer}
-                fieldStyle={[
-                  styles.sheetField,
-                  errors.amount && amountTouched ? styles.inputError : null,
-                ]}
-                label={t("amount", { ns: "meals" }).replace("[g]", "").trim()}
-                rightLabel={unitLabel}
-                value={amount}
-                onChangeText={(v) => handleNumericChange(v, setAmount, "amount")}
-                maxDecimals={getNumericMaxDecimals("amount")}
-                blurFallback="0"
-                onFocus={() => clearZeroOnFocus(amount, setAmount)}
-                onBlur={(normalizedValue) => {
-                  setAmountTouched(true);
-                  handleNumericBlur("amount", normalizedValue);
-                }}
-              />
-              {errors.amount && amountTouched ? (
-                <Text style={styles.errText}>{errors.amount}</Text>
-              ) : null}
-            </View>
-
-            <View style={styles.fieldColumn}>
-              <TextInput
-                style={styles.sheetFieldContainer}
-                fieldStyle={styles.sheetField}
-                label={t("review_meal_edit_ingredient_unit", {
-                  ns: "meals",
-                  defaultValue: "Unit",
-                })}
-                value={unitLabel}
-                onChangeText={() => undefined}
-                editable={false}
-                right={<Text style={styles.sheetChevron}>›</Text>}
-              />
-            </View>
+          <View style={styles.fieldColumn}>
+            <NumberInput
+              style={styles.sheetFieldContainer}
+              fieldStyle={[
+                styles.sheetField,
+                errors.amount && amountTouched ? styles.inputError : null,
+              ]}
+              label={t("amount", { ns: "meals" }).replace("[g]", "").trim()}
+              rightLabel={unitLabel}
+              value={amount}
+              onChangeText={(v) => handleNumericChange(v, setAmount, "amount")}
+              maxDecimals={getNumericMaxDecimals("amount")}
+              blurFallback="0"
+              onFocus={() => clearZeroOnFocus(amount, setAmount)}
+              onBlur={(normalizedValue) => {
+                setAmountTouched(true);
+                handleNumericBlur("amount", normalizedValue);
+              }}
+            />
+            {errors.amount && amountTouched ? (
+              <Text style={styles.errText}>{errors.amount}</Text>
+            ) : null}
           </View>
         ) : (
           <>
@@ -653,12 +636,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     sheetField: {
       minHeight: 54,
       borderRadius: theme.rounded.md,
-    },
-    sheetChevron: {
-      color: theme.textSecondary,
-      fontSize: 18,
-      lineHeight: 18,
-      fontFamily: theme.typography.fontFamily.medium,
     },
     inputError: {
       borderColor: theme.input.borderError,
