@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Layout } from "@/components";
+import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView";
 import { useTheme } from "@/theme/useTheme";
 
 type AuthScreenLayoutProps = {
@@ -26,33 +27,39 @@ export function AuthScreenLayout({
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
-    <Layout showNavigation={false} style={styles.layout}>
+    <Layout showNavigation={false} disableScroll style={styles.layout}>
       <View style={styles.container}>
-        <View style={styles.content}>
-          <View style={styles.hero}>
-            <Text style={styles.wordmark}>{brand}</Text>
+        <KeyboardAwareScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <View style={styles.hero}>
+              <Text style={styles.wordmark}>{brand}</Text>
 
-            <View style={styles.headingGroup}>
-              <Text style={styles.title} accessibilityRole="header">
-                {title}
-              </Text>
-              {description ? (
-                <Text style={styles.description}>{description}</Text>
-              ) : null}
+              <View style={styles.headingGroup}>
+                <Text style={styles.title} accessibilityRole="header">
+                  {title}
+                </Text>
+                {description ? (
+                  <Text style={styles.description}>{description}</Text>
+                ) : null}
+              </View>
             </View>
+
+            {banner ? <View style={styles.banner}>{banner}</View> : null}
+
+            <View style={styles.form}>{children}</View>
           </View>
 
-          {banner ? <View style={styles.banner}>{banner}</View> : null}
-
-          <View style={styles.form}>{children}</View>
-        </View>
-
-        {bottomAction || footer ? (
-          <View style={styles.bottomBlock}>
-            {bottomAction}
-            {footer ? <View style={styles.footer}>{footer}</View> : null}
-          </View>
-        ) : null}
+          {bottomAction || footer ? (
+            <View style={styles.bottomBlock}>
+              {bottomAction}
+              {footer ? <View style={styles.footer}>{footer}</View> : null}
+            </View>
+          ) : null}
+        </KeyboardAwareScrollView>
       </View>
     </Layout>
   );
@@ -66,11 +73,17 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
     },
     container: {
+      flex: 1,
+      minHeight: 0,
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
       flexGrow: 1,
       justifyContent: "space-between",
     },
     content: {
-      flexGrow: 1,
       paddingTop: theme.spacing.xl,
     },
     hero: {

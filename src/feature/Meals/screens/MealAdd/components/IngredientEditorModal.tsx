@@ -1,14 +1,23 @@
-import { Modal as RNModal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Modal as RNModal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { useTranslation } from "react-i18next";
+import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView";
 import { IngredientEditor } from "@/components/IngredientEditor";
 import { useTheme } from "@/theme/useTheme";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import type { Ingredient } from "@/types/meal";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type IngredientEditorModalProps = {
   visible: boolean;
   ingredientDraft: Ingredient | null;
   editingIngredientIndex: number | null;
-  keyboardDismissMode: "none" | "interactive" | "on-drag";
   onClose: () => void;
   onCommit: (updated: Ingredient) => void;
   onDelete: () => void;
@@ -18,14 +27,23 @@ export default function IngredientEditorModal({
   visible,
   ingredientDraft,
   editingIngredientIndex,
-  keyboardDismissMode,
   onClose,
   onCommit,
   onDelete,
 }: IngredientEditorModalProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardInset();
+  const { height: windowHeight } = useWindowDimensions();
   const { t } = useTranslation(["meals", "common"]);
   const styles = createStyles(theme);
+  const sheetDefaultMaxHeight = windowHeight * 0.76;
+  const sheetAvailableHeight =
+    windowHeight - insets.top - theme.spacing.md - keyboardInset;
+  const sheetMaxHeight = Math.max(
+    320,
+    Math.min(sheetDefaultMaxHeight, sheetAvailableHeight),
+  );
 
   return (
     <RNModal
@@ -44,7 +62,18 @@ export default function IngredientEditorModal({
             defaultValue: "Close ingredient editor",
           })}
         />
-        <View style={[styles.sheet, styles.ingredientSheet]}>
+        <View
+          testID="ingredient-editor-sheet"
+          style={[
+            styles.sheet,
+            styles.ingredientSheet,
+            {
+              marginBottom: keyboardInset,
+              paddingBottom: theme.spacing.xl + insets.bottom,
+              maxHeight: sheetMaxHeight,
+            },
+          ]}
+        >
           <View style={styles.sheetHandle} />
           <Text style={styles.sheetTitle}>
             {t(
@@ -61,9 +90,7 @@ export default function IngredientEditorModal({
             )}
           </Text>
           {ingredientDraft ? (
-            <ScrollView
-              keyboardDismissMode={keyboardDismissMode}
-              keyboardShouldPersistTaps="handled"
+            <KeyboardAwareScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.ingredientEditorContent}
             >
@@ -88,7 +115,7 @@ export default function IngredientEditorModal({
                 onCancel={onClose}
                 onDelete={onDelete}
               />
-            </ScrollView>
+            </KeyboardAwareScrollView>
           ) : null}
         </View>
       </View>
@@ -114,7 +141,6 @@ const createStyles = (theme: ReturnType<typeof useTheme>) =>
       borderTopRightRadius: theme.rounded.xxl,
       paddingTop: theme.spacing.sm,
       paddingHorizontal: theme.spacing.bottomSheetPadding,
-      paddingBottom: theme.spacing.xl,
       gap: theme.spacing.sm,
       shadowColor: theme.shadow,
       shadowOpacity: theme.isDark ? 0.4 : 0.18,

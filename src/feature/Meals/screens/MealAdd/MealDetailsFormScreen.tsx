@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Layout } from "@/components";
+import { KeyboardAwareScrollView, Layout } from "@/components";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDetailsForm } from "@/feature/Meals/hooks/useMealDetailsForm";
 import {
@@ -18,6 +18,7 @@ import MealTimePickerModal from "@/feature/Meals/screens/MealAdd/components/Meal
 import IngredientEditorModal from "@/feature/Meals/screens/MealAdd/components/IngredientEditorModal";
 import type { Meal } from "@/types/meal";
 import type { MealAddFlowApi } from "@/feature/Meals/feature/MapMealAddScreens";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Mode = "manual" | "review";
 
@@ -54,13 +55,14 @@ export function MealDetailsFormScreen({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals", "common"]);
+  const insets = useSafeAreaInsets();
+  const footerBottomInset = Math.max(insets.bottom, theme.spacing.sm);
 
   const {
     uid,
     meal,
     mealTimestamp,
     isManualMode,
-    keyboardDismissMode,
     mealName,
     setMealName,
     typePickerVisible,
@@ -123,11 +125,15 @@ export function MealDetailsFormScreen({
   return (
     <Layout showNavigation={false} disableScroll style={styles.layout}>
       <View style={styles.screen}>
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
-          keyboardDismissMode={keyboardDismissMode}
-          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom:
+                theme.spacing.xxxl + 92 + footerBottomInset,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {!isManualMode && onReviewPhotoPress ? (
@@ -167,12 +173,13 @@ export function MealDetailsFormScreen({
               </Text>
             </View>
           ) : null}
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         <MealDetailsFooter
           isManualMode={isManualMode}
           manualSubmitDisabled={manualSubmitDisabled}
           reviewSubmitLabel={reviewSubmitLabel}
+          footerBottomInset={footerBottomInset}
           onSubmit={() => {
             void handleSubmit();
           }}
@@ -205,7 +212,6 @@ export function MealDetailsFormScreen({
         visible={ingredientDraft !== null}
         ingredientDraft={ingredientDraft}
         editingIngredientIndex={editingIngredientIndex}
-        keyboardDismissMode={keyboardDismissMode}
         onClose={handleCloseIngredientEditor}
         onCommit={(updated) => {
           void handleCommitIngredient(updated);
@@ -233,7 +239,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     scrollContent: {
       gap: theme.spacing.md,
       paddingTop: theme.spacing.sm,
-      paddingBottom: theme.spacing.xxxl + 92,
     },
     helperPill: {
       borderRadius: theme.rounded.md,

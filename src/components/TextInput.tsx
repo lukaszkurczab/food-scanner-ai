@@ -1,4 +1,4 @@
-import React, { forwardRef, useMemo, useState } from "react";
+import React, { forwardRef, useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   TextInput as RNTextInput,
@@ -11,6 +11,7 @@ import {
   TextInputProps,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
+import { useKeyboardAwareInputFocus } from "@/components/KeyboardAwareScrollView";
 
 type Props = {
   label?: string;
@@ -111,7 +112,24 @@ export const TextInput = forwardRef<RNTextInput, Props>(
   ) => {
     const theme = useTheme();
     const styles = useMemo(() => makeStyles(theme), [theme]);
+    const focusInputIntoView = useKeyboardAwareInputFocus();
     const [isFocused, setIsFocused] = useState(false);
+    const innerRef = useRef<RNTextInput | null>(null);
+
+    const setInputRef = useCallback(
+      (instance: RNTextInput | null) => {
+        innerRef.current = instance;
+        if (typeof ref === "function") {
+          ref(instance);
+          return;
+        }
+        if (ref) {
+          (ref as React.MutableRefObject<RNTextInput | null>).current =
+            instance;
+        }
+      },
+      [ref],
+    );
 
     const hasError = !!error;
     const errorMsg = typeof error === "string" ? error : undefined;
@@ -196,11 +214,12 @@ export const TextInput = forwardRef<RNTextInput, Props>(
             testID={testID}
             autoCorrect={autoCorrect}
             spellCheck={resolvedSpellCheck}
-            ref={ref}
+            ref={setInputRef}
             value={value}
             onChangeText={onChangeText}
             onFocus={() => {
               setIsFocused(true);
+              focusInputIntoView?.(innerRef.current);
               onFocus?.();
             }}
             onBlur={() => {

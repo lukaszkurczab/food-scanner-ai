@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  ScrollView,
   Platform,
   KeyboardAvoidingView,
   Dimensions,
@@ -14,6 +13,7 @@ import { useTheme } from "@/theme/useTheme";
 import { IconButton } from "@/components/IconButton";
 import AppIcon from "@/components/AppIcon";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
+import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView";
 
 const WINDOW_HEIGHT = Dimensions.get("window").height;
 const MODAL_MAX_WIDTH = 500;
@@ -60,8 +60,6 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
-    Platform.OS === "ios" ? "interactive" : "on-drag";
 
   const contentBottomPadding = contentPaddingBottom ?? 0;
 
@@ -135,7 +133,7 @@ export const Modal: React.FC<ModalProps> = ({
               {title ? <Text style={styles.title}>{title}</Text> : null}
 
               {hasBodyContent ? (
-                <ScrollView
+                <KeyboardAwareScrollView
                   style={[
                     styles.scrollView,
                     title ? styles.scrollViewWithTitle : null,
@@ -144,15 +142,13 @@ export const Modal: React.FC<ModalProps> = ({
                     styles.scrollContent,
                     { paddingBottom: contentBottomPadding },
                   ]}
-                  keyboardDismissMode={keyboardDismissMode}
-                  keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
                 >
                   <View style={styles.contentStack}>
                     {message ? <Text style={styles.message}>{message}</Text> : null}
                     {children}
                   </View>
-                </ScrollView>
+                </KeyboardAwareScrollView>
               ) : null}
 
               {footer ? (

@@ -87,6 +87,8 @@ jest.mock("@/components", () => {
     __esModule: true,
     Layout: ({ children }: { children?: unknown }) =>
       createElement(View, null, children as never),
+    KeyboardAwareScrollView: ({ children }: { children?: unknown }) =>
+      createElement(View, null, children as never),
     Card: ({
       children,
       onPress,

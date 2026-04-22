@@ -2,9 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -15,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import {
   Button,
   Checkbox,
+  KeyboardAwareScrollView,
   Layout,
   PhotoPreview,
   ScreenCornerNavButton,
@@ -31,6 +30,7 @@ import { autoMealName } from "@/utils/autoMealName";
 import type { Meal } from "@/types/meal";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const IMAGE_HEIGHT = 164;
 
@@ -60,8 +60,8 @@ export default function ReviewMealScreen({
 }: MealAddScreenProps<"ReviewMeal">) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
-    Platform.OS === "ios" ? "interactive" : "on-drag";
+  const insets = useSafeAreaInsets();
+  const footerBottomInset = Math.max(insets.bottom, theme.spacing.sm);
   const { t, i18n } = useTranslation(["meals", "common"]);
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
@@ -333,11 +333,15 @@ export default function ReviewMealScreen({
       />
 
       <View style={styles.screen}>
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
-          keyboardDismissMode={keyboardDismissMode}
-          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom:
+                theme.spacing.xxxl + 104 + footerBottomInset,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {image && !imageError ? (
@@ -483,9 +487,9 @@ export default function ReviewMealScreen({
                 : t("add_to_my_meals", { ns: "meals" })}
             </Text>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: footerBottomInset }]}>
           <Button
             variant="secondary"
             label={t("review_meal_edit_cta", {
@@ -559,7 +563,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     scrollContent: {
       paddingTop: theme.spacing.xxxl,
-      paddingBottom: theme.spacing.xxxl + 104,
       gap: theme.spacing.md,
     },
     heroBlock: {
@@ -732,7 +735,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       bottom: 0,
       backgroundColor: theme.background,
       paddingTop: theme.spacing.sm,
-      paddingBottom: theme.spacing.sm,
       gap: theme.spacing.sm,
     },
     editButton: {

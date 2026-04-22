@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
@@ -66,8 +65,6 @@ export function useMealDetailsForm({
   navigation,
   onReviewSubmit,
 }: UseMealDetailsFormParams) {
-  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
-    Platform.OS === "ios" ? "interactive" : "on-drag";
   const { i18n } = useTranslation(["meals", "common"]);
   const { uid } = useAuthContext();
   const { meal, loadDraft, saveDraft, setMeal, setLastScreen } = useMealDraftContext();
@@ -314,7 +311,6 @@ export function useMealDetailsForm({
     meal,
     mealTimestamp,
     isManualMode,
-    keyboardDismissMode,
     mealName,
     setMealName: handleMealNameChange,
     typePickerVisible,

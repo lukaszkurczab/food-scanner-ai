@@ -10,7 +10,6 @@ import {
   type ViewStyle,
 } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { ScrollView } from "react-native-gesture-handler";
 import {
   BottomTabBar,
   BOTTOM_TAB_BAR_BASE_HEIGHT,
@@ -19,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useE2ENetInfo } from "@/services/e2e/connectivity";
+import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView";
 
 type LayoutProps = {
   children: ReactNode;
@@ -28,9 +28,6 @@ type LayoutProps = {
   showOfflineBanner?: boolean;
   keyboardAvoiding?: boolean;
 };
-
-const KEYBOARD_DISMISS_MODE: "none" | "interactive" | "on-drag" =
-  Platform.OS === "ios" ? "interactive" : "on-drag";
 
 export const Layout = ({
   children,
@@ -131,18 +128,16 @@ export const Layout = ({
             {children}
           </View>
         ) : (
-          <ScrollView
+          <KeyboardAwareScrollView
             style={styles.content}
             contentContainerStyle={[
               styles.scrollContent,
               { paddingTop: contentTopPadding },
             ]}
-            keyboardDismissMode={KEYBOARD_DISMISS_MODE}
-            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             {children}
-          </ScrollView>
+          </KeyboardAwareScrollView>
         )}
       </View>
       {shouldShowTabBar && <BottomTabBar />}

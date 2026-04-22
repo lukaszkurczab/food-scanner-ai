@@ -1,7 +1,5 @@
 import { useMemo, type ReactNode } from "react";
 import {
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -15,6 +13,7 @@ import {
 } from "@/components/BackTitleHeader";
 import { GlobalActionButtons } from "@/components/GlobalActionButtons";
 import { Layout } from "@/components/Layout";
+import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView";
 import { useTheme } from "@/theme/useTheme";
 
 type ActionTone = "primary" | "secondary" | "ghost" | "destructive";
@@ -75,8 +74,6 @@ export function FormScreenShell({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const keyboardDismissMode: "none" | "interactive" | "on-drag" =
-    Platform.OS === "ios" ? "interactive" : "on-drag";
   const hasActions = !!actionLabel || !!secondaryActionLabel;
 
   const actions = hasActions ? (
@@ -119,17 +116,15 @@ export function FormScreenShell({
           titleSize="h2"
         />
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scroll}
           contentContainerStyle={[styles.scrollContent, contentStyle]}
-          keyboardDismissMode={keyboardDismissMode}
-          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {intro ? <Text style={styles.intro}>{intro}</Text> : null}
           <View style={styles.content}>{children}</View>
           {!stickyActions ? actions : null}
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {stickyActions ? actions : null}
       </View>

@@ -8,6 +8,7 @@ type MealDetailsFooterProps = {
   isManualMode: boolean;
   manualSubmitDisabled: boolean;
   reviewSubmitLabel?: string;
+  footerBottomInset?: number;
   onSubmit: () => void;
   onChangeMethod: () => void;
 };
@@ -16,6 +17,7 @@ export default function MealDetailsFooter({
   isManualMode,
   manualSubmitDisabled,
   reviewSubmitLabel,
+  footerBottomInset = 0,
   onSubmit,
   onChangeMethod,
 }: MealDetailsFooterProps) {
@@ -24,7 +26,7 @@ export default function MealDetailsFooter({
   const styles = createStyles(theme);
 
   return (
-    <View style={styles.footer}>
+    <View style={[styles.footer, { paddingBottom: footerBottomInset }]}>
       <Button
         label={
           isManualMode
@@ -64,7 +66,6 @@ const createStyles = (theme: ReturnType<typeof useTheme>) =>
       right: 0,
       bottom: 0,
       paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.sm,
       gap: theme.spacing.xs,
       backgroundColor: theme.background,
     },

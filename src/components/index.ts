@@ -21,6 +21,7 @@ export * from "./Checkbox";
 export * from "./Dropdown";
 export * from "./CheckboxDropdown";
 export * from "./LongTextInput";
+export * from "./KeyboardAwareScrollView";
 export * from "./BottomTabBar";
 export * from "./ButtonToggle";
 export * from "./SelectableGroup";

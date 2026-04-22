@@ -40,6 +40,7 @@ import {
 } from "@/feature/Meals/components/MealAddPhotoScaffold";
 import { MealAddBarcodePreview } from "@/feature/Meals/components/MealAddBarcodePreview";
 import { buildBarcodeDraft } from "@/feature/Meals/utils/buildBarcodeDraft";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 
 const BARCODE_PREVIEW_HEIGHT = 280;
 
@@ -53,6 +54,7 @@ export default function BarcodeScanScreen({
   const insets = useSafeAreaInsets();
   const { t: tMeals } = useTranslation("meals");
   const { t: tCommon } = useTranslation("common");
+  const keyboardInset = useKeyboardInset();
   const [permission, requestPermission] = useCameraPermissions();
   const { uid } = useAuthContext();
   const { meal, saveDraft, setLastScreen, setMeal } = useMealDraftContext();
@@ -406,7 +408,15 @@ export default function BarcodeScanScreen({
               })}
             />
 
-            <View style={styles.manualSheet}>
+            <View
+              style={[
+                styles.manualSheet,
+                {
+                  marginBottom: keyboardInset,
+                  paddingBottom: theme.spacing.xl + insets.bottom,
+                },
+              ]}
+            >
               <View style={styles.sheetHandle} />
 
               <Text style={styles.manualTitle}>
@@ -522,7 +532,6 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       borderTopRightRadius: theme.rounded.xxl,
       paddingHorizontal: theme.spacing.xl,
       paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.xl,
       gap: theme.spacing.md,
       backgroundColor: theme.surface,
       shadowColor: "#000000",
