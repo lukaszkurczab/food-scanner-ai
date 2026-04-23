@@ -32,7 +32,7 @@ jobs:
         run: npm ci
 
       - name: Run npm audit
-        run: npm audit --omit=dev --audit-level=moderate
+        run: npm audit --omit=dev --audit-level=high
 
   secret-scan:
     name: gitleaks (full git history)
