@@ -7,8 +7,6 @@ import { renderWithTheme } from "@/test-utils/renderWithTheme";
 const mockUseNavigation = jest.fn();
 const mockUseRoute = jest.fn();
 const mockUseMealAddMethodState = jest.fn();
-const mockTrackMealAddMethodSelected =
-  jest.fn<(optionKey: string) => Promise<void>>();
 
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockUseNavigation(),
@@ -17,11 +15,6 @@ jest.mock("@react-navigation/native", () => ({
 
 jest.mock("@/feature/Meals/hooks/useMealAddMethodState", () => ({
   useMealAddMethodState: (params: unknown) => mockUseMealAddMethodState(params),
-}));
-
-jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
-  trackMealAddMethodSelected: (optionKey: string) =>
-    mockTrackMealAddMethodSelected(optionKey),
 }));
 
 jest.mock("react-i18next", () => ({
@@ -99,7 +92,6 @@ describe("MealAddMethodScreen", () => {
       goBack: jest.fn(),
     });
     mockUseRoute.mockReturnValue({ params: undefined });
-    mockTrackMealAddMethodSelected.mockResolvedValue();
   });
 
   it("renders method rows and forwards the selected option", () => {
@@ -134,11 +126,6 @@ describe("MealAddMethodScreen", () => {
     fireEvent.press(getByTestId("meal-add-option-photo"));
     fireEvent.press(getByTestId("meal-add-option-barcode"));
 
-    expect(mockTrackMealAddMethodSelected).toHaveBeenNthCalledWith(1, "photo");
-    expect(mockTrackMealAddMethodSelected).toHaveBeenNthCalledWith(
-      2,
-      "barcode",
-    );
     expect(handleOptionPress.mock.calls[0][0]).toEqual(options[0]);
     expect(handleOptionPress.mock.calls[1][0]).toEqual(options[1]);
     expect(mockUseMealAddMethodState).toHaveBeenCalledWith({

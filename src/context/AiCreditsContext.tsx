@@ -12,7 +12,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuthContext } from "@/context/AuthContext";
 import { get } from "@/services/core/apiClient";
 import {
+  parseCreditTransactionsResponse,
   parseCreditsFromResponse,
+  type AiCreditTransactionItem,
   type AiCreditsAction,
   type AiCreditsResponse,
   type AiCreditsStatus,
@@ -23,6 +25,7 @@ type AiCreditsContextValue = {
   credits: AiCreditsStatus | null;
   loading: boolean;
   refreshCredits: () => Promise<AiCreditsStatus | null>;
+  refreshCreditTransactions: (limit?: number) => Promise<AiCreditTransactionItem[]>;
   applyCreditsFromResponse: (value: unknown) => AiCreditsStatus | null;
   canAfford: (action: AiCreditsAction) => boolean;
 };
@@ -31,6 +34,7 @@ const AiCreditsContext = createContext<AiCreditsContextValue>({
   credits: null,
   loading: false,
   refreshCredits: async () => null,
+  refreshCreditTransactions: async () => [],
   applyCreditsFromResponse: () => null,
   canAfford: () => false,
 });
@@ -106,6 +110,17 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
     }
   }, [uid, updateCredits]);
 
+  const refreshCreditTransactions = useCallback(async (limit = 50) => {
+    if (!uid) return [];
+    try {
+      const response = await get(`/ai/credits/transactions?limit=${Math.min(Math.max(limit, 1), 200)}`);
+      return parseCreditTransactionsResponse(response)?.items ?? [];
+    } catch (error) {
+      logWarning("ai credits transaction history refresh failed", null, error);
+      return [];
+    }
+  }, [uid]);
+
   const refreshCreditsIfStale = useCallback(async (): Promise<AiCreditsStatus | null> => {
     const now = Date.now();
     if (now - lastActiveRefreshAtRef.current < APP_ACTIVE_REFRESH_THROTTLE_MS) {
@@ -170,10 +185,18 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
       credits,
       loading,
       refreshCredits,
+      refreshCreditTransactions,
       applyCreditsFromResponse,
       canAfford,
     }),
-    [credits, loading, refreshCredits, applyCreditsFromResponse, canAfford],
+    [
+      credits,
+      loading,
+      refreshCredits,
+      refreshCreditTransactions,
+      applyCreditsFromResponse,
+      canAfford,
+    ],
   );
 
   return (

@@ -7,8 +7,10 @@ import { v4 as uuidv4 } from "uuid";
 import * as apiClient from "@/services/core/apiClient";
 import { withV2 } from "@/services/core/apiVersioning";
 import { readPublicEnv } from "@/services/core/publicEnv";
+import { TELEMETRY_EVENT_NAMES } from "@/services/telemetry/telemetryTypes";
 import type {
   TelemetryBatchPayload,
+  TelemetryEventName,
   TelemetryEvent,
   TelemetryProps,
 } from "@/services/telemetry/telemetryTypes";
@@ -79,6 +81,12 @@ function isTelemetryEvent(value: unknown): value is TelemetryEvent {
   }
 
   if (typeof value.eventId !== "string" || typeof value.name !== "string") {
+    return false;
+  }
+
+  if (
+    !(TELEMETRY_EVENT_NAMES as readonly string[]).includes(value.name)
+  ) {
     return false;
   }
 
@@ -308,7 +316,7 @@ async function ensureInitialized(): Promise<void> {
 }
 
 export async function track(
-  name: string,
+  name: TelemetryEventName,
   props?: TelemetryProps,
 ): Promise<void> {
   if (!isTelemetryEnabled()) {
@@ -317,14 +325,9 @@ export async function track(
 
   await ensureInitialized();
 
-  const normalizedName = name.trim();
-  if (!normalizedName) {
-    return;
-  }
-
   const event: TelemetryEvent = {
     eventId: createEventId(),
-    name: normalizedName,
+    name,
     ts: new Date().toISOString(),
     ...(props && Object.keys(props).length > 0 ? { props } : {}),
   };

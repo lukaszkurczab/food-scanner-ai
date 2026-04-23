@@ -39,9 +39,7 @@ const mockUpsertMyMealWithPhoto = jest.fn<
 >();
 const mockDebugLog = jest.fn();
 const mockDebugWarn = jest.fn();
-const mockTrackMealAdded = jest.fn<(meal: Meal) => Promise<void>>();
-const mockTrackMealUpdated = jest.fn<(meal: Meal) => Promise<void>>();
-const mockTrackMealDeleted = jest.fn<(meal?: Meal | null) => Promise<void>>();
+const mockTrackMealLogged = jest.fn<(meal: Meal) => Promise<void>>();
 const mockEventHandlers = new Map<
   string,
   Set<(payload?: Record<string, unknown>) => void>
@@ -132,9 +130,7 @@ jest.mock("@/services/meals/myMealService", () => ({
 }));
 
 jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
-  trackMealAdded: (meal: Meal) => mockTrackMealAdded(meal),
-  trackMealUpdated: (meal: Meal) => mockTrackMealUpdated(meal),
-  trackMealDeleted: (meal?: Meal | null) => mockTrackMealDeleted(meal),
+  trackMealLogged: (meal: Meal) => mockTrackMealLogged(meal),
 }));
 
 jest.mock("@/utils/debug", () => ({
@@ -222,9 +218,7 @@ describe("useMeals", () => {
     mockPushQueue.mockResolvedValue();
     mockPullChanges.mockResolvedValue();
     mockUpsertMyMealWithPhoto.mockResolvedValue();
-    mockTrackMealAdded.mockResolvedValue();
-    mockTrackMealUpdated.mockResolvedValue();
-    mockTrackMealDeleted.mockResolvedValue();
+    mockTrackMealLogged.mockResolvedValue();
   });
 
   afterEach(() => {
@@ -402,7 +396,7 @@ describe("useMeals", () => {
     });
     expect(savedPayload.totals).toEqual({ kcal: 50, protein: 6, fat: 3, carbs: 8 });
     expect(mockEnqueueUpsert).toHaveBeenCalledWith("user-1", savedPayload);
-    expect(mockTrackMealAdded).toHaveBeenCalledWith(
+    expect(mockTrackMealLogged).toHaveBeenCalledWith(
       expect.objectContaining({
         cloudId: "cloud-new",
         mealId: "meal-new",
@@ -594,13 +588,7 @@ describe("useMeals", () => {
       }),
       "file://saved-photo.jpg",
     );
-    expect(mockTrackMealUpdated).toHaveBeenCalledWith(
-      expect.objectContaining({
-        mealId: "saved-doc",
-        cloudId: "saved-doc",
-        source: "saved",
-      }),
-    );
+    expect(mockTrackMealLogged).not.toHaveBeenCalled();
     expect(mockUpsertMealLocal).not.toHaveBeenCalled();
     expect(mockEnqueueUpsert).not.toHaveBeenCalled();
     expect(mockReconcileAll).not.toHaveBeenCalled();
@@ -644,12 +632,7 @@ describe("useMeals", () => {
         cloudId: "updated-cloud",
       }),
     );
-    expect(mockTrackMealUpdated).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cloudId: "updated-cloud",
-        source: "manual",
-      }),
-    );
+    expect(mockTrackMealLogged).not.toHaveBeenCalled();
 
     await act(async () => {
       jest.advanceTimersByTime(1200);
@@ -701,11 +684,7 @@ describe("useMeals", () => {
         cloudId: "delete-me",
       }),
     );
-    expect(mockTrackMealDeleted).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cloudId: "delete-me",
-      }),
-    );
+    expect(mockTrackMealLogged).not.toHaveBeenCalled();
 
     await act(async () => {
       jest.advanceTimersByTime(1200);
@@ -747,7 +726,7 @@ describe("useMeals", () => {
       "user-1",
       expect.objectContaining({ cloudId: "copy-cloud" }),
     );
-    expect(mockTrackMealAdded).toHaveBeenCalledWith(
+    expect(mockTrackMealLogged).toHaveBeenCalledWith(
       expect.objectContaining({
         cloudId: "copy-cloud",
         mealId: "copy-meal",

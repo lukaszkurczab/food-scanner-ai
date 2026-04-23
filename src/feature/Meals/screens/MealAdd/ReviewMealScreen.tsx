@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -31,6 +31,7 @@ import type { Meal } from "@/types/meal";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { trackAiMealReviewSaved } from "@/services/telemetry/telemetryInstrumentation";
 
 const IMAGE_HEIGHT = 164;
 
@@ -52,6 +53,25 @@ function formatIngredientValue(amount?: number, unit?: string) {
     ? String(amount)
     : (amount ?? 0).toFixed(1);
   return `${value}${unit ? ` ${unit}` : ""}`.trim();
+}
+
+function buildAiReviewFingerprint(meal: Meal): string {
+  const normalizedIngredients = meal.ingredients.map((ingredient) => ({
+    name: ingredient.name.trim().toLowerCase(),
+    amount: Number(ingredient.amount.toFixed(3)),
+    unit: ingredient.unit ?? "g",
+    kcal: Number(ingredient.kcal.toFixed(3)),
+    protein: Number(ingredient.protein.toFixed(3)),
+    carbs: Number(ingredient.carbs.toFixed(3)),
+    fat: Number(ingredient.fat.toFixed(3)),
+  }));
+
+  return JSON.stringify({
+    name: (meal.name ?? "").trim().toLowerCase(),
+    type: meal.type,
+    timestamp: meal.timestamp,
+    ingredients: normalizedIngredients,
+  });
 }
 
 export default function ReviewMealScreen({
@@ -77,6 +97,8 @@ export default function ReviewMealScreen({
   const [checkingImage, setCheckingImage] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [saveToMyMeals, setSaveToMyMeals] = useState(false);
+  const initialAiReviewMealIdRef = useRef<string | null>(null);
+  const initialAiReviewFingerprintRef = useRef<string | null>(null);
 
   const image = meal?.photoUrl ?? null;
   const isFromSaved = meal?.source === "saved";
@@ -87,6 +109,23 @@ export default function ReviewMealScreen({
   useEffect(() => {
     setSaveToMyMeals(false);
   }, [isFromSaved, meal?.mealId, savedTemplateId]);
+
+  useEffect(() => {
+    const reviewMeal = meal;
+    if (!reviewMeal || reviewMeal.source !== "ai") {
+      initialAiReviewMealIdRef.current = null;
+      initialAiReviewFingerprintRef.current = null;
+      return;
+    }
+
+    const reviewMealId = reviewMeal.mealId || reviewMeal.cloudId || "draft";
+    if (initialAiReviewMealIdRef.current === reviewMealId) {
+      return;
+    }
+
+    initialAiReviewMealIdRef.current = reviewMealId;
+    initialAiReviewFingerprintRef.current = buildAiReviewFingerprint(reviewMeal);
+  }, [meal]);
 
   useEffect(() => {
     if (uid) {
@@ -229,6 +268,18 @@ export default function ReviewMealScreen({
           } else if (!isFromSaved) {
             await createSavedMealTemplate(nextMeal);
           }
+        }
+        if (nextMeal.source === "ai") {
+          const initialFingerprint = initialAiReviewFingerprintRef.current;
+          const corrected =
+            initialFingerprint !== null &&
+            initialFingerprint !== buildAiReviewFingerprint(nextMeal);
+          void trackAiMealReviewSaved({
+            inputMethod: nextMeal.inputMethod === "text" ? "text" : "photo",
+            corrected,
+            ingredientCount: nextMeal.ingredients.length,
+            requestId: nextMeal.aiMeta?.runId ?? null,
+          });
         }
         clearMeal(uid);
         if (openShareComposer && nextMeal.photoUrl) {

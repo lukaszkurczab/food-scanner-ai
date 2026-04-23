@@ -17,9 +17,6 @@ const mockRcSetAttributes = jest.fn<
 >();
 const mockIsBillingDisabled = jest.fn(() => false);
 const mockIsRevenueCatConfigured = jest.fn(() => true);
-const mockTrackPremiumStateEvaluated = jest.fn<
-  (input: Record<string, unknown>) => Promise<void>
->();
 const mockAppStateRemove = jest.fn();
 let appStateHandler: AppStateHandler | null = null;
 
@@ -59,11 +56,6 @@ jest.mock("@/services/billing/revenuecat", () => ({
   rcSetAttributes: (attrs: Record<string, string | null>) => mockRcSetAttributes(attrs),
 }));
 
-jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
-  trackPremiumStateEvaluated: (input: Record<string, unknown>) =>
-    mockTrackPremiumStateEvaluated(input),
-}));
-
 function wrapper({ children }: { children: React.ReactNode }) {
   return <PremiumProvider>{children}</PremiumProvider>;
 }
@@ -99,9 +91,8 @@ describe("PremiumContext", () => {
     mockPost.mockResolvedValue({});
     mockRefreshCredits.mockResolvedValue(null);
     mockRcLogIn.mockResolvedValue(true);
-    mockRcLogOut.mockResolvedValue(undefined);
+   mockRcLogOut.mockResolvedValue(undefined);
     mockRcSetAttributes.mockResolvedValue(undefined);
-    mockTrackPremiumStateEvaluated.mockResolvedValue(undefined);
     asyncStorage.getItem.mockResolvedValue(null);
     asyncStorage.setItem.mockResolvedValue(undefined);
     asyncStorage.multiSet.mockResolvedValue(undefined);
@@ -138,22 +129,6 @@ describe("PremiumContext", () => {
     expect(mockPost).not.toHaveBeenCalled();
     expect(mockGetCustomerInfo).not.toHaveBeenCalled();
     expect(mockRefreshCredits).toHaveBeenCalled();
-  });
-
-  it("emits mismatch telemetry when cached premium state differs from live entitlement", async () => {
-    asyncStorage.getItem.mockResolvedValueOnce("false");
-
-    renderHook(() => usePremiumContext(), { wrapper });
-
-    await waitFor(() => {
-      expect(mockTrackPremiumStateEvaluated).toHaveBeenCalledWith(
-        expect.objectContaining({
-          source: "customer_info",
-          cacheState: "hit_false",
-          mismatch: true,
-        }),
-      );
-    });
   });
 
   it("refreshes premium state when app returns to active", async () => {

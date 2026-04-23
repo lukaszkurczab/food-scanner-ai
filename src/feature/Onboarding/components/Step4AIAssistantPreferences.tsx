@@ -6,9 +6,8 @@ import {
   LongTextInput,
   SelectableGroup,
 } from "@/components";
-import { trackOnboardingOptionSelected } from "@/services/telemetry/telemetryInstrumentation";
 import { useTheme } from "@/theme/useTheme";
-import type { FormData, OnboardingMode } from "@/types";
+import type { FormData } from "@/types";
 import {
   AI_FOCUS_OPTIONS,
   AI_STYLE_OPTIONS,
@@ -19,7 +18,6 @@ type Props = {
   setForm: React.Dispatch<React.SetStateAction<FormData>>;
   onContinue: () => void;
   onBack: () => void;
-  mode: OnboardingMode;
   submitting?: boolean;
 };
 
@@ -28,7 +26,6 @@ export default function Step4AIAssistantPreferences({
   setForm,
   onContinue,
   onBack,
-  mode,
   submitting = false,
 }: Props) {
   const { t } = useTranslation("onboarding");
@@ -68,12 +65,6 @@ export default function Step4AIAssistantPreferences({
                 ...current,
                 aiStyle: nextStyle,
               }));
-              void trackOnboardingOptionSelected({
-                mode,
-                step: 4,
-                field: "aiStyle",
-                value: nextStyle,
-              });
             }}
             variant="card"
           />
@@ -94,12 +85,6 @@ export default function Step4AIAssistantPreferences({
                 aiFocus: nextFocus,
                 aiFocusOther: "",
               }));
-              void trackOnboardingOptionSelected({
-                mode,
-                step: 4,
-                field: "aiFocus",
-                value: nextFocus,
-              });
             }}
             variant="card"
           />

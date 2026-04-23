@@ -6,9 +6,28 @@ export type TelemetryPropertyValue =
 
 export type TelemetryProps = Record<string, TelemetryPropertyValue>;
 
+export const TELEMETRY_EVENT_NAMES = [
+  "session_start",
+  "onboarding_completed",
+  "meal_logged",
+  "ai_meal_review_saved",
+  "notification_opened",
+  "paywall_viewed",
+  "purchase_completed",
+  "entitlement_activated",
+  "weekly_report_opened",
+  "smart_reminder_suppressed",
+  "smart_reminder_scheduled",
+  "smart_reminder_noop",
+  "smart_reminder_decision_failed",
+  "smart_reminder_schedule_failed",
+] as const;
+
+export type TelemetryEventName = (typeof TELEMETRY_EVENT_NAMES)[number];
+
 export type TelemetryEvent = {
   eventId: string;
-  name: string;
+  name: TelemetryEventName;
   ts: string;
   props?: TelemetryProps;
 };

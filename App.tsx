@@ -9,7 +9,6 @@ import { ThemeController } from "@/theme/ThemeController";
 import AppNavigator from "@/navigation/AppNavigator";
 import { NavigationContainer } from "@react-navigation/native";
 import {
-  getCurrentRouteNameSafe,
   markNavigationReady,
   markNavigationUnavailable,
   navigationRef,
@@ -46,7 +45,6 @@ import {
   initTelemetryLifecycle,
   stopTelemetryLifecycle,
 } from "@/services/telemetry/telemetryLifecycle";
-import { createNavigationTelemetryTracker } from "@/services/telemetry/navigationTelemetry";
 import {
   initReminderRuntime,
   setReminderRuntimeUid,
@@ -96,16 +94,9 @@ if (sentryDsn) {
 
 function Root() {
   const fontsLoaded = useAppFonts();
-  const navigationTelemetryHandlerRef = useRef<(() => void) | null>(null);
   const launchIssueLoggedRef = useRef(false);
   const { uid } = useAuthContext();
   const launchReadinessIssue = getLaunchReadinessIssue();
-
-  if (!navigationTelemetryHandlerRef.current) {
-    navigationTelemetryHandlerRef.current = createNavigationTelemetryTracker({
-      getCurrentRouteName: getCurrentRouteNameSafe,
-    });
-  }
 
   useEffect(() => {
     warnMissingEnv();
@@ -214,9 +205,7 @@ function Root() {
       ref={navigationRef}
       onReady={() => {
         markNavigationReady();
-        navigationTelemetryHandlerRef.current?.();
       }}
-      onStateChange={navigationTelemetryHandlerRef.current}
     >
       <AiCreditsProvider>
         <PremiumProvider>

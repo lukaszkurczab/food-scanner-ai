@@ -1,10 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/theme/useTheme";
 import { Button } from "@/components/Button";
 import { useTranslation } from "react-i18next";
 import type { CoachEmptyReason } from "@/services/coach/coachTypes";
-import { trackCoachEmptyStateViewed } from "@/services/telemetry/telemetryInstrumentation";
 
 type CommonProps = {
   isToday: boolean;
@@ -61,16 +60,6 @@ export default function EmptyDayView({
       : isToday
         ? t("emptyDay.subtitle_today")
         : null);
-
-  useEffect(() => {
-    if (!isCoachAware || !coachEmptyReason) {
-      return;
-    }
-
-    void trackCoachEmptyStateViewed({
-      emptyReason: coachEmptyReason,
-    }).catch(() => undefined);
-  }, [coachEmptyReason, isCoachAware]);
 
   return (
     <View style={styles.container}>

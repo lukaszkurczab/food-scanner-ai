@@ -14,12 +14,12 @@ import * as fs from "fs";
 import * as path from "path";
 
 import type {
-  Meal,
   MealType,
   MealSyncState,
   MealInputMethod,
   MealSource,
 } from "@/types/meal";
+import type { MealDocument } from "@/types/mealDocument";
 import type {
   CoachActionType,
   CoachEmptyReason,
@@ -213,12 +213,11 @@ describe("Enum parity", () => {
 });
 
 describe("Meal item contract", () => {
-  const meal = loadFixture<Meal>("meal_item.json");
+  const meal = loadFixture<MealDocument>("meal_item.json");
 
   test("has all required fields", () => {
-    expect(meal.userUid).toBe("user-contract-1");
-    expect(meal.mealId).toBe("meal-contract-1");
-    expect(typeof meal.timestamp).toBe("string");
+    expect(meal.id).toBe("meal-contract-1");
+    expect(typeof meal.loggedAt).toBe("string");
     expect(meal.type).toBe("lunch");
     expect(Array.isArray(meal.ingredients)).toBe(true);
     expect(typeof meal.createdAt).toBe("string");
@@ -250,6 +249,7 @@ describe("Meal item contract", () => {
     expect(meal.aiMeta?.confidence).toBe(0.88);
     expect(meal.totals?.kcal).toBe(330.0);
     expect(meal.totals?.protein).toBe(62.0);
+    expect(meal.imageRef?.imageId).toBe("img-001");
   });
 
   test("fixture type field is a valid MealType", () => {

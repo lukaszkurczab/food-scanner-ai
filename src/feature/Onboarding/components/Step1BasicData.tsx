@@ -2,10 +2,9 @@ import { useMemo } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { GlobalActionButtons, NumberInput, RowPicker } from "@/components";
-import { trackOnboardingOptionSelected } from "@/services/telemetry/telemetryInstrumentation";
 import { useTheme } from "@/theme/useTheme";
 import { cmToFtIn, ftInToCm, kgToLbs, lbsToKg } from "@/utils/units";
-import type { FormData, OnboardingMode } from "@/types";
+import type { FormData } from "@/types";
 import { SEX_OPTIONS, UNITS_OPTIONS } from "@/feature/Onboarding/constants";
 
 type Props = {
@@ -15,7 +14,6 @@ type Props = {
   setErrors: React.Dispatch<
     React.SetStateAction<Partial<Record<keyof FormData, string>>>
   >;
-  mode: OnboardingMode;
   onContinue: () => void;
   onSecondaryAction: () => void;
   submitting?: boolean;
@@ -32,7 +30,6 @@ export default function Step1BasicData({
   setForm,
   errors,
   setErrors,
-  mode,
   onContinue,
   onSecondaryAction,
   submitting = false,
@@ -116,12 +113,6 @@ export default function Step1BasicData({
                   ...current,
                   unitsSystem: nextUnitsSystem,
                 }));
-                void trackOnboardingOptionSelected({
-                  mode,
-                  step: 1,
-                  field: "unitsSystem",
-                  value: nextUnitsSystem,
-                });
               }}
               style={styles.topRowItem}
             />
@@ -141,12 +132,6 @@ export default function Step1BasicData({
                   sex: nextSex,
                 }));
                 clearError("sex");
-                void trackOnboardingOptionSelected({
-                  mode,
-                  step: 1,
-                  field: "sex",
-                  value: nextSex,
-                });
               }}
               error={errors.sex}
               style={styles.topRowItem}

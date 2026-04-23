@@ -24,6 +24,29 @@ export type AiCreditsStatus = {
 
 export type AiCreditsResponse = AiCreditsStatus;
 export type AiCreditsAction = "chat" | "textMeal" | "photo";
+export type AiCreditTransactionType =
+  | "deduct"
+  | "refund"
+  | "cycle_reset"
+  | "subscription_transition"
+  | string;
+
+export type AiCreditTransactionItem = {
+  id: string;
+  type: AiCreditTransactionType;
+  action: string;
+  cost: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  tier: "free" | "premium";
+  periodStartAt: string;
+  periodEndAt: string;
+  createdAt: string;
+};
+
+export type AiCreditTransactionsResponse = {
+  items: AiCreditTransactionItem[];
+};
 
 function isValidDateString(value: string): boolean {
   return Number.isFinite(Date.parse(value));
@@ -82,6 +105,50 @@ function parseAiCreditsStatus(value: unknown): AiCreditsStatus | null {
   };
 }
 
+function parseAiCreditTransactionItem(value: unknown): AiCreditTransactionItem | null {
+  if (!isRecord(value)) return null;
+  const id = asString(value.id);
+  const type = asString(value.type);
+  const action = asString(value.action);
+  const cost = asNumber(value.cost);
+  const balanceBefore = asNumber(value.balanceBefore);
+  const balanceAfter = asNumber(value.balanceAfter);
+  const tierRaw = asString(value.tier);
+  const periodStartAt = asString(value.periodStartAt);
+  const periodEndAt = asString(value.periodEndAt);
+  const createdAt = asString(value.createdAt);
+  if (
+    !id ||
+    !type ||
+    !action ||
+    cost === undefined ||
+    balanceBefore === undefined ||
+    balanceAfter === undefined ||
+    !tierRaw ||
+    (tierRaw !== "free" && tierRaw !== "premium") ||
+    !periodStartAt ||
+    !periodEndAt ||
+    !createdAt ||
+    !isValidDateString(periodStartAt) ||
+    !isValidDateString(periodEndAt) ||
+    !isValidDateString(createdAt)
+  ) {
+    return null;
+  }
+  return {
+    id,
+    type,
+    action,
+    cost,
+    balanceBefore,
+    balanceAfter,
+    tier: tierRaw,
+    periodStartAt,
+    periodEndAt,
+    createdAt,
+  };
+}
+
 export function hasCreditsFields(value: unknown): value is AiCreditsStatus {
   return parseAiCreditsStatus(value) !== null;
 }
@@ -103,6 +170,16 @@ export function parseCreditsFromResponse(value: unknown): AiCreditsStatus | null
   }
 
   return null;
+}
+
+export function parseCreditTransactionsResponse(
+  value: unknown,
+): AiCreditTransactionsResponse | null {
+  if (!isRecord(value) || !Array.isArray(value.items)) return null;
+  const items = value.items
+    .map((item) => parseAiCreditTransactionItem(item))
+    .filter((item): item is AiCreditTransactionItem => item !== null);
+  return { items };
 }
 
 export type AiBackendCreditsMeta = AiCreditsStatus & {

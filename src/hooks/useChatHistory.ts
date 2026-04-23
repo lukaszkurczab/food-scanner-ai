@@ -23,10 +23,6 @@ import {
 } from "@/services/offline/queue.repo";
 import { pullChatChanges, pushQueue } from "@/services/offline/sync.engine";
 import {
-  trackAiChatResult,
-  trackAiChatSend,
-} from "@/services/telemetry/telemetryInstrumentation";
-import {
   type ChatMessageCursor,
   fetchChatThreadMessagesPage,
   persistAssistantChatMessage,
@@ -283,7 +279,6 @@ export function useChatHistory(
       const net = await NetInfo.fetch();
       if (isOfflineNetState(net)) return null;
       if (!userUid) return null;
-      void trackAiChatSend(trimmed);
 
       const requestId = uuidv4();
       activeSendRequestIdRef.current = requestId;
@@ -365,9 +360,7 @@ export function useChatHistory(
               ? aiResponse.assistantMessageId
               : null;
           if (assistantReply) {
-            void trackAiChatResult("success");
           } else {
-            void trackAiChatResult("error");
             setSendErrorType("unknown");
           }
           applyCreditsFromResponse(aiResponse);
@@ -388,32 +381,24 @@ export function useChatHistory(
               ? Math.max(refreshedLimit - refreshed.balance, 0)
               : creditsUsed;
             void refreshedUsed;
-            void trackAiChatResult("payment_required");
             setSendErrorType(null);
           } else if (
             gatewayCode === "AI_GATEWAY_BLOCKED" ||
             (gatewayReason !== null &&
               GATEWAY_REJECT_REASONS.has(gatewayReason))
           ) {
-            void trackAiChatResult("gateway_reject");
             setSendErrorType(null);
           } else if (status === 429) {
-            void trackAiChatResult("rate_limited");
             setSendErrorType(null);
           } else if (errorType === "offline") {
-            void trackAiChatResult("offline");
             setSendErrorType("offline");
           } else if (errorType === "timeout") {
-            void trackAiChatResult("timeout");
             setSendErrorType("timeout");
           } else if (errorType === "unavailable") {
-            void trackAiChatResult("unavailable");
             setSendErrorType("unavailable");
           } else if (errorType === "auth") {
-            void trackAiChatResult("auth");
             setSendErrorType("auth");
           } else {
-            void trackAiChatResult("error");
             setSendErrorType("unknown");
           }
           captureException(

@@ -1,4 +1,5 @@
 import type { Meal } from "@/types/meal";
+import type { MealDocument, MealImageRef } from "@/types/mealDocument";
 import { get, post, upload } from "@/services/core/apiClient";
 import { on } from "@/services/core/events";
 import {
@@ -39,60 +40,95 @@ function toFiniteNumber(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function normalizeMeal(raw: unknown): Meal | null {
-  if (!raw || typeof raw !== "object") return null;
-  const meal = raw as Partial<Meal>;
-  const cloudId = String(meal.cloudId || meal.mealId || "").trim();
-  const mealId = String(meal.mealId || cloudId).trim();
-  const userUid = String(meal.userUid || "").trim();
-  const timestamp = String(meal.timestamp || "").trim();
-  const updatedAt = String(meal.updatedAt || "").trim();
-  if (!cloudId || !mealId || !userUid || !timestamp || !updatedAt) {
+function asMap(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
+
+function parseImageRef(raw: unknown): MealImageRef | null {
+  const imageRef = asMap(raw);
+  if (!imageRef) return null;
+  const imageId = String(imageRef.imageId || "").trim();
+  const storagePath = String(imageRef.storagePath || "").trim();
+  if (!imageId || !storagePath) return null;
+  const downloadUrl =
+    typeof imageRef.downloadUrl === "string" && imageRef.downloadUrl.trim().length > 0
+      ? imageRef.downloadUrl.trim()
+      : null;
+  return {
+    imageId,
+    storagePath,
+    downloadUrl,
+  };
+}
+
+function normalizeMeal(raw: unknown, uid: string): Meal | null {
+  const doc = raw as Partial<MealDocument> & Partial<Meal>;
+  const id = String(doc.id || doc.cloudId || doc.mealId || "").trim();
+  const loggedAt = String(doc.loggedAt || doc.timestamp || "").trim();
+  const updatedAt = String(doc.updatedAt || "").trim();
+  if (!id || !loggedAt || !updatedAt) {
     return null;
   }
 
+  const imageRef =
+    parseImageRef(doc.imageRef) ||
+    (typeof doc.imageId === "string" && doc.imageId.trim().length > 0
+      ? {
+          imageId: doc.imageId.trim(),
+          storagePath: `myMeals/${uid}/${doc.imageId.trim()}.jpg`,
+          downloadUrl:
+            typeof doc.photoUrl === "string" && doc.photoUrl.trim().length > 0
+              ? doc.photoUrl.trim()
+              : null,
+        }
+      : null);
+
   return {
-    userUid,
-    mealId,
-    timestamp,
+    userUid: uid,
+    mealId: id,
+    cloudId: id,
+    timestamp: loggedAt,
     type:
-      meal.type === "breakfast" ||
-      meal.type === "lunch" ||
-      meal.type === "dinner" ||
-      meal.type === "snack" ||
-      meal.type === "other"
-        ? meal.type
+      doc.type === "breakfast" ||
+      doc.type === "lunch" ||
+      doc.type === "dinner" ||
+      doc.type === "snack" ||
+      doc.type === "other"
+        ? doc.type
         : "other",
-    name: typeof meal.name === "string" ? meal.name : null,
-    ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
-    createdAt: String(meal.createdAt || timestamp),
+    name: typeof doc.name === "string" ? doc.name : null,
+    ingredients: Array.isArray(doc.ingredients) ? doc.ingredients : [],
+    createdAt: String(doc.createdAt || loggedAt),
     updatedAt,
     syncState: "synced",
     source: "saved",
-    inputMethod: normalizeMealInputMethod(meal.inputMethod),
-    aiMeta: normalizeMealAiMeta(meal.aiMeta),
-    imageId: typeof meal.imageId === "string" ? meal.imageId : null,
-    photoUrl: typeof meal.photoUrl === "string" ? meal.photoUrl : null,
-    notes: typeof meal.notes === "string" ? meal.notes : null,
-    tags: Array.isArray(meal.tags)
-      ? meal.tags.filter((tag): tag is string => typeof tag === "string")
+    inputMethod: normalizeMealInputMethod(doc.inputMethod),
+    aiMeta: normalizeMealAiMeta(doc.aiMeta),
+    imageId: imageRef?.imageId ?? null,
+    photoUrl: imageRef?.downloadUrl ?? null,
+    notes: typeof doc.notes === "string" ? doc.notes : null,
+    tags: Array.isArray(doc.tags)
+      ? doc.tags.filter((tag): tag is string => typeof tag === "string")
       : [],
-    deleted: Boolean(meal.deleted),
-    cloudId,
+    deleted: Boolean(doc.deleted),
     totals: {
-      kcal: toFiniteNumber(meal.totals?.kcal),
-      protein: toFiniteNumber(meal.totals?.protein),
-      carbs: toFiniteNumber(meal.totals?.carbs),
-      fat: toFiniteNumber(meal.totals?.fat),
+      kcal: toFiniteNumber(doc.totals?.kcal),
+      protein: toFiniteNumber(doc.totals?.protein),
+      carbs: toFiniteNumber(doc.totals?.carbs),
+      fat: toFiniteNumber(doc.totals?.fat),
     },
   };
 }
 
-function toRemotePage(payload: unknown): { items: Meal[]; nextCursor: string | null } {
+function toRemotePage(
+  payload: unknown,
+  uid: string,
+): { items: Meal[]; nextCursor: string | null } {
   const page = (payload || {}) as MyMealsRemoteResponse;
   const items = Array.isArray(page.items)
     ? page.items
-        .map((item) => normalizeMeal(item))
+        .map((item) => normalizeMeal(item, uid))
         .filter((item): item is Meal => item !== null)
     : [];
   return {
@@ -207,7 +243,6 @@ export async function fetchMyMealChangesRemote(params: {
   pageSize: number;
   cursor: string | null;
 }): Promise<{ items: Meal[]; nextCursor: string | null }> {
-  void params.uid;
   const query = new URLSearchParams();
   query.set("limit", String(params.pageSize));
   if (params.cursor) {
@@ -217,21 +252,61 @@ export async function fetchMyMealChangesRemote(params: {
   const response = await get<MyMealsRemoteResponse>(
     `/users/me/my-meals/changes?${query.toString()}`,
   );
-  return toRemotePage(response);
+  return toRemotePage(response, params.uid);
+}
+
+function toMealDocumentPayload(
+  mealId: string,
+  payload: MyMealDoc | Partial<MyMealDoc> | Partial<MealDocument>,
+): Partial<MealDocument> {
+  const id = String(payload.cloudId || payload.mealId || mealId || "").trim();
+  const imageId =
+    typeof payload.imageId === "string" && payload.imageId.trim().length > 0
+      ? payload.imageId.trim()
+      : null;
+  const downloadUrl =
+    typeof payload.photoUrl === "string" && /^https?:\/\//i.test(payload.photoUrl)
+      ? payload.photoUrl
+      : null;
+
+  return {
+    id,
+    loggedAt:
+      typeof payload.timestamp === "string" && payload.timestamp.trim().length > 0
+        ? payload.timestamp
+        : undefined,
+    dayKey: payload.dayKey,
+    loggedAtLocalMin: payload.loggedAtLocalMin,
+    tzOffsetMin: payload.tzOffsetMin,
+    type: payload.type,
+    name: payload.name,
+    ingredients: payload.ingredients,
+    createdAt: payload.createdAt,
+    updatedAt: payload.updatedAt,
+    source: "saved",
+    inputMethod: normalizeMealInputMethod(payload.inputMethod),
+    aiMeta: normalizeMealAiMeta(payload.aiMeta),
+    imageRef: imageId
+      ? {
+          imageId,
+          storagePath: `myMeals/${payload.userUid || "unknown"}/${imageId}.jpg`,
+          downloadUrl,
+        }
+      : null,
+    notes: payload.notes,
+    tags: payload.tags,
+    deleted: payload.deleted,
+    totals: payload.totals,
+  };
 }
 
 export async function updateMyMealRemote(
   uid: string,
   mealId: string,
-  payload: MyMealDoc | Partial<MyMealDoc>,
+  payload: MyMealDoc | Partial<MyMealDoc> | Partial<MealDocument>,
 ): Promise<void> {
   void uid;
-  await post("/users/me/my-meals", {
-    ...payload,
-    mealId,
-    cloudId: mealId,
-    source: "saved",
-  });
+  await post("/users/me/my-meals", toMealDocumentPayload(mealId, payload));
 }
 
 export async function uploadMyMealPhotoRemote(

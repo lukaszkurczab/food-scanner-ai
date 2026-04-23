@@ -12,7 +12,6 @@ import { runMigrations } from "@/services/offline/db";
 import { startSyncLoop, stopSyncLoop } from "@/services/offline/sync.engine";
 import { cleanupTransientOfflineAssets } from "@/services/offline/fileCleanup";
 import { emit, on } from "@/services/core/events";
-import { track } from "@/services/telemetry/telemetryClient";
 
 export type UserProfileContextType = {
   userData: UserData | null;
@@ -94,10 +93,6 @@ export const UserProfileProvider = ({
         emit("ui:toast", {
           key: "sync_conflict_resolved",
           ns: "common",
-        });
-        void track("sync.meal_conflict_resolved", {
-          isAmbiguous: true,
-          cloudId: event.cloudId ?? null,
         });
       },
     );

@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const mockTrackSessionStart = jest.fn<() => Promise<void>>();
-const mockTrackSessionEnd = jest.fn<() => Promise<void>>();
 const mockFlush = jest.fn<() => Promise<void>>();
 
 let mockAppStateChangeListener:
@@ -12,7 +11,6 @@ const mockAppStateSubscription = { remove: jest.fn() };
 
 jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
   trackSessionStart: () => mockTrackSessionStart(),
-  trackSessionEnd: () => mockTrackSessionEnd(),
 }));
 
 jest.mock("@/services/telemetry/telemetryClient", () => ({
@@ -40,7 +38,6 @@ describe("telemetryLifecycle", () => {
     jest.clearAllMocks();
     mockAppStateChangeListener = null;
     mockTrackSessionStart.mockResolvedValue(undefined);
-    mockTrackSessionEnd.mockResolvedValue(undefined);
     mockFlush.mockResolvedValue(undefined);
   });
 
@@ -51,10 +48,9 @@ describe("telemetryLifecycle", () => {
     await lifecycle.initTelemetryLifecycle();
 
     expect(mockTrackSessionStart).toHaveBeenCalledTimes(1);
-    expect(mockTrackSessionEnd).not.toHaveBeenCalled();
   });
 
-  it("tracks session end and flushes when app moves to background or inactive", async () => {
+  it("flushes when app moves to background or inactive", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const lifecycle = require("@/services/telemetry/telemetryLifecycle") as typeof import("@/services/telemetry/telemetryLifecycle");
 
@@ -63,7 +59,6 @@ describe("telemetryLifecycle", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(mockTrackSessionEnd).toHaveBeenCalledTimes(1);
     expect(mockFlush).toHaveBeenCalledTimes(1);
 
     mockAppStateChangeListener?.("active");
@@ -74,7 +69,6 @@ describe("telemetryLifecycle", () => {
     await Promise.resolve();
 
     expect(mockTrackSessionStart).toHaveBeenCalledTimes(2);
-    expect(mockTrackSessionEnd).toHaveBeenCalledTimes(2);
     expect(mockFlush).toHaveBeenCalledTimes(2);
   });
 

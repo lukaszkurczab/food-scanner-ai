@@ -14,6 +14,11 @@ import {
   isRevenueCatConfigured,
 } from "@/services/billing/revenuecat";
 import { isPremiumSubscriptionState } from "@/services/billing/subscriptionStateMachine";
+import {
+  trackEntitlementActivated,
+  trackPaywallViewed,
+  trackPurchaseCompleted,
+} from "@/services/telemetry/telemetryInstrumentation";
 import type { SubscriptionState } from "@/types/subscription";
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -216,6 +221,7 @@ export function useManageSubscriptionState(params: {
       const res = await restorePurchases(params.uid);
       if (res.status === "success") {
         await params.refreshPremium();
+        void trackEntitlementActivated({ source: "restore" });
         setActionFeedback({
           tone: "success",
           title: params.t("manageSubscription.restoreSuccessTitle", {
@@ -260,6 +266,8 @@ export function useManageSubscriptionState(params: {
       const res = await startOrRenewSubscription(params.uid);
       if (res.status === "success") {
         await params.refreshPremium();
+        void trackPurchaseCompleted({ source: "manage_subscription" });
+        void trackEntitlementActivated({ source: "purchase" });
         setPaywallVisible(false);
         setActionFeedback({
           tone: "success",
@@ -322,6 +330,7 @@ export function useManageSubscriptionState(params: {
   const openPaywall = useCallback(() => {
     setActionFeedback(null);
     setPaywallVisible(true);
+    void trackPaywallViewed({ source: "manage_subscription" });
   }, []);
 
   const closePaywall = useCallback(() => {

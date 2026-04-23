@@ -1,5 +1,3 @@
-import type { Meal } from "@/types/meal";
-import type { CoachActionType, CoachEmptyReason, CoachInsightType } from "@/services/coach/coachTypes";
 import type {
   NoopReminderReasonCode,
   ReminderDecisionType,
@@ -8,6 +6,7 @@ import type {
 } from "@/services/reminders/reminderTypes";
 import type { TelemetryProps } from "@/services/telemetry/telemetryTypes";
 import { track } from "@/services/telemetry/telemetryClient";
+import type { Meal } from "@/types/meal";
 
 type MealInputMethod = "manual" | "photo" | "barcode" | "text" | "saved" | "quick_add";
 type NotificationTelemetryOrigin =
@@ -18,9 +17,6 @@ type NotificationTelemetryOrigin =
 type NotificationTelemetryInput = {
   notificationType?: string | null;
   origin?: string | null;
-  actionIdentifier?: string | null;
-  openedFromBackground?: boolean;
-  foreground?: boolean;
 };
 
 type SmartReminderConfidenceBucket = "low" | "medium" | "high";
@@ -52,52 +48,13 @@ type SmartReminderTelemetryInput = {
 };
 
 type OnboardingModeTelemetry = "first" | "refill";
-type OnboardingNavigationDirection = "next" | "back";
-type OnboardingExitAction = "save" | "discard";
 
-type OnboardingTelemetryInput = {
-  step: number;
-  mode: OnboardingModeTelemetry;
-};
+type PaywallSource = "manage_subscription" | "meal_text_limit";
+type EntitlementSource = "purchase" | "restore";
 
-type OnboardingOptionField =
-  | "unitsSystem"
-  | "sex"
-  | "preference"
-  | "activityLevel"
-  | "goal"
-  | "chronicDisease"
-  | "allergy"
-  | "aiStyle"
-  | "aiFocus";
+type WeeklyReportStatus = "ready" | "insufficient_data" | "unavailable";
 
-type PremiumStateSource =
-  | "logged_out"
-  | "billing_disabled"
-  | "revenuecat_unconfigured"
-  | "customer_info"
-  | "cache_fallback"
-  | "sync_validation";
-
-type PremiumCacheState =
-  | "not_applicable"
-  | "hit_true"
-  | "hit_false"
-  | "miss";
-
-type PremiumCreditsTier = "free" | "premium" | "unknown";
-
-export function normalizeTelemetryScreenName(routeName: string): string {
-  const normalized = routeName
-    .trim()
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-    .replace(/[^a-zA-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .toLowerCase();
-
-  return normalized || "unknown";
-}
+type AiMealReviewInputMethod = "photo" | "text";
 
 function normalizeNotificationValue(value: string | null | undefined): string | null {
   if (!value) {
@@ -129,26 +86,11 @@ function normalizeNotificationOrigin(
 function buildNotificationProps(
   input: NotificationTelemetryInput,
 ): TelemetryProps {
-  const props: TelemetryProps = {
+  return {
     notificationType:
       normalizeNotificationValue(input.notificationType) || "unknown",
     origin: normalizeNotificationOrigin(input.origin),
   };
-
-  const actionIdentifier = normalizeNotificationValue(input.actionIdentifier);
-  if (actionIdentifier) {
-    props.actionIdentifier = actionIdentifier;
-  }
-
-  if (typeof input.openedFromBackground === "boolean") {
-    props.openedFromBackground = input.openedFromBackground;
-  }
-
-  if (typeof input.foreground === "boolean") {
-    props.foreground = input.foreground;
-  }
-
-  return props;
 }
 
 function buildSmartReminderProps(
@@ -161,6 +103,36 @@ function buildSmartReminderProps(
     }
   }
   return props;
+}
+
+function inferMealInputMethod(meal: Pick<
+  Meal,
+  "inputMethod" | "source" | "photoUrl" | "photoLocalPath" | "localPhotoUrl" | "imageId"
+>): MealInputMethod | null {
+  if (meal.inputMethod) {
+    return meal.inputMethod;
+  }
+
+  if (meal.source === "saved") {
+    return "saved";
+  }
+
+  if (meal.source === "manual" || meal.source === null) {
+    return "manual";
+  }
+
+  if (meal.source === "ai") {
+    if (meal.photoUrl || meal.photoLocalPath || meal.localPhotoUrl || meal.imageId) {
+      return "photo";
+    }
+    return "text";
+  }
+
+  return null;
+}
+
+function resolveWeeklyReportStatus(input: WeeklyReportStatus): WeeklyReportStatus {
+  return input;
 }
 
 export function toSmartReminderConfidenceBucket(
@@ -199,145 +171,82 @@ export function toSmartReminderScheduledWindow(
   return "late_evening";
 }
 
-export function mapMealAddMethodKeyToInputMethod(
-  key: string,
-): MealInputMethod | null {
-  switch (key) {
-    case "photo":
-    case "ai_photo":
-      return "photo";
-    case "text":
-    case "ai_text":
-      return "text";
-    case "barcode":
-      return "barcode";
-    case "manual":
-      return "manual";
-    case "saved":
-      return "saved";
-    default:
-      return null;
-  }
-}
-
-export function inferMealInputMethod(meal: Pick<
-  Meal,
-  "source" | "photoUrl" | "photoLocalPath" | "localPhotoUrl" | "imageId"
->): MealInputMethod | null {
-  if (meal.source === "saved") {
-    return "saved";
-  }
-
-  if (meal.source === "manual" || meal.source === null) {
-    return "manual";
-  }
-
-  if (meal.source === "ai") {
-    if (meal.photoUrl || meal.photoLocalPath || meal.localPhotoUrl || meal.imageId) {
-      return "photo";
-    }
-    return "text";
-  }
-
-  return null;
-}
-
-function buildMealProps(meal: Meal): TelemetryProps {
-  const mealInputMethod = inferMealInputMethod(meal);
-  const props: TelemetryProps = {
-    ingredientCount: meal.ingredients.length,
-  };
-
-  if (mealInputMethod) {
-    props.mealInputMethod = mealInputMethod;
-  }
-
-  return props;
-}
-
 export function trackSessionStart(): Promise<void> {
   return track("session_start", { origin: "app_boot" });
 }
 
-export function trackSessionEnd(): Promise<void> {
-  return track("session_end", { origin: "app_background" });
-}
-
-export function trackScreenView(routeName: string): Promise<void> {
-  return track("screen_view", {
-    screen: normalizeTelemetryScreenName(routeName),
-  });
-}
-
-export function trackMealAddMethodSelected(optionKey: string): Promise<void> {
-  const mealInputMethod = mapMealAddMethodKeyToInputMethod(optionKey);
-  return track("meal_add_method_selected", {
+export function trackMealLogged(meal: Meal): Promise<void> {
+  const mealInputMethod = inferMealInputMethod(meal);
+  return track("meal_logged", {
+    ingredientCount: meal.ingredients.length,
+    source: meal.source ?? "manual",
     ...(mealInputMethod ? { mealInputMethod } : {}),
   });
 }
 
-export function trackMealAdded(meal: Meal): Promise<void> {
-  return track("meal_added", buildMealProps(meal));
-}
-
-export function trackMealUpdated(meal: Meal): Promise<void> {
-  return track("meal_updated", buildMealProps(meal));
-}
-
-export function trackMealDeleted(meal?: Meal | null): Promise<void> {
-  const mealInputMethod = meal ? inferMealInputMethod(meal) : null;
-  return track("meal_deleted", {
-    ...(mealInputMethod ? { mealInputMethod } : {}),
-  });
-}
-
-export function trackAiChatSend(message: string): Promise<void> {
-  return track("ai_chat_send", {
-    surface: "chat",
-    chars: message.trim().length,
-  });
-}
-
-export function trackAiChatResult(resultStatus: string): Promise<void> {
-  return track("ai_chat_result", {
-    surface: "chat",
-    success: resultStatus === "success",
-    resultStatus,
-  });
-}
-
-export function trackPremiumStateEvaluated(input: {
-  source: PremiumStateSource;
-  premium: boolean;
-  cacheState: PremiumCacheState;
-  mismatch?: boolean;
-  creditsTier?: PremiumCreditsTier;
+export function trackAiMealReviewSaved(input: {
+  inputMethod: AiMealReviewInputMethod;
+  corrected: boolean;
+  ingredientCount: number;
+  requestId?: string | null;
 }): Promise<void> {
-  return track("premium_state_evaluated", {
-    source: input.source,
-    premium: input.premium,
-    cacheState: input.cacheState,
-    ...(typeof input.mismatch === "boolean" ? { mismatch: input.mismatch } : {}),
-    ...(input.creditsTier ? { creditsTier: input.creditsTier } : {}),
+  return track("ai_meal_review_saved", {
+    inputMethod: input.inputMethod,
+    corrected: input.corrected,
+    ingredientCount: input.ingredientCount,
+    ...(input.requestId ? { requestId: input.requestId } : {}),
   });
-}
-
-export function trackNotificationScheduled(
-  input: NotificationTelemetryInput,
-): Promise<void> {
-  return track("notification_scheduled", buildNotificationProps(input));
-}
-
-export function trackNotificationFired(
-  input: NotificationTelemetryInput,
-): Promise<void> {
-  return track("notification_fired", buildNotificationProps(input));
 }
 
 export function trackNotificationOpened(
   input: NotificationTelemetryInput,
 ): Promise<void> {
   return track("notification_opened", buildNotificationProps(input));
+}
+
+export function trackPaywallViewed(input: {
+  source: PaywallSource;
+}): Promise<void> {
+  return track("paywall_viewed", {
+    source: input.source,
+  });
+}
+
+export function trackPurchaseCompleted(input: {
+  source: "manage_subscription";
+}): Promise<void> {
+  return track("purchase_completed", {
+    source: input.source,
+  });
+}
+
+export function trackEntitlementActivated(input: {
+  source: EntitlementSource;
+}): Promise<void> {
+  return track("entitlement_activated", {
+    source: input.source,
+    tier: "premium",
+  });
+}
+
+export function trackWeeklyReportOpened(input: {
+  reportStatus: WeeklyReportStatus;
+  insightCount: number;
+  priorityCount: number;
+}): Promise<void> {
+  return track("weekly_report_opened", {
+    reportStatus: resolveWeeklyReportStatus(input.reportStatus),
+    insightCount: input.insightCount,
+    priorityCount: input.priorityCount,
+  });
+}
+
+export function trackOnboardingCompleted(input: {
+  mode: OnboardingModeTelemetry;
+}): Promise<void> {
+  return track("onboarding_completed", {
+    mode: input.mode,
+  });
 }
 
 export function trackSmartReminderScheduled(
@@ -368,115 +277,4 @@ export function trackSmartReminderScheduleFailed(
   input: Required<Pick<SmartReminderTelemetryInput, "reminderKind" | "decision" | "confidenceBucket" | "failureReason">>,
 ): Promise<void> {
   return track("smart_reminder_schedule_failed", buildSmartReminderProps(input));
-}
-
-export function trackCoachCardViewed(input: {
-  insightType: CoachInsightType;
-  actionType: CoachActionType;
-  isPositive: boolean;
-}): Promise<void> {
-  return track("coach_card_viewed", {
-    insightType: input.insightType,
-    actionType: input.actionType,
-    isPositive: input.isPositive,
-  });
-}
-
-export function trackCoachCardExpanded(input: {
-  insightType: CoachInsightType;
-}): Promise<void> {
-  return track("coach_card_expanded", {
-    insightType: input.insightType,
-  });
-}
-
-export function trackCoachCardCtaClicked(input: {
-  insightType: CoachInsightType;
-  actionType: CoachActionType;
-  targetScreen: "MealAddMethod" | "Chat" | "HistoryList";
-}): Promise<void> {
-  return track("coach_card_cta_clicked", {
-    insightType: input.insightType,
-    actionType: input.actionType,
-    targetScreen: input.targetScreen,
-  });
-}
-
-export function trackCoachEmptyStateViewed(input: {
-  emptyReason: CoachEmptyReason;
-}): Promise<void> {
-  return track("coach_empty_state_viewed", {
-    emptyReason: input.emptyReason,
-  });
-}
-
-export function trackOnboardingNavigation(input: {
-  step: number;
-  mode: OnboardingModeTelemetry;
-  direction: OnboardingNavigationDirection;
-}): Promise<void> {
-  return track("onboarding_navigation", {
-    step: input.step,
-    mode: input.mode,
-    direction: input.direction,
-  });
-}
-
-export function trackOnboardingStepCompleted(
-  input: OnboardingTelemetryInput,
-): Promise<void> {
-  return track("onboarding_step_completed", {
-    step: input.step,
-    mode: input.mode,
-  });
-}
-
-export function trackOnboardingCompleted(input: {
-  mode: OnboardingModeTelemetry;
-}): Promise<void> {
-  return track("onboarding_completed", {
-    mode: input.mode,
-  });
-}
-
-export function trackOnboardingStepSkipped(
-  input: OnboardingTelemetryInput,
-): Promise<void> {
-  return track("onboarding_step_skipped", {
-    step: input.step,
-    mode: input.mode,
-  });
-}
-
-export function trackOnboardingSkipConfirmed(
-  input: OnboardingTelemetryInput,
-): Promise<void> {
-  return track("onboarding_skip_confirmed", {
-    step: input.step,
-    mode: input.mode,
-  });
-}
-
-export function trackOnboardingExitAction(input: {
-  mode: OnboardingModeTelemetry;
-  action: OnboardingExitAction;
-}): Promise<void> {
-  return track("onboarding_exit_action", {
-    mode: input.mode,
-    action: input.action,
-  });
-}
-
-export function trackOnboardingOptionSelected(input: {
-  step: number;
-  mode: OnboardingModeTelemetry;
-  field: OnboardingOptionField;
-  value: string;
-}): Promise<void> {
-  return track("onboarding_option_selected", {
-    step: input.step,
-    mode: input.mode,
-    field: input.field,
-    value: input.value,
-  });
 }

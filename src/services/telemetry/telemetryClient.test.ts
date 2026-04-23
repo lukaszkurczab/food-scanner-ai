@@ -74,7 +74,7 @@ describe("telemetryClient", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const telemetryClient = require("@/services/telemetry/telemetryClient") as typeof import("@/services/telemetry/telemetryClient");
 
-    await telemetryClient.track("meal_added", { mealInputMethod: "photo" });
+    await telemetryClient.track("meal_logged", { mealInputMethod: "photo" });
 
     const raw = await AsyncStorage.getItem(
       telemetryClient.TELEMETRY_BUFFER_STORAGE_KEY,
@@ -87,7 +87,7 @@ describe("telemetryClient", () => {
     expect(payload.sessionId).toEqual(expect.any(String));
     expect(payload.events).toHaveLength(1);
     expect(payload.events?.[0]).toMatchObject({
-      name: "meal_added",
+      name: "meal_logged",
       props: { mealInputMethod: "photo" },
     });
   });
@@ -95,7 +95,7 @@ describe("telemetryClient", () => {
   it("deduplicates buffered events by eventId when restoring persisted queue", async () => {
     const duplicateEvent = {
       eventId: "evt-1",
-      name: "meal_added",
+      name: "meal_logged",
       ts: "2026-03-18T12:00:00.000Z",
       props: { mealInputMethod: "photo" },
     };
@@ -126,7 +126,7 @@ describe("telemetryClient", () => {
     const telemetryClient = require("@/services/telemetry/telemetryClient") as typeof import("@/services/telemetry/telemetryClient");
 
     for (let index = 0; index < 50; index += 1) {
-      await telemetryClient.track("meal_added", { batchIndex: index });
+      await telemetryClient.track("meal_logged", { batchIndex: index });
     }
 
     expect(mockPost).toHaveBeenCalledTimes(1);
@@ -149,7 +149,7 @@ describe("telemetryClient", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const telemetryClient = require("@/services/telemetry/telemetryClient") as typeof import("@/services/telemetry/telemetryClient");
 
-    await telemetryClient.track("meal_added");
+    await telemetryClient.track("meal_logged");
     await telemetryClient.flush();
     await telemetryClient.flush();
 
@@ -174,7 +174,11 @@ describe("telemetryClient", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const telemetryClient = require("@/services/telemetry/telemetryClient") as typeof import("@/services/telemetry/telemetryClient");
 
-    await telemetryClient.track("screen_view", { screen: "home" });
+    await telemetryClient.track("weekly_report_opened", {
+      reportStatus: "ready",
+      insightCount: 2,
+      priorityCount: 2,
+    });
     await telemetryClient.flush();
 
     expect(mockPost).toHaveBeenCalledTimes(1);
@@ -215,9 +219,13 @@ describe("telemetryClient", () => {
         events: [
           {
             eventId: "evt-restored",
-            name: "screen_view",
+            name: "weekly_report_opened",
             ts: "2026-03-18T12:00:00.000Z",
-            props: { screen: "home" },
+            props: {
+              reportStatus: "ready",
+              insightCount: 2,
+              priorityCount: 2,
+            },
           },
         ],
       }),
@@ -245,7 +253,7 @@ describe("telemetryClient", () => {
         events: [
           expect.objectContaining({
             eventId: "evt-restored",
-            name: "screen_view",
+            name: "weekly_report_opened",
           }),
         ],
       }),

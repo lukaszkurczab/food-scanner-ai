@@ -1,32 +1,22 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import {
-  normalizeTelemetryScreenName,
   toSmartReminderConfidenceBucket,
   toSmartReminderScheduledWindow,
-  trackAiChatResult,
-  trackAiChatSend,
-  trackCoachCardCtaClicked,
-  trackCoachCardExpanded,
-  trackCoachCardViewed,
-  trackCoachEmptyStateViewed,
-  trackMealAddMethodSelected,
-  trackMealAdded,
-  trackMealDeleted,
-  trackMealUpdated,
-  trackNotificationFired,
+  trackAiMealReviewSaved,
+  trackEntitlementActivated,
+  trackMealLogged,
   trackNotificationOpened,
-  trackNotificationScheduled,
-  trackOnboardingOptionSelected,
-  trackPremiumStateEvaluated,
+  trackOnboardingCompleted,
+  trackPaywallViewed,
+  trackPurchaseCompleted,
+  trackSessionStart,
   trackSmartReminderDecisionFailed,
   trackSmartReminderNoop,
   trackSmartReminderScheduled,
   trackSmartReminderScheduleFailed,
   trackSmartReminderSuppressed,
-  trackScreenView,
-  trackSessionEnd,
-  trackSessionStart,
+  trackWeeklyReportOpened,
 } from "@/services/telemetry/telemetryInstrumentation";
 
 const mockTrack = jest.fn<(name: string, props?: Record<string, unknown>) => Promise<void>>();
@@ -55,175 +45,84 @@ describe("telemetryInstrumentation", () => {
     mockTrack.mockResolvedValue();
   });
 
-  it("normalizes route names into stable telemetry screen names", () => {
-    expect(normalizeTelemetryScreenName("MealAddMethod")).toBe("meal_add_method");
-    expect(normalizeTelemetryScreenName("ReviewMeal")).toBe("review_meal");
-    expect(normalizeTelemetryScreenName("LegalPrivacyHub")).toBe(
-      "legal_privacy_hub",
-    );
-    expect(normalizeTelemetryScreenName("Notifications")).toBe("notifications");
-  });
-
-  it("maps meal add methods and screen views to privacy-safe props", async () => {
+  it("maps launch KPI telemetry events to the backend allowlist", async () => {
     await trackSessionStart();
-    await trackSessionEnd();
-    await trackScreenView("MealAddMethod");
-    await trackMealAddMethodSelected("ai_photo");
+    await trackOnboardingCompleted({ mode: "first" });
+    await trackMealLogged(
+      baseMeal({
+        source: "ai",
+        inputMethod: "photo",
+        ingredients: [
+          {
+            id: "i1",
+            name: "Egg",
+            amount: 1,
+            kcal: 80,
+            protein: 6,
+            fat: 5,
+            carbs: 0,
+          },
+        ],
+      }),
+    );
+    await trackAiMealReviewSaved({
+      inputMethod: "photo",
+      corrected: true,
+      ingredientCount: 1,
+      requestId: "run-1",
+    });
+    await trackNotificationOpened({
+      notificationType: "meal_reminder",
+      origin: "system_notifications",
+    });
+    await trackPaywallViewed({ source: "meal_text_limit" });
+    await trackPurchaseCompleted({ source: "manage_subscription" });
+    await trackEntitlementActivated({ source: "purchase" });
+    await trackWeeklyReportOpened({
+      reportStatus: "ready",
+      insightCount: 2,
+      priorityCount: 2,
+    });
 
     expect(mockTrack).toHaveBeenNthCalledWith(1, "session_start", {
       origin: "app_boot",
     });
-    expect(mockTrack).toHaveBeenNthCalledWith(2, "session_end", {
-      origin: "app_background",
+    expect(mockTrack).toHaveBeenNthCalledWith(2, "onboarding_completed", {
+      mode: "first",
     });
-    expect(mockTrack).toHaveBeenNthCalledWith(3, "screen_view", {
-      screen: "meal_add_method",
-    });
-    expect(mockTrack).toHaveBeenNthCalledWith(4, "meal_add_method_selected", {
-      mealInputMethod: "photo",
-    });
-  });
-
-  it("maps meal and AI domain events to stable telemetry payloads", async () => {
-    await trackMealAdded(
-      baseMeal({
-        source: "ai",
-        photoUrl: "file:///meal.jpg",
-        ingredients: [{ id: "i1", name: "Egg", amount: 1, kcal: 80, protein: 6, fat: 5, carbs: 0 }],
-      }),
-    );
-    await trackMealUpdated(baseMeal({ source: "ai", ingredients: [] }));
-    await trackMealDeleted(baseMeal({ source: "saved" }));
-    await trackAiChatSend("hello world");
-    await trackAiChatResult("gateway_reject");
-
-    expect(mockTrack).toHaveBeenNthCalledWith(1, "meal_added", {
-      mealInputMethod: "photo",
+    expect(mockTrack).toHaveBeenNthCalledWith(3, "meal_logged", {
       ingredientCount: 1,
+      source: "ai",
+      mealInputMethod: "photo",
     });
-    expect(mockTrack).toHaveBeenNthCalledWith(2, "meal_updated", {
-      mealInputMethod: "text",
-      ingredientCount: 0,
+    expect(mockTrack).toHaveBeenNthCalledWith(4, "ai_meal_review_saved", {
+      inputMethod: "photo",
+      corrected: true,
+      ingredientCount: 1,
+      requestId: "run-1",
     });
-    expect(mockTrack).toHaveBeenNthCalledWith(3, "meal_deleted", {
-      mealInputMethod: "saved",
-    });
-    expect(mockTrack).toHaveBeenNthCalledWith(4, "ai_chat_send", {
-      surface: "chat",
-      chars: 11,
-    });
-    expect(mockTrack).toHaveBeenNthCalledWith(5, "ai_chat_result", {
-      surface: "chat",
-      success: false,
-      resultStatus: "gateway_reject",
-    });
-  });
-
-  it("maps premium state evaluation telemetry to the backend allowlist", async () => {
-    await trackPremiumStateEvaluated({
-      source: "customer_info",
-      premium: true,
-      cacheState: "hit_false",
-      mismatch: true,
-      creditsTier: "free",
-    });
-
-    expect(mockTrack).toHaveBeenCalledWith("premium_state_evaluated", {
-      source: "customer_info",
-      premium: true,
-      cacheState: "hit_false",
-      mismatch: true,
-      creditsTier: "free",
-    });
-  });
-
-  it("maps notification telemetry events to privacy-safe props", async () => {
-    await trackNotificationScheduled({
-      notificationType: "day_fill",
-      origin: "user_notifications",
-    });
-    await trackNotificationFired({
+    expect(mockTrack).toHaveBeenNthCalledWith(5, "notification_opened", {
       notificationType: "meal_reminder",
       origin: "system_notifications",
-      foreground: true,
     });
-    await trackNotificationOpened({
-      notificationType: "stats_weekly_summary",
-      origin: "system_notifications",
-      openedFromBackground: true,
-      actionIdentifier: "DEFAULT",
+    expect(mockTrack).toHaveBeenNthCalledWith(6, "paywall_viewed", {
+      source: "meal_text_limit",
     });
-
-    expect(mockTrack).toHaveBeenNthCalledWith(1, "notification_scheduled", {
-      notificationType: "day_fill",
-      origin: "user_notifications",
+    expect(mockTrack).toHaveBeenNthCalledWith(7, "purchase_completed", {
+      source: "manage_subscription",
     });
-    expect(mockTrack).toHaveBeenNthCalledWith(2, "notification_fired", {
-      notificationType: "meal_reminder",
-      origin: "system_notifications",
-      foreground: true,
+    expect(mockTrack).toHaveBeenNthCalledWith(8, "entitlement_activated", {
+      source: "purchase",
+      tier: "premium",
     });
-    expect(mockTrack).toHaveBeenNthCalledWith(3, "notification_opened", {
-      notificationType: "stats_weekly_summary",
-      origin: "system_notifications",
-      openedFromBackground: true,
-      actionIdentifier: "default",
+    expect(mockTrack).toHaveBeenNthCalledWith(9, "weekly_report_opened", {
+      reportStatus: "ready",
+      insightCount: 2,
+      priorityCount: 2,
     });
   });
 
-  it("maps coach insight telemetry events to the backend allowlist", async () => {
-    await trackCoachCardViewed({
-      insightType: "under_logging",
-      actionType: "log_next_meal",
-      isPositive: false,
-    });
-    await trackCoachCardExpanded({
-      insightType: "under_logging",
-    });
-    await trackCoachCardCtaClicked({
-      insightType: "under_logging",
-      actionType: "log_next_meal",
-      targetScreen: "MealAddMethod",
-    });
-    await trackCoachEmptyStateViewed({
-      emptyReason: "no_data",
-    });
-
-    expect(mockTrack).toHaveBeenNthCalledWith(1, "coach_card_viewed", {
-      insightType: "under_logging",
-      actionType: "log_next_meal",
-      isPositive: false,
-    });
-    expect(mockTrack).toHaveBeenNthCalledWith(2, "coach_card_expanded", {
-      insightType: "under_logging",
-    });
-    expect(mockTrack).toHaveBeenNthCalledWith(3, "coach_card_cta_clicked", {
-      insightType: "under_logging",
-      actionType: "log_next_meal",
-      targetScreen: "MealAddMethod",
-    });
-    expect(mockTrack).toHaveBeenNthCalledWith(4, "coach_empty_state_viewed", {
-      emptyReason: "no_data",
-    });
-  });
-
-  it("maps onboarding option selection events to the backend allowlist", async () => {
-    await trackOnboardingOptionSelected({
-      step: 2,
-      mode: "first",
-      field: "goal",
-      value: "maintain",
-    });
-
-    expect(mockTrack).toHaveBeenCalledWith("onboarding_option_selected", {
-      step: 2,
-      mode: "first",
-      field: "goal",
-      value: "maintain",
-    });
-  });
-
-  it("maps smart reminder telemetry events to the backend allowlist", async () => {
+  it("keeps smart reminder telemetry mappings contract-safe", async () => {
     expect(toSmartReminderConfidenceBucket(0.2)).toBe("low");
     expect(toSmartReminderConfidenceBucket(0.7)).toBe("medium");
     expect(toSmartReminderConfidenceBucket(0.9)).toBe("high");

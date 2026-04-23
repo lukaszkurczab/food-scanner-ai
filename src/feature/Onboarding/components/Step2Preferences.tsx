@@ -8,8 +8,6 @@ import {
   RowPicker,
   Slider,
 } from "@/components";
-import type { OnboardingMode } from "@/types";
-import { trackOnboardingOptionSelected } from "@/services/telemetry/telemetryInstrumentation";
 import { useTheme } from "@/theme/useTheme";
 import type { FormData, Preference } from "@/types";
 import {
@@ -28,7 +26,6 @@ type Props = {
   >;
   onContinue: () => void;
   onBack: () => void;
-  mode: OnboardingMode;
   submitting?: boolean;
 };
 
@@ -42,7 +39,6 @@ export default function Step2Preferences({
   setErrors,
   onContinue,
   onBack,
-  mode,
   submitting = false,
 }: Props) {
   const { t } = useTranslation("onboarding");
@@ -97,15 +93,6 @@ export default function Step2Preferences({
                 ...current,
                 preferences: nextPreferences as Preference[],
               }));
-              const latestValue = nextPreferences[nextPreferences.length - 1];
-              if (latestValue) {
-                void trackOnboardingOptionSelected({
-                  mode,
-                  step: 2,
-                  field: "preference",
-                  value: latestValue,
-                });
-              }
             }}
             disabledValues={[...disabledPreferences]}
           />
@@ -130,12 +117,6 @@ export default function Step2Preferences({
                 ...current,
                 activityLevel: undefined,
               }));
-              void trackOnboardingOptionSelected({
-                mode,
-                step: 2,
-                field: "activityLevel",
-                value: nextActivityLevel,
-              });
             }}
             error={errors.activityLevel}
           />
@@ -172,12 +153,6 @@ export default function Step2Preferences({
                 calorieDeficit: undefined,
                 calorieSurplus: undefined,
               }));
-              void trackOnboardingOptionSelected({
-                mode,
-                step: 2,
-                field: "goal",
-                value: nextGoal,
-              });
             }}
             error={errors.goal}
             size="compact"

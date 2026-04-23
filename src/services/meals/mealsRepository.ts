@@ -1,4 +1,5 @@
 import type { Meal } from "@/types/meal";
+import type { MealDocument, MealImageRef } from "@/types/mealDocument";
 import { get, post } from "@/services/core/apiClient";
 import { updateMyMealRemote } from "@/services/meals/myMealsRepository";
 import {
@@ -44,19 +45,38 @@ function computeTotalsFromIngredients(meal: Partial<Meal>) {
   };
 }
 
-function normalizeMeal(raw: unknown): Meal | null {
-  if (!raw || typeof raw !== "object") return null;
-  const meal = raw as Partial<Meal>;
-  const cloudId = String(meal.cloudId || meal.mealId || "").trim();
-  const mealId = String(meal.mealId || cloudId).trim();
-  const userUid = String(meal.userUid || "").trim();
-  const timestamp = String(meal.timestamp || "").trim();
-  const updatedAt = String(meal.updatedAt || "").trim();
-  if (!cloudId || !mealId || !userUid || !timestamp || !updatedAt) {
+function asMap(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
+
+function parseImageRef(raw: unknown): MealImageRef | null {
+  const imageRef = asMap(raw);
+  if (!imageRef) return null;
+  const imageId = String(imageRef.imageId || "").trim();
+  const storagePath = String(imageRef.storagePath || "").trim();
+  if (!imageId || !storagePath) return null;
+  const downloadUrl =
+    typeof imageRef.downloadUrl === "string" && imageRef.downloadUrl.trim().length > 0
+      ? imageRef.downloadUrl.trim()
+      : null;
+  return {
+    imageId,
+    storagePath,
+    downloadUrl,
+  };
+}
+
+function normalizeMeal(raw: unknown, uid: string): Meal | null {
+  const doc = raw as Partial<MealDocument> & Partial<Meal>;
+  const id = String(doc.id || doc.cloudId || doc.mealId || "").trim();
+  const loggedAt = String(doc.loggedAt || doc.timestamp || "").trim();
+  const updatedAt = String(doc.updatedAt || "").trim();
+  if (!id || !loggedAt || !updatedAt) {
     return null;
   }
 
-  const type = meal.type;
+  const type = doc.type;
   const normalizedType =
     type === "breakfast" ||
     type === "lunch" ||
@@ -66,54 +86,67 @@ function normalizeMeal(raw: unknown): Meal | null {
       ? type
       : "other";
 
-  const totals =
-    meal.totals && typeof meal.totals === "object"
+  const imageRef =
+    parseImageRef(doc.imageRef) ||
+    (typeof doc.imageId === "string" && doc.imageId.trim().length > 0
       ? {
-          kcal: toFiniteNumber(meal.totals.kcal),
-          protein: toFiniteNumber(meal.totals.protein),
-          carbs: toFiniteNumber(meal.totals.carbs),
-          fat: toFiniteNumber(meal.totals.fat),
+          imageId: doc.imageId.trim(),
+          storagePath: `meals/${uid}/${doc.imageId.trim()}.jpg`,
+          downloadUrl:
+            typeof doc.photoUrl === "string" && doc.photoUrl.trim().length > 0
+              ? doc.photoUrl.trim()
+              : null,
         }
-      : computeTotalsFromIngredients(meal);
+      : null);
+
+  const totals =
+    doc.totals && typeof doc.totals === "object"
+      ? {
+          kcal: toFiniteNumber(doc.totals.kcal),
+          protein: toFiniteNumber(doc.totals.protein),
+          carbs: toFiniteNumber(doc.totals.carbs),
+          fat: toFiniteNumber(doc.totals.fat),
+        }
+      : computeTotalsFromIngredients(doc);
 
   return {
-    userUid,
-    mealId,
-    timestamp,
-    dayKey: typeof meal.dayKey === "string" ? meal.dayKey : null,
+    userUid: uid,
+    mealId: id,
+    cloudId: id,
+    timestamp: loggedAt,
+    dayKey: typeof doc.dayKey === "string" ? doc.dayKey : null,
     loggedAtLocalMin:
-      typeof meal.loggedAtLocalMin === "number" ? meal.loggedAtLocalMin : null,
+      typeof doc.loggedAtLocalMin === "number" ? doc.loggedAtLocalMin : null,
     tzOffsetMin:
-      typeof meal.tzOffsetMin === "number" ? meal.tzOffsetMin : null,
+      typeof doc.tzOffsetMin === "number" ? doc.tzOffsetMin : null,
     type: normalizedType,
-    name: typeof meal.name === "string" ? meal.name : null,
-    ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
-    createdAt: String(meal.createdAt || timestamp),
+    name: typeof doc.name === "string" ? doc.name : null,
+    ingredients: Array.isArray(doc.ingredients) ? doc.ingredients : [],
+    createdAt: String(doc.createdAt || loggedAt),
     updatedAt,
     syncState: "synced",
     source:
-      meal.source === "ai" || meal.source === "manual" || meal.source === "saved"
-        ? meal.source
+      doc.source === "ai" || doc.source === "manual" || doc.source === "saved"
+        ? doc.source
         : null,
-    inputMethod: normalizeMealInputMethod(meal.inputMethod),
-    aiMeta: normalizeMealAiMeta(meal.aiMeta),
-    imageId: typeof meal.imageId === "string" ? meal.imageId : null,
-    photoUrl: typeof meal.photoUrl === "string" ? meal.photoUrl : null,
-    notes: typeof meal.notes === "string" ? meal.notes : null,
-    tags: Array.isArray(meal.tags)
-      ? meal.tags.filter((tag): tag is string => typeof tag === "string")
+    inputMethod: normalizeMealInputMethod(doc.inputMethod),
+    aiMeta: normalizeMealAiMeta(doc.aiMeta),
+    imageId: imageRef?.imageId ?? null,
+    photoUrl: imageRef?.downloadUrl ?? null,
+    notes: typeof doc.notes === "string" ? doc.notes : null,
+    tags: Array.isArray(doc.tags)
+      ? doc.tags.filter((tag): tag is string => typeof tag === "string")
       : [],
-    deleted: Boolean(meal.deleted),
-    cloudId,
+    deleted: Boolean(doc.deleted),
     totals,
   };
 }
 
-function toMealsPage(payload: unknown): MealsRemotePage {
+function toMealsPage(payload: unknown, uid: string): MealsRemotePage {
   const page = (payload || {}) as MealsRemoteResponse;
   const items = Array.isArray(page.items)
     ? page.items
-        .map((item) => normalizeMeal(item))
+        .map((item) => normalizeMeal(item, uid))
         .filter((item): item is Meal => item !== null)
     : [];
 
@@ -153,8 +186,8 @@ function buildHistoryPath(input: {
   appendRangeParams(params, "fat", input.filters?.fat);
 
   if (input.filters?.dateRange) {
-    params.set("timestampStart", input.filters.dateRange.start.toISOString());
-    params.set("timestampEnd", input.filters.dateRange.end.toISOString());
+    params.set("loggedAtStart", input.filters.dateRange.start.toISOString());
+    params.set("loggedAtEnd", input.filters.dateRange.end.toISOString());
   }
 
   return `/users/me/meals/history?${params.toString()}`;
@@ -180,7 +213,6 @@ export async function fetchMealsPageRemote(params: {
   cursor: MealsRemoteCursor;
   filters?: MealHistoryFilters;
 }): Promise<MealsRemotePage> {
-  void params.uid;
   const response = await get<MealsRemoteResponse>(
     buildHistoryPath({
       pageSize: params.pageSize,
@@ -188,7 +220,7 @@ export async function fetchMealsPageRemote(params: {
       filters: params.filters,
     }),
   );
-  return toMealsPage(response);
+  return toMealsPage(response, params.uid);
 }
 
 export async function fetchMealChangesRemote(params: {
@@ -196,7 +228,6 @@ export async function fetchMealChangesRemote(params: {
   pageSize: number;
   cursor: MealsRemoteCursor;
 }): Promise<MealsRemotePage> {
-  void params.uid;
   const query = new URLSearchParams();
   query.set("limit", String(params.pageSize));
   if (params.cursor) {
@@ -206,7 +237,48 @@ export async function fetchMealChangesRemote(params: {
   const response = await get<MealsRemoteResponse>(
     `/users/me/meals/changes?${query.toString()}`,
   );
-  return toMealsPage(response);
+  return toMealsPage(response, params.uid);
+}
+
+function toMealDocumentPayload(meal: Meal): MealDocument {
+  const id = String(meal.cloudId || meal.mealId || "").trim();
+  const imageId =
+    typeof meal.imageId === "string" && meal.imageId.trim().length > 0
+      ? meal.imageId.trim()
+      : null;
+  const downloadUrl =
+    typeof meal.photoUrl === "string" && /^https?:\/\//i.test(meal.photoUrl)
+      ? meal.photoUrl
+      : null;
+
+  const imageRef = imageId
+    ? {
+        imageId,
+        storagePath: `meals/${meal.userUid || "unknown"}/${imageId}.jpg`,
+        downloadUrl,
+      }
+    : null;
+
+  return {
+    id,
+    loggedAt: meal.timestamp,
+    dayKey: meal.dayKey ?? null,
+    loggedAtLocalMin: meal.loggedAtLocalMin ?? null,
+    tzOffsetMin: meal.tzOffsetMin ?? null,
+    type: meal.type,
+    name: meal.name ?? null,
+    ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
+    createdAt: meal.createdAt,
+    updatedAt: meal.updatedAt,
+    source: meal.source,
+    inputMethod: normalizeMealInputMethod(meal.inputMethod),
+    aiMeta: normalizeMealAiMeta(meal.aiMeta),
+    imageRef,
+    notes: meal.notes ?? null,
+    tags: Array.isArray(meal.tags) ? meal.tags : [],
+    deleted: Boolean(meal.deleted),
+    totals: meal.totals ?? { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+  };
 }
 
 export async function saveMealRemote(params: {
@@ -214,12 +286,11 @@ export async function saveMealRemote(params: {
   meal: Meal;
   alsoSaveToMyMeals?: boolean;
 }): Promise<void> {
-  await post("/users/me/meals", params.meal);
+  const payload = toMealDocumentPayload(params.meal);
+  await post("/users/me/meals", payload);
   if (params.alsoSaveToMyMeals) {
     await updateMyMealRemote(params.uid, params.meal.mealId, {
-      ...params.meal,
-      mealId: params.meal.mealId,
-      cloudId: params.meal.mealId,
+      ...payload,
       source: "saved",
     });
   }

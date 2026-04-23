@@ -5,13 +5,7 @@ import { useOnboardingFlow } from "@/feature/Onboarding/hooks/useOnboardingFlow"
 
 const mockUpdateUser = jest.fn();
 const mockSyncUserProfile = jest.fn();
-const mockTrackScreenView = jest.fn();
-const mockTrackOnboardingNavigation = jest.fn();
-const mockTrackOnboardingStepCompleted = jest.fn();
 const mockTrackOnboardingCompleted = jest.fn();
-const mockTrackOnboardingStepSkipped = jest.fn();
-const mockTrackOnboardingSkipConfirmed = jest.fn();
-const mockTrackOnboardingExitAction = jest.fn();
 
 let mockUserData: UserData | null = null;
 
@@ -35,19 +29,8 @@ jest.mock("@/context/UserContext", () => ({
 }));
 
 jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
-  trackScreenView: (...args: unknown[]) => mockTrackScreenView(...args),
-  trackOnboardingNavigation: (...args: unknown[]) =>
-    mockTrackOnboardingNavigation(...args),
-  trackOnboardingStepCompleted: (...args: unknown[]) =>
-    mockTrackOnboardingStepCompleted(...args),
   trackOnboardingCompleted: (...args: unknown[]) =>
     mockTrackOnboardingCompleted(...args),
-  trackOnboardingStepSkipped: (...args: unknown[]) =>
-    mockTrackOnboardingStepSkipped(...args),
-  trackOnboardingSkipConfirmed: (...args: unknown[]) =>
-    mockTrackOnboardingSkipConfirmed(...args),
-  trackOnboardingExitAction: (...args: unknown[]) =>
-    mockTrackOnboardingExitAction(...args),
 }));
 
 function buildNavigation() {
@@ -103,21 +86,7 @@ describe("useOnboardingFlow", () => {
     mockUserData = null;
     mockUpdateUser.mockReset().mockImplementation(async () => undefined);
     mockSyncUserProfile.mockReset().mockImplementation(async () => undefined);
-    mockTrackScreenView.mockReset().mockImplementation(async () => undefined);
-    mockTrackOnboardingNavigation.mockReset().mockImplementation(async () => undefined);
-    mockTrackOnboardingStepCompleted
-      .mockReset()
-      .mockImplementation(async () => undefined);
     mockTrackOnboardingCompleted
-      .mockReset()
-      .mockImplementation(async () => undefined);
-    mockTrackOnboardingStepSkipped
-      .mockReset()
-      .mockImplementation(async () => undefined);
-    mockTrackOnboardingSkipConfirmed
-      .mockReset()
-      .mockImplementation(async () => undefined);
-    mockTrackOnboardingExitAction
       .mockReset()
       .mockImplementation(async () => undefined);
   });
@@ -282,7 +251,6 @@ describe("useOnboardingFlow", () => {
 
     expect(result.current.modalState).toBeNull();
     expect(mockUpdateUser).toHaveBeenCalledTimes(1);
-    expect(mockTrackOnboardingSkipConfirmed).toHaveBeenCalledTimes(2);
   });
 
   it("stops save-and-exit in refill mode when required data is invalid", async () => {

@@ -284,4 +284,39 @@ describe("AiCreditsContext", () => {
     expect(result.current.credits).toBeNull();
     expect(mockGet).toHaveBeenCalledWith("/ai/credits");
   });
+
+  it("fetches credit transactions history from backend", async () => {
+    mockGet
+      .mockResolvedValueOnce(buildCredits({ balance: 100 }))
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "tx-1",
+            type: "deduct",
+            action: "chat",
+            cost: 1,
+            balanceBefore: 20,
+            balanceAfter: 19,
+            tier: "free",
+            periodStartAt: "2026-03-23T00:00:00Z",
+            periodEndAt: "2026-04-23T00:00:00Z",
+            createdAt: "2026-03-24T10:00:00Z",
+          },
+        ],
+      });
+
+    const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
+    await waitFor(() => {
+      expect(result.current.credits?.balance).toBe(100);
+    });
+
+    await act(async () => {
+      const items = await result.current.refreshCreditTransactions(2);
+      expect(items).toHaveLength(1);
+      expect(items[0]?.id).toBe("tx-1");
+      expect(items[0]?.action).toBe("chat");
+    });
+
+    expect(mockGet).toHaveBeenCalledWith("/ai/credits/transactions?limit=2");
+  });
 });

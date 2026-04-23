@@ -37,8 +37,6 @@ const mockGetDeadLetterCount = jest.fn<(uid: string, options?: unknown) => Promi
 const mockRetryDeadLetterOps = jest.fn<(params: unknown) => Promise<number>>();
 const mockPushQueue = jest.fn<(uid: string) => Promise<void>>();
 const mockPullChatChanges = jest.fn<(uid: string) => Promise<void>>();
-const mockTrackAiChatSend = jest.fn<(message: string) => Promise<void>>();
-const mockTrackAiChatResult = jest.fn<(status: string) => Promise<void>>();
 
 type RepoMessage = {
   id: string;
@@ -113,11 +111,6 @@ jest.mock("@/services/offline/queue.repo", () => ({
 jest.mock("@/services/offline/sync.engine", () => ({
   pushQueue: (uid: string) => mockPushQueue(uid),
   pullChatChanges: (uid: string) => mockPullChatChanges(uid),
-}));
-
-jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
-  trackAiChatSend: (message: string) => mockTrackAiChatSend(message),
-  trackAiChatResult: (status: string) => mockTrackAiChatResult(status),
 }));
 
 const profileFixture: FormData = {
@@ -208,8 +201,6 @@ describe("useChatHistory", () => {
     mockRetryDeadLetterOps.mockResolvedValue(0);
     mockPushQueue.mockResolvedValue();
     mockPullChatChanges.mockResolvedValue();
-    mockTrackAiChatSend.mockResolvedValue();
-    mockTrackAiChatResult.mockResolvedValue();
     mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
     mockRefreshCredits.mockResolvedValue(buildCredits({ balance: 0 }));
     mockCanAfford.mockReturnValue(true);
@@ -271,8 +262,6 @@ describe("useChatHistory", () => {
     expect(call?.[2]).toEqual(
       expect.objectContaining({ signal: expect.any(Object) }),
     );
-    expect(mockTrackAiChatSend).toHaveBeenCalledWith("hello");
-    expect(mockTrackAiChatResult).toHaveBeenCalledWith("success");
     expect(mockApplyCreditsFromResponse).toHaveBeenCalledWith(
       expect.objectContaining({
         balance: 19,
@@ -294,8 +283,6 @@ describe("useChatHistory", () => {
     });
 
     expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
-    expect(mockTrackAiChatSend).toHaveBeenCalledWith("hello");
-    expect(mockTrackAiChatResult).toHaveBeenCalledWith("payment_required");
     expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
   });
 
@@ -318,8 +305,6 @@ describe("useChatHistory", () => {
     });
 
     expect(mockRefreshCredits).not.toHaveBeenCalled();
-    expect(mockTrackAiChatSend).toHaveBeenCalledWith("Flaga Boliwii");
-    expect(mockTrackAiChatResult).toHaveBeenCalledWith("gateway_reject");
     expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
   });
 

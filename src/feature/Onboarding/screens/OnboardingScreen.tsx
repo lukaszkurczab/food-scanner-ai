@@ -93,7 +93,6 @@ export default function OnboardingScreen({
             setForm={state.setForm}
             errors={state.errors}
             setErrors={state.setErrors}
-            mode={mode}
             onContinue={state.handlePrimaryAction}
             onSecondaryAction={state.handleStep1SecondaryAction}
             submitting={state.submitting}
@@ -108,7 +107,6 @@ export default function OnboardingScreen({
             setErrors={state.setErrors}
             onContinue={state.handlePrimaryAction}
             onBack={state.handleBack}
-            mode={mode}
             submitting={state.submitting}
           />
         ) : null}
@@ -122,7 +120,6 @@ export default function OnboardingScreen({
             onContinue={state.handlePrimaryAction}
             onBack={state.handleBack}
             onSkip={state.handleSkipStep}
-            mode={mode}
             submitting={state.submitting}
           />
         ) : null}
@@ -133,7 +130,6 @@ export default function OnboardingScreen({
             setForm={state.setForm}
             onContinue={state.handlePrimaryAction}
             onBack={state.handleBack}
-            mode={mode}
             submitting={state.submitting}
           />
         ) : null}

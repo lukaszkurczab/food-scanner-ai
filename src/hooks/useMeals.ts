@@ -23,9 +23,7 @@ import { deriveMealTimingMetadata } from "@/services/meals/mealMetadata";
 import { formatStreakDate } from "@/services/gamification/streak.logic";
 import { refreshStreakFromBackend } from "@/services/gamification/streakService";
 import {
-  trackMealAdded,
-  trackMealDeleted,
-  trackMealUpdated,
+  trackMealLogged,
 } from "@/services/telemetry/telemetryInstrumentation";
 
 const PAGE_LIMIT = 50;
@@ -374,7 +372,7 @@ export function useMeals(userUid: string | null) {
 
       await upsertMealLocal(base);
       emit("meal:added", { uid: userUid, meal: base });
-      void trackMealAdded(base);
+      void trackMealLogged(base);
       await enqueueUpsert(userUid, base);
 
       scheduleQueuedSync("add");
@@ -450,7 +448,6 @@ export function useMeals(userUid: string | null) {
         };
         await upsertMyMealWithPhoto(userUid, toSave, localPhoto);
         emit("meal:updated", { uid: userUid, meal: toSave });
-        void trackMealUpdated(toSave);
         return;
       }
 
@@ -479,7 +476,6 @@ export function useMeals(userUid: string | null) {
 
       await upsertMealLocal(payload);
       emit("meal:updated", { uid: userUid, meal: payload });
-      void trackMealUpdated(payload);
       await enqueueUpsert(userUid, payload);
 
       scheduleQueuedSync("update");
@@ -493,8 +489,6 @@ export function useMeals(userUid: string | null) {
   const deleteMeal = useCallback(
     async (mealCloudId: string) => {
       if (!userUid || !mealCloudId) return;
-      const existingMeal =
-        meals.find((meal) => (meal.cloudId || "") === mealCloudId) || null;
       const now = new Date().toISOString();
       await markDeletedLocal(mealCloudId, now);
       emit("meal:deleted", {
@@ -502,14 +496,13 @@ export function useMeals(userUid: string | null) {
         cloudId: mealCloudId,
         sourceHookId: hookInstanceIdRef.current,
       });
-      void trackMealDeleted(existingMeal);
       await enqueueDelete(userUid, mealCloudId, now);
 
       scheduleQueuedSync("delete");
 
       setMeals((prev) => prev.filter((m) => (m.cloudId || "") !== mealCloudId));
     },
-    [meals, userUid, scheduleQueuedSync],
+    [userUid, scheduleQueuedSync],
   );
 
   const duplicateMeal = useCallback(
@@ -533,7 +526,7 @@ export function useMeals(userUid: string | null) {
 
       await upsertMealLocal(copy);
       emit("meal:added", { uid: userUid, meal: copy });
-      void trackMealAdded(copy);
+      void trackMealLogged(copy);
       await enqueueUpsert(userUid, copy);
 
       scheduleQueuedSync("duplicate");

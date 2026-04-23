@@ -9,12 +9,6 @@ import { assertNoUndefined } from "@/utils/findUndefined";
 import { cmToFtIn, kgToLbs } from "@/utils/units";
 import {
   trackOnboardingCompleted,
-  trackOnboardingExitAction,
-  trackOnboardingNavigation,
-  trackOnboardingSkipConfirmed,
-  trackOnboardingStepCompleted,
-  trackOnboardingStepSkipped,
-  trackScreenView,
 } from "@/services/telemetry/telemetryInstrumentation";
 import {
   INITIAL_FORM,
@@ -83,21 +77,6 @@ function buildInitialForm(userData: UserData | null): FormData {
     aiFocusOther: "",
     aiNote: userData.aiNote ?? "",
   };
-}
-
-function getStepScreenName(step: number): string {
-  switch (step) {
-    case 1:
-      return "onboarding_step_1_basics";
-    case 2:
-      return "onboarding_step_2_shape_plan";
-    case 3:
-      return "onboarding_step_3_health_details";
-    case 4:
-      return "onboarding_step_4_make_it_yours";
-    default:
-      return "onboarding_unknown";
-  }
 }
 
 function validateStep1(form: FormData, t: (key: string) => string): OnboardingErrors {
@@ -254,10 +233,6 @@ export function useOnboardingFlow(params: {
     setIsLoaded(true);
   }, [userData]);
 
-  useEffect(() => {
-    void trackScreenView(getStepScreenName(step));
-  }, [step]);
-
   const isDirty = useMemo(() => {
     return (
       JSON.stringify(normalizeFormForCompare(form)) !==
@@ -311,35 +286,20 @@ export function useOnboardingFlow(params: {
   const handlePrimaryAction = useCallback(async () => {
     if (!validateCurrentStep(step)) return;
 
-    void trackOnboardingStepCompleted({
-      mode: params.mode,
-      step,
-    });
-
     if (step === ONBOARDING_TOTAL_STEPS) {
       await finishOnboarding();
       return;
     }
 
-    void trackOnboardingNavigation({
-      mode: params.mode,
-      step,
-      direction: "next",
-    });
     setErrors({});
     setStep((current) => Math.min(ONBOARDING_TOTAL_STEPS, current + 1));
   }, [finishOnboarding, params.mode, step, validateCurrentStep]);
 
   const handleBack = useCallback(() => {
     if (step <= 1) return;
-    void trackOnboardingNavigation({
-      mode: params.mode,
-      step,
-      direction: "back",
-    });
     setErrors({});
     setStep((current) => Math.max(1, current - 1));
-  }, [params.mode, step]);
+  }, [step]);
 
   const handleStep1SecondaryAction = useCallback(() => {
     if (params.mode === "first") {
@@ -365,11 +325,6 @@ export function useOnboardingFlow(params: {
   }, [goToProfile, isDirty, params.mode]);
 
   const applyOptionalStepSkip = useCallback(async (skipStep: 3 | 4) => {
-    void trackOnboardingSkipConfirmed({
-      mode: params.mode,
-      step: skipStep,
-    });
-
     setErrors({});
 
     if (skipStep === 3) {
@@ -381,14 +336,10 @@ export function useOnboardingFlow(params: {
     const nextForm = resetOptionalAssistantFields(form);
     setForm(nextForm);
     await finishOnboarding(nextForm);
-  }, [finishOnboarding, form, params.mode]);
+  }, [finishOnboarding, form]);
 
   const handleSkipStep = useCallback(async () => {
     if (step !== 3 && step !== 4) return;
-    void trackOnboardingStepSkipped({
-      mode: params.mode,
-      step,
-    });
 
     if (hasConfirmedOptionalSkip) {
       await applyOptionalStepSkip(step);
@@ -396,7 +347,7 @@ export function useOnboardingFlow(params: {
     }
 
     setModalState({ type: "skip_step", step });
-  }, [applyOptionalStepSkip, hasConfirmedOptionalSkip, params.mode, step]);
+  }, [applyOptionalStepSkip, hasConfirmedOptionalSkip, step]);
 
   const handleModalClose = useCallback(() => {
     setModalState(null);
@@ -406,10 +357,6 @@ export function useOnboardingFlow(params: {
     if (!modalState) return;
 
     if (modalState.type === "skip_onboarding") {
-      void trackOnboardingSkipConfirmed({
-        mode: params.mode,
-        step: 1,
-      });
       params.navigation.reset({ index: 0, routes: [{ name: "Home" }] });
       return;
     }
@@ -419,7 +366,7 @@ export function useOnboardingFlow(params: {
     setHasConfirmedOptionalSkip(true);
     setModalState(null);
     await applyOptionalStepSkip(modalState.step);
-  }, [applyOptionalStepSkip, modalState, params.mode, params.navigation]);
+  }, [applyOptionalStepSkip, modalState, params.navigation]);
 
   const handleSaveAndExit = useCallback(async () => {
     const invalidStep = findFirstInvalidStep(form, t);
@@ -434,24 +381,16 @@ export function useOnboardingFlow(params: {
     try {
       await updateUser(buildPartialSavePatch(form));
       await syncUserProfile();
-      void trackOnboardingExitAction({
-        mode: params.mode,
-        action: "save",
-      });
       goToProfile();
     } finally {
       setSubmitting(false);
     }
-  }, [form, goToProfile, params.mode, syncUserProfile, t, updateUser]);
+  }, [form, goToProfile, syncUserProfile, t, updateUser]);
 
   const handleDiscardAndExit = useCallback(() => {
     setModalState(null);
-    void trackOnboardingExitAction({
-      mode: params.mode,
-      action: "discard",
-    });
     goToProfile();
-  }, [goToProfile, params.mode]);
+  }, [goToProfile]);
 
   return {
     errors,

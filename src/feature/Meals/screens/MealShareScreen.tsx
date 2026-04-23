@@ -19,7 +19,6 @@ import { useTranslation } from "react-i18next";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { emit } from "@/services/core/events";
-import { track } from "@/services/telemetry/telemetryClient";
 import ShareComposerCanvas from "@/feature/Meals/shareComposer/ShareComposerCanvas";
 import ShareComposerDock from "@/feature/Meals/shareComposer/ShareComposerDock";
 import {
@@ -121,23 +120,10 @@ export default function MealShareScreen() {
   );
 
   const trackShareEvent = useCallback(
-    (name: string, params: Record<string, unknown> = {}) => {
-      return track(name, {
-        template_id: selectedPreset,
-        meal_context: mealContext,
-        mode,
-        text_count: composition.textLayers.length,
-        additional_photo_used: Boolean(composition.additionalPhoto),
-        ...params,
-      });
+    (_name: string, _params: Record<string, unknown> = {}) => {
+      return Promise.resolve();
     },
-    [
-      composition.additionalPhoto,
-      composition.textLayers.length,
-      mealContext,
-      mode,
-      selectedPreset,
-    ],
+    [],
   );
 
   useEffect(() => {

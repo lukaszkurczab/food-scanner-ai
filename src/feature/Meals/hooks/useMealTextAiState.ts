@@ -9,6 +9,7 @@ import type {
   AiCreditsStatus,
 } from "@/services/ai/contracts";
 import { post } from "@/services/core/apiClient";
+import { trackPaywallViewed } from "@/services/telemetry/telemetryInstrumentation";
 import type {
   MealAddFlowApi,
   MealAddStepParams,
@@ -171,6 +172,7 @@ export function useMealTextAiState(params: {
 
   const openPaywall = useCallback(() => {
     setShowLimitModal(false);
+    void trackPaywallViewed({ source: "meal_text_limit" });
     navigation.navigate("ManageSubscription");
   }, [navigation]);
 

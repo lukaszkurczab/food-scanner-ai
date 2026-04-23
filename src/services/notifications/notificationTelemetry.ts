@@ -2,9 +2,7 @@ import * as Notifications from "expo-notifications";
 import { AppState, type AppStateStatus } from "react-native";
 import { asString, isRecord } from "@/services/contracts/guards";
 import {
-  trackNotificationFired,
   trackNotificationOpened,
-  trackNotificationScheduled,
 } from "@/services/telemetry/telemetryInstrumentation";
 import { getNotificationPresentationPolicyDiagnostics } from "@/services/notifications/notificationPresentationPolicy";
 import { debugScope } from "@/utils/debug";
@@ -82,18 +80,7 @@ async function safeTrack(
 export async function emitNotificationScheduledTelemetry(
   context: NotificationTelemetryContext,
 ): Promise<void> {
-  log.log("notification lifecycle:scheduled", {
-    notificationType: context.notificationType ?? null,
-    origin: context.origin ?? null,
-  });
-  await safeTrack(
-    trackNotificationScheduled(context),
-    "notification_scheduled",
-    {
-      notificationType: context.notificationType,
-      origin: context.origin,
-    },
-  );
+  void context;
 }
 
 function handleNotificationReceived(notification: Notifications.Notification): void {
@@ -111,17 +98,6 @@ function handleNotificationReceived(notification: Notifications.Notification): v
     foregroundShowsList:
       presentationDiagnostics.foregroundBehavior.shouldShowList,
   });
-  void safeTrack(
-    trackNotificationFired({
-      ...context,
-      foreground,
-    }),
-    "notification_fired",
-    {
-      ...context,
-      foreground,
-    },
-  );
 }
 
 function handleNotificationResponse(

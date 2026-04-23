@@ -7,9 +7,8 @@ import {
   SelectableGroup,
   TextInput,
 } from "@/components";
-import { trackOnboardingOptionSelected } from "@/services/telemetry/telemetryInstrumentation";
 import { useTheme } from "@/theme/useTheme";
-import type { Allergy, ChronicDisease, FormData, OnboardingMode } from "@/types";
+import type { Allergy, ChronicDisease, FormData } from "@/types";
 import {
   ALLERGY_OPTIONS,
   CHRONIC_DISEASE_OPTIONS,
@@ -34,7 +33,6 @@ type Props = {
   onContinue: () => void;
   onBack: () => void;
   onSkip: () => void;
-  mode: OnboardingMode;
   submitting?: boolean;
 };
 
@@ -46,7 +44,6 @@ export default function Step3Health({
   onContinue,
   onBack,
   onSkip,
-  mode,
   submitting = false,
 }: Props) {
   const { t } = useTranslation("onboarding");
@@ -90,7 +87,6 @@ export default function Step3Health({
             }))}
             values={form.chronicDiseases ?? []}
             onChange={(nextValue) => {
-              const isSelecting = !(form.chronicDiseases ?? []).includes(nextValue);
               setForm((current) => {
                 const currentValues = current.chronicDiseases ?? [];
                 const hasValue = currentValues.includes(nextValue);
@@ -110,14 +106,6 @@ export default function Step3Health({
                 ...current,
                 chronicDiseasesOther: undefined,
               }));
-              if (isSelecting) {
-                void trackOnboardingOptionSelected({
-                  mode,
-                  step: 3,
-                  field: "chronicDisease",
-                  value: nextValue,
-                });
-              }
             }}
             selectionMode="multiple"
             variant="chip"
@@ -152,7 +140,6 @@ export default function Step3Health({
             }))}
             values={form.allergies ?? []}
             onChange={(nextValue) => {
-              const isSelecting = !(form.allergies ?? []).includes(nextValue);
               setForm((current) => {
                 const currentValues = current.allergies ?? [];
                 const hasValue = currentValues.includes(nextValue);
@@ -172,14 +159,6 @@ export default function Step3Health({
                 ...current,
                 allergiesOther: undefined,
               }));
-              if (isSelecting) {
-                void trackOnboardingOptionSelected({
-                  mode,
-                  step: 3,
-                  field: "allergy",
-                  value: nextValue,
-                });
-              }
             }}
             selectionMode="multiple"
             variant="chip"

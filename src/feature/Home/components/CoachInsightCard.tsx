@@ -1,15 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Button } from "@/components/Button";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import type { CoachInsight } from "@/services/coach/coachTypes";
-import {
-  trackCoachCardCtaClicked,
-  trackCoachCardExpanded,
-  trackCoachCardViewed,
-} from "@/services/telemetry/telemetryInstrumentation";
 
 type Props = {
   insight: CoachInsight;
@@ -53,23 +48,9 @@ export default function CoachInsightCard({
     typeof onPressCta === "function" &&
     !!ctaTargetScreen;
 
-  useEffect(() => {
-    void trackCoachCardViewed({
-      insightType: insight.type,
-      actionType: insight.actionType,
-      isPositive: insight.isPositive,
-    }).catch(() => undefined);
-  }, [insight.actionType, insight.isPositive, insight.type]);
-
   const handleExpandToggle = () => {
     setExpanded((current) => {
-      const next = !current;
-      if (next) {
-        void trackCoachCardExpanded({
-          insightType: insight.type,
-        }).catch(() => undefined);
-      }
-      return next;
+      return !current;
     });
   };
 
@@ -77,11 +58,6 @@ export default function CoachInsightCard({
     if (!showCta || !ctaTargetScreen) {
       return;
     }
-    void trackCoachCardCtaClicked({
-      insightType: insight.type,
-      actionType: insight.actionType,
-      targetScreen: ctaTargetScreen,
-    }).catch(() => undefined);
     onPressCta?.();
   };
 

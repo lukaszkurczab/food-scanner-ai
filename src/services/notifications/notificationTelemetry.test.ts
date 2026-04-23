@@ -1,12 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
-const mockTrackNotificationFired = jest.fn<
-  (input: Record<string, unknown>) => Promise<void>
->();
 const mockTrackNotificationOpened = jest.fn<
-  (input: Record<string, unknown>) => Promise<void>
->();
-const mockTrackNotificationScheduled = jest.fn<
   (input: Record<string, unknown>) => Promise<void>
 >();
 const mockWarn = jest.fn<(...args: unknown[]) => void>();
@@ -26,12 +20,8 @@ const mockResponseSubscription = { remove: jest.fn() };
 const mockAppStateSubscription = { remove: jest.fn() };
 
 jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
-  trackNotificationFired: (input: Record<string, unknown>) =>
-    mockTrackNotificationFired(input),
   trackNotificationOpened: (input: Record<string, unknown>) =>
     mockTrackNotificationOpened(input),
-  trackNotificationScheduled: (input: Record<string, unknown>) =>
-    mockTrackNotificationScheduled(input),
 }));
 
 jest.mock("expo-notifications", () => ({
@@ -92,9 +82,7 @@ describe("notificationTelemetry", () => {
     mockNotificationReceivedListener = null;
     mockNotificationResponseListener = null;
     mockAppStateChangeListener = null;
-    mockTrackNotificationFired.mockResolvedValue(undefined);
     mockTrackNotificationOpened.mockResolvedValue(undefined);
-    mockTrackNotificationScheduled.mockResolvedValue(undefined);
   });
 
   it("resolveNotificationTelemetryContext returns null context for non-record data", () => {
@@ -159,17 +147,26 @@ describe("notificationTelemetry", () => {
   });
 
   it("safeTrack swallows telemetry errors and logs a warning", async () => {
-    mockTrackNotificationScheduled.mockRejectedValueOnce(new Error("network"));
+    mockTrackNotificationOpened.mockRejectedValueOnce(new Error("network"));
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const service = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
 
-    await expect(
-      service.emitNotificationScheduledTelemetry({ notificationType: "t", origin: "o" }),
-    ).resolves.toBeUndefined();
+    service.initNotificationTelemetry();
+    mockNotificationResponseListener?.({
+      actionIdentifier: "DEFAULT",
+      notification: {
+        request: {
+          content: {
+            data: { type: "meal_reminder", origin: "user_notifications" },
+          },
+        },
+      },
+    });
+    await Promise.resolve();
     expect(mockWarn).toHaveBeenCalled();
   });
 
-  it("tracks notification fired and opened events from Expo listeners", async () => {
+  it("tracks notification opened events from Expo listeners", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const service = require("@/services/notifications/notificationTelemetry") as typeof import("@/services/notifications/notificationTelemetry");
 
@@ -196,11 +193,6 @@ describe("notificationTelemetry", () => {
 
     await Promise.resolve();
 
-    expect(mockTrackNotificationFired).toHaveBeenCalledWith({
-      notificationType: "meal_reminder",
-      origin: "user_notifications",
-      foreground: true,
-    });
     expect(mockTrackNotificationOpened).toHaveBeenCalledWith({
       notificationType: "stats_weekly_summary",
       origin: "system_notifications",
@@ -224,11 +216,7 @@ describe("notificationTelemetry", () => {
 
     await Promise.resolve();
 
-    expect(mockTrackNotificationFired).toHaveBeenCalledWith({
-      notificationType: "meal_reminder",
-      origin: "user_notifications",
-      foreground: true,
-    });
+    expect(mockTrackNotificationOpened).not.toHaveBeenCalled();
   });
 
   it("tracks smart reminder opens only through generic notification_opened", async () => {

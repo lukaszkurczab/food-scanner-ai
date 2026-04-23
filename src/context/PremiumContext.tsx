@@ -28,7 +28,6 @@ import {
   resolveSubscriptionFromRevenueCat,
 } from "@/services/billing/subscriptionStateMachine";
 import { logWarning } from "@/services/core/errorLogger";
-import { trackPremiumStateEvaluated } from "@/services/telemetry/telemetryInstrumentation";
 
 type PremiumContextType = {
   isPremium: boolean | null;
@@ -37,15 +36,7 @@ type PremiumContextType = {
   refreshPremium: () => Promise<boolean>;
 };
 
-type PremiumCacheState = "not_applicable" | "hit_true" | "hit_false" | "miss";
-
 const PREMIUM_ACTIVE_REFRESH_THROTTLE_MS = 30_000;
-
-function toPremiumCacheState(cached: boolean | null): PremiumCacheState {
-  if (cached === true) return "hit_true";
-  if (cached === false) return "hit_false";
-  return "miss";
-}
 
 async function readCachedPremiumStatus(
   premiumKey: string | null,
@@ -103,25 +94,13 @@ export const PremiumProvider = ({
   const checkPremiumStatus = useCallback(async (): Promise<boolean> => {
     if (!uid) {
       setSubscriptionFromPremium(false);
-      void trackPremiumStateEvaluated({
-        source: "logged_out",
-        premium: false,
-        cacheState: "not_applicable",
-      });
       return false;
     }
 
     const cachedBefore = await readCachedPremiumStatus(premiumKey);
-    const cacheState = toPremiumCacheState(cachedBefore);
-
     if (isBillingDisabled()) {
       const val = cachedBefore ?? false;
       setSubscriptionFromPremium(val);
-      void trackPremiumStateEvaluated({
-        source: "billing_disabled",
-        premium: val,
-        cacheState,
-      });
       return val;
     }
 
@@ -129,11 +108,6 @@ export const PremiumProvider = ({
 
     if (!isRevenueCatConfigured()) {
       setSubscriptionFromPremium(false);
-      void trackPremiumStateEvaluated({
-        source: "revenuecat_unconfigured",
-        premium: false,
-        cacheState,
-      });
       return false;
     }
 
@@ -146,30 +120,14 @@ export const PremiumProvider = ({
       if (premiumKey) {
         await AsyncStorage.setItem(premiumKey, premium ? "true" : "false");
       }
-      void trackPremiumStateEvaluated({
-        source: "customer_info",
-        premium,
-        cacheState,
-        mismatch: cachedBefore !== null ? cachedBefore !== premium : undefined,
-      });
       return premium;
     } catch (error) {
       logWarning("premium status check failed", null, error);
       if (cachedBefore !== null) {
         setSubscriptionFromPremium(cachedBefore);
-        void trackPremiumStateEvaluated({
-          source: "cache_fallback",
-          premium: cachedBefore,
-          cacheState,
-        });
         return cachedBefore;
       }
       setSubscriptionFromPremium(false);
-      void trackPremiumStateEvaluated({
-        source: "cache_fallback",
-        premium: false,
-        cacheState: "miss",
-      });
       return false;
     }
   }, [
@@ -180,39 +138,16 @@ export const PremiumProvider = ({
   ]);
 
   const syncTierAndRefreshCredits = useCallback(async (): Promise<void> => {
-    let syncTierFailed = false;
     if (uid) {
       try {
         await post("/ai/credits/sync-tier");
       } catch (error) {
-        syncTierFailed = true;
         logWarning("ai credits tier sync failed", null, error);
         // Keep local premium status and fallback to normal credits refresh.
       }
     }
 
-    const refreshed = await refreshCredits();
-    const premiumNow = isPremiumRef.current;
-    if (premiumNow === null) {
-      return;
-    }
-
-    const expectedTier = premiumNow ? "premium" : "free";
-    const actualTier = refreshed?.tier ?? "unknown";
-    const mismatch =
-      syncTierFailed
-      || (actualTier !== "unknown" && actualTier !== expectedTier);
-    if (!mismatch) {
-      return;
-    }
-
-    void trackPremiumStateEvaluated({
-      source: "sync_validation",
-      premium: premiumNow,
-      cacheState: "not_applicable",
-      mismatch: true,
-      creditsTier: actualTier,
-    });
+    await refreshCredits();
   }, [refreshCredits, uid]);
 
   useEffect(() => {

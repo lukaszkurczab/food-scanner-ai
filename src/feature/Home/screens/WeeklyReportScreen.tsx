@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { AppIcon, Button, Layout } from "@/components";
@@ -19,6 +19,7 @@ import {
   getSignalDotColor,
   isWeeklyReportDevPreview,
 } from "@/feature/Home/screens/WeeklyReportScreen.helpers";
+import { trackWeeklyReportOpened } from "@/services/telemetry/telemetryInstrumentation";
 
 type WeeklyReportNavigation = StackNavigationProp<
   RootStackParamList,
@@ -416,6 +417,7 @@ export default function WeeklyReportScreen({ navigation }: Props) {
     active: !weeklyReportDevPreview,
   });
   const [refreshing, setRefreshing] = useState(false);
+  const hasTrackedOpenRef = useRef(false);
 
   const weeklyReport = useMemo(
     () =>
@@ -448,6 +450,26 @@ export default function WeeklyReportScreen({ navigation }: Props) {
     !weeklyReport.loading &&
     weeklyReport.status === "live_success" &&
     weeklyReport.report.status === "insufficient_data";
+
+  useEffect(() => {
+    if (weeklyReport.loading || hasTrackedOpenRef.current) {
+      return;
+    }
+
+    const reportStatus =
+      weeklyReport.report.status === "ready"
+        ? "ready"
+        : weeklyReport.report.status === "insufficient_data"
+          ? "insufficient_data"
+          : "unavailable";
+
+    hasTrackedOpenRef.current = true;
+    void trackWeeklyReportOpened({
+      reportStatus,
+      insightCount: weeklyReport.report.insights.length,
+      priorityCount: weeklyReport.report.priorities.length,
+    });
+  }, [weeklyReport.loading, weeklyReport.report]);
 
   return (
     <Layout showNavigation={false}>

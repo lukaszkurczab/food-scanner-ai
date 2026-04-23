@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
-jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
-  trackScreenView: jest.fn(),
-}));
-
 import { createNavigationTelemetryTracker } from "@/services/telemetry/navigationTelemetry";
 
 describe("navigationTelemetry", () => {

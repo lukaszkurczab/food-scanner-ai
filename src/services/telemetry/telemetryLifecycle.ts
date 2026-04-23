@@ -1,7 +1,6 @@
 import { AppState, type AppStateStatus } from "react-native";
 import { flush } from "@/services/telemetry/telemetryClient";
 import {
-  trackSessionEnd,
   trackSessionStart,
 } from "@/services/telemetry/telemetryInstrumentation";
 
@@ -30,7 +29,6 @@ async function handleAppStateChange(nextState: AppStateStatus): Promise<void> {
   currentAppState = nextState;
 
   if (isForeground(previousState) && !isForeground(nextState)) {
-    await safeTrack(trackSessionEnd());
     void flush();
     return;
   }

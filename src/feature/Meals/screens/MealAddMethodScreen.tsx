@@ -9,7 +9,6 @@ import type { RootStackParamList } from "@/navigation/navigate";
 import AppIcon from "@/components/AppIcon";
 import { useTranslation } from "react-i18next";
 import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
-import { trackMealAddMethodSelected } from "@/services/telemetry/telemetryInstrumentation";
 import { ResumeDraftSheet } from "@/feature/Meals/components/ResumeDraftSheet";
 
 type MealAddMethodNavigationProp = StackNavigationProp<
@@ -59,7 +58,6 @@ const MealAddMethodScreen = () => {
               accessibilityRole="button"
               accessibilityLabel={t(option.titleKey)}
               onPress={() => {
-                void trackMealAddMethodSelected(option.key);
                 void state.handleOptionPress(option);
               }}
               style={({ pressed }) => [

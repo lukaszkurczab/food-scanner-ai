@@ -1,18 +1,8 @@
 import { fireEvent } from "@testing-library/react-native";
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { describe, expect, it, jest } from "@jest/globals";
 import CoachInsightCard from "@/feature/Home/components/CoachInsightCard";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 import type { CoachInsight } from "@/services/coach/coachTypes";
-
-const mockTrackCoachCardViewed = jest.fn<() => Promise<void>>();
-const mockTrackCoachCardExpanded = jest.fn<() => Promise<void>>();
-const mockTrackCoachCardCtaClicked = jest.fn<() => Promise<void>>();
-
-jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
-  trackCoachCardViewed: () => mockTrackCoachCardViewed(),
-  trackCoachCardExpanded: () => mockTrackCoachCardExpanded(),
-  trackCoachCardCtaClicked: () => mockTrackCoachCardCtaClicked(),
-}));
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -62,12 +52,6 @@ function createInsight(overrides?: Partial<CoachInsight>): CoachInsight {
 }
 
 describe("CoachInsightCard", () => {
-  beforeEach(() => {
-    mockTrackCoachCardViewed.mockResolvedValue(undefined);
-    mockTrackCoachCardExpanded.mockResolvedValue(undefined);
-    mockTrackCoachCardCtaClicked.mockResolvedValue(undefined);
-  });
-
   it("renders the insight and triggers CTA", () => {
     const onPressCta = jest.fn();
     const { getByText, getByTestId } = renderWithTheme(
@@ -85,7 +69,6 @@ describe("CoachInsightCard", () => {
 
     fireEvent.press(getByTestId("coach-insight-cta"));
     expect(onPressCta).toHaveBeenCalledTimes(1);
-    expect(mockTrackCoachCardCtaClicked).toHaveBeenCalledTimes(1);
   });
 
   it("expands the why section with reason copy", () => {
@@ -99,7 +82,6 @@ describe("CoachInsightCard", () => {
 
     expect(getByText("Why am I seeing this?")).toBeTruthy();
     expect(getByText("This insight is based on recent logging consistency and how many recent days had enough meal data to interpret.")).toBeTruthy();
-    expect(mockTrackCoachCardExpanded).toHaveBeenCalledTimes(1);
   });
 
   it("hides the CTA when the insight has no action", () => {
@@ -119,11 +101,9 @@ describe("CoachInsightCard", () => {
     expect(queryByTestId("coach-insight-cta")).toBeNull();
   });
 
-  it("tracks card exposure on mount", () => {
+  it("renders card on mount", () => {
     renderWithTheme(
       <CoachInsightCard insight={createInsight()} />,
     );
-
-    expect(mockTrackCoachCardViewed).toHaveBeenCalledTimes(1);
   });
 });

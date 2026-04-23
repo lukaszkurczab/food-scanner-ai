@@ -1,5 +1,3 @@
-import { trackScreenView } from "@/services/telemetry/telemetryInstrumentation";
-
 type TrackScreenViewFn = (routeName: string) => Promise<void>;
 
 type CreateNavigationTelemetryTrackerParams = {
@@ -9,7 +7,7 @@ type CreateNavigationTelemetryTrackerParams = {
 
 export function createNavigationTelemetryTracker({
   getCurrentRouteName,
-  trackScreenViewFn = trackScreenView,
+  trackScreenViewFn,
 }: CreateNavigationTelemetryTrackerParams): () => void {
   let previousRouteName: string | undefined;
 
@@ -27,6 +25,8 @@ export function createNavigationTelemetryTracker({
     }
 
     previousRouteName = currentRouteName;
-    void trackScreenViewFn(currentRouteName);
+    if (trackScreenViewFn) {
+      void trackScreenViewFn(currentRouteName);
+    }
   };
 }

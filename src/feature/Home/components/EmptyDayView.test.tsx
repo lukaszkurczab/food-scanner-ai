@@ -3,12 +3,6 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import EmptyDayView from "@/feature/Home/components/EmptyDayView";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
-const mockTrackCoachEmptyStateViewed = jest.fn<() => Promise<void>>();
-
-jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
-  trackCoachEmptyStateViewed: () => mockTrackCoachEmptyStateViewed(),
-}));
-
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (
@@ -26,7 +20,6 @@ jest.mock("react-i18next", () => ({
 describe("EmptyDayView", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockTrackCoachEmptyStateViewed.mockResolvedValue(undefined);
   });
 
   it("renders plain today state and triggers add meal action without coach telemetry", () => {
@@ -43,7 +36,6 @@ describe("EmptyDayView", () => {
 
     fireEvent.press(getByText("translated:emptyDay.addMeal"));
     expect(onAddMeal).toHaveBeenCalledTimes(1);
-    expect(mockTrackCoachEmptyStateViewed).not.toHaveBeenCalled();
   });
 
   it("renders plain non-today state and triggers open history action", () => {
@@ -59,7 +51,6 @@ describe("EmptyDayView", () => {
 
     fireEvent.press(getByText("translated:emptyDay.openHistory"));
     expect(onOpenHistory).toHaveBeenCalledTimes(1);
-    expect(mockTrackCoachEmptyStateViewed).not.toHaveBeenCalled();
   });
 
   it("renders today offline copy", () => {
@@ -88,7 +79,7 @@ describe("EmptyDayView", () => {
     expect(onOpenHistory).toHaveBeenCalledTimes(1);
   });
 
-  it("renders coach-aware empty state and emits telemetry when live coach empty reason is present", () => {
+  it("renders coach-aware empty state when live coach empty reason is present", () => {
     const { getByText } = renderWithTheme(
       <EmptyDayView
         mode="coach_aware"
@@ -102,22 +93,17 @@ describe("EmptyDayView", () => {
     expect(getByText("translated:emptyDay.coachAware.insufficient_data.body")).toBeTruthy();
     expect(getByText("Why am I seeing this?")).toBeTruthy();
     expect(getByText("translated:emptyDay.coachAware.insufficient_data.whyBody")).toBeTruthy();
-    expect(mockTrackCoachEmptyStateViewed).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps service-unavailable style plain empty state free from coach telemetry", () => {
+  it("keeps service-unavailable style plain empty state", () => {
     renderWithTheme(
       <EmptyDayView isToday onAddMeal={() => undefined} />,
     );
-
-    expect(mockTrackCoachEmptyStateViewed).not.toHaveBeenCalled();
   });
 
-  it("keeps stale-cache style plain empty state free from coach telemetry", () => {
+  it("keeps stale-cache style plain empty state", () => {
     renderWithTheme(
       <EmptyDayView isToday={false} onOpenHistory={() => undefined} />,
     );
-
-    expect(mockTrackCoachEmptyStateViewed).not.toHaveBeenCalled();
   });
 });
