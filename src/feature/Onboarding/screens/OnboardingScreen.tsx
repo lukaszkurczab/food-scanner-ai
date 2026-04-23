@@ -89,6 +89,7 @@ export default function OnboardingScreen({
 
         {state.step === 1 ? (
           <Step1BasicData
+            mode={mode}
             form={state.form}
             setForm={state.setForm}
             errors={state.errors}

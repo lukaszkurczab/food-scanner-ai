@@ -91,6 +91,11 @@ jest.mock("expo-device", () => ({
   isDevice: true,
 }));
 
+jest.mock("expo-localization", () => ({
+  __esModule: true,
+  getLocales: jest.fn(() => [{ languageTag: "en-US" }]),
+}));
+
 jest.mock("@sentry/react-native", () => ({
   __esModule: true,
   init: jest.fn(),

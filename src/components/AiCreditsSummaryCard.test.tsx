@@ -25,10 +25,10 @@ describe("AiCreditsSummaryCard", () => {
       />,
     );
 
-    expect(getByText("AI Credits")).toBeTruthy();
+    expect(getByText("manageSubscription.aiCreditsSection")).toBeTruthy();
     expect(getByText("76")).toBeTruthy();
     expect(getByText("800")).toBeTruthy();
-    expect(getByText("Premium")).toBeTruthy();
+    expect(getByText("manageSubscription.tierPremium")).toBeTruthy();
     expect(getByText("14.05.2026, 12:00")).toBeTruthy();
   });
 

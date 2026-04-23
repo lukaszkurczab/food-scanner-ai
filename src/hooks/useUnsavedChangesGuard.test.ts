@@ -3,7 +3,11 @@ import { act, renderHook } from "@testing-library/react-native";
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 
+type GuardNavigation = Parameters<typeof useUnsavedChangesGuard>[0]["navigation"];
+
 type BeforeRemoveListener = (event: {
+  type: "beforeRemove";
+  target?: string;
   data: { action: { type: string } };
   preventDefault: () => void;
 }) => void;
@@ -11,16 +15,18 @@ type BeforeRemoveListener = (event: {
 function createNavigationMock() {
   let beforeRemoveListener: BeforeRemoveListener | undefined;
 
-  const navigation = {
-    addListener: jest.fn(
-      (_eventName: string, listener: BeforeRemoveListener) => {
-        beforeRemoveListener = listener;
-        return jest.fn();
-      },
-    ),
-    dispatch: jest.fn(),
-    goBack: jest.fn(),
-    canGoBack: jest.fn(() => true),
+  const addListener: GuardNavigation["addListener"] = ((eventName, listener) => {
+    if (eventName === "beforeRemove") {
+      beforeRemoveListener = listener as unknown as BeforeRemoveListener;
+    }
+    return () => undefined;
+  }) as GuardNavigation["addListener"];
+
+  const navigation: GuardNavigation = {
+    addListener,
+    dispatch: jest.fn() as GuardNavigation["dispatch"],
+    goBack: jest.fn() as GuardNavigation["goBack"],
+    canGoBack: jest.fn(() => true) as GuardNavigation["canGoBack"],
   };
 
   return {
@@ -28,6 +34,7 @@ function createNavigationMock() {
     emitBeforeRemove(actionType: string) {
       const preventDefault = jest.fn();
       beforeRemoveListener?.({
+        type: "beforeRemove",
         data: { action: { type: actionType } },
         preventDefault,
       });

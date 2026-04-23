@@ -1,16 +1,25 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { BackHandler } from "react-native";
+import { BackHandler, type NativeEventSubscription } from "react-native";
 import { useMealDetailsState } from "@/feature/History/hooks/useMealDetailsState";
 import type { Meal } from "@/types/meal";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { StackNavigationProp } from "@react-navigation/stack";
 
-const mockBackHandlerAddEventListener = jest.fn();
+const mockBackHandlerAddEventListener = jest.fn(
+  (_eventName: string, _handler: () => boolean) =>
+    ({ remove: jest.fn() }) as NativeEventSubscription,
+);
 const mockEmit = jest.fn();
-const mockOn = jest.fn();
-const mockGetMealByCloudIdLocal = jest.fn();
-const mockGetMyMealByCloudIdLocal = jest.fn();
+const mockOn = jest.fn((_event: string, _handler: (payload?: unknown) => void) =>
+  jest.fn(),
+);
+const mockGetMealByCloudIdLocal = jest.fn(
+  async (_uid: string, _cloudId: string): Promise<Meal | null> => null,
+);
+const mockGetMyMealByCloudIdLocal = jest.fn(
+  async (_uid: string, _cloudId: string): Promise<Meal | null> => null,
+);
 
 jest.mock("@/services/core/events", () => ({
   emit: (event: string, payload: unknown) => mockEmit(event, payload),
@@ -97,10 +106,10 @@ describe("useMealDetailsState", () => {
     jest.clearAllMocks();
     jest
       .spyOn(BackHandler, "addEventListener")
-      .mockImplementation((eventName, handler) =>
-        mockBackHandlerAddEventListener(eventName, handler),
+      .mockImplementation(
+        ((eventName: string, handler: () => boolean) =>
+          mockBackHandlerAddEventListener(eventName, handler)) as typeof BackHandler.addEventListener,
       );
-    mockBackHandlerAddEventListener.mockReturnValue({ remove: jest.fn() });
     mockOn.mockReturnValue(jest.fn());
     mockGetMealByCloudIdLocal.mockResolvedValue(null);
     mockGetMyMealByCloudIdLocal.mockResolvedValue(null);

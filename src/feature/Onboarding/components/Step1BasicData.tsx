@@ -8,6 +8,7 @@ import type { FormData } from "@/types";
 import { SEX_OPTIONS, UNITS_OPTIONS } from "@/feature/Onboarding/constants";
 
 type Props = {
+  mode: "first" | "refill";
   form: FormData;
   setForm: React.Dispatch<React.SetStateAction<FormData>>;
   errors: Partial<Record<keyof FormData, string>>;
@@ -26,6 +27,7 @@ function getString(value: unknown): string {
 }
 
 export default function Step1BasicData({
+  mode,
   form,
   setForm,
   errors,

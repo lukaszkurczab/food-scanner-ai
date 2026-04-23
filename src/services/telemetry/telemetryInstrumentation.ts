@@ -17,6 +17,8 @@ type NotificationTelemetryOrigin =
 type NotificationTelemetryInput = {
   notificationType?: string | null;
   origin?: string | null;
+  actionIdentifier?: string | null;
+  openedFromBackground?: boolean | null;
 };
 
 type SmartReminderConfidenceBucket = "low" | "medium" | "high";
@@ -86,10 +88,15 @@ function normalizeNotificationOrigin(
 function buildNotificationProps(
   input: NotificationTelemetryInput,
 ): TelemetryProps {
+  const actionIdentifier = normalizeNotificationValue(input.actionIdentifier);
   return {
     notificationType:
       normalizeNotificationValue(input.notificationType) || "unknown",
     origin: normalizeNotificationOrigin(input.origin),
+    ...(actionIdentifier ? { actionIdentifier } : {}),
+    ...(typeof input.openedFromBackground === "boolean"
+      ? { openedFromBackground: input.openedFromBackground }
+      : {}),
   };
 }
 
