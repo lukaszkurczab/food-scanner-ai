@@ -7,9 +7,7 @@ import type { RootStackParamList } from "@/navigation/navigate";
 import { calculateCalorieTarget } from "@/feature/Onboarding/utils/calculateCalorieTarget";
 import { assertNoUndefined } from "@/utils/findUndefined";
 import { cmToFtIn, kgToLbs } from "@/utils/units";
-import {
-  trackOnboardingCompleted,
-} from "@/services/telemetry/telemetryInstrumentation";
+import { trackOnboardingCompleted } from "@/services/telemetry/telemetryInstrumentation";
 import {
   INITIAL_FORM,
   ONBOARDING_TOTAL_STEPS,
@@ -17,7 +15,10 @@ import {
   resetOptionalHealthFields,
 } from "@/feature/Onboarding/constants";
 
-type OnboardingNavigation = StackNavigationProp<RootStackParamList, "Onboarding">;
+type OnboardingNavigation = StackNavigationProp<
+  RootStackParamList,
+  "Onboarding"
+>;
 
 type OnboardingErrorKey =
   | keyof FormData
@@ -79,12 +80,19 @@ function buildInitialForm(userData: UserData | null): FormData {
   };
 }
 
-function validateStep1(form: FormData, t: (key: string) => string): OnboardingErrors {
+function validateStep1(
+  form: FormData,
+  t: (key: string) => string,
+): OnboardingErrors {
   const nextErrors: OnboardingErrors = {};
 
   if (!form.age) {
     nextErrors.age = t("errors.ageRequired");
-  } else if (!/^\d+$/.test(form.age) || Number(form.age) < 16 || Number(form.age) > 120) {
+  } else if (
+    !/^\d+$/.test(form.age) ||
+    Number(form.age) < 16 ||
+    Number(form.age) > 120
+  ) {
     nextErrors.age = t("errors.ageInvalid");
   }
 
@@ -95,13 +103,21 @@ function validateStep1(form: FormData, t: (key: string) => string): OnboardingEr
   if (form.unitsSystem === "metric") {
     if (!form.height) {
       nextErrors.height = t("errors.heightRequired");
-    } else if (!/^\d{2,3}$/.test(form.height) || Number(form.height) < 90 || Number(form.height) > 250) {
+    } else if (
+      !/^\d{2,3}$/.test(form.height) ||
+      Number(form.height) < 90 ||
+      Number(form.height) > 250
+    ) {
       nextErrors.height = t("errors.heightInvalid");
     }
 
     if (!form.weight) {
       nextErrors.weight = t("errors.weightRequired");
-    } else if (!/^\d+$/.test(form.weight) || Number(form.weight) < 30 || Number(form.weight) > 300) {
+    } else if (
+      !/^\d+$/.test(form.weight) ||
+      Number(form.weight) < 30 ||
+      Number(form.weight) > 300
+    ) {
       nextErrors.weight = t("errors.weightInvalid");
     }
 
@@ -131,7 +147,10 @@ function validateStep1(form: FormData, t: (key: string) => string): OnboardingEr
   return nextErrors;
 }
 
-function validateStep2(form: FormData, t: (key: string) => string): OnboardingErrors {
+function validateStep2(
+  form: FormData,
+  t: (key: string) => string,
+): OnboardingErrors {
   const nextErrors: OnboardingErrors = {};
 
   if (!form.activityLevel) {
@@ -153,14 +172,23 @@ function validateStep2(form: FormData, t: (key: string) => string): OnboardingEr
   return nextErrors;
 }
 
-function validateStep3(form: FormData, t: (key: string) => string): OnboardingErrors {
+function validateStep3(
+  form: FormData,
+  t: (key: string) => string,
+): OnboardingErrors {
   const nextErrors: OnboardingErrors = {};
 
-  if ((form.chronicDiseases ?? []).includes("other") && !form.chronicDiseasesOther?.trim()) {
+  if (
+    (form.chronicDiseases ?? []).includes("other") &&
+    !form.chronicDiseasesOther?.trim()
+  ) {
     nextErrors.chronicDiseasesOther = t("validation.otherRequired");
   }
 
-  if ((form.allergies ?? []).includes("other") && !form.allergiesOther?.trim()) {
+  if (
+    (form.allergies ?? []).includes("other") &&
+    !form.allergiesOther?.trim()
+  ) {
     nextErrors.allergiesOther = t("validation.otherRequired");
   }
 
@@ -173,16 +201,20 @@ function validateStep4(): OnboardingErrors {
 
 function findFirstInvalidStep(form: FormData, t: (key: string) => string) {
   const step1Errors = validateStep1(form, t);
-  if (Object.keys(step1Errors).length > 0) return { step: 1 as const, errors: step1Errors };
+  if (Object.keys(step1Errors).length > 0)
+    return { step: 1 as const, errors: step1Errors };
 
   const step2Errors = validateStep2(form, t);
-  if (Object.keys(step2Errors).length > 0) return { step: 2 as const, errors: step2Errors };
+  if (Object.keys(step2Errors).length > 0)
+    return { step: 2 as const, errors: step2Errors };
 
   const step3Errors = validateStep3(form, t);
-  if (Object.keys(step3Errors).length > 0) return { step: 3 as const, errors: step3Errors };
+  if (Object.keys(step3Errors).length > 0)
+    return { step: 3 as const, errors: step3Errors };
 
   const step4Errors = validateStep4();
-  if (Object.keys(step4Errors).length > 0) return { step: 4 as const, errors: step4Errors };
+  if (Object.keys(step4Errors).length > 0)
+    return { step: 4 as const, errors: step4Errors };
 
   return null;
 }
@@ -224,7 +256,8 @@ export function useOnboardingFlow(params: {
   const [isLoaded, setIsLoaded] = useState(false);
   const [modalState, setModalState] = useState<ModalState>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [hasConfirmedOptionalSkip, setHasConfirmedOptionalSkip] = useState(false);
+  const [hasConfirmedOptionalSkip, setHasConfirmedOptionalSkip] =
+    useState(false);
 
   useEffect(() => {
     const nextInitialForm = buildInitialForm(userData);
@@ -253,7 +286,7 @@ export function useOnboardingFlow(params: {
           : currentStep === 2
             ? validateStep2(form, t)
             : currentStep === 3
-            ? validateStep3(form, t)
+              ? validateStep3(form, t)
               : validateStep4();
 
       setErrors(nextErrors);
@@ -266,22 +299,32 @@ export function useOnboardingFlow(params: {
     params.navigation.navigate("Profile");
   }, [params.navigation]);
 
-  const finishOnboarding = useCallback(async (nextForm?: FormData) => {
-    const resolvedForm = nextForm ?? form;
-    setSubmitting(true);
-    try {
-      await updateUser(buildCompletedPatch(resolvedForm));
-      await syncUserProfile();
-      void trackOnboardingCompleted({ mode: params.mode });
-      if (params.mode === "first") {
-        params.navigation.replace("Home");
-      } else {
-        goToProfile();
+  const finishOnboarding = useCallback(
+    async (nextForm?: FormData) => {
+      const resolvedForm = nextForm ?? form;
+      setSubmitting(true);
+      try {
+        await updateUser(buildCompletedPatch(resolvedForm));
+        await syncUserProfile();
+        void trackOnboardingCompleted({ mode: params.mode });
+        if (params.mode === "first") {
+          params.navigation.replace("Home");
+        } else {
+          goToProfile();
+        }
+      } finally {
+        setSubmitting(false);
       }
-    } finally {
-      setSubmitting(false);
-    }
-  }, [form, goToProfile, params.mode, params.navigation, syncUserProfile, updateUser]);
+    },
+    [
+      form,
+      goToProfile,
+      params.mode,
+      params.navigation,
+      syncUserProfile,
+      updateUser,
+    ],
+  );
 
   const handlePrimaryAction = useCallback(async () => {
     if (!validateCurrentStep(step)) return;
@@ -293,7 +336,7 @@ export function useOnboardingFlow(params: {
 
     setErrors({});
     setStep((current) => Math.min(ONBOARDING_TOTAL_STEPS, current + 1));
-  }, [finishOnboarding, params.mode, step, validateCurrentStep]);
+  }, [finishOnboarding, step, validateCurrentStep]);
 
   const handleBack = useCallback(() => {
     if (step <= 1) return;
@@ -324,19 +367,22 @@ export function useOnboardingFlow(params: {
     setModalState({ type: "exit_refill" });
   }, [goToProfile, isDirty, params.mode]);
 
-  const applyOptionalStepSkip = useCallback(async (skipStep: 3 | 4) => {
-    setErrors({});
+  const applyOptionalStepSkip = useCallback(
+    async (skipStep: 3 | 4) => {
+      setErrors({});
 
-    if (skipStep === 3) {
-      setForm((current) => resetOptionalHealthFields(current));
-      setStep(4);
-      return;
-    }
+      if (skipStep === 3) {
+        setForm((current) => resetOptionalHealthFields(current));
+        setStep(4);
+        return;
+      }
 
-    const nextForm = resetOptionalAssistantFields(form);
-    setForm(nextForm);
-    await finishOnboarding(nextForm);
-  }, [finishOnboarding, form]);
+      const nextForm = resetOptionalAssistantFields(form);
+      setForm(nextForm);
+      await finishOnboarding(nextForm);
+    },
+    [finishOnboarding, form],
+  );
 
   const handleSkipStep = useCallback(async () => {
     if (step !== 3 && step !== 4) return;

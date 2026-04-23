@@ -12,7 +12,10 @@ import type {
   AiChatRunRequest,
   AiChatRunResponse,
 } from "@/services/ai/contracts";
-import { getErrorStatus, isServiceError } from "@/services/contracts/serviceError";
+import {
+  getErrorStatus,
+  isServiceError,
+} from "@/services/contracts/serviceError";
 import { captureException } from "@/services/core/errorLogger";
 import { getAiUxErrorType, type AiUxErrorType } from "@/services/ai/uxError";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
@@ -39,10 +42,17 @@ type RetryableSendContext = {
   createdAt: number;
 };
 
-const GATEWAY_REJECT_REASONS = new Set(["OFF_TOPIC", "ML_OFF_TOPIC", "TOO_SHORT"]);
+const GATEWAY_REJECT_REASONS = new Set([
+  "OFF_TOPIC",
+  "ML_OFF_TOPIC",
+  "TOO_SHORT",
+]);
 const CHAT_DEAD_LETTER_KINDS: QueueKind[] = ["persist_chat_message"];
 
-function findInsertIndexDesc(messages: ChatMessage[], createdAt: number): number {
+function findInsertIndexDesc(
+  messages: ChatMessage[],
+  createdAt: number,
+): number {
   let left = 0;
   let right = messages.length;
 
@@ -108,11 +118,7 @@ function getGatewayRejectReason(error: unknown): string | null {
   const details = isRecord(error.details) ? error.details : null;
   if (!details) return null;
   const canonicalDetail = isRecord(details.detail) ? details.detail : details;
-  return (
-    asString(canonicalDetail.reason) ||
-    asString(details.reason) ||
-    null
-  );
+  return asString(canonicalDetail.reason) || asString(details.reason) || null;
 }
 
 function getGatewayRejectCode(error: unknown): string | null {
@@ -146,7 +152,9 @@ export function useChatHistory(
   const [sending, setSending] = useState(false);
   const [typing, setTyping] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [sendErrorType, setSendErrorType] = useState<AiUxErrorType | null>(null);
+  const [sendErrorType, setSendErrorType] = useState<AiUxErrorType | null>(
+    null,
+  );
   const [failedSyncCount, setFailedSyncCount] = useState(0);
   const [retryingFailedSync, setRetryingFailedSync] = useState(false);
 
@@ -274,7 +282,8 @@ export function useChatHistory(
       retryContext?: RetryableSendContext | null,
     ): Promise<string | null> => {
       const trimmed = text.trim();
-      if (!trimmed || !canSend || sending || sendInFlightRef.current) return null;
+      if (!trimmed || !canSend || sending || sendInFlightRef.current)
+        return null;
 
       const net = await NetInfo.fetch();
       if (isOfflineNetState(net)) return null;
@@ -292,10 +301,12 @@ export function useChatHistory(
 
       const isRetryAttempt = !!retryContext;
       const now = retryContext?.createdAt ?? Date.now();
-      const createdThreadId = retryContext?.threadId ?? (isLocalThread ? uuidv4() : threadId);
+      const createdThreadId =
+        retryContext?.threadId ?? (isLocalThread ? uuidv4() : threadId);
       const userMsgId = retryContext?.userMessageId ?? uuidv4();
       const aiMsgId = uuidv4();
-      const isRequestActive = () => activeSendRequestIdRef.current === requestId;
+      const isRequestActive = () =>
+        activeSendRequestIdRef.current === requestId;
 
       if (!isRetryAttempt) {
         retryableSendRef.current = null;
@@ -359,8 +370,7 @@ export function useChatHistory(
             aiResponse.assistantMessageId.trim().length > 0
               ? aiResponse.assistantMessageId
               : null;
-          if (assistantReply) {
-          } else {
+          if (!assistantReply) {
             setSendErrorType("unknown");
           }
           applyCreditsFromResponse(aiResponse);

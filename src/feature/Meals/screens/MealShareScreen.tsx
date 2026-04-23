@@ -45,7 +45,6 @@ import {
   CANVAS_MIN_WIDTH,
   CANVAS_RATIO,
   clamp,
-  resolveMealContext,
   resolveMealTitle,
   resolveShareNutrition,
 } from "@/feature/Meals/screens/MealShareScreen.helpers";
@@ -103,11 +102,6 @@ export default function MealShareScreen() {
     error: null,
   });
   const [completed, setCompleted] = useState(false);
-
-  const mealContext = useMemo(
-    () => resolveMealContext(route.params.returnTo),
-    [route.params.returnTo],
-  );
 
   const canvasWidth = useMemo(() => {
     const available = screenWidth - theme.spacing.md * 2;
@@ -412,7 +406,14 @@ export default function MealShareScreen() {
   );
 
   const handleChartStyleChange = useCallback(
-    (patch: Partial<Pick<NonNullable<ShareCompositionState["widgets"]["chart"]>, "textColor" | "backgroundColor">>) => {
+    (
+      patch: Partial<
+        Pick<
+          NonNullable<ShareCompositionState["widgets"]["chart"]>,
+          "textColor" | "backgroundColor"
+        >
+      >,
+    ) => {
       setComposition((prev) => {
         const current = prev.widgets.chart || createDefaultChartLayer();
         return {
@@ -471,7 +472,14 @@ export default function MealShareScreen() {
   );
 
   const handleCardStyleChange = useCallback(
-    (patch: Partial<Pick<NonNullable<ShareCompositionState["widgets"]["card"]>, "textColor" | "backgroundColor">>) => {
+    (
+      patch: Partial<
+        Pick<
+          NonNullable<ShareCompositionState["widgets"]["card"]>,
+          "textColor" | "backgroundColor"
+        >
+      >,
+    ) => {
       setComposition((prev) => {
         if (!prev.widgets.card) {
           const preset = getPresetTemplate(selectedPreset);
@@ -508,7 +516,11 @@ export default function MealShareScreen() {
   );
 
   const handleAdditionalPhotoTreatmentChange = useCallback(
-    (treatment: NonNullable<ShareCompositionState["additionalPhoto"]>["treatment"]) => {
+    (
+      treatment: NonNullable<
+        ShareCompositionState["additionalPhoto"]
+      >["treatment"],
+    ) => {
       setComposition((prev) => {
         if (!prev.additionalPhoto) return prev;
         return {
@@ -552,7 +564,11 @@ export default function MealShareScreen() {
   }, [t, trackShareEvent]);
 
   const handleRemoveSelectedLayer = useCallback(() => {
-    if (!selectedLayerId || selectedLayerId === "mealPhoto" || selectedLayerId === "text:title") {
+    if (
+      !selectedLayerId ||
+      selectedLayerId === "mealPhoto" ||
+      selectedLayerId === "text:title"
+    ) {
       return;
     }
 
@@ -584,7 +600,9 @@ export default function MealShareScreen() {
       if (selectedLayerId.startsWith("text:")) {
         return {
           ...prev,
-          textLayers: prev.textLayers.filter((layer) => layer.id !== selectedLayerId),
+          textLayers: prev.textLayers.filter(
+            (layer) => layer.id !== selectedLayerId,
+          ),
         };
       }
       return prev;
@@ -730,7 +748,9 @@ export default function MealShareScreen() {
               defaultValue: "Share unavailable",
             })}
           </Text>
-          <Text style={[styles.invalidDescription, { color: theme.textSecondary }]}>
+          <Text
+            style={[styles.invalidDescription, { color: theme.textSecondary }]}
+          >
             {t("share_unavailable_description", {
               ns: "share",
               defaultValue:
@@ -767,16 +787,16 @@ export default function MealShareScreen() {
         paddingLeft: theme.spacing.md,
         paddingRight: theme.spacing.md,
       }}
-      >
-        <View style={styles.screen}>
-          <Pressable
-            onPress={handleClose}
-            accessibilityRole="button"
-            accessibilityLabel={t("common:close", { defaultValue: "Close" })}
-            style={[styles.closeButtonFloating, { borderColor: theme.border }]}
-          >
-            <AppIcon name="close" size={14} color={theme.primaryStrong} />
-          </Pressable>
+    >
+      <View style={styles.screen}>
+        <Pressable
+          onPress={handleClose}
+          accessibilityRole="button"
+          accessibilityLabel={t("common:close", { defaultValue: "Close" })}
+          style={[styles.closeButtonFloating, { borderColor: theme.border }]}
+        >
+          <AppIcon name="close" size={14} color={theme.primaryStrong} />
+        </Pressable>
 
         <View style={[styles.modeSwitch, { borderColor: theme.border }]}>
           <Pressable
@@ -884,7 +904,9 @@ export default function MealShareScreen() {
           onChartStyleChange={handleChartStyleChange}
           onCardVariantChange={handleCardVariantChange}
           onCardStyleChange={handleCardStyleChange}
-          onAdditionalPhotoTreatmentChange={handleAdditionalPhotoTreatmentChange}
+          onAdditionalPhotoTreatmentChange={
+            handleAdditionalPhotoTreatmentChange
+          }
           onAddTextLayer={handleAddTextLayer}
           onEnsureChartLayer={handleEnsureChartLayer}
           onEnsureCardLayer={handleEnsureCardLayer}
