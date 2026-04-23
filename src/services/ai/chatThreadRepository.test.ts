@@ -208,6 +208,62 @@ describe("services/ai/chatThreadRepository", () => {
     expect(page.nextCursor).toEqual({ beforeCreatedAt: 200 });
   });
 
+  it("syncs only active thread messages on thread message subscription", async () => {
+    mockGetChatMessagesPageLocal
+      .mockResolvedValueOnce({
+        items: [],
+        nextBeforeCreatedAt: null,
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "m-remote",
+            userUid: "user-1",
+            role: "assistant",
+            content: "thread message",
+            createdAt: 200,
+            lastSyncedAt: 200,
+            syncState: "synced",
+          },
+        ],
+        nextBeforeCreatedAt: null,
+      });
+    mockGet.mockResolvedValueOnce({
+      items: [
+        {
+          id: "m-remote",
+          role: "assistant",
+          content: "thread message",
+          createdAt: 200,
+          lastSyncedAt: 200,
+          deleted: false,
+        },
+      ],
+      nextBeforeCreatedAt: null,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { subscribeToChatThreadMessages } = require("@/services/ai/chatThreadRepository");
+
+    const unsubscribe = subscribeToChatThreadMessages({
+      userUid: "user-1",
+      threadId: "thread-1",
+      pageSize: 50,
+      onMessages: jest.fn(),
+      onError: jest.fn(),
+    });
+
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(mockPullChatChanges).toHaveBeenCalledWith("user-1");
+    expect(mockGet).toHaveBeenCalledWith(
+      "/users/me/chat/threads/thread-1/messages?limit=50",
+    );
+    unsubscribe();
+  });
+
   it("triggers chat pull on thread subscription when online", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { subscribeToChatThreads } = require("@/services/ai/chatThreadRepository");

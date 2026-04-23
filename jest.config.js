@@ -63,7 +63,7 @@ const featureCoverageFiles = [
 
 const serviceCoverageFiles = [
   // AI
-  "src/services/ai/askDietAI.ts",
+  "src/services/ai/contracts.ts",
   // chatThreadRepository.ts excluded — async/error path coverage requires integration tests
   "src/services/ai/textMealService.ts",
   "src/services/ai/visionService.ts",

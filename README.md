@@ -188,13 +188,14 @@ The manual disposable smoke delete helper (`node scripts/manual-delete-smoke-che
 
 The mobile app uses v2 endpoints selectively:
 
+- **AI Chat**: Chat runtime is canonical v2 and sends user prompts to `POST /api/v2/ai/chat/runs`.
 - **Telemetry**: When `EXPO_PUBLIC_ENABLE_TELEMETRY=true`, the telemetry client batches events and sends them to `POST /api/v2/telemetry/events/batch`.
 - **NutritionState**: The Home screen fetches from `GET /api/v2/users/me/state?day=YYYY-MM-DD` with local fallback caching. If the backend is unreachable, the consumer falls back to locally-computed state.
 - **Smart Reminders**: The app fetches `GET /api/v2/users/me/reminders/decision?day=YYYY-MM-DD`, schedules only `decision="send"`, and cancels on `suppress`, `noop`, invalid payload, or failure. Mobile schedules from canonical backend `scheduledAtUtc`, not reconstructed local clock fields. Device notification permission stays a mobile execution concern, not part of the backend reminder decision contract.
 - **Smart Reminders scope**: Smart Reminders v1 currently depend on NutritionState, habit signals already surfaced through state, existing reminder preferences, and current-time evaluation context. Coach Insights v1 remain a separate surface and are not a runtime input to reminder decisions in v1.
 - **Legacy residue policy**: Mobile no longer exposes legacy meal/day reminder forms as a production path. Notifications settings now drive a single canonical runtime (smart reminders + local scheduling + system prefs).
 
-All other features (meals, AI chat, photo analysis, subscriptions) continue to use v1 endpoints.
+All other features (meals, photo analysis, subscriptions) continue to use v1 endpoints.
 
 If AI features are enabled locally, the mobile app still needs a reachable backend configured through `EXPO_PUBLIC_API_BASE_URL`; the OpenAI API key now lives only on the backend.
 

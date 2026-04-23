@@ -122,6 +122,11 @@ export function subscribeToChatThreadMessages(params: {
       const net = await NetInfo.fetch();
       if (isOfflineNetState(net)) return;
       await requestChatPull(params.userUid);
+      await syncMessagesFromBackend({
+        userUid: params.userUid,
+        threadId: params.threadId,
+        limitCount: params.pageSize,
+      });
       await publish();
     } catch (error) {
       params.onError?.(error);

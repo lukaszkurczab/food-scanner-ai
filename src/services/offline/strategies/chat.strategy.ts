@@ -1,12 +1,11 @@
 import NetInfo from "@react-native-community/netinfo";
-import type { ChatMessage, ChatThread } from "@/types";
+import type { ChatThread } from "@/types";
 import { Sync } from "@/utils/debug";
 import { get } from "@/services/core/apiClient";
 import { isOfflineNetState } from "@/services/core/networkState";
 import { normalizeServiceError } from "@/services/contracts/serviceError";
 import {
   getChatThreadByIdLocal,
-  upsertChatMessageLocal,
   upsertChatThreadLocal,
 } from "../chat.repo";
 import { getLastChatPullTs, setLastChatPullTs } from "../sync.storage";
@@ -31,32 +30,12 @@ type ChatThreadsPageApiResponse = {
   nextCursor?: string | null;
 };
 
-type ChatMessageApiItem = {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  createdAt: number;
-  lastSyncedAt: number;
-  deleted?: boolean;
-};
-
-type ChatMessagesPageApiResponse = {
-  items?: ChatMessageApiItem[];
-};
-
 function toSyncError(error: unknown) {
   return normalizeServiceError(error, {
     code: "sync/unknown",
     source: "SyncEngine",
     retryable: true,
   });
-}
-
-function toChatThreadRole(
-  value: string | null | undefined,
-): "user" | "assistant" | "system" {
-  if (value === "user" || value === "assistant" || value === "system") return value;
-  return "assistant";
 }
 
 function toChatThread(userUid: string, item: ChatThreadApiItem): ChatThread {
@@ -72,42 +51,6 @@ function toChatThread(userUid: string, item: ChatThreadApiItem): ChatThread {
   };
 }
 
-function toChatMessage(userUid: string, item: ChatMessageApiItem): ChatMessage {
-  const createdAt = Number(item.createdAt || 0);
-  return {
-    id: String(item.id || ""),
-    userUid,
-    role: toChatThreadRole(item.role),
-    content: String(item.content || ""),
-    createdAt,
-    lastSyncedAt: Number(item.lastSyncedAt || createdAt),
-    syncState: "synced",
-    deleted: Boolean(item.deleted),
-    cloudId: String(item.id || ""),
-  };
-}
-
-async function pullChatThreadMessages(params: {
-  uid: string;
-  threadId: string;
-  limitCount?: number;
-}): Promise<number> {
-  const limit = Math.max(1, Math.min(params.limitCount ?? 50, 200));
-  const response = await get<ChatMessagesPageApiResponse>(
-    `/users/me/chat/threads/${encodeURIComponent(params.threadId)}/messages?limit=${limit}`
-  );
-  const items = Array.isArray(response?.items) ? response.items : [];
-  for (const item of items) {
-    const normalized = toChatMessage(params.uid, item);
-    if (!normalized.id) continue;
-    await upsertChatMessageLocal({
-      threadId: params.threadId,
-      message: normalized,
-    });
-  }
-  return items.length;
-}
-
 export const chatStrategy: SyncStrategy = {
   async pull(uid: string): Promise<number> {
     const pullLog = log.child("pull:chat");
@@ -121,7 +64,6 @@ export const chatStrategy: SyncStrategy = {
     const lastPullTs = await getLastChatPullTs(uid);
     let newestPullTs = lastPullTs;
     let syncedThreads = 0;
-    let syncedMessages = 0;
     let beforeUpdatedAtCursor: number | null = null;
     let opaqueCursor: string | null = null;
 
@@ -157,32 +99,6 @@ export const chatStrategy: SyncStrategy = {
             syncedThreads++;
           }
 
-          const remoteLastMessageAt = normalizedThread.lastMessageAt ?? 0;
-          const localLastMessageAt = localThread?.lastMessageAt ?? 0;
-          const shouldSyncMessages =
-            !localIsNewer &&
-            (!localThread ||
-              normalizedThread.updatedAt >= localThread.updatedAt ||
-              remoteLastMessageAt > localLastMessageAt ||
-              normalizedThread.updatedAt >= lastPullTs);
-
-          if (!shouldSyncMessages) continue;
-
-          try {
-            syncedMessages += await pullChatThreadMessages({
-              uid,
-              threadId: normalizedThread.id,
-              limitCount: 50,
-            });
-          } catch (error: unknown) {
-            const err = toSyncError(error);
-            pullLog.error("thread_messages:fail", {
-              threadId: normalizedThread.id,
-              code: err.code,
-              message: err.message,
-              retryable: err.retryable,
-            });
-          }
         }
 
         const nextBeforeUpdatedAt =
@@ -219,10 +135,9 @@ export const chatStrategy: SyncStrategy = {
       }
       pullLog.log("done", {
         threads: syncedThreads,
-        messages: syncedMessages,
         lastPullTs: newestPullTs,
       });
-      return syncedThreads + syncedMessages;
+      return syncedThreads;
     } catch (error: unknown) {
       const err = toSyncError(error);
       pullLog.error("threads:fail", {

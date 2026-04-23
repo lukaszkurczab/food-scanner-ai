@@ -238,7 +238,11 @@ describe("apiClient", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { post } = require("@/services/core/apiClient");
 
-    const pending = post("/ai/ask", { message: "hello" }, { retryMode: "idempotent" });
+    const pending = post(
+      "/api/v2/ai/chat/runs",
+      { message: "hello" },
+      { retryMode: "idempotent" },
+    );
     await jest.advanceTimersByTimeAsync(1000);
     await expect(pending).resolves.toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledTimes(2);

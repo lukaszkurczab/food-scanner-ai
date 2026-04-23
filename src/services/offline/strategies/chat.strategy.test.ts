@@ -44,7 +44,7 @@ describe("chat strategy", () => {
     mockUpsertChatMessageLocal.mockResolvedValue();
   });
 
-  it("pulls chat thread changes and syncs messages for updated threads", async () => {
+  it("pulls chat thread changes without prefetching per-thread messages", async () => {
     mockGetItem.mockImplementation((key: unknown) =>
       Promise.resolve(key === "sync:last_pull_chat:user-1" ? "1700" : null),
     );
@@ -69,18 +69,6 @@ describe("chat strategy", () => {
             lastMessageAt: 2000,
           },
         ],
-      })
-      .mockResolvedValueOnce({
-        items: [
-          {
-            id: "msg-1",
-            role: "assistant",
-            content: "hello",
-            createdAt: 2000,
-            lastSyncedAt: 2000,
-            deleted: false,
-          },
-        ],
       });
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -88,12 +76,8 @@ describe("chat strategy", () => {
 
     const synced = await chatStrategy.pull("user-1");
 
-    expect(synced).toBe(2);
+    expect(synced).toBe(1);
     expect(mockGet).toHaveBeenNthCalledWith(1, "/users/me/chat/threads?limit=100");
-    expect(mockGet).toHaveBeenNthCalledWith(
-      2,
-      "/users/me/chat/threads/thread-1/messages?limit=50",
-    );
     expect(mockUpsertChatThreadLocal).toHaveBeenCalledWith(
       expect.objectContaining({
         id: "thread-1",
@@ -101,14 +85,7 @@ describe("chat strategy", () => {
         updatedAt: 2000,
       }),
     );
-    expect(mockUpsertChatMessageLocal).toHaveBeenCalledWith({
-      threadId: "thread-1",
-      message: expect.objectContaining({
-        id: "msg-1",
-        userUid: "user-1",
-        syncState: "synced",
-      }),
-    });
+    expect(mockUpsertChatMessageLocal).not.toHaveBeenCalled();
     expect(mockSetItem).toHaveBeenCalledWith("sync:last_pull_chat:user-1", "2000");
   });
 
@@ -170,18 +147,6 @@ describe("chat strategy", () => {
       .mockResolvedValueOnce({
         items: [
           {
-            id: "msg-1",
-            role: "assistant",
-            content: "hello 1",
-            createdAt: 1900,
-            lastSyncedAt: 1900,
-            deleted: false,
-          },
-        ],
-      })
-      .mockResolvedValueOnce({
-        items: [
-          {
             id: "thread-2",
             title: "Second page",
             createdAt: 1100,
@@ -191,18 +156,6 @@ describe("chat strategy", () => {
           },
         ],
         nextBeforeUpdatedAt: null,
-      })
-      .mockResolvedValueOnce({
-        items: [
-          {
-            id: "msg-2",
-            role: "assistant",
-            content: "hello 2",
-            createdAt: 1700,
-            lastSyncedAt: 1700,
-            deleted: false,
-          },
-        ],
       });
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires

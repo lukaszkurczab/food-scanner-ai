@@ -8,7 +8,10 @@ import { post } from "@/services/core/apiClient";
 import { emit, on } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
 import { asString, isRecord } from "@/services/contracts/guards";
-import type { AiAskBackendResponse } from "@/services/ai/contracts";
+import type {
+  AiChatRunRequest,
+  AiChatRunResponse,
+} from "@/services/ai/contracts";
 import { getErrorStatus, isServiceError } from "@/services/contracts/serviceError";
 import { captureException } from "@/services/core/errorLogger";
 import { getAiUxErrorType, type AiUxErrorType } from "@/services/ai/uxError";
@@ -108,13 +111,21 @@ function getGatewayRejectReason(error: unknown): string | null {
   if (getErrorStatus(error) !== 400 || !isRecord(error)) return null;
   const details = isRecord(error.details) ? error.details : null;
   if (!details) return null;
+  const canonicalDetail = isRecord(details.detail) ? details.detail : details;
   return (
+    asString(canonicalDetail.reason) ||
     asString(details.reason) ||
-    (isRecord(details.detail) ? asString(details.detail.reason) : undefined) ||
     null
   );
 }
 
+function getGatewayRejectCode(error: unknown): string | null {
+  if (getErrorStatus(error) !== 400 || !isRecord(error)) return null;
+  const details = isRecord(error.details) ? error.details : null;
+  if (!details) return null;
+  const canonicalDetail = isRecord(details.detail) ? details.detail : details;
+  return asString(canonicalDetail.code) || asString(details.code) || null;
+}
 
 export function useChatHistory(
   userUid: string,
@@ -277,8 +288,8 @@ export function useChatHistory(
       const requestId = uuidv4();
       activeSendRequestIdRef.current = requestId;
       sendInFlightRef.current = true;
-      const askAbortController = new AbortController();
-      sendAbortControllerRef.current = askAbortController;
+      const chatRunAbortController = new AbortController();
+      sendAbortControllerRef.current = chatRunAbortController;
 
       setSending(true);
       setTyping(true);
@@ -325,21 +336,22 @@ export function useChatHistory(
           });
         }
 
-        let askFailed = false;
+        let chatRunFailed = false;
         let assistantReply: string | null = null;
         let assistantMessageIdFromServer: string | null = null;
         try {
           if (!isRequestActive()) return null;
-          const aiResponse = await post<AiAskBackendResponse>(
-            "/ai/ask",
+          const chatRunPayload: AiChatRunRequest = {
+            threadId: createdThreadId,
+            clientMessageId: userMsgId,
+            message: trimmed,
+            language: i18next.language === "pl" ? "pl" : "en",
+          };
+          const aiResponse = await post<AiChatRunResponse>(
+            "/api/v2/ai/chat/runs",
+            chatRunPayload,
             {
-              threadId: createdThreadId,
-              clientMessageId: userMsgId,
-              message: trimmed,
-              language: i18next.language === "pl" ? "pl" : "en",
-            },
-            {
-              signal: askAbortController.signal,
+              signal: chatRunAbortController.signal,
               retryMode: "idempotent",
             },
           );
@@ -366,6 +378,7 @@ export function useChatHistory(
           if (!isRequestActive()) return null;
 
           const status = getErrorStatus(error);
+          const gatewayCode = getGatewayRejectCode(error);
           const gatewayReason = getGatewayRejectReason(error);
           const errorType = getAiUxErrorType(error);
           if (status === 402) {
@@ -378,8 +391,9 @@ export function useChatHistory(
             void trackAiChatResult("payment_required");
             setSendErrorType(null);
           } else if (
-            gatewayReason !== null &&
-            GATEWAY_REJECT_REASONS.has(gatewayReason)
+            gatewayCode === "AI_GATEWAY_BLOCKED" ||
+            (gatewayReason !== null &&
+              GATEWAY_REJECT_REASONS.has(gatewayReason))
           ) {
             void trackAiChatResult("gateway_reject");
             setSendErrorType(null);
@@ -413,11 +427,11 @@ export function useChatHistory(
             content: trimmed,
             createdAt: now,
           };
-          askFailed = true;
+          chatRunFailed = true;
         }
 
-        if (!assistantReply || askFailed) {
-          if (!askFailed) {
+        if (!assistantReply || chatRunFailed) {
+          if (!chatRunFailed) {
             retryableSendRef.current = {
               threadId: createdThreadId,
               userMessageId: userMsgId,
@@ -466,7 +480,7 @@ export function useChatHistory(
         ) {
           activeSendRequestIdRef.current = null;
           sendInFlightRef.current = false;
-          if (sendAbortControllerRef.current === askAbortController) {
+          if (sendAbortControllerRef.current === chatRunAbortController) {
             sendAbortControllerRef.current = null;
           }
           setTyping(false);

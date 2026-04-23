@@ -120,35 +120,44 @@ export type AiScopeDecision =
   | "ALLOW_NUTRITION"
   | "DENY_OTHER";
 
-export type AiAskUsage = {
+export type AiChatRunLanguage = "pl" | "en";
+
+export type AiChatRunRequest = {
+  threadId: string;
+  clientMessageId: string;
+  message: string;
+  language: AiChatRunLanguage;
+};
+
+export type AiChatRunUsage = {
   promptTokens?: number | null;
   completionTokens?: number | null;
   totalTokens?: number | null;
 };
 
-export type AiAskContextStats = {
+export type AiChatRunContextStats = {
   usedSummary: boolean;
   historyTurns: number;
   truncated: boolean;
   scopeDecision: AiScopeDecision;
 };
 
-export type AiAskBackendResponse = AiBackendCreditsMeta & {
+export type AiChatRunResponse = AiBackendCreditsMeta & {
+  runId: string;
   reply: string;
-  threadId: string;
   assistantMessageId: string;
-  usage: AiAskUsage;
-  contextStats: AiAskContextStats;
+  usage: AiChatRunUsage;
+  contextStats: AiChatRunContextStats;
   scopeDecision: AiScopeDecision;
 };
 
-export type AiAskE2EResponse = {
+export type AiChatRunE2EResponse = {
   reply: string;
   version: "e2e";
   persistence: AiPersistence;
 };
 
-export type AiAskResponse = AiAskBackendResponse | AiAskE2EResponse;
+export type AiChatRunAnyResponse = AiChatRunResponse | AiChatRunE2EResponse;
 
 export type AiMealIngredient = {
   name: string;

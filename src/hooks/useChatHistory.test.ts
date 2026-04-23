@@ -179,8 +179,8 @@ describe("useChatHistory", () => {
       return key;
     });
     mockApiPost.mockResolvedValue({
+      runId: "run-1",
       reply: "AI response",
-      threadId: "thread-created",
       assistantMessageId: "assistant-msg",
       usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
       contextStats: {
@@ -244,7 +244,7 @@ describe("useChatHistory", () => {
     expect(result.current.creditsUsed).toBe(100);
   });
 
-  it("applies inline credits from successful /ai/ask responses", async () => {
+  it("applies inline credits from successful /api/v2/ai/chat/runs responses", async () => {
     mockUuid
       .mockReturnValueOnce("request-1")
       .mockReturnValueOnce("thread-created")
@@ -261,7 +261,7 @@ describe("useChatHistory", () => {
     expect(createdThreadId).toBe("thread-created");
     expect(mockApiPost).toHaveBeenCalledTimes(1);
     const call = mockApiPost.mock.calls[0];
-    expect(call?.[0]).toBe("/ai/ask");
+    expect(call?.[0]).toBe("/api/v2/ai/chat/runs");
     expect(call?.[1]).toEqual({
       threadId: "thread-created",
       clientMessageId: "user-msg",
@@ -302,7 +302,13 @@ describe("useChatHistory", () => {
   it("does not refresh credits on gateway reject responses", async () => {
     mockApiPost.mockRejectedValueOnce({
       status: 400,
-      details: { reason: "OFF_TOPIC" },
+      details: {
+        detail: {
+          code: "AI_GATEWAY_BLOCKED",
+          message: "AI request blocked by gateway",
+          reason: "OFF_TOPIC",
+        },
+      },
     });
 
     const { result } = await renderChatHistoryHook();
@@ -341,12 +347,14 @@ describe("useChatHistory", () => {
 
     const resolveInFlightPost = resolvePost;
     if (!resolveInFlightPost || !firstPromise) {
-      throw new Error("Expected in-flight /ai/ask call before resolving test promise.");
+      throw new Error(
+        "Expected in-flight /api/v2/ai/chat/runs call before resolving test promise.",
+      );
     }
 
     (resolveInFlightPost as (value: unknown) => void)({
+      runId: "run-2",
       reply: "AI response",
-      threadId: "thread-created",
       assistantMessageId: "assistant-msg",
       usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
       contextStats: {
@@ -378,8 +386,8 @@ describe("useChatHistory", () => {
     mockApiPost
       .mockRejectedValueOnce(Object.assign(new Error("timeout"), { status: 504 }))
       .mockResolvedValueOnce({
+        runId: "run-retry",
         reply: "Recovered response",
-        threadId: "thread-created",
         usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
         contextStats: {
           usedSummary: false,
