@@ -1,5 +1,4 @@
 import { getApp } from "@react-native-firebase/app";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   getAuth,
   signOut,
@@ -9,11 +8,8 @@ import {
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
 import { logError } from "@/services/core/errorLogger";
-import { cancelAllReminderScheduling } from "@/services/reminders/reminderScheduling";
 import { initializeUserOnboardingProfile } from "@/services/user/userService";
-import { stopSyncLoop } from "@/services/offline/sync.engine";
-import { resetOfflineStorage } from "@/services/offline/db";
-import { cleanupUserOfflineAssets } from "@/services/offline/fileCleanup";
+import { resetUserRuntime } from "@/services/session/resetUserRuntime";
 import i18n from "@/i18n";
 
 function resolveInitialLanguage(language: string | undefined): "en" | "pl" {
@@ -29,31 +25,6 @@ function normalizeEmail(email: string): string {
 
 function normalizeUsername(username: string): string {
   return username.trim().toLowerCase();
-}
-
-function shouldClearUserScopedKey(key: string, uid: string): boolean {
-  return (
-    key === `user:profile:${uid}` ||
-    key === `premium_status:${uid}` ||
-    key === `ai_credits:${uid}` ||
-    key.includes(`:${uid}:`) ||
-    key.endsWith(`:${uid}`) ||
-    key.endsWith(`_${uid}`)
-  );
-}
-
-async function clearScopedAsyncStorage(uid: string | null): Promise<void> {
-  try {
-    const keys = await AsyncStorage.getAllKeys();
-    const keysToRemove = uid
-      ? keys.filter((key) => shouldClearUserScopedKey(key, uid))
-      : [];
-    keysToRemove.push("premium_status:anon");
-    if (!keysToRemove.length) return;
-    await AsyncStorage.multiRemove(Array.from(new Set(keysToRemove)));
-  } catch {
-    // Best-effort cleanup for per-user local cache.
-  }
 }
 
 export async function authLogin(email: string, password: string) {
@@ -82,25 +53,7 @@ export async function authLogout(): Promise<void> {
     signOutError = error;
   }
 
-  stopSyncLoop();
-  if (uid) {
-    try {
-      await cancelAllReminderScheduling(uid);
-    } catch {
-      // Reminder cleanup is best-effort on logout.
-    }
-  }
-  try {
-    resetOfflineStorage();
-  } catch {
-    // Offline reset is best-effort.
-  }
-  try {
-    await cleanupUserOfflineAssets(uid);
-  } catch {
-    // Filesystem cleanup is best-effort.
-  }
-  await clearScopedAsyncStorage(uid);
+  await resetUserRuntime(uid, { reason: "logout" });
 
   if (signOutError) {
     throw signOutError;

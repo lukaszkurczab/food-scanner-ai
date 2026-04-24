@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { getApp } from "@react-native-firebase/app";
@@ -12,6 +13,7 @@ import {
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
 import * as Sentry from "@sentry/react-native";
+import { resetUserRuntime } from "@/services/session/resetUserRuntime";
 
 type AuthContextType = {
   firebaseUser: FirebaseAuthTypes.User | null;
@@ -33,20 +35,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [firebaseUser, setAuthStateUser] =
     useState<FirebaseAuthTypes.User | null>(null);
   const [loading, setLoading] = useState(true);
+  const lastUidRef = useRef<string | null>(null);
 
   useEffect(() => {
     const app = getApp();
     const auth = getAuth(app);
+    let active = true;
+    let authStateVersion = 0;
+
     const unsub = onAuthStateChanged(auth, (user) => {
-      setAuthStateUser(user);
-      if (user) {
-        Sentry.setUser({ id: user.uid });
-      } else {
-        Sentry.setUser(null);
-      }
-      setLoading(false);
+      const version = ++authStateVersion;
+      const previousUid = lastUidRef.current;
+      const nextUid = user?.uid ?? null;
+
+      const applyAuthState = () => {
+        lastUidRef.current = nextUid;
+        setAuthStateUser(user);
+        if (user) {
+          Sentry.setUser({ id: user.uid });
+        } else {
+          Sentry.setUser(null);
+        }
+        setLoading(false);
+      };
+
+      const handleAuthState = async () => {
+        if (previousUid && nextUid && previousUid !== nextUid) {
+          setLoading(true);
+          await resetUserRuntime(previousUid, { reason: "account_switch" });
+        }
+
+        if (!active || version !== authStateVersion) return;
+        applyAuthState();
+      };
+
+      void handleAuthState();
     });
-    return unsub;
+    return () => {
+      active = false;
+      unsub();
+    };
   }, []);
 
   const value = useMemo<AuthContextType>(() => {

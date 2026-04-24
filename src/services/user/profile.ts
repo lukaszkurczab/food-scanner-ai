@@ -13,6 +13,7 @@ import { get, post } from "@/services/core/apiClient";
 import { parseUserData } from "./profile.dto";
 import { createServiceError } from "@/services/contracts/serviceError";
 import { claimUsername } from "@/services/user/usernameService";
+import { resetUserRuntime } from "@/services/session/resetUserRuntime";
 import {
   fetchUserProfileRemote,
   initializeUserOnboardingRemote,
@@ -137,13 +138,13 @@ export async function deleteAccountService({
   uid: string;
   password: string;
 }) {
-  void uid;
   const auth = getAuth(getApp());
   const current = requireCurrentUser(auth.currentUser);
   const cred = EmailAuthProvider.credential(current.email!, password);
   await reauthenticateWithCredential(current, cred);
   await post("/users/me/delete");
   await current.delete();
+  await resetUserRuntime(uid, { reason: "delete_account" });
 }
 
 export async function initializeUserOnboardingProfile(

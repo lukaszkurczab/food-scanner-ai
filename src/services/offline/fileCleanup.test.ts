@@ -39,10 +39,10 @@ describe("cleanupUserOfflineAssets", () => {
     expect(mockDeleteAsync).not.toHaveBeenCalled();
   });
 
-  it("ignores deletion failures to keep logout resilient", async () => {
+  it("rejects deletion failures so session reset can log the failed stage", async () => {
     mockDeleteAsync.mockRejectedValueOnce(new Error("boom"));
 
-    await expect(cleanupUserOfflineAssets("user-1")).resolves.toBeUndefined();
+    await expect(cleanupUserOfflineAssets("user-1")).rejects.toThrow("boom");
     expect(mockDeleteAsync).toHaveBeenCalledTimes(2);
   });
 

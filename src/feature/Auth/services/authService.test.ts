@@ -26,15 +26,8 @@ const mockSignInWithEmailAndPassword = jest.fn<
   (...args: unknown[]) => Promise<{ user: { uid: string } }>
 >();
 const mockSendPasswordResetEmail = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockGetAllKeys = jest.fn<() => Promise<string[]>>();
-const mockMultiRemove = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockStopSyncLoop = jest.fn<() => void>();
-const mockResetOfflineStorage = jest.fn<() => void>();
-const mockCleanupUserOfflineAssets = jest.fn<
-  (uid: string | null) => Promise<void>
->();
-const mockCancelAllReminderScheduling = jest.fn<
-  (uid: string) => Promise<void>
+const mockResetUserRuntime = jest.fn<
+  (...args: unknown[]) => Promise<void>
 >();
 
 jest.mock("@react-native-firebase/app", () => ({
@@ -52,32 +45,8 @@ jest.mock("@react-native-firebase/auth", () => ({
     mockCreateUserWithEmailAndPassword(...args),
 }));
 
-jest.mock("@react-native-async-storage/async-storage", () => ({
-  __esModule: true,
-  default: {
-    getAllKeys: () => mockGetAllKeys(),
-    multiRemove: (...args: unknown[]) => mockMultiRemove(...args),
-  },
-  getAllKeys: () => mockGetAllKeys(),
-  multiRemove: (...args: unknown[]) => mockMultiRemove(...args),
-}));
-
-jest.mock("@/services/offline/sync.engine", () => ({
-  stopSyncLoop: () => mockStopSyncLoop(),
-}));
-
-jest.mock("@/services/offline/db", () => ({
-  resetOfflineStorage: () => mockResetOfflineStorage(),
-}));
-
-jest.mock("@/services/offline/fileCleanup", () => ({
-  cleanupUserOfflineAssets: (uid: string | null) =>
-    mockCleanupUserOfflineAssets(uid),
-}));
-
-jest.mock("@/services/reminders/reminderScheduling", () => ({
-  cancelAllReminderScheduling: (uid: string) =>
-    mockCancelAllReminderScheduling(uid),
+jest.mock("@/services/session/resetUserRuntime", () => ({
+  resetUserRuntime: (...args: unknown[]) => mockResetUserRuntime(...args),
 }));
 
 jest.mock("@/services/user/userService", () => ({
@@ -108,14 +77,7 @@ describe("authService", () => {
       user: { uid: "user-1" },
     });
     mockSendPasswordResetEmail.mockResolvedValue(undefined);
-    mockGetAllKeys.mockResolvedValue([]);
-    mockMultiRemove.mockResolvedValue(undefined);
-    mockStopSyncLoop.mockReset();
-    mockResetOfflineStorage.mockReset();
-    mockCleanupUserOfflineAssets.mockReset();
-    mockCleanupUserOfflineAssets.mockResolvedValue(undefined);
-    mockCancelAllReminderScheduling.mockReset();
-    mockCancelAllReminderScheduling.mockResolvedValue(undefined);
+    mockResetUserRuntime.mockResolvedValue(undefined);
     mockCreateUserWithEmailAndPassword.mockResolvedValue({
       user: {
         uid: "user-1",
@@ -199,37 +161,22 @@ describe("authService", () => {
     expect(mockInitializeUserOnboardingProfile).toHaveBeenCalled();
   });
 
-  it("cleans local offline state and scoped storage on logout", async () => {
-    mockGetAllKeys.mockResolvedValue([
-      "user:profile:user-1",
-      "sync:last_pull_ts:user-1",
-      "notif:sys:ids:user-1:stats",
-      "theme:mode",
-    ]);
-
+  it("resets user runtime on logout", async () => {
     await authLogout();
 
     expect(mockSignOut).toHaveBeenCalled();
-    expect(mockStopSyncLoop).toHaveBeenCalled();
-    expect(mockCancelAllReminderScheduling).toHaveBeenCalledWith("user-1");
-    expect(mockResetOfflineStorage).toHaveBeenCalled();
-    expect(mockCleanupUserOfflineAssets).toHaveBeenCalledWith("user-1");
-    expect(mockMultiRemove).toHaveBeenCalledWith([
-      "user:profile:user-1",
-      "sync:last_pull_ts:user-1",
-      "notif:sys:ids:user-1:stats",
-      "premium_status:anon",
-    ]);
+    expect(mockResetUserRuntime).toHaveBeenCalledWith("user-1", {
+      reason: "logout",
+    });
   });
 
-  it("still runs local cleanup when signOut fails", async () => {
+  it("still resets runtime when signOut fails and rethrows signOut error", async () => {
     mockSignOut.mockRejectedValueOnce(new Error("signout-failed"));
 
     await expect(authLogout()).rejects.toThrow("signout-failed");
 
-    expect(mockStopSyncLoop).toHaveBeenCalled();
-    expect(mockCancelAllReminderScheduling).toHaveBeenCalledWith("user-1");
-    expect(mockResetOfflineStorage).toHaveBeenCalled();
-    expect(mockCleanupUserOfflineAssets).toHaveBeenCalledWith("user-1");
+    expect(mockResetUserRuntime).toHaveBeenCalledWith("user-1", {
+      reason: "logout",
+    });
   });
 });

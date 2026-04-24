@@ -17,13 +17,9 @@ export async function cleanupUserOfflineAssets(uid: string | null): Promise<void
   ];
 
   await Promise.all(
-    targets.map(async (target) => {
-      try {
-        await FileSystem.deleteAsync(target, { idempotent: true });
-      } catch {
-        // Keep logout flow resilient if filesystem cleanup fails.
-      }
-    }),
+    targets.map((target) =>
+      FileSystem.deleteAsync(target, { idempotent: true }),
+    ),
   );
 }
 

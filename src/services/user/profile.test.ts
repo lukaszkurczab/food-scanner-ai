@@ -29,6 +29,9 @@ const mockUploadUserAvatarRemote = jest.fn<(...args: unknown[]) => Promise<unkno
 const mockClaimUsername = jest.fn<(...args: unknown[]) => Promise<string>>();
 const mockGet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockPost = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockResetUserRuntime = jest.fn<
+  (...args: unknown[]) => Promise<void>
+>();
 const mockEmailCredential = jest.fn<(...args: unknown[]) => unknown>();
 const mockReauthenticateWithCredential = jest.fn<
   (...args: unknown[]) => Promise<void>
@@ -51,6 +54,10 @@ jest.mock("@/services/user/usernameService", () => ({
 jest.mock("@/services/core/apiClient", () => ({
   get: (...args: unknown[]) => mockGet(...args),
   post: (...args: unknown[]) => mockPost(...args),
+}));
+
+jest.mock("@/services/session/resetUserRuntime", () => ({
+  resetUserRuntime: (...args: unknown[]) => mockResetUserRuntime(...args),
 }));
 
 jest.mock("@react-native-firebase/app", () => ({
@@ -100,6 +107,7 @@ describe("user/profile", () => {
       chatMessages: [{ id: "chat-1" }],
     });
     mockPost.mockResolvedValue(undefined);
+    mockResetUserRuntime.mockResolvedValue(undefined);
     mockEmailCredential.mockReturnValue({ providerId: "password" });
     mockReauthenticateWithCredential.mockResolvedValue(undefined);
     mockGetAuth.mockReturnValue({
@@ -260,6 +268,9 @@ describe("user/profile", () => {
     expect(mockReauthenticateWithCredential).toHaveBeenCalled();
     expect(mockPost).toHaveBeenCalledWith("/users/me/delete");
     expect(mockCurrentUserDelete).toHaveBeenCalledWith();
+    expect(mockResetUserRuntime).toHaveBeenCalledWith("u1", {
+      reason: "delete_account",
+    });
   });
 
   it("initializes onboarding profile through backend-owned endpoint", async () => {

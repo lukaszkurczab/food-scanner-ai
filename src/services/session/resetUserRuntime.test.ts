@@ -1,0 +1,118 @@
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { resetUserRuntime } from "@/services/session/resetUserRuntime";
+
+const mockGetAllKeys = jest.fn<() => Promise<string[]>>();
+const mockMultiRemove = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockStopSyncLoop = jest.fn<() => void>();
+const mockCancelAllReminderScheduling = jest.fn<
+  (uid: string) => Promise<void>
+>();
+const mockResetOfflineStorage = jest.fn<() => void>();
+const mockCleanupUserOfflineAssets = jest.fn<
+  (uid: string | null) => Promise<void>
+>();
+const mockEmit = jest.fn<(...args: unknown[]) => void>();
+const mockLogWarning = jest.fn<(...args: unknown[]) => void>();
+
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  __esModule: true,
+  default: {
+    getAllKeys: () => mockGetAllKeys(),
+    multiRemove: (...args: unknown[]) => mockMultiRemove(...args),
+  },
+}));
+
+jest.mock("@/services/offline/sync.engine", () => ({
+  stopSyncLoop: () => mockStopSyncLoop(),
+}));
+
+jest.mock("@/services/reminders/reminderScheduling", () => ({
+  cancelAllReminderScheduling: (uid: string) =>
+    mockCancelAllReminderScheduling(uid),
+}));
+
+jest.mock("@/services/offline/db", () => ({
+  resetOfflineStorage: () => mockResetOfflineStorage(),
+}));
+
+jest.mock("@/services/offline/fileCleanup", () => ({
+  cleanupUserOfflineAssets: (uid: string | null) =>
+    mockCleanupUserOfflineAssets(uid),
+}));
+
+jest.mock("@/services/core/events", () => ({
+  emit: (...args: unknown[]) => mockEmit(...args),
+}));
+
+jest.mock("@/services/core/errorLogger", () => ({
+  logWarning: (...args: unknown[]) => mockLogWarning(...args),
+}));
+
+describe("resetUserRuntime", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetAllKeys.mockResolvedValue([
+      "user:profile:user-1",
+      "premium_status:user-1",
+      "ai_credits:user-1",
+      "sync:last_pull_ts:user-1",
+      "notif:sys:ids:user-1:stats",
+      "notif:ids:user-1:smart-reminders:2026-04-24",
+      "current_meal_draft_user-1",
+      "chat_legal_ack:user-1",
+      "theme:mode",
+    ]);
+    mockMultiRemove.mockResolvedValue(undefined);
+    mockCancelAllReminderScheduling.mockResolvedValue(undefined);
+    mockCleanupUserOfflineAssets.mockResolvedValue(undefined);
+  });
+
+  it("cleans user-scoped runtime state for a uid", async () => {
+    await resetUserRuntime("user-1", { reason: "logout" });
+
+    expect(mockStopSyncLoop).toHaveBeenCalledTimes(1);
+    expect(mockCancelAllReminderScheduling).toHaveBeenCalledWith("user-1");
+    expect(mockResetOfflineStorage).toHaveBeenCalledTimes(1);
+    expect(mockCleanupUserOfflineAssets).toHaveBeenCalledWith("user-1");
+    expect(mockMultiRemove).toHaveBeenCalledWith([
+      "user:profile:user-1",
+      "premium_status:user-1",
+      "ai_credits:user-1",
+      "sync:last_pull_ts:user-1",
+      "notif:sys:ids:user-1:stats",
+      "notif:ids:user-1:smart-reminders:2026-04-24",
+      "current_meal_draft_user-1",
+      "chat_legal_ack:user-1",
+      "premium_status:anon",
+    ]);
+  });
+
+  it("logs and emits non-fatal cleanup failures per stage", async () => {
+    const failure = new Error("offline-reset-failed");
+    mockResetOfflineStorage.mockImplementationOnce(() => {
+      throw failure;
+    });
+
+    await expect(
+      resetUserRuntime("user-1", { reason: "account_switch" }),
+    ).resolves.toBeUndefined();
+
+    expect(mockEmit).toHaveBeenCalledWith("session:runtime-reset:failed", {
+      uid: "user-1",
+      reason: "account_switch",
+      stage: "reset_offline_storage",
+    });
+    expect(mockLogWarning).toHaveBeenCalledWith(
+      "user runtime reset stage failed",
+      {
+        uid: "user-1",
+        reason: "account_switch",
+        stage: "reset_offline_storage",
+      },
+      failure,
+    );
+    expect(mockMultiRemove).toHaveBeenCalled();
+    expect(mockCleanupUserOfflineAssets).toHaveBeenCalledWith("user-1");
+  });
+});
+
