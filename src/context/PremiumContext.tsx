@@ -138,13 +138,15 @@ export const PremiumProvider = ({
   ]);
 
   const syncTierAndRefreshCredits = useCallback(async (): Promise<void> => {
-    if (uid) {
-      try {
-        await post("/ai/credits/sync-tier");
-      } catch (error) {
-        logWarning("ai credits tier sync failed", null, error);
-        // Keep local premium status and fallback to normal credits refresh.
-      }
+    if (!uid) {
+      return;
+    }
+
+    try {
+      await post("/ai/credits/sync-tier");
+    } catch (error) {
+      logWarning("ai credits tier sync failed", null, error);
+      // Keep local premium status and fallback to normal credits refresh.
     }
 
     await refreshCredits();

@@ -92,6 +92,38 @@ describe("AiCreditsContext", () => {
     );
   });
 
+  it("dedupes concurrent credits refreshes for the same uid", async () => {
+    let resolveCredits: ((value: unknown) => void) | null = null;
+    mockGet.mockReturnValue(
+      new Promise((resolve) => {
+        resolveCredits = resolve;
+      }),
+    );
+
+    const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
+
+    await waitFor(() => {
+      expect(mockGet).toHaveBeenCalledTimes(1);
+      expect(result.current.loading).toBe(true);
+    });
+
+    const first = result.current.refreshCredits();
+    const second = result.current.refreshCredits();
+
+    expect(first).toBe(second);
+    expect(mockGet).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveCredits?.(buildCredits({ balance: 33 }));
+      await first;
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.credits?.balance).toBe(33);
+    });
+  });
+
   it("returns safe defaults without provider", async () => {
     const { result } = renderHook(() => useAiCreditsContext());
 

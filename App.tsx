@@ -55,7 +55,6 @@ import { captureException } from "@/services/core/errorLogger";
 import { warnMissingEnv } from "@/services/core/envValidation";
 import { getLaunchReadinessIssue } from "@/services/release/launchReadiness";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { initRevenueCat } from "@/feature/Subscription";
 
 const extra = Constants.expoConfig?.extra as Record<string, unknown> | undefined;
 const sentryDsn = typeof extra?.sentryDsn === "string" ? extra.sentryDsn : "";
@@ -116,9 +115,6 @@ function Root() {
     if (launchReadinessIssue) {
       return;
     }
-
-    // RevenueCat setup is moved to runtime effect to avoid extra module-evaluation work on cold start.
-    initRevenueCat();
 
     let cancelled = false;
     const bootTask = setTimeout(() => {

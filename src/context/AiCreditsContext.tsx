@@ -61,6 +61,16 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
   const [loading, setLoading] = useState(false);
   const creditsRef = useRef(credits);
   const lastActiveRefreshAtRef = useRef(0);
+  const uidRef = useRef(uid);
+  const refreshInFlightRef = useRef<{
+    uid: string;
+    token: object;
+    promise: Promise<AiCreditsStatus | null>;
+  } | null>(null);
+
+  useEffect(() => {
+    uidRef.current = uid;
+  }, [uid]);
 
   const updateCredits = useCallback((next: AiCreditsStatus | null) => {
     if (!creditsChanged(creditsRef.current, next)) return;
@@ -83,31 +93,46 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
     return parsed;
   }, [uid, updateCredits]);
 
-  const refreshCredits = useCallback(async (): Promise<AiCreditsStatus | null> => {
+  const refreshCredits = useCallback((): Promise<AiCreditsStatus | null> => {
     if (!uid) {
       updateCredits(null);
-      return null;
+      return Promise.resolve(null);
+    }
+
+    const inFlight = refreshInFlightRef.current;
+    if (inFlight?.uid === uid) {
+      return inFlight.promise;
     }
 
     setLoading(true);
-    try {
-      const response = await get<AiCreditsResponse>("/ai/credits");
-      const parsed = parseCreditsFromResponse(response);
-      if (!parsed) return null;
-      updateCredits(parsed);
-      await AsyncStorage
-        .setItem(creditsStorageKey(uid), JSON.stringify(parsed))
-        .catch((error) => {
-          logWarning("ai credits cache write failed", null, error);
-          return undefined;
-        });
-      return parsed;
-    } catch (error) {
-      logWarning("ai credits refresh failed", null, error);
-      return null;
-    } finally {
-      setLoading(false);
-    }
+    const requestUid = uid;
+    const token = {};
+    const promise = (async () => {
+      try {
+        const response = await get<AiCreditsResponse>("/ai/credits");
+        const parsed = parseCreditsFromResponse(response);
+        if (!parsed) return null;
+        if (uidRef.current !== requestUid) return parsed;
+        updateCredits(parsed);
+        await AsyncStorage
+          .setItem(creditsStorageKey(requestUid), JSON.stringify(parsed))
+          .catch((error) => {
+            logWarning("ai credits cache write failed", null, error);
+            return undefined;
+          });
+        return parsed;
+      } catch (error) {
+        logWarning("ai credits refresh failed", null, error);
+        return null;
+      } finally {
+        if (refreshInFlightRef.current?.token === token) {
+          refreshInFlightRef.current = null;
+          setLoading(false);
+        }
+      }
+    })();
+    refreshInFlightRef.current = { uid: requestUid, token, promise };
+    return promise;
   }, [uid, updateCredits]);
 
   const refreshCreditTransactions = useCallback(async (limit = 50) => {

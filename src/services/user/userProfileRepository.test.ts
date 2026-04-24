@@ -102,6 +102,29 @@ describe("services/user/userProfileRepository", () => {
     expect(mockGet).toHaveBeenCalledWith("/users/me/profile");
   });
 
+  it("dedupes concurrent profile fetches for the same uid", async () => {
+    let resolveProfile!: (value: unknown) => void;
+    mockGet.mockReturnValue(
+      new Promise((resolve) => {
+        resolveProfile = resolve;
+      }),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { fetchUserProfileRemote } = require("@/services/user/userProfileRepository");
+
+    const first = fetchUserProfileRemote("u1");
+    const second = fetchUserProfileRemote("u1");
+
+    expect(mockGet).toHaveBeenCalledTimes(1);
+    resolveProfile({
+      profile: { uid: "u1", username: "neo" },
+    });
+
+    await expect(first).resolves.toEqual({ uid: "u1", username: "neo" });
+    await expect(second).resolves.toEqual({ uid: "u1", username: "neo" });
+  });
+
   it("skips backend patch when payload has only local-only/non-editable fields", async () => {
     mockPost.mockResolvedValue({ updated: true });
     mockGet.mockResolvedValue({

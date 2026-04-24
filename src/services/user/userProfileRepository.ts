@@ -15,6 +15,7 @@ type UserOnboardingResponse = {
 };
 
 const profileCache = new Map<string, UserData | null>();
+const profileFetchInFlight = new Map<string, Promise<UserData | null>>();
 
 function emitUserProfile(uid: string, data: UserData | null) {
   profileCache.set(uid, data);
@@ -48,11 +49,24 @@ export function subscribeToUserProfile(params: {
 }
 
 export async function fetchUserProfileRemote(uid: string): Promise<UserData | null> {
-  void uid;
-  const response = await get<{ profile: UserData | null }>("/users/me/profile");
-  const profile = response.profile ?? null;
-  emitUserProfile(uid, profile);
-  return profile;
+  const existing = profileFetchInFlight.get(uid);
+  if (existing) return existing;
+
+  const request = (async () => {
+    const response = await get<{ profile: UserData | null }>("/users/me/profile");
+    const profile = response.profile ?? null;
+    emitUserProfile(uid, profile);
+    return profile;
+  })();
+
+  profileFetchInFlight.set(uid, request);
+  try {
+    return await request;
+  } finally {
+    if (profileFetchInFlight.get(uid) === request) {
+      profileFetchInFlight.delete(uid);
+    }
+  }
 }
 
 export async function mergeUserProfileRemote(

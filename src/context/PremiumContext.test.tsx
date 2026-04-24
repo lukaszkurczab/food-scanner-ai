@@ -128,7 +128,7 @@ describe("PremiumContext", () => {
 
     expect(mockPost).not.toHaveBeenCalled();
     expect(mockGetCustomerInfo).not.toHaveBeenCalled();
-    expect(mockRefreshCredits).toHaveBeenCalled();
+    expect(mockRefreshCredits).not.toHaveBeenCalled();
   });
 
   it("refreshes premium state when app returns to active", async () => {
