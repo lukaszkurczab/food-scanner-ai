@@ -91,4 +91,31 @@ describe("AuthContext", () => {
     expect(lastRenderedUid(renderedUids)).toBe("user-b");
     expect(mockSentrySetUser).toHaveBeenLastCalledWith({ id: "user-b" });
   });
+
+  it("resets previous user runtime when native auth session is lost", async () => {
+    const renderedUids: Array<string | null> = [];
+    render(
+      <AuthProvider>
+        <Probe onRender={(uid) => renderedUids.push(uid)} />
+      </AuthProvider>,
+    );
+
+    await act(async () => {
+      authStateCallback?.({ uid: "user-a", email: "a@example.com" });
+      await Promise.resolve();
+    });
+
+    expect(lastRenderedUid(renderedUids)).toBe("user-a");
+
+    await act(async () => {
+      authStateCallback?.(null);
+      await Promise.resolve();
+    });
+
+    expect(mockResetUserRuntime).toHaveBeenCalledWith("user-a", {
+      reason: "session_lost",
+    });
+    expect(lastRenderedUid(renderedUids)).toBeNull();
+    expect(mockSentrySetUser).toHaveBeenLastCalledWith(null);
+  });
 });

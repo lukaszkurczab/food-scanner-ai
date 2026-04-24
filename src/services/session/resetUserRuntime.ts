@@ -5,15 +5,18 @@ import { resetOfflineStorage } from "@/services/offline/db";
 import { cleanupUserOfflineAssets } from "@/services/offline/fileCleanup";
 import { stopSyncLoop } from "@/services/offline/sync.engine";
 import { cancelAllReminderScheduling } from "@/services/reminders/reminderScheduling";
+import { clearCachedUserProfile } from "@/services/user/userProfileRepository";
 
 export type ResetUserRuntimeReason =
   | "logout"
   | "account_switch"
-  | "delete_account";
+  | "delete_account"
+  | "session_lost";
 
 type ResetUserRuntimeStage =
   | "stop_sync_loop"
   | "cancel_reminders"
+  | "clear_profile_cache"
   | "reset_offline_storage"
   | "clear_async_storage"
   | "cleanup_offline_assets";
@@ -27,6 +30,19 @@ type ResetUserRuntimeFailure = {
 type ResetUserRuntimeOptions = {
   reason: ResetUserRuntimeReason;
 };
+
+const RESET_DEDUPE_WINDOW_MS = 2_000;
+const resetInFlight = new Map<string, Promise<void>>();
+const recentlyResetAt = new Map<string, number>();
+
+export function __resetUserRuntimeDedupeForTests(): void {
+  resetInFlight.clear();
+  recentlyResetAt.clear();
+}
+
+function resetKey(uid: string | null): string {
+  return uid ?? "anon";
+}
 
 function shouldClearUserScopedKey(key: string, uid: string): boolean {
   return (
@@ -68,6 +84,27 @@ export async function resetUserRuntime(
   uid: string | null,
   options: ResetUserRuntimeOptions,
 ): Promise<void> {
+  const key = resetKey(uid);
+  const inFlight = resetInFlight.get(key);
+  if (inFlight) return inFlight;
+
+  const lastResetAt = recentlyResetAt.get(key) ?? 0;
+  if (Date.now() - lastResetAt < RESET_DEDUPE_WINDOW_MS) {
+    return;
+  }
+
+  const resetTask = runUserRuntimeReset(uid, options).finally(() => {
+    resetInFlight.delete(key);
+    recentlyResetAt.set(key, Date.now());
+  });
+  resetInFlight.set(key, resetTask);
+  return resetTask;
+}
+
+async function runUserRuntimeReset(
+  uid: string | null,
+  options: ResetUserRuntimeOptions,
+): Promise<void> {
   await runCleanupStage("stop_sync_loop", uid, options.reason, () => {
     stopSyncLoop();
   });
@@ -76,6 +113,10 @@ export async function resetUserRuntime(
     await runCleanupStage("cancel_reminders", uid, options.reason, () =>
       cancelAllReminderScheduling(uid),
     );
+
+    await runCleanupStage("clear_profile_cache", uid, options.reason, () => {
+      clearCachedUserProfile(uid);
+    });
   }
 
   await runCleanupStage("reset_offline_storage", uid, options.reason, () => {
@@ -92,4 +133,3 @@ export async function resetUserRuntime(
     );
   }
 }
-

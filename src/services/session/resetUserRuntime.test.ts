@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { resetUserRuntime } from "@/services/session/resetUserRuntime";
+import {
+  __resetUserRuntimeDedupeForTests,
+  resetUserRuntime,
+} from "@/services/session/resetUserRuntime";
 
 const mockGetAllKeys = jest.fn<() => Promise<string[]>>();
 const mockMultiRemove = jest.fn<(...args: unknown[]) => Promise<void>>();
@@ -13,6 +16,7 @@ const mockCleanupUserOfflineAssets = jest.fn<
 >();
 const mockEmit = jest.fn<(...args: unknown[]) => void>();
 const mockLogWarning = jest.fn<(...args: unknown[]) => void>();
+const mockClearCachedUserProfile = jest.fn<(uid: string) => void>();
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   __esModule: true,
@@ -40,6 +44,10 @@ jest.mock("@/services/offline/fileCleanup", () => ({
     mockCleanupUserOfflineAssets(uid),
 }));
 
+jest.mock("@/services/user/userProfileRepository", () => ({
+  clearCachedUserProfile: (uid: string) => mockClearCachedUserProfile(uid),
+}));
+
 jest.mock("@/services/core/events", () => ({
   emit: (...args: unknown[]) => mockEmit(...args),
 }));
@@ -51,6 +59,7 @@ jest.mock("@/services/core/errorLogger", () => ({
 describe("resetUserRuntime", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    __resetUserRuntimeDedupeForTests();
     mockGetAllKeys.mockResolvedValue([
       "user:profile:user-1",
       "premium_status:user-1",
@@ -72,6 +81,7 @@ describe("resetUserRuntime", () => {
 
     expect(mockStopSyncLoop).toHaveBeenCalledTimes(1);
     expect(mockCancelAllReminderScheduling).toHaveBeenCalledWith("user-1");
+    expect(mockClearCachedUserProfile).toHaveBeenCalledWith("user-1");
     expect(mockResetOfflineStorage).toHaveBeenCalledTimes(1);
     expect(mockCleanupUserOfflineAssets).toHaveBeenCalledWith("user-1");
     expect(mockMultiRemove).toHaveBeenCalledWith([
@@ -114,5 +124,24 @@ describe("resetUserRuntime", () => {
     expect(mockMultiRemove).toHaveBeenCalled();
     expect(mockCleanupUserOfflineAssets).toHaveBeenCalledWith("user-1");
   });
-});
 
+  it("dedupes overlapping and immediately repeated resets for the same uid", async () => {
+    let resolveReminders!: () => void;
+    mockCancelAllReminderScheduling.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveReminders = resolve;
+      }),
+    );
+
+    const first = resetUserRuntime("user-1", { reason: "session_lost" });
+    const second = resetUserRuntime("user-1", { reason: "logout" });
+
+    expect(mockStopSyncLoop).toHaveBeenCalledTimes(1);
+
+    resolveReminders();
+    await Promise.all([first, second]);
+
+    await resetUserRuntime("user-1", { reason: "logout" });
+    expect(mockStopSyncLoop).toHaveBeenCalledTimes(1);
+  });
+});

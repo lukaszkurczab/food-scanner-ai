@@ -326,7 +326,7 @@ export function useUserProfile(uid: string): UseUserProfileResult {
       return cached;
     }
     try {
-      const data = await fetchUserProfileRemote();
+      const data = await fetchUserProfileRemote(uid);
       const profile = isValidBootstrapProfile(uid, data) ? data : null;
       if (data && !profile) {
         logWarning("remote profile invalid for bootstrap", { uid });
@@ -461,7 +461,6 @@ export function useUserProfile(uid: string): UseUserProfileResult {
         if (parsed) {
           if (cancelled) return;
           await applyProfileData(parsed, {
-            emitChange: true,
             completeBootstrap: false,
           });
         }

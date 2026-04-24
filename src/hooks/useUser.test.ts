@@ -399,6 +399,35 @@ describe("useUser", () => {
     expect(result.current.profileBootstrapState).toBe("profileMissing");
   });
 
+  it("hydrates local cache without marking bootstrap as remote-confirmed profileReady", async () => {
+    const cached = createUser({ username: "cached-name" });
+    let resolveRemote: ((value: UserData) => void) | null = null;
+    mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
+    mockFetchUserProfileRemote.mockReturnValueOnce(
+      new Promise<UserData>((resolve) => {
+        resolveRemote = resolve;
+      }),
+    );
+
+    const { result } = renderHook(() => useUser("u1"));
+
+    await waitFor(() => {
+      expect(result.current.userData?.username).toBe("cached-name");
+    });
+
+    expect(result.current.loading).toBe(true);
+    expect(result.current.profileBootstrapState).toBe("profileLoading");
+
+    await act(async () => {
+      resolveRemote?.(createUser({ username: "remote-name" }));
+    });
+
+    await waitFor(() => {
+      expect(result.current.profileBootstrapState).toBe("profileReady");
+      expect(result.current.userData?.username).toBe("remote-name");
+    });
+  });
+
   it("preserves existing local avatar path when snapshot omits it", async () => {
     const cached = createUser({
       username: "neo",
@@ -583,7 +612,7 @@ describe("useUser", () => {
     expect(profile).toEqual(
       expect.objectContaining({ username: "remote-name" }),
     );
-    expect(mockFetchUserProfileRemote).toHaveBeenCalledWith();
+    expect(mockFetchUserProfileRemote).toHaveBeenCalledWith("u1");
     expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
       "user:profile:u1",
       expect.stringContaining("remote-name"),

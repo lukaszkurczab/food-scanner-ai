@@ -67,6 +67,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await resetUserRuntime(previousUid, { reason: "account_switch" });
         }
 
+        if (previousUid && !nextUid) {
+          setLoading(true);
+          await resetUserRuntime(previousUid, { reason: "session_lost" });
+        }
+
         if (!active || version !== authStateVersion) return;
         applyAuthState();
       };

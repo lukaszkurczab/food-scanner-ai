@@ -15,10 +15,15 @@ type UserOnboardingResponse = {
 };
 
 const profileCache = new Map<string, UserData | null>();
-let profileFetchInFlight: Promise<UserData | null> | null = null;
+const profileFetchInFlight = new Map<string, Promise<UserData | null>>();
 
 export function getCachedUserProfile(uid: string): UserData | null | undefined {
   return profileCache.get(uid);
+}
+
+export function clearCachedUserProfile(uid: string): void {
+  profileCache.delete(uid);
+  emit("user:profile:changed", { uid, data: null });
 }
 
 export function emitUserProfileChanged(uid: string, data: UserData | null) {
@@ -44,20 +49,27 @@ export function subscribeToUserProfile(params: {
   );
 }
 
-export async function fetchUserProfileRemote(): Promise<UserData | null> {
-  if (profileFetchInFlight) return profileFetchInFlight;
+export async function fetchUserProfileRemote(
+  sessionKey?: string,
+): Promise<UserData | null> {
+  if (sessionKey) {
+    const inFlight = profileFetchInFlight.get(sessionKey);
+    if (inFlight) return inFlight;
+  }
 
   const request = (async () => {
     const response = await get<{ profile: UserData | null }>("/users/me/profile");
     return response.profile ?? null;
   })();
 
-  profileFetchInFlight = request;
+  if (sessionKey) {
+    profileFetchInFlight.set(sessionKey, request);
+  }
   try {
     return await request;
   } finally {
-    if (profileFetchInFlight === request) {
-      profileFetchInFlight = null;
+    if (sessionKey && profileFetchInFlight.get(sessionKey) === request) {
+      profileFetchInFlight.delete(sessionKey);
     }
   }
 }

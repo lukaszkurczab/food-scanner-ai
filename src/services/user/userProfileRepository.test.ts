@@ -90,7 +90,7 @@ describe("services/user/userProfileRepository", () => {
     expect(mockGet).toHaveBeenCalledWith("/users/me/profile");
   });
 
-  it("dedupes concurrent profile fetches for the same uid", async () => {
+  it("dedupes concurrent profile fetches for the same session key", async () => {
     let resolveProfile!: (value: unknown) => void;
     mockGet.mockReturnValue(
       new Promise((resolve) => {
@@ -101,8 +101,8 @@ describe("services/user/userProfileRepository", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { fetchUserProfileRemote } = require("@/services/user/userProfileRepository");
 
-    const first = fetchUserProfileRemote();
-    const second = fetchUserProfileRemote();
+    const first = fetchUserProfileRemote("u1");
+    const second = fetchUserProfileRemote("u1");
 
     expect(mockGet).toHaveBeenCalledTimes(1);
     resolveProfile({
@@ -111,6 +111,67 @@ describe("services/user/userProfileRepository", () => {
 
     await expect(first).resolves.toEqual({ uid: "u1", username: "neo" });
     await expect(second).resolves.toEqual({ uid: "u1", username: "neo" });
+  });
+
+  it("does not share in-flight profile response across different session keys", async () => {
+    let resolveFirst!: (value: unknown) => void;
+    let resolveSecond!: (value: unknown) => void;
+    mockGet
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirst = resolve;
+        }),
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSecond = resolve;
+        }),
+      );
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { fetchUserProfileRemote } = require("@/services/user/userProfileRepository");
+
+    const userA = fetchUserProfileRemote("user-a");
+    const userB = fetchUserProfileRemote("user-b");
+
+    expect(mockGet).toHaveBeenCalledTimes(2);
+
+    resolveSecond({
+      profile: { uid: "user-b", username: "trinity" },
+    });
+    resolveFirst({
+      profile: { uid: "user-a", username: "neo" },
+    });
+
+    await expect(userB).resolves.toEqual({
+      uid: "user-b",
+      username: "trinity",
+    });
+    await expect(userA).resolves.toEqual({ uid: "user-a", username: "neo" });
+  });
+
+  it("clears in-memory profile cache for a uid", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const repo = require("@/services/user/userProfileRepository");
+
+    repo.emitUserProfileChanged("u1", { uid: "u1", username: "neo" });
+    repo.emitUserProfileChanged("u2", { uid: "u2", username: "trinity" });
+
+    repo.clearCachedUserProfile("u1");
+
+    const receivedU1: unknown[] = [];
+    const receivedU2: unknown[] = [];
+    repo.subscribeToUserProfile({
+      uid: "u1",
+      onData: (d: unknown) => receivedU1.push(d),
+    });
+    repo.subscribeToUserProfile({
+      uid: "u2",
+      onData: (d: unknown) => receivedU2.push(d),
+    });
+
+    expect(receivedU1).toEqual([]);
+    expect(receivedU2).toEqual([{ uid: "u2", username: "trinity" }]);
   });
 
   it("skips backend patch when payload has only local-only/non-editable fields", async () => {
