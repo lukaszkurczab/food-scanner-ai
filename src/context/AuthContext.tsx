@@ -20,6 +20,7 @@ type AuthContextType = {
   uid: string | null;
   email: string | null;
   isAuthenticated: boolean;
+  authLoading: boolean;
   loading: boolean;
 };
 
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
   uid: null,
   email: null,
   isAuthenticated: false,
+  authLoading: true,
   loading: true,
 });
 
@@ -85,6 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       uid,
       email,
       isAuthenticated: !!uid,
+      authLoading: loading,
       loading,
     };
   }, [firebaseUser, loading]);

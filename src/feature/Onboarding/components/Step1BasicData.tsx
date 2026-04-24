@@ -17,6 +17,7 @@ type Props = {
   >;
   onContinue: () => void;
   onSecondaryAction: () => void;
+  showSecondaryAction?: boolean;
   submitting?: boolean;
 };
 
@@ -34,6 +35,7 @@ export default function Step1BasicData({
   setErrors,
   onContinue,
   onSecondaryAction,
+  showSecondaryAction = true,
   submitting = false,
 }: Props) {
   const { t } = useTranslation("onboarding");
@@ -240,7 +242,11 @@ export default function Step1BasicData({
         onPress={onContinue}
         loading={submitting}
         secondaryLabel={
-          mode === "first" ? t("step1.secondaryCtaFirst") : t("common:cancel")
+          showSecondaryAction
+            ? mode === "first"
+              ? t("step1.secondaryCtaFirst")
+              : t("common:cancel")
+            : undefined
         }
         secondaryOnPress={onSecondaryAction}
         secondaryTone={mode === "first" ? "ghost" : "secondary"}

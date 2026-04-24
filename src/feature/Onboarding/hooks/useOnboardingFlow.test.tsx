@@ -110,6 +110,26 @@ describe("useOnboardingFlow", () => {
     expect(mockUpdateUser).not.toHaveBeenCalled();
   });
 
+  it("does not allow first-step skip in profile recovery mode", async () => {
+    const navigation = buildNavigation();
+    const { result } = renderHook(() =>
+      useOnboardingFlow({
+        mode: "first",
+        navigation: navigation as never,
+        allowInitialSkip: false,
+      }),
+    );
+
+    await waitFor(() => expect(result.current.isLoaded).toBe(true));
+
+    act(() => {
+      result.current.handleStep1SecondaryAction();
+    });
+
+    expect(result.current.modalState).toBeNull();
+    expect(navigation.reset).not.toHaveBeenCalled();
+  });
+
   it("clears optional health details when the user confirms skip on step 3", async () => {
     const navigation = buildNavigation();
     const { result } = renderHook(() =>

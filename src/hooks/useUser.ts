@@ -8,6 +8,8 @@ export function useUser(uid: string) {
   const {
     userData,
     loading,
+    profileBootstrapState,
+    profileBootstrapError,
     syncState,
     retryingProfileSync,
     language,
@@ -49,6 +51,8 @@ export function useUser(uid: string) {
     () => ({
       userData,
       loading,
+      profileBootstrapState,
+      profileBootstrapError,
       syncState,
       retryingProfileSync,
       getUserProfile,
@@ -64,6 +68,8 @@ export function useUser(uid: string) {
     [
       userData,
       loading,
+      profileBootstrapState,
+      profileBootstrapError,
       syncState,
       retryingProfileSync,
       getUserProfile,

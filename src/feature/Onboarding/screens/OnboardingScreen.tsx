@@ -22,10 +22,12 @@ export default function OnboardingScreen({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const mode = route.params?.mode ?? "first";
+  const profileRecovery = route.params?.profileRecovery === true;
 
   const state = useOnboardingFlow({
     mode,
     navigation,
+    allowInitialSkip: !profileRecovery,
   });
 
   useEffect(() => {
@@ -96,6 +98,7 @@ export default function OnboardingScreen({
             setErrors={state.setErrors}
             onContinue={state.handlePrimaryAction}
             onSecondaryAction={state.handleStep1SecondaryAction}
+            showSecondaryAction={!profileRecovery}
             submitting={state.submitting}
           />
         ) : null}

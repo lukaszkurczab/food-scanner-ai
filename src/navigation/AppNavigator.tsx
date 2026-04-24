@@ -1,7 +1,8 @@
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { useEffect, useRef } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import type { RootStackParamList } from "./navigate";
 import { useAuthContext } from "@/context/AuthContext";
+import { useUserProfileContext } from "@/context/UserProfileContext";
 import HomeScreen from "@/feature/Home/screens/HomeScreen";
 import WeeklyReportScreen from "@/feature/Home/screens/WeeklyReportScreen";
 import HistoryListScreen from "@/feature/History/screens/HistoryListScreen";
@@ -43,8 +44,20 @@ import SavedMealsCameraScreen from "@/feature/History/screens/SavedMealsCameraSc
 import AddMealScreen from "@feature/Meals/screens/AddMealScreen";
 import { isE2EModeEnabled } from "@/services/e2e/config";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { ensureStreakDoc, resetIfMissed } from "@/services/gamification/streakService";
+import { primeBadges } from "@/services/gamification/badgeService";
+import { logWarning } from "@/services/core/errorLogger";
 
 const Stack = createStackNavigator<RootStackParamList>();
+
+export type AppBootstrapState =
+  | "authLoading"
+  | "unauthenticated"
+  | "profileLoading"
+  | "profileReady"
+  | "profileMissing"
+  | "offlineCached"
+  | "bootstrapFailed";
 
 function renderAuthScreens() {
   return (
@@ -57,14 +70,24 @@ function renderAuthScreens() {
   );
 }
 
-function renderAppScreens() {
+function renderAppScreens({
+  onboardingMode = "first",
+  profileRecovery = false,
+}: {
+  onboardingMode?: "first" | "refill";
+  profileRecovery?: boolean;
+} = {}) {
   return (
     <>
       <Stack.Screen name="Loading" component={LoadingScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="WeeklyReport" component={WeeklyReportScreen} />
       <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      <Stack.Screen
+        name="Onboarding"
+        component={OnboardingScreen}
+        initialParams={{ mode: onboardingMode, profileRecovery }}
+      />
       <Stack.Screen name="AvatarCamera" component={AvatarCameraScreen} />
       <Stack.Screen
         name="ProfilePhotoPreview"
@@ -143,34 +166,100 @@ function renderSharedScreens() {
   );
 }
 
-export default function AppNavigator() {
-  const { isAuthenticated, loading } = useAuthContext();
-  const disableAnimations = isE2EModeEnabled();
+function resolveBootstrapState(params: {
+  authLoading: boolean;
+  isAuthenticated: boolean;
+  profileBootstrapState: AppBootstrapState;
+}): AppBootstrapState {
+  if (params.authLoading) return "authLoading";
+  if (!params.isAuthenticated) return "unauthenticated";
+  return params.profileBootstrapState;
+}
 
-  if (loading) {
-    return (
-      <View style={styles.centerBoth}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+function resolveInitialRouteName(
+  bootstrapState: AppBootstrapState,
+  surveyCompleted: boolean | undefined,
+): keyof RootStackParamList {
+  if (bootstrapState === "profileReady" || bootstrapState === "offlineCached") {
+    return surveyCompleted ? "Home" : "Onboarding";
   }
+
+  if (bootstrapState === "profileMissing") {
+    return "Onboarding";
+  }
+
+  return "Loading";
+}
+
+function isAppReadyState(bootstrapState: AppBootstrapState): boolean {
+  return bootstrapState === "profileReady" || bootstrapState === "offlineCached";
+}
+
+export default function AppNavigator() {
+  const { isAuthenticated, authLoading } = useAuthContext();
+  const { userData, profileBootstrapState } = useUserProfileContext();
+  const disableAnimations = isE2EModeEnabled();
+  const primedUidRef = useRef<string | null>(null);
+  const bootstrapState = resolveBootstrapState({
+    authLoading,
+    isAuthenticated,
+    profileBootstrapState,
+  });
+  const initialRouteName = resolveInitialRouteName(
+    bootstrapState,
+    userData?.surveyComplited,
+  );
+
+  useEffect(() => {
+    if (!isAppReadyState(bootstrapState) || !userData?.uid) {
+      return;
+    }
+    if (primedUidRef.current === userData.uid) {
+      return;
+    }
+    primedUidRef.current = userData.uid;
+
+    void (async () => {
+      try {
+        await ensureStreakDoc(userData.uid);
+        await resetIfMissed(userData.uid);
+        await primeBadges(userData.uid);
+      } catch (error) {
+        logWarning("post-bootstrap user runtime priming failed", {
+          uid: userData.uid,
+          bootstrapState,
+        }, error);
+      }
+    })();
+  }, [bootstrapState, userData?.uid]);
+
+  const showAuthStack = bootstrapState === "unauthenticated";
+  const showProfileStack =
+    bootstrapState === "profileReady" ||
+    bootstrapState === "offlineCached" ||
+    bootstrapState === "profileMissing";
 
   return (
     <ErrorBoundary>
       <Stack.Navigator
+        key={bootstrapState}
+        initialRouteName={initialRouteName}
         screenOptions={{
           headerShown: false,
           gestureEnabled: true,
           animation: disableAnimations ? "none" : "default",
         }}
       >
-        {isAuthenticated ? renderAppScreens() : renderAuthScreens()}
+        {showAuthStack
+          ? renderAuthScreens()
+          : showProfileStack
+            ? renderAppScreens({
+                onboardingMode: "first",
+                profileRecovery: bootstrapState === "profileMissing",
+              })
+            : <Stack.Screen name="Loading" component={LoadingScreen} />}
         {renderSharedScreens()}
       </Stack.Navigator>
     </ErrorBoundary>
   );
 }
-
-const styles = StyleSheet.create({
-  centerBoth: { flex: 1, justifyContent: "center", alignItems: "center" },
-});

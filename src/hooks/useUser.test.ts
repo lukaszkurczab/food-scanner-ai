@@ -283,7 +283,7 @@ describe("useUser", () => {
       return mockUnsub;
     });
 
-    mockFetchUserProfileRemote.mockResolvedValue(null);
+    mockFetchUserProfileRemote.mockResolvedValue(createUser());
     mockSavePhotoLocally.mockResolvedValue("file:///photos/avatar.jpg");
     mockChangeUsernameService.mockResolvedValue(undefined);
     mockChangeEmailService.mockResolvedValue(undefined);
@@ -335,6 +335,7 @@ describe("useUser", () => {
 
     expect(result.current.userData).toBeNull();
     expect(result.current.language).toBe("en");
+    expect(result.current.profileBootstrapState).toBe("profileMissing");
     expect(mockSubscribeToUserProfile).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -351,6 +352,7 @@ describe("useUser", () => {
       language: "de",
       avatarLocalPath: "file:///avatar-local.jpg",
     });
+    mockFetchUserProfileRemote.mockResolvedValue(cached);
     mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
 
     const { result, unmount } = renderHook(() => useUser("u1"));
@@ -361,6 +363,7 @@ describe("useUser", () => {
 
     expect(result.current.userData?.username).toBe("neo");
     expect(result.current.language).toBe("en");
+    expect(result.current.profileBootstrapState).toBe("profileReady");
 
     await act(async () => {
       emitSnapshot(
@@ -383,12 +386,26 @@ describe("useUser", () => {
     expect(mockUnsub).toHaveBeenCalled();
   });
 
+  it("marks authenticated bootstrap as profile missing when remote profile is absent", async () => {
+    mockFetchUserProfileRemote.mockResolvedValue(null);
+
+    const { result } = renderHook(() => useUser("u1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.userData).toBeNull();
+    expect(result.current.profileBootstrapState).toBe("profileMissing");
+  });
+
   it("preserves existing local avatar path when snapshot omits it", async () => {
     const cached = createUser({
       username: "neo",
       avatarUrl: "https://cdn/avatar.jpg",
       avatarLocalPath: "file:///avatar-local.jpg",
     });
+    mockFetchUserProfileRemote.mockResolvedValue(cached);
     mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
     mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
       const path = args[0] as string;
@@ -432,6 +449,7 @@ describe("useUser", () => {
       avatarUrl: "https://cdn/avatar-remote.jpg",
       avatarLocalPath: "",
     });
+    mockFetchUserProfileRemote.mockResolvedValue(cached);
 
     mockAsyncStorageGetItem
       .mockResolvedValueOnce(JSON.stringify(cached))
@@ -470,6 +488,7 @@ describe("useUser", () => {
       avatarLocalPath: "",
     });
 
+    mockFetchUserProfileRemote.mockResolvedValue(cached);
     mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
     mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
       const path = args[0] as string;
@@ -499,6 +518,7 @@ describe("useUser", () => {
     const cached = createUser({
       avatarLocalPath: "file:///missing-avatar.jpg",
     });
+    mockFetchUserProfileRemote.mockResolvedValue(cached);
     mockAsyncStorageGetItem.mockResolvedValueOnce(JSON.stringify(cached));
     mockFsGetInfoAsync.mockImplementation(async (...args: unknown[]) => {
       const path = args[0] as string;
@@ -538,6 +558,7 @@ describe("useUser", () => {
     expect(profile).toEqual(
       expect.objectContaining({ username: "cached-name" }),
     );
+    expect(result.current.profileBootstrapState).toBe("offlineCached");
     expect(mockFetchUserProfileRemote).not.toHaveBeenCalled();
   });
 
@@ -546,7 +567,7 @@ describe("useUser", () => {
       username: "remote-name",
       avatarLocalPath: "file:///avatar-local.jpg",
     });
-    mockFetchUserProfileRemote.mockResolvedValueOnce(remote);
+    mockFetchUserProfileRemote.mockResolvedValue(remote);
 
     const { result } = renderHook(() => useUser("u1"));
 
@@ -577,7 +598,7 @@ describe("useUser", () => {
       }
       return { exists: false };
     });
-    mockFetchUserProfileRemote.mockResolvedValueOnce(
+    mockFetchUserProfileRemote.mockResolvedValue(
       createUser({
         avatarUrl: "https://cdn/avatar-remote.jpg",
         avatarLocalPath: "",
@@ -692,6 +713,7 @@ describe("useUser", () => {
       avatarlastSyncedAt: "2026-03-10T10:00:00.000Z",
       createdAt: 1,
     });
+    mockFetchUserProfileRemote.mockResolvedValue(cachedProfile);
     mockAsyncStorageGetItem.mockImplementation((key: unknown) =>
       Promise.resolve(
         key === "user:profile:u1" ? JSON.stringify(cachedProfile) : null,

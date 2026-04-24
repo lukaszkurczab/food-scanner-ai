@@ -73,6 +73,16 @@ function profileCacheKey(uid: string): string {
   return `user:profile:${uid}`;
 }
 
+function isValidBootstrapProfile(uid: string, value: unknown): value is UserData {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<UserData>;
+  return (
+    candidate.uid === uid &&
+    typeof candidate.username === "string" &&
+    candidate.username.trim().length > 0
+  );
+}
+
 function avatarCachePath(uid: string): string {
   return `${FileSystem.documentDirectory}users/${uid}/images/avatar.jpg`;
 }
@@ -81,7 +91,12 @@ async function readProfileCache(uid: string): Promise<UserData | null> {
   try {
     const cached = await AsyncStorage.getItem(profileCacheKey(uid));
     if (!cached) return null;
-    return JSON.parse(cached) as UserData;
+    const parsed: unknown = JSON.parse(cached);
+    if (!isValidBootstrapProfile(uid, parsed)) {
+      logWarning("profile cache invalid for bootstrap", { uid });
+      return null;
+    }
+    return parsed;
   } catch (error) {
     logWarning("profile cache read failed", null, error);
     return null;
@@ -142,10 +157,18 @@ async function resolveExistingAvatarPath(
 }
 
 type SyncState = "synced" | "pending" | "conflict";
+export type UserProfileBootstrapState =
+  | "profileLoading"
+  | "profileReady"
+  | "profileMissing"
+  | "offlineCached"
+  | "bootstrapFailed";
 
 type UseUserProfileResult = {
   userData: UserData | null;
   loading: boolean;
+  profileBootstrapState: UserProfileBootstrapState;
+  profileBootstrapError: unknown | null;
   syncState: SyncState;
   retryingProfileSync: boolean;
   language: string;
@@ -164,6 +187,10 @@ type UseUserProfileResult = {
 export function useUserProfile(uid: string): UseUserProfileResult {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileBootstrapState, setProfileBootstrapState] =
+    useState<UserProfileBootstrapState>("profileLoading");
+  const [profileBootstrapError, setProfileBootstrapError] =
+    useState<unknown | null>(null);
   const [syncState, setSyncState] = useState<SyncState>("synced");
   const [retryingProfileSync, setRetryingProfileSync] = useState(false);
   const [language, setLanguage] = useState<string>(() =>
@@ -187,14 +214,23 @@ export function useUserProfile(uid: string): UseUserProfileResult {
       options?: {
         emitChange?: boolean;
         writeCache?: boolean;
+        completeBootstrap?: boolean;
+        bootstrapState?: UserProfileBootstrapState;
       },
     ): Promise<UserData | null> => {
       if (!uid) return null;
+      const completeBootstrap = options?.completeBootstrap !== false;
 
       if (!profile) {
         setUserData(null);
         userDataRef.current = null;
-        setLoading(false);
+        if (completeBootstrap) {
+          setLoading(false);
+          setProfileBootstrapState(
+            options?.bootstrapState ?? "profileMissing",
+          );
+          setProfileBootstrapError(null);
+        }
         if (options?.emitChange) {
           emitUserProfileChanged(uid, null);
         }
@@ -213,7 +249,11 @@ export function useUserProfile(uid: string): UseUserProfileResult {
       const normalized = { ...profile, avatarLocalPath };
       setUserData(normalized);
       userDataRef.current = normalized;
-      setLoading(false);
+      if (completeBootstrap) {
+        setLoading(false);
+        setProfileBootstrapState(options?.bootstrapState ?? "profileReady");
+        setProfileBootstrapError(null);
+      }
       if (
         options?.writeCache ||
         (profile.avatarLocalPath || "") !== avatarLocalPath
@@ -274,20 +314,40 @@ export function useUserProfile(uid: string): UseUserProfileResult {
     const net = await NetInfo.fetch();
     if (isOfflineNetState(net)) {
       const cached = (await readCached()) || userDataRef.current;
-      if (!cached) setLoading(false);
+      if (cached) {
+        setLoading(false);
+        setProfileBootstrapState("offlineCached");
+        setProfileBootstrapError(null);
+      } else {
+        setLoading(false);
+        setProfileBootstrapState("bootstrapFailed");
+        setProfileBootstrapError(null);
+      }
       return cached;
     }
     try {
       const data = await fetchUserProfileRemote();
-      if (!data && userDataRef.current?.uid === uid) {
-        setLoading(false);
-        return userDataRef.current;
+      const profile = isValidBootstrapProfile(uid, data) ? data : null;
+      if (data && !profile) {
+        logWarning("remote profile invalid for bootstrap", { uid });
       }
-      return applyProfileData(data, { emitChange: true, writeCache: !!data });
+      return applyProfileData(profile, {
+        emitChange: true,
+        writeCache: !!profile,
+        bootstrapState: profile ? "profileReady" : "profileMissing",
+      });
     } catch (error) {
       logWarning("user profile remote fetch failed", null, error);
       const cached = (await readCached()) || userDataRef.current;
-      if (!cached) setLoading(false);
+      if (cached) {
+        setLoading(false);
+        setProfileBootstrapState("offlineCached");
+        setProfileBootstrapError(error);
+      } else {
+        setLoading(false);
+        setProfileBootstrapState("bootstrapFailed");
+        setProfileBootstrapError(error);
+      }
       return cached;
     }
   }, [applyProfileData, uid]);
@@ -380,8 +440,13 @@ export function useUserProfile(uid: string): UseUserProfileResult {
       setUserData(null);
       setLanguage(normalizeLanguageCode(i18n.resolvedLanguage ?? i18n.language));
       setLoading(false);
+      setProfileBootstrapState("profileMissing");
+      setProfileBootstrapError(null);
       return;
     }
+    setLoading(true);
+    setProfileBootstrapState("profileLoading");
+    setProfileBootstrapError(null);
 
     const unsub = subscribeToUserProfile({
       uid,
@@ -395,7 +460,10 @@ export function useUserProfile(uid: string): UseUserProfileResult {
         const parsed = await readProfileCache(uid);
         if (parsed) {
           if (cancelled) return;
-          await applyProfileData(parsed, { emitChange: true });
+          await applyProfileData(parsed, {
+            emitChange: true,
+            completeBootstrap: false,
+          });
         }
       } catch (error) {
         logWarning("profile cache hydration failed", null, error);
@@ -436,6 +504,8 @@ export function useUserProfile(uid: string): UseUserProfileResult {
     () => ({
       userData,
       loading,
+      profileBootstrapState,
+      profileBootstrapError,
       syncState,
       retryingProfileSync,
       language,
@@ -453,6 +523,8 @@ export function useUserProfile(uid: string): UseUserProfileResult {
     [
       userData,
       loading,
+      profileBootstrapState,
+      profileBootstrapError,
       syncState,
       retryingProfileSync,
       language,

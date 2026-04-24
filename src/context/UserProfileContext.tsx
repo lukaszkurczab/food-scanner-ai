@@ -8,6 +8,7 @@ import React, {
 import { useAuthContext } from "./AuthContext";
 import { useUser } from "@hooks/useUser";
 import type { UserData } from "@/types";
+import type { UserProfileBootstrapState } from "@/hooks/useUserProfile";
 import { runMigrations } from "@/services/offline/db";
 import { startSyncLoop, stopSyncLoop } from "@/services/offline/sync.engine";
 import { cleanupTransientOfflineAssets } from "@/services/offline/fileCleanup";
@@ -16,6 +17,8 @@ import { emit, on } from "@/services/core/events";
 export type UserProfileContextType = {
   userData: UserData | null;
   loadingUser: boolean;
+  profileBootstrapState: UserProfileBootstrapState;
+  profileBootstrapError: unknown | null;
   syncState: "synced" | "pending" | "conflict";
   retryingProfileSync: boolean;
   refreshUser: () => Promise<UserData | null>;
@@ -29,6 +32,8 @@ export type UserProfileContextType = {
 const UserProfileContext = createContext<UserProfileContextType>({
   userData: null,
   loadingUser: true,
+  profileBootstrapState: "profileLoading",
+  profileBootstrapError: null,
   syncState: "pending",
   retryingProfileSync: false,
   refreshUser: async () => null,
@@ -50,6 +55,8 @@ export const UserProfileProvider = ({
   const {
     userData,
     loading: loadingUser,
+    profileBootstrapState,
+    profileBootstrapError,
     syncState,
     retryingProfileSync,
     getUserProfile,
@@ -105,6 +112,8 @@ export const UserProfileProvider = ({
     () => ({
       userData,
       loadingUser,
+      profileBootstrapState,
+      profileBootstrapError,
       syncState,
       retryingProfileSync,
       refreshUser,
@@ -117,6 +126,8 @@ export const UserProfileProvider = ({
     [
       userData,
       loadingUser,
+      profileBootstrapState,
+      profileBootstrapError,
       syncState,
       retryingProfileSync,
       refreshUser,
