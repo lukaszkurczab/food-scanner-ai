@@ -23,7 +23,6 @@ export function getCachedUserProfile(uid: string): UserData | null | undefined {
 
 export function clearCachedUserProfile(uid: string): void {
   profileCache.delete(uid);
-  emit("user:profile:changed", { uid, data: null });
 }
 
 export function emitUserProfileChanged(uid: string, data: UserData | null) {

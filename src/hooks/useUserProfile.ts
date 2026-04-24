@@ -45,6 +45,8 @@ const isLocalUri = (value: string | null | undefined): value is string =>
   !!value &&
   (value.startsWith("file://") || value.startsWith("content://"));
 
+type CurrentGuard = () => boolean;
+
 async function withProfileCacheLock<T>(
   uid: string,
   task: () => Promise<T>
@@ -197,6 +199,20 @@ export function useUserProfile(uid: string): UseUserProfileResult {
     normalizeLanguageCode(i18n.resolvedLanguage ?? i18n.language)
   );
   const userDataRef = useRef<UserData | null>(null);
+  const mountedRef = useRef(true);
+  const latestUidRef = useRef(uid);
+  const bootstrapRunIdRef = useRef(0);
+
+  useEffect(() => {
+    latestUidRef.current = uid;
+  }, [uid]);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      bootstrapRunIdRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     if (!uid) {
@@ -216,9 +232,14 @@ export function useUserProfile(uid: string): UseUserProfileResult {
         writeCache?: boolean;
         completeBootstrap?: boolean;
         bootstrapState?: UserProfileBootstrapState;
+        isCurrent?: CurrentGuard;
       },
     ): Promise<UserData | null> => {
       if (!uid) return null;
+      const isCurrent =
+        options?.isCurrent ??
+        (() => mountedRef.current && latestUidRef.current === uid);
+      if (!isCurrent()) return null;
       const completeBootstrap = options?.completeBootstrap !== false;
 
       if (!profile) {
@@ -246,6 +267,7 @@ export function useUserProfile(uid: string): UseUserProfileResult {
         currentAvatarLocalPath,
         avatarCachePath(uid)
       );
+      if (!isCurrent()) return null;
       const normalized = { ...profile, avatarLocalPath };
       setUserData(normalized);
       userDataRef.current = normalized;
@@ -283,37 +305,48 @@ export function useUserProfile(uid: string): UseUserProfileResult {
     }
   }, [uid]);
 
-  const fetchUserFromCloud = useCallback(async () => {
+  const fetchUserFromCloud = useCallback(async (options?: { isCurrent?: CurrentGuard }) => {
     if (!uid) return null;
+    const requestUid = uid;
+    const isCurrent =
+      options?.isCurrent ??
+      (() => mountedRef.current && latestUidRef.current === requestUid);
+    if (!isCurrent()) return null;
+
     const readCached = async () => {
       try {
-        const parsed = await readProfileCache(uid);
+        const parsed = await readProfileCache(requestUid);
+        if (!isCurrent()) return null;
         if (!parsed) return null;
         const currentAvatarLocalPath =
-          userDataRef.current?.uid === uid
+          userDataRef.current?.uid === requestUid
             ? userDataRef.current.avatarLocalPath
             : undefined;
         const avatarLocalPath = await resolveExistingAvatarPath(
           parsed.avatarLocalPath,
           currentAvatarLocalPath,
-          avatarCachePath(uid)
+          avatarCachePath(requestUid)
         );
+        if (!isCurrent()) return null;
         const normalized = { ...parsed, avatarLocalPath };
         setUserData(normalized);
         userDataRef.current = normalized;
         if ((parsed.avatarLocalPath || "") !== avatarLocalPath) {
-          void writeProfileCache(uid, normalized);
+          void writeProfileCache(requestUid, normalized);
         }
         return normalized;
       } catch (error) {
+        if (!isCurrent()) return null;
         logWarning("profile cache fallback read failed", null, error);
         return null;
       }
     };
 
     const net = await NetInfo.fetch();
+    if (!isCurrent()) return null;
     if (isOfflineNetState(net)) {
       const cached = (await readCached()) || userDataRef.current;
+      if (!isCurrent()) return null;
       if (cached) {
         setLoading(false);
         setProfileBootstrapState("offlineCached");
@@ -326,19 +359,23 @@ export function useUserProfile(uid: string): UseUserProfileResult {
       return cached;
     }
     try {
-      const data = await fetchUserProfileRemote(uid);
-      const profile = isValidBootstrapProfile(uid, data) ? data : null;
+      const data = await fetchUserProfileRemote(requestUid);
+      if (!isCurrent()) return null;
+      const profile = isValidBootstrapProfile(requestUid, data) ? data : null;
       if (data && !profile) {
-        logWarning("remote profile invalid for bootstrap", { uid });
+        logWarning("remote profile invalid for bootstrap", { uid: requestUid });
       }
       return applyProfileData(profile, {
         emitChange: true,
         writeCache: !!profile,
         bootstrapState: profile ? "profileReady" : "profileMissing",
+        isCurrent,
       });
     } catch (error) {
+      if (!isCurrent()) return null;
       logWarning("user profile remote fetch failed", null, error);
       const cached = (await readCached()) || userDataRef.current;
+      if (!isCurrent()) return null;
       if (cached) {
         setLoading(false);
         setProfileBootstrapState("offlineCached");
@@ -436,6 +473,13 @@ export function useUserProfile(uid: string): UseUserProfileResult {
 
   useEffect(() => {
     let cancelled = false;
+    const runId = ++bootstrapRunIdRef.current;
+    const isCurrent = () =>
+      !cancelled &&
+      mountedRef.current &&
+      latestUidRef.current === uid &&
+      bootstrapRunIdRef.current === runId;
+
     if (!uid) {
       setUserData(null);
       setLanguage(normalizeLanguageCode(i18n.resolvedLanguage ?? i18n.language));
@@ -451,7 +495,8 @@ export function useUserProfile(uid: string): UseUserProfileResult {
     const unsub = subscribeToUserProfile({
       uid,
       onData: (data) => {
-        void applyProfileData(data, { writeCache: !!data });
+        if (!isCurrent()) return;
+        void applyProfileData(data, { writeCache: !!data, isCurrent });
       },
     });
 
@@ -459,21 +504,24 @@ export function useUserProfile(uid: string): UseUserProfileResult {
       try {
         const parsed = await readProfileCache(uid);
         if (parsed) {
-          if (cancelled) return;
+          if (!isCurrent()) return;
           await applyProfileData(parsed, {
             completeBootstrap: false,
+            isCurrent,
           });
         }
       } catch (error) {
+        if (!isCurrent()) return;
         logWarning("profile cache hydration failed", null, error);
       }
 
-      if (cancelled) return;
-      await fetchUserFromCloud();
+      if (!isCurrent()) return;
+      await fetchUserFromCloud({ isCurrent });
     })();
 
     return () => {
       cancelled = true;
+      bootstrapRunIdRef.current += 1;
       unsub();
     };
   }, [applyProfileData, fetchUserFromCloud, uid]);

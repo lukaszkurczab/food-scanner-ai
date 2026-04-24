@@ -428,6 +428,119 @@ describe("useUser", () => {
     });
   });
 
+  it("ignores delayed remote profile response after account switch", async () => {
+    let resolveUserA: ((value: UserData) => void) | null = null;
+    mockFetchUserProfileRemote.mockImplementation((sessionKey: unknown) => {
+      if (sessionKey === "user-a") {
+        return new Promise<UserData>((resolve) => {
+          resolveUserA = resolve;
+        });
+      }
+      if (sessionKey === "user-b") {
+        return Promise.resolve(
+          createUser({
+            uid: "user-b",
+            email: "user-b@example.com",
+            username: "fresh-b",
+          }),
+        );
+      }
+      return Promise.resolve(null);
+    });
+
+    let currentUid = "user-a";
+    const { result, rerender } = renderHook(() => useUser(currentUid));
+
+    await waitFor(() => {
+      expect(mockFetchUserProfileRemote).toHaveBeenCalledWith("user-a");
+    });
+
+    currentUid = "user-b";
+    rerender(undefined);
+
+    await waitFor(() => {
+      expect(result.current.profileBootstrapState).toBe("profileReady");
+      expect(result.current.userData?.uid).toBe("user-b");
+      expect(result.current.userData?.username).toBe("fresh-b");
+    });
+
+    mockAsyncStorageSetItem.mockClear();
+    mockEmitUserProfileChanged.mockClear();
+
+    await act(async () => {
+      resolveUserA?.(
+        createUser({
+          uid: "user-a",
+          email: "user-a@example.com",
+          username: "stale-a",
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.userData?.uid).toBe("user-b");
+    expect(result.current.userData?.username).toBe("fresh-b");
+    expect(mockAsyncStorageSetItem).not.toHaveBeenCalledWith(
+      "user:profile:user-a",
+      expect.any(String),
+    );
+    expect(mockEmitUserProfileChanged).not.toHaveBeenCalledWith(
+      "user-a",
+      expect.anything(),
+    );
+  });
+
+  it("ignores delayed remote profile response after logout", async () => {
+    let resolveUserA: ((value: UserData) => void) | null = null;
+    mockFetchUserProfileRemote.mockReturnValueOnce(
+      new Promise<UserData>((resolve) => {
+        resolveUserA = resolve;
+      }),
+    );
+
+    let currentUid = "user-a";
+    const { result, rerender } = renderHook(() => useUser(currentUid));
+
+    await waitFor(() => {
+      expect(mockFetchUserProfileRemote).toHaveBeenCalledWith("user-a");
+    });
+
+    currentUid = "";
+    rerender(undefined);
+
+    await waitFor(() => {
+      expect(result.current.userData).toBeNull();
+      expect(result.current.profileBootstrapState).toBe("profileMissing");
+    });
+
+    mockAsyncStorageSetItem.mockClear();
+    mockEmitUserProfileChanged.mockClear();
+
+    await act(async () => {
+      resolveUserA?.(
+        createUser({
+          uid: "user-a",
+          email: "user-a@example.com",
+          username: "stale-a",
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.userData).toBeNull();
+    expect(result.current.profileBootstrapState).toBe("profileMissing");
+    expect(mockAsyncStorageSetItem).not.toHaveBeenCalledWith(
+      "user:profile:user-a",
+      expect.any(String),
+    );
+    expect(mockEmitUserProfileChanged).not.toHaveBeenCalledWith(
+      "user-a",
+      expect.anything(),
+    );
+  });
+
   it("preserves existing local avatar path when snapshot omits it", async () => {
     const cached = createUser({
       username: "neo",
@@ -612,6 +725,7 @@ describe("useUser", () => {
     expect(profile).toEqual(
       expect.objectContaining({ username: "remote-name" }),
     );
+    expect(result.current.profileBootstrapState).toBe("profileReady");
     expect(mockFetchUserProfileRemote).toHaveBeenCalledWith("u1");
     expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
       "user:profile:u1",
