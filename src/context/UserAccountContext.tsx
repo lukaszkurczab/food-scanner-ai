@@ -55,7 +55,7 @@ export const UserAccountProvider = ({
   const changeEmail = useCallback(
     async (newEmail: string, password: string) => {
       if (!uid) return;
-      await changeEmailService({ uid, newEmail, password });
+      await changeEmailService({ newEmail, password });
     },
     [uid]
   );
@@ -69,7 +69,7 @@ export const UserAccountProvider = ({
 
   const exportUserData = useCallback(async (): Promise<string | void> => {
     if (!uid) return;
-    const data = await fetchUserExportData(uid);
+    const data = await fetchUserExportData();
     const json = JSON.stringify(data, null, 2);
 
     const html = `

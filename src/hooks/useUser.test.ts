@@ -14,6 +14,7 @@ import { Platform } from "react-native";
 const mockSubscribeToUserProfile = jest.fn<(...args: unknown[]) => unknown>();
 const mockFetchUserProfileRemote =
   jest.fn<(...args: unknown[]) => Promise<UserData | null>>();
+const mockEmitUserProfileChanged = jest.fn<(...args: unknown[]) => void>();
 const mockSavePhotoLocally = jest.fn<(...args: unknown[]) => Promise<string>>();
 const mockChangeUsernameService =
   jest.fn<(...args: unknown[]) => Promise<void>>();
@@ -85,6 +86,8 @@ jest.mock("@/services/user/userProfileRepository", () => ({
     mockSubscribeToUserProfile(...args),
   fetchUserProfileRemote: (...args: unknown[]) =>
     mockFetchUserProfileRemote(...args),
+  emitUserProfileChanged: (...args: unknown[]) =>
+    mockEmitUserProfileChanged(...args),
 }));
 
 jest.mock("@utils/savePhotoLocally", () => ({
@@ -523,7 +526,7 @@ describe("useUser", () => {
       avatarLocalPath: "file:///avatar-local.jpg",
     });
     mockAsyncStorageGetItem.mockResolvedValue(JSON.stringify(cached));
-    mockNetInfoFetch.mockResolvedValueOnce({ isConnected: false });
+    mockNetInfoFetch.mockResolvedValue({ isConnected: false });
 
     const { result } = renderHook(() => useUser("u1"));
     let profile: unknown = null;
@@ -559,7 +562,7 @@ describe("useUser", () => {
     expect(profile).toEqual(
       expect.objectContaining({ username: "remote-name" }),
     );
-    expect(mockFetchUserProfileRemote).toHaveBeenCalledWith("u1");
+    expect(mockFetchUserProfileRemote).toHaveBeenCalledWith();
     expect(mockAsyncStorageSetItem).toHaveBeenCalledWith(
       "user:profile:u1",
       expect.stringContaining("remote-name"),
@@ -633,6 +636,7 @@ describe("useUser", () => {
     await act(async () => {
       emitSnapshot(createUser());
     });
+    mockNetInfoFetch.mockClear();
 
     await act(async () => {
       await result.current.updateUserProfile({
@@ -876,7 +880,6 @@ describe("useUser", () => {
       password: "pw",
     });
     expect(mockChangeEmailService).toHaveBeenCalledWith({
-      uid: "u1",
       newEmail: "new@example.com",
       password: "pw",
     });
@@ -903,8 +906,8 @@ describe("useUser", () => {
       await result.current.changeLanguage("it");
     });
 
-    // syncUserProfile → fetchUserFromCloud (1×) + changeLanguage → pushPendingChanges (1×)
-    expect(mockNetInfoFetch).toHaveBeenCalledTimes(2);
+    // bootstrap/fetchUserFromCloud + syncUserProfile + changeLanguage pushPendingChanges
+    expect(mockNetInfoFetch).toHaveBeenCalledTimes(3);
     expect(result.current.language).toBe("en");
     expect(mockI18nChangeLanguage).toHaveBeenCalledWith("en");
     expect(mockEnqueueUserProfileUpdate).toHaveBeenCalledWith(
@@ -928,7 +931,7 @@ describe("useUser", () => {
 
     const iosResult = await result.current.exportUserData();
     expect(iosResult).toBe("file:///docs/fitaly_user_data_2026-03-11.pdf");
-    expect(mockExportUserDataService).toHaveBeenCalledWith("u1");
+    expect(mockExportUserDataService).toHaveBeenCalledWith();
     expect(mockFsCopyAsync).toHaveBeenCalledWith({
       from: "file:///tmp/export.pdf",
       to: "file:///docs/fitaly_user_data_2026-03-11.pdf",

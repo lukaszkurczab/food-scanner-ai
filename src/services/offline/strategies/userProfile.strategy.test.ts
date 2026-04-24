@@ -42,7 +42,7 @@ describe("user profile strategy", () => {
     });
 
     expect(handled).toBe(true);
-    expect(mockUpdateUserProfileRemote).toHaveBeenCalledWith("user-1", {
+    expect(mockUpdateUserProfileRemote).toHaveBeenCalledWith({
       age: "31",
       calorieTarget: 2300,
     });
@@ -66,10 +66,7 @@ describe("user profile strategy", () => {
     });
 
     expect(handled).toBe(true);
-    expect(mockUploadUserAvatarRemote).toHaveBeenCalledWith(
-      "user-1",
-      "file://avatar.jpg",
-    );
+    expect(mockUploadUserAvatarRemote).toHaveBeenCalledWith("file://avatar.jpg");
   });
 
   it("has no pull behavior", async () => {

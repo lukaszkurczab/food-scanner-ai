@@ -46,7 +46,7 @@ export function useUserExport({
 
   const exportUserData = useCallback(async (): Promise<string | void> => {
     if (!uid) return;
-    const data = await fetchUserExportData(uid);
+    const data = await fetchUserExportData();
     const json = JSON.stringify(data, null, 2);
 
     const html = `

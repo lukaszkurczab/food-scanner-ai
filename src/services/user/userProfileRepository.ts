@@ -15,9 +15,13 @@ type UserOnboardingResponse = {
 };
 
 const profileCache = new Map<string, UserData | null>();
-const profileFetchInFlight = new Map<string, Promise<UserData | null>>();
+let profileFetchInFlight: Promise<UserData | null> | null = null;
 
-function emitUserProfile(uid: string, data: UserData | null) {
+export function getCachedUserProfile(uid: string): UserData | null | undefined {
+  return profileCache.get(uid);
+}
+
+export function emitUserProfileChanged(uid: string, data: UserData | null) {
   profileCache.set(uid, data);
   emit("user:profile:changed", { uid, data });
 }
@@ -29,14 +33,6 @@ export function subscribeToUserProfile(params: {
   const cached = profileCache.get(params.uid);
   if (cached !== undefined) {
     params.onData(cached);
-  } else {
-    void fetchUserProfileRemote(params.uid)
-      .then((data) => {
-        params.onData(data);
-      })
-      .catch(() => {
-        params.onData(null);
-      });
   }
 
   return on<{ uid?: string; data?: UserData | null }>(
@@ -48,47 +44,39 @@ export function subscribeToUserProfile(params: {
   );
 }
 
-export async function fetchUserProfileRemote(uid: string): Promise<UserData | null> {
-  const existing = profileFetchInFlight.get(uid);
-  if (existing) return existing;
+export async function fetchUserProfileRemote(): Promise<UserData | null> {
+  if (profileFetchInFlight) return profileFetchInFlight;
 
   const request = (async () => {
     const response = await get<{ profile: UserData | null }>("/users/me/profile");
-    const profile = response.profile ?? null;
-    emitUserProfile(uid, profile);
-    return profile;
+    return response.profile ?? null;
   })();
 
-  profileFetchInFlight.set(uid, request);
+  profileFetchInFlight = request;
   try {
     return await request;
   } finally {
-    if (profileFetchInFlight.get(uid) === request) {
-      profileFetchInFlight.delete(uid);
+    if (profileFetchInFlight === request) {
+      profileFetchInFlight = null;
     }
   }
 }
 
 export async function mergeUserProfileRemote(
-  uid: string,
   payload: Partial<UserData>,
 ): Promise<void> {
-  void uid;
   const patch = sanitizeUserProfilePatch(payload);
   if (Object.keys(patch).length === 0) return;
   await post("/users/me/profile", patch);
-  await fetchUserProfileRemote(uid);
 }
 
 export async function updateUserProfileRemote(
-  uid: string,
   payload: Partial<UserData> & { updatedAt?: string },
 ): Promise<void> {
-  await mergeUserProfileRemote(uid, payload);
+  await mergeUserProfileRemote(payload);
 }
 
 export async function uploadUserAvatarRemote(
-  uid: string,
   localPath: string,
 ): Promise<AvatarUploadResponse> {
   const data = new FormData();
@@ -97,28 +85,14 @@ export async function uploadUserAvatarRemote(
     name: "avatar.jpg",
     type: "image/jpeg",
   } as unknown as Blob);
-  const response = await upload<AvatarUploadResponse>("/users/me/avatar", data);
-  const current = profileCache.get(uid);
-  if (current) {
-    emitUserProfile(uid, {
-      ...current,
-      avatarUrl: response.avatarUrl,
-      avatarlastSyncedAt: response.avatarlastSyncedAt,
-      avatarLocalPath: "",
-    });
-  }
-  return response;
+  return upload<AvatarUploadResponse>("/users/me/avatar", data);
 }
 
 export async function initializeUserOnboardingRemote(
-  uid: string,
   payload: {
     username: string;
     language?: string | null;
   },
 ): Promise<UserOnboardingResponse> {
-  void uid;
-  const response = await post<UserOnboardingResponse>("/users/me/onboarding", payload);
-  emitUserProfile(uid, response.profile);
-  return response;
+  return post<UserOnboardingResponse>("/users/me/onboarding", payload);
 }

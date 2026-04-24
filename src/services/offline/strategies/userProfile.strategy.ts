@@ -46,7 +46,7 @@ export const userProfileStrategy: SyncStrategy = {
       if (Object.keys(payload).length === 0) {
         pushLog.log("profile:update:empty", { uid, opId: op.id });
       } else {
-        await updateUserProfileRemote(uid, payload as Partial<UserData>);
+        await updateUserProfileRemote(payload as Partial<UserData>);
         pushLog.log("profile:update", {
           uid,
           keys: Object.keys(payload),
@@ -67,7 +67,7 @@ export const userProfileStrategy: SyncStrategy = {
           retryable: false,
         });
       }
-      const uploaded = await uploadUserAvatarRemote(uid, localPath);
+      const uploaded = await uploadUserAvatarRemote(localPath);
       emit("user:avatar:synced", {
         uid,
         avatarUrl: uploaded.avatarUrl,

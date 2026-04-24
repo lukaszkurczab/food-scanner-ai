@@ -75,7 +75,6 @@ export async function authRegister(
       i18n.resolvedLanguage ?? i18n.language,
     );
     await initializeUserOnboardingProfile(
-      cred.user,
       normalizedUsername,
       initialLanguage,
     );

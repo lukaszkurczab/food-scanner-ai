@@ -22,7 +22,7 @@ import {
 
 const mockFetchUserProfileRemote = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockInitializeUserOnboardingRemote = jest.fn<
-  (...args: unknown[]) => Promise<void>
+  (...args: unknown[]) => Promise<unknown>
 >();
 const mockMergeUserProfileRemote = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockUploadUserAvatarRemote = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -131,7 +131,7 @@ describe("user/profile", () => {
       darkTheme: true,
     });
 
-    await expect(getUserLocal("u1")).resolves.toMatchObject({
+    await expect(getUserLocal()).resolves.toMatchObject({
       uid: "u1",
       email: "u1@example.com",
       username: "neo",
@@ -140,13 +140,14 @@ describe("user/profile", () => {
       plan: "free",
     });
 
-    await expect(fetchUserFromCloud("u1")).resolves.toMatchObject({
+    await expect(fetchUserFromCloud()).resolves.toMatchObject({
       uid: "u1",
       email: "u1@example.com",
       username: "neo",
     });
-    expect(mockFetchUserProfileRemote).toHaveBeenNthCalledWith(1, "u1");
-    expect(mockFetchUserProfileRemote).toHaveBeenNthCalledWith(2, "u1");
+    expect(mockFetchUserProfileRemote).toHaveBeenCalledTimes(2);
+    expect(mockFetchUserProfileRemote).toHaveBeenNthCalledWith(1);
+    expect(mockFetchUserProfileRemote).toHaveBeenNthCalledWith(2);
   });
 
   it("delegates profile writes to repository helpers", async () => {
@@ -187,24 +188,20 @@ describe("user/profile", () => {
     };
 
     await upsertUserLocal(profile);
-    await updateUserLanguageInFirestore("u1", "pl");
+    await updateUserLanguageInFirestore("pl");
 
-    expect(mockMergeUserProfileRemote).toHaveBeenNthCalledWith(1, "u1", profile);
-    expect(mockMergeUserProfileRemote).toHaveBeenNthCalledWith(2, "u1", {
+    expect(mockMergeUserProfileRemote).toHaveBeenNthCalledWith(1, profile);
+    expect(mockMergeUserProfileRemote).toHaveBeenNthCalledWith(2, {
       language: "pl",
     });
   });
 
   it("uploads avatar via repository and persists synced metadata", async () => {
     const result = await uploadAndSaveAvatar({
-      userUid: "u1",
       localUri: "file:///avatar.jpg",
     });
 
-    expect(mockUploadUserAvatarRemote).toHaveBeenCalledWith(
-      "u1",
-      "file:///avatar.jpg",
-    );
+    expect(mockUploadUserAvatarRemote).toHaveBeenCalledWith("file:///avatar.jpg");
     expect(result).toEqual({
       avatarUrl: "https://cdn/avatar.jpg",
       avatarLocalPath: "file:///avatar.jpg",
@@ -213,7 +210,7 @@ describe("user/profile", () => {
   });
 
   it("fetches export payload from backend", async () => {
-    await expect(exportUserData("u1")).resolves.toEqual({
+    await expect(exportUserData()).resolves.toEqual({
       profile: { uid: "u1", username: "neo" },
       meals: [{ id: "meal-1" }],
       myMeals: [{ id: "saved-1" }],
@@ -243,7 +240,6 @@ describe("user/profile", () => {
 
   it("persists emailPending through backend after verify-before-update flow", async () => {
     await changeEmailService({
-      uid: "u1",
       newEmail: "new@example.com",
       password: "Strong1!",
     });
@@ -275,12 +271,11 @@ describe("user/profile", () => {
 
   it("initializes onboarding profile through backend-owned endpoint", async () => {
     await initializeUserOnboardingProfile(
-      { uid: "u1", email: "u1@example.com" } as never,
       " neo ",
       "pl-PL",
     );
 
-    expect(mockInitializeUserOnboardingRemote).toHaveBeenCalledWith("u1", {
+    expect(mockInitializeUserOnboardingRemote).toHaveBeenCalledWith({
       username: "neo",
       language: "pl",
     });

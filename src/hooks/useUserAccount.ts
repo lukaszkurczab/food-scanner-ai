@@ -38,7 +38,7 @@ export function useUserAccount({
   const changeEmail = useCallback(
     async (newEmail: string, password: string) => {
       if (!uid) return;
-      await changeEmailService({ uid, newEmail, password });
+      await changeEmailService({ newEmail, password });
     },
     [uid]
   );

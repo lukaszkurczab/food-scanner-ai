@@ -43,32 +43,30 @@ function normalizeInitialLanguage(language: string | null | undefined): "en" | "
   return "en";
 }
 
-export async function getUserLocal(uid: string): Promise<UserData | null> {
-  const data = await fetchUserProfileRemote(uid);
+export async function getUserLocal(): Promise<UserData | null> {
+  const data = await fetchUserProfileRemote();
   return data ? parseUserData(data) : null;
 }
 
 export async function upsertUserLocal(data: UserData): Promise<void> {
-  await mergeUserProfileRemote(data.uid, data);
+  await mergeUserProfileRemote(data);
 }
 
-export async function fetchUserFromCloud(uid: string): Promise<UserData | null> {
-  const data = await fetchUserProfileRemote(uid);
+export async function fetchUserFromCloud(): Promise<UserData | null> {
+  const data = await fetchUserProfileRemote();
   return data ? parseUserData(data) : null;
 }
 
-export async function updateUserLanguageInFirestore(uid: string, language: string) {
-  await mergeUserProfileRemote(uid, { language });
+export async function updateUserLanguageInFirestore(language: string) {
+  await mergeUserProfileRemote({ language });
 }
 
 export async function uploadAndSaveAvatar({
-  userUid,
   localUri,
 }: {
-  userUid: string;
   localUri: string;
 }) {
-  const response = await uploadUserAvatarRemote(userUid, localUri);
+  const response = await uploadUserAvatarRemote(localUri);
   return {
     avatarUrl: response.avatarUrl,
     avatarLocalPath: localUri,
@@ -93,15 +91,12 @@ export async function changeUsernameService({
 }
 
 export async function changeEmailService({
-  uid,
   newEmail,
   password,
 }: {
-  uid: string;
   newEmail: string;
   password: string;
 }) {
-  void uid;
   const auth = getAuth(getApp());
   const current = requireCurrentUser(auth.currentUser);
   const cred = EmailAuthProvider.credential(current.email!, password);
@@ -126,8 +121,7 @@ export async function changePasswordService({
   await updatePassword(current, newPassword);
 }
 
-export async function exportUserData(uid: string) {
-  void uid;
+export async function exportUserData() {
   return get<ExportedUserData>("/users/me/export");
 }
 
@@ -148,13 +142,13 @@ export async function deleteAccountService({
 }
 
 export async function initializeUserOnboardingProfile(
-  user: FirebaseAuthTypes.User,
   username: string,
   initialLanguage?: string | null,
 ) {
   const normalizedLanguage = normalizeInitialLanguage(initialLanguage);
-  await initializeUserOnboardingRemote(user.uid, {
+  const response = await initializeUserOnboardingRemote({
     username: username.trim(),
     language: normalizedLanguage,
   });
+  return response;
 }

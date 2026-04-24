@@ -8,6 +8,7 @@ import * as FileSystem from "@/services/core/fileSystem";
 import { emit, on } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
 import {
+  emitUserProfileChanged,
   fetchUserProfileRemote,
   subscribeToUserProfile,
 } from "@/services/user/userProfileRepository";
@@ -180,6 +181,53 @@ export function useUserProfile(uid: string): UseUserProfileResult {
     userDataRef.current = userData;
   }, [userData]);
 
+  const applyProfileData = useCallback(
+    async (
+      profile: UserData | null,
+      options?: {
+        emitChange?: boolean;
+        writeCache?: boolean;
+      },
+    ): Promise<UserData | null> => {
+      if (!uid) return null;
+
+      if (!profile) {
+        setUserData(null);
+        userDataRef.current = null;
+        setLoading(false);
+        if (options?.emitChange) {
+          emitUserProfileChanged(uid, null);
+        }
+        return null;
+      }
+
+      const currentAvatarLocalPath =
+        userDataRef.current?.uid === uid
+          ? userDataRef.current.avatarLocalPath
+          : undefined;
+      const avatarLocalPath = await resolveExistingAvatarPath(
+        profile.avatarLocalPath,
+        currentAvatarLocalPath,
+        avatarCachePath(uid)
+      );
+      const normalized = { ...profile, avatarLocalPath };
+      setUserData(normalized);
+      userDataRef.current = normalized;
+      setLoading(false);
+      if (
+        options?.writeCache ||
+        (profile.avatarLocalPath || "") !== avatarLocalPath
+      ) {
+        void writeProfileCache(uid, normalized);
+      }
+      if (options?.emitChange) {
+        emitUserProfileChanged(uid, normalized);
+      }
+      return normalized;
+    },
+    [uid],
+  );
+
   const refreshProfileSyncState = useCallback(async () => {
     if (!uid) {
       setSyncState("synced");
@@ -225,30 +273,24 @@ export function useUserProfile(uid: string): UseUserProfileResult {
 
     const net = await NetInfo.fetch();
     if (isOfflineNetState(net)) {
-      return (await readCached()) || userDataRef.current;
+      const cached = (await readCached()) || userDataRef.current;
+      if (!cached) setLoading(false);
+      return cached;
     }
     try {
-      const data = await fetchUserProfileRemote(uid);
-      if (!data) return (await readCached()) || null;
-      const currentAvatarLocalPath =
-        userDataRef.current?.uid === uid
-          ? userDataRef.current.avatarLocalPath
-          : undefined;
-      const avatarLocalPath = await resolveExistingAvatarPath(
-        data.avatarLocalPath,
-        currentAvatarLocalPath,
-        avatarCachePath(uid)
-      );
-      const normalized = { ...data, avatarLocalPath };
-      setUserData(normalized);
-      userDataRef.current = normalized;
-      void writeProfileCache(uid, normalized);
-      return normalized;
+      const data = await fetchUserProfileRemote();
+      if (!data && userDataRef.current?.uid === uid) {
+        setLoading(false);
+        return userDataRef.current;
+      }
+      return applyProfileData(data, { emitChange: true, writeCache: !!data });
     } catch (error) {
       logWarning("user profile remote fetch failed", null, error);
-      return (await readCached()) || userDataRef.current;
+      const cached = (await readCached()) || userDataRef.current;
+      if (!cached) setLoading(false);
+      return cached;
     }
-  }, [uid]);
+  }, [applyProfileData, uid]);
 
   const getUserProfile = useCallback(async () => {
     return userData;
@@ -341,66 +383,33 @@ export function useUserProfile(uid: string): UseUserProfileResult {
       return;
     }
 
-    (async () => {
+    const unsub = subscribeToUserProfile({
+      uid,
+      onData: (data) => {
+        void applyProfileData(data, { writeCache: !!data });
+      },
+    });
+
+    void (async () => {
       try {
         const parsed = await readProfileCache(uid);
         if (parsed) {
-          const currentAvatarLocalPath =
-            userDataRef.current?.uid === uid
-              ? userDataRef.current.avatarLocalPath
-              : undefined;
-          const avatarLocalPath = await resolveExistingAvatarPath(
-            parsed.avatarLocalPath,
-            currentAvatarLocalPath,
-            avatarCachePath(uid)
-          );
-          const normalized = { ...parsed, avatarLocalPath };
           if (cancelled) return;
-          setUserData(normalized);
-          setLoading(false);
-          if ((parsed.avatarLocalPath || "") !== avatarLocalPath) {
-            void writeProfileCache(uid, normalized);
-          }
+          await applyProfileData(parsed, { emitChange: true });
         }
       } catch (error) {
         logWarning("profile cache hydration failed", null, error);
       }
-    })();
 
-    const unsub = subscribeToUserProfile({
-      uid,
-      onData: (data) => {
-        if (!data) {
-          if (!cancelled) {
-            setUserData(null);
-            setLoading(false);
-          }
-          return;
-        }
-        void (async () => {
-          const currentAvatarLocalPath =
-            userDataRef.current?.uid === uid
-              ? userDataRef.current.avatarLocalPath
-              : undefined;
-          const avatarLocalPath = await resolveExistingAvatarPath(
-            data.avatarLocalPath,
-            currentAvatarLocalPath,
-            avatarCachePath(uid)
-          );
-          const normalized = { ...data, avatarLocalPath };
-          if (cancelled) return;
-          setUserData(normalized);
-          setLoading(false);
-          void writeProfileCache(uid, normalized);
-        })();
-      },
-    });
+      if (cancelled) return;
+      await fetchUserFromCloud();
+    })();
 
     return () => {
       cancelled = true;
       unsub();
     };
-  }, [uid]);
+  }, [applyProfileData, fetchUserFromCloud, uid]);
 
   useEffect(() => {
     void refreshProfileSyncState();

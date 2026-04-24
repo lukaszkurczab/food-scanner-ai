@@ -94,7 +94,6 @@ describe("authService", () => {
 
     expect(mockCreateUserWithEmailAndPassword).toHaveBeenCalled();
     expect(mockInitializeUserOnboardingProfile).toHaveBeenCalledWith(
-      user,
       "neo",
       "pl",
     );
@@ -121,7 +120,6 @@ describe("authService", () => {
       "Strong1!",
     );
     expect(mockInitializeUserOnboardingProfile).toHaveBeenCalledWith(
-      expect.objectContaining({ uid: "user-1" }),
       "neo",
       "en",
     );
@@ -131,7 +129,6 @@ describe("authService", () => {
     mockI18n.resolvedLanguage = "pl-PL";
     await authRegister("user@example.com", "Strong1!", "Neo");
     expect(mockInitializeUserOnboardingProfile).toHaveBeenLastCalledWith(
-      expect.objectContaining({ uid: "user-1" }),
       "neo",
       "pl",
     );
@@ -140,7 +137,6 @@ describe("authService", () => {
     mockI18n.language = "de-DE";
     await authRegister("user@example.com", "Strong1!", "Neo");
     expect(mockInitializeUserOnboardingProfile).toHaveBeenLastCalledWith(
-      expect.objectContaining({ uid: "user-1" }),
       "neo",
       "en",
     );

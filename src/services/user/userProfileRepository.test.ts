@@ -33,17 +33,14 @@ describe("services/user/userProfileRepository", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { fetchUserProfileRemote } = require("@/services/user/userProfileRepository");
 
-    await expect(fetchUserProfileRemote("u1")).resolves.toBeNull();
+    await expect(fetchUserProfileRemote()).resolves.toBeNull();
   });
 
-  it("returns cached profile immediately without fetching", async () => {
-    mockGet.mockResolvedValue({ profile: { uid: "u1", username: "neo" } });
+  it("returns cached profile immediately without fetching in subscription", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const repo = require("@/services/user/userProfileRepository");
 
-    // Populate cache via a fetch first
-    await repo.fetchUserProfileRemote("u1");
-    mockGet.mockClear();
+    repo.emitUserProfileChanged("u1", { uid: "u1", username: "neo" });
 
     const received: unknown[] = [];
     repo.subscribeToUserProfile({ uid: "u1", onData: (d: unknown) => received.push(d) });
@@ -54,13 +51,10 @@ describe("services/user/userProfileRepository", () => {
   });
 
   it("calls onData(null) when cache holds null for the uid", async () => {
-    mockGet.mockResolvedValue({ profile: null });
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const repo = require("@/services/user/userProfileRepository");
 
-    // Cache null explicitly
-    await repo.fetchUserProfileRemote("u-null");
-    mockGet.mockClear();
+    repo.emitUserProfileChanged("u-null", null);
 
     const received: unknown[] = [];
     repo.subscribeToUserProfile({ uid: "u-null", onData: (d: unknown) => received.push(d) });
@@ -69,21 +63,15 @@ describe("services/user/userProfileRepository", () => {
     expect(mockGet).not.toHaveBeenCalled();
   });
 
-  it("skips cache update in uploadUserAvatarRemote when profile is not cached", async () => {
-    mockUpload.mockResolvedValue({
-      avatarUrl: "https://cdn/avatar.jpg",
-      avatarlastSyncedAt: "2026-03-03T12:00:00.000Z",
-    });
+  it("does not fetch from subscribeToUserProfile when cache is empty", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { uploadUserAvatarRemote } = require("@/services/user/userProfileRepository");
+    const repo = require("@/services/user/userProfileRepository");
 
-    // uid "u-unknown" has no cache entry — should not throw
-    const result = await uploadUserAvatarRemote("u-unknown", "file:///avatar.jpg");
+    const received: unknown[] = [];
+    repo.subscribeToUserProfile({ uid: "u-missing", onData: (d: unknown) => received.push(d) });
 
-    expect(result).toEqual({
-      avatarUrl: "https://cdn/avatar.jpg",
-      avatarlastSyncedAt: "2026-03-03T12:00:00.000Z",
-    });
+    expect(received).toEqual([]);
+    expect(mockGet).not.toHaveBeenCalled();
   });
 
   it("fetches current user profile from backend-owned endpoint", async () => {
@@ -94,7 +82,7 @@ describe("services/user/userProfileRepository", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { fetchUserProfileRemote } = require("@/services/user/userProfileRepository");
 
-    await expect(fetchUserProfileRemote("u1")).resolves.toEqual({
+    await expect(fetchUserProfileRemote()).resolves.toEqual({
       uid: "u1",
       username: "neo",
       language: "pl",
@@ -113,8 +101,8 @@ describe("services/user/userProfileRepository", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { fetchUserProfileRemote } = require("@/services/user/userProfileRepository");
 
-    const first = fetchUserProfileRemote("u1");
-    const second = fetchUserProfileRemote("u1");
+    const first = fetchUserProfileRemote();
+    const second = fetchUserProfileRemote();
 
     expect(mockGet).toHaveBeenCalledTimes(1);
     resolveProfile({
@@ -134,7 +122,7 @@ describe("services/user/userProfileRepository", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { mergeUserProfileRemote } = require("@/services/user/userProfileRepository");
 
-    await mergeUserProfileRemote("u1", {
+    await mergeUserProfileRemote({
       username: "neo",
       language: "pl",
       darkTheme: true,
@@ -154,7 +142,7 @@ describe("services/user/userProfileRepository", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { mergeUserProfileRemote } = require("@/services/user/userProfileRepository");
 
-    await mergeUserProfileRemote("u1", {
+    await mergeUserProfileRemote({
       language: "pl",
       darkTheme: true,
       age: "31",
@@ -175,7 +163,7 @@ describe("services/user/userProfileRepository", () => {
     const { uploadUserAvatarRemote } = require("@/services/user/userProfileRepository");
 
     await expect(
-      uploadUserAvatarRemote("u1", "file:///avatar.jpg"),
+      uploadUserAvatarRemote("file:///avatar.jpg"),
     ).resolves.toEqual({
       avatarUrl: "https://cdn/avatar.jpg",
       avatarlastSyncedAt: "2026-03-03T12:00:00.000Z",
