@@ -124,6 +124,44 @@ describe("AiCreditsContext", () => {
     });
   });
 
+  it("does not duplicate credits requests when restore-session bootstrap and consumers refresh together", async () => {
+    let resolveCredits: ((value: unknown) => void) | null = null;
+    mockGet.mockReturnValue(
+      new Promise((resolve) => {
+        resolveCredits = resolve;
+      }),
+    );
+
+    const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(true);
+      expect(mockGet).toHaveBeenCalledTimes(1);
+    });
+
+    const consumerRefresh = result.current.refreshCredits();
+
+    act(() => {
+      if (!appStateListener) {
+        throw new Error("Missing AppState listener");
+      }
+      appStateListener("active");
+    });
+
+    expect(mockGet).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveCredits?.(buildCredits({ balance: 64 }));
+      await consumerRefresh;
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.credits?.balance).toBe(64);
+    });
+    expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+
   it("returns safe defaults without provider", async () => {
     const { result } = renderHook(() => useAiCreditsContext());
 

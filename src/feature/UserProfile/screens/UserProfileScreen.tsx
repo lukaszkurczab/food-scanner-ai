@@ -191,6 +191,7 @@ export default function UserProfileScreen({
         <SettingsSection title={t("accountActionsSectionTitle")}>
           <SettingsRow
             title={t("logOut")}
+            testID="account-logout-row"
             onPress={state.handleLogout}
             showChevron={false}
           />

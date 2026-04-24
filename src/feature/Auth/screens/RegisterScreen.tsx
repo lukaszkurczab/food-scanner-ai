@@ -168,6 +168,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
       }
       bottomAction={
         <Button
+          testID="register-submit-button"
           label={t("sign_up")}
           onPress={handleSubmit}
           disabled={isFormDisabled}
@@ -177,6 +178,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
     >
       <View style={styles.formBlock}>
         <TextInput
+          testID="register-username-input"
           label={t("username")}
           value={username}
           autoComplete="username"
@@ -194,6 +196,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         />
 
         <TextInput
+          testID="register-email-input"
           label={t("email", { ns: "login" })}
           value={email}
           autoComplete="email"
@@ -212,6 +215,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         />
 
         <TextInput
+          testID="register-password-input"
           label={t("password", { ns: "login" })}
           value={password}
           autoComplete="new-password"
@@ -232,6 +236,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         />
 
         <TextInput
+          testID="register-confirm-password-input"
           value={confirmPassword}
           autoComplete="new-password"
           textContentType="newPassword"
@@ -255,6 +260,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         <View style={styles.legalSection}>
           <View style={styles.termsRow}>
             <Checkbox
+              testID="register-terms-checkbox"
               checked={termsAccepted}
               onChange={(checked) => {
                 setTermsAccepted(checked);

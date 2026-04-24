@@ -10,9 +10,16 @@ import { useRegister } from "@/feature/Auth/hooks/useRegister";
 
 const mockAuthRegister = jest.fn<(...args: unknown[]) => Promise<{ uid: string }>>();
 const mockIsUsernameAvailable = jest.fn<(...args: unknown[]) => Promise<boolean>>();
+const mockSetFirebaseUser = jest.fn<(...args: unknown[]) => void>();
 
 jest.mock("@/feature/Auth/services/authService", () => ({
   authRegister: (...args: unknown[]) => mockAuthRegister(...args),
+}));
+
+jest.mock("@/context/AuthContext", () => ({
+  useAuthContext: () => ({
+    setFirebaseUser: (...args: unknown[]) => mockSetFirebaseUser(...args),
+  }),
 }));
 
 jest.mock("@/services/user/usernameService", () => ({
@@ -50,7 +57,7 @@ describe("useRegister", () => {
     expect(mockAuthRegister).not.toHaveBeenCalled();
   });
 
-  it("registers user and leaves auth state to Firebase listener", async () => {
+  it("registers user and leaves Firebase user state to onAuthStateChanged", async () => {
     const { result } = renderHook(() => useRegister());
 
     await act(async () => {
@@ -72,6 +79,7 @@ describe("useRegister", () => {
       "Strong1!",
       "neo",
     );
+    expect(mockSetFirebaseUser).not.toHaveBeenCalled();
     expect(result.current.errors).toEqual({});
   });
 
@@ -93,7 +101,7 @@ describe("useRegister", () => {
     expect(mockAuthRegister).not.toHaveBeenCalled();
   });
 
-  it("surfaces username_taken when backend claim loses the race", async () => {
+  it("maps signup rollback username/unavailable to username_taken", async () => {
     mockAuthRegister.mockRejectedValueOnce({ code: "username/unavailable" });
     const { result } = renderHook(() => useRegister());
 
@@ -108,5 +116,6 @@ describe("useRegister", () => {
     });
 
     expect(result.current.errors).toEqual({ username: "username_taken" });
+    expect(mockSetFirebaseUser).not.toHaveBeenCalled();
   });
 });

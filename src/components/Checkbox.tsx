@@ -17,6 +17,7 @@ type CheckboxProps = {
   error?: boolean;
   hitSlop?: PressableProps["hitSlop"];
   accessibilityLabel?: string;
+  testID?: string;
 };
 
 export const Checkbox: React.FC<CheckboxProps> = ({
@@ -27,6 +28,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   error = false,
   hitSlop = 8,
   accessibilityLabel = "Checkbox",
+  testID,
 }) => {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -39,6 +41,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled }}
       accessibilityLabel={accessibilityLabel}
+      testID={testID}
       style={({ pressed }) => [
         styles.box,
         checked ? styles.boxChecked : styles.boxUnchecked,
