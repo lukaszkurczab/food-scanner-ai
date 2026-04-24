@@ -4,8 +4,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  Dispatch,
-  SetStateAction,
 } from "react";
 import { getApp } from "@react-native-firebase/app";
 import {
@@ -21,7 +19,6 @@ type AuthContextType = {
   email: string | null;
   isAuthenticated: boolean;
   loading: boolean;
-  setFirebaseUser: Dispatch<SetStateAction<FirebaseAuthTypes.User | null>>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,11 +27,10 @@ const AuthContext = createContext<AuthContextType>({
   email: null,
   isAuthenticated: false,
   loading: true,
-  setFirebaseUser: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [firebaseUser, setFirebaseUser] =
+  const [firebaseUser, setAuthStateUser] =
     useState<FirebaseAuthTypes.User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const app = getApp();
     const auth = getAuth(app);
     const unsub = onAuthStateChanged(auth, (user) => {
-      setFirebaseUser(user);
+      setAuthStateUser(user);
       if (user) {
         Sentry.setUser({ id: user.uid });
       } else {
@@ -62,7 +58,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email,
       isAuthenticated: !!uid,
       loading,
-      setFirebaseUser,
     };
   }, [firebaseUser, loading]);
 

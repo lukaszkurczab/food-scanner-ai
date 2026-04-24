@@ -6,7 +6,6 @@ import { Button, TextInput, ErrorBox, LinkText } from "@/components";
 import NetInfo from "@react-native-community/netinfo";
 import { validateEmail } from "@/utils/validation";
 import AppIcon from "@/components/AppIcon";
-import { useAuthContext } from "@/context/AuthContext";
 import { useLogin } from "@/feature/Auth/hooks/useLogin";
 import { AuthScreenLayout } from "@/feature/Auth/components/AuthScreenLayout";
 import { isOfflineNetState } from "@/services/core/networkState";
@@ -30,9 +29,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [touched, setTouched] = useState({ email: false, password: false });
   const [internetError, setInternetError] = useState(false);
 
-  const { setFirebaseUser } = useAuthContext();
-  const { login, loading, errors, criticalError, reset } =
-    useLogin(setFirebaseUser);
+  const { login, loading, errors, criticalError, reset } = useLogin();
 
   useEffect(() => {
     reset();

@@ -12,7 +12,6 @@ import NetInfo from "@react-native-community/netinfo";
 import { useTheme } from "@/theme/useTheme";
 import { Button, TextInput, ErrorBox, LinkText, Checkbox } from "@/components";
 import AppIcon from "@/components/AppIcon";
-import { useAuthContext } from "@/context/AuthContext";
 import { useRegister } from "@/feature/Auth/hooks/useRegister";
 import { getTermsUrl } from "@/utils/legalUrls";
 import { AuthScreenLayout } from "@/feature/Auth/components/AuthScreenLayout";
@@ -52,9 +51,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
     confirmPassword: false,
   });
 
-  const { setFirebaseUser } = useAuthContext();
-  const { register, loading, errors, clearError } =
-    useRegister(setFirebaseUser);
+  const { register, loading, errors, clearError } = useRegister();
 
   React.useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {

@@ -10,7 +10,6 @@ import { useRegister } from "@/feature/Auth/hooks/useRegister";
 
 const mockAuthRegister = jest.fn<(...args: unknown[]) => Promise<{ uid: string }>>();
 const mockIsUsernameAvailable = jest.fn<(...args: unknown[]) => Promise<boolean>>();
-const mockSetUser = jest.fn<(user: { uid: string }) => void>();
 
 jest.mock("@/feature/Auth/services/authService", () => ({
   authRegister: (...args: unknown[]) => mockAuthRegister(...args),
@@ -28,7 +27,7 @@ describe("useRegister", () => {
   });
 
   it("validates input locally before hitting services", async () => {
-    const { result } = renderHook(() => useRegister(mockSetUser as never));
+    const { result } = renderHook(() => useRegister());
 
     await act(async () => {
       await result.current.register(
@@ -51,8 +50,8 @@ describe("useRegister", () => {
     expect(mockAuthRegister).not.toHaveBeenCalled();
   });
 
-  it("registers user and persists auth state", async () => {
-    const { result } = renderHook(() => useRegister(mockSetUser as never));
+  it("registers user and leaves auth state to Firebase listener", async () => {
+    const { result } = renderHook(() => useRegister());
 
     await act(async () => {
       await result.current.register(
@@ -73,13 +72,12 @@ describe("useRegister", () => {
       "Strong1!",
       "neo",
     );
-    expect(mockSetUser).toHaveBeenCalledWith({ uid: "user-1" });
     expect(result.current.errors).toEqual({});
   });
 
   it("surfaces username_taken without creating auth user", async () => {
     mockIsUsernameAvailable.mockResolvedValueOnce(false);
-    const { result } = renderHook(() => useRegister(mockSetUser as never));
+    const { result } = renderHook(() => useRegister());
 
     await act(async () => {
       await result.current.register(
@@ -93,12 +91,11 @@ describe("useRegister", () => {
 
     expect(result.current.errors).toEqual({ username: "username_taken" });
     expect(mockAuthRegister).not.toHaveBeenCalled();
-    expect(mockSetUser).not.toHaveBeenCalled();
   });
 
   it("surfaces username_taken when backend claim loses the race", async () => {
     mockAuthRegister.mockRejectedValueOnce({ code: "username/unavailable" });
-    const { result } = renderHook(() => useRegister(mockSetUser as never));
+    const { result } = renderHook(() => useRegister());
 
     await act(async () => {
       await result.current.register(
@@ -111,6 +108,5 @@ describe("useRegister", () => {
     });
 
     expect(result.current.errors).toEqual({ username: "username_taken" });
-    expect(mockSetUser).not.toHaveBeenCalled();
   });
 });

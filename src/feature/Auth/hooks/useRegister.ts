@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { authRegister } from "@/feature/Auth/services/authService";
 import { isUsernameAvailable } from "@/services/user/usernameService";
 import {
@@ -24,7 +23,7 @@ const getErrorCode = (error: unknown): string | null => {
   return typeof maybeCode === "string" ? maybeCode : null;
 };
 
-export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
+export const useRegister = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<RegisterErrors>({});
 
@@ -63,8 +62,7 @@ export const useRegister = (setUser: (u: FirebaseAuthTypes.User) => void) => {
         setErrors({ username: "username_taken" });
         return;
       }
-      const user = await authRegister(email.trim(), password, username.trim());
-      setUser(user);
+      await authRegister(email.trim(), password, username.trim());
     } catch (error: unknown) {
       const code = getErrorCode(error);
       const e: RegisterErrors = {};

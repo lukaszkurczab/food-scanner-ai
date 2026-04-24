@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { authLogin } from "@/feature/Auth/services/authService";
 
 type LoginErrors = { email?: string; password?: string };
@@ -15,7 +14,7 @@ const getErrorCode = (error: unknown): string | null => {
   return typeof maybeCode === "string" ? maybeCode : null;
 };
 
-export const useLogin = (setUser: (u: FirebaseAuthTypes.User) => void) => {
+export const useLogin = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<LoginErrors>({});
   const [criticalError, setCriticalError] = useState<CriticalError>(null);
@@ -26,8 +25,7 @@ export const useLogin = (setUser: (u: FirebaseAuthTypes.User) => void) => {
       setErrors({});
       setCriticalError(null);
       try {
-        const user = await authLogin(email, password);
-        setUser(user);
+        await authLogin(email, password);
       } catch (error: unknown) {
         const code = getErrorCode(error);
         if (code === "auth/too-many-requests")
@@ -45,7 +43,7 @@ export const useLogin = (setUser: (u: FirebaseAuthTypes.User) => void) => {
         setLoading(false);
       }
     },
-    [setUser],
+    [],
   );
 
   const reset = useCallback(() => {
