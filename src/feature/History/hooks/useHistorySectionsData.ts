@@ -237,32 +237,38 @@ export function useHistorySectionsData(params: {
     const uid = params.uid;
     if (!uid) return;
 
-    const up = on<{ cloudId?: string }>("meal:local:upserted", async (event) => {
-      const id = String(event?.cloudId || "");
-      if (!id) return;
+    const up = on<{ uid?: string; cloudId?: string }>(
+      "meal:local:upserted",
+      async (event) => {
+        const eventUid = typeof event?.uid === "string" ? event.uid : null;
+        if (eventUid !== uid) return;
 
-      const meal = await getMealByCloudIdLocal(uid, id);
-      if (!meal || meal.deleted) return;
+        const id = String(event?.cloudId || "");
+        if (!id) return;
 
-      if (!isMealInDateRange(meal, localFilters?.dateRange)) {
+        const meal = await getMealByCloudIdLocal(uid, id);
+        if (!meal || meal.deleted) return;
+
+        if (!isMealInDateRange(meal, localFilters?.dateRange)) {
+          setSectionsMap((prev) => {
+            const next = new Map(prev);
+            removeMealFromSections(next, id);
+            return next;
+          });
+          return;
+        }
+
         setSectionsMap((prev) => {
           const next = new Map(prev);
-          removeMealFromSections(next, id);
+          addOrUpdateMealInSections(next, meal, {
+            todayLabel: params.todayLabel,
+            yesterdayLabel: params.yesterdayLabel,
+            locale: params.locale,
+          });
           return next;
         });
-        return;
-      }
-
-      setSectionsMap((prev) => {
-        const next = new Map(prev);
-        addOrUpdateMealInSections(next, meal, {
-          todayLabel: params.todayLabel,
-          yesterdayLabel: params.yesterdayLabel,
-          locale: params.locale,
-        });
-        return next;
-      });
-    });
+      },
+    );
 
     const del = on<{ cloudId?: string }>("meal:local:deleted", async (event) => {
       const id = String(event?.cloudId || "");

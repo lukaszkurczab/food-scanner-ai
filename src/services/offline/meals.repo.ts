@@ -52,6 +52,8 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
   const createdAt = meal.createdAt ?? meal.timestamp ?? meal.updatedAt;
   const syncState = normalizeMealSyncState(meal.syncState);
   const lastSyncedAt = syncState === "synced" ? toEpochMs(meal.updatedAt) : 0;
+  const cloudId = meal.cloudId ?? meal.mealId;
+  const dayKey = toDayKey(meal.dayKey ?? meal.timestamp);
 
   db.runSync(
     `INSERT INTO meals (
@@ -91,11 +93,11 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       notes=excluded.notes,
       tags=excluded.tags`,
     [
-      meal.cloudId ?? meal.mealId,
+      cloudId,
       meal.mealId,
       meal.userUid,
       meal.timestamp,
-      toDayKey(meal.dayKey ?? meal.timestamp),
+      dayKey,
       meal.loggedAtLocalMin ?? null,
       meal.tzOffsetMin ?? null,
       meal.type,
@@ -120,7 +122,13 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
       tags,
     ]
   );
-  emit("meal:local:upserted", { cloudId: meal.cloudId, ts: meal.updatedAt });
+  emit("meal:local:upserted", {
+    uid: meal.userUid,
+    cloudId,
+    mealId: meal.mealId,
+    dayKey,
+    ts: meal.updatedAt,
+  });
 }
 
 const MEAL_TYPES: Meal["type"][] = [
@@ -347,6 +355,7 @@ export async function setMealSyncStateLocal(params: {
     );
   }
   emit("meal:local:upserted", {
+    uid: params.uid,
     cloudId: params.cloudId,
     ts: params.updatedAt ?? new Date().toISOString(),
   });

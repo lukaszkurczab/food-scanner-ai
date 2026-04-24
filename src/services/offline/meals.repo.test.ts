@@ -54,6 +54,9 @@ describe("offline meals repo", () => {
       jest.requireActual<typeof import("@/services/offline/meals.repo")>(
         "@/services/offline/meals.repo",
       );
+    const { emit } = jest.requireMock("@/services/core/events") as {
+      emit: jest.Mock;
+    };
 
     await upsertMealLocal(baseMeal());
 
@@ -68,6 +71,13 @@ describe("offline meals repo", () => {
       }),
     );
     expect(args).toContain("2026-03-18");
+    expect(emit).toHaveBeenCalledWith("meal:local:upserted", {
+      uid: "user-1",
+      cloudId: "cloud-1",
+      mealId: "meal-1",
+      dayKey: "2026-03-18",
+      ts: "2026-03-18T10:00:00.000Z",
+    });
   });
 
   it("round-trips dayKey, inputMethod, aiMeta, and totals from local persistence", async () => {

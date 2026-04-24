@@ -412,7 +412,7 @@ export async function retryDeadLetterOps(params: {
 
   const now = new Date().toISOString();
   for (const cloudId of mealCloudIds) {
-    emit("meal:local:upserted", { cloudId, ts: now });
+    emit("meal:local:upserted", { uid: params.uid, cloudId, ts: now });
   }
   for (const cloudId of myMealCloudIds) {
     emit("mymeal:local:upserted", { cloudId, ts: now });

@@ -15,6 +15,9 @@ const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
 const mockGetMealsPageLocal = jest.fn<
   (uid: string, limit: number, before?: string) => Promise<Meal[]>
 >();
+const mockGetMealByCloudIdLocal = jest.fn<
+  (uid: string, cloudId: string) => Promise<Meal | null>
+>();
 const mockUpsertMealLocal = jest.fn<(meal: Meal) => Promise<void>>();
 const mockUpsertMyMealLocal = jest.fn<(meal: Meal) => Promise<void>>();
 const mockMarkDeletedLocal = jest.fn<(cloudId: string, now: string) => Promise<void>>();
@@ -57,6 +60,8 @@ jest.mock("@react-native-community/netinfo", () => ({
 jest.mock("@/services/offline/meals.repo", () => ({
   getMealsPageLocal: (uid: string, limit: number, before?: string) =>
     mockGetMealsPageLocal(uid, limit, before),
+  getMealByCloudIdLocal: (uid: string, cloudId: string) =>
+    mockGetMealByCloudIdLocal(uid, cloudId),
   upsertMealLocal: (meal: Meal) => mockUpsertMealLocal(meal),
   markDeletedLocal: (cloudId: string, now: string) =>
     mockMarkDeletedLocal(cloudId, now),
@@ -206,6 +211,7 @@ describe("useMeals", () => {
     mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
     mockNetInfoFetch.mockResolvedValue({ isConnected: true });
     mockGetMealsPageLocal.mockResolvedValue([]);
+    mockGetMealByCloudIdLocal.mockResolvedValue(null);
     mockUpsertMealLocal.mockResolvedValue();
     mockUpsertMyMealLocal.mockResolvedValue();
     mockMarkDeletedLocal.mockResolvedValue();
@@ -287,6 +293,59 @@ describe("useMeals", () => {
     await waitFor(() => {
       expect(result.current.meals).toEqual([]);
     });
+  });
+
+  it("merges local upserts from another useMeals instance without backend reload", async () => {
+    const pendingMeal = baseMeal({
+      cloudId: "pending-cloud",
+      mealId: "pending-meal",
+      name: "Pending meal",
+      syncState: "pending",
+      timestamp: "2026-02-25T13:00:00.000Z",
+      updatedAt: "2026-02-25T13:00:00.000Z",
+      dayKey: "2026-02-25",
+    });
+
+    mockGetMealsPageLocal.mockResolvedValueOnce([
+      baseMeal({ cloudId: "existing-cloud", timestamp: "2026-02-25T10:00:00.000Z" }),
+    ]);
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce(pendingMeal);
+
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    mockGetMealsPageLocal.mockClear();
+    mockPullChanges.mockClear();
+
+    await act(async () => {
+      const handlers = mockEventHandlers.get("meal:local:upserted");
+      handlers?.forEach((handler) =>
+        handler({
+          uid: "user-1",
+          cloudId: "pending-cloud",
+          dayKey: "2026-02-25",
+          ts: "2026-02-25T13:00:00.000Z",
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.meals[0]).toEqual(
+        expect.objectContaining({
+          cloudId: "pending-cloud",
+          syncState: "pending",
+        }),
+      );
+    });
+    expect(mockGetMealByCloudIdLocal).toHaveBeenCalledWith(
+      "user-1",
+      "pending-cloud",
+    );
+    expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
+    expect(mockPullChanges).not.toHaveBeenCalled();
   });
 
   it("clears data when user is missing and keeps pagination inactive", async () => {

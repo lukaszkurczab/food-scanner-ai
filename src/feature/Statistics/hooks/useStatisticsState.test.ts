@@ -163,6 +163,43 @@ describe("useStatisticsState", () => {
     expect(result.current.metricAverage).toBe(30);
   });
 
+  it("keeps pending meals visible in statistics after local save", () => {
+    const pendingMeal = makeMeal({
+      mealId: "pending-meal",
+      cloudId: "pending-cloud",
+      syncState: "pending",
+      totals: { kcal: 420, protein: 31, carbs: 44, fat: 12 },
+    });
+
+    useMealsMock.mockReturnValue({
+      meals: [pendingMeal],
+      getMeals: jest.fn(),
+      loading: false,
+    } as never);
+
+    useStatsMock.mockReturnValue({
+      labels: ["Tue"],
+      caloriesSeries: [420],
+      totals: { kcal: 420, protein: 31, fat: 12, carbs: 44 },
+      averages: { kcal: 420, protein: 31, fat: 12, carbs: 44 },
+      goal: 2000,
+      progressPct: 21,
+    });
+
+    const { result } = renderHook(() =>
+      useStatisticsState({ uid: "user-1", calorieTarget: 2000 }),
+    );
+
+    expect(useStatsMock).toHaveBeenCalledWith(
+      [expect.objectContaining({ syncState: "pending" })],
+      expect.any(Object),
+      2000,
+    );
+    expect(result.current.emptyKind).toBe("none");
+    expect(result.current.hasEntriesInRange).toBe(true);
+    expect(result.current.selectedSeries).toEqual([0, 0, 0, 0, 0, 0, 420]);
+  });
+
   it("marks limited window and no_entries_in_range when user has history outside selected range", () => {
     lastNDaysRangeMock.mockImplementation(() => ({
       start: new Date(2026, 2, 1, 0, 0, 0, 0),

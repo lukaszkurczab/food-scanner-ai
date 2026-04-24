@@ -389,6 +389,28 @@ describe("HomeScreen", () => {
     expect(getByText("meals:1")).toBeTruthy();
   });
 
+  it("shows a pending saved meal from useMeals immediately in today's totals", () => {
+    mockUseMeals.mockReturnValue({
+      meals: [
+        createMeal({
+          mealId: "pending-meal",
+          cloudId: "pending-cloud",
+          syncState: "pending",
+        }),
+      ],
+      getMeals: jest.fn(),
+    });
+
+    const navigation = createNavigation();
+    const { getByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    expect(getByText("meals:1")).toBeTruthy();
+    expect(getByText("hero-progress:0.25")).toBeTruthy();
+    expect(getByText("macro-targets:125/65/225;consumed:25/15/45")).toBeTruthy();
+  });
+
   it("does not trigger an extra meals reload from the screen layer", async () => {
     const getMeals = jest.fn();
     mockUseMeals.mockReturnValue({

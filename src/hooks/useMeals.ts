@@ -7,6 +7,7 @@ import {
   upsertMealLocal,
   markDeletedLocal,
   getPendingMealsLocal,
+  getMealByCloudIdLocal,
 } from "@/services/offline/meals.repo";
 import {
   enqueueUpsert,
@@ -45,6 +46,26 @@ function mealIdentity(meal: Meal): string {
   return meal.cloudId || meal.mealId || `${meal.timestamp}:${meal.name || ""}`;
 }
 
+function getMealSortTimestamp(meal: Meal): number {
+  const raw = meal.timestamp || meal.updatedAt || meal.createdAt;
+  const parsed = typeof raw === "number" ? raw : Date.parse(raw ?? "");
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function upsertMealIntoPage(prev: Meal[], meal: Meal): Meal[] {
+  const nextById = new Map<string, Meal>();
+  for (const item of prev) {
+    nextById.set(mealIdentity(item), item);
+  }
+  nextById.set(mealIdentity(meal), meal);
+
+  return Array.from(nextById.values())
+    .sort(
+      (left, right) => getMealSortTimestamp(right) - getMealSortTimestamp(left),
+    )
+    .slice(0, PAGE_LIMIT);
+}
+
 function withDerivedMealFields(meal: Meal, fallbackIso: string): Meal {
   const timestamp = meal.timestamp ?? fallbackIso;
   const timingMetadata = deriveMealTimingMetadata(timestamp);
@@ -72,6 +93,12 @@ function isLocalUri(u?: string | null): u is string {
 }
 
 const log = debugScope("Hook:useMeals");
+
+type LocalMealUpsertEvent = {
+  uid?: string;
+  cloudId?: string;
+  dayKey?: string | null;
+};
 
 function triggerReconcile(uid?: string | null) {
   /* istanbul ignore next -- callers always pass defined uid */
@@ -330,6 +357,25 @@ export function useMeals(userUid: string | null) {
         if (event?.sourceHookId === hookInstanceIdRef.current) return;
         void reloadFirstPage();
       }),
+      on<LocalMealUpsertEvent>("meal:local:upserted", async (event) => {
+        const eventUid = typeof event?.uid === "string" ? event.uid : null;
+        if (eventUid !== userUid) return;
+
+        const cloudId = typeof event?.cloudId === "string" ? event.cloudId : "";
+        if (!cloudId) return;
+
+        const meal = await getMealByCloudIdLocal(userUid, cloudId);
+        if (activeUidRef.current !== userUid) return;
+
+        if (!meal || meal.deleted) {
+          setMeals((prev) =>
+            prev.filter((item) => (item.cloudId || item.mealId) !== cloudId),
+          );
+          return;
+        }
+
+        setMeals((prev) => upsertMealIntoPage(prev, meal));
+      }),
     ];
 
     return () => {
@@ -376,7 +422,7 @@ export function useMeals(userUid: string | null) {
       await enqueueUpsert(userUid, base);
 
       scheduleQueuedSync("add");
-      setMeals((prev) => [base, ...prev].slice(0, PAGE_LIMIT));
+      setMeals((prev) => upsertMealIntoPage(prev, base));
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
     },
     [userUid, scheduleQueuedSync],
@@ -479,9 +525,7 @@ export function useMeals(userUid: string | null) {
       await enqueueUpsert(userUid, payload);
 
       scheduleQueuedSync("update");
-      setMeals((prev) =>
-        prev.map((m) => (m.cloudId === payload.cloudId ? payload : m)),
-      );
+      setMeals((prev) => upsertMealIntoPage(prev, payload));
     },
     [userUid, scheduleQueuedSync],
   );
@@ -530,7 +574,7 @@ export function useMeals(userUid: string | null) {
       await enqueueUpsert(userUid, copy);
 
       scheduleQueuedSync("duplicate");
-      setMeals((prev) => [copy, ...prev].slice(0, PAGE_LIMIT));
+      setMeals((prev) => upsertMealIntoPage(prev, copy));
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
     },
     [userUid, scheduleQueuedSync],
