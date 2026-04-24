@@ -283,9 +283,7 @@ describe("ReviewMealScreen", () => {
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUseUserContext.mockReturnValue({ userData: { uid: "user-1" } });
     mockUseMeals.mockReturnValue({
-      addMeal: jest.fn(async () => undefined),
-      createSavedMealTemplate: jest.fn(async () => undefined),
-      updateSavedMealTemplate: jest.fn(async () => undefined),
+      saveMeal: jest.fn(async ({ meal }: { meal: Meal }) => meal),
       meals: [],
     });
   });
@@ -327,15 +325,13 @@ describe("ReviewMealScreen", () => {
   });
 
   it("saves the reviewed meal and navigates home", async () => {
-    const addMeal = jest.fn(async () => undefined);
+    const saveMeal = jest.fn(async ({ meal }: { meal: Meal }) => meal);
     const ctx = buildDraftContext();
     const testProps = buildProps();
 
     mockUseMealDraftContext.mockReturnValue(ctx);
     mockUseMeals.mockReturnValue({
-      addMeal,
-      createSavedMealTemplate: jest.fn(async () => undefined),
-      updateSavedMealTemplate: jest.fn(async () => undefined),
+      saveMeal,
       meals: [],
     });
 
@@ -346,22 +342,20 @@ describe("ReviewMealScreen", () => {
     fireEvent.press(getByText("Save meal"));
 
     await waitFor(() => {
-      expect(addMeal).toHaveBeenCalledTimes(1);
+      expect(saveMeal).toHaveBeenCalledTimes(1);
       expect(ctx.clearMeal).toHaveBeenCalledWith("user-1");
       expect(testProps.navigate).toHaveBeenCalledWith("Home");
     });
   });
 
   it("saves meal and opens share composer from review entry", async () => {
-    const addMeal = jest.fn(async () => undefined);
+    const saveMeal = jest.fn(async ({ meal }: { meal: Meal }) => meal);
     const ctx = buildDraftContext();
     const testProps = buildProps();
 
     mockUseMealDraftContext.mockReturnValue(ctx);
     mockUseMeals.mockReturnValue({
-      addMeal,
-      createSavedMealTemplate: jest.fn(async () => undefined),
-      updateSavedMealTemplate: jest.fn(async () => undefined),
+      saveMeal,
       meals: [],
     });
 
@@ -372,7 +366,7 @@ describe("ReviewMealScreen", () => {
     fireEvent.press(getByText("Save and share"));
 
     await waitFor(() => {
-      expect(addMeal).toHaveBeenCalledTimes(1);
+      expect(saveMeal).toHaveBeenCalledTimes(1);
       expect(ctx.clearMeal).toHaveBeenCalledWith("user-1");
       expect(testProps.navigate).toHaveBeenCalledWith(
         "MealShare",
@@ -401,9 +395,7 @@ describe("ReviewMealScreen", () => {
   });
 
   it("logs from saved meal without updating template when checkbox is unchecked", async () => {
-    const addMeal = jest.fn(async () => undefined);
-    const createSavedMealTemplate = jest.fn(async () => undefined);
-    const updateSavedMealTemplate = jest.fn(async () => undefined);
+    const saveMeal = jest.fn(async ({ meal }: { meal: Meal }) => meal);
     const ctx = buildDraftContext({
       source: "saved",
       savedMealRefId: "saved-template-1",
@@ -411,9 +403,7 @@ describe("ReviewMealScreen", () => {
     const testProps = buildProps();
     mockUseMealDraftContext.mockReturnValue(ctx);
     mockUseMeals.mockReturnValue({
-      addMeal,
-      createSavedMealTemplate,
-      updateSavedMealTemplate,
+      saveMeal,
       meals: [],
     });
 
@@ -424,17 +414,17 @@ describe("ReviewMealScreen", () => {
     fireEvent.press(getByText("Save meal"));
 
     await waitFor(() => {
-      expect(addMeal).toHaveBeenCalledTimes(1);
-      expect(updateSavedMealTemplate).not.toHaveBeenCalled();
-      expect(createSavedMealTemplate).not.toHaveBeenCalled();
+      expect(saveMeal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          savedTemplate: { mode: "none" },
+        }),
+      );
       expect(testProps.navigate).toHaveBeenCalledWith("Home");
     });
   });
 
   it("updates existing saved template when checkbox is checked", async () => {
-    const addMeal = jest.fn(async () => undefined);
-    const createSavedMealTemplate = jest.fn(async () => undefined);
-    const updateSavedMealTemplate = jest.fn(async () => undefined);
+    const saveMeal = jest.fn(async ({ meal }: { meal: Meal }) => meal);
     const ctx = buildDraftContext({
       source: "saved",
       savedMealRefId: "saved-template-42",
@@ -442,9 +432,7 @@ describe("ReviewMealScreen", () => {
     const testProps = buildProps();
     mockUseMealDraftContext.mockReturnValue(ctx);
     mockUseMeals.mockReturnValue({
-      addMeal,
-      createSavedMealTemplate,
-      updateSavedMealTemplate,
+      saveMeal,
       meals: [],
     });
 
@@ -456,14 +444,11 @@ describe("ReviewMealScreen", () => {
     fireEvent.press(getByText("Save meal"));
 
     await waitFor(() => {
-      expect(addMeal).toHaveBeenCalledTimes(1);
-      expect(updateSavedMealTemplate).toHaveBeenCalledWith(
-        "saved-template-42",
+      expect(saveMeal).toHaveBeenCalledWith(
         expect.objectContaining({
-          source: "saved",
+          savedTemplate: { mode: "update", templateId: "saved-template-42" },
         }),
       );
-      expect(createSavedMealTemplate).not.toHaveBeenCalled();
       expect(testProps.navigate).toHaveBeenCalledWith("Home");
     });
   });

@@ -25,11 +25,23 @@ export async function enqueueUpsert(uid: string, meal: Meal): Promise<void> {
   const db = getDB();
   const cloudId = meal.cloudId ?? meal.mealId;
   const payload = meal.cloudId ? meal : { ...meal, cloudId };
-  db.runSync(
-    `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
-     VALUES (?, ?, 'upsert', ?, ?)`,
-    [cloudId, uid, JSON.stringify(payload), meal.updatedAt]
-  );
+  db.execSync("BEGIN");
+  try {
+    db.runSync(
+      `DELETE FROM op_queue
+       WHERE cloud_id=? AND user_uid=? AND kind='upsert'`,
+      [cloudId, uid],
+    );
+    db.runSync(
+      `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
+       VALUES (?, ?, 'upsert', ?, ?)`,
+      [cloudId, uid, JSON.stringify(payload), meal.updatedAt],
+    );
+    db.execSync("COMMIT");
+  } catch (error) {
+    db.execSync("ROLLBACK");
+    throw error;
+  }
 }
 
 export async function enqueueMyMealUpsert(
@@ -44,11 +56,23 @@ export async function enqueueMyMealUpsert(
     cloudId: docId,
     source: meal.source ?? "saved",
   };
-  db.runSync(
-    `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
-     VALUES (?, ?, 'upsert_mymeal', ?, ?)`,
-    [docId, uid, JSON.stringify(payload), meal.updatedAt]
-  );
+  db.execSync("BEGIN");
+  try {
+    db.runSync(
+      `DELETE FROM op_queue
+       WHERE cloud_id=? AND user_uid=? AND kind='upsert_mymeal'`,
+      [docId, uid],
+    );
+    db.runSync(
+      `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
+       VALUES (?, ?, 'upsert_mymeal', ?, ?)`,
+      [docId, uid, JSON.stringify(payload), meal.updatedAt],
+    );
+    db.execSync("COMMIT");
+  } catch (error) {
+    db.execSync("ROLLBACK");
+    throw error;
+  }
 }
 
 export async function enqueueDelete(

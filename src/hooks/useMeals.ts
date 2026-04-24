@@ -28,8 +28,9 @@ import {
 } from "@/services/meals/mealMetadata";
 import { refreshStreakFromBackend } from "@/services/gamification/streakService";
 import {
-  trackMealLogged,
-} from "@/services/telemetry/telemetryInstrumentation";
+  saveMealTransaction,
+  type SavedMealTemplateSave,
+} from "@/services/meals/mealSaveTransaction";
 
 const PAGE_LIMIT = 50;
 const SYNC_DEBOUNCE_MS = 1200;
@@ -388,46 +389,36 @@ export function useMeals(userUid: string | null) {
   const addMeal = useCallback(
     async (meal: Omit<Meal, "updatedAt" | "deleted">) => {
       if (!userUid) return;
-      const now = new Date().toISOString();
-      const persistableMeal = omitDraftOnlyFields(meal as Meal);
-      const cloudId = persistableMeal.cloudId ?? uuidv4();
-      const mealId = persistableMeal.mealId ?? uuidv4();
-      const timestamp = meal.timestamp ?? now;
-
-      const base = withDerivedMealFields({
-        ...persistableMeal,
-        userUid,
-        cloudId,
-        mealId,
-        createdAt: persistableMeal.createdAt ?? now,
-        updatedAt: now,
-        syncState: "pending",
-        deleted: false,
-        source: persistableMeal.source ?? "manual",
-        timestamp,
-      }, now);
-
-      const maybeUri = persistableMeal.photoUrl;
-      if (isLocalUri(maybeUri)) {
-        base.photoLocalPath = maybeUri;
-        await insertOrUpdateImage(
-          userUid,
-          cloudId,
-          base.photoLocalPath,
-          "pending",
-        );
-      }
-
-      await upsertMealLocal(base);
-      emit("meal:added", { uid: userUid, meal: base });
-      void trackMealLogged(base);
-      await enqueueUpsert(userUid, base);
+      const { meal: savedMeal } = await saveMealTransaction({
+        uid: userUid,
+        meal: meal as Meal,
+      });
 
       scheduleQueuedSync("add");
-      setMeals((prev) => upsertMealIntoPage(prev, base));
+      setMeals((prev) => upsertMealIntoPage(prev, savedMeal));
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
     },
     [userUid, scheduleQueuedSync],
+  );
+
+  const saveMeal = useCallback(
+    async (params: {
+      meal: Meal;
+      savedTemplate?: SavedMealTemplateSave;
+    }): Promise<Meal | null> => {
+      if (!userUid) return null;
+      const { meal: savedMeal } = await saveMealTransaction({
+        uid: userUid,
+        meal: params.meal,
+        savedTemplate: params.savedTemplate,
+      });
+
+      scheduleQueuedSync("add");
+      setMeals((prev) => upsertMealIntoPage(prev, savedMeal));
+      emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
+      return savedMeal;
+    },
+    [scheduleQueuedSync, userUid],
   );
 
   const createSavedMealTemplate = useCallback(
@@ -558,7 +549,7 @@ export function useMeals(userUid: string | null) {
       const newCloudId = uuidv4();
       const newMealId = uuidv4();
 
-      const copy = withDerivedMealFields({
+      const copy: Meal = {
         ...original,
         userUid,
         cloudId: newCloudId,
@@ -568,15 +559,15 @@ export function useMeals(userUid: string | null) {
         updatedAt: now,
         syncState: "pending",
         deleted: false,
-      }, now);
-
-      await upsertMealLocal(copy);
-      emit("meal:added", { uid: userUid, meal: copy });
-      void trackMealLogged(copy);
-      await enqueueUpsert(userUid, copy);
+      };
+      const { meal: savedCopy } = await saveMealTransaction({
+        uid: userUid,
+        meal: copy,
+        nowISO: now,
+      });
 
       scheduleQueuedSync("duplicate");
-      setMeals((prev) => upsertMealIntoPage(prev, copy));
+      setMeals((prev) => upsertMealIntoPage(prev, savedCopy));
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
     },
     [userUid, scheduleQueuedSync],
@@ -599,6 +590,7 @@ export function useMeals(userUid: string | null) {
       getMeals,
       loadNextPage,
       addMeal,
+      saveMeal,
       createSavedMealTemplate,
       updateSavedMealTemplate,
       updateMeal,
@@ -613,6 +605,7 @@ export function useMeals(userUid: string | null) {
       getMeals,
       loadNextPage,
       addMeal,
+      saveMeal,
       createSavedMealTemplate,
       updateSavedMealTemplate,
       updateMeal,

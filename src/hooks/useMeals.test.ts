@@ -401,7 +401,7 @@ describe("useMeals", () => {
   it("adds a meal, computes totals, updates local feed and queues sync", async () => {
     jest.useFakeTimers();
     mockGetMealsPageLocal.mockResolvedValue([]);
-    mockUuid.mockReturnValueOnce("cloud-new").mockReturnValueOnce("meal-new");
+    mockUuid.mockReturnValueOnce("cloud-new");
 
     const { result } = renderHook(() => useMeals("user-1"));
     await waitFor(() => {
@@ -444,7 +444,7 @@ describe("useMeals", () => {
     expect(mockUpsertMealLocal).toHaveBeenCalledTimes(1);
     const savedPayload = mockUpsertMealLocal.mock.calls[0][0];
     expect(savedPayload.cloudId).toBe("cloud-new");
-    expect(savedPayload.mealId).toBe("meal-new");
+    expect(savedPayload.mealId).toBe("cloud-new");
     expect(savedPayload.source).toBe("manual");
     expect(savedPayload.inputMethod).toBe("manual");
     expect(savedPayload.dayKey).toEqual(expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
@@ -459,14 +459,14 @@ describe("useMeals", () => {
     expect(mockTrackMealLogged).toHaveBeenCalledWith(
       expect.objectContaining({
         cloudId: "cloud-new",
-        mealId: "meal-new",
+        mealId: "cloud-new",
         source: "manual",
       }),
     );
     expect(result.current.meals[0]).toEqual(
       expect.objectContaining({
         cloudId: "cloud-new",
-        mealId: "meal-new",
+        mealId: "cloud-new",
         name: "New meal",
       }),
     );
@@ -544,6 +544,85 @@ describe("useMeals", () => {
         mealId: "draft-meal-id",
         source: "saved",
       }),
+    );
+  });
+
+  it("saveMeal retries a saved-template draft against the same canonical meal id", async () => {
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const draft = baseMeal({
+      mealId: "draft-meal-id",
+      cloudId: undefined,
+      savedMealRefId: "saved-template-1",
+      source: "saved",
+      inputMethod: "saved",
+    });
+
+    await act(async () => {
+      await result.current.saveMeal({
+        meal: draft,
+        savedTemplate: { mode: "none" },
+      });
+      await result.current.saveMeal({
+        meal: draft,
+        savedTemplate: { mode: "none" },
+      });
+    });
+
+    const cloudIds = mockUpsertMealLocal.mock.calls.map(
+      ([meal]) => meal.cloudId,
+    );
+    expect(new Set(cloudIds)).toEqual(new Set(["draft-meal-id"]));
+    expect(mockUpsertMyMealWithPhoto).not.toHaveBeenCalled();
+    expect(result.current.meals).toHaveLength(1);
+    expect(result.current.meals[0]).toEqual(
+      expect.objectContaining({
+        cloudId: "draft-meal-id",
+        mealId: "draft-meal-id",
+        source: "saved",
+      }),
+    );
+  });
+
+  it("saveMeal updates the selected saved template without using it as the logged meal id", async () => {
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.saveMeal({
+        meal: baseMeal({
+          mealId: "draft-logged-meal",
+          cloudId: undefined,
+          source: "saved",
+          savedMealRefId: "saved-template-42",
+          photoUrl: "file://template-update.jpg",
+        }),
+        savedTemplate: { mode: "update", templateId: "saved-template-42" },
+      });
+    });
+
+    expect(mockUpsertMealLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudId: "draft-logged-meal",
+        mealId: "draft-logged-meal",
+        source: "saved",
+      }),
+    );
+    expect(mockUpsertMyMealWithPhoto).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({
+        mealId: "saved-template-42",
+        cloudId: "saved-template-42",
+        source: "saved",
+      }),
+      "file://template-update.jpg",
     );
   });
 

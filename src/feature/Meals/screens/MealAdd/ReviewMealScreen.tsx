@@ -87,8 +87,7 @@ export default function ReviewMealScreen({
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
   const { userData } = useUserContext();
-  const { addMeal, createSavedMealTemplate, updateSavedMealTemplate } =
-    useMeals(uid ?? null);
+  const { saveMeal } = useMeals(uid ?? null);
   const { meal, clearMeal, loadDraft, saveDraft, setLastScreen, setPhotoUrl } =
     useMealDraftContext();
 
@@ -240,51 +239,44 @@ export default function ReviewMealScreen({
       if (!meal || !userData?.uid || saving || !uid) return;
 
       setSaving(true);
-      const nowIso = new Date().toISOString();
-      const stableMealId =
-        meal.mealId || meal.cloudId || `meal-${Date.now().toString(36)}`;
-      const stableCloudId = isFromSaved
-        ? meal.mealId || `cloud-${Date.now().toString(36)}`
-        : meal.cloudId || meal.mealId || `cloud-${Date.now().toString(36)}`;
-      const nextMeal: Meal = {
+      const reviewMeal: Meal = {
         ...meal,
-        mealId: stableMealId,
-        cloudId: stableCloudId,
         userUid: uid,
         name: resolvedMealName,
         type: meal.type || "other",
         timestamp: mealTime.toISOString(),
-        createdAt: meal.createdAt || nowIso,
-        updatedAt: nowIso,
-        syncState: "pending",
         source: meal.source ?? "manual",
       };
 
       try {
-        await addMeal(nextMeal);
-        if (saveToMyMeals) {
-          if (isFromSaved && savedTemplateId) {
-            await updateSavedMealTemplate(savedTemplateId, nextMeal);
-          } else if (!isFromSaved) {
-            await createSavedMealTemplate(nextMeal);
-          }
+        const savedMeal = await saveMeal({
+          meal: reviewMeal,
+          savedTemplate: saveToMyMeals
+            ? isFromSaved && savedTemplateId
+              ? { mode: "update", templateId: savedTemplateId }
+              : { mode: "create" }
+            : { mode: "none" },
+        });
+        if (!savedMeal) {
+          setSaving(false);
+          return;
         }
-        if (nextMeal.source === "ai") {
+        if (savedMeal.source === "ai") {
           const initialFingerprint = initialAiReviewFingerprintRef.current;
           const corrected =
             initialFingerprint !== null &&
-            initialFingerprint !== buildAiReviewFingerprint(nextMeal);
+            initialFingerprint !== buildAiReviewFingerprint(savedMeal);
           void trackAiMealReviewSaved({
-            inputMethod: nextMeal.inputMethod === "text" ? "text" : "photo",
+            inputMethod: savedMeal.inputMethod === "text" ? "text" : "photo",
             corrected,
-            ingredientCount: nextMeal.ingredients.length,
-            requestId: nextMeal.aiMeta?.runId ?? null,
+            ingredientCount: savedMeal.ingredients.length,
+            requestId: savedMeal.aiMeta?.runId ?? null,
           });
         }
         clearMeal(uid);
-        if (openShareComposer && nextMeal.photoUrl) {
+        if (openShareComposer && savedMeal.photoUrl) {
           navigation.navigate("MealShare", {
-            meal: nextMeal,
+            meal: savedMeal,
             returnTo: "ReviewMeal",
           });
           return;
@@ -295,8 +287,6 @@ export default function ReviewMealScreen({
       }
     },
     [
-      addMeal,
-      createSavedMealTemplate,
       clearMeal,
       isFromSaved,
       meal,
@@ -305,9 +295,9 @@ export default function ReviewMealScreen({
       resolvedMealName,
       savedTemplateId,
       saveToMyMeals,
+      saveMeal,
       saving,
       uid,
-      updateSavedMealTemplate,
       userData?.uid,
     ],
   );
