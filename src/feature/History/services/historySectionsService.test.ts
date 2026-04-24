@@ -104,4 +104,23 @@ describe("historySectionsService", () => {
     const section = sections.get("2026-02-25");
     expect(section?.data.map((meal: Meal) => meal.cloudId)).toEqual(["m1", "m2"]);
   });
+
+  it("groups late-night meals by dayKey instead of timestamp day", () => {
+    const sections = buildSectionsMap(
+      [
+        makeMeal({
+          cloudId: "late",
+          mealId: "late",
+          dayKey: "2026-03-18",
+          timestamp: "2026-03-19T00:30:00.000Z",
+          createdAt: "2026-03-19T00:30:00.000Z",
+          updatedAt: "2026-03-19T00:30:00.000Z",
+        }),
+      ],
+      LABELS,
+    );
+
+    expect(sections.get("2026-03-18")?.data[0].cloudId).toBe("late");
+    expect(sections.has("2026-03-19")).toBe(false);
+  });
 });

@@ -1,5 +1,9 @@
 import type { Meal } from "@/types/meal";
 import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
+import {
+  getMealDayIndex,
+  isMealInDayKeyRange,
+} from "@/services/meals/mealMetadata";
 
 export type StatsRange = { start: Date; end: Date };
 export type StatsResult = {
@@ -24,7 +28,6 @@ export function getStatsForRange(
   rangeEnd.setHours(0, 0, 0, 0);
 
   const startMs = rangeStart.getTime();
-  const endMs = rangeEnd.getTime() + DAY_MS - 1;
   const spanMs = Math.max(0, rangeEnd.getTime() - startMs);
   const days = Math.max(1, Math.floor(spanMs / DAY_MS) + 1);
 
@@ -38,19 +41,13 @@ export function getStatsForRange(
   const caloriesSeries = Array.from({ length: days }, () => 0);
   const dayHasValues = Array.from({ length: days }, () => false);
 
-  const toMillis = (raw: unknown): number => {
-    if (typeof raw === "number") return raw < 1e12 ? raw * 1000 : raw;
-    const t = Date.parse(String(raw ?? ""));
-    return Number.isNaN(t) ? NaN : t;
-  };
-
   const totals = meals.reduce(
     (acc, meal) => {
-      const raw = meal.timestamp ?? meal.updatedAt ?? meal.createdAt;
-      const ts = toMillis(raw);
-      if (Number.isNaN(ts) || ts < startMs || ts > endMs) return acc;
+      if (!isMealInDayKeyRange(meal, { start: rangeStart, end: rangeEnd })) {
+        return acc;
+      }
 
-      const dayIdx = Math.floor((new Date(ts).setHours(0, 0, 0, 0) - startMs) / DAY_MS);
+      const dayIdx = getMealDayIndex(meal, rangeStart);
       const nutrients = calculateTotalNutrients([meal]);
       const kcal = Number(nutrients.kcal) || 0;
       const protein = Number(nutrients.protein) || 0;
@@ -62,7 +59,7 @@ export function getStatsForRange(
       acc.fat += fat;
       acc.carbs += carbs;
 
-      if (dayIdx >= 0 && dayIdx < days) {
+      if (dayIdx !== null && dayIdx >= 0 && dayIdx < days) {
         caloriesSeries[dayIdx] += kcal;
         if (kcal > 0 || protein > 0 || fat > 0 || carbs > 0) {
           dayHasValues[dayIdx] = true;

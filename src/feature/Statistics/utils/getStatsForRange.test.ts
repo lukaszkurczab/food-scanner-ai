@@ -207,4 +207,42 @@ describe("getStatsForRange", () => {
     });
     expect(result.progressPct).toBeNull();
   });
+
+  it("uses dayKey for late-night meals whose timestamp falls on a neighboring day", () => {
+    const range = {
+      start: new Date(2026, 2, 18, 12, 0),
+      end: new Date(2026, 2, 18, 12, 0),
+    };
+
+    const result = getStatsForRange(
+      [
+        createMeal({
+          mealId: "late-night",
+          dayKey: "2026-03-18",
+          timestamp: "2026-03-19T00:30:00.000Z",
+          ingredients: [
+            {
+              id: "late",
+              name: "Late snack",
+              amount: 1,
+              kcal: 180,
+              protein: 12,
+              fat: 8,
+              carbs: 15,
+            },
+          ],
+        }),
+      ],
+      range,
+      2000,
+    );
+
+    expect(result.caloriesSeries).toEqual([180]);
+    expect(result.totals).toEqual({
+      kcal: 180,
+      protein: 12,
+      fat: 8,
+      carbs: 15,
+    });
+  });
 });

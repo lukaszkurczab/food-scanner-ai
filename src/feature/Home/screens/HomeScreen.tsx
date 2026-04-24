@@ -20,39 +20,17 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
 import { createMockWeeklyReportResult } from "@/services/weeklyReport/weeklyReportMocks";
+import {
+  formatMealDayKey,
+  getMealsForDayKey,
+} from "@/services/meals/mealMetadata";
 
 function isWeeklyReportDevPreview(): boolean {
   return typeof __DEV__ !== "undefined" && __DEV__;
 }
 
-function startEndOfLocalDay(date: Date) {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-  return { start: start.getTime(), end: end.getTime() };
-}
-
-function parseMealTs(meal: Meal): number | null {
-  const raw = meal.timestamp || meal.createdAt;
-  if (!raw) return null;
-  if (typeof raw === "number") return raw;
-  const parsed = Date.parse(raw);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
 function getMealsForDate(allMeals: Meal[], date: Date): Meal[] {
-  const { start, end } = startEndOfLocalDay(date);
-
-  return allMeals
-    .filter((meal) => {
-      const timestamp = parseMealTs(meal);
-      return timestamp !== null && timestamp >= start && timestamp < end;
-    })
-    .sort((left, right) => {
-      const leftTimestamp = parseMealTs(left) ?? 0;
-      const rightTimestamp = parseMealTs(right) ?? 0;
-      return leftTimestamp - rightTimestamp;
-    });
+  return getMealsForDayKey(allMeals, formatMealDayKey(date), "asc");
 }
 
 function buildLast7Days(): WeekDayItem[] {

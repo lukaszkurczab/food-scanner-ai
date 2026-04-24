@@ -447,6 +447,7 @@ describe("useMeals", () => {
     expect(savedPayload.mealId).toBe("meal-new");
     expect(savedPayload.source).toBe("manual");
     expect(savedPayload.inputMethod).toBe("manual");
+    expect(savedPayload.dayKey).toEqual(expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
     expect(savedPayload.aiMeta).toEqual({
       model: "gpt-5.4-mini",
       runId: "run-1",

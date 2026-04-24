@@ -4,6 +4,7 @@ import type { MealRow } from "./types";
 import { emit } from "@/services/core/events";
 import type { SQLiteBindValue } from "expo-sqlite";
 import {
+  getMealDayKey,
   normalizeMealInputMethod,
   parseMealAiMeta,
   serializeMealAiMeta,
@@ -22,26 +23,6 @@ function normalizeMealSyncState(value: Meal["syncState"]): Meal["syncState"] {
   return "pending";
 }
 
-function toDayKey(value?: string | null): string | null {
-  if (typeof value === "string" && value.trim()) {
-    return value.trim();
-  }
-
-  if (!value) {
-    return null;
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  const year = parsed.getFullYear();
-  const month = String(parsed.getMonth() + 1).padStart(2, "0");
-  const day = String(parsed.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 export async function upsertMealLocal(meal: Meal): Promise<void> {
   const db = getDB();
   const tags = JSON.stringify(meal.tags || []);
@@ -53,7 +34,12 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
   const syncState = normalizeMealSyncState(meal.syncState);
   const lastSyncedAt = syncState === "synced" ? toEpochMs(meal.updatedAt) : 0;
   const cloudId = meal.cloudId ?? meal.mealId;
-  const dayKey = toDayKey(meal.dayKey ?? meal.timestamp);
+  const dayKey = getMealDayKey({
+    dayKey: meal.dayKey,
+    timestamp: meal.timestamp,
+    createdAt,
+    updatedAt: meal.updatedAt,
+  });
 
   db.runSync(
     `INSERT INTO meals (
@@ -190,7 +176,12 @@ function rowToMeal(r: MealRow): Meal {
     userUid: r.user_uid,
     mealId: r.meal_id,
     timestamp: r.timestamp,
-    dayKey: toDayKey(r.day_key ?? r.timestamp),
+    dayKey: getMealDayKey({
+      dayKey: r.day_key,
+      timestamp: r.timestamp,
+      createdAt: r.created_at ?? r.timestamp ?? r.updated_at,
+      updatedAt: r.updated_at,
+    }),
     loggedAtLocalMin:
       typeof r.logged_at_local_min === "number"
         ? Number(r.logged_at_local_min)

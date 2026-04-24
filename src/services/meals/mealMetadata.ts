@@ -1,4 +1,4 @@
-import type { MealAiMeta, MealInputMethod } from "@/types/meal";
+import type { Meal, MealAiMeta, MealInputMethod } from "@/types/meal";
 
 export const MEAL_INPUT_METHODS = [
   "manual",
@@ -8,6 +8,16 @@ export const MEAL_INPUT_METHODS = [
   "saved",
   "quick_add",
 ] as const satisfies readonly MealInputMethod[];
+
+const DAY_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+type MealDateFields = {
+  dayKey?: unknown;
+  timestamp?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -72,6 +82,113 @@ export function serializeMealAiMeta(
 
 export function getMealAiMetaFromAiResponse(value: unknown): MealAiMeta | null {
   return normalizeMealAiMeta(value);
+}
+
+export function isCanonicalMealDayKey(value: unknown): value is string {
+  return typeof value === "string" && DAY_KEY_REGEX.test(value);
+}
+
+export function formatMealDayKey(date: Date): string | null {
+  if (Number.isNaN(date.getTime())) return null;
+
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+export function normalizeMealDayKey(value: unknown): string | null {
+  if (isCanonicalMealDayKey(value)) return value;
+
+  if (value instanceof Date) {
+    return formatMealDayKey(value);
+  }
+
+  if (typeof value === "number") {
+    const date = new Date(value < 1e12 ? value * 1000 : value);
+    return formatMealDayKey(date);
+  }
+
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (isCanonicalMealDayKey(trimmed)) return trimmed;
+
+  const parsed = new Date(trimmed);
+  return formatMealDayKey(parsed);
+}
+
+export function getMealDayKey(
+  meal: MealDateFields,
+): string | null {
+  const explicitDayKey = normalizeMealDayKey(meal.dayKey);
+  if (explicitDayKey) return explicitDayKey;
+
+  // TODO(dayKey-backfill): remove timestamp fallback after all persisted meals
+  // have canonical YYYY-MM-DD dayKey populated.
+  return (
+    normalizeMealDayKey(meal.timestamp) ??
+    normalizeMealDayKey(meal.createdAt) ??
+    normalizeMealDayKey(meal.updatedAt)
+  );
+}
+
+export function getMealSortTimestamp(
+  meal: Pick<MealDateFields, "timestamp" | "createdAt" | "updatedAt">,
+): number {
+  const raw = meal.timestamp || meal.updatedAt || meal.createdAt;
+  if (typeof raw === "number") return raw < 1e12 ? raw * 1000 : raw;
+  const parsed = Date.parse(String(raw ?? ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function getMealsForDayKey(
+  meals: Meal[],
+  dayKey: string | null | undefined,
+  order: "asc" | "desc" = "asc",
+): Meal[] {
+  const normalizedDayKey = normalizeMealDayKey(dayKey);
+  if (!normalizedDayKey) return [];
+
+  return meals
+    .filter((meal) => getMealDayKey(meal) === normalizedDayKey)
+    .sort((left, right) => {
+      const delta = getMealSortTimestamp(left) - getMealSortTimestamp(right);
+      return order === "asc" ? delta : -delta;
+    });
+}
+
+function dayKeyToLocalDate(dayKey: string): Date | null {
+  if (!isCanonicalMealDayKey(dayKey)) return null;
+  const [year, month, day] = dayKey.split("-").map((part) => Number(part));
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function isMealInDayKeyRange(
+  meal: MealDateFields,
+  range: { start: Date; end: Date },
+): boolean {
+  const mealDayKey = getMealDayKey(meal);
+  const startDayKey = formatMealDayKey(range.start);
+  const endDayKey = formatMealDayKey(range.end);
+  if (!mealDayKey || !startDayKey || !endDayKey) return false;
+  return mealDayKey >= startDayKey && mealDayKey <= endDayKey;
+}
+
+export function getMealDayIndex(
+  meal: MealDateFields,
+  rangeStart: Date,
+): number | null {
+  const mealDayKey = getMealDayKey(meal);
+  if (!mealDayKey) return null;
+
+  const mealDate = dayKeyToLocalDate(mealDayKey);
+  const startDayKey = formatMealDayKey(rangeStart);
+  const startDate = startDayKey ? dayKeyToLocalDate(startDayKey) : null;
+  if (!mealDate || !startDate) return null;
+
+  return Math.floor((mealDate.getTime() - startDate.getTime()) / DAY_MS);
 }
 
 export function deriveMealTimingMetadata(

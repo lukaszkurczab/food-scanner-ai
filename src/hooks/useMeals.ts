@@ -20,8 +20,12 @@ import { emit, on } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
 import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/meals/myMealService";
-import { deriveMealTimingMetadata } from "@/services/meals/mealMetadata";
-import { formatStreakDate } from "@/services/gamification/streak.logic";
+import {
+  deriveMealTimingMetadata,
+  formatMealDayKey,
+  getMealSortTimestamp,
+  normalizeMealDayKey,
+} from "@/services/meals/mealMetadata";
 import { refreshStreakFromBackend } from "@/services/gamification/streakService";
 import {
   trackMealLogged,
@@ -46,12 +50,6 @@ function mealIdentity(meal: Meal): string {
   return meal.cloudId || meal.mealId || `${meal.timestamp}:${meal.name || ""}`;
 }
 
-function getMealSortTimestamp(meal: Meal): number {
-  const raw = meal.timestamp || meal.updatedAt || meal.createdAt;
-  const parsed = typeof raw === "number" ? raw : Date.parse(raw ?? "");
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
 function upsertMealIntoPage(prev: Meal[], meal: Meal): Meal[] {
   const nextById = new Map<string, Meal>();
   for (const item of prev) {
@@ -69,10 +67,14 @@ function upsertMealIntoPage(prev: Meal[], meal: Meal): Meal[] {
 function withDerivedMealFields(meal: Meal, fallbackIso: string): Meal {
   const timestamp = meal.timestamp ?? fallbackIso;
   const timingMetadata = deriveMealTimingMetadata(timestamp);
+  const dayKey =
+    normalizeMealDayKey(meal.dayKey) ??
+    formatMealDayKey(new Date(timestamp)) ??
+    formatMealDayKey(new Date(fallbackIso));
   return {
     ...meal,
     timestamp,
-    dayKey: meal.dayKey ?? formatStreakDate(new Date(timestamp)),
+    dayKey: dayKey ?? fallbackIso.slice(0, 10),
     loggedAtLocalMin: meal.loggedAtLocalMin ?? timingMetadata.loggedAtLocalMin,
     tzOffsetMin: meal.tzOffsetMin ?? timingMetadata.tzOffsetMin,
     totals: computeTotals(meal),

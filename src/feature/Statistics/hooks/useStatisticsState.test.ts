@@ -200,6 +200,58 @@ describe("useStatisticsState", () => {
     expect(result.current.selectedSeries).toEqual([0, 0, 0, 0, 0, 0, 420]);
   });
 
+  it("counts a late-night meal in the selected day from dayKey", () => {
+    jest.setSystemTime(new Date(2026, 2, 18, 12, 0, 0, 0));
+    lastNDaysRangeMock.mockImplementation(() => ({
+      start: new Date(2026, 2, 18, 0, 0, 0, 0),
+      end: new Date(2026, 2, 18, 0, 0, 0, 0),
+    }));
+
+    useMealsMock.mockReturnValue({
+      meals: [
+        makeMeal({
+          mealId: "late-night",
+          dayKey: "2026-03-18",
+          timestamp: "2026-03-19T00:30:00.000Z",
+          ingredients: [
+            {
+              id: "ing-late",
+              name: "Late snack",
+              amount: 1,
+              kcal: 120,
+              protein: 9,
+              fat: 4,
+              carbs: 10,
+            },
+          ],
+        }),
+      ],
+      getMeals: jest.fn(),
+      loading: false,
+    } as never);
+
+    useStatsMock.mockReturnValue({
+      labels: ["Wed"],
+      caloriesSeries: [120],
+      totals: { kcal: 120, protein: 9, fat: 4, carbs: 10 },
+      averages: { kcal: 120, protein: 9, fat: 4, carbs: 10 },
+      goal: 2000,
+      progressPct: 6,
+    });
+
+    const { result } = renderHook(() =>
+      useStatisticsState({ uid: "user-1", calorieTarget: 2000 }),
+    );
+
+    act(() => {
+      result.current.setMetric("protein");
+    });
+
+    expect(result.current.emptyKind).toBe("none");
+    expect(result.current.hasEntriesInRange).toBe(true);
+    expect(result.current.selectedSeries).toEqual([9]);
+  });
+
   it("marks limited window and no_entries_in_range when user has history outside selected range", () => {
     lastNDaysRangeMock.mockImplementation(() => ({
       start: new Date(2026, 2, 1, 0, 0, 0, 0),

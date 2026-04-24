@@ -1,5 +1,6 @@
 import type { Meal } from "@/types/meal";
 import type { DaySection } from "@/feature/History/types/daySection";
+import { getMealDayKey } from "@/services/meals/mealMetadata";
 
 const normalizeText = (value: unknown): string =>
   String(value || "")
@@ -7,16 +8,11 @@ const normalizeText = (value: unknown): string =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-const toDate = (value?: string | number | null): Date => {
-  if (!value) return new Date(0);
-  const parsed = new Date(value);
-  return isNaN(parsed.getTime()) ? new Date(0) : parsed;
+const dateFromDayKey = (dayKey: string): Date => {
+  const [year, month, day] = dayKey.split("-").map((part) => Number(part));
+  const date = new Date(year, month - 1, day);
+  return isNaN(date.getTime()) ? new Date(0) : date;
 };
-
-const toDateKey = (date: Date): string =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-    date.getDate(),
-  ).padStart(2, "0")}`;
 
 const isSameDay = (left: Date, right: Date): boolean =>
   left.getDate() === right.getDate() &&
@@ -115,8 +111,8 @@ export function addOrUpdateMealInSections(
     locale?: string;
   },
 ): void {
-  const date = toDate(meal.timestamp || meal.updatedAt || meal.createdAt);
-  const dateKey = toDateKey(date);
+  const dateKey = getMealDayKey(meal) ?? "1970-01-01";
+  const date = dateFromDayKey(dateKey);
   const title = toHeaderTitle({
     date,
     todayLabel: labels.todayLabel,

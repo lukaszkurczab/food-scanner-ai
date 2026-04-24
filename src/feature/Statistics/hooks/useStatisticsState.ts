@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Meal } from "@/types/meal";
 import { useMeals } from "@/hooks/useMeals";
 import { useStats } from "@/hooks/useStats";
 import { lastNDaysRange } from "../utils/dateRange";
+import {
+  getMealDayIndex,
+  isMealInDayKeyRange,
+} from "@/services/meals/mealMetadata";
 import type {
   DateRange,
   MetricKey,
@@ -29,17 +32,6 @@ const clampRangeForAccessWindow = (
     start: startOfDay(clamped.start),
     end: startOfDay(clamped.end),
   };
-};
-
-const getMealTimestamp = (meal: Meal): Date | null => {
-  const value = meal.timestamp ?? meal.updatedAt ?? meal.createdAt;
-  const date = new Date(value ?? "");
-  return Number.isNaN(date.getTime()) ? null : date;
-};
-
-const isDateInRange = (date: Date, range: DateRange): boolean => {
-  const ts = date.getTime();
-  return ts >= range.start.getTime() && ts <= range.end.getTime();
 };
 
 const buildRecentRange = (days: number): DateRange => {
@@ -156,12 +148,8 @@ export function useStatisticsState(params: {
   );
 
   const mealsInEffectiveRange = useMemo(() => {
-    return meals.filter((meal) => {
-      const mealTimestamp = getMealTimestamp(meal);
-      if (!mealTimestamp) return false;
-      return isDateInRange(mealTimestamp, statsRange);
-    }).length;
-  }, [meals, statsRange]);
+    return meals.filter((meal) => isMealInDayKeyRange(meal, effectiveRange)).length;
+  }, [effectiveRange, meals]);
 
   const hasAnyMeals = meals.length > 0;
   const hasEntriesInRange = mealsInEffectiveRange > 0;
@@ -186,14 +174,9 @@ export function useStatisticsState(params: {
     });
 
     for (const meal of meals) {
-      const mealTimestamp = getMealTimestamp(meal);
-      if (!mealTimestamp || !isDateInRange(mealTimestamp, statsRange)) continue;
-
-      const mealDay = startOfDay(mealTimestamp);
-      const index = Math.floor(
-        (mealDay.getTime() - effectiveRange.start.getTime()) / DAY_MS,
-      );
-
+      if (!isMealInDayKeyRange(meal, effectiveRange)) continue;
+      const index = getMealDayIndex(meal, effectiveRange.start);
+      if (index === null) continue;
       if (index < 0 || index >= days) continue;
 
       const mealIngredients = meal.ingredients ?? [];
@@ -214,7 +197,7 @@ export function useStatisticsState(params: {
       labels: nextLabels,
       nutrientsByDay: buckets as NutrientsBucket[],
     };
-  }, [days, effectiveRange.start, meals, statsRange]);
+  }, [days, effectiveRange, meals]);
 
   const kcalSeries = normalizeSeries(stats.caloriesSeries, days);
   const proteinSeries = nutrientsByDay.map((day) => day.protein || 0);
