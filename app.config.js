@@ -91,7 +91,7 @@ export default {
         "@sentry/react-native/expo",
         { organization: sentryOrganization, project: sentryProject },
       ],
-      "./plugins/with-rnfb-non-modular-headers.js",
+      "./plugins/with-non-modular-headers-fix.js",
     ],
     extra: {
       apiBaseUrl: resolvedApiBaseUrl,

@@ -1,6 +1,13 @@
 import { BackHandler } from "react-native";
 import { act, fireEvent, waitFor } from "@testing-library/react-native";
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
 import ReviewMealScreen from "@/feature/Meals/screens/MealAdd/ReviewMealScreen";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
@@ -36,7 +43,8 @@ const mockUseMealDraftContext = jest.fn();
 const mockUseUserContext = jest.fn();
 const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
 const mockUseMeals = jest.fn();
-const mockGetInfoAsync = jest.fn<(uri: string) => Promise<{ exists: boolean }>>();
+const mockGetInfoAsync =
+  jest.fn<(uri: string) => Promise<{ exists: boolean }>>();
 const mockBackHandlerAddEventListener = jest.fn();
 
 jest.mock("@/services/core/fileSystem", () => ({
@@ -71,15 +79,21 @@ jest.mock("@/components/AppIcon", () => ({
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     i18n: { language: "en" },
-    t: (key: string, options?: { ns?: string; defaultValue?: string; count?: number }) =>
+    t: (
+      key: string,
+      options?: { ns?: string; defaultValue?: string; count?: number },
+    ) =>
       options?.defaultValue ??
-      (options?.count !== undefined ? `${options.ns}:${key}:${options.count}` : options?.ns ? `${options.ns}:${key}` : key),
+      (options?.count !== undefined
+        ? `${options.ns}:${key}:${options.count}`
+        : options?.ns
+          ? `${options.ns}:${key}`
+          : key),
   }),
 }));
 
 jest.mock("@/components", () => {
-  const { createElement } =
-    jest.requireActual<typeof import("react")>("react");
+  const { createElement } = jest.requireActual<typeof import("react")>("react");
   const { Pressable, Text, View } =
     jest.requireActual<typeof import("react-native")>("react-native");
 
@@ -135,14 +149,20 @@ jest.mock("@/components", () => {
             primaryAction
               ? createElement(
                   Pressable,
-                  { onPress: primaryAction.onPress, accessibilityRole: "button" },
+                  {
+                    onPress: primaryAction.onPress,
+                    accessibilityRole: "button",
+                  },
                   createElement(Text, null, primaryAction.label),
                 )
               : null,
             secondaryAction
               ? createElement(
                   Pressable,
-                  { onPress: secondaryAction.onPress, accessibilityRole: "button" },
+                  {
+                    onPress: secondaryAction.onPress,
+                    accessibilityRole: "button",
+                  },
                   createElement(Text, null, secondaryAction.label),
                 )
               : null,
@@ -249,14 +269,13 @@ const buildProps = () => {
 
 describe("ReviewMealScreen", () => {
   beforeEach(() => {
-    jest
-      .spyOn(BackHandler, "addEventListener")
-      .mockImplementation(
-        ((_eventName: string, _listener: () => boolean) => {
-          mockBackHandlerAddEventListener();
-          return { remove: jest.fn() };
-        }) as typeof BackHandler.addEventListener,
-      );
+    jest.spyOn(BackHandler, "addEventListener").mockImplementation(((
+      _eventName: string,
+      _listener: () => boolean,
+    ) => {
+      mockBackHandlerAddEventListener();
+      return { remove: jest.fn() };
+    }) as typeof BackHandler.addEventListener);
 
     mockGetInfoAsync.mockReset();
     mockGetInfoAsync.mockResolvedValue({ exists: true });
@@ -398,7 +417,9 @@ describe("ReviewMealScreen", () => {
       meals: [],
     });
 
-    const { getByText } = renderWithTheme(<ReviewMealScreen {...testProps.props} />);
+    const { getByText } = renderWithTheme(
+      <ReviewMealScreen {...testProps.props} />,
+    );
 
     fireEvent.press(getByText("Save meal"));
 

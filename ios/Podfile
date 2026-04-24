@@ -60,10 +60,16 @@ target 'Fitaly' do
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
 
+  # [with-non-modular-headers-fix]
   installer.pods_project.targets.each do |target|
-    if ['RNFBApp', 'RNFBAuth', 'RNFBAnalytics', 'RNFBCrashlytics', 'RNFBMessaging', 'RNFBFirestore', 'RNFBFunctions', 'RNFBStorage', 'RNFBDatabase', 'RNFBRemoteConfig', 'RNFBPerf', 'RNFBInstallations'].include?(target.name)
+    if ["RNFBApp","RNFBAuth","RNFBAnalytics","RNFBCrashlytics","RNFBMessaging","RNFBFirestore","RNFBFunctions","RNFBStorage","RNFBDatabase","RNFBRemoteConfig","RNFBPerf","RNFBInstallations","ExpoTaskManager","EXTaskManager","ExpoBackgroundTask","EXBackgroundTask","ExpoNotifications","EXNotifications"].include?(target.name)
       target.build_configurations.each do |config|
         config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+
+        other_cflags = config.build_settings['OTHER_CFLAGS'] || ['$(inherited)']
+        other_cflags = [other_cflags] unless other_cflags.is_a?(Array)
+        other_cflags << '-Wno-non-modular-include-in-framework-module'
+        config.build_settings['OTHER_CFLAGS'] = other_cflags.uniq
       end
     end
   end
