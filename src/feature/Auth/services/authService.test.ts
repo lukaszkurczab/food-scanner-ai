@@ -20,6 +20,8 @@ const mockCreateUserWithEmailAndPassword = jest.fn<
 const mockInitializeUserOnboardingProfile = jest.fn<
   (...args: unknown[]) => Promise<void>
 >();
+const mockPost = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockLogError = jest.fn<(...args: unknown[]) => void>();
 const mockDelete = jest.fn<() => Promise<void>>();
 const mockSignOut = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockSignInWithEmailAndPassword = jest.fn<
@@ -43,6 +45,14 @@ jest.mock("@react-native-firebase/auth", () => ({
     mockSendPasswordResetEmail(...args),
   createUserWithEmailAndPassword: (...args: unknown[]) =>
     mockCreateUserWithEmailAndPassword(...args),
+}));
+
+jest.mock("@/services/core/apiClient", () => ({
+  post: (...args: unknown[]) => mockPost(...args),
+}));
+
+jest.mock("@/services/core/errorLogger", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
 }));
 
 jest.mock("@/services/session/resetUserRuntime", () => ({
@@ -78,6 +88,7 @@ describe("authService", () => {
     });
     mockSendPasswordResetEmail.mockResolvedValue(undefined);
     mockResetUserRuntime.mockResolvedValue(undefined);
+    mockPost.mockResolvedValue({ deleted: true });
     mockCreateUserWithEmailAndPassword.mockResolvedValue({
       user: {
         uid: "user-1",
@@ -142,19 +153,62 @@ describe("authService", () => {
     );
   });
 
-  it("rolls back auth user when backend onboarding fails", async () => {
+  it("maps onboarding 409 to username unavailable and rolls back backend then auth user", async () => {
     mockInitializeUserOnboardingProfile.mockRejectedValue({
-      code: "username/unavailable",
+      status: 409,
+      code: "api/http-error",
     });
 
     await expect(
       authRegister("user@example.com", "Strong1!", "Neo"),
     ).rejects.toMatchObject({
       code: "username/unavailable",
+      source: "AuthService",
     });
 
+    expect(mockPost).toHaveBeenCalledWith("/users/me/delete");
     expect(mockDelete).toHaveBeenCalled();
+    expect(mockPost.mock.invocationCallOrder[0]).toBeLessThan(
+      mockDelete.mock.invocationCallOrder[0],
+    );
     expect(mockInitializeUserOnboardingProfile).toHaveBeenCalled();
+  });
+
+  it("still deletes Firebase user and logs when backend signup cleanup fails", async () => {
+    const onboardingError = new Error("onboarding failed");
+    const cleanupError = new Error("cleanup failed");
+    mockInitializeUserOnboardingProfile.mockRejectedValue(onboardingError);
+    mockPost.mockRejectedValue(cleanupError);
+
+    await expect(
+      authRegister("user@example.com", "Strong1!", "Neo"),
+    ).rejects.toBe(onboardingError);
+
+    expect(mockPost).toHaveBeenCalledWith("/users/me/delete");
+    expect(mockDelete).toHaveBeenCalled();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "authRegister: failed backend account cleanup during signup rollback",
+      { uid: "user-1" },
+      cleanupError,
+    );
+  });
+
+  it("logs Firebase delete failure without hiding onboarding error", async () => {
+    const onboardingError = new Error("onboarding failed");
+    const deleteError = new Error("delete failed");
+    mockInitializeUserOnboardingProfile.mockRejectedValue(onboardingError);
+    mockDelete.mockRejectedValue(deleteError);
+
+    await expect(
+      authRegister("user@example.com", "Strong1!", "Neo"),
+    ).rejects.toBe(onboardingError);
+
+    expect(mockPost).toHaveBeenCalledWith("/users/me/delete");
+    expect(mockLogError).toHaveBeenCalledWith(
+      "authRegister: failed to delete Firebase user during signup rollback — zombie user requires manual cleanup",
+      { uid: "user-1" },
+      deleteError,
+    );
   });
 
   it("resets user runtime on logout", async () => {

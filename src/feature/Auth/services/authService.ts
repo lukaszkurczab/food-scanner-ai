@@ -7,6 +7,11 @@ import {
   createUserWithEmailAndPassword,
   type FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
+import { post } from "@/services/core/apiClient";
+import {
+  createServiceError,
+  getErrorStatus,
+} from "@/services/contracts/serviceError";
 import { logError } from "@/services/core/errorLogger";
 import { initializeUserOnboardingProfile } from "@/services/user/userService";
 import { resetUserRuntime } from "@/services/session/resetUserRuntime";
@@ -25,6 +30,42 @@ function normalizeEmail(email: string): string {
 
 function normalizeUsername(username: string): string {
   return username.trim().toLowerCase();
+}
+
+function mapSignupOnboardingError(error: unknown): unknown {
+  if (getErrorStatus(error) === 409) {
+    return createServiceError({
+      code: "username/unavailable",
+      source: "AuthService",
+      retryable: false,
+      message: "Username unavailable",
+      cause: error,
+    });
+  }
+
+  return error;
+}
+
+async function rollbackFailedSignup(user: FirebaseAuthTypes.User): Promise<void> {
+  try {
+    await post("/users/me/delete");
+  } catch (backendCleanupError) {
+    logError(
+      "authRegister: failed backend account cleanup during signup rollback",
+      { uid: user.uid },
+      backendCleanupError,
+    );
+  }
+
+  try {
+    await user.delete();
+  } catch (firebaseDeleteError) {
+    logError(
+      "authRegister: failed to delete Firebase user during signup rollback — zombie user requires manual cleanup",
+      { uid: user.uid },
+      firebaseDeleteError,
+    );
+  }
 }
 
 export async function authLogin(email: string, password: string) {
@@ -79,16 +120,9 @@ export async function authRegister(
       initialLanguage,
     );
     return cred.user;
-  } catch (e) {
-    try {
-      await cred.user.delete();
-    } catch (deleteError) {
-      logError(
-        "authRegister: failed to delete Firebase user during rollback — zombie user requires manual cleanup",
-        { uid: cred.user.uid },
-        deleteError,
-      );
-    }
-    throw e;
+  } catch (error) {
+    const mappedError = mapSignupOnboardingError(error);
+    await rollbackFailedSignup(cred.user);
+    throw mappedError;
   }
 }
