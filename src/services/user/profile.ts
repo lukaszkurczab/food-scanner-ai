@@ -9,7 +9,6 @@ import {
   updatePassword,
 } from "@react-native-firebase/auth";
 import { getApp } from "@react-native-firebase/app";
-import { Appearance } from "react-native";
 import { get, post } from "@/services/core/apiClient";
 import { parseUserData } from "./profile.dto";
 import { createServiceError } from "@/services/contracts/serviceError";
@@ -145,52 +144,6 @@ export async function deleteAccountService({
   await reauthenticateWithCredential(current, cred);
   await post("/users/me/delete");
   await current.delete();
-}
-
-export async function createInitialUserProfile(
-  user: FirebaseAuthTypes.User,
-  username: string,
-  initialLanguage?: string | null,
-) {
-  const uid = user.uid;
-  const now = Date.now();
-  const profile: UserData = {
-    uid,
-    email: user.email ?? "",
-    username: username.trim(),
-    createdAt: now,
-    lastLogin: new Date().toISOString(),
-    plan: "free",
-    unitsSystem: "metric",
-    age: "",
-    sex: "female",
-    height: "",
-    heightInch: "",
-    weight: "",
-    preferences: [],
-    activityLevel: "moderate",
-    goal: "maintain",
-    chronicDiseases: [],
-    chronicDiseasesOther: "",
-    allergies: [],
-    allergiesOther: "",
-    lifestyle: "",
-    aiStyle: "none",
-    aiFocus: "none",
-    aiFocusOther: "",
-    aiNote: "",
-    surveyComplited: false,
-    calorieTarget: 0,
-    syncState: "pending",
-    lastSyncedAt: "",
-    darkTheme: Appearance.getColorScheme() === "dark",
-    avatarUrl: "",
-    avatarLocalPath: "",
-    avatarlastSyncedAt: "",
-    language: normalizeInitialLanguage(initialLanguage),
-  };
-
-  await mergeUserProfileRemote(uid, profile);
 }
 
 export async function initializeUserOnboardingProfile(

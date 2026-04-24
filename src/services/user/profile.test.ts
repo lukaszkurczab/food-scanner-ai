@@ -10,17 +10,20 @@ import type { UserData } from "@/types";
 import {
   changeUsernameService,
   changeEmailService,
-  createInitialUserProfile,
   deleteAccountService,
   exportUserData,
   fetchUserFromCloud,
   getUserLocal,
+  initializeUserOnboardingProfile,
   updateUserLanguageInFirestore,
   uploadAndSaveAvatar,
   upsertUserLocal,
 } from "@/services/user/profile";
 
 const mockFetchUserProfileRemote = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockInitializeUserOnboardingRemote = jest.fn<
+  (...args: unknown[]) => Promise<void>
+>();
 const mockMergeUserProfileRemote = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockUploadUserAvatarRemote = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockClaimUsername = jest.fn<(...args: unknown[]) => Promise<string>>();
@@ -35,6 +38,8 @@ const mockCurrentUserDelete = jest.fn<() => Promise<void>>();
 
 jest.mock("@/services/user/userProfileRepository", () => ({
   fetchUserProfileRemote: (...args: unknown[]) => mockFetchUserProfileRemote(...args),
+  initializeUserOnboardingRemote: (...args: unknown[]) =>
+    mockInitializeUserOnboardingRemote(...args),
   mergeUserProfileRemote: (...args: unknown[]) => mockMergeUserProfileRemote(...args),
   uploadUserAvatarRemote: (...args: unknown[]) => mockUploadUserAvatarRemote(...args),
 }));
@@ -76,17 +81,12 @@ jest.mock("react-native-zip-archive", () => ({
   zip: jest.fn(),
 }));
 
-jest.mock("react-native", () => ({
-  Appearance: {
-    getColorScheme: () => "dark",
-  },
-}));
-
 describe("user/profile", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-03-03T12:00:00.000Z"));
+    mockInitializeUserOnboardingRemote.mockResolvedValue(undefined);
     mockMergeUserProfileRemote.mockResolvedValue(undefined);
     mockUploadUserAvatarRemote.mockResolvedValue({
       avatarUrl: "https://cdn/avatar.jpg",
@@ -262,50 +262,17 @@ describe("user/profile", () => {
     expect(mockCurrentUserDelete).toHaveBeenCalledWith();
   });
 
-  it("creates initial user profile using provided supported language", async () => {
-    await createInitialUserProfile(
+  it("initializes onboarding profile through backend-owned endpoint", async () => {
+    await initializeUserOnboardingProfile(
       { uid: "u1", email: "u1@example.com" } as never,
-      "neo",
+      " neo ",
       "pl-PL",
     );
 
-    expect(mockMergeUserProfileRemote).toHaveBeenCalledWith(
-      "u1",
-      expect.objectContaining({
-        uid: "u1",
-        email: "u1@example.com",
-        username: "neo",
-        plan: "free",
-        darkTheme: true,
-        language: "pl",
-        syncState: "pending",
-      }),
-    );
-  });
-
-  it("falls back to en when initial language is missing or unsupported", async () => {
-    await createInitialUserProfile(
-      { uid: "u1", email: "u1@example.com" } as never,
-      "neo",
-      "de-DE",
-    );
-
-    expect(mockMergeUserProfileRemote).toHaveBeenLastCalledWith(
-      "u1",
-      expect.objectContaining({
-        language: "en",
-      }),
-    );
-
-    await createInitialUserProfile(
-      { uid: "u1", email: "u1@example.com" } as never,
-      "neo",
-    );
-    expect(mockMergeUserProfileRemote).toHaveBeenLastCalledWith(
-      "u1",
-      expect.objectContaining({
-        language: "en",
-      }),
-    );
+    expect(mockInitializeUserOnboardingRemote).toHaveBeenCalledWith("u1", {
+      username: "neo",
+      language: "pl",
+    });
+    expect(mockMergeUserProfileRemote).not.toHaveBeenCalled();
   });
 });
