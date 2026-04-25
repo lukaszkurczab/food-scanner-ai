@@ -235,7 +235,13 @@ describe("useHistorySectionsData", () => {
 
     await act(async () => {
       secondLoad.resolve({
-        items: [buildMeal({ mealId: "meal-2", name: "Fresh filter result" })],
+        items: [
+          buildMeal({
+            mealId: "meal-2",
+            name: "Fresh filter result",
+            totals: { kcal: 200, protein: 0, carbs: 0, fat: 0 },
+          }),
+        ],
         nextBefore: null,
       });
       await secondLoad.promise;

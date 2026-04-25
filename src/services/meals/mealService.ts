@@ -5,16 +5,18 @@ import {
   localPhotoPath,
 } from "./mealService.images";
 import {
-  getMealsPageLocal,
   getMealsPageLocalFiltered,
   type LocalHistoryFilters,
 } from "@/services/offline/meals.repo";
-import { on } from "@/services/core/events";
 import {
   extractMealTimestampCursor,
   markMealDeletedRemote,
   type MealHistoryFilters,
 } from "@/services/meals/mealsRepository";
+import {
+  getLocalMealsSnapshot,
+  subscribeLocalMeals,
+} from "@/services/meals/localMealsStore";
 export const FREE_WINDOW_DAYS = 30;
 export type HistoryFilters = MealHistoryFilters;
 
@@ -92,28 +94,9 @@ export function subscribeMeals(
   uid: string,
   cb: (items: Meal[]) => void
 ): () => void {
-  let active = true;
-
-  const publish = async () => {
-    if (!active) return;
-    const items = await getMealsPageLocal(uid, 50, undefined);
-    if (active) {
-      cb(items);
-    }
-  };
-
-  void publish();
-
-  const unsubs = [
-    on("meal:local:upserted", () => void publish()),
-    on("meal:local:deleted", () => void publish()),
-    on("meal:synced", () => void publish()),
-  ];
-
-  return () => {
-    active = false;
-    unsubs.forEach((unsubscribe) => unsubscribe());
-  };
+  return subscribeLocalMeals(uid, () => {
+    cb(getLocalMealsSnapshot(uid).meals);
+  });
 }
 
 export async function deleteMealInFirestore(uid: string, cloudId: string) {

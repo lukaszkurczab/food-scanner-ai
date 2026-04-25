@@ -3,11 +3,9 @@ import { v4 as uuidv4 } from "uuid";
 import NetInfo from "@react-native-community/netinfo";
 import type { Meal } from "@/types/meal";
 import {
-  getMealsPageLocal,
   upsertMealLocal,
   markDeletedLocal,
   getPendingMealsLocal,
-  getMealByCloudIdLocal,
 } from "@/services/offline/meals.repo";
 import {
   enqueueUpsert,
@@ -16,14 +14,13 @@ import {
 import { insertOrUpdateImage } from "@/services/offline/images.repo";
 import { reconcileAll } from "@/services/notifications/engine";
 import { debugScope } from "@/utils/debug";
-import { emit, on } from "@/services/core/events";
+import { emit } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
 import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/meals/myMealService";
 import {
   deriveMealTimingMetadata,
   formatMealDayKey,
-  getMealSortTimestamp,
   normalizeMealDayKey,
 } from "@/services/meals/mealMetadata";
 import { refreshStreakFromBackend } from "@/services/gamification/streakService";
@@ -31,8 +28,14 @@ import {
   saveMealTransaction,
   type SavedMealTemplateSave,
 } from "@/services/meals/mealSaveTransaction";
+import {
+  getLocalMealsSnapshot,
+  removeLocalMealSnapshot,
+  refreshLocalMeals,
+  subscribeLocalMeals,
+  upsertLocalMealSnapshot,
+} from "@/services/meals/localMealsStore";
 
-const PAGE_LIMIT = 50;
 const SYNC_DEBOUNCE_MS = 1200;
 
 function computeTotals(meal: Pick<Meal, "ingredients">) {
@@ -45,24 +48,6 @@ function computeTotals(meal: Pick<Meal, "ingredients">) {
     carbs: sum("carbs"),
     fat: sum("fat"),
   };
-}
-
-function mealIdentity(meal: Meal): string {
-  return meal.cloudId || meal.mealId || `${meal.timestamp}:${meal.name || ""}`;
-}
-
-function upsertMealIntoPage(prev: Meal[], meal: Meal): Meal[] {
-  const nextById = new Map<string, Meal>();
-  for (const item of prev) {
-    nextById.set(mealIdentity(item), item);
-  }
-  nextById.set(mealIdentity(meal), meal);
-
-  return Array.from(nextById.values())
-    .sort(
-      (left, right) => getMealSortTimestamp(right) - getMealSortTimestamp(left),
-    )
-    .slice(0, PAGE_LIMIT);
 }
 
 function withDerivedMealFields(meal: Meal, fallbackIso: string): Meal {
@@ -97,12 +82,6 @@ function isLocalUri(u?: string | null): u is string {
 
 const log = debugScope("Hook:useMeals");
 
-type LocalMealUpsertEvent = {
-  uid?: string;
-  cloudId?: string;
-  dayKey?: string | null;
-};
-
 function triggerReconcile(uid?: string | null) {
   /* istanbul ignore next -- callers always pass defined uid */
   if (!uid) return;
@@ -113,20 +92,16 @@ function triggerReconcile(uid?: string | null) {
 }
 
 export function useMeals(userUid: string | null) {
-  const [meals, setMeals] = useState<Meal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [snapshot, setSnapshot] = useState(() => getLocalMealsSnapshot(userUid));
   const hookInstanceIdRef = useRef(`useMeals-${Math.random().toString(36).slice(2)}`);
-  const beforeRef = useRef<string | null>(null);
-  const activeUidRef = useRef<string | null>(userUid);
-  const firstPageRequestIdRef = useRef(0);
-  const nextPageInFlightRef = useRef(false);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncInFlightRef = useRef(false);
   const syncRequestedRef = useRef(false);
+  const syncPullRequestedRef = useRef(false);
   const lastOfflineToastAtRef = useRef(0);
-  const reloadInFlightRef = useRef(false);
-  const reloadRequestedRef = useRef(false);
   const remoteRefreshInFlightRef = useRef(false);
+  const meals = snapshot.meals;
+  const loading = snapshot.loading;
 
   const emitOfflineQueuedToast = useCallback(() => {
     const now = Date.now();
@@ -138,9 +113,12 @@ export function useMeals(userUid: string | null) {
     });
   }, []);
 
-  const flushQueuedSync = useCallback(async () => {
+  const flushQueuedSync = useCallback(async (options?: { pullAfterPush?: boolean }) => {
     /* istanbul ignore next -- syncMeals/scheduler guard missing uid */
     if (!userUid) return;
+    if (options?.pullAfterPush) {
+      syncPullRequestedRef.current = true;
+    }
     if (syncInFlightRef.current) {
       syncRequestedRef.current = true;
       return;
@@ -150,10 +128,14 @@ export function useMeals(userUid: string | null) {
 
     syncInFlightRef.current = true;
     syncRequestedRef.current = false;
+    const shouldPullAfterPush = syncPullRequestedRef.current;
+    syncPullRequestedRef.current = false;
     try {
       log.log("sync flush start", { uid: userUid });
       await pushQueue(userUid);
-      await pullChanges(userUid);
+      if (shouldPullAfterPush) {
+        await pullChanges(userUid);
+      }
       try {
         await refreshStreakFromBackend(userUid, { refreshBadges: true });
       } catch (error: unknown) {
@@ -204,16 +186,20 @@ export function useMeals(userUid: string | null) {
   );
 
   useEffect(() => {
-    activeUidRef.current = userUid;
-    firstPageRequestIdRef.current += 1;
-    beforeRef.current = null;
-    nextPageInFlightRef.current = false;
     if (syncTimerRef.current) {
       clearTimeout(syncTimerRef.current);
       syncTimerRef.current = null;
     }
     syncInFlightRef.current = false;
     syncRequestedRef.current = false;
+    syncPullRequestedRef.current = false;
+  }, [userUid]);
+
+  useEffect(() => {
+    setSnapshot(getLocalMealsSnapshot(userUid));
+    return subscribeLocalMeals(userUid, () => {
+      setSnapshot(getLocalMealsSnapshot(userUid));
+    });
   }, [userUid]);
 
   useEffect(
@@ -226,90 +212,13 @@ export function useMeals(userUid: string | null) {
     [],
   );
 
-  const loadFirstPage = useCallback(async (options?: { silent?: boolean }) => {
-    const requestUid = userUid;
-    const requestId = ++firstPageRequestIdRef.current;
-    const silent = options?.silent === true;
-
-    const isStale = () =>
-      firstPageRequestIdRef.current !== requestId || activeUidRef.current !== requestUid;
-
-    if (!userUid) {
-      setMeals([]);
-      setLoading(false);
-      beforeRef.current = null;
-      return;
-    }
-    if (!silent) {
-      setLoading(true);
-    }
-    try {
-      const page = await getMealsPageLocal(userUid, PAGE_LIMIT, undefined);
-      if (isStale()) return;
-      setMeals(page);
-      beforeRef.current = page.length
-        ? String(page[page.length - 1].timestamp)
-        : null;
-    } catch (error: unknown) {
-      if (isStale()) return;
-      log.warn("loadFirstPage failed", error);
-      setMeals([]);
-      beforeRef.current = null;
-    } finally {
-      if (!isStale()) {
-        setLoading(false);
-      }
-    }
-  }, [userUid]);
-
-  const reloadFirstPage = useCallback(async () => {
-    if (reloadInFlightRef.current) {
-      reloadRequestedRef.current = true;
-      return;
-    }
-
-    reloadInFlightRef.current = true;
-    try {
-      await loadFirstPage({ silent: true });
-    } finally {
-      reloadInFlightRef.current = false;
-      if (reloadRequestedRef.current) {
-        reloadRequestedRef.current = false;
-        void reloadFirstPage();
-      }
-    }
-  }, [loadFirstPage]);
-
   const loadNextPage = useCallback(async () => {
-    if (!userUid || !beforeRef.current || nextPageInFlightRef.current) return;
-    const requestUid = userUid;
-    const beforeCursor = beforeRef.current;
-    nextPageInFlightRef.current = true;
-    try {
-      const page = await getMealsPageLocal(userUid, PAGE_LIMIT, beforeCursor);
-      if (activeUidRef.current !== requestUid) return;
-      if (!page.length) {
-        beforeRef.current = null;
-        return;
-      }
-      setMeals((prev) => {
-        const existing = new Set(prev.map(mealIdentity));
-        const deduped = page.filter((meal) => !existing.has(mealIdentity(meal)));
-        return [...prev, ...deduped];
-      });
-      beforeRef.current = String(page[page.length - 1].timestamp);
-    } finally {
-      nextPageInFlightRef.current = false;
-    }
+    await refreshLocalMeals(userUid);
   }, [userUid]);
 
   const getMeals = useCallback(async () => {
-    await loadFirstPage();
-  }, [loadFirstPage]);
-
-  useEffect(() => {
-    void getMeals();
-  }, [getMeals]);
+    await refreshLocalMeals(userUid);
+  }, [userUid]);
 
   useEffect(() => {
     if (!userUid) {
@@ -345,47 +254,6 @@ export function useMeals(userUid: string | null) {
     };
   }, [userUid]);
 
-  useEffect(() => {
-    if (!userUid) return;
-
-    const unsubs = [
-      on<{ uid?: string }>("meal:synced", (event) => {
-        const eventUid = typeof event?.uid === "string" ? event.uid : userUid;
-        if (eventUid !== userUid) return;
-        void reloadFirstPage();
-      }),
-      on<{ uid?: string; sourceHookId?: string }>("meal:deleted", (event) => {
-        const eventUid = typeof event?.uid === "string" ? event.uid : userUid;
-        if (eventUid !== userUid) return;
-        if (event?.sourceHookId === hookInstanceIdRef.current) return;
-        void reloadFirstPage();
-      }),
-      on<LocalMealUpsertEvent>("meal:local:upserted", async (event) => {
-        const eventUid = typeof event?.uid === "string" ? event.uid : null;
-        if (eventUid !== userUid) return;
-
-        const cloudId = typeof event?.cloudId === "string" ? event.cloudId : "";
-        if (!cloudId) return;
-
-        const meal = await getMealByCloudIdLocal(userUid, cloudId);
-        if (activeUidRef.current !== userUid) return;
-
-        if (!meal || meal.deleted) {
-          setMeals((prev) =>
-            prev.filter((item) => (item.cloudId || item.mealId) !== cloudId),
-          );
-          return;
-        }
-
-        setMeals((prev) => upsertMealIntoPage(prev, meal));
-      }),
-    ];
-
-    return () => {
-      for (const unsub of unsubs) unsub();
-    };
-  }, [reloadFirstPage, userUid]);
-
   const addMeal = useCallback(
     async (meal: Omit<Meal, "updatedAt" | "deleted">) => {
       if (!userUid) return;
@@ -393,9 +261,9 @@ export function useMeals(userUid: string | null) {
         uid: userUid,
         meal: meal as Meal,
       });
+      upsertLocalMealSnapshot(userUid, savedMeal);
 
       scheduleQueuedSync("add");
-      setMeals((prev) => upsertMealIntoPage(prev, savedMeal));
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
     },
     [userUid, scheduleQueuedSync],
@@ -412,9 +280,9 @@ export function useMeals(userUid: string | null) {
         meal: params.meal,
         savedTemplate: params.savedTemplate,
       });
+      upsertLocalMealSnapshot(userUid, savedMeal);
 
       scheduleQueuedSync("add");
-      setMeals((prev) => upsertMealIntoPage(prev, savedMeal));
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
       return savedMeal;
     },
@@ -514,11 +382,11 @@ export function useMeals(userUid: string | null) {
       }
 
       await upsertMealLocal(payload);
+      upsertLocalMealSnapshot(userUid, payload);
       emit("meal:updated", { uid: userUid, meal: payload });
       await enqueueUpsert(userUid, payload);
 
       scheduleQueuedSync("update");
-      setMeals((prev) => upsertMealIntoPage(prev, payload));
     },
     [userUid, scheduleQueuedSync],
   );
@@ -528,6 +396,7 @@ export function useMeals(userUid: string | null) {
       if (!userUid || !mealCloudId) return;
       const now = new Date().toISOString();
       await markDeletedLocal(mealCloudId, now);
+      removeLocalMealSnapshot(userUid, mealCloudId);
       emit("meal:deleted", {
         uid: userUid,
         cloudId: mealCloudId,
@@ -536,8 +405,6 @@ export function useMeals(userUid: string | null) {
       await enqueueDelete(userUid, mealCloudId, now);
 
       scheduleQueuedSync("delete");
-
-      setMeals((prev) => prev.filter((m) => (m.cloudId || "") !== mealCloudId));
     },
     [userUid, scheduleQueuedSync],
   );
@@ -565,9 +432,9 @@ export function useMeals(userUid: string | null) {
         meal: copy,
         nowISO: now,
       });
+      upsertLocalMealSnapshot(userUid, savedCopy);
 
       scheduleQueuedSync("duplicate");
-      setMeals((prev) => upsertMealIntoPage(prev, savedCopy));
       emit("ui:toast", { key: "toast.mealAdded", ns: "common" });
     },
     [userUid, scheduleQueuedSync],
@@ -576,7 +443,7 @@ export function useMeals(userUid: string | null) {
   const syncMeals = useCallback(async () => {
     if (!userUid) return;
     syncRequestedRef.current = true;
-    await flushQueuedSync();
+    await flushQueuedSync({ pullAfterPush: true });
   }, [flushQueuedSync, userUid]);
   const getUnsyncedMeals = useCallback(async () => {
     if (!userUid) return [] as Meal[];

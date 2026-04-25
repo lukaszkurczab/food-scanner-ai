@@ -14,8 +14,11 @@ const mockEmit = jest.fn();
 const mockOn = jest.fn((_event: string, _handler: (payload?: unknown) => void) =>
   jest.fn(),
 );
-const mockGetMealByCloudIdLocal = jest.fn(
-  async (_uid: string, _cloudId: string): Promise<Meal | null> => null,
+const mockSelectLocalMealByCloudId = jest.fn(
+  (_uid: string, _cloudId: string): Meal | null => null,
+);
+const mockSubscribeLocalMeals = jest.fn(
+  (_uid: string, _listener: () => void) => jest.fn(),
 );
 const mockGetMyMealByCloudIdLocal = jest.fn(
   async (_uid: string, _cloudId: string): Promise<Meal | null> => null,
@@ -27,9 +30,11 @@ jest.mock("@/services/core/events", () => ({
     mockOn(event, handler),
 }));
 
-jest.mock("@/services/offline/meals.repo", () => ({
-  getMealByCloudIdLocal: (uid: string, cloudId: string) =>
-    mockGetMealByCloudIdLocal(uid, cloudId),
+jest.mock("@/services/meals/localMealsStore", () => ({
+  selectLocalMealByCloudId: (uid: string, cloudId: string) =>
+    mockSelectLocalMealByCloudId(uid, cloudId),
+  subscribeLocalMeals: (uid: string, listener: () => void) =>
+    mockSubscribeLocalMeals(uid, listener),
 }));
 
 jest.mock("@/services/offline/myMeals.repo", () => ({
@@ -111,7 +116,8 @@ describe("useMealDetailsState", () => {
           mockBackHandlerAddEventListener(eventName, handler)) as typeof BackHandler.addEventListener,
       );
     mockOn.mockReturnValue(jest.fn());
-    mockGetMealByCloudIdLocal.mockResolvedValue(null);
+    mockSelectLocalMealByCloudId.mockReturnValue(null);
+    mockSubscribeLocalMeals.mockReturnValue(jest.fn());
     mockGetMyMealByCloudIdLocal.mockResolvedValue(null);
   });
 
@@ -159,7 +165,7 @@ describe("useMealDetailsState", () => {
 
   it("deletes through the history path when a history meal exists even if source is saved", async () => {
     const historyMeal = baseMeal({ cloudId: "history-cloud", source: "saved" });
-    mockGetMealByCloudIdLocal.mockResolvedValue(historyMeal);
+    mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
 
     const { result, deleteMeal, deleteSavedMeal } = setupHook({
       routeMeal: baseMeal({ cloudId: "route-id", mealId: "route-id", source: "saved" }),
@@ -175,7 +181,7 @@ describe("useMealDetailsState", () => {
 
   it("navigates to HistoryList when delete succeeds and there is no back stack", async () => {
     const historyMeal = baseMeal({ cloudId: "history-no-back" });
-    mockGetMealByCloudIdLocal.mockResolvedValue(historyMeal);
+    mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
 
     const navigation = createNavigation({ canGoBack: false });
     const { result } = setupHook({ navigation });
@@ -206,7 +212,7 @@ describe("useMealDetailsState", () => {
 
   it("keeps modal open and does not navigate when delete fails", async () => {
     const historyMeal = baseMeal({ cloudId: "fail-id" });
-    mockGetMealByCloudIdLocal.mockResolvedValue(historyMeal);
+    mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
 
     const deleteError = new Error("failed");
     const deleteMeal = jest.fn<(id: string) => Promise<unknown>>(async () => {

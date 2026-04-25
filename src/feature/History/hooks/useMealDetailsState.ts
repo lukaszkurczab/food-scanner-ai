@@ -6,8 +6,11 @@ import type { Meal } from "@/types/meal";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { emit, on } from "@/services/core/events";
-import { getMealByCloudIdLocal } from "@/services/offline/meals.repo";
 import { getMyMealByCloudIdLocal } from "@/services/offline/myMeals.repo";
+import {
+  selectLocalMealByCloudId,
+  subscribeLocalMeals,
+} from "@/services/meals/localMealsStore";
 
 function toEpochMs(value?: string | null): number {
   if (!value) return 0;
@@ -122,10 +125,8 @@ export function useMealDetailsState(params: {
       "";
     if (!userUid) return false;
 
-    const [historyMeal, savedMeal] = await Promise.all([
-      getMealByCloudIdLocal(userUid, routeMealId),
-      getMyMealByCloudIdLocal(userUid, routeMealId),
-    ]);
+    const historyMeal = selectLocalMealByCloudId(userUid, routeMealId);
+    const savedMeal = await getMyMealByCloudIdLocal(userUid, routeMealId);
     const latest = pickLatestMeal([historyMeal, savedMeal]);
     if (!latest) return false;
 
@@ -152,15 +153,17 @@ export function useMealDetailsState(params: {
     let cancelled = false;
     void reloadFromLocal();
 
-    const handleSyncEvent = (event?: { cloudId?: string }) => {
+    const handleMyMealSyncEvent = (event?: { cloudId?: string }) => {
       const cloudId = typeof event?.cloudId === "string" ? event.cloudId : "";
       if (!cloudId || cloudId !== routeMealId || cancelled) return;
       void reloadFromLocal();
     };
 
     const unsubs = [
-      on<{ cloudId?: string }>("meal:local:upserted", handleSyncEvent),
-      on<{ cloudId?: string }>("mymeal:local:upserted", handleSyncEvent),
+      subscribeLocalMeals(userUid, () => {
+        if (!cancelled) void reloadFromLocal();
+      }),
+      on<{ cloudId?: string }>("mymeal:local:upserted", handleMyMealSyncEvent),
     ];
 
     return () => {
@@ -287,12 +290,12 @@ export function useMealDetailsState(params: {
         (typeof initialMeal?.userUid === "string" && initialMeal.userUid) ||
         uid ||
         "";
-      const [historyMeal, savedMeal] = userUid
-        ? await Promise.all([
-            getMealByCloudIdLocal(userUid, fallbackId),
-            getMyMealByCloudIdLocal(userUid, fallbackId),
-          ])
-        : [null, null];
+      const historyMeal = userUid
+        ? selectLocalMealByCloudId(userUid, fallbackId)
+        : null;
+      const savedMeal = userUid
+        ? await getMyMealByCloudIdLocal(userUid, fallbackId)
+        : null;
 
       const resolvedDelete = resolveDeleteTarget({
         draft,

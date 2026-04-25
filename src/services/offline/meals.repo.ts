@@ -235,6 +235,17 @@ export async function getMealsPageLocal(
   return (rows as MealRow[]).map(rowToMeal);
 }
 
+export async function getAllMealsLocal(uid: string): Promise<Meal[]> {
+  const db = getDB();
+  const rows = db.getAllSync(
+    `SELECT * FROM meals
+     WHERE user_uid=? AND deleted=0
+     ORDER BY timestamp DESC`,
+    [uid]
+  ) as MealRow[];
+  return rows.map(rowToMeal);
+}
+
 export type LocalHistoryFilters = {
   calories?: [number, number];
   protein?: [number, number];

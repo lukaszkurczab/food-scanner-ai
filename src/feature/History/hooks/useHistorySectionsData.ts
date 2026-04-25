@@ -4,20 +4,21 @@ import type { Filters } from "@/context/HistoryContext";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { resolveDataViewState } from "@/types/dataViewState";
 import {
-  getMealByCloudIdLocal,
-  getMealsPageLocalFiltered,
   type LocalHistoryFilters,
 } from "@/services/offline/meals.repo";
 import { pullChanges } from "@/services/offline/sync.engine";
-import { on } from "@/services/core/events";
 import type { DaySection } from "@/feature/History/types/daySection";
 import {
   addOrUpdateMealInSections,
   buildSectionsMap,
   filterSectionsByQuery,
-  removeMealFromSections,
 } from "@/feature/History/services/historySectionsService";
 import { resolveDateRangeWithinAccessWindow } from "@/utils/accessWindow";
+import {
+  getLocalMealsSnapshot,
+  selectLocalMealsByRange,
+  subscribeLocalMeals,
+} from "@/services/meals/localMealsStore";
 
 const PAGE = 20;
 const PULL_THROTTLE_MS = 30_000;
@@ -40,6 +41,37 @@ function isMealInDateRange(
   if (!timestamp) return false;
   const ts = timestamp.getTime();
   return ts >= dateRange.start.getTime() && ts <= dateRange.end.getTime();
+}
+
+function mealNutrientValue(
+  meal: { totals?: { kcal?: number; protein?: number; carbs?: number; fat?: number } },
+  key: "kcal" | "protein" | "carbs" | "fat",
+): number {
+  return Number(meal.totals?.[key] ?? 0) || 0;
+}
+
+function inRange(value: number, range?: [number, number]): boolean {
+  if (!range) return true;
+  return value >= range[0] && value <= range[1];
+}
+
+function getFilteredLocalMeals(
+  uid: string,
+  filters?: LocalHistoryFilters,
+) {
+  const source = filters?.dateRange
+    ? selectLocalMealsByRange(uid, filters.dateRange)
+    : getLocalMealsSnapshot(uid).meals;
+
+  return source.filter((meal) => {
+    if (!isMealInDateRange(meal, filters?.dateRange)) return false;
+    return (
+      inRange(mealNutrientValue(meal, "kcal"), filters?.calories) &&
+      inRange(mealNutrientValue(meal, "protein"), filters?.protein) &&
+      inRange(mealNutrientValue(meal, "carbs"), filters?.carbs) &&
+      inRange(mealNutrientValue(meal, "fat"), filters?.fat)
+    );
+  });
 }
 
 export function useHistorySectionsData(params: {
@@ -135,21 +167,18 @@ export function useHistorySectionsData(params: {
 
     setLoading(true);
     try {
-      const page = await getMealsPageLocalFiltered(params.uid, {
-        limit: PAGE,
-        beforeISO: null,
-        filters: localFilters,
-      });
+      const items = getFilteredLocalMeals(params.uid, localFilters);
+      const pageItems = items.slice(0, PAGE);
       if (isStale()) return;
       setSectionsMap(
-        buildSectionsMap(page.items, {
+        buildSectionsMap(pageItems, {
           todayLabel: params.todayLabel,
           yesterdayLabel: params.yesterdayLabel,
           locale: params.locale,
         }),
       );
-      setCursor(page.nextBefore);
-      setHasMore(!!page.nextBefore && page.items.length === PAGE);
+      setCursor(items.length > PAGE ? String(PAGE) : null);
+      setHasMore(items.length > PAGE);
       setErrorKind(null);
     } catch {
       if (isStale()) return;
@@ -208,7 +237,15 @@ export function useHistorySectionsData(params: {
   }, [params.uid]);
 
   useEffect(() => {
-    void resetAndLoadLocal();
+    if (!params.uid) {
+      void resetAndLoadLocal();
+      return;
+    }
+
+    const unsubscribe = subscribeLocalMeals(params.uid, () => {
+      void resetAndLoadLocal();
+    });
+    return unsubscribe;
   }, [params.uid, resetAndLoadLocal]);
 
   const prevKey = useRef<string>("");
@@ -233,65 +270,6 @@ export function useHistorySectionsData(params: {
     }, [requestPullChanges]),
   );
 
-  useEffect(() => {
-    const uid = params.uid;
-    if (!uid) return;
-
-    const up = on<{ uid?: string; cloudId?: string }>(
-      "meal:local:upserted",
-      async (event) => {
-        const eventUid = typeof event?.uid === "string" ? event.uid : null;
-        if (eventUid !== uid) return;
-
-        const id = String(event?.cloudId || "");
-        if (!id) return;
-
-        const meal = await getMealByCloudIdLocal(uid, id);
-        if (!meal || meal.deleted) return;
-
-        if (!isMealInDateRange(meal, localFilters?.dateRange)) {
-          setSectionsMap((prev) => {
-            const next = new Map(prev);
-            removeMealFromSections(next, id);
-            return next;
-          });
-          return;
-        }
-
-        setSectionsMap((prev) => {
-          const next = new Map(prev);
-          addOrUpdateMealInSections(next, meal, {
-            todayLabel: params.todayLabel,
-            yesterdayLabel: params.yesterdayLabel,
-            locale: params.locale,
-          });
-          return next;
-        });
-      },
-    );
-
-    const del = on<{ cloudId?: string }>("meal:local:deleted", async (event) => {
-      const id = String(event?.cloudId || "");
-      if (!id) return;
-
-      setSectionsMap((prev) => {
-        const next = new Map(prev);
-        removeMealFromSections(next, id);
-        return next;
-      });
-    });
-
-    return () => {
-      [up, del].forEach((unsub) => unsub && unsub());
-    };
-  }, [
-    localFilters?.dateRange,
-    params.locale,
-    params.todayLabel,
-    params.uid,
-    params.yesterdayLabel,
-  ]);
-
   const loadMore = useCallback(async () => {
     if (!params.uid || !hasMore || loadingMoreRef.current || !cursor) return;
 
@@ -303,15 +281,13 @@ export function useHistorySectionsData(params: {
     loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
-      const page = await getMealsPageLocalFiltered(params.uid, {
-        limit: PAGE,
-        beforeISO: cursor,
-        filters: localFilters,
-      });
+      const offset = Number(cursor) || 0;
+      const items = getFilteredLocalMeals(params.uid, localFilters);
+      const pageItems = items.slice(offset, offset + PAGE);
       if (isStale()) return;
       setSectionsMap((prev) => {
         const next = new Map(prev);
-        for (const meal of page.items) {
+        for (const meal of pageItems) {
           addOrUpdateMealInSections(next, meal, {
             todayLabel: params.todayLabel,
             yesterdayLabel: params.yesterdayLabel,
@@ -320,8 +296,9 @@ export function useHistorySectionsData(params: {
         }
         return next;
       });
-      setCursor(page.nextBefore);
-      setHasMore(!!page.nextBefore && page.items.length === PAGE);
+      const nextOffset = offset + pageItems.length;
+      setCursor(items.length > nextOffset ? String(nextOffset) : null);
+      setHasMore(items.length > nextOffset);
     } finally {
       if (!isStale()) {
         setLoadingMore(false);

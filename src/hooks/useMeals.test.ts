@@ -364,38 +364,30 @@ describe("useMeals", () => {
     expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
   });
 
-  it("supports paginating meals and stops when no more results exist", async () => {
+  it("keeps loadNextPage backed by the canonical local store refresh", async () => {
     const firstPage = [
       baseMeal({ cloudId: "c3", timestamp: "2026-02-25T12:00:00.000Z" }),
       baseMeal({ cloudId: "c2", timestamp: "2026-02-25T10:00:00.000Z" }),
     ];
-    const secondPage = [baseMeal({ cloudId: "c1", timestamp: "2026-02-25T08:00:00.000Z" })];
+    const refreshed = [
+      ...firstPage,
+      baseMeal({ cloudId: "c1", timestamp: "2026-02-25T08:00:00.000Z" }),
+    ];
 
-    mockGetMealsPageLocal
-      .mockResolvedValueOnce(firstPage)
-      .mockResolvedValueOnce(secondPage)
-      .mockResolvedValueOnce([]);
+    mockGetMealsPageLocal.mockResolvedValueOnce(firstPage);
 
     const { result } = renderHook(() => useMeals("user-1"));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
+    mockGetMealsPageLocal.mockResolvedValue(refreshed);
 
     await act(async () => {
       await result.current.loadNextPage();
     });
-    expect(result.current.meals.map((m) => m.cloudId)).toEqual(["c3", "c2", "c1"]);
-    expect(mockGetMealsPageLocal).toHaveBeenNthCalledWith(2, "user-1", 50, "2026-02-25T10:00:00.000Z");
-
-    await act(async () => {
-      await result.current.loadNextPage();
-    });
-
-    await act(async () => {
-      await result.current.loadNextPage();
-    });
-    expect(mockGetMealsPageLocal).toHaveBeenCalledTimes(3);
+    expect(result.current.meals.map((m) => m.cloudId)).toEqual(["c3", "c2"]);
+    expect(mockGetMealsPageLocal).toHaveBeenLastCalledWith("user-1", 50, undefined);
   });
 
   it("adds a meal, computes totals, updates local feed and queues sync", async () => {
@@ -407,6 +399,7 @@ describe("useMeals", () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
+    mockPullChanges.mockClear();
 
     await act(async () => {
       await result.current.addMeal(
@@ -482,7 +475,7 @@ describe("useMeals", () => {
     await flush();
 
     expect(mockPushQueue).toHaveBeenCalledWith("user-1");
-    expect(mockPullChanges).toHaveBeenCalledWith("user-1");
+    expect(mockPullChanges).not.toHaveBeenCalled();
     expect(mockRefreshStreakFromBackend).toHaveBeenCalledWith("user-1", {
       refreshBadges: true,
     });
