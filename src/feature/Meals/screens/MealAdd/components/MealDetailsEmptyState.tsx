@@ -5,7 +5,6 @@ import { useTheme } from "@/theme/useTheme";
 
 type MealDetailsEmptyStateProps = {
   uid: string | null | undefined;
-  isManualMode: boolean;
   reviewFallbackLabel?: string;
   onRetry: () => void;
   onSecondaryAction: () => void;
@@ -13,7 +12,6 @@ type MealDetailsEmptyStateProps = {
 
 export default function MealDetailsEmptyState({
   uid,
-  isManualMode,
   reviewFallbackLabel,
   onRetry,
   onSecondaryAction,
@@ -24,11 +22,13 @@ export default function MealDetailsEmptyState({
 
   return (
     <View style={styles.emptyWrap}>
-      <Text style={styles.emptyTitle}>{t("resultUnavailable.title", { ns: "meals" })}</Text>
+      <Text style={styles.emptyTitle}>
+        {t("reviewMealUnavailable.title", { ns: "meals" })}
+      </Text>
       <Text style={styles.emptyDescription}>
         {!uid
-          ? t("resultUnavailable.authDesc", { ns: "meals" })
-          : t("resultUnavailable.desc", { ns: "meals" })}
+          ? t("reviewMealUnavailable.authDesc", { ns: "meals" })
+          : t("reviewMealUnavailable.desc", { ns: "meals" })}
       </Text>
       <Button
         label={t("retry", { ns: "common" })}
@@ -39,13 +39,11 @@ export default function MealDetailsEmptyState({
       <Button
         variant="secondary"
         label={
-          isManualMode
-            ? t("back_home", { ns: "meals" })
-            : (reviewFallbackLabel ??
-              t("review_meal_edit_done", {
-                ns: "meals",
-                defaultValue: "Back to review",
-              }))
+          reviewFallbackLabel ??
+          t("review_meal_edit_done", {
+            ns: "meals",
+            defaultValue: "Back to review",
+          })
         }
         onPress={onSecondaryAction}
         style={styles.emptyAction}

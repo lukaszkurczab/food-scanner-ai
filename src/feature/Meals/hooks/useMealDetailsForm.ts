@@ -9,19 +9,11 @@ import type {
   MealAddScreenName,
 } from "@/feature/Meals/feature/MapMealAddScreens";
 
-export type MealDetailsFormMode = "manual" | "review";
-
-type MealDetailsNavigation = {
-  navigate: (
-    screen: "Home" | "MealAddMethod",
-    params?: { selectionMode: "temporary"; origin: "mealAddFlow" },
-  ) => void;
-};
+export type MealDetailsFormMode = "review";
 
 type UseMealDetailsFormParams = {
   mode: MealDetailsFormMode;
   flow: MealAddFlowApi;
-  navigation: MealDetailsNavigation;
   onReviewSubmit?: (meal: Meal) => Promise<void> | void;
 };
 
@@ -55,21 +47,19 @@ function buildDraftIngredient(source?: Ingredient | null): Ingredient {
   };
 }
 
-function getResumeTrackingScreen(mode: MealDetailsFormMode): MealAddScreenName {
-  return mode === "manual" ? "ManualMealEntry" : "EditMealDetails";
+function getResumeTrackingScreen(_mode: MealDetailsFormMode): MealAddScreenName {
+  return "EditMealDetails";
 }
 
 export function useMealDetailsForm({
   mode,
   flow,
-  navigation,
   onReviewSubmit,
 }: UseMealDetailsFormParams) {
   const { i18n } = useTranslation(["meals", "common"]);
   const { uid } = useAuthContext();
   const { meal, loadDraft, saveDraft, setMeal, setLastScreen } = useMealDraftContext();
   const mealTimestamp = meal?.timestamp;
-  const isManualMode = mode === "manual";
 
   const [mealName, setMealName] = useState(meal?.name ?? "");
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
@@ -234,61 +224,26 @@ export function useMealDetailsForm({
   const handleSubmit = useCallback(async () => {
     const trimmedName = mealName.trim();
 
-    if (!isManualMode) {
-      if (!meal) return;
-      const nextMeal: Meal = {
-        ...meal,
-        name: trimmedName || null,
-        updatedAt: new Date().toISOString(),
-      };
-      await persistMeal(nextMeal);
-      if (onReviewSubmit) {
-        await onReviewSubmit(nextMeal);
-      } else {
-        flow.goBack();
-      }
-      setHasPendingChanges(false);
-      return;
-    }
-
-    if (!meal || !uid || !trimmedName) {
-      return;
-    }
-
-    const nowIso = new Date().toISOString();
+    if (!meal) return;
     const nextMeal: Meal = {
       ...meal,
-      userUid: uid,
-      name: trimmedName,
-      type: meal.type || "other",
-      timestamp: pickerDate.toISOString(),
-      createdAt: meal.createdAt || nowIso,
-      updatedAt: nowIso,
-      syncState: "pending",
-      source: "manual",
-      inputMethod: meal.inputMethod ?? "manual",
+      name: trimmedName || null,
+      updatedAt: new Date().toISOString(),
     };
-
     await persistMeal(nextMeal);
+    if (onReviewSubmit) {
+      await onReviewSubmit(nextMeal);
+    } else {
+      flow.goBack();
+    }
     setHasPendingChanges(false);
-    flow.replace("ReviewMeal", {});
   }, [
     flow,
-    isManualMode,
     meal,
     mealName,
     onReviewSubmit,
     persistMeal,
-    pickerDate,
-    uid,
   ]);
-
-  const handleChangeMethod = useCallback(() => {
-    navigation.navigate("MealAddMethod", {
-      selectionMode: "temporary",
-      origin: "mealAddFlow",
-    });
-  }, [navigation]);
 
   const locale = i18n?.language || "en";
   const prefers12h = useMemo(() => {
@@ -304,13 +259,11 @@ export function useMealDetailsForm({
   }, [locale]);
 
   const ingredients = meal?.ingredients ?? [];
-  const manualSubmitDisabled = !uid || !meal || mealName.trim().length === 0;
 
   return {
     uid,
     meal,
     mealTimestamp,
-    isManualMode,
     mealName,
     setMealName: handleMealNameChange,
     typePickerVisible,
@@ -326,7 +279,6 @@ export function useMealDetailsForm({
     locale,
     prefers12h,
     ingredients,
-    manualSubmitDisabled,
     retryLoadDraft,
     handleNameBlur,
     handleOpenTypePicker,
@@ -340,7 +292,6 @@ export function useMealDetailsForm({
     handleCommitIngredient,
     handleDeleteIngredient,
     handleSubmit,
-    handleChangeMethod,
     hasPendingChanges,
   };
 }

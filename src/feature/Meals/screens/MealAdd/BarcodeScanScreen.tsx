@@ -203,10 +203,15 @@ export default function BarcodeScanScreen({
         const result = await lookupBarcodeProduct(code);
 
         if (result.kind === "not_found") {
-          flow.replace("BarcodeProductNotFound", {
-            code,
-            codeSource: resolvedCodeSource,
-          });
+          setDetectedCode(code);
+          setCodeSource(resolvedCodeSource);
+          setManualCode(code);
+          setLookupError(
+            tMeals("barcode_scan_not_found_error", {
+              defaultValue:
+                "We couldn't find a product for this barcode. Edit the code or try another method.",
+            }),
+          );
           return;
         }
 
@@ -232,6 +237,7 @@ export default function BarcodeScanScreen({
   const handleOpenManualEntry = useCallback(() => {
     setManualCode(detectedCode ?? "");
     setManualError(undefined);
+    setLookupError(undefined);
     setCodeSource("manual");
 
     setShowManualEntry(true);
@@ -437,6 +443,7 @@ export default function BarcodeScanScreen({
                 onChangeText={(value) => {
                   setManualCode(value);
                   if (manualError) setManualError(undefined);
+                  if (lookupError) setLookupError(undefined);
                 }}
                 keyboardType="number-pad"
                 placeholder={tMeals("barcode_scan_sheet_placeholder", {
@@ -447,6 +454,7 @@ export default function BarcodeScanScreen({
                 })}
                 error={manualError}
               />
+              {lookupError ? <ErrorBox message={lookupError} /> : null}
 
               <View style={styles.manualActions}>
                 <Button

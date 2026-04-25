@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { fireEvent, waitFor } from "@testing-library/react-native";
+import { fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import BarcodeScanScreen from "@/feature/Meals/screens/MealAdd/BarcodeScanScreen";
 import type { Ingredient } from "@/types";
@@ -239,7 +239,7 @@ describe("BarcodeScanScreen", () => {
     });
   });
 
-  it("routes unmatched codes to BarcodeProductNotFound", async () => {
+  it("keeps unmatched scanned codes in the scanner lookup state", async () => {
     mockLookupBarcodeProduct.mockResolvedValue({
       kind: "not_found",
     });
@@ -250,15 +250,12 @@ describe("BarcodeScanScreen", () => {
     fireEvent.press(getByText("barcode-scan"));
     fireEvent.press(getByText("Search product"));
 
-    await waitFor(() => {
-      expect(props.flow.replace).toHaveBeenCalledWith(
-        "BarcodeProductNotFound",
-        {
-          code: "5901234123457",
-          codeSource: "scan",
-        },
-      );
-    });
+    expect(
+      await screen.findAllByText(
+        "We couldn't find a product for this barcode. Edit the code or try another method.",
+      ),
+    ).not.toHaveLength(0);
+    expect(props.flow.replace).not.toHaveBeenCalled();
   });
 
   it("opens the add method chooser from the footer link", () => {
@@ -274,7 +271,7 @@ describe("BarcodeScanScreen", () => {
     });
   });
 
-  it("marks not found results from manual entry as manual source", async () => {
+  it("keeps unmatched manual codes in the manual sheet", async () => {
     mockLookupBarcodeProduct.mockResolvedValue({
       kind: "not_found",
     });
@@ -287,14 +284,11 @@ describe("BarcodeScanScreen", () => {
     fireEvent.changeText(getByTestId("barcode-manual-input"), "5901234123457");
     fireEvent.press(getByText("Search product"));
 
-    await waitFor(() => {
-      expect(props.flow.replace).toHaveBeenCalledWith(
-        "BarcodeProductNotFound",
-        {
-          code: "5901234123457",
-          codeSource: "manual",
-        },
-      );
-    });
+    expect(
+      await screen.findAllByText(
+        "We couldn't find a product for this barcode. Edit the code or try another method.",
+      ),
+    ).not.toHaveLength(0);
+    expect(props.flow.replace).not.toHaveBeenCalled();
   });
 });

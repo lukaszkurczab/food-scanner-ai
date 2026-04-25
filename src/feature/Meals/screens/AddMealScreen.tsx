@@ -31,9 +31,9 @@ export default function AddMealScreen() {
 
   const initialStep: Step = useMemo(() => {
     const p = (route.params ?? {}) as NonNullable<RootStackParamList["AddMeal"]>;
-    const start = typeof p.start === "string" ? p.start : "MealCamera";
+    const start = typeof p.start === "string" ? p.start : "CameraDefault";
 
-    if (start === "MealCamera") {
+    if (start === "CameraDefault") {
       return {
         name: "CameraDefault",
         params: {
@@ -60,10 +60,6 @@ export default function AddMealScreen() {
 
     if (start === "ReviewMeal") {
       return { name: "ReviewMeal", params: {} };
-    }
-
-    if (start === "ManualMealEntry") {
-      return { name: "ManualMealEntry", params: {} };
     }
 
     if (start === "EditMealDetails") {

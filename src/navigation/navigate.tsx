@@ -5,11 +5,10 @@ export type RootStackParamList = {
   AddMeal:
     | {
         start?:
-          | "MealCamera"
+          | "CameraDefault"
           | "BarcodeScan"
           | "DescribeMeal"
           | "ReviewMeal"
-          | "ManualMealEntry"
           | "EditMealDetails";
         id?: string;
         skipDetection?: boolean;

@@ -319,14 +319,14 @@ export default function ReviewMealScreen({
       <Layout showNavigation={false}>
         <View style={styles.emptyWrap}>
           <Text style={styles.emptyTitle}>
-            {t("resultUnavailable.title", { ns: "meals" })}
+            {t("reviewMealUnavailable.title", { ns: "meals" })}
           </Text>
           <Text style={styles.emptyDescription}>
             {!uid
-              ? t("resultUnavailable.authDesc", { ns: "meals" })
+              ? t("reviewMealUnavailable.authDesc", { ns: "meals" })
               : isOnline
-                ? t("resultUnavailable.desc", { ns: "meals" })
-                : t("resultUnavailable.offlineDesc", { ns: "meals" })}
+                ? t("reviewMealUnavailable.desc", { ns: "meals" })
+                : t("reviewMealUnavailable.offlineDesc", { ns: "meals" })}
           </Text>
           <Button
             label={t("retry", { ns: "common" })}
@@ -553,7 +553,7 @@ export default function ReviewMealScreen({
             loading={saving}
             disabled={saving}
             style={styles.saveButton}
-            testID="meal-result-save-button"
+            testID="review-meal-save-button"
           />
           {image ? (
             <TextButton

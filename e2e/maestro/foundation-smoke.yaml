@@ -8,9 +8,7 @@ appId: com.lkurczab.fitaly
 - tapOn:
     id: meal-add-option-manual
 - tapOn:
-    id: meal-add-continue-button
-- tapOn:
-    id: meal-result-save-button
+    id: review-meal-save-button
 - assertVisible:
     id: tab-home
 - tapOn:

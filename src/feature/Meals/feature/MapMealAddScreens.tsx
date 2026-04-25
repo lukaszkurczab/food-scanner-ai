@@ -1,9 +1,7 @@
 import BarcodeScanScreen from "../screens/MealAdd/BarcodeScanScreen";
-import BarcodeProductNotFoundScreen from "../screens/MealAdd/BarcodeProductNotFoundScreen";
 import DescribeMealScreen from "../screens/MealAdd/DescribeMealScreen";
 import EditMealDetailsScreen from "../screens/MealAdd/EditMealDetailsScreen";
 import IngredientsNotRecognizedScreen from "../screens/MealAdd/IngredientsNotRecognizedScreen";
-import ManualMealEntryScreen from "../screens/MealAdd/ManualMealEntryScreen";
 import MealCameraScreen from "../screens/MealAdd/MealCameraScreen";
 import PreparingReviewPhotoScreen from "../screens/MealAdd/PreparingReviewPhotoScreen";
 import ReviewMealScreen from "../screens/MealAdd/ReviewMealScreen";
@@ -18,9 +16,7 @@ export type MealAddScreenName =
   | "DescribeMeal"
   | "TextAnalyzing"
   | "ReviewMeal"
-  | "ManualMealEntry"
   | "EditMealDetails"
-  | "BarcodeProductNotFound"
   | "IngredientsNotRecognized";
 
 export type MealAddSimulatorCreditsState = "ok" | "low" | "none";
@@ -69,13 +65,7 @@ export type MealAddStepParams = {
     retries?: number;
   };
   ReviewMeal: Record<string, never>;
-  ManualMealEntry: Record<string, never>;
   EditMealDetails: Record<string, never>;
-  BarcodeProductNotFound: {
-    code?: string;
-    codeSource?: MealAddBarcodeCodeSource;
-    attempt?: number;
-  };
   IngredientsNotRecognized: {
     image?: string;
     id?: string;
@@ -117,12 +107,8 @@ const MapMealAddScreens = (screenName: MealAddScreenName) => {
       return TextAnalyzingScreen;
     case "ReviewMeal":
       return ReviewMealScreen;
-    case "ManualMealEntry":
-      return ManualMealEntryScreen;
     case "EditMealDetails":
       return EditMealDetailsScreen;
-    case "BarcodeProductNotFound":
-      return BarcodeProductNotFoundScreen;
     case "IngredientsNotRecognized":
       return IngredientsNotRecognizedScreen;
     default:

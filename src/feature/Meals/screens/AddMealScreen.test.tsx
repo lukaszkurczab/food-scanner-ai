@@ -116,10 +116,10 @@ describe("AddMealScreen", () => {
     jest.restoreAllMocks();
   });
 
-  it("maps the legacy MealCamera start to CameraDefault", () => {
+  it("maps the CameraDefault start to the photo entry screen", () => {
     mockUseRoute.mockReturnValue({
       params: {
-        start: "MealCamera",
+        start: "CameraDefault",
         id: "meal-1",
         skipDetection: true,
         attempt: 2,
@@ -163,19 +163,6 @@ describe("AddMealScreen", () => {
     const { getByText } = renderWithTheme(<AddMealScreen />);
 
     expect(getByText("screen:ReviewMeal")).toBeTruthy();
-    expect(getByText("params:{}")).toBeTruthy();
-  });
-
-  it("maps the ManualMealEntry start to the dedicated manual screen", () => {
-    mockUseRoute.mockReturnValue({
-      params: {
-        start: "ManualMealEntry",
-      },
-    });
-
-    const { getByText } = renderWithTheme(<AddMealScreen />);
-
-    expect(getByText("screen:ManualMealEntry")).toBeTruthy();
     expect(getByText("params:{}")).toBeTruthy();
   });
 

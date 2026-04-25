@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { KeyboardAwareScrollView, Layout } from "@/components";
 import { useTheme } from "@/theme/useTheme";
@@ -20,7 +20,7 @@ import type { Meal } from "@/types/meal";
 import type { MealAddFlowApi } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type Mode = "manual" | "review";
+type Mode = "review";
 
 type Props = {
   flow: MealAddFlowApi;
@@ -42,7 +42,6 @@ type Props = {
 
 export function MealDetailsFormScreen({
   flow,
-  navigation,
   mode,
   onReviewSubmit,
   reviewSubmitLabel,
@@ -62,7 +61,6 @@ export function MealDetailsFormScreen({
     uid,
     meal,
     mealTimestamp,
-    isManualMode,
     mealName,
     setMealName,
     typePickerVisible,
@@ -76,7 +74,6 @@ export function MealDetailsFormScreen({
     locale,
     prefers12h,
     ingredients,
-    manualSubmitDisabled,
     retryLoadDraft,
     handleNameBlur,
     handleOpenTypePicker,
@@ -90,11 +87,9 @@ export function MealDetailsFormScreen({
     handleCommitIngredient,
     handleDeleteIngredient,
     handleSubmit,
-    handleChangeMethod,
   } = useMealDetailsForm({
     mode,
     flow,
-    navigation,
     onReviewSubmit,
   });
 
@@ -107,15 +102,12 @@ export function MealDetailsFormScreen({
       <Layout showNavigation={false}>
         <MealDetailsEmptyState
           uid={uid}
-          isManualMode={isManualMode}
           reviewFallbackLabel={reviewFallbackLabel}
           onRetry={() => {
             void retryLoadDraft();
           }}
           onSecondaryAction={() =>
-            isManualMode
-              ? navigation.navigate("Home")
-              : (onReviewFallback ?? flow.goBack)()
+            (onReviewFallback ?? flow.goBack)()
           }
         />
       </Layout>
@@ -136,7 +128,7 @@ export function MealDetailsFormScreen({
           ]}
           showsVerticalScrollIndicator={false}
         >
-          {!isManualMode && onReviewPhotoPress ? (
+          {onReviewPhotoPress ? (
             <MealPhotoSection
               reviewPhotoUri={reviewPhotoUri}
               reviewPhotoActionLabel={reviewPhotoActionLabel}
@@ -145,7 +137,6 @@ export function MealDetailsFormScreen({
           ) : null}
 
           <MealBasicsSection
-            isManualMode={isManualMode}
             mealName={mealName}
             mealTypeLabel={mealTypeLabel}
             mealTimeLabel={mealTimeLabel}
@@ -158,32 +149,17 @@ export function MealDetailsFormScreen({
           />
 
           <IngredientListSection
-            isManualMode={isManualMode}
             ingredients={ingredients}
             onOpenIngredientEditor={handleOpenIngredientEditor}
           />
-
-          {isManualMode ? (
-            <View style={styles.helperPill}>
-              <Text style={styles.helperPillText}>
-                {t("manual_entry_name_only_hint", {
-                  ns: "meals",
-                  defaultValue: "You can save with just a meal name",
-                })}
-              </Text>
-            </View>
-          ) : null}
         </KeyboardAwareScrollView>
 
         <MealDetailsFooter
-          isManualMode={isManualMode}
-          manualSubmitDisabled={manualSubmitDisabled}
           reviewSubmitLabel={reviewSubmitLabel}
           footerBottomInset={footerBottomInset}
           onSubmit={() => {
             void handleSubmit();
           }}
-          onChangeMethod={handleChangeMethod}
         />
       </View>
 
@@ -239,18 +215,5 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
     scrollContent: {
       gap: theme.spacing.md,
       paddingTop: theme.spacing.sm,
-    },
-    helperPill: {
-      borderRadius: theme.rounded.md,
-      backgroundColor: theme.success.surface,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-    },
-    helperPillText: {
-      color: theme.success.text,
-      fontSize: theme.typography.size.bodyS,
-      lineHeight: theme.typography.lineHeight.bodyS,
-      fontFamily: theme.typography.fontFamily.medium,
-      textAlign: "center",
     },
   });

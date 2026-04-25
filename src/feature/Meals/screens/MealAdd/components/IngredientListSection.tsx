@@ -5,7 +5,6 @@ import { useTheme } from "@/theme/useTheme";
 import type { Ingredient } from "@/types/meal";
 
 type IngredientListSectionProps = {
-  isManualMode: boolean;
   ingredients: Ingredient[];
   onOpenIngredientEditor: (index: number | null) => void;
 };
@@ -16,7 +15,6 @@ function formatIngredientAmount(value: number) {
 }
 
 export default function IngredientListSection({
-  isManualMode,
   ingredients,
   onOpenIngredientEditor,
 }: IngredientListSectionProps) {
@@ -33,13 +31,9 @@ export default function IngredientListSection({
           })}
         </Text>
         <Text style={styles.ingredientsSubtitle}>
-          {isManualMode
-            ? t("manual_entry_ingredients_subtitle", {
-                defaultValue: "Ingredients are optional. Add what you know.",
-              })
-            : t("review_meal_edit_ingredients_subtitle", {
-                defaultValue: "Edit items and amounts. Totals update below.",
-              })}
+          {t("review_meal_edit_ingredients_subtitle", {
+            defaultValue: "Edit items and amounts. Totals update below.",
+          })}
         </Text>
       </View>
 
@@ -81,15 +75,9 @@ export default function IngredientListSection({
             })}
           </Text>
           <Text style={styles.emptyIngredientsDescription}>
-            {isManualMode
-              ? t("manual_entry_no_ingredients_description", {
-                  defaultValue:
-                    "Add the main ingredients for a better estimate.",
-                })
-              : t("review_meal_edit_no_ingredients_description", {
-                  defaultValue:
-                    "Add ingredients if you want to refine nutrition.",
-                })}
+            {t("review_meal_edit_no_ingredients_description", {
+              defaultValue: "Add ingredients if you want to refine nutrition.",
+            })}
           </Text>
         </View>
       )}

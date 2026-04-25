@@ -5,7 +5,6 @@ import AppIcon from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
 
 type MealBasicsSectionProps = {
-  isManualMode: boolean;
   mealName: string;
   mealTypeLabel: string;
   mealTimeLabel: string;
@@ -16,7 +15,6 @@ type MealBasicsSectionProps = {
 };
 
 export default function MealBasicsSection({
-  isManualMode,
   mealName,
   mealTypeLabel,
   mealTimeLabel,
@@ -33,13 +31,9 @@ export default function MealBasicsSection({
     <>
       <View style={styles.headerBlock}>
         <Text style={styles.title}>
-          {isManualMode
-            ? t("manual_entry_title", {
-                defaultValue: "Add meal manually",
-              })
-            : t("review_meal_edit_screen_title", {
-                defaultValue: "Edit meal details",
-              })}
+          {t("review_meal_edit_screen_title", {
+            defaultValue: "Edit meal details",
+          })}
         </Text>
       </View>
 

@@ -61,7 +61,7 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
     descKey: "photoDesc",
     screen: "AddMeal",
     params: {
-      start: "MealCamera",
+      start: "CameraDefault",
       attempt: 1,
     },
   },
@@ -82,7 +82,7 @@ export const mealAddMethodOptions: readonly MethodOption[] = [
     descKey: "manualDesc",
     screen: "AddMeal",
     params: {
-      start: "ManualMealEntry",
+      start: "ReviewMeal",
     },
   },
   {
@@ -341,7 +341,7 @@ export function useMealAddMethodState(params: {
       if (option.screen === "AddMeal") {
         const start = option.params.start;
         await primeEmptyMeal(
-          start ?? "MealCamera",
+          start ?? "CameraDefault",
           getInputMethodForOption(option),
         );
         openAddMeal(option.params);

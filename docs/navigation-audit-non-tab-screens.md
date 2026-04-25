@@ -9,14 +9,12 @@ Legend:
 | Screen | Affordance | Guard | Confirm | Notes |
 | --- | --- | --- | --- | --- |
 | `CameraDefault` | `back` or `close` | yes | no | No form edits on camera preview itself. |
-| `BarcodeScan` | `back` or `close` | yes | no | Returns to prior step/manual panel. |
-| `BarcodeProductNotFound` | `back` (to scan) | yes | no | Recovery step; no unsaved form draft beyond retry code. |
+| `BarcodeScan` | `back` or `close` | yes | no | Returns to prior step; manual barcode entry is a scanner sheet. |
 | `DescribeMeal` | `back` or `close` | yes (shared hook) | yes | Unsaved text input protected. |
 | `TextAnalyzing` | `back` or `close` | parent flow | no | Processing state, explicit exit added. |
 | `PreparingReviewPhoto` | `back` or `close` | parent flow | no | Processing/recovery state, explicit exit added. |
 | `ReviewMeal` | `close` | yes (shared hook) | yes | Unsaved meal draft protected on all exits. |
-| `ManualMealEntry` | `back`/`close` | yes (shared hook) | yes | Unsaved edit session protected. |
-| `EditMealDetails` | `back`/`close` | yes (shared hook) | yes | Unsaved edit session protected. |
+| `EditMealDetails` | `back`/`close` | yes (shared hook) | yes | Optional edit session after `ReviewMeal`, including manual meal details. |
 | `IngredientsNotRecognized` | explicit action buttons | n/a | no | Full-screen now without bottom tabs (`showNavigation=false`). |
 
 ## Edit / Detail / Draft Flows

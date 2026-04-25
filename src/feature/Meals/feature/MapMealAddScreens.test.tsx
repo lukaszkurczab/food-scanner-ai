@@ -49,20 +49,6 @@ jest.mock("../screens/MealAdd/EditMealDetailsScreen", () => ({
   },
 }));
 
-jest.mock("../screens/MealAdd/ManualMealEntryScreen", () => ({
-  __esModule: true,
-  default: function MockManualMealEntryScreen() {
-    return null;
-  },
-}));
-
-jest.mock("../screens/MealAdd/BarcodeProductNotFoundScreen", () => ({
-  __esModule: true,
-  default: function MockBarcodeProductNotFoundScreen() {
-    return null;
-  },
-}));
-
 jest.mock("../screens/MealAdd/IngredientsNotRecognizedScreen", () => ({
   __esModule: true,
   default: function MockIngredientsNotRecognizedScreen() {
@@ -71,11 +57,9 @@ jest.mock("../screens/MealAdd/IngredientsNotRecognizedScreen", () => ({
 }));
 
 import BarcodeScanScreen from "../screens/MealAdd/BarcodeScanScreen";
-import BarcodeProductNotFoundScreen from "../screens/MealAdd/BarcodeProductNotFoundScreen";
 import DescribeMealScreen from "../screens/MealAdd/DescribeMealScreen";
 import EditMealDetailsScreen from "../screens/MealAdd/EditMealDetailsScreen";
 import IngredientsNotRecognizedScreen from "../screens/MealAdd/IngredientsNotRecognizedScreen";
-import ManualMealEntryScreen from "../screens/MealAdd/ManualMealEntryScreen";
 import MealCameraScreen from "../screens/MealAdd/MealCameraScreen";
 import PreparingReviewPhotoScreen from "../screens/MealAdd/PreparingReviewPhotoScreen";
 import ReviewMealScreen from "../screens/MealAdd/ReviewMealScreen";
@@ -92,11 +76,7 @@ describe("MapMealAddScreens", () => {
     expect(MapMealAddScreens("DescribeMeal")).toBe(DescribeMealScreen);
     expect(MapMealAddScreens("TextAnalyzing")).toBe(TextAnalyzingScreen);
     expect(MapMealAddScreens("ReviewMeal")).toBe(ReviewMealScreen);
-    expect(MapMealAddScreens("ManualMealEntry")).toBe(ManualMealEntryScreen);
     expect(MapMealAddScreens("EditMealDetails")).toBe(EditMealDetailsScreen);
-    expect(MapMealAddScreens("BarcodeProductNotFound")).toBe(
-      BarcodeProductNotFoundScreen,
-    );
     expect(MapMealAddScreens("IngredientsNotRecognized")).toBe(
       IngredientsNotRecognizedScreen,
     );
