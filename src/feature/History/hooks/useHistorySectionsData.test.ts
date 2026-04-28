@@ -47,14 +47,6 @@ const mockFilterSectionsByQuery = jest.fn<
   (params: { sectionsMap: Map<string, DaySection>; query: string }) => DaySection[]
 >();
 
-let focusEffectCallback: (() => void) | undefined;
-
-jest.mock("@react-navigation/native", () => ({
-  useFocusEffect: (callback: () => void) => {
-    focusEffectCallback = callback;
-  },
-}));
-
 jest.mock("@/hooks/useDebouncedValue", () => ({
   useDebouncedValue: <T,>(value: T) => value,
 }));
@@ -121,7 +113,6 @@ describe("useHistorySectionsData", () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-04-12T10:00:00.000Z"));
     __resetLocalMealsStoreForTests();
-    focusEffectCallback = undefined;
 
     mockGetAllMealsLocal.mockResolvedValue([]);
     mockGetMealByCloudIdLocal.mockResolvedValue(null);
@@ -148,8 +139,8 @@ describe("useHistorySectionsData", () => {
     __resetLocalMealsStoreForTests();
   });
 
-  it("throttles focus pull immediately after a forced refresh-triggered pull", async () => {
-    renderHook(() =>
+  it("does not remote pull on mount or refresh and keeps refresh local", async () => {
+    const { result } = renderHook(() =>
       useHistorySectionsData({
         uid: "user-1",
         query: "",
@@ -162,27 +153,25 @@ describe("useHistorySectionsData", () => {
     );
 
     await waitFor(() => {
-      expect(mockPullChanges).toHaveBeenCalledTimes(1);
+      expect(mockGetAllMealsLocal).toHaveBeenCalledWith("user-1");
+      expect(result.current.loading).toBe(false);
     });
+    expect(mockPullChanges).not.toHaveBeenCalled();
+
+    mockGetAllMealsLocal.mockResolvedValueOnce([
+      buildMeal({ cloudId: "local-refresh", name: "Local refresh" }),
+    ]);
 
     await act(async () => {
-      focusEffectCallback?.();
+      await result.current.refresh();
     });
 
-    expect(mockPullChanges).toHaveBeenCalledTimes(1);
-
-    await act(async () => {
-      focusEffectCallback?.();
+    await waitFor(() => {
+      expect(result.current.sections).toEqual([
+        expect.objectContaining({ title: "Local refresh" }),
+      ]);
     });
-
-    expect(mockPullChanges).toHaveBeenCalledTimes(1);
-
-    await act(async () => {
-      jest.advanceTimersByTime(30_001);
-      focusEffectCallback?.();
-    });
-
-    expect(mockPullChanges).toHaveBeenCalledTimes(2);
+    expect(mockPullChanges).not.toHaveBeenCalled();
   });
 
   it("applies filter changes locally without refetching from the backend", async () => {
@@ -235,7 +224,7 @@ describe("useHistorySectionsData", () => {
         "Fresh filter result",
       ]);
     });
-    expect(mockPullChanges).toHaveBeenCalledTimes(1);
+    expect(mockPullChanges).not.toHaveBeenCalled();
 
     rerender({ filters: { calories: [100, 300] } });
 
@@ -244,7 +233,7 @@ describe("useHistorySectionsData", () => {
         expect.objectContaining({ title: "Fresh filter result" }),
       ]);
     });
-    expect(mockPullChanges).toHaveBeenCalledTimes(1);
+    expect(mockPullChanges).not.toHaveBeenCalled();
   });
 
   it("applies search locally without refetching from the backend", async () => {
@@ -265,7 +254,7 @@ describe("useHistorySectionsData", () => {
     );
 
     await waitFor(() => {
-      expect(mockPullChanges).toHaveBeenCalledTimes(1);
+      expect(mockGetAllMealsLocal).toHaveBeenCalledWith("user-1");
     });
 
     rerender({ query: "chicken" });
@@ -275,7 +264,7 @@ describe("useHistorySectionsData", () => {
         expect.objectContaining({ query: "chicken" }),
       );
     });
-    expect(mockPullChanges).toHaveBeenCalledTimes(1);
+    expect(mockPullChanges).not.toHaveBeenCalled();
   });
 
   it("uses canonical local meals across dayKeys and keeps pending/failed/delete transitions visible", async () => {

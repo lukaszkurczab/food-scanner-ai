@@ -7,7 +7,7 @@ import { reconcileAll } from "@/services/notifications/engine";
 import { debugScope } from "@/utils/debug";
 import { emit } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
-import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
+import { pushQueue } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/meals/myMealService";
 import { formatMealDayKey } from "@/services/meals/mealMetadata";
 import { refreshStreakFromBackend } from "@/services/gamification/streakService";
@@ -51,9 +51,7 @@ export function useMeals(userUid: string | null) {
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncInFlightRef = useRef(false);
   const syncRequestedRef = useRef(false);
-  const syncPullRequestedRef = useRef(false);
   const lastOfflineToastAtRef = useRef(0);
-  const remoteRefreshInFlightRef = useRef(false);
   const meals = snapshot.meals;
   const loading = snapshot.loading;
 
@@ -67,12 +65,9 @@ export function useMeals(userUid: string | null) {
     });
   }, []);
 
-  const flushQueuedSync = useCallback(async (options?: { pullAfterPush?: boolean }) => {
+  const flushQueuedSync = useCallback(async () => {
     /* istanbul ignore next -- syncMeals/scheduler guard missing uid */
     if (!userUid) return;
-    if (options?.pullAfterPush) {
-      syncPullRequestedRef.current = true;
-    }
     if (syncInFlightRef.current) {
       syncRequestedRef.current = true;
       return;
@@ -82,14 +77,9 @@ export function useMeals(userUid: string | null) {
 
     syncInFlightRef.current = true;
     syncRequestedRef.current = false;
-    const shouldPullAfterPush = syncPullRequestedRef.current;
-    syncPullRequestedRef.current = false;
     try {
       log.log("sync flush start", { uid: userUid });
       await pushQueue(userUid);
-      if (shouldPullAfterPush) {
-        await pullChanges(userUid);
-      }
       try {
         await refreshStreakFromBackend(userUid, { refreshBadges: true });
       } catch (error: unknown) {
@@ -146,7 +136,6 @@ export function useMeals(userUid: string | null) {
     }
     syncInFlightRef.current = false;
     syncRequestedRef.current = false;
-    syncPullRequestedRef.current = false;
   }, [userUid]);
 
   useEffect(() => {
@@ -172,40 +161,6 @@ export function useMeals(userUid: string | null) {
 
   const getMeals = useCallback(async () => {
     await refreshLocalMeals(userUid);
-  }, [userUid]);
-
-  useEffect(() => {
-    if (!userUid) {
-      remoteRefreshInFlightRef.current = false;
-      return;
-    }
-
-    let cancelled = false;
-
-    void (async () => {
-      const net = await NetInfo.fetch();
-      if (
-        cancelled ||
-        isOfflineNetState(net) ||
-        remoteRefreshInFlightRef.current
-      ) {
-        return;
-      }
-
-      remoteRefreshInFlightRef.current = true;
-      try {
-        await pullChanges(userUid);
-      } catch (error: unknown) {
-        log.warn("background pull failed", error);
-      } finally {
-        remoteRefreshInFlightRef.current = false;
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      remoteRefreshInFlightRef.current = false;
-    };
   }, [userUid]);
 
   const addMeal = useCallback(
@@ -353,7 +308,7 @@ export function useMeals(userUid: string | null) {
   const syncMeals = useCallback(async () => {
     if (!userUid) return;
     syncRequestedRef.current = true;
-    await flushQueuedSync({ pullAfterPush: true });
+    await flushQueuedSync();
   }, [flushQueuedSync, userUid]);
   const getUnsyncedMeals = useCallback(async () => {
     if (!userUid) return [] as Meal[];

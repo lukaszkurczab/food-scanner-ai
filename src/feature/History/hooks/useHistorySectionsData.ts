@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFocusEffect } from "@react-navigation/native";
 import type { Filters } from "@/context/HistoryContext";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { resolveDataViewState } from "@/types/dataViewState";
 import {
   type LocalHistoryFilters,
 } from "@/services/offline/meals.repo";
-import { pullChanges } from "@/services/offline/sync.engine";
 import type { DaySection } from "@/feature/History/types/daySection";
 import {
   addOrUpdateMealInSections,
@@ -16,12 +14,12 @@ import {
 import { resolveDateRangeWithinAccessWindow } from "@/utils/accessWindow";
 import {
   getLocalMealsSnapshot,
+  refreshLocalMeals,
   selectLocalMealsByRange,
   subscribeLocalMeals,
 } from "@/services/meals/localMealsStore";
 
 const PAGE = 20;
-const PULL_THROTTLE_MS = 30_000;
 
 export type HistoryErrorKind = "load" | "sync" | null;
 
@@ -76,10 +74,6 @@ export function useHistorySectionsData(params: {
   const [hasMore, setHasMore] = useState(true);
 
   const loadingMoreRef = useRef(false);
-  const firstFocus = useRef(true);
-  const pullInFlightRef = useRef(false);
-  const pullPendingRef = useRef(false);
-  const lastPullRequestedAtRef = useRef(0);
   const firstPageRequestIdRef = useRef(0);
   const loadMoreRequestIdRef = useRef(0);
 
@@ -183,45 +177,6 @@ export function useHistorySectionsData(params: {
     resetAndLoadLocalRef.current = resetAndLoadLocal;
   }, [resetAndLoadLocal]);
 
-  const requestPullChanges = useCallback(async (options?: { force?: boolean }) => {
-    if (!params.uid) return;
-    const requestScope = requestScopeKeyRef.current;
-    const isStale = () => requestScopeKeyRef.current !== requestScope;
-    if (pullInFlightRef.current) {
-      pullPendingRef.current = true;
-      return;
-    }
-    const now = Date.now();
-    if (!options?.force) {
-      if (now - lastPullRequestedAtRef.current < PULL_THROTTLE_MS) return;
-    }
-    lastPullRequestedAtRef.current = now;
-
-    pullInFlightRef.current = true;
-    try {
-      await pullChanges(params.uid);
-      if (!isStale()) {
-        setErrorKind(null);
-      }
-    } catch {
-      if (!isStale()) {
-        setErrorKind("sync");
-      }
-    } finally {
-      pullInFlightRef.current = false;
-      if (pullPendingRef.current) {
-        pullPendingRef.current = false;
-        void requestPullChanges({ force: true });
-      }
-    }
-  }, [params.uid]);
-
-  useEffect(() => {
-    pullInFlightRef.current = false;
-    pullPendingRef.current = false;
-    lastPullRequestedAtRef.current = 0;
-  }, [params.uid]);
-
   useEffect(() => {
     void resetAndLoadLocal();
   }, [resetAndLoadLocal]);
@@ -232,26 +187,6 @@ export function useHistorySectionsData(params: {
       void resetAndLoadLocalRef.current();
     });
   }, [params.uid]);
-
-  const prevKey = useRef<string>("");
-  useEffect(() => {
-    const key = JSON.stringify({
-      uid: params.uid,
-    });
-    if (!params.uid || key === prevKey.current) return;
-    prevKey.current = key;
-    void requestPullChanges({ force: true });
-  }, [params.uid, requestPullChanges]);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (firstFocus.current) {
-        firstFocus.current = false;
-        return;
-      }
-      void requestPullChanges();
-    }, [requestPullChanges]),
-  );
 
   const loadMore = useCallback(async () => {
     if (!params.uid || !hasMore || loadingMoreRef.current || !cursor) return;
@@ -309,8 +244,9 @@ export function useHistorySectionsData(params: {
   }, [hasMore, loadMore]);
 
   const refresh = useCallback(async () => {
-    await requestPullChanges({ force: true });
-  }, [requestPullChanges]);
+    await refreshLocalMeals(params.uid);
+    await resetAndLoadLocal();
+  }, [params.uid, resetAndLoadLocal]);
 
   const sections = useMemo(
     () =>

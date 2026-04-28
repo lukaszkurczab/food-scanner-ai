@@ -264,7 +264,57 @@ describe("useMeals", () => {
 
     expect(result.current.meals).toEqual(firstPage);
     expect(mockGetMealsPageLocal).toHaveBeenCalledWith("user-1", 50, undefined);
-    expect(mockPullChanges).toHaveBeenCalledWith("user-1");
+    expect(mockPullChanges).not.toHaveBeenCalled();
+  });
+
+  it("does not start remote pulls when multiple useMeals instances mount", async () => {
+    mockGetMealsPageLocal.mockResolvedValue([
+      baseMeal({ cloudId: "local-cloud", name: "Local meal" }),
+    ]);
+
+    const first = renderHook(() => useMeals("user-1"));
+    const second = renderHook(() => useMeals("user-1"));
+    const third = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(first.result.current.loading).toBe(false);
+      expect(second.result.current.loading).toBe(false);
+      expect(third.result.current.loading).toBe(false);
+      expect(first.result.current.meals[0]?.cloudId).toBe("local-cloud");
+    });
+
+    expect(first.result.current.meals).toEqual([
+      expect.objectContaining({ cloudId: "local-cloud" }),
+    ]);
+    expect(second.result.current.meals).toEqual(first.result.current.meals);
+    expect(third.result.current.meals).toEqual(first.result.current.meals);
+    expect(mockPullChanges).not.toHaveBeenCalled();
+  });
+
+  it("reads the canonical local meal model while offline", async () => {
+    mockNetInfoFetch.mockResolvedValue({ isConnected: false });
+    mockGetMealsPageLocal.mockResolvedValueOnce([
+      baseMeal({
+        cloudId: "offline-local",
+        name: "Offline visible meal",
+        syncState: "pending",
+      }),
+    ]);
+
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.meals).toEqual([
+      expect.objectContaining({
+        cloudId: "offline-local",
+        name: "Offline visible meal",
+        syncState: "pending",
+      }),
+    ]);
+    expect(mockPullChanges).not.toHaveBeenCalled();
   });
 
   it("reloads visible meals when a synced meal event arrives", async () => {
@@ -1002,7 +1052,7 @@ describe("useMeals", () => {
     await flush();
 
     expect(mockPushQueue).toHaveBeenCalledWith("user-1");
-    expect(mockPullChanges).toHaveBeenCalledWith("user-1");
+    expect(mockPullChanges).not.toHaveBeenCalled();
     expect(mockRefreshStreakFromBackend).toHaveBeenCalledWith("user-1", {
       refreshBadges: true,
     });
@@ -1431,7 +1481,7 @@ describe("useMeals", () => {
       await result.current.syncMeals();
     });
     expect(mockPushQueue).toHaveBeenCalledWith("user-1");
-    expect(mockPullChanges).toHaveBeenCalledWith("user-1");
+    expect(mockPullChanges).not.toHaveBeenCalled();
 
     const unsynced = await result.current.getUnsyncedMeals();
     expect(unsynced).toEqual([]);
@@ -1495,7 +1545,7 @@ describe("useMeals", () => {
     await flush();
 
     expect(mockPushQueue).toHaveBeenCalledTimes(2);
-    expect(mockPullChanges).toHaveBeenCalledTimes(2);
+    expect(mockPullChanges).not.toHaveBeenCalled();
   });
 
   it("clears pending sync timer when user changes", async () => {

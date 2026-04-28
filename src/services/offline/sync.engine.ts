@@ -113,7 +113,7 @@ export function startSyncLoop(uid: string) {
       await runLoopStep(loopLog, "push", () => pushQueue(uid));
       if (isStale()) return;
       await runLoopStep(loopLog, "meals", async () => {
-        await mealsStrategy.pull(uid);
+        await pullChanges(uid);
       });
       if (isStale()) return;
       await runLoopStep(loopLog, "myMeals", async () => {

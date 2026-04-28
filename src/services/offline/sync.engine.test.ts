@@ -121,6 +121,32 @@ describe("offline sync.engine integration", () => {
     stopSyncLoop();
   });
 
+  it("owns meal pulls on startup and reconnect through the central loop", async () => {
+    let networkListener: (state: { isConnected: boolean }) => void = () => undefined;
+    mockAddEventListener.mockImplementation((listener) => {
+      networkListener = listener;
+      return jest.fn();
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { startSyncLoop, stopSyncLoop } = require("@/services/offline/sync.engine");
+
+    startSyncLoop("user-1");
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(mockMealsPull).toHaveBeenCalledTimes(1);
+    expect(mockMealsPull).toHaveBeenCalledWith("user-1");
+
+    networkListener?.({ isConnected: true });
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(mockMealsPull).toHaveBeenCalledTimes(2);
+    expect(mockMealsPull).toHaveBeenLastCalledWith("user-1");
+    stopSyncLoop();
+  });
+
   it("continues later sync phases when an earlier phase fails", async () => {
     const order: string[] = [];
     mockAddEventListener.mockReturnValue(jest.fn());
