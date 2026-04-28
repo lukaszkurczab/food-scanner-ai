@@ -978,6 +978,80 @@ describe("useMeals", () => {
     expect(mockReconcileAll).toHaveBeenCalledWith("user-1");
   });
 
+  it("updates history meals offline as a local pending upsert", async () => {
+    jest.useFakeTimers();
+    mockNetInfoFetch.mockResolvedValue({ isConnected: false });
+
+    const { result } = renderHook(() => useMeals("user-1"));
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const originalTimestamp = "2026-02-20T09:15:00.000Z";
+    const originalDayKey = "2026-02-20";
+
+    await act(async () => {
+      await result.current.updateMeal(
+        baseMeal({
+          userUid: "stale-user",
+          mealId: "history-meal",
+          cloudId: "history-cloud",
+          timestamp: originalTimestamp,
+          dayKey: originalDayKey,
+          name: "Offline edit",
+          deleted: true,
+          syncState: "synced",
+          totals: { kcal: 999, protein: 999, carbs: 999, fat: 999 },
+          ingredients: [
+            {
+              id: "i1",
+              name: "Rice",
+              amount: 100,
+              kcal: 120,
+              protein: 3,
+              carbs: 25,
+              fat: 1,
+            },
+            {
+              id: "i2",
+              name: "Chicken",
+              amount: 80,
+              kcal: 140,
+              protein: 24,
+              carbs: 0,
+              fat: 4,
+            },
+          ],
+        }),
+      );
+    });
+
+    const saved = mockUpsertMealLocal.mock.calls.at(-1)?.[0];
+    expect(saved).toEqual(
+      expect.objectContaining({
+        userUid: "user-1",
+        mealId: "history-meal",
+        cloudId: "history-cloud",
+        timestamp: originalTimestamp,
+        dayKey: originalDayKey,
+        deleted: false,
+        syncState: "pending",
+        totals: { kcal: 260, protein: 27, carbs: 25, fat: 5 },
+      }),
+    );
+    expect(mockEnqueueUpsert).toHaveBeenCalledWith("user-1", saved);
+
+    await waitFor(() => {
+      expect(result.current.meals).toEqual([
+        expect.objectContaining({
+          cloudId: "history-cloud",
+          name: "Offline edit",
+          syncState: "pending",
+        }),
+      ]);
+    });
+  });
+
   it("deletes meals, prunes local list and queues delete sync", async () => {
     jest.useFakeTimers();
     mockGetMealsPageLocal.mockResolvedValueOnce([

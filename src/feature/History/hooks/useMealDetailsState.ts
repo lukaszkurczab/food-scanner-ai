@@ -25,18 +25,12 @@ export function useMealDetailsState(params: {
   routeParams?: RootStackParamList["MealDetails"];
   navigation: StackNavigationProp<RootStackParamList>;
   uid: string;
-  saveDraft: (userUid: string, draftOverride?: Meal | null) => Promise<void>;
-  setLastScreen: (userUid: string, screen: string) => Promise<void>;
-  setMeal: (meal: Meal) => void;
   deleteMeal: (mealCloudId: string) => Promise<unknown>;
 }) {
   const {
     routeParams,
     navigation,
     uid,
-    saveDraft,
-    setLastScreen,
-    setMeal,
     deleteMeal,
   } = params;
   const routeCloudId =
@@ -170,11 +164,8 @@ export function useMealDetailsState(params: {
       return;
     }
     const nextDraft = buildEditDraft(currentMeal);
-    setMeal(nextDraft);
-    await saveDraft(uid, nextDraft);
-    await setLastScreen(uid, "EditMealDetails");
     navigation.navigate("EditHistoryMealDetails", { meal: nextDraft });
-  }, [navigation, routeCloudId, saveDraft, setLastScreen, setMeal, uid]);
+  }, [navigation, routeCloudId, uid]);
 
   const goShare = useCallback(() => {
     if (!routeCloudId || !uid) return;

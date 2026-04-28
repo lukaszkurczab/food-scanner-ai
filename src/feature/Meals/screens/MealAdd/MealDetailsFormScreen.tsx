@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { KeyboardAwareScrollView, Layout } from "@/components";
 import { useTheme } from "@/theme/useTheme";
 import { useMealDetailsForm } from "@/feature/Meals/hooks/useMealDetailsForm";
+import type { MealDetailsDraftAdapter } from "@/feature/Meals/hooks/useMealDetailsForm";
 import {
   formatMealTime,
   getMealDateOrNow,
@@ -19,6 +20,8 @@ import IngredientEditorModal from "@/feature/Meals/screens/MealAdd/components/In
 import type { Meal } from "@/types/meal";
 import type { MealAddFlowApi } from "@/feature/Meals/feature/MapMealAddScreens";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuthContext } from "@/context/AuthContext";
+import { useMealDraftContext } from "@contexts/MealDraftContext";
 
 type Mode = "review";
 
@@ -38,9 +41,58 @@ type Props = {
   reviewPhotoUri?: string | null;
   reviewPhotoActionLabel?: string;
   onReviewPhotoPress?: () => void;
+  draftAdapter?: MealDetailsDraftAdapter;
 };
 
 export function MealDetailsFormScreen({
+  draftAdapter,
+  ...props
+}: Props) {
+  if (draftAdapter) {
+    return (
+      <MealDetailsFormScreenInner
+        {...props}
+        draftAdapter={draftAdapter}
+      />
+    );
+  }
+
+  return <MealDetailsFormScreenWithDraftContext {...props} />;
+}
+
+function MealDetailsFormScreenWithDraftContext(props: Omit<Props, "draftAdapter">) {
+  const { uid } = useAuthContext();
+  const { meal, loadDraft, saveDraft, setMeal, setLastScreen } =
+    useMealDraftContext();
+
+  useEffect(() => {
+    if (uid) {
+      void setLastScreen(uid, "EditMealDetails");
+    }
+  }, [setLastScreen, uid]);
+
+  const draftAdapter = useMemo<MealDetailsDraftAdapter>(
+    () => ({
+      uid: uid || null,
+      meal,
+      persistMeal: async (nextMeal: Meal) => {
+        setMeal(nextMeal);
+        if (uid) {
+          await saveDraft(uid, nextMeal);
+        }
+      },
+      retryLoadDraft: async () => {
+        if (!uid) return;
+        await loadDraft(uid);
+      },
+    }),
+    [loadDraft, meal, saveDraft, setMeal, uid],
+  );
+
+  return <MealDetailsFormScreenInner {...props} draftAdapter={draftAdapter} />;
+}
+
+function MealDetailsFormScreenInner({
   flow,
   mode,
   onReviewSubmit,
@@ -50,7 +102,8 @@ export function MealDetailsFormScreen({
   reviewPhotoUri,
   reviewPhotoActionLabel,
   onReviewPhotoPress,
-}: Props) {
+  draftAdapter,
+}: Omit<Props, "draftAdapter"> & { draftAdapter: MealDetailsDraftAdapter }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["meals", "common"]);
@@ -91,6 +144,7 @@ export function MealDetailsFormScreen({
     mode,
     flow,
     onReviewSubmit,
+    draftAdapter,
   });
 
   const selectedAt = getMealDateOrNow(mealTimestamp);

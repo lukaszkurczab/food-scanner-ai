@@ -360,11 +360,15 @@ export function useMeals(userUid: string | null) {
 
       const now = new Date().toISOString();
       const cloudId = persistableMeal.cloudId ?? uuidv4();
+      const mealId = persistableMeal.mealId || cloudId;
       const timestamp = persistableMeal.timestamp ?? now;
 
       const payload = withDerivedMealFields({
         ...persistableMeal,
+        userUid,
+        mealId,
         cloudId,
+        deleted: false,
         updatedAt: now,
         syncState: "pending",
         timestamp,

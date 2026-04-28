@@ -7,7 +7,12 @@ import type { Meal } from "@/types/meal";
 const mockUseRoute = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockUseMeals = jest.fn();
-const mockUseMealDraftContext = jest.fn();
+const mockSelectLocalMealByCloudId = jest.fn(
+  (_uid: string, _cloudId: string): Meal | null => null,
+);
+const mockSubscribeLocalMeals = jest.fn(
+  (_uid: string, _listener: () => void) => jest.fn(),
+);
 
 jest.mock("@react-navigation/native", () => ({
   useRoute: () => mockUseRoute(),
@@ -21,8 +26,11 @@ jest.mock("@/hooks/useMeals", () => ({
   useMeals: (uid: string) => mockUseMeals(uid),
 }));
 
-jest.mock("@contexts/MealDraftContext", () => ({
-  useMealDraftContext: () => mockUseMealDraftContext(),
+jest.mock("@/services/meals/localMealsStore", () => ({
+  selectLocalMealByCloudId: (uid: string, cloudId: string) =>
+    mockSelectLocalMealByCloudId(uid, cloudId),
+  subscribeLocalMeals: (uid: string, listener: () => void) =>
+    mockSubscribeLocalMeals(uid, listener),
 }));
 
 jest.mock("react-i18next", () => ({
@@ -36,9 +44,14 @@ jest.mock("@/feature/Meals/screens/MealAdd/MealDetailsFormScreen", () => ({
   MealDetailsFormScreen: ({
     onReviewSubmit,
     onReviewPhotoPress,
+    draftAdapter,
   }: {
     onReviewSubmit?: (meal: Meal) => Promise<void> | void;
     onReviewPhotoPress?: () => void;
+    draftAdapter?: {
+      meal: Meal | null;
+      persistMeal: (meal: Meal) => Promise<void> | void;
+    };
   }) => {
     const { createElement } =
       jest.requireActual<typeof import("react")>("react");
@@ -53,19 +66,14 @@ jest.mock("@/feature/Meals/screens/MealAdd/MealDetailsFormScreen", () => ({
         {
           accessibilityRole: "button",
           onPress: () => {
-            void onReviewSubmit?.({
-              userUid: "user-1",
-              mealId: "meal-1",
-              cloudId: "cloud-1",
-              timestamp: "2026-01-10T12:00:00.000Z",
-              type: "lunch",
+            const nextMeal = {
+              ...(draftAdapter?.meal as Meal),
               name: "Edited meal",
-              ingredients: [],
-              createdAt: "2026-01-10T12:00:00.000Z",
-              updatedAt: "2026-01-10T12:00:00.000Z",
-              syncState: "synced",
-              source: "manual",
-              photoUrl: "file:///meal.jpg",
+            };
+            void draftAdapter?.persistMeal(nextMeal);
+            void onReviewSubmit?.({
+              ...nextMeal,
+              name: "Edited meal",
             });
           },
         },
@@ -101,42 +109,35 @@ const buildMeal = (overrides?: Partial<Meal>): Meal => ({
 
 describe("EditHistoryMealDetailsScreen", () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     mockUseRoute.mockReturnValue({ params: { meal: buildMeal() } });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
+    mockSelectLocalMealByCloudId.mockReturnValue(buildMeal());
+    mockSubscribeLocalMeals.mockReturnValue(jest.fn());
   });
 
-  it("primes the meal draft and updates the existing meal on submit", async () => {
+  it("loads the local history snapshot and updates the existing meal on submit", async () => {
     const navigation = {
       goBack: jest.fn<() => void>(),
+      canGoBack: jest.fn<() => boolean>(() => true),
+      navigate: jest.fn<(screen: string, params?: unknown) => void>(),
       replace: jest.fn<(screen: string, params?: unknown) => void>(),
     };
     const updateMeal = jest.fn<(meal: Meal) => Promise<void>>(
       async (_meal: Meal) => undefined,
     );
-    const setMeal = jest.fn<(meal: Meal) => void>();
-    const saveDraft = jest.fn<(uid: string, draft?: Meal | null) => Promise<void>>(
-      async (_uid: string, _draft?: Meal | null) => undefined,
-    );
-    const setLastScreen = jest.fn<(uid: string, screen: string) => Promise<void>>(
-      async (_uid: string, _screen: string) => undefined,
-    );
 
     mockUseMeals.mockReturnValue({ updateMeal });
-    mockUseMealDraftContext.mockReturnValue({
-      meal: buildMeal(),
-      setMeal,
-      saveDraft,
-      setLastScreen,
-    });
 
     const screen = renderWithTheme(
       <EditHistoryMealDetailsScreen navigation={navigation as never} />,
     );
 
     await waitFor(() => {
-      expect(setMeal).toHaveBeenCalledWith(buildMeal());
-      expect(saveDraft).toHaveBeenCalledWith("user-1", buildMeal());
-      expect(setLastScreen).toHaveBeenCalledWith("user-1", "EditMealDetails");
+      expect(mockSelectLocalMealByCloudId).toHaveBeenCalledWith(
+        "user-1",
+        "cloud-1",
+      );
     });
 
     fireEvent.press(screen.getByText("submit-review-edit"));
@@ -146,6 +147,7 @@ describe("EditHistoryMealDetailsScreen", () => {
         expect.objectContaining({
           mealId: "meal-1",
           cloudId: "cloud-1",
+          userUid: "user-1",
           name: "Edited meal",
           localPhotoUrl: undefined,
         }),
@@ -157,16 +159,12 @@ describe("EditHistoryMealDetailsScreen", () => {
   it("opens the camera from the edit screen instead of details view", async () => {
     const navigation = {
       goBack: jest.fn<() => void>(),
+      canGoBack: jest.fn<() => boolean>(() => true),
+      navigate: jest.fn<(screen: string, params?: unknown) => void>(),
       replace: jest.fn<(screen: string, params?: unknown) => void>(),
     };
 
     mockUseMeals.mockReturnValue({ updateMeal: jest.fn(async () => undefined) });
-    mockUseMealDraftContext.mockReturnValue({
-      meal: buildMeal(),
-      setMeal: jest.fn(),
-      saveDraft: jest.fn(async () => undefined),
-      setLastScreen: jest.fn(async () => undefined),
-    });
 
     const screen = renderWithTheme(
       <EditHistoryMealDetailsScreen navigation={navigation as never} />,
@@ -176,52 +174,33 @@ describe("EditHistoryMealDetailsScreen", () => {
 
     expect(navigation.replace).toHaveBeenCalledWith("SavedMealsCamera", {
       id: "meal-1",
-      meal: buildMeal(),
+      meal: expect.objectContaining({
+        mealId: "meal-1",
+        cloudId: "cloud-1",
+      }),
       returnTo: "EditHistoryMealDetails",
     });
   });
 
-  it("does not re-seed draft on rerender when route meal version is unchanged", async () => {
+  it("does not touch MealDraftContext for history edit", async () => {
     const navigation = {
       goBack: jest.fn<() => void>(),
+      canGoBack: jest.fn<() => boolean>(() => true),
+      navigate: jest.fn<(screen: string, params?: unknown) => void>(),
       replace: jest.fn<(screen: string, params?: unknown) => void>(),
     };
-    const stableRouteMeal = buildMeal({
-      updatedAt: "2026-01-10T12:00:00.000Z",
-    });
-    const setMeal = jest.fn<(meal: Meal) => void>();
-    const saveDraft = jest.fn<(uid: string, draft?: Meal | null) => Promise<void>>(
-      async (_uid: string, _draft?: Meal | null) => undefined,
-    );
-    const setLastScreen = jest.fn<(uid: string, screen: string) => Promise<void>>(
-      async (_uid: string, _screen: string) => undefined,
-    );
 
-    mockUseRoute.mockImplementation(() => ({
-      params: { meal: { ...stableRouteMeal } },
-    }));
     mockUseMeals.mockReturnValue({ updateMeal: jest.fn(async () => undefined) });
-    mockUseMealDraftContext.mockReturnValue({
-      meal: stableRouteMeal,
-      setMeal,
-      saveDraft,
-      setLastScreen,
-    });
 
-    const view = renderWithTheme(
+    renderWithTheme(
       <EditHistoryMealDetailsScreen navigation={navigation as never} />,
     );
 
     await waitFor(() => {
-      expect(setMeal).toHaveBeenCalledTimes(1);
-    });
-
-    view.rerender(<EditHistoryMealDetailsScreen navigation={navigation as never} />);
-
-    await waitFor(() => {
-      expect(setMeal).toHaveBeenCalledTimes(1);
-      expect(saveDraft).toHaveBeenCalledTimes(1);
-      expect(setLastScreen).toHaveBeenCalledTimes(1);
+      expect(mockSubscribeLocalMeals).toHaveBeenCalledWith(
+        "user-1",
+        expect.any(Function),
+      );
     });
   });
 });

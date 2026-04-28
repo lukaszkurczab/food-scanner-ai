@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { useMealDraftContext } from "@contexts/MealDraftContext";
-import { useAuthContext } from "@/context/AuthContext";
 import type { Ingredient, Meal, MealType } from "@/types/meal";
-import type {
-  MealAddFlowApi,
-  MealAddScreenName,
-} from "@/feature/Meals/feature/MapMealAddScreens";
+import type { MealAddFlowApi } from "@/feature/Meals/feature/MapMealAddScreens";
 
 export type MealDetailsFormMode = "review";
 
@@ -15,6 +10,14 @@ type UseMealDetailsFormParams = {
   mode: MealDetailsFormMode;
   flow: MealAddFlowApi;
   onReviewSubmit?: (meal: Meal) => Promise<void> | void;
+  draftAdapter: MealDetailsDraftAdapter;
+};
+
+export type MealDetailsDraftAdapter = {
+  uid: string | null;
+  meal: Meal | null;
+  persistMeal: (meal: Meal) => Promise<void> | void;
+  retryLoadDraft?: () => Promise<void> | void;
 };
 
 export function isValidIsoDate(value?: string | null) {
@@ -47,40 +50,37 @@ function buildDraftIngredient(source?: Ingredient | null): Ingredient {
   };
 }
 
-function getResumeTrackingScreen(_mode: MealDetailsFormMode): MealAddScreenName {
-  return "EditMealDetails";
-}
-
 export function useMealDetailsForm({
   mode,
   flow,
   onReviewSubmit,
+  draftAdapter,
 }: UseMealDetailsFormParams) {
   const { i18n } = useTranslation(["meals", "common"]);
-  const { uid } = useAuthContext();
-  const { meal, loadDraft, saveDraft, setMeal, setLastScreen } = useMealDraftContext();
-  const mealTimestamp = meal?.timestamp;
+  const uid = draftAdapter.uid;
+  const currentMeal = draftAdapter.meal;
+  const mealTimestamp = currentMeal?.timestamp;
 
-  const [mealName, setMealName] = useState(meal?.name ?? "");
+  const [mealName, setMealName] = useState(currentMeal?.name ?? "");
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [typePickerVisible, setTypePickerVisible] = useState(false);
-  const [typeDraft, setTypeDraft] = useState<MealType>(meal?.type ?? "other");
+  const [typeDraft, setTypeDraft] = useState<MealType>(currentMeal?.type ?? "other");
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [pickerDate, setPickerDate] = useState<Date>(getMealDateOrNow(mealTimestamp));
   const [editingIngredientIndex, setEditingIngredientIndex] = useState<number | null>(null);
   const [ingredientDraft, setIngredientDraft] = useState<Ingredient | null>(null);
 
   useEffect(() => {
-    setMealName(meal?.name ?? "");
-  }, [meal?.name]);
+    setMealName(currentMeal?.name ?? "");
+  }, [currentMeal?.name]);
 
   useEffect(() => {
     setHasPendingChanges(false);
-  }, [meal?.mealId, mode]);
+  }, [currentMeal?.mealId, mode]);
 
   useEffect(() => {
-    setTypeDraft(meal?.type ?? "other");
-  }, [meal?.type]);
+    setTypeDraft(currentMeal?.type ?? "other");
+  }, [currentMeal?.type]);
 
   useEffect(() => {
     if (isValidIsoDate(mealTimestamp) && mealTimestamp) {
@@ -88,38 +88,28 @@ export function useMealDetailsForm({
     }
   }, [mealTimestamp]);
 
-  useEffect(() => {
-    if (uid) {
-      void setLastScreen(uid, getResumeTrackingScreen(mode));
-    }
-  }, [mode, setLastScreen, uid]);
-
   const retryLoadDraft = useCallback(async () => {
-    if (!uid) return;
-    await loadDraft(uid);
-  }, [loadDraft, uid]);
+    await draftAdapter.retryLoadDraft?.();
+  }, [draftAdapter]);
 
   const persistMeal = useCallback(
     async (nextMeal: Meal) => {
-      setMeal(nextMeal);
-      if (uid) {
-        await saveDraft(uid, nextMeal);
-      }
+      await draftAdapter.persistMeal(nextMeal);
     },
-    [saveDraft, setMeal, uid],
+    [draftAdapter],
   );
 
   const persistMealPatch = useCallback(
     async (patch: Partial<Meal>) => {
-      if (!meal) return;
+      if (!currentMeal) return;
       const nextMeal: Meal = {
-        ...meal,
+        ...currentMeal,
         ...patch,
         updatedAt: new Date().toISOString(),
       };
       await persistMeal(nextMeal);
     },
-    [meal, persistMeal],
+    [currentMeal, persistMeal],
   );
 
   const handleNameBlur = useCallback(async () => {
@@ -132,14 +122,14 @@ export function useMealDetailsForm({
   }, []);
 
   const handleOpenTypePicker = useCallback(() => {
-    setTypeDraft(meal?.type ?? "other");
+    setTypeDraft(currentMeal?.type ?? "other");
     setTypePickerVisible(true);
-  }, [meal?.type]);
+  }, [currentMeal?.type]);
 
   const handleCloseTypePicker = useCallback(() => {
     setTypePickerVisible(false);
-    setTypeDraft(meal?.type ?? "other");
-  }, [meal?.type]);
+    setTypeDraft(currentMeal?.type ?? "other");
+  }, [currentMeal?.type]);
 
   const handleApplyType = useCallback(
     async (nextType: MealType) => {
@@ -172,11 +162,12 @@ export function useMealDetailsForm({
 
   const handleOpenIngredientEditor = useCallback(
     (index: number | null) => {
-      const source = index === null ? null : (meal?.ingredients ?? [])[index] ?? null;
+      const source =
+        index === null ? null : (currentMeal?.ingredients ?? [])[index] ?? null;
       setEditingIngredientIndex(index);
       setIngredientDraft(buildDraftIngredient(source));
     },
-    [meal?.ingredients],
+    [currentMeal?.ingredients],
   );
 
   const handleCloseIngredientEditor = useCallback(() => {
@@ -186,9 +177,9 @@ export function useMealDetailsForm({
 
   const handleCommitIngredient = useCallback(
     async (updated: Ingredient) => {
-      if (!meal) return;
+      if (!currentMeal) return;
 
-      const currentIngredients = meal.ingredients ?? [];
+      const currentIngredients = currentMeal.ingredients ?? [];
       const nextIngredients =
         editingIngredientIndex === null
           ? [...currentIngredients, updated]
@@ -197,36 +188,36 @@ export function useMealDetailsForm({
             );
 
       await persistMeal({
-        ...meal,
+        ...currentMeal,
         ingredients: nextIngredients,
         updatedAt: new Date().toISOString(),
       });
       setHasPendingChanges(true);
       handleCloseIngredientEditor();
     },
-    [editingIngredientIndex, handleCloseIngredientEditor, meal, persistMeal],
+    [currentMeal, editingIngredientIndex, handleCloseIngredientEditor, persistMeal],
   );
 
   const handleDeleteIngredient = useCallback(async () => {
-    if (!meal || editingIngredientIndex === null) return;
+    if (!currentMeal || editingIngredientIndex === null) return;
 
     await persistMeal({
-      ...meal,
-      ingredients: (meal.ingredients ?? []).filter(
+      ...currentMeal,
+      ingredients: (currentMeal.ingredients ?? []).filter(
         (_ingredient, index) => index !== editingIngredientIndex,
       ),
       updatedAt: new Date().toISOString(),
     });
     setHasPendingChanges(true);
     handleCloseIngredientEditor();
-  }, [editingIngredientIndex, handleCloseIngredientEditor, meal, persistMeal]);
+  }, [currentMeal, editingIngredientIndex, handleCloseIngredientEditor, persistMeal]);
 
   const handleSubmit = useCallback(async () => {
     const trimmedName = mealName.trim();
 
-    if (!meal) return;
+    if (!currentMeal) return;
     const nextMeal: Meal = {
-      ...meal,
+      ...currentMeal,
       name: trimmedName || null,
       updatedAt: new Date().toISOString(),
     };
@@ -239,7 +230,7 @@ export function useMealDetailsForm({
     setHasPendingChanges(false);
   }, [
     flow,
-    meal,
+    currentMeal,
     mealName,
     onReviewSubmit,
     persistMeal,
@@ -258,11 +249,11 @@ export function useMealDetailsForm({
     }
   }, [locale]);
 
-  const ingredients = meal?.ingredients ?? [];
+  const ingredients = currentMeal?.ingredients ?? [];
 
   return {
     uid,
-    meal,
+    meal: currentMeal,
     mealTimestamp,
     mealName,
     setMealName: handleMealNameChange,

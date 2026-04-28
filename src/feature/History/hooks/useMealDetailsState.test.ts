@@ -91,9 +91,6 @@ function setupHook(options?: {
       routeParams,
       navigation,
       uid: "user-1",
-      saveDraft: jest.fn(async () => undefined),
-      setLastScreen: jest.fn(async () => undefined),
-      setMeal: jest.fn(),
       deleteMeal,
     }),
   );

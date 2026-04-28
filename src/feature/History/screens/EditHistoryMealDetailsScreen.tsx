@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRoute, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useTranslation } from "react-i18next";
@@ -6,10 +6,13 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@/hooks/useMeals";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { MealDetailsFormScreen } from "@/feature/Meals/screens/MealAdd/MealDetailsFormScreen";
-import { useMealDraftContext } from "@contexts/MealDraftContext";
 import type { MealAddFlowApi } from "@/feature/Meals/feature/MapMealAddScreens";
 import type { Meal } from "@/types/meal";
 import { pickMealPhotoUri } from "@/utils/mealImage";
+import {
+  selectLocalMealByCloudId,
+  subscribeLocalMeals,
+} from "@/services/meals/localMealsStore";
 
 type EditHistoryMealDetailsNavigation = StackNavigationProp<
   RootStackParamList,
@@ -20,6 +23,16 @@ type EditHistoryMealDetailsRoute = RouteProp<
   "EditHistoryMealDetails"
 >;
 
+function buildEditMeal(meal: Meal): Meal {
+  return {
+    ...meal,
+    localPhotoUrl:
+      meal.localPhotoUrl ?? meal.photoLocalPath ?? meal.photoUrl ?? null,
+    photoLocalPath:
+      meal.photoLocalPath ?? meal.localPhotoUrl ?? meal.photoUrl ?? null,
+  };
+}
+
 export default function EditHistoryMealDetailsScreen({
   navigation,
 }: {
@@ -29,26 +42,25 @@ export default function EditHistoryMealDetailsScreen({
   const { t } = useTranslation(["common", "meals"]);
   const { uid } = useAuthContext();
   const { updateMeal } = useMeals(uid || "");
-  const { meal, saveDraft, setLastScreen, setMeal } = useMealDraftContext();
-  const seededMealVersionRef = useRef<string | null>(null);
+  const mealCloudId = route.params.meal.cloudId || route.params.meal.mealId;
+  const [editMeal, setEditMeal] = useState<Meal | null>(null);
 
-  useEffect(() => {
-    const nextMeal = route.params.meal;
-    const nextMealVersion = [
-      nextMeal.cloudId ?? "",
-      nextMeal.mealId ?? "",
-      nextMeal.updatedAt ?? "",
-    ].join("|");
-    if (seededMealVersionRef.current === nextMealVersion) {
+  const reloadFromLocal = useCallback(() => {
+    if (!uid || !mealCloudId) {
+      setEditMeal(null);
       return;
     }
-    seededMealVersionRef.current = nextMealVersion;
 
-    setMeal(nextMeal);
-    if (!uid) return;
-    void saveDraft(uid, nextMeal);
-    void setLastScreen(uid, "EditMealDetails");
-  }, [route.params.meal, saveDraft, setLastScreen, setMeal, uid]);
+    const localMeal = selectLocalMealByCloudId(uid, mealCloudId);
+    setEditMeal(localMeal ? buildEditMeal(localMeal) : null);
+  }, [mealCloudId, uid]);
+
+  useEffect(() => {
+    reloadFromLocal();
+
+    if (!uid) return undefined;
+    return subscribeLocalMeals(uid, reloadFromLocal);
+  }, [reloadFromLocal, uid]);
 
   const flow = useMemo<MealAddFlowApi>(
     () => ({
@@ -64,13 +76,33 @@ export default function EditHistoryMealDetailsScreen({
 
   const handleReviewSubmit = useCallback(
     async (meal: Meal) => {
-      await updateMeal({ ...meal, localPhotoUrl: undefined });
-      navigation.goBack();
+      await updateMeal({
+        ...meal,
+        userUid: uid || meal.userUid,
+        cloudId: meal.cloudId || mealCloudId,
+        localPhotoUrl: undefined,
+      });
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate("HistoryList");
+      }
     },
-    [navigation, updateMeal],
+    [mealCloudId, navigation, uid, updateMeal],
   );
 
-  const reviewPhotoUri = pickMealPhotoUri(meal);
+  const reviewPhotoUri = pickMealPhotoUri(editMeal);
+  const draftAdapter = useMemo(
+    () => ({
+      uid: uid || null,
+      meal: editMeal,
+      persistMeal: (nextMeal: Meal) => {
+        setEditMeal(nextMeal);
+      },
+      retryLoadDraft: reloadFromLocal,
+    }),
+    [editMeal, reloadFromLocal, uid],
+  );
 
   return (
     <MealDetailsFormScreen
@@ -95,7 +127,7 @@ export default function EditHistoryMealDetailsScreen({
         defaultValue: "Add photo",
       })}
       onReviewPhotoPress={() => {
-        const currentMeal = meal ?? route.params.meal;
+        const currentMeal = editMeal;
         if (!currentMeal) return;
         navigation.replace("SavedMealsCamera", {
           id: currentMeal.mealId,
@@ -103,6 +135,7 @@ export default function EditHistoryMealDetailsScreen({
           returnTo: "EditHistoryMealDetails",
         });
       }}
+      draftAdapter={draftAdapter}
     />
   );
 }
