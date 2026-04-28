@@ -26,7 +26,7 @@ const mockGetMealsPageLocalFiltered =
   jest.fn<
     (
       ...args: unknown[]
-    ) => Promise<{ items: Meal[]; nextBefore: string | null }>
+    ) => Promise<{ items: Meal[]; nextCursor: string | null }>
   >();
 const mockFetchMealsPageRemote =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -45,8 +45,6 @@ jest.mock("@/services/offline/meals.repo", () => ({
 }));
 
 jest.mock("@/services/meals/mealsRepository", () => ({
-  extractMealTimestampCursor: (cursor: string | null) =>
-    typeof cursor === "string" ? cursor.split("|")[0] : null,
   fetchMealsPageRemote: (...args: unknown[]) =>
     mockFetchMealsPageRemote(...args),
   markMealDeletedRemote: (...args: unknown[]) =>
@@ -136,12 +134,12 @@ describe("services/mealService", () => {
   it("uses local history repo and clamps access window", async () => {
     mockGetMealsPageLocalFiltered.mockResolvedValueOnce({
       items: [baseMeal()],
-      nextBefore: "2026-03-02T12:00:00.000Z",
+      nextCursor: "2026-03-02|2026-03-02T12:00:00.000Z|cloud-1",
     });
 
     const result = await getMealsPageFiltered("u1", {
       limit: 20,
-      cursor: "2026-03-02T12:00:00.000Z",
+      cursor: "2026-03-02|2026-03-02T12:00:00.000Z|cloud-1",
       filters: {
         dateRange: {
           start: new Date("2026-01-01T12:00:00.000Z"),
@@ -157,7 +155,7 @@ describe("services/mealService", () => {
       "u1",
       expect.objectContaining({
         limit: 20,
-        beforeISO: "2026-03-02T12:00:00.000Z",
+        cursor: "2026-03-02|2026-03-02T12:00:00.000Z|cloud-1",
         filters: expect.objectContaining({
           dateRange: {
             start: expectedWindow.start,
@@ -169,14 +167,14 @@ describe("services/mealService", () => {
     expect(mockFetchMealsPageRemote).not.toHaveBeenCalled();
     expect(result).toEqual({
       items: [baseMeal()],
-      nextCursor: "2026-03-02T12:00:00.000Z",
+      nextCursor: "2026-03-02|2026-03-02T12:00:00.000Z|cloud-1",
     });
   });
 
   it("uses local history repo for filtered pagination even when online", async () => {
     mockGetMealsPageLocalFiltered.mockResolvedValueOnce({
       items: [baseMeal({ cloudId: "cloud-2" })],
-      nextBefore: "2026-03-01T12:00:00.000Z",
+      nextCursor: "2026-03-01|2026-03-01T12:00:00.000Z|cloud-2",
     });
 
     const result = await getMealsPageFiltered("u1", {
@@ -192,7 +190,7 @@ describe("services/mealService", () => {
 
     expect(mockGetMealsPageLocalFiltered).toHaveBeenCalledWith("u1", {
       limit: 10,
-      beforeISO: null,
+      cursor: null,
       filters: {
         calories: [100, 500],
         protein: undefined,
@@ -204,7 +202,7 @@ describe("services/mealService", () => {
     expect(mockFetchMealsPageRemote).not.toHaveBeenCalled();
     expect(result).toEqual({
       items: [baseMeal({ cloudId: "cloud-2" })],
-      nextCursor: "2026-03-01T12:00:00.000Z",
+      nextCursor: "2026-03-01|2026-03-01T12:00:00.000Z|cloud-2",
     });
   });
 
@@ -241,7 +239,7 @@ describe("services/mealService", () => {
     };
     mockGetMealsPageLocalFiltered.mockResolvedValueOnce({
       items: [],
-      nextBefore: null,
+      nextCursor: null,
     });
 
     await getMealsPageFiltered("u1", {
@@ -266,7 +264,7 @@ describe("services/mealService", () => {
     };
     mockGetMealsPageLocalFiltered.mockResolvedValueOnce({
       items: [],
-      nextBefore: null,
+      nextCursor: null,
     });
 
     await getMealsPageFiltered("u1", {
@@ -288,7 +286,7 @@ describe("services/mealService", () => {
     // → after clamping: start = 2026-03-01, end = 2026-01-01 → start > end → epoch
     mockGetMealsPageLocalFiltered.mockResolvedValueOnce({
       items: [],
-      nextBefore: null,
+      nextCursor: null,
     });
 
     await getMealsPageFiltered("u1", {

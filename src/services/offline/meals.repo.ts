@@ -254,22 +254,66 @@ export type LocalHistoryFilters = {
   dateRange?: { start: Date; end: Date };
 };
 
+type LocalHistoryCursor = {
+  dayKey: string;
+  timestamp: string;
+  cloudId: string;
+};
+
+function parseLocalHistoryCursor(
+  cursor?: string | null
+): LocalHistoryCursor | null {
+  const normalized = typeof cursor === "string" ? cursor.trim() : "";
+  if (!normalized) return null;
+
+  const parts = normalized.split("|");
+  if (parts.length !== 3 || parts.some((part) => part.trim().length === 0)) {
+    throw new Error("Invalid local history cursor");
+  }
+
+  return {
+    dayKey: parts[0].trim(),
+    timestamp: parts[1].trim(),
+    cloudId: parts[2].trim(),
+  };
+}
+
+function buildLocalHistoryCursor(meal: Meal): string | null {
+  const dayKey = typeof meal.dayKey === "string" ? meal.dayKey.trim() : "";
+  const timestamp =
+    typeof meal.timestamp === "string" ? meal.timestamp.trim() : "";
+  const cloudId = typeof meal.cloudId === "string" ? meal.cloudId.trim() : "";
+  return dayKey && timestamp && cloudId
+    ? `${dayKey}|${timestamp}|${cloudId}`
+    : null;
+}
+
 export async function getMealsPageLocalFiltered(
   uid: string,
   opts: {
     limit: number;
-    beforeISO?: string | null;
+    cursor?: string | null;
     filters?: LocalHistoryFilters;
   }
-): Promise<{ items: Meal[]; nextBefore: string | null }> {
+): Promise<{ items: Meal[]; nextCursor: string | null }> {
   const db = getDB();
   const args: SQLiteBindValue[] = [uid];
 
   const where: string[] = [`user_uid=?`, `deleted=0`];
+  const cursor = parseLocalHistoryCursor(opts.cursor);
 
-  if (opts.beforeISO) {
-    where.push(`timestamp<?`);
-    args.push(opts.beforeISO);
+  if (cursor) {
+    where.push(
+      `(day_key<? OR (day_key=? AND timestamp<?) OR (day_key=? AND timestamp=? AND cloud_id<?))`,
+    );
+    args.push(
+      cursor.dayKey,
+      cursor.dayKey,
+      cursor.timestamp,
+      cursor.dayKey,
+      cursor.timestamp,
+      cursor.cloudId,
+    );
   }
 
   if (opts.filters?.dateRange) {
@@ -304,13 +348,10 @@ export async function getMealsPageLocalFiltered(
   const rows = db.getAllSync(sql, args) as MealRow[];
   const items = rows.map(rowToMeal);
   const last = items.length ? items[items.length - 1] : null;
-  const lastTs = last
-    ? String(last.timestamp || last.updatedAt || last.createdAt || "")
-    : null;
-  const nextBefore =
-    items.length === opts.limit && lastTs && lastTs.length > 0 ? lastTs : null;
+  const nextCursor =
+    items.length === opts.limit && last ? buildLocalHistoryCursor(last) : null;
 
-  return { items, nextBefore };
+  return { items, nextCursor };
 }
 
 export async function markDeletedLocal(

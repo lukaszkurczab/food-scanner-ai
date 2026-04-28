@@ -9,7 +9,6 @@ import {
   type LocalHistoryFilters,
 } from "@/services/offline/meals.repo";
 import {
-  extractMealTimestampCursor,
   markMealDeletedRemote,
   type MealHistoryFilters,
 } from "@/services/meals/mealsRepository";
@@ -20,7 +19,6 @@ import {
 export const FREE_WINDOW_DAYS = 30;
 export type HistoryFilters = MealHistoryFilters;
 
-export type MealsPage = { items: Meal[]; nextBefore: string | null };
 export type MealsPageV2 = {
   items: Meal[];
   nextCursor: string | null;
@@ -76,18 +74,13 @@ export async function getMealsPageFiltered(
       }
     : undefined;
 
-  const beforeISO =
-    typeof opts.cursor === "string" && opts.cursor
-      ? extractMealTimestampCursor(opts.cursor)
-      : null;
-
   const page = await getMealsPageLocalFiltered(uid, {
     limit: opts.limit,
-    beforeISO,
+    cursor: opts.cursor,
     filters: localFilters,
   });
 
-  return { items: page.items, nextCursor: page.nextBefore };
+  return { items: page.items, nextCursor: page.nextCursor };
 }
 
 export function subscribeMeals(

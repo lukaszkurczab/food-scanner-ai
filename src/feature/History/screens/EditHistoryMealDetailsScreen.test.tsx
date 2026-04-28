@@ -7,6 +7,7 @@ import type { Meal } from "@/types/meal";
 const mockUseRoute = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockUseMeals = jest.fn();
+const mockUseMealDraftContext = jest.fn();
 const mockSelectLocalMealByCloudId = jest.fn(
   (_uid: string, _cloudId: string): Meal | null => null,
 );
@@ -24,6 +25,10 @@ jest.mock("@/context/AuthContext", () => ({
 
 jest.mock("@/hooks/useMeals", () => ({
   useMeals: (uid: string) => mockUseMeals(uid),
+}));
+
+jest.mock("@contexts/MealDraftContext", () => ({
+  useMealDraftContext: () => mockUseMealDraftContext(),
 }));
 
 jest.mock("@/services/meals/localMealsStore", () => ({
@@ -66,11 +71,14 @@ jest.mock("@/feature/Meals/screens/MealAdd/MealDetailsFormScreen", () => ({
         {
           accessibilityRole: "button",
           onPress: () => {
+            if (!draftAdapter) {
+              throw new Error("History edit requires a local draft adapter");
+            }
             const nextMeal = {
-              ...(draftAdapter?.meal as Meal),
+              ...(draftAdapter.meal as Meal),
               name: "Edited meal",
             };
-            void draftAdapter?.persistMeal(nextMeal);
+            void draftAdapter.persistMeal(nextMeal);
             void onReviewSubmit?.({
               ...nextMeal,
               name: "Edited meal",
@@ -114,6 +122,12 @@ describe("EditHistoryMealDetailsScreen", () => {
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockSelectLocalMealByCloudId.mockReturnValue(buildMeal());
     mockSubscribeLocalMeals.mockReturnValue(jest.fn());
+    mockUseMealDraftContext.mockReturnValue({
+      setMeal: jest.fn(),
+      saveDraft: jest.fn(async () => undefined),
+      setLastScreen: jest.fn(async () => undefined),
+      loadDraft: jest.fn(async () => undefined),
+    });
   });
 
   it("loads the local history snapshot and updates the existing meal on submit", async () => {
@@ -182,25 +196,46 @@ describe("EditHistoryMealDetailsScreen", () => {
     });
   });
 
-  it("does not touch MealDraftContext for history edit", async () => {
+  it("does not save the global draft and submits history edits through updateMeal", async () => {
     const navigation = {
       goBack: jest.fn<() => void>(),
       canGoBack: jest.fn<() => boolean>(() => true),
       navigate: jest.fn<(screen: string, params?: unknown) => void>(),
       replace: jest.fn<(screen: string, params?: unknown) => void>(),
     };
+    const updateMeal = jest.fn<(meal: Meal) => Promise<void>>(
+      async (_meal: Meal) => undefined,
+    );
+    const setMeal = jest.fn();
+    const saveDraft = jest.fn(async () => undefined);
+    const setLastScreen = jest.fn(async () => undefined);
+    const loadDraft = jest.fn(async () => undefined);
 
-    mockUseMeals.mockReturnValue({ updateMeal: jest.fn(async () => undefined) });
+    mockUseMeals.mockReturnValue({ updateMeal });
+    mockUseMealDraftContext.mockReturnValue({
+      setMeal,
+      saveDraft,
+      setLastScreen,
+      loadDraft,
+    });
 
-    renderWithTheme(
+    const screen = renderWithTheme(
       <EditHistoryMealDetailsScreen navigation={navigation as never} />,
     );
 
+    fireEvent.press(screen.getByText("submit-review-edit"));
+
     await waitFor(() => {
-      expect(mockSubscribeLocalMeals).toHaveBeenCalledWith(
-        "user-1",
-        expect.any(Function),
+      expect(updateMeal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cloudId: "cloud-1",
+          name: "Edited meal",
+        }),
       );
     });
+    expect(setMeal).not.toHaveBeenCalled();
+    expect(saveDraft).not.toHaveBeenCalled();
+    expect(setLastScreen).not.toHaveBeenCalled();
+    expect(loadDraft).not.toHaveBeenCalled();
   });
 });

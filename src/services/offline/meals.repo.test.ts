@@ -235,7 +235,7 @@ describe("offline meals repo", () => {
 
     await getMealsPageLocalFiltered("user-1", {
       limit: 25,
-      beforeISO: "2026-04-05T00:00:00.000Z",
+      cursor: "2026-04-05|2026-04-05T00:00:00.000Z|cloud-cursor",
       filters: {
         dateRange: {
           start: new Date(2026, 3, 2, 23, 30),
@@ -248,7 +248,9 @@ describe("offline meals repo", () => {
 
     const [sql, args] = mockGetAllSync.mock.calls[0] as [string, unknown[]];
 
+    expect(sql).toContain("day_key<?");
     expect(sql).toContain("timestamp<?");
+    expect(sql).toContain("cloud_id<?");
     expect(sql).toContain("day_key>=?");
     expect(sql).toContain("day_key<=?");
     expect(sql).not.toContain("timestamp>=?");
@@ -258,7 +260,12 @@ describe("offline meals repo", () => {
     );
     expect(args).toEqual([
       "user-1",
+      "2026-04-05",
+      "2026-04-05",
       "2026-04-05T00:00:00.000Z",
+      "2026-04-05",
+      "2026-04-05T00:00:00.000Z",
+      "cloud-cursor",
       "2026-04-02",
       "2026-04-04",
       300,
@@ -267,5 +274,52 @@ describe("offline meals repo", () => {
       30,
       25,
     ]);
+  });
+
+  it("returns a composite cursor matching local history ordering", async () => {
+    mockGetAllSync.mockReturnValue([
+      {
+        cloud_id: "cloud-3",
+        meal_id: "meal-3",
+        user_uid: "user-1",
+        timestamp: "2026-04-04T07:30:00.000Z",
+        day_key: "2026-04-04",
+        type: "breakfast",
+        name: "Boundary meal",
+        ingredients: "[]",
+        photo_url: null,
+        image_local: null,
+        image_id: null,
+        totals_kcal: 320,
+        totals_protein: 18,
+        totals_carbs: 24,
+        totals_fat: 12,
+        deleted: 0,
+        created_at: "2026-04-04T07:30:00.000Z",
+        updated_at: "2026-04-04T07:30:00.000Z",
+        last_synced_at: 0,
+        sync_state: "synced",
+        source: "manual",
+        input_method: null,
+        ai_meta: null,
+        notes: null,
+        tags: "[]",
+      },
+    ]);
+
+    const { getMealsPageLocalFiltered } =
+      jest.requireActual<typeof import("@/services/offline/meals.repo")>(
+        "@/services/offline/meals.repo",
+      );
+
+    await expect(
+      getMealsPageLocalFiltered("user-1", {
+        limit: 1,
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        nextCursor: "2026-04-04|2026-04-04T07:30:00.000Z|cloud-3",
+      }),
+    );
   });
 });
