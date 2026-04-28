@@ -80,12 +80,10 @@ export async function enqueueDelete(
   cloudId: string,
   updatedAt: string
 ): Promise<void> {
-  const db = getDB();
-  db.runSync(
-    `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
-     VALUES (?, ?, 'delete', ?, ?)`,
-    [cloudId, uid, JSON.stringify({ cloudId, deleted: true }), updatedAt]
-  );
+  await enqueueDeleteOp(uid, cloudId, updatedAt, "delete", [
+    "upsert",
+    "delete",
+  ]);
 }
 
 export async function enqueueMyMealDelete(
@@ -93,12 +91,45 @@ export async function enqueueMyMealDelete(
   cloudId: string,
   updatedAt: string
 ): Promise<void> {
+  await enqueueDeleteOp(uid, cloudId, updatedAt, "delete_mymeal", [
+    "upsert_mymeal",
+    "delete_mymeal",
+  ]);
+}
+
+async function enqueueDeleteOp(
+  uid: string,
+  cloudId: string,
+  updatedAt: string,
+  kind: Extract<QueueKind, "delete" | "delete_mymeal">,
+  supersededKinds: QueueKind[],
+): Promise<void> {
   const db = getDB();
-  db.runSync(
-    `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
-     VALUES (?, ?, 'delete_mymeal', ?, ?)`,
-    [cloudId, uid, JSON.stringify({ cloudId, deleted: true }), updatedAt]
-  );
+  db.execSync("BEGIN");
+  try {
+    db.runSync(
+      `DELETE FROM op_queue
+       WHERE cloud_id=? AND user_uid=? AND kind IN (${supersededKinds
+         .map(() => "?")
+         .join(",")})`,
+      [cloudId, uid, ...supersededKinds],
+    );
+    db.runSync(
+      `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        cloudId,
+        uid,
+        kind,
+        JSON.stringify({ cloudId, deleted: true }),
+        updatedAt,
+      ],
+    );
+    db.execSync("COMMIT");
+  } catch (error) {
+    db.execSync("ROLLBACK");
+    throw error;
+  }
 }
 
 export async function enqueueChatMessagePersist(
