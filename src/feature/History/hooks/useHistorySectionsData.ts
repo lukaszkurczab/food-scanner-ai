@@ -25,24 +25,6 @@ const PULL_THROTTLE_MS = 30_000;
 
 export type HistoryErrorKind = "load" | "sync" | null;
 
-function getMealTimestamp(meal: { timestamp?: unknown; updatedAt?: unknown; createdAt?: unknown }) {
-  const raw = meal.timestamp ?? meal.updatedAt ?? meal.createdAt;
-  const parsed = new Date(raw as string | number | Date);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed;
-}
-
-function isMealInDateRange(
-  meal: { timestamp?: unknown; updatedAt?: unknown; createdAt?: unknown },
-  dateRange?: { start: Date; end: Date },
-) {
-  if (!dateRange) return true;
-  const timestamp = getMealTimestamp(meal);
-  if (!timestamp) return false;
-  const ts = timestamp.getTime();
-  return ts >= dateRange.start.getTime() && ts <= dateRange.end.getTime();
-}
-
 function mealNutrientValue(
   meal: { totals?: { kcal?: number; protein?: number; carbs?: number; fat?: number } },
   key: "kcal" | "protein" | "carbs" | "fat",
@@ -64,7 +46,6 @@ function getFilteredLocalMeals(
     : getLocalMealsSnapshot(uid).meals;
 
   return source.filter((meal) => {
-    if (!isMealInDateRange(meal, filters?.dateRange)) return false;
     return (
       inRange(mealNutrientValue(meal, "kcal"), filters?.calories) &&
       inRange(mealNutrientValue(meal, "protein"), filters?.protein) &&

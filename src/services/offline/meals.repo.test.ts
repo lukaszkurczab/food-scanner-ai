@@ -168,7 +168,30 @@ describe("offline meals repo", () => {
       expect.objectContaining({
         inputMethod: null,
         aiMeta: null,
+        dayKey: null,
       }),
     );
+  });
+
+  it("emits user-scoped delete events", async () => {
+    const { markDeletedLocal } =
+      jest.requireActual<typeof import("@/services/offline/meals.repo")>(
+        "@/services/offline/meals.repo",
+      );
+    const { emit } = jest.requireMock("@/services/core/events") as {
+      emit: jest.Mock;
+    };
+
+    await markDeletedLocal("user-1", "cloud-1", "2026-03-18T12:00:00.000Z");
+
+    expect(mockRunSync).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE user_uid=? AND cloud_id=?"),
+      ["2026-03-18T12:00:00.000Z", "user-1", "cloud-1"],
+    );
+    expect(emit).toHaveBeenCalledWith("meal:local:deleted", {
+      uid: "user-1",
+      cloudId: "cloud-1",
+      ts: "2026-03-18T12:00:00.000Z",
+    });
   });
 });

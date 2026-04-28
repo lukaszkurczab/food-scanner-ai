@@ -7,6 +7,7 @@ const createMeal = (overrides: Partial<Meal>): Meal =>
     userUid: "user-1",
     mealId: "meal-1",
     timestamp: new Date(2026, 2, 2, 12, 0).toISOString(),
+    dayKey: "2026-03-02",
     type: "breakfast",
     name: null,
     ingredients: [],
@@ -34,6 +35,7 @@ describe("getStatsForRange", () => {
       createMeal({
         mealId: "day2-seconds",
         timestamp: Math.floor(new Date(2026, 2, 2, 9, 0).getTime() / 1000) as unknown as string,
+        dayKey: "2026-03-02",
         ingredients: [
           {
             id: "i1",
@@ -47,10 +49,11 @@ describe("getStatsForRange", () => {
         ],
       }),
       createMeal({
-        mealId: "day3-createdAt-fallback",
+        mealId: "day3-canonical-day-key",
         timestamp: undefined as unknown as string,
         updatedAt: undefined as unknown as string,
         createdAt: new Date(2026, 2, 3, 9, 0).toISOString(),
+        dayKey: "2026-03-03",
         ingredients: [],
         totals: {
           kcal: 300,
@@ -62,10 +65,12 @@ describe("getStatsForRange", () => {
       createMeal({
         mealId: "invalid",
         timestamp: "bad-date",
+        dayKey: null,
       }),
       createMeal({
         mealId: "out-of-range",
         timestamp: new Date(2026, 2, 10, 9, 0).toISOString(),
+        dayKey: "2026-03-10",
       }),
     ];
 
@@ -125,6 +130,7 @@ describe("getStatsForRange", () => {
       createMeal({
         mealId: "nan-kcal",
         timestamp: msTs as unknown as string,
+        dayKey: "2026-03-05",
         ingredients: [
           {
             id: "nan",
@@ -140,6 +146,7 @@ describe("getStatsForRange", () => {
       createMeal({
         mealId: "protein-only",
         timestamp: msTs as unknown as string,
+        dayKey: "2026-03-05",
         ingredients: [
           {
             id: "p",
@@ -155,6 +162,7 @@ describe("getStatsForRange", () => {
       createMeal({
         mealId: "fat-only",
         timestamp: msTs as unknown as string,
+        dayKey: "2026-03-05",
         ingredients: [
           {
             id: "f",
@@ -170,6 +178,7 @@ describe("getStatsForRange", () => {
       createMeal({
         mealId: "carbs-only",
         timestamp: msTs as unknown as string,
+        dayKey: "2026-03-05",
         ingredients: [
           {
             id: "c",
@@ -187,6 +196,7 @@ describe("getStatsForRange", () => {
         timestamp: undefined as unknown as string,
         updatedAt: undefined as unknown as string,
         createdAt: undefined as unknown as string,
+        dayKey: null,
       }),
     ];
 

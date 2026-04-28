@@ -395,7 +395,7 @@ export function useMeals(userUid: string | null) {
     async (mealCloudId: string) => {
       if (!userUid || !mealCloudId) return;
       const now = new Date().toISOString();
-      await markDeletedLocal(mealCloudId, now);
+      await markDeletedLocal(userUid, mealCloudId, now);
       removeLocalMealSnapshot(userUid, mealCloudId);
       emit("meal:deleted", {
         uid: userUid,
@@ -422,6 +422,7 @@ export function useMeals(userUid: string | null) {
         cloudId: newCloudId,
         mealId: newMealId,
         timestamp: dateOverride || now,
+        dayKey: formatMealDayKey(new Date(dateOverride || now)) ?? now.slice(0, 10),
         createdAt: now,
         updatedAt: now,
         syncState: "pending",

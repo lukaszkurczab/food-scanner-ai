@@ -36,6 +36,7 @@ const makeMeal = (overrides: Partial<Meal>): Meal =>
     userUid: "user-1",
     mealId: "meal-1",
     timestamp: new Date(2026, 2, 10, 10, 0).toISOString(),
+    dayKey: "2026-03-10",
     type: "lunch",
     name: null,
     ingredients: [],
@@ -263,6 +264,7 @@ describe("useStatisticsState", () => {
         makeMeal({
           mealId: "old",
           timestamp: new Date(2026, 1, 10, 12, 0, 0, 0).toISOString(),
+          dayKey: "2026-02-10",
         }),
       ],
       getMeals: jest.fn(),

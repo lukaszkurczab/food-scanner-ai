@@ -111,7 +111,8 @@ export function addOrUpdateMealInSections(
     locale?: string;
   },
 ): void {
-  const dateKey = getMealDayKey(meal) ?? "1970-01-01";
+  const dateKey = getMealDayKey(meal);
+  if (!dateKey) return;
   const date = dateFromDayKey(dateKey);
   const title = toHeaderTitle({
     date,

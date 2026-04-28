@@ -6,31 +6,21 @@ import { useTranslation } from "react-i18next";
 import { useUserProfileContext } from "@/context/UserProfileContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { usePremiumContext } from "@/context/PremiumContext";
-import { useMeals } from "@/hooks/useMeals";
 import { useWeeklyReport } from "@/hooks/useWeeklyReport";
-import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
-import { calculateMacroTargets } from "@/utils/calculateMacroTargets";
 import WeekStrip, { type WeekDayItem } from "@/components/WeekStrip";
 import { MacroTargetsRow } from "../components/MacroTargetsRow";
 import { TodaysMealsList } from "../components/TodaysMealsList";
 import HomeHeroCard from "../components/HomeHeroCard";
 import WeeklyReportCard from "../components/WeeklyReportCard";
-import type { Meal } from "@/types/meal";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
 import { createMockWeeklyReportResult } from "@/services/weeklyReport/weeklyReportMocks";
-import {
-  formatMealDayKey,
-  getMealsForDayKey,
-} from "@/services/meals/mealMetadata";
+import { formatMealDayKey } from "@/services/meals/mealMetadata";
+import { useHomeTodayState } from "@/feature/Home/hooks/useHomeTodayState";
 
 function isWeeklyReportDevPreview(): boolean {
   return typeof __DEV__ !== "undefined" && __DEV__;
-}
-
-function getMealsForDate(allMeals: Meal[], date: Date): Meal[] {
-  return getMealsForDayKey(allMeals, formatMealDayKey(date), "asc");
 }
 
 function buildLast7Days(): WeekDayItem[] {
@@ -47,10 +37,6 @@ function buildLast7Days(): WeekDayItem[] {
       isToday: date.toDateString() === todayString,
     };
   });
-}
-
-function clampProgress(value: number): number {
-  return Math.max(0, Math.min(value, 1));
 }
 
 function getGreetingKey(hour: number): "morning" | "afternoon" | "evening" {
@@ -81,12 +67,20 @@ export default function HomeScreen({ navigation }: Props) {
   const { isPremium } = usePremiumContext();
   const canAccessWeeklyReport = isPremium === true;
   const weeklyReportDevPreview = isWeeklyReportDevPreview();
-  const { meals } = useMeals(uid);
   const liveWeeklyReport = useWeeklyReport({
     uid,
     active: canAccessWeeklyReport && !weeklyReportDevPreview,
   });
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const selectedDayKey = useMemo(
+    () => formatMealDayKey(selectedDate),
+    [selectedDate],
+  );
+  const homeDay = useHomeTodayState({
+    uid,
+    selectedDayKey,
+    userData,
+  });
   const last7Days = useMemo(buildLast7Days, []);
   const mealAddEntry = useMealAddMethodState({
     navigation,
@@ -100,28 +94,19 @@ export default function HomeScreen({ navigation }: Props) {
       }
     : liveWeeklyReport;
 
-  const isToday = selectedDate.toDateString() === new Date().toDateString();
-  const dayMeals = useMemo(
-    () => getMealsForDate(meals, selectedDate),
-    [meals, selectedDate],
-  );
-  const mealCount = dayMeals.length;
-  const consumed = useMemo(() => calculateTotalNutrients(dayMeals), [dayMeals]);
+  const {
+    dayMeals,
+    mealCount,
+    consumed,
+    goalCalories,
+    macroTargets,
+    kcalProgress,
+    isToday,
+    isCompletedDay,
+    isPastEmptyDay,
+    isTodayEmpty,
+  } = homeDay;
   const totalCalories = consumed.kcal;
-
-  const goalCalories = userData?.calorieTarget ?? 0;
-
-  const macroTargets = useMemo(
-    () =>
-      userData?.calorieTarget && userData.calorieTarget > 0
-        ? calculateMacroTargets({
-            calorieTarget: userData.calorieTarget,
-            preferences: userData.preferences,
-            goal: userData.goal,
-          })
-        : null,
-    [userData?.calorieTarget, userData?.goal, userData?.preferences],
-  );
 
   const numberFormatter = useMemo(
     () => new Intl.NumberFormat(i18n.language || undefined),
@@ -150,11 +135,6 @@ export default function HomeScreen({ navigation }: Props) {
     }
     return `${consumedLabel} kcal`;
   }, [goalCalories, numberFormatter, totalCalories]);
-
-  const isCompletedDay = mealCount > 0 && goalCalories > 0 && totalCalories >= goalCalories;
-  const isEmptyDay = mealCount === 0;
-  const isPastEmptyDay = !isToday && isEmptyDay;
-  const isTodayEmpty = isToday && isEmptyDay;
 
   const selectedMethodName = t(`meals:${mealAddEntry.preferredOption.titleKey}`);
   const methodSelectorLabel = t("home:methodSelector", {
@@ -220,7 +200,7 @@ export default function HomeScreen({ navigation }: Props) {
       supportText: null,
       showMethodSelector: true,
       progress:
-        goalCalories > 0 ? clampProgress(totalCalories / goalCalories) : null,
+        kcalProgress,
       supportCopy: null,
     };
   }, [
@@ -231,6 +211,7 @@ export default function HomeScreen({ navigation }: Props) {
     isPastEmptyDay,
     isTodayEmpty,
     isToday,
+    kcalProgress,
     kcalProgressLabel,
     mealCount,
     selectedDate,

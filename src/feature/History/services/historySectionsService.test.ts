@@ -17,6 +17,7 @@ function makeMeal(overrides: Partial<Meal> = {}): Meal {
     userUid: "user-1",
     mealId: "meal-1",
     timestamp: "2026-02-25T10:00:00.000Z",
+    dayKey: "2026-02-25",
     type: "lunch",
     name: "Meal",
     ingredients: [],

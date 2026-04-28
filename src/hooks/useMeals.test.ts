@@ -9,6 +9,7 @@ import {
 } from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import { useMeals } from "@/hooks/useMeals";
+import { __resetLocalMealsStoreForTests } from "@/services/meals/localMealsStore";
 
 const mockUuid = jest.fn<() => string>();
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
@@ -20,7 +21,9 @@ const mockGetMealByCloudIdLocal = jest.fn<
 >();
 const mockUpsertMealLocal = jest.fn<(meal: Meal) => Promise<void>>();
 const mockUpsertMyMealLocal = jest.fn<(meal: Meal) => Promise<void>>();
-const mockMarkDeletedLocal = jest.fn<(cloudId: string, now: string) => Promise<void>>();
+const mockMarkDeletedLocal = jest.fn<
+  (uid: string, cloudId: string, now: string) => Promise<void>
+>();
 const mockEnqueueUpsert = jest.fn<(uid: string, meal: Meal) => Promise<void>>();
 const mockEnqueueDelete = jest.fn<
   (uid: string, cloudId: string, now: string) => Promise<void>
@@ -63,8 +66,8 @@ jest.mock("@/services/offline/meals.repo", () => ({
   getMealByCloudIdLocal: (uid: string, cloudId: string) =>
     mockGetMealByCloudIdLocal(uid, cloudId),
   upsertMealLocal: (meal: Meal) => mockUpsertMealLocal(meal),
-  markDeletedLocal: (cloudId: string, now: string) =>
-    mockMarkDeletedLocal(cloudId, now),
+  markDeletedLocal: (uid: string, cloudId: string, now: string) =>
+    mockMarkDeletedLocal(uid, cloudId, now),
   getPendingMealsLocal: () => Promise.resolve([]),
 }));
 
@@ -204,6 +207,7 @@ const baseAddMealInput: Omit<Meal, "updatedAt" | "deleted"> = {
 
 describe("useMeals", () => {
   beforeEach(() => {
+    __resetLocalMealsStoreForTests();
     jest.clearAllMocks();
     jest.useRealTimers();
     mockEventHandlers.clear();
@@ -269,6 +273,45 @@ describe("useMeals", () => {
     await waitFor(() => {
       expect(result.current.meals[0]?.cloudId).toBe("c2");
     });
+  });
+
+  it("updates pushed meals point-wise when the sync event includes an id", async () => {
+    const syncedMeal = baseMeal({
+      cloudId: "c1",
+      name: "Pushed meal",
+      syncState: "synced",
+      updatedAt: "2026-02-25T13:00:00.000Z",
+    });
+
+    mockGetMealsPageLocal.mockResolvedValueOnce([
+      baseMeal({ cloudId: "c1", name: "Pending meal", syncState: "pending" }),
+    ]);
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce(syncedMeal);
+
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    mockGetMealsPageLocal.mockClear();
+
+    await act(async () => {
+      const handlers = mockEventHandlers.get("meal:pushed");
+      handlers?.forEach((handler) => handler({ uid: "user-1", cloudId: "c1" }));
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.meals[0]).toEqual(
+        expect.objectContaining({
+          cloudId: "c1",
+          name: "Pushed meal",
+          syncState: "synced",
+        }),
+      );
+    });
+    expect(mockGetMealByCloudIdLocal).toHaveBeenCalledWith("user-1", "c1");
+    expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
   });
 
   it("reloads visible meals when another useMeals instance emits meal deleted", async () => {
@@ -346,6 +389,50 @@ describe("useMeals", () => {
     );
     expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
     expect(mockPullChanges).not.toHaveBeenCalled();
+  });
+
+  it("ignores local mutation events for a different or missing user without changing the snapshot", async () => {
+    const initialMeal = baseMeal({
+      userUid: "regression-user",
+      cloudId: "current-user-meal",
+    });
+    const otherUserMeal = baseMeal({
+      userUid: "user-2",
+      cloudId: "other-user-meal",
+      name: "Other user meal",
+    });
+
+    mockGetMealsPageLocal.mockResolvedValueOnce([initialMeal]);
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce(otherUserMeal);
+
+    const { result } = renderHook(() => useMeals("regression-user"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    const baseline = result.current.meals;
+    mockGetMealByCloudIdLocal.mockClear();
+
+    await act(async () => {
+      const upsertHandlers = mockEventHandlers.get("meal:local:upserted");
+      upsertHandlers?.forEach((handler) =>
+        handler({ uid: "user-2", cloudId: "other-user-meal" }),
+      );
+      upsertHandlers?.forEach((handler) =>
+        handler({ cloudId: "other-user-meal" }),
+      );
+      const deleteHandlers = mockEventHandlers.get("meal:local:deleted");
+      deleteHandlers?.forEach((handler) =>
+        handler({ uid: "user-2", cloudId: "current-user-meal" }),
+      );
+      deleteHandlers?.forEach((handler) =>
+        handler({ cloudId: "current-user-meal" }),
+      );
+      await Promise.resolve();
+    });
+
+    expect(mockGetMealByCloudIdLocal).not.toHaveBeenCalled();
+    expect(result.current.meals).toBe(baseline);
   });
 
   it("clears data when user is missing and keeps pagination inactive", async () => {
@@ -803,6 +890,11 @@ describe("useMeals", () => {
     });
 
     expect(mockMarkDeletedLocal).toHaveBeenCalledTimes(1);
+    expect(mockMarkDeletedLocal).toHaveBeenCalledWith(
+      "user-1",
+      "delete-me",
+      expect.any(String),
+    );
     expect(mockEnqueueDelete).toHaveBeenCalledWith(
       "user-1",
       "delete-me",
@@ -851,6 +943,7 @@ describe("useMeals", () => {
         cloudId: "copy-cloud",
         mealId: "copy-meal",
         timestamp: "2026-03-01T12:00:00.000Z",
+        dayKey: "2026-03-01",
         deleted: false,
       }),
     );

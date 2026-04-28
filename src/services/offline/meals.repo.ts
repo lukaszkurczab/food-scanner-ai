@@ -4,6 +4,7 @@ import type { MealRow } from "./types";
 import { emit } from "@/services/core/events";
 import type { SQLiteBindValue } from "expo-sqlite";
 import {
+  deriveMealDayKey,
   getMealDayKey,
   normalizeMealInputMethod,
   parseMealAiMeta,
@@ -34,7 +35,7 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
   const syncState = normalizeMealSyncState(meal.syncState);
   const lastSyncedAt = syncState === "synced" ? toEpochMs(meal.updatedAt) : 0;
   const cloudId = meal.cloudId ?? meal.mealId;
-  const dayKey = getMealDayKey({
+  const dayKey = deriveMealDayKey({
     dayKey: meal.dayKey,
     timestamp: meal.timestamp,
     createdAt,
@@ -176,12 +177,7 @@ function rowToMeal(r: MealRow): Meal {
     userUid: r.user_uid,
     mealId: r.meal_id,
     timestamp: r.timestamp,
-    dayKey: getMealDayKey({
-      dayKey: r.day_key,
-      timestamp: r.timestamp,
-      createdAt: r.created_at ?? r.timestamp ?? r.updated_at,
-      updatedAt: r.updated_at,
-    }),
+    dayKey: getMealDayKey({ dayKey: r.day_key }),
     loggedAtLocalMin:
       typeof r.logged_at_local_min === "number"
         ? Number(r.logged_at_local_min)
@@ -314,17 +310,19 @@ export async function getMealsPageLocalFiltered(
 }
 
 export async function markDeletedLocal(
+  uid: string,
   cloudId: string,
   updatedAt: string
 ): Promise<void> {
+  if (!uid || !cloudId) return;
   const db = getDB();
   db.runSync(
     `UPDATE meals
      SET deleted=1, updated_at=?, sync_state='pending'
-     WHERE cloud_id=?`,
-    [updatedAt, cloudId]
+     WHERE user_uid=? AND cloud_id=?`,
+    [updatedAt, uid, cloudId]
   );
-  emit("meal:local:deleted", { cloudId, ts: updatedAt });
+  emit("meal:local:deleted", { uid, cloudId, ts: updatedAt });
 }
 
 export async function setMealSyncStateLocal(params: {

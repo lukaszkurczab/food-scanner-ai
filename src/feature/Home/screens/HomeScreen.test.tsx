@@ -217,8 +217,18 @@ jest.mock("../components/MacroTargetsRow", () => ({
 }));
 
 jest.mock("../components/TodaysMealsList", () => ({
-  TodaysMealsList: ({ meals }: { meals: Array<unknown> }) =>
-    mockReact.createElement(mockText, null, `meals:${meals.length}`),
+  TodaysMealsList: ({
+    meals,
+  }: {
+    meals: Array<{ name?: string | null; syncState?: string }>;
+  }) =>
+    mockReact.createElement(
+      mockText,
+      null,
+      `meals:${meals.length}:${meals
+        .map((meal) => `${meal.name ?? ""}/${meal.syncState ?? ""}`)
+        .join("|")}`,
+    ),
 }));
 
 jest.mock("../components/WeeklyReportCard", () => ({
@@ -256,6 +266,7 @@ function createMeal(overrides: Record<string, unknown> = {}) {
     userUid: "user-1",
     mealId: "meal-1",
     timestamp: new Date("2026-03-18T10:00:00.000Z").getTime(),
+    dayKey: "2026-03-18",
     type: "breakfast",
     name: "Breakfast",
     ingredients: [],
@@ -354,7 +365,7 @@ describe("HomeScreen", () => {
       getByText("Start with your first meal and the rest of today will build from there."),
     ).toBeTruthy();
     expect(getByText("weekly-report-card:ready")).toBeTruthy();
-    expect(queryByText("meals:1")).toBeNull();
+    expect(queryByText(/^meals:1:/)).toBeNull();
 
     fireEvent.press(getByText("Log breakfast"));
 
@@ -386,16 +397,32 @@ describe("HomeScreen", () => {
     expect(getByText("Log next meal")).toBeTruthy();
     expect(getByText("hero-progress:0.25")).toBeTruthy();
     expect(getByText("macro-targets:125/65/225;consumed:25/15/45")).toBeTruthy();
-    expect(getByText("meals:1")).toBeTruthy();
+    expect(getByText(/^meals:1:/)).toBeTruthy();
   });
 
-  it("shows a pending saved meal from useMeals immediately in today's totals", () => {
+  it("shows pending, failed and conflict meals from the canonical day state in list and progress", () => {
     mockUseMeals.mockReturnValue({
       meals: [
         createMeal({
           mealId: "pending-meal",
           cloudId: "pending-cloud",
+          name: "Pending meal",
           syncState: "pending",
+          totals: { kcal: 500, protein: 25, fat: 15, carbs: 45 },
+        }),
+        createMeal({
+          mealId: "failed-meal",
+          cloudId: "failed-cloud",
+          name: "Failed meal",
+          syncState: "failed",
+          totals: { kcal: 400, protein: 20, fat: 10, carbs: 50 },
+        }),
+        createMeal({
+          mealId: "conflict-meal",
+          cloudId: "conflict-cloud",
+          name: "Conflict meal",
+          syncState: "conflict",
+          totals: { kcal: 300, protein: 15, fat: 9, carbs: 35 },
         }),
       ],
       getMeals: jest.fn(),
@@ -406,9 +433,13 @@ describe("HomeScreen", () => {
       <HomeScreen navigation={navigation as never} />,
     );
 
-    expect(getByText("meals:1")).toBeTruthy();
-    expect(getByText("hero-progress:0.25")).toBeTruthy();
-    expect(getByText("macro-targets:125/65/225;consumed:25/15/45")).toBeTruthy();
+    expect(
+      getByText(
+        "meals:3:Pending meal/pending|Failed meal/failed|Conflict meal/conflict",
+      ),
+    ).toBeTruthy();
+    expect(getByText("hero-progress:0.60")).toBeTruthy();
+    expect(getByText("macro-targets:125/65/225;consumed:60/34/130")).toBeTruthy();
   });
 
   it("does not trigger an extra meals reload from the screen layer", async () => {
@@ -458,6 +489,7 @@ describe("HomeScreen", () => {
       meals: [
         createMeal({
           mealId: "meal-past",
+          dayKey: "2026-03-17",
           timestamp: new Date("2026-03-17T10:00:00.000Z").getTime(),
           createdAt: "2026-03-17T10:00:00.000Z",
           updatedAt: "2026-03-17T10:00:00.000Z",
@@ -476,7 +508,7 @@ describe("HomeScreen", () => {
 
     expect(getByText("Add a missed meal")).toBeTruthy();
     expect(getByText("hero-progress:0.35")).toBeTruthy();
-    expect(getByText("meals:1")).toBeTruthy();
+    expect(getByText(/^meals:1:/)).toBeTruthy();
     expect(queryByText("You missed a meal log")).toBeNull();
     expect(queryByText("You can still fill in what was missing.")).toBeNull();
   });
@@ -493,13 +525,13 @@ describe("HomeScreen", () => {
       <HomeScreen navigation={navigation as never} />,
     );
 
-    expect(queryByText("meals:1")).toBeNull();
+    expect(queryByText(/^meals:1:/)).toBeNull();
     expect(queryByText("hero-progress:0.25")).toBeNull();
 
     mealsState.meals = [createMeal()];
     rerender(<HomeScreen navigation={navigation as never} />);
 
-    expect(getByText("meals:1")).toBeTruthy();
+    expect(getByText(/^meals:1:/)).toBeTruthy();
     expect(getByText("hero-progress:0.25")).toBeTruthy();
     expect(queryByText("hero-progress:0.00")).toBeNull();
   });

@@ -121,12 +121,14 @@ export function normalizeMealDayKey(value: unknown): string | null {
 export function getMealDayKey(
   meal: MealDateFields,
 ): string | null {
-  const explicitDayKey = normalizeMealDayKey(meal.dayKey);
-  if (explicitDayKey) return explicitDayKey;
+  return isCanonicalMealDayKey(meal.dayKey) ? meal.dayKey : null;
+}
 
-  // TODO(dayKey-backfill): remove timestamp fallback after all persisted meals
-  // have canonical YYYY-MM-DD dayKey populated.
+export function deriveMealDayKey(
+  meal: MealDateFields,
+): string | null {
   return (
+    normalizeMealDayKey(meal.dayKey) ??
     normalizeMealDayKey(meal.timestamp) ??
     normalizeMealDayKey(meal.createdAt) ??
     normalizeMealDayKey(meal.updatedAt)

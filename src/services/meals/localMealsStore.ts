@@ -143,6 +143,10 @@ class LocalMealsReadModel {
     this.upsert(meal);
   }
 
+  resetForTests(): void {
+    this.stop();
+  }
+
   private removeByIdSilently(id: string): boolean {
     let changed = false;
     for (const [key, meal] of this.byId.entries()) {
@@ -165,10 +169,20 @@ class LocalMealsReadModel {
         void this.applyLocalMealEvent(event);
       }),
       on<LocalMealEvent>("meal:synced", (event) => {
-        if (this.matchesUid(event)) void this.refresh();
+        if (!this.matchesUid(event)) return;
+        if (event?.cloudId || event?.mealId) {
+          void this.applyLocalMealEvent(event);
+        } else {
+          void this.refresh();
+        }
       }),
       on<LocalMealEvent>("meal:pushed", (event) => {
-        if (this.matchesUid(event)) void this.refresh();
+        if (!this.matchesUid(event)) return;
+        if (event?.cloudId || event?.mealId) {
+          void this.applyLocalMealEvent(event);
+        } else {
+          void this.refresh();
+        }
       }),
       on<LocalMealEvent>("meal:deleted", (event) => {
         if (!this.matchesUid(event)) return;
@@ -192,7 +206,7 @@ class LocalMealsReadModel {
   }
 
   private matchesUid(event?: LocalMealEvent): boolean {
-    return typeof event?.uid !== "string" || event.uid === this.uid;
+    return typeof event?.uid === "string" && event.uid === this.uid;
   }
 
   private upsert(meal: Meal): void {
@@ -302,4 +316,11 @@ export function removeLocalMealSnapshot(
   cloudId: string,
 ): void {
   getStore(uid)?.removeById(cloudId);
+}
+
+export function __resetLocalMealsStoreForTests(): void {
+  for (const store of stores.values()) {
+    store.resetForTests();
+  }
+  stores.clear();
 }

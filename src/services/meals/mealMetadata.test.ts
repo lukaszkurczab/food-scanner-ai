@@ -104,4 +104,24 @@ describe("mealMetadata", () => {
     expect(getMealsForDayKey([meal], "2026-03-18")).toEqual([meal]);
     expect(getMealsForDayKey([meal], "2026-03-19")).toEqual([]);
   });
+
+  it("does not treat timestamp-only meals as canonical day meals", () => {
+    const meal = makeMeal({
+      dayKey: null,
+      timestamp: "2026-03-18T10:00:00.000Z",
+    });
+
+    expect(getMealDayKey(meal)).toBeNull();
+    expect(getMealsForDayKey([meal], "2026-03-18")).toEqual([]);
+  });
+
+  it("rejects non-canonical dayKey values in canonical selectors", () => {
+    const meal = makeMeal({
+      dayKey: "2026-03-18T10:00:00.000Z",
+      timestamp: "2026-03-18T10:00:00.000Z",
+    });
+
+    expect(getMealDayKey(meal)).toBeNull();
+    expect(getMealsForDayKey([meal], "2026-03-18")).toEqual([]);
+  });
 });
