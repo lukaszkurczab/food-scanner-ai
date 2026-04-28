@@ -9,7 +9,13 @@ import {
 } from "@jest/globals";
 import type { Meal } from "@/types/meal";
 import { useMeals } from "@/hooks/useMeals";
-import { __resetLocalMealsStoreForTests } from "@/services/meals/localMealsStore";
+import { buildHomeDayState } from "@/feature/Home/services/homeDaySelectors";
+import { getStatsForRange } from "@/feature/Statistics/utils/getStatsForRange";
+import {
+  __resetLocalMealsStoreForTests,
+  getLocalMealsSnapshot,
+  selectLocalMealByCloudId,
+} from "@/services/meals/localMealsStore";
 
 const mockUuid = jest.fn<() => string>();
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
@@ -979,8 +985,27 @@ describe("useMeals", () => {
   });
 
   it("updates history meals offline as a local pending upsert", async () => {
-    jest.useFakeTimers();
     mockNetInfoFetch.mockResolvedValue({ isConnected: false });
+    mockGetMealsPageLocal.mockResolvedValueOnce([
+      baseMeal({
+        cloudId: "history-cloud",
+        mealId: "history-meal",
+        dayKey: "2026-02-20",
+        timestamp: "2026-02-20T09:15:00.000Z",
+        name: "Stale history meal",
+        ingredients: [],
+        totals: { kcal: 150, protein: 15, carbs: 8, fat: 3 },
+      }),
+      baseMeal({
+        cloudId: "other-day-cloud",
+        mealId: "other-day-meal",
+        dayKey: "2026-02-21",
+        timestamp: "2026-02-21T08:00:00.000Z",
+        name: "Other day meal",
+        ingredients: [],
+        totals: { kcal: 90, protein: 8, carbs: 7, fat: 2 },
+      }),
+    ]);
 
     const { result } = renderHook(() => useMeals("user-1"));
     await waitFor(() => {
@@ -989,6 +1014,61 @@ describe("useMeals", () => {
 
     const originalTimestamp = "2026-02-20T09:15:00.000Z";
     const originalDayKey = "2026-02-20";
+
+    mockEnqueueUpsert.mockImplementationOnce(async (uid, queuedMeal) => {
+      expect(uid).toBe("user-1");
+      expect(mockUpsertMealLocal.mock.invocationCallOrder.at(-1) ?? 0).toBeLessThan(
+        mockEnqueueUpsert.mock.invocationCallOrder.at(-1) ?? Number.MAX_SAFE_INTEGER,
+      );
+
+      const canonicalLocalMeal = selectLocalMealByCloudId("user-1", "history-cloud");
+      expect(canonicalLocalMeal).toEqual(
+        expect.objectContaining({
+          cloudId: "history-cloud",
+          name: "Offline edit",
+          syncState: "pending",
+          dayKey: originalDayKey,
+          totals: { kcal: 260, protein: 27, carbs: 25, fat: 5 },
+        }),
+      );
+
+      const snapshotMeals = getLocalMealsSnapshot("user-1").meals;
+      const homeState = buildHomeDayState({
+        meals: snapshotMeals,
+        selectedDayKey: originalDayKey,
+        todayDayKey: originalDayKey,
+        userData: {
+          calorieTarget: 1000,
+          preferences: ["balanced"],
+          goal: "maintain",
+        },
+      });
+      const stats = getStatsForRange(snapshotMeals, {
+        start: new Date("2026-02-20T00:00:00.000Z"),
+        end: new Date("2026-02-21T00:00:00.000Z"),
+      });
+
+      expect(homeState.dayMeals).toEqual([
+        expect.objectContaining({
+          cloudId: "history-cloud",
+          name: "Offline edit",
+          syncState: "pending",
+        }),
+      ]);
+      expect(homeState.consumed).toEqual({
+        kcal: 260,
+        protein: 27,
+        carbs: 25,
+        fat: 5,
+      });
+      expect(stats.totals).toEqual({
+        kcal: 350,
+        protein: 35,
+        carbs: 32,
+        fat: 7,
+      });
+      expect(queuedMeal).toEqual(canonicalLocalMeal);
+    });
 
     await act(async () => {
       await result.current.updateMeal(
@@ -1044,6 +1124,10 @@ describe("useMeals", () => {
     await waitFor(() => {
       expect(result.current.meals).toEqual([
         expect.objectContaining({
+          cloudId: "other-day-cloud",
+          name: "Other day meal",
+        }),
+        expect.objectContaining({
           cloudId: "history-cloud",
           name: "Offline edit",
           syncState: "pending",
@@ -1053,11 +1137,31 @@ describe("useMeals", () => {
   });
 
   it("deletes meals, prunes local list and queues delete sync", async () => {
-    jest.useFakeTimers();
     mockGetMealsPageLocal.mockResolvedValueOnce([
-      baseMeal({ cloudId: "delete-me" }),
-      baseMeal({ cloudId: "keep-me" }),
-      baseMeal({ cloudId: undefined }),
+      baseMeal({
+        cloudId: "delete-me",
+        mealId: "delete-me",
+        dayKey: "2026-02-20",
+        timestamp: "2026-02-20T12:00:00.000Z",
+        ingredients: [],
+        totals: { kcal: 220, protein: 18, carbs: 17, fat: 8 },
+      }),
+      baseMeal({
+        cloudId: "keep-me",
+        mealId: "keep-me",
+        dayKey: "2026-02-20",
+        timestamp: "2026-02-20T08:00:00.000Z",
+        ingredients: [],
+        totals: { kcal: 80, protein: 6, carbs: 4, fat: 2 },
+      }),
+      baseMeal({
+        cloudId: "other-day",
+        mealId: "other-day",
+        dayKey: "2026-02-21",
+        timestamp: "2026-02-21T07:00:00.000Z",
+        ingredients: [],
+        totals: { kcal: 120, protein: 10, carbs: 9, fat: 3 },
+      }),
     ]);
 
     const { result } = renderHook(() => useMeals("user-1"));
@@ -1070,6 +1174,49 @@ describe("useMeals", () => {
       await result.current.deleteMeal("");
     });
     expect(mockMarkDeletedLocal).not.toHaveBeenCalled();
+
+    mockEnqueueDelete.mockImplementationOnce(async (uid, cloudId) => {
+      expect(uid).toBe("user-1");
+      expect(cloudId).toBe("delete-me");
+      expect(mockMarkDeletedLocal.mock.invocationCallOrder.at(-1) ?? 0).toBeLessThan(
+        mockEnqueueDelete.mock.invocationCallOrder.at(-1) ?? Number.MAX_SAFE_INTEGER,
+      );
+      expect(selectLocalMealByCloudId("user-1", "delete-me")).toBeNull();
+
+      const snapshotMeals = getLocalMealsSnapshot("user-1").meals;
+      const homeState = buildHomeDayState({
+        meals: snapshotMeals,
+        selectedDayKey: "2026-02-20",
+        todayDayKey: "2026-02-20",
+        userData: {
+          calorieTarget: 1000,
+          preferences: ["balanced"],
+          goal: "maintain",
+        },
+      });
+      const stats = getStatsForRange(snapshotMeals, {
+        start: new Date("2026-02-20T00:00:00.000Z"),
+        end: new Date("2026-02-21T00:00:00.000Z"),
+      });
+
+      expect(snapshotMeals.map((meal) => meal.cloudId)).toEqual([
+        "other-day",
+        "keep-me",
+      ]);
+      expect(homeState.dayMeals.map((meal) => meal.cloudId)).toEqual(["keep-me"]);
+      expect(homeState.consumed).toEqual({
+        kcal: 80,
+        protein: 6,
+        carbs: 4,
+        fat: 2,
+      });
+      expect(stats.totals).toEqual({
+        kcal: 200,
+        protein: 16,
+        carbs: 13,
+        fat: 5,
+      });
+    });
 
     await act(async () => {
       await result.current.deleteMeal("delete-me");
@@ -1086,7 +1233,7 @@ describe("useMeals", () => {
       "delete-me",
       expect.any(String),
     );
-    expect(result.current.meals.map((m) => m.cloudId)).toEqual(["keep-me", undefined]);
+    expect(result.current.meals.map((m) => m.cloudId)).toEqual(["other-day", "keep-me"]);
     expect(mockEmit).toHaveBeenCalledWith(
       "meal:deleted",
       expect.objectContaining({
@@ -1096,16 +1243,31 @@ describe("useMeals", () => {
     );
     expect(mockTrackMealLogged).not.toHaveBeenCalled();
 
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce(
+      baseMeal({
+        userUid: "user-1",
+        cloudId: "delete-me",
+        mealId: "delete-me",
+        dayKey: "2026-02-20",
+        timestamp: "2026-02-20T12:00:00.000Z",
+        updatedAt: "2026-02-20T12:30:00.000Z",
+        deleted: true,
+        syncState: "failed",
+      }),
+    );
+
     await act(async () => {
-      jest.advanceTimersByTime(1200);
+      const handlers = mockEventHandlers.get("meal:local:upserted");
+      handlers?.forEach((handler) => handler({ uid: "user-1", cloudId: "delete-me" }));
+      await Promise.resolve();
     });
-    await flush();
-    expect(mockPushQueue).toHaveBeenCalledWith("user-1");
-    expect(mockPullChanges).toHaveBeenCalledWith("user-1");
-    expect(mockRefreshStreakFromBackend).toHaveBeenCalledWith("user-1", {
-      refreshBadges: true,
-    });
-    expect(mockReconcileAll).toHaveBeenCalledWith("user-1");
+
+    expect(result.current.meals.map((meal) => meal.cloudId)).toEqual([
+      "other-day",
+      "keep-me",
+    ]);
+    expect(selectLocalMealByCloudId("user-1", "delete-me")).toBeNull();
+    expect(mockEnqueueDelete).toHaveBeenCalledTimes(1);
   });
 
   it("duplicates meals and allows overriding target date", async () => {

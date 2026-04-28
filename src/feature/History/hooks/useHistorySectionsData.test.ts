@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import {
+  afterEach,
   beforeEach,
   describe,
   expect,
@@ -11,6 +12,11 @@ import type { DaySection } from "@/feature/History/types/daySection";
 import type { LocalHistoryFilters } from "@/services/offline/meals.repo";
 import type { DataViewState } from "@/types/dataViewState";
 import type { Meal } from "@/types/meal";
+import {
+  __resetLocalMealsStoreForTests,
+  removeLocalMealSnapshot,
+  upsertLocalMealSnapshot,
+} from "@/services/meals/localMealsStore";
 
 const mockGetMealsPageLocalFiltered = jest.fn<
   (
@@ -141,6 +147,7 @@ describe("useHistorySectionsData", () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-04-12T10:00:00.000Z"));
+    __resetLocalMealsStoreForTests();
     focusEffectCallback = undefined;
 
     mockGetMealsPageLocalFiltered.mockResolvedValue({
@@ -168,6 +175,7 @@ describe("useHistorySectionsData", () => {
 
   afterEach(() => {
     jest.useRealTimers();
+    __resetLocalMealsStoreForTests();
   });
 
   it("throttles focus pull immediately after a forced refresh-triggered pull", async () => {
@@ -263,6 +271,137 @@ describe("useHistorySectionsData", () => {
 
     expect(result.current.sections).toEqual([
       expect.objectContaining({ title: "Fresh filter result" }),
+    ]);
+  });
+
+  it("uses canonical local meals across dayKeys and keeps pending/failed/delete transitions visible", async () => {
+    upsertLocalMealSnapshot(
+      "user-1",
+      buildMeal({
+        mealId: "history-1",
+        cloudId: "history-1",
+        dayKey: "2026-04-12",
+        name: "Breakfast",
+        syncState: "synced",
+        totals: { kcal: 300, protein: 20, carbs: 25, fat: 10 },
+      }),
+    );
+    upsertLocalMealSnapshot(
+      "user-1",
+      buildMeal({
+        mealId: "history-2",
+        cloudId: "history-2",
+        dayKey: "2026-04-11",
+        timestamp: "2026-04-11T18:00:00.000Z",
+        updatedAt: "2026-04-11T18:00:00.000Z",
+        name: "Dinner",
+        syncState: "synced",
+        totals: { kcal: 450, protein: 28, carbs: 35, fat: 18 },
+      }),
+    );
+
+    const { result } = renderHook(() =>
+      useHistorySectionsData({
+        uid: "user-1",
+        query: "",
+        filters: null,
+        todayLabel: "Today",
+        yesterdayLabel: "Yesterday",
+        locale: "en",
+        isOnline: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.sections.map((section) => section.title)).toEqual([
+        "Breakfast",
+        "Dinner",
+      ]);
+    });
+
+    await act(async () => {
+      upsertLocalMealSnapshot(
+        "user-1",
+        buildMeal({
+          mealId: "history-1",
+          cloudId: "history-1",
+          dayKey: "2026-04-12",
+          name: "Breakfast edited offline",
+          updatedAt: "2026-04-12T12:00:00.000Z",
+          syncState: "pending",
+          totals: { kcal: 520, protein: 36, carbs: 42, fat: 20 },
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.sections[0]?.data[0]).toEqual(
+        expect.objectContaining({
+          cloudId: "history-1",
+          name: "Breakfast edited offline",
+          syncState: "pending",
+          dayKey: "2026-04-12",
+        }),
+      );
+    });
+
+    await act(async () => {
+      upsertLocalMealSnapshot(
+        "user-1",
+        buildMeal({
+          mealId: "history-1",
+          cloudId: "history-1",
+          dayKey: "2026-04-12",
+          name: "Breakfast sync failed",
+          updatedAt: "2026-04-12T13:00:00.000Z",
+          syncState: "failed",
+          totals: { kcal: 520, protein: 36, carbs: 42, fat: 20 },
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.sections[0]?.data[0]).toEqual(
+        expect.objectContaining({
+          cloudId: "history-1",
+          name: "Breakfast sync failed",
+          syncState: "failed",
+        }),
+      );
+    });
+
+    await act(async () => {
+      removeLocalMealSnapshot("user-1", "history-2");
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.sections.map((section) => section.title)).toEqual([
+        "Breakfast sync failed",
+      ]);
+    });
+
+    await act(async () => {
+      upsertLocalMealSnapshot(
+        "user-1",
+        buildMeal({
+          mealId: "history-2",
+          cloudId: "history-2",
+          dayKey: "2026-04-11",
+          timestamp: "2026-04-11T18:00:00.000Z",
+          updatedAt: "2026-04-12T14:00:00.000Z",
+          name: "Dinner",
+          deleted: true,
+          syncState: "failed",
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    expect(result.current.sections.map((section) => section.title)).toEqual([
+      "Breakfast sync failed",
     ]);
   });
 });

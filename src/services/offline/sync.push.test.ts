@@ -78,6 +78,51 @@ describe("sync.push", () => {
     expect(mockMoveToDeadLetter).not.toHaveBeenCalled();
   });
 
+  it("keeps failed upserts pending for diagnostics before dead-lettering them", async () => {
+    mockNextBatch
+      .mockResolvedValueOnce([
+        {
+          id: 7,
+          cloud_id: "meal-7",
+          user_uid: "user-1",
+          kind: "upsert",
+          payload: {},
+          updated_at: "2026-03-03T12:00:00.000Z",
+          attempts: 0,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const strategy: SyncStrategy = {
+      pull: async () => 0,
+      handlePushOp: async () => {
+        throw new Error("temporary outage");
+      },
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { runPushQueue } = require("@/services/offline/sync.push");
+
+    await runPushQueue("user-1", 25, [strategy]);
+
+    expect(mockBumpAttempts).toHaveBeenCalledWith(7);
+    expect(mockMoveToDeadLetter).not.toHaveBeenCalled();
+    expect(mockSetMealSyncStateLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: "user-1",
+        cloudId: "meal-7",
+        syncState: "pending",
+        updatedAt: "2026-03-03T12:00:00.000Z",
+      }),
+    );
+    expect(mockEmit).toHaveBeenCalledWith("meal:failed", {
+      uid: "user-1",
+      opId: 7,
+      cloudId: "meal-7",
+      dead: false,
+    });
+  });
+
   it("moves poisoned ops to dead letter after max retries", async () => {
     mockNextBatch
       .mockResolvedValueOnce([

@@ -224,6 +224,79 @@ describe("meals strategy", () => {
     );
   });
 
+  it("does not overwrite a newer local offline edit with an older server snapshot after reconnect", async () => {
+    mockFetchMealChangesRemote
+      .mockResolvedValueOnce({
+        items: [
+          {
+            userUid: "user-1",
+            mealId: "meal-1",
+            cloudId: "meal-1",
+            timestamp: "2026-03-03T12:00:00.000Z",
+            dayKey: "2026-03-03",
+            type: "lunch",
+            name: "Remote older copy",
+            ingredients: [],
+            createdAt: "2026-03-03T12:00:00.000Z",
+            updatedAt: "2026-03-03T12:20:00.000Z",
+            syncState: "synced",
+            source: "manual",
+            imageId: null,
+            photoUrl: null,
+            notes: null,
+            tags: [],
+            deleted: false,
+            totals: { kcal: 200, protein: 30, carbs: 0, fat: 5 },
+          },
+        ],
+        nextCursor: null,
+      })
+      .mockResolvedValueOnce({ items: [], nextCursor: null });
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce({
+      userUid: "user-1",
+      mealId: "meal-1",
+      cloudId: "meal-1",
+      timestamp: "2026-03-03T12:00:00.000Z",
+      dayKey: "2026-03-04",
+      type: "lunch",
+      name: "Local offline edit",
+      ingredients: [],
+      createdAt: "2026-03-03T12:00:00.000Z",
+      updatedAt: "2026-03-03T12:45:00.000Z",
+      syncState: "pending",
+      source: "manual",
+      imageId: null,
+      photoUrl: null,
+      notes: "keep newer local notes",
+      tags: ["offline-edit"],
+      deleted: false,
+      totals: { kcal: 520, protein: 36, carbs: 42, fat: 20 },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { mealsStrategy } = require("@/services/offline/strategies/meals.strategy");
+
+    await mealsStrategy.pull("user-1");
+
+    expect(mockUpsertMealLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudId: "meal-1",
+        name: "Local offline edit",
+        dayKey: "2026-03-04",
+        updatedAt: "2026-03-03T12:45:00.000Z",
+        syncState: "synced",
+        notes: "keep newer local notes",
+        tags: ["offline-edit"],
+        totals: { kcal: 520, protein: 36, carbs: 42, fat: 20 },
+      }),
+    );
+    expect(mockEmit).toHaveBeenCalledWith("meal:synced", {
+      uid: "user-1",
+      cloudId: "meal-1",
+      updatedAt: "2026-03-03T12:45:00.000Z",
+    });
+  });
+
   it("emits ambiguous conflict event when local and remote updates are within 5 minutes", async () => {
     mockFetchMealChangesRemote
       .mockResolvedValueOnce({

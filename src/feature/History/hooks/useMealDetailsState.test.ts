@@ -31,6 +31,7 @@ jest.mock("@/services/core/events", () => ({
 }));
 
 jest.mock("@/services/meals/localMealsStore", () => ({
+  ...jest.requireActual("@/services/meals/localMealsStore"),
   selectLocalMealByCloudId: (uid: string, cloudId: string) =>
     mockSelectLocalMealByCloudId(uid, cloudId),
   subscribeLocalMeals: (uid: string, listener: () => void) =>
@@ -41,6 +42,11 @@ jest.mock("@/services/offline/myMeals.repo", () => ({
   getMyMealByCloudIdLocal: (uid: string, cloudId: string) =>
     mockGetMyMealByCloudIdLocal(uid, cloudId),
 }));
+
+const actualLocalMealsStore =
+  jest.requireActual<typeof import("@/services/meals/localMealsStore")>(
+    "@/services/meals/localMealsStore",
+  );
 
 const baseMeal = (overrides?: Partial<Meal>): Meal => ({
   userUid: "user-1",
@@ -107,6 +113,7 @@ describe("useMealDetailsState", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    actualLocalMealsStore.__resetLocalMealsStoreForTests();
     localMealsListener = null;
     jest
       .spyOn(BackHandler, "addEventListener")
@@ -115,17 +122,20 @@ describe("useMealDetailsState", () => {
           mockBackHandlerAddEventListener(eventName, handler)) as typeof BackHandler.addEventListener,
       );
     mockOn.mockReturnValue(jest.fn());
-    mockSelectLocalMealByCloudId.mockReturnValue(null);
+    mockSelectLocalMealByCloudId.mockImplementation((uid: string, cloudId: string) =>
+      actualLocalMealsStore.selectLocalMealByCloudId(uid, cloudId),
+    );
     mockSubscribeLocalMeals.mockImplementation(
-      (_uid: string, listener: () => void) => {
+      (uid: string, listener: () => void) => {
         localMealsListener = listener;
-        return jest.fn();
+        return actualLocalMealsStore.subscribeLocalMeals(uid, listener);
       },
     );
     mockGetMyMealByCloudIdLocal.mockResolvedValue(null);
   });
 
   afterEach(() => {
+    actualLocalMealsStore.__resetLocalMealsStoreForTests();
     jest.restoreAllMocks();
   });
 
@@ -162,7 +172,7 @@ describe("useMealDetailsState", () => {
       source: "saved",
       updatedAt: "2026-04-13T10:00:00.000Z",
     });
-    mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
+    actualLocalMealsStore.upsertLocalMealSnapshot("user-1", historyMeal);
     mockGetMyMealByCloudIdLocal.mockResolvedValue(savedMeal);
 
     const { result } = setupHook({
@@ -182,6 +192,62 @@ describe("useMealDetailsState", () => {
       "shared-id",
     );
     expect(mockGetMyMealByCloudIdLocal).not.toHaveBeenCalled();
+  });
+
+  it("keeps pending and failed local sync state observable on the canonical meal entity", async () => {
+    const staleRouteMeal = baseMeal({
+      cloudId: "sync-diagnostics",
+      mealId: "sync-diagnostics",
+      name: "Route meal",
+      updatedAt: "2026-04-12T10:00:00.000Z",
+      syncState: "synced",
+    });
+    actualLocalMealsStore.upsertLocalMealSnapshot(
+      "user-1",
+      baseMeal({
+        cloudId: "sync-diagnostics",
+        mealId: "sync-diagnostics",
+        name: "Offline edit pending",
+        updatedAt: "2026-04-12T11:00:00.000Z",
+        syncState: "pending",
+      }),
+    );
+
+    const { result } = setupHook({ routeMeal: staleRouteMeal });
+
+    await waitFor(() => {
+      expect(result.current.draft).toEqual(
+        expect.objectContaining({
+          cloudId: "sync-diagnostics",
+          name: "Offline edit pending",
+          syncState: "pending",
+        }),
+      );
+    });
+
+    await act(async () => {
+      actualLocalMealsStore.upsertLocalMealSnapshot(
+        "user-1",
+        baseMeal({
+          cloudId: "sync-diagnostics",
+          mealId: "sync-diagnostics",
+          name: "Offline edit failed",
+          updatedAt: "2026-04-12T12:00:00.000Z",
+          syncState: "failed",
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.draft).toEqual(
+        expect.objectContaining({
+          cloudId: "sync-diagnostics",
+          name: "Offline edit failed",
+          syncState: "failed",
+        }),
+      );
+    });
   });
 
   it("falls back safely when route params are missing cloudId", async () => {
@@ -255,7 +321,7 @@ describe("useMealDetailsState", () => {
 
   it("shows unavailable details after the local history meal is deleted", async () => {
     const historyMeal = baseMeal({ cloudId: "local-delete" });
-    mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
+    actualLocalMealsStore.upsertLocalMealSnapshot("user-1", historyMeal);
 
     const { result } = setupHook({
       routeMeal: baseMeal({ cloudId: "local-delete", mealId: "local-delete" }),
