@@ -158,7 +158,7 @@ describe("meals strategy", () => {
     );
   });
 
-  it("keeps newer local meal version during pull conflicts", async () => {
+  it("keeps pending local edit when pulled remote meal is older", async () => {
     mockFetchMealChangesRemote
       .mockResolvedValueOnce({
         items: [
@@ -210,13 +210,10 @@ describe("meals strategy", () => {
 
     await mealsStrategy.pull("user-1");
 
-    expect(mockUpsertMealLocal).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cloudId: "meal-1",
-        name: "Local",
-        updatedAt: "2026-03-03T12:40:00.000Z",
-        syncState: "synced",
-      }),
+    expect(mockUpsertMealLocal).not.toHaveBeenCalled();
+    expect(mockEmit).not.toHaveBeenCalledWith(
+      "meal:synced",
+      expect.anything(),
     );
     expect(mockEmit).not.toHaveBeenCalledWith(
       "meal:conflict:ambiguous",
@@ -278,26 +275,217 @@ describe("meals strategy", () => {
 
     await mealsStrategy.pull("user-1");
 
+    expect(mockUpsertMealLocal).not.toHaveBeenCalled();
+    expect(mockEmit).not.toHaveBeenCalledWith(
+      "meal:synced",
+      expect.anything(),
+    );
+    expect(mockSetItem).toHaveBeenCalledWith(
+      "sync:last_pull_ts:user-1",
+      "2026-03-03T12:20:00.000Z|meal-1",
+    );
+  });
+
+  it("marks pending local edit as conflict when pulled remote meal is newer", async () => {
+    mockFetchMealChangesRemote
+      .mockResolvedValueOnce({
+        items: [
+          {
+            userUid: "user-1",
+            mealId: "meal-1",
+            cloudId: "meal-1",
+            timestamp: "2026-03-03T12:00:00.000Z",
+            type: "lunch",
+            name: "Remote",
+            ingredients: [],
+            createdAt: "2026-03-03T12:00:00.000Z",
+            updatedAt: "2026-03-03T12:40:00.000Z",
+            syncState: "synced",
+            source: "manual",
+            imageId: null,
+            photoUrl: null,
+            notes: null,
+            tags: [],
+            deleted: false,
+            totals: { kcal: 200, protein: 30, carbs: 0, fat: 5 },
+          },
+        ],
+        nextCursor: null,
+      })
+      .mockResolvedValueOnce({ items: [], nextCursor: null });
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce({
+      userUid: "user-1",
+      mealId: "meal-1",
+      cloudId: "meal-1",
+      timestamp: "2026-03-03T12:00:00.000Z",
+      type: "lunch",
+      name: "Local offline edit",
+      ingredients: [],
+      createdAt: "2026-03-03T12:00:00.000Z",
+      updatedAt: "2026-03-03T12:10:00.000Z",
+      syncState: "pending",
+      source: "manual",
+      imageId: null,
+      photoUrl: null,
+      notes: null,
+      tags: [],
+      deleted: false,
+      totals: { kcal: 180, protein: 25, carbs: 5, fat: 4 },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { mealsStrategy } = require("@/services/offline/strategies/meals.strategy");
+
+    await mealsStrategy.pull("user-1");
+
     expect(mockUpsertMealLocal).toHaveBeenCalledWith(
       expect.objectContaining({
         cloudId: "meal-1",
         name: "Local offline edit",
-        dayKey: "2026-03-04",
-        updatedAt: "2026-03-03T12:45:00.000Z",
-        syncState: "synced",
-        notes: "keep newer local notes",
-        tags: ["offline-edit"],
-        totals: { kcal: 520, protein: 36, carbs: 42, fat: 20 },
+        updatedAt: "2026-03-03T12:10:00.000Z",
+        syncState: "conflict",
       }),
     );
-    expect(mockEmit).toHaveBeenCalledWith("meal:synced", {
-      uid: "user-1",
-      cloudId: "meal-1",
-      updatedAt: "2026-03-03T12:45:00.000Z",
-    });
+    expect(mockEmit).not.toHaveBeenCalledWith(
+      "meal:synced",
+      expect.anything(),
+    );
+    expect(mockEmit).not.toHaveBeenCalledWith(
+      "meal:conflict:ambiguous",
+      expect.anything(),
+    );
   });
 
-  it("emits ambiguous conflict event when local and remote updates are within 5 minutes", async () => {
+  it("keeps a pending local delete tombstone when pull contains a remote update", async () => {
+    mockFetchMealChangesRemote
+      .mockResolvedValueOnce({
+        items: [
+          {
+            userUid: "user-1",
+            mealId: "meal-1",
+            cloudId: "meal-1",
+            timestamp: "2026-03-03T12:00:00.000Z",
+            type: "lunch",
+            name: "Remote update",
+            ingredients: [],
+            createdAt: "2026-03-03T12:00:00.000Z",
+            updatedAt: "2026-03-03T12:40:00.000Z",
+            syncState: "synced",
+            source: "manual",
+            imageId: null,
+            photoUrl: null,
+            notes: null,
+            tags: [],
+            deleted: false,
+            totals: { kcal: 200, protein: 30, carbs: 0, fat: 5 },
+          },
+        ],
+        nextCursor: null,
+      })
+      .mockResolvedValueOnce({ items: [], nextCursor: null });
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce({
+      userUid: "user-1",
+      mealId: "meal-1",
+      cloudId: "meal-1",
+      timestamp: "2026-03-03T12:00:00.000Z",
+      type: "lunch",
+      name: "Local delete",
+      ingredients: [],
+      createdAt: "2026-03-03T12:00:00.000Z",
+      updatedAt: "2026-03-03T12:10:00.000Z",
+      syncState: "pending",
+      source: "manual",
+      imageId: null,
+      photoUrl: null,
+      notes: null,
+      tags: [],
+      deleted: true,
+      totals: { kcal: 180, protein: 25, carbs: 5, fat: 4 },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { mealsStrategy } = require("@/services/offline/strategies/meals.strategy");
+
+    await mealsStrategy.pull("user-1");
+
+    expect(mockUpsertMealLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudId: "meal-1",
+        name: "Local delete",
+        deleted: true,
+        syncState: "conflict",
+      }),
+    );
+    expect(mockEmit).not.toHaveBeenCalledWith(
+      "meal:synced",
+      expect.anything(),
+    );
+  });
+
+  it("does not mask a dead-lettered local meal when pull contains a remote change", async () => {
+    mockFetchMealChangesRemote
+      .mockResolvedValueOnce({
+        items: [
+          {
+            userUid: "user-1",
+            mealId: "meal-1",
+            cloudId: "meal-1",
+            timestamp: "2026-03-03T12:00:00.000Z",
+            type: "lunch",
+            name: "Remote update",
+            ingredients: [],
+            createdAt: "2026-03-03T12:00:00.000Z",
+            updatedAt: "2026-03-03T12:40:00.000Z",
+            syncState: "synced",
+            source: "manual",
+            imageId: null,
+            photoUrl: null,
+            notes: null,
+            tags: [],
+            deleted: false,
+            totals: { kcal: 200, protein: 30, carbs: 0, fat: 5 },
+          },
+        ],
+        nextCursor: null,
+      })
+      .mockResolvedValueOnce({ items: [], nextCursor: null });
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce({
+      userUid: "user-1",
+      mealId: "meal-1",
+      cloudId: "meal-1",
+      timestamp: "2026-03-03T12:00:00.000Z",
+      type: "lunch",
+      name: "Failed local",
+      ingredients: [],
+      createdAt: "2026-03-03T12:00:00.000Z",
+      updatedAt: "2026-03-03T12:10:00.000Z",
+      syncState: "failed",
+      source: "manual",
+      imageId: null,
+      photoUrl: null,
+      notes: null,
+      tags: [],
+      deleted: false,
+      totals: { kcal: 180, protein: 25, carbs: 5, fat: 4 },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { mealsStrategy } = require("@/services/offline/strategies/meals.strategy");
+
+    await mealsStrategy.pull("user-1");
+
+    expect(mockUpsertMealLocal).not.toHaveBeenCalled();
+    expect(mockEmit).not.toHaveBeenCalledWith(
+      "meal:synced",
+      expect.anything(),
+    );
+    expect(mockEmit).not.toHaveBeenCalledWith(
+      "meal:conflict:ambiguous",
+      expect.anything(),
+    );
+  });
+
+  it("emits ambiguous conflict event when pending local and remote updates are within 5 minutes", async () => {
     mockFetchMealChangesRemote
       .mockResolvedValueOnce({
         items: [
@@ -349,10 +537,19 @@ describe("meals strategy", () => {
 
     await mealsStrategy.pull("user-1");
 
+    expect(mockUpsertMealLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudId: "meal-1",
+        name: "Local",
+        syncState: "conflict",
+      }),
+    );
     expect(mockEmit).toHaveBeenCalledWith("meal:conflict:ambiguous", {
       uid: "user-1",
       cloudId: "meal-1",
-      resolvedAt: "2026-03-03T12:12:00.000Z",
+      localUpdatedAt: "2026-03-03T12:12:00.000Z",
+      remoteUpdatedAt: "2026-03-03T12:10:00.000Z",
+      reason: "pending-ambiguous",
     });
   });
 });

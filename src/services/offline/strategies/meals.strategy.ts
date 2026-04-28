@@ -128,21 +128,39 @@ export const mealsStrategy: SyncStrategy = {
             const existingLocal = meal.cloudId
               ? await getMealByCloudIdLocal(uid, meal.cloudId)
               : null;
-            const { resolved, isAmbiguous } = existingLocal
+            const resolution = existingLocal
               ? resolveMealConflict(existingLocal, meal)
-              : { resolved: meal, isAmbiguous: false };
+              : {
+                  resolved: meal,
+                  discarded: null,
+                  isAmbiguous: false,
+                  decision: "remote-wins" as const,
+                  reason: "remote-newer" as const,
+                };
+            const { resolved } = resolution;
 
-            await upsertMealLocal({ ...resolved, syncState: "synced" });
-            emit("meal:synced", {
-              uid,
-              cloudId: resolved.cloudId ?? meal.cloudId,
-              updatedAt: resolved.updatedAt,
-            });
-            if (existingLocal && isAmbiguous) {
+            if (resolution.decision === "remote-wins") {
+              await upsertMealLocal({ ...resolved, syncState: "synced" });
+              emit("meal:synced", {
+                uid,
+                cloudId: resolved.cloudId ?? meal.cloudId,
+                updatedAt: resolved.updatedAt,
+              });
+            } else if (resolution.decision === "conflict") {
+              await upsertMealLocal({ ...resolved, syncState: "conflict" });
+            }
+
+            if (
+              existingLocal &&
+              resolution.decision === "conflict" &&
+              resolution.isAmbiguous
+            ) {
               emit("meal:conflict:ambiguous", {
                 uid,
                 cloudId: resolved.cloudId,
-                resolvedAt: resolved.updatedAt,
+                localUpdatedAt: existingLocal.updatedAt,
+                remoteUpdatedAt: meal.updatedAt,
+                reason: resolution.reason,
               });
             }
             total++;
@@ -150,6 +168,8 @@ export const mealsStrategy: SyncStrategy = {
             pullLog.log("local_upsert:ok", {
               id: meal.cloudId,
               updatedAt: meal.updatedAt,
+              decision: resolution.decision,
+              reason: resolution.reason,
             });
           } catch (e: unknown) {
             const err = toSyncError(e);
