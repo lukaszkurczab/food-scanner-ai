@@ -1,11 +1,16 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { ChatThread } from "@/types";
 import { Sync } from "@/utils/debug";
-import { get } from "@/services/core/apiClient";
+import { get, post } from "@/services/core/apiClient";
+import { emit } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
-import { normalizeServiceError } from "@/services/contracts/serviceError";
+import {
+  createServiceError,
+  normalizeServiceError,
+} from "@/services/contracts/serviceError";
 import {
   getChatThreadByIdLocal,
+  setChatMessageSyncState,
   upsertChatThreadLocal,
 } from "../chat.repo";
 import { getLastChatPullTs, setLastChatPullTs } from "../sync.storage";
@@ -36,6 +41,56 @@ function toSyncError(error: unknown) {
     source: "SyncEngine",
     retryable: true,
   });
+}
+
+function syncEngineError(
+  code: string,
+  options?: { message?: string; retryable?: boolean; cause?: unknown }
+) {
+  return createServiceError({
+    code,
+    source: "SyncEngine",
+    retryable: options?.retryable ?? true,
+    message: options?.message,
+    cause: options?.cause,
+  });
+}
+
+function toPersistChatPayload(payload: unknown): {
+  threadId: string;
+  messageId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  createdAt: number;
+  title?: string;
+} {
+  const candidate =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : null;
+  const role = candidate?.role;
+  if (
+    !candidate ||
+    typeof candidate.threadId !== "string" ||
+    typeof candidate.messageId !== "string" ||
+    typeof candidate.content !== "string" ||
+    typeof candidate.createdAt !== "number" ||
+    (role !== "user" && role !== "assistant" && role !== "system")
+  ) {
+    throw syncEngineError("sync/chat-invalid-payload", {
+      message: "Missing or invalid chat message payload",
+      retryable: false,
+    });
+  }
+
+  return {
+    threadId: candidate.threadId,
+    messageId: candidate.messageId,
+    role,
+    content: candidate.content,
+    createdAt: candidate.createdAt,
+    title: typeof candidate.title === "string" ? candidate.title : undefined,
+  };
 }
 
 function toChatThread(userUid: string, item: ChatThreadApiItem): ChatThread {
@@ -149,7 +204,31 @@ export const chatStrategy: SyncStrategy = {
     }
   },
 
-  async handlePushOp(_uid: string, _op: QueueOp): Promise<boolean> {
-    return false;
+  async handlePushOp(uid: string, op: QueueOp): Promise<boolean> {
+    if (op.kind !== "persist_chat_message") return false;
+
+    const payload = toPersistChatPayload(op.payload);
+    await post(
+      `/users/me/chat/threads/${payload.threadId}/messages`,
+      {
+        messageId: payload.messageId,
+        role: payload.role,
+        content: payload.content,
+        createdAt: payload.createdAt,
+        title: payload.title,
+      },
+      {
+        retryMode: "idempotent",
+      },
+    );
+    await setChatMessageSyncState({
+      userUid: uid,
+      threadId: payload.threadId,
+      messageId: payload.messageId,
+      syncState: "synced",
+      lastSyncedAt: payload.createdAt,
+    });
+    emit("chat:pushed", { uid, opId: op.id, threadId: payload.threadId });
+    return true;
   },
 };

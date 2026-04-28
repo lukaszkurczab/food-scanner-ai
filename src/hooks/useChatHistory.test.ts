@@ -109,6 +109,7 @@ jest.mock("@/services/offline/queue.repo", () => ({
 }));
 
 jest.mock("@/services/offline/sync.engine", () => ({
+  requestSync: (params: { uid: string }) => mockPushQueue(params.uid),
   pushQueue: (uid: string) => mockPushQueue(uid),
   pullChatChanges: (uid: string) => mockPullChatChanges(uid),
 }));

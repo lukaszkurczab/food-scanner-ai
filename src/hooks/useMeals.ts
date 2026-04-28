@@ -7,7 +7,7 @@ import { reconcileAll } from "@/services/notifications/engine";
 import { debugScope } from "@/utils/debug";
 import { emit } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
-import { pushQueue } from "@/services/offline/sync.engine";
+import { requestSync } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/meals/myMealService";
 import { formatMealDayKey } from "@/services/meals/mealMetadata";
 import { refreshStreakFromBackend } from "@/services/gamification/streakService";
@@ -79,7 +79,11 @@ export function useMeals(userUid: string | null) {
     syncRequestedRef.current = false;
     try {
       log.log("sync flush start", { uid: userUid });
-      await pushQueue(userUid);
+      await requestSync({
+        uid: userUid,
+        domain: "meals",
+        reason: "local-change",
+      });
       try {
         await refreshStreakFromBackend(userUid, { refreshBadges: true });
       } catch (error: unknown) {

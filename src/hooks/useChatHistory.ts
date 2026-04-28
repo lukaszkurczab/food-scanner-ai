@@ -24,7 +24,7 @@ import {
   retryDeadLetterOps,
   type QueueKind,
 } from "@/services/offline/queue.repo";
-import { pullChatChanges, pushQueue } from "@/services/offline/sync.engine";
+import { requestSync } from "@/services/offline/sync.engine";
 import {
   type ChatMessageCursor,
   fetchChatThreadMessagesPage,
@@ -464,7 +464,11 @@ export function useChatHistory(
           createdAt: now2,
           syncToBackend: false,
         });
-        void pullChatChanges(userUid).catch(() => {});
+        void requestSync({
+          uid: userUid,
+          domain: "chat",
+          reason: "local-change",
+        }).catch(() => {});
 
         if (isLocalThread && !isRetryAttempt) return createdThreadId;
         return null;
@@ -525,7 +529,11 @@ export function useChatHistory(
       }
       const net = await NetInfo.fetch();
       if (retried > 0 && !isOfflineNetState(net)) {
-        await pushQueue(userUid);
+        await requestSync({
+          uid: userUid,
+          domain: "chat",
+          reason: "retry",
+        });
         await refreshFailedSyncCount();
       }
     } catch {

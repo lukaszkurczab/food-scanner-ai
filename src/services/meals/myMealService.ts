@@ -10,7 +10,7 @@ import {
   markDeletedMyMealLocal,
   upsertMyMealLocal as upsertMyMealLocalRepo,
 } from "@/services/offline/myMeals.repo";
-import { pullMyMealChanges, pushQueue } from "@/services/offline/sync.engine";
+import { requestSync } from "@/services/offline/sync.engine";
 
 type MyMealDoc = Meal & {
   uploadState?: "pending" | "done";
@@ -19,35 +19,12 @@ type MyMealDoc = Meal & {
 
 const isLocalPhoto = (uri?: string | null) =>
   !!uri && (uri.startsWith("file:") || uri.startsWith("content:"));
-const myMealSyncTasks = new Map<string, Promise<void>>();
-const myMealSyncPending = new Set<string>();
-
-async function runMyMealSync(uid: string): Promise<void> {
-  for (;;) {
-    myMealSyncPending.delete(uid);
-    await pushQueue(uid);
-    await pullMyMealChanges(uid);
-    if (!myMealSyncPending.has(uid)) {
-      return;
-    }
-  }
-}
-
 async function requestMyMealSync(uid: string): Promise<void> {
-  const existing = myMealSyncTasks.get(uid);
-  if (existing) {
-    myMealSyncPending.add(uid);
-    return existing;
-  }
-
-  const task = runMyMealSync(uid).finally(() => {
-    if (myMealSyncTasks.get(uid) === task) {
-      myMealSyncTasks.delete(uid);
-    }
-    myMealSyncPending.delete(uid);
+  await requestSync({
+    uid,
+    domain: "myMeals",
+    reason: "local-change",
   });
-  myMealSyncTasks.set(uid, task);
-  return task;
 }
 
 export async function upsertMyMealLocal(

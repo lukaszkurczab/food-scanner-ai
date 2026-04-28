@@ -11,7 +11,7 @@ import {
   retryDeadLetterOps,
   type QueueKind,
 } from "@/services/offline/queue.repo";
-import { pushQueue } from "@/services/offline/sync.engine";
+import { requestSync } from "@/services/offline/sync.engine";
 import { emit, on } from "@/services/core/events";
 import type { Meal } from "@/types/meal";
 import { useHistorySectionsData } from "@/feature/History/hooks/useHistorySectionsData";
@@ -120,7 +120,11 @@ export function useHistoryListState(params: {
       }
 
       if (retried > 0 && isOnline) {
-        await pushQueue(uid);
+        await requestSync({
+          uid,
+          domain: "meals",
+          reason: "retry",
+        });
         await refreshFailedSyncCount();
       }
     } catch {

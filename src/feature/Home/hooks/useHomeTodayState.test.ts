@@ -44,6 +44,7 @@ jest.mock("@react-native-community/netinfo", () => ({
 }));
 
 jest.mock("@/services/offline/sync.engine", () => ({
+  requestSync: (params: { uid: string }) => mockPushQueue(params.uid),
   pushQueue: (uid: string) => mockPushQueue(uid),
   pullChanges: (uid: string) => mockPullChanges(uid),
 }));

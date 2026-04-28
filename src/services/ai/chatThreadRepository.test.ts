@@ -208,7 +208,7 @@ describe("services/ai/chatThreadRepository", () => {
     expect(page.nextCursor).toEqual({ beforeCreatedAt: 200 });
   });
 
-  it("syncs only active thread messages on thread message subscription", async () => {
+  it("reads only local thread messages on thread message subscription mount", async () => {
     mockGetChatMessagesPageLocal
       .mockResolvedValueOnce({
         items: [],
@@ -257,14 +257,14 @@ describe("services/ai/chatThreadRepository", () => {
     await new Promise((resolve) => setImmediate(resolve));
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(mockPullChatChanges).toHaveBeenCalledWith("user-1");
-    expect(mockGet).toHaveBeenCalledWith(
+    expect(mockPullChatChanges).not.toHaveBeenCalled();
+    expect(mockGet).not.toHaveBeenCalledWith(
       "/users/me/chat/threads/thread-1/messages?limit=50",
     );
     unsubscribe();
   });
 
-  it("triggers chat pull on thread subscription when online", async () => {
+  it("does not trigger chat pull on thread subscription mount when online", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { subscribeToChatThreads } = require("@/services/ai/chatThreadRepository");
 
@@ -277,11 +277,11 @@ describe("services/ai/chatThreadRepository", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(mockPullChatChanges).toHaveBeenCalledWith("user-1");
+    expect(mockPullChatChanges).not.toHaveBeenCalled();
     unsubscribe();
   });
 
-  it("does not trigger chat pull on thread subscription when offline", async () => {
+  it("does not trigger chat pull on thread subscription mount when offline", async () => {
     mockNetInfoFetch.mockResolvedValue({ isConnected: false });
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { subscribeToChatThreads } = require("@/services/ai/chatThreadRepository");

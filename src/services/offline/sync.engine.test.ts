@@ -1,12 +1,21 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
-const mockAddEventListener = jest.fn<(listener: (state: { isConnected: boolean }) => void) => () => void>();
-const mockRunPushQueue = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockAddEventListener = jest.fn<
+  (listener: (state: { isConnected: boolean }) => void) => () => void
+>();
+const mockRunPushQueue = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockMealsPull = jest.fn<(...args: unknown[]) => Promise<number>>();
 const mockMyMealsPull = jest.fn<(...args: unknown[]) => Promise<number>>();
 const mockChatPull = jest.fn<(...args: unknown[]) => Promise<number>>();
 const mockProcessImageUploads = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockGetQueuedOpsCount = jest.fn<(...args: unknown[]) => Promise<number>>();
+const mockGetPendingUploads = jest.fn<(...args: unknown[]) => Promise<unknown[]>>();
+const mockGetLastPullTs = jest.fn<(...args: unknown[]) => Promise<string | null>>();
+const mockGetLastMyMealsPullTs = jest.fn<
+  (...args: unknown[]) => Promise<string | null>
+>();
+const mockGetLastChatPullTs = jest.fn<(...args: unknown[]) => Promise<number>>();
 
 jest.mock("@react-native-community/netinfo", () => ({
   __esModule: true,
@@ -19,6 +28,23 @@ jest.mock("@react-native-community/netinfo", () => ({
 
 jest.mock("./sync.push", () => ({
   runPushQueue: (...args: unknown[]) => mockRunPushQueue(...args),
+}));
+
+jest.mock("./queue.repo", () => ({
+  getQueuedOpsCount: (...args: unknown[]) => mockGetQueuedOpsCount(...args),
+}));
+
+jest.mock("./images.repo", () => ({
+  getPendingUploads: (...args: unknown[]) => mockGetPendingUploads(...args),
+}));
+
+jest.mock("./sync.storage", () => ({
+  getLastPullTs: (...args: unknown[]) => mockGetLastPullTs(...args),
+  setLastPullTs: jest.fn(),
+  getLastMyMealsPullTs: (...args: unknown[]) => mockGetLastMyMealsPullTs(...args),
+  setLastMyMealsPullTs: jest.fn(),
+  getLastChatPullTs: (...args: unknown[]) => mockGetLastChatPullTs(...args),
+  setLastChatPullTs: jest.fn(),
 }));
 
 jest.mock("./strategies/meals.strategy", () => ({
@@ -57,22 +83,35 @@ jest.mock("./strategies/images.strategy", () => ({
   processImageUploads: (...args: unknown[]) => mockProcessImageUploads(...args),
 }));
 
-describe("offline sync.engine integration", () => {
+const flushPromises = async () => {
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+};
+
+describe("offline sync.engine selective coordinator", () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    jest.useRealTimers();
+    jest.spyOn(Date, "now").mockReturnValue(Date.parse("2026-04-28T10:00:00.000Z"));
     mockNetInfoFetch.mockResolvedValue({ isConnected: true });
-    mockAddEventListener.mockReset();
-    mockRunPushQueue.mockResolvedValue();
+    mockRunPushQueue.mockResolvedValue({
+      processed: 0,
+      failed: 0,
+      deadLettered: 0,
+    });
     mockMealsPull.mockResolvedValue(0);
     mockMyMealsPull.mockResolvedValue(0);
     mockChatPull.mockResolvedValue(0);
     mockProcessImageUploads.mockResolvedValue();
-    jest.spyOn(global, "setInterval").mockImplementation(() => 1 as never);
-    jest.spyOn(global, "clearInterval").mockImplementation(() => {});
+    mockGetQueuedOpsCount.mockResolvedValue(0);
+    mockGetPendingUploads.mockResolvedValue([]);
+    mockGetLastPullTs.mockResolvedValue("2026-04-28T09:59:00.000Z");
+    mockGetLastMyMealsPullTs.mockResolvedValue("2026-04-28T09:59:00.000Z");
+    mockGetLastChatPullTs.mockResolvedValue(Date.parse("2026-04-28T09:59:00.000Z"));
   });
 
-  it("starts and stops sync loop with timer and network subscription", () => {
+  it("starts runtime, runs startup reconcile, and stops network subscription", async () => {
     const unsub = jest.fn();
     mockAddEventListener.mockReturnValue(unsub);
 
@@ -80,49 +119,28 @@ describe("offline sync.engine integration", () => {
     const { startSyncLoop, stopSyncLoop, getSyncStatus } = require("@/services/offline/sync.engine");
 
     startSyncLoop("user-1");
-    expect(getSyncStatus()).toEqual({ running: false, hasTimer: true });
+    expect(getSyncStatus().hasTimer).toBe(true);
+    await flushPromises();
+
+    expect(mockRunPushQueue).toHaveBeenCalledTimes(1);
+    expect(mockMealsPull).toHaveBeenCalledWith("user-1");
+    expect(mockMyMealsPull).not.toHaveBeenCalled();
+    expect(mockChatPull).not.toHaveBeenCalled();
 
     stopSyncLoop();
     expect(unsub).toHaveBeenCalledTimes(1);
-    expect(clearInterval).toHaveBeenCalledTimes(1);
     expect(getSyncStatus()).toEqual({ running: false, hasTimer: false });
   });
 
-  it("runs loop work in order: images -> push -> meals -> myMeals -> chat", async () => {
-    const order: string[] = [];
-    mockAddEventListener.mockReturnValue(jest.fn());
-    mockProcessImageUploads.mockImplementation(async () => {
-      order.push("images");
-    });
-    mockRunPushQueue.mockImplementation(async () => {
-      order.push("push");
-    });
-    mockMealsPull.mockImplementation(async () => {
-      order.push("meals");
-      return 1;
-    });
-    mockMyMealsPull.mockImplementation(async () => {
-      order.push("myMeals");
-      return 1;
-    });
-    mockChatPull.mockImplementation(async () => {
-      order.push("chat");
-      return 1;
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { startSyncLoop, stopSyncLoop } = require("@/services/offline/sync.engine");
-
-    startSyncLoop("user-1");
-    await new Promise((resolve) => setImmediate(resolve));
-    await new Promise((resolve) => setImmediate(resolve));
-
-    expect(order).toEqual(["images", "push", "meals", "myMeals", "chat"]);
-    stopSyncLoop();
-  });
-
-  it("owns meal pulls on startup and reconnect through the central loop", async () => {
+  it("debounces reconnect and does not run global pulls for clean domains", async () => {
     let networkListener: (state: { isConnected: boolean }) => void = () => undefined;
+    let scheduledReconnect: (() => void) | null = null;
+    const setTimeoutSpy = jest
+      .spyOn(global, "setTimeout")
+      .mockImplementation((callback: TimerHandler) => {
+        scheduledReconnect = callback as () => void;
+        return 1 as never;
+      });
     mockAddEventListener.mockImplementation((listener) => {
       networkListener = listener;
       return jest.fn();
@@ -132,105 +150,104 @@ describe("offline sync.engine integration", () => {
     const { startSyncLoop, stopSyncLoop } = require("@/services/offline/sync.engine");
 
     startSyncLoop("user-1");
-    await new Promise((resolve) => setImmediate(resolve));
-    await new Promise((resolve) => setImmediate(resolve));
+    await flushPromises();
+    expect(mockMealsPull).toHaveBeenCalledTimes(1);
+
+    networkListener({ isConnected: true });
+    networkListener({ isConnected: true });
+    networkListener({ isConnected: true });
+    expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+    expect(scheduledReconnect).not.toBeNull();
+    (scheduledReconnect as unknown as () => void)();
+    await flushPromises();
+
+    expect(mockRunPushQueue).toHaveBeenCalledTimes(2);
+    expect(mockMealsPull).toHaveBeenCalledTimes(2);
+    expect(mockMyMealsPull).not.toHaveBeenCalled();
+    expect(mockChatPull).not.toHaveBeenCalled();
+    stopSyncLoop();
+  });
+
+  it("coalesces concurrent sync requests so the pending queue pushes once", async () => {
+    let releasePush!: () => void;
+    mockRunPushQueue.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releasePush = () =>
+            resolve({ processed: 1, failed: 0, deadLettered: 0 });
+        }),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { requestSync } = require("@/services/offline/sync.engine");
+
+    const p1 = requestSync({
+      uid: "user-1",
+      domain: "meals",
+      reason: "local-change",
+    });
+    const p2 = requestSync({
+      uid: "user-1",
+      domain: "chat",
+      reason: "local-change",
+    });
+
+    await flushPromises();
+    expect(mockRunPushQueue).toHaveBeenCalledTimes(1);
+
+    releasePush();
+    await Promise.all([p1, p2]);
+
+    expect(mockRunPushQueue).toHaveBeenCalledTimes(1);
+    expect(mockMealsPull).toHaveBeenCalledTimes(1);
+    expect(mockChatPull).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes meal pulls through the cursor-based meals strategy", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { pullChanges } = require("@/services/offline/sync.engine");
+
+    await pullChanges("user-1");
 
     expect(mockMealsPull).toHaveBeenCalledTimes(1);
     expect(mockMealsPull).toHaveBeenCalledWith("user-1");
-
-    networkListener?.({ isConnected: true });
-    await new Promise((resolve) => setImmediate(resolve));
-    await new Promise((resolve) => setImmediate(resolve));
-
-    expect(mockMealsPull).toHaveBeenCalledTimes(2);
-    expect(mockMealsPull).toHaveBeenLastCalledWith("user-1");
-    stopSyncLoop();
+    expect(mockMyMealsPull).not.toHaveBeenCalled();
+    expect(mockChatPull).not.toHaveBeenCalled();
   });
 
-  it("continues later sync phases when an earlier phase fails", async () => {
-    const order: string[] = [];
-    mockAddEventListener.mockReturnValue(jest.fn());
-    mockProcessImageUploads.mockImplementation(async () => {
-      order.push("images");
-      throw new Error("upload failed");
-    });
-    mockRunPushQueue.mockImplementation(async () => {
-      order.push("push");
-    });
-    mockMealsPull.mockImplementation(async () => {
-      order.push("meals");
-      return 1;
-    });
-    mockMyMealsPull.mockImplementation(async () => {
-      order.push("myMeals");
-      return 1;
-    });
-    mockChatPull.mockImplementation(async () => {
-      order.push("chat");
-      return 1;
-    });
-
+  it("does not pull chat after a meal-only change", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { startSyncLoop, stopSyncLoop } = require("@/services/offline/sync.engine");
+    const { requestSync } = require("@/services/offline/sync.engine");
 
-    startSyncLoop("user-1");
-    await new Promise((resolve) => setImmediate(resolve));
-    await new Promise((resolve) => setImmediate(resolve));
-
-    expect(order).toEqual(["images", "push", "meals", "myMeals", "chat"]);
-    stopSyncLoop();
-  });
-
-  it("serializes pushQueue calls per uid using the internal lock", async () => {
-    let releaseFirst!: () => void;
-    const firstCall = new Promise<void>((resolve) => {
-      releaseFirst = () => resolve();
+    await requestSync({
+      uid: "user-1",
+      domain: "meals",
+      reason: "local-change",
     });
-    mockRunPushQueue
-      .mockImplementationOnce(() => firstCall)
-      .mockImplementationOnce(async () => {});
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { pushQueue } = require("@/services/offline/sync.engine");
-
-    const p1 = pushQueue("user-1");
-    const p2 = pushQueue("user-1");
-
-    await new Promise((resolve) => setImmediate(resolve));
     expect(mockRunPushQueue).toHaveBeenCalledTimes(1);
-
-    releaseFirst();
-    await p1;
-    await p2;
-
-    expect(mockRunPushQueue).toHaveBeenCalledTimes(2);
+    expect(mockMealsPull).toHaveBeenCalledTimes(1);
+    expect(mockMyMealsPull).not.toHaveBeenCalled();
+    expect(mockChatPull).not.toHaveBeenCalled();
   });
 
-  it("coalesces duplicate chat pull requests for the same uid", async () => {
-    let releasePull!: () => void;
-    const firstPull = new Promise<number>((resolve) => {
-      releasePull = () => resolve(1);
+  it("rejects requestSync when push reports failed operations", async () => {
+    mockRunPushQueue.mockResolvedValueOnce({
+      processed: 0,
+      failed: 1,
+      deadLettered: 0,
     });
-    mockChatPull
-      .mockImplementationOnce(() => firstPull)
-      .mockImplementationOnce(async () => 1);
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { pullChatChanges } = require("@/services/offline/sync.engine");
+    const { requestSync } = require("@/services/offline/sync.engine");
 
-    const p1 = pullChatChanges("user-1");
-    const p2 = pullChatChanges("user-1");
-
-    await new Promise((resolve) => setImmediate(resolve));
-    expect(mockChatPull).toHaveBeenCalledTimes(1);
-
-    releasePull();
-    await p1;
-    await p2;
-
-    expect(mockChatPull).toHaveBeenCalledTimes(1);
-
-    await pullChatChanges("user-1");
-    expect(mockChatPull).toHaveBeenCalledTimes(2);
+    await expect(
+      requestSync({
+        uid: "user-1",
+        domain: "meals",
+        reason: "local-change",
+      }),
+    ).rejects.toMatchObject({ code: "sync/push-failed" });
+    expect(mockMealsPull).not.toHaveBeenCalled();
   });
 });

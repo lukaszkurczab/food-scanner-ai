@@ -12,7 +12,6 @@ import {
   upsertChatThreadLocal,
 } from "@/services/offline/chat.repo";
 import { enqueueChatMessagePersist } from "@/services/offline/queue.repo";
-import { pullChatChanges } from "@/services/offline/sync.engine";
 
 type ChatMessageApiItem = {
   id: string;
@@ -38,17 +37,6 @@ export type ChatMessagesPage = {
 };
 
 const LOCAL_THREADS_LIMIT = 20;
-const chatPullInFlight = new Map<string, Promise<void>>();
-
-function requestChatPull(userUid: string): Promise<void> {
-  const existing = chatPullInFlight.get(userUid);
-  if (existing) return existing;
-  const task = pullChatChanges(userUid).finally(() => {
-    chatPullInFlight.delete(userUid);
-  });
-  chatPullInFlight.set(userUid, task);
-  return task;
-}
 
 function toChatMessage(userUid: string, item: ChatMessageApiItem): ChatMessage {
   return {
@@ -116,22 +104,6 @@ export function subscribeToChatThreadMessages(params: {
   const off = on(`chat:messages:${params.userUid}:${params.threadId}`, () => {
     void publish();
   });
-
-  void (async () => {
-    try {
-      const net = await NetInfo.fetch();
-      if (isOfflineNetState(net)) return;
-      await requestChatPull(params.userUid);
-      await syncMessagesFromBackend({
-        userUid: params.userUid,
-        threadId: params.threadId,
-        limitCount: params.pageSize,
-      });
-      await publish();
-    } catch (error) {
-      params.onError?.(error);
-    }
-  })();
 
   return () => {
     active = false;
@@ -383,17 +355,6 @@ export function subscribeToChatThreads(params: {
   const off = on(`chat:threads:${params.userUid}`, () => {
     void publish();
   });
-
-  void (async () => {
-    try {
-      const net = await NetInfo.fetch();
-      if (isOfflineNetState(net)) return;
-      await requestChatPull(params.userUid);
-      await publish();
-    } catch (error) {
-      params.onError?.(error);
-    }
-  })();
 
   return () => {
     active = false;

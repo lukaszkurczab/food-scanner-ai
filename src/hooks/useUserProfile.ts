@@ -17,7 +17,7 @@ import {
   enqueueUserProfileUpdate,
   retryDeadLetterOps,
 } from "@/services/offline/queue.repo";
-import { pushQueue } from "@/services/offline/sync.engine";
+import { requestSync } from "@/services/offline/sync.engine";
 import {
   sanitizeUserProfileLocalPatch,
   sanitizeUserProfilePatch,
@@ -397,7 +397,12 @@ export function useUserProfile(uid: string): UseUserProfileResult {
     setSyncState("pending");
     const net = await NetInfo.fetch();
     if (isOfflineNetState(net)) return;
-    await pushQueue(uid);
+    await requestSync({
+      uid,
+      domain: "userProfile",
+      reason: "local-change",
+      pullAfterPush: false,
+    });
     await refreshProfileSyncState();
   }, [uid, refreshProfileSyncState]);
 
@@ -454,7 +459,12 @@ export function useUserProfile(uid: string): UseUserProfileResult {
       }
       const net = await NetInfo.fetch();
       if (retried > 0 && !isOfflineNetState(net)) {
-        await pushQueue(uid);
+        await requestSync({
+          uid,
+          domain: "userProfile",
+          reason: "retry",
+          pullAfterPush: false,
+        });
       }
       await refreshProfileSyncState();
     } catch (error) {

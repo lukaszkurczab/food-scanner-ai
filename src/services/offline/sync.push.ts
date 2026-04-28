@@ -19,6 +19,12 @@ import type { SyncStrategy } from "./sync.strategy";
 
 const log = Sync;
 
+export type PushQueueResult = {
+  processed: number;
+  failed: number;
+  deadLettered: number;
+};
+
 function toSyncError(error: unknown) {
   return normalizeServiceError(error, {
     code: "sync/unknown",
@@ -31,16 +37,18 @@ export async function runPushQueue(
   uid: string,
   pushBatchSize: number,
   strategies: SyncStrategy[]
-): Promise<void> {
+): Promise<PushQueueResult> {
   const pushLog = log.child("push");
   const net = await NetInfo.fetch();
   pushLog.log("start", { uid, isConnected: net.isConnected });
   if (isOfflineNetState(net)) {
     pushLog.log("skip:offline");
-    return;
+    return { processed: 0, failed: 0, deadLettered: 0 };
   }
   pushLog.time("exec");
   let processed = 0;
+  let failed = 0;
+  let deadLettered = 0;
 
   for (;;) {
     const batch = await nextBatch(pushBatchSize, uid);
@@ -71,6 +79,7 @@ export async function runPushQueue(
         processed++;
         pushLog.log("op:done", { id: op.id });
       } catch (e: unknown) {
+        failed++;
         const err = toSyncError(e);
         const nextAttempts = op.attempts + 1;
         pushLog.error("op:fail", {
@@ -82,6 +91,7 @@ export async function runPushQueue(
         const shouldDeadLetter =
           !err.retryable || nextAttempts >= MAX_QUEUE_ATTEMPTS;
         if (shouldDeadLetter) {
+          deadLettered++;
           await moveToDeadLetter(op, nextAttempts, {
             code: err.code,
             message: err.message,
@@ -148,5 +158,6 @@ export async function runPushQueue(
   }
 
   pushLog.timeEnd("exec");
-  pushLog.log("done", { processed });
+  pushLog.log("done", { processed, failed, deadLettered });
+  return { processed, failed, deadLettered };
 }

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -12,7 +12,6 @@ import { useUserContext } from "@contexts/UserContext";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { useMeals } from "@hooks/useMeals";
 import { useChatHistory } from "@/hooks/useChatHistory";
-import { pullChatChanges } from "@/services/offline/sync.engine";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import type { RootStackParamList } from "@/navigation/navigate";
@@ -60,7 +59,6 @@ export default function ChatScreen() {
   const [threadId, setThreadId] = useState<string>(() => `local-${uuidv4()}`);
   const [legalAckVisible, setLegalAckVisible] = useState(false);
   const [legalAckLoading, setLegalAckLoading] = useState(true);
-  const lastChatPullRef = useRef<number>(0);
 
   const {
     messages,
@@ -271,16 +269,6 @@ export default function ChatScreen() {
         cancelInFlightSend();
       };
     }, [cancelInFlightSend]),
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!uid) return;
-      const now = Date.now();
-      if (now - lastChatPullRef.current < 30_000) return;
-      lastChatPullRef.current = now;
-      void pullChatChanges(uid).catch(() => {});
-    }, [uid]),
   );
 
   return (

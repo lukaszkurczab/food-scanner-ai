@@ -19,8 +19,9 @@ const mockMarkDeletedMyMealLocal = jest.fn<
   (cloudId: string, deletedAtISO: string) => Promise<void>
 >();
 const mockUpsertMyMealLocalRepo = jest.fn<(meal: Meal) => Promise<void>>();
-const mockPullMyMealChanges = jest.fn<(uid: string) => Promise<void>>();
-const mockPushQueue = jest.fn<(uid: string) => Promise<void>>();
+const mockRequestSync = jest.fn<
+  (params: { uid: string; domain: string; reason: string }) => Promise<void>
+>();
 
 jest.mock("@react-native-community/netinfo", () => ({
   __esModule: true,
@@ -45,8 +46,8 @@ jest.mock("@/services/offline/myMeals.repo", () => ({
 }));
 
 jest.mock("@/services/offline/sync.engine", () => ({
-  pullMyMealChanges: (uid: string) => mockPullMyMealChanges(uid),
-  pushQueue: (uid: string) => mockPushQueue(uid),
+  requestSync: (params: { uid: string; domain: string; reason: string }) =>
+    mockRequestSync(params),
 }));
 
 const baseMeal = (overrides: Partial<Meal> = {}): Meal =>
@@ -74,8 +75,7 @@ describe("services/meals/myMealService", () => {
     mockEnqueueMyMealUpsert.mockResolvedValue(undefined);
     mockMarkDeletedMyMealLocal.mockResolvedValue(undefined);
     mockUpsertMyMealLocalRepo.mockResolvedValue(undefined);
-    mockPullMyMealChanges.mockResolvedValue(undefined);
-    mockPushQueue.mockResolvedValue(undefined);
+    mockRequestSync.mockResolvedValue(undefined);
   });
 
   it("syncs an updated saved meal through the shared sync coordinator", async () => {
@@ -98,39 +98,23 @@ describe("services/meals/myMealService", () => {
       uid: "user-1",
       cloudId: "meal-1",
     });
-    expect(mockPushQueue).toHaveBeenCalledTimes(1);
-    expect(mockPullMyMealChanges).toHaveBeenCalledTimes(1);
+    expect(mockRequestSync).toHaveBeenCalledWith({
+      uid: "user-1",
+      domain: "myMeals",
+      reason: "local-change",
+    });
   });
 
-  it("coalesces concurrent my-meal sync requests into one active run plus one rerun", async () => {
-    let releaseFirstPush!: () => void;
-    const firstPush = new Promise<void>((resolve) => {
-      releaseFirstPush = resolve;
-    });
-    mockPushQueue
-      .mockImplementationOnce(() => firstPush)
-      .mockImplementationOnce(async () => undefined)
-      .mockImplementationOnce(async () => undefined);
-    mockPullMyMealChanges
-      .mockImplementationOnce(async () => undefined)
-      .mockImplementationOnce(async () => undefined)
-      .mockImplementationOnce(async () => undefined);
-
+  it("delegates explicit saved-meal sync to the shared coordinator", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { syncMyMeals } = require("@/services/meals/myMealService");
 
-    const p1 = syncMyMeals("user-1");
-    const p2 = syncMyMeals("user-1");
-    const p3 = syncMyMeals("user-1");
+    await syncMyMeals("user-1");
 
-    await Promise.resolve();
-    expect(mockPushQueue).toHaveBeenCalledTimes(1);
-    expect(mockPullMyMealChanges).toHaveBeenCalledTimes(0);
-
-    releaseFirstPush();
-    await Promise.all([p1, p2, p3]);
-
-    expect(mockPushQueue).toHaveBeenCalledTimes(2);
-    expect(mockPullMyMealChanges).toHaveBeenCalledTimes(2);
+    expect(mockRequestSync).toHaveBeenCalledWith({
+      uid: "user-1",
+      domain: "myMeals",
+      reason: "local-change",
+    });
   });
 });
