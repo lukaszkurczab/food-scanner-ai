@@ -122,7 +122,16 @@ export default function StatisticsScreen({ navigation }: Props) {
               ) : null}
             </ScrollView>
           ) : (
-            <StatisticsEmptyState kind={state.emptyKind} isOffline={!isOnline} />
+            <StatisticsEmptyState
+              kind={state.emptyKind}
+              isOffline={!isOnline}
+              accessWindowDays={accessWindowDays}
+              onManageSubscription={
+                premiumActive
+                  ? undefined
+                  : () => navigation.navigate("ManageSubscription")
+              }
+            />
           )}
         </View>
       </View>

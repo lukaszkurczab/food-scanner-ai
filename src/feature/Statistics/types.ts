@@ -33,4 +33,5 @@ export type StatisticsRangeState = {
 export type StatisticsEmptyKind =
   | "none"
   | "no_history"
-  | "no_entries_in_range";
+  | "no_entries_in_range"
+  | "limited_by_free_window";

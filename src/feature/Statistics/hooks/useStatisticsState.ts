@@ -12,7 +12,6 @@ import {
 } from "@/services/meals/dayKeyRange";
 import {
   buildStatisticsRangeState,
-  clampStatisticsRangeToFreeWindow,
 } from "@/feature/Statistics/services/statisticsRangeSelectors";
 import type {
   DateRange,
@@ -70,35 +69,12 @@ export function useStatisticsState(params: {
   const [metric, setMetric] = useState<MetricKey>("kcal");
 
   const setCustomRange = (range: DateRange) => {
-    const dayKeyRange = dateRangeToDayKeyRange(range);
-    const clampedRange = dayKeyRange
-      ? clampStatisticsRangeToFreeWindow({
-          range: dayKeyRange,
-          accessWindowDays: params.accessWindowDays,
-          todayDayKey,
-        }) ?? dayKeyRange
-      : null;
-
-    setCustomRangeState(
-      clampedRange ? dayKeyRangeToDateRange(clampedRange) : normalizeRange(range),
-    );
+    setCustomRangeState(normalizeRange(range));
   };
 
   useEffect(() => {
-    setCustomRangeState((prev) => {
-      const dayKeyRange = dateRangeToDayKeyRange(prev);
-      if (!dayKeyRange) return normalizeRange(prev);
-
-      const clampedRange =
-        clampStatisticsRangeToFreeWindow({
-          range: dayKeyRange,
-          accessWindowDays: params.accessWindowDays,
-          todayDayKey,
-        }) ?? dayKeyRange;
-
-      return dayKeyRangeToDateRange(clampedRange);
-    });
-  }, [params.accessWindowDays, todayDayKey]);
+    setCustomRangeState((prev) => normalizeRange(prev));
+  }, [todayDayKey]);
 
   const customDayKeyRange = useMemo(
     () => dateRangeToDayKeyRange(customRange),
@@ -127,13 +103,17 @@ export function useStatisticsState(params: {
   );
   const days = rangeState.dayKeys.length;
   const hasEntriesInRange = rangeState.averages.loggedDaysCount > 0;
-
   const hasAnyMeals = meals.length > 0;
+  const isWindowLimited =
+    !!params.accessWindowDays &&
+    rangeState.requestedRange.startDayKey < rangeState.effectiveRange.startDayKey;
   const emptyKind: StatisticsEmptyKind =
     !loadingMeals && !hasAnyMeals
       ? "no_history"
       : !loadingMeals && hasAnyMeals && !hasEntriesInRange
-        ? "no_entries_in_range"
+        ? isWindowLimited
+          ? "limited_by_free_window"
+          : "no_entries_in_range"
         : "none";
 
   const metricAverageByKey: Record<MetricKey, number> = {
@@ -173,8 +153,6 @@ export function useStatisticsState(params: {
     avgCarbs: rangeState.averages.rangeDays.carbs,
     avgFat: rangeState.averages.rangeDays.fat,
     metricAverage: metricAverageByKey[metric],
-    isWindowLimited:
-      !!params.accessWindowDays &&
-      rangeState.requestedRange.startDayKey < rangeState.effectiveRange.startDayKey,
+    isWindowLimited,
   };
 }

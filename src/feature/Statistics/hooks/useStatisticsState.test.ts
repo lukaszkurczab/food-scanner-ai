@@ -180,7 +180,16 @@ describe("useStatisticsState", () => {
     ).toBe(true);
   });
 
-  it("clamps a free custom range to the access window", () => {
+  it("preserves the requested custom range and clamps only the effective free window", () => {
+    mockUseMeals([
+      makeMeal({
+        mealId: "old",
+        cloudId: "old",
+        dayKey: "2026-01-15",
+        timestamp: "2026-01-15T10:00:00.000Z",
+      }),
+    ]);
+
     const { result } = renderHook(() =>
       useStatisticsState({
         uid: "user-1",
@@ -197,19 +206,17 @@ describe("useStatisticsState", () => {
       });
     });
 
-    expect(result.current.customRange.start).toEqual(new Date(2026, 1, 9));
-    expect(result.current.customRange.end).toEqual(new Date(2026, 1, 9));
+    expect(result.current.customRange.start).toEqual(new Date(2026, 0, 1));
+    expect(result.current.customRange.end).toEqual(new Date(2026, 0, 15));
+    expect(result.current.selectedRange.start).toEqual(new Date(2026, 0, 1));
+    expect(result.current.selectedRange.end).toEqual(new Date(2026, 0, 15));
     expect(result.current.effectiveRange.start).toEqual(new Date(2026, 1, 9));
-    expect(result.current.isWindowLimited).toBe(false);
+    expect(result.current.effectiveRange.end).toEqual(new Date(2026, 1, 9));
+    expect(result.current.emptyKind).toBe("limited_by_free_window");
+    expect(result.current.isWindowLimited).toBe(true);
   });
 
-  it("keeps no_history and no_entries_in_range behavior", () => {
-    const noHistory = renderHook(() =>
-      useStatisticsState({ uid: "user-1", calorieTarget: null }),
-    );
-    expect(noHistory.result.current.emptyKind).toBe("no_history");
-    noHistory.unmount();
-
+  it("keeps no_entries_in_range when the user has history inside the local read model but not in the effective range", () => {
     mockUseMeals([
       makeMeal({
         mealId: "old",
@@ -226,6 +233,100 @@ describe("useStatisticsState", () => {
     expect(result.current.emptyKind).toBe("no_entries_in_range");
     expect(result.current.hasAnyMeals).toBe(true);
     expect(result.current.hasEntriesInRange).toBe(false);
+    expect(result.current.isWindowLimited).toBe(false);
+  });
+
+  it("uses limited_by_free_window instead of no_entries_in_range when the request exceeds the free window", () => {
+    mockUseMeals([
+      makeMeal({
+        mealId: "old",
+        cloudId: "old",
+        dayKey: "2026-01-15",
+        timestamp: "2026-01-15T10:00:00.000Z",
+      }),
+    ]);
+
+    const { result } = renderHook(() =>
+      useStatisticsState({
+        uid: "user-1",
+        calorieTarget: null,
+        accessWindowDays: 30,
+      }),
+    );
+
+    act(() => {
+      result.current.setActive("custom");
+      result.current.setCustomRange({
+        start: new Date(2026, 0, 1),
+        end: new Date(2026, 0, 15),
+      });
+    });
+
+    expect(result.current.emptyKind).toBe("limited_by_free_window");
+    expect(result.current.hasAnyMeals).toBe(true);
+    expect(result.current.hasEntriesInRange).toBe(false);
+    expect(result.current.isWindowLimited).toBe(true);
+  });
+
+  it("does not limit premium users for older custom ranges", () => {
+    mockUseMeals([
+      makeMeal({
+        mealId: "old",
+        cloudId: "old",
+        dayKey: "2026-01-15",
+        timestamp: "2026-01-15T10:00:00.000Z",
+      }),
+    ]);
+
+    const { result } = renderHook(() =>
+      useStatisticsState({ uid: "user-1", calorieTarget: null }),
+    );
+
+    act(() => {
+      result.current.setActive("custom");
+      result.current.setCustomRange({
+        start: new Date(2026, 0, 1),
+        end: new Date(2026, 0, 15),
+      });
+    });
+
+    expect(result.current.emptyKind).toBe("none");
+    expect(result.current.hasEntriesInRange).toBe(true);
+    expect(result.current.isWindowLimited).toBe(false);
+  });
+
+  it("keeps analytics visible for free users when the accessible part of the range contains entries", () => {
+    mockUseMeals([
+      makeMeal({
+        mealId: "window-meal",
+        cloudId: "window-meal",
+        dayKey: "2026-02-20",
+        timestamp: "2026-02-20T10:00:00.000Z",
+        totals: { kcal: 320, protein: 30, carbs: 25, fat: 10 },
+      }),
+    ]);
+
+    const { result } = renderHook(() =>
+      useStatisticsState({
+        uid: "user-1",
+        calorieTarget: null,
+        accessWindowDays: 30,
+      }),
+    );
+
+    act(() => {
+      result.current.setActive("custom");
+      result.current.setCustomRange({
+        start: new Date(2026, 0, 1),
+        end: new Date(2026, 1, 20),
+      });
+    });
+
+    expect(result.current.emptyKind).toBe("none");
+    expect(result.current.hasEntriesInRange).toBe(true);
+    expect(result.current.isWindowLimited).toBe(true);
+    expect(result.current.selectedRange.start).toEqual(new Date(2026, 0, 1));
+    expect(result.current.effectiveRange.start).toEqual(new Date(2026, 1, 9));
   });
 
   it("includes pending, failed and conflict meals in totals", () => {

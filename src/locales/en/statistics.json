@@ -26,6 +26,12 @@
     "desc": "Try another range or keep logging to compare later.",
     "foot": "Switch ranges to restore the trend."
   },
+  "limitedRange": {
+    "title": "This range is outside your current history window",
+    "desc": "Your current plan shows statistics from the last {{days}} days.",
+    "foot": "Choose a newer range or manage your subscription to view older trends.",
+    "cta": "Manage plan"
+  },
   "trend": {
     "title": "Trend",
     "avgPerDay": "avg/day"
@@ -63,12 +69,12 @@
     }
   },
   "limitedHistory": {
-    "eyebrow": "Premium",
-    "title": "Unlock longer-term trends",
-    "body": "See how habits look after {{days}}+ days.",
-    "cta": "Unlock Premium"
+    "eyebrow": "Plan limit",
+    "title": "Older trends are outside your current window",
+    "body": "Your current plan includes statistics from the last {{days}} days.",
+    "cta": "Manage plan"
   },
   "limitedWindowTitle": "Access to older data requires Premium",
   "limitedWindowDesc": "Range was limited to the last {{d}} days.",
-  "upgrade": "Unlock Premium"
+  "upgrade": "Manage plan"
 }

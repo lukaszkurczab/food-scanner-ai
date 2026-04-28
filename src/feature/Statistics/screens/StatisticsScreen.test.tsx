@@ -159,13 +159,34 @@ jest.mock("@/feature/Statistics/components/StatisticsEmptyState", () => ({
   StatisticsEmptyState: ({
     kind,
     isOffline,
+    accessWindowDays,
+    onManageSubscription,
   }: {
     kind: string;
     isOffline: boolean;
+    accessWindowDays?: number;
+    onManageSubscription?: () => void;
   }) => {
     const { createElement } = jest.requireActual<typeof import("react")>("react");
-    const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
-    return createElement(Text, null, `empty:${kind}:${String(isOffline)}`);
+    const { Pressable, Text, View } = jest.requireActual<typeof import("react-native")>(
+      "react-native",
+    );
+    return createElement(
+      View,
+      null,
+      createElement(
+        Text,
+        null,
+        `empty:${kind}:${String(isOffline)}:${String(accessWindowDays ?? "")}`,
+      ),
+      kind === "limited_by_free_window" && onManageSubscription
+        ? createElement(
+            Pressable,
+            { onPress: onManageSubscription },
+            createElement(Text, null, "empty-cta"),
+          )
+        : null,
+    );
   },
 }));
 
@@ -267,6 +288,39 @@ describe("StatisticsScreen", () => {
       <StatisticsScreen navigation={navigation as never} />,
     );
 
-    expect(getByText("empty:no_history:true")).toBeTruthy();
+    expect(getByText("empty:no_history:true:30")).toBeTruthy();
+  });
+
+  it("navigates to ManageSubscription from the free-window empty state", () => {
+    const navigation = { navigate: jest.fn() };
+    mockUseStatisticsState.mockReturnValue(
+      makeAnalyticsState({
+        emptyKind: "limited_by_free_window",
+      }),
+    );
+
+    const { getByText } = renderWithTheme(
+      <StatisticsScreen navigation={navigation as never} />,
+    );
+
+    expect(getByText("empty:limited_by_free_window:false:30")).toBeTruthy();
+    fireEvent.press(getByText("empty-cta"));
+    expect(navigation.navigate).toHaveBeenCalledWith("ManageSubscription");
+  });
+
+  it("does not render the premium banner for premium users", () => {
+    const navigation = { navigate: jest.fn() };
+    mockUsePremiumContext.mockReturnValue({ isPremium: true });
+    mockUseStatisticsState.mockReturnValue(
+      makeAnalyticsState({
+        isWindowLimited: true,
+      }),
+    );
+
+    const { queryByText } = renderWithTheme(
+      <StatisticsScreen navigation={navigation as never} />,
+    );
+
+    expect(queryByText("premium-banner")).toBeNull();
   });
 });

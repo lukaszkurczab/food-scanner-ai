@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import AppIcon from "@/components/AppIcon";
 import { useTheme } from "@/theme/useTheme";
@@ -8,16 +8,26 @@ import type { StatisticsEmptyKind } from "@/feature/Statistics/types";
 type Props = {
   kind: StatisticsEmptyKind;
   isOffline: boolean;
+  accessWindowDays?: number;
+  onManageSubscription?: () => void;
 };
 
-export function StatisticsEmptyState({ kind, isOffline }: Props) {
+export function StatisticsEmptyState({
+  kind,
+  isOffline,
+  accessWindowDays,
+  onManageSubscription,
+}: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation(["statistics"]);
+  const isLimitedByFreeWindow = kind === "limited_by_free_window";
 
   const resolvedTitle =
     isOffline && kind === "no_history"
       ? t("statistics:offlineEmpty.title")
+      : isLimitedByFreeWindow
+        ? t("statistics:limitedRange.title")
       : kind === "no_entries_in_range"
         ? t("statistics:emptyRange.title")
         : t("statistics:empty.title");
@@ -25,12 +35,16 @@ export function StatisticsEmptyState({ kind, isOffline }: Props) {
   const resolvedBody =
     isOffline && kind === "no_history"
       ? t("statistics:offlineEmpty.desc")
+      : isLimitedByFreeWindow
+        ? t("statistics:limitedRange.desc", { days: accessWindowDays })
       : kind === "no_entries_in_range"
         ? t("statistics:emptyRange.desc")
         : t("statistics:empty.desc");
 
   const resolvedFoot =
-    kind === "no_entries_in_range"
+    isLimitedByFreeWindow
+      ? t("statistics:limitedRange.foot", { days: accessWindowDays })
+      : kind === "no_entries_in_range"
       ? t("statistics:emptyRange.foot")
       : t("statistics:empty.foot");
 
@@ -44,6 +58,20 @@ export function StatisticsEmptyState({ kind, isOffline }: Props) {
 
       <Text style={styles.title}>{resolvedTitle}</Text>
       <Text style={styles.body}>{resolvedBody}</Text>
+
+      {isLimitedByFreeWindow && onManageSubscription ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("statistics:limitedRange.cta")}
+          onPress={onManageSubscription}
+          style={({ pressed }) => [
+            styles.ctaButton,
+            pressed ? styles.ctaPressed : null,
+          ]}
+        >
+          <Text style={styles.ctaLabel}>{t("statistics:limitedRange.cta")}</Text>
+        </Pressable>
+      ) : null}
 
       <View style={styles.footPill}>
         <View style={styles.footDot} />
@@ -93,6 +121,23 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       lineHeight: theme.typography.lineHeight.bodyL,
       textAlign: "center",
       maxWidth: 280,
+    },
+    ctaButton: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: theme.rounded.full,
+      backgroundColor: theme.surfaceAlt,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+    },
+    ctaPressed: {
+      opacity: 0.9,
+    },
+    ctaLabel: {
+      color: theme.primary,
+      fontFamily: theme.typography.fontFamily.medium,
+      fontSize: theme.typography.size.bodyS,
+      lineHeight: theme.typography.lineHeight.bodyS,
     },
     footPill: {
       borderWidth: 1,

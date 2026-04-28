@@ -26,6 +26,12 @@
     "desc": "Wybierz inny zakres albo dodawaj dalej, by porównać później.",
     "foot": "Zmień zakres, aby przywrócić trend."
   },
+  "limitedRange": {
+    "title": "Ten zakres jest poza bieżącym oknem historii",
+    "desc": "W obecnym planie statystyki obejmują ostatnie {{days}} dni.",
+    "foot": "Wybierz nowszy zakres albo zarządzaj subskrypcją, aby zobaczyć starsze trendy.",
+    "cta": "Zarządzaj planem"
+  },
   "trend": {
     "title": "Trend",
     "avgPerDay": "śr./dzień"
@@ -63,12 +69,12 @@
     }
   },
   "limitedHistory": {
-    "eyebrow": "Premium",
-    "title": "Odblokuj trendy długoterminowe",
-    "body": "Zobacz, jak wyglądają nawyki po ponad {{days}} dniach.",
-    "cta": "Odblokuj Premium"
+    "eyebrow": "Limit planu",
+    "title": "Starsze trendy są poza bieżącym oknem",
+    "body": "W obecnym planie statystyki obejmują ostatnie {{days}} dni.",
+    "cta": "Zarządzaj planem"
   },
   "limitedWindowTitle": "Dostęp do starszych danych wymaga Premium",
   "limitedWindowDesc": "Zakres ograniczono do ostatnich {{d}} dni.",
-  "upgrade": "Odblokuj Premium"
+  "upgrade": "Zarządzaj planem"
 }
