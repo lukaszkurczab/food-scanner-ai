@@ -442,6 +442,45 @@ describe("HomeScreen", () => {
     expect(getByText("macro-targets:125/65/225;consumed:60/34/130")).toBeTruthy();
   });
 
+  it("uses canonical dayKey for the selected day when list and progress update from pending meals", () => {
+    const getMeals = jest.fn();
+    mockUseMeals.mockReturnValue({
+      meals: [
+        createMeal({
+          mealId: "late-pending",
+          cloudId: "late-pending",
+          name: "Late pending",
+          dayKey: "2026-03-17",
+          timestamp: "2026-03-18T01:30:00.000Z",
+          syncState: "pending",
+          totals: { kcal: 400, protein: 30, fat: 10, carbs: 45 },
+        }),
+        createMeal({
+          mealId: "timestamp-neighbor",
+          cloudId: "timestamp-neighbor",
+          name: "Timestamp neighbor",
+          dayKey: "2026-03-18",
+          timestamp: "2026-03-17T12:00:00.000Z",
+          totals: { kcal: 900, protein: 70, fat: 30, carbs: 95 },
+        }),
+      ],
+      getMeals,
+    });
+
+    const navigation = createNavigation();
+    const { getByText, queryByText } = renderWithTheme(
+      <HomeScreen navigation={navigation as never} />,
+    );
+
+    fireEvent.press(getByText("pick-2026-03-17"));
+
+    expect(getByText("meals:1:Late pending/pending")).toBeTruthy();
+    expect(getByText("hero-progress:0.20")).toBeTruthy();
+    expect(getByText("macro-targets:125/65/225;consumed:30/10/45")).toBeTruthy();
+    expect(queryByText(/Timestamp neighbor/)).toBeNull();
+    expect(getMeals).not.toHaveBeenCalled();
+  });
+
   it("does not trigger an extra meals reload from the screen layer", async () => {
     const getMeals = jest.fn();
     mockUseMeals.mockReturnValue({

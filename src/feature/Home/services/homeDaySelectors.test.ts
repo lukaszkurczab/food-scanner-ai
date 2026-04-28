@@ -82,6 +82,13 @@ describe("homeDaySelectors", () => {
       carbs: 72,
     });
     expect(state.kcalProgress).toBe(0.6);
+    expect(state.macroTargets).toEqual(
+      expect.objectContaining({
+        proteinGrams: 65,
+        fatGrams: 35,
+        carbsGrams: 115,
+      }),
+    );
     expect(state.status).toBe("in_progress");
   });
 });
