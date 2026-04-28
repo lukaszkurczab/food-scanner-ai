@@ -37,6 +37,68 @@ function mealIdentity(meal: Meal): string {
   return meal.cloudId || meal.mealId || `${meal.timestamp}:${meal.name || ""}`;
 }
 
+function mealEventId(event?: LocalMealEvent): string {
+  return String(event?.cloudId || event?.mealId || "");
+}
+
+function nullable<T>(value: T | null | undefined): T | null {
+  return value ?? null;
+}
+
+function lastSyncedValue(value: number | null | undefined): number {
+  return value ?? 0;
+}
+
+function isLocalPhotoUri(value?: string | null): boolean {
+  return (
+    typeof value === "string" &&
+    (value.startsWith("file://") || value.startsWith("content://"))
+  );
+}
+
+function localPhotoValue(meal: Meal): string | null {
+  return (
+    meal.photoLocalPath ??
+    meal.localPhotoUrl ??
+    (isLocalPhotoUri(meal.photoUrl) ? meal.photoUrl : null) ??
+    null
+  );
+}
+
+function mealListValue(value: unknown): string {
+  return JSON.stringify(value ?? null);
+}
+
+function areMealSnapshotsEqual(left: Meal, right: Meal): boolean {
+  return (
+    mealIdentity(left) === mealIdentity(right) &&
+    left.userUid === right.userUid &&
+    nullable(left.mealId) === nullable(right.mealId) &&
+    nullable(left.cloudId) === nullable(right.cloudId) &&
+    left.timestamp === right.timestamp &&
+    nullable(left.dayKey) === nullable(right.dayKey) &&
+    nullable(left.loggedAtLocalMin) === nullable(right.loggedAtLocalMin) &&
+    nullable(left.tzOffsetMin) === nullable(right.tzOffsetMin) &&
+    left.type === right.type &&
+    nullable(left.name) === nullable(right.name) &&
+    left.createdAt === right.createdAt &&
+    left.updatedAt === right.updatedAt &&
+    lastSyncedValue(left.lastSyncedAt) === lastSyncedValue(right.lastSyncedAt) &&
+    left.syncState === right.syncState &&
+    nullable(left.source) === nullable(right.source) &&
+    nullable(left.inputMethod) === nullable(right.inputMethod) &&
+    nullable(left.imageId) === nullable(right.imageId) &&
+    nullable(left.photoUrl) === nullable(right.photoUrl) &&
+    nullable(localPhotoValue(left)) === nullable(localPhotoValue(right)) &&
+    nullable(left.notes) === nullable(right.notes) &&
+    Boolean(left.deleted) === Boolean(right.deleted) &&
+    mealListValue(left.ingredients) === mealListValue(right.ingredients) &&
+    mealListValue(left.totals) === mealListValue(right.totals) &&
+    mealListValue(left.tags) === mealListValue(right.tags) &&
+    mealListValue(left.aiMeta) === mealListValue(right.aiMeta)
+  );
+}
+
 function sortMealsDesc(meals: Meal[]): Meal[] {
   return [...meals].sort(
     (left, right) => getMealSortTimestamp(right) - getMealSortTimestamp(left),
@@ -67,6 +129,7 @@ class LocalMealsReadModel {
   private loading = false;
   private version = 0;
   private loadToken = 0;
+  private snapshotCache: LocalMealsSnapshot = EMPTY_SNAPSHOT;
 
   constructor(private readonly uid: string) {}
 
@@ -84,11 +147,19 @@ class LocalMealsReadModel {
   }
 
   snapshot(): LocalMealsSnapshot {
-    return {
+    if (
+      this.snapshotCache.version === this.version &&
+      this.snapshotCache.loading === this.loading
+    ) {
+      return this.snapshotCache;
+    }
+
+    this.snapshotCache = {
       meals: sortMealsDesc(Array.from(this.byId.values())),
       loading: this.loading,
       version: this.version,
     };
+    return this.snapshotCache;
   }
 
   async refresh(): Promise<void> {
@@ -117,7 +188,7 @@ class LocalMealsReadModel {
   async applyLocalMealEvent(event?: LocalMealEvent): Promise<void> {
     if (!this.matchesUid(event)) return;
 
-    const cloudId = String(event?.cloudId || event?.mealId || "");
+    const cloudId = mealEventId(event);
     if (!cloudId) {
       await this.refresh();
       return;
@@ -130,6 +201,18 @@ class LocalMealsReadModel {
     }
 
     this.upsert(meal);
+  }
+
+  applyLocalDeleteEvent(event?: LocalMealEvent): void {
+    if (!this.matchesUid(event)) return;
+
+    const cloudId = mealEventId(event);
+    if (cloudId) {
+      this.removeById(cloudId);
+      return;
+    }
+
+    void this.refresh();
   }
 
   removeById(id: string): void {
@@ -158,6 +241,16 @@ class LocalMealsReadModel {
     return changed;
   }
 
+  private removeByMealSilently(meal: Meal): boolean {
+    const ids = [meal.cloudId, meal.mealId, mealIdentity(meal)].filter(
+      (id): id is string => Boolean(id),
+    );
+    return ids.reduce(
+      (changed, id) => this.removeByIdSilently(id) || changed,
+      false,
+    );
+  }
+
   private start(): void {
     if (this.unsubs.length > 0) return;
 
@@ -166,11 +259,11 @@ class LocalMealsReadModel {
         void this.applyLocalMealEvent(event);
       }),
       on<LocalMealEvent>("meal:local:deleted", (event) => {
-        void this.applyLocalMealEvent(event);
+        this.applyLocalDeleteEvent(event);
       }),
       on<LocalMealEvent>("meal:synced", (event) => {
         if (!this.matchesUid(event)) return;
-        if (event?.cloudId || event?.mealId) {
+        if (mealEventId(event)) {
           void this.applyLocalMealEvent(event);
         } else {
           void this.refresh();
@@ -178,7 +271,7 @@ class LocalMealsReadModel {
       }),
       on<LocalMealEvent>("meal:pushed", (event) => {
         if (!this.matchesUid(event)) return;
-        if (event?.cloudId || event?.mealId) {
+        if (mealEventId(event)) {
           void this.applyLocalMealEvent(event);
         } else {
           void this.refresh();
@@ -186,7 +279,7 @@ class LocalMealsReadModel {
       }),
       on<LocalMealEvent>("meal:deleted", (event) => {
         if (!this.matchesUid(event)) return;
-        const cloudId = String(event?.cloudId || event?.mealId || "");
+        const cloudId = mealEventId(event);
         if (cloudId) this.removeById(cloudId);
       }),
     ];
@@ -203,6 +296,7 @@ class LocalMealsReadModel {
     this.loading = false;
     this.loadToken += 1;
     this.version += 1;
+    this.snapshotCache = EMPTY_SNAPSHOT;
   }
 
   private matchesUid(event?: LocalMealEvent): boolean {
@@ -215,10 +309,34 @@ class LocalMealsReadModel {
       return;
     }
 
-    this.removeByIdSilently(meal.cloudId || meal.mealId);
+    const existing = this.findByMeal(meal);
+    if (existing && areMealSnapshotsEqual(existing, meal)) {
+      return;
+    }
+
+    this.removeByMealSilently(meal);
     this.byId.set(mealIdentity(meal), meal);
     this.version += 1;
     this.publish();
+  }
+
+  private findByMeal(meal: Meal): Meal | null {
+    const ids = [meal.cloudId, meal.mealId, mealIdentity(meal)].filter(
+      (id): id is string => Boolean(id),
+    );
+    for (const candidate of this.byId.values()) {
+      if (
+        ids.some(
+          (id) =>
+            mealIdentity(candidate) === id ||
+            candidate.cloudId === id ||
+            candidate.mealId === id,
+        )
+      ) {
+        return candidate;
+      }
+    }
+    return null;
   }
 
   private publish(): void {

@@ -275,6 +275,45 @@ describe("useMeals", () => {
     });
   });
 
+  it("updates synced meals point-wise when the sync event includes an id", async () => {
+    const syncedMeal = baseMeal({
+      cloudId: "c1",
+      name: "Synced meal",
+      syncState: "synced",
+      updatedAt: "2026-02-25T13:00:00.000Z",
+    });
+
+    mockGetMealsPageLocal.mockResolvedValueOnce([
+      baseMeal({ cloudId: "c1", name: "Pending meal", syncState: "pending" }),
+    ]);
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce(syncedMeal);
+
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    mockGetMealsPageLocal.mockClear();
+
+    await act(async () => {
+      const handlers = mockEventHandlers.get("meal:synced");
+      handlers?.forEach((handler) => handler({ uid: "user-1", cloudId: "c1" }));
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.meals[0]).toEqual(
+        expect.objectContaining({
+          cloudId: "c1",
+          name: "Synced meal",
+          syncState: "synced",
+        }),
+      );
+    });
+    expect(mockGetMealByCloudIdLocal).toHaveBeenCalledWith("user-1", "c1");
+    expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
+  });
+
   it("updates pushed meals point-wise when the sync event includes an id", async () => {
     const syncedMeal = baseMeal({
       cloudId: "c1",
@@ -311,6 +350,35 @@ describe("useMeals", () => {
       );
     });
     expect(mockGetMealByCloudIdLocal).toHaveBeenCalledWith("user-1", "c1");
+    expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
+  });
+
+  it("removes locally deleted meals point-wise without reloading the local feed", async () => {
+    mockGetMealsPageLocal.mockResolvedValueOnce([
+      baseMeal({ cloudId: "c1", name: "Deleted meal" }),
+      baseMeal({ cloudId: "c2", name: "Kept meal" }),
+    ]);
+
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.meals.map((meal) => meal.cloudId)).toEqual([
+        "c1",
+        "c2",
+      ]);
+    });
+    mockGetMealsPageLocal.mockClear();
+    mockGetMealByCloudIdLocal.mockClear();
+
+    await act(async () => {
+      const handlers = mockEventHandlers.get("meal:local:deleted");
+      handlers?.forEach((handler) => handler({ uid: "user-1", cloudId: "c1" }));
+      await Promise.resolve();
+    });
+
+    expect(result.current.meals.map((meal) => meal.cloudId)).toEqual(["c2"]);
+    expect(mockGetMealByCloudIdLocal).not.toHaveBeenCalled();
     expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
   });
 
@@ -389,6 +457,46 @@ describe("useMeals", () => {
     );
     expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
     expect(mockPullChanges).not.toHaveBeenCalled();
+  });
+
+  it("keeps the same meals array for equivalent duplicate local upsert events", async () => {
+    const meal = baseMeal({
+      userUid: "user-dup",
+      cloudId: "same-cloud",
+      syncState: "pending",
+      lastSyncedAt: undefined,
+    });
+
+    mockGetMealsPageLocal.mockReset();
+    mockGetMealByCloudIdLocal.mockReset();
+    mockGetMealsPageLocal.mockResolvedValue([meal]);
+    mockGetMealByCloudIdLocal.mockResolvedValueOnce({
+      ...meal,
+      lastSyncedAt: 0,
+    });
+
+    const { result } = renderHook(() => useMeals("user-dup"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    const currentMeals = result.current.meals;
+    mockGetMealsPageLocal.mockClear();
+
+    await act(async () => {
+      const handlers = mockEventHandlers.get("meal:local:upserted");
+      handlers?.forEach((handler) =>
+        handler({ uid: "user-dup", cloudId: "same-cloud" }),
+      );
+      await Promise.resolve();
+    });
+
+    expect(result.current.meals).toBe(currentMeals);
+    expect(mockGetMealByCloudIdLocal).toHaveBeenCalledWith(
+      "user-dup",
+      "same-cloud",
+    );
+    expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
   });
 
   it("ignores local mutation events for a different or missing user without changing the snapshot", async () => {
@@ -473,7 +581,11 @@ describe("useMeals", () => {
     await act(async () => {
       await result.current.loadNextPage();
     });
-    expect(result.current.meals.map((m) => m.cloudId)).toEqual(["c3", "c2"]);
+    expect(result.current.meals.map((m) => m.cloudId)).toEqual([
+      "c3",
+      "c2",
+      "c1",
+    ]);
     expect(mockGetMealsPageLocal).toHaveBeenLastCalledWith("user-1", 50, undefined);
   });
 
