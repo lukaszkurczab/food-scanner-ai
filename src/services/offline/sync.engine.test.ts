@@ -231,6 +231,33 @@ describe("offline sync.engine selective coordinator", () => {
     expect(mockChatPull).not.toHaveBeenCalled();
   });
 
+  it("reconnect pushes once and only pulls meal changes for dirty meal queue", async () => {
+    mockGetQueuedOpsCount.mockImplementation(async (_uid, options) => {
+      const kinds = (options as { kinds?: string[] } | undefined)?.kinds ?? [];
+      return kinds.includes("upsert") || kinds.includes("delete") ? 1 : 0;
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { runReconnectReconcile } = require("@/services/offline/sync.engine");
+
+    const result = await runReconnectReconcile("user-1");
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        ok: true,
+        pulled: { meals: 0 },
+        skipped: expect.objectContaining({
+          myMeals: "clean",
+          chat: "clean",
+        }),
+      }),
+    );
+    expect(mockRunPushQueue).toHaveBeenCalledTimes(1);
+    expect(mockMealsPull).toHaveBeenCalledTimes(1);
+    expect(mockMyMealsPull).not.toHaveBeenCalled();
+    expect(mockChatPull).not.toHaveBeenCalled();
+  });
+
   it("rejects requestSync when push reports failed operations", async () => {
     mockRunPushQueue.mockResolvedValueOnce({
       processed: 0,

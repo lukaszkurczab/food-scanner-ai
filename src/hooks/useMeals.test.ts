@@ -318,6 +318,60 @@ describe("useMeals", () => {
     expect(mockPullChanges).not.toHaveBeenCalled();
   });
 
+  it("creates an offline meal in the local read model immediately and queues one upsert", async () => {
+    jest.useFakeTimers();
+    mockNetInfoFetch.mockResolvedValue({ isConnected: false });
+
+    const { result } = renderHook(() => useMeals("user-1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.addMeal({
+        ...baseAddMealInput,
+        mealId: "offline-create",
+        name: "Offline create",
+        ingredients: [
+          {
+            id: "i1",
+            name: "Rice",
+            amount: 100,
+            kcal: 120,
+            protein: 3,
+            carbs: 25,
+            fat: 1,
+          },
+        ],
+      });
+    });
+
+    const localMeal = selectLocalMealByCloudId("user-1", "offline-create");
+    expect(localMeal).toEqual(
+      expect.objectContaining({
+        userUid: "user-1",
+        cloudId: "offline-create",
+        mealId: "offline-create",
+        name: "Offline create",
+        syncState: "pending",
+        deleted: false,
+        totals: { kcal: 120, protein: 3, carbs: 25, fat: 1 },
+      }),
+    );
+    expect(result.current.meals).toEqual([
+      expect.objectContaining({
+        cloudId: "offline-create",
+        syncState: "pending",
+      }),
+    ]);
+    expect(mockUpsertMealLocal).toHaveBeenCalledTimes(1);
+    expect(mockEnqueueUpsert).toHaveBeenCalledTimes(1);
+    expect(mockEnqueueUpsert).toHaveBeenCalledWith("user-1", localMeal);
+    expect(mockPushQueue).not.toHaveBeenCalled();
+    expect(mockPullChanges).not.toHaveBeenCalled();
+  });
+
   it("reloads visible meals when a synced meal event arrives", async () => {
     mockGetMealsPageLocal
       .mockResolvedValueOnce([baseMeal({ cloudId: "c1", name: "Old meal" })])
@@ -1262,6 +1316,73 @@ describe("useMeals", () => {
     expect(selectLocalMealByCloudId("user-1", "repeat-cloud")).toEqual(
       expect.objectContaining({ name: "Final edit", syncState: "pending" }),
     );
+  });
+
+  it("deletes after a pending edit, removes the meal locally and leaves one queued delete", async () => {
+    jest.useFakeTimers();
+    const queuedOps = new Map<
+      string,
+      { kind: "upsert"; meal: Meal } | { kind: "delete"; cloudId: string; updatedAt: string }
+    >();
+
+    mockGetMealsPageLocal.mockResolvedValueOnce([
+      baseMeal({
+        cloudId: "edit-delete",
+        mealId: "edit-delete",
+        name: "Before edit",
+      }),
+    ]);
+    mockEnqueueUpsert.mockImplementation(async (uid, meal) => {
+      queuedOps.set(`${uid}:${meal.cloudId}`, { kind: "upsert", meal });
+    });
+    mockEnqueueDelete.mockImplementation(async (uid, cloudId, updatedAt) => {
+      queuedOps.delete(`${uid}:${cloudId}`);
+      queuedOps.set(`${uid}:${cloudId}`, { kind: "delete", cloudId, updatedAt });
+    });
+
+    const { result } = renderHook(() => useMeals("user-1"));
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.updateMeal(
+        baseMeal({
+          cloudId: "edit-delete",
+          mealId: "edit-delete",
+          name: "Pending edit",
+        }),
+      );
+    });
+
+    expect(selectLocalMealByCloudId("user-1", "edit-delete")).toEqual(
+      expect.objectContaining({
+        name: "Pending edit",
+        syncState: "pending",
+      }),
+    );
+    expect([...queuedOps.values()]).toEqual([
+      expect.objectContaining({
+        kind: "upsert",
+        meal: expect.objectContaining({ name: "Pending edit" }),
+      }),
+    ]);
+
+    await act(async () => {
+      await result.current.deleteMeal("edit-delete");
+    });
+
+    expect(selectLocalMealByCloudId("user-1", "edit-delete")).toBeNull();
+    expect(result.current.meals).toEqual([]);
+    expect(mockEnqueueUpsert).toHaveBeenCalledTimes(1);
+    expect(mockEnqueueDelete).toHaveBeenCalledTimes(1);
+    expect([...queuedOps.values()]).toEqual([
+      expect.objectContaining({
+        kind: "delete",
+        cloudId: "edit-delete",
+        updatedAt: expect.any(String),
+      }),
+    ]);
   });
 
   it("deletes meals, prunes local list and queues delete sync", async () => {

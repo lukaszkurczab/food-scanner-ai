@@ -218,6 +218,50 @@ describe("queue.repo", () => {
     expect(mockExecSync).toHaveBeenNthCalledWith(2, "COMMIT");
   });
 
+  it("keeps one queued meal upsert after repeated offline edits and stores the latest payload", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { enqueueUpsert, getSyncCounts } = require("@/services/offline/queue.repo") as
+      typeof import("@/services/offline/queue.repo");
+
+    await enqueueUpsert(
+      "user-1",
+      baseMeal({
+        name: "First offline edit",
+        updatedAt: "2026-02-25T10:10:00.000Z",
+      }),
+    );
+    await enqueueUpsert(
+      "user-1",
+      baseMeal({
+        name: "Second offline edit",
+        updatedAt: "2026-02-25T10:20:00.000Z",
+      }),
+    );
+    await enqueueUpsert(
+      "user-1",
+      baseMeal({
+        name: "Final offline edit",
+        updatedAt: "2026-02-25T10:30:00.000Z",
+      }),
+    );
+
+    expect(queuedOps).toHaveLength(1);
+    expect(queuedOps[0]).toEqual(
+      expect.objectContaining({
+        cloudId: "cloud-1",
+        kind: "upsert",
+        updatedAt: "2026-02-25T10:30:00.000Z",
+        payload: expect.objectContaining({
+          name: "Final offline edit",
+          updatedAt: "2026-02-25T10:30:00.000Z",
+        }),
+      }),
+    );
+    await expect(
+      getSyncCounts("user-1", { kinds: ["upsert", "delete"] }),
+    ).resolves.toEqual({ dead: 0, pending: 1 });
+  });
+
   it("coalesces saved-meal upserts by generated document id", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { enqueueMyMealUpsert } = require("@/services/offline/queue.repo") as
@@ -269,13 +313,19 @@ describe("queue.repo", () => {
     ]);
   });
 
-  it("replaces a pending meal upsert with a single delete", async () => {
+  it("replaces a pending meal edit with a single delete tombstone", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const queueRepo = require("@/services/offline/queue.repo") as
       typeof import("@/services/offline/queue.repo");
     const { enqueueDelete, enqueueUpsert } = queueRepo;
 
-    await enqueueUpsert("user-1", baseMeal());
+    await enqueueUpsert(
+      "user-1",
+      baseMeal({
+        name: "Edited before delete",
+        updatedAt: "2026-02-25T10:30:00.000Z",
+      }),
+    );
     await enqueueDelete("user-1", "cloud-1", "2026-02-25T11:00:00.000Z");
 
     expect(queuedOps).toEqual([
@@ -284,6 +334,7 @@ describe("queue.repo", () => {
         uid: "user-1",
         kind: "delete",
         updatedAt: "2026-02-25T11:00:00.000Z",
+        payload: { cloudId: "cloud-1", deleted: true },
       }),
     ]);
   });

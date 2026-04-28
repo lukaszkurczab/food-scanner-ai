@@ -158,6 +158,81 @@ describe("meals strategy", () => {
     );
   });
 
+  it("pulls meal changes from stored cursor and follows page cursors only while pages contain items", async () => {
+    mockGetItem.mockResolvedValueOnce("2026-03-03T12:00:00.000Z|meal-0");
+    mockFetchMealChangesRemote
+      .mockResolvedValueOnce({
+        items: [
+          {
+            userUid: "user-1",
+            mealId: "meal-1",
+            cloudId: "meal-1",
+            timestamp: "2026-03-03T12:00:00.000Z",
+            type: "lunch",
+            name: "Page one",
+            ingredients: [],
+            createdAt: "2026-03-03T12:00:00.000Z",
+            updatedAt: "2026-03-03T12:30:00.000Z",
+            syncState: "synced",
+            source: "manual",
+            imageId: null,
+            photoUrl: null,
+            notes: null,
+            tags: [],
+            deleted: false,
+            totals: { kcal: 200, protein: 30, carbs: 0, fat: 5 },
+          },
+        ],
+        nextCursor: "2026-03-03T12:30:00.000Z|meal-1",
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            userUid: "user-1",
+            mealId: "meal-2",
+            cloudId: "meal-2",
+            timestamp: "2026-03-03T13:00:00.000Z",
+            type: "dinner",
+            name: "Page two",
+            ingredients: [],
+            createdAt: "2026-03-03T13:00:00.000Z",
+            updatedAt: "2026-03-03T13:30:00.000Z",
+            syncState: "synced",
+            source: "manual",
+            imageId: null,
+            photoUrl: null,
+            notes: null,
+            tags: [],
+            deleted: false,
+            totals: { kcal: 300, protein: 20, carbs: 30, fat: 10 },
+          },
+        ],
+        nextCursor: null,
+      });
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { mealsStrategy } = require("@/services/offline/strategies/meals.strategy");
+
+    const synced = await mealsStrategy.pull("user-1");
+
+    expect(synced).toBe(2);
+    expect(mockFetchMealChangesRemote).toHaveBeenNthCalledWith(1, {
+      uid: "user-1",
+      pageSize: 100,
+      cursor: "2026-03-03T12:00:00.000Z|meal-0",
+    });
+    expect(mockFetchMealChangesRemote).toHaveBeenNthCalledWith(2, {
+      uid: "user-1",
+      pageSize: 100,
+      cursor: "2026-03-03T12:30:00.000Z|meal-1",
+    });
+    expect(mockFetchMealChangesRemote).toHaveBeenCalledTimes(2);
+    expect(mockSetItem).toHaveBeenCalledWith(
+      "sync:last_pull_ts:user-1",
+      "2026-03-03T13:30:00.000Z|meal-2",
+    );
+  });
+
   it("keeps pending local edit when pulled remote meal is older", async () => {
     mockFetchMealChangesRemote
       .mockResolvedValueOnce({

@@ -71,8 +71,9 @@ describe("sync.push", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { runPushQueue } = require("@/services/offline/sync.push");
 
-    await runPushQueue("user-1", 25, [strategy]);
+    const result = await runPushQueue("user-1", 25, [strategy]);
 
+    expect(result).toEqual({ processed: 0, failed: 1, deadLettered: 1 });
     expect(mockMarkDone).not.toHaveBeenCalledWith(1);
     expect(mockBumpAttempts).not.toHaveBeenCalled();
     expect(mockMoveToDeadLetter).toHaveBeenCalledWith(
@@ -118,8 +119,9 @@ describe("sync.push", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { runPushQueue } = require("@/services/offline/sync.push");
 
-    await runPushQueue("user-1", 25, [strategy]);
+    const result = await runPushQueue("user-1", 25, [strategy]);
 
+    expect(result).toEqual({ processed: 0, failed: 1, deadLettered: 0 });
     expect(mockBumpAttempts).toHaveBeenCalledWith(7);
     expect(mockMoveToDeadLetter).not.toHaveBeenCalled();
     expect(mockSetMealSyncStateLocal).toHaveBeenCalledWith(
@@ -163,8 +165,9 @@ describe("sync.push", () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { runPushQueue } = require("@/services/offline/sync.push");
 
-    await runPushQueue("user-1", 25, [strategy]);
+    const result = await runPushQueue("user-1", 25, [strategy]);
 
+    expect(result).toEqual({ processed: 0, failed: 1, deadLettered: 1 });
     expect(mockMoveToDeadLetter).toHaveBeenCalledWith(
       expect.objectContaining({ id: 99, kind: "upsert", attempts: 9 }),
       10,
