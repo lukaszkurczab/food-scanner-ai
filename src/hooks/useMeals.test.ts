@@ -10,7 +10,7 @@ import {
 import type { Meal } from "@/types/meal";
 import { useMeals } from "@/hooks/useMeals";
 import { buildHomeDayState } from "@/feature/Home/services/homeDaySelectors";
-import { getStatsForRange } from "@/feature/Statistics/utils/getStatsForRange";
+import { buildStatisticsRangeState } from "@/feature/Statistics/services/statisticsRangeSelectors";
 import {
   __resetLocalMealsStoreForTests,
   getLocalMealsSnapshot,
@@ -1053,9 +1053,14 @@ describe("useMeals", () => {
           goal: "maintain",
         },
       });
-      const stats = getStatsForRange(snapshotMeals, {
-        start: new Date("2026-02-20T00:00:00.000Z"),
-        end: new Date("2026-02-21T00:00:00.000Z"),
+      const stats = buildStatisticsRangeState({
+        meals: snapshotMeals,
+        activeRange: "custom",
+        todayDayKey: "2026-02-21",
+        customRange: {
+          startDayKey: "2026-02-20",
+          endDayKey: "2026-02-21",
+        },
       });
 
       expect(homeState.dayMeals).toEqual([
@@ -1204,9 +1209,14 @@ describe("useMeals", () => {
           goal: "maintain",
         },
       });
-      const stats = getStatsForRange(snapshotMeals, {
-        start: new Date("2026-02-20T00:00:00.000Z"),
-        end: new Date("2026-02-21T00:00:00.000Z"),
+      const stats = buildStatisticsRangeState({
+        meals: snapshotMeals,
+        activeRange: "custom",
+        todayDayKey: "2026-02-21",
+        customRange: {
+          startDayKey: "2026-02-20",
+          endDayKey: "2026-02-21",
+        },
       });
 
       expect(snapshotMeals.map((meal) => meal.cloudId)).toEqual([

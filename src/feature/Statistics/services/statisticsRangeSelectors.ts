@@ -93,6 +93,30 @@ export function clampStatisticsRangeToFreeWindow(params: {
   );
 }
 
+function clampDayKeyRangeToToday(
+  range: DayKeyRange,
+  todayDayKey: string,
+): DayKeyRange | null {
+  const normalized = normalizeDayKeyRange(range);
+  if (!normalized) return null;
+
+  if (normalized.endDayKey <= todayDayKey) {
+    return normalized;
+  }
+
+  if (normalized.startDayKey > todayDayKey) {
+    return {
+      startDayKey: todayDayKey,
+      endDayKey: todayDayKey,
+    };
+  }
+
+  return {
+    startDayKey: normalized.startDayKey,
+    endDayKey: todayDayKey,
+  };
+}
+
 export function buildStatisticsRangeState(
   params: BuildStatisticsRangeStateParams,
 ): StatisticsRangeState {
@@ -101,12 +125,14 @@ export function buildStatisticsRangeState(
       startDayKey: params.todayDayKey,
       endDayKey: params.todayDayKey,
     };
+  const todayClampedRange =
+    clampDayKeyRangeToToday(requestedRange, params.todayDayKey) ?? requestedRange;
   const effectiveRange =
     clampStatisticsRangeToFreeWindow({
-      range: requestedRange,
+      range: todayClampedRange,
       accessWindowDays: params.accessWindowDays,
       todayDayKey: params.todayDayKey,
-    }) ?? requestedRange;
+    }) ?? todayClampedRange;
   const dayKeys = enumerateDayKeys(effectiveRange);
   const buckets = dayKeys.map((dayKey) =>
     buildNutritionDayBucket(params.meals, dayKey),

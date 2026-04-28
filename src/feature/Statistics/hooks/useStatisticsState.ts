@@ -1,20 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMeals } from "@/hooks/useMeals";
-import { useStats } from "@/hooks/useStats";
-import { lastNDaysRange } from "../utils/dateRange";
 import {
-  getMealDayIndex,
-  isMealInDayKeyRange,
+  formatMealDayKey,
+  isCanonicalMealDayKey,
 } from "@/services/meals/mealMetadata";
+import {
+  buildRecentDayKeyRange,
+  dayKeyToDate,
+  normalizeDayKeyRange,
+  type DayKeyRange,
+} from "@/services/meals/dayKeyRange";
+import {
+  buildStatisticsRangeState,
+  clampStatisticsRangeToFreeWindow,
+} from "@/feature/Statistics/services/statisticsRangeSelectors";
 import type {
   DateRange,
   MetricKey,
   RangeKey,
   StatisticsEmptyKind,
 } from "@/feature/Statistics/types";
-import { clampDateRangeToAccessWindow, endOfDay, startOfDay } from "@/utils/accessWindow";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { startOfDay } from "@/utils/accessWindow";
 
 const normalizeRange = (range: DateRange): DateRange => {
   const start = startOfDay(range.start);
@@ -23,55 +29,27 @@ const normalizeRange = (range: DateRange): DateRange => {
   return { start: end, end: start };
 };
 
-const clampRangeForAccessWindow = (
-  range: DateRange,
-  accessWindowDays?: number,
-): DateRange => {
-  const clamped = clampDateRangeToAccessWindow(range, accessWindowDays);
-  return {
-    start: startOfDay(clamped.start),
-    end: startOfDay(clamped.end),
-  };
-};
+const getTodayDayKey = (): string => formatMealDayKey(new Date()) ?? "1970-01-01";
 
-const buildRecentRange = (days: number): DateRange => {
-  const range = lastNDaysRange(days);
-  return normalizeRange(range);
-};
+const dayKeyRangeToDateRange = (range: DayKeyRange): DateRange => {
+  const start = dayKeyToDate(range.startDayKey);
+  const end = dayKeyToDate(range.endDayKey);
 
-const formatLabel = (date: Date, totalDays: number): string =>
-  date.toLocaleDateString(undefined, {
-    weekday: totalDays <= 7 ? "short" : undefined,
-    month: totalDays > 7 ? "short" : undefined,
-    day: totalDays > 7 ? "numeric" : undefined,
+  return normalizeRange({
+    start: start ?? new Date(),
+    end: end ?? start ?? new Date(),
   });
-
-const normalizeSeries = (
-  source: number[] | undefined,
-  length: number,
-): number[] => {
-  if (!Array.isArray(source)) {
-    return Array.from({ length }, () => 0);
-  }
-
-  if (source.length === length) {
-    return source.map((value) => Number(value) || 0);
-  }
-
-  if (source.length > length) {
-    return source.slice(source.length - length).map((value) => Number(value) || 0);
-  }
-
-  return [
-    ...Array.from({ length: length - source.length }, () => 0),
-    ...source.map((value) => Number(value) || 0),
-  ];
 };
 
-type NutrientsBucket = {
-  protein: number;
-  carbs: number;
-  fat: number;
+const dateRangeToDayKeyRange = (range: DateRange): DayKeyRange | null => {
+  const normalized = normalizeRange(range);
+  const startDayKey = formatMealDayKey(normalized.start);
+  const endDayKey = formatMealDayKey(normalized.end);
+  if (!isCanonicalMealDayKey(startDayKey) || !isCanonicalMealDayKey(endDayKey)) {
+    return null;
+  }
+
+  return normalizeDayKeyRange({ startDayKey, endDayKey });
 };
 
 export function useStatisticsState(params: {
@@ -80,80 +58,77 @@ export function useStatisticsState(params: {
   accessWindowDays?: number;
 }) {
   const { meals, loading: loadingMeals } = useMeals(params.uid);
+  const todayDayKey = getTodayDayKey();
 
   const [active, setActive] = useState<RangeKey>("7d");
-  const [customRange, setCustomRangeState] = useState<DateRange>(() =>
-    buildRecentRange(7),
-  );
+  const [customRange, setCustomRangeState] = useState<DateRange>(() => {
+    const recentRange = buildRecentDayKeyRange(7, getTodayDayKey());
+    return recentRange
+      ? dayKeyRangeToDateRange(recentRange)
+      : normalizeRange({ start: new Date(), end: new Date() });
+  });
   const [metric, setMetric] = useState<MetricKey>("kcal");
 
   const setCustomRange = (range: DateRange) => {
-    setCustomRangeState(clampRangeForAccessWindow(range, params.accessWindowDays));
+    const dayKeyRange = dateRangeToDayKeyRange(range);
+    const clampedRange = dayKeyRange
+      ? clampStatisticsRangeToFreeWindow({
+          range: dayKeyRange,
+          accessWindowDays: params.accessWindowDays,
+          todayDayKey,
+        }) ?? dayKeyRange
+      : null;
+
+    setCustomRangeState(
+      clampedRange ? dayKeyRangeToDateRange(clampedRange) : normalizeRange(range),
+    );
   };
 
   useEffect(() => {
-    setCustomRangeState((prev) =>
-      clampRangeForAccessWindow(prev, params.accessWindowDays),
-    );
-  }, [params.accessWindowDays]);
+    setCustomRangeState((prev) => {
+      const dayKeyRange = dateRangeToDayKeyRange(prev);
+      if (!dayKeyRange) return normalizeRange(prev);
 
-  const requestedRange = useMemo<DateRange>(() => {
-    if (active === "7d") return buildRecentRange(7);
-    if (active === "30d") return buildRecentRange(30);
-    return normalizeRange(customRange);
-  }, [active, customRange]);
+      const clampedRange =
+        clampStatisticsRangeToFreeWindow({
+          range: dayKeyRange,
+          accessWindowDays: params.accessWindowDays,
+          todayDayKey,
+        }) ?? dayKeyRange;
 
-  const selectedRange = useMemo<DateRange>(() => {
-    return clampRangeForAccessWindow(requestedRange, params.accessWindowDays);
-  }, [params.accessWindowDays, requestedRange]);
+      return dayKeyRangeToDateRange(clampedRange);
+    });
+  }, [params.accessWindowDays, todayDayKey]);
 
-  const effectiveRange = useMemo<DateRange>(() => {
-    const today = startOfDay(new Date());
-    let nextStart = selectedRange.start;
-    let nextEnd = selectedRange.end > today ? today : selectedRange.end;
-
-    if (params.accessWindowDays && params.accessWindowDays > 0) {
-      const cutoff = startOfDay(new Date());
-      cutoff.setDate(cutoff.getDate() - params.accessWindowDays + 1);
-      if (nextStart < cutoff) nextStart = cutoff;
-      if (nextEnd < cutoff) nextEnd = cutoff;
-    }
-
-    if (nextStart > nextEnd) {
-      nextStart = nextEnd;
-    }
-
-    return { start: nextStart, end: nextEnd };
-  }, [params.accessWindowDays, selectedRange.end, selectedRange.start]);
-
-  const statsRange = useMemo(
-    () => ({
-      start: startOfDay(effectiveRange.start),
-      end: endOfDay(effectiveRange.end),
-    }),
-    [effectiveRange.end, effectiveRange.start],
+  const customDayKeyRange = useMemo(
+    () => dateRangeToDayKeyRange(customRange),
+    [customRange],
   );
 
-  const stats = useStats(meals, statsRange, params.calorieTarget);
-
-  const days = useMemo(
+  const rangeState = useMemo(
     () =>
-      Math.max(
-        1,
-        Math.floor(
-          (effectiveRange.end.getTime() - effectiveRange.start.getTime()) / DAY_MS,
-        ) + 1,
-      ),
-    [effectiveRange.end, effectiveRange.start],
+      buildStatisticsRangeState({
+        meals,
+        activeRange: active,
+        todayDayKey,
+        customRange: customDayKeyRange,
+        accessWindowDays: params.accessWindowDays,
+      }),
+    [active, customDayKeyRange, meals, params.accessWindowDays, todayDayKey],
   );
 
-  const mealsInEffectiveRange = useMemo(() => {
-    return meals.filter((meal) => isMealInDayKeyRange(meal, effectiveRange)).length;
-  }, [effectiveRange, meals]);
+  const selectedRange = useMemo(
+    () => dayKeyRangeToDateRange(rangeState.requestedRange),
+    [rangeState.requestedRange],
+  );
+  const effectiveRange = useMemo(
+    () => dayKeyRangeToDateRange(rangeState.effectiveRange),
+    [rangeState.effectiveRange],
+  );
+  const days = rangeState.dayKeys.length;
+  const hasEntriesInRange = rangeState.averages.loggedDaysCount > 0;
 
   const hasAnyMeals = meals.length > 0;
-  const hasEntriesInRange = mealsInEffectiveRange > 0;
-
   const emptyKind: StatisticsEmptyKind =
     !loadingMeals && !hasAnyMeals
       ? "no_history"
@@ -161,103 +136,18 @@ export function useStatisticsState(params: {
         ? "no_entries_in_range"
         : "none";
 
-  const { labels, nutrientsByDay } = useMemo(() => {
-    const buckets = Array.from({ length: days }, () => ({
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-    }));
-
-    const nextLabels = Array.from({ length: days }, (_, index) => {
-      const dayDate = new Date(effectiveRange.start.getTime() + index * DAY_MS);
-      return formatLabel(dayDate, days);
-    });
-
-    for (const meal of meals) {
-      if (!isMealInDayKeyRange(meal, effectiveRange)) continue;
-      const index = getMealDayIndex(meal, effectiveRange.start);
-      if (index === null) continue;
-      if (index < 0 || index >= days) continue;
-
-      const mealIngredients = meal.ingredients ?? [];
-      if (mealIngredients.length > 0) {
-        for (const ingredient of mealIngredients) {
-          buckets[index].protein += Number(ingredient?.protein) || 0;
-          buckets[index].carbs += Number(ingredient?.carbs) || 0;
-          buckets[index].fat += Number(ingredient?.fat) || 0;
-        }
-      } else if (meal.totals) {
-        buckets[index].protein += Number(meal.totals.protein) || 0;
-        buckets[index].carbs += Number(meal.totals.carbs) || 0;
-        buckets[index].fat += Number(meal.totals.fat) || 0;
-      }
-    }
-
-    return {
-      labels: nextLabels,
-      nutrientsByDay: buckets as NutrientsBucket[],
-    };
-  }, [days, effectiveRange, meals]);
-
-  const kcalSeries = normalizeSeries(stats.caloriesSeries, days);
-  const proteinSeries = nutrientsByDay.map((day) => day.protein || 0);
-  const carbsSeries = nutrientsByDay.map((day) => day.carbs || 0);
-  const fatSeries = nutrientsByDay.map((day) => day.fat || 0);
-
-  const seriesByMetric: Record<MetricKey, number[]> = {
-    kcal: kcalSeries,
-    protein: proteinSeries,
-    carbs: carbsSeries,
-    fat: fatSeries,
-  };
-
-  const totals = {
-    kcal:
-      typeof stats.totals?.kcal === "number"
-        ? stats.totals.kcal
-        : kcalSeries.reduce((sum, value) => sum + (value || 0), 0),
-    protein:
-      typeof stats.totals?.protein === "number"
-        ? stats.totals.protein
-        : proteinSeries.reduce((sum, value) => sum + (value || 0), 0),
-    carbs:
-      typeof stats.totals?.carbs === "number"
-        ? stats.totals.carbs
-        : carbsSeries.reduce((sum, value) => sum + (value || 0), 0),
-    fat:
-      typeof stats.totals?.fat === "number"
-        ? stats.totals.fat
-        : fatSeries.reduce((sum, value) => sum + (value || 0), 0),
-  };
-
-  const averages = {
-    kcal:
-      typeof stats.averages?.kcal === "number"
-        ? stats.averages.kcal
-        : Math.round(totals.kcal / Math.max(1, days)),
-    protein:
-      typeof stats.averages?.protein === "number"
-        ? stats.averages.protein
-        : Math.round(totals.protein / Math.max(1, days)),
-    carbs:
-      typeof stats.averages?.carbs === "number"
-        ? stats.averages.carbs
-        : Math.round(totals.carbs / Math.max(1, days)),
-    fat:
-      typeof stats.averages?.fat === "number"
-        ? stats.averages.fat
-        : Math.round(totals.fat / Math.max(1, days)),
-  };
-
   const metricAverageByKey: Record<MetricKey, number> = {
-    kcal: averages.kcal,
-    protein: averages.protein,
-    carbs: averages.carbs,
-    fat: averages.fat,
+    kcal: rangeState.averages.rangeDays.kcal,
+    protein: rangeState.averages.rangeDays.protein,
+    carbs: rangeState.averages.rangeDays.carbs,
+    fat: rangeState.averages.rangeDays.fat,
   };
 
   const hasTotals =
-    totals.kcal > 0 || totals.protein > 0 || totals.carbs > 0 || totals.fat > 0;
+    rangeState.totals.kcal > 0 ||
+    rangeState.totals.protein > 0 ||
+    rangeState.totals.carbs > 0 ||
+    rangeState.totals.fat > 0;
 
   return {
     active,
@@ -273,18 +163,18 @@ export function useStatisticsState(params: {
     emptyKind,
     hasAnyMeals,
     hasEntriesInRange,
-    labels,
-    seriesByMetric,
-    selectedSeries: seriesByMetric[metric],
-    totals,
+    labels: rangeState.labels,
+    seriesByMetric: rangeState.seriesByMetric,
+    selectedSeries: rangeState.seriesByMetric[metric],
+    totals: rangeState.totals,
     hasTotals,
-    avgKcal: averages.kcal,
-    avgProtein: averages.protein,
-    avgCarbs: averages.carbs,
-    avgFat: averages.fat,
+    avgKcal: rangeState.averages.rangeDays.kcal,
+    avgProtein: rangeState.averages.rangeDays.protein,
+    avgCarbs: rangeState.averages.rangeDays.carbs,
+    avgFat: rangeState.averages.rangeDays.fat,
     metricAverage: metricAverageByKey[metric],
     isWindowLimited:
       !!params.accessWindowDays &&
-      requestedRange.start.getTime() < effectiveRange.start.getTime(),
+      rangeState.requestedRange.startDayKey < rangeState.effectiveRange.startDayKey,
   };
 }

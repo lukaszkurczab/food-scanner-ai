@@ -127,7 +127,6 @@ const hooksCoverageFiles = [
   "src/hooks/useMeals.ts",
   "src/hooks/useNotifications.ts",
   "src/hooks/useReminderDecision.ts",
-  "src/hooks/useStats.ts",
   "src/hooks/useUser.ts",
 ];
 

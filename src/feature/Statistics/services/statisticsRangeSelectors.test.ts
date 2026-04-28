@@ -101,6 +101,28 @@ describe("statisticsRangeSelectors", () => {
     ]);
   });
 
+  it("clamps future custom effective range to today", () => {
+    const state = buildStatisticsRangeState({
+      meals: [],
+      activeRange: "custom",
+      todayDayKey: "2026-03-18",
+      customRange: {
+        startDayKey: "2026-03-20",
+        endDayKey: "2026-03-22",
+      },
+    });
+
+    expect(state.requestedRange).toEqual({
+      startDayKey: "2026-03-20",
+      endDayKey: "2026-03-22",
+    });
+    expect(state.effectiveRange).toEqual({
+      startDayKey: "2026-03-18",
+      endDayKey: "2026-03-18",
+    });
+    expect(state.dayKeys).toEqual(["2026-03-18"]);
+  });
+
   it("matches Home totals for a single canonical day", () => {
     const meals = [
       makeMeal({
