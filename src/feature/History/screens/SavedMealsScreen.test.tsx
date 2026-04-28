@@ -469,7 +469,6 @@ describe("SavedMealsScreen", () => {
     expect(toggleShowFilters).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenNthCalledWith(1, "MealDetails", {
       cloudId: "cloud-1",
-      initialMeal: meal,
     });
     expect(onDelete).toHaveBeenCalledWith(meal);
 

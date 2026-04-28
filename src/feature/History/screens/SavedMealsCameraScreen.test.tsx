@@ -176,7 +176,7 @@ describe("SavedMealsCameraScreen", () => {
     fireEvent.press(screen.getByText("Back to edit"));
 
     expect(navigation.replace).toHaveBeenCalledWith("EditHistoryMealDetails", {
-      meal: buildMeal(),
+      cloudId: "cloud-1",
     });
   });
 
@@ -201,7 +201,7 @@ describe("SavedMealsCameraScreen", () => {
 
     expect(handled).toBe(true);
     expect(navigation.replace).toHaveBeenCalledWith("EditHistoryMealDetails", {
-      meal: buildMeal(),
+      cloudId: "cloud-1",
     });
   });
 
@@ -250,12 +250,7 @@ describe("SavedMealsCameraScreen", () => {
       expect(navigation.replace).toHaveBeenCalledWith(
         "EditHistoryMealDetails",
         {
-          meal: expect.objectContaining({
-            mealId: "meal-1",
-            photoUrl: "file:///new-photo.jpg",
-            localPhotoUrl: "file:///new-photo.jpg",
-            photoLocalPath: "file:///new-photo.jpg",
-          }),
+          cloudId: "cloud-1",
         },
       );
     });

@@ -177,6 +177,11 @@ export function useHistorySectionsData(params: {
     params.yesterdayLabel,
     requestScopeKey,
   ]);
+  const resetAndLoadLocalRef = useRef(resetAndLoadLocal);
+
+  useEffect(() => {
+    resetAndLoadLocalRef.current = resetAndLoadLocal;
+  }, [resetAndLoadLocal]);
 
   const requestPullChanges = useCallback(async (options?: { force?: boolean }) => {
     if (!params.uid) return;
@@ -218,28 +223,25 @@ export function useHistorySectionsData(params: {
   }, [params.uid]);
 
   useEffect(() => {
-    if (!params.uid) {
-      void resetAndLoadLocal();
-      return;
-    }
+    void resetAndLoadLocal();
+  }, [resetAndLoadLocal]);
 
-    const unsubscribe = subscribeLocalMeals(params.uid, () => {
-      void resetAndLoadLocal();
+  useEffect(() => {
+    if (!params.uid) return undefined;
+    return subscribeLocalMeals(params.uid, () => {
+      void resetAndLoadLocalRef.current();
     });
-    return unsubscribe;
-  }, [params.uid, resetAndLoadLocal]);
+  }, [params.uid]);
 
   const prevKey = useRef<string>("");
   useEffect(() => {
     const key = JSON.stringify({
       uid: params.uid,
-      localFilters,
-      accessWindowDays: params.accessWindowDays,
     });
     if (!params.uid || key === prevKey.current) return;
     prevKey.current = key;
     void requestPullChanges({ force: true });
-  }, [params.accessWindowDays, params.uid, localFilters, requestPullChanges]);
+  }, [params.uid, requestPullChanges]);
 
   useFocusEffect(
     useCallback(() => {

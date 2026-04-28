@@ -35,7 +35,10 @@ export async function upsertMealLocal(meal: Meal): Promise<void> {
   const createdAt = meal.createdAt ?? meal.timestamp ?? meal.updatedAt;
   const syncState = normalizeMealSyncState(meal.syncState);
   const lastSyncedAt = syncState === "synced" ? toEpochMs(meal.updatedAt) : 0;
-  const cloudId = meal.cloudId ?? meal.mealId;
+  const cloudId = meal.cloudId;
+  if (!cloudId) {
+    throw new Error("upsertMealLocal requires canonical cloudId");
+  }
   const dayKey = deriveMealDayKey({
     dayKey: meal.dayKey,
     timestamp: meal.timestamp,

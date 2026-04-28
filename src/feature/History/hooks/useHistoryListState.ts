@@ -142,7 +142,6 @@ export function useHistoryListState(params: {
       if (!meal.cloudId) return;
       params.navigation.navigate("MealDetails", {
         cloudId: meal.cloudId,
-        initialMeal: meal,
       });
     },
     [params.navigation],

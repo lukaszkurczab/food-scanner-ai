@@ -67,6 +67,8 @@ jest.mock("@react-native-community/netinfo", () => ({
 }));
 
 jest.mock("@/services/offline/meals.repo", () => ({
+  getAllMealsLocal: (uid: string) =>
+    mockGetMealsPageLocal(uid, 50, undefined),
   getMealsPageLocal: (uid: string, limit: number, before?: string) =>
     mockGetMealsPageLocal(uid, limit, before),
   getMealByCloudIdLocal: (uid: string, cloudId: string) =>
@@ -899,8 +901,8 @@ describe("useMeals", () => {
     nowSpy.mockRestore();
   });
 
-  it("updates saved meals via myMeal service", async () => {
-    mockUuid.mockReturnValueOnce("saved-doc");
+  it("updates saved-source history meals through the canonical meal transaction", async () => {
+    jest.useFakeTimers();
     const { result } = renderHook(() => useMeals("user-1"));
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -909,26 +911,34 @@ describe("useMeals", () => {
     await act(async () => {
       await result.current.updateMeal(
         baseMeal({
-          mealId: "",
-          cloudId: undefined,
+          mealId: "history-from-template",
+          cloudId: "history-from-template",
           source: "saved",
           photoUrl: "file://saved-photo.jpg",
         }),
       );
     });
 
-    expect(mockUpsertMyMealWithPhoto).toHaveBeenCalledWith(
+    expect(mockInsertOrUpdateImage).toHaveBeenCalledWith(
       "user-1",
-      expect.objectContaining({
-        mealId: "saved-doc",
-        cloudId: "saved-doc",
-      }),
+      "history-from-template",
       "file://saved-photo.jpg",
+      "pending",
     );
-    expect(mockTrackMealLogged).not.toHaveBeenCalled();
-    expect(mockUpsertMealLocal).not.toHaveBeenCalled();
-    expect(mockEnqueueUpsert).not.toHaveBeenCalled();
-    expect(mockReconcileAll).not.toHaveBeenCalled();
+    expect(mockUpsertMealLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mealId: "history-from-template",
+        cloudId: "history-from-template",
+        source: "saved",
+        photoLocalPath: "file://saved-photo.jpg",
+      }),
+    );
+    expect(mockEnqueueUpsert).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({ cloudId: "history-from-template" }),
+    );
+    expect(mockUpsertMyMealWithPhoto).not.toHaveBeenCalled();
+    jest.runOnlyPendingTimers();
   });
 
   it("updates regular meals and handles local image upload metadata", async () => {

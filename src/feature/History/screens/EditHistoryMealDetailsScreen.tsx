@@ -42,7 +42,7 @@ export default function EditHistoryMealDetailsScreen({
   const { t } = useTranslation(["common", "meals"]);
   const { uid } = useAuthContext();
   const { updateMeal } = useMeals(uid || "");
-  const mealCloudId = route.params.meal.cloudId || route.params.meal.mealId;
+  const mealCloudId = route.params.cloudId;
   const [editMeal, setEditMeal] = useState<Meal | null>(null);
 
   const reloadFromLocal = useCallback(() => {
@@ -130,7 +130,7 @@ export default function EditHistoryMealDetailsScreen({
         const currentMeal = editMeal;
         if (!currentMeal) return;
         navigation.replace("SavedMealsCamera", {
-          id: currentMeal.mealId,
+          id: currentMeal.cloudId,
           meal: currentMeal,
           returnTo: "EditHistoryMealDetails",
         });

@@ -6,6 +6,7 @@ import {
 } from "@jest/globals";
 import {
   __resetLocalMealsStoreForTests,
+  selectLocalMealByCloudId,
   selectLocalMealsByRange,
   upsertLocalMealSnapshot,
 } from "@/services/meals/localMealsStore";
@@ -114,5 +115,20 @@ describe("localMealsStore range selectors", () => {
         end: new Date(2026, 3, 4),
       }).map((meal) => meal.cloudId),
     ).toEqual(["end", "middle", "start"]);
+  });
+
+  it("selects details by canonical cloudId only", () => {
+    upsertLocalMealSnapshot(
+      UID,
+      makeMeal({
+        mealId: "legacy-meal-id",
+        cloudId: "canonical-cloud-id",
+      }),
+    );
+
+    expect(
+      selectLocalMealByCloudId(UID, "canonical-cloud-id"),
+    ).toEqual(expect.objectContaining({ cloudId: "canonical-cloud-id" }));
+    expect(selectLocalMealByCloudId(UID, "legacy-meal-id")).toBeNull();
   });
 });

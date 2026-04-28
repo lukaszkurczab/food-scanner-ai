@@ -2,8 +2,6 @@ import type { Meal } from "@/types/meal";
 import { on } from "@/services/core/events";
 import {
   getAllMealsLocal,
-  getMealsPageLocal,
-  getMealsPageLocalFiltered,
   getMealByCloudIdLocal,
 } from "@/services/offline/meals.repo";
 import {
@@ -34,11 +32,11 @@ const EMPTY_SNAPSHOT: LocalMealsSnapshot = {
 };
 
 function mealIdentity(meal: Meal): string {
-  return meal.cloudId || meal.mealId || `${meal.timestamp}:${meal.name || ""}`;
+  return meal.cloudId || "";
 }
 
 function mealEventId(event?: LocalMealEvent): string {
-  return String(event?.cloudId || event?.mealId || "");
+  return String(event?.cloudId || "");
 }
 
 function nullable<T>(value: T | null | undefined): T | null {
@@ -106,20 +104,7 @@ function sortMealsDesc(meals: Meal[]): Meal[] {
 }
 
 async function loadAllMealsFromRepo(uid: string): Promise<Meal[]> {
-  if (typeof getAllMealsLocal === "function") {
-    return getAllMealsLocal(uid);
-  }
-  if (typeof getMealsPageLocal === "function") {
-    return getMealsPageLocal(uid, 50, undefined);
-  }
-  if (typeof getMealsPageLocalFiltered === "function") {
-    const page = await getMealsPageLocalFiltered(uid, {
-      limit: 50,
-      beforeISO: null,
-    });
-    return page.items;
-  }
-  return [];
+  return getAllMealsLocal(uid);
 }
 
 class LocalMealsReadModel {
@@ -173,7 +158,7 @@ class LocalMealsReadModel {
 
       this.byId = new Map(
         meals
-          .filter((meal) => !meal.deleted)
+          .filter((meal) => !meal.deleted && !!meal.cloudId)
           .map((meal) => [mealIdentity(meal), meal]),
       );
       this.version += 1;
@@ -242,7 +227,7 @@ class LocalMealsReadModel {
   }
 
   private removeByMealSilently(meal: Meal): boolean {
-    const ids = [meal.cloudId, meal.mealId, mealIdentity(meal)].filter(
+    const ids = [meal.cloudId, mealIdentity(meal)].filter(
       (id): id is string => Boolean(id),
     );
     return ids.reduce(
@@ -304,7 +289,7 @@ class LocalMealsReadModel {
   }
 
   private upsert(meal: Meal): void {
-    if (meal.userUid !== this.uid || meal.deleted) {
+    if (meal.userUid !== this.uid || meal.deleted || !meal.cloudId) {
       this.removeById(mealIdentity(meal));
       return;
     }
@@ -321,16 +306,14 @@ class LocalMealsReadModel {
   }
 
   private findByMeal(meal: Meal): Meal | null {
-    const ids = [meal.cloudId, meal.mealId, mealIdentity(meal)].filter(
+    const ids = [meal.cloudId, mealIdentity(meal)].filter(
       (id): id is string => Boolean(id),
     );
     for (const candidate of this.byId.values()) {
       if (
         ids.some(
           (id) =>
-            mealIdentity(candidate) === id ||
-            candidate.cloudId === id ||
-            candidate.mealId === id,
+            mealIdentity(candidate) === id || candidate.cloudId === id,
         )
       ) {
         return candidate;
@@ -417,7 +400,7 @@ export function selectLocalMealByCloudId(
   return (
     getStore(uid)
       ?.snapshot()
-      .meals.find((meal) => meal.cloudId === cloudId || meal.mealId === cloudId) ??
+      .meals.find((meal) => meal.cloudId === cloudId) ??
     null
   );
 }

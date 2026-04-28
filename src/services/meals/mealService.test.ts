@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from "@jest/globals";
+import { waitFor } from "@testing-library/react-native";
 import type { Meal } from "@/types/meal";
 import * as FileSystem from "@/services/core/fileSystem";
 import {
@@ -36,6 +37,8 @@ const mockEmit =
 const mockOn = jest.fn<(...args: unknown[]) => () => void>();
 
 jest.mock("@/services/offline/meals.repo", () => ({
+  getAllMealsLocal: (uid: string) =>
+    mockGetMealsPageLocal(uid, 50, undefined),
   getMealsPageLocal: (...args: unknown[]) => mockGetMealsPageLocal(...args),
   getMealsPageLocalFiltered: (...args: unknown[]) =>
     mockGetMealsPageLocalFiltered(...args),
@@ -213,15 +216,16 @@ describe("services/mealService", () => {
       .mockReturnValueOnce(unsubscribe1)
       .mockReturnValueOnce(unsubscribe2)
       .mockReturnValueOnce(unsubscribe3);
-    mockGetMealsPageLocal.mockResolvedValueOnce([baseMeal()]);
+    const localMeal = baseMeal({ userUid: "u1" });
+    mockGetMealsPageLocal.mockResolvedValueOnce([localMeal]);
     const onData = jest.fn();
 
     const result = subscribeMeals("u1", onData);
 
-    await Promise.resolve();
-
-    expect(mockGetMealsPageLocal).toHaveBeenCalledWith("u1", 50, undefined);
-    expect(onData).toHaveBeenCalledWith([baseMeal()]);
+    await waitFor(() => {
+      expect(mockGetMealsPageLocal).toHaveBeenCalledWith("u1", 50, undefined);
+      expect(onData).toHaveBeenCalledWith([localMeal]);
+    });
 
     result();
 

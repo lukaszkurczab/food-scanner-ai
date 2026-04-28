@@ -144,7 +144,6 @@ export default function SavedMealsScreen({
       if (!meal.cloudId) return;
       navigation.navigate("MealDetails", {
         cloudId: meal.cloudId,
-        initialMeal: meal,
       });
     },
     [navigation],

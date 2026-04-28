@@ -11,37 +11,19 @@ import {
   subscribeLocalMeals,
 } from "@/services/meals/localMealsStore";
 
-function buildEditDraft(meal: Meal): Meal {
-  return {
-    ...meal,
-    localPhotoUrl:
-      meal.localPhotoUrl ?? meal.photoLocalPath ?? meal.photoUrl ?? null,
-    photoLocalPath:
-      meal.photoLocalPath ?? meal.localPhotoUrl ?? meal.photoUrl ?? null,
-  };
-}
-
 export function useMealDetailsState(params: {
   routeParams?: RootStackParamList["MealDetails"];
   navigation: StackNavigationProp<RootStackParamList>;
   uid: string;
   deleteMeal: (mealCloudId: string) => Promise<unknown>;
 }) {
-  const {
-    routeParams,
-    navigation,
-    uid,
-    deleteMeal,
-  } = params;
+  const { routeParams, navigation, uid, deleteMeal } = params;
   const routeCloudId =
     typeof routeParams?.cloudId === "string" && routeParams.cloudId.trim()
       ? routeParams.cloudId
       : null;
-  const initialMeal = routeParams?.initialMeal ?? null;
 
-  const [draft, setDraft] = useState<Meal | null>(() =>
-    routeCloudId ? initialMeal : null,
-  );
+  const [draft, setDraft] = useState<Meal | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [checkingImage, setCheckingImage] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -53,8 +35,8 @@ export function useMealDetailsState(params: {
     if (routeCloudIdRef.current === routeCloudId) return;
     routeCloudIdRef.current = routeCloudId;
     deletedRef.current = false;
-    setDraft(routeCloudId ? initialMeal : null);
-  }, [initialMeal, routeCloudId]);
+    setDraft(null);
+  }, [routeCloudId]);
 
   const reloadFromLocal = useCallback(async () => {
     if (deletedRef.current) return false;
@@ -163,8 +145,9 @@ export function useMealDetailsState(params: {
       setDraft(null);
       return;
     }
-    const nextDraft = buildEditDraft(currentMeal);
-    navigation.navigate("EditHistoryMealDetails", { meal: nextDraft });
+    navigation.navigate("EditHistoryMealDetails", {
+      cloudId: currentMeal.cloudId!,
+    });
   }, [navigation, routeCloudId, uid]);
 
   const goShare = useCallback(() => {

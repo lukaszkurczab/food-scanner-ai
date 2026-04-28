@@ -55,7 +55,11 @@ export default function SavedMealsCameraScreen({
     (meal: Meal) => {
       canLeaveRef.current = true;
       if (returnTo === "EditHistoryMealDetails") {
-        navigation.replace("EditHistoryMealDetails", { meal });
+        if (meal.cloudId) {
+          navigation.replace("EditHistoryMealDetails", { cloudId: meal.cloudId });
+        } else {
+          navigation.replace("HistoryList");
+        }
         return;
       }
       if (!meal.cloudId) {
@@ -64,7 +68,6 @@ export default function SavedMealsCameraScreen({
       }
       navigation.replace("MealDetails", {
         cloudId: meal.cloudId,
-        initialMeal: meal,
       });
     },
     [navigation, returnTo],

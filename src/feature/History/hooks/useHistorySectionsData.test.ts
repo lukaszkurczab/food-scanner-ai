@@ -9,7 +9,6 @@ import {
 } from "@jest/globals";
 import { useHistorySectionsData } from "@/feature/History/hooks/useHistorySectionsData";
 import type { DaySection } from "@/feature/History/types/daySection";
-import type { LocalHistoryFilters } from "@/services/offline/meals.repo";
 import type { DataViewState } from "@/types/dataViewState";
 import type { Meal } from "@/types/meal";
 import {
@@ -18,16 +17,7 @@ import {
   upsertLocalMealSnapshot,
 } from "@/services/meals/localMealsStore";
 
-const mockGetMealsPageLocalFiltered = jest.fn<
-  (
-    uid: string,
-    options: {
-      limit: number;
-      beforeISO?: string | null;
-      filters?: LocalHistoryFilters;
-    },
-  ) => Promise<{ items: Meal[]; nextBefore: string | null }>
->();
+const mockGetAllMealsLocal = jest.fn<(uid: string) => Promise<Meal[]>>();
 const mockGetMealByCloudIdLocal = jest.fn<
   (uid: string, cloudId: string) => Promise<Meal | null>
 >();
@@ -79,14 +69,7 @@ jest.mock("@/types/dataViewState", () => ({
 }));
 
 jest.mock("@/services/offline/meals.repo", () => ({
-  getMealsPageLocalFiltered: (
-    uid: string,
-    options: {
-      limit: number;
-      beforeISO?: string | null;
-      filters?: LocalHistoryFilters;
-    },
-  ) => mockGetMealsPageLocalFiltered(uid, options),
+  getAllMealsLocal: (uid: string) => mockGetAllMealsLocal(uid),
   getMealByCloudIdLocal: (uid: string, cloudId: string) =>
     mockGetMealByCloudIdLocal(uid, cloudId),
 }));
@@ -117,16 +100,6 @@ jest.mock("@/feature/History/services/historySectionsService", () => ({
   removeMealFromSections: jest.fn(),
 }));
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((nextResolve, nextReject) => {
-    resolve = nextResolve;
-    reject = nextReject;
-  });
-  return { promise, resolve, reject };
-}
-
 const buildMeal = (overrides: Partial<Meal> = {}): Meal => ({
   userUid: "user-1",
   mealId: overrides.mealId ?? "meal-1",
@@ -150,10 +123,7 @@ describe("useHistorySectionsData", () => {
     __resetLocalMealsStoreForTests();
     focusEffectCallback = undefined;
 
-    mockGetMealsPageLocalFiltered.mockResolvedValue({
-      items: [],
-      nextBefore: null,
-    });
+    mockGetAllMealsLocal.mockResolvedValue([]);
     mockGetMealByCloudIdLocal.mockResolvedValue(null);
     mockPullChanges.mockResolvedValue(undefined);
     mockOn.mockReturnValue(() => undefined);
@@ -215,14 +185,7 @@ describe("useHistorySectionsData", () => {
     expect(mockPullChanges).toHaveBeenCalledTimes(2);
   });
 
-  it("ignores stale local loads after filters change", async () => {
-    const firstLoad = deferred<{ items: Meal[]; nextBefore: string | null }>();
-    const secondLoad = deferred<{ items: Meal[]; nextBefore: string | null }>();
-
-    mockGetMealsPageLocalFiltered
-      .mockReturnValueOnce(firstLoad.promise)
-      .mockReturnValueOnce(secondLoad.promise);
-
+  it("applies filter changes locally without refetching from the backend", async () => {
     const { result, rerender } = renderHook(
       ({ filters }: { filters: { calories: [number, number] } | null }) =>
         useHistorySectionsData({
@@ -239,67 +202,83 @@ describe("useHistorySectionsData", () => {
       },
     );
 
-    rerender({ filters: { calories: [100, 300] } });
+    await waitFor(() => {
+      expect(mockGetAllMealsLocal).toHaveBeenCalledWith("user-1");
+      expect(result.current.loading).toBe(false);
+    });
 
     await act(async () => {
-      secondLoad.resolve({
-        items: [
-          buildMeal({
-            mealId: "meal-2",
-            name: "Fresh filter result",
-            totals: { kcal: 200, protein: 0, carbs: 0, fat: 0 },
-          }),
-        ],
-        nextBefore: null,
-      });
-      await secondLoad.promise;
+      upsertLocalMealSnapshot(
+        "user-1",
+        buildMeal({
+          mealId: "meal-1",
+          cloudId: "meal-1",
+          name: "Outside filter",
+          totals: { kcal: 600, protein: 0, carbs: 0, fat: 0 },
+        }),
+      );
+      upsertLocalMealSnapshot(
+        "user-1",
+        buildMeal({
+          mealId: "meal-2",
+          cloudId: "meal-2",
+          name: "Fresh filter result",
+          totals: { kcal: 200, protein: 0, carbs: 0, fat: 0 },
+        }),
+      );
+      await Promise.resolve();
     });
+
+    await waitFor(() => {
+      expect(result.current.sections.map((section) => section.title)).toEqual([
+        "Outside filter",
+        "Fresh filter result",
+      ]);
+    });
+    expect(mockPullChanges).toHaveBeenCalledTimes(1);
+
+    rerender({ filters: { calories: [100, 300] } });
 
     await waitFor(() => {
       expect(result.current.sections).toEqual([
         expect.objectContaining({ title: "Fresh filter result" }),
       ]);
     });
+    expect(mockPullChanges).toHaveBeenCalledTimes(1);
+  });
 
-    await act(async () => {
-      firstLoad.resolve({
-        items: [buildMeal({ mealId: "meal-1", name: "Stale result" })],
-        nextBefore: null,
-      });
-      await firstLoad.promise;
+  it("applies search locally without refetching from the backend", async () => {
+    const { rerender } = renderHook(
+      ({ query }: { query: string }) =>
+        useHistorySectionsData({
+          uid: "user-1",
+          query,
+          filters: null,
+          todayLabel: "Today",
+          yesterdayLabel: "Yesterday",
+          locale: "en",
+          isOnline: true,
+        }),
+      {
+        initialProps: { query: "" },
+      },
+    );
+
+    await waitFor(() => {
+      expect(mockPullChanges).toHaveBeenCalledTimes(1);
     });
 
-    expect(result.current.sections).toEqual([
-      expect.objectContaining({ title: "Fresh filter result" }),
-    ]);
+    rerender({ query: "chicken" });
+
+    await waitFor(() => {
+      expect(mockFilterSectionsByQuery).toHaveBeenLastCalledWith(
+        expect.objectContaining({ query: "chicken" }),
+      );
+    });
+    expect(mockPullChanges).toHaveBeenCalledTimes(1);
   });
 
   it("uses canonical local meals across dayKeys and keeps pending/failed/delete transitions visible", async () => {
-    upsertLocalMealSnapshot(
-      "user-1",
-      buildMeal({
-        mealId: "history-1",
-        cloudId: "history-1",
-        dayKey: "2026-04-12",
-        name: "Breakfast",
-        syncState: "synced",
-        totals: { kcal: 300, protein: 20, carbs: 25, fat: 10 },
-      }),
-    );
-    upsertLocalMealSnapshot(
-      "user-1",
-      buildMeal({
-        mealId: "history-2",
-        cloudId: "history-2",
-        dayKey: "2026-04-11",
-        timestamp: "2026-04-11T18:00:00.000Z",
-        updatedAt: "2026-04-11T18:00:00.000Z",
-        name: "Dinner",
-        syncState: "synced",
-        totals: { kcal: 450, protein: 28, carbs: 35, fat: 18 },
-      }),
-    );
-
     const { result } = renderHook(() =>
       useHistorySectionsData({
         uid: "user-1",
@@ -311,6 +290,39 @@ describe("useHistorySectionsData", () => {
         isOnline: true,
       }),
     );
+
+    await waitFor(() => {
+      expect(mockGetAllMealsLocal).toHaveBeenCalledWith("user-1");
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      upsertLocalMealSnapshot(
+        "user-1",
+        buildMeal({
+          mealId: "history-1",
+          cloudId: "history-1",
+          dayKey: "2026-04-12",
+          name: "Breakfast",
+          syncState: "synced",
+          totals: { kcal: 300, protein: 20, carbs: 25, fat: 10 },
+        }),
+      );
+      upsertLocalMealSnapshot(
+        "user-1",
+        buildMeal({
+          mealId: "history-2",
+          cloudId: "history-2",
+          dayKey: "2026-04-11",
+          timestamp: "2026-04-11T18:00:00.000Z",
+          updatedAt: "2026-04-11T18:00:00.000Z",
+          name: "Dinner",
+          syncState: "synced",
+          totals: { kcal: 450, protein: 28, carbs: 35, fat: 18 },
+        }),
+      );
+      await Promise.resolve();
+    });
 
     await waitFor(() => {
       expect(result.current.sections.map((section) => section.title)).toEqual([

@@ -14,15 +14,12 @@ const mockEmit = jest.fn();
 const mockOn = jest.fn((_event: string, _handler: (payload?: unknown) => void) =>
   jest.fn(),
 );
-const mockSelectLocalMealByCloudId = jest.fn(
-  (_uid: string, _cloudId: string): Meal | null => null,
-);
-const mockSubscribeLocalMeals = jest.fn(
-  (_uid: string, _listener: () => void) => jest.fn(),
-);
-const mockGetMyMealByCloudIdLocal = jest.fn(
-  async (_uid: string, _cloudId: string): Promise<Meal | null> => null,
-);
+const mockSelectLocalMealByCloudId = jest.fn<
+  (_uid: string, _cloudId: string) => Meal | null
+>(() => null);
+const mockSubscribeLocalMeals = jest.fn<
+  (_uid: string, _listener: () => void) => () => void
+>(() => jest.fn());
 
 jest.mock("@/services/core/events", () => ({
   emit: (event: string, payload: unknown) => mockEmit(event, payload),
@@ -31,16 +28,11 @@ jest.mock("@/services/core/events", () => ({
 }));
 
 jest.mock("@/services/meals/localMealsStore", () => ({
-  ...jest.requireActual("@/services/meals/localMealsStore"),
+  ...(jest.requireActual("@/services/meals/localMealsStore") as object),
   selectLocalMealByCloudId: (uid: string, cloudId: string) =>
     mockSelectLocalMealByCloudId(uid, cloudId),
   subscribeLocalMeals: (uid: string, listener: () => void) =>
     mockSubscribeLocalMeals(uid, listener),
-}));
-
-jest.mock("@/services/offline/myMeals.repo", () => ({
-  getMyMealByCloudIdLocal: (uid: string, cloudId: string) =>
-    mockGetMyMealByCloudIdLocal(uid, cloudId),
 }));
 
 const actualLocalMealsStore =
@@ -86,7 +78,6 @@ function setupHook(options?: {
   const routeMeal = options?.routeMeal ?? baseMeal();
   const routeParams = options?.routeParams ?? {
     cloudId: routeMeal.cloudId || "",
-    initialMeal: routeMeal,
   };
   const deleteMeal =
     options?.deleteMeal ??
@@ -131,7 +122,6 @@ describe("useMealDetailsState", () => {
         return actualLocalMealsStore.subscribeLocalMeals(uid, listener);
       },
     );
-    mockGetMyMealByCloudIdLocal.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -157,7 +147,7 @@ describe("useMealDetailsState", () => {
     expect(result.current.showDeleteModal).toBe(false);
   });
 
-  it("renders the updated local meal over a stale initial route snapshot", async () => {
+  it("renders the canonical local meal for the route cloudId", async () => {
     const historyMeal = baseMeal({
       cloudId: "shared-id",
       mealId: "shared-id",
@@ -165,15 +155,7 @@ describe("useMealDetailsState", () => {
       source: "manual",
       updatedAt: "2026-04-12T10:00:00.000Z",
     });
-    const savedMeal = baseMeal({
-      cloudId: "shared-id",
-      mealId: "shared-id",
-      name: "Saved template",
-      source: "saved",
-      updatedAt: "2026-04-13T10:00:00.000Z",
-    });
     actualLocalMealsStore.upsertLocalMealSnapshot("user-1", historyMeal);
-    mockGetMyMealByCloudIdLocal.mockResolvedValue(savedMeal);
 
     const { result } = setupHook({
       routeMeal: baseMeal({
@@ -191,7 +173,6 @@ describe("useMealDetailsState", () => {
       "user-1",
       "shared-id",
     );
-    expect(mockGetMyMealByCloudIdLocal).not.toHaveBeenCalled();
   });
 
   it("keeps pending and failed local sync state observable on the canonical meal entity", async () => {
@@ -252,9 +233,7 @@ describe("useMealDetailsState", () => {
 
   it("falls back safely when route params are missing cloudId", async () => {
     const { result } = setupHook({
-      routeParams: {
-        initialMeal: baseMeal({ name: "Stale route-only meal" }),
-      } as unknown as RootStackParamList["MealDetails"],
+      routeParams: {} as unknown as RootStackParamList["MealDetails"],
     });
 
     expect(result.current.draft).toBeNull();
@@ -266,9 +245,6 @@ describe("useMealDetailsState", () => {
   it("deletes through deleteMeal and never deletes a saved meal template", async () => {
     const historyMeal = baseMeal({ cloudId: "history-cloud", source: "saved" });
     mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
-    mockGetMyMealByCloudIdLocal.mockResolvedValue(
-      baseMeal({ cloudId: "saved-cloud", source: "saved" }),
-    );
     const deleteSavedMeal = jest.fn<(id: string) => Promise<unknown>>(
       async () => undefined,
     );
@@ -288,7 +264,6 @@ describe("useMealDetailsState", () => {
 
     expect(deleteMeal).toHaveBeenCalledWith("history-cloud");
     expect(deleteSavedMeal).not.toHaveBeenCalled();
-    expect(mockGetMyMealByCloudIdLocal).not.toHaveBeenCalled();
     expect(result.current.showDeleteModal).toBe(false);
     expect(result.current.draft).toBeNull();
   });

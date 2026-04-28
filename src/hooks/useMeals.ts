@@ -339,25 +339,6 @@ export function useMeals(userUid: string | null) {
       if (!userUid) return;
       const persistableMeal = omitDraftOnlyFields(meal);
 
-      if (persistableMeal.source === "saved") {
-        const now = new Date().toISOString();
-        const docId = persistableMeal.mealId || persistableMeal.cloudId || uuidv4();
-        const localPhoto = isLocalUri(persistableMeal.photoUrl)
-          ? (persistableMeal.photoUrl as string)
-          : null;
-        const toSave: Meal = {
-          ...persistableMeal,
-          userUid,
-          mealId: docId,
-          cloudId: docId,
-          updatedAt: now,
-          photoLocalPath: localPhoto,
-        };
-        await upsertMyMealWithPhoto(userUid, toSave, localPhoto);
-        emit("meal:updated", { uid: userUid, meal: toSave });
-        return;
-      }
-
       const now = new Date().toISOString();
       const cloudId = persistableMeal.cloudId ?? uuidv4();
       const mealId = persistableMeal.mealId || cloudId;

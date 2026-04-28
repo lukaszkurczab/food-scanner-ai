@@ -110,7 +110,7 @@ const buildMeal = (overrides?: Partial<Meal>): Meal => ({
 describe("EditHistoryMealDetailsScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseRoute.mockReturnValue({ params: { meal: buildMeal() } });
+    mockUseRoute.mockReturnValue({ params: { cloudId: "cloud-1" } });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockSelectLocalMealByCloudId.mockReturnValue(buildMeal());
     mockSubscribeLocalMeals.mockReturnValue(jest.fn());
@@ -173,7 +173,7 @@ describe("EditHistoryMealDetailsScreen", () => {
     fireEvent.press(screen.getByText("open-photo-edit"));
 
     expect(navigation.replace).toHaveBeenCalledWith("SavedMealsCamera", {
-      id: "meal-1",
+      id: "cloud-1",
       meal: expect.objectContaining({
         mealId: "meal-1",
         cloudId: "cloud-1",
