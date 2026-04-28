@@ -149,11 +149,10 @@ export function getMealsForDayKey(
   dayKey: string | null | undefined,
   order: "asc" | "desc" = "asc",
 ): Meal[] {
-  const normalizedDayKey = normalizeMealDayKey(dayKey);
-  if (!normalizedDayKey) return [];
+  if (!isCanonicalMealDayKey(dayKey)) return [];
 
   return meals
-    .filter((meal) => getMealDayKey(meal) === normalizedDayKey)
+    .filter((meal) => getMealDayKey(meal) === dayKey)
     .sort((left, right) => {
       const delta = getMealSortTimestamp(left) - getMealSortTimestamp(right);
       return order === "asc" ? delta : -delta;

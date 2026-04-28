@@ -1,0 +1,155 @@
+import type { Meal, Nutrients } from "@/types";
+import { buildNutritionDayBucket } from "@/services/meals/nutritionDaySelectors";
+import {
+  buildRecentDayKeyRange,
+  clampDayKeyRangeToWindow,
+  dayKeyToDate,
+  enumerateDayKeys,
+  normalizeDayKeyRange,
+  type DayKeyRange,
+} from "@/services/meals/dayKeyRange";
+import type {
+  MetricKey,
+  RangeKey,
+  StatisticsRangeAverages,
+  StatisticsRangeState,
+} from "@/feature/Statistics/types";
+
+const METRIC_KEYS: MetricKey[] = ["kcal", "protein", "carbs", "fat"];
+
+const ZERO_NUTRIENTS: Nutrients = {
+  kcal: 0,
+  protein: 0,
+  carbs: 0,
+  fat: 0,
+};
+
+export type BuildStatisticsRangeStateParams = {
+  meals: Meal[];
+  activeRange: RangeKey;
+  todayDayKey: string;
+  customRange?: DayKeyRange | null;
+  accessWindowDays?: number;
+};
+
+function cloneZeroNutrients(): Nutrients {
+  return { ...ZERO_NUTRIENTS };
+}
+
+function addNutrients(total: Nutrients, next: Nutrients): Nutrients {
+  return {
+    kcal: total.kcal + (Number(next.kcal) || 0),
+    protein: total.protein + (Number(next.protein) || 0),
+    carbs: total.carbs + (Number(next.carbs) || 0),
+    fat: total.fat + (Number(next.fat) || 0),
+  };
+}
+
+function divideNutrients(total: Nutrients, divisor: number): Nutrients {
+  const safeDivisor = Math.max(1, divisor);
+  return {
+    kcal: Math.round(total.kcal / safeDivisor),
+    protein: Math.round(total.protein / safeDivisor),
+    carbs: Math.round(total.carbs / safeDivisor),
+    fat: Math.round(total.fat / safeDivisor),
+  };
+}
+
+function formatLabel(dayKey: string, totalDays: number): string {
+  const date = dayKeyToDate(dayKey);
+  if (!date) return dayKey;
+
+  return date.toLocaleDateString(undefined, {
+    weekday: totalDays <= 7 ? "short" : undefined,
+    month: totalDays > 7 ? "short" : undefined,
+    day: totalDays > 7 ? "numeric" : undefined,
+  });
+}
+
+function buildRequestedRange(
+  params: BuildStatisticsRangeStateParams,
+): DayKeyRange | null {
+  if (params.activeRange === "7d") {
+    return buildRecentDayKeyRange(7, params.todayDayKey);
+  }
+
+  if (params.activeRange === "30d") {
+    return buildRecentDayKeyRange(30, params.todayDayKey);
+  }
+
+  if (!params.customRange) return null;
+  return normalizeDayKeyRange(params.customRange);
+}
+
+export function clampStatisticsRangeToFreeWindow(params: {
+  range: DayKeyRange;
+  accessWindowDays?: number;
+  todayDayKey: string;
+}): DayKeyRange | null {
+  return clampDayKeyRangeToWindow(
+    params.range,
+    params.accessWindowDays,
+    params.todayDayKey,
+  );
+}
+
+export function buildStatisticsRangeState(
+  params: BuildStatisticsRangeStateParams,
+): StatisticsRangeState {
+  const requestedRange =
+    buildRequestedRange(params) ?? {
+      startDayKey: params.todayDayKey,
+      endDayKey: params.todayDayKey,
+    };
+  const effectiveRange =
+    clampStatisticsRangeToFreeWindow({
+      range: requestedRange,
+      accessWindowDays: params.accessWindowDays,
+      todayDayKey: params.todayDayKey,
+    }) ?? requestedRange;
+  const dayKeys = enumerateDayKeys(effectiveRange);
+  const buckets = dayKeys.map((dayKey) =>
+    buildNutritionDayBucket(params.meals, dayKey),
+  );
+  const labels = dayKeys.map((dayKey) => formatLabel(dayKey, dayKeys.length));
+
+  const seriesByMetric = METRIC_KEYS.reduce<Record<MetricKey, number[]>>(
+    (series, metric) => {
+      series[metric] = buckets.map((bucket) => Number(bucket.totals[metric]) || 0);
+      return series;
+    },
+    {
+      kcal: [],
+      protein: [],
+      carbs: [],
+      fat: [],
+    },
+  );
+
+  const totals = buckets.reduce<Nutrients>(
+    (sum, bucket) => addNutrients(sum, bucket.totals),
+    cloneZeroNutrients(),
+  );
+  const loggedDaysCount = buckets.filter((bucket) => bucket.mealCount > 0).length;
+  const averages: StatisticsRangeAverages = {
+    rangeDays: divideNutrients(totals, dayKeys.length),
+    loggedDays:
+      loggedDaysCount > 0
+        ? divideNutrients(totals, loggedDaysCount)
+        : cloneZeroNutrients(),
+    rangeDaysCount: dayKeys.length,
+    loggedDaysCount,
+  };
+
+  return {
+    activeRange: params.activeRange,
+    requestedRange,
+    effectiveRange,
+    dayKeys,
+    labels,
+    buckets,
+    seriesByMetric,
+    totals,
+    averages,
+  };
+}
