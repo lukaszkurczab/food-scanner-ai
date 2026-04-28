@@ -3,8 +3,6 @@ import {
   isCanonicalMealDayKey,
 } from "@/services/meals/mealMetadata";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 export type DayKeyRange = {
   startDayKey: string;
   endDayKey: string;
@@ -66,13 +64,18 @@ export function enumerateDayKeys(range: DayKeyRange): string[] {
   const end = dayKeyToLocalDate(normalized.endDayKey);
   if (!start || !end) return [];
 
-  const days = Math.floor((end.getTime() - start.getTime()) / DAY_MS) + 1;
+  const dayKeys: string[] = [];
+  const cursor = new Date(start);
 
-  return Array.from({ length: Math.max(0, days) }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    return formatMealDayKey(date) ?? "";
-  }).filter(isCanonicalMealDayKey);
+  while (cursor <= end) {
+    const dayKey = formatMealDayKey(cursor);
+    if (dayKey && isCanonicalMealDayKey(dayKey)) {
+      dayKeys.push(dayKey);
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dayKeys;
 }
 
 export function dayKeyToDate(dayKey: string): Date | null {
