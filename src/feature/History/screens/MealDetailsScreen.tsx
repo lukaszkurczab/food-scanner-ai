@@ -139,6 +139,9 @@ export default function MealDetailsScreen() {
   }
 
   const ingredientCount = state.draft.ingredients.length;
+  const canShareMeal = Boolean(
+    state.effectivePhotoUri && (state.draft.cloudId || state.draft.mealId),
+  );
 
   return (
     <Layout showNavigation={false} style={styles.layout}>
@@ -166,18 +169,20 @@ export default function MealDetailsScreen() {
                       borderRadius={theme.rounded.xl}
                       onError={state.onImageError}
                     />
-                    <Pressable
-                      onPress={state.goShare}
-                      accessibilityRole="button"
-                      accessibilityLabel={t("share", { ns: "common" })}
-                      hitSlop={8}
-                      style={({ pressed }) => [
-                        styles.fab,
-                        pressed ? styles.fabPressed : null,
-                      ]}
-                    >
-                      <AppIcon name="share" size={18} color={theme.surface} />
-                    </Pressable>
+                    {canShareMeal ? (
+                      <Pressable
+                        onPress={state.goShare}
+                        accessibilityRole="button"
+                        accessibilityLabel={t("share", { ns: "common" })}
+                        hitSlop={8}
+                        style={({ pressed }) => [
+                          styles.fab,
+                          pressed ? styles.fabPressed : null,
+                        ]}
+                      >
+                        <AppIcon name="share" size={18} color={theme.surface} />
+                      </Pressable>
+                    ) : null}
                   </>
                 ) : null}
               </View>

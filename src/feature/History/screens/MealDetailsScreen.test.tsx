@@ -293,6 +293,20 @@ describe("MealDetailsScreen", () => {
     expect(state.handleBack).toHaveBeenCalledTimes(1);
   });
 
+  it("hides the share action when the meal has a photo but no identity", () => {
+    mockUseMealDetailsScreenState.mockReturnValue(
+      buildState({
+        draft: buildMeal({ cloudId: undefined, mealId: "" }),
+        effectivePhotoUri: "file:///meal.jpg",
+      }),
+    );
+
+    const screen = renderWithTheme(<MealDetailsScreen />);
+
+    expect(screen.getByText("fallback-image:file:///meal.jpg")).toBeTruthy();
+    expect(screen.queryByLabelText("common:share")).toBeNull();
+  });
+
   it("renders the image loading branch", () => {
     mockUseMealDetailsScreenState.mockReturnValue(
       buildState({

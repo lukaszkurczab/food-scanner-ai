@@ -5,32 +5,11 @@ import { calculateTotalNutrients } from "@/utils/calculateTotalNutrients";
 import type { Meal } from "@/types/meal";
 import type { RootStackParamList } from "@/navigation/navigate";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { emit, on } from "@/services/core/events";
-import { getMyMealByCloudIdLocal } from "@/services/offline/myMeals.repo";
+import { emit } from "@/services/core/events";
 import {
   selectLocalMealByCloudId,
   subscribeLocalMeals,
 } from "@/services/meals/localMealsStore";
-
-function toEpochMs(value?: string | null): number {
-  if (!value) return 0;
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function pickLatestMeal(candidates: Array<Meal | null>): Meal | null {
-  let latest: Meal | null = null;
-  let latestTs = 0;
-  for (const candidate of candidates) {
-    if (!candidate) continue;
-    const ts = toEpochMs(candidate.updatedAt);
-    if (!latest || ts >= latestTs) {
-      latest = candidate;
-      latestTs = ts;
-    }
-  }
-  return latest;
-}
 
 function buildEditDraft(meal: Meal): Meal {
   return {
@@ -42,37 +21,6 @@ function buildEditDraft(meal: Meal): Meal {
   };
 }
 
-type DeleteTarget = "history" | "saved";
-
-function resolveDeleteTarget(params: {
-  draft: Meal;
-  historyMeal: Meal | null;
-  savedMeal: Meal | null;
-}): { target: DeleteTarget; id: string } {
-  const { draft, historyMeal, savedMeal } = params;
-  const fallbackId = draft.cloudId || draft.mealId || "";
-
-  if (historyMeal && !historyMeal.deleted) {
-    return {
-      target: "history",
-      id: historyMeal.cloudId || historyMeal.mealId || fallbackId,
-    };
-  }
-
-  if (savedMeal && !savedMeal.deleted) {
-    return {
-      target: "saved",
-      id: savedMeal.cloudId || savedMeal.mealId || fallbackId,
-    };
-  }
-
-  if (draft.source === "saved") {
-    return { target: "saved", id: fallbackId };
-  }
-
-  return { target: "history", id: fallbackId };
-}
-
 export function useMealDetailsState(params: {
   routeParams: RootStackParamList["MealDetails"];
   navigation: StackNavigationProp<RootStackParamList>;
@@ -81,7 +29,6 @@ export function useMealDetailsState(params: {
   setLastScreen: (userUid: string, screen: string) => Promise<void>;
   setMeal: (meal: Meal) => void;
   deleteMeal: (mealCloudId: string) => Promise<unknown>;
-  deleteSavedMeal: (cloudId: string) => Promise<unknown>;
 }) {
   const {
     routeParams,
@@ -91,7 +38,6 @@ export function useMealDetailsState(params: {
     setLastScreen,
     setMeal,
     deleteMeal,
-    deleteSavedMeal,
   } = params;
   const initialMeal = routeParams.meal;
   const routeMealId = initialMeal?.cloudId ?? initialMeal?.mealId ?? null;
@@ -102,19 +48,14 @@ export function useMealDetailsState(params: {
   const [deleting, setDeleting] = useState(false);
   const allowNextBackRef = useRef(false);
   const deletedRef = useRef(false);
+  const routeMealIdRef = useRef(routeMealId);
 
   useEffect(() => {
+    if (routeMealIdRef.current === routeMealId) return;
+    routeMealIdRef.current = routeMealId;
     deletedRef.current = false;
-  }, [routeMealId]);
-
-  useEffect(() => {
-    if (deletedRef.current) return;
-    if (!routeMealId) return;
-    const currentId = draft?.cloudId ?? draft?.mealId ?? null;
-    if (currentId !== routeMealId) {
-      setDraft(initialMeal ?? null);
-    }
-  }, [draft?.cloudId, draft?.mealId, initialMeal, routeMealId]);
+    setDraft(initialMeal ?? null);
+  }, [initialMeal, routeMealId]);
 
   const reloadFromLocal = useCallback(async () => {
     if (deletedRef.current) return false;
@@ -125,18 +66,19 @@ export function useMealDetailsState(params: {
       "";
     if (!userUid) return false;
 
-    const historyMeal = selectLocalMealByCloudId(userUid, routeMealId);
-    const savedMeal = await getMyMealByCloudIdLocal(userUid, routeMealId);
-    const latest = pickLatestMeal([historyMeal, savedMeal]);
-    if (!latest) return false;
+    const localMeal = selectLocalMealByCloudId(userUid, routeMealId);
+    if (!localMeal) {
+      setDraft(null);
+      return false;
+    }
 
     setDraft((current) => ({
-      ...latest,
+      ...localMeal,
       localPhotoUrl:
         current?.localPhotoUrl ??
-        latest.localPhotoUrl ??
-        latest.photoLocalPath ??
-        latest.photoUrl ??
+        localMeal.localPhotoUrl ??
+        localMeal.photoLocalPath ??
+        localMeal.photoUrl ??
         null,
     }));
     return true;
@@ -150,27 +92,16 @@ export function useMealDetailsState(params: {
       "";
     if (!userUid) return;
 
-    let cancelled = false;
     void reloadFromLocal();
 
-    const handleMyMealSyncEvent = (event?: { cloudId?: string }) => {
-      const cloudId = typeof event?.cloudId === "string" ? event.cloudId : "";
-      if (!cloudId || cloudId !== routeMealId || cancelled) return;
-      void reloadFromLocal();
-    };
-
-    const unsubs = [
-      subscribeLocalMeals(userUid, () => {
-        if (!cancelled) void reloadFromLocal();
-      }),
-      on<{ cloudId?: string }>("mymeal:local:upserted", handleMyMealSyncEvent),
-    ];
+    let cancelled = false;
+    const unsubscribe = subscribeLocalMeals(userUid, () => {
+      if (!cancelled) void reloadFromLocal();
+    });
 
     return () => {
       cancelled = true;
-      for (const unsub of unsubs) {
-        unsub();
-      }
+      unsubscribe();
     };
   }, [draft?.userUid, initialMeal?.userUid, reloadFromLocal, routeMealId]);
 
@@ -180,7 +111,7 @@ export function useMealDetailsState(params: {
         allowNextBackRef.current = true;
         navigation.goBack();
       } else {
-        navigation.navigate("SavedMeals");
+        navigation.navigate("HistoryList");
       }
       return true;
     });
@@ -293,22 +224,11 @@ export function useMealDetailsState(params: {
       const historyMeal = userUid
         ? selectLocalMealByCloudId(userUid, fallbackId)
         : null;
-      const savedMeal = userUid
-        ? await getMyMealByCloudIdLocal(userUid, fallbackId)
-        : null;
+      const historyMealId = historyMeal?.cloudId || historyMeal?.mealId || "";
+      const deleteId = historyMealId || fallbackId;
+      if (!deleteId) return;
 
-      const resolvedDelete = resolveDeleteTarget({
-        draft,
-        historyMeal,
-        savedMeal,
-      });
-      if (!resolvedDelete.id) return;
-
-      if (resolvedDelete.target === "saved") {
-        await deleteSavedMeal(resolvedDelete.id);
-      } else {
-        await deleteMeal(resolvedDelete.id);
-      }
+      await deleteMeal(deleteId);
 
       deletedRef.current = true;
       setShowDeleteModal(false);
@@ -318,9 +238,7 @@ export function useMealDetailsState(params: {
         allowNextBackRef.current = true;
         navigation.goBack();
       } else {
-        navigation.navigate(
-          resolvedDelete.target === "saved" ? "SavedMeals" : "HistoryList",
-        );
+        navigation.navigate("HistoryList");
       }
     } catch {
       emit("ui:toast", { key: "unknownError", ns: "common" });
@@ -329,7 +247,6 @@ export function useMealDetailsState(params: {
     }
   }, [
     deleteMeal,
-    deleteSavedMeal,
     deleting,
     draft,
     initialMeal?.userUid,
@@ -342,7 +259,7 @@ export function useMealDetailsState(params: {
       allowNextBackRef.current = true;
       navigation.goBack();
     } else {
-      navigation.navigate("SavedMeals");
+      navigation.navigate("HistoryList");
     }
   }, [navigation]);
 

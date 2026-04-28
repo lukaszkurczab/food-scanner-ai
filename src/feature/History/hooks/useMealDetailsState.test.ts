@@ -74,15 +74,11 @@ function setupHook(options?: {
   routeMeal?: Meal;
   navigation?: StackNavigationProp<RootStackParamList>;
   deleteMeal?: (id: string) => Promise<unknown>;
-  deleteSavedMeal?: (id: string) => Promise<unknown>;
 }) {
   const navigation = options?.navigation ?? createNavigation();
   const routeMeal = options?.routeMeal ?? baseMeal();
   const deleteMeal =
     options?.deleteMeal ??
-    jest.fn<(id: string) => Promise<unknown>>(async () => undefined);
-  const deleteSavedMeal =
-    options?.deleteSavedMeal ??
     jest.fn<(id: string) => Promise<unknown>>(async () => undefined);
 
   const hook = renderHook(() =>
@@ -94,7 +90,6 @@ function setupHook(options?: {
       setLastScreen: jest.fn(async () => undefined),
       setMeal: jest.fn(),
       deleteMeal,
-      deleteSavedMeal,
     }),
   );
 
@@ -102,13 +97,15 @@ function setupHook(options?: {
     ...hook,
     navigation,
     deleteMeal,
-    deleteSavedMeal,
   };
 }
 
 describe("useMealDetailsState", () => {
+  let localMealsListener: (() => void) | null = null;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    localMealsListener = null;
     jest
       .spyOn(BackHandler, "addEventListener")
       .mockImplementation(
@@ -117,7 +114,12 @@ describe("useMealDetailsState", () => {
       );
     mockOn.mockReturnValue(jest.fn());
     mockSelectLocalMealByCloudId.mockReturnValue(null);
-    mockSubscribeLocalMeals.mockReturnValue(jest.fn());
+    mockSubscribeLocalMeals.mockImplementation(
+      (_uid: string, listener: () => void) => {
+        localMealsListener = listener;
+        return jest.fn();
+      },
+    );
     mockGetMyMealByCloudIdLocal.mockResolvedValue(null);
   });
 
@@ -143,12 +145,59 @@ describe("useMealDetailsState", () => {
     expect(result.current.showDeleteModal).toBe(false);
   });
 
-  it("deletes through the saved-meal path when the meal exists in my_meals", async () => {
-    const savedMeal = baseMeal({ cloudId: "saved-cloud", mealId: "saved-cloud", source: "saved" });
+  it("uses the history meal when a saved meal with the same id also exists", async () => {
+    const historyMeal = baseMeal({
+      cloudId: "shared-id",
+      mealId: "shared-id",
+      name: "History meal",
+      source: "manual",
+      updatedAt: "2026-04-12T10:00:00.000Z",
+    });
+    const savedMeal = baseMeal({
+      cloudId: "shared-id",
+      mealId: "shared-id",
+      name: "Saved template",
+      source: "saved",
+      updatedAt: "2026-04-13T10:00:00.000Z",
+    });
+    mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
     mockGetMyMealByCloudIdLocal.mockResolvedValue(savedMeal);
 
-    const { result, deleteMeal, deleteSavedMeal, navigation } = setupHook({
-      routeMeal: baseMeal({ cloudId: "route-id", mealId: "route-id", source: "saved" }),
+    const { result } = setupHook({
+      routeMeal: baseMeal({
+        cloudId: "shared-id",
+        mealId: "shared-id",
+        name: "Route meal",
+      }),
+    });
+
+    await waitFor(() => {
+      expect(result.current.draft?.name).toBe("History meal");
+    });
+
+    expect(mockSelectLocalMealByCloudId).toHaveBeenCalledWith(
+      "user-1",
+      "shared-id",
+    );
+    expect(mockGetMyMealByCloudIdLocal).not.toHaveBeenCalled();
+  });
+
+  it("deletes through deleteMeal and never deletes a saved meal template", async () => {
+    const historyMeal = baseMeal({ cloudId: "history-cloud", source: "saved" });
+    mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
+    mockGetMyMealByCloudIdLocal.mockResolvedValue(
+      baseMeal({ cloudId: "saved-cloud", source: "saved" }),
+    );
+    const deleteSavedMeal = jest.fn<(id: string) => Promise<unknown>>(
+      async () => undefined,
+    );
+
+    const { result, deleteMeal } = setupHook({
+      routeMeal: baseMeal({
+        cloudId: "history-cloud",
+        mealId: "history-cloud",
+        source: "saved",
+      }),
     });
 
     await act(async () => {
@@ -156,30 +205,14 @@ describe("useMealDetailsState", () => {
       await result.current.confirmDelete();
     });
 
-    expect(deleteSavedMeal).toHaveBeenCalledWith("saved-cloud");
-    expect(deleteMeal).not.toHaveBeenCalled();
-    expect(navigation.goBack).toHaveBeenCalledTimes(1);
+    expect(deleteMeal).toHaveBeenCalledWith("history-cloud");
+    expect(deleteSavedMeal).not.toHaveBeenCalled();
+    expect(mockGetMyMealByCloudIdLocal).not.toHaveBeenCalled();
     expect(result.current.showDeleteModal).toBe(false);
     expect(result.current.draft).toBeNull();
   });
 
-  it("deletes through the history path when a history meal exists even if source is saved", async () => {
-    const historyMeal = baseMeal({ cloudId: "history-cloud", source: "saved" });
-    mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
-
-    const { result, deleteMeal, deleteSavedMeal } = setupHook({
-      routeMeal: baseMeal({ cloudId: "route-id", mealId: "route-id", source: "saved" }),
-    });
-
-    await act(async () => {
-      await result.current.confirmDelete();
-    });
-
-    expect(deleteMeal).toHaveBeenCalledWith("history-cloud");
-    expect(deleteSavedMeal).not.toHaveBeenCalled();
-  });
-
-  it("navigates to HistoryList when delete succeeds and there is no back stack", async () => {
+  it("clears details and navigates to HistoryList when delete succeeds with no back stack", async () => {
     const historyMeal = baseMeal({ cloudId: "history-no-back" });
     mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
 
@@ -191,23 +224,42 @@ describe("useMealDetailsState", () => {
     });
 
     expect(navigation.navigate).toHaveBeenCalledWith("HistoryList");
+    expect(result.current.draft).toBeNull();
   });
 
-  it("navigates to SavedMeals when saved delete succeeds and there is no back stack", async () => {
-    const savedMeal = baseMeal({ cloudId: "saved-no-back", source: "saved" });
-    mockGetMyMealByCloudIdLocal.mockResolvedValue(savedMeal);
-
+  it("falls back to HistoryList when backing without a stack", async () => {
     const navigation = createNavigation({ canGoBack: false });
-    const { result } = setupHook({
-      navigation,
-      routeMeal: baseMeal({ cloudId: "saved-no-back", source: "saved" }),
-    });
+    const { result } = setupHook({ navigation });
 
     await act(async () => {
-      await result.current.confirmDelete();
+      result.current.handleBack();
     });
 
-    expect(navigation.navigate).toHaveBeenCalledWith("SavedMeals");
+    expect(navigation.navigate).toHaveBeenCalledWith("HistoryList");
+  });
+
+  it("shows unavailable details after the local history meal is deleted", async () => {
+    const historyMeal = baseMeal({ cloudId: "local-delete" });
+    mockSelectLocalMealByCloudId.mockReturnValue(historyMeal);
+
+    const { result } = setupHook({
+      routeMeal: baseMeal({ cloudId: "local-delete", mealId: "local-delete" }),
+    });
+
+    await waitFor(() => {
+      expect(result.current.draft?.cloudId).toBe("local-delete");
+    });
+
+    mockSelectLocalMealByCloudId.mockReturnValue(null);
+
+    await act(async () => {
+      localMealsListener?.();
+    });
+
+    await waitFor(() => {
+      expect(result.current.draft).toBeNull();
+      expect(result.current.nutrition).toBeNull();
+    });
   });
 
   it("keeps modal open and does not navigate when delete fails", async () => {
