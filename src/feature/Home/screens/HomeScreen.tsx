@@ -18,6 +18,7 @@ import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodSta
 import { createMockWeeklyReportResult } from "@/services/weeklyReport/weeklyReportMocks";
 import { formatMealDayKey } from "@/services/meals/mealMetadata";
 import { useHomeTodayState } from "@/feature/Home/hooks/useHomeTodayState";
+import { buildHomeHeroModel } from "@/feature/Home/services/homeHeroPresenter";
 
 function isWeeklyReportDevPreview(): boolean {
   return typeof __DEV__ !== "undefined" && __DEV__;
@@ -37,19 +38,6 @@ function buildLast7Days(): WeekDayItem[] {
       isToday: date.toDateString() === todayString,
     };
   });
-}
-
-function getGreetingKey(hour: number): "morning" | "afternoon" | "evening" {
-  if (hour < 12) return "morning";
-  if (hour < 18) return "afternoon";
-  return "evening";
-}
-
-function getMealCountLabel(
-  t: (key: string, options?: Record<string, unknown>) => string,
-  count: number,
-): string {
-  return t("home:mealCount", { count });
 }
 
 type HomeNavigation = StackNavigationProp<RootStackParamList, "Home">;
@@ -98,15 +86,8 @@ export default function HomeScreen({ navigation }: Props) {
     dayMeals,
     mealCount,
     consumed,
-    goalCalories,
     macroTargets,
-    kcalProgress,
-    isToday,
-    isCompletedDay,
-    isPastEmptyDay,
-    isTodayEmpty,
   } = homeDay;
-  const totalCalories = consumed.kcal;
 
   const numberFormatter = useMemo(
     () => new Intl.NumberFormat(i18n.language || undefined),
@@ -128,95 +109,27 @@ export default function HomeScreen({ navigation }: Props) {
     return candidate.split(/\s+/)[0] ?? null;
   }, [userData?.username]);
 
-  const kcalProgressLabel = useMemo(() => {
-    const consumedLabel = numberFormatter.format(totalCalories);
-    if (goalCalories > 0) {
-      return `${consumedLabel} / ${numberFormatter.format(goalCalories)} kcal`;
-    }
-    return `${consumedLabel} kcal`;
-  }, [goalCalories, numberFormatter, totalCalories]);
-
   const selectedMethodName = t(`meals:${mealAddEntry.preferredOption.titleKey}`);
   const methodSelectorLabel = t("home:methodSelector", {
     method: selectedMethodName,
   });
 
   const heroModel = useMemo(() => {
-    if (isCompletedDay) {
-      return {
-        title: displayName
-          ? t("home:hero.completed.title", {
-              name: displayName,
-            })
-          : t("home:hero.completed.titleGeneric"),
-        meta: `${kcalProgressLabel} · ${getMealCountLabel(t, mealCount)}`,
-        ctaLabel: t("home:hero.completed.cta"),
-        tone: "success" as const,
-        supportText: t("home:hero.completed.support"),
-        showMethodSelector: false,
-        progress: null,
-        supportCopy: null,
-      };
-    }
-
-    if (isPastEmptyDay) {
-      return {
-        title: fullDateFormatter.format(selectedDate),
-        meta: t("home:hero.pastIncomplete.meta"),
-        ctaLabel: t("home:hero.pastIncomplete.cta"),
-        tone: "default" as const,
-        supportText: null,
-        showMethodSelector: true,
-        progress: null,
-        supportCopy: t("home:hero.pastIncomplete.supportCopy"),
-      };
-    }
-
-    const greetingKey = getGreetingKey(new Date().getHours());
-    const greeting = displayName
-      ? t(`home:hero.greeting.${greetingKey}`, { name: displayName })
-      : t(`home:hero.greetingGeneric.${greetingKey}`);
-
-    if (isTodayEmpty) {
-      return {
-        title: greeting,
-        meta: fullDateFormatter.format(selectedDate),
-        ctaLabel: t("home:hero.todayEmpty.cta"),
-        tone: "default" as const,
-        supportText: null,
-        showMethodSelector: true,
-        progress: null,
-        supportCopy: t("home:hero.todayEmpty.supportCopy"),
-      };
-    }
-
-    return {
-      title: isToday ? greeting : fullDateFormatter.format(selectedDate),
-      meta: `${getMealCountLabel(t, mealCount)} · ${kcalProgressLabel}`,
-      ctaLabel: isToday
-        ? t("home:hero.todayInProgress.cta")
-        : t("home:hero.pastIncomplete.cta"),
-      tone: "default" as const,
-      supportText: null,
-      showMethodSelector: true,
-      progress:
-        kcalProgress,
-      supportCopy: null,
-    };
+    return buildHomeHeroModel({
+      dayState: homeDay,
+      selectedDate,
+      displayName,
+      t,
+      numberFormatter,
+      fullDateFormatter,
+    });
   }, [
     displayName,
     fullDateFormatter,
-    goalCalories,
-    isCompletedDay,
-    isPastEmptyDay,
-    isTodayEmpty,
-    isToday,
-    kcalProgress,
-    kcalProgressLabel,
-    mealCount,
+    homeDay,
+    numberFormatter,
     selectedDate,
     t,
-    totalCalories,
   ]);
 
   return (
@@ -233,7 +146,7 @@ export default function HomeScreen({ navigation }: Props) {
           meta={heroModel.meta}
           ctaLabel={heroModel.ctaLabel}
           onPressCta={() => {
-            if (isCompletedDay) {
+            if (heroModel.ctaAction === "review_history") {
               navigation.navigate("HistoryList");
               return;
             }
