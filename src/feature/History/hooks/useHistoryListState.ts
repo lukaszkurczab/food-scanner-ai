@@ -8,6 +8,8 @@ import { useFilters } from "@/context/HistoryContext";
 import { FREE_WINDOW_DAYS } from "@/services/meals/mealService";
 import {
   getDeadLetterCount,
+  getDeadLetterOps,
+  getSyncCounts,
   retryDeadLetterOps,
   type QueueKind,
 } from "@/services/offline/queue.repo";
@@ -24,6 +26,12 @@ const DEAD_LETTER_HISTORY_KINDS: QueueKind[] = [
   "delete_mymeal",
 ];
 
+type FailedSyncDiagnostics = {
+  dead: number;
+  pending: number;
+  lastFailedKind: QueueKind | null;
+};
+
 export function useHistoryListState(params: {
   navigation: StackNavigationProp<RootStackParamList, "HistoryList">;
 }) {
@@ -31,7 +39,12 @@ export function useHistoryListState(params: {
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
   const { t, i18n } = useTranslation(["history", "meals", "common"]);
-  const [failedSyncCount, setFailedSyncCount] = useState(0);
+  const [failedSyncDiagnostics, setFailedSyncDiagnostics] =
+    useState<FailedSyncDiagnostics>({
+      dead: 0,
+      pending: 0,
+      lastFailedKind: null,
+    });
   const [retryingFailedSync, setRetryingFailedSync] = useState(false);
 
   const {
@@ -68,14 +81,32 @@ export function useHistoryListState(params: {
 
   const refreshFailedSyncCount = useCallback(async () => {
     if (!uid) {
-      setFailedSyncCount(0);
+      setFailedSyncDiagnostics({
+        dead: 0,
+        pending: 0,
+        lastFailedKind: null,
+      });
       return;
     }
     try {
-      const count = await getDeadLetterCount(uid, {
-        kinds: DEAD_LETTER_HISTORY_KINDS,
+      const [deadCount, syncCounts, latestDeadOps] = await Promise.all([
+        getDeadLetterCount(uid, {
+          kinds: DEAD_LETTER_HISTORY_KINDS,
+        }),
+        getSyncCounts(uid, {
+          kinds: DEAD_LETTER_HISTORY_KINDS,
+        }),
+        getDeadLetterOps({
+          uid,
+          kinds: DEAD_LETTER_HISTORY_KINDS,
+          limit: 1,
+        }),
+      ]);
+      setFailedSyncDiagnostics({
+        dead: Math.max(deadCount, syncCounts.dead),
+        pending: syncCounts.pending,
+        lastFailedKind: latestDeadOps[0]?.kind ?? null,
       });
-      setFailedSyncCount(count);
     } catch {
       // Ignore dead-letter count errors - history data can still render.
     }
@@ -196,17 +227,32 @@ export function useHistoryListState(params: {
   }, [dataState, errorKind, query, t]);
 
   const deadLetterBanner = useMemo(() => {
+    const failedSyncCount = failedSyncDiagnostics.dead;
     if (failedSyncCount <= 0) return null;
+    const lastFailedKind = failedSyncDiagnostics.lastFailedKind
+      ? t(`history.deadLetterOperation.${failedSyncDiagnostics.lastFailedKind}`, {
+          ns: "meals",
+        })
+      : null;
     return {
       title: t("history.deadLetterTitle", {
         ns: "meals",
         count: failedSyncCount,
       }),
-      description: t("history.deadLetterSubtitle", { ns: "meals" }),
+      description: lastFailedKind
+        ? t("history.deadLetterSubtitleWithLast", {
+            ns: "meals",
+            pending: failedSyncDiagnostics.pending,
+            operation: lastFailedKind,
+          })
+        : t("history.deadLetterSubtitle", {
+            ns: "meals",
+            pending: failedSyncDiagnostics.pending,
+          }),
       actionLabel: t("common:retry"),
       count: failedSyncCount,
     };
-  }, [failedSyncCount, t]);
+  }, [failedSyncDiagnostics, t]);
 
   return {
     isOnline,

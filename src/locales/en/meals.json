@@ -191,9 +191,16 @@
     "syncSyncedAt": "Synced {{time}}",
     "syncPending": "Pending",
     "syncFailed": "Failed",
-    "deadLetterTitle": "{{count}} changes failed to sync.",
-    "deadLetterSubtitle": "Retry to move them back to the sync queue.",
+    "deadLetterTitle": "{{count}} meal changes need retry.",
+    "deadLetterSubtitle": "Retry sends them back to sync. Pending meal changes: {{pending}}.",
+    "deadLetterSubtitleWithLast": "Retry sends them back to sync. Pending meal changes: {{pending}}. Last failed: {{operation}}.",
     "deadLetterRetryQueued": "{{count}} failed changes queued for retry.",
+    "deadLetterOperation": {
+      "upsert": "meal update",
+      "delete": "meal delete",
+      "upsert_mymeal": "saved meal update",
+      "delete_mymeal": "saved meal delete"
+    },
     "offlineEmpty": "No local data. Connect to the internet to load history.",
     "errorTitle": "Could not load history"
   },

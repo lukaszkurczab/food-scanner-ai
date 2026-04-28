@@ -198,9 +198,16 @@
     "syncSyncedAt": "Zsynchronizowano {{time}}",
     "syncPending": "Czeka na synchronizację",
     "syncFailed": "Synchronizacja nieudana",
-    "deadLetterTitle": "{{count}} zmian nie zostało zsynchronizowanych.",
-    "deadLetterSubtitle": "Ponów, aby przywrócić je do kolejki synchronizacji.",
+    "deadLetterTitle": "{{count}} zmian posiłków wymaga ponowienia.",
+    "deadLetterSubtitle": "Ponowienie przywróci je do synchronizacji. Oczekujące zmiany posiłków: {{pending}}.",
+    "deadLetterSubtitleWithLast": "Ponowienie przywróci je do synchronizacji. Oczekujące zmiany posiłków: {{pending}}. Ostatnia nieudana operacja: {{operation}}.",
     "deadLetterRetryQueued": "Dodano {{count}} nieudanych zmian do ponownej synchronizacji.",
+    "deadLetterOperation": {
+      "upsert": "aktualizacja posiłku",
+      "delete": "usunięcie posiłku",
+      "upsert_mymeal": "aktualizacja zapisanego posiłku",
+      "delete_mymeal": "usunięcie zapisanego posiłku"
+    },
     "offlineEmpty": "Brak danych lokalnych. Połącz się z internetem, aby pobrać historię.",
     "errorTitle": "Nie udało się wczytać historii"
   },

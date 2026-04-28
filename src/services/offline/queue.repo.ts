@@ -425,6 +425,11 @@ export async function retryDeadLetterOps(params: {
   try {
     for (const row of rows) {
       db.runSync(
+        `DELETE FROM op_queue
+         WHERE cloud_id=? AND user_uid=? AND kind=?`,
+        [row.cloud_id, row.user_uid, row.kind],
+      );
+      db.runSync(
         `INSERT INTO op_queue (
            cloud_id, user_uid, kind, payload, updated_at, attempts
          ) VALUES (?, ?, ?, ?, ?, 0)`,
