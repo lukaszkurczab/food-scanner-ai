@@ -262,11 +262,6 @@ class LocalMealsReadModel {
           void this.refresh();
         }
       }),
-      on<LocalMealEvent>("meal:deleted", (event) => {
-        if (!this.matchesUid(event)) return;
-        const cloudId = mealEventId(event);
-        if (cloudId) this.removeById(cloudId);
-      }),
     ];
 
     void this.refresh();

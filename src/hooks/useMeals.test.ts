@@ -226,7 +226,12 @@ describe("useMeals", () => {
     mockGetMealByCloudIdLocal.mockResolvedValue(null);
     mockUpsertMealLocal.mockResolvedValue();
     mockUpsertMyMealLocal.mockResolvedValue();
-    mockMarkDeletedLocal.mockResolvedValue();
+    mockMarkDeletedLocal.mockImplementation(async (uid, cloudId, now) => {
+      const handlers = mockEventHandlers.get("meal:local:deleted");
+      handlers?.forEach((handler) =>
+        handler({ uid, cloudId, ts: now }),
+      );
+    });
     mockEnqueueUpsert.mockResolvedValue();
     mockEnqueueDelete.mockResolvedValue();
     mockEnqueueMyMealUpsert.mockResolvedValue();
@@ -390,10 +395,10 @@ describe("useMeals", () => {
     expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
   });
 
-  it("reloads visible meals when another useMeals instance emits meal deleted", async () => {
-    mockGetMealsPageLocal
-      .mockResolvedValueOnce([baseMeal({ cloudId: "c1", name: "Old meal" })])
-      .mockResolvedValueOnce([]);
+  it("does not use meal:deleted as a local read-model event", async () => {
+    mockGetMealsPageLocal.mockResolvedValueOnce([
+      baseMeal({ cloudId: "c1", name: "Old meal" }),
+    ]);
 
     const { result } = renderHook(() => useMeals("user-1"));
 
@@ -401,6 +406,7 @@ describe("useMeals", () => {
       expect(result.current.loading).toBe(false);
       expect(result.current.meals.map((meal) => meal.cloudId)).toEqual(["c1"]);
     });
+    mockGetMealsPageLocal.mockClear();
 
     act(() => {
       const handlers = mockEventHandlers.get("meal:deleted");
@@ -409,9 +415,9 @@ describe("useMeals", () => {
       );
     });
 
-    await waitFor(() => {
-      expect(result.current.meals).toEqual([]);
-    });
+    expect(mockOn).not.toHaveBeenCalledWith("meal:deleted", expect.any(Function));
+    expect(result.current.meals.map((meal) => meal.cloudId)).toEqual(["c1"]);
+    expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
   });
 
   it("merges local upserts from another useMeals instance without backend reload", async () => {

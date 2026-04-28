@@ -2,11 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import NetInfo from "@react-native-community/netinfo";
 import type { Meal } from "@/types/meal";
-import {
-  markDeletedLocal,
-  getPendingMealsLocal,
-} from "@/services/offline/meals.repo";
-import { enqueueDelete } from "@/services/offline/queue.repo";
+import { getPendingMealsLocal } from "@/services/offline/meals.repo";
 import { reconcileAll } from "@/services/notifications/engine";
 import { debugScope } from "@/utils/debug";
 import { emit } from "@/services/core/events";
@@ -21,11 +17,11 @@ import {
 } from "@/services/meals/mealSaveTransaction";
 import {
   getLocalMealsSnapshot,
-  removeLocalMealSnapshot,
   refreshLocalMeals,
   subscribeLocalMeals,
   upsertLocalMealSnapshot,
 } from "@/services/meals/localMealsStore";
+import { deleteMealTransaction } from "@/services/meals/mealDeleteTransaction";
 
 const SYNC_DEBOUNCE_MS = 1200;
 
@@ -52,7 +48,6 @@ function triggerReconcile(uid?: string | null) {
 
 export function useMeals(userUid: string | null) {
   const [snapshot, setSnapshot] = useState(() => getLocalMealsSnapshot(userUid));
-  const hookInstanceIdRef = useRef(`useMeals-${Math.random().toString(36).slice(2)}`);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncInFlightRef = useRef(false);
   const syncRequestedRef = useRef(false);
@@ -313,15 +308,10 @@ export function useMeals(userUid: string | null) {
   const deleteMeal = useCallback(
     async (mealCloudId: string) => {
       if (!userUid || !mealCloudId) return;
-      const now = new Date().toISOString();
-      await markDeletedLocal(userUid, mealCloudId, now);
-      removeLocalMealSnapshot(userUid, mealCloudId);
-      emit("meal:deleted", {
+      await deleteMealTransaction({
         uid: userUid,
         cloudId: mealCloudId,
-        sourceHookId: hookInstanceIdRef.current,
       });
-      await enqueueDelete(userUid, mealCloudId, now);
 
       scheduleQueuedSync("delete");
     },
