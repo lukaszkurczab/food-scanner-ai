@@ -903,6 +903,7 @@ describe("useMeals", () => {
 
   it("updates saved-source history meals through the canonical meal transaction", async () => {
     jest.useFakeTimers();
+    mockUuid.mockReturnValueOnce("history-cloud-id");
     const { result } = renderHook(() => useMeals("user-1"));
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -911,8 +912,9 @@ describe("useMeals", () => {
     await act(async () => {
       await result.current.updateMeal(
         baseMeal({
-          mealId: "history-from-template",
-          cloudId: "history-from-template",
+          mealId: "saved-template-id",
+          savedMealRefId: "saved-template-id",
+          cloudId: undefined,
           source: "saved",
           photoUrl: "file://saved-photo.jpg",
         }),
@@ -921,23 +923,29 @@ describe("useMeals", () => {
 
     expect(mockInsertOrUpdateImage).toHaveBeenCalledWith(
       "user-1",
-      "history-from-template",
+      "history-cloud-id",
       "file://saved-photo.jpg",
       "pending",
     );
     expect(mockUpsertMealLocal).toHaveBeenCalledWith(
+      expect.not.objectContaining({ savedMealRefId: expect.anything() }),
+    );
+    expect(mockUpsertMealLocal).toHaveBeenCalledWith(
       expect.objectContaining({
-        mealId: "history-from-template",
-        cloudId: "history-from-template",
+        mealId: "history-cloud-id",
+        cloudId: "history-cloud-id",
         source: "saved",
         photoLocalPath: "file://saved-photo.jpg",
       }),
     );
     expect(mockEnqueueUpsert).toHaveBeenCalledWith(
       "user-1",
-      expect.objectContaining({ cloudId: "history-from-template" }),
+      expect.objectContaining({ cloudId: "history-cloud-id" }),
     );
+    expect(mockEmit).toHaveBeenCalledWith("meal:updated", expect.any(Object));
+    expect(mockEmit).not.toHaveBeenCalledWith("meal:added", expect.any(Object));
     expect(mockUpsertMyMealWithPhoto).not.toHaveBeenCalled();
+    expect(mockTrackMealLogged).not.toHaveBeenCalled();
     jest.runOnlyPendingTimers();
   });
 
@@ -953,6 +961,7 @@ describe("useMeals", () => {
     await act(async () => {
       await result.current.updateMeal(
         baseMeal({
+          mealId: undefined as unknown as string,
           cloudId: undefined,
           timestamp: undefined as unknown as string,
           source: "manual",
@@ -1149,6 +1158,53 @@ describe("useMeals", () => {
         }),
       ]);
     });
+  });
+
+  it("updates the read model before queueing and leaves one queued upsert after repeated updates", async () => {
+    jest.useFakeTimers();
+    const queuedUpserts = new Map<string, Meal>();
+    const { result } = renderHook(() => useMeals("user-1"));
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    mockEnqueueUpsert.mockImplementation(async (uid, queuedMeal) => {
+      queuedUpserts.set(`${uid}:${queuedMeal.cloudId}`, queuedMeal);
+      expect(selectLocalMealByCloudId(uid, queuedMeal.cloudId)).toEqual(
+        expect.objectContaining({
+          cloudId: queuedMeal.cloudId,
+          name: queuedMeal.name,
+          syncState: "pending",
+        }),
+      );
+    });
+
+    await act(async () => {
+      await result.current.updateMeal(
+        baseMeal({ cloudId: "repeat-cloud", mealId: "repeat-meal", name: "First edit" }),
+      );
+      await result.current.updateMeal(
+        baseMeal({ cloudId: "repeat-cloud", mealId: "repeat-meal", name: "Second edit" }),
+      );
+      await result.current.updateMeal(
+        baseMeal({ cloudId: "repeat-cloud", mealId: "repeat-meal", name: "Final edit" }),
+      );
+    });
+
+    expect(mockUpsertMealLocal).toHaveBeenCalledTimes(3);
+    expect(mockEnqueueUpsert).toHaveBeenCalledTimes(3);
+    expect(queuedUpserts.size).toBe(1);
+    expect([...queuedUpserts.values()][0]).toEqual(
+      expect.objectContaining({
+        cloudId: "repeat-cloud",
+        mealId: "repeat-meal",
+        name: "Final edit",
+        syncState: "pending",
+      }),
+    );
+    expect(selectLocalMealByCloudId("user-1", "repeat-cloud")).toEqual(
+      expect.objectContaining({ name: "Final edit", syncState: "pending" }),
+    );
   });
 
   it("deletes meals, prunes local list and queues delete sync", async () => {

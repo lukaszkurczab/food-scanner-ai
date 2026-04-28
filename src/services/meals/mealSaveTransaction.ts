@@ -17,11 +17,15 @@ export type SavedMealTemplateSave =
   | { mode: "create" }
   | { mode: "update"; templateId: string };
 
+export type SaveMealTransactionOperation = "create" | "update";
+
 export type SaveMealTransactionInput = {
   uid: string;
   meal: Meal;
+  operation?: SaveMealTransactionOperation;
   savedTemplate?: SavedMealTemplateSave;
   nowISO?: string;
+  onLocalCommitted?: (meal: Meal) => void;
 };
 
 export type SaveMealTransactionResult = {
@@ -140,6 +144,7 @@ export async function saveMealTransaction(
   input: SaveMealTransactionInput,
 ): Promise<SaveMealTransactionResult> {
   const nowISO = input.nowISO ?? new Date().toISOString();
+  const operation = input.operation ?? "create";
   const meal = withCanonicalMealFields({
     uid: input.uid,
     meal: input.meal,
@@ -158,9 +163,15 @@ export async function saveMealTransaction(
   }
 
   await upsertMealLocal(meal);
-  emit("meal:added", { uid: input.uid, meal });
+  input.onLocalCommitted?.(meal);
+  emit(operation === "update" ? "meal:updated" : "meal:added", {
+    uid: input.uid,
+    meal,
+  });
   await enqueueUpsert(input.uid, meal);
-  void trackMealLogged(meal);
+  if (operation === "create") {
+    void trackMealLogged(meal);
+  }
 
   await maybeSaveTemplate({
     uid: input.uid,

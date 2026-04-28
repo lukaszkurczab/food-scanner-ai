@@ -3,26 +3,17 @@ import { v4 as uuidv4 } from "uuid";
 import NetInfo from "@react-native-community/netinfo";
 import type { Meal } from "@/types/meal";
 import {
-  upsertMealLocal,
   markDeletedLocal,
   getPendingMealsLocal,
 } from "@/services/offline/meals.repo";
-import {
-  enqueueUpsert,
-  enqueueDelete,
-} from "@/services/offline/queue.repo";
-import { insertOrUpdateImage } from "@/services/offline/images.repo";
+import { enqueueDelete } from "@/services/offline/queue.repo";
 import { reconcileAll } from "@/services/notifications/engine";
 import { debugScope } from "@/utils/debug";
 import { emit } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
 import { pushQueue, pullChanges } from "@/services/offline/sync.engine";
 import { upsertMyMealWithPhoto } from "@/services/meals/myMealService";
-import {
-  deriveMealTimingMetadata,
-  formatMealDayKey,
-  normalizeMealDayKey,
-} from "@/services/meals/mealMetadata";
+import { formatMealDayKey } from "@/services/meals/mealMetadata";
 import { refreshStreakFromBackend } from "@/services/gamification/streakService";
 import {
   saveMealTransaction,
@@ -37,38 +28,6 @@ import {
 } from "@/services/meals/localMealsStore";
 
 const SYNC_DEBOUNCE_MS = 1200;
-
-function computeTotals(meal: Pick<Meal, "ingredients">) {
-  const ing = meal.ingredients || [];
-  const sum = (k: "kcal" | "protein" | "carbs" | "fat") =>
-    ing.reduce((a, b) => a + (Number(b?.[k]) || 0), 0);
-  return {
-    kcal: sum("kcal"),
-    protein: sum("protein"),
-    carbs: sum("carbs"),
-    fat: sum("fat"),
-  };
-}
-
-function withDerivedMealFields(meal: Meal, fallbackIso: string): Meal {
-  const timestamp = meal.timestamp ?? fallbackIso;
-  const timingMetadata = deriveMealTimingMetadata(timestamp);
-  const dayKey =
-    normalizeMealDayKey(meal.dayKey) ??
-    formatMealDayKey(new Date(timestamp)) ??
-    formatMealDayKey(new Date(fallbackIso));
-  return {
-    ...meal,
-    timestamp,
-    dayKey: dayKey ?? fallbackIso.slice(0, 10),
-    loggedAtLocalMin: meal.loggedAtLocalMin ?? timingMetadata.loggedAtLocalMin,
-    tzOffsetMin: meal.tzOffsetMin ?? timingMetadata.tzOffsetMin,
-    totals: computeTotals(meal),
-    inputMethod:
-      meal.inputMethod ??
-      (meal.source === "manual" || meal.source === null ? "manual" : null),
-  };
-}
 
 function omitDraftOnlyFields(meal: Meal): Meal {
   const { savedMealRefId: _savedMealRefId, ...persistable } = meal;
@@ -337,39 +296,14 @@ export function useMeals(userUid: string | null) {
   const updateMeal = useCallback(
     async (meal: Meal) => {
       if (!userUid) return;
-      const persistableMeal = omitDraftOnlyFields(meal);
-
-      const now = new Date().toISOString();
-      const cloudId = persistableMeal.cloudId ?? uuidv4();
-      const mealId = persistableMeal.mealId || cloudId;
-      const timestamp = persistableMeal.timestamp ?? now;
-
-      const payload = withDerivedMealFields({
-        ...persistableMeal,
-        userUid,
-        mealId,
-        cloudId,
-        deleted: false,
-        updatedAt: now,
-        syncState: "pending",
-        timestamp,
-      }, now);
-
-      const maybeUri = persistableMeal.photoUrl;
-      if (isLocalUri(maybeUri)) {
-        payload.photoLocalPath = maybeUri;
-        await insertOrUpdateImage(
-          userUid,
-          cloudId,
-          payload.photoLocalPath,
-          "pending",
-        );
-      }
-
-      await upsertMealLocal(payload);
-      upsertLocalMealSnapshot(userUid, payload);
-      emit("meal:updated", { uid: userUid, meal: payload });
-      await enqueueUpsert(userUid, payload);
+      await saveMealTransaction({
+        uid: userUid,
+        meal,
+        operation: "update",
+        onLocalCommitted: (savedMeal) => {
+          upsertLocalMealSnapshot(userUid, savedMeal);
+        },
+      });
 
       scheduleQueuedSync("update");
     },
