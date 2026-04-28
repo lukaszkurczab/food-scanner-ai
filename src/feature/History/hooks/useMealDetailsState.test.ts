@@ -72,18 +72,23 @@ function createNavigation(options?: { canGoBack?: boolean }) {
 
 function setupHook(options?: {
   routeMeal?: Meal;
+  routeParams?: RootStackParamList["MealDetails"];
   navigation?: StackNavigationProp<RootStackParamList>;
   deleteMeal?: (id: string) => Promise<unknown>;
 }) {
   const navigation = options?.navigation ?? createNavigation();
   const routeMeal = options?.routeMeal ?? baseMeal();
+  const routeParams = options?.routeParams ?? {
+    cloudId: routeMeal.cloudId || "",
+    initialMeal: routeMeal,
+  };
   const deleteMeal =
     options?.deleteMeal ??
     jest.fn<(id: string) => Promise<unknown>>(async () => undefined);
 
   const hook = renderHook(() =>
     useMealDetailsState({
-      routeParams: { meal: routeMeal },
+      routeParams,
       navigation,
       uid: "user-1",
       saveDraft: jest.fn(async () => undefined),
@@ -145,11 +150,11 @@ describe("useMealDetailsState", () => {
     expect(result.current.showDeleteModal).toBe(false);
   });
 
-  it("uses the history meal when a saved meal with the same id also exists", async () => {
+  it("renders the updated local meal over a stale initial route snapshot", async () => {
     const historyMeal = baseMeal({
       cloudId: "shared-id",
       mealId: "shared-id",
-      name: "History meal",
+      name: "Updated history meal",
       source: "manual",
       updatedAt: "2026-04-12T10:00:00.000Z",
     });
@@ -172,7 +177,7 @@ describe("useMealDetailsState", () => {
     });
 
     await waitFor(() => {
-      expect(result.current.draft?.name).toBe("History meal");
+      expect(result.current.draft?.name).toBe("Updated history meal");
     });
 
     expect(mockSelectLocalMealByCloudId).toHaveBeenCalledWith(
@@ -180,6 +185,19 @@ describe("useMealDetailsState", () => {
       "shared-id",
     );
     expect(mockGetMyMealByCloudIdLocal).not.toHaveBeenCalled();
+  });
+
+  it("falls back safely when route params are missing cloudId", async () => {
+    const { result } = setupHook({
+      routeParams: {
+        initialMeal: baseMeal({ name: "Stale route-only meal" }),
+      } as unknown as RootStackParamList["MealDetails"],
+    });
+
+    expect(result.current.draft).toBeNull();
+    expect(result.current.nutrition).toBeNull();
+    expect(mockSelectLocalMealByCloudId).not.toHaveBeenCalled();
+    expect(mockSubscribeLocalMeals).not.toHaveBeenCalled();
   });
 
   it("deletes through deleteMeal and never deletes a saved meal template", async () => {

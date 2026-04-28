@@ -139,7 +139,11 @@ export function useHistoryListState(params: {
 
   const onMealPress = useCallback(
     (meal: Meal) => {
-      params.navigation.navigate("MealDetails", { meal });
+      if (!meal.cloudId) return;
+      params.navigation.navigate("MealDetails", {
+        cloudId: meal.cloudId,
+        initialMeal: meal,
+      });
     },
     [params.navigation],
   );

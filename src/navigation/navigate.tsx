@@ -66,7 +66,8 @@ export type RootStackParamList = {
   Notifications: undefined;
   Loading: undefined;
   MealDetails: {
-    meal: Meal;
+    cloudId: string;
+    initialMeal?: Meal;
   };
   EditHistoryMealDetails: { meal: Meal };
   MealShare: { meal: Meal; returnTo: "MealDetails" | "ReviewMeal" };

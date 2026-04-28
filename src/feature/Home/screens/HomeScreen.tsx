@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Layout, Modal } from "@/components";
 import { useTheme } from "@/theme/useTheme";
@@ -19,6 +19,7 @@ import { createMockWeeklyReportResult } from "@/services/weeklyReport/weeklyRepo
 import { formatMealDayKey } from "@/services/meals/mealMetadata";
 import { useHomeTodayState } from "@/feature/Home/hooks/useHomeTodayState";
 import { buildHomeHeroModel } from "@/feature/Home/services/homeHeroPresenter";
+import type { Meal } from "@/types/meal";
 
 function isWeeklyReportDevPreview(): boolean {
   return typeof __DEV__ !== "undefined" && __DEV__;
@@ -132,6 +133,17 @@ export default function HomeScreen({ navigation }: Props) {
     t,
   ]);
 
+  const openMealDetails = useCallback(
+    (meal: Meal) => {
+      if (!meal.cloudId) return;
+      navigation.navigate("MealDetails", {
+        cloudId: meal.cloudId,
+        initialMeal: meal,
+      });
+    },
+    [navigation],
+  );
+
   return (
     <Layout>
       <View style={[styles.screen, styles.screenGap]}>
@@ -194,7 +206,7 @@ export default function HomeScreen({ navigation }: Props) {
         {mealCount > 0 ? (
           <TodaysMealsList
             meals={dayMeals}
-            onOpenMeal={(meal) => navigation.navigate("MealDetails", { meal })}
+            onOpenMeal={openMealDetails}
           />
         ) : null}
 

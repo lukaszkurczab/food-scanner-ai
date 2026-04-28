@@ -139,19 +139,30 @@ export default function SavedMealsScreen({
     [],
   );
 
+  const onOpenMeal = useCallback(
+    (meal: Meal) => {
+      if (!meal.cloudId) return;
+      navigation.navigate("MealDetails", {
+        cloudId: meal.cloudId,
+        initialMeal: meal,
+      });
+    },
+    [navigation],
+  );
+
   const renderItem = useCallback(
     ({ item }: { item: Meal }) => (
       <View style={styles.listItemWrap}>
         <MealListItem
           meal={item}
-          onPress={() => navigation.navigate("MealDetails", { meal: item })}
+          onPress={() => onOpenMeal(item)}
           onDuplicate={() => onDuplicate(item)}
           onEdit={() => onEdit(item)}
           onDelete={() => onDelete(item)}
         />
       </View>
     ),
-    [navigation, onDelete, onDuplicate, onEdit, styles],
+    [onDelete, onDuplicate, onEdit, onOpenMeal, styles],
   );
 
   if (dataState === "loading") {

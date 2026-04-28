@@ -22,7 +22,7 @@ function buildEditDraft(meal: Meal): Meal {
 }
 
 export function useMealDetailsState(params: {
-  routeParams: RootStackParamList["MealDetails"];
+  routeParams?: RootStackParamList["MealDetails"];
   navigation: StackNavigationProp<RootStackParamList>;
   uid: string;
   saveDraft: (userUid: string, draftOverride?: Meal | null) => Promise<void>;
@@ -39,63 +39,56 @@ export function useMealDetailsState(params: {
     setMeal,
     deleteMeal,
   } = params;
-  const initialMeal = routeParams.meal;
-  const routeMealId = initialMeal?.cloudId ?? initialMeal?.mealId ?? null;
+  const routeCloudId =
+    typeof routeParams?.cloudId === "string" && routeParams.cloudId.trim()
+      ? routeParams.cloudId
+      : null;
+  const initialMeal = routeParams?.initialMeal ?? null;
 
-  const [draft, setDraft] = useState<Meal | null>(() => initialMeal ?? null);
+  const [draft, setDraft] = useState<Meal | null>(() =>
+    routeCloudId ? initialMeal : null,
+  );
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [checkingImage, setCheckingImage] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const allowNextBackRef = useRef(false);
   const deletedRef = useRef(false);
-  const routeMealIdRef = useRef(routeMealId);
+  const routeCloudIdRef = useRef(routeCloudId);
 
   useEffect(() => {
-    if (routeMealIdRef.current === routeMealId) return;
-    routeMealIdRef.current = routeMealId;
+    if (routeCloudIdRef.current === routeCloudId) return;
+    routeCloudIdRef.current = routeCloudId;
     deletedRef.current = false;
-    setDraft(initialMeal ?? null);
-  }, [initialMeal, routeMealId]);
+    setDraft(routeCloudId ? initialMeal : null);
+  }, [initialMeal, routeCloudId]);
 
   const reloadFromLocal = useCallback(async () => {
     if (deletedRef.current) return false;
-    if (!routeMealId) return false;
-    const userUid =
-      (typeof draft?.userUid === "string" && draft.userUid) ||
-      (typeof initialMeal?.userUid === "string" && initialMeal.userUid) ||
-      "";
-    if (!userUid) return false;
+    if (!routeCloudId || !uid) {
+      setDraft(null);
+      return false;
+    }
 
-    const localMeal = selectLocalMealByCloudId(userUid, routeMealId);
+    const localMeal = selectLocalMealByCloudId(uid, routeCloudId);
     if (!localMeal) {
       setDraft(null);
       return false;
     }
 
-    setDraft((current) => ({
-      ...localMeal,
-      localPhotoUrl:
-        current?.localPhotoUrl ??
-        localMeal.localPhotoUrl ??
-        localMeal.photoLocalPath ??
-        localMeal.photoUrl ??
-        null,
-    }));
+    setDraft(localMeal);
     return true;
-  }, [draft?.userUid, initialMeal?.userUid, routeMealId]);
+  }, [routeCloudId, uid]);
 
   useEffect(() => {
-    if (!routeMealId) return;
-    const userUid =
-      (typeof draft?.userUid === "string" && draft.userUid) ||
-      (typeof initialMeal?.userUid === "string" && initialMeal.userUid) ||
-      "";
-    if (!userUid) return;
+    if (!routeCloudId || !uid) {
+      setDraft(null);
+      return;
+    }
 
     void reloadFromLocal();
 
     let cancelled = false;
-    const unsubscribe = subscribeLocalMeals(userUid, () => {
+    const unsubscribe = subscribeLocalMeals(uid, () => {
       if (!cancelled) void reloadFromLocal();
     });
 
@@ -103,7 +96,7 @@ export function useMealDetailsState(params: {
       cancelled = true;
       unsubscribe();
     };
-  }, [draft?.userUid, initialMeal?.userUid, reloadFromLocal, routeMealId]);
+  }, [reloadFromLocal, routeCloudId, uid]);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -170,22 +163,37 @@ export function useMealDetailsState(params: {
   );
 
   const startEdit = useCallback(async () => {
-    if (!draft || !uid) return;
-    const nextDraft = buildEditDraft(draft);
+    if (!routeCloudId || !uid) return;
+    const currentMeal = selectLocalMealByCloudId(uid, routeCloudId);
+    if (!currentMeal) {
+      setDraft(null);
+      return;
+    }
+    const nextDraft = buildEditDraft(currentMeal);
     setMeal(nextDraft);
     await saveDraft(uid, nextDraft);
     await setLastScreen(uid, "EditMealDetails");
     navigation.navigate("EditHistoryMealDetails", { meal: nextDraft });
-  }, [draft, navigation, saveDraft, setLastScreen, setMeal, uid]);
+  }, [navigation, routeCloudId, saveDraft, setLastScreen, setMeal, uid]);
 
   const goShare = useCallback(() => {
-    if (!draft) return;
+    if (!routeCloudId || !uid) return;
+    const currentMeal = selectLocalMealByCloudId(uid, routeCloudId);
+    if (!currentMeal) {
+      setDraft(null);
+      return;
+    }
     const photoUri =
-      draft.localPhotoUrl || draft.photoLocalPath || draft.photoUrl || "";
-    const hasIdentity = Boolean(draft.cloudId || draft.mealId);
-    if (!hasIdentity || !photoUri) return;
-    navigation.navigate("MealShare", { meal: draft, returnTo: "MealDetails" });
-  }, [draft, navigation]);
+      currentMeal.localPhotoUrl ||
+      currentMeal.photoLocalPath ||
+      currentMeal.photoUrl ||
+      "";
+    if (!photoUri) return;
+    navigation.navigate("MealShare", {
+      meal: currentMeal,
+      returnTo: "MealDetails",
+    });
+  }, [navigation, routeCloudId, uid]);
 
   const onImageError = useCallback(() => {
     setDraft((current) =>
@@ -210,22 +218,12 @@ export function useMealDetailsState(params: {
   }, [deleting]);
 
   const confirmDelete = useCallback(async () => {
-    if (!draft || deleting) return;
-    const fallbackId = draft.cloudId || draft.mealId || "";
-    if (!fallbackId) return;
+    if (!routeCloudId || !uid || deleting) return;
 
     setDeleting(true);
     try {
-      const userUid =
-        (typeof draft.userUid === "string" && draft.userUid) ||
-        (typeof initialMeal?.userUid === "string" && initialMeal.userUid) ||
-        uid ||
-        "";
-      const historyMeal = userUid
-        ? selectLocalMealByCloudId(userUid, fallbackId)
-        : null;
-      const historyMealId = historyMeal?.cloudId || historyMeal?.mealId || "";
-      const deleteId = historyMealId || fallbackId;
+      const historyMeal = selectLocalMealByCloudId(uid, routeCloudId);
+      const deleteId = historyMeal?.cloudId || routeCloudId;
       if (!deleteId) return;
 
       await deleteMeal(deleteId);
@@ -248,9 +246,8 @@ export function useMealDetailsState(params: {
   }, [
     deleteMeal,
     deleting,
-    draft,
-    initialMeal?.userUid,
     navigation,
+    routeCloudId,
     uid,
   ]);
 

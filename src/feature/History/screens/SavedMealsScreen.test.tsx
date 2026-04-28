@@ -467,7 +467,10 @@ describe("SavedMealsScreen", () => {
     fireEvent.press(screen.getByText("delete:Pasta bake"));
 
     expect(toggleShowFilters).toHaveBeenCalledTimes(1);
-    expect(navigate).toHaveBeenNthCalledWith(1, "MealDetails", { meal });
+    expect(navigate).toHaveBeenNthCalledWith(1, "MealDetails", {
+      cloudId: "cloud-1",
+      initialMeal: meal,
+    });
     expect(onDelete).toHaveBeenCalledWith(meal);
 
     await waitFor(() => {

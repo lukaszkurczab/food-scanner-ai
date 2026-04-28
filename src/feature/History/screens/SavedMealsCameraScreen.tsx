@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text, BackHandler } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { v4 as uuidv4 } from "uuid";
@@ -51,13 +51,30 @@ export default function SavedMealsCameraScreen({
   const returnTo = route.params?.returnTo || "MealDetails";
   const canLeaveRef = useRef(false);
   const { updateMeal } = useMeals(uid || "");
+  const replaceToOrigin = useCallback(
+    (meal: Meal) => {
+      canLeaveRef.current = true;
+      if (returnTo === "EditHistoryMealDetails") {
+        navigation.replace("EditHistoryMealDetails", { meal });
+        return;
+      }
+      if (!meal.cloudId) {
+        navigation.replace("HistoryList");
+        return;
+      }
+      navigation.replace("MealDetails", {
+        cloudId: meal.cloudId,
+        initialMeal: meal,
+      });
+    },
+    [navigation, returnTo],
+  );
   const returnToOrigin = useMemo(
     () => () => {
       if (!mealFromRoute) return;
-      canLeaveRef.current = true;
-      navigation.replace(returnTo, { meal: mealFromRoute });
+      replaceToOrigin(mealFromRoute);
     },
-    [mealFromRoute, navigation, returnTo],
+    [mealFromRoute, replaceToOrigin],
   );
   const returnLabel =
     returnTo === "EditHistoryMealDetails"
@@ -141,8 +158,7 @@ export default function SavedMealsCameraScreen({
       updatedAt: new Date().toISOString(),
     };
     await updateMeal(updated);
-    canLeaveRef.current = true;
-    navigation.replace(returnTo, { meal: updated });
+    replaceToOrigin(updated);
   };
 
   const handleRetake = () => setPhotoUri(null);
