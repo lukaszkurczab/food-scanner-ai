@@ -5,6 +5,7 @@ import { emit } from "@/services/core/events";
 import type { SQLiteBindValue } from "expo-sqlite";
 import {
   deriveMealDayKey,
+  formatMealDayKey,
   getMealDayKey,
   normalizeMealInputMethod,
   parseMealAiMeta,
@@ -269,13 +270,13 @@ export async function getMealsPageLocalFiltered(
   }
 
   if (opts.filters?.dateRange) {
-    where.push(`timestamp>=?`);
-    where.push(`timestamp<=?`);
-    const s = new Date(opts.filters.dateRange.start);
-    s.setHours(0, 0, 0, 0);
-    const e = new Date(opts.filters.dateRange.end);
-    e.setHours(23, 59, 59, 999);
-    args.push(s.toISOString(), e.toISOString());
+    const startDayKey = formatMealDayKey(opts.filters.dateRange.start);
+    const endDayKey = formatMealDayKey(opts.filters.dateRange.end);
+    if (startDayKey && endDayKey) {
+      where.push(`day_key>=?`);
+      where.push(`day_key<=?`);
+      args.push(startDayKey, endDayKey);
+    }
   }
 
   const pushBetween = (col: string, rng?: [number, number]) => {
@@ -292,7 +293,7 @@ export async function getMealsPageLocalFiltered(
   const sql = `
     SELECT * FROM meals
     WHERE ${where.join(" AND ")}
-    ORDER BY timestamp DESC
+    ORDER BY day_key DESC, timestamp DESC, cloud_id DESC
     LIMIT ?
   `;
   args.push(opts.limit);

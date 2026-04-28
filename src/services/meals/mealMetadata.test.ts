@@ -4,6 +4,7 @@ import {
   getMealAiMetaFromAiResponse,
   getMealDayKey,
   getMealsForDayKey,
+  isMealInDayKeyRange,
   normalizeMealAiMeta,
   normalizeMealDayKey,
   normalizeMealInputMethod,
@@ -123,5 +124,70 @@ describe("mealMetadata", () => {
 
     expect(getMealDayKey(meal)).toBeNull();
     expect(getMealsForDayKey([meal], "2026-03-18")).toEqual([]);
+  });
+
+  it("matches day-key ranges by canonical dayKey instead of timestamp day", () => {
+    const meal = makeMeal({
+      mealId: "timezone-boundary",
+      dayKey: "2026-04-02",
+      timestamp: "2026-04-01T23:30:00.000Z",
+      createdAt: "2026-04-01T23:30:00.000Z",
+      updatedAt: "2026-04-01T23:30:00.000Z",
+    });
+
+    expect(
+      isMealInDayKeyRange(meal, {
+        start: new Date(2026, 3, 2),
+        end: new Date(2026, 3, 2),
+      }),
+    ).toBe(true);
+    expect(
+      isMealInDayKeyRange(meal, {
+        start: new Date(2026, 3, 1),
+        end: new Date(2026, 3, 1),
+      }),
+    ).toBe(false);
+  });
+
+  it("treats day-key range boundaries as inclusive", () => {
+    const startMeal = makeMeal({
+      mealId: "start",
+      dayKey: "2026-04-02",
+      timestamp: "2026-04-02T08:00:00.000Z",
+    });
+    const endMeal = makeMeal({
+      mealId: "end",
+      dayKey: "2026-04-04",
+      timestamp: "2026-04-04T20:00:00.000Z",
+    });
+
+    const range = {
+      start: new Date(2026, 3, 2),
+      end: new Date(2026, 3, 4),
+    };
+
+    expect(isMealInDayKeyRange(startMeal, range)).toBe(true);
+    expect(isMealInDayKeyRange(endMeal, range)).toBe(true);
+  });
+
+  it("excludes meals with missing or invalid canonical dayKey from ranges", () => {
+    const missingDayKeyMeal = makeMeal({
+      mealId: "missing-day-key",
+      dayKey: null,
+      timestamp: "2026-04-02T10:00:00.000Z",
+    });
+    const invalidDayKeyMeal = makeMeal({
+      mealId: "invalid-day-key",
+      dayKey: "2026-04-02T10:00:00.000Z",
+      timestamp: "2026-04-02T10:00:00.000Z",
+    });
+
+    const range = {
+      start: new Date(2026, 3, 2),
+      end: new Date(2026, 3, 2),
+    };
+
+    expect(isMealInDayKeyRange(missingDayKeyMeal, range)).toBe(false);
+    expect(isMealInDayKeyRange(invalidDayKeyMeal, range)).toBe(false);
   });
 });

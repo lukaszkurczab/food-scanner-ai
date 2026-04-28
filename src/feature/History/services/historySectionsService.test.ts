@@ -106,6 +106,36 @@ describe("historySectionsService", () => {
     expect(section?.data.map((meal: Meal) => meal.cloudId)).toEqual(["m1", "m2"]);
   });
 
+  it("preserves incoming order when timestamps tie within the same day", () => {
+    const sections = buildSectionsMap(
+      [
+        makeMeal({
+          cloudId: "cloud-3",
+          mealId: "cloud-3",
+          timestamp: "2026-02-25T12:00:00.000Z",
+        }),
+        makeMeal({
+          cloudId: "cloud-2",
+          mealId: "cloud-2",
+          timestamp: "2026-02-25T12:00:00.000Z",
+        }),
+        makeMeal({
+          cloudId: "cloud-1",
+          mealId: "cloud-1",
+          timestamp: "2026-02-25T12:00:00.000Z",
+        }),
+      ],
+      LABELS,
+    );
+
+    const section = sections.get("2026-02-25");
+    expect(section?.data.map((meal: Meal) => meal.cloudId)).toEqual([
+      "cloud-3",
+      "cloud-2",
+      "cloud-1",
+    ]);
+  });
+
   it("groups late-night meals by dayKey instead of timestamp day", () => {
     const sections = buildSectionsMap(
       [

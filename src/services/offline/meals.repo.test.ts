@@ -3,11 +3,13 @@ import type { Meal } from "@/types/meal";
 
 const mockRunSync = jest.fn();
 const mockGetFirstSync = jest.fn();
+const mockGetAllSync = jest.fn();
 
 jest.mock("@/services/offline/db", () => ({
   getDB: () => ({
     runSync: (...args: unknown[]) => mockRunSync(...args),
     getFirstSync: (...args: unknown[]) => mockGetFirstSync(...args),
+    getAllSync: (...args: unknown[]) => mockGetAllSync(...args),
   }),
 }));
 
@@ -193,5 +195,77 @@ describe("offline meals repo", () => {
       cloudId: "cloud-1",
       ts: "2026-03-18T12:00:00.000Z",
     });
+  });
+
+  it("filters date ranges by canonical day_key and keeps stable history ordering", async () => {
+    mockGetAllSync.mockReturnValue([
+      {
+        cloud_id: "cloud-3",
+        meal_id: "meal-3",
+        user_uid: "user-1",
+        timestamp: "2026-04-04T07:30:00.000Z",
+        day_key: "2026-04-04",
+        type: "breakfast",
+        name: "Boundary meal",
+        ingredients: "[]",
+        photo_url: null,
+        image_local: null,
+        image_id: null,
+        totals_kcal: 320,
+        totals_protein: 18,
+        totals_carbs: 24,
+        totals_fat: 12,
+        deleted: 0,
+        created_at: "2026-04-04T07:30:00.000Z",
+        updated_at: "2026-04-04T07:30:00.000Z",
+        last_synced_at: 0,
+        sync_state: "synced",
+        source: "manual",
+        input_method: null,
+        ai_meta: null,
+        notes: null,
+        tags: "[]",
+      },
+    ]);
+
+    const { getMealsPageLocalFiltered } =
+      jest.requireActual<typeof import("@/services/offline/meals.repo")>(
+        "@/services/offline/meals.repo",
+      );
+
+    await getMealsPageLocalFiltered("user-1", {
+      limit: 25,
+      beforeISO: "2026-04-05T00:00:00.000Z",
+      filters: {
+        dateRange: {
+          start: new Date(2026, 3, 2, 23, 30),
+          end: new Date(2026, 3, 4, 0, 15),
+        },
+        calories: [300, 500],
+        protein: [10, 30],
+      },
+    });
+
+    const [sql, args] = mockGetAllSync.mock.calls[0] as [string, unknown[]];
+
+    expect(sql).toContain("timestamp<?");
+    expect(sql).toContain("day_key>=?");
+    expect(sql).toContain("day_key<=?");
+    expect(sql).not.toContain("timestamp>=?");
+    expect(sql).not.toContain("timestamp<=?");
+    expect(sql).toContain(
+      "ORDER BY day_key DESC, timestamp DESC, cloud_id DESC",
+    );
+    expect(args).toEqual([
+      "user-1",
+      "2026-04-05T00:00:00.000Z",
+      "2026-04-02",
+      "2026-04-04",
+      300,
+      500,
+      10,
+      30,
+      25,
+    ]);
   });
 });
