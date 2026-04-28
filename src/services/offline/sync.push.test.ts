@@ -48,7 +48,7 @@ describe("sync.push", () => {
     mockSetMyMealSyncStateLocal.mockResolvedValue();
   });
 
-  it("marks unknown ops done to avoid infinite retries", async () => {
+  it("moves unknown ops to dead letter without marking them done", async () => {
     mockNextBatch
       .mockResolvedValueOnce([
         {
@@ -73,9 +73,24 @@ describe("sync.push", () => {
 
     await runPushQueue("user-1", 25, [strategy]);
 
-    expect(mockMarkDone).toHaveBeenCalledWith(1);
+    expect(mockMarkDone).not.toHaveBeenCalledWith(1);
     expect(mockBumpAttempts).not.toHaveBeenCalled();
-    expect(mockMoveToDeadLetter).not.toHaveBeenCalled();
+    expect(mockMoveToDeadLetter).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1, kind: "unknown_kind", attempts: 0 }),
+      1,
+      expect.objectContaining({
+        code: "sync/unknown-op",
+        message: "Unknown queue operation: unknown_kind",
+      }),
+    );
+    expect(mockEmit).toHaveBeenCalledWith("sync:op:dead", {
+      uid: "user-1",
+      opId: 1,
+      cloudId: "x-1",
+      kind: "unknown_kind",
+      attempts: 1,
+      code: "sync/unknown-op",
+    });
   });
 
   it("keeps failed upserts pending for diagnostics before dead-lettering them", async () => {

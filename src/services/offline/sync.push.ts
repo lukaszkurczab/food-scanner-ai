@@ -2,7 +2,10 @@ import NetInfo from "@react-native-community/netinfo";
 import { Sync } from "@/utils/debug";
 import { emit } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
-import { normalizeServiceError } from "@/services/contracts/serviceError";
+import {
+  createServiceError,
+  normalizeServiceError,
+} from "@/services/contracts/serviceError";
 import {
   nextBatch,
   markDone,
@@ -56,6 +59,12 @@ export async function runPushQueue(
         }
         if (!handled) {
           pushLog.warn("unknown_op", op.kind);
+          throw createServiceError({
+            code: "sync/unknown-op",
+            source: "SyncEngine",
+            message: `Unknown queue operation: ${op.kind}`,
+            retryable: false,
+          });
         }
 
         await markDone(op.id);
@@ -70,7 +79,9 @@ export async function runPushQueue(
           message: err.message,
           retryable: err.retryable,
         });
-        if (nextAttempts >= MAX_QUEUE_ATTEMPTS) {
+        const shouldDeadLetter =
+          !err.retryable || nextAttempts >= MAX_QUEUE_ATTEMPTS;
+        if (shouldDeadLetter) {
           await moveToDeadLetter(op, nextAttempts, {
             code: err.code,
             message: err.message,
@@ -96,7 +107,7 @@ export async function runPushQueue(
           await setMealSyncStateLocal({
             uid,
             cloudId: op.cloud_id,
-            syncState: nextAttempts >= MAX_QUEUE_ATTEMPTS ? "failed" : "pending",
+            syncState: shouldDeadLetter ? "failed" : "pending",
             updatedAt: op.updated_at,
           });
         }
@@ -104,7 +115,7 @@ export async function runPushQueue(
           await setMyMealSyncStateLocal({
             uid,
             cloudId: op.cloud_id,
-            syncState: nextAttempts >= MAX_QUEUE_ATTEMPTS ? "failed" : "pending",
+            syncState: shouldDeadLetter ? "failed" : "pending",
             updatedAt: op.updated_at,
           });
         }
@@ -114,20 +125,20 @@ export async function runPushQueue(
           emit("user:profile:failed", {
             uid,
             opId: op.id,
-            dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
+            dead: shouldDeadLetter,
           });
         } else if (op.kind === "upload_user_avatar") {
           emit("user:avatar:failed", {
             uid,
             opId: op.id,
-            dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
+            dead: shouldDeadLetter,
           });
         } else {
           emit("meal:failed", {
             uid,
             opId: op.id,
             cloudId: op.cloud_id,
-            dead: nextAttempts >= MAX_QUEUE_ATTEMPTS,
+            dead: shouldDeadLetter,
           });
         }
       }
