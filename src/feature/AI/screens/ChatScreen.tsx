@@ -84,9 +84,11 @@ export default function ChatScreen() {
   });
   const legalGateActive = legalAckLoading || legalAckVisible;
   const profileReadyForAi = !loadingUser;
+  const chatDisabled = sendErrorType === "disabled";
   const composerDisabled =
     sending ||
     limitReached ||
+    chatDisabled ||
     isOffline ||
     legalGateActive ||
     !profileReadyForAi;
@@ -194,6 +196,7 @@ export default function ChatScreen() {
     if (sending) return t("sending");
     if (sendErrorType === "offline") return t("errors.offline");
     if (sendErrorType === "timeout") return t("errors.timeout");
+    if (sendErrorType === "disabled") return t("errors.disabled");
     if (sendErrorType === "unavailable") return t("errors.serviceUnavailable");
     if (sendErrorType === "auth") return t("errors.authRequired");
     if (sendErrorType === "unknown") return t("errors.fetchFailed");
@@ -203,6 +206,7 @@ export default function ChatScreen() {
   const retryEnabled =
     !sending &&
     canSend &&
+    !chatDisabled &&
     !isOffline &&
     !legalGateActive &&
     (sendErrorType === "offline" ||
@@ -212,6 +216,8 @@ export default function ChatScreen() {
 
   const composerPlaceholder = limitReached
     ? t("composer.lockedCredits")
+    : chatDisabled
+      ? t("composer.lockedDisabled")
     : isOffline
       ? t("composer.lockedOffline")
       : legalGateActive
@@ -310,6 +316,15 @@ export default function ChatScreen() {
           variant="offline"
           title={t("lock.offlineTitle")}
           body={t("lock.offlineBody")}
+        />
+      ) : null}
+
+      {chatDisabled ? (
+        <ChatStatusBanner
+          testID="chat-disabled-banner"
+          variant="info"
+          title={t("lock.disabledTitle")}
+          body={t("lock.disabledBody")}
         />
       ) : null}
 

@@ -21,14 +21,17 @@
   "composer": {
     "placeholder": "Ask anything...",
     "lockedCredits": "Upgrade to send again",
-    "lockedOffline": "Back online to send"
+    "lockedOffline": "Back online to send",
+    "lockedDisabled": "Chat temporarily unavailable"
   },
   "lock": {
     "creditsTitle": "Upgrade to keep chatting",
     "creditsBody": "Past guidance stays available.",
     "creditsAction": "Upgrade",
     "offlineTitle": "You're offline",
-    "offlineBody": "You can still read this conversation. Sending returns when you are back online."
+    "offlineBody": "You can still read this conversation. Sending returns when you are back online.",
+    "disabledTitle": "Chat temporarily unavailable",
+    "disabledBody": "AI Chat is currently disabled on the server. Your existing conversation stays visible, but sending and retry are unavailable."
   },
   "limit": {
     "title": "Not enough AI Credits",
@@ -96,6 +99,7 @@
     "offline": "You're offline. Reconnect and try again.",
     "timeout": "The request timed out. Please retry.",
     "serviceUnavailable": "AI is temporarily unavailable. Please try again shortly.",
+    "disabled": "AI Chat is temporarily disabled. Please try again later.",
     "authRequired": "Please sign in again to continue.",
     "emptyResponse": "I couldn't generate a useful response. Please try again."
   },

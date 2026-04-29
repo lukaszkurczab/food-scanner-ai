@@ -21,14 +21,17 @@
   "composer": {
     "placeholder": "Zapytaj o cokolwiek...",
     "lockedCredits": "Odblokuj wysyłanie",
-    "lockedOffline": "Wróć online, aby wysyłać"
+    "lockedOffline": "Wróć online, aby wysyłać",
+    "lockedDisabled": "Czat chwilowo niedostępny"
   },
   "lock": {
     "creditsTitle": "Odblokuj dalszą rozmowę",
     "creditsBody": "Dotychczasowe wskazówki pozostają dostępne.",
     "creditsAction": "Odblokuj",
     "offlineTitle": "Jesteś offline",
-    "offlineBody": "Możesz czytać tę rozmowę. Wysyłanie wróci, gdy połączysz się z internetem."
+    "offlineBody": "Możesz czytać tę rozmowę. Wysyłanie wróci, gdy połączysz się z internetem.",
+    "disabledTitle": "Czat chwilowo niedostępny",
+    "disabledBody": "AI Chat jest obecnie wyłączony po stronie serwera. Dotychczasowa rozmowa pozostaje widoczna, ale wysyłanie i ponawianie są zablokowane."
   },
   "limit": {
     "title": "Za mało AI Credits",
@@ -95,6 +98,7 @@
     "offline": "Brak internetu. Połącz się ponownie i spróbuj jeszcze raz.",
     "timeout": "Przekroczono limit czasu żądania. Spróbuj ponownie.",
     "serviceUnavailable": "Usługa AI jest chwilowo niedostępna. Spróbuj za moment.",
+    "disabled": "AI Chat jest tymczasowo wyłączony. Spróbuj ponownie później.",
     "authRequired": "Zaloguj się ponownie, aby kontynuować.",
     "emptyResponse": "Nie udało się wygenerować odpowiedzi. Spróbuj ponownie.",
     "rateLimited": "Wysyłasz wiadomości zbyt szybko. Poczekaj chwilę."

@@ -309,6 +309,46 @@ describe("useChatHistory", () => {
     expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
   });
 
+  it("enters degraded disabled state and blocks retry context when backend kill switch is active", async () => {
+    mockApiPost.mockRejectedValueOnce({
+      status: 503,
+      details: {
+        detail: {
+          code: "AI_CHAT_DISABLED",
+          message: "AI Chat v2 is temporarily disabled.",
+        },
+      },
+    });
+    mockUuid
+      .mockReturnValueOnce("request-1")
+      .mockReturnValueOnce("thread-created")
+      .mockReturnValueOnce("user-msg")
+      .mockReturnValueOnce("ai-msg");
+
+    const { result } = await renderChatHistoryHook();
+
+    let createdThreadId: string | null = null;
+    await act(async () => {
+      createdThreadId = await result.current.send("hello");
+    });
+
+    expect(createdThreadId).toBe("thread-created");
+    expect(result.current.sendErrorType).toBe("disabled");
+    expect(mockRefreshCredits).not.toHaveBeenCalled();
+    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
+    expect(mockCaptureException).toHaveBeenCalledWith(
+      "[useChatHistory.send] AI chat v2 disabled by backend kill switch",
+      { userUid: "user-1", threadId: "thread-created" },
+      expect.objectContaining({ code: "ai/disabled" }),
+    );
+
+    await act(async () => {
+      await result.current.retryLastSend();
+    });
+
+    expect(mockApiPost).toHaveBeenCalledTimes(1);
+  });
+
   it("deduplicates double-tap send intents while request is in flight", async () => {
     let resolvePost: ((value: unknown) => void) | null = null;
     const pendingPost = new Promise((resolve) => {

@@ -13,6 +13,7 @@ import type {
   AiChatRunResponse,
 } from "@/services/ai/contracts";
 import {
+  createServiceError,
   getErrorStatus,
   isServiceError,
 } from "@/services/contracts/serviceError";
@@ -127,6 +128,18 @@ function getGatewayRejectCode(error: unknown): string | null {
   if (!details) return null;
   const canonicalDetail = isRecord(details.detail) ? details.detail : details;
   return asString(canonicalDetail.code) || asString(details.code) || null;
+}
+
+function isAiChatDisabledError(error: unknown): boolean {
+  if (isServiceError(error) && error.code === "ai/disabled") {
+    return true;
+  }
+
+  if (getErrorStatus(error) !== 503 || !isRecord(error)) return false;
+  const details = isRecord(error.details) ? error.details : null;
+  if (!details) return false;
+  const canonicalDetail = isRecord(details.detail) ? details.detail : details;
+  return asString(canonicalDetail.code) === "AI_CHAT_DISABLED";
 }
 
 export function useChatHistory(
@@ -282,7 +295,13 @@ export function useChatHistory(
       retryContext?: RetryableSendContext | null,
     ): Promise<string | null> => {
       const trimmed = text.trim();
-      if (!trimmed || !canSend || sending || sendInFlightRef.current)
+      if (
+        !trimmed ||
+        !canSend ||
+        sendErrorType === "disabled" ||
+        sending ||
+        sendInFlightRef.current
+      )
         return null;
 
       const net = await NetInfo.fetch();
@@ -379,6 +398,23 @@ export function useChatHistory(
             return null;
           }
           if (!isRequestActive()) return null;
+
+          if (isAiChatDisabledError(error)) {
+            setSendErrorType("disabled");
+            retryableSendRef.current = null;
+            captureException(
+              "[useChatHistory.send] AI chat v2 disabled by backend kill switch",
+              { userUid, threadId: createdThreadId },
+              createServiceError({
+                code: "ai/disabled",
+                source: "useChatHistory",
+                retryable: false,
+                message: "AI Chat v2 disabled by backend kill switch",
+                cause: error,
+              }),
+            );
+            return isLocalThread && !isRetryAttempt ? createdThreadId : null;
+          }
 
           const status = getErrorStatus(error);
           const gatewayCode = getGatewayRejectCode(error);
@@ -489,6 +525,7 @@ export function useChatHistory(
     },
     [
       canSend,
+      sendErrorType,
       sending,
       isLocalThread,
       threadId,

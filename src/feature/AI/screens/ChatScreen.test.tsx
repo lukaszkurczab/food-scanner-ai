@@ -38,7 +38,14 @@ let mockChatHistoryState: {
   loading: boolean;
   sending: boolean;
   typing: boolean;
-  sendErrorType: null | "offline" | "timeout" | "unavailable" | "auth" | "unknown";
+  sendErrorType:
+    | null
+    | "offline"
+    | "timeout"
+    | "unavailable"
+    | "disabled"
+    | "auth"
+    | "unknown";
   failedSyncCount: number;
   retryingFailedSync: boolean;
   canSend: boolean;
@@ -391,5 +398,19 @@ describe("ChatScreen", () => {
 
     expect(mockChatHistoryState.retryLastSend).toHaveBeenCalledTimes(1);
     expect(mockChatHistoryState.send).not.toHaveBeenCalled();
+  });
+
+  it("renders degraded disabled state and blocks retry when backend kill switch is active", async () => {
+    mockChatHistoryState.messages = baseMessages;
+    mockChatHistoryState.sendErrorType = "disabled";
+
+    const screen = renderWithTheme(<ChatScreen />);
+
+    expect(screen.getByTestId("chat-disabled-banner")).toBeTruthy();
+    expect(screen.getByText("lock.disabledTitle")).toBeTruthy();
+    expect(screen.getByText("lock.disabledBody")).toBeTruthy();
+    expect(await screen.findByPlaceholderText("composer.lockedDisabled")).toBeTruthy();
+    expect(screen.getByTestId("chat-input").props.editable).toBe(false);
+    expect(screen.queryByText("retryLast")).toBeNull();
   });
 });
