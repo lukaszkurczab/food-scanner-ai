@@ -174,6 +174,8 @@ describe("useChatHistory", () => {
     });
     mockApiPost.mockResolvedValue({
       runId: "run-1",
+      threadId: "thread-created",
+      clientMessageId: "user-msg",
       reply: "AI response",
       assistantMessageId: "assistant-msg",
       usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
@@ -183,14 +185,8 @@ describe("useChatHistory", () => {
         truncated: false,
         scopeDecision: "ALLOW_NUTRITION",
       },
-      scopeDecision: "ALLOW_NUTRITION",
-      userId: "user-1",
-      tier: "free",
-      balance: 19,
-      allocation: 100,
-      periodStartAt: "2026-03-01T00:00:00.000Z",
-      periodEndAt: "2026-04-01T00:00:00.000Z",
-      costs: { chat: 1, textMeal: 1, photo: 5 },
+      credits: null,
+      persistence: "backend_owned",
     });
     mockFetchChatThreadMessagesPage.mockResolvedValue({
       items: [],
@@ -236,7 +232,7 @@ describe("useChatHistory", () => {
     expect(result.current.creditsUsed).toBe(100);
   });
 
-  it("applies inline credits from successful /api/v2/ai/chat/runs responses", async () => {
+  it("sends the minimal AI Chat v2 contract to /api/v2/ai/chat/runs", async () => {
     mockUuid
       .mockReturnValueOnce("request-1")
       .mockReturnValueOnce("thread-created")
@@ -265,8 +261,12 @@ describe("useChatHistory", () => {
     );
     expect(mockApplyCreditsFromResponse).toHaveBeenCalledWith(
       expect.objectContaining({
-        balance: 19,
-        allocation: 100,
+        runId: "run-1",
+        threadId: "thread-created",
+        clientMessageId: "user-msg",
+        assistantMessageId: "assistant-msg",
+        persistence: "backend_owned",
+        credits: null,
       }),
     );
     expect(mockRefreshCredits).not.toHaveBeenCalled();
@@ -340,6 +340,8 @@ describe("useChatHistory", () => {
 
     (resolveInFlightPost as (value: unknown) => void)({
       runId: "run-2",
+      threadId: "thread-created",
+      clientMessageId: "user-msg",
       reply: "AI response",
       assistantMessageId: "assistant-msg",
       usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
@@ -349,14 +351,8 @@ describe("useChatHistory", () => {
         truncated: false,
         scopeDecision: "ALLOW_NUTRITION",
       },
-      scopeDecision: "ALLOW_NUTRITION",
-      userId: "user-1",
-      tier: "free",
-      balance: 19,
-      allocation: 100,
-      periodStartAt: "2026-03-01T00:00:00.000Z",
-      periodEndAt: "2026-04-01T00:00:00.000Z",
-      costs: { chat: 1, textMeal: 1, photo: 5 },
+      credits: null,
+      persistence: "backend_owned",
     });
 
     await act(async () => {
@@ -373,7 +369,10 @@ describe("useChatHistory", () => {
       .mockRejectedValueOnce(Object.assign(new Error("timeout"), { status: 504 }))
       .mockResolvedValueOnce({
         runId: "run-retry",
+        threadId: "thread-created",
+        clientMessageId: "user-msg",
         reply: "Recovered response",
+        assistantMessageId: "ai-msg-2",
         usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
         contextStats: {
           usedSummary: false,
@@ -381,14 +380,8 @@ describe("useChatHistory", () => {
           truncated: false,
           scopeDecision: "ALLOW_NUTRITION",
         },
-        scopeDecision: "ALLOW_NUTRITION",
-        userId: "user-1",
-        tier: "free",
-        balance: 19,
-        allocation: 100,
-        periodStartAt: "2026-03-01T00:00:00.000Z",
-        periodEndAt: "2026-04-01T00:00:00.000Z",
-        costs: { chat: 1, textMeal: 1, photo: 5 },
+        credits: null,
+        persistence: "backend_owned",
       });
     mockUuid
       .mockReturnValueOnce("request-1")

@@ -199,11 +199,17 @@ export type AiScopeDecision =
 
 export type AiChatRunLanguage = "pl" | "en";
 
+export type AiChatRunUiContext = {
+  screen?: string | null;
+  entryPoint?: string | null;
+};
+
 export type AiChatRunRequest = {
   threadId: string;
   clientMessageId: string;
   message: string;
   language: AiChatRunLanguage;
+  uiContext?: AiChatRunUiContext;
 };
 
 export type AiChatRunUsage = {
@@ -219,22 +225,17 @@ export type AiChatRunContextStats = {
   scopeDecision: AiScopeDecision;
 };
 
-export type AiChatRunResponse = AiBackendCreditsMeta & {
+export type AiChatRunResponse = {
   runId: string;
+  threadId: string;
+  clientMessageId: string;
   reply: string;
   assistantMessageId: string;
   usage: AiChatRunUsage;
   contextStats: AiChatRunContextStats;
-  scopeDecision: AiScopeDecision;
-};
-
-export type AiChatRunE2EResponse = {
-  reply: string;
-  version: "e2e";
+  credits: AiCreditsStatus | null;
   persistence: AiPersistence;
 };
-
-export type AiChatRunAnyResponse = AiChatRunResponse | AiChatRunE2EResponse;
 
 export type AiMealIngredient = {
   name: string;
