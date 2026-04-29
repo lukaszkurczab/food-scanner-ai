@@ -7,7 +7,6 @@ import {
   it,
   jest,
 } from "@jest/globals";
-import type { FormData, Meal } from "@/types";
 import { useChatHistory } from "@/hooks/useChatHistory";
 
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
@@ -111,21 +110,6 @@ jest.mock("@/services/offline/sync.engine", () => ({
   pullChatChanges: (uid: string) => mockPullChatChanges(uid),
 }));
 
-const profileFixture: FormData = {
-  unitsSystem: "metric",
-  age: "30",
-  sex: "male",
-  height: "180",
-  weight: "80",
-  preferences: [],
-  activityLevel: "moderate",
-  goal: "maintain",
-  surveyComplited: true,
-  calorieTarget: 2300,
-};
-
-const mealsFixture: Meal[] = [];
-
 function buildCredits(overrides?: Partial<{
   tier: "free" | "premium";
   balance: number;
@@ -151,7 +135,7 @@ async function renderChatHistoryHook(params?: {
   const threadId = params?.threadId ?? "local-thread";
   const pageSize = params?.pageSize;
   const rendered = renderHook(() =>
-    useChatHistory(uid, mealsFixture, profileFixture, threadId, pageSize ? { pageSize } : {}),
+    useChatHistory(uid, threadId, pageSize ? { pageSize } : {}),
   );
   await Promise.resolve();
   return rendered;

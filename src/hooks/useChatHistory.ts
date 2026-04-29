@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
-import type { Meal, FormData, ChatMessage } from "@/types";
+import type { ChatMessage } from "@/types";
 import { post } from "@/services/core/apiClient";
 import { isOfflineNetState } from "@/services/core/networkState";
 import { asString, isRecord } from "@/services/contracts/guards";
@@ -138,13 +138,9 @@ function isAiChatDisabledError(error: unknown): boolean {
 
 export function useChatHistory(
   userUid: string,
-  meals: Meal[],
-  profile: FormData,
   threadId: string,
   opts: Options = {},
 ) {
-  void meals;
-  void profile;
   const {
     credits,
     loading: creditsLoading,

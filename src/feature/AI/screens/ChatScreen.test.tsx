@@ -155,10 +155,6 @@ jest.mock("@/context/AiCreditsContext", () => ({
   }),
 }));
 
-jest.mock("@hooks/useMeals", () => ({
-  useMeals: () => ({ meals: [] }),
-}));
-
 jest.mock("@/hooks/useChatHistory", () => ({
   useChatHistory: () => mockChatHistoryState,
 }));

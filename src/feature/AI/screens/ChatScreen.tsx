@@ -10,12 +10,10 @@ import { Layout } from "@/components/Layout";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUserContext } from "@contexts/UserContext";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
-import { useMeals } from "@hooks/useMeals";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import type { RootStackParamList } from "@/navigation/navigate";
-import type { FormData } from "@/types";
 import { ChatHeader } from "../components/ChatHeader";
 import { ChatIntroCard } from "../components/ChatIntroCard";
 import { SuggestedStarterGrid } from "../components/SuggestedStarterGrid";
@@ -25,19 +23,6 @@ import { ChatHistorySheet } from "../components/ChatHistorySheet";
 import { ChatStatusBanner } from "../components/ChatStatusBanner";
 import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
 
-const EMPTY_PROFILE: FormData = {
-  unitsSystem: "metric",
-  age: "",
-  sex: "female",
-  height: "",
-  weight: "",
-  preferences: [],
-  activityLevel: "",
-  goal: "",
-  surveyComplited: false,
-  calorieTarget: 0,
-};
-
 function getChatLegalAckKey(uid: string): string {
   return `chat_legal_ack:${uid}`;
 }
@@ -45,7 +30,7 @@ function getChatLegalAckKey(uid: string): string {
 export default function ChatScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { firebaseUser: user } = useAuthContext();
-  const { userData, loadingUser } = useUserContext();
+  const { loadingUser } = useUserContext();
   const { credits } = useAiCreditsContext();
   const net = useNetInfo();
   const theme = useTheme();
@@ -53,7 +38,6 @@ export default function ChatScreen() {
   const { t, i18n } = useTranslation("chat");
 
   const uid = user?.uid || "";
-  const { meals } = useMeals(uid);
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [threadId, setThreadId] = useState<string>(() => `local-${uuidv4()}`);
@@ -71,7 +55,7 @@ export default function ChatScreen() {
     retryLastSend,
     cancelInFlightSend,
     loadMore,
-  } = useChatHistory(uid, meals || [], userData ?? EMPTY_PROFILE, threadId);
+  } = useChatHistory(uid, threadId);
 
   const isOffline = net.isConnected === false;
   const hasMessages = messages.length > 0;
