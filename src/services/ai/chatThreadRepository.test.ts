@@ -8,13 +8,11 @@ import {
 
 const mockNetInfoFetch = jest.fn<() => Promise<{ isConnected: boolean }>>();
 const mockGet = jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockPost = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetChatThreadsLocal = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetChatMessagesPageLocal = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockUpsertChatThreadLocal = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockUpsertChatMessageLocal = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockSetChatMessageSyncState = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockEnqueueChatMessagePersist = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockPullChatChanges = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockCaptureException = jest.fn<
   (message: string, context?: unknown, error?: unknown) => void
@@ -27,7 +25,6 @@ jest.mock("@react-native-community/netinfo", () => ({
 
 jest.mock("@/services/core/apiClient", () => ({
   get: (...args: unknown[]) => mockGet(...args),
-  post: (...args: unknown[]) => mockPost(...args),
 }));
 
 jest.mock("@/services/offline/chat.repo", () => ({
@@ -38,11 +35,6 @@ jest.mock("@/services/offline/chat.repo", () => ({
   upsertChatMessageLocal: (...args: unknown[]) => mockUpsertChatMessageLocal(...args),
   setChatMessageSyncState: (...args: unknown[]) =>
     mockSetChatMessageSyncState(...args),
-}));
-
-jest.mock("@/services/offline/queue.repo", () => ({
-  enqueueChatMessagePersist: (...args: unknown[]) =>
-    mockEnqueueChatMessagePersist(...args),
 }));
 
 jest.mock("@/services/offline/sync.engine", () => ({
@@ -67,13 +59,11 @@ describe("services/ai/chatThreadRepository", () => {
     mockUpsertChatThreadLocal.mockResolvedValue();
     mockUpsertChatMessageLocal.mockResolvedValue();
     mockSetChatMessageSyncState.mockResolvedValue();
-    mockEnqueueChatMessagePersist.mockResolvedValue();
     mockPullChatChanges.mockResolvedValue();
     mockGet.mockResolvedValue({ items: [], nextBeforeUpdatedAt: null });
-    mockPost.mockResolvedValue({ updated: true });
   });
 
-  it("persists user message locally first and mirrors it to backend", async () => {
+  it("persists user message as a local projection only", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { persistUserChatMessage } = require("@/services/ai/chatThreadRepository");
 
@@ -100,35 +90,14 @@ describe("services/ai/chatThreadRepository", () => {
         id: "msg-1",
         role: "user",
         content: "hello",
+        syncState: "pending",
       }),
     });
-    expect(mockPost).toHaveBeenCalledWith(
-      "/users/me/chat/threads/thread-1/messages",
-      {
-        messageId: "msg-1",
-        role: "user",
-        content: "hello",
-        createdAt: 100,
-        title: "First chat",
-      },
-      {
-        retryMode: "idempotent",
-      },
-    );
-    expect(mockSetChatMessageSyncState).toHaveBeenCalledWith({
-      userUid: "user-1",
-      threadId: "thread-1",
-      messageId: "msg-1",
-      syncState: "synced",
-      lastSyncedAt: 100,
-    });
     expect(mockGet).not.toHaveBeenCalled();
-    expect(mockEnqueueChatMessagePersist).not.toHaveBeenCalled();
+    expect(mockSetChatMessageSyncState).not.toHaveBeenCalled();
   });
 
-  it("enqueues retry when backend persist fails", async () => {
-    mockPost.mockRejectedValueOnce(new Error("boom"));
-
+  it("persists assistant message as a synced local projection only", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { persistAssistantChatMessage } = require("@/services/ai/chatThreadRepository");
 
@@ -140,12 +109,14 @@ describe("services/ai/chatThreadRepository", () => {
       createdAt: 101,
     });
 
-    expect(mockEnqueueChatMessagePersist).toHaveBeenCalledWith("user-1", {
+    expect(mockUpsertChatMessageLocal).toHaveBeenCalledWith({
       threadId: "thread-1",
-      messageId: "msg-2",
-      role: "assistant",
-      content: "AI response",
-      createdAt: 101,
+      message: expect.objectContaining({
+        id: "msg-2",
+        role: "assistant",
+        content: "AI response",
+        syncState: "synced",
+      }),
     });
     expect(mockSetChatMessageSyncState).not.toHaveBeenCalled();
   });

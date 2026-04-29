@@ -81,6 +81,25 @@ describe("offline db bootstrap (src/services/offline/db.ts)", () => {
     expect(mockExecSync).toHaveBeenCalledWith("PRAGMA user_version = 8;");
   });
 
+  it("removes legacy chat persistence queue rows during v11 migration", () => {
+    mockGetFirstSync.mockReturnValue({ user_version: 8 });
+
+    const module =
+      jest.requireActual<typeof import("@/services/offline/db")>(
+        "@/services/offline/db",
+      );
+
+    module.runMigrations();
+
+    expect(mockExecSync).toHaveBeenCalledWith(
+      "DELETE FROM op_queue WHERE kind = 'persist_chat_message';",
+    );
+    expect(mockExecSync).toHaveBeenCalledWith(
+      "DELETE FROM op_queue_dead WHERE kind = 'persist_chat_message';",
+    );
+    expect(mockExecSync).toHaveBeenCalledWith("PRAGMA user_version = 11;");
+  });
+
   it("skips v8 column adds when schema is already current", () => {
     mockGetFirstSync.mockReturnValue({ user_version: 8 });
 

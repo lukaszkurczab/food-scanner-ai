@@ -66,14 +66,11 @@ export default function ChatScreen() {
     sending,
     typing,
     sendErrorType,
-    failedSyncCount,
-    retryingFailedSync,
     canSend,
     send,
     retryLastSend,
     cancelInFlightSend,
     loadMore,
-    retryFailedSyncOps,
   } = useChatHistory(uid, meals || [], userData ?? EMPTY_PROFILE, threadId);
 
   const isOffline = net.isConnected === false;
@@ -325,19 +322,6 @@ export default function ChatScreen() {
           variant="info"
           title={t("lock.disabledTitle")}
           body={t("lock.disabledBody")}
-        />
-      ) : null}
-
-      {failedSyncCount > 0 ? (
-        <ChatStatusBanner
-          variant="warning"
-          title={t("deadLetterTitle", { count: failedSyncCount })}
-          body={t("deadLetterSubtitle")}
-          actionLabel={t("deadLetterRetry")}
-          onActionPress={() => {
-            void retryFailedSyncOps();
-          }}
-          actionDisabled={retryingFailedSync}
         />
       ) : null}
 

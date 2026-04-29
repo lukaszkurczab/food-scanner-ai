@@ -129,9 +129,7 @@ export async function runPushQueue(
             updatedAt: op.updated_at,
           });
         }
-        if (op.kind === "persist_chat_message") {
-          emit("chat:failed", { uid, opId: op.id });
-        } else if (op.kind === "update_user_profile") {
+        if (op.kind === "update_user_profile") {
           emit("user:profile:failed", {
             uid,
             opId: op.id,

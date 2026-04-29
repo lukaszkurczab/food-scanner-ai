@@ -170,4 +170,22 @@ describe("chat strategy", () => {
     expect(mockUpsertChatThreadLocal).toHaveBeenCalledTimes(2);
     expect(mockSetItem).toHaveBeenCalledWith("sync:last_pull_chat:user-1", "1900");
   });
+
+  it("does not handle push ops because AI Chat persistence is backend-owned", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { chatStrategy } = require("@/services/offline/strategies/chat.strategy");
+
+    await expect(
+      chatStrategy.handlePushOp("user-1", {
+        id: 1,
+        cloud_id: "msg-1",
+        user_uid: "user-1",
+        kind: "upsert",
+        payload: {},
+        updated_at: "2026-04-29T10:00:00.000Z",
+        attempts: 0,
+      }),
+    ).resolves.toBe(false);
+    expect(mockGet).not.toHaveBeenCalled();
+  });
 });

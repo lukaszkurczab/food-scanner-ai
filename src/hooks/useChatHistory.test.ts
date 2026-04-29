@@ -33,8 +33,9 @@ const mockPersistUserChatMessage = jest.fn<
 const mockPersistAssistantChatMessage = jest.fn<
   (params: unknown) => Promise<void>
 >();
-const mockGetDeadLetterCount = jest.fn<(uid: string, options?: unknown) => Promise<number>>();
-const mockRetryDeadLetterOps = jest.fn<(params: unknown) => Promise<number>>();
+const mockMarkChatMessageProjectionSynced = jest.fn<
+  (params: unknown) => Promise<void>
+>();
 const mockPushQueue = jest.fn<(uid: string) => Promise<void>>();
 const mockPullChatChanges = jest.fn<(uid: string) => Promise<void>>();
 
@@ -100,12 +101,8 @@ jest.mock("@/services/ai/chatThreadRepository", () => ({
     mockPersistUserChatMessage(params),
   persistAssistantChatMessage: (params: unknown) =>
     mockPersistAssistantChatMessage(params),
-}));
-
-jest.mock("@/services/offline/queue.repo", () => ({
-  getDeadLetterCount: (uid: string, options?: unknown) =>
-    mockGetDeadLetterCount(uid, options),
-  retryDeadLetterOps: (params: unknown) => mockRetryDeadLetterOps(params),
+  markChatMessageProjectionSynced: (params: unknown) =>
+    mockMarkChatMessageProjectionSynced(params),
 }));
 
 jest.mock("@/services/offline/sync.engine", () => ({
@@ -156,9 +153,7 @@ async function renderChatHistoryHook(params?: {
   const rendered = renderHook(() =>
     useChatHistory(uid, mealsFixture, profileFixture, threadId, pageSize ? { pageSize } : {}),
   );
-  await waitFor(() => {
-    expect(mockGetDeadLetterCount).toHaveBeenCalled();
-  });
+  await Promise.resolve();
   return rendered;
 }
 
@@ -194,8 +189,7 @@ describe("useChatHistory", () => {
     });
     mockPersistUserChatMessage.mockResolvedValue();
     mockPersistAssistantChatMessage.mockResolvedValue();
-    mockGetDeadLetterCount.mockResolvedValue(0);
-    mockRetryDeadLetterOps.mockResolvedValue(0);
+    mockMarkChatMessageProjectionSynced.mockResolvedValue();
     mockPushQueue.mockResolvedValue();
     mockPullChatChanges.mockResolvedValue();
     mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
@@ -269,6 +263,21 @@ describe("useChatHistory", () => {
         credits: null,
       }),
     );
+    expect(mockPersistUserChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userUid: "user-1",
+        threadId: "thread-created",
+        messageId: "user-msg",
+        content: "hello",
+        syncState: "pending",
+      }),
+    );
+    expect(mockMarkChatMessageProjectionSynced).toHaveBeenCalledWith({
+      userUid: "user-1",
+      threadId: "thread-created",
+      messageId: "user-msg",
+      lastSyncedAt: expect.any(Number),
+    });
     expect(mockRefreshCredits).not.toHaveBeenCalled();
   });
 
@@ -450,7 +459,12 @@ describe("useChatHistory", () => {
       messageId: "ai-msg-2",
       content: "Recovered response",
       createdAt: expect.any(Number),
-      syncToBackend: false,
+    });
+    expect(mockMarkChatMessageProjectionSynced).toHaveBeenCalledWith({
+      userUid: "user-1",
+      threadId: "thread-created",
+      messageId: "user-msg",
+      lastSyncedAt: expect.any(Number),
     });
   });
 
@@ -526,43 +540,19 @@ describe("useChatHistory", () => {
     expect(result.current.messages.map((message) => message.id)).toEqual(["m1", "m2"]);
   });
 
-  it("reads failed chat sync count and retries dead-letter ops", async () => {
-    mockGetDeadLetterCount.mockResolvedValueOnce(2).mockResolvedValueOnce(0);
-    mockRetryDeadLetterOps.mockResolvedValueOnce(2);
-
-    const { result } = await renderChatHistoryHook();
-
-    await waitFor(() => {
-      expect(result.current.failedSyncCount).toBe(2);
-    });
-
-    await act(async () => {
-      await result.current.retryFailedSyncOps();
-    });
-
-    expect(mockRetryDeadLetterOps).toHaveBeenCalledWith({
-      uid: "user-1",
-      kinds: ["persist_chat_message"],
-    });
-    expect(mockPushQueue).toHaveBeenCalledWith("user-1");
-  });
-
-  it("retries failed chat sync locally without push when offline", async () => {
-    mockGetDeadLetterCount.mockResolvedValueOnce(1).mockResolvedValueOnce(1);
-    mockRetryDeadLetterOps.mockResolvedValueOnce(1);
+  it("blocks offline sends without queueing a successful chat message", async () => {
     mockNetInfoFetch.mockResolvedValue({ isConnected: false });
 
     const { result } = await renderChatHistoryHook();
 
-    await waitFor(() => {
-      expect(result.current.failedSyncCount).toBe(1);
-    });
-
     await act(async () => {
-      await result.current.retryFailedSyncOps();
+      await result.current.send("hello offline");
     });
 
-    expect(mockRetryDeadLetterOps).toHaveBeenCalled();
+    expect(result.current.sendErrorType).toBe("offline");
+    expect(mockApiPost).not.toHaveBeenCalled();
+    expect(mockPersistUserChatMessage).not.toHaveBeenCalled();
+    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
     expect(mockPushQueue).not.toHaveBeenCalled();
   });
 });

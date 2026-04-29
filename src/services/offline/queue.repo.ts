@@ -132,30 +132,6 @@ async function enqueueDeleteOp(
   }
 }
 
-export async function enqueueChatMessagePersist(
-  uid: string,
-  payload: {
-    threadId: string;
-    messageId: string;
-    role: "user" | "assistant" | "system";
-    content: string;
-    createdAt: number;
-    title?: string;
-  }
-): Promise<void> {
-  const db = getDB();
-  db.runSync(
-    `INSERT INTO op_queue (cloud_id, user_uid, kind, payload, updated_at)
-     VALUES (?, ?, 'persist_chat_message', ?, ?)`,
-    [
-      payload.messageId,
-      uid,
-      JSON.stringify(payload),
-      new Date(payload.createdAt).toISOString(),
-    ]
-  );
-}
-
 export async function enqueueUserProfileUpdate(
   uid: string,
   payload: Partial<UserData>,

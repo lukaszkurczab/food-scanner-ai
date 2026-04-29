@@ -95,7 +95,7 @@ const domainConfigs: Record<Exclude<SyncDomain, "images" | "userProfile">, Domai
   },
   chat: {
     strategy: chatStrategy,
-    queueKinds: ["persist_chat_message"],
+    queueKinds: [],
     staleAfterMs: CHAT_STALE_MS,
     getLastPullMarker: getLastChatPullTs,
   },
@@ -246,9 +246,9 @@ async function hasDomainDirtyQueue(uid: string, domain: SyncDomain): Promise<boo
       })) > 0
     );
   }
-  return (
-    (await getQueuedOpsCount(uid, { kinds: domainConfigs[domain].queueKinds })) > 0
-  );
+  const queueKinds = domainConfigs[domain].queueKinds;
+  if (queueKinds.length === 0) return false;
+  return (await getQueuedOpsCount(uid, { kinds: queueKinds })) > 0;
 }
 
 function markerTime(marker: string | number | null): number {

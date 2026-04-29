@@ -3,7 +3,6 @@ export type QueueKind =
   | "delete"
   | "upsert_mymeal"
   | "delete_mymeal"
-  | "persist_chat_message"
   | "update_user_profile"
   | "upload_user_avatar";
 

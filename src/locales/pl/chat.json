@@ -87,10 +87,6 @@
     }
   },
   "retryLast": "Ponów ostatnią wiadomość",
-  "deadLetterTitle": "{{count}} wiadomości czeka na synchronizację",
-  "deadLetterSubtitle": "Wiadomości są bezpiecznie zapisane na tym urządzeniu. Ponów synchronizację.",
-  "deadLetterRetry": "Ponów",
-  "deadLetterRetryQueued": "{{count}} wiadomości dodano do ponownej synchronizacji.",
   "sending": "AI przygotowuje odpowiedź...",
   "errors": {
     "fetchFailed": "Nie udało się pobrać odpowiedzi. Spróbuj ponownie.",

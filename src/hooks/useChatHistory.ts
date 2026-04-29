@@ -5,7 +5,6 @@ import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
 import type { Meal, FormData, ChatMessage } from "@/types";
 import { post } from "@/services/core/apiClient";
-import { emit, on } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
 import { asString, isRecord } from "@/services/contracts/guards";
 import type {
@@ -20,15 +19,11 @@ import {
 import { captureException } from "@/services/core/errorLogger";
 import { getAiUxErrorType, type AiUxErrorType } from "@/services/ai/uxError";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
-import {
-  getDeadLetterCount,
-  retryDeadLetterOps,
-  type QueueKind,
-} from "@/services/offline/queue.repo";
 import { requestSync } from "@/services/offline/sync.engine";
 import {
   type ChatMessageCursor,
   fetchChatThreadMessagesPage,
+  markChatMessageProjectionSynced,
   persistAssistantChatMessage,
   persistUserChatMessage,
   subscribeToChatThreadMessages,
@@ -48,7 +43,6 @@ const GATEWAY_REJECT_REASONS = new Set([
   "ML_OFF_TOPIC",
   "TOO_SHORT",
 ]);
-const CHAT_DEAD_LETTER_KINDS: QueueKind[] = ["persist_chat_message"];
 
 function findInsertIndexDesc(
   messages: ChatMessage[],
@@ -168,8 +162,6 @@ export function useChatHistory(
   const [sendErrorType, setSendErrorType] = useState<AiUxErrorType | null>(
     null,
   );
-  const [failedSyncCount, setFailedSyncCount] = useState(0);
-  const [retryingFailedSync, setRetryingFailedSync] = useState(false);
 
   const lastDocRef = useRef<ChatMessageCursor>(null);
   const sendInFlightRef = useRef(false);
@@ -208,43 +200,6 @@ export function useChatHistory(
       sendAbortControllerRef.current = null;
     };
   }, []);
-
-  const refreshFailedSyncCount = useCallback(async () => {
-    if (!userUid) {
-      setFailedSyncCount(0);
-      return;
-    }
-    try {
-      const count = await getDeadLetterCount(userUid, {
-        kinds: CHAT_DEAD_LETTER_KINDS,
-      });
-      setFailedSyncCount(count);
-    } catch {
-      // Ignore dead-letter lookup failures; chat can still function.
-    }
-  }, [userUid]);
-
-  useEffect(() => {
-    void refreshFailedSyncCount();
-  }, [refreshFailedSyncCount]);
-
-  useEffect(() => {
-    if (!userUid) return;
-    const refreshForUid = (event?: { uid?: string }) => {
-      const eventUid = typeof event?.uid === "string" ? event.uid : userUid;
-      if (eventUid !== userUid) return;
-      void refreshFailedSyncCount();
-    };
-    const unsubs = [
-      on<{ uid?: string }>("sync:op:dead", refreshForUid),
-      on<{ uid?: string }>("sync:op:retried", refreshForUid),
-      on<{ uid?: string }>("chat:failed", refreshForUid),
-      on<{ uid?: string }>("chat:pushed", refreshForUid),
-    ];
-    return () => {
-      for (const unsub of unsubs) unsub();
-    };
-  }, [userUid, refreshFailedSyncCount]);
 
   useEffect(() => {
     if (!canReadThread) {
@@ -305,7 +260,10 @@ export function useChatHistory(
         return null;
 
       const net = await NetInfo.fetch();
-      if (isOfflineNetState(net)) return null;
+      if (isOfflineNetState(net)) {
+        setSendErrorType("offline");
+        return null;
+      }
       if (!userUid) return null;
 
       const requestId = uuidv4();
@@ -357,7 +315,7 @@ export function useChatHistory(
                 ? trimmed.slice(0, 42).trim() + "…"
                 : trimmed
               : undefined,
-            syncToBackend: false,
+            syncState: "pending",
           });
         }
 
@@ -477,6 +435,12 @@ export function useChatHistory(
 
         const now2 = Date.now();
         const assistantMessageId = assistantMessageIdFromServer ?? aiMsgId;
+        await markChatMessageProjectionSynced({
+          userUid,
+          threadId: createdThreadId,
+          messageId: userMsgId,
+          lastSyncedAt: now2,
+        });
 
         const optimisticAi: ChatMessage = {
           id: assistantMessageId,
@@ -498,7 +462,6 @@ export function useChatHistory(
           messageId: assistantMessageId,
           content: assistantReply,
           createdAt: now2,
-          syncToBackend: false,
         });
         void requestSync({
           uid: userUid,
@@ -548,40 +511,6 @@ export function useChatHistory(
     return sendInternal(retryContext.content, retryContext);
   }, [sendInternal]);
 
-  const retryFailedSyncOps = useCallback(async () => {
-    if (!userUid || retryingFailedSync) return;
-    setRetryingFailedSync(true);
-    try {
-      const retried = await retryDeadLetterOps({
-        uid: userUid,
-        kinds: CHAT_DEAD_LETTER_KINDS,
-      });
-      await refreshFailedSyncCount();
-      if (retried > 0) {
-        emit("ui:toast", {
-          key: "deadLetterRetryQueued",
-          ns: "chat",
-          options: { count: retried },
-        });
-      }
-      const net = await NetInfo.fetch();
-      if (retried > 0 && !isOfflineNetState(net)) {
-        await requestSync({
-          uid: userUid,
-          domain: "chat",
-          reason: "retry",
-        });
-        await refreshFailedSyncCount();
-      }
-    } catch {
-      emit("ui:toast", {
-        text: i18next.t("common:unknownError"),
-      });
-    } finally {
-      setRetryingFailedSync(false);
-    }
-  }, [refreshFailedSyncCount, retryingFailedSync, userUid]);
-
   return {
     messages,
     loading,
@@ -593,12 +522,9 @@ export function useChatHistory(
     creditAllocation,
     creditBalance,
     sendErrorType,
-    failedSyncCount,
-    retryingFailedSync,
     loadMore,
     send,
     retryLastSend,
     cancelInFlightSend,
-    retryFailedSyncOps,
   };
 }

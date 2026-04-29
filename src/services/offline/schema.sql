@@ -119,4 +119,4 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 CREATE INDEX IF NOT EXISTS idx_chat_messages_thread_created
   ON chat_messages(user_uid, thread_id, created_at DESC);
 
-PRAGMA user_version=8;
+PRAGMA user_version=11;

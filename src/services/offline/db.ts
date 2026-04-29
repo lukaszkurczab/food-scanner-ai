@@ -587,6 +587,20 @@ export function runMigrations() {
     }
   }
 
+  if (v < 11) {
+    d.execSync("BEGIN");
+    try {
+      d.execSync(`DELETE FROM op_queue WHERE kind = 'persist_chat_message';`);
+      d.execSync(`DELETE FROM op_queue_dead WHERE kind = 'persist_chat_message';`);
+      setUserVersion(d, 11);
+      d.execSync("COMMIT");
+      v = 11;
+    } catch (e) {
+      d.execSync("ROLLBACK");
+      throw e;
+    }
+  }
+
   void ensureMigrationRunner().catch(() => undefined);
 }
 

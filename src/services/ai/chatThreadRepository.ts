@@ -1,6 +1,6 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { ChatMessage, ChatThread } from "@/types";
-import { get, post } from "@/services/core/apiClient";
+import { get } from "@/services/core/apiClient";
 import { captureException } from "@/services/core/errorLogger";
 import { on } from "@/services/core/events";
 import { isOfflineNetState } from "@/services/core/networkState";
@@ -11,7 +11,6 @@ import {
   upsertChatMessageLocal,
   upsertChatThreadLocal,
 } from "@/services/offline/chat.repo";
-import { enqueueChatMessagePersist } from "@/services/offline/queue.repo";
 
 type ChatMessageApiItem = {
   id: string;
@@ -170,9 +169,8 @@ export async function persistUserChatMessage(params: {
   content: string;
   createdAt: number;
   title?: string;
-  syncToBackend?: boolean;
+  syncState?: ChatMessage["syncState"];
 }): Promise<void> {
-  const syncToBackend = params.syncToBackend !== false;
   const thread: ChatThread = {
     id: params.threadId,
     userUid: params.userUid,
@@ -189,67 +187,13 @@ export async function persistUserChatMessage(params: {
     content: params.content,
     createdAt: params.createdAt,
     lastSyncedAt: params.createdAt,
-    syncState: syncToBackend ? "pending" : "synced",
+    syncState: params.syncState ?? "pending",
     deleted: false,
     cloudId: params.messageId,
   };
 
   await upsertChatThreadLocal(thread);
   await upsertChatMessageLocal({ threadId: params.threadId, message });
-  if (!syncToBackend) return;
-
-  try {
-    const net = await NetInfo.fetch();
-    if (isOfflineNetState(net)) {
-      await enqueueChatMessagePersist(params.userUid, {
-        threadId: params.threadId,
-        messageId: params.messageId,
-        role: "user",
-        content: params.content,
-        createdAt: params.createdAt,
-        title: params.title,
-      });
-      return;
-    }
-    await post(
-      `/users/me/chat/threads/${params.threadId}/messages`,
-      {
-        messageId: params.messageId,
-        role: "user",
-        content: params.content,
-        createdAt: params.createdAt,
-        title: params.title,
-      },
-      {
-        retryMode: "idempotent",
-      },
-    );
-    await setChatMessageSyncState({
-      userUid: params.userUid,
-      threadId: params.threadId,
-      messageId: params.messageId,
-      syncState: "synced",
-      lastSyncedAt: params.createdAt,
-    });
-  } catch (error) {
-    await enqueueChatMessagePersist(params.userUid, {
-      threadId: params.threadId,
-      messageId: params.messageId,
-      role: "user",
-      content: params.content,
-      createdAt: params.createdAt,
-      title: params.title,
-    });
-    captureException(
-      "[chatThreadRepository] failed to persist user chat message to backend",
-      {
-        userUid: params.userUid,
-        threadId: params.threadId,
-        messageId: params.messageId,
-      },
-      error,
-    );
-  }
 }
 
 export async function persistAssistantChatMessage(params: {
@@ -258,9 +202,7 @@ export async function persistAssistantChatMessage(params: {
   messageId: string;
   content: string;
   createdAt: number;
-  syncToBackend?: boolean;
 }): Promise<void> {
-  const syncToBackend = params.syncToBackend !== false;
   const message: ChatMessage = {
     id: params.messageId,
     userUid: params.userUid,
@@ -268,7 +210,7 @@ export async function persistAssistantChatMessage(params: {
     content: params.content,
     createdAt: params.createdAt,
     lastSyncedAt: params.createdAt,
-    syncState: syncToBackend ? "pending" : "synced",
+    syncState: "synced",
     deleted: false,
     cloudId: params.messageId,
   };
@@ -284,57 +226,21 @@ export async function persistAssistantChatMessage(params: {
 
   await upsertChatThreadLocal(thread);
   await upsertChatMessageLocal({ threadId: params.threadId, message });
-  if (!syncToBackend) return;
+}
 
-  try {
-    const net = await NetInfo.fetch();
-    if (isOfflineNetState(net)) {
-      await enqueueChatMessagePersist(params.userUid, {
-        threadId: params.threadId,
-        messageId: params.messageId,
-        role: "assistant",
-        content: params.content,
-        createdAt: params.createdAt,
-      });
-      return;
-    }
-    await post(
-      `/users/me/chat/threads/${params.threadId}/messages`,
-      {
-        messageId: params.messageId,
-        role: "assistant",
-        content: params.content,
-        createdAt: params.createdAt,
-      },
-      {
-        retryMode: "idempotent",
-      },
-    );
-    await setChatMessageSyncState({
-      userUid: params.userUid,
-      threadId: params.threadId,
-      messageId: params.messageId,
-      syncState: "synced",
-      lastSyncedAt: params.createdAt,
-    });
-  } catch (error) {
-    await enqueueChatMessagePersist(params.userUid, {
-      threadId: params.threadId,
-      messageId: params.messageId,
-      role: "assistant",
-      content: params.content,
-      createdAt: params.createdAt,
-    });
-    captureException(
-      "[chatThreadRepository] failed to persist assistant chat message to backend",
-      {
-        userUid: params.userUid,
-        threadId: params.threadId,
-        messageId: params.messageId,
-      },
-      error,
-    );
-  }
+export async function markChatMessageProjectionSynced(params: {
+  userUid: string;
+  threadId: string;
+  messageId: string;
+  lastSyncedAt: number;
+}): Promise<void> {
+  await setChatMessageSyncState({
+    userUid: params.userUid,
+    threadId: params.threadId,
+    messageId: params.messageId,
+    syncState: "synced",
+    lastSyncedAt: params.lastSyncedAt,
+  });
 }
 
 export function subscribeToChatThreads(params: {

@@ -87,10 +87,6 @@
     }
   },
   "retryLast": "Retry last message",
-  "deadLetterTitle": "{{count}} messages are waiting to sync",
-  "deadLetterSubtitle": "Your messages are safe on this device. Retry sync now.",
-  "deadLetterRetry": "Retry",
-  "deadLetterRetryQueued": "{{count}} messages queued for retry.",
   "sending": "AI is preparing a response...",
   "errors": {
     "fetchFailed": "Could not fetch a response. Please try again.",

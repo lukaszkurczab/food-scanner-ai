@@ -46,15 +46,12 @@ let mockChatHistoryState: {
     | "disabled"
     | "auth"
     | "unknown";
-  failedSyncCount: number;
-  retryingFailedSync: boolean;
   canSend: boolean;
   creditAllocation: number;
   send: (value: string) => Promise<string | null>;
   retryLastSend: () => Promise<string | null>;
   cancelInFlightSend: () => void;
   loadMore: () => void;
-  retryFailedSyncOps: () => Promise<void>;
 };
 
 jest.mock("@react-navigation/native", () => ({
@@ -226,15 +223,12 @@ describe("ChatScreen", () => {
       sending: false,
       typing: false,
       sendErrorType: null,
-      failedSyncCount: 0,
-      retryingFailedSync: false,
       canSend: true,
       creditAllocation: 100,
       send: jest.fn(async () => null),
       retryLastSend: jest.fn(async () => null),
       cancelInFlightSend: () => undefined,
       loadMore: () => undefined,
-      retryFailedSyncOps: async () => undefined,
     };
   });
 
