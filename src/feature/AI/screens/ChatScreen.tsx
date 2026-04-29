@@ -59,13 +59,14 @@ export default function ChatScreen() {
 
   const isOffline = net.isConnected === false;
   const hasMessages = messages.length > 0;
-  const limitReached = !canSend;
+  const limitReached =
+    !canSend || sendErrorType === "AI_CREDITS_EXHAUSTED";
   const renewalDateLabel = formatLocalDateTime(credits?.periodEndAt, {
     locale: i18n?.language,
   });
   const legalGateActive = legalAckLoading || legalAckVisible;
   const profileReadyForAi = !loadingUser;
-  const chatDisabled = sendErrorType === "disabled";
+  const chatDisabled = sendErrorType === "AI_CHAT_DISABLED";
   const composerDisabled =
     sending ||
     limitReached ||
@@ -176,9 +177,20 @@ export default function ChatScreen() {
   const helperText = useMemo(() => {
     if (sending) return t("sending");
     if (sendErrorType === "offline") return t("errors.offline");
-    if (sendErrorType === "timeout") return t("errors.timeout");
-    if (sendErrorType === "disabled") return t("errors.disabled");
-    if (sendErrorType === "unavailable") return t("errors.serviceUnavailable");
+    if (sendErrorType === "AI_CHAT_TIMEOUT") return t("errors.timeout");
+    if (sendErrorType === "AI_CHAT_DISABLED") return t("errors.disabled");
+    if (sendErrorType === "AI_CHAT_PROVIDER_UNAVAILABLE")
+      return t("errors.serviceUnavailable");
+    if (sendErrorType === "AI_CHAT_CONTEXT_UNAVAILABLE")
+      return t("errors.contextUnavailable");
+    if (sendErrorType === "AI_CHAT_INTERNAL_ERROR")
+      return t("errors.internal");
+    if (sendErrorType === "AI_CHAT_IDEMPOTENCY_CONFLICT")
+      return t("errors.idempotencyConflict");
+    if (sendErrorType === "AI_CHAT_CONSENT_REQUIRED")
+      return t("errors.consentRequired");
+    if (sendErrorType === "AI_CREDITS_EXHAUSTED")
+      return t("errors.creditsExhausted");
     if (sendErrorType === "auth") return t("errors.authRequired");
     if (sendErrorType === "unknown") return t("errors.fetchFailed");
     return undefined;
@@ -191,8 +203,10 @@ export default function ChatScreen() {
     !isOffline &&
     !legalGateActive &&
     (sendErrorType === "offline" ||
-      sendErrorType === "timeout" ||
-      sendErrorType === "unavailable" ||
+      sendErrorType === "AI_CHAT_TIMEOUT" ||
+      sendErrorType === "AI_CHAT_PROVIDER_UNAVAILABLE" ||
+      sendErrorType === "AI_CHAT_CONTEXT_UNAVAILABLE" ||
+      sendErrorType === "AI_CHAT_INTERNAL_ERROR" ||
       sendErrorType === "unknown");
 
   const composerPlaceholder = limitReached
@@ -306,6 +320,15 @@ export default function ChatScreen() {
           variant="info"
           title={t("lock.disabledTitle")}
           body={t("lock.disabledBody")}
+        />
+      ) : null}
+
+      {hasMessages && sendErrorType === "AI_CHAT_CONTEXT_UNAVAILABLE" ? (
+        <ChatStatusBanner
+          testID="chat-context-unavailable-banner"
+          variant="info"
+          title={t("lock.contextUnavailableTitle")}
+          body={t("lock.contextUnavailableBody")}
         />
       ) : null}
 

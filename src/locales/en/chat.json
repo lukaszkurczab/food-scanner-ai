@@ -31,7 +31,9 @@
     "offlineTitle": "You're offline",
     "offlineBody": "You can still read this conversation. Sending returns when you are back online.",
     "disabledTitle": "Chat temporarily unavailable",
-    "disabledBody": "AI Chat is currently disabled on the server. Your existing conversation stays visible, but sending and retry are unavailable."
+    "disabledBody": "AI Chat is currently disabled on the server. Your existing conversation stays visible, but sending and retry are unavailable.",
+    "contextUnavailableTitle": "Chat context temporarily unavailable",
+    "contextUnavailableBody": "Your conversation is still here, but current meal or profile context could not be loaded. Retry in a moment."
   },
   "limit": {
     "title": "Not enough AI Credits",
@@ -96,6 +98,11 @@
     "timeout": "The request timed out. Please retry.",
     "serviceUnavailable": "AI is temporarily unavailable. Please try again shortly.",
     "disabled": "AI Chat is temporarily disabled. Please try again later.",
+    "creditsExhausted": "You have no AI Credits left for chat. Refreshing your balance and plans.",
+    "consentRequired": "AI Chat needs your health-data consent before it can answer.",
+    "contextUnavailable": "Meal or profile context is temporarily unavailable. Retry in a moment.",
+    "idempotencyConflict": "This message is still being reconciled. Wait a moment before trying again.",
+    "internal": "AI Chat failed before a response was generated. Please try again.",
     "authRequired": "Please sign in again to continue.",
     "emptyResponse": "I couldn't generate a useful response. Please try again."
   },

@@ -35,8 +35,8 @@ const getRecognitionFailureReason = (
 ): "offline" | "timeout" | "ai_unavailable" | "not_recognized" => {
   const errorType = getAiUxErrorType(error);
   if (errorType === "offline") return "offline";
-  if (errorType === "timeout") return "timeout";
-  if (errorType === "unavailable") return "ai_unavailable";
+  if (errorType === "AI_CHAT_TIMEOUT") return "timeout";
+  if (errorType === "AI_CHAT_PROVIDER_UNAVAILABLE") return "ai_unavailable";
   return "not_recognized";
 };
 

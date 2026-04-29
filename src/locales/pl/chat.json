@@ -31,7 +31,9 @@
     "offlineTitle": "Jesteś offline",
     "offlineBody": "Możesz czytać tę rozmowę. Wysyłanie wróci, gdy połączysz się z internetem.",
     "disabledTitle": "Czat chwilowo niedostępny",
-    "disabledBody": "AI Chat jest obecnie wyłączony po stronie serwera. Dotychczasowa rozmowa pozostaje widoczna, ale wysyłanie i ponawianie są zablokowane."
+    "disabledBody": "AI Chat jest obecnie wyłączony po stronie serwera. Dotychczasowa rozmowa pozostaje widoczna, ale wysyłanie i ponawianie są zablokowane.",
+    "contextUnavailableTitle": "Kontekst czatu chwilowo niedostępny",
+    "contextUnavailableBody": "Rozmowa pozostaje widoczna, ale nie udało się teraz pobrać kontekstu posiłków lub profilu. Spróbuj ponownie za chwilę."
   },
   "limit": {
     "title": "Za mało AI Credits",
@@ -95,6 +97,11 @@
     "timeout": "Przekroczono limit czasu żądania. Spróbuj ponownie.",
     "serviceUnavailable": "Usługa AI jest chwilowo niedostępna. Spróbuj za moment.",
     "disabled": "AI Chat jest tymczasowo wyłączony. Spróbuj ponownie później.",
+    "creditsExhausted": "Brakuje AI Credits do dalszego czatu. Odświeżam saldo i dostępne plany.",
+    "consentRequired": "AI Chat wymaga zgody na dane zdrowotne, zanim odpowie.",
+    "contextUnavailable": "Kontekst posiłków lub profilu jest chwilowo niedostępny. Spróbuj ponownie za chwilę.",
+    "idempotencyConflict": "Ta wiadomość jest jeszcze uzgadniana. Odczekaj chwilę przed kolejną próbą.",
+    "internal": "AI Chat nie zakończył przetwarzania przed wygenerowaniem odpowiedzi. Spróbuj ponownie.",
     "authRequired": "Zaloguj się ponownie, aby kontynuować.",
     "emptyResponse": "Nie udało się wygenerować odpowiedzi. Spróbuj ponownie.",
     "rateLimited": "Wysyłasz wiadomości zbyt szybko. Poczekaj chwilę."

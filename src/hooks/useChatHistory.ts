@@ -17,7 +17,11 @@ import {
   isServiceError,
 } from "@/services/contracts/serviceError";
 import { captureException } from "@/services/core/errorLogger";
-import { getAiUxErrorType, type AiUxErrorType } from "@/services/ai/uxError";
+import {
+  getAiUxErrorType,
+  type AiChatBackendErrorCode,
+  type AiUxErrorType,
+} from "@/services/ai/uxError";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
 import { requestSync } from "@/services/offline/sync.engine";
 import {
@@ -136,6 +140,32 @@ function isAiChatDisabledError(error: unknown): boolean {
   return asString(canonicalDetail.code) === "AI_CHAT_DISABLED";
 }
 
+function isRetryableSendErrorType(errorType: AiUxErrorType): boolean {
+  return (
+    errorType === "offline" ||
+    errorType === "AI_CHAT_TIMEOUT" ||
+    errorType === "AI_CHAT_PROVIDER_UNAVAILABLE" ||
+    errorType === "AI_CHAT_CONTEXT_UNAVAILABLE" ||
+    errorType === "AI_CHAT_INTERNAL_ERROR" ||
+    errorType === "unknown"
+  );
+}
+
+function isBackendOwnedAiChatErrorCode(
+  errorType: AiUxErrorType,
+): errorType is AiChatBackendErrorCode {
+  return (
+    errorType === "AI_CHAT_DISABLED" ||
+    errorType === "AI_CREDITS_EXHAUSTED" ||
+    errorType === "AI_CHAT_CONSENT_REQUIRED" ||
+    errorType === "AI_CHAT_PROVIDER_UNAVAILABLE" ||
+    errorType === "AI_CHAT_TIMEOUT" ||
+    errorType === "AI_CHAT_CONTEXT_UNAVAILABLE" ||
+    errorType === "AI_CHAT_IDEMPOTENCY_CONFLICT" ||
+    errorType === "AI_CHAT_INTERNAL_ERROR"
+  );
+}
+
 export function useChatHistory(
   userUid: string,
   threadId: string,
@@ -249,7 +279,7 @@ export function useChatHistory(
       if (
         !trimmed ||
         !canSend ||
-        sendErrorType === "disabled" ||
+        sendErrorType === "AI_CHAT_DISABLED" ||
         sending ||
         sendInFlightRef.current
       )
@@ -354,7 +384,7 @@ export function useChatHistory(
           if (!isRequestActive()) return null;
 
           if (isAiChatDisabledError(error)) {
-            setSendErrorType("disabled");
+            setSendErrorType("AI_CHAT_DISABLED");
             retryableSendRef.current = null;
             captureException(
               "[useChatHistory.send] AI chat v2 disabled by backend kill switch",
@@ -374,14 +404,14 @@ export function useChatHistory(
           const gatewayCode = getGatewayRejectCode(error);
           const gatewayReason = getGatewayRejectReason(error);
           const errorType = getAiUxErrorType(error);
-          if (status === 402) {
+          if (errorType === "AI_CREDITS_EXHAUSTED") {
             const refreshed = await refreshCredits();
             const refreshedLimit = refreshed?.allocation ?? creditAllocation;
             const refreshedUsed = refreshed
               ? Math.max(refreshedLimit - refreshed.balance, 0)
               : creditsUsed;
             void refreshedUsed;
-            setSendErrorType(null);
+            setSendErrorType("AI_CREDITS_EXHAUSTED");
           } else if (
             gatewayCode === "AI_GATEWAY_BLOCKED" ||
             (gatewayReason !== null &&
@@ -390,14 +420,13 @@ export function useChatHistory(
             setSendErrorType(null);
           } else if (status === 429) {
             setSendErrorType(null);
-          } else if (errorType === "offline") {
-            setSendErrorType("offline");
-          } else if (errorType === "timeout") {
-            setSendErrorType("timeout");
-          } else if (errorType === "unavailable") {
-            setSendErrorType("unavailable");
-          } else if (errorType === "auth") {
-            setSendErrorType("auth");
+          } else if (
+            errorType === "offline" ||
+            errorType === "auth" ||
+            errorType === "unknown" ||
+            isBackendOwnedAiChatErrorCode(errorType)
+          ) {
+            setSendErrorType(errorType);
           } else {
             setSendErrorType("unknown");
           }
@@ -406,12 +435,14 @@ export function useChatHistory(
             { userUid, threadId },
             error,
           );
-          retryableSendRef.current = {
-            threadId: createdThreadId,
-            userMessageId: userMsgId,
-            content: trimmed,
-            createdAt: now,
-          };
+          retryableSendRef.current = isRetryableSendErrorType(errorType)
+            ? {
+                threadId: createdThreadId,
+                userMessageId: userMsgId,
+                content: trimmed,
+                createdAt: now,
+              }
+            : null;
           chatRunFailed = true;
         }
 

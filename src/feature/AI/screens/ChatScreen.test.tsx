@@ -41,11 +41,17 @@ let mockChatHistoryState: {
   sendErrorType:
     | null
     | "offline"
-    | "timeout"
-    | "unavailable"
-    | "disabled"
     | "auth"
-    | "unknown";
+    | "limit"
+    | "unknown"
+    | "AI_CHAT_DISABLED"
+    | "AI_CREDITS_EXHAUSTED"
+    | "AI_CHAT_CONSENT_REQUIRED"
+    | "AI_CHAT_PROVIDER_UNAVAILABLE"
+    | "AI_CHAT_TIMEOUT"
+    | "AI_CHAT_CONTEXT_UNAVAILABLE"
+    | "AI_CHAT_IDEMPOTENCY_CONFLICT"
+    | "AI_CHAT_INTERNAL_ERROR";
   canSend: boolean;
   creditAllocation: number;
   send: (value: string) => Promise<string | null>;
@@ -378,7 +384,7 @@ describe("ChatScreen", () => {
 
   it("retries the failed assistant reply without reusing composer text flow", async () => {
     mockChatHistoryState.messages = baseMessages;
-    mockChatHistoryState.sendErrorType = "timeout";
+    mockChatHistoryState.sendErrorType = "AI_CHAT_TIMEOUT";
 
     const screen = renderWithTheme(<ChatScreen />);
 
@@ -392,7 +398,7 @@ describe("ChatScreen", () => {
 
   it("renders degraded disabled state and blocks retry when backend kill switch is active", async () => {
     mockChatHistoryState.messages = baseMessages;
-    mockChatHistoryState.sendErrorType = "disabled";
+    mockChatHistoryState.sendErrorType = "AI_CHAT_DISABLED";
 
     const screen = renderWithTheme(<ChatScreen />);
 
@@ -402,5 +408,18 @@ describe("ChatScreen", () => {
     expect(await screen.findByPlaceholderText("composer.lockedDisabled")).toBeTruthy();
     expect(screen.getByTestId("chat-input").props.editable).toBe(false);
     expect(screen.queryByText("retryLast")).toBeNull();
+  });
+
+  it("renders context unavailable degraded state instead of generic unknown", async () => {
+    mockChatHistoryState.messages = baseMessages;
+    mockChatHistoryState.sendErrorType = "AI_CHAT_CONTEXT_UNAVAILABLE";
+
+    const screen = renderWithTheme(<ChatScreen />);
+
+    expect(screen.getByTestId("chat-context-unavailable-banner")).toBeTruthy();
+    expect(screen.getByText("lock.contextUnavailableTitle")).toBeTruthy();
+    expect(screen.getByText("lock.contextUnavailableBody")).toBeTruthy();
+    expect(await screen.findByText("errors.contextUnavailable")).toBeTruthy();
+    expect(screen.getByText("retryLast")).toBeTruthy();
   });
 });

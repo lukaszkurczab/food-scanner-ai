@@ -267,7 +267,15 @@ describe("useChatHistory", () => {
 
   it("refreshes credits after backend 402 and persists limit fallback", async () => {
     mockApiPost.mockRejectedValueOnce(
-      Object.assign(new Error("payment required"), { status: 402 }),
+      {
+        status: 402,
+        details: {
+          detail: {
+            code: "AI_CREDITS_EXHAUSTED",
+            message: "AI credits exhausted",
+          },
+        },
+      },
     );
 
     const { result } = await renderChatHistoryHook();
@@ -277,6 +285,7 @@ describe("useChatHistory", () => {
     });
 
     expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
+    expect(result.current.sendErrorType).toBe("AI_CREDITS_EXHAUSTED");
     expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
   });
 
@@ -326,7 +335,7 @@ describe("useChatHistory", () => {
     });
 
     expect(createdThreadId).toBe("thread-created");
-    expect(result.current.sendErrorType).toBe("disabled");
+    expect(result.current.sendErrorType).toBe("AI_CHAT_DISABLED");
     expect(mockRefreshCredits).not.toHaveBeenCalled();
     expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
     expect(mockCaptureException).toHaveBeenCalledWith(
@@ -340,6 +349,33 @@ describe("useChatHistory", () => {
     });
 
     expect(mockApiPost).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps backend context failures to degraded context-unavailable state", async () => {
+    mockApiPost.mockRejectedValueOnce({
+      status: 503,
+      details: {
+        detail: {
+          code: "AI_CHAT_CONTEXT_UNAVAILABLE",
+          message: "Chat context is temporarily unavailable.",
+        },
+      },
+    });
+
+    const { result } = await renderChatHistoryHook();
+
+    await act(async () => {
+      await result.current.send("hello");
+    });
+
+    expect(result.current.sendErrorType).toBe("AI_CHAT_CONTEXT_UNAVAILABLE");
+    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.retryLastSend();
+    });
+
+    expect(mockApiPost).toHaveBeenCalledTimes(2);
   });
 
   it("deduplicates double-tap send intents while request is in flight", async () => {

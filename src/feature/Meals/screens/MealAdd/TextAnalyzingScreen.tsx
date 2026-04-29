@@ -234,13 +234,13 @@ export default function TextAnalyzingScreen({
           });
           return;
         }
-        if (errorType === "timeout") {
+        if (errorType === "AI_CHAT_TIMEOUT") {
           replaceDescribeMeal({
             submitError: t("text_ai_error_timeout"),
           });
           return;
         }
-        if (errorType === "unavailable") {
+        if (errorType === "AI_CHAT_PROVIDER_UNAVAILABLE") {
           replaceDescribeMeal({
             submitError: t("text_ai_error_unavailable"),
           });
