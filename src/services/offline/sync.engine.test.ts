@@ -231,6 +231,23 @@ describe("offline sync.engine selective coordinator", () => {
     expect(mockChatPull).not.toHaveBeenCalled();
   });
 
+  it("skips pull after a push-only local change request", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { requestSync } = require("@/services/offline/sync.engine");
+
+    await requestSync({
+      uid: "user-1",
+      domain: "meals",
+      reason: "local-change",
+      pullAfterPush: false,
+    });
+
+    expect(mockRunPushQueue).toHaveBeenCalledTimes(1);
+    expect(mockMealsPull).not.toHaveBeenCalled();
+    expect(mockMyMealsPull).not.toHaveBeenCalled();
+    expect(mockChatPull).not.toHaveBeenCalled();
+  });
+
   it("reconnect pushes once and only pulls meal changes for dirty meal queue", async () => {
     mockGetQueuedOpsCount.mockImplementation(async (_uid, options) => {
       const kinds = (options as { kinds?: string[] } | undefined)?.kinds ?? [];
@@ -256,6 +273,22 @@ describe("offline sync.engine selective coordinator", () => {
     expect(mockMealsPull).toHaveBeenCalledTimes(1);
     expect(mockMyMealsPull).not.toHaveBeenCalled();
     expect(mockChatPull).not.toHaveBeenCalled();
+  });
+
+  it("manual reconcile still pulls meals", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { runManualReconcile } = require("@/services/offline/sync.engine");
+
+    const result = await runManualReconcile("user-1");
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        ok: true,
+        pulled: expect.objectContaining({ meals: 0 }),
+      }),
+    );
+    expect(mockRunPushQueue).toHaveBeenCalledTimes(1);
+    expect(mockMealsPull).toHaveBeenCalledTimes(1);
   });
 
   it("rejects requestSync when push reports failed operations", async () => {

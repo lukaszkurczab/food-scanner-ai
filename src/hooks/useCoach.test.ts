@@ -275,6 +275,70 @@ describe("useCoach", () => {
     });
   });
 
+  it("invalidates and refreshes coach after a committed meal delete for the same user", async () => {
+    const initialCoach = createFallbackCoachResponse("2026-03-18");
+    initialCoach.meta.available = true;
+
+    const refreshedCoach = createFallbackCoachResponse("2026-03-18");
+    refreshedCoach.meta.available = true;
+    refreshedCoach.topInsight = {
+      id: "2026-03-18:post-delete",
+      type: "under_logging",
+      priority: 100,
+      title: "Meal removed",
+      body: "Refresh after delete.",
+      actionLabel: "Log next meal",
+      actionType: "log_next_meal",
+      reasonCodes: ["delete"],
+      source: "rules",
+      validUntil: "2026-03-18T23:59:59Z",
+      confidence: 0.92,
+      isPositive: false,
+    };
+    refreshedCoach.insights = [refreshedCoach.topInsight];
+
+    mockGetCoach.mockResolvedValue({
+      coach: initialCoach,
+      source: "remote",
+      status: "live_success",
+      enabled: true,
+      isStale: false,
+      error: null,
+    });
+    mockRefreshCoach.mockResolvedValue({
+      coach: refreshedCoach,
+      source: "remote",
+      status: "live_success",
+      enabled: true,
+      isStale: false,
+      error: null,
+    });
+
+    const { result } = renderHook(() =>
+      useCoach({ uid: "user-1", dayKey: "2026-03-18" }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    act(() => {
+      emit("meal:delete:committed", { uid: "user-1", cloudId: "meal-1" });
+    });
+
+    await waitFor(() => {
+      expect(mockInvalidateCoachCache).toHaveBeenCalledWith("user-1", {
+        dayKey: "2026-03-18",
+      });
+    });
+    expect(mockRefreshCoach).toHaveBeenCalledWith("user-1", {
+      dayKey: "2026-03-18",
+    });
+    await waitFor(() => {
+      expect(result.current.coach.topInsight?.title).toBe("Meal removed");
+    });
+  });
+
   it("ignores stale coach loads after day changes", async () => {
     const firstCoach = createFallbackCoachResponse("2026-03-18");
     firstCoach.meta.available = true;

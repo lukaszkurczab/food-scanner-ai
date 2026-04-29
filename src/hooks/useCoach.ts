@@ -147,7 +147,7 @@ export function useCoach({
     const unsubscribers = [
       on<CoachMutationEvent>("meal:added", handleMealMutation),
       on<CoachMutationEvent>("meal:updated", handleMealMutation),
-      on<CoachMutationEvent>("meal:deleted", handleMealMutation),
+      on<CoachMutationEvent>("meal:delete:committed", handleMealMutation),
     ];
 
     return () => {

@@ -314,6 +314,27 @@ function buildKindsClause(kinds?: QueueKind[]) {
   };
 }
 
+function retryConflictFamily(kind: QueueKind): QueueKind[] {
+  if (kind === "upsert" || kind === "delete") {
+    return ["upsert", "delete"];
+  }
+  if (kind === "upsert_mymeal" || kind === "delete_mymeal") {
+    return ["upsert_mymeal", "delete_mymeal"];
+  }
+  return [kind];
+}
+
+function isRetryUpsertKind(kind: QueueKind): boolean {
+  return kind === "upsert" || kind === "upsert_mymeal";
+}
+
+function isNewerOrSameIntent(
+  pending: Pick<QueueRow, "updated_at">,
+  dead: Pick<DeadLetterRow, "updated_at">,
+): boolean {
+  return String(pending.updated_at) >= String(dead.updated_at);
+}
+
 export async function getDeadLetterCount(
   uid: string,
   options?: { kinds?: QueueKind[] },
@@ -409,25 +430,48 @@ export async function retryDeadLetterOps(params: {
   const mealCloudIds = new Set<string>();
   const myMealCloudIds = new Set<string>();
   const deadIds: number[] = [];
-  for (const row of rows) {
-    deadIds.push(row.id);
-    if (row.cloud_id) {
-      if (row.kind === "upsert" || row.kind === "delete") {
-        mealCloudIds.add(row.cloud_id);
-      }
-      if (row.kind === "upsert_mymeal" || row.kind === "delete_mymeal") {
-        myMealCloudIds.add(row.cloud_id);
-      }
-    }
-  }
+  const skippedRows: Array<{
+    id: number;
+    cloudId: string;
+    kind: QueueKind;
+    reason: "newer_pending_family_op";
+  }> = [];
+  let retriedCount = 0;
 
   db.execSync("BEGIN");
   try {
     for (const row of rows) {
+      deadIds.push(row.id);
+      const family = retryConflictFamily(row.kind);
+      const familyPendingRows = db.getAllSync(
+        `SELECT *
+         FROM op_queue
+         WHERE cloud_id=? AND user_uid=? AND kind IN (${family
+           .map(() => "?")
+           .join(",")})
+         ORDER BY updated_at DESC, id DESC`,
+        [row.cloud_id, row.user_uid, ...family],
+      ) as QueueRow[];
+      const hasNewerOrSamePendingFamilyOp =
+        isRetryUpsertKind(row.kind) &&
+        familyPendingRows.some((pending) => isNewerOrSameIntent(pending, row));
+
+      if (hasNewerOrSamePendingFamilyOp) {
+        skippedRows.push({
+          id: row.id,
+          cloudId: row.cloud_id,
+          kind: row.kind,
+          reason: "newer_pending_family_op",
+        });
+        continue;
+      }
+
       db.runSync(
         `DELETE FROM op_queue
-         WHERE cloud_id=? AND user_uid=? AND kind=?`,
-        [row.cloud_id, row.user_uid, row.kind],
+         WHERE cloud_id=? AND user_uid=? AND kind IN (${family
+           .map(() => "?")
+           .join(",")})`,
+        [row.cloud_id, row.user_uid, ...family],
       );
       db.runSync(
         `INSERT INTO op_queue (
@@ -435,6 +479,16 @@ export async function retryDeadLetterOps(params: {
          ) VALUES (?, ?, ?, ?, ?, 0)`,
         [row.cloud_id, row.user_uid, row.kind, row.payload, row.updated_at],
       );
+      retriedCount++;
+
+      if (row.cloud_id) {
+        if (row.kind === "upsert" || row.kind === "delete") {
+          mealCloudIds.add(row.cloud_id);
+        }
+        if (row.kind === "upsert_mymeal" || row.kind === "delete_mymeal") {
+          myMealCloudIds.add(row.cloud_id);
+        }
+      }
     }
 
     if (deadIds.length) {
@@ -479,8 +533,20 @@ export async function retryDeadLetterOps(params: {
   }
   emit("sync:op:retried", {
     uid: params.uid,
-    count: rows.length,
+    count: retriedCount,
   });
+  if (skippedRows.length) {
+    emit("sync:op:retry_skipped", {
+      uid: params.uid,
+      count: skippedRows.length,
+      reason: "newer_pending_family_op",
+      ops: skippedRows.map((row) => ({
+        id: row.id,
+        cloudId: row.cloudId,
+        kind: row.kind,
+      })),
+    });
+  }
 
-  return rows.length;
+  return retriedCount;
 }

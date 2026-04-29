@@ -7,6 +7,7 @@ const mockGetAllSync = jest.fn<(sql: string, params?: unknown[]) => unknown[]>()
 const mockGetFirstSync = jest.fn<
   (sql: string, params?: unknown[]) => { count?: number; dead?: number; pending?: number } | undefined
 >();
+const mockEmit = jest.fn<(event: string, payload?: unknown) => void>();
 
 type QueuedOp = {
   id: number;
@@ -26,6 +27,7 @@ type DeadOp = QueuedOp & {
 };
 
 let nextQueueId = 1;
+let nextDeadId = 100;
 let queuedOps: QueuedOp[] = [];
 let deadOps: DeadOp[] = [];
 
@@ -115,12 +117,58 @@ function selectDeadOps(_sql: string, params: unknown[] = []) {
     }));
 }
 
+function toQueueRow(op: QueuedOp) {
+  return {
+    id: op.id,
+    cloud_id: op.cloudId,
+    user_uid: op.uid,
+    kind: op.kind,
+    payload: JSON.stringify(op.payload),
+    updated_at: op.updatedAt,
+    attempts: op.attempts,
+  };
+}
+
+function selectQueuedOps(_sql: string, params: unknown[] = []) {
+  const cloudId = String(params[0] ?? "");
+  const uid = String(params[1] ?? "");
+  const kinds = new Set(
+    params
+      .slice(2)
+      .filter((value): value is string => typeof value === "string"),
+  );
+  return queuedOps
+    .filter(
+      (op) =>
+        op.cloudId === cloudId &&
+        op.uid === uid &&
+        (!kinds.size || kinds.has(op.kind)),
+    )
+    .sort((left, right) => {
+      const byUpdatedAt = right.updatedAt.localeCompare(left.updatedAt);
+      return byUpdatedAt || right.id - left.id;
+    })
+    .map(toQueueRow);
+}
+
+function selectRows(sql: string, params: unknown[] = []) {
+  if (sql.includes("FROM op_queue_dead")) {
+    return selectDeadOps(sql, params);
+  }
+  if (sql.includes("FROM op_queue")) {
+    return selectQueuedOps(sql, params);
+  }
+  return [];
+}
+
 function countFor(
   ops: Array<{ uid: string; kind: string }>,
   uid: string,
   kinds: string[],
 ) {
-  return ops.filter((op) => op.uid === uid && (!kinds.length || kinds.includes(op.kind))).length;
+  return ops.filter(
+    (op) => op.uid === uid && (!kinds.length || kinds.includes(op.kind)),
+  ).length;
 }
 
 function getCounts(sql: string, params: unknown[] = []) {
@@ -158,7 +206,7 @@ jest.mock("@/services/offline/db", () => ({
 }));
 
 jest.mock("@/services/core/events", () => ({
-  emit: jest.fn(),
+  emit: (event: string, payload?: unknown) => mockEmit(event, payload),
 }));
 
 jest.mock("uuid", () => ({
@@ -180,15 +228,53 @@ const baseMeal = (overrides: Partial<Meal> = {}): Meal => ({
   ...overrides,
 });
 
+function queuedOp(overrides: Partial<QueuedOp> = {}): QueuedOp {
+  return {
+    id: nextQueueId++,
+    cloudId: "cloud-1",
+    uid: "user-1",
+    kind: "upsert",
+    payload: baseMeal(),
+    updatedAt: "2026-02-25T10:00:00.000Z",
+    attempts: 0,
+    ...overrides,
+  };
+}
+
+function deadOp(overrides: Partial<DeadOp> = {}): DeadOp {
+  return {
+    id: nextDeadId++,
+    opId: 10 + deadOps.length,
+    cloudId: "cloud-1",
+    uid: "user-1",
+    kind: "upsert",
+    payload: baseMeal({ syncState: "failed" }),
+    updatedAt: "2026-02-25T10:00:00.000Z",
+    attempts: 10,
+    failedAt: "2026-02-25T10:05:00.000Z",
+    lastErrorCode: "sync/test",
+    lastErrorMessage: "Test failure",
+    ...overrides,
+  };
+}
+
+function familyOps(uid: string, cloudId: string, kinds: string[]) {
+  return queuedOps.filter(
+    (op) =>
+      op.uid === uid && op.cloudId === cloudId && kinds.includes(op.kind),
+  );
+}
+
 describe("queue.repo", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetModules();
     nextQueueId = 1;
+    nextDeadId = 100;
     queuedOps = [];
     deadOps = [];
     mockRunSync.mockImplementation(applyQueueMutation);
-    mockGetAllSync.mockImplementation(selectDeadOps);
+    mockGetAllSync.mockImplementation(selectRows);
     mockGetFirstSync.mockImplementation(getCounts);
   });
 
@@ -377,8 +463,11 @@ describe("queue.repo", () => {
         cloudId: "cloud-1",
         uid: "user-1",
         kind: "upsert",
-        payload: baseMeal(),
-        updatedAt: "2026-02-25T10:00:00.000Z",
+        payload: baseMeal({
+          name: "Older pending payload",
+          updatedAt: "2026-02-25T09:00:00.000Z",
+        }),
+        updatedAt: "2026-02-25T09:00:00.000Z",
         attempts: 0,
       },
     ];
@@ -426,6 +515,7 @@ describe("queue.repo", () => {
         cloudId: "cloud-1",
         kind: "upsert",
         attempts: 0,
+        payload: expect.objectContaining({ syncState: "failed" }),
       }),
     );
     await expect(
@@ -437,5 +527,315 @@ describe("queue.repo", () => {
     await expect(
       getSyncCounts("user-1", { kinds: ["upsert", "delete"] }),
     ).resolves.toEqual({ dead: 0, pending: 0 });
+  });
+
+  it("skips a dead meal upsert when a newer pending delete exists", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { retryDeadLetterOps } = require("@/services/offline/queue.repo") as
+      typeof import("@/services/offline/queue.repo");
+
+    queuedOps = [
+      queuedOp({
+        kind: "delete",
+        payload: { cloudId: "cloud-1", deleted: true },
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+    ];
+    deadOps = [
+      deadOp({
+        kind: "upsert",
+        payload: baseMeal({
+          name: "Stale dead upsert",
+          updatedAt: "2026-02-25T10:00:00.000Z",
+        }),
+        updatedAt: "2026-02-25T10:00:00.000Z",
+      }),
+    ];
+
+    await expect(
+      retryDeadLetterOps({ uid: "user-1", kinds: ["upsert", "delete"] }),
+    ).resolves.toBe(0);
+
+    expect(familyOps("user-1", "cloud-1", ["upsert", "delete"])).toEqual([
+      expect.objectContaining({
+        kind: "delete",
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+    ]);
+    expect(deadOps).toEqual([]);
+    expect(mockEmit).toHaveBeenCalledWith("sync:op:retried", {
+      uid: "user-1",
+      count: 0,
+    });
+    expect(mockEmit).toHaveBeenCalledWith(
+      "sync:op:retry_skipped",
+      expect.objectContaining({
+        uid: "user-1",
+        count: 1,
+        reason: "newer_pending_family_op",
+      }),
+    );
+  });
+
+  it("retries a dead meal delete by superseding a pending upsert", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { retryDeadLetterOps } = require("@/services/offline/queue.repo") as
+      typeof import("@/services/offline/queue.repo");
+
+    queuedOps = [
+      queuedOp({
+        kind: "upsert",
+        payload: baseMeal({ name: "Pending upsert" }),
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+    ];
+    deadOps = [
+      deadOp({
+        kind: "delete",
+        payload: { cloudId: "cloud-1", deleted: true },
+        updatedAt: "2026-02-25T10:00:00.000Z",
+      }),
+    ];
+
+    await expect(
+      retryDeadLetterOps({ uid: "user-1", kinds: ["upsert", "delete"] }),
+    ).resolves.toBe(1);
+
+    expect(familyOps("user-1", "cloud-1", ["upsert", "delete"])).toEqual([
+      expect.objectContaining({
+        kind: "delete",
+        payload: { cloudId: "cloud-1", deleted: true },
+        updatedAt: "2026-02-25T10:00:00.000Z",
+      }),
+    ]);
+    expect(mockEmit).toHaveBeenCalledWith("sync:op:retried", {
+      uid: "user-1",
+      count: 1,
+    });
+  });
+
+  it("skips an older dead meal upsert when a newer pending upsert exists", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { retryDeadLetterOps } = require("@/services/offline/queue.repo") as
+      typeof import("@/services/offline/queue.repo");
+
+    queuedOps = [
+      queuedOp({
+        kind: "upsert",
+        payload: baseMeal({
+          name: "Newer pending payload",
+          updatedAt: "2026-02-25T11:00:00.000Z",
+        }),
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+    ];
+    deadOps = [
+      deadOp({
+        kind: "upsert",
+        payload: baseMeal({
+          name: "Older dead payload",
+          updatedAt: "2026-02-25T10:00:00.000Z",
+        }),
+        updatedAt: "2026-02-25T10:00:00.000Z",
+      }),
+    ];
+
+    await expect(
+      retryDeadLetterOps({ uid: "user-1", kinds: ["upsert", "delete"] }),
+    ).resolves.toBe(0);
+
+    expect(familyOps("user-1", "cloud-1", ["upsert", "delete"])).toEqual([
+      expect.objectContaining({
+        kind: "upsert",
+        payload: expect.objectContaining({ name: "Newer pending payload" }),
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+    ]);
+    expect(deadOps).toEqual([]);
+  });
+
+  it("retries a newer dead meal upsert by replacing an older pending upsert", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { retryDeadLetterOps } = require("@/services/offline/queue.repo") as
+      typeof import("@/services/offline/queue.repo");
+
+    queuedOps = [
+      queuedOp({
+        kind: "upsert",
+        payload: baseMeal({
+          name: "Older pending payload",
+          updatedAt: "2026-02-25T10:00:00.000Z",
+        }),
+        updatedAt: "2026-02-25T10:00:00.000Z",
+      }),
+    ];
+    deadOps = [
+      deadOp({
+        kind: "upsert",
+        payload: baseMeal({
+          name: "Newer dead payload",
+          updatedAt: "2026-02-25T11:00:00.000Z",
+        }),
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+    ];
+
+    await expect(
+      retryDeadLetterOps({ uid: "user-1", kinds: ["upsert", "delete"] }),
+    ).resolves.toBe(1);
+
+    expect(familyOps("user-1", "cloud-1", ["upsert", "delete"])).toEqual([
+      expect.objectContaining({
+        kind: "upsert",
+        payload: expect.objectContaining({ name: "Newer dead payload" }),
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+    ]);
+  });
+
+  it("applies family-aware retry semantics to saved meal dead-letter ops", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { retryDeadLetterOps } = require("@/services/offline/queue.repo") as
+      typeof import("@/services/offline/queue.repo");
+
+    queuedOps = [
+      queuedOp({
+        cloudId: "saved-skip",
+        kind: "delete_mymeal",
+        payload: { cloudId: "saved-skip", deleted: true },
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+      queuedOp({
+        cloudId: "saved-delete",
+        kind: "upsert_mymeal",
+        payload: baseMeal({
+          cloudId: "saved-delete",
+          mealId: "saved-delete",
+          name: "Pending saved upsert",
+        }),
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+    ];
+    deadOps = [
+      deadOp({
+        cloudId: "saved-skip",
+        kind: "upsert_mymeal",
+        payload: baseMeal({
+          cloudId: "saved-skip",
+          mealId: "saved-skip",
+          name: "Stale saved upsert",
+          updatedAt: "2026-02-25T10:00:00.000Z",
+        }),
+        updatedAt: "2026-02-25T10:00:00.000Z",
+      }),
+      deadOp({
+        cloudId: "saved-delete",
+        kind: "delete_mymeal",
+        payload: { cloudId: "saved-delete", deleted: true },
+        updatedAt: "2026-02-25T10:00:00.000Z",
+      }),
+    ];
+
+    await expect(
+      retryDeadLetterOps({
+        uid: "user-1",
+        kinds: ["upsert_mymeal", "delete_mymeal"],
+      }),
+    ).resolves.toBe(1);
+
+    expect(
+      familyOps("user-1", "saved-skip", ["upsert_mymeal", "delete_mymeal"]),
+    ).toEqual([
+      expect.objectContaining({
+        kind: "delete_mymeal",
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+    ]);
+    expect(
+      familyOps("user-1", "saved-delete", ["upsert_mymeal", "delete_mymeal"]),
+    ).toEqual([
+      expect.objectContaining({
+        kind: "delete_mymeal",
+        payload: { cloudId: "saved-delete", deleted: true },
+      }),
+    ]);
+    expect(mockEmit).toHaveBeenCalledWith("sync:op:retried", {
+      uid: "user-1",
+      count: 1,
+    });
+    expect(mockEmit).toHaveBeenCalledWith(
+      "sync:op:retry_skipped",
+      expect.objectContaining({ uid: "user-1", count: 1 }),
+    );
+  });
+
+  it("reports only actually requeued ops and leaves no duplicate operation family rows", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { retryDeadLetterOps } = require("@/services/offline/queue.repo") as
+      typeof import("@/services/offline/queue.repo");
+
+    queuedOps = [
+      queuedOp({
+        cloudId: "skip-cloud",
+        kind: "delete",
+        payload: { cloudId: "skip-cloud", deleted: true },
+        updatedAt: "2026-02-25T12:00:00.000Z",
+      }),
+      queuedOp({
+        cloudId: "replace-cloud",
+        kind: "upsert",
+        payload: baseMeal({
+          cloudId: "replace-cloud",
+          mealId: "replace-cloud",
+          name: "Old pending",
+          updatedAt: "2026-02-25T09:00:00.000Z",
+        }),
+        updatedAt: "2026-02-25T09:00:00.000Z",
+      }),
+    ];
+    deadOps = [
+      deadOp({
+        cloudId: "skip-cloud",
+        kind: "upsert",
+        payload: baseMeal({
+          cloudId: "skip-cloud",
+          mealId: "skip-cloud",
+          name: "Skipped dead",
+          updatedAt: "2026-02-25T10:00:00.000Z",
+        }),
+        updatedAt: "2026-02-25T10:00:00.000Z",
+      }),
+      deadOp({
+        cloudId: "replace-cloud",
+        kind: "upsert",
+        payload: baseMeal({
+          cloudId: "replace-cloud",
+          mealId: "replace-cloud",
+          name: "Requeued dead",
+          updatedAt: "2026-02-25T11:00:00.000Z",
+        }),
+        updatedAt: "2026-02-25T11:00:00.000Z",
+      }),
+    ];
+
+    await expect(
+      retryDeadLetterOps({ uid: "user-1", kinds: ["upsert", "delete"] }),
+    ).resolves.toBe(1);
+
+    expect(mockEmit).toHaveBeenCalledWith("sync:op:retried", {
+      uid: "user-1",
+      count: 1,
+    });
+    for (const cloudId of ["skip-cloud", "replace-cloud"]) {
+      expect(
+        familyOps("user-1", cloudId, ["upsert", "delete"]),
+      ).toHaveLength(1);
+    }
+    expect(familyOps("user-1", "replace-cloud", ["upsert", "delete"])).toEqual([
+      expect.objectContaining({
+        kind: "upsert",
+        payload: expect.objectContaining({ name: "Requeued dead" }),
+      }),
+    ]);
   });
 });

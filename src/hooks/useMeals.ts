@@ -83,6 +83,7 @@ export function useMeals(userUid: string | null) {
         uid: userUid,
         domain: "meals",
         reason: "local-change",
+        pullAfterPush: false,
       });
       try {
         await refreshStreakFromBackend(userUid, { refreshBadges: true });

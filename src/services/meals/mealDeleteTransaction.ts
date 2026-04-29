@@ -21,7 +21,7 @@ export async function deleteMealTransaction(
 
   await markDeletedLocal(input.uid, input.cloudId, deletedAt);
   await enqueueDelete(input.uid, input.cloudId, deletedAt);
-  emit("meal:deleted", {
+  emit("meal:delete:committed", {
     uid: input.uid,
     cloudId: input.cloudId,
     ts: deletedAt,

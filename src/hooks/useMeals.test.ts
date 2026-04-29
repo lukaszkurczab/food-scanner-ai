@@ -44,6 +44,14 @@ const mockRefreshStreakFromBackend = jest.fn<
 >();
 const mockEmit = jest.fn<(event: string, payload: Record<string, unknown>) => void>();
 const mockOn = jest.fn();
+const mockRequestSync = jest.fn<
+  (params: {
+    uid: string;
+    domain: string;
+    reason: string;
+    pullAfterPush?: boolean;
+  }) => Promise<void>
+>();
 const mockPushQueue = jest.fn<(uid: string) => Promise<void>>();
 const mockPullChanges = jest.fn<(uid: string) => Promise<void>>();
 const mockUpsertMyMealWithPhoto = jest.fn<
@@ -136,7 +144,12 @@ jest.mock("@/services/core/events", () => ({
 }));
 
 jest.mock("@/services/offline/sync.engine", () => ({
-  requestSync: (params: { uid: string }) => mockPushQueue(params.uid),
+  requestSync: (params: {
+    uid: string;
+    domain: string;
+    reason: string;
+    pullAfterPush?: boolean;
+  }) => mockRequestSync(params),
   pushQueue: (uid: string) => mockPushQueue(uid),
   pullChanges: (uid: string) => mockPullChanges(uid),
 }));
@@ -239,6 +252,12 @@ describe("useMeals", () => {
     mockInsertOrUpdateImage.mockResolvedValue();
     mockReconcileAll.mockResolvedValue();
     mockRefreshStreakFromBackend.mockResolvedValue();
+    mockRequestSync.mockImplementation(async (params) => {
+      await mockPushQueue(params.uid);
+      if (params.pullAfterPush !== false) {
+        await mockPullChanges(params.uid);
+      }
+    });
     mockPushQueue.mockResolvedValue();
     mockPullChanges.mockResolvedValue();
     mockUpsertMyMealWithPhoto.mockResolvedValue();
@@ -500,7 +519,7 @@ describe("useMeals", () => {
     expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
   });
 
-  it("does not use meal:deleted as a local read-model event", async () => {
+  it("does not use non-local delete transaction events as a local read-model event", async () => {
     mockGetMealsPageLocal.mockResolvedValueOnce([
       baseMeal({ cloudId: "c1", name: "Old meal" }),
     ]);
@@ -514,13 +533,16 @@ describe("useMeals", () => {
     mockGetMealsPageLocal.mockClear();
 
     act(() => {
-      const handlers = mockEventHandlers.get("meal:deleted");
+      const handlers = mockEventHandlers.get("meal:delete:committed");
       handlers?.forEach((handler) =>
         handler({ uid: "user-1", cloudId: "c1", sourceHookId: "other-instance" }),
       );
     });
 
-    expect(mockOn).not.toHaveBeenCalledWith("meal:deleted", expect.any(Function));
+    expect(mockOn).not.toHaveBeenCalledWith(
+      "meal:delete:committed",
+      expect.any(Function),
+    );
     expect(result.current.meals.map((meal) => meal.cloudId)).toEqual(["c1"]);
     expect(mockGetMealsPageLocal).not.toHaveBeenCalled();
   });
@@ -792,6 +814,12 @@ describe("useMeals", () => {
     });
     await flush();
 
+    expect(mockRequestSync).toHaveBeenCalledWith({
+      uid: "user-1",
+      domain: "meals",
+      reason: "local-change",
+      pullAfterPush: false,
+    });
     expect(mockPushQueue).toHaveBeenCalledWith("user-1");
     expect(mockPullChanges).not.toHaveBeenCalled();
     expect(mockRefreshStreakFromBackend).toHaveBeenCalledWith("user-1", {
@@ -1106,6 +1134,12 @@ describe("useMeals", () => {
     });
     await flush();
 
+    expect(mockRequestSync).toHaveBeenCalledWith({
+      uid: "user-1",
+      domain: "meals",
+      reason: "local-change",
+      pullAfterPush: false,
+    });
     expect(mockPushQueue).toHaveBeenCalledWith("user-1");
     expect(mockPullChanges).not.toHaveBeenCalled();
     expect(mockRefreshStreakFromBackend).toHaveBeenCalledWith("user-1", {
@@ -1489,12 +1523,13 @@ describe("useMeals", () => {
     );
     expect(result.current.meals.map((m) => m.cloudId)).toEqual(["other-day", "keep-me"]);
     expect(mockEmit).toHaveBeenCalledWith(
-      "meal:deleted",
+      "meal:delete:committed",
       expect.objectContaining({
         uid: "user-1",
         cloudId: "delete-me",
       }),
     );
+    expect(mockEmit).not.toHaveBeenCalledWith("meal:deleted", expect.anything());
     expect(mockTrackMealLogged).not.toHaveBeenCalled();
 
     mockGetMealByCloudIdLocal.mockResolvedValueOnce(
@@ -1522,6 +1557,46 @@ describe("useMeals", () => {
     ]);
     expect(selectLocalMealByCloudId("user-1", "delete-me")).toBeNull();
     expect(mockEnqueueDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it("pushes delete sync after debounce without pulling meals again", async () => {
+    jest.useFakeTimers();
+    mockGetMealsPageLocal.mockResolvedValueOnce([
+      baseMeal({
+        cloudId: "delete-sync",
+        mealId: "delete-sync",
+        name: "Delete sync target",
+      }),
+    ]);
+
+    const { result } = renderHook(() => useMeals("user-1"));
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    mockRequestSync.mockClear();
+    mockPushQueue.mockClear();
+    mockPullChanges.mockClear();
+
+    await act(async () => {
+      await result.current.deleteMeal("delete-sync");
+    });
+
+    expect(selectLocalMealByCloudId("user-1", "delete-sync")).toBeNull();
+    expect(result.current.meals).toEqual([]);
+
+    await act(async () => {
+      jest.advanceTimersByTime(1200);
+    });
+    await flush();
+
+    expect(mockRequestSync).toHaveBeenCalledWith({
+      uid: "user-1",
+      domain: "meals",
+      reason: "local-change",
+      pullAfterPush: false,
+    });
+    expect(mockPushQueue).toHaveBeenCalledWith("user-1");
+    expect(mockPullChanges).not.toHaveBeenCalled();
   });
 
   it("duplicates meals and allows overriding target date", async () => {

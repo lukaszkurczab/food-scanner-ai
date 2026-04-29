@@ -54,11 +54,15 @@ describe("deleteMealTransaction", () => {
     expect(mockMarkDeletedLocal.mock.invocationCallOrder[0]).toBeLessThan(
       mockEnqueueDelete.mock.invocationCallOrder[0],
     );
-    expect(mockEmit).toHaveBeenCalledWith("meal:deleted", {
+    expect(mockEmit).toHaveBeenCalledWith("meal:delete:committed", {
       uid: "user-1",
       cloudId: "cloud-1",
       ts: "2026-04-28T08:00:00.000Z",
     });
+    expect(mockEmit).not.toHaveBeenCalledWith(
+      "meal:deleted",
+      expect.anything(),
+    );
   });
 
   it("skips empty identifiers", async () => {
