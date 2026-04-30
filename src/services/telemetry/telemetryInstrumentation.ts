@@ -52,8 +52,10 @@ type SmartReminderTelemetryInput = {
 type OnboardingModeTelemetry = "first" | "refill";
 
 type PaywallSource = "manage_subscription" | "meal_text_limit";
+type PaywallTriggerSource =
+  | "manage_subscription_screen"
+  | "meal_text_limit_modal";
 type EntitlementSource = "purchase" | "restore";
-type DomainEntitlementSource = EntitlementSource;
 type DomainFailureReason =
   | "billing_unavailable"
   | "billing_not_initialized"
@@ -227,79 +229,64 @@ export function trackNotificationOpened(
 
 export function trackPaywallViewed(input: {
   source: PaywallSource;
+  triggerSource: PaywallTriggerSource;
 }): Promise<void> {
-  return track("paywall_viewed", {
+  return track("paywall_view", {
     source: input.source,
+    trigger_source: input.triggerSource,
   });
 }
 
-export function trackPurchaseCompleted(input: {
-  source: "manage_subscription";
-}): Promise<void> {
-  return track("purchase_completed", {
-    source: input.source,
+export function trackPurchaseStarted(): Promise<void> {
+  return track("purchase_started", {
+    source: "manage_subscription",
   });
 }
 
-export function trackEntitlementActivated(input: {
+export function trackPurchaseSucceeded(): Promise<void> {
+  return track("purchase_succeeded", {
+    source: "manage_subscription",
+  });
+}
+
+export function trackEntitlementConfirmed(input: {
   source: EntitlementSource;
 }): Promise<void> {
-  return track("entitlement_activated", {
+  return track("entitlement_confirmed", {
     source: input.source,
     tier: "premium",
   });
 }
 
-export function trackDomainPurchaseStarted(): Promise<void> {
-  return track("domain.purchase.started", {
-    source: "manage_subscription",
-  });
-}
-
-export function trackDomainPurchaseSucceeded(): Promise<void> {
-  return track("domain.purchase.succeeded", {
-    source: "manage_subscription",
-  });
-}
-
-export function trackDomainEntitlementConfirmed(input: {
-  source: DomainEntitlementSource;
-}): Promise<void> {
-  return track("domain.entitlement.confirmed", {
-    source: input.source,
-    tier: "premium",
-  });
-}
-
-export function trackDomainEntitlementConfirmationFailed(input: {
-  source: DomainEntitlementSource;
+export function trackEntitlementConfirmationFailed(input: {
+  source: EntitlementSource;
   reason: DomainFailureReason;
 }): Promise<void> {
-  return track("domain.entitlement.confirmation_failed", {
+  return track("entitlement_confirmation_failed", {
     source: input.source,
     reason: input.reason,
   });
 }
 
-export function trackDomainRestoreStarted(): Promise<void> {
-  return track("domain.restore.started", {
+export function trackRestoreStarted(): Promise<void> {
+  return track("restore_started", {
     source: "manage_subscription",
   });
 }
 
-export function trackDomainRestoreCompleted(input: {
+export function trackRestoreSucceeded(input: {
   confirmed: boolean;
 }): Promise<void> {
-  return track("domain.restore.completed", {
+  return track("restore_succeeded", {
     source: "manage_subscription",
     confirmed: input.confirmed,
   });
 }
 
-export function trackDomainRestoreFailed(input: {
+export function trackRestoreFailed(input: {
   reason: DomainFailureReason;
 }): Promise<void> {
-  return track("domain.restore.failed", {
+  return track("restore_failed", {
     source: "manage_subscription",
     reason: input.reason,
   });

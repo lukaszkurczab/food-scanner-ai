@@ -172,7 +172,10 @@ export function useMealTextAiState(params: {
 
   const openPaywall = useCallback(() => {
     setShowLimitModal(false);
-    void trackPaywallViewed({ source: "meal_text_limit" });
+    void trackPaywallViewed({
+      source: "meal_text_limit",
+      triggerSource: "meal_text_limit_modal",
+    });
     navigation.navigate("ManageSubscription");
   }, [navigation]);
 

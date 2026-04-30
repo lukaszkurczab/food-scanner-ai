@@ -40,7 +40,10 @@ type PremiumContextType = {
   subscription: Subscription | null;
   setDevPremium: (enabled: boolean) => Promise<void>;
   refreshPremium: () => Promise<boolean>;
-  confirmPremiumEntitlement: () => Promise<boolean>;
+  confirmPremiumEntitlement: () => Promise<{
+    confirmed: boolean;
+    reason?: "credits_not_premium" | "sync_tier_failed";
+  }>;
 };
 
 const PREMIUM_ACTIVE_REFRESH_THROTTLE_MS = 30_000;
@@ -60,7 +63,7 @@ const PremiumContext = createContext<PremiumContextType>({
   subscription: null,
   setDevPremium: async () => {},
   refreshPremium: async () => false,
-  confirmPremiumEntitlement: async () => false,
+  confirmPremiumEntitlement: async () => ({ confirmed: false }),
 });
 
 export const PremiumProvider = ({
@@ -188,10 +191,13 @@ export const PremiumProvider = ({
     [refreshCredits, uid],
   );
 
-  const confirmPremiumEntitlement = useCallback(async (): Promise<boolean> => {
+  const confirmPremiumEntitlement = useCallback(async (): Promise<{
+    confirmed: boolean;
+    reason?: "credits_not_premium" | "sync_tier_failed";
+  }> => {
     if (!uid) {
       setSubscriptionFromPremium(false);
-      return false;
+      return { confirmed: false, reason: "sync_tier_failed" };
     }
 
     let credits: AiCreditsStatus | null = null;
@@ -206,10 +212,14 @@ export const PremiumProvider = ({
     } catch (error) {
       logWarning("premium entitlement confirmation sync failed", null, error);
       setSubscriptionFromPremium(false);
-      return false;
+      return { confirmed: false, reason: "sync_tier_failed" };
     }
 
-    return applyBackendCreditsPremium(credits);
+    const confirmed = applyBackendCreditsPremium(credits);
+    return {
+      confirmed,
+      ...(confirmed ? {} : { reason: "credits_not_premium" as const }),
+    };
   }, [
     applyBackendCreditsPremium,
     refreshCredits,

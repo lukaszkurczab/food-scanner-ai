@@ -56,6 +56,28 @@ describe("PaywallModal", () => {
     expect(onRestore).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps subscribe and restore telemetry delegated to the caller", () => {
+    const onSubscribe = jest.fn();
+    const onRestore = jest.fn();
+    const onClose = jest.fn();
+    const { getByText } = renderWithTheme(
+      <PaywallModal
+        visible
+        priceText="$9.99 / month"
+        onClose={onClose}
+        onSubscribe={onSubscribe}
+        onRestore={onRestore}
+      />,
+    );
+
+    fireEvent.press(getByText("Subscribe"));
+    fireEvent.press(getByText("Restore Purchases"));
+
+    expect(onSubscribe).toHaveBeenCalledTimes(1);
+    expect(onRestore).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it("opens terms/privacy links when urls are provided", () => {
     const openURLSpy = jest
       .spyOn(Linking, "openURL")

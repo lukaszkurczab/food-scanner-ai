@@ -15,16 +15,14 @@ import {
 } from "@/services/billing/revenuecat";
 import { isPremiumSubscriptionState } from "@/services/billing/subscriptionStateMachine";
 import {
-  trackDomainEntitlementConfirmationFailed,
-  trackDomainEntitlementConfirmed,
-  trackDomainPurchaseStarted,
-  trackDomainPurchaseSucceeded,
-  trackDomainRestoreCompleted,
-  trackDomainRestoreFailed,
-  trackDomainRestoreStarted,
-  trackEntitlementActivated,
+  trackEntitlementConfirmationFailed,
+  trackEntitlementConfirmed,
   trackPaywallViewed,
-  trackPurchaseCompleted,
+  trackPurchaseStarted,
+  trackPurchaseSucceeded,
+  trackRestoreFailed,
+  trackRestoreStarted,
+  trackRestoreSucceeded,
 } from "@/services/telemetry/telemetryInstrumentation";
 import type { SubscriptionState } from "@/types/subscription";
 
@@ -43,6 +41,11 @@ export type SubscriptionActionFeedback = {
   message: string;
   source: Exclude<SubscriptionBusyAction, null>;
 } | null;
+
+type PremiumEntitlementConfirmationResult = {
+  confirmed: boolean;
+  reason?: "credits_not_premium" | "sync_tier_failed";
+};
 
 const PREMIUM_RECOVERY_STATES = new Set<SubscriptionState>([
   "premium_expired",
@@ -78,7 +81,7 @@ export function useManageSubscriptionState(params: {
   subscriptionState?: string | null;
   isPremium: boolean | null | undefined;
   refreshPremium: () => Promise<unknown>;
-  confirmPremiumEntitlement: () => Promise<boolean>;
+  confirmPremiumEntitlement: () => Promise<PremiumEntitlementConfirmationResult>;
   setDevPremium: (value: boolean) => void;
   t: Translate;
 }) {
@@ -257,14 +260,13 @@ export function useManageSubscriptionState(params: {
     setBusy(true);
     setBusyAction("restore");
     try {
-      void trackDomainRestoreStarted();
+      void trackRestoreStarted();
       const res = await restorePurchases(params.uid);
       if (res.status === "success") {
-        const confirmed = await params.confirmPremiumEntitlement();
-        void trackDomainRestoreCompleted({ confirmed });
-        if (confirmed) {
-          void trackDomainEntitlementConfirmed({ source: "restore" });
-          void trackEntitlementActivated({ source: "restore" });
+        const confirmation = await params.confirmPremiumEntitlement();
+        void trackRestoreSucceeded({ confirmed: confirmation.confirmed });
+        if (confirmation.confirmed) {
+          void trackEntitlementConfirmed({ source: "restore" });
           setActionFeedback({
             tone: "success",
             title: params.t("manageSubscription.restoreSuccessTitle", {
@@ -276,9 +278,9 @@ export function useManageSubscriptionState(params: {
             source: "restore",
           });
         } else {
-          void trackDomainEntitlementConfirmationFailed({
+          void trackEntitlementConfirmationFailed({
             source: "restore",
-            reason: "credits_not_premium",
+            reason: confirmation.reason ?? "sync_tier_failed",
           });
           setActionFeedback({
             tone: "warning",
@@ -295,7 +297,7 @@ export function useManageSubscriptionState(params: {
       } else if (res.status === "cancelled") {
         return;
       } else {
-        void trackDomainRestoreFailed({ reason: res.errorCode });
+        void trackRestoreFailed({ reason: res.errorCode });
         const fallback = params.t("manageSubscription.restoreFailed", {
           defaultValue: "Restore failed. Try again later.",
         });
@@ -324,15 +326,13 @@ export function useManageSubscriptionState(params: {
     setBusy(true);
     setBusyAction("purchase");
     try {
-      void trackDomainPurchaseStarted();
+      void trackPurchaseStarted();
       const res = await startOrRenewSubscription(params.uid);
       if (res.status === "success") {
-        void trackDomainPurchaseSucceeded();
-        const confirmed = await params.confirmPremiumEntitlement();
-        if (confirmed) {
-          void trackDomainEntitlementConfirmed({ source: "purchase" });
-          void trackPurchaseCompleted({ source: "manage_subscription" });
-          void trackEntitlementActivated({ source: "purchase" });
+        void trackPurchaseSucceeded();
+        const confirmation = await params.confirmPremiumEntitlement();
+        if (confirmation.confirmed) {
+          void trackEntitlementConfirmed({ source: "purchase" });
           setPaywallVisible(false);
           setActionFeedback({
             tone: "success",
@@ -345,9 +345,9 @@ export function useManageSubscriptionState(params: {
             source: "purchase",
           });
         } else {
-          void trackDomainEntitlementConfirmationFailed({
+          void trackEntitlementConfirmationFailed({
             source: "purchase",
-            reason: "credits_not_premium",
+            reason: confirmation.reason ?? "sync_tier_failed",
           });
           setActionFeedback({
             tone: "warning",
@@ -412,7 +412,10 @@ export function useManageSubscriptionState(params: {
   const openPaywall = useCallback(() => {
     setActionFeedback(null);
     setPaywallVisible(true);
-    void trackPaywallViewed({ source: "manage_subscription" });
+    void trackPaywallViewed({
+      source: "manage_subscription",
+      triggerSource: "manage_subscription_screen",
+    });
   }, []);
 
   const closePaywall = useCallback(() => {

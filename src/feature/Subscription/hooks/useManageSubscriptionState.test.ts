@@ -31,25 +31,21 @@ jest.mock("expo-constants", () => ({
 const mockTrack = jest.fn();
 
 jest.mock("@/services/telemetry/telemetryInstrumentation", () => ({
-  trackDomainEntitlementConfirmationFailed: (...args: unknown[]) =>
-    mockTrack("domain.entitlement.confirmation_failed", ...args),
-  trackDomainEntitlementConfirmed: (...args: unknown[]) =>
-    mockTrack("domain.entitlement.confirmed", ...args),
-  trackDomainPurchaseStarted: (...args: unknown[]) =>
-    mockTrack("domain.purchase.started", ...args),
-  trackDomainPurchaseSucceeded: (...args: unknown[]) =>
-    mockTrack("domain.purchase.succeeded", ...args),
-  trackDomainRestoreCompleted: (...args: unknown[]) =>
-    mockTrack("domain.restore.completed", ...args),
-  trackDomainRestoreFailed: (...args: unknown[]) =>
-    mockTrack("domain.restore.failed", ...args),
-  trackDomainRestoreStarted: (...args: unknown[]) =>
-    mockTrack("domain.restore.started", ...args),
-  trackEntitlementActivated: (...args: unknown[]) =>
-    mockTrack("entitlement_activated", ...args),
-  trackPaywallViewed: (...args: unknown[]) => mockTrack("paywall_viewed", ...args),
-  trackPurchaseCompleted: (...args: unknown[]) =>
-    mockTrack("purchase_completed", ...args),
+  trackEntitlementConfirmationFailed: (...args: unknown[]) =>
+    mockTrack("entitlement_confirmation_failed", ...args),
+  trackEntitlementConfirmed: (...args: unknown[]) =>
+    mockTrack("entitlement_confirmed", ...args),
+  trackPaywallViewed: (...args: unknown[]) => mockTrack("paywall_view", ...args),
+  trackPurchaseStarted: (...args: unknown[]) =>
+    mockTrack("purchase_started", ...args),
+  trackPurchaseSucceeded: (...args: unknown[]) =>
+    mockTrack("purchase_succeeded", ...args),
+  trackRestoreFailed: (...args: unknown[]) =>
+    mockTrack("restore_failed", ...args),
+  trackRestoreStarted: (...args: unknown[]) =>
+    mockTrack("restore_started", ...args),
+  trackRestoreSucceeded: (...args: unknown[]) =>
+    mockTrack("restore_succeeded", ...args),
 }));
 
 function t(_key: string, options?: Record<string, unknown>): string {
@@ -62,7 +58,7 @@ function makeParams(overrides: Record<string, unknown> = {}) {
     subscriptionState: "free_active",
     isPremium: false,
     refreshPremium: jest.fn(async () => false),
-    confirmPremiumEntitlement: jest.fn(async () => true),
+    confirmPremiumEntitlement: jest.fn(async () => ({ confirmed: true })),
     setDevPremium: jest.fn(),
     t,
     ...overrides,
@@ -77,7 +73,10 @@ describe("useManageSubscriptionState", () => {
   });
 
   it("keeps purchase success pending when backend entitlement confirmation fails", async () => {
-    const confirmPremiumEntitlement = jest.fn(async () => false);
+    const confirmPremiumEntitlement = jest.fn(async () => ({
+      confirmed: false,
+      reason: "credits_not_premium" as const,
+    }));
     const { result } = renderHook(() =>
       useManageSubscriptionState(makeParams({ confirmPremiumEntitlement })),
     );
@@ -95,17 +94,17 @@ describe("useManageSubscriptionState", () => {
     });
     expect(result.current.actionFeedback?.title).not.toBe("Premium active");
     expect(mockTrack).toHaveBeenCalledWith(
-      "domain.entitlement.confirmation_failed",
+      "entitlement_confirmation_failed",
       { source: "purchase", reason: "credits_not_premium" },
     );
     expect(mockTrack).not.toHaveBeenCalledWith(
-      "purchase_completed",
+      "entitlement_confirmed",
       expect.anything(),
     );
   });
 
   it("shows final purchase success only after backend entitlement confirmation", async () => {
-    const confirmPremiumEntitlement = jest.fn(async () => true);
+    const confirmPremiumEntitlement = jest.fn(async () => ({ confirmed: true }));
     const { result } = renderHook(() =>
       useManageSubscriptionState(makeParams({ confirmPremiumEntitlement })),
     );
@@ -120,13 +119,44 @@ describe("useManageSubscriptionState", () => {
       source: "purchase",
     });
     expect(mockTrack).toHaveBeenCalledWith(
-      "domain.entitlement.confirmed",
+      "entitlement_confirmed",
       { source: "purchase" },
     );
   });
 
+  it("emits sync-tier failure when purchase succeeds but confirmation call fails", async () => {
+    const confirmPremiumEntitlement = jest.fn(async () => ({
+      confirmed: false,
+      reason: "sync_tier_failed" as const,
+    }));
+    const { result } = renderHook(() =>
+      useManageSubscriptionState(makeParams({ confirmPremiumEntitlement })),
+    );
+
+    await act(async () => {
+      await result.current.trySubscribe();
+    });
+
+    expect(result.current.actionFeedback).toMatchObject({
+      tone: "warning",
+      title: "Confirmation pending",
+      source: "purchase",
+    });
+    expect(mockTrack).toHaveBeenCalledWith(
+      "entitlement_confirmation_failed",
+      { source: "purchase", reason: "sync_tier_failed" },
+    );
+    expect(mockTrack).not.toHaveBeenCalledWith(
+      "entitlement_confirmed",
+      expect.anything(),
+    );
+  });
+
   it("keeps restore success pending when backend entitlement confirmation fails", async () => {
-    const confirmPremiumEntitlement = jest.fn(async () => false);
+    const confirmPremiumEntitlement = jest.fn(async () => ({
+      confirmed: false,
+      reason: "credits_not_premium" as const,
+    }));
     const { result } = renderHook(() =>
       useManageSubscriptionState(makeParams({ confirmPremiumEntitlement })),
     );
@@ -142,8 +172,23 @@ describe("useManageSubscriptionState", () => {
       source: "restore",
     });
     expect(mockTrack).toHaveBeenCalledWith(
-      "domain.restore.completed",
+      "restore_succeeded",
       { confirmed: false },
     );
+  });
+
+  it("tracks paywall view with source and trigger source", async () => {
+    const { result } = renderHook(() =>
+      useManageSubscriptionState(makeParams()),
+    );
+
+    await act(async () => {
+      result.current.openPaywall();
+    });
+
+    expect(mockTrack).toHaveBeenCalledWith("paywall_view", {
+      source: "manage_subscription",
+      triggerSource: "manage_subscription_screen",
+    });
   });
 });

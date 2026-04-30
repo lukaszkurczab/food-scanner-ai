@@ -144,7 +144,7 @@ describe("PremiumContext", () => {
 
     let confirmed = false;
     await act(async () => {
-      confirmed = await result.current.confirmPremiumEntitlement();
+      confirmed = (await result.current.confirmPremiumEntitlement()).confirmed;
     });
 
     expect(confirmed).toBe(true);
@@ -168,7 +168,7 @@ describe("PremiumContext", () => {
 
     let confirmed = true;
     await act(async () => {
-      confirmed = await result.current.confirmPremiumEntitlement();
+      confirmed = (await result.current.confirmPremiumEntitlement()).confirmed;
     });
 
     expect(confirmed).toBe(false);
