@@ -233,7 +233,7 @@ export type AiChatRunResponse = {
   assistantMessageId: string;
   usage: AiChatRunUsage;
   contextStats: AiChatRunContextStats;
-  credits: AiCreditsStatus | null;
+  credits: AiCreditsStatus;
   persistence: AiPersistence;
 };
 

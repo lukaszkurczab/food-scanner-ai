@@ -2,6 +2,7 @@ import NetInfo from "@react-native-community/netinfo";
 import type { ChatThread } from "@/types";
 import { Sync } from "@/utils/debug";
 import { get } from "@/services/core/apiClient";
+import { withV2 } from "@/services/core/apiVersioning";
 import { isOfflineNetState } from "@/services/core/networkState";
 import { normalizeServiceError } from "@/services/contracts/serviceError";
 import {
@@ -80,7 +81,7 @@ export const chatStrategy: SyncStrategy = {
         }
 
         const response = await get<ChatThreadsPageApiResponse>(
-          `/users/me/chat/threads?${query.join("&")}`
+          withV2(`/users/me/chat/threads?${query.join("&")}`)
         );
         const items = Array.isArray(response?.items) ? response.items : [];
         pullLog.log("threads:page", { size: items.length, lastPullTs });

@@ -23,13 +23,12 @@ import {
   type AiUxErrorType,
 } from "@/services/ai/uxError";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
-import { requestSync } from "@/services/offline/sync.engine";
 import {
+  cacheAssistantChatMessageProjection,
+  cacheUserChatMessageProjection,
   type ChatMessageCursor,
   fetchChatThreadMessagesPage,
   markChatMessageProjectionSynced,
-  persistAssistantChatMessage,
-  persistUserChatMessage,
   subscribeToChatThreadMessages,
 } from "@/services/ai/chatThreadRepository";
 
@@ -330,7 +329,7 @@ export function useChatHistory(
 
       try {
         if (!isRetryAttempt) {
-          await persistUserChatMessage({
+          await cacheUserChatMessageProjection({
             userUid,
             threadId: createdThreadId,
             messageId: userMsgId,
@@ -483,18 +482,13 @@ export function useChatHistory(
 
         setMessages((prev) => upsertSortedMessage(prev, optimisticAi));
 
-        await persistAssistantChatMessage({
+        await cacheAssistantChatMessageProjection({
           userUid,
           threadId: createdThreadId,
           messageId: assistantMessageId,
           content: assistantReply,
           createdAt: now2,
         });
-        void requestSync({
-          uid: userUid,
-          domain: "chat",
-          reason: "local-change",
-        }).catch(() => {});
 
         if (isLocalThread && !isRetryAttempt) return createdThreadId;
         return null;

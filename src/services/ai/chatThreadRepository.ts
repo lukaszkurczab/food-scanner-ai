@@ -162,7 +162,7 @@ export async function fetchChatThreadMessagesPage(params: {
   };
 }
 
-export async function persistUserChatMessage(params: {
+export async function cacheUserChatMessageProjection(params: {
   userUid: string;
   threadId: string;
   messageId: string;
@@ -196,7 +196,7 @@ export async function persistUserChatMessage(params: {
   await upsertChatMessageLocal({ threadId: params.threadId, message });
 }
 
-export async function persistAssistantChatMessage(params: {
+export async function cacheAssistantChatMessageProjection(params: {
   userUid: string;
   threadId: string;
   messageId: string;

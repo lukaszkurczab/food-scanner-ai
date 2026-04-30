@@ -77,7 +77,10 @@ describe("chat strategy", () => {
     const synced = await chatStrategy.pull("user-1");
 
     expect(synced).toBe(1);
-    expect(mockGet).toHaveBeenNthCalledWith(1, "/users/me/chat/threads?limit=100");
+    expect(mockGet).toHaveBeenNthCalledWith(
+      1,
+      "/api/v2/users/me/chat/threads?limit=100",
+    );
     expect(mockUpsertChatThreadLocal).toHaveBeenCalledWith(
       expect.objectContaining({
         id: "thread-1",
@@ -163,9 +166,9 @@ describe("chat strategy", () => {
 
     await chatStrategy.pull("user-1");
 
-    expect(mockGet).toHaveBeenCalledWith("/users/me/chat/threads?limit=100");
+    expect(mockGet).toHaveBeenCalledWith("/api/v2/users/me/chat/threads?limit=100");
     expect(mockGet).toHaveBeenCalledWith(
-      "/users/me/chat/threads?limit=100&beforeUpdatedAt=1800",
+      "/api/v2/users/me/chat/threads?limit=100&beforeUpdatedAt=1800",
     );
     expect(mockUpsertChatThreadLocal).toHaveBeenCalledTimes(2);
     expect(mockSetItem).toHaveBeenCalledWith("sync:last_pull_chat:user-1", "1900");

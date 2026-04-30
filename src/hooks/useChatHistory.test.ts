@@ -26,10 +26,10 @@ const mockSubscribeToChatThreadMessages = jest.fn();
 const mockFetchChatThreadMessagesPage = jest.fn<
   (params: unknown) => Promise<unknown>
 >();
-const mockPersistUserChatMessage = jest.fn<
+const mockCacheUserChatMessageProjection = jest.fn<
   (params: unknown) => Promise<void>
 >();
-const mockPersistAssistantChatMessage = jest.fn<
+const mockCacheAssistantChatMessageProjection = jest.fn<
   (params: unknown) => Promise<void>
 >();
 const mockMarkChatMessageProjectionSynced = jest.fn<
@@ -96,10 +96,10 @@ jest.mock("@/services/ai/chatThreadRepository", () => ({
   },
   fetchChatThreadMessagesPage: (params: unknown) =>
     mockFetchChatThreadMessagesPage(params),
-  persistUserChatMessage: (params: unknown) =>
-    mockPersistUserChatMessage(params),
-  persistAssistantChatMessage: (params: unknown) =>
-    mockPersistAssistantChatMessage(params),
+  cacheUserChatMessageProjection: (params: unknown) =>
+    mockCacheUserChatMessageProjection(params),
+  cacheAssistantChatMessageProjection: (params: unknown) =>
+    mockCacheAssistantChatMessageProjection(params),
   markChatMessageProjectionSynced: (params: unknown) =>
     mockMarkChatMessageProjectionSynced(params),
 }));
@@ -164,15 +164,15 @@ describe("useChatHistory", () => {
         truncated: false,
         scopeDecision: "ALLOW_NUTRITION",
       },
-      credits: null,
+      credits: buildCredits({ balance: 19 }),
       persistence: "backend_owned",
     });
     mockFetchChatThreadMessagesPage.mockResolvedValue({
       items: [],
       nextCursor: null,
     });
-    mockPersistUserChatMessage.mockResolvedValue();
-    mockPersistAssistantChatMessage.mockResolvedValue();
+    mockCacheUserChatMessageProjection.mockResolvedValue();
+    mockCacheAssistantChatMessageProjection.mockResolvedValue();
     mockMarkChatMessageProjectionSynced.mockResolvedValue();
     mockPushQueue.mockResolvedValue();
     mockPullChatChanges.mockResolvedValue();
@@ -244,10 +244,10 @@ describe("useChatHistory", () => {
         clientMessageId: "user-msg",
         assistantMessageId: "assistant-msg",
         persistence: "backend_owned",
-        credits: null,
+        credits: buildCredits({ balance: 19 }),
       }),
     );
-    expect(mockPersistUserChatMessage).toHaveBeenCalledWith(
+    expect(mockCacheUserChatMessageProjection).toHaveBeenCalledWith(
       expect.objectContaining({
         userUid: "user-1",
         threadId: "thread-created",
@@ -262,6 +262,7 @@ describe("useChatHistory", () => {
       messageId: "user-msg",
       lastSyncedAt: expect.any(Number),
     });
+    expect(mockPushQueue).not.toHaveBeenCalled();
     expect(mockRefreshCredits).not.toHaveBeenCalled();
   });
 
@@ -286,7 +287,7 @@ describe("useChatHistory", () => {
 
     expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
     expect(result.current.sendErrorType).toBe("AI_CREDITS_EXHAUSTED");
-    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
+    expect(mockCacheAssistantChatMessageProjection).not.toHaveBeenCalled();
   });
 
   it("does not refresh credits on gateway reject responses", async () => {
@@ -308,7 +309,7 @@ describe("useChatHistory", () => {
     });
 
     expect(mockRefreshCredits).not.toHaveBeenCalled();
-    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
+    expect(mockCacheAssistantChatMessageProjection).not.toHaveBeenCalled();
   });
 
   it("enters degraded disabled state and blocks retry context when backend kill switch is active", async () => {
@@ -337,7 +338,7 @@ describe("useChatHistory", () => {
     expect(createdThreadId).toBe("thread-created");
     expect(result.current.sendErrorType).toBe("AI_CHAT_DISABLED");
     expect(mockRefreshCredits).not.toHaveBeenCalled();
-    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
+    expect(mockCacheAssistantChatMessageProjection).not.toHaveBeenCalled();
     expect(mockCaptureException).toHaveBeenCalledWith(
       "[useChatHistory.send] AI chat v2 disabled by backend kill switch",
       { userUid: "user-1", threadId: "thread-created" },
@@ -369,7 +370,7 @@ describe("useChatHistory", () => {
     });
 
     expect(result.current.sendErrorType).toBe("AI_CHAT_CONTEXT_UNAVAILABLE");
-    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
+    expect(mockCacheAssistantChatMessageProjection).not.toHaveBeenCalled();
 
     await act(async () => {
       await result.current.retryLastSend();
@@ -420,7 +421,7 @@ describe("useChatHistory", () => {
         truncated: false,
         scopeDecision: "ALLOW_NUTRITION",
       },
-      credits: null,
+      credits: buildCredits({ balance: 19 }),
       persistence: "backend_owned",
     });
 
@@ -430,7 +431,7 @@ describe("useChatHistory", () => {
 
     expect(secondResult).toBeNull();
     expect(mockApiPost).toHaveBeenCalledTimes(1);
-    expect(mockPersistUserChatMessage).toHaveBeenCalledTimes(1);
+    expect(mockCacheUserChatMessageProjection).toHaveBeenCalledTimes(1);
   }, 10_000);
 
   it("retries the failed assistant reply without persisting a duplicate user message", async () => {
@@ -449,7 +450,7 @@ describe("useChatHistory", () => {
           truncated: false,
           scopeDecision: "ALLOW_NUTRITION",
         },
-        credits: null,
+        credits: buildCredits({ balance: 19 }),
         persistence: "backend_owned",
       });
     mockUuid
@@ -470,10 +471,10 @@ describe("useChatHistory", () => {
       await result.current.retryLastSend();
     });
 
-    expect(mockPersistUserChatMessage).toHaveBeenCalledTimes(1);
+    expect(mockCacheUserChatMessageProjection).toHaveBeenCalledTimes(1);
     expect(mockApiPost).toHaveBeenCalledTimes(2);
-    expect(mockPersistAssistantChatMessage).toHaveBeenCalledTimes(1);
-    expect(mockPersistAssistantChatMessage).toHaveBeenCalledWith({
+    expect(mockCacheAssistantChatMessageProjection).toHaveBeenCalledTimes(1);
+    expect(mockCacheAssistantChatMessageProjection).toHaveBeenCalledWith({
       userUid: "user-1",
       threadId: "thread-created",
       messageId: "ai-msg-2",
@@ -508,7 +509,7 @@ describe("useChatHistory", () => {
       await pendingSend;
     });
 
-    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
+    expect(mockCacheAssistantChatMessageProjection).not.toHaveBeenCalled();
   });
 
   it("maps incoming snapshots and loads next pages", async () => {
@@ -571,8 +572,8 @@ describe("useChatHistory", () => {
 
     expect(result.current.sendErrorType).toBe("offline");
     expect(mockApiPost).not.toHaveBeenCalled();
-    expect(mockPersistUserChatMessage).not.toHaveBeenCalled();
-    expect(mockPersistAssistantChatMessage).not.toHaveBeenCalled();
+    expect(mockCacheUserChatMessageProjection).not.toHaveBeenCalled();
+    expect(mockCacheAssistantChatMessageProjection).not.toHaveBeenCalled();
     expect(mockPushQueue).not.toHaveBeenCalled();
   });
 });
