@@ -15,6 +15,13 @@ import {
 } from "@/services/billing/revenuecat";
 import { isPremiumSubscriptionState } from "@/services/billing/subscriptionStateMachine";
 import {
+  trackDomainEntitlementConfirmationFailed,
+  trackDomainEntitlementConfirmed,
+  trackDomainPurchaseStarted,
+  trackDomainPurchaseSucceeded,
+  trackDomainRestoreCompleted,
+  trackDomainRestoreFailed,
+  trackDomainRestoreStarted,
   trackEntitlementActivated,
   trackPaywallViewed,
   trackPurchaseCompleted,
@@ -73,6 +80,7 @@ export function useManageSubscriptionState(params: {
   subscriptionState?: string | null;
   isPremium: boolean | null | undefined;
   refreshPremium: () => Promise<unknown>;
+  confirmPremiumEntitlement: () => Promise<boolean>;
   setDevPremium: (value: boolean) => void;
   t: Translate;
 }) {
@@ -218,23 +226,45 @@ export function useManageSubscriptionState(params: {
     setBusy(true);
     setBusyAction("restore");
     try {
+      void trackDomainRestoreStarted();
       const res = await restorePurchases(params.uid);
       if (res.status === "success") {
-        await params.refreshPremium();
-        void trackEntitlementActivated({ source: "restore" });
-        setActionFeedback({
-          tone: "success",
-          title: params.t("manageSubscription.restoreSuccessTitle", {
-            defaultValue: "Restore complete",
-          }),
-          message: params.t("manageSubscription.restoreSuccess", {
-            defaultValue: "Purchases restored.",
-          }),
-          source: "restore",
-        });
+        const confirmed = await params.confirmPremiumEntitlement();
+        void trackDomainRestoreCompleted({ confirmed });
+        if (confirmed) {
+          void trackDomainEntitlementConfirmed({ source: "restore" });
+          void trackEntitlementActivated({ source: "restore" });
+          setActionFeedback({
+            tone: "success",
+            title: params.t("manageSubscription.restoreSuccessTitle", {
+              defaultValue: "Premium active",
+            }),
+            message: params.t("manageSubscription.restoreSuccess", {
+              defaultValue: "Purchases restored and premium is active.",
+            }),
+            source: "restore",
+          });
+        } else {
+          void trackDomainEntitlementConfirmationFailed({
+            source: "restore",
+            reason: "credits_not_premium",
+          });
+          setActionFeedback({
+            tone: "warning",
+            title: params.t("manageSubscription.confirmationPendingTitle", {
+              defaultValue: "Confirmation pending",
+            }),
+            message: params.t("manageSubscription.confirmationPending", {
+              defaultValue:
+                "Purchase was restored, but premium is still waiting for backend confirmation. Please try again shortly.",
+            }),
+            source: "restore",
+          });
+        }
       } else if (res.status === "cancelled") {
         return;
       } else {
+        void trackDomainRestoreFailed({ reason: res.errorCode });
         const fallback = params.t("manageSubscription.restoreFailed", {
           defaultValue: "Restore failed. Try again later.",
         });
@@ -263,22 +293,43 @@ export function useManageSubscriptionState(params: {
     setBusy(true);
     setBusyAction("purchase");
     try {
+      void trackDomainPurchaseStarted();
       const res = await startOrRenewSubscription(params.uid);
       if (res.status === "success") {
-        await params.refreshPremium();
-        void trackPurchaseCompleted({ source: "manage_subscription" });
-        void trackEntitlementActivated({ source: "purchase" });
-        setPaywallVisible(false);
-        setActionFeedback({
-          tone: "success",
-          title: params.t("manageSubscription.purchaseSuccessTitle", {
-            defaultValue: "Premium active",
-          }),
-          message: params.t("manageSubscription.purchaseSuccess", {
-            defaultValue: "Subscription active.",
-          }),
-          source: "purchase",
-        });
+        void trackDomainPurchaseSucceeded();
+        const confirmed = await params.confirmPremiumEntitlement();
+        if (confirmed) {
+          void trackDomainEntitlementConfirmed({ source: "purchase" });
+          void trackPurchaseCompleted({ source: "manage_subscription" });
+          void trackEntitlementActivated({ source: "purchase" });
+          setPaywallVisible(false);
+          setActionFeedback({
+            tone: "success",
+            title: params.t("manageSubscription.purchaseSuccessTitle", {
+              defaultValue: "Premium active",
+            }),
+            message: params.t("manageSubscription.purchaseSuccess", {
+              defaultValue: "Subscription active.",
+            }),
+            source: "purchase",
+          });
+        } else {
+          void trackDomainEntitlementConfirmationFailed({
+            source: "purchase",
+            reason: "credits_not_premium",
+          });
+          setActionFeedback({
+            tone: "warning",
+            title: params.t("manageSubscription.confirmationPendingTitle", {
+              defaultValue: "Confirmation pending",
+            }),
+            message: params.t("manageSubscription.confirmationPending", {
+              defaultValue:
+                "Purchase succeeded, but premium is still waiting for backend confirmation. Please try again shortly.",
+            }),
+            source: "purchase",
+          });
+        }
       } else if (res.status === "cancelled") {
         return;
       } else {

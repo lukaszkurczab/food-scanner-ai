@@ -4,6 +4,13 @@ import {
   toSmartReminderConfidenceBucket,
   toSmartReminderScheduledWindow,
   trackAiMealReviewSaved,
+  trackDomainEntitlementConfirmationFailed,
+  trackDomainEntitlementConfirmed,
+  trackDomainPurchaseStarted,
+  trackDomainPurchaseSucceeded,
+  trackDomainRestoreCompleted,
+  trackDomainRestoreFailed,
+  trackDomainRestoreStarted,
   trackEntitlementActivated,
   trackMealLogged,
   trackNotificationOpened,
@@ -78,6 +85,16 @@ describe("telemetryInstrumentation", () => {
     await trackPaywallViewed({ source: "meal_text_limit" });
     await trackPurchaseCompleted({ source: "manage_subscription" });
     await trackEntitlementActivated({ source: "purchase" });
+    await trackDomainPurchaseStarted();
+    await trackDomainPurchaseSucceeded();
+    await trackDomainEntitlementConfirmed({ source: "purchase" });
+    await trackDomainEntitlementConfirmationFailed({
+      source: "purchase",
+      reason: "credits_not_premium",
+    });
+    await trackDomainRestoreStarted();
+    await trackDomainRestoreCompleted({ confirmed: true });
+    await trackDomainRestoreFailed({ reason: "network" });
     await trackWeeklyReportOpened({
       reportStatus: "ready",
       insightCount: 2,
@@ -115,7 +132,36 @@ describe("telemetryInstrumentation", () => {
       source: "purchase",
       tier: "premium",
     });
-    expect(mockTrack).toHaveBeenNthCalledWith(9, "weekly_report_opened", {
+    expect(mockTrack).toHaveBeenNthCalledWith(9, "domain.purchase.started", {
+      source: "manage_subscription",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(10, "domain.purchase.succeeded", {
+      source: "manage_subscription",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(11, "domain.entitlement.confirmed", {
+      source: "purchase",
+      tier: "premium",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(
+      12,
+      "domain.entitlement.confirmation_failed",
+      {
+        source: "purchase",
+        reason: "credits_not_premium",
+      },
+    );
+    expect(mockTrack).toHaveBeenNthCalledWith(13, "domain.restore.started", {
+      source: "manage_subscription",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(14, "domain.restore.completed", {
+      source: "manage_subscription",
+      confirmed: true,
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(15, "domain.restore.failed", {
+      source: "manage_subscription",
+      reason: "network",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(16, "weekly_report_opened", {
       reportStatus: "ready",
       insightCount: 2,
       priorityCount: 2,

@@ -20,6 +20,22 @@ const mockIsRevenueCatConfigured = jest.fn(() => true);
 const mockAppStateRemove = jest.fn();
 let appStateHandler: AppStateHandler | null = null;
 
+function creditsSnapshot(tier: "free" | "premium") {
+  return {
+    userId: "user-1",
+    tier,
+    balance: tier === "premium" ? 800 : 50,
+    allocation: tier === "premium" ? 800 : 50,
+    periodStartAt: "2026-04-01T00:00:00.000Z",
+    periodEndAt: "2026-05-01T00:00:00.000Z",
+    costs: {
+      chat: 1,
+      textMeal: 5,
+      photo: 10,
+    },
+  };
+}
+
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
 }));
@@ -115,6 +131,49 @@ describe("PremiumContext", () => {
 
     expect(mockPost).toHaveBeenCalledWith("/ai/credits/sync-tier");
     expect(mockRefreshCredits).toHaveBeenCalled();
+  });
+
+  it("confirms premium only from backend credits tier after sync-tier", async () => {
+    mockPost.mockResolvedValue(creditsSnapshot("premium"));
+
+    const { result } = renderHook(() => usePremiumContext(), { wrapper });
+
+    await waitFor(() => {
+      expect(mockGetCustomerInfo).toHaveBeenCalled();
+    });
+
+    let confirmed = false;
+    await act(async () => {
+      confirmed = await result.current.confirmPremiumEntitlement();
+    });
+
+    expect(confirmed).toBe(true);
+    expect(mockPost).toHaveBeenCalledWith("/ai/credits/sync-tier");
+    expect(result.current.isPremium).toBe(true);
+    expect(result.current.subscription?.state).toBe("premium_active");
+  });
+
+  it("does not keep Premium active when RevenueCat is premium but sync-tier confirmation fails", async () => {
+    const { result } = renderHook(() => usePremiumContext(), { wrapper });
+
+    await waitFor(() => {
+      expect(mockGetCustomerInfo).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(mockPost).toHaveBeenCalled();
+    });
+
+    mockPost.mockClear();
+    mockPost.mockRejectedValueOnce(new Error("sync failed"));
+
+    let confirmed = true;
+    await act(async () => {
+      confirmed = await result.current.confirmPremiumEntitlement();
+    });
+
+    expect(confirmed).toBe(false);
+    expect(result.current.isPremium).toBe(false);
+    expect(result.current.subscription?.state).not.toBe("premium_active");
   });
 
   it("skips sync-tier API call when user is logged out", async () => {

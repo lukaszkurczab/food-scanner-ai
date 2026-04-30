@@ -15,6 +15,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Subscription } from "@/types/subscription";
 import { post } from "@/services/core/apiClient";
 import {
+  parseCreditsFromResponse,
+  type AiCreditsResponse,
+  type AiCreditsStatus,
+} from "@/services/ai/contracts";
+import {
   initRevenueCat,
   isBillingDisabled,
   isRevenueCatConfigured,
@@ -34,6 +39,7 @@ type PremiumContextType = {
   subscription: Subscription | null;
   setDevPremium: (enabled: boolean) => Promise<void>;
   refreshPremium: () => Promise<boolean>;
+  confirmPremiumEntitlement: () => Promise<boolean>;
 };
 
 const PREMIUM_ACTIVE_REFRESH_THROTTLE_MS = 30_000;
@@ -53,6 +59,7 @@ const PremiumContext = createContext<PremiumContextType>({
   subscription: null,
   setDevPremium: async () => {},
   refreshPremium: async () => false,
+  confirmPremiumEntitlement: async () => false,
 });
 
 export const PremiumProvider = ({
@@ -78,6 +85,15 @@ export const PremiumProvider = ({
   const setSubscriptionFromPremium = useCallback((premium: boolean) => {
     setSubscriptionState(mapPremiumToSubscription(premium));
   }, [setSubscriptionState]);
+
+  const applyBackendCreditsPremium = useCallback(
+    (credits: AiCreditsStatus | null): boolean => {
+      const premium = credits?.tier === "premium";
+      setSubscriptionFromPremium(premium);
+      return premium;
+    },
+    [setSubscriptionFromPremium],
+  );
 
   const setSubscriptionFromRevenueCat = useCallback((input: {
     customerInfo: unknown;
@@ -137,20 +153,51 @@ export const PremiumProvider = ({
     uid,
   ]);
 
-  const syncTierAndRefreshCredits = useCallback(async (): Promise<void> => {
+  const syncTierAndRefreshCredits = useCallback(
+    async (): Promise<AiCreditsStatus | null> => {
+      if (!uid) {
+        return null;
+      }
+
+      try {
+        await post("/ai/credits/sync-tier");
+      } catch (error) {
+        logWarning("ai credits tier sync failed", null, error);
+      }
+
+      return refreshCredits();
+    },
+    [refreshCredits, uid],
+  );
+
+  const confirmPremiumEntitlement = useCallback(async (): Promise<boolean> => {
     if (!uid) {
-      return;
+      setSubscriptionFromPremium(false);
+      return false;
     }
 
+    let credits: AiCreditsStatus | null = null;
     try {
-      await post("/ai/credits/sync-tier");
+      const syncedResponse = await post<AiCreditsResponse>("/ai/credits/sync-tier");
+      credits = parseCreditsFromResponse(syncedResponse);
+      if (!credits) {
+        credits = await refreshCredits();
+      } else {
+        await refreshCredits();
+      }
     } catch (error) {
-      logWarning("ai credits tier sync failed", null, error);
-      // Keep local premium status and fallback to normal credits refresh.
+      logWarning("premium entitlement confirmation sync failed", null, error);
+      setSubscriptionFromPremium(false);
+      return false;
     }
 
-    await refreshCredits();
-  }, [refreshCredits, uid]);
+    return applyBackendCreditsPremium(credits);
+  }, [
+    applyBackendCreditsPremium,
+    refreshCredits,
+    setSubscriptionFromPremium,
+    uid,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +212,10 @@ export const PremiumProvider = ({
       } finally {
         if (!cancelled) {
           await checkPremiumStatus();
-          await syncTierAndRefreshCredits();
+          const credits = await syncTierAndRefreshCredits();
+          if (!cancelled) {
+            applyBackendCreditsPremium(credits);
+          }
         }
       }
     })();
@@ -173,7 +223,12 @@ export const PremiumProvider = ({
     return () => {
       cancelled = true;
     };
-  }, [uid, checkPremiumStatus, syncTierAndRefreshCredits]);
+  }, [
+    uid,
+    applyBackendCreditsPremium,
+    checkPremiumStatus,
+    syncTierAndRefreshCredits,
+  ]);
 
   useEffect(() => {
     if (!uid || !email) return;
@@ -185,11 +240,20 @@ export const PremiumProvider = ({
 
   const refreshPremium = useCallback(
     async () => {
-      const premium = await checkPremiumStatus();
-      await syncTierAndRefreshCredits();
-      return premium;
+      await checkPremiumStatus();
+      const credits = await syncTierAndRefreshCredits();
+      if (credits) {
+        return applyBackendCreditsPremium(credits);
+      }
+      setSubscriptionFromPremium(false);
+      return false;
     },
-    [checkPremiumStatus, syncTierAndRefreshCredits],
+    [
+      applyBackendCreditsPremium,
+      checkPremiumStatus,
+      setSubscriptionFromPremium,
+      syncTierAndRefreshCredits,
+    ],
   );
 
   const refreshPremiumIfStale = useCallback(async (): Promise<void> => {
@@ -234,8 +298,20 @@ export const PremiumProvider = ({
   );
 
   const value = useMemo(
-    () => ({ isPremium, subscription, setDevPremium, refreshPremium }),
-    [isPremium, subscription, setDevPremium, refreshPremium],
+    () => ({
+      isPremium,
+      subscription,
+      setDevPremium,
+      refreshPremium,
+      confirmPremiumEntitlement,
+    }),
+    [
+      isPremium,
+      subscription,
+      setDevPremium,
+      refreshPremium,
+      confirmPremiumEntitlement,
+    ],
   );
 
   return (

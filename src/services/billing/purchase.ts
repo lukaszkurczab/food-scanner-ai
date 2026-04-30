@@ -1,6 +1,5 @@
 import { Platform, Linking } from "react-native";
 import Purchases from "react-native-purchases";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   initRevenueCat,
   isBillingDisabled,
@@ -79,16 +78,6 @@ function mapPurchaseError(meta: PurchaseErrorMeta): PurchaseErrorCode {
   return "unknown";
 }
 
-async function cachePremiumStatus(
-  uid: string | null | undefined,
-  premium: boolean,
-): Promise<void> {
-  if (!uid) return;
-  await AsyncStorage
-    .setItem(`premium_status:${uid}`, premium ? "true" : "false")
-    .catch(() => undefined);
-}
-
 export async function startOrRenewSubscription(
   uid?: string | null,
 ): Promise<PurchaseResult> {
@@ -165,7 +154,6 @@ export async function startOrRenewSubscription(
       };
     }
 
-    await cachePremiumStatus(uid, true);
     return { status: "success" };
   } catch (e: unknown) {
     const meta = errToObj(e);
@@ -218,7 +206,6 @@ export async function restorePurchases(
     const premium = !!info.entitlements.active["premium"];
 
     if (premium) {
-      await cachePremiumStatus(uid, true);
       return { status: "success" };
     }
 

@@ -66,8 +66,13 @@ export default function ManageSubscriptionScreen({
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
   const { credits, loading: creditsLoading } = useAiCreditsContext();
-  const { isPremium, subscription, setDevPremium, refreshPremium } =
-    usePremiumContext();
+  const {
+    isPremium,
+    subscription,
+    setDevPremium,
+    refreshPremium,
+    confirmPremiumEntitlement,
+  } = usePremiumContext();
 
   const {
     busy,
@@ -98,6 +103,7 @@ export default function ManageSubscriptionScreen({
     subscriptionState: subscription?.state,
     isPremium,
     refreshPremium,
+    confirmPremiumEntitlement,
     setDevPremium,
     t,
   });

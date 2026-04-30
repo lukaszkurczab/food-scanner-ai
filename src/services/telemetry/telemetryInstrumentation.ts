@@ -53,6 +53,20 @@ type OnboardingModeTelemetry = "first" | "refill";
 
 type PaywallSource = "manage_subscription" | "meal_text_limit";
 type EntitlementSource = "purchase" | "restore";
+type DomainEntitlementSource = EntitlementSource;
+type DomainFailureReason =
+  | "billing_unavailable"
+  | "billing_not_initialized"
+  | "entitlement_inactive"
+  | "login_failed"
+  | "network"
+  | "no_offerings"
+  | "purchase_not_allowed"
+  | "sign_in_required"
+  | "store_problem"
+  | "sync_tier_failed"
+  | "credits_not_premium"
+  | "unknown";
 
 type WeeklyReportStatus = "ready" | "insufficient_data" | "unavailable";
 
@@ -233,6 +247,61 @@ export function trackEntitlementActivated(input: {
   return track("entitlement_activated", {
     source: input.source,
     tier: "premium",
+  });
+}
+
+export function trackDomainPurchaseStarted(): Promise<void> {
+  return track("domain.purchase.started", {
+    source: "manage_subscription",
+  });
+}
+
+export function trackDomainPurchaseSucceeded(): Promise<void> {
+  return track("domain.purchase.succeeded", {
+    source: "manage_subscription",
+  });
+}
+
+export function trackDomainEntitlementConfirmed(input: {
+  source: DomainEntitlementSource;
+}): Promise<void> {
+  return track("domain.entitlement.confirmed", {
+    source: input.source,
+    tier: "premium",
+  });
+}
+
+export function trackDomainEntitlementConfirmationFailed(input: {
+  source: DomainEntitlementSource;
+  reason: DomainFailureReason;
+}): Promise<void> {
+  return track("domain.entitlement.confirmation_failed", {
+    source: input.source,
+    reason: input.reason,
+  });
+}
+
+export function trackDomainRestoreStarted(): Promise<void> {
+  return track("domain.restore.started", {
+    source: "manage_subscription",
+  });
+}
+
+export function trackDomainRestoreCompleted(input: {
+  confirmed: boolean;
+}): Promise<void> {
+  return track("domain.restore.completed", {
+    source: "manage_subscription",
+    confirmed: input.confirmed,
+  });
+}
+
+export function trackDomainRestoreFailed(input: {
+  reason: DomainFailureReason;
+}): Promise<void> {
+  return track("domain.restore.failed", {
+    source: "manage_subscription",
+    reason: input.reason,
   });
 }
 
