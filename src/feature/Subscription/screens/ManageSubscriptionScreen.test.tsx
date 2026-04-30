@@ -232,7 +232,6 @@ function makeManageState(overrides: Record<string, unknown> = {}) {
     tryOpenRefundPolicy: jest.fn(),
     openPaywall: jest.fn(),
     closePaywall: jest.fn(),
-    toggleDevPremium: jest.fn(),
     openTerms: jest.fn(),
     openPrivacy: jest.fn(),
     clearActionFeedback: jest.fn(),
@@ -257,9 +256,7 @@ describe("ManageSubscriptionScreen", () => {
       loading: false,
     });
     mockUsePremiumContext.mockReturnValue({
-      isPremium: false,
       subscription: { state: "inactive" },
-      setDevPremium: jest.fn(),
       refreshPremium: jest.fn(),
       confirmPremiumEntitlement: jest.fn(),
     });
@@ -271,9 +268,7 @@ describe("ManageSubscriptionScreen", () => {
 
   it("shows the loader while subscription data is missing", () => {
     mockUsePremiumContext.mockReturnValue({
-      isPremium: false,
       subscription: null,
-      setDevPremium: jest.fn(),
       refreshPremium: jest.fn(),
       confirmPremiumEntitlement: jest.fn(),
     });
@@ -296,9 +291,7 @@ describe("ManageSubscriptionScreen", () => {
     };
     mockUseNetInfo.mockReturnValue({ isConnected: false });
     mockUsePremiumContext.mockReturnValue({
-      isPremium: false,
       subscription: null,
-      setDevPremium: jest.fn(),
       refreshPremium,
       confirmPremiumEntitlement: jest.fn(),
     });
@@ -334,7 +327,6 @@ describe("ManageSubscriptionScreen", () => {
     const tryOpenRefundPolicy = jest.fn();
     const openPaywall = jest.fn();
     const closePaywall = jest.fn();
-    const toggleDevPremium = jest.fn();
     const clearActionFeedback = jest.fn();
 
     mockUseManageSubscriptionState.mockReturnValue(
@@ -348,7 +340,6 @@ describe("ManageSubscriptionScreen", () => {
         tryOpenRefundPolicy,
         openPaywall,
         closePaywall,
-        toggleDevPremium,
         clearActionFeedback,
       }),
     );
@@ -382,7 +373,6 @@ describe("ManageSubscriptionScreen", () => {
     fireEvent.press(getByText("subscribe-paywall"));
     fireEvent.press(getByText("restore-paywall"));
     fireEvent.press(getByText("close-paywall"));
-    fireEvent.press(getByText("DEV: Enable premium"));
 
     expect(clearActionFeedback).toHaveBeenCalledTimes(1);
     expect(openPaywall).toHaveBeenCalledTimes(1);
@@ -392,6 +382,5 @@ describe("ManageSubscriptionScreen", () => {
     expect(tryOpenRefundPolicy).toHaveBeenCalledTimes(1);
     expect(trySubscribe).toHaveBeenCalledTimes(1);
     expect(closePaywall).toHaveBeenCalledTimes(1);
-    expect(toggleDevPremium).toHaveBeenCalledTimes(1);
   });
 });

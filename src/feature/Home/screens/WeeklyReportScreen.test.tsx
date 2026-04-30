@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
-import { afterAll, beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import WeeklyReportScreen from "@/feature/Home/screens/WeeklyReportScreen";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 const mockUseAuthContext = jest.fn();
 const mockUsePremiumContext = jest.fn();
 const mockUseWeeklyReport = jest.fn();
-const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
 
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
@@ -109,16 +108,11 @@ jest.mock("@/components", () => {
 describe("WeeklyReportScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (globalThis as { __DEV__?: boolean }).__DEV__ = false;
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUsePremiumContext.mockReturnValue({
       subscription: { state: "premium_active" },
       refreshPremium: jest.fn(),
     });
-  });
-
-  afterAll(() => {
-    (globalThis as { __DEV__?: boolean }).__DEV__ = originalDev;
   });
 
   it("renders loading state", () => {

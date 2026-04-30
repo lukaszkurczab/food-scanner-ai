@@ -15,15 +15,10 @@ import WeeklyReportCard from "../components/WeeklyReportCard";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { useMealAddMethodState } from "@/feature/Meals/hooks/useMealAddMethodState";
-import { createMockWeeklyReportResult } from "@/services/weeklyReport/weeklyReportMocks";
 import { formatMealDayKey } from "@/services/meals/mealMetadata";
 import { useHomeTodayState } from "@/feature/Home/hooks/useHomeTodayState";
 import { buildHomeHeroModel } from "@/feature/Home/services/homeHeroPresenter";
 import type { Meal } from "@/types/meal";
-
-function isWeeklyReportDevPreview(): boolean {
-  return typeof __DEV__ !== "undefined" && __DEV__;
-}
 
 function buildLast7Days(): WeekDayItem[] {
   const now = new Date();
@@ -55,10 +50,9 @@ export default function HomeScreen({ navigation }: Props) {
   const { uid } = useAuthContext();
   const { isPremium } = usePremiumContext();
   const canAccessWeeklyReport = isPremium === true;
-  const weeklyReportDevPreview = isWeeklyReportDevPreview();
-  const liveWeeklyReport = useWeeklyReport({
+  const weeklyReport = useWeeklyReport({
     uid,
-    active: canAccessWeeklyReport && !weeklyReportDevPreview,
+    active: canAccessWeeklyReport,
   });
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const selectedDayKey = useMemo(
@@ -75,13 +69,6 @@ export default function HomeScreen({ navigation }: Props) {
     navigation,
     replaceOnStart: false,
   });
-  const weeklyReport = weeklyReportDevPreview
-    ? {
-        ...createMockWeeklyReportResult("ready"),
-        loading: false,
-        refresh: async () => createMockWeeklyReportResult("ready").report,
-      }
-    : liveWeeklyReport;
 
   const {
     dayMeals,

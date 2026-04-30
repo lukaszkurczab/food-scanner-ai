@@ -108,7 +108,6 @@ export default {
       revenuecatIosKey: process.env.RC_IOS_API_KEY || "",
       disableBilling:
         (process.env.DISABLE_BILLING || "").toLowerCase() === "true",
-      forcePremium: (process.env.FORCE_PREMIUM || "").toLowerCase() === "true",
       termsUrl: process.env.TERMS_URL || "",
       privacyUrl: process.env.PRIVACY_URL || "",
       sentryDsn: process.env.SENTRY_DSN || "",

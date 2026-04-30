@@ -7,7 +7,6 @@ import { usePremiumContext } from "@/context/PremiumContext";
 import { useWeeklyReport } from "@/hooks/useWeeklyReport";
 import type { RootStackParamList } from "@/navigation/navigate";
 import { hasPremiumAccess } from "@/services/billing/subscriptionStateMachine";
-import { createMockWeeklyReportResult } from "@/services/weeklyReport/weeklyReportMocks";
 import type {
   WeeklyReport,
   WeeklyReportInsight,
@@ -20,7 +19,6 @@ import {
   formatWeeklyPeriod,
   getCarryForwardLine,
   getSignalDotColor,
-  isWeeklyReportDevPreview,
 } from "@/feature/Home/screens/WeeklyReportScreen.helpers";
 import { trackWeeklyReportOpened } from "@/services/telemetry/telemetryInstrumentation";
 
@@ -550,28 +548,13 @@ export default function WeeklyReportScreen({ navigation }: Props) {
   const { t, i18n } = useTranslation("home");
   const { uid } = useAuthContext();
   const { subscription, refreshPremium } = usePremiumContext();
-  const weeklyReportDevPreview = isWeeklyReportDevPreview();
-  const accessState = weeklyReportDevPreview
-    ? "premium"
-    : resolveWeeklyReportAccessState(subscription);
-  const liveWeeklyReport = useWeeklyReport({
+  const accessState = resolveWeeklyReportAccessState(subscription);
+  const weeklyReport = useWeeklyReport({
     uid,
-    active: accessState === "premium" && !weeklyReportDevPreview,
+    active: accessState === "premium",
   });
   const [refreshing, setRefreshing] = useState(false);
   const hasTrackedOpenRef = useRef(false);
-
-  const weeklyReport = useMemo(
-    () =>
-      weeklyReportDevPreview
-        ? {
-            ...createMockWeeklyReportResult("ready"),
-            loading: false,
-            refresh: async () => createMockWeeklyReportResult("ready").report,
-          }
-        : liveWeeklyReport,
-    [weeklyReportDevPreview, liveWeeklyReport],
-  );
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;

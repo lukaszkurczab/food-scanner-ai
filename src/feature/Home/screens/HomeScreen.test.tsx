@@ -5,7 +5,7 @@ import {
   View as mockView,
 } from "react-native";
 import { fireEvent, waitFor } from "@testing-library/react-native";
-import { afterAll, afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import HomeScreen from "@/feature/Home/screens/HomeScreen";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
@@ -17,7 +17,6 @@ const mockUseAuthContext = jest.fn();
 const mockUsePremiumContext = jest.fn();
 const mockUseMealAddMethodState = jest.fn();
 const mockUseWeeklyReport = jest.fn();
-const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
 
 jest.mock("@/hooks/useMeals", () => ({
   useMeals: (uid: string | null | undefined) => mockUseMeals(uid),
@@ -281,7 +280,6 @@ function createMeal(overrides: Record<string, unknown> = {}) {
 
 describe("HomeScreen", () => {
   beforeEach(() => {
-    (globalThis as { __DEV__?: boolean }).__DEV__ = false;
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-03-18T08:00:00.000Z"));
     jest.clearAllMocks();
@@ -332,10 +330,6 @@ describe("HomeScreen", () => {
 
   afterEach(() => {
     jest.useRealTimers();
-  });
-
-  afterAll(() => {
-    (globalThis as { __DEV__?: boolean }).__DEV__ = originalDev;
   });
 
   it("renders the empty today state and starts the preferred method from the hero CTA", async () => {

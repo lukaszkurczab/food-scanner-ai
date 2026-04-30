@@ -7,7 +7,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuthContext } from "@/context/AuthContext";
 import { get } from "@/services/core/apiClient";
@@ -38,7 +37,6 @@ const AiCreditsContext = createContext<AiCreditsContextValue>({
   applyCreditsFromResponse: () => null,
   canAfford: () => false,
 });
-const APP_ACTIVE_REFRESH_THROTTLE_MS = 30_000;
 
 function getActionCost(credits: AiCreditsStatus, action: AiCreditsAction): number {
   return credits.costs[action];
@@ -60,7 +58,6 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
   const [credits, setCredits] = useState<AiCreditsStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const creditsRef = useRef(credits);
-  const lastActiveRefreshAtRef = useRef(0);
   const uidRef = useRef(uid);
   const refreshInFlightRef = useRef<{
     uid: string;
@@ -146,15 +143,6 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
     }
   }, [uid]);
 
-  const refreshCreditsIfStale = useCallback(async (): Promise<AiCreditsStatus | null> => {
-    const now = Date.now();
-    if (now - lastActiveRefreshAtRef.current < APP_ACTIVE_REFRESH_THROTTLE_MS) {
-      return creditsRef.current;
-    }
-    lastActiveRefreshAtRef.current = now;
-    return refreshCredits();
-  }, [refreshCredits]);
-
   useEffect(() => {
     let cancelled = false;
     if (!uid) {
@@ -180,22 +168,6 @@ export const AiCreditsProvider = ({ children }: { children: React.ReactNode }) =
       cancelled = true;
     };
   }, [uid, updateCredits]);
-
-  useEffect(() => {
-    void refreshCredits();
-  }, [refreshCredits]);
-
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") {
-        void refreshCreditsIfStale();
-      }
-    });
-
-    return () => {
-      sub.remove();
-    };
-  }, [refreshCreditsIfStale]);
 
   const canAfford = useCallback(
     (action: AiCreditsAction) => {

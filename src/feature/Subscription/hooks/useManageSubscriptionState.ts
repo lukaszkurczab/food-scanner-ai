@@ -13,7 +13,7 @@ import {
   isBillingDisabled,
   isRevenueCatConfigured,
 } from "@/services/billing/revenuecat";
-import { isPremiumSubscriptionState } from "@/services/billing/subscriptionStateMachine";
+import { hasPremiumAccess } from "@/services/billing/subscriptionStateMachine";
 import {
   trackEntitlementConfirmationFailed,
   trackEntitlementConfirmed,
@@ -32,7 +32,6 @@ export type SubscriptionBusyAction =
   | "restore"
   | "purchase"
   | "manage"
-  | "dev"
   | null;
 
 export type SubscriptionActionFeedback = {
@@ -55,7 +54,6 @@ const PREMIUM_RECOVERY_STATES = new Set<SubscriptionState>([
 
 function normalizeSubscriptionState(input: {
   rawState: string;
-  isPremiumHint: boolean;
 }): SubscriptionState {
   const knownStates: SubscriptionState[] = [
     "premium_active",
@@ -79,10 +77,8 @@ function normalizeSubscriptionState(input: {
 export function useManageSubscriptionState(params: {
   uid: string | null | undefined;
   subscriptionState?: string | null;
-  isPremium: boolean | null | undefined;
   refreshPremium: () => Promise<unknown>;
   confirmPremiumEntitlement: () => Promise<PremiumEntitlementConfirmationResult>;
-  setDevPremium: (value: boolean) => void;
   t: Translate;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -108,12 +104,9 @@ export function useManageSubscriptionState(params: {
   }, [params]);
 
   const baseState = (params.subscriptionState || "free_active").trim();
-  const isPremiumByState =
-    baseState !== "unknown" && isPremiumSubscriptionState(baseState);
-  const isPremiumComputed = params.isPremium === true || isPremiumByState;
+  const isPremiumComputed = hasPremiumAccess(baseState);
   const state = normalizeSubscriptionState({
     rawState: baseState,
-    isPremiumHint: isPremiumComputed,
   });
 
   const showManageInStore =
@@ -426,12 +419,6 @@ export function useManageSubscriptionState(params: {
     setExpanded((prev) => (prev === key ? null : key));
   }, []);
 
-  const toggleDevPremium = useCallback(() => {
-    setBusyAction("dev");
-    params.setDevPremium(!isPremiumComputed);
-    setBusyAction(null);
-  }, [isPremiumComputed, params]);
-
   const openTerms = useCallback(async () => {
     if (!termsUrl) return;
     await Linking.openURL(termsUrl);
@@ -468,7 +455,6 @@ export function useManageSubscriptionState(params: {
     tryOpenRefundPolicy,
     openPaywall,
     closePaywall,
-    toggleDevPremium,
     openTerms,
     openPrivacy,
     clearActionFeedback: () => setActionFeedback(null),

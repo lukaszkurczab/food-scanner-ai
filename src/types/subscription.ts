@@ -18,5 +18,4 @@ export type Subscription = {
   lastPayment?: string;
   lastPaymentAmount?: string;
   startDate?: string;
-  lastKnownPremiumHint?: boolean | null;
 };

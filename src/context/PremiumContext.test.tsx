@@ -8,6 +8,7 @@ type AppStateHandler = (state: string) => void;
 
 const mockUseAuthContext = jest.fn();
 const mockRefreshCredits = jest.fn<() => Promise<unknown>>();
+const mockApplyCreditsFromResponse = jest.fn<(value: unknown) => unknown>();
 const mockPost = jest.fn<(url: string) => Promise<unknown>>();
 const mockGetCustomerInfo = jest.fn<() => Promise<unknown>>();
 const mockRcLogIn = jest.fn<(uid: string) => Promise<boolean>>();
@@ -42,6 +43,7 @@ jest.mock("@/context/AuthContext", () => ({
 
 jest.mock("@/context/AiCreditsContext", () => ({
   useAiCreditsContext: () => ({
+    applyCreditsFromResponse: mockApplyCreditsFromResponse,
     refreshCredits: mockRefreshCredits,
   }),
 }));
@@ -52,8 +54,6 @@ jest.mock("@/services/core/apiClient", () => ({
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(async () => null),
-  setItem: jest.fn(async () => undefined),
-  multiSet: jest.fn(async () => undefined),
 }));
 
 jest.mock("react-native-purchases", () => ({
@@ -79,17 +79,12 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe("PremiumContext", () => {
   type AsyncStorageMock = {
     getItem: jest.MockedFunction<(key: string) => Promise<string | null>>;
-    setItem: jest.MockedFunction<
-      (key: string, value: string) => Promise<void>
-    >;
-    multiSet: jest.MockedFunction<
-      (entries: [string, string][]) => Promise<void>
-    >;
   };
 
   const asyncStorage = (
     jest.requireMock("@react-native-async-storage/async-storage") as AsyncStorageMock
   );
+  let nowMs = 1_000_000;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -106,12 +101,13 @@ describe("PremiumContext", () => {
     });
     mockPost.mockResolvedValue({});
     mockRefreshCredits.mockResolvedValue(null);
+    mockApplyCreditsFromResponse.mockReturnValue(null);
     mockRcLogIn.mockResolvedValue(true);
-   mockRcLogOut.mockResolvedValue(undefined);
+    mockRcLogOut.mockResolvedValue(undefined);
     mockRcSetAttributes.mockResolvedValue(undefined);
     asyncStorage.getItem.mockResolvedValue(null);
-    asyncStorage.setItem.mockResolvedValue(undefined);
-    asyncStorage.multiSet.mockResolvedValue(undefined);
+    nowMs = 1_000_000;
+    jest.spyOn(Date, "now").mockImplementation(() => nowMs);
   });
 
   afterEach(() => {
@@ -135,6 +131,7 @@ describe("PremiumContext", () => {
 
   it("confirms premium only from backend credits tier after sync-tier", async () => {
     mockPost.mockResolvedValue(creditsSnapshot("premium"));
+    mockApplyCreditsFromResponse.mockReturnValue(creditsSnapshot("premium"));
 
     const { result } = renderHook(() => usePremiumContext(), { wrapper });
 
@@ -149,6 +146,45 @@ describe("PremiumContext", () => {
 
     expect(confirmed).toBe(true);
     expect(mockPost).toHaveBeenCalledWith("/ai/credits/sync-tier");
+    expect(mockApplyCreditsFromResponse).toHaveBeenCalled();
+    expect(result.current.isPremium).toBe(true);
+    expect(result.current.subscription?.state).toBe("premium_active");
+  });
+
+  it("dedupes concurrent premium entitlement confirmations", async () => {
+    let resolveSync: ((value: unknown) => void) | null = null;
+    mockApplyCreditsFromResponse.mockReturnValue(creditsSnapshot("premium"));
+
+    const { result } = renderHook(() => usePremiumContext(), { wrapper });
+
+    await waitFor(() => {
+      expect(mockGetCustomerInfo).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(mockRefreshCredits).toHaveBeenCalled();
+    });
+
+    mockPost.mockClear();
+    mockPost.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSync = resolve;
+      }),
+    );
+    let first: Promise<{ confirmed: boolean }>;
+    let second: Promise<{ confirmed: boolean }>;
+    act(() => {
+      first = result.current.confirmPremiumEntitlement();
+      second = result.current.confirmPremiumEntitlement();
+    });
+
+    expect(first!).toBe(second!);
+    expect(mockPost).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveSync?.(creditsSnapshot("premium"));
+      await first!;
+    });
+
     expect(result.current.isPremium).toBe(true);
     expect(result.current.subscription?.state).toBe("premium_active");
   });
@@ -176,8 +212,7 @@ describe("PremiumContext", () => {
     expect(result.current.subscription?.state).not.toBe("premium_active");
   });
 
-  it("does not grant confirmed premium access from cached premium when RevenueCat fails", async () => {
-    asyncStorage.getItem.mockResolvedValue("true");
+  it("keeps subscription unknown when RevenueCat fails", async () => {
     mockGetCustomerInfo.mockRejectedValueOnce(new Error("revenuecat offline"));
 
     const { result } = renderHook(() => usePremiumContext(), { wrapper });
@@ -190,7 +225,6 @@ describe("PremiumContext", () => {
     });
 
     expect(result.current.isPremium).toBeNull();
-    expect(result.current.subscription?.lastKnownPremiumHint).toBe(true);
     expect(result.current.subscription?.state).not.toBe("premium_active");
   });
 
@@ -215,13 +249,42 @@ describe("PremiumContext", () => {
       expect(mockGetCustomerInfo).toHaveBeenCalledTimes(1);
     });
     expect(appStateHandler).toBeTruthy();
+    mockGetCustomerInfo.mockClear();
+    mockPost.mockClear();
+    mockRefreshCredits.mockClear();
 
     await act(async () => {
+      nowMs += 31_000;
       appStateHandler?.("active");
     });
 
     await waitFor(() => {
-      expect(mockGetCustomerInfo).toHaveBeenCalledTimes(2);
+      expect(mockGetCustomerInfo).toHaveBeenCalledTimes(1);
     });
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs at most one access refresh sequence when app resumes repeatedly", async () => {
+    renderHook(() => usePremiumContext(), { wrapper });
+
+    await waitFor(() => {
+      expect(mockGetCustomerInfo).toHaveBeenCalledTimes(1);
+    });
+    mockGetCustomerInfo.mockClear();
+    mockPost.mockClear();
+    mockRefreshCredits.mockClear();
+
+    await act(async () => {
+      nowMs += 31_000;
+      appStateHandler?.("active");
+      appStateHandler?.("active");
+    });
+
+    await waitFor(() => {
+      expect(mockGetCustomerInfo).toHaveBeenCalledTimes(1);
+    });
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
   });
 });

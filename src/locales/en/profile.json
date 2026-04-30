@@ -242,11 +242,6 @@
     "actionsTitle": "Subscription actions",
     "restoreSubtitle": "Restore access if you already purchased premium on this account.",
     "refundSubtitle": "Open the current store refund policy.",
-    "devSectionTitle": "Developer billing tools",
-    "devSectionFooter": "Visible in development only. This does not change production billing behavior.",
-    "devDisablePremium": "DEV: Disable premium",
-    "devEnablePremium": "DEV: Enable premium",
-    "devToggleSubtitle": "Uses the existing dev-only billing override path.",
     "restorePurchases": "Restore purchases",
     "inactiveSince": "Inactive since",
     "store": {

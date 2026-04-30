@@ -242,11 +242,6 @@
     "actionsTitle": "Działania związane z subskrypcją",
     "restoreSubtitle": "Przywróć dostęp, jeśli Premium zostało już kupione na tym koncie.",
     "refundSubtitle": "Otwórz aktualne zasady zwrotów dla bieżącego sklepu.",
-    "devSectionTitle": "Narzędzia deweloperskie rozliczeń",
-    "devSectionFooter": "Widoczne tylko w trybie deweloperskim. Nie zmienia to zachowania rozliczeń w produkcji.",
-    "devDisablePremium": "DEV: Wyłącz Premium",
-    "devEnablePremium": "DEV: Włącz Premium",
-    "devToggleSubtitle": "Korzysta z istniejącej ścieżki nadpisania rozliczeń tylko w trybie deweloperskim.",
     "restorePurchases": "Przywróć zakupy",
     "inactiveSince": "Nieaktywna od",
     "store": {

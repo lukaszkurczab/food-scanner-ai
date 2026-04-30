@@ -47,7 +47,6 @@ function resetKey(uid: string | null): string {
 function shouldClearUserScopedKey(key: string, uid: string): boolean {
   return (
     key === `user:profile:${uid}` ||
-    key === `premium_status:${uid}` ||
     key === `ai_credits:${uid}` ||
     key.includes(`:${uid}:`) ||
     key.endsWith(`:${uid}`) ||
@@ -60,7 +59,6 @@ async function clearScopedAsyncStorage(uid: string | null): Promise<void> {
   const keysToRemove = uid
     ? keys.filter((key) => shouldClearUserScopedKey(key, uid))
     : [];
-  keysToRemove.push("premium_status:anon");
   if (!keysToRemove.length) return;
   await AsyncStorage.multiRemove(Array.from(new Set(keysToRemove)));
 }

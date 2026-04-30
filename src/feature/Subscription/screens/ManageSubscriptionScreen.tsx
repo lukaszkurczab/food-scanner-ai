@@ -68,9 +68,7 @@ export default function ManageSubscriptionScreen({
   const { uid } = useAuthContext();
   const { credits, loading: creditsLoading } = useAiCreditsContext();
   const {
-    isPremium,
     subscription,
-    setDevPremium,
     refreshPremium,
     confirmPremiumEntitlement,
   } = usePremiumContext();
@@ -99,15 +97,12 @@ export default function ManageSubscriptionScreen({
     tryOpenRefundPolicy,
     openPaywall,
     closePaywall,
-    toggleDevPremium,
     clearActionFeedback,
   } = useManageSubscriptionState({
     uid,
     subscriptionState: subscription?.state,
-    isPremium,
     refreshPremium,
     confirmPremiumEntitlement,
-    setDevPremium,
     t,
   });
 
@@ -511,36 +506,6 @@ export default function ManageSubscriptionScreen({
             ) : null}
           </SettingsSection>
 
-          {__DEV__ ? (
-            <SettingsSection
-              title={t("manageSubscription.devSectionTitle", {
-                defaultValue: "Developer billing tools",
-              })}
-              footer={t("manageSubscription.devSectionFooter", {
-                defaultValue:
-                  "Visible in development only. This does not change production billing behavior.",
-              })}
-            >
-              <SettingsRow
-                title={
-                  isPremiumComputed
-                    ? t("manageSubscription.devDisablePremium", {
-                        defaultValue: "DEV: Disable premium",
-                      })
-                    : t("manageSubscription.devEnablePremium", {
-                        defaultValue: "DEV: Enable premium",
-                      })
-                }
-                subtitle={t("manageSubscription.devToggleSubtitle", {
-                  defaultValue:
-                    "Uses the existing dev-only billing override path.",
-                })}
-                onPress={() => {
-                  void toggleDevPremium();
-                }}
-              />
-            </SettingsSection>
-          ) : null}
         </View>
       </FormScreenShell>
 

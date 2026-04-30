@@ -56,10 +56,8 @@ function makeParams(overrides: Record<string, unknown> = {}) {
   return {
     uid: "user-1",
     subscriptionState: "free_active",
-    isPremium: false,
     refreshPremium: jest.fn(async () => false),
     confirmPremiumEntitlement: jest.fn(async () => ({ confirmed: true })),
-    setDevPremium: jest.fn(),
     t,
     ...overrides,
   };

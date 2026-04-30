@@ -4,10 +4,6 @@ import type {
 } from "@/services/weeklyReport/weeklyReportTypes";
 import type { useTheme } from "@/theme/useTheme";
 
-export function isWeeklyReportDevPreview(): boolean {
-  return typeof __DEV__ !== "undefined" && __DEV__;
-}
-
 function lowerFirst(value: string): string {
   if (!value) return value;
   return `${value.charAt(0).toLowerCase()}${value.slice(1)}`;

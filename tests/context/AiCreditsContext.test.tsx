@@ -1,7 +1,6 @@
 import React from "react";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { AppState, type AppStateStatus } from "react-native";
 import { AiCreditsProvider, useAiCreditsContext } from "@/context/AiCreditsContext";
 import type { AiCreditsStatus } from "@/services/ai/contracts";
 
@@ -52,35 +51,23 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 describe("AiCreditsContext", () => {
-  let appStateListener: ((state: AppStateStatus) => void) | null = null;
-  const appStateRemove = jest.fn();
-  let nowMs = 1_000;
-
   beforeEach(() => {
     mockUseAuthContext.mockReset().mockReturnValue({ uid: "user-1" });
     mockGet.mockReset().mockResolvedValue(buildCredits());
     mockStorageGetItem.mockReset().mockResolvedValue(null);
     mockStorageSetItem.mockReset().mockResolvedValue(undefined);
-    appStateRemove.mockClear();
-    appStateListener = null;
-    nowMs = 1_000;
-
-    jest.spyOn(Date, "now").mockImplementation(() => nowMs);
-
-    jest.spyOn(AppState, "addEventListener").mockImplementation(
-      (_eventType, listener) => {
-        appStateListener = listener;
-        return { remove: appStateRemove } as never;
-      },
-    );
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it("refreshes credits on mount", async () => {
+  it("refreshes credits when requested", async () => {
     const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
+
+    await act(async () => {
+      await result.current.refreshCredits();
+    });
 
     await waitFor(() => {
       expect(mockGet).toHaveBeenCalledWith("/ai/credits");
@@ -102,20 +89,22 @@ describe("AiCreditsContext", () => {
 
     const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
 
+    let first: Promise<AiCreditsStatus | null>;
+    let second: Promise<AiCreditsStatus | null>;
+    act(() => {
+      first = result.current.refreshCredits();
+      second = result.current.refreshCredits();
+    });
+
+    expect(first!).toBe(second!);
+    expect(mockGet).toHaveBeenCalledTimes(1);
     await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledTimes(1);
       expect(result.current.loading).toBe(true);
     });
 
-    const first = result.current.refreshCredits();
-    const second = result.current.refreshCredits();
-
-    expect(first).toBe(second);
-    expect(mockGet).toHaveBeenCalledTimes(1);
-
     await act(async () => {
       resolveCredits?.(buildCredits({ balance: 33 }));
-      await first;
+      await first!;
     });
 
     await waitFor(() => {
@@ -124,7 +113,7 @@ describe("AiCreditsContext", () => {
     });
   });
 
-  it("does not duplicate credits requests when restore-session bootstrap and consumers refresh together", async () => {
+  it("does not duplicate credits requests when consumers refresh together", async () => {
     let resolveCredits: ((value: unknown) => void) | null = null;
     mockGet.mockReturnValue(
       new Promise((resolve) => {
@@ -134,25 +123,19 @@ describe("AiCreditsContext", () => {
 
     const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(true);
-      expect(mockGet).toHaveBeenCalledTimes(1);
-    });
-
-    const consumerRefresh = result.current.refreshCredits();
-
+    let firstRefresh: Promise<AiCreditsStatus | null>;
+    let consumerRefresh: Promise<AiCreditsStatus | null>;
     act(() => {
-      if (!appStateListener) {
-        throw new Error("Missing AppState listener");
-      }
-      appStateListener("active");
+      firstRefresh = result.current.refreshCredits();
+      consumerRefresh = result.current.refreshCredits();
     });
 
     expect(mockGet).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       resolveCredits?.(buildCredits({ balance: 64 }));
-      await consumerRefresh;
+      await firstRefresh!;
+      await consumerRefresh!;
     });
 
     await waitFor(() => {
@@ -171,87 +154,13 @@ describe("AiCreditsContext", () => {
     await expect(result.current.refreshCredits()).resolves.toBeNull();
   });
 
-  it("refreshes credits on app foreground", async () => {
-    mockGet
-      .mockResolvedValueOnce(buildCredits({ balance: 100 }))
-      .mockResolvedValueOnce(buildCredits({ balance: 77 }));
-
-    const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.credits?.balance).toBe(100);
-    });
-
-    act(() => {
-      nowMs += 31_000;
-      if (!appStateListener) {
-        throw new Error("Missing AppState listener");
-      }
-      appStateListener("active");
-    });
-
-    await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledTimes(2);
-      expect(result.current.credits?.balance).toBe(77);
-    });
-  });
-
-  it("throttles app foreground refresh when app resumes too quickly", async () => {
-    mockGet
-      .mockResolvedValueOnce(buildCredits({ balance: 100 }))
-      .mockResolvedValueOnce(buildCredits({ balance: 77 }));
-
-    const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.credits?.balance).toBe(100);
-    });
-
-    act(() => {
-      nowMs += 5_000;
-      if (!appStateListener) {
-        throw new Error("Missing AppState listener");
-      }
-      appStateListener("active");
-    });
-
-    await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledTimes(1);
-      expect(result.current.credits?.balance).toBe(100);
-    });
-  });
-
-  it("does not refresh on non-active app state", async () => {
-    mockGet
-      .mockResolvedValueOnce(buildCredits({ balance: 100 }))
-      .mockResolvedValueOnce(buildCredits({ balance: 77 }));
-
-    const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.credits?.balance).toBe(100);
-    });
-
-    act(() => {
-      if (!appStateListener) {
-        throw new Error("Missing AppState listener");
-      }
-      appStateListener("background");
-    });
-
-    await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledTimes(1);
-      expect(result.current.credits?.balance).toBe(100);
-    });
-  });
-
   it("computes canAfford from shared credits state", async () => {
     mockGet.mockResolvedValue(buildCredits({ balance: 4 }));
 
     const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.credits?.balance).toBe(4);
+    await act(async () => {
+      await result.current.refreshCredits();
     });
 
     expect(result.current.canAfford("chat")).toBe(true);
@@ -264,8 +173,8 @@ describe("AiCreditsContext", () => {
 
     const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.credits?.balance).toBe(90);
+    await act(async () => {
+      await result.current.refreshCredits();
     });
 
     act(() => {
@@ -299,10 +208,6 @@ describe("AiCreditsContext", () => {
 
     const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
     await act(async () => {
       const refreshed = await result.current.refreshCredits();
       expect(refreshed).toBeNull();
@@ -322,7 +227,7 @@ describe("AiCreditsContext", () => {
     await waitFor(() => {
       expect(result.current.credits?.balance).toBe(42);
     });
-    expect(mockGet).toHaveBeenCalledWith("/ai/credits");
+    expect(mockGet).not.toHaveBeenCalled();
   });
 
   it("ignores invalid inline credits payload", async () => {
@@ -330,8 +235,8 @@ describe("AiCreditsContext", () => {
 
     const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.credits?.balance).toBe(55);
+    await act(async () => {
+      await result.current.refreshCredits();
     });
 
     act(() => {
@@ -347,8 +252,8 @@ describe("AiCreditsContext", () => {
 
     const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+    await act(async () => {
+      await result.current.refreshCredits();
     });
 
     expect(result.current.credits).toBeNull();
@@ -376,8 +281,8 @@ describe("AiCreditsContext", () => {
       });
 
     const { result } = renderHook(() => useAiCreditsContext(), { wrapper });
-    await waitFor(() => {
-      expect(result.current.credits?.balance).toBe(100);
+    await act(async () => {
+      await result.current.refreshCredits();
     });
 
     await act(async () => {

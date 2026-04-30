@@ -62,7 +62,6 @@ describe("resetUserRuntime", () => {
     __resetUserRuntimeDedupeForTests();
     mockGetAllKeys.mockResolvedValue([
       "user:profile:user-1",
-      "premium_status:user-1",
       "ai_credits:user-1",
       "sync:last_pull_ts:user-1",
       "notif:sys:ids:user-1:stats",
@@ -86,14 +85,12 @@ describe("resetUserRuntime", () => {
     expect(mockCleanupUserOfflineAssets).toHaveBeenCalledWith("user-1");
     expect(mockMultiRemove).toHaveBeenCalledWith([
       "user:profile:user-1",
-      "premium_status:user-1",
       "ai_credits:user-1",
       "sync:last_pull_ts:user-1",
       "notif:sys:ids:user-1:stats",
       "notif:ids:user-1:smart-reminders:2026-04-24",
       "current_meal_draft_user-1",
       "chat_legal_ack:user-1",
-      "premium_status:anon",
     ]);
   });
 

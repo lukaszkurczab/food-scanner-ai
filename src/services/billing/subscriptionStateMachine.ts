@@ -118,10 +118,6 @@ function resolveSubscriptionState(
   return "free_active";
 }
 
-export function isPremiumSubscriptionState(state: SubscriptionState | string): boolean {
-  return state.startsWith("premium_");
-}
-
 export function hasPremiumAccess(state: SubscriptionState | string): boolean {
   return (
     state === "premium_active"
@@ -136,23 +132,19 @@ export function mapPremiumToSubscription(premium: boolean): Subscription {
 }
 
 export function mapUnknownSubscription(
-  lastKnownPremiumHint: boolean | null = null,
 ): Subscription {
   return {
     state: "unknown",
-    lastKnownPremiumHint,
   };
 }
 
 export function resolveSubscriptionFromRevenueCat(params: {
   customerInfo: unknown;
-  lastKnownPremiumHint?: boolean | null;
 }): Subscription {
   const entitlement = normalizeEntitlement(params.customerInfo);
   const state = resolveSubscriptionState(entitlement);
   return {
     state,
-    lastKnownPremiumHint: params.lastKnownPremiumHint ?? null,
     renewDate: entitlement.expirationDate ?? undefined,
     endDate: entitlement.expirationDate ?? undefined,
     startDate:
