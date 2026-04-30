@@ -234,7 +234,6 @@ export function useMealCameraState({
   }, [
     accessState,
     canUsePhotoAnalysis,
-    credits,
     handleAccept,
     isCameraReady,
     isSimulatorPreview,

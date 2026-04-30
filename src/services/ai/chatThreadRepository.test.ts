@@ -65,9 +65,7 @@ describe("services/ai/chatThreadRepository", () => {
 
   it("persists user message as a local projection only", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const {
-      cacheUserChatMessageProjection,
-    } = require("@/services/ai/chatThreadRepository");
+    const { cacheUserChatMessageProjection } = require("@/services/ai/chatThreadRepository");
 
     await cacheUserChatMessageProjection({
       userUid: "user-1",
@@ -101,9 +99,7 @@ describe("services/ai/chatThreadRepository", () => {
 
   it("persists assistant message as a synced local projection only", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const {
-      cacheAssistantChatMessageProjection,
-    } = require("@/services/ai/chatThreadRepository");
+    const { cacheAssistantChatMessageProjection } = require("@/services/ai/chatThreadRepository");
 
     await cacheAssistantChatMessageProjection({
       userUid: "user-1",

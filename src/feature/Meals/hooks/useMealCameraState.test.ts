@@ -15,6 +15,7 @@ const mockUseMealDraftContext = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockUseAiCreditsContext = jest.fn();
 const mockCanAfford = jest.fn(() => true);
+const mockCanUseFeature = jest.fn((feature: string) => feature === "photoAnalysis");
 const mockDevice = { isDevice: true };
 const mockNormalizeImageOrientation = jest.fn<(uri: string) => Promise<string>>();
 
@@ -35,6 +36,27 @@ jest.mock("@/context/AuthContext", () => ({
 
 jest.mock("@/context/AiCreditsContext", () => ({
   useAiCreditsContext: () => mockUseAiCreditsContext(),
+}));
+
+jest.mock("@/context/AccessContext", () => ({
+  useAccessContext: () => ({
+    accessState: {
+      credits: {
+        userId: "user-1",
+        tier: "free",
+        balance: 10,
+        allocation: 100,
+        periodStartAt: "2026-03-01T00:00:00.000Z",
+        periodEndAt: "2026-04-01T00:00:00.000Z",
+        costs: { chat: 1, textMeal: 1, photo: 5 },
+      },
+    },
+    loading: false,
+    refreshAccess: jest.fn(),
+    applyAccessFromResponse: jest.fn(),
+    canUseFeature: mockCanUseFeature,
+    getFeature: jest.fn(),
+  }),
 }));
 
 jest.mock("@/utils/devSamples", () => ({
@@ -70,6 +92,7 @@ describe("useMealCameraState", () => {
     (globalThis as { __DEV__?: boolean }).__DEV__ = false;
     mockDevice.isDevice = true;
     mockCanAfford.mockReturnValue(true);
+    mockCanUseFeature.mockImplementation((feature: string) => feature === "photoAnalysis");
     mockNormalizeImageOrientation.mockImplementation(async (uri: string) => uri);
 
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
@@ -186,6 +209,7 @@ describe("useMealCameraState", () => {
 
   it("opens insufficient-credits modal when photo AI is not affordable", async () => {
     mockCanAfford.mockReturnValue(false);
+    mockCanUseFeature.mockReturnValue(false);
 
     const flow = {
       goTo: jest.fn(),

@@ -152,6 +152,29 @@ describe("reminderService", () => {
     expect(result).toBe(expected);
   });
 
+  it("defaults smart reminders on and derives canonical local day keys", () => {
+    mockReadPublicEnv.mockReturnValue(undefined);
+    const service = jest.requireActual(
+      "@/services/reminders/reminderService",
+    ) as typeof import("@/services/reminders/reminderService");
+
+    expect(service.isSmartRemindersEnabled()).toBe(true);
+    expect(
+      service.getCurrentReminderDecisionDayKey(
+        new Date("2026-03-18T12:00:00.000Z"),
+      ),
+    ).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("treats blank smart reminder flags as enabled", () => {
+    mockReadPublicEnv.mockReturnValue("   ");
+    const service = jest.requireActual(
+      "@/services/reminders/reminderService",
+    ) as typeof import("@/services/reminders/reminderService");
+
+    expect(service.isSmartRemindersEnabled()).toBe(true);
+  });
+
   it("returns disabled state and skips the endpoint when smart reminders are globally disabled", async () => {
     mockReadPublicEnv.mockImplementation((name: string) => {
       if (name === "EXPO_PUBLIC_ENABLE_SMART_REMINDERS") {

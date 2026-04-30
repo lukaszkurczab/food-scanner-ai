@@ -221,4 +221,44 @@ describe("telemetryInstrumentation", () => {
       failureReason: "invalid_time",
     });
   });
+
+  it("normalizes optional telemetry dimensions before sending", async () => {
+    expect(toSmartReminderScheduledWindow(0)).toBe("overnight");
+    expect(toSmartReminderScheduledWindow(1300)).toBe("late_evening");
+
+    await trackMealLogged(baseMeal({ source: "saved", ingredients: [] }));
+    await trackMealLogged(
+      baseMeal({
+        source: "ai",
+        photoUrl: null,
+        photoLocalPath: null,
+        localPhotoUrl: null,
+        imageId: null,
+        ingredients: [],
+      }),
+    );
+    await trackNotificationOpened({
+      notificationType: " Meal Reminder! ",
+      origin: "third-party",
+      actionIdentifier: "Open Chat",
+      openedFromBackground: true,
+    });
+
+    expect(mockTrack).toHaveBeenNthCalledWith(1, "meal_logged", {
+      ingredientCount: 0,
+      source: "saved",
+      mealInputMethod: "saved",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(2, "meal_logged", {
+      ingredientCount: 0,
+      source: "ai",
+      mealInputMethod: "text",
+    });
+    expect(mockTrack).toHaveBeenNthCalledWith(3, "notification_opened", {
+      notificationType: "meal_reminder",
+      origin: "unknown",
+      actionIdentifier: "open_chat",
+      openedFromBackground: true,
+    });
+  });
 });

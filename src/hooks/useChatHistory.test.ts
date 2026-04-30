@@ -19,9 +19,13 @@ const mockCaptureException = jest.fn<
   (message: string, context?: unknown, error?: unknown) => void
 >();
 const mockUseAiCreditsContext = jest.fn();
+const mockUseAccessContext = jest.fn();
 const mockApplyCreditsFromResponse = jest.fn();
+const mockApplyAccessFromResponse = jest.fn();
 const mockRefreshCredits = jest.fn<() => Promise<unknown>>();
+const mockRefreshAccess = jest.fn<() => Promise<{ credits: ReturnType<typeof buildCredits> } | null>>();
 const mockCanAfford = jest.fn(() => true);
+const mockCanUseFeature = jest.fn((feature: string) => feature === "aiChat");
 const mockSubscribeToChatThreadMessages = jest.fn();
 const mockFetchChatThreadMessagesPage = jest.fn<
   (params: unknown) => Promise<unknown>
@@ -84,6 +88,10 @@ jest.mock("@/services/core/errorLogger", () => ({
 
 jest.mock("@/context/AiCreditsContext", () => ({
   useAiCreditsContext: () => mockUseAiCreditsContext(),
+}));
+
+jest.mock("@/context/AccessContext", () => ({
+  useAccessContext: () => mockUseAccessContext(),
 }));
 
 jest.mock("@/services/ai/chatThreadRepository", () => ({
@@ -178,13 +186,23 @@ describe("useChatHistory", () => {
     mockPullChatChanges.mockResolvedValue();
     mockUuid.mockImplementation(() => `uuid-${mockUuid.mock.calls.length}`);
     mockRefreshCredits.mockResolvedValue(buildCredits({ balance: 0 }));
+    mockRefreshAccess.mockResolvedValue({ credits: buildCredits({ balance: 0 }) });
     mockCanAfford.mockReturnValue(true);
+    mockCanUseFeature.mockImplementation((feature: string) => feature === "aiChat");
     mockUseAiCreditsContext.mockReturnValue({
       credits: buildCredits(),
       loading: false,
       canAfford: mockCanAfford,
       applyCreditsFromResponse: mockApplyCreditsFromResponse,
       refreshCredits: mockRefreshCredits,
+    });
+    mockUseAccessContext.mockReturnValue({
+      accessState: { credits: buildCredits() },
+      loading: false,
+      canUseFeature: mockCanUseFeature,
+      applyAccessFromResponse: mockApplyAccessFromResponse,
+      refreshAccess: mockRefreshAccess,
+      getFeature: jest.fn(),
     });
   });
 
@@ -194,12 +212,21 @@ describe("useChatHistory", () => {
 
   it("derives send ability and counters from shared credits state", async () => {
     mockCanAfford.mockReturnValue(false);
+    mockCanUseFeature.mockReturnValue(false);
     mockUseAiCreditsContext.mockReturnValue({
       credits: buildCredits({ balance: 0 }),
       loading: false,
       canAfford: mockCanAfford,
       applyCreditsFromResponse: mockApplyCreditsFromResponse,
       refreshCredits: mockRefreshCredits,
+    });
+    mockUseAccessContext.mockReturnValue({
+      accessState: { credits: buildCredits({ balance: 0 }) },
+      loading: false,
+      canUseFeature: mockCanUseFeature,
+      applyAccessFromResponse: mockApplyAccessFromResponse,
+      refreshAccess: mockRefreshAccess,
+      getFeature: jest.fn(),
     });
 
     const { result } = await renderChatHistoryHook();
@@ -247,6 +274,12 @@ describe("useChatHistory", () => {
         credits: buildCredits({ balance: 19 }),
       }),
     );
+    expect(mockApplyAccessFromResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: "run-1",
+        credits: buildCredits({ balance: 19 }),
+      }),
+    );
     expect(mockCacheUserChatMessageProjection).toHaveBeenCalledWith(
       expect.objectContaining({
         userUid: "user-1",
@@ -263,7 +296,7 @@ describe("useChatHistory", () => {
       lastSyncedAt: expect.any(Number),
     });
     expect(mockPushQueue).not.toHaveBeenCalled();
-    expect(mockRefreshCredits).not.toHaveBeenCalled();
+    expect(mockRefreshAccess).not.toHaveBeenCalled();
   });
 
   it("refreshes credits after backend 402 and persists limit fallback", async () => {
@@ -285,7 +318,7 @@ describe("useChatHistory", () => {
       await result.current.send("hello");
     });
 
-    expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
+    expect(mockRefreshAccess).toHaveBeenCalledTimes(1);
     expect(result.current.sendErrorType).toBe("AI_CREDITS_EXHAUSTED");
     expect(mockCacheAssistantChatMessageProjection).not.toHaveBeenCalled();
   });
@@ -308,7 +341,7 @@ describe("useChatHistory", () => {
       await result.current.send("Flaga Boliwii");
     });
 
-    expect(mockRefreshCredits).not.toHaveBeenCalled();
+    expect(mockRefreshAccess).not.toHaveBeenCalled();
     expect(mockCacheAssistantChatMessageProjection).not.toHaveBeenCalled();
   });
 
@@ -337,7 +370,7 @@ describe("useChatHistory", () => {
 
     expect(createdThreadId).toBe("thread-created");
     expect(result.current.sendErrorType).toBe("AI_CHAT_DISABLED");
-    expect(mockRefreshCredits).not.toHaveBeenCalled();
+    expect(mockRefreshAccess).not.toHaveBeenCalled();
     expect(mockCacheAssistantChatMessageProjection).not.toHaveBeenCalled();
     expect(mockCaptureException).toHaveBeenCalledWith(
       "[useChatHistory.send] AI chat v2 disabled by backend kill switch",

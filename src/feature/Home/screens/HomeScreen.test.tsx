@@ -15,6 +15,7 @@ const mockUseMeals = jest.fn();
 const mockUseUserProfileContext = jest.fn();
 const mockUseAuthContext = jest.fn();
 const mockUsePremiumContext = jest.fn();
+const mockUseAccessContext = jest.fn();
 const mockUseMealAddMethodState = jest.fn();
 const mockUseWeeklyReport = jest.fn();
 
@@ -32,6 +33,10 @@ jest.mock("@/context/AuthContext", () => ({
 
 jest.mock("@/context/PremiumContext", () => ({
   usePremiumContext: () => mockUsePremiumContext(),
+}));
+
+jest.mock("@/context/AccessContext", () => ({
+  useAccessContext: () => mockUseAccessContext(),
 }));
 
 jest.mock("@/feature/Meals/hooks/useMealAddMethodState", () => ({
@@ -295,6 +300,14 @@ describe("HomeScreen", () => {
     });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
     mockUsePremiumContext.mockReturnValue({ isPremium: true });
+    mockUseAccessContext.mockReturnValue({
+      accessState: null,
+      loading: false,
+      refreshAccess: jest.fn(),
+      applyAccessFromResponse: jest.fn(),
+      canUseFeature: jest.fn((feature: string) => feature === "weeklyReport"),
+      getFeature: jest.fn(),
+    });
     mockUseMeals.mockReturnValue({
       meals: [],
       getMeals: jest.fn(),
@@ -493,7 +506,14 @@ describe("HomeScreen", () => {
   });
 
   it("hides weekly report card for free users", () => {
-    mockUsePremiumContext.mockReturnValue({ isPremium: false });
+    mockUseAccessContext.mockReturnValue({
+      accessState: null,
+      loading: false,
+      refreshAccess: jest.fn(),
+      applyAccessFromResponse: jest.fn(),
+      canUseFeature: jest.fn(() => false),
+      getFeature: jest.fn(),
+    });
 
     const navigation = createNavigation();
     const { queryByText } = renderWithTheme(

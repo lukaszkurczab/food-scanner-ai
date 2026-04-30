@@ -15,9 +15,8 @@ describe("dayKeyRange DST handling", () => {
 
   it("enumerates all canonical dayKeys across the DST transition", () => {
     jest.isolateModules(() => {
-      const {
-        enumerateDayKeys,
-      } = require("@/services/meals/dayKeyRange") as typeof import("@/services/meals/dayKeyRange");
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { enumerateDayKeys } = require("@/services/meals/dayKeyRange") as typeof import("@/services/meals/dayKeyRange");
 
       expect(
         enumerateDayKeys({
@@ -30,10 +29,8 @@ describe("dayKeyRange DST handling", () => {
 
   it("keeps Statistics custom ranges inclusive across the DST transition", () => {
     jest.isolateModules(() => {
-      const {
-        buildStatisticsRangeState,
-      } =
-        require("@/feature/Statistics/services/statisticsRangeSelectors") as typeof import("@/feature/Statistics/services/statisticsRangeSelectors");
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { buildStatisticsRangeState } = require("@/feature/Statistics/services/statisticsRangeSelectors") as typeof import("@/feature/Statistics/services/statisticsRangeSelectors");
 
       const state = buildStatisticsRangeState({
         meals: [],

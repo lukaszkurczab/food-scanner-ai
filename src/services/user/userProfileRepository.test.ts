@@ -174,6 +174,17 @@ describe("services/user/userProfileRepository", () => {
     expect(receivedU2).toEqual([{ uid: "u2", username: "trinity" }]);
   });
 
+  it("exposes cached profile values for direct readers", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const repo = require("@/services/user/userProfileRepository");
+
+    expect(repo.getCachedUserProfile("u1")).toBeUndefined();
+    repo.emitUserProfileChanged("u1", { uid: "u1", username: "neo" });
+    expect(repo.getCachedUserProfile("u1")).toEqual({ uid: "u1", username: "neo" });
+    repo.clearCachedUserProfile("u1");
+    expect(repo.getCachedUserProfile("u1")).toBeUndefined();
+  });
+
   it("skips backend patch when payload has only local-only/non-editable fields", async () => {
     mockPost.mockResolvedValue({ updated: true });
     mockGet.mockResolvedValue({
@@ -214,6 +225,21 @@ describe("services/user/userProfileRepository", () => {
     });
   });
 
+  it("keeps updateUserProfileRemote on the sanitized profile patch path", async () => {
+    mockPost.mockResolvedValue({ updated: true });
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { updateUserProfileRemote } = require("@/services/user/userProfileRepository");
+
+    await updateUserProfileRemote({
+      age: "31",
+      updatedAt: "local-only",
+    });
+
+    expect(mockPost).toHaveBeenCalledWith("/users/me/profile", {
+      age: "31",
+    });
+  });
+
   it("uploads avatar through backend-owned endpoint", async () => {
     mockUpload.mockResolvedValue({
       avatarUrl: "https://cdn/avatar.jpg",
@@ -230,5 +256,27 @@ describe("services/user/userProfileRepository", () => {
       avatarlastSyncedAt: "2026-03-03T12:00:00.000Z",
     });
     expect(mockUpload).toHaveBeenCalledWith("/users/me/avatar", expect.any(FormData));
+  });
+
+  it("initializes onboarding through the backend-owned endpoint", async () => {
+    mockPost.mockResolvedValue({
+      username: "neo",
+      profile: { uid: "u1", username: "neo" },
+      updated: true,
+    });
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { initializeUserOnboardingRemote } = require("@/services/user/userProfileRepository");
+
+    await expect(
+      initializeUserOnboardingRemote({ username: "neo", language: "pl" }),
+    ).resolves.toEqual({
+      username: "neo",
+      profile: { uid: "u1", username: "neo" },
+      updated: true,
+    });
+    expect(mockPost).toHaveBeenCalledWith("/users/me/onboarding", {
+      username: "neo",
+      language: "pl",
+    });
   });
 });

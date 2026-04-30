@@ -7,6 +7,7 @@ import type { DateRange } from "@/feature/Statistics/types";
 
 const mockUseUserContext = jest.fn();
 const mockUsePremiumContext = jest.fn();
+const mockUseAccessContext = jest.fn();
 const mockUseStatisticsState = jest.fn();
 const mockUseNetInfo = jest.fn();
 
@@ -16,6 +17,10 @@ jest.mock("@contexts/UserContext", () => ({
 
 jest.mock("@/context/PremiumContext", () => ({
   usePremiumContext: () => mockUsePremiumContext(),
+}));
+
+jest.mock("@/context/AccessContext", () => ({
+  useAccessContext: () => mockUseAccessContext(),
 }));
 
 jest.mock("@react-native-community/netinfo", () => ({
@@ -224,6 +229,14 @@ describe("StatisticsScreen", () => {
       userData: { uid: "user-1", calorieTarget: 2200 },
     });
     mockUsePremiumContext.mockReturnValue({ isPremium: false });
+    mockUseAccessContext.mockReturnValue({
+      accessState: null,
+      loading: false,
+      refreshAccess: jest.fn(),
+      applyAccessFromResponse: jest.fn(),
+      canUseFeature: jest.fn(() => false),
+      getFeature: jest.fn(),
+    });
   });
 
   it("renders loading state", () => {
@@ -311,6 +324,14 @@ describe("StatisticsScreen", () => {
   it("does not render the premium banner for premium users", () => {
     const navigation = { navigate: jest.fn() };
     mockUsePremiumContext.mockReturnValue({ isPremium: true });
+    mockUseAccessContext.mockReturnValue({
+      accessState: null,
+      loading: false,
+      refreshAccess: jest.fn(),
+      applyAccessFromResponse: jest.fn(),
+      canUseFeature: jest.fn((feature: string) => feature === "fullHistory"),
+      getFeature: jest.fn(),
+    });
     mockUseStatisticsState.mockReturnValue(
       makeAnalyticsState({
         isWindowLimited: true,

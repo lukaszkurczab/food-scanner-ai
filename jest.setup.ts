@@ -96,6 +96,26 @@ jest.mock("expo-localization", () => ({
   getLocales: jest.fn(() => [{ languageTag: "en-US" }]),
 }));
 
+jest.mock("expo-notifications", () => ({
+  __esModule: true,
+  AndroidImportance: { HIGH: "high" },
+  AndroidNotificationVisibility: { PUBLIC: "public" },
+  SchedulableTriggerInputTypes: {
+    CALENDAR: "calendar",
+    DAILY: "daily",
+    DATE: "date",
+  },
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  cancelScheduledNotificationAsync: jest.fn(async () => undefined),
+  getNotificationChannelAsync: jest.fn(async () => ({ id: "default" })),
+  getPermissionsAsync: jest.fn(async () => ({ granted: true, status: "granted" })),
+  requestPermissionsAsync: jest.fn(async () => ({ granted: true, status: "granted" })),
+  scheduleNotificationAsync: jest.fn(async () => "mock-notification-id"),
+  setNotificationChannelAsync: jest.fn(async () => undefined),
+  setNotificationHandler: jest.fn(),
+}));
+
 jest.mock("@sentry/react-native", () => ({
   __esModule: true,
   init: jest.fn(),
