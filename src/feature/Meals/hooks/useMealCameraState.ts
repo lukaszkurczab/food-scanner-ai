@@ -8,7 +8,7 @@ import { getSampleMealUri } from "@/utils/devSamples";
 import { normalizeImageOrientation } from "@/utils/normalizeImageOrientation";
 import { debugScope } from "@/utils/debug";
 import { useAuthContext } from "@/context/AuthContext";
-import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import { useAccessContext } from "@/context/AccessContext";
 import { getErrorStatus } from "@/services/contracts/serviceError";
 import type { Meal } from "@/types";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
@@ -32,7 +32,9 @@ export function useMealCameraState({
   const { meal, setMeal, updateMeal, setLastScreen, saveDraft } =
     useMealDraftContext();
   const { uid } = useAuthContext();
-  const { canAfford, credits } = useAiCreditsContext();
+  const { accessState, canUseFeature } = useAccessContext();
+  const credits = accessState?.credits ?? null;
+  const canUsePhotoAnalysis = canUseFeature("photoAnalysis");
 
   const routeId = params?.id as string | undefined;
   const skipDetection = !!params?.skipDetection;
@@ -184,7 +186,7 @@ export function useMealCameraState({
   );
 
   const handleTakePicture = useCallback(async () => {
-    const canUsePhotoAi = credits ? canAfford("photo") : true;
+    const canUsePhotoAi = canUsePhotoAnalysis;
     log.log("takePicture start", {
       skipDetection,
       canUsePhotoAi,
@@ -195,7 +197,7 @@ export function useMealCameraState({
     });
 
     if (isSimulatorPreview) {
-      const canUseSimulatorPreviewAi = credits
+      const canUseSimulatorPreviewAi = accessState
         ? canUsePhotoAi
         : simulatorCreditsState !== "none";
 
@@ -213,7 +215,7 @@ export function useMealCameraState({
       return;
     }
 
-    if (!skipDetection && credits && !canUsePhotoAi) {
+    if (!skipDetection && !canUsePhotoAi) {
       setPremiumModal(true);
       return;
     }
@@ -230,7 +232,8 @@ export function useMealCameraState({
       setIsTakingPhoto(false);
     }
   }, [
-    canAfford,
+    accessState,
+    canUsePhotoAnalysis,
     credits,
     handleAccept,
     isCameraReady,
@@ -262,7 +265,7 @@ export function useMealCameraState({
     isTakingPhoto,
     photoUri,
     premiumModal,
-    canUsePhotoAi: credits ? canAfford("photo") : true,
+    canUsePhotoAi: canUsePhotoAnalysis,
     credits,
     skipDetection,
     setIsCameraReady,

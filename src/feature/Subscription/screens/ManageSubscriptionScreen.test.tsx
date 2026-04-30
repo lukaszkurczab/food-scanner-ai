@@ -15,7 +15,7 @@ type PaywallModalProps = {
 
 const mockUsePremiumContext = jest.fn();
 const mockUseAuthContext = jest.fn();
-const mockUseAiCreditsContext = jest.fn();
+const mockUseAccessContext = jest.fn();
 const mockUseManageSubscriptionState = jest.fn();
 const mockUseNetInfo = jest.fn<() => { isConnected: boolean | null }>();
 
@@ -27,8 +27,8 @@ jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
 }));
 
-jest.mock("@/context/AiCreditsContext", () => ({
-  useAiCreditsContext: () => mockUseAiCreditsContext(),
+jest.mock("@/context/AccessContext", () => ({
+  useAccessContext: () => mockUseAccessContext(),
 }));
 
 jest.mock("@/feature/Subscription/hooks/useManageSubscriptionState", () => ({
@@ -246,12 +246,14 @@ describe("ManageSubscriptionScreen", () => {
     (globalThis as { __DEV__?: boolean }).__DEV__ = true;
     mockUseNetInfo.mockReturnValue({ isConnected: true });
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
-    mockUseAiCreditsContext.mockReturnValue({
-      credits: {
-        balance: 76,
-        allocation: 800,
-        tier: "premium",
-        periodEndAt: "2026-05-14T10:00:00.000Z",
+    mockUseAccessContext.mockReturnValue({
+      accessState: {
+        credits: {
+          balance: 76,
+          allocation: 800,
+          tier: "premium",
+          periodEndAt: "2026-05-14T10:00:00.000Z",
+        },
       },
       loading: false,
     });

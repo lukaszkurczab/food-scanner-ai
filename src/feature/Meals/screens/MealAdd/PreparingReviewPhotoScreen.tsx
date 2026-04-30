@@ -5,6 +5,7 @@ import * as Device from "expo-device";
 import { Button, Layout } from "@/components";
 import { useTranslation } from "react-i18next";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import { useAccessContext } from "@/context/AccessContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useUserContext } from "@contexts/UserContext";
@@ -71,7 +72,8 @@ export default function PreparingReviewPhotoScreen({
   const { uid } = useAuthContext();
   const { language } = useUserContext();
   const { meal, saveDraft, setMeal, updateMeal } = useMealDraftContext();
-  const { applyCreditsFromResponse, refreshCredits } = useAiCreditsContext();
+  const { applyCreditsFromResponse } = useAiCreditsContext();
+  const { applyAccessFromResponse, refreshAccess } = useAccessContext();
   const [uiState, setUiState] = useState<PreparingReviewUiState>("preparing");
   const [imageError, setImageError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
@@ -166,6 +168,7 @@ export default function PreparingReviewPhotoScreen({
 
         if (analyzeResult?.credits) {
           applyCreditsFromResponse(analyzeResult.credits);
+          applyAccessFromResponse(analyzeResult.credits);
         }
 
         if (cancelled || ignoreResultRef.current) {
@@ -219,7 +222,7 @@ export default function PreparingReviewPhotoScreen({
         }
 
         if (getErrorStatus(error) === 402) {
-          await refreshCredits();
+          await refreshAccess();
           if (!cancelled) {
             flow.replace("CameraDefault", {
               id: params.id,
@@ -258,6 +261,7 @@ export default function PreparingReviewPhotoScreen({
     };
   }, [
     applyCreditsFromResponse,
+    applyAccessFromResponse,
     ensureDraftWithPhoto,
     flow,
     isSimulatorPreview,
@@ -268,7 +272,7 @@ export default function PreparingReviewPhotoScreen({
     params.image,
     params.simulatorCreditsState,
     params.simulatorReviewState,
-    refreshCredits,
+    refreshAccess,
     retryKey,
     saveDraft,
     setMeal,

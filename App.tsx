@@ -19,6 +19,7 @@ import { MealDraftProvider } from "@/context/MealDraftContext";
 import { PremiumProvider } from "@/context/PremiumContext";
 import { HistoryProvider } from "@/context/HistoryContext";
 import { AiCreditsProvider } from "@/context/AiCreditsContext";
+import { AccessProvider } from "@/context/AccessContext";
 import {
   View,
   ActivityIndicator,
@@ -203,20 +204,22 @@ function Root() {
         markNavigationReady();
       }}
     >
-      <AiCreditsProvider>
-        <PremiumProvider>
-          <UserProvider>
-            <MealDraftProvider>
-              <HistoryProvider>
-                <ThemeController>
-                  <AppNavigator />
-                  <ToastBridge />
-                </ThemeController>
-              </HistoryProvider>
-            </MealDraftProvider>
-          </UserProvider>
-        </PremiumProvider>
-      </AiCreditsProvider>
+      <AccessProvider>
+        <AiCreditsProvider>
+          <PremiumProvider>
+            <UserProvider>
+              <MealDraftProvider>
+                <HistoryProvider>
+                  <ThemeController>
+                    <AppNavigator />
+                    <ToastBridge />
+                  </ThemeController>
+                </HistoryProvider>
+              </MealDraftProvider>
+            </UserProvider>
+          </PremiumProvider>
+        </AiCreditsProvider>
+      </AccessProvider>
     </NavigationContainer>
   );
 }

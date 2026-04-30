@@ -10,6 +10,7 @@ import React, {
 import { AppState } from "react-native";
 import { useAuthContext } from "@/context/AuthContext";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import { useAccessContext } from "@/context/AccessContext";
 import Purchases from "react-native-purchases";
 import type { Subscription } from "@/types/subscription";
 import { post } from "@/services/core/apiClient";
@@ -62,7 +63,8 @@ export const PremiumProvider = ({
   children: React.ReactNode;
 }) => {
   const { uid, email } = useAuthContext();
-  const { applyCreditsFromResponse, refreshCredits } = useAiCreditsContext();
+  const { applyCreditsFromResponse } = useAiCreditsContext();
+  const { applyAccessFromResponse, refreshAccess } = useAccessContext();
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const isPremiumRef = useRef<boolean | null>(null);
@@ -188,9 +190,11 @@ export const PremiumProvider = ({
         lastSyncTierAtRef.current = Date.now();
         credits = parseCreditsFromResponse(syncedResponse);
         if (!credits) {
-          credits = await refreshCredits();
+          const access = await refreshAccess();
+          credits = access?.credits ?? null;
         } else {
           applyCreditsFromResponse(syncedResponse);
+          applyAccessFromResponse(syncedResponse);
         }
       } catch (error) {
         logWarning("premium entitlement confirmation sync failed", null, error);
@@ -213,8 +217,9 @@ export const PremiumProvider = ({
     return promise;
   }, [
     applyBackendCreditsPremium,
+    applyAccessFromResponse,
     applyCreditsFromResponse,
-    refreshCredits,
+    refreshAccess,
     setSubscriptionFromPremium,
     uid,
   ]);
@@ -243,6 +248,7 @@ export const PremiumProvider = ({
             credits = parseCreditsFromResponse(syncedResponse);
             if (credits) {
               applyCreditsFromResponse(syncedResponse);
+              applyAccessFromResponse(syncedResponse);
             }
           } catch (error) {
             logWarning("ai credits tier sync failed", null, error);
@@ -250,7 +256,8 @@ export const PremiumProvider = ({
         }
 
         if (!credits) {
-          credits = await refreshCredits();
+          const access = await refreshAccess();
+          credits = access?.credits ?? null;
         }
         if (credits) {
           return applyBackendCreditsPremium(credits);
@@ -267,9 +274,10 @@ export const PremiumProvider = ({
     },
     [
       applyBackendCreditsPremium,
+      applyAccessFromResponse,
       applyCreditsFromResponse,
       checkPremiumStatus,
-      refreshCredits,
+      refreshAccess,
       setSubscriptionFromPremium,
       shouldRunSyncTier,
       uid,

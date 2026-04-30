@@ -16,7 +16,7 @@ import {
 } from "@/components";
 import AppIcon from "@/components/AppIcon";
 import { usePremiumContext } from "@/context/PremiumContext";
-import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import { useAccessContext } from "@/context/AccessContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { PaywallModal } from "@/feature/Subscription/components/PaywallModal";
 import { useManageSubscriptionState } from "@/feature/Subscription/hooks/useManageSubscriptionState";
@@ -66,7 +66,8 @@ export default function ManageSubscriptionScreen({
   const netInfo = useNetInfo();
   const isOnline = netInfo.isConnected !== false;
   const { uid } = useAuthContext();
-  const { credits, loading: creditsLoading } = useAiCreditsContext();
+  const { accessState, loading: creditsLoading } = useAccessContext();
+  const credits = accessState?.credits ?? null;
   const {
     subscription,
     refreshPremium,

@@ -4,6 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { Layout, TextInput, Toast } from "@/components";
 import { useTranslation } from "react-i18next";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import { useAccessContext } from "@/context/AccessContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMealDraftContext } from "@contexts/MealDraftContext";
 import { useUserContext } from "@contexts/UserContext";
@@ -11,7 +12,6 @@ import type { Meal } from "@/types";
 import type { MealAddScreenProps } from "@/feature/Meals/feature/MapMealAddScreens";
 import { extractIngredientsFromText } from "@/services/ai/textMealService";
 import type {
-  AiCreditsResponse,
   AiCreditsStatus,
   AiTextMealPayload,
 } from "@/services/ai/contracts";
@@ -23,7 +23,6 @@ import {
   MealAddPhotoScaffold,
   MealAddStatusBanner,
 } from "@/feature/Meals/components/MealAddPhotoScaffold";
-import { post } from "@/services/core/apiClient";
 import { isOfflineNetState } from "@/services/core/networkState";
 import { useTheme } from "@/theme/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -74,7 +73,8 @@ export default function TextAnalyzingScreen({
   const { uid } = useAuthContext();
   const { language } = useUserContext();
   const { meal, saveDraft, setLastScreen, setMeal } = useMealDraftContext();
-  const { applyCreditsFromResponse, refreshCredits } = useAiCreditsContext();
+  const { applyCreditsFromResponse } = useAiCreditsContext();
+  const { applyAccessFromResponse, refreshAccess } = useAccessContext();
   const mealRef = useRef(meal);
   const startedForKeyRef = useRef<string | null>(null);
   const trimmedName = params.name.trim();
@@ -115,18 +115,9 @@ export default function TextAnalyzingScreen({
       });
     };
 
-    const syncTierAndRefreshCredits = async (): Promise<AiCreditsStatus | null> => {
-      let syncedSnapshot: AiCreditsStatus | null = null;
-
-      try {
-        const syncedResponse = await post<AiCreditsResponse>("/ai/credits/sync-tier");
-        syncedSnapshot = applyCreditsFromResponse(syncedResponse);
-      } catch {
-        // Fall back to plain credits refresh if tier sync is unavailable.
-      }
-
-      const refreshedSnapshot = await refreshCredits();
-      return refreshedSnapshot ?? syncedSnapshot;
+    const refreshAccessCredits = async (): Promise<AiCreditsStatus | null> => {
+      const refreshedAccess = await refreshAccess();
+      return refreshedAccess?.credits ?? null;
     };
 
     const analyze = async () => {
@@ -161,7 +152,7 @@ export default function TextAnalyzingScreen({
         }
 
         if (analysisError && getErrorStatus(analysisError) === 402) {
-          const creditsSnapshot = await syncTierAndRefreshCredits();
+          const creditsSnapshot = await refreshAccessCredits();
           const canRetry =
             creditsSnapshot !== null &&
             creditsSnapshot.balance >= creditsSnapshot.costs.textMeal;
@@ -191,6 +182,7 @@ export default function TextAnalyzingScreen({
         }
 
         applyCreditsFromResponse(result.credits);
+        applyAccessFromResponse(result.credits);
         const aiMeta = getMealAiMetaFromAiResponse(result.credits);
         const baseMeal = mealRef.current ?? buildInitialMeal(uid);
 
@@ -220,7 +212,7 @@ export default function TextAnalyzingScreen({
         }
       } catch (error) {
         if (getErrorStatus(error) === 402) {
-          await refreshCredits();
+          await refreshAccess();
           replaceDescribeMeal({
             showLimitModal: true,
           });
@@ -269,12 +261,13 @@ export default function TextAnalyzingScreen({
     };
   }, [
     applyCreditsFromResponse,
+    applyAccessFromResponse,
     analysisKey,
     analysisLang,
     flow,
     params,
     retries,
-    refreshCredits,
+    refreshAccess,
     saveDraft,
     setLastScreen,
     setMeal,

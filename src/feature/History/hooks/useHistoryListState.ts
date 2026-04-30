@@ -3,7 +3,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "@/context/AuthContext";
-import { usePremiumContext } from "@/context/PremiumContext";
+import { useAccessContext } from "@/context/AccessContext";
 import { useFilters } from "@/context/HistoryContext";
 import { FREE_WINDOW_DAYS } from "@/services/meals/mealService";
 import {
@@ -56,8 +56,8 @@ export function useHistoryListState(params: {
     filterCount,
   } = useFilters("history");
 
-  const { isPremium } = usePremiumContext();
-  const premiumActive = isPremium === true;
+  const { canUseFeature } = useAccessContext();
+  const premiumActive = canUseFeature("fullHistory");
   const accessWindowDays = premiumActive ? undefined : FREE_WINDOW_DAYS;
 
   const {

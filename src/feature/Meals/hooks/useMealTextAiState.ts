@@ -2,13 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { v4 as uuidv4 } from "uuid";
-import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import { useAccessContext } from "@/context/AccessContext";
 import type { RootStackParamList } from "@/navigation/navigate";
-import type {
-  AiCreditsResponse,
-  AiCreditsStatus,
-} from "@/services/ai/contracts";
-import { post } from "@/services/core/apiClient";
+import type { AiCreditsStatus } from "@/services/ai/contracts";
 import { trackPaywallViewed } from "@/services/telemetry/telemetryInstrumentation";
 import type {
   MealAddFlowApi,
@@ -25,8 +21,8 @@ export function useMealTextAiState(params: {
 }) {
   const { t, flow, initialValues } = params;
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { credits, canAfford, refreshCredits, applyCreditsFromResponse } =
-    useAiCreditsContext();
+  const { accessState, canUseFeature, refreshAccess } = useAccessContext();
+  const credits = accessState?.credits ?? null;
 
   const [name, setName] = useState(initialValues?.name ?? "");
   const [quickDescription, setQuickDescription] = useState(
@@ -62,18 +58,9 @@ export function useMealTextAiState(params: {
   ]);
 
   const reconcileCredits = useCallback(async (): Promise<AiCreditsStatus | null> => {
-    let syncedSnapshot: AiCreditsStatus | null = null;
-
-    try {
-      const syncedResponse = await post<AiCreditsResponse>("/ai/credits/sync-tier");
-      syncedSnapshot = applyCreditsFromResponse(syncedResponse);
-    } catch {
-      // Fall back to standard refresh when reconciliation endpoint is unavailable.
-    }
-
-    const refreshedSnapshot = await refreshCredits();
-    return refreshedSnapshot ?? syncedSnapshot ?? credits;
-  }, [applyCreditsFromResponse, credits, refreshCredits]);
+    const refreshedAccess = await refreshAccess();
+    return refreshedAccess?.credits ?? credits;
+  }, [credits, refreshAccess]);
 
   const onAnalyze = useCallback(async () => {
     setDescriptionError(undefined);
@@ -97,7 +84,7 @@ export function useMealTextAiState(params: {
       } as const;
       let resolvedCredits = credits;
 
-      if (resolvedCredits && canAfford("textMeal")) {
+      if (canUseFeature("textMealAnalysis")) {
         flow.goTo("TextAnalyzing", textAnalyzingParams);
         return;
       }
@@ -105,7 +92,7 @@ export function useMealTextAiState(params: {
       resolvedCredits = await reconcileCredits();
 
       if (
-        resolvedCredits &&
+        !resolvedCredits ||
         resolvedCredits.balance < resolvedCredits.costs.textMeal
       ) {
         setShowLimitModal(true);
@@ -117,7 +104,7 @@ export function useMealTextAiState(params: {
       setLoading(false);
     }
   }, [
-    canAfford,
+    canUseFeature,
     credits,
     flow,
     name,

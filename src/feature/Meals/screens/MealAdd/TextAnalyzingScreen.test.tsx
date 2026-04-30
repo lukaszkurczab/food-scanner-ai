@@ -42,6 +42,7 @@ const mockPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
 const mockUseAuthContext = jest.fn();
 const mockUseUserContext = jest.fn();
 const mockUseAiCreditsContext = jest.fn();
+const mockUseAccessContext = jest.fn();
 const mockUseMealDraftContext = jest.fn();
 
 jest.mock("react-native-safe-area-context", () => ({
@@ -80,6 +81,10 @@ jest.mock("@contexts/UserContext", () => ({
 
 jest.mock("@/context/AiCreditsContext", () => ({
   useAiCreditsContext: () => mockUseAiCreditsContext(),
+}));
+
+jest.mock("@/context/AccessContext", () => ({
+  useAccessContext: () => mockUseAccessContext(),
 }));
 
 jest.mock("@contexts/MealDraftContext", () => ({
@@ -169,11 +174,17 @@ describe("TextAnalyzingScreen", () => {
     });
     mockGetAiUxErrorType.mockReturnValue("unknown");
     mockGetMealAiMetaFromAiResponse.mockReturnValue(null);
+    mockUseAccessContext.mockReturnValue({
+      applyAccessFromResponse: jest.fn((value: unknown) => value),
+      refreshAccess: jest.fn(async () => ({ credits: creditsSnapshot })),
+    });
   });
 
   it("retries after syncing credits when the first analysis returns 402", async () => {
     const applyCreditsFromResponse = jest.fn((value: unknown) => value);
     const refreshCredits = jest.fn(async () => creditsSnapshot);
+    const applyAccessFromResponse = jest.fn((value: unknown) => value);
+    const refreshAccess = jest.fn(async () => ({ credits: creditsSnapshot }));
     const setMeal = jest.fn();
     const saveDraft = jest.fn(async (_uid: string, _meal?: Meal | null) => undefined);
     const setLastScreen = jest.fn(async (_uid: string, _screen: string) => undefined);
@@ -196,6 +207,10 @@ describe("TextAnalyzingScreen", () => {
     mockUseAiCreditsContext.mockReturnValue({
       applyCreditsFromResponse,
       refreshCredits,
+    });
+    mockUseAccessContext.mockReturnValue({
+      applyAccessFromResponse,
+      refreshAccess,
     });
     mockUseMealDraftContext.mockReturnValue({
       meal: null,
@@ -220,18 +235,18 @@ describe("TextAnalyzingScreen", () => {
         ],
         credits: creditsSnapshot,
       });
-    mockPost.mockResolvedValueOnce(creditsSnapshot);
-
     renderWithTheme(<TextAnalyzingScreen {...props} />);
 
     await waitFor(() => {
       expect(props.flow.replace).toHaveBeenCalledWith("ReviewMeal", {});
     });
 
-    expect(mockPost).toHaveBeenCalledWith("/ai/credits/sync-tier", undefined);
-    expect(refreshCredits).toHaveBeenCalledTimes(1);
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(refreshCredits).not.toHaveBeenCalled();
+    expect(refreshAccess).toHaveBeenCalledTimes(1);
     expect(mockExtractIngredientsFromText).toHaveBeenCalledTimes(2);
     expect(applyCreditsFromResponse).toHaveBeenCalledWith(creditsSnapshot);
+    expect(applyAccessFromResponse).toHaveBeenCalledWith(creditsSnapshot);
     expect(setLastScreen).toHaveBeenCalledWith("user-1", "AddMeal");
   });
 

@@ -23,6 +23,7 @@ import {
   type AiUxErrorType,
 } from "@/services/ai/uxError";
 import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import { useAccessContext } from "@/context/AccessContext";
 import {
   cacheAssistantChatMessageProjection,
   cacheUserChatMessageProjection,
@@ -171,12 +172,16 @@ export function useChatHistory(
   opts: Options = {},
 ) {
   const {
-    credits,
     loading: creditsLoading,
-    canAfford,
     applyCreditsFromResponse,
-    refreshCredits,
   } = useAiCreditsContext();
+  const {
+    accessState,
+    loading: accessLoading,
+    canUseFeature,
+    applyAccessFromResponse,
+    refreshAccess,
+  } = useAccessContext();
   const pageSize = opts.pageSize ?? 50;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -197,11 +202,12 @@ export function useChatHistory(
 
   const isLocalThread = threadId.startsWith("local-");
   const canReadThread = !!userUid && !!threadId && !isLocalThread;
-  const usageLoading = !!userUid && creditsLoading;
-  const creditAllocation = credits?.allocation ?? 0;
-  const creditBalance = credits?.balance ?? 0;
+  const accessCredits = accessState?.credits ?? null;
+  const usageLoading = !!userUid && (creditsLoading || accessLoading);
+  const creditAllocation = accessCredits?.allocation ?? 0;
+  const creditBalance = accessCredits?.balance ?? 0;
   const creditsUsed = Math.max(creditAllocation - creditBalance, 0);
-  const canSend = canAfford("chat");
+  const canSend = canUseFeature("aiChat");
   const loading = messagesLoading;
 
   const cancelInFlightSend = useCallback(() => {
@@ -376,6 +382,7 @@ export function useChatHistory(
             setSendErrorType("unknown");
           }
           applyCreditsFromResponse(aiResponse);
+          applyAccessFromResponse(aiResponse);
         } catch (error) {
           if (isServiceError(error) && error.code === "api/aborted") {
             return null;
@@ -404,7 +411,7 @@ export function useChatHistory(
           const gatewayReason = getGatewayRejectReason(error);
           const errorType = getAiUxErrorType(error);
           if (errorType === "AI_CREDITS_EXHAUSTED") {
-            const refreshed = await refreshCredits();
+            const refreshed = (await refreshAccess())?.credits ?? null;
             const refreshedLimit = refreshed?.allocation ?? creditAllocation;
             const refreshedUsed = refreshed
               ? Math.max(refreshedLimit - refreshed.balance, 0)
@@ -517,7 +524,8 @@ export function useChatHistory(
       creditAllocation,
       creditsUsed,
       applyCreditsFromResponse,
-      refreshCredits,
+      applyAccessFromResponse,
+      refreshAccess,
     ],
   );
 

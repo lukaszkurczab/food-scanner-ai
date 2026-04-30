@@ -8,6 +8,9 @@ const mockCanAfford = jest.fn(() => true);
 const mockRefreshCredits = jest.fn<() => Promise<unknown>>();
 const mockApplyCreditsFromResponse = jest.fn<(value: unknown) => unknown>();
 const mockPost = jest.fn<(url: string, data?: unknown) => Promise<unknown>>();
+const mockUseAccessContext = jest.fn();
+const mockCanUseFeature = jest.fn(() => true);
+const mockRefreshAccess = jest.fn<() => Promise<unknown>>();
 
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockUseNavigation(),
@@ -21,6 +24,10 @@ jest.mock("@/context/AiCreditsContext", () => ({
   useAiCreditsContext: () => mockUseAiCreditsContext(),
 }));
 
+jest.mock("@/context/AccessContext", () => ({
+  useAccessContext: () => mockUseAccessContext(),
+}));
+
 describe("useMealTextAiState", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -32,6 +39,8 @@ describe("useMealTextAiState", () => {
     mockRefreshCredits.mockResolvedValue(null);
     mockApplyCreditsFromResponse.mockImplementation((value: unknown) => value);
     mockPost.mockResolvedValue(null);
+    mockCanUseFeature.mockReturnValue(true);
+    mockRefreshAccess.mockResolvedValue(null);
     mockUseAiCreditsContext.mockReturnValue({
       credits: {
         userId: "user-1",
@@ -46,19 +55,36 @@ describe("useMealTextAiState", () => {
       refreshCredits: mockRefreshCredits,
       applyCreditsFromResponse: mockApplyCreditsFromResponse,
     });
+    mockUseAccessContext.mockReturnValue({
+      accessState: {
+        credits: {
+          userId: "user-1",
+          tier: "free",
+          balance: 100,
+          allocation: 100,
+          periodStartAt: "2026-03-01T00:00:00.000Z",
+          periodEndAt: "2026-04-01T00:00:00.000Z",
+          costs: { chat: 1, textMeal: 1, photo: 5 },
+        },
+      },
+      canUseFeature: mockCanUseFeature,
+      refreshAccess: mockRefreshAccess,
+    });
   });
 
   it("shows limit modal when user cannot afford text meal analysis", async () => {
     const flow = { goTo: jest.fn() };
-    mockCanAfford.mockReturnValue(false);
-    mockRefreshCredits.mockResolvedValue({
-      userId: "user-1",
-      tier: "free",
-      balance: 0,
-      allocation: 100,
-      periodStartAt: "2026-03-01T00:00:00.000Z",
-      periodEndAt: "2026-04-01T00:00:00.000Z",
-      costs: { chat: 1, textMeal: 1, photo: 5 },
+    mockCanUseFeature.mockReturnValue(false);
+    mockRefreshAccess.mockResolvedValue({
+      credits: {
+        userId: "user-1",
+        tier: "free",
+        balance: 0,
+        allocation: 100,
+        periodStartAt: "2026-03-01T00:00:00.000Z",
+        periodEndAt: "2026-04-01T00:00:00.000Z",
+        costs: { chat: 1, textMeal: 1, photo: 5 },
+      },
     });
 
     const { result } = renderHook(() =>
@@ -122,6 +148,11 @@ describe("useMealTextAiState", () => {
       refreshCredits: mockRefreshCredits,
       applyCreditsFromResponse: mockApplyCreditsFromResponse,
     });
+    mockUseAccessContext.mockReturnValue({
+      accessState: null,
+      canUseFeature: mockCanUseFeature,
+      refreshAccess: mockRefreshAccess,
+    });
 
     const { result } = renderHook(() =>
       useMealTextAiState({
@@ -153,6 +184,21 @@ describe("useMealTextAiState", () => {
       canAfford: mockCanAfford,
       refreshCredits: mockRefreshCredits,
       applyCreditsFromResponse: mockApplyCreditsFromResponse,
+    });
+    mockUseAccessContext.mockReturnValue({
+      accessState: {
+        credits: {
+          userId: "user-1",
+          tier: "free",
+          balance: 0,
+          allocation: 100,
+          periodStartAt: "2026-03-01T00:00:00.000Z",
+          periodEndAt: "2026-04-01T00:00:00.000Z",
+          costs: { chat: 1, textMeal: 1, photo: 5 },
+        },
+      },
+      canUseFeature: mockCanUseFeature,
+      refreshAccess: mockRefreshAccess,
     });
 
     const { result } = renderHook(() =>
@@ -204,25 +250,18 @@ describe("useMealTextAiState", () => {
 
   it("reconciles credits before blocking analysis when local snapshot says no credits", async () => {
     const flow = { goTo: jest.fn() };
-    mockCanAfford.mockReturnValue(false);
-    mockPost.mockResolvedValue({
-      userId: "user-1",
-      tier: "free",
-      balance: 74,
-      allocation: 100,
-      periodStartAt: "2026-03-01T00:00:00.000Z",
-      periodEndAt: "2026-04-01T00:00:00.000Z",
-      costs: { chat: 1, textMeal: 1, photo: 5 },
-    });
+    mockCanUseFeature.mockReturnValue(false);
     mockApplyCreditsFromResponse.mockImplementation((value: unknown) => value);
-    mockRefreshCredits.mockResolvedValue({
-      userId: "user-1",
-      tier: "free",
-      balance: 74,
-      allocation: 100,
-      periodStartAt: "2026-03-01T00:00:00.000Z",
-      periodEndAt: "2026-04-01T00:00:00.000Z",
-      costs: { chat: 1, textMeal: 1, photo: 5 },
+    mockRefreshAccess.mockResolvedValue({
+      credits: {
+        userId: "user-1",
+        tier: "free",
+        balance: 74,
+        allocation: 100,
+        periodStartAt: "2026-03-01T00:00:00.000Z",
+        periodEndAt: "2026-04-01T00:00:00.000Z",
+        costs: { chat: 1, textMeal: 1, photo: 5 },
+      },
     });
 
     const { result } = renderHook(() =>
@@ -243,8 +282,8 @@ describe("useMealTextAiState", () => {
       await result.current.onAnalyze();
     });
 
-    expect(mockPost).toHaveBeenCalledWith("/ai/credits/sync-tier", undefined);
-    expect(mockRefreshCredits).toHaveBeenCalled();
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(mockRefreshAccess).toHaveBeenCalled();
     expect(flow.goTo).toHaveBeenCalledWith(
       "TextAnalyzing",
       expect.objectContaining({

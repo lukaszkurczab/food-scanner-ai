@@ -5,6 +5,7 @@ import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 const mockUseAuthContext = jest.fn();
 const mockUsePremiumContext = jest.fn();
+const mockUseAccessContext = jest.fn();
 const mockUseWeeklyReport = jest.fn();
 
 jest.mock("@/context/AuthContext", () => ({
@@ -13,6 +14,10 @@ jest.mock("@/context/AuthContext", () => ({
 
 jest.mock("@/context/PremiumContext", () => ({
   usePremiumContext: () => mockUsePremiumContext(),
+}));
+
+jest.mock("@/context/AccessContext", () => ({
+  useAccessContext: () => mockUseAccessContext(),
 }));
 
 jest.mock("@/hooks/useWeeklyReport", () => ({
@@ -113,6 +118,14 @@ describe("WeeklyReportScreen", () => {
       subscription: { state: "premium_active" },
       refreshPremium: jest.fn(),
     });
+    mockUseAccessContext.mockReturnValue({
+      getFeature: jest.fn(() => ({
+        enabled: true,
+        status: "enabled",
+        reason: null,
+      })),
+      refreshAccess: jest.fn(),
+    });
   });
 
   it("renders loading state", () => {
@@ -151,6 +164,10 @@ describe("WeeklyReportScreen", () => {
       subscription: null,
       refreshPremium: jest.fn(),
     });
+    mockUseAccessContext.mockReturnValue({
+      getFeature: jest.fn(() => null),
+      refreshAccess: jest.fn(),
+    });
     mockUseWeeklyReport.mockReturnValue({
       report: {
         status: "not_available",
@@ -183,6 +200,14 @@ describe("WeeklyReportScreen", () => {
     mockUsePremiumContext.mockReturnValue({
       subscription: { state: "free_active" },
       refreshPremium: jest.fn(),
+    });
+    mockUseAccessContext.mockReturnValue({
+      getFeature: jest.fn(() => ({
+        enabled: false,
+        status: "disabled",
+        reason: "requires_premium",
+      })),
+      refreshAccess: jest.fn(),
     });
     mockUseWeeklyReport.mockReturnValue({
       report: {
@@ -218,6 +243,14 @@ describe("WeeklyReportScreen", () => {
     mockUsePremiumContext.mockReturnValue({
       subscription: { state: "premium_expired" },
       refreshPremium,
+    });
+    mockUseAccessContext.mockReturnValue({
+      getFeature: jest.fn(() => ({
+        enabled: false,
+        status: "unknown",
+        reason: "degraded",
+      })),
+      refreshAccess: refreshPremium,
     });
     mockUseWeeklyReport.mockReturnValue({
       report: {

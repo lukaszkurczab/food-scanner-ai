@@ -3,10 +3,9 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { AppIcon, Button, Layout } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
-import { usePremiumContext } from "@/context/PremiumContext";
+import { useAccessContext } from "@/context/AccessContext";
 import { useWeeklyReport } from "@/hooks/useWeeklyReport";
 import type { RootStackParamList } from "@/navigation/navigate";
-import { hasPremiumAccess } from "@/services/billing/subscriptionStateMachine";
 import type {
   WeeklyReport,
   WeeklyReportInsight,
@@ -14,7 +13,6 @@ import type {
 } from "@/services/weeklyReport/weeklyReportTypes";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
-import type { Subscription, SubscriptionState } from "@/types/subscription";
 import {
   formatWeeklyPeriod,
   getCarryForwardLine,
@@ -51,27 +49,19 @@ type WeeklyReportAccessState =
   | "degraded"
   | "premium";
 
-const DEGRADED_SUBSCRIPTION_STATES = new Set<SubscriptionState>([
-  "premium_expired",
-  "premium_paused",
-  "premium_refunded",
-]);
-
 function resolveWeeklyReportAccessState(
-  subscription: Subscription | null,
+  status: "enabled" | "disabled" | "unknown" | null,
+  reason: string | null | undefined,
 ): WeeklyReportAccessState {
-  if (!subscription) {
+  if (!status) {
     return "unknown";
   }
-
-  if (hasPremiumAccess(subscription.state)) {
+  if (status === "enabled") {
     return "premium";
   }
-
-  if (DEGRADED_SUBSCRIPTION_STATES.has(subscription.state)) {
+  if (status === "unknown" || reason === "degraded") {
     return "degraded";
   }
-
   return "locked";
 }
 
@@ -547,8 +537,12 @@ export default function WeeklyReportScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation("home");
   const { uid } = useAuthContext();
-  const { subscription, refreshPremium } = usePremiumContext();
-  const accessState = resolveWeeklyReportAccessState(subscription);
+  const { getFeature, refreshAccess } = useAccessContext();
+  const weeklyReportFeature = getFeature("weeklyReport");
+  const accessState = resolveWeeklyReportAccessState(
+    weeklyReportFeature?.status ?? null,
+    weeklyReportFeature?.reason,
+  );
   const weeklyReport = useWeeklyReport({
     uid,
     active: accessState === "premium",
@@ -578,11 +572,11 @@ export default function WeeklyReportScreen({ navigation }: Props) {
     if (refreshing) return;
     setRefreshing(true);
     try {
-      await refreshPremium();
+      await refreshAccess();
     } finally {
       setRefreshing(false);
     }
-  }, [refreshPremium, refreshing]);
+  }, [refreshAccess, refreshing]);
 
   const isReady = !weeklyReport.loading && weeklyReport.report.status === "ready";
   const isInsufficient =

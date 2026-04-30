@@ -5,7 +5,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
 import { useUserProfileContext } from "@/context/UserProfileContext";
 import { useAuthContext } from "@/context/AuthContext";
-import { usePremiumContext } from "@/context/PremiumContext";
+import { useAccessContext } from "@/context/AccessContext";
 import { useWeeklyReport } from "@/hooks/useWeeklyReport";
 import WeekStrip, { type WeekDayItem } from "@/components/WeekStrip";
 import { MacroTargetsRow } from "../components/MacroTargetsRow";
@@ -48,8 +48,8 @@ export default function HomeScreen({ navigation }: Props) {
   const { t, i18n } = useTranslation(["home", "common", "meals"]);
   const { userData } = useUserProfileContext();
   const { uid } = useAuthContext();
-  const { isPremium } = usePremiumContext();
-  const canAccessWeeklyReport = isPremium === true;
+  const { canUseFeature } = useAccessContext();
+  const canAccessWeeklyReport = canUseFeature("weeklyReport");
   const weeklyReport = useWeeklyReport({
     uid,
     active: canAccessWeeklyReport,

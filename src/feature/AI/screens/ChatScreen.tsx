@@ -9,7 +9,7 @@ import { Button, Modal } from "@/components";
 import { Layout } from "@/components/Layout";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUserContext } from "@contexts/UserContext";
-import { useAiCreditsContext } from "@/context/AiCreditsContext";
+import { useAccessContext } from "@/context/AccessContext";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
@@ -31,7 +31,8 @@ export default function ChatScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { firebaseUser: user } = useAuthContext();
   const { loadingUser } = useUserContext();
-  const { credits } = useAiCreditsContext();
+  const { accessState } = useAccessContext();
+  const credits = accessState?.credits ?? null;
   const net = useNetInfo();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
