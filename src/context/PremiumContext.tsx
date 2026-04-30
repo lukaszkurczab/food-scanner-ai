@@ -14,11 +14,11 @@ import { useAccessContext } from "@/context/AccessContext";
 import Purchases from "react-native-purchases";
 import type { Subscription } from "@/types/subscription";
 import { post } from "@/services/core/apiClient";
+import { type AiCreditsResponse } from "@/services/ai/contracts";
 import {
-  parseCreditsFromResponse,
-  type AiCreditsResponse,
-  type AiCreditsStatus,
-} from "@/services/ai/contracts";
+  hasConfirmedPremiumAccess,
+  type AccessState,
+} from "@/services/access/accessState";
 import {
   initRevenueCat,
   isBillingDisabled,
@@ -64,10 +64,9 @@ export const PremiumProvider = ({
 }) => {
   const { uid, email } = useAuthContext();
   const { applyCreditsFromResponse } = useAiCreditsContext();
-  const { applyAccessFromResponse, refreshAccess } = useAccessContext();
+  const { refreshAccess } = useAccessContext();
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const isPremiumRef = useRef<boolean | null>(null);
   const lastActiveRefreshAtRef = useRef(0);
   const lastSyncTierAtRef = useRef(0);
   const accessRefreshInFlightRef = useRef<{
@@ -81,7 +80,6 @@ export const PremiumProvider = ({
 
   const setSubscriptionState = useCallback((next: Subscription) => {
     const premium = hasPremiumAccess(next.state);
-    isPremiumRef.current = premium;
     setIsPremium(premium);
     setSubscription(next);
   }, []);
@@ -91,18 +89,31 @@ export const PremiumProvider = ({
   }, [setSubscriptionState]);
 
   const setSubscriptionUnknown = useCallback(() => {
-    isPremiumRef.current = null;
     setIsPremium(null);
     setSubscription(mapUnknownSubscription());
   }, []);
 
-  const applyBackendCreditsPremium = useCallback(
-    (credits: AiCreditsStatus | null): boolean => {
-      if (!credits) {
+  const applyAccessCredits = useCallback(
+    (accessState: AccessState | null) => {
+      if (accessState?.credits) {
+        applyCreditsFromResponse(accessState);
+      }
+    },
+    [applyCreditsFromResponse],
+  );
+
+  const setSubscriptionFromAccessState = useCallback(
+    (accessState: AccessState | null): boolean => {
+      if (
+        !accessState
+        || accessState.tier === "unknown"
+        || accessState.entitlementStatus === "degraded"
+        || accessState.entitlementStatus === "unknown"
+      ) {
         setSubscriptionUnknown();
         return false;
       }
-      const premium = credits.tier === "premium";
+      const premium = hasConfirmedPremiumAccess(accessState);
       setSubscriptionFromPremium(premium);
       return premium;
     },
@@ -184,25 +195,18 @@ export const PremiumProvider = ({
         await accessRefreshInFlightRef.current.promise;
       }
 
-      let credits: AiCreditsStatus | null = null;
       try {
-        const syncedResponse = await post<AiCreditsResponse>("/ai/credits/sync-tier");
+        await post<AiCreditsResponse>("/ai/credits/sync-tier");
         lastSyncTierAtRef.current = Date.now();
-        credits = parseCreditsFromResponse(syncedResponse);
-        if (!credits) {
-          const access = await refreshAccess();
-          credits = access?.credits ?? null;
-        } else {
-          applyCreditsFromResponse(syncedResponse);
-          applyAccessFromResponse(syncedResponse);
-        }
       } catch (error) {
         logWarning("premium entitlement confirmation sync failed", null, error);
         setSubscriptionFromPremium(false);
         return { confirmed: false, reason: "sync_tier_failed" as const };
       }
 
-      const confirmed = applyBackendCreditsPremium(credits);
+      const access = await refreshAccess();
+      applyAccessCredits(access);
+      const confirmed = setSubscriptionFromAccessState(access);
       return {
         confirmed,
         ...(confirmed ? {} : { reason: "credits_not_premium" as const }),
@@ -216,10 +220,9 @@ export const PremiumProvider = ({
     entitlementConfirmationInFlightRef.current = promise;
     return promise;
   }, [
-    applyBackendCreditsPremium,
-    applyAccessFromResponse,
-    applyCreditsFromResponse,
+    applyAccessCredits,
     refreshAccess,
+    setSubscriptionFromAccessState,
     setSubscriptionFromPremium,
     uid,
   ]);
@@ -240,29 +243,18 @@ export const PremiumProvider = ({
 
         await checkPremiumStatus();
 
-        let credits: AiCreditsStatus | null = null;
         if (shouldRunSyncTier(params.syncTier)) {
           try {
-            const syncedResponse = await post<AiCreditsResponse>("/ai/credits/sync-tier");
+            await post<AiCreditsResponse>("/ai/credits/sync-tier");
             lastSyncTierAtRef.current = Date.now();
-            credits = parseCreditsFromResponse(syncedResponse);
-            if (credits) {
-              applyCreditsFromResponse(syncedResponse);
-              applyAccessFromResponse(syncedResponse);
-            }
           } catch (error) {
             logWarning("ai credits tier sync failed", null, error);
           }
         }
 
-        if (!credits) {
-          const access = await refreshAccess();
-          credits = access?.credits ?? null;
-        }
-        if (credits) {
-          return applyBackendCreditsPremium(credits);
-        }
-        return isPremiumRef.current === true;
+        const access = await refreshAccess();
+        applyAccessCredits(access);
+        return setSubscriptionFromAccessState(access);
       })().finally(() => {
         if (accessRefreshInFlightRef.current?.promise === promise) {
           accessRefreshInFlightRef.current = null;
@@ -273,11 +265,10 @@ export const PremiumProvider = ({
       return promise;
     },
     [
-      applyBackendCreditsPremium,
-      applyAccessFromResponse,
-      applyCreditsFromResponse,
+      applyAccessCredits,
       checkPremiumStatus,
       refreshAccess,
+      setSubscriptionFromAccessState,
       setSubscriptionFromPremium,
       shouldRunSyncTier,
       uid,

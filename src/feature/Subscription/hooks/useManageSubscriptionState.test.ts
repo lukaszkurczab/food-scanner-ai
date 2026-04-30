@@ -101,7 +101,7 @@ describe("useManageSubscriptionState", () => {
     );
   });
 
-  it("shows final purchase success only after backend entitlement confirmation", async () => {
+  it("shows final purchase success after access-state premium active confirmation", async () => {
     const confirmPremiumEntitlement = jest.fn(async () => ({ confirmed: true }));
     const { result } = renderHook(() =>
       useManageSubscriptionState(makeParams({ confirmPremiumEntitlement })),

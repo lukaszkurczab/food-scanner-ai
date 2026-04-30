@@ -10,9 +10,7 @@ import React, {
 import { useAuthContext } from "@/context/AuthContext";
 import { get } from "@/services/core/apiClient";
 import { logWarning } from "@/services/core/errorLogger";
-import { parseCreditsFromResponse } from "@/services/ai/contracts";
 import {
-  buildAccessStateFromCredits,
   buildDegradedAccessState,
   getAccessFeature,
   parseAccessState,
@@ -69,17 +67,9 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
 
   const applyAccessFromResponse = useCallback((value: unknown): AccessState | null => {
     const parsedAccess = parseAccessState(value);
-    if (parsedAccess) {
-      updateAccess(parsedAccess);
-      return parsedAccess;
-    }
-
-    const parsedCredits = parseCreditsFromResponse(value);
-    if (!parsedCredits) return null;
-
-    const next = buildAccessStateFromCredits(parsedCredits);
-    updateAccess(next);
-    return next;
+    if (!parsedAccess) return null;
+    updateAccess(parsedAccess);
+    return parsedAccess;
   }, [updateAccess]);
 
   const refreshAccess = useCallback((): Promise<AccessState | null> => {

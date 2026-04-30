@@ -130,27 +130,6 @@ export function parseAccessState(value: unknown): AccessState | null {
   };
 }
 
-function creditFeature(balance: number, requiredCredits: number): AccessFeatureState {
-  const enabled = balance >= requiredCredits;
-  return {
-    enabled,
-    status: enabled ? "enabled" : "disabled",
-    reason: enabled ? null : "insufficient_credits",
-    requiredCredits,
-    remainingCredits: Math.max(balance - requiredCredits, 0),
-  };
-}
-
-function premiumFeature(isPremium: boolean): AccessFeatureState {
-  return {
-    enabled: isPremium,
-    status: isPremium ? "enabled" : "disabled",
-    reason: isPremium ? null : "requires_premium",
-    requiredCredits: null,
-    remainingCredits: null,
-  };
-}
-
 function degradedFeature(): AccessFeatureState {
   return {
     enabled: false,
@@ -181,25 +160,13 @@ export function buildDegradedAccessState(
   };
 }
 
-export function buildAccessStateFromCredits(
-  credits: AiCreditsStatus,
-  refreshedAt: string = new Date().toISOString(),
-): AccessState {
-  const isPremium = credits.tier === "premium";
-  return {
-    tier: credits.tier,
-    entitlementStatus: isPremium ? "active" : "inactive",
-    credits,
-    features: {
-      aiChat: creditFeature(credits.balance, credits.costs.chat),
-      photoAnalysis: creditFeature(credits.balance, credits.costs.photo),
-      textMealAnalysis: creditFeature(credits.balance, credits.costs.textMeal),
-      weeklyReport: premiumFeature(isPremium),
-      fullHistory: premiumFeature(isPremium),
-      cloudBackup: premiumFeature(isPremium),
-    },
-    refreshedAt,
-  };
+export function hasConfirmedPremiumAccess(
+  accessState: AccessState | null,
+): boolean {
+  return (
+    accessState?.tier === "premium"
+    && accessState.entitlementStatus === "active"
+  );
 }
 
 export function getAccessFeature(

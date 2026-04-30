@@ -9,6 +9,7 @@ type AppStateHandler = (state: string) => void;
 const mockUseAuthContext = jest.fn();
 const mockRefreshCredits = jest.fn<() => Promise<unknown>>();
 const mockApplyCreditsFromResponse = jest.fn<(value: unknown) => unknown>();
+const mockRefreshAccess = jest.fn<() => Promise<unknown>>();
 const mockPost = jest.fn<(url: string) => Promise<unknown>>();
 const mockGetCustomerInfo = jest.fn<() => Promise<unknown>>();
 const mockRcLogIn = jest.fn<(uid: string) => Promise<boolean>>();
@@ -37,6 +38,37 @@ function creditsSnapshot(tier: "free" | "premium") {
   };
 }
 
+function accessStateSnapshot(
+  tier: "free" | "premium" | "unknown",
+  entitlementStatus: "active" | "inactive" | "degraded" | "unknown",
+) {
+  const feature = {
+    enabled: tier === "premium" && entitlementStatus === "active",
+    status: tier === "premium" && entitlementStatus === "active"
+      ? "enabled"
+      : "disabled",
+    reason: tier === "premium" && entitlementStatus === "active"
+      ? null
+      : "requires_premium",
+    requiredCredits: null,
+    remainingCredits: null,
+  };
+  return {
+    tier,
+    entitlementStatus,
+    credits: tier === "unknown" ? null : creditsSnapshot(tier),
+    features: {
+      aiChat: feature,
+      photoAnalysis: feature,
+      textMealAnalysis: feature,
+      weeklyReport: feature,
+      fullHistory: feature,
+      cloudBackup: feature,
+    },
+    refreshedAt: "2026-04-30T10:00:00.000Z",
+  };
+}
+
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
 }));
@@ -45,6 +77,12 @@ jest.mock("@/context/AiCreditsContext", () => ({
   useAiCreditsContext: () => ({
     applyCreditsFromResponse: mockApplyCreditsFromResponse,
     refreshCredits: mockRefreshCredits,
+  }),
+}));
+
+jest.mock("@/context/AccessContext", () => ({
+  useAccessContext: () => ({
+    refreshAccess: mockRefreshAccess,
   }),
 }));
 
@@ -100,6 +138,7 @@ describe("PremiumContext", () => {
       entitlements: { active: { premium: { identifier: "premium" } } },
     });
     mockPost.mockResolvedValue({});
+    mockRefreshAccess.mockResolvedValue(accessStateSnapshot("free", "inactive"));
     mockRefreshCredits.mockResolvedValue(null);
     mockApplyCreditsFromResponse.mockReturnValue(null);
     mockRcLogIn.mockResolvedValue(true);
@@ -126,12 +165,12 @@ describe("PremiumContext", () => {
     });
 
     expect(mockPost).toHaveBeenCalledWith("/ai/credits/sync-tier");
-    expect(mockRefreshCredits).toHaveBeenCalled();
+    expect(mockRefreshAccess).toHaveBeenCalled();
   });
 
-  it("confirms premium only from backend credits tier after sync-tier", async () => {
+  it("confirms premium only from canonical access-state after sync-tier", async () => {
     mockPost.mockResolvedValue(creditsSnapshot("premium"));
-    mockApplyCreditsFromResponse.mockReturnValue(creditsSnapshot("premium"));
+    mockRefreshAccess.mockResolvedValue(accessStateSnapshot("premium", "active"));
 
     const { result } = renderHook(() => usePremiumContext(), { wrapper });
 
@@ -146,14 +185,40 @@ describe("PremiumContext", () => {
 
     expect(confirmed).toBe(true);
     expect(mockPost).toHaveBeenCalledWith("/ai/credits/sync-tier");
-    expect(mockApplyCreditsFromResponse).toHaveBeenCalled();
+    expect(mockRefreshAccess).toHaveBeenCalled();
+    expect(mockApplyCreditsFromResponse).toHaveBeenCalledWith(
+      accessStateSnapshot("premium", "active"),
+    );
     expect(result.current.isPremium).toBe(true);
     expect(result.current.subscription?.state).toBe("premium_active");
   });
 
+  it("does not confirm premium when sync-tier returns premium but access-state is free degraded", async () => {
+    mockPost.mockResolvedValue(creditsSnapshot("premium"));
+    mockRefreshAccess.mockResolvedValue(accessStateSnapshot("free", "degraded"));
+
+    const { result } = renderHook(() => usePremiumContext(), { wrapper });
+
+    await waitFor(() => {
+      expect(mockGetCustomerInfo).toHaveBeenCalled();
+    });
+
+    let confirmation: Awaited<ReturnType<typeof result.current.confirmPremiumEntitlement>>;
+    await act(async () => {
+      confirmation = await result.current.confirmPremiumEntitlement();
+    });
+
+    expect(confirmation!).toEqual({
+      confirmed: false,
+      reason: "credits_not_premium",
+    });
+    expect(result.current.isPremium).toBeNull();
+    expect(result.current.subscription?.state).toBe("unknown");
+  });
+
   it("dedupes concurrent premium entitlement confirmations", async () => {
     let resolveSync: ((value: unknown) => void) | null = null;
-    mockApplyCreditsFromResponse.mockReturnValue(creditsSnapshot("premium"));
+    mockRefreshAccess.mockResolvedValue(accessStateSnapshot("premium", "active"));
 
     const { result } = renderHook(() => usePremiumContext(), { wrapper });
 
@@ -161,7 +226,7 @@ describe("PremiumContext", () => {
       expect(mockGetCustomerInfo).toHaveBeenCalled();
     });
     await waitFor(() => {
-      expect(mockRefreshCredits).toHaveBeenCalled();
+      expect(mockRefreshAccess).toHaveBeenCalled();
     });
 
     mockPost.mockClear();
@@ -212,7 +277,7 @@ describe("PremiumContext", () => {
     expect(result.current.subscription?.state).not.toBe("premium_active");
   });
 
-  it("keeps subscription unknown when RevenueCat fails", async () => {
+  it("uses canonical access-state when RevenueCat fails", async () => {
     mockGetCustomerInfo.mockRejectedValueOnce(new Error("revenuecat offline"));
 
     const { result } = renderHook(() => usePremiumContext(), { wrapper });
@@ -221,10 +286,10 @@ describe("PremiumContext", () => {
       expect(mockGetCustomerInfo).toHaveBeenCalled();
     });
     await waitFor(() => {
-      expect(result.current.subscription?.state).toBe("unknown");
+      expect(result.current.subscription?.state).toBe("free_active");
     });
 
-    expect(result.current.isPremium).toBeNull();
+    expect(result.current.isPremium).toBe(false);
     expect(result.current.subscription?.state).not.toBe("premium_active");
   });
 
@@ -239,7 +304,7 @@ describe("PremiumContext", () => {
 
     expect(mockPost).not.toHaveBeenCalled();
     expect(mockGetCustomerInfo).not.toHaveBeenCalled();
-    expect(mockRefreshCredits).not.toHaveBeenCalled();
+    expect(mockRefreshAccess).not.toHaveBeenCalled();
   });
 
   it("refreshes premium state when app returns to active", async () => {
@@ -251,7 +316,7 @@ describe("PremiumContext", () => {
     expect(appStateHandler).toBeTruthy();
     mockGetCustomerInfo.mockClear();
     mockPost.mockClear();
-    mockRefreshCredits.mockClear();
+    mockRefreshAccess.mockClear();
 
     await act(async () => {
       nowMs += 31_000;
@@ -262,7 +327,7 @@ describe("PremiumContext", () => {
       expect(mockGetCustomerInfo).toHaveBeenCalledTimes(1);
     });
     expect(mockPost).not.toHaveBeenCalled();
-    expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
+    expect(mockRefreshAccess).toHaveBeenCalledTimes(1);
   });
 
   it("runs at most one access refresh sequence when app resumes repeatedly", async () => {
@@ -273,7 +338,7 @@ describe("PremiumContext", () => {
     });
     mockGetCustomerInfo.mockClear();
     mockPost.mockClear();
-    mockRefreshCredits.mockClear();
+    mockRefreshAccess.mockClear();
 
     await act(async () => {
       nowMs += 31_000;
@@ -285,6 +350,6 @@ describe("PremiumContext", () => {
       expect(mockGetCustomerInfo).toHaveBeenCalledTimes(1);
     });
     expect(mockPost).not.toHaveBeenCalled();
-    expect(mockRefreshCredits).toHaveBeenCalledTimes(1);
+    expect(mockRefreshAccess).toHaveBeenCalledTimes(1);
   });
 });

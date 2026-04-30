@@ -1,6 +1,6 @@
 import {
   buildDegradedAccessState,
-  buildAccessStateFromCredits,
+  hasConfirmedPremiumAccess,
   parseAccessState,
 } from "@/services/access/accessState";
 import type { AiCreditsStatus } from "@/services/ai/contracts";
@@ -119,15 +119,68 @@ describe("access state contract parser", () => {
     })).toBeNull();
   });
 
-  it("derives feature gates from inline backend credits", () => {
-    const state = buildAccessStateFromCredits(
-      buildCredits({ tier: "premium", balance: 2, allocation: 800 }),
-      "2026-04-30T10:00:00Z",
-    );
+  it("confirms premium only for premium tier with active entitlement", () => {
+    const activePremium = parseAccessState({
+      tier: "premium",
+      entitlementStatus: "active",
+      credits: buildCredits({ tier: "premium", balance: 2, allocation: 800 }),
+      features: {
+        aiChat: {
+          enabled: true,
+          status: "enabled",
+          reason: null,
+          requiredCredits: 1,
+          remainingCredits: 1,
+        },
+        photoAnalysis: {
+          enabled: false,
+          status: "disabled",
+          reason: "insufficient_credits",
+          requiredCredits: 5,
+          remainingCredits: 0,
+        },
+        textMealAnalysis: {
+          enabled: true,
+          status: "enabled",
+          reason: null,
+          requiredCredits: 1,
+          remainingCredits: 1,
+        },
+        weeklyReport: {
+          enabled: true,
+          status: "enabled",
+          reason: null,
+          requiredCredits: null,
+          remainingCredits: null,
+        },
+        fullHistory: {
+          enabled: true,
+          status: "enabled",
+          reason: null,
+          requiredCredits: null,
+          remainingCredits: null,
+        },
+        cloudBackup: {
+          enabled: true,
+          status: "enabled",
+          reason: null,
+          requiredCredits: null,
+          remainingCredits: null,
+        },
+      },
+      refreshedAt: "2026-04-30T10:00:00Z",
+    });
+    const degradedPremium = {
+      ...activePremium!,
+      entitlementStatus: "degraded" as const,
+    };
 
-    expect(state.entitlementStatus).toBe("active");
-    expect(state.features.weeklyReport.enabled).toBe(true);
-    expect(state.features.photoAnalysis.enabled).toBe(false);
+    expect(hasConfirmedPremiumAccess(activePremium)).toBe(true);
+    expect(hasConfirmedPremiumAccess(degradedPremium)).toBe(false);
+    expect(hasConfirmedPremiumAccess({
+      ...activePremium!,
+      tier: "free",
+    })).toBe(false);
   });
 
   it("builds explicit degraded client state when refresh fails before payload parsing", () => {
