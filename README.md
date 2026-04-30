@@ -189,6 +189,8 @@ The manual disposable smoke delete helper (`node scripts/manual-delete-smoke-che
 The mobile app uses v2 endpoints selectively:
 
 - **AI Chat**: Chat runtime is canonical v2 and sends user prompts to `POST /api/v2/ai/chat/runs`.
+- **AI Chat history**: Thread/message projection reads use `/api/v2/users/me/chat/*`; AI Chat code is guarded against `/api/v1` and legacy `/ai/ask`.
+- **AI Chat persona**: Mobile stores assistant preference as user profile `aiStyle`; backend bounds it to Fitaly style profiles and applies brand guardrails in the v2 prompt.
 - **Telemetry**: When `EXPO_PUBLIC_ENABLE_TELEMETRY=true`, the telemetry client batches events and sends them to `POST /api/v2/telemetry/events/batch`.
 - **NutritionState**: The Home screen fetches from `GET /api/v2/users/me/state?day=YYYY-MM-DD` with local fallback caching. If the backend is unreachable, the consumer falls back to locally-computed state.
 - **Smart Reminders**: The app fetches `GET /api/v2/users/me/reminders/decision?day=YYYY-MM-DD`, schedules only `decision="send"`, and cancels on `suppress`, `noop`, invalid payload, or failure. Mobile schedules from canonical backend `scheduledAtUtc`, not reconstructed local clock fields. Device notification permission stays a mobile execution concern, not part of the backend reminder decision contract.

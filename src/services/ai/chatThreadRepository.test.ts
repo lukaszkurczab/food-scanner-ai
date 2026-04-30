@@ -167,7 +167,7 @@ describe("services/ai/chatThreadRepository", () => {
     });
 
     expect(mockGet).toHaveBeenCalledWith(
-      "/users/me/chat/threads/thread-1/messages?limit=2&beforeCreatedAt=300",
+      "/api/v2/users/me/chat/threads/thread-1/messages?limit=2&beforeCreatedAt=300",
     );
     expect(mockUpsertChatMessageLocal).toHaveBeenCalledWith({
       threadId: "thread-1",
@@ -230,7 +230,7 @@ describe("services/ai/chatThreadRepository", () => {
 
     expect(mockPullChatChanges).not.toHaveBeenCalled();
     expect(mockGet).not.toHaveBeenCalledWith(
-      "/users/me/chat/threads/thread-1/messages?limit=50",
+      "/api/v2/users/me/chat/threads/thread-1/messages?limit=50",
     );
     unsubscribe();
   });

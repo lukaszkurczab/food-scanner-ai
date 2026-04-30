@@ -65,7 +65,7 @@ async function syncMessagesFromBackend(params: {
   }
 
   const response = await get<ChatMessagesPageApiResponse>(
-    `/users/me/chat/threads/${params.threadId}/messages?${search.toString()}`,
+    `/api/v2/users/me/chat/threads/${params.threadId}/messages?${search.toString()}`,
   );
 
   for (const item of response.items) {
