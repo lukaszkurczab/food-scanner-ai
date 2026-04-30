@@ -29,6 +29,7 @@ import {
 } from "@/services/billing/revenuecat";
 import {
   hasPremiumAccess,
+  mapUnknownSubscription,
   mapPremiumToSubscription,
   resolveSubscriptionFromRevenueCat,
 } from "@/services/billing/subscriptionStateMachine";
@@ -86,26 +87,44 @@ export const PremiumProvider = ({
     setSubscriptionState(mapPremiumToSubscription(premium));
   }, [setSubscriptionState]);
 
+  const setSubscriptionUnknown = useCallback(
+    (lastKnownPremiumHint: boolean | null) => {
+      isPremiumRef.current = null;
+      setIsPremium(null);
+      setSubscription(mapUnknownSubscription(lastKnownPremiumHint));
+    },
+    [],
+  );
+
   const applyBackendCreditsPremium = useCallback(
     (credits: AiCreditsStatus | null): boolean => {
-      const premium = credits?.tier === "premium";
+      if (!credits) {
+        setSubscriptionUnknown(null);
+        return false;
+      }
+      const premium = credits.tier === "premium";
       setSubscriptionFromPremium(premium);
       return premium;
     },
-    [setSubscriptionFromPremium],
+    [setSubscriptionFromPremium, setSubscriptionUnknown],
   );
 
   const setSubscriptionFromRevenueCat = useCallback((input: {
     customerInfo: unknown;
-    fallbackPremium: boolean;
-  }): boolean => {
+    lastKnownPremiumHint: boolean | null;
+  }): { confirmedAccess: boolean; displayPremiumHint: boolean } => {
     const resolved = resolveSubscriptionFromRevenueCat({
       customerInfo: input.customerInfo,
-      fallbackPremium: input.fallbackPremium,
+      lastKnownPremiumHint: input.lastKnownPremiumHint,
     });
+    const revenueCatPremium = hasPremiumAccess(resolved.state);
+    if (revenueCatPremium) {
+      setSubscriptionUnknown(input.lastKnownPremiumHint);
+      return { confirmedAccess: false, displayPremiumHint: true };
+    }
     setSubscriptionState(resolved);
-    return hasPremiumAccess(resolved.state);
-  }, [setSubscriptionState]);
+    return { confirmedAccess: false, displayPremiumHint: false };
+  }, [setSubscriptionState, setSubscriptionUnknown]);
 
   const checkPremiumStatus = useCallback(async (): Promise<boolean> => {
     if (!uid) {
@@ -115,41 +134,40 @@ export const PremiumProvider = ({
 
     const cachedBefore = await readCachedPremiumStatus(premiumKey);
     if (isBillingDisabled()) {
-      const val = cachedBefore ?? false;
-      setSubscriptionFromPremium(val);
-      return val;
+      setSubscriptionUnknown(cachedBefore);
+      return false;
     }
 
     initRevenueCat();
 
     if (!isRevenueCatConfigured()) {
-      setSubscriptionFromPremium(false);
+      setSubscriptionUnknown(cachedBefore);
       return false;
     }
 
     try {
       const info = await Purchases.getCustomerInfo();
-      const premium = setSubscriptionFromRevenueCat({
+      const resolved = setSubscriptionFromRevenueCat({
         customerInfo: info,
-        fallbackPremium: cachedBefore ?? false,
+        lastKnownPremiumHint: cachedBefore,
       });
       if (premiumKey) {
-        await AsyncStorage.setItem(premiumKey, premium ? "true" : "false");
+        await AsyncStorage.setItem(
+          premiumKey,
+          resolved.displayPremiumHint ? "true" : "false",
+        );
       }
-      return premium;
+      return resolved.confirmedAccess;
     } catch (error) {
       logWarning("premium status check failed", null, error);
-      if (cachedBefore !== null) {
-        setSubscriptionFromPremium(cachedBefore);
-        return cachedBefore;
-      }
-      setSubscriptionFromPremium(false);
+      setSubscriptionUnknown(cachedBefore);
       return false;
     }
   }, [
     premiumKey,
     setSubscriptionFromPremium,
     setSubscriptionFromRevenueCat,
+    setSubscriptionUnknown,
     uid,
   ]);
 
@@ -213,7 +231,7 @@ export const PremiumProvider = ({
         if (!cancelled) {
           await checkPremiumStatus();
           const credits = await syncTierAndRefreshCredits();
-          if (!cancelled) {
+          if (!cancelled && credits) {
             applyBackendCreditsPremium(credits);
           }
         }
@@ -245,7 +263,6 @@ export const PremiumProvider = ({
       if (credits) {
         return applyBackendCreditsPremium(credits);
       }
-      setSubscriptionFromPremium(false);
       return false;
     },
     [

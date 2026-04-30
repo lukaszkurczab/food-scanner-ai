@@ -69,9 +69,14 @@ export default function UserProfileScreen({
     );
   }
 
-  const planLabel = isPremium
-    ? t("manageSubscription.premium")
-    : t("manageSubscription.free");
+  const planLabel =
+    isPremium === true
+      ? t("manageSubscription.premium")
+      : isPremium === null
+        ? t("manageSubscription.subscriptionUnknown", {
+            defaultValue: "Cannot confirm premium",
+          })
+        : t("manageSubscription.free");
   return (
     <Layout>
       <View style={styles.content}>

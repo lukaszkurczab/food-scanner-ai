@@ -219,12 +219,14 @@ function makeManageState(overrides: Record<string, unknown> = {}) {
     state: "free_active",
     showRenew: false,
     showStart: true,
+    showConfirmationRetry: false,
     showManageInStore: true,
     headerStatus: "Free",
     isPremiumComputed: false,
     billingAvailability: "ready",
     actionFeedback: null,
     tryOpenManage: jest.fn(),
+    tryRefreshPremium: jest.fn(),
     tryRestore: jest.fn(),
     trySubscribe: jest.fn(),
     tryOpenRefundPolicy: jest.fn(),
@@ -259,6 +261,7 @@ describe("ManageSubscriptionScreen", () => {
       subscription: { state: "inactive" },
       setDevPremium: jest.fn(),
       refreshPremium: jest.fn(),
+      confirmPremiumEntitlement: jest.fn(),
     });
   });
 
@@ -272,6 +275,7 @@ describe("ManageSubscriptionScreen", () => {
       subscription: null,
       setDevPremium: jest.fn(),
       refreshPremium: jest.fn(),
+      confirmPremiumEntitlement: jest.fn(),
     });
     mockUseManageSubscriptionState.mockReturnValue(makeManageState());
 
@@ -296,6 +300,7 @@ describe("ManageSubscriptionScreen", () => {
       subscription: null,
       setDevPremium: jest.fn(),
       refreshPremium,
+      confirmPremiumEntitlement: jest.fn(),
     });
     mockUseManageSubscriptionState.mockReturnValue(makeManageState());
 

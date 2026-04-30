@@ -176,6 +176,24 @@ describe("PremiumContext", () => {
     expect(result.current.subscription?.state).not.toBe("premium_active");
   });
 
+  it("does not grant confirmed premium access from cached premium when RevenueCat fails", async () => {
+    asyncStorage.getItem.mockResolvedValue("true");
+    mockGetCustomerInfo.mockRejectedValueOnce(new Error("revenuecat offline"));
+
+    const { result } = renderHook(() => usePremiumContext(), { wrapper });
+
+    await waitFor(() => {
+      expect(mockGetCustomerInfo).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(result.current.subscription?.state).toBe("unknown");
+    });
+
+    expect(result.current.isPremium).toBeNull();
+    expect(result.current.subscription?.lastKnownPremiumHint).toBe(true);
+    expect(result.current.subscription?.state).not.toBe("premium_active");
+  });
+
   it("skips sync-tier API call when user is logged out", async () => {
     mockUseAuthContext.mockReturnValue({ uid: null, email: null });
 

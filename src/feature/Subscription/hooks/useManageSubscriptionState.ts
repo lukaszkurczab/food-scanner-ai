@@ -64,13 +64,11 @@ function normalizeSubscriptionState(input: {
     "premium_expired",
     "free_active",
     "free_expired",
+    "unknown",
   ];
   const raw = input.rawState as SubscriptionState;
   if (knownStates.includes(raw)) {
     return raw;
-  }
-  if (input.isPremiumHint) {
-    return "premium_active";
   }
   return input.rawState.startsWith("premium_") ? "premium_expired" : "free_active";
 }
@@ -107,8 +105,9 @@ export function useManageSubscriptionState(params: {
   }, [params]);
 
   const baseState = (params.subscriptionState || "free_active").trim();
-  const isPremiumByState = isPremiumSubscriptionState(baseState);
-  const isPremiumComputed = Boolean(params.isPremium ?? isPremiumByState);
+  const isPremiumByState =
+    baseState !== "unknown" && isPremiumSubscriptionState(baseState);
+  const isPremiumComputed = params.isPremium === true || isPremiumByState;
   const state = normalizeSubscriptionState({
     rawState: baseState,
     isPremiumHint: isPremiumComputed,
@@ -118,9 +117,11 @@ export function useManageSubscriptionState(params: {
     state === "premium_active"
     || state === "premium_trial"
     || state === "premium_grace"
-    || state === "premium_pending_downgrade";
+    || state === "premium_pending_downgrade"
+    || state === "unknown";
   const showRenew = PREMIUM_RECOVERY_STATES.has(state);
-  const showStart = !showManageInStore && !showRenew;
+  const showConfirmationRetry = state === "unknown";
+  const showStart = !showConfirmationRetry && !showManageInStore && !showRenew;
 
   const headerStatus =
     state === "premium_trial"
@@ -145,7 +146,11 @@ export function useManageSubscriptionState(params: {
                 })
               : state === "premium_expired"
                 ? `${params.t("manageSubscription.premium")} (${params.t("expired", { defaultValue: "expired" })})`
-                : state === "premium_active"
+                : state === "unknown"
+                  ? params.t("manageSubscription.subscriptionUnknown", {
+                      defaultValue: "Cannot confirm premium",
+                    })
+                  : state === "premium_active"
                   ? params.t("manageSubscription.premium")
                   : params.t("manageSubscription.free");
 
@@ -218,6 +223,32 @@ export function useManageSubscriptionState(params: {
       setBusyAction(null);
     }
   }, [alertBillingUnavailable, setFeedbackForError]);
+
+  const tryRefreshPremium = useCallback(async () => {
+    if (!requireAuthOrAlert("manage")) return;
+
+    setBusy(true);
+    setBusyAction("manage");
+    try {
+      const confirmed = await params.refreshPremium();
+      if (confirmed !== true) {
+        setActionFeedback({
+          tone: "warning",
+          title: params.t("manageSubscription.subscriptionUnknownTitle", {
+            defaultValue: "Cannot confirm premium right now",
+          }),
+          message: params.t("manageSubscription.subscriptionUnknownBody", {
+            defaultValue:
+              "We could not confirm premium with billing and backend credits. Try again, restore purchases, or manage your store subscription.",
+          }),
+          source: "manage",
+        });
+      }
+    } finally {
+      setBusy(false);
+      setBusyAction(null);
+    }
+  }, [params, requireAuthOrAlert]);
 
   const tryRestore = useCallback(async () => {
     if (!requireAuthOrAlert("restore")) return;
@@ -419,6 +450,7 @@ export function useManageSubscriptionState(params: {
     state,
     showRenew,
     showStart,
+    showConfirmationRetry,
     showManageInStore,
     headerStatus,
     isPremiumComputed,
@@ -427,6 +459,7 @@ export function useManageSubscriptionState(params: {
     actionFeedback,
     toggleExpanded,
     tryOpenManage,
+    tryRefreshPremium,
     tryRestore,
     trySubscribe,
     tryOpenRefundPolicy,

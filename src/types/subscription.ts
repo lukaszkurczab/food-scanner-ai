@@ -7,7 +7,8 @@ export type SubscriptionState =
   | "premium_refunded"
   | "premium_expired"
   | "free_active"
-  | "free_expired";
+  | "free_expired"
+  | "unknown";
 
 export type Subscription = {
   state: SubscriptionState;
@@ -17,4 +18,5 @@ export type Subscription = {
   lastPayment?: string;
   lastPaymentAmount?: string;
   startDate?: string;
+  lastKnownPremiumHint?: boolean | null;
 };

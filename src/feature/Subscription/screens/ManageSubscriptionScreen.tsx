@@ -45,7 +45,8 @@ function getSummaryTone(
 ): "success" | "warning" | "neutral" {
   if (state === "premium_active" || state === "premium_trial") return "success";
   if (
-    state === "premium_expired"
+    state === "unknown"
+    || state === "premium_expired"
     || state === "premium_grace"
     || state === "premium_pending_downgrade"
     || state === "premium_paused"
@@ -85,12 +86,14 @@ export default function ManageSubscriptionScreen({
     state,
     showRenew,
     showStart,
+    showConfirmationRetry,
     showManageInStore,
     headerStatus,
     isPremiumComputed,
     billingAvailability,
     actionFeedback,
     tryOpenManage,
+    tryRefreshPremium,
     tryRestore,
     trySubscribe,
     tryOpenRefundPolicy,
@@ -133,13 +136,17 @@ export default function ManageSubscriptionScreen({
                 ? t("manageSubscription.summaryPremiumTitle", {
                     defaultValue: "Premium active",
                   })
-                : state === "premium_expired"
-                  ? t("manageSubscription.summaryExpiredTitle", {
-                      defaultValue: "Premium expired",
+                : state === "unknown"
+                  ? t("manageSubscription.summaryUnknownTitle", {
+                      defaultValue: "Cannot confirm premium right now",
                     })
-                  : t("manageSubscription.summaryFreeTitle", {
-                      defaultValue: "Free plan",
-                    });
+                  : state === "premium_expired"
+                    ? t("manageSubscription.summaryExpiredTitle", {
+                        defaultValue: "Premium expired",
+                      })
+                    : t("manageSubscription.summaryFreeTitle", {
+                        defaultValue: "Free plan",
+                      });
 
   const summaryBody =
     state === "premium_trial"
@@ -172,21 +179,30 @@ export default function ManageSubscriptionScreen({
                     defaultValue:
                       "Your account currently has access to premium features and the premium AI Credits tier.",
                   })
-                : state === "premium_expired"
-                  ? t("manageSubscription.summaryExpiredBody", {
+                : state === "unknown"
+                  ? t("manageSubscription.summaryUnknownBody", {
                       defaultValue:
-                        "Your premium access is no longer active. You can renew when billing is available.",
+                        "We could not confirm premium with billing and backend credits. Try again, restore purchases, or manage your store subscription.",
                     })
-                  : t("manageSubscription.summaryFreeBody", {
-                      defaultValue:
-                        "You’re currently on the free plan. Upgrade to unlock the premium AI Credits tier and additional account features.",
-                    });
+                  : state === "premium_expired"
+                    ? t("manageSubscription.summaryExpiredBody", {
+                        defaultValue:
+                          "Your premium access is no longer active. You can renew when billing is available.",
+                      })
+                    : t("manageSubscription.summaryFreeBody", {
+                        defaultValue:
+                          "You’re currently on the free plan. Upgrade to unlock the premium AI Credits tier and additional account features.",
+                      });
 
-  const primaryCtaLabel = showRenew
-    ? t("manageSubscription.renewSubscription")
-    : showStart
-      ? t("manageSubscription.startSubscription")
-      : null;
+  const primaryCtaLabel = showConfirmationRetry
+    ? t("manageSubscription.retryConfirmation", {
+        defaultValue: "Retry confirmation",
+      })
+    : showRenew
+      ? t("manageSubscription.renewSubscription")
+      : showStart
+        ? t("manageSubscription.startSubscription")
+        : null;
 
   const billingStatusMessage =
     billingAvailability === "disabled"
@@ -274,6 +290,7 @@ export default function ManageSubscriptionScreen({
                     || state === "premium_trial"
                       ? theme.success.text
                     : state === "premium_expired"
+                      || state === "unknown"
                       || state === "premium_grace"
                       || state === "premium_pending_downgrade"
                       || state === "premium_paused"
@@ -343,9 +360,15 @@ export default function ManageSubscriptionScreen({
                 label={primaryCtaLabel}
                 onPress={() => {
                   clearActionFeedback();
+                  if (showConfirmationRetry) {
+                    void tryRefreshPremium();
+                    return;
+                  }
                   openPaywall();
                 }}
-                disabled={busy || billingAvailability !== "ready"}
+                disabled={
+                  busy || (!showConfirmationRetry && billingAvailability !== "ready")
+                }
               />
             </View>
           ) : null}

@@ -74,10 +74,9 @@ function normalizeEntitlement(customerInfo: unknown): NormalizedEntitlement {
 
 function resolveSubscriptionState(
   entitlement: NormalizedEntitlement,
-  fallbackPremium: boolean,
 ): SubscriptionState {
   if (entitlement.source === "none") {
-    return fallbackPremium ? "premium_active" : "free_active";
+    return "free_active";
   }
 
   if (entitlement.isActive) {
@@ -116,7 +115,7 @@ function resolveSubscriptionState(
     return "premium_expired";
   }
 
-  return fallbackPremium ? "premium_active" : "free_active";
+  return "free_active";
 }
 
 export function isPremiumSubscriptionState(state: SubscriptionState | string): boolean {
@@ -136,14 +135,24 @@ export function mapPremiumToSubscription(premium: boolean): Subscription {
   return premium ? { state: "premium_active" } : { state: "free_active" };
 }
 
+export function mapUnknownSubscription(
+  lastKnownPremiumHint: boolean | null = null,
+): Subscription {
+  return {
+    state: "unknown",
+    lastKnownPremiumHint,
+  };
+}
+
 export function resolveSubscriptionFromRevenueCat(params: {
   customerInfo: unknown;
-  fallbackPremium: boolean;
+  lastKnownPremiumHint?: boolean | null;
 }): Subscription {
   const entitlement = normalizeEntitlement(params.customerInfo);
-  const state = resolveSubscriptionState(entitlement, params.fallbackPremium);
+  const state = resolveSubscriptionState(entitlement);
   return {
     state,
+    lastKnownPremiumHint: params.lastKnownPremiumHint ?? null,
     renewDate: entitlement.expirationDate ?? undefined,
     endDate: entitlement.expirationDate ?? undefined,
     startDate:

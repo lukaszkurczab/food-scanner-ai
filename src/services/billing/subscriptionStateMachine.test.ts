@@ -2,6 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 import {
   hasPremiumAccess,
   isPremiumSubscriptionState,
+  mapUnknownSubscription,
   mapPremiumToSubscription,
   resolveSubscriptionFromRevenueCat,
 } from "@/services/billing/subscriptionStateMachine";
@@ -14,7 +15,7 @@ describe("subscriptionStateMachine", () => {
 
   it("resolves trial state when active entitlement is in trial period", () => {
     const subscription = resolveSubscriptionFromRevenueCat({
-      fallbackPremium: false,
+      lastKnownPremiumHint: false,
       customerInfo: {
         entitlements: {
           active: {
@@ -35,7 +36,7 @@ describe("subscriptionStateMachine", () => {
 
   it("resolves grace state when entitlement is active with billing issue", () => {
     const subscription = resolveSubscriptionFromRevenueCat({
-      fallbackPremium: false,
+      lastKnownPremiumHint: false,
       customerInfo: {
         entitlements: {
           active: {
@@ -54,7 +55,7 @@ describe("subscriptionStateMachine", () => {
 
   it("resolves pending downgrade state for active non-renewing entitlement", () => {
     const subscription = resolveSubscriptionFromRevenueCat({
-      fallbackPremium: false,
+      lastKnownPremiumHint: false,
       customerInfo: {
         entitlements: {
           active: {
@@ -73,7 +74,7 @@ describe("subscriptionStateMachine", () => {
 
   it("resolves paused state when entitlement is inactive with billing issue", () => {
     const subscription = resolveSubscriptionFromRevenueCat({
-      fallbackPremium: false,
+      lastKnownPremiumHint: false,
       customerInfo: {
         entitlements: {
           all: {
@@ -91,7 +92,7 @@ describe("subscriptionStateMachine", () => {
 
   it("resolves refunded state when inactive entitlement has no renewal and no expiry", () => {
     const subscription = resolveSubscriptionFromRevenueCat({
-      fallbackPremium: false,
+      lastKnownPremiumHint: false,
       customerInfo: {
         entitlements: {
           all: {
@@ -111,7 +112,7 @@ describe("subscriptionStateMachine", () => {
 
   it("resolves expired state when premium history exists but entitlement is inactive", () => {
     const subscription = resolveSubscriptionFromRevenueCat({
-      fallbackPremium: false,
+      lastKnownPremiumHint: false,
       customerInfo: {
         entitlements: {
           all: {
@@ -127,13 +128,22 @@ describe("subscriptionStateMachine", () => {
     expect(subscription.state).toBe("premium_expired");
   });
 
-  it("keeps fallback premium state when revenuecat payload is missing", () => {
+  it("does not grant premium access from last-known cache hint when revenuecat payload is missing", () => {
     const subscription = resolveSubscriptionFromRevenueCat({
-      fallbackPremium: true,
+      lastKnownPremiumHint: true,
       customerInfo: {},
     });
 
-    expect(subscription.state).toBe("premium_active");
+    expect(subscription.state).toBe("free_active");
+    expect(subscription.lastKnownPremiumHint).toBe(true);
+  });
+
+  it("maps unknown subscription as a display-only degraded state", () => {
+    expect(mapUnknownSubscription(true)).toEqual({
+      state: "unknown",
+      lastKnownPremiumHint: true,
+    });
+    expect(hasPremiumAccess("unknown")).toBe(false);
   });
 
   it("classifies premium states using helper", () => {
