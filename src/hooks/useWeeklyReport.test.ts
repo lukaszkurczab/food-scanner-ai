@@ -37,6 +37,39 @@ describe("useWeeklyReport", () => {
     jest.clearAllMocks();
   });
 
+  it("does not request weekly report when inactive", () => {
+    const { result } = renderHook(() =>
+      useWeeklyReport({
+        uid: "user-1",
+        weekEnd: "2026-03-15",
+        active: false,
+      }),
+    );
+
+    expect(mockGetWeeklyReport).not.toHaveBeenCalled();
+    expect(result.current.loading).toBe(false);
+    expect(result.current.enabled).toBe(false);
+    expect(result.current.source).toBe("disabled");
+    expect(result.current.status).toBe("disabled");
+  });
+
+  it("does not refresh weekly report when inactive", async () => {
+    const { result } = renderHook(() =>
+      useWeeklyReport({
+        uid: "user-1",
+        weekEnd: "2026-03-15",
+        active: false,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(mockGetWeeklyReport).not.toHaveBeenCalled();
+    expect(result.current.report.period.endDay).toBe("2026-03-15");
+  });
+
   it("ignores stale weekly report loads after week changes", async () => {
     const firstReport = createFallbackWeeklyReport("2026-03-15");
     firstReport.summary = "Stale summary";

@@ -3,8 +3,10 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { AppIcon, Button, Layout } from "@/components";
 import { useAuthContext } from "@/context/AuthContext";
+import { usePremiumContext } from "@/context/PremiumContext";
 import { useWeeklyReport } from "@/hooks/useWeeklyReport";
 import type { RootStackParamList } from "@/navigation/navigate";
+import { hasPremiumAccess } from "@/services/billing/subscriptionStateMachine";
 import { createMockWeeklyReportResult } from "@/services/weeklyReport/weeklyReportMocks";
 import type {
   WeeklyReport,
@@ -13,6 +15,7 @@ import type {
 } from "@/services/weeklyReport/weeklyReportTypes";
 import { useTheme } from "@/theme/useTheme";
 import { useTranslation } from "react-i18next";
+import type { Subscription, SubscriptionState } from "@/types/subscription";
 import {
   formatWeeklyPeriod,
   getCarryForwardLine,
@@ -43,6 +46,36 @@ type StateCardProps = {
   leading?: React.ReactNode;
   children?: React.ReactNode;
 };
+
+type WeeklyReportAccessState =
+  | "unknown"
+  | "locked"
+  | "degraded"
+  | "premium";
+
+const DEGRADED_SUBSCRIPTION_STATES = new Set<SubscriptionState>([
+  "premium_expired",
+  "premium_paused",
+  "premium_refunded",
+]);
+
+function resolveWeeklyReportAccessState(
+  subscription: Subscription | null,
+): WeeklyReportAccessState {
+  if (!subscription) {
+    return "unknown";
+  }
+
+  if (hasPremiumAccess(subscription.state)) {
+    return "premium";
+  }
+
+  if (DEGRADED_SUBSCRIPTION_STATES.has(subscription.state)) {
+    return "degraded";
+  }
+
+  return "locked";
+}
 
 function HeaderButton({
   icon,
@@ -247,7 +280,17 @@ function LoadingRing() {
   );
 }
 
-function LoadingState({ report }: { report: WeeklyReport }) {
+function LoadingState({
+  report,
+  title,
+  body,
+  helperNote,
+}: {
+  report: WeeklyReport;
+  title?: string;
+  body?: string;
+  helperNote?: string;
+}) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation("home");
@@ -261,10 +304,14 @@ function LoadingState({ report }: { report: WeeklyReport }) {
 
         <View style={styles.loadingHeadlineRow}>
           <LoadingRing />
-          <Text style={styles.loadingTitle}>{t("weeklyReport.loadingTitle")}</Text>
+          <Text style={styles.loadingTitle}>
+            {title ?? t("weeklyReport.loadingTitle")}
+          </Text>
         </View>
 
-        <Text style={styles.loadingBody}>{t("weeklyReport.loadingBody")}</Text>
+        <Text style={styles.loadingBody}>
+          {body ?? t("weeklyReport.loadingBody")}
+        </Text>
 
         <View style={[styles.skeletonBar, styles.skeletonBarLong]} />
         <View style={[styles.skeletonBar, styles.skeletonBarShort]} />
@@ -276,7 +323,9 @@ function LoadingState({ report }: { report: WeeklyReport }) {
         <View style={[styles.skeletonBar, styles.skeletonSupport]} />
       </View>
 
-      <Text style={styles.helperNote}>{t("weeklyReport.loadingHelperNote")}</Text>
+      <Text style={styles.helperNote}>
+        {helperNote ?? t("weeklyReport.loadingHelperNote")}
+      </Text>
     </View>
   );
 }
@@ -406,15 +455,108 @@ function UnavailableState({
   );
 }
 
+function LockedState({
+  onManageSubscription,
+}: {
+  onManageSubscription: () => void;
+}) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { t } = useTranslation("home");
+
+  return (
+    <View style={styles.content}>
+      <StateCard
+        title={t("weeklyReport.lockedTitle", {
+          defaultValue: "Weekly Report is a Premium feature",
+        })}
+        body={t("weeklyReport.lockedBody", {
+          defaultValue:
+            "Upgrade to Premium to unlock your weekly reflection before we generate it.",
+        })}
+        leading={
+          <View style={styles.stateIconWrap}>
+            <Text style={styles.stateLockedIcon}>✦</Text>
+          </View>
+        }
+      >
+        <Button
+          label={t("weeklyReport.unlockCta", {
+            defaultValue: "Manage subscription",
+          })}
+          onPress={onManageSubscription}
+          style={styles.primaryButton}
+        />
+      </StateCard>
+    </View>
+  );
+}
+
+function DegradedAccessState({
+  onRetryAccess,
+  onManageSubscription,
+  retrying,
+}: {
+  onRetryAccess: () => void;
+  onManageSubscription: () => void;
+  retrying: boolean;
+}) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { t } = useTranslation("home");
+
+  return (
+    <View style={styles.content}>
+      <StateCard
+        title={t("weeklyReport.accessIssueTitle", {
+          defaultValue: "Weekly Report access needs attention",
+        })}
+        body={t("weeklyReport.accessIssueBody", {
+          defaultValue:
+            "Restore or review your Premium subscription before requesting this report again.",
+        })}
+        leading={
+          <View style={styles.unavailableIconWrap}>
+            <AppIcon name="refresh" size={22} color={theme.accentWarm} />
+          </View>
+        }
+      >
+        <View style={styles.stateActions}>
+          <Button
+            label={t("weeklyReport.retryAccessCta", {
+              defaultValue: "Retry access check",
+            })}
+            onPress={onRetryAccess}
+            loading={retrying}
+            style={styles.primaryButton}
+          />
+          <Button
+            label={t("weeklyReport.restoreAccessCta", {
+              defaultValue: "Manage subscription",
+            })}
+            variant="secondary"
+            onPress={onManageSubscription}
+            style={styles.secondaryButton}
+          />
+        </View>
+      </StateCard>
+    </View>
+  );
+}
+
 export default function WeeklyReportScreen({ navigation }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation("home");
   const { uid } = useAuthContext();
+  const { subscription, refreshPremium } = usePremiumContext();
   const weeklyReportDevPreview = isWeeklyReportDevPreview();
+  const accessState = weeklyReportDevPreview
+    ? "premium"
+    : resolveWeeklyReportAccessState(subscription);
   const liveWeeklyReport = useWeeklyReport({
     uid,
-    active: !weeklyReportDevPreview,
+    active: accessState === "premium" && !weeklyReportDevPreview,
   });
   const [refreshing, setRefreshing] = useState(false);
   const hasTrackedOpenRef = useRef(false);
@@ -445,6 +587,20 @@ export default function WeeklyReportScreen({ navigation }: Props) {
     navigation.navigate("Home");
   }, [navigation]);
 
+  const handleManageSubscription = useCallback(() => {
+    navigation.navigate("ManageSubscription");
+  }, [navigation]);
+
+  const handleRetryAccess = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await refreshPremium();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshPremium, refreshing]);
+
   const isReady = !weeklyReport.loading && weeklyReport.report.status === "ready";
   const isInsufficient =
     !weeklyReport.loading &&
@@ -452,7 +608,11 @@ export default function WeeklyReportScreen({ navigation }: Props) {
     weeklyReport.report.status === "insufficient_data";
 
   useEffect(() => {
-    if (weeklyReport.loading || hasTrackedOpenRef.current) {
+    if (
+      accessState !== "premium"
+      || weeklyReport.loading
+      || hasTrackedOpenRef.current
+    ) {
       return;
     }
 
@@ -469,7 +629,7 @@ export default function WeeklyReportScreen({ navigation }: Props) {
       insightCount: weeklyReport.report.insights.length,
       priorityCount: weeklyReport.report.priorities.length,
     });
-  }, [weeklyReport.loading, weeklyReport.report]);
+  }, [accessState, weeklyReport.loading, weeklyReport.report]);
 
   return (
     <Layout showNavigation={false}>
@@ -481,7 +641,30 @@ export default function WeeklyReportScreen({ navigation }: Props) {
       />
 
       <View style={styles.screen}>
-        {weeklyReport.loading ? (
+        {accessState === "unknown" ? (
+          <LoadingState
+            report={weeklyReport.report}
+            title={t("weeklyReport.accessLoadingTitle", {
+              defaultValue: "Checking weekly report access",
+            })}
+            body={t("weeklyReport.accessLoadingBody", {
+              defaultValue:
+                "Confirming your Premium access before we generate this report.",
+            })}
+            helperNote={t("weeklyReport.accessLoadingHelper", {
+              defaultValue:
+                "We wait for subscription state first so we don't trigger the report unnecessarily.",
+            })}
+          />
+        ) : accessState === "locked" ? (
+          <LockedState onManageSubscription={handleManageSubscription} />
+        ) : accessState === "degraded" ? (
+          <DegradedAccessState
+            onRetryAccess={handleRetryAccess}
+            onManageSubscription={handleManageSubscription}
+            retrying={refreshing}
+          />
+        ) : weeklyReport.loading ? (
           <LoadingState report={weeklyReport.report} />
         ) : isReady ? (
           <View style={styles.content}>
@@ -814,6 +997,12 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       lineHeight: 32,
       fontFamily: theme.typography.fontFamily.medium,
     },
+    stateLockedIcon: {
+      color: theme.primary,
+      fontSize: theme.typography.size.displayM,
+      lineHeight: 32,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
     stateTitle: {
       color: theme.text,
       fontSize: theme.typography.size.title,
@@ -827,6 +1016,10 @@ const makeStyles = (theme: ReturnType<typeof useTheme>) =>
       lineHeight: 19,
       fontFamily: theme.typography.fontFamily.regular,
       textAlign: "center",
+    },
+    stateActions: {
+      gap: 12,
+      marginTop: 4,
     },
     signalMeter: {
       alignItems: "flex-start",

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createFallbackWeeklyReport,
   getCurrentWeeklyReportWeekEnd,
@@ -36,13 +36,21 @@ export function useWeeklyReport({
   active = true,
 }: UseWeeklyReportParams): UseWeeklyReportResult {
   const resolvedWeekEnd = resolveWeekEnd(weekEnd);
+  const fallbackReport = useMemo(
+    () => createFallbackWeeklyReport(resolvedWeekEnd),
+    [resolvedWeekEnd],
+  );
   const [report, setReport] = useState<WeeklyReport>(() =>
-    createFallbackWeeklyReport(resolvedWeekEnd),
+    fallbackReport,
   );
   const [loading, setLoading] = useState<boolean>(!!uid && active);
-  const [enabled, setEnabled] = useState<boolean>(true);
-  const [source, setSource] = useState<WeeklyReportSource>("fallback");
-  const [status, setStatus] = useState<WeeklyReportResultStatus>("no_user");
+  const [enabled, setEnabled] = useState<boolean>(active);
+  const [source, setSource] = useState<WeeklyReportSource>(
+    active ? "fallback" : "disabled",
+  );
+  const [status, setStatus] = useState<WeeklyReportResultStatus>(
+    active ? "no_user" : "disabled",
+  );
   const [error, setError] = useState<unknown | null>(null);
   const requestIdRef = useRef(0);
   const requestScopeKey = `${uid ?? ""}:${resolvedWeekEnd}:${active ? "active" : "inactive"}`;
@@ -71,11 +79,11 @@ export function useWeeklyReport({
     let mounted = true;
 
     if (!active) {
-      setReport(createFallbackWeeklyReport(resolvedWeekEnd));
+      setReport(fallbackReport);
       setLoading(false);
-      setEnabled(true);
-      setSource("fallback");
-      setStatus("no_user");
+      setEnabled(false);
+      setSource("disabled");
+      setStatus("disabled");
       setError(null);
       return () => {
         mounted = false;
@@ -100,9 +108,21 @@ export function useWeeklyReport({
     return () => {
       mounted = false;
     };
-  }, [active, applyResult, requestScopeKey, resolvedWeekEnd, uid]);
+  }, [active, applyResult, fallbackReport, requestScopeKey, resolvedWeekEnd, uid]);
 
   const refresh = useCallback(async () => {
+    if (!active) {
+      applyResult({
+        report: fallbackReport,
+        enabled: false,
+        source: "disabled",
+        status: "disabled",
+        error: null,
+      });
+      setLoading(false);
+      return fallbackReport;
+    }
+
     const requestId = ++requestIdRef.current;
     const requestScope = requestScopeKey;
     const result = await getWeeklyReport(uid, { weekEnd: resolvedWeekEnd });
@@ -114,7 +134,7 @@ export function useWeeklyReport({
       setLoading(false);
     }
     return result.report;
-  }, [applyResult, requestScopeKey, resolvedWeekEnd, uid]);
+  }, [active, applyResult, fallbackReport, requestScopeKey, resolvedWeekEnd, uid]);
 
   return {
     report,

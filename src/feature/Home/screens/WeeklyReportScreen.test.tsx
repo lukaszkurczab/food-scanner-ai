@@ -4,11 +4,16 @@ import WeeklyReportScreen from "@/feature/Home/screens/WeeklyReportScreen";
 import { renderWithTheme } from "@/test-utils/renderWithTheme";
 
 const mockUseAuthContext = jest.fn();
+const mockUsePremiumContext = jest.fn();
 const mockUseWeeklyReport = jest.fn();
 const originalDev = (globalThis as { __DEV__?: boolean }).__DEV__;
 
 jest.mock("@/context/AuthContext", () => ({
   useAuthContext: () => mockUseAuthContext(),
+}));
+
+jest.mock("@/context/PremiumContext", () => ({
+  usePremiumContext: () => mockUsePremiumContext(),
 }));
 
 jest.mock("@/hooks/useWeeklyReport", () => ({
@@ -48,6 +53,21 @@ jest.mock("react-i18next", () => ({
       "weeklyReport.tryAgain": "Try again",
       "weeklyReport.back": "Back",
       "weeklyReport.accessibilityRefresh": "Refresh weekly report",
+      "weeklyReport.lockedTitle": "Weekly Report is a Premium feature",
+      "weeklyReport.lockedBody":
+        "Upgrade to Premium to unlock your weekly reflection before we generate it.",
+      "weeklyReport.unlockCta": "Manage subscription",
+      "weeklyReport.accessIssueTitle":
+        "Weekly Report access needs attention",
+      "weeklyReport.accessIssueBody":
+        "Restore or review your Premium subscription before requesting this report again.",
+      "weeklyReport.retryAccessCta": "Retry access check",
+      "weeklyReport.restoreAccessCta": "Manage subscription",
+      "weeklyReport.accessLoadingTitle": "Checking weekly report access",
+      "weeklyReport.accessLoadingBody":
+        "Confirming your Premium access before we generate this report.",
+      "weeklyReport.accessLoadingHelper":
+        "We wait for subscription state first so we don't trigger the report unnecessarily.",
     };
 
     return {
@@ -88,8 +108,13 @@ jest.mock("@/components", () => {
 
 describe("WeeklyReportScreen", () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     (globalThis as { __DEV__?: boolean }).__DEV__ = false;
     mockUseAuthContext.mockReturnValue({ uid: "user-1" });
+    mockUsePremiumContext.mockReturnValue({
+      subscription: { state: "premium_active" },
+      refreshPremium: jest.fn(),
+    });
   });
 
   afterAll(() => {
@@ -125,6 +150,108 @@ describe("WeeklyReportScreen", () => {
         "Reading the closed week first, then shaping one carry-forward for next week.",
       ),
     ).toBeTruthy();
+  });
+
+  it("keeps weekly report request inactive while premium state is unknown", () => {
+    mockUsePremiumContext.mockReturnValue({
+      subscription: null,
+      refreshPremium: jest.fn(),
+    });
+    mockUseWeeklyReport.mockReturnValue({
+      report: {
+        status: "not_available",
+        period: { startDay: "2026-03-09", endDay: "2026-03-15" },
+        summary: null,
+        insights: [],
+        priorities: [],
+      },
+      loading: false,
+      enabled: false,
+      source: "disabled",
+      status: "disabled",
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const navigation = { goBack: jest.fn(), navigate: jest.fn() };
+    const { getByText } = renderWithTheme(
+      <WeeklyReportScreen navigation={navigation as never} />,
+    );
+
+    expect(mockUseWeeklyReport).toHaveBeenCalledWith({
+      uid: "user-1",
+      active: false,
+    });
+    expect(getByText("Checking weekly report access")).toBeTruthy();
+  });
+
+  it("renders premium locked state for free users without activating request", () => {
+    mockUsePremiumContext.mockReturnValue({
+      subscription: { state: "free_active" },
+      refreshPremium: jest.fn(),
+    });
+    mockUseWeeklyReport.mockReturnValue({
+      report: {
+        status: "not_available",
+        period: { startDay: "2026-03-09", endDay: "2026-03-15" },
+        summary: null,
+        insights: [],
+        priorities: [],
+      },
+      loading: false,
+      enabled: false,
+      source: "disabled",
+      status: "disabled",
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const navigation = { goBack: jest.fn(), navigate: jest.fn() };
+    const { getByText } = renderWithTheme(
+      <WeeklyReportScreen navigation={navigation as never} />,
+    );
+
+    expect(mockUseWeeklyReport).toHaveBeenCalledWith({
+      uid: "user-1",
+      active: false,
+    });
+    expect(getByText("Weekly Report is a Premium feature")).toBeTruthy();
+    expect(getByText("Manage subscription")).toBeTruthy();
+  });
+
+  it("renders degraded access state without activating weekly report request", () => {
+    const refreshPremium = jest.fn();
+    mockUsePremiumContext.mockReturnValue({
+      subscription: { state: "premium_expired" },
+      refreshPremium,
+    });
+    mockUseWeeklyReport.mockReturnValue({
+      report: {
+        status: "not_available",
+        period: { startDay: "2026-03-09", endDay: "2026-03-15" },
+        summary: null,
+        insights: [],
+        priorities: [],
+      },
+      loading: false,
+      enabled: false,
+      source: "disabled",
+      status: "disabled",
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const navigation = { goBack: jest.fn(), navigate: jest.fn() };
+    const { getByText } = renderWithTheme(
+      <WeeklyReportScreen navigation={navigation as never} />,
+    );
+
+    expect(mockUseWeeklyReport).toHaveBeenCalledWith({
+      uid: "user-1",
+      active: false,
+    });
+    expect(getByText("Weekly Report access needs attention")).toBeTruthy();
+    expect(getByText("Retry access check")).toBeTruthy();
   });
 
   it("renders ready state with synthesis hierarchy", () => {
